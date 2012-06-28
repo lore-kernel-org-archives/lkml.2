@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab2F1ND3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 09:03:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34329 "EHLO mx1.redhat.com"
+	id S1754816Ab2F1M6H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:58:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3536 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754098Ab2F1M6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:58:11 -0400
+	id S1754988Ab2F1M6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:58:03 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -27,50 +27,43 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 16/40] autonuma: init knuma_migrated queues
-Date: Thu, 28 Jun 2012 14:55:56 +0200
-Message-Id: <1340888180-15355-17-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 21/40] autonuma: avoid CFS select_task_rq_fair to return -1
+Date: Thu, 28 Jun 2012 14:56:01 +0200
+Message-Id: <1340888180-15355-22-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initialize the knuma_migrated queues at boot time.
+Fix to avoid -1 retval.
+
+Includes fixes from Hillf Danton <dhillf@gmail.com>.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- mm/page_alloc.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ kernel/sched/fair.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index a9710a4..48eabe9 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -59,6 +59,7 @@
- #include <linux/prefetch.h>
- #include <linux/migrate.h>
- #include <linux/page-debug-flags.h>
-+#include <linux/autonuma.h>
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c099cc6..fa96810 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2789,6 +2789,9 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ 		if (new_cpu == -1 || new_cpu == cpu) {
+ 			/* Now try balancing at a lower domain level of cpu */
+ 			sd = sd->child;
++			if (new_cpu < 0)
++				/* Return prev_cpu is find_idlest_cpu failed */
++				new_cpu = prev_cpu;
+ 			continue;
+ 		}
  
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-@@ -4348,8 +4349,18 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 	int nid = pgdat->node_id;
- 	unsigned long zone_start_pfn = pgdat->node_start_pfn;
- 	int ret;
-+#ifdef CONFIG_AUTONUMA
-+	int node_iter;
-+#endif
+@@ -2807,6 +2810,7 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ unlock:
+ 	rcu_read_unlock();
  
- 	pgdat_resize_init(pgdat);
-+#ifdef CONFIG_AUTONUMA
-+	spin_lock_init(&pgdat->autonuma_lock);
-+	init_waitqueue_head(&pgdat->autonuma_knuma_migrated_wait);
-+	pgdat->autonuma_nr_migrate_pages = 0;
-+	for_each_node(node_iter)
-+		INIT_LIST_HEAD(&pgdat->autonuma_migrate_head[node_iter]);
-+#endif
- 	pgdat->nr_zones = 0;
- 	init_waitqueue_head(&pgdat->kswapd_wait);
- 	pgdat->kswapd_max_order = 0;
++	BUG_ON(new_cpu < 0);
+ 	return new_cpu;
+ }
+ #endif /* CONFIG_SMP */
