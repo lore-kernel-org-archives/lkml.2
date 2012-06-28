@@ -1,92 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110Ab2F1PEO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 11:04:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28093 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753175Ab2F1PEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 11:04:12 -0400
-Subject: Re: [Cluster-devel] [PATCH] Fixing double brelse'ing bh allocated
- in gfs2_meta_read when EIO occurs
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Masatake YAMATO <yamato@redhat.com>
-Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-In-Reply-To: <20120618.163131.350454467360099988.yamato@redhat.com>
-References: <20120618.163131.350454467360099988.yamato@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Thu, 28 Jun 2012 16:02:56 +0100
-Message-ID: <1340895776.2770.17.camel@menhir>
-Mime-Version: 1.0
+	id S1755275Ab2F1PNZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 11:13:25 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:10270 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459Ab2F1PNX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 11:13:23 -0400
+Message-ID: <4FEC7487.9020909@hp.com>
+Date: Thu, 28 Jun 2012 08:13:11 -0700
+From: Don Morris <don.morris@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 05/40] autonuma: define _PAGE_NUMA_PTE and _PAGE_NUMA_PMD
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-6-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1340888180-15355-6-git-send-email-aarcange@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Many thanks for the patch. I've added it to the -nmw git tree. Sorry for
-the delay, just getting back up to speed after my holiday,
-
-Steve.
-
-On Mon, 2012-06-18 at 16:31 +0900, Masatake YAMATO wrote:
-> This patch fixes buffer_head double free in following code path:
-> 
-> gfs2_block_map
-> => gfs2_meta_inode_buffer
->  => gfs2_meta_indirect_buffer
->   => gfs2_meta_read
-> => release_metapath
-> 
-> 
-> gfs2_block_map calls gfs2_meta_inode_buffer with &mp.mp_bh[0]
-> as an argument. mp.mp_bh are filled with zero at the beginning
-> of gfs2_block_map.
-> 
-> If gfs2_meta_inode_buffer returns non-zero value, gfs2_block_map
-> calls release_metapath to free buffers chained to mp.mp_bh.
-> release_metapath checks each slot of mp.mp_bh[i] and 
-> free(with brelse) unless the slot is filled with NULL.
-> 
-> 
-> &mp.mp_bh[0] passed to gfs2_meta_inode_buffer is filled at
-> gfs2_meta_read. gfs2_meta_read is filled a buffer allocated with
-> gfs2_getbuf even if EIO occurs. When EIO occurs, the allocated buffer
-> is brelse'ed though the pointer(wrong poiner) points the brelse'ed is
-> passed back to caller via an argument bhp.
-> 
-> gfs2_meta_indirect_buffer, the caller also pass the wrong pointer
-> to its caller with EIO. Finally gfs2_block_map gets both EIO and
-> &mp.mp_bh[0] filled with the wrong pointer. release_metapath
-> calls brelse again on the wrong pointer.
-> 
-> Signed-off-by: Masatake YAMATO<yamato@redhat.com>
-> 
-> diff --git a/fs/gfs2/meta_io.c b/fs/gfs2/meta_io.c
-> index 6c1e5d1..3a56c8d 100644
-> --- a/fs/gfs2/meta_io.c
-> +++ b/fs/gfs2/meta_io.c
-> @@ -213,8 +213,10 @@ int gfs2_meta_read(struct gfs2_glock *gl, u64 blkno, int flags,
->  	struct gfs2_sbd *sdp = gl->gl_sbd;
->  	struct buffer_head *bh;
->  
-> -	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags)))
-> +	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags))) {
-> +		*bhp = NULL;
->  		return -EIO;
-> +	}
->  
->  	*bhp = bh = gfs2_getbuf(gl, blkno, CREATE);
->  
-> @@ -235,6 +237,7 @@ int gfs2_meta_read(struct gfs2_glock *gl, u64 blkno, int flags,
->  		if (tr && tr->tr_touched)
->  			gfs2_io_error_bh(sdp, bh);
->  		brelse(bh);
-> +		*bhp = NULL;
->  		return -EIO;
->  	}
->  
+On 06/28/2012 05:55 AM, Andrea Arcangeli wrote:
+> We will set these bitflags only when the pmd and pte is non present.
 > 
 
+Just a couple grammar nitpicks.
+
+> They work like PROT_NONE but they identify a request for the numa
+> hinting page fault to trigger.
+> 
+> Because we want to be able to set these bitflag in any established pte
+
+these bitflags
+
+> or pmd (while clearing the present bit at the same time) without
+> losing information, these bitflags must never be set when the pte and
+> pmd are present.
+> 
+> For _PAGE_NUMA_PTE the pte bitflag used is _PAGE_PSE, which cannot be
+> set on ptes and it also fits in between _PAGE_FILE and _PAGE_PROTNONE
+> which avoids having to alter the swp entries format.
+> 
+> For _PAGE_NUMA_PMD, we use a reserved bitflag. pmds never contain
+> swap_entries but if in the future we'll swap transparent hugepages, we
+> must keep in mind not to use the _PAGE_UNUSED2 bitflag in the swap
+> entry format and to start the swap entry offset above it.
+> 
+> PAGE_UNUSED2 is used by Xen but only on ptes established by ioremap,
+> but it's never used on pmds so there's no risk of collision with Xen.
+
+Maybe "but only on ptes established by ioremap, never on pmds so
+there's no risk of collision with Xen." ? The extra "but" just
+doesn't flow in the original.
+
+Don Morris
+
+> 
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> ---
+>  arch/x86/include/asm/pgtable_types.h |   11 +++++++++++
+>  1 files changed, 11 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+> index b74cac9..6e2d954 100644
+> --- a/arch/x86/include/asm/pgtable_types.h
+> +++ b/arch/x86/include/asm/pgtable_types.h
+> @@ -71,6 +71,17 @@
+>  #define _PAGE_FILE	(_AT(pteval_t, 1) << _PAGE_BIT_FILE)
+>  #define _PAGE_PROTNONE	(_AT(pteval_t, 1) << _PAGE_BIT_PROTNONE)
+>  
+> +/*
+> + * Cannot be set on pte. The fact it's in between _PAGE_FILE and
+> + * _PAGE_PROTNONE avoids having to alter the swp entries.
+> + */
+> +#define _PAGE_NUMA_PTE	_PAGE_PSE
+> +/*
+> + * Cannot be set on pmd, if transparent hugepages will be swapped out
+> + * the swap entry offset must start above it.
+> + */
+> +#define _PAGE_NUMA_PMD	_PAGE_UNUSED2
+> +
+>  #define _PAGE_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_USER |	\
+>  			 _PAGE_ACCESSED | _PAGE_DIRTY)
+>  #define _KERNPG_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_ACCESSED |	\
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> .
+> 
 
