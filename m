@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab2F1TK6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 15:10:58 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:54232 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755972Ab2F1TK4 (ORCPT
+	id S1754095Ab2F1TNr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 15:13:47 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63698 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab2F1TNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 15:10:56 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6756"; a="203300392"
-Message-ID: <4FECAC3C.2010202@codeaurora.org>
-Date: Thu, 28 Jun 2012 12:10:52 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 28 Jun 2012 15:13:46 -0400
+X-Originating-IP: 108.223.40.66
+Date: Thu, 28 Jun 2012 12:14:02 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.5-rc5
+Message-ID: <20120628191402.GA20318@roeck-us.net>
 MIME-Version: 1.0
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>
-CC: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Julia Lawall <Julia.Lawall@lip6.fr>, Jamie Iles <jamie@jamieiles.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v3] Exynos : Add support for Exynos random number generator
-References: <1340851345-27107-1-git-send-email-jonghwa3.lee@samsung.com>
-In-Reply-To: <1340851345-27107-1-git-send-email-jonghwa3.lee@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/12 19:42, Jonghwa Lee wrote:
-> This patch supports Exynos SOC's PRNG driver. Exynos's PRNG has 5 seeds and
-> 5 random number outputs. Module is excuted under runtime power management control,
-> so it activates only while it's in use. Otherwise it will be suspended generally.
-> It was tested on PQ board by rngtest program.
->
-> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+--RnlQjJ0d97Da+TV1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I'll leave the signoff chain discrepancy to whoever applies this patch.
+Hi Linus,
 
-> +
-> +#include <linux/hw_random.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/delay.h>
+Please pull hwmon fixes for Linux 3.5-rc5 from signed tag:
 
-Is delay.h used?
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Thanks,
+Guenter
+------
 
+The following changes since commit 6b16351acbd415e66ba16bf7d473ece1574cf0bc:
+
+  Linux 3.5-rc4 (2012-06-24 12:53:04 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+for you to fetch changes up to bb9a80e5719abae235c7e9c7391a3a17b64a217b:
+
+  hwmon: Update my e-mail address (2012-06-25 06:46:24 -0700)
+
+----------------------------------------------------------------
+hwmon changes for 3.5-rc5:
+
+e-mail address updates
+
+----------------------------------------------------------------
+Guenter Roeck (1):
+      hwmon: Update my e-mail address
+
+Jesper Juhl (1):
+      hwmon: (applesmc) correct email address for Jesper Juhl
+
+ drivers/hwmon/applesmc.c    |    2 +-
+ drivers/hwmon/jc42.c        |    2 +-
+ drivers/hwmon/lineage-pem.c |    2 +-
+ drivers/hwmon/ltc4261.c     |    2 +-
+ drivers/hwmon/max16065.c    |    2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
+
+--RnlQjJ0d97Da+TV1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP7Kz6AAoJEMsfJm/On5mBbDUP/10aXshFegLaqq/Q/6MJcy4d
+Nxi2ebiZ86IepcxxT8eUAIFt06GgJojzMdrY8OLx2UPYswMTDAiwCcfRRgiDhqzg
+a0PxaSBuNsuBgHhxSc+uVWzMRE1kGgCl08Vjm2/FU5gls3y+15g7WF61hvszdJ5C
+goKffxaFMjDJK5FsqYvfmXG78RcUzMvi0Vu9S7frVGZVaumpRWgKNUVHHCuAcggC
+W/tCZvmGSmaAW4SGFttA4IzzfqeM9vwQzTWdt3QXCW90As2mK64mQwoMhCFqpIKe
++e3tnuyrTZjHX3kcFQL5DZOUkZzM7/H8gfGsNPvUd8lD+6w70biZnhDRBr0vjs2N
+vRDEQaTqJWobIuDM+rXWAKc/1RVL+2JOqBBrA0xlFEhlA9LUJzcjq4kDfJV7HTQ3
+G0LxycbtwX+0MTGmo1q9gzrP0X9n02zD1y4YnrXT+2xt4o+ExyMU51RQRldTnQ0I
+IUXqyNDlGG70UGP/KmAAs/V5psCyFCdl+DEjcYaw/UEVuUb5SmeVPCFqyzlm8my9
+QhfP5UTu+Kjfrdspdam0lRpEPiu/X0dy7fqQiyJ9KbGjsz9rAvr5+WI2TnPgvJsr
+7TZQc+GPySxplFMFzl1yKbg2INPJpl0W75AmNUKSGPKLdk5WHCE6e2TF7X3T/pjS
+vjxbkAQ1At1nw8/9TppG
+=kh3/
+-----END PGP SIGNATURE-----
+
+--RnlQjJ0d97Da+TV1--
