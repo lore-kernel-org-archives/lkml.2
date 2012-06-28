@@ -1,111 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab2F1LHD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 07:07:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62134 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752735Ab2F1LHA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 07:07:00 -0400
-From: Sha Zhengju <handai.szj@gmail.com>
-To: linux-mm@kvack.org, cgroups@vger.kernel.org
-Cc: kamezawa.hiroyu@jp.fujitsu.com, gthelen@google.com, yinghan@google.com,
-        akpm@linux-foundation.org, mhocko@suse.cz,
-        linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
-Subject: [PATCH 7/7] memcg: print more detailed info while memcg oom happening
-Date: Thu, 28 Jun 2012 19:06:49 +0800
-Message-Id: <1340881609-5935-1-git-send-email-handai.szj@taobao.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>
-References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>
+	id S1753584Ab2F1LLf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 07:11:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6189 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751617Ab2F1LLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 07:11:34 -0400
+Message-ID: <4FEC3BE3.8050802@redhat.com>
+Date: Thu, 28 Jun 2012 07:11:31 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [PATCH] kvm, Add x86_hyper_kvm to complete detect_hypervisor_platform
+ check
+References: <1340833338-15485-1-git-send-email-prarit@redhat.com> <20120628012419.GA8956@phenom.dumpdata.com>
+In-Reply-To: <20120628012419.GA8956@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sha Zhengju <handai.szj@taobao.com>
 
-While memcg oom happening, the dump info is limited, so add this
-to provide memcg page stat.
 
-Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
----
- mm/memcontrol.c |   42 ++++++++++++++++++++++++++++++++++--------
- 1 files changed, 34 insertions(+), 8 deletions(-)
+On 06/27/2012 09:24 PM, Konrad Rzeszutek Wilk wrote:
+> On Wed, Jun 27, 2012 at 05:42:18PM -0400, Prarit Bhargava wrote:
+>> While debugging I noticed that unlike all the other hypervisor code in the
+>> kernel, kvm does not have an entry for x86_hyper which is used in
+>> detect_hypervisor_platform(), and results in a nice message about the
+>> hypervisor being used.  This is only really a stub function and it makes
+>> kvm more consistent with the other hypervisors (and it makes debugging
+>> a little easier).
+>>
+>> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+>> Cc: Avi Kivity <avi@redhat.com>
+>> Cc: Gleb Natapov <gleb@redhat.com>
+>> Cc: Alex Williamson <alex.williamson@redhat.com>
+>> ---
+>>  arch/x86/include/asm/hypervisor.h |    1 +
+>>  arch/x86/kernel/cpu/hypervisor.c  |    1 +
+>>  arch/x86/kernel/kvm.c             |    6 ++++++
+>>  3 files changed, 8 insertions(+)
+>>
+>> diff --git a/arch/x86/include/asm/hypervisor.h b/arch/x86/include/asm/hypervisor.h
+>> index 7a15153..b518c75 100644
+>> --- a/arch/x86/include/asm/hypervisor.h
+>> +++ b/arch/x86/include/asm/hypervisor.h
+>> @@ -49,6 +49,7 @@ extern const struct hypervisor_x86 *x86_hyper;
+>>  extern const struct hypervisor_x86 x86_hyper_vmware;
+>>  extern const struct hypervisor_x86 x86_hyper_ms_hyperv;
+>>  extern const struct hypervisor_x86 x86_hyper_xen_hvm;
+>> +extern const struct hypervisor_x86 x86_hyper_kvm;
+>>  
+>>  static inline bool hypervisor_x2apic_available(void)
+>>  {
+>> diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
+>> index 755f64f..6d6dd7a 100644
+>> --- a/arch/x86/kernel/cpu/hypervisor.c
+>> +++ b/arch/x86/kernel/cpu/hypervisor.c
+>> @@ -37,6 +37,7 @@ static const __initconst struct hypervisor_x86 * const hypervisors[] =
+>>  #endif
+>>  	&x86_hyper_vmware,
+>>  	&x86_hyper_ms_hyperv,
+>> +	&x86_hyper_kvm,
+>>  };
+>>  
+>>  const struct hypervisor_x86 *x86_hyper;
+>> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+>> index e554e5a..0a38b68 100644
+>> --- a/arch/x86/kernel/kvm.c
+>> +++ b/arch/x86/kernel/kvm.c
+>> @@ -39,6 +39,7 @@
+>>  #include <asm/desc.h>
+>>  #include <asm/tlbflush.h>
+>>  #include <asm/idle.h>
+>> +#include <asm/hypervisor.h>
+>>  
+>>  static int kvmapf = 1;
+>>  
+>> @@ -432,6 +433,11 @@ void __init kvm_guest_init(void)
+>>  #endif
+>>  }
+>>  
+>> +const struct hypervisor_x86 x86_hyper_kvm __refconst = {
+>> +	.name			= "KVM",
+>> +};
+>> +EXPORT_SYMBOL(x86_hyper_kvm);
+> 
+> EXPORT_SYMBOL_GPL version. ?
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8493119..3ed41e9 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -101,6 +101,14 @@ static const char * const mem_cgroup_events_names[] = {
- 	"pgmajfault",
- };
- 
-+static const char * const mem_cgroup_lru_names[] = {
-+	"inactive_anon",
-+	"active_anon",
-+	"inactive_file",
-+	"active_file",
-+	"unevictable",
-+};
-+
- /*
-  * Per memcg event counter is incremented at every pagein/pageout. With THP,
-  * it will be incremated by the number of pages. This counter is used for
-@@ -1358,6 +1366,30 @@ static void move_unlock_mem_cgroup(struct mem_cgroup *memcg,
- 	spin_unlock_irqrestore(&memcg->move_lock, *flags);
- }
- 
-+#define K(x) ((x) << (PAGE_SHIFT-10))
-+static void mem_cgroup_print_oom_stat(struct mem_cgroup *memcg)
-+{
-+	int i;
-+
-+	printk(KERN_INFO "Memory cgroup stat:\n");
-+	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
-+		if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
-+			continue;
-+		printk(KERN_CONT "%s:%ldKB ", mem_cgroup_stat_names[i],
-+			   K(mem_cgroup_read_stat(memcg, i)));
-+	}
-+
-+	for (i = 0; i < MEM_CGROUP_EVENTS_NSTATS; i++)
-+		printk(KERN_CONT "%s:%lu ", mem_cgroup_events_names[i],
-+			   mem_cgroup_read_events(memcg, i));
-+
-+	for (i = 0; i < NR_LRU_LISTS; i++)
-+		printk(KERN_CONT "%s:%luKB ", mem_cgroup_lru_names[i],
-+			   K(mem_cgroup_nr_lru_pages(memcg, BIT(i))));
-+	printk(KERN_CONT "\n");
-+
-+}
-+
- /**
-  * mem_cgroup_print_oom_info: Called from OOM with tasklist_lock held in read mode.
-  * @memcg: The memory cgroup that went over limit
-@@ -1422,6 +1454,8 @@ done:
- 		res_counter_read_u64(&memcg->memsw, RES_USAGE) >> 10,
- 		res_counter_read_u64(&memcg->memsw, RES_LIMIT) >> 10,
- 		res_counter_read_u64(&memcg->memsw, RES_FAILCNT));
-+
-+	mem_cgroup_print_oom_stat(memcg);
- }
- 
- /*
-@@ -4043,14 +4077,6 @@ static int mem_control_numa_stat_show(struct cgroup *cont, struct cftype *cft,
- }
- #endif /* CONFIG_NUMA */
- 
--static const char * const mem_cgroup_lru_names[] = {
--	"inactive_anon",
--	"active_anon",
--	"inactive_file",
--	"active_file",
--	"unevictable",
--};
--
- static inline void mem_cgroup_lru_names_not_uptodate(void)
- {
- 	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_lru_names) != NR_LRU_LISTS);
--- 
-1.7.1
+Hey Konrad, thanks for the review.
 
+The other hypervisor_x86 structs are only EXPORT_SYMBOL, so I maintained that
+convention here.
+
+If I'm mistaken in that assumption, please let me know.
+
+Thanks again,
+
+P.
