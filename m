@@ -1,70 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab2F1Xz0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 19:55:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52591 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752282Ab2F1XzY (ORCPT
+	id S1754707Ab2F1Xza (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 19:55:30 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57579 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752282Ab2F1Xz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 19:55:24 -0400
-Date: Thu, 28 Jun 2012 16:55:18 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Eric Miao <eric.miao@canonical.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org,
-        Ayan George <ayan.george@canonical.com>
-Subject: Re: [PATCH RFC] input: fix weird issue of synaptics psmouse sync
- lost after resume
-Message-ID: <20120628235518.GA26283@core.coreip.homeip.net>
-References: <CAMPhdO92C=t8hDYAkk5rG0ZNHnLiZQ2WY3SP+LGJ=VNJL=Unaw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMPhdO92C=t8hDYAkk5rG0ZNHnLiZQ2WY3SP+LGJ=VNJL=Unaw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 28 Jun 2012 19:55:26 -0400
+Date: Thu, 28 Jun 2012 16:55:25 -0700 (PDT)
+Message-Id: <20120628.165525.131827870929792389.davem@davemloft.net>
+To: vlee@twitter.com
+Cc: edumazet@google.com, mirq-linux@rere.qmqm.pl, jpirko@redhat.com,
+        therbert@google.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tdmackey@twitter.com
+Subject: Re: [PATCH] net: Downgrade CAP_SYS_MODULE deprecated message from
+ error to warning.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1340843527-9962-1-git-send-email-vlee@twitter.com>
+References: <1340843527-9962-1-git-send-email-vlee@twitter.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+From: Vinson Lee <vlee@twitter.com>
+Date: Wed, 27 Jun 2012 17:32:07 -0700
 
-On Sun, Jun 24, 2012 at 11:32:38PM +0800, Eric Miao wrote:
-> All,
+> Make logging level consistent with other deprecation messages in net
+> subsystem.
 > 
-> BugLink: https://bugs.launchpad.net/bugs/717970
-> 
-> So in summary, the symptom is intermittent key events lost after resume
-> on some machines with synaptics touchpad (seems this is synaptics _only_),
-> and key events loss is due to serio port reconnect after psmouse sync lost.
-> Removing psmouse and inserting it back during the suspend/resume process
-> is able to work around the issue, so the difference between psmouse_connect()
-> and psmouse_reconnect() is the key to the root cause of this problem.
-> 
-> After comparing the two different paths, synaptics driver has its own
-> implementation of synaptics_reconnect(), and the missing psmouse_probe()
-> seems significant, the patch below added psmouse_probe() to the reconnect
-> process, and has been verified many times that the issue could not be reliably
-> reproduced.
-> 
-> There are two PS/2 commands in psmouse_probe():
-> 
->   1. PSMOUSE_CMD_GETID
->   2. PSMOUSE_CMD_RESET_DIS
-> 
-> The weird thing is, the PSMOUSE_CMD_GETID seems to be significant, and the
-> PSMOUSE_CMD_RESET_DIS is irrelevant to this issue after trying several times.
-> Now it's rather difficult to form a sane theory. So this patch is
-> really for RFC.
+> Signed-off-by: Vinson Lee <vlee@twitter.com>
+> Cc: David Mackey <tdmackey@twitter.com>
 
-Hmm, murky and unknown to us EC/KBC firmware code and uglies are hidden
-there...
-
-I issuing PSMOUSE_CMD_GETID bis fine if it makes some firmware happy and
-we probably should do it for all protocols, not only Synaptics. Could
-you please try moving calls to psmouse_reset() and psmouse_probe() in
-psmouse_reconnect() up, before we check if we have protocol specific
-reconnect handler?
-
-Thanks.
-
--- 
-Dmitry
+Applied, thanks.
