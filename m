@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758003Ab2F1JIU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 05:08:20 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:43838 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755229Ab2F1JIT convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Thu, 28 Jun 2012 05:08:19 -0400
-Message-Id: <4FEC3B4A020000780008C673@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 28 Jun 2012 10:08:58 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Jinsong Liu" <jinsong.liu@intel.com>, "Will Auld" <will.auld@intel.com>
-Cc: "Ashok Raj" <ashok.raj@intel.com>,
-        "Donald D Dugger" <donald.d.dugger@intel.com>,
-        "Haitao Shan" <haitao.shan@intel.com>,
-        "Jun Nakajima" <jun.nakajima@intel.com>,
-        "Susie Li" <susie.li@intel.com>, "Tony Luck" <tony.luck@intel.com>,
-        "Xiantao Zhang" <xiantao.zhang@intel.com>,
-        "Yunhong Jiang" <yunhong.jiang@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Keir Fraser" <keir@xen.org>
-Subject: RE: [xen vMCE RFC V0.2] xen vMCE design
-References: <DE8DF0795D48FD4CA783C40EC829233525D395@SHSMSX101.ccr.corp.intel.com>
- <4FEB236C020000780008C392@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC8292335263B9D@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC8292335263B9D@SHSMSX101.ccr.corp.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S932657Ab2F1JI7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 05:08:59 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34693 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756510Ab2F1JI6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 05:08:58 -0400
+Date: Thu, 28 Jun 2012 10:08:27 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Dave Martin <dave.martin@linaro.org>, Minchan Kim <minchan@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Chanho Min <chanho.min@lge.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Jongsung Kim <neidhard.kim@lge.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] [RESEND] arm: limit memblock base address for
+	early_pte_alloc
+Message-ID: <20120628090827.GH19026@n2100.arm.linux.org.uk>
+References: <1338880312-17561-1-git-send-email-minchan@kernel.org> <20120627161224.GB2310@linaro.org> <alpine.LFD.2.02.1206280019160.31003@xanadu.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1206280019160.31003@xanadu.home>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 28.06.12 at 10:54, "Liu, Jinsong" <jinsong.liu@intel.com> wrote:
-> Jan Beulich wrote:
->> The 2-bank approach also needs to be brought in line with the
->> current host derived value in MCG_CAP, especially if the code to
->> implement this new model doesn't make it into 4.2 (which would
->> generally save a larger value).
+On Thu, Jun 28, 2012 at 12:33:02AM -0400, Nicolas Pitre wrote:
+> I propose the following two patches instead -- both patches are included 
+> inline not to break the email thread.  What do you think?
 > 
-> Let me repeat in my word to avoid misunderstanding about your concern:
-> Your concern rooted from the history patch (c/s 24887, as attached) which 
-> used to solve vMCE migration issue caused from bank number. I guess the patch 
-> was not in xen4.1.x but would be in xen 4.2 release recently (right? and when 
-> will xen 4.2 release?)
+> ---------- >8
+> 
+> From: Nicolas Pitre <nicolas.pitre@linaro.org>
+> Date: Wed, 27 Jun 2012 23:02:31 -0400
+> Subject: [PATCH] ARM: head.S: simplify initial page table mapping
+> 
+> Let's map the initial RAM up to the end of the kernel.bss plus 64MB
+> instead of the strict kernel image area.  This simplifies the code
+> as the kernel image only needs to be handled specially in the XIP case.
+> This also give some room for the early memory allocator to use before
+> the real mapping is finally installed with the actual amount of memory.
+> 
+> Signed-off-by: Nicolas Pitre <nico@linaro.org>
 
-4.2 is in feature freeze right now, preparing for the release.
+Why is this needed?  The initial allocation is sufficient, and you really
+should not be wanting to _allocate_ memory in your ->reserve method and
+have it be _usable_ at that point.
 
-> Per my understanding, you want us to make sure our new vMCE model compatible 
-> w/ olde vMCE. For example if our patch in xen 4.3 release, you want to make 
-> sure a guest migrate from xen 4.2 to 4.3 would not broken. Is this your 
-> concern?
+> Early on the only accessible memory comes from the initial mapping
+> performed in head.S, minus those page table entries cleared in
+> prepare_page_table().  Eventually the full lowmem is available once
+> map_lowmem() has mapped it.  Let's have this properly reflected in the
+> memblock allocator limit.
 
-Yes. If we can't get the save/restore records adjusted in time
-for 4.2, compatibility with 4.2 would be a requirement. If we
-manage to get the necessary adjustments done in time, and if
-they're not too intrusive (i.e. would be acceptable at this late
-stage of the development cycle), then the concern could be
-dropped from an upstream perspective due to the lack of
-support in 4.1 (and hence no backward compatibility issues).
-BUT this isn't as simple from a product usage point of view: As
-the save/restore code currently in -unstable was coded up to
-address a problem observed by SLE11 SP2 users, we already
-backported those patches. So compatibility will be a requirement
-in any case.
+Err, I don't think you understand what's going on here.
 
-Jan
+The sequence is:
 
+1. setup the initial mappings so we can run the kernel in virtual space.
+2. provide the memory areas to memblock
+3. ask the platform to reserve whatever memory it wants from memblock
+   [this means using memblock_reserve or arm_memblock_steal).  The
+   reserved memory is *not* expected to be mapped at this point, and is
+   therefore inaccessible.
+4. Setup the lowmem mappings.
+
+And when we're setting up the lowmem mappings, we do *not* expect to
+create any non-section page mappings, which again means we have no reason
+to use the memblock allocator to obtain memory that we want to immediately
+use.
+
+So I don't know where you're claim of being "fragile" is coming from.
+
+What is fragile is people wanting to use arm_memblock_steal() without
+following the rules for it I layed down.
