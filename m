@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938Ab2F1RVa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 13:21:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47295 "EHLO mx1.redhat.com"
+	id S1753518Ab2F1R0L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 13:26:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41729 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752375Ab2F1RV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 13:21:28 -0400
-Message-ID: <1340904084.3179.41.camel@ul30vt>
-Subject: Re: [PATCH 4/4][RFC] kvm: eoi_eventfd
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, jan.kiszka@siemens.com,
-        mst@redhat.com
-Date: Thu, 28 Jun 2012 11:21:24 -0600
-In-Reply-To: <4FEC860B.3090605@redhat.com>
-References: <20120622220040.9858.43665.stgit@bling.home>
-	  <20120622221626.9858.33817.stgit@bling.home> <4FE70E99.90609@redhat.com>
-	 <1340550156.14120.53.camel@bling.home> <4FEC860B.3090605@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1751275Ab2F1R0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 13:26:10 -0400
+Message-ID: <4FEC9392.2090904@redhat.com>
+Date: Thu, 28 Jun 2012 13:25:38 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Jim Schutt <jaschut@sandia.gov>
+CC: linux-mm@kvack.org, akpm@linux-foundation.org, Mel Gorman <mel@csn.ul.ie>,
+        kamezawa.hiroyu@jp.fujitsu.com, minchan@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm] mm: have order>0 compaction start off where it left
+References: <20120627233742.53225fc7@annuminas.surriel.com> <4FEC9181.9060000@sandia.gov>
+In-Reply-To: <4FEC9181.9060000@sandia.gov>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-28 at 19:27 +0300, Avi Kivity wrote:
-> On 06/24/2012 06:02 PM, Alex Williamson wrote:
-> > On Sun, 2012-06-24 at 15:56 +0300, Avi Kivity wrote:
-> >> On 06/23/2012 01:16 AM, Alex Williamson wrote:
-> >> > I think we're probably also going to need something like this.
-> >> > When running in non-accelerated qemu, we're going to have to
-> >> > create some kind of EOI notifier for drivers.  VFIO can make
-> >> > additional improvements when running on KVM so it will probably
-> >> > make use of the KVM_IRQFD_LEVEL_EOI interface, but we don't
-> >> > want to have a generic EOI notifier in qemu that just stops
-> >> > working when kvm-ioapic is enabled.
-> >> 
-> >> Why?
-> > 
-> > Hmm, I must be missing something or not describing it correctly, because
-> > it seems obvious.  
-> 
-> I have not exhausted this quarter's quota of stupid questions yet.
+On 06/28/2012 01:16 PM, Jim Schutt wrote:
+>
+> On 06/27/2012 09:37 PM, Rik van Riel wrote:
+>> Order> 0 compaction stops when enough free pages of the correct
+>> page order have been coalesced. When doing subsequent higher order
+>> allocations, it is possible for compaction to be invoked many times.
+>>
+>> However, the compaction code always starts out looking for things to
+>> compact at the start of the zone, and for free pages to compact things
+>> to at the end of the zone.
+>>
+>> This can cause quadratic behaviour, with isolate_freepages starting
+>> at the end of the zone each time, even though previous invocations
+>> of the compaction code already filled up all free memory on that end
+>> of the zone.
+>>
+>> This can cause isolate_freepages to take enormous amounts of CPU
+>> with certain workloads on larger memory systems.
+>>
+>> The obvious solution is to have isolate_freepages remember where
+>> it left off last time, and continue at that point the next time
+>> it gets invoked for an order> 0 compaction. This could cause
+>> compaction to fail if cc->free_pfn and cc->migrate_pfn are close
+>> together initially, in that case we restart from the end of the
+>> zone and try once more.
+>>
+>> Forced full (order == -1) compactions are left alone.
+>>
+>> Reported-by: Jim Schutt<jaschut@sandia.gov>
+>> Signed-off-by: Rik van Riel<riel@redhat.com>
+>
+> Tested-by: Jim Schutt<jaschut@sandia.gov>
+>
+> Please let me know if you further refine this patch
+> and would like me to test it with my workload.
 
-;)
+Mel pointed out a serious problem with the way wrapping
+cc->free_pfn back to the top of the zone is handled.
 
-> > If we create a dependency in qemu of needing to know
-> > when an eoi occurs and notifier a driver and have no way to fulfill that
-> > dependency when running on kvm... that'd be bad, right?  I don't want to
-> > assume that every consumer of such an interface would prefer to make use
-> > of an irqfd.  Not sure if that answers your question though.  Thanks,
-> 
-> I meant, what scenario do you have in mind where we want the EOI
-> notifier while running with kvm-irqchip enabled?  Perhaps I phrased my
-> question a bit too tersely.
+I will send you a new patch once I have a fix for that.
 
-Aha.  Well, the v2 series really pulls eoifd in as more of a primary
-player and is now the only way to get EOI notification regardless of
-whether it's bound to a separate level irq source or used by qemu for
-the common userspace source.  I don't know of any users that currently
-need EOI notification for the common userspace source id, but depending
-on where we land with whether KVM_IRQFD supports level interrupts, it
-may be vfio that needs it.
+> So far I've run a total of ~20 TB of data over fifty minutes
+> or so through 12 machines running this patch; no hint of
+> trouble, great performance.
+>
+> Without this patch I would typically start having trouble
+> after just a few minutes of this load.
 
-Alex
+Good to hear that!
 
+Thank you for testing last night's version.
+
+-- 
+All rights reversed
