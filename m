@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab2F1Qs2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 12:48:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2715 "EHLO mx1.redhat.com"
+	id S1755589Ab2F1QtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 12:49:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43729 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293Ab2F1Qs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 12:48:26 -0400
-Date: Thu, 28 Jun 2012 18:45:39 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        ". James Morris" <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 0/4] Was: deferring __fput()
-Message-ID: <20120628164539.GA26350@redhat.com>
-References: <20120623194505.GI14083@ZenIV.linux.org.uk> <20120623203800.GA10306@redhat.com> <20120623210141.GK14083@ZenIV.linux.org.uk> <20120624041652.GN14083@ZenIV.linux.org.uk> <20120624153310.GB24596@redhat.com> <20120625060357.GT14083@ZenIV.linux.org.uk> <20120625151812.GA16062@redhat.com> <20120627183721.GA23086@redhat.com> <20120628043836.GW14083@ZenIV.linux.org.uk> <20120628162253.GA25357@redhat.com>
+	id S1750769Ab2F1QtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 12:49:14 -0400
+Message-ID: <4FEC8AFB.8060606@redhat.com>
+Date: Thu, 28 Jun 2012 19:48:59 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120628162253.GA25357@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        yrl.pp-manager.tt@hitachi.com, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [RFC PATCH 16/18] KVM: add kvm_arch_vcpu_prevent_run to prevent
+ VM ENTER when NMI is received
+References: <20120628060719.19298.43879.stgit@localhost.localdomain> <20120628060842.19298.14653.stgit@localhost.localdomain>
+In-Reply-To: <20120628060842.19298.14653.stgit@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Forgot to mention...
+On 06/28/2012 09:08 AM, Tomoki Sekiyama wrote:
+> Since NMI can not be disabled around VM enter, there is a race between
+> receiving NMI to kick a guest and entering the guests on slave CPUs.If the
+> NMI is received just before entering VM, after the NMI handler is invoked,
+> it continues entering the guest and the effect of the NMI will be lost.
+> 
+> This patch adds kvm_arch_vcpu_prevent_run(), which causes VM exit right
+> after VM enter. The NMI handler uses this to ensure the execution of the
+> guest is cancelled after NMI.
+> 
+>  
+> +/*
+> + * Make VMRESUME fail using preemption timer with timer value = 0.
+> + * On processors that doesn't support preemption timer, VMRESUME will fail
+> + * by internal error.
+> + */
+> +static void vmx_prevent_run(struct kvm_vcpu *vcpu, int prevent)
+> +{
+> +	if (prevent)
+> +		vmcs_set_bits(PIN_BASED_VM_EXEC_CONTROL,
+> +			      PIN_BASED_PREEMPTION_TIMER);
+> +	else
+> +		vmcs_clear_bits(PIN_BASED_VM_EXEC_CONTROL,
+> +				PIN_BASED_PREEMPTION_TIMER);
+> +}
 
-And I still think that task_work_add() should not succeed unconditionally,
-it synchronize with exit_task_work(). Otherwise keyctl_session_to_parent()
-is broken.
+This may interrupt another RMW sequence, which will then overwrite the
+control.  So it needs to be called only if inside the entry sequence
+(otherwise can just set a KVM_REQ_IMMEDIATE_EXIT in vcpu->requests).
 
-On 06/28, Oleg Nesterov wrote:
->
-> On 06/28, Al Viro wrote:
-> >
-> > The list removal logics in mine looks really ugly ;-/
->
-> Basically the code is almost the same as mine.
->
-> But task_work_add() can be simplified a bit, no need to check
-> last != NULL twice.
->
-> 	last = task->task_works ?: twork;
-> 	task->last_twork = twork;
-> 	twork->next = last->next;	/* XXX */
-> 	last->next = twork;
->
-> If ->task_works == NULL, then XXX is meaningless but safe.
->
-> Oleg.
+-- 
+error compiling committee.c: too many arguments to function
+
 
