@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab2F1SHT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 14:07:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41666 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab2F1SHQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 14:07:16 -0400
-Date: Thu, 28 Jun 2012 11:07:12 -0700
-From: "tj@kernel.org" <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: shyju pv <shyju.pv@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Sanil kumar <sanil.kumar@huawei.com>,
-        Masanari Iida <standby24x7@gmail.com>
-Subject: Re: 3.5-rc3: BUG: Dentry still in use (1) [unmount of cgroup
- cgroup]
-Message-ID: <20120628180712.GC22641@google.com>
-References: <E061084CB90FCE4F89232A6CF839683B32B52291@SZXEML507-MBS.china.huawei.com>
- <20120627182903.GP15811@google.com>
- <4FEBF4B7.2070105@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FEBF4B7.2070105@huawei.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755881Ab2F1SJU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 14:09:20 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:46591 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752289Ab2F1SJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 14:09:19 -0400
+Message-ID: <1340906958.2602.6.camel@joe2Laptop>
+Subject: Re: [PATCH] scripts/get_maintainer.pl: Add tested-by signature
+From: Joe Perches <joe@perches.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 28 Jun 2012 11:09:18 -0700
+In-Reply-To: <1340877845.28750.5.camel@twins>
+References: <1340193105-10734-1-git-send-email-aletes.xgr@gmail.com>
+	 <1340209526.29885.14.camel@joe2Laptop>
+	 <20120620143959.394b9930.akpm@linux-foundation.org>
+	 <1340877845.28750.5.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Li.
-
-On Thu, Jun 28, 2012 at 02:07:51PM +0800, Li Zefan wrote:
-> > Hmm... fa980ca87d "cgroup: superblock can't be released with active
-> > dentries" is supposed to have fixed that.  Looking into it.
-> > 
+On Thu, 2012-06-28 at 12:04 +0200, Peter Zijlstra wrote:
+> On Wed, 2012-06-20 at 14:39 -0700, Andrew Morton wrote:
+> > Bug-spotted-by:
+> > Cause-discovered-by:
+> > Cautiously-acked-by:
+> > Checked-by:
+> > Committed-by:
+> > Compile-Tested-by:
+> > Compile-tested-by:
+> > Confirmed-by:
+> > Debugged-and-tested-by: 
 > 
-> 
-> I think I know what happened here:
-> 
-> umount
->   deativate_super(sb)
->                        dput(subdir)
->                          subdir->d_count--
->                          d_release(subdir)
->                            deactivate_super(sb)
->                              shrink_dcache_for_umount(sb)
->                                BUG(root->d_count)!!
->                          root->d_count--
+> You missed my favourite:
 
-Can you please elaborate a bit?  I'm not really following?  Where does
-the last root->d_count-- come from?
+Some of mine are:
 
-> I use this script to reproduce the bug:
-> 
-> mount -t cgroup -o cpu xxx /mnt
-> mkdir /mnt/sub
-> sleep 100 < /mnt/sub &
-> kill $!
-> wait $!
-> rmdir /mnt/sub
-> umount /mnt
+AOLed-by:
+Blame-taken-by:
+Heckled-for-on-IRC-by:
+iSigned-off-by: (unfortunately not a contribution from Apple)
 
-Unfortunately, this doesn't reproduce the bug here either. :(
-
-Thanks.
-
--- 
-tejun
