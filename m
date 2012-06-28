@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758170Ab2F1DqB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 23:46:01 -0400
-Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:42848 "EHLO
-	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754328Ab2F1Dp7 (ORCPT
+	id S1758234Ab2F1Dqz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 23:46:55 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:36491 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758194Ab2F1Dqu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 23:45:59 -0400
-Date: Thu, 28 Jun 2012 12:45:46 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: avi@redhat.com, mtosatti@redhat.com, agraf@suse.de, paulus@samba.org,
-        aarcange@redhat.com, kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, takuya.yoshikawa@gmail.com
-Subject: Re: [PATCH 5/6] KVM: Separate rmap_pde from
- kvm_lpage_info->write_count
-Message-Id: <20120628124546.83a829f3.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <4FEBCBB3.3060707@linux.vnet.ibm.com>
-References: <20120628105733.ccd9abb3.yoshikawa.takuya@oss.ntt.co.jp>
-	<20120628110141.7b908c91.yoshikawa.takuya@oss.ntt.co.jp>
-	<4FEBCBB3.3060707@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Jun 2012 23:46:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120627185136.315e6625@endymion.delvare>
+References: <1340805255-8041-1-git-send-email-djkurtz@chromium.org>
+ <1340805255-8041-5-git-send-email-djkurtz@chromium.org> <20120627185136.315e6625@endymion.delvare>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Thu, 28 Jun 2012 11:46:28 +0800
+X-Google-Sender-Auth: Jod9TGh7RODhpyNRbADgIvMK57o
+Message-ID: <CAGS+omDkhA=dP0JP=4huQEwJ4j6YqZWJ+mFsJv+eeGMBRpu5fQ@mail.gmail.com>
+Subject: Re: [PATCH 4/8 v3] i2c: i801: check and return errors during
+ byte-by-byte transfers
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        Seth Heasley <seth.heasley@intel.com>, Olof Johansson <olof@lixom.net>,
+        Benson Leung <bleung@chromium.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Jun 2012 11:12:51 +0800
-Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+On Thu, Jun 28, 2012 at 12:51 AM, Jean Delvare <khali@linux-fr.org> wrote:
+> On Wed, 27 Jun 2012 21:54:11 +0800, Daniel Kurtz wrote:
+>> If an error is detected in the polling loop, abort the transaction and
+>> return an error code.
+>>
+>>  * DEV_ERR is set if the device does not respond with an acknowledge, and
+>> the SMBus controller times out (minimum 25ms).
+>>  * BUS_ERR is set if a bus arbitration collision is detected.  In other
+>> words, when the SMBus controller tries to generate a START condition, but
+>> detects that the SMBDATA is being held low, usually by another SMBus/I2C
+>> master.
+>>  * FAILED is only set if a the transaction is set by software (using the
+>> SMBHSTCNT KILL bit).
 
-> >  struct kvm_arch_memory_slot {
-> > +	unsigned long *rmap_pde[KVM_NR_PAGE_SIZES - 1];
-> >  	struct kvm_lpage_info *lpage_info[KVM_NR_PAGE_SIZES - 1];
-> >  };
-> > 
-> 
-> It looks little complex than before - need manage more alloc-ed/freed buffers.
+That was supposed to say:
 
-Actually I want to integrate rmap and rmap_pde in the future:
+ * FAILED is only set if a transaction is stopped by software (using
+the SMBHSTCNT KILL bit).
 
-	rmap[KVM_NR_PAGE_SIZES]
+> Not quite sure what you mean with "set by software". Other than this,
+> patch looks good, applied, thanks.
 
-For this we need to modify some unrelated ppc code, so I just
-avoided the integration in this series.
+Applied where?
+I'd like to send a rebased patchset onto whatever you have already staged.
 
-Note: write_count: 4 bytes, rmap_pde: 8 bytes.  So we are wasting
-extra paddings by packing them into lpage_info.
-
-> Why not just introduce a function to get the next rmap? Something like this:
-
-I want to eliminate this kind of overheads.
-
-Thanks,
-	Takuya
-
-> static unsigned long *get_next_rmap(unsigned long *rmap, int level)
-> {
-> 	struct kvm_lpage_info *linfo
-> 
-> 	if (level == 1)
-> 		return rmap++
-> 	
-> 	linfo = container_of(rmap, struct kvm_lpage_info, rmap_pde);
-> 	
-> 	return &(++linfo)->rmap_pde
-> }
-> 
-> [ Completely untested ]
+>
+>>
+>> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+>> ---
+>>  drivers/i2c/busses/i2c-i801.c |   10 ++++++----
+>>  1 files changed, 6 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
+>> index 6a53338..ba56b74 100644
+>> --- a/drivers/i2c/busses/i2c-i801.c
+>> +++ b/drivers/i2c/busses/i2c-i801.c
+>> @@ -131,9 +131,11 @@
+>>  #define SMBHSTSTS_INTR               0x02
+>>  #define SMBHSTSTS_HOST_BUSY  0x01
+>>
+>> -#define STATUS_FLAGS         (SMBHSTSTS_BYTE_DONE | SMBHSTSTS_FAILED | \
+>> -                              SMBHSTSTS_BUS_ERR | SMBHSTSTS_DEV_ERR | \
+>> -                              SMBHSTSTS_INTR)
+>> +#define STATUS_ERROR_FLAGS   (SMBHSTSTS_FAILED | SMBHSTSTS_BUS_ERR | \
+>> +                              SMBHSTSTS_DEV_ERR)
+>> +
+>> +#define STATUS_FLAGS         (SMBHSTSTS_BYTE_DONE | SMBHSTSTS_INTR | \
+>> +                              STATUS_ERROR_FLAGS)
+>>
+>>  /* Older devices have their ID defined in <linux/pci_ids.h> */
+>>  #define PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS        0x1c22
+>> @@ -385,7 +387,7 @@ static int i801_block_transaction_byte_by_byte(struct i801_priv *priv,
+>>               do {
+>>                       usleep_range(250, 500);
+>>                       status = inb_p(SMBHSTSTS(priv));
+>> -             } while ((!(status & SMBHSTSTS_BYTE_DONE))
+>> +             } while (!(status & (SMBHSTSTS_BYTE_DONE | STATUS_ERROR_FLAGS))
+>>                        && (timeout++ < MAX_RETRIES));
+>>
+>>               result = i801_check_post(priv, status, timeout > MAX_RETRIES);
+>
+>
+> --
+> Jean Delvare
