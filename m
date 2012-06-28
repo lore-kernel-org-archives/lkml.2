@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab2F1NBV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 09:01:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56728 "EHLO mx1.redhat.com"
+	id S1753245Ab2F1NBm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 09:01:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57678 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755891Ab2F1M6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:58:41 -0400
+	id S1755877Ab2F1M6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:58:40 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -27,66 +27,32 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 14/40] autonuma: add page structure fields
-Date: Thu, 28 Jun 2012 14:55:54 +0200
-Message-Id: <1340888180-15355-15-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 01/40] mm: add unlikely to the mm allocation failure check
+Date: Thu, 28 Jun 2012 14:55:41 +0200
+Message-Id: <1340888180-15355-2-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 64bit archs, 20 bytes are used for async memory migration (specific
-to the knuma_migrated per-node threads), and 4 bytes are used for the
-thread NUMA false sharing detection logic.
-
-This is a bad implementation due lack of time to do a proper one.
-
-These AutoNUMA new fields must be moved to the pgdat like memcg
-does. So that they're only allocated at boot time if the kernel is
-booted on NUMA hardware. And so that they're not allocated even if
-booted on NUMA hardware if "noautonuma" is passed as boot parameter to
-the kernel.
+Very minor optimization to hint gcc.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- include/linux/mm_types.h |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
+ kernel/fork.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index f0c6379..d1248cf 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -136,6 +136,32 @@ struct page {
- 		struct page *first_page;	/* Compound tail pages */
- 	};
+diff --git a/kernel/fork.c b/kernel/fork.c
+index ab5211b..5fcfa70 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -572,7 +572,7 @@ struct mm_struct *mm_alloc(void)
+ 	struct mm_struct *mm;
  
-+#ifdef CONFIG_AUTONUMA
-+	/*
-+	 * FIXME: move to pgdat section along with the memcg and allocate
-+	 * at runtime only in presence of a numa system.
-+	 */
-+	/*
-+	 * To modify autonuma_last_nid lockless the architecture,
-+	 * needs SMP atomic granularity < sizeof(long), not all archs
-+	 * have that, notably some ancient alpha (but none of those
-+	 * should run in NUMA systems). Archs without that requires
-+	 * autonuma_last_nid to be a long.
-+	 */
-+#if BITS_PER_LONG > 32
-+	int autonuma_migrate_nid;
-+	int autonuma_last_nid;
-+#else
-+#if MAX_NUMNODES >= 32768
-+#error "too many nodes"
-+#endif
-+	/* FIXME: remember to check the updates are atomic */
-+	short autonuma_migrate_nid;
-+	short autonuma_last_nid;
-+#endif
-+	struct list_head autonuma_migrate_node;
-+#endif
-+
- 	/*
- 	 * On machines where all RAM is mapped into kernel address space,
- 	 * we can simply calculate the virtual address. On machines with
+ 	mm = allocate_mm();
+-	if (!mm)
++	if (unlikely(!mm))
+ 		return NULL;
+ 
+ 	memset(mm, 0, sizeof(*mm));
