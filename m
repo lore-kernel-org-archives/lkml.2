@@ -1,49 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388Ab2F1QjN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 12:39:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47711 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750769Ab2F1QjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 12:39:12 -0400
-Message-ID: <4FEC88A2.5040103@redhat.com>
-Date: Thu, 28 Jun 2012 19:38:58 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1755515Ab2F1Qpa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 12:45:30 -0400
+Received: from ausc60ps301.us.dell.com ([143.166.148.206]:48149 "EHLO
+	ausc60ps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808Ab2F1Qp2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 12:45:28 -0400
+X-Loopcount0: from 10.175.216.250
+From: <Srinivas_G_Gowda@Dell.com>
+To: <tcminyard@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <openipmi@mvista.com>
+Date: Thu, 28 Jun 2012 22:14:30 +0530
+Subject: [PATCH 0/1 v2 ] ipmi: Setting OS name as Linux in BMC
+Thread-Topic: [PATCH 0/1 v2 ] ipmi: Setting OS name as Linux in BMC
+Thread-Index: Ac1VTVec3/Mp5k/VQXe8AuLnzDWfbw==
+Message-ID: <4FEC89EE.60203@dell.com>
+References: <4FEC88C2.3050309@dell.com>
+In-Reply-To: <4FEC88C2.3050309@dell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120131
+ Thunderbird/10.0
+x-forwarded-message-id: <4FEC88C2.3050309@dell.com>
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        yrl.pp-manager.tt@hitachi.com, Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [RFC PATCH 18/18] x86: request TLB flush to slave CPU using NMI
-References: <20120628060719.19298.43879.stgit@localhost.localdomain> <20120628060853.19298.32233.stgit@localhost.localdomain>
-In-Reply-To: <20120628060853.19298.32233.stgit@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 09:08 AM, Tomoki Sekiyama wrote:
-> For slave CPUs, it is inapropriate to request TLB flush using IPI.
-> because the IPI may be sent to a KVM guest when the slave CPU is running
-> the guest with direct interrupt routing.
-> 
-> Instead, it registers a TLB flush request in per-cpu bitmask and send a NMI
-> to interrupt execution of the guest. Then, NMI handler will check the
-> requests and handles the requests.
+
+>The idea here is fine, but it's probably more appropriate to do this in 
+>ipmi_msghandler.c, not ipmi_si_intf.c, since the latter only handles 
+>some interface types.
+v2 patch - moving the code to ipmi_msghandler. Called soon after BMC is
+registered by the driver.
+
+There is an option in IPMI spec using which BMC can be made aware
+of the OS name that it is talking to.
+IPMI_Spec-IPMI2_0E4_061209  -  ref - 22.14a ,  .Set System Info.
+
+This patch will update the OS name as "Linux" in BMC during
+IPMI Driver initialization. In the current patch declaration of
+the OS name is done only for the Volatile param.
 
 
-Currently x86's get_user_pages_fast() depends on TLB flushes being held
-up by local_irq_disable().  With this patch, this is no longer true and
-get_user_pages_fast() can race with page table freeing.  There are
-patches from Peter Zijlstra to remove this dependency though.  NMIs are
-still slow and fragile when compared to normal interrupts, so this patch
-is somewhat problematic.
+Signed-off-by: Srinivas Gowda G <Srinivas_G_Gowda@Dell.com>
+---
+ drivers/char/ipmi/ipmi_msghandler.c |   28 ++++++++++++++++++++++++++++
+ 1 files changed, 28 insertions(+), 0 deletions(-)
 
-
+diff --git a/drivers/char/ipmi/ipmi_msghandler.c b/drivers/char/ipmi/ipmi_msghandler.c
+index 2c29942..d0abb3a 100644
+--- a/drivers/char/ipmi/ipmi_msghandler.c
++++ b/drivers/char/ipmi/ipmi_msghandler.c
+@@ -55,8 +55,10 @@ static struct ipmi_recv_msg *ipmi_alloc_recv_msg(void);
+ static int ipmi_init_msghandler(void);
+ static void smi_recv_tasklet(unsigned long);
+ static void handle_new_recv_msgs(ipmi_smi_t intf);
++static void set_os_name_bmc(ipmi_smi_t intf);
+ 
+ static int initialized;
++static unsigned char os_name_set;
+ 
+ #ifdef CONFIG_PROC_FS
+ static struct proc_dir_entry *proc_ipmi_root;
+@@ -2568,6 +2570,11 @@ static int ipmi_bmc_register(ipmi_smi_t intf, int ifnum,
+ 			 bmc->id.manufacturer_id,
+ 			 bmc->id.product_id,
+ 			 bmc->id.device_id);
++		/* 
++		 * Set the OS in BMC as "Linux" using 
++ 		 * "Set System Info" Command
++ 		 */
++		set_os_name_bmc(intf);
+ 	}
+ 
+ 	/*
+@@ -2702,6 +2709,27 @@ get_guid(ipmi_smi_t intf)
+ 	intf->null_user_handler = NULL;
+ }
+ 
++/*
++ *   Set the Operating System Name as "Linux" in BMC 
++ *   using "Set System Info" command.
++ *   Only setting Volatile variable - Parameter 4
++ */
++static void
++set_os_name_bmc(ipmi_smi_t intf)
++{
++	int rv;
++	
++	intf->null_user_handler = set_os_name_handler;
++	rv = send_set_os_name_cmd(intf);
++	if (rv)
++		printk(KERN_WARNING PFX
++			"Send Failed: Set_System_Info - OS name Linux\n");
++
++	os_name_set = 0;
++	wait_event(intf->waitq, os_name_set == 1);
++	intf->null_user_handler = NULL;
++}
++
+ static int
+ send_channel_info_cmd(ipmi_smi_t intf, int chan)
+ {
 -- 
-error compiling committee.c: too many arguments to function
+1.7.1
 
 
+Thanks,
+G
