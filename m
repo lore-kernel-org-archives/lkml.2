@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245Ab2F1B5C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 21:57:02 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:12216 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751985Ab2F1B5A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 21:57:00 -0400
-X-IronPort-AV: E=Sophos;i="4.77,488,1336320000"; 
-   d="scan'208";a="5279184"
-Message-ID: <4FEBBAF6.60409@cn.fujitsu.com>
-Date: Thu, 28 Jun 2012 10:01:26 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: lenb@kernel.org, linux-acpi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>
-Subject: Re: [PATCH 4/8] donot allow to eject the memory device if it is being
- used
-References: <4FE97DD5.6030205@cn.fujitsu.com> <4FE97EEC.6060008@cn.fujitsu.com> <alpine.DEB.2.00.1206262118070.24245@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1206262118070.24245@chino.kir.corp.google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/28 09:57:07,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/28 09:57:09,
-	Serialize complete at 2012/06/28 09:57:09
+	id S1757924Ab2F1B5t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 21:57:49 -0400
+Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:41180 "EHLO
+	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754231Ab2F1B5r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 21:57:47 -0400
+Date: Thu, 28 Jun 2012 10:57:33 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: avi@redhat.com, mtosatti@redhat.com
+Cc: agraf@suse.de, paulus@samba.org, aarcange@redhat.com, kvm@vger.kernel.org,
+        kvm-ppc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        takuya.yoshikawa@gmail.com
+Subject: [PATCH 0/6] KVM: Optimize MMU notifier's THP page invalidation -v3
+Message-Id: <20120628105733.ccd9abb3.yoshikawa.takuya@oss.ntt.co.jp>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 06/27/2012 12:21 PM, David Rientjes Wrote:
-> On Tue, 26 Jun 2012, Wen Congyang wrote:
-> 
->> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
->> index a325bb9..2e5d5ab 100644
->> --- a/drivers/acpi/acpi_memhotplug.c
->> +++ b/drivers/acpi/acpi_memhotplug.c
->> @@ -78,6 +78,7 @@ struct acpi_memory_info {
->>  	unsigned short caching;	/* memory cache attribute */
->>  	unsigned short write_protect;	/* memory read/write attribute */
->>  	unsigned int enabled:1;
->> +	unsigned int failed:1;
->>  };
->>  
->>  struct acpi_memory_device {
->> @@ -251,9 +252,19 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
->>  			node = memory_add_physaddr_to_nid(info->start_addr);
->>  
->>  		result = add_memory(node, info->start_addr, info->length);
->> -		if (result)
->> +
->> +		/*
->> +		 * If the memory block has been used by the kernel, add_memory()
->> +		 * returns -EEXIST. If add_memory() returns the other error, it
->> +		 * means that this memory block is not used by the kernel.
->> +		 */
->> +		if (result && result != -EEXIST) {
->> +			info->failed = 1;
->>  			continue;
->> -		info->enabled = 1;
->> +		}
->> +
->> +		if (!result)
->> +			info->enabled = 1;
->>  		num_enabled++;
->>  	}
->>  	if (!num_enabled) {
-> 
-> num_enabled should only be incremented for result == 0.
-> 
+Updated patch 3 and 6 so that unmap handler be called with exactly same
+rmap arguments as before, even if kvm_handle_hva_range() is called with
+unaligned [start, end).
 
-If num_enabled is not incremented for result == -EEXIST, this device is not
-managed by this module, and it is not able to be hot removed. Another problem
-is the user will see a strange message: add_memory failed
+Please see the comments I added there.
 
-Thanks
-Wen Congyang
+	Takuya
+
+
+Takuya Yoshikawa (6):
+  KVM: MMU: Use __gfn_to_rmap() to clean up kvm_handle_hva()
+  KVM: Introduce hva_to_gfn_memslot() for kvm_handle_hva()
+  KVM: MMU: Make kvm_handle_hva() handle range of addresses
+  KVM: Introduce kvm_unmap_hva_range() for kvm_mmu_notifier_invalidate_range_start()
+  KVM: Separate rmap_pde from kvm_lpage_info->write_count
+  KVM: MMU: Avoid handling same rmap_pde in kvm_handle_hva_range()
+
+
+ arch/powerpc/include/asm/kvm_host.h |    2 +
+ arch/powerpc/kvm/book3s_64_mmu_hv.c |   47 +++++++++++++++----
+ arch/x86/include/asm/kvm_host.h     |    3 +-
+ arch/x86/kvm/mmu.c                  |   83 +++++++++++++++++++++++------------
+ arch/x86/kvm/x86.c                  |   11 +++++
+ include/linux/kvm_host.h            |    8 +++
+ virt/kvm/kvm_main.c                 |    3 +-
+ 7 files changed, 116 insertions(+), 41 deletions(-)
+
+
+>From v2:
+
+I added further optimization based on Avi's advice and my rmap_pde work.
+ - patch [5-6]
+
+The new test result was impressively good, see below, and THP page
+invalidation was more than 5 times faster on my x86 machine.
+
+Before:
+  ...
+  19.852 us  |  __mmu_notifier_invalidate_range_start();
+  28.033 us  |  __mmu_notifier_invalidate_range_start();
+  19.066 us  |  __mmu_notifier_invalidate_range_start();
+  44.715 us  |  __mmu_notifier_invalidate_range_start();
+  31.613 us  |  __mmu_notifier_invalidate_range_start();
+  20.659 us  |  __mmu_notifier_invalidate_range_start();
+  19.979 us  |  __mmu_notifier_invalidate_range_start();
+  20.416 us  |  __mmu_notifier_invalidate_range_start();
+  20.632 us  |  __mmu_notifier_invalidate_range_start();
+  22.316 us  |  __mmu_notifier_invalidate_range_start();
+  ...
+
+After:
+  ...
+  4.089 us   |  __mmu_notifier_invalidate_range_start();
+  4.096 us   |  __mmu_notifier_invalidate_range_start();
+  3.560 us   |  __mmu_notifier_invalidate_range_start();
+  3.376 us   |  __mmu_notifier_invalidate_range_start();
+  3.772 us   |  __mmu_notifier_invalidate_range_start();
+  3.353 us   |  __mmu_notifier_invalidate_range_start();
+  3.332 us   |  __mmu_notifier_invalidate_range_start();
+  3.332 us   |  __mmu_notifier_invalidate_range_start();
+  3.332 us   |  __mmu_notifier_invalidate_range_start();
+  3.337 us   |  __mmu_notifier_invalidate_range_start();
+  ...
+-- 
+1.7.5.4
+
