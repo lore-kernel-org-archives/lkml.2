@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab2F1Q6c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 12:58:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18213 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750769Ab2F1Q6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 12:58:30 -0400
-Message-ID: <4FEC8D31.3070406@redhat.com>
-Date: Thu, 28 Jun 2012 19:58:25 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1755899Ab2F1RCO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 13:02:14 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:54984 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755712Ab2F1RCM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 13:02:12 -0400
 MIME-Version: 1.0
-To: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH 00/18] KVM: x86: CPU isolation and direct interrupts
- handling by guests
-References: <20120628060719.19298.43879.stgit@localhost.localdomain>
-In-Reply-To: <20120628060719.19298.43879.stgit@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+In-Reply-To: <4FEB80A5.8020806@zytor.com>
+References: <CAJ0yFaxO-ZU7d_RNbQ3y1cfB5EJL9wgvmgZk-nmkVOLoBRH88A@mail.gmail.com>
+	<1340832957-7386-1-git-send-email-olof@lixom.net>
+	<4FEB80A5.8020806@zytor.com>
+Date: Thu, 28 Jun 2012 10:02:12 -0700
+Message-ID: <CAOesGMhzAmpX0sSFv4w+=Y4Uzh77aa3_QW3JW=eurfo22dRMoA@mail.gmail.com>
+Subject: Re: [PATCH] efi: add efi_runtime state checking
+From: Olof Johansson <olof@lixom.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Marko Kohtala <marko.kohtala@gmail.com>, linux-kernel@vger.kernel.org,
+        mjg@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 09:07 AM, Tomoki Sekiyama wrote:
-> Hello,
-> 
-> This RFC patch series provides facility to dedicate CPUs to KVM guests
-> and enable the guests to handle interrupts from passed-through PCI devices
-> directly (without VM exit and relay by the host).
-> 
-> With this feature, we can improve throughput and response time of the device
-> and the host's CPU usage by reducing the overhead of interrupt handling.
-> This is good for the application using very high throughput/frequent
-> interrupt device (e.g. 10GbE NIC).
-> CPU-intensive high performance applications and real-time applicatoins
-> also gets benefit from CPU isolation feature, which reduces VM exit and
-> scheduling delay.
-> 
-> Current implementation is still just PoC and have many limitations, but
-> submitted for RFC. Any comments are appreciated.
-> 
-> * Overview
-> Intel and AMD CPUs have a feature to handle interrupts by guests without
-> VM Exit. However, because it cannot switch VM Exit based on IRQ vectors,
-> interrupts to both the host and the guest will be routed to guests.
-> 
-> To avoid mixture of host and guest interrupts, in this patch, some of CPUs
-> are cut off from the host and dedicated to the guests. In addition, IRQ
-> affinity of the passed-through devices are set to the guest CPUs only.
-> 
-> For IPI from the host to the guest, we use NMIs, that is an only interrupts
-> having another VM Exit flag.
-> 
-> * Benefits
-> This feature provides benefits of virtualization to areas where high
-> performance and low latency are required, such as HPC and trading,
-> and so on. It also useful for consolidation in large scale systems with
-> many CPU cores and PCI devices passed-through or with SR-IOV.
-> For the future, it may be used to keep the guests running even if the host
-> is crashed (but that would need additional features like memory isolation).
-> 
-> * Limitations
-> Current implementation is experimental, unstable, and has a lot of limitations.
->  - SMP guests don't work correctly
->  - Only Linux guest is supported
->  - Only Intel VT-x is supported
->  - Only MSI and MSI-X pass-through; no ISA interrupts support
->  - Non passed-through PCI devices (including virtio) are slower
->  - Kernel space PIT emulation does not work
->  - Needs a lot of cleanups
-> 
+On Wed, Jun 27, 2012 at 2:52 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 06/27/2012 02:35 PM, Olof Johansson wrote:
+>>
+>> This adds an efi_runtime variable indicating whether the
+>> efi runtime services are available. The only time they are
+>> expected to not be available is when a 32-bit kernel has been
+>> booted using 64-but EFI and vice versa.
+>>
+>> It also adds checking to the two locations where functions are
+>> called; x86 reboot and efivars.
+>>
+>
+> OK, stupid question:
+>
+> Why is this different from the efi_enabled variable, or rather: why is it
+> different from what the efi_enabled variable *should* be?  If runtime
+> services aren't available the only "EFI" that is available to the kernel are
+> the data structures passed in, and those can be checked directly...
 
-This is both impressive and scary.  What is the target scenario here?
-Partitioning?  I don't see this working for generic consolidation.
+Excellent question, and I think it would work to turn off efi_enabled
+towards the end of setup_arch() for non-native boots. That'd solve all
+these problems, I believe.
+
+I'll try it out and revise this patch. It might take me a day or two
+to get cycles for it.
 
 
--- 
-error compiling committee.c: too many arguments to function
-
-
+-Olof
