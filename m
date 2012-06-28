@@ -1,200 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab2F1TSp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 15:18:45 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:45047 "EHLO ogre.sisk.pl"
+	id S1753165Ab2F1T3d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 15:29:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57347 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399Ab2F1TSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 15:18:42 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>, lenb@kernel.org
-Subject: Re: [PATCH v2] acpi: intel_idle : break dependency between modules
-Date: Thu, 28 Jun 2012 21:24:09 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: trenn@suse.de, srivatsa.bhat@linux.vnet.ibm.com,
-        deepthi@linux.vnet.ibm.com, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, linux-pm@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org
-References: <201206271506.29034.trenn@suse.de> <1340873202-2476-1-git-send-email-daniel.lezcano@linaro.org>
-In-Reply-To: <1340873202-2476-1-git-send-email-daniel.lezcano@linaro.org>
+	id S1751399Ab2F1T3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 15:29:31 -0400
+Date: Thu, 28 Jun 2012 22:29:27 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v2 5/6] kvm: KVM_EOIFD, an eventfd for EOIs
+Message-ID: <20120628192927.GB14787@redhat.com>
+References: <20120627044758.23698.249.stgit@bling.home>
+ <20120627050952.23698.37235.stgit@bling.home>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201206282124.09857.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120627050952.23698.37235.stgit@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 28, 2012, Daniel Lezcano wrote:
-> When the system is booted with some cpus offline, the idle
-> driver is not initialized. When a cpu is set online, the
-> acpi code call the intel idle init function. Unfortunately
-> this code introduce a dependency between intel_idle and acpi.
-> 
-> This patch is intended to remove this dependency by using the
-> notifier of intel_idle. This patch has the benefit of
-> encapsulating the intel_idle driver and remove some exported
-> functions.
-> 
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-
-This one looks good to me too.
-
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-
-Len, are you going to take it?
-
-Rafael
-
-
-> ---
->  drivers/acpi/processor_driver.c |    7 ------
->  drivers/idle/intel_idle.c       |   41 +++++++++++++++++++++++++-------------
->  include/linux/cpuidle.h         |    7 ------
->  3 files changed, 27 insertions(+), 28 deletions(-)
-> 
-> diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-> index 0734086..8648b29 100644
-> --- a/drivers/acpi/processor_driver.c
-> +++ b/drivers/acpi/processor_driver.c
-> @@ -427,18 +427,11 @@ static int acpi_cpu_soft_notify(struct notifier_block *nfb,
->  		 * Initialize missing things
->  		 */
->  		if (pr->flags.need_hotplug_init) {
-> -			struct cpuidle_driver *idle_driver =
-> -				cpuidle_get_driver();
-> -
->  			printk(KERN_INFO "Will online and init hotplugged "
->  			       "CPU: %d\n", pr->id);
->  			WARN(acpi_processor_start(pr), "Failed to start CPU:"
->  				" %d\n", pr->id);
->  			pr->flags.need_hotplug_init = 0;
-> -			if (idle_driver && !strcmp(idle_driver->name,
-> -						   "intel_idle")) {
-> -				intel_idle_cpu_init(pr->id);
-> -			}
->  		/* Normal CPU soft online event */
->  		} else {
->  			acpi_processor_ppc_has_changed(pr, 0);
-> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> index d0f59c3..fe95d54 100644
-> --- a/drivers/idle/intel_idle.c
-> +++ b/drivers/idle/intel_idle.c
-> @@ -96,6 +96,7 @@ static const struct idle_cpu *icpu;
->  static struct cpuidle_device __percpu *intel_idle_cpuidle_devices;
->  static int intel_idle(struct cpuidle_device *dev,
->  			struct cpuidle_driver *drv, int index);
-> +static int intel_idle_cpu_init(int cpu);
+On Tue, Jun 26, 2012 at 11:10:08PM -0600, Alex Williamson wrote:
+> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> index b216709..87a2558 100644
+> --- a/Documentation/virtual/kvm/api.txt
+> +++ b/Documentation/virtual/kvm/api.txt
+> @@ -1987,6 +1987,30 @@ interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
+>  with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
+>  KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
 >  
->  static struct cpuidle_state *cpuidle_state_table;
->  
-> @@ -302,22 +303,35 @@ static void __setup_broadcast_timer(void *arg)
->  	clockevents_notify(reason, &cpu);
->  }
->  
-> -static int setup_broadcast_cpuhp_notify(struct notifier_block *n,
-> -		unsigned long action, void *hcpu)
-> +static int cpu_hotplug_notify(struct notifier_block *n,
-> +			      unsigned long action, void *hcpu)
->  {
->  	int hotcpu = (unsigned long)hcpu;
-> +	struct cpuidle_device *dev;
->  
->  	switch (action & 0xf) {
->  	case CPU_ONLINE:
-> -		smp_call_function_single(hotcpu, __setup_broadcast_timer,
-> -			(void *)true, 1);
+> +4.77 KVM_EOIFD
 > +
-> +		if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE)
-> +			smp_call_function_single(hotcpu, __setup_broadcast_timer,
-> +						 (void *)true, 1);
+> +Capability: KVM_CAP_EOIFD
+> +Architectures: x86
+> +Type: vm ioctl
+> +Parameters: struct kvm_eoifd (in)
+> +Returns: 0 on success, -1 on error
 > +
-> +		/*
-> +		 * Some systems can hotplug a cpu at runtime after
-> +		 * the kernel has booted, we have to initialize the
-> +		 * driver in this case
-> +		 */
-> +		dev = per_cpu_ptr(intel_idle_cpuidle_devices, hotcpu);
-> +		if (!dev->registered)
-> +			intel_idle_cpu_init(hotcpu);
+> +KVM_EOIFD allows userspace to receive EOI notification through an
+> +eventfd for level triggered irqchip interrupts.  Behavior for edge
+> +triggered interrupts is undefined.  kvm_eoifd.fd specifies the eventfd
+> +used for notification and kvm_eoifd.gsi specifies the irchip pin,
+> +similar to KVM_IRQFD.  KVM_EOIFD_FLAG_DEASSIGN is used to deassign
+> +a previously enabled eoifd and should also set fd and gsi to match.
 > +
->  		break;
->  	}
->  	return NOTIFY_OK;
->  }
->  
-> -static struct notifier_block setup_broadcast_notifier = {
-> -	.notifier_call = setup_broadcast_cpuhp_notify,
-> +static struct notifier_block cpu_hotplug_notifier = {
-> +	.notifier_call = cpu_hotplug_notify,
->  };
->  
->  static void auto_demotion_disable(void *dummy)
-> @@ -405,10 +419,10 @@ static int intel_idle_probe(void)
->  
->  	if (boot_cpu_has(X86_FEATURE_ARAT))	/* Always Reliable APIC Timer */
->  		lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
-> -	else {
-> +	else
->  		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
-> -		register_cpu_notifier(&setup_broadcast_notifier);
-> -	}
+> +The KVM_EOIFD_FLAG_LEVEL_IRQFD flag indicates that the EOI is for
+> +a level triggered EOI and the kvm_eoifd structure includes
+> +kvm_eoifd.irqfd, which must be previously configured using KVM_IRQFD
+> +with the KVM_IRQFD_FLAG_LEVEL flag.  This allows both EOI notification
+> +through kvm_eoifd.fd as well as automatically de-asserting level
+> +irqfds on EOI.  Both KVM_EOIFD_FLAG_DEASSIGN and
+> +KVM_EOIFD_FLAG_LEVEL_IRQFD should be used to de-assign an eoifd
+> +initially setup with KVM_EOIFD_FLAG_LEVEL_IRQFD.
 > +
-> +	register_cpu_notifier(&cpu_hotplug_notifier);
->  
->  	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
->  		" model 0x%X\n", boot_cpu_data.x86_model);
-> @@ -494,7 +508,7 @@ static int intel_idle_cpuidle_driver_init(void)
->   * allocate, initialize, register cpuidle_devices
->   * @cpu: cpu/core to initialize
->   */
-> -int intel_idle_cpu_init(int cpu)
-> +static int intel_idle_cpu_init(int cpu)
->  {
->  	int cstate;
->  	struct cpuidle_device *dev;
-> @@ -539,7 +553,6 @@ int intel_idle_cpu_init(int cpu)
->  
->  	return 0;
->  }
-> -EXPORT_SYMBOL_GPL(intel_idle_cpu_init);
->  
->  static int __init intel_idle_init(void)
->  {
-> @@ -581,10 +594,10 @@ static void __exit intel_idle_exit(void)
->  	intel_idle_cpuidle_devices_uninit();
->  	cpuidle_unregister_driver(&intel_idle_driver);
->  
-> -	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE) {
-> +
-> +	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE)
->  		on_each_cpu(__setup_broadcast_timer, (void *)false, 1);
-> -		unregister_cpu_notifier(&setup_broadcast_notifier);
-> -	}
-> +	unregister_cpu_notifier(&cpu_hotplug_notifier);
->  
->  	return;
->  }
-> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-> index 5ab7183..66d7e0d 100644
-> --- a/include/linux/cpuidle.h
-> +++ b/include/linux/cpuidle.h
-> @@ -213,14 +213,7 @@ struct cpuidle_governor {
->  extern int cpuidle_register_governor(struct cpuidle_governor *gov);
->  extern void cpuidle_unregister_governor(struct cpuidle_governor *gov);
->  
-> -#ifdef CONFIG_INTEL_IDLE
-> -extern int intel_idle_cpu_init(int cpu);
->  #else
-> -static inline int intel_idle_cpu_init(int cpu) { return -1; }
-> -#endif
-> -
-> -#else
-> -static inline int intel_idle_cpu_init(int cpu) { return -1; }
->  
->  static inline int cpuidle_register_governor(struct cpuidle_governor *gov)
->  {return 0;}
-> 
 
+OK so thinking about this some more, does the below makes sense:
+it is enough to have LEVEL either in IRQFD or in EOIFD but not both.
+I weakly prefer it in EOIFD: when you bind it to irqfd you
+also assign a source id to that irqfd.
+
+We also can make is a bit clearer: rename KVM_EOIFD_FLAG_LEVEL_IRQFD
+to KVM_EOIFD_FLAG_LEVEL_CLEAR which makes it explicit that we clear
+on EOI and that it is for a level interrupt. The fact that it needs
+an irqfd is less important IMHO.
+Make this flag mandatory for now, we'll see later how to handle
+vcpu filtering and edge.
+
+How does it sound?
+
+-- 
+MST
