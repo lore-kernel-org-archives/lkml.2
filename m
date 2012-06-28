@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932653Ab2F1I7h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 04:59:37 -0400
-Received: from mail-fa0-f74.google.com ([209.85.161.74]:38140 "EHLO
-	mail-fa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756232Ab2F1I7f (ORCPT
+	id S932700Ab2F1JA7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 05:00:59 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:58079 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753989Ab2F1JA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 04:59:35 -0400
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Seth Heasley <seth.heasley@intel.com>
-Cc: Olof Johansson <olof@lixom.net>, Benson Leung <bleung@chromium.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH] i2c-i801: Clear only status bits in HST_STS after waiting for INTR
-Date: Thu, 28 Jun 2012 16:59:30 +0800
-Message-Id: <1340873970-19226-1-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Thu, 28 Jun 2012 05:00:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <1340860886.16533.67.camel@joe2Laptop>
+References: <CAFU-uVs_Gwacxj74cyekY2gv+zAq+Spba7nfPLdTc_dR3y8CYw@mail.gmail.com>
+ <20120516143830.GA483@kroah.com> <alpine.LNX.2.00.1205161640520.8796@pobox.suse.cz>
+ <CAFU-uVt94sgzq7DgsgKL2OJ0e7DazvNpFunx7BNEz88LHJOg+g@mail.gmail.com>
+ <20120516150813.GA3293@kroah.com> <CAFU-uVvzyN0asmReOVJcAEiAtbQ=styfGxRRbnrJKgNFDS5X_g@mail.gmail.com>
+ <CAFU-uVsStG0KoiQm95-uC8ZPXWAq=8Q8vXircxOuUCHhk+r9uw@mail.gmail.com>
+ <1338492342.5861.23.camel@joe2Laptop> <1340860886.16533.67.camel@joe2Laptop>
+From: Philipp Riemer <ruderphilipp@gmail.com>
+Date: Thu, 28 Jun 2012 11:00:36 +0200
+Message-ID: <CAFU-uVstyi1mfTR-7+BGiC53eEiLw7=XxBCFs1Qnd6stm=_JxQ@mail.gmail.com>
+Subject: Re: [GIT PULL] new mailmap file for the linux kernel git repository
+To: Joe Perches <joe@perches.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Jiri Kosina <jkosina@suse.cz>,
+        Paul Mundt <lethal@linux-sh.org>,
+        =?ISO-8859-1?Q?Michael_B=FCsch?= <m@bues.ch>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Wang Chen <ellre923@gmail.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Writing back the whole status register could clear unwanted bits.
-In particular, it could clear the "INUSE_STS" bit, which is a
-'hardware semaphore', that might be useful to use some day.
-To prepare for this, let's ban writing back the whole status to register
-HST_STS, of which this is the only instance.
+2012/6/28 Joe Perches <joe@perches.com>:
+> On Thu, 2012-05-31 at 12:25 -0700, Joe Perches wrote:
+>> On Thu, 2012-05-31 at 18:08 +0200, Philipp Riemer wrote:
+>> > updated mailmap file for LK repository
+>
+> Hello Philipp
+>
+> Did you give up on this proposed patch?
+>
+> cheers, Joe
+>
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-Reported-by: Jean Delvare <khali@linux-fr.org>
----
- drivers/i2c/busses/i2c-i801.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Hi Joe,
 
-diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
-index ae2945a..7443990 100644
---- a/drivers/i2c/busses/i2c-i801.c
-+++ b/drivers/i2c/busses/i2c-i801.c
-@@ -301,7 +301,7 @@ static void i801_wait_hwpec(struct i801_priv *priv)
- 	if (timeout > MAX_RETRIES)
- 		dev_dbg(&priv->pci_dev->dev, "PEC Timeout!\n");
- 
--	outb_p(status, SMBHSTSTS(priv));
-+	outb_p(status & STATUS_FLAGS, SMBHSTSTS(priv));
- }
- 
- static int i801_block_transaction_by_block(struct i801_priv *priv,
--- 
-1.7.7.3
+I am still planning to provide an improved version of the .mailmap
+file in future and even got some mails outside of this list from
+people who sent me their mail addresses so that the mappings are
+correct later.
 
+I am currently pretty busy with my thesis and as a result have not
+much time to work on in. But will do again in approx. 3 weeks.
+
+Whenever having some spare time, I work on
+<https://github.com/ruderphilipp/linux/blob/mailmap-changes/shortlog.diff>
+to not only find potential wrong mappings and to fix them for a final
+patch but also to prepare an evidence for all these "disbelievers"
+that my patch can improve overview and patch statistics. But this file
+has 8600 lines -- so it is quite a lot of work for that I
+unfortunately do not have time until my thesis is done.
+
+Thank you very much for your request!
+Philipp
