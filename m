@@ -1,106 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622Ab2F1NOX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 09:14:23 -0400
-Received: from mail-yx0-f202.google.com ([209.85.213.202]:47768 "EHLO
-	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754453Ab2F1NI3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 09:08:29 -0400
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Nick Dyer <nick.dyer@itdev.co.uk>, Yufeng Shen <miletus@chromium.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Benson Leung <bleung@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 07/23 v6] Input: atmel_mxt_ts - optimize reading objects in object sysfs entry
-Date: Thu, 28 Jun 2012 21:08:08 +0800
-Message-Id: <1340888904-15620-8-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1340888904-15620-1-git-send-email-djkurtz@chromium.org>
-References: <1340888904-15620-1-git-send-email-djkurtz@chromium.org>
+	id S1755390Ab2F1NQy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 09:16:54 -0400
+Received: from gherkin.frus.com ([192.158.254.49]:58731 "EHLO gherkin.frus.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751946Ab2F1NQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 09:16:53 -0400
+Date: Thu, 28 Jun 2012 08:16:51 -0500
+From: Bob Tracy <rct@gherkin.frus.com>
+To: linux-kernel@vger.kernel.org
+Subject: 3.5-rcX: USB support without udev?
+Message-ID: <20120628131651.GA14492@gherkin.frus.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Read each object in a single i2c transaction instead of byte-by-byte
+With the removal of the deprecated usbfs feature in the 3.5 release
+candidates, is there a way of getting USB devices working on a non-
+embedded Linux system without udev (static "/dev")?
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/input/touchscreen/atmel_mxt_ts.c |   35 ++++++++++++-----------------
- 1 files changed, 15 insertions(+), 20 deletions(-)
+Assume I have a way to determine the appropriate device nodes to create
+under /dev/bus/usb.  What else is needed to get USB keyboards and mice
+working again?  The mapping of a particular USB device to a class
+(input, generic_usb, etc.) that used to happen before USB_DEVICE_CLASS
+was removed is the part I'm missing.
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 55855b8..94dd1d1 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -479,20 +479,6 @@ static int mxt_read_message(struct mxt_data *data,
- 			sizeof(struct mxt_message), message);
- }
- 
--static int mxt_read_object(struct mxt_data *data,
--				u8 type, u8 offset, u8 *val)
--{
--	struct mxt_object *object;
--	u16 reg;
--
--	object = mxt_get_object(data, type);
--	if (!object)
--		return -EINVAL;
--
--	reg = object->start_address;
--	return __mxt_read_reg(data->client, reg + offset, 1, val);
--}
--
- static int mxt_write_object(struct mxt_data *data,
- 				 u8 type, u8 offset, u8 val)
- {
-@@ -900,7 +886,14 @@ static ssize_t mxt_object_show(struct device *dev,
- 	int i, j;
- 	int error;
- 	u8 val;
-+	u8 *obuf;
-+
-+	/* Pre-allocate buffer large enough to hold max sized object. */
-+	obuf = kmalloc(256, GFP_KERNEL);
-+	if (!obuf)
-+		return -ENOMEM;
- 
-+	error = 0;
- 	for (i = 0; i < data->info.object_num; i++) {
- 		object = data->object_table + i;
- 
-@@ -914,20 +907,22 @@ static ssize_t mxt_object_show(struct device *dev,
- 			continue;
- 		}
- 
-+		error = __mxt_read_reg(data->client, object->start_address,
-+				object->size + 1, obuf);
-+		if (error)
-+			break;
-+
- 		for (j = 0; j < object->size + 1; j++) {
--			error = mxt_read_object(data,
--						object->type, j, &val);
--			if (error)
--				return error;
-+			val = obuf[j];
- 
- 			count += scnprintf(buf + count, PAGE_SIZE - count,
- 					"\t[%2d]: %02x (%d)\n", j, val, val);
- 		}
--
- 		count += scnprintf(buf + count, PAGE_SIZE - count, "\n");
- 	}
- 
--	return count;
-+	kfree(obuf);
-+	return error ?: count;
- }
- 
- static int mxt_load_fw(struct device *dev, const char *fn)
--- 
-1.7.7.3
+Thanks in advance.
 
+--Bob
