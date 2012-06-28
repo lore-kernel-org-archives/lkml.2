@@ -1,147 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160Ab2F1Ewj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 00:52:39 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:56754 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123Ab2F1Ewh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 00:52:37 -0400
-Message-ID: <4FEBE2FF.3010105@us.ibm.com>
-Date: Wed, 27 Jun 2012 21:52:15 -0700
-From: Sridhar Samudrala <sri@us.ibm.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, habanero@linux.vnet.ibm.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        krkumar2@in.ibm.com, tahm@linux.vnet.ibm.com, akong@redhat.com,
-        davem@davemloft.net, shemminger@vyatta.com, mashirle@us.ibm.com
-Subject: Re: [net-next RFC V3 PATCH 4/6] tuntap: multiqueue support
-References: <20120625060830.6765.27584.stgit@amd-6168-8-1.englab.nay.redhat.com> <20120625061018.6765.76633.stgit@amd-6168-8-1.englab.nay.redhat.com> <20120625082553.GC18229@redhat.com> <4FE92F99.6020402@redhat.com> <20120626104250.GC13108@redhat.com> <4FEA972E.9010104@redhat.com> <20120627084431.GC15406@redhat.com> <4FEBC936.3080001@redhat.com>
-In-Reply-To: <4FEBC936.3080001@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751683Ab2F1FAR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 01:00:17 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60295 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751152Ab2F1FAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 01:00:16 -0400
+Message-ID: <1340859614.16533.66.camel@joe2Laptop>
+Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
+From: Joe Perches <joe@perches.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>
+Date: Wed, 27 Jun 2012 22:00:14 -0700
+In-Reply-To: <1340869133.876.10.camel@mop>
+References: <1340651142.7037.2.camel@gandalf.stny.rr.com>
+	 <20120625150722.8cd4f45d.akpm@linux-foundation.org>
+	 <20120625235531.GB3652@kroah.com>
+	 <CA+55aFwczZTA=JUahoj_Sw1fQssDwoM2LGJ6g5nPvehTLxnSpg@mail.gmail.com>
+	 <20120626002307.GA4389@kroah.com>
+	 <CA+55aFxhYRqcU2EUmcsuLrhgo4FEO6-b+mB57wB3JRiXEp3ZrA@mail.gmail.com>
+	 <CAPXgP10cPFSmZ5yr6Z4wVtDa+x2J1yQDF57NJXtxjUuxMHm=Lw@mail.gmail.com>
+	 <CA+55aFzkX=jCC1O6+2oz8meswOqZQ+Q8Ao60q8eAS1G3AuEStQ@mail.gmail.com>
+	 <1340726856.977.6.camel@mop>
+	 <1340810038.16702.16.camel@gandalf.stny.rr.com>
+	 <1340810283.16702.19.camel@gandalf.stny.rr.com>
+	 <CAPXgP121+zA_p4x9VdSMWtu-SqqqiNC51CKkYKY4YkAL+QsQ4g@mail.gmail.com>
+	 <1340869133.876.10.camel@mop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12062804-1780-0000-0000-000006E1D459
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000283; HX=3.00000190; KW=3.00000007;
- PH=3.00000001; SC=3.00000004; SDB=6.00151877; UDB=6.00034406; UTC=2012-06-28
- 04:52:36
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/27/2012 8:02 PM, Jason Wang wrote:
-> On 06/27/2012 04:44 PM, Michael S. Tsirkin wrote:
->> On Wed, Jun 27, 2012 at 01:16:30PM +0800, Jason Wang wrote:
->>> On 06/26/2012 06:42 PM, Michael S. Tsirkin wrote:
->>>> On Tue, Jun 26, 2012 at 11:42:17AM +0800, Jason Wang wrote:
->>>>> On 06/25/2012 04:25 PM, Michael S. Tsirkin wrote:
->>>>>> On Mon, Jun 25, 2012 at 02:10:18PM +0800, Jason Wang wrote:
->>>>>>> This patch adds multiqueue support for tap device. This is done 
->>>>>>> by abstracting
->>>>>>> each queue as a file/socket and allowing multiple sockets to be 
->>>>>>> attached to the
->>>>>>> tuntap device (an array of tun_file were stored in the 
->>>>>>> tun_struct). Userspace
->>>>>>> could write and read from those files to do the parallel packet
->>>>>>> sending/receiving.
->>>>>>>
->>>>>>> Unlike the previous single queue implementation, the socket and 
->>>>>>> device were
->>>>>>> loosely coupled, each of them were allowed to go away first. In 
->>>>>>> order to let the
->>>>>>> tx path lockless, netif_tx_loch_bh() is replaced by 
->>>>>>> RCU/NETIF_F_LLTX to
->>>>>>> synchronize between data path and system call.
->>>>>> Don't use LLTX/RCU. It's not worth it.
->>>>>> Use something like netif_set_real_num_tx_queues.
->>>>>>
->>>>>>> The tx queue selecting is first based on the recorded rxq index 
->>>>>>> of an skb, it
->>>>>>> there's no such one, then choosing based on rx hashing 
->>>>>>> (skb_get_rxhash()).
->>>>>>>
->>>>>>> Signed-off-by: Jason Wang<jasowang@redhat.com>
->>>>>> Interestingly macvtap switched to hashing first:
->>>>>> ef0002b577b52941fb147128f30bd1ecfdd3ff6d
->>>>>> (the commit log is corrupted but see what it
->>>>>> does in the patch).
->>>>>> Any idea why?
->>>>> Yes, so tap should be changed to behave same as macvtap. I remember
->>>>> the reason we do that is to make sure the packet of a single flow to
->>>>> be queued to a fixed socket/virtqueues. As 10g cards like ixgbe
->>>>> choose the rx queue for a flow based on the last tx queue where the
->>>>> packets of that flow comes. So if we are using recored rx queue in
->>>>> macvtap, the queue index of a flow would change as vhost thread
->>>>> moves amongs processors.
->>>> Hmm. OTOH if you override this, if TX is sent from VCPU0, RX might 
->>>> land
->>>> on VCPU1 in the guest, which is not good, right?
->>> Yes, but better than making the rx moves between vcpus when we use
->>> recorded rx queue.
->> Why isn't this a problem with native TCP?
->> I think what happens is one of the following:
->> - moving between CPUs is more expensive with tun
->>    because it can queue so much data on xmit
->> - scheduler makes very bad decisions about VCPUs
->>    bouncing them around all the time
->
-> For usual native TCP/host process, as it reads and writes tcp sockets, 
-> so it make make sense to move rx to the porcessor where the process 
-> moves. But vhost does not do tcp stuffs and ixgbe would still move rx 
-> when vhost process moves, and we can't even make sure the vhost 
-> process that handling rx is running on processor that handle rx 
-> interrupt.
+On Thu, 2012-06-28 at 09:38 +0200, Kay Sievers wrote:
+> Here we share the continuation buffer with the console copy logic,
+> and partial lines are always immediately flushed to the available
+> consoles. They are still buffered internally to improve the
+> readability and integrity of the messages and minimize the amount
+> of needed record headers to store.
 
-We also saw this behavior with the default ixgbe configuration. If vhost 
-is pinned to a CPU all
-packets for that VM are received on a single RX queue.
-So even if the VM is doing multiple TCP_RR sessions, packets for all the 
-flows are received
-on a single RX queue. Without pinning, vhost moves around and so does 
-the packets across
-the RX queues.
+trivia:
 
-I think
-         ethtool -K ethX ntuple on
-will disable this behavior and it should be possible to program the flow 
-director using ethtool -U.
-This way we can split the packets across the host NIC RX queues based on 
-the flows, but it is not
-clear if this would help with the current model of single vhost per device.
-With per-cpu vhost,  each RX queue can be handled by the matching vhost, 
-but if we have only
-1 queue in the VMs virtio-net device, that could become the bottleneck.
-Multi-queue virtio-net should help here, but we need the same number of 
-queues in VM's virtio-net
-device as the host's NIC so that each vhost can handle the corresponding 
-virtio queue.
-But if the VM has only 2 vcpus, i think it is not efficient to have 8 
-virtio-net queues.(to match a host
-with 8 physical cpus and 8 RX queues in the NIC).
+> diff --git a/kernel/printk.c b/kernel/printk.c
 
-Thanks
-Sridhar
+> @@ -329,8 +337,13 @@ static void log_store(int facility, int level,
+>  	msg->text_len = text_len;
+>  	memcpy(log_dict(msg), dict, dict_len);
+>  	msg->dict_len = dict_len;
+> -	msg->level = (facility << 3) | (level & 7);
+> -	msg->ts_nsec = local_clock();
+> +	msg->facility = facility;
+> +	msg->level = level & 7;
 
->
->> Could we isolate which it is? Does the problem
->> still happen if you pin VCPUs to host cpus?
->> If not it's the queue depth.
->
-> It may not help as tun does not record the vcpu/queue that send the 
-> stream, so it can't transmit the packets back the same vcpu/queue.
->>> Flow steering is needed to make sure the tx and
->>> rx on the same vcpu.
->> That involves IPI between processes, so it might be
->> very expensive for kvm.
->>
->>>>> But during test tun/tap, one interesting thing I find is that even
->>>>> ixgbe has recorded the queue index during rx, it seems be lost when
->>>>> tap tries to transmit skbs to userspace.
->>>> dev_pick_tx does this I think but ndo_select_queue
->>>> should be able to get it without trouble.
->>>>
->>>>
+Doesn't need & 7
+
+> +	msg->flags = flags & 0x1f;
+> +	if (ts_nsec > 0)
+> +		msg->ts_nsec = ts_nsec;
+> +	else
+> +		msg->ts_nsec = local_clock();
+
+Why local_clock?  ts_nsec really can be 0.
+[]
+
+> @@ -1294,15 +1311,92 @@ static inline void printk_delay(void)
+>  	}
+>  }
+>  
+> +/*
+> + * Continuation lines are buffered, and not committed to the record buffer
+> + * until the line is complete, or a race forces it. The line fragments
+> + * though, are printed immediately to the consoles to ensure everything has
+> + * reached the console in case of a kernel crash.
+> + */
+> +static struct cont {
+> +	char buf[LOG_LINE_MAX];
+> +	size_t len;			/* length == 0 means unused buffer */
+> +	size_t cons;			/* bytes written to console */
+> +	struct task_struct *owner;	/* task of first print*/
+> +	u64 ts_nsec;			/* time of first print */
+> +	u8 level;			/* log level of first message */
+> +	u8 facility;			/* log level of first message */
+> +	bool flushed:1;			/* buffer sealed and committed */
+
+bool flushed:1 seems unnecessary.
+bool flushed seems more appropriate.
+
+> +} cont;
+> +
+> +static void cont_flush(void)
+> +{
+> +	if (cont.flushed)
+> +		return;
+> +	if (cont.len == 0)
+> +		return;
+> +
+> +	log_store(cont.facility, cont.level, LOG_NOCONS, cont.ts_nsec,
+> +		  NULL, 0, cont.buf, cont.len);
+> +
+> +	cont.flushed = true;
+> +}
+> +
+> +static bool cont_add(int facility, int level, const char *text, size_t len)
+> +{
+> +	if (cont.len && cont.flushed)
+> +		return false;
+> +
+> +	if (cont.len + len > sizeof(cont.buf)) {
+> +		cont_flush();
+> +		return false;
+> +	}
+> +
+> +	if (!cont.len) {
+> +		cont.facility = facility;
+> +		cont.level = level;
+> +		cont.owner = current;
+> +		cont.ts_nsec = local_clock();
+> +		cont.cons = 0;
+> +		cont.flushed = false;
+> +	}
+> +
+> +	memcpy(cont.buf + cont.len, text, len);
+
+Looks like you can still overrun cont.buf.
+
 
