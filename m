@@ -1,90 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758034Ab2F1DUy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 23:20:54 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:53238 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753686Ab2F1DUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 23:20:52 -0400
-X-IronPort-AV: E=Sophos;i="4.77,488,1336320000"; 
-   d="scan'208";a="5279858"
-Message-ID: <4FEBCE9C.7030904@cn.fujitsu.com>
-Date: Thu, 28 Jun 2012 11:25:16 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1758095Ab2F1Dg4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 23:36:56 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:49038 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754328Ab2F1Dgz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jun 2012 23:36:55 -0400
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: rientjes@google.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
-        cl@linux.com, minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC PATCH 1/12] memory-hotplug : rename remove_memory to offline_memory
-References: <4FEA9C88.1070800@jp.fujitsu.com> <4FEA9D5C.1080508@jp.fujitsu.com> <4FEAB2E1.3090200@cn.fujitsu.com> <4FEAC891.7030808@cn.fujitsu.com> <4FEBC8EE.7040207@jp.fujitsu.com>
-In-Reply-To: <4FEBC8EE.7040207@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/28 11:20:57,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/28 11:21:01,
-	Serialize complete at 2012/06/28 11:21:01
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
+From: Paul Turner <pjt@google.com>
+Date: Wed, 27 Jun 2012 20:36:24 -0700
+Message-ID: <CAPM31R+PALEsrHQjALK-NqQrkv8uYwnyJCKF_ceoMk8cjg_MLQ@mail.gmail.com>
+Subject: sched: per-entity load-tracking
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 06/28/2012 11:01 AM, Yasuaki Ishimatsu Wrote:
-> Hi David and Wen,
-> 
-> Thank you for reviewing my patch.
-> 
-> 2012/06/27 17:47, Wen Congyang wrote:
->> At 06/27/2012 03:14 PM, Wen Congyang Wrote:
->>> At 06/27/2012 01:42 PM, Yasuaki Ishimatsu Wrote:
->>>> remove_memory() does not remove memory but just offlines memory. The patch
->>>> changes name of it to offline_memory().
->>>
->>> There are 3 functions in the kernel:
->>> 1. add_memory()
->>> 2. online_pages()
->>> 3. remove_memory()
->>>
->>> So I think offline_pages() is better than offline_memory().
->>
->> There is already a function named offline_pages(). So we
->> should call offline_pages() instead of remove_memory() in
->> memory_block_action(), and there is no need to rename
->> remove_memory().
-> 
-> As Wen says, Linux has 4 functions for memory hotplug already.
-> In my recognition, these functions are prepared for following purpose.
-> 
-> 1. add_memory     : add physical memory
-> 2. online_pages   : online logical memory
-> 3. remove_memory  : offline logical memory
-> 4. offline_pages  : offline logical memory
-> 
-> add_memory() is used for adding physical memory. I think remove_memory()
-> would rather be used for removing physical memory than be used for removing
-> logical memory. So I renamed remove_memory() to offline_memory().
-> How do you think?
+Argh, regenerated mbox and forgot to fix the subject.
 
-Hmm, remove_memory() will revert all things we do in add_memory(), so I think
-there is no need to rename it. If we rename it to offline_memory(), we should
-also rename add_memory() to online_memory().
+This should have been: sched: per-entity load-tracking.
 
-Thanks
-Wen Congyang
+I won't bother re-posting, but if you find yourself reading this
+email; look to the much more interesting "Series short description".
 
-> 
-> Regards,
-> Yasuaki Ishimatsu
-> 
->>
->> Thanks
->> Wen Congyang
->>
->>>
->>> Thanks
->>> Wen Congyang
->>>>
+Thanks,
+
+- Paul
+
+On Wed, Jun 27, 2012 at 7:24 PM, Paul Turner <pjt@google.com> wrote:
+> Hi all,
+>
+> Please find attached the latest version for CFS load-tracking.
+>
+> It implements load-tracking on a per-sched_entity (currently SCHED_NORMAL, but
+> could be extended to RT as well) basis. This results in a bottom-up
+> load-computation in which entities contribute to their parents' load, as
+> opposed to the current top-down where the parent averages its children.  In
+> particular this allows us to correctly migrate load with their accompanying
+> entities and provides the necessary inputs for intelligent load-balancing and
+> power-management.
+>
+> Modulo review I think this is now close to a mergable state.
+>
+> Notable updates:
+> ----------------
+> - Few stability issues fixed; in particular on systems with tasks having idle
+>  periods spanning several days.  Minor code cleanups.
+> - 32 bit performance improved (now reported faster[*] on 32-bit ARM than
+>  without, presumably due to better load-balance or reduced overhead.  Thanks
+>  to Vincent Guittot and others for looking at this)
+> - All configs delinted
+> - Config dependencies seperated so that load-tracking can be used without
+>  FAIR_GROUP_SCHED so that we may generally use it for power governors and
+>  per-entity load-balance (in progress).
+>
+> Thanks to Peter, Vincent, Morten, Nikunj, and others for testing and comments.
+>
+> Rewinding some context since I've been buried with internal work and it's been
+> a while since my last posting:
+>
+> Background:
+> ----------
+> We currently track the load average at the parenting cfs_rq level. We divide
+> execution into a series of consecutive "windows, w_i".  Within each we track:
+>  \Sum load_i * t_i where \Sum t_i = w and each load_i a disjoint load level.
+>
+> The load average is then \Sum w_j / 2^n.
+>
+> This this works reasonably well but there's a few problems
+> 1) Since decay occurs at boundary window boundary there are 'skews':
+> At a window boundary the 'foreground' time has a bias against the
+> time immediately preceding it (as a result of the folding division)
+> e.g.  __xx_|_yyyy___ vs __xx_yyyy_|___  (where '|' is a window boundary).
+>
+> The accounting here is 2x + 4y/2 or 2x + 4y, depending on which side of the
+> window your load lands on.
+>
+> 2) Everything within a window 'w' is accounted equally, we only fold at
+> the boundaries.  This actually means you can't set 'w' large enough to
+> really have meaningful coverage of the sched period without throwing
+> decay out the window.  But then with w/2 << sched_period (currently
+> w/2=5ms) the average ends up having fairly drastic swings even with
+> stable loads.
+>
+> (Note:  Before we even looked at migrating to per-entity tracking we evaluating
+> foreground window into the considered average until it was "complete", this
+> represented a measurable improvement in stability under predictable load.)
+>
+> 3) Since the load sum average is per-cfs_rq and not per-entity when a task
+> entity migrates we lose its contribution to load-sum and effectively double
+> count it while it former sum decays.
+>
+> New approach:
+> -------------
+> Instead of tracking load on a per-cfs_rq basis we do it on a per-sched_entity
+> basis.  The load sum for a cfs_rq is then just the sum of its childrens' load
+> averages.  The obvious immediately nice property is that when we migrate thread
+> A from cpu1-->cpu2, we carry its load with it; leaving the global load sum
+> unmodified.
+>
+> The 'windows' above are replaced with more fine-grained tracking, that is (for
+> an entity j):
+>
+> runnable_j = u_i * y^i , load_avg_j = runnable_j * weight_j [*]
+>
+> Where: u_i is the usage in the last i`th ~ms and y is chosen such that
+> y^~sched_period = 1/2 (we currently choose k=32).This means that load tracked 1
+> sched_period ago contributes about ~50% as current execution.
+>
+> Now, the real challenge in tracking at an entity basis is handling blocked
+> entities.  Obviously runnable entities will be updated naturally as we iterate
+> through them but there could be O(many) blocked entities so we can't afford to
+> iterate through them and update their tracking.
+>
+> That our decay for a unit period is exponential introduces a particularly nice
+> property here:
+> We can separate the contributed load on a cfs_rq into blocked and runnable.
+> Runnable load is just the sum of all load_avg_j above, maintained by the
+> entities themselves as they run and self update (when they update their
+> load_avg they update the cumulative sum also).
+>
+> Blocked load then looks like:
+>  load_avg_j = weight_k * \Sum u[k]_n * y^n
+>
+> To account an entirely idle period we then only need to multiply by y.
+>
+> This ends up being orders of magnitude more accurate than the current
+> tracking schema, even with the old shares_window massively dilated to
+> better capture a stable load-state.  It's also obviously stable under
+> migration.
+>
+> As referenced above this also allows us to potentially improve decisions within
+> the load-balancer, for both distribution and power-management.
+>
+> Example: consider 1x80% task  and 2x40% tasks on a 2-core machine.  It's
+> currently a bit of a gamble as to whether you get an {AB, B} or {A, BB} split
+> since they have equal weight (assume 1024).  With per-task tracking we can
+> actually consider them at their contributed weight and see a stable ~{800,{400,
+> 400}} load-split.  Likewise within balance_tasks we can consider the load
+> migrated to be that actually contributed.  We have some patches looking at this
+> and will post them as they mature.
+>
+> Thanks,
+>
+> - Paul
+>
+> ---
+>
+> Ben Segall (1):
+>      sched: maintain per-rq runnable averages
+>
+> Paul Turner (15):
+>      sched: track the runnable average on a per-task entitiy basis
+>      sched: aggregate load contributed by task entities on parenting cfs_rq
+>      sched: maintain the load contribution of blocked entities
+>      sched: add an rq migration call-back to sched_class
+>      sched: account for blocked load waking back up
+>      sched: aggregate total task_group load
+>      sched: compute load contribution by a group entity
+>      sched: normalize tg load contributions against runnable time
+>      sched: maintain runnable averages across throttled periods
+>      sched: replace update_shares weight distribution with per-entity computation
+>      sched: refactor update_shares_cpu() -> update_blocked_avgs()
+>      sched: update_cfs_shares at period edge
+>      sched: make __update_entity_runnable_avg() fast
+>      sched: implement usage tracking
+>      sched: introduce temporary FAIR_GROUP_SCHED dependency for load-tracking
+>
+>
+>  include/linux/sched.h |   18 +
+>  kernel/sched/core.c   |    5
+>  kernel/sched/debug.c  |   39 ++
+>  kernel/sched/fair.c   |  793 +++++++++++++++++++++++++++++++++++++++----------
+>  kernel/sched/sched.h  |   60 ++--
+>  5 files changed, 720 insertions(+), 195 deletions(-)
+>
+> --
+> Signature
+>
