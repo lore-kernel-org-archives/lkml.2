@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab2F1RuW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 13:50:22 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:41957 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab2F1RuV (ORCPT
+	id S1755958Ab2F1RxV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 13:53:21 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42715 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755245Ab2F1RxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 13:50:21 -0400
-Date: Thu, 28 Jun 2012 13:50:16 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Dave Martin <dave.martin@linaro.org>, Minchan Kim <minchan@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Chanho Min <chanho.min@lge.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Jongsung Kim <neidhard.kim@lge.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] [RESEND] arm: limit memblock base address for
- early_pte_alloc
-In-Reply-To: <20120628090827.GH19026@n2100.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.02.1206281338170.31003@xanadu.home>
-References: <1338880312-17561-1-git-send-email-minchan@kernel.org> <20120627161224.GB2310@linaro.org> <alpine.LFD.2.02.1206280019160.31003@xanadu.home> <20120628090827.GH19026@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 28 Jun 2012 13:53:19 -0400
+Date: Thu, 28 Jun 2012 20:53:03 +0300
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Richard Genoud <richard.genoud@gmail.com>, linux-mtd@lists.infradead.org,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] UBI: add minimal amount of reserved erase blocks in
+ Kconfig
+Message-ID: <20120628205303.676fa2ea@halley>
+In-Reply-To: <1340636918-7505-1-git-send-email-richard.genoud@gmail.com>
+References: <1340636918-7505-1-git-send-email-richard.genoud@gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Jun 2012, Russell King - ARM Linux wrote:
+On Mon, 25 Jun 2012 17:08:38 +0200 Richard Genoud <richard.genoud@gmail.com> wrote:
+> diff --git a/drivers/mtd/ubi/misc.c b/drivers/mtd/ubi/misc.c
+> index f6a7d7a..c2c6db0 100644
+> --- a/drivers/mtd/ubi/misc.c
+> +++ b/drivers/mtd/ubi/misc.c
+> @@ -100,8 +100,9 @@ void ubi_calculate_reserved(struct ubi_device *ubi)
+>  {
+>  	ubi->beb_rsvd_level = ubi->good_peb_count/100;
+>  	ubi->beb_rsvd_level *= CONFIG_MTD_UBI_BEB_RESERVE;
 
-> Err, I don't think you understand what's going on here.
-> 
-> The sequence is:
-> 
-> 1. setup the initial mappings so we can run the kernel in virtual space.
-> 2. provide the memory areas to memblock
-> 3. ask the platform to reserve whatever memory it wants from memblock
->    [this means using memblock_reserve or arm_memblock_steal).  The
->    reserved memory is *not* expected to be mapped at this point, and is
->    therefore inaccessible.
-> 4. Setup the lowmem mappings.
+BTW Artem, I've always had an unresolved issue with this original
+calculation... maybe you can shed some light here.
 
-I do understand that pretty well so far.
+Why 'beb_rsvd_level' is set to RESERVE percent of the 'good_peb_count'?
 
-> And when we're setting up the lowmem mappings, we do *not* expect to
-> create any non-section page mappings, which again means we have no reason
-> to use the memblock allocator to obtain memory that we want to immediately
-> use.
+As the device gets worn, number of 'good_peb_count' will lessen over
+time - and as such, the 'beb_rsvd_level' may vary (lessen) over time.
 
-And why does this have to remain so?
+I'd expect a fixed number of 'beb_rsvd_level' PEBs for a given mtd
+partition, or more correctly, as Richard suggests, the *sum* of bad PEBs
+plus the beb reserved PEBs should be constant for a partition - as I
+do not expect more than a known constant of blocks to go bad during
+device's (and thus, partition's) lifetime.
 
-> So I don't know where you're claim of being "fragile" is coming from.
-
-It doesn't come from anything you've described so far. It comes from 
-those previous attempts at lifting this limitation.  I think that my 
-proposal is much less fragile than the other ones.
-
-> What is fragile is people wanting to use arm_memblock_steal() without
-> following the rules for it I layed down.
-
-What about enhancing your rules if the technical limitations they were 
-based on are lifted?
-
-
-Nicolas
+Regards,
+Shmulik
