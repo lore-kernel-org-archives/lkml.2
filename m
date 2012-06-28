@@ -1,62 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589Ab2F1QtP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 12:49:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43729 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750769Ab2F1QtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 12:49:14 -0400
-Message-ID: <4FEC8AFB.8060606@redhat.com>
-Date: Thu, 28 Jun 2012 19:48:59 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        yrl.pp-manager.tt@hitachi.com, Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [RFC PATCH 16/18] KVM: add kvm_arch_vcpu_prevent_run to prevent
- VM ENTER when NMI is received
-References: <20120628060719.19298.43879.stgit@localhost.localdomain> <20120628060842.19298.14653.stgit@localhost.localdomain>
-In-Reply-To: <20120628060842.19298.14653.stgit@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
+	id S1755727Ab2F1QvS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 12:51:18 -0400
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:59606 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754026Ab2F1QvQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 12:51:16 -0400
+Date: Thu, 28 Jun 2012 18:51:09 +0200
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v2 1/6] kvm: Pass kvm_irqfd to functions
+Message-ID: <20120628185109.16da81d3@BR9GNB5Z>
+In-Reply-To: <20120628120948.GA13567@redhat.com>
+References: <20120627044758.23698.249.stgit@bling.home>
+	<20120627050858.23698.44118.stgit@bling.home>
+	<20120627162430.3477d0f6@BR9GNB5Z>
+	<20120628083857.GD12447@redhat.com>
+	<20120628110316.0f53a1ef@BR9GNB5Z>
+	<20120628093442.GH12447@redhat.com>
+	<20120628140041.10354331@BR9GNB5Z>
+	<20120628120948.GA13567@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+x-cbid: 12062816-6892-0000-0000-000002466EF9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 09:08 AM, Tomoki Sekiyama wrote:
-> Since NMI can not be disabled around VM enter, there is a race between
-> receiving NMI to kick a guest and entering the guests on slave CPUs.If the
-> NMI is received just before entering VM, after the NMI handler is invoked,
-> it continues entering the guest and the effect of the NMI will be lost.
+On Thu, 28 Jun 2012 15:09:49 +0300
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
+
+> On Thu, Jun 28, 2012 at 02:00:41PM +0200, Cornelia Huck wrote:
+> > On Thu, 28 Jun 2012 12:34:43 +0300
+> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > 
+> > > On Thu, Jun 28, 2012 at 11:03:16AM +0200, Cornelia Huck wrote:
+> > 
+> > > > How about something like this as parameter for the new ioctl?
+> > > > 
+> > > > struct kvm_irqfd2 {
+> > > > 	__u32 fd;
+> > > > 	__u32 flags;  /* for things like deassign */
+> > > > 	__u64 type;   /* determines the payload */
+> > > > 	union {
+> > > > 		/* type traditional */
+> > > > 		struct {
+> > > > 			__u32 gsi;
+> > > > 		} trad;
+> > > > 		/* type s390 */
+> > > > 		struct {
+> > > > 			__u32 int_type;
+> > > > 			__u32 parm;
+> > > > 			__u64 parm64;
+> > > > 		} s390;
+> > > > 		__u8 pad[20];
+> > > > 	};
+> > > > }
+> > > > 
+> > > > This could be combined with an arch or a per-kvm callback to keep the
+> > > > generic code clean of architecture dependencies.
+> > > > 
+> > > > Cornelia
+> > > 
+> > > Looks a bit weird - shouldn't all this be part of gsi routing?
+> > > But no idea really, I don't see the big picture here.
+> > > 
+> > 
+> > Well, on s390 we don't have anything like "gsi routing" (I'm not even
+> > really sure what that is).
 > 
-> This patch adds kvm_arch_vcpu_prevent_run(), which causes VM exit right
-> after VM enter. The NMI handler uses this to ensure the execution of the
-> guest is cancelled after NMI.
+> I really mean kvm_irq_routing. This has options for
+> irqchip, msi, I guess we can add more.
+
+I stared at irq_comm.c for a bit and it seems to fulfill a purpose
+similar to arch/s390/kvm/interrupt.c (although it looks more static).
+But I don't really see how they could fit together easily.
+
 > 
->  
-> +/*
-> + * Make VMRESUME fail using preemption timer with timer value = 0.
-> + * On processors that doesn't support preemption timer, VMRESUME will fail
-> + * by internal error.
-> + */
-> +static void vmx_prevent_run(struct kvm_vcpu *vcpu, int prevent)
-> +{
-> +	if (prevent)
-> +		vmcs_set_bits(PIN_BASED_VM_EXEC_CONTROL,
-> +			      PIN_BASED_PREEMPTION_TIMER);
-> +	else
-> +		vmcs_clear_bits(PIN_BASED_VM_EXEC_CONTROL,
-> +				PIN_BASED_PREEMPTION_TIMER);
-> +}
+> 
+> > My understanding is the following:
+> > 
+> > - Basically, we want to notify the guest for a virtqueue.
+> > - For this, we want to inject an interrupt for the associated device.
+> > - On x86, this means raising an interrupt on an interrupt line, as
+> >   specified by some kind of number.
+> 
+> Not just that: for MSI we pass in data encoding priority
+> destination etc.
+> 
+> > - On s390, we need some more information to (a) identify the device and
+> >   (b) additional information that needs to be transmitted for an
+> >   interrupt (device specific). (This is what basically goes into struct
+> >   kvm_s390_interrupt, which I reproduced in the s390 part.)
+> > 
+> > Cornelia
+> 
+> Is this b mostly static or does it change for each interrupt?
 
-This may interrupt another RMW sequence, which will then overwrite the
-control.  So it needs to be called only if inside the entry sequence
-(otherwise can just set a KVM_REQ_IMMEDIATE_EXIT in vcpu->requests).
+For Linux guests it will be static, although the architecture would
+allow for changing (some of) it.
 
--- 
-error compiling committee.c: too many arguments to function
-
+Cornelia
 
