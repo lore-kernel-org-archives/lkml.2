@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab2F1M5r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 08:57:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25616 "EHLO mx1.redhat.com"
+	id S1755361Ab2F1M5t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 08:57:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13775 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755076Ab2F1M5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 08:57:45 -0400
+	id S1755008Ab2F1M5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 08:57:43 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -27,61 +27,41 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 39/40] autonuma: bugcheck page_autonuma fields on newly allocated pages
-Date: Thu, 28 Jun 2012 14:56:19 +0200
-Message-Id: <1340888180-15355-40-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 02/40] autonuma: make set_pmd_at always available
+Date: Thu, 28 Jun 2012 14:55:42 +0200
+Message-Id: <1340888180-15355-3-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Debug tweak.
+set_pmd_at() will also be used for the knuma_scand/pmd = 1 (default)
+mode even when TRANSPARENT_HUGEPAGE=n. Make it available so the build
+won't fail.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- include/linux/autonuma.h |   11 +++++++++++
- mm/page_alloc.c          |    1 +
- 2 files changed, 12 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/paravirt.h |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/autonuma.h b/include/linux/autonuma.h
-index 67af86a..05bd8c1 100644
---- a/include/linux/autonuma.h
-+++ b/include/linux/autonuma.h
-@@ -29,6 +29,16 @@ static inline void autonuma_free_page(struct page *page)
- 	}
+diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+index 6cbbabf..e99fb37 100644
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -564,7 +564,6 @@ static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
+ 		PVOP_VCALL4(pv_mmu_ops.set_pte_at, mm, addr, ptep, pte.pte);
  }
  
-+static inline void autonuma_check_new_page(struct page *page)
-+{
-+	struct page_autonuma *page_autonuma;
-+	if (!autonuma_impossible()) {
-+		page_autonuma = lookup_page_autonuma(page);
-+		BUG_ON(page_autonuma->autonuma_migrate_nid != -1);
-+		BUG_ON(page_autonuma->autonuma_last_nid != -1);
-+	}
-+}
-+
- #define autonuma_printk(format, args...) \
- 	if (autonuma_debug()) printk(format, ##args)
- 
-@@ -41,6 +51,7 @@ static inline void autonuma_migrate_split_huge_page(struct page *page,
- 						    struct page *page_tail) {}
- static inline void autonuma_setup_new_exec(struct task_struct *p) {}
- static inline void autonuma_free_page(struct page *page) {}
-+static inline void autonuma_check_new_page(struct page *page) {}
- 
- #endif /* CONFIG_AUTONUMA */
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 2d53a1f..5943ed2 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -833,6 +833,7 @@ static inline int check_new_page(struct page *page)
- 		bad_page(page);
- 		return 1;
- 	}
-+	autonuma_check_new_page(page);
- 	return 0;
+-#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ static inline void set_pmd_at(struct mm_struct *mm, unsigned long addr,
+ 			      pmd_t *pmdp, pmd_t pmd)
+ {
+@@ -575,7 +574,6 @@ static inline void set_pmd_at(struct mm_struct *mm, unsigned long addr,
+ 		PVOP_VCALL4(pv_mmu_ops.set_pmd_at, mm, addr, pmdp,
+ 			    native_pmd_val(pmd));
  }
+-#endif
  
+ static inline void set_pmd(pmd_t *pmdp, pmd_t pmd)
+ {
