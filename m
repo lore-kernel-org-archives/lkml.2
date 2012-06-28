@@ -1,95 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758018Ab2F1B7Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jun 2012 21:59:24 -0400
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:34239 "EHLO
-	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753821Ab2F1B7W (ORCPT
+	id S932282Ab2F1CAA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jun 2012 22:00:00 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44208 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754206Ab2F1B76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jun 2012 21:59:22 -0400
-Date: Thu, 28 Jun 2012 10:59:12 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: avi@redhat.com, mtosatti@redhat.com
-Cc: agraf@suse.de, paulus@samba.org, aarcange@redhat.com, kvm@vger.kernel.org,
-        kvm-ppc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        takuya.yoshikawa@gmail.com
-Subject: [PATCH 2/6] KVM: Introduce hva_to_gfn_memslot() for
- kvm_handle_hva()
-Message-Id: <20120628105912.2d0a4c4b.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <20120628105733.ccd9abb3.yoshikawa.takuya@oss.ntt.co.jp>
-References: <20120628105733.ccd9abb3.yoshikawa.takuya@oss.ntt.co.jp>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Jun 2012 21:59:58 -0400
+X-AuditID: 9c930179-b7cceae000004195-54-4febba999418
+From: Namhyung Kim <namhyung@kernel.org>
+To: Hitoshi Mitake <h.mitake@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf tools: Fix an error on perf-bench document
+References: <1339944948-3193-1-git-send-email-namhyung@kernel.org>
+	<20120618090501.GB28824@gmail.com> <87mx3zhekz.fsf@sejong.aot.lge.com>
+	<CAMO-S2jPvVZndo3_cM67ZvXXV5y5CKvxe-x6YGfguq3w9mVbAg@mail.gmail.com>
+	<CAMO-S2j74+=9QJ40-=3Zj9a2M2wnCC474vsm216GP-BB9OWbsg@mail.gmail.com>
+Date: Thu, 28 Jun 2012 10:56:04 +0900
+In-Reply-To: <CAMO-S2j74+=9QJ40-=3Zj9a2M2wnCC474vsm216GP-BB9OWbsg@mail.gmail.com>
+	(Hitoshi Mitake's message of "Wed, 27 Jun 2012 23:28:22 +0900")
+Message-ID: <87395gyzbf.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This restricts hva handling in mmu code and makes it easier to extend
-kvm_handle_hva() so that it can treat a range of addresses later in this
-patch series.
+On Wed, 27 Jun 2012 23:28:22 +0900, Hitoshi Mitake wrote:
+> I wrote the simple fix for eliminatng wrong usage of "clock":
+> https://github.com/mitake/linux/commit/b7836d41deff430c16058ca729120dccfa41e74e
+>
+> This patch assumes the change made by the Namhyung's patch. So I'm
+> planning to send this after the Namhyung's patch is applied to tip
+> tree. Or should the patches be unified before applied?
 
-Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Cc: Alexander Graf <agraf@suse.de>
-Cc: Paul Mackerras <paulus@samba.org>
----
- arch/powerpc/kvm/book3s_64_mmu_hv.c |    6 +++---
- arch/x86/kvm/mmu.c                  |    3 +--
- include/linux/kvm_host.h            |    8 ++++++++
- 3 files changed, 12 insertions(+), 5 deletions(-)
+The patch is now in Arnaldo's tree. So you can see it in tip tree soon
+unless something bad happens.
 
-diff --git a/arch/powerpc/kvm/book3s_64_mmu_hv.c b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-index d03eb6f..3703755 100644
---- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
-+++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-@@ -772,10 +772,10 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
- 
- 		end = start + (memslot->npages << PAGE_SHIFT);
- 		if (hva >= start && hva < end) {
--			gfn_t gfn_offset = (hva - start) >> PAGE_SHIFT;
-+			gfn_t gfn = hva_to_gfn_memslot(hva, memslot);
-+			gfn_t gfn_offset = gfn - memslot->base_gfn;
- 
--			ret = handler(kvm, &memslot->rmap[gfn_offset],
--				      memslot->base_gfn + gfn_offset);
-+			ret = handler(kvm, &memslot->rmap[gfn_offset], gfn);
- 			retval |= ret;
- 		}
- 	}
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index d3e7e6a..b898bec 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1202,8 +1202,7 @@ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
- 
- 		end = start + (memslot->npages << PAGE_SHIFT);
- 		if (hva >= start && hva < end) {
--			gfn_t gfn_offset = (hva - start) >> PAGE_SHIFT;
--			gfn_t gfn = memslot->base_gfn + gfn_offset;
-+			gfn_t gfn = hva_to_gfn_memslot(hva, memslot);
- 
- 			ret = 0;
- 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index c7f7787..c0dd2e9 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -740,6 +740,14 @@ static inline gfn_t gfn_to_index(gfn_t gfn, gfn_t base_gfn, int level)
- 		(base_gfn >> KVM_HPAGE_GFN_SHIFT(level));
- }
- 
-+static inline gfn_t
-+hva_to_gfn_memslot(unsigned long hva, struct kvm_memory_slot *slot)
-+{
-+	gfn_t gfn_offset = (hva - slot->userspace_addr) >> PAGE_SHIFT;
-+
-+	return slot->base_gfn + gfn_offset;
-+}
-+
- static inline unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot,
- 					       gfn_t gfn)
- {
--- 
-1.7.5.4
+Anyway, looking at your commit (I think it's better just to send it via
+email with mentioning the dependency), it seems only addresses memset
+part but I think memcpy has the same problem, right?
 
+Thanks,
+Namhyung
