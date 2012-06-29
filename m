@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160Ab2F2PjA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 11:39:00 -0400
-Received: from zimbra.linbit.com ([212.69.161.123]:59312 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557Ab2F2Pi6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 11:38:58 -0400
-Message-ID: <1340984335.25450.24.camel@gurkel.linbit>
-Subject: Re: [RFC] [TCP 1/3] tcp: Add MSG_NEW_PACKET flag to indicate
- preferable packet boundaries
-From: Andreas Gruenbacher <agruen@linbit.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Fri, 29 Jun 2012 17:38:55 +0200
-In-Reply-To: <1340982666.21162.3.camel@edumazet-glaptop>
-References: <1340981690.25226.3.camel@gurkel.linbit>
-	 <1340982666.21162.3.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932204Ab2F2PjG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 11:39:06 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29455 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932118Ab2F2Pi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 11:38:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="186647439"
+Date: Fri, 29 Jun 2012 17:50:08 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com, patches@linaro.org
+Subject: Re: [PATCH 1/1] mfd: max8997: Add missing static storage class
+ specifier
+Message-ID: <20120629155008.GO22806@sortiz-mobl>
+References: <1338808147-1862-1-git-send-email-sachin.kamat@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338808147-1862-1-git-send-email-sachin.kamat@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-29 at 17:11 +0200, Eric Dumazet wrote:
-> On Fri, 2012-06-29 at 16:54 +0200, Andreas Gruenbacher wrote:
-> > The MSG_NEW_PACKET flag indicates to sendmsg / sendpage that the message or
-> > page should be put into a new packet even when there is still room left in the
-> > previous packet.
-> > 
-> > In the tcp protocol, messages which are not sent immediately are queued.  When
-> > more data is sent, it will be added to the last segment in that queue until
-> > that segment is "full" whenever possible; only then is a new segment added.
-> > Right now, there is no way to indicate when tcp should start a new segment.
-> > The new flag allows to control that.
-> > 
-> > Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
-> > ---
+Hi Sachin
+
+On Mon, Jun 04, 2012 at 04:39:07PM +0530, Sachin Kamat wrote:
+> Fixes the following sparse warnings:
+> drivers/mfd/max8997.c:209:4: warning: symbol 'max8997_dumpaddr_pmic' was not declared. Should it be static?
+> drivers/mfd/max8997.c:334:4: warning: symbol 'max8997_dumpaddr_muic' was not declared. Should it be static?
+> drivers/mfd/max8997.c:344:4: warning: symbol 'max8997_dumpaddr_haptic' was not declared. Should it be static?
+> drivers/mfd/max8997.c:426:25: warning: symbol 'max8997_pm' was not declared. Should it be static?
 > 
-> I don't understand how maintaining any message boundaries at sender can
-> prevent any middlebox or the receiver to coalesce frames to any
-> boundaries it prefers ?
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
+>  drivers/mfd/max8997.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+Patch applied, thanks.
 
-The primary use case is fast Gigabit (10 or more) Ethernet connections
-with jumbo frames and switches that support them.  There, frames will go
-through unchanged and you can zero-copy receive all the time.
+Cheers,
+Samuel.
 
-Not sure how well the approach scales to other kinds of connections; it
-may work often enough to be worth it.  When things get distorted between
-the sender and the receiver and tcp_recvbio() fails, the data can still
-be copied out of the socket as before.
-
-Andreas
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
