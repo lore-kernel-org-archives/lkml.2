@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732Ab2F2Gor (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 02:44:47 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:17826 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab2F2Gop (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 02:44:45 -0400
-Date: Fri, 29 Jun 2012 09:44:32 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Robin Holt <holt@sgi.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Jack Steiner <steiner@sgi.com>
-Subject: Re: [patch] sgi-xp: nested calls to spin_lock_irqsave()
-Message-ID: <20120629064432.GM3007@mwanda>
-References: <20120627135155.GA3464@sgi.com>
- <20120628150342.aaa4ad2d.akpm@linux-foundation.org>
+	id S1751856Ab2F2Gq0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 02:46:26 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:58844 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751210Ab2F2GqY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 02:46:24 -0400
+From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Per ELLEFSEN <per.ellefsen@stericsson.com>,
+        Kim LILLIESTIERNA <kim.xx.lilliestierna@stericsson.com>
+Date: Fri, 29 Jun 2012 08:46:04 +0200
+Subject: RE: linux-next: manual merge of the net-next tree with the net tree
+Thread-Topic: linux-next: manual merge of the net-next tree with the net tree
+Thread-Index: Ac1TUYw0XNIkDhiOQU24vnH40OO88QCcN0xg
+Message-ID: <81C3A93C17462B4BBD7E272753C10579232F86B36C@EXDCVYMBSTM005.EQ1STM.local>
+References: <20120626131543.21e4338894b19f5e02f8bdde@canb.auug.org.au>
+In-Reply-To: <20120626131543.21e4338894b19f5e02f8bdde@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120628150342.aaa4ad2d.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is actually my patch, so the patch description is my fault.
-It's a static checker patch and I don't have the hardware, but the
-changelog could have been written more clearly as well.
+Hi Stephen,
 
-Robin, the trick to resending patches is to put a:
+> Today's linux-next merge of the net-next tree got a conflict in
+> drivers/net/caif/caif_hsi.c between commits 3935600a7f34 ("caif-hsi:
+> Bugfix - Piggyback'ed embedded CAIF frame lost") and 1fdc7630b2cb
+> ("caif-hsi: Add missing return in error path") from the net tree and
+> commits 4e7bb59d49fb ("caif-hsi: Removed dead code") and c41254006377
+> ("caif-hsi: Add rtnl support") from the net-next tree.
+> 
+> I fixed them up (see below) and can carry the fix as necessary.
 
-From:  Dan Carpenter <dan.carpenter@oracle.com>
+Sorry for late response. Your merge looks perfect.
 
-before the patch description and then it shows up as mine.
-
-Also, btw, Robin, I'm looking through my mailbox again and you did
-respond to the patch the first time I sent it.  Sorry, that I didn't
-see that before, and thanks for your help on this.
-
-regards,
-dan carpenter
-
+Thanks,
+Sjur
