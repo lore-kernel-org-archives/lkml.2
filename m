@@ -1,373 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab2F2VZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 17:25:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40985 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753515Ab2F2VZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 17:25:41 -0400
-Date: Sat, 30 Jun 2012 07:25:19 +1000
-From: NeilBrown <neilb@suse.de>
-To: Andrew Boie <andrew.p.boie@intel.com>
-Cc: gregkh@linuxfoundation.org, ccross@android.com, arve@android.com,
-        rebecca@android.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bcb: Android bootloader control block driver
-Message-ID: <20120630072519.71835f43@notabene.brown>
-In-Reply-To: <1340998590-23042-1-git-send-email-andrew.p.boie@intel.com>
-References: <1340998590-23042-1-git-send-email-andrew.p.boie@intel.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/.iVllnukMhZR.Hj7WeNKNbj"; protocol="application/pgp-signature"
+	id S1755959Ab2F2V1Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 17:27:16 -0400
+Received: from mail-yw0-f42.google.com ([209.85.213.42]:61959 "EHLO
+	mail-yw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab2F2V1O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 17:27:14 -0400
+Message-ID: <4FEE1DAE.10509@lwfinger.net>
+Date: Fri, 29 Jun 2012 16:27:10 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: netdev <netdev@vger.kernel.org>, wireless <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Kernel oops in at76c50x-usb
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/.iVllnukMhZR.Hj7WeNKNbj
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Johannes,
 
-On Fri, 29 Jun 2012 12:36:30 -0700 Andrew Boie <andrew.p.boie@intel.com>
-wrote:
+This particular oops is seen for at76c50x-usb on a PPC, but I have seen a 
+similar oops for b43legacy, and i thought there was one earlier in the wireless 
+ML, but I could not find it just now.
 
-> Android userspace tells the kernel that it wants to boot into recovery
-> or some other non-default OS environment by passing a string argument
-> to reboot(). It is left to the OEM to hook this up to their specific
-> bootloader.
->=20
-> This driver uses the bootloader control block (BCB) in the 'misc'
-> partition, which is the AOSP mechanism used to communicate with
-> the bootloader. Writing 'bootonce-NNN' to the command field
-> will cause the bootloader to do a oneshot boot into an alternate
-> boot label NNN if it exists. The device and partition number are
-> passed in via kernel command line.
->=20
-> It is the bootloader's job to guard against this area being uninitialzed
-> or containing an invalid boot label, and just boot normally if that
-> is the case. The bootloader will always populate a magic signature in
-> the BCB; the driver will refuse to update it if not present.
->=20
-> Signed-off-by: Andrew Boie <andrew.p.boie@intel.com>
+This particular oops does not always occur. Usually, the machine just freezes.
 
-Maybe I'm missing something obvious, but why does this need to be implement=
-ed
-in the kernel?  Can't some user-space process just write to that partition
-using open/read/seek/write/close before calling 'reboot'.
+The dmesg dump is:
+
+=============================================================
+
+[  156.231550] Unable to handle kernel paging request for data at address 0x0000004c
+[  156.231571] Faulting instruction address: 0xc0342e98
+[  156.231594] Oops: Kernel access of bad area, sig: 11 [#1]
+[  156.231599] PowerMac
+[  156.231692] Modules linked in: at76c50x_usb nfs lockd fscache auth_rpcgss 
+nfs_acl sunrpc uinput cpufreq_userspace cpufreq_conservative cpufreq_ondemand 
+cpufreq_stats cpufreq_powersave bluetooth fuse loop firewire_sbp2 arc4 b43 
+mac80211 cfg80211 rfkill rng_core ssb mmc_core pcmcia evdev yenta_socket 
+pcmcia_rsrc pcmcia_core ext4 mbcache jbd2 crc16 ohci_hcd ehci_hcd usbcore 
+firewire_ohci sungem firewire_core sungem_phy crc_itu_t sr_mod cdrom usb_common 
+nls_base [last unloaded: scsi_wait_scan]
+[  156.231703] NIP: c0342e98 LR: e25121ac CTR: c0342e80
+[  156.231715] REGS: df869e00 TRAP: 0300   Not tainted  (3.5.0-rc4-wl+)
+[  156.231732] MSR: 00001032 <ME,IR,DR,RI>  CR: 42000042  XER: 20000000
+[  156.231738] DAR: 0000004c, DSISR: 40000000
+[  156.231804] TASK = df859b00[5] 'kworker/u:0' THREAD: df868000
+[  156.231804] GPR00: e25121ac df869eb0 df859b00 00000000 df858db0 df858db0 
+1d0be361 00000000
+[  156.231804] GPR08: 00000000 00000001 73635f72 0000004c c0342e80 00000000 
+018bd137 0197dda0
+[  156.231804] GPR16: 018bd55a 0196ecb8 018ee7d4 018bd538 ffbc1280 018bcd5b 
+00000001 c05830d4
+[  156.231804] GPR24: c05e46d8 00000000 00000001 00000001 de8cd460 debde9c8 
+df869ec8 debde300
+[  156.231840] NIP [c0342e98] __netif_schedule+0x18/0x78
+[  156.231967] LR [e25121ac] ieee80211_propagate_queue_wake+0x100/0x14c [mac80211]
+[  156.231972] Call Trace:
+[  156.231986] [df869eb0] [c0342ee0] __netif_schedule+0x60/0x78 (unreliable)
+[  156.232025] [df869ec0] [e25121ac] ieee80211_propagate_queue_wake+0x100/0x14c 
+[mac80211]
+[  156.232065] [df869f00] [e25123bc] ieee80211_wake_queues_by_reason+0x3c/0x7c 
+[mac80211]
+[  156.232096] [df869f20] [e29a2178] at76_dwork_hw_scan+0x184/0x1a8 [at76c50x_usb]
+[  156.232123] [df869f50] [c0057d04] process_one_work+0x2a4/0x45c
+[  156.232136] [df869f80] [c0058358] worker_thread+0x244/0x3d4
+[  156.232153] [df869fb0] [c005d168] kthread+0x88/0x8c
+[  156.232174] [df869ff0] [c000fa58] kernel_thread+0x4c/0x68
+[  156.232180] Instruction dump:
+[  156.232200] 83810010 83a10014 83c10018 83e1001c 38210020 4e800020 9421fff0 
+7c0802a6
+[  156.232219] 3963004c 39200001 90010014 93e1000c <7c005828> 7c0a4b78 7d40592d 
+40a2fff4
+[  156.232232] ---[ end trace 11d3cd4cb4a4faf3 ]---
+[  156.232236]
+[  156.232401] Unable to handle kernel paging request for data at address 0xfffffffc
+[  156.232411] Faulting instruction address: 0xc005cb48
+
+=============================================================
+The objdump listing and the source for the routine in question follows:
+
+=============================================================
+
+00001600 <__netif_schedule>:
+__netif_schedule():
+     1600:       94 21 ff f0     stwu    r1,-16(r1)
+     1604:       7c 08 02 a6     mflr    r0
+     1608:       39 63 00 4c     addi    r11,r3,76
+     160c:       39 20 00 01     li      r9,1
+     1610:       90 01 00 14     stw     r0,20(r1)
+     1614:       93 e1 00 0c     stw     r31,12(r1)
+     1618:       7c 00 58 28     lwarx   r0,0,r11
+     161c:       7c 0a 4b 78     or      r10,r0,r9
+     1620:       7d 40 59 2d     stwcx.  r10,0,r11
+     1624:       40 a2 ff f4     bne-    1618 <__netif_schedule+0x18>
+     1628:       70 00 00 01     andi.   r0,r0,1
+     162c:       40 a2 00 38     bne+    1664 <__netif_schedule+0x64>
+     1630:       7f e0 00 a6     mfmsr   r31
+     1634:       57 e9 04 5e     rlwinm  r9,r31,0,17,15
+     1638:       7d 20 01 24     mtmsr   r9
+     163c:       90 03 00 44     stw     r0,68(r3)
+     1640:       3d 20 00 00     lis     r9,0
+     1644:       38 03 00 44     addi    r0,r3,68
+     1648:       39 29 00 00     addi    r9,r9,0
+     164c:       81 69 00 04     lwz     r11,4(r9)
+     1650:       90 6b 00 00     stw     r3,0(r11)
+     1654:       38 60 00 02     li      r3,2
+     1658:       90 09 00 04     stw     r0,4(r9)
+     165c:       48 00 00 01     bl      165c <__netif_schedule+0x5c>
+     1660:       7f e0 01 24     mtmsr   r31
+     1664:       80 01 00 14     lwz     r0,20(r1)
+     1668:       83 e1 00 0c     lwz     r31,12(r1)
+     166c:       38 21 00 10     addi    r1,r1,16
+     1670:       7c 08 03 a6     mtlr    r0
+     1674:       4e 80 00 20     blr
+
+static inline void __netif_reschedule(struct Qdisc *q)
+{
+         struct softnet_data *sd;
+         unsigned long flags;
+
+         local_irq_save(flags);
+         sd = &__get_cpu_var(softnet_data);
+         q->next_sched = NULL;
+         *sd->output_queue_tailp = q;
+         sd->output_queue_tailp = &q->next_sched;
+         raise_softirq_irqoff(NET_TX_SOFTIRQ);
+         local_irq_restore(flags);
+}
+
+void __netif_schedule(struct Qdisc *q)
+{
+         if (!test_and_set_bit(__QDISC_STATE_SCHED, &q->state))
+                 __netif_reschedule(q);
+}
+EXPORT_SYMBOL(__netif_schedule);
+
+===================================================
+
+
+My PPC instruction decoding skills are poor, but I think the crash is happening 
+at offset 1660. In addition, the routine is about to exit.
 
 Thanks,
-NeilBrown
 
-
-
-> ---
->  drivers/staging/android/Kconfig  |   11 ++
->  drivers/staging/android/Makefile |    1 +
->  drivers/staging/android/bcb.c    |  232 ++++++++++++++++++++++++++++++++=
-++++++
->  3 files changed, 244 insertions(+)
->  create mode 100644 drivers/staging/android/bcb.c
->=20
-> diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kc=
-onfig
-> index 9a99238..c30fd20 100644
-> --- a/drivers/staging/android/Kconfig
-> +++ b/drivers/staging/android/Kconfig
-> @@ -78,6 +78,17 @@ config ANDROID_INTF_ALARM_DEV
->  	  elapsed realtime, and a non-wakeup alarm on the monotonic clock.
->  	  Also exports the alarm interface to user-space.
-> =20
-> +config BOOTLOADER_CONTROL
-> +	tristate "Bootloader Control Block module"
-> +	default n
-> +	help
-> +	  This driver installs a reboot hook, such that if reboot() is invoked
-> +	  with a string argument NNN, "bootonce-NNN" is copied to the command
-> +	  field in the Bootloader Control Block on the /misc partition, to be
-> +	  read by the bootloader. If the string matches one of the boot labels
-> +	  defined in its configuration, it will boot once into that label. The
-> +	  device and partition number are specified on the kernel command line.
-> +
->  endif # if ANDROID
-> =20
->  endmenu
-> diff --git a/drivers/staging/android/Makefile b/drivers/staging/android/M=
-akefile
-> index 8e18d4e..a27707f 100644
-> --- a/drivers/staging/android/Makefile
-> +++ b/drivers/staging/android/Makefile
-> @@ -9,5 +9,6 @@ obj-$(CONFIG_ANDROID_LOW_MEMORY_KILLER)	+=3D lowmemorykil=
-ler.o
->  obj-$(CONFIG_ANDROID_SWITCH)		+=3D switch/
->  obj-$(CONFIG_ANDROID_INTF_ALARM_DEV)	+=3D alarm-dev.o
->  obj-$(CONFIG_PERSISTENT_TRACER)		+=3D trace_persistent.o
-> +obj-$(CONFIG_BOOTLOADER_CONTROL)	+=3D bcb.o
-> =20
->  CFLAGS_REMOVE_trace_persistent.o =3D -pg
-> diff --git a/drivers/staging/android/bcb.c b/drivers/staging/android/bcb.c
-> new file mode 100644
-> index 0000000..af75257
-> --- /dev/null
-> +++ b/drivers/staging/android/bcb.c
-> @@ -0,0 +1,232 @@
-> +/*
-> + * bcb.c: Reboot hook to write bootloader commands to
-> + *        the Android bootloader control block
-> + *
-> + * (C) Copyright 2012 Intel Corporation
-> + * Author: Andrew Boie <andrew.p.boie@intel.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; version 2
-> + * of the License.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/moduleparam.h>
-> +#include <linux/blkdev.h>
-> +#include <linux/reboot.h>
-> +
-> +#define BCB_MAGIC	0xFEEDFACE
-> +
-> +/* Persistent area written by Android recovery console and Linux bcb dri=
-ver
-> + * reboot hook for communication with the bootloader. Bootloader must
-> + * gracefully handle this area being unitinitailzed */
-> +struct bootloader_message {
-> +	/* Directive to the bootloader on what it needs to do next.
-> +	 * Possible values:
-> +	 *   boot-NNN - Automatically boot into label NNN
-> +	 *   bootonce-NNN - Automatically boot into label NNN, clearing this
-> +	 *     field afterwards
-> +	 *   anything else / garbage - Boot default label */
-> +	char command[32];
-> +
-> +	/* Storage area for error codes when using the BCB to boot into special
-> +	 * boot targets, e.g. for baseband update. Not used here. */
-> +	char status[32];
-> +
-> +	/* Area for recovery console to stash its command line arguments
-> +	 * in case it is reset and the cache command file is erased.
-> +	 * Not used here. */
-> +	char recovery[1024];
-> +
-> +	/* Magic sentinel value written by the bootloader; don't update this
-> +	 * if not equalto to BCB_MAGIC */
-> +	uint32_t magic;
-> +};
-> +
-> +/* TODO: device names/partition numbers are unstable. Add support for lo=
-oking
-> + * by GPT partition UUIDs */
-> +static char *bootdev =3D "sda";
-> +module_param(bootdev, charp, S_IRUGO);
-> +MODULE_PARM_DESC(bootdev, "Block device for bootloader communication");
-> +
-> +static int partno;
-> +module_param(partno, int, S_IRUGO);
-> +MODULE_PARM_DESC(partno, "Partition number for bootloader communication"=
-);
-> +
-> +static int device_match(struct device *dev, void *data)
-> +{
-> +	if (strcmp(dev_name(dev), bootdev) =3D=3D 0)
-> +		return 1;
-> +	return 0;
-> +}
-> +
-> +static struct block_device *get_emmc_bdev(void)
-> +{
-> +	struct block_device *bdev;
-> +	struct device *disk_device;
-> +
-> +	disk_device =3D class_find_device(&block_class, NULL, NULL, device_matc=
-h);
-> +	if (!disk_device) {
-> +		pr_err("bcb: device %s not found!\n", bootdev);
-> +		return NULL;
-> +	}
-> +	bdev =3D bdget_disk(dev_to_disk(disk_device), partno);
-> +	if (!bdev) {
-> +		dev_err(disk_device, "bcb: unable to get disk (%s,%d)\n",
-> +				bootdev, partno);
-> +		return NULL;
-> +	}
-> +	/* Note: this bdev ref will be freed after first
-> +	   bdev_get/bdev_put cycle */
-> +	return bdev;
-> +}
-> +
-> +static u64 last_lba(struct block_device *bdev)
-> +{
-> +	if (!bdev || !bdev->bd_inode)
-> +		return 0;
-> +	return div_u64(bdev->bd_inode->i_size,
-> +		       bdev_logical_block_size(bdev)) - 1ULL;
-> +}
-> +
-> +static size_t read_lba(struct block_device *bdev,
-> +		       u64 lba, u8 *buffer, size_t count)
-> +{
-> +	size_t totalreadcount =3D 0;
-> +	sector_t n =3D lba * (bdev_logical_block_size(bdev) / 512);
-> +
-> +	if (!buffer || lba > last_lba(bdev))
-> +		return 0;
-> +
-> +	while (count) {
-> +		int copied =3D 512;
-> +		Sector sect;
-> +		unsigned char *data =3D read_dev_sector(bdev, n++, &sect);
-> +		if (!data)
-> +			break;
-> +		if (copied > count)
-> +			copied =3D count;
-> +		memcpy(buffer, data, copied);
-> +		put_dev_sector(sect);
-> +		buffer +=3D copied;
-> +		totalreadcount +=3D copied;
-> +		count -=3D copied;
-> +	}
-> +	return totalreadcount;
-> +}
-> +
-> +static size_t write_lba(struct block_device *bdev,
-> +		       u64 lba, u8 *buffer, size_t count)
-> +{
-> +	size_t totalwritecount =3D 0;
-> +	sector_t n =3D lba * (bdev_logical_block_size(bdev) / 512);
-> +
-> +	if (!buffer || lba > last_lba(bdev))
-> +		return 0;
-> +
-> +	while (count) {
-> +		int copied =3D 512;
-> +		Sector sect;
-> +		unsigned char *data =3D read_dev_sector(bdev, n++, &sect);
-> +		if (!data)
-> +			break;
-> +		if (copied > count)
-> +			copied =3D count;
-> +		memcpy(data, buffer, copied);
-> +		set_page_dirty(sect.v);
-> +		unlock_page(sect.v);
-> +		put_dev_sector(sect);
-> +		buffer +=3D copied;
-> +		totalwritecount +=3D copied;
-> +		count -=3D copied;
-> +	}
-> +	sync_blockdev(bdev);
-> +	return totalwritecount;
-> +}
-> +
-> +static int bcb_reboot_notifier_call(
-> +		struct notifier_block *notifier,
-> +		unsigned long what, void *data)
-> +{
-> +	int ret =3D NOTIFY_DONE;
-> +	char *cmd =3D (char *)data;
-> +	struct block_device *bdev =3D NULL;
-> +	struct bootloader_message *bcb =3D NULL;
-> +
-> +	if (what !=3D SYS_RESTART || !data)
-> +		goto out;
-> +
-> +	bdev =3D get_emmc_bdev();
-> +	if (!bdev)
-> +		goto out;
-> +
-> +	/* make sure the block device is open rw */
-> +	if (blkdev_get(bdev, FMODE_READ | FMODE_WRITE, NULL) < 0) {
-> +		pr_err("bcb: blk_dev_get failed!\n");
-> +		goto out;
-> +	}
-> +
-> +	bcb =3D kmalloc(sizeof(*bcb), GFP_KERNEL);
-> +	if (!bcb) {
-> +		pr_err("bcb: out of memory\n");
-> +		goto out;
-> +	}
-> +
-> +	if (read_lba(bdev, 0, (u8 *)bcb, sizeof(*bcb)) !=3D sizeof(*bcb)) {
-> +		pr_err("bcb: couldn't read bootloader control block\n");
-> +		goto out;
-> +	}
-> +
-> +	if (bcb->magic !=3D BCB_MAGIC) {
-> +		pr_err("bcb: bootloader control block corrupted, not writing\n");
-> +		goto out;
-> +	}
-> +
-> +	/* When the bootloader reads this area, it will null-terminate it
-> +	* and check if it matches any existing boot labels */
-> +	snprintf(bcb->command, sizeof(bcb->command), "bootonce-%s", cmd);
-> +
-> +	if (write_lba(bdev, 0, (u8 *)bcb, sizeof(*bcb)) !=3D sizeof(*bcb)) {
-> +		pr_err("bcb: couldn't write bootloader control block\n");
-> +		goto out;
-> +	}
-> +
-> +	ret =3D NOTIFY_OK;
-> +out:
-> +	kfree(bcb);
-> +	if (bdev)
-> +		blkdev_put(bdev, FMODE_READ | FMODE_WRITE);
-> +
-> +	return ret;
-> +}
-> +
-> +static struct notifier_block bcb_reboot_notifier =3D {
-> +	.notifier_call =3D bcb_reboot_notifier_call,
-> +};
-> +
-> +static int __init bcb_init(void)
-> +{
-> +	if (partno < 1) {
-> +		pr_err("bcb: partition number not specified\n");
-> +		return -1;
-> +	}
-> +	if (register_reboot_notifier(&bcb_reboot_notifier)) {
-> +		pr_err("bcb: unable to register reboot notifier\n");
-> +		return -1;
-> +	}
-> +	pr_info("bcb: writing commands to (%s,%d)\n",
-> +			bootdev, partno);
-> +	return 0;
-> +}
-> +module_init(bcb_init);
-> +
-> +static void __exit bcb_exit(void)
-> +{
-> +	unregister_reboot_notifier(&bcb_reboot_notifier);
-> +}
-> +module_exit(bcb_exit);
-> +
-> +MODULE_AUTHOR("Andrew Boie <andrew.p.boie@intel.com>");
-> +MODULE_DESCRIPTION("bootloader communication module");
-> +MODULE_LICENSE("GPL v2");
-
-
---Sig_/.iVllnukMhZR.Hj7WeNKNbj
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT+4dPznsnt1WYoG5AQKayw//bLpknvsmu6WUh7nVlSRCM1BcplWNukUk
-ToqS6HABfoZeGbE7ahf0Ecdtdrkp57fQV+GLBBlxGvWH9sAcCnybayli67qYtJ4U
-xbaq+NZJha9cq1IWO0LS/zyDDOaPtTUaE+TtqVSCnVNithHcUbZ9MDgk9Uzr0Gfh
-OSEO3aei+nT+sEPKV+kU9h576wDBzhy6RuzRNnMHLK54WTj1fmZKAoUohYc574hn
-tu3YTBUyoOJSIwctyrphVtJCZgKb9HdJ+mVa7TOA6p7h8Zi290ZHJMaRnFi4loaE
-X8Uk5VAhCOYksKLEWVdR/9dcNCTFKa6HQkIfJlJJ5pXz3OkIO+ReHdveK8xqc4ft
-f4wQLUPZx2flcLFewYoVaBAD8y5mBE9Va3OcEIOu8hp6j6dmptYKT9LdxeK9nBma
-Jk8rpx5DUmPetSlFLEKnpBDpFNkmhdDER2EZyJXHWKkD/T23oCVF6G+9LYE/2CJe
-GcLhCCH9QfZlM3o0zoxshHNH+F5Q78uTZCcnFOZnoR852cej4dDq6VFqYG5b7hd4
-gdVHJ0bzCD+FjFAnW5uQ6ud1TmCV6eLHhFrfEAm22PfyNAzh0bL9v2mwGV6VW76Z
-2n5Q2XMDXYlIXPlz34TYxpIFmAOJCGnuJT/fcpGEL2f49NjZz2Qcn1wMG122omol
-Zng/XV0thaE=
-=tFvY
------END PGP SIGNATURE-----
-
---Sig_/.iVllnukMhZR.Hj7WeNKNbj--
+Larry
