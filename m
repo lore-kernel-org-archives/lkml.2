@@ -1,63 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685Ab2F2HZG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 03:25:06 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:47556 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806Ab2F2HZE (ORCPT
+	id S1751664Ab2F2HaC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 03:30:02 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:53962 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab2F2HaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 03:25:04 -0400
-Date: Fri, 29 Jun 2012 10:24:41 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Zoltan Kelemen <zoltan@digisec.se>
-Cc: willy@meta-x.org, gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] staging:panel: Rewrite for fixing synchronization
- issues
-Message-ID: <20120629072441.GN5333@mwanda>
-References: <4FECC539.8040303@digisec.se>
+	Fri, 29 Jun 2012 03:30:00 -0400
+X-AuditID: 9c93016f-b7c85ae00000559e-2b-4fed596ff58d
+From: Namhyung Kim <namhyung@kernel.org>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Subject: Re: [PATCH 09/16] sched: normalize tg load contributions against runnable time
+References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
+	<20120628022414.30496.11931.stgit@kitami.mtv.corp.google.com>
+Date: Fri, 29 Jun 2012 16:26:05 +0900
+In-Reply-To: <20120628022414.30496.11931.stgit@kitami.mtv.corp.google.com>
+	(Paul Turner's message of "Wed, 27 Jun 2012 19:24:14 -0700")
+Message-ID: <87txxuwpde.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FECC539.8040303@digisec.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 10:57:29PM +0200, Zoltan Kelemen wrote:
+On Wed, 27 Jun 2012 19:24:14 -0700, Paul Turner wrote:
+> Entities of equal weight should receive equitable distribution of cpu time.
+> This is challenging in the case of a task_group's shares as execution may be
+> occurring on multiple cpus simultaneously.
+>
+> To handle this we divide up the shares into weights proportionate with the load
+> on each cfs_rq.  This does not however, account for the fact that the sum of
+> the parts may be less than one cpu and so we need to normalize:
+>   load(tg) = min(runnable_avg(tg), 1) * tg->shares
+> Where runnable_avg is the aggregate time in which the task_group had runnable
+> children.
+>
+> Signed-off-by: Paul Turner <pjt@google.com>
+> Signed-off-by: Ben Segall <bsegall@google.com>.
+> ---
+>  kernel/sched/debug.c |    4 ++++
+>  kernel/sched/fair.c  |   39 +++++++++++++++++++++++++++++++++++++++
+>  kernel/sched/sched.h |    2 ++
+>  3 files changed, 45 insertions(+), 0 deletions(-)
+>
+> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+> index 9268fb7..9334c68 100644
+> --- a/kernel/sched/debug.c
+> +++ b/kernel/sched/debug.c
+> @@ -237,6 +237,10 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+>  			atomic64_read(&cfs_rq->tg->load_avg));
+>  	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_contrib",
+>  			cfs_rq->tg_load_contrib);
+> +	SEQ_printf(m, "  .%-30s: %d\n", "tg_runnable_contrib",
+> +			cfs_rq->tg_runnable_contrib);
+> +	SEQ_printf(m, "  .%-30s: %d\n", "tg->runnable_avg",
+> +			atomic_read(&cfs_rq->tg->runnable_avg));
+>  #endif
+>  
+>  	print_cfs_group_stats(m, cpu, cfs_rq->tg);
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index a416296..91d0b21 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1117,19 +1117,56 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+>  	}
+>  }
+>  
+> +/*
+> + * Aggregate cfs_rq runnable averages into an equivalent task_group
+> + * representation for computing load contributions.
+> + */
+> +static inline void __update_tg_runnable_avg(struct sched_avg *sa,
+> +						  struct cfs_rq *cfs_rq)
+> +{
+> +	struct task_group *tg = cfs_rq->tg;
+> +	long contrib;
+> +
+> +	contrib = div_u64(sa->runnable_avg_sum << 12,
+> +			  sa->runnable_avg_period + 1);
+> +	contrib -= cfs_rq->tg_runnable_contrib;
+> +
+> +	if (abs(contrib) > cfs_rq->tg_runnable_contrib / 64) {
+> +		atomic_add(contrib, &tg->runnable_avg);
+> +		cfs_rq->tg_runnable_contrib += contrib;
+> +	}
+> +}
+> +
+>  static inline void __update_group_entity_contrib(struct sched_entity *se)
+>  {
+>  	struct cfs_rq *cfs_rq = group_cfs_rq(se);
+>  	struct task_group *tg = cfs_rq->tg;
+> +	int runnable_avg;
+> +
+>  	u64 contrib;
+>  
+>  	contrib = cfs_rq->tg_load_contrib * tg->shares;
+>  	se->avg.load_avg_contrib = div64_u64(contrib,
+>  					     atomic64_read(&tg->load_avg) + 1);
+> +
+> +	/*
+> +	 * Unlike a task-entity, a group entity may be using >=1 cpu globally.
+> +	 * However, in the case that it's using <1 cpu we need to form a
+> +	 * correction term so that we contribute the same load as a task of
+> +	 * equal weight. (Global runnable time is taken as a fraction over
+> +	 * 2^12.)
 
-> Partial rewrite of panel driver to make it more robust. The old code contains
-> problems potentially leading to kernel oops, deadlocks and memory leaks.
-> 
-> The patch contains the following changes:
-> * Handle asynchronous attach/detach to/from parport.
-> * Proper synchronization of multiple opens to same device.
-> * Proper disabling of softirqs when locking pprt from user context.
-> * Replaced interruptible_sleep_on in keypad_read to avoid race conditions.
-> * Changed to del_timer_sync to make sure timer function finishes before
->   unloading module.
-> * Added owner to file_operations to avoid module being unloaded with dangling
->   opens.
-> * Check status of user-mode memory write in keypad_read.
-> * Check for and handle errors in keypad_init.
-> * Properly free memory for logical_inputs to avoid memory leak on unload.
-> 
-
-Gar...  Don't do this.  :/  Each bullet point here should be a
-separate patch.  Please break it apart and resend.
-
-Put the white space changes and the declaration reshuffles in their
-own patch.
-
-Do not create lock_pprt() and unlock_pprt() functions.  It doesn't
-save any lines of code.  It means that Sparse is unable check for
-locking bugs.  It hides information pointlessly so it's considered
-bad style.  The comment is nice though and that should go next to
-the declaration of the "pprt_lock" spinlock.
-
-regards,
-dan carpenter
+Wouldn't it be better using a symbolic name rather than the magic number?
 
 
+> +	 */
+> +	runnable_avg = atomic_read(&tg->runnable_avg);
+> +	if (runnable_avg < (1<<12)) {
+> +		se->avg.load_avg_contrib *= runnable_avg;
+> +		se->avg.load_avg_contrib /= (1<<12);
+
+Ditto.
+
+Thanks,
+Namhyung
+
+
+> +	}
+>  }
+>  #else
+>  static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+>  						 int force_update) {}
+> +static inline void __update_tg_runnable_avg(struct sched_avg *sa,
+> +						  struct cfs_rq *cfs_rq) {}
+>  static inline void __update_group_entity_contrib(struct sched_entity *se) {}
+>  #endif
+>  
+> @@ -1151,6 +1188,7 @@ static long __update_entity_load_avg_contrib(struct sched_entity *se)
+>  	if (entity_is_task(se)) {
+>  		__update_task_entity_contrib(se);
+>  	} else {
+> +		__update_tg_runnable_avg(&se->avg, group_cfs_rq(se));
+>  		__update_group_entity_contrib(se);
+>  	}
+>  
+> @@ -1219,6 +1257,7 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+>  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+>  {
+>  	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
+> +	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
+>  }
+>  
+>  /* Add the load generated by se into cfs_rq's child load-average */
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 4d3b3ad..b48bbd7 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -113,6 +113,7 @@ struct task_group {
+>  
+>  	atomic_t load_weight;
+>  	atomic64_t load_avg;
+> +	atomic_t runnable_avg;
+>  #endif
+>  
+>  #ifdef CONFIG_RT_GROUP_SCHED
+> @@ -234,6 +235,7 @@ struct cfs_rq {
+>  	atomic64_t decay_counter, removed_load;
+>  	u64 last_decay;
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+> +	u32 tg_runnable_contrib;
+>  	u64 tg_load_contrib;
+>  #endif
+>  #endif
