@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932365Ab2F2Ndj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 09:33:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45670 "EHLO mx2.suse.de"
+	id S932461Ab2F2Ndu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 09:33:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45775 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932279Ab2F2Ndb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 09:33:31 -0400
+	id S932186Ab2F2Ndm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 09:33:42 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -19,9 +19,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Eric B Munson <emunson@mgebm.net>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 03/12] mm: Methods for teaching filesystems about PG_swapcache pages
-Date: Fri, 29 Jun 2012 14:33:16 +0100
-Message-Id: <1340976805-5799-4-git-send-email-mgorman@suse.de>
+Subject: [PATCH 11/12] nfs: Prevent page allocator recursions with swap over NFS.
+Date: Fri, 29 Jun 2012 14:33:24 +0100
+Message-Id: <1340976805-5799-12-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1340976805-5799-1-git-send-email-mgorman@suse.de>
 References: <1340976805-5799-1-git-send-email-mgorman@suse.de>
@@ -29,128 +29,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to teach filesystems to handle swap cache pages, three new
-page functions are introduced:
+GFP_NOFS is _more_ permissive than GFP_NOIO in that it will initiate
+IO, just not of any filesystem data.
 
-  pgoff_t page_file_index(struct page *);
-  loff_t page_file_offset(struct page *);
-  struct address_space *page_file_mapping(struct page *);
-
-page_file_index() - gives the offset of this page in the file in
-PAGE_CACHE_SIZE blocks. Like page->index is for mapped pages, this
-function also gives the correct index for PG_swapcache pages.
-
-page_file_offset() - uses page_file_index(), so that it will give
-the expected result, even for PG_swapcache pages.
-
-page_file_mapping() - gives the mapping backing the actual page;
-that is for swap cache pages it will give swap_file->f_mapping.
+The problem is that previously NOFS was correct because that avoids
+recursion into the NFS code. With swap-over-NFS, it is no longer
+correct as swap IO can lead to this recursion.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
 ---
- include/linux/mm.h      |   25 +++++++++++++++++++++++++
- include/linux/pagemap.h |    5 +++++
- mm/swapfile.c           |   19 +++++++++++++++++++
- 3 files changed, 49 insertions(+)
+ fs/nfs/pagelist.c |    2 +-
+ fs/nfs/write.c    |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index a4549c6..b3d4cd9 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -805,6 +805,17 @@ static inline void *page_rmapping(struct page *page)
- 	return (void *)((unsigned long)page->mapping & ~PAGE_MAPPING_FLAGS);
- }
- 
-+extern struct address_space *__page_file_mapping(struct page *);
-+
-+static inline
-+struct address_space *page_file_mapping(struct page *page)
-+{
-+	if (unlikely(PageSwapCache(page)))
-+		return __page_file_mapping(page);
-+
-+	return page->mapping;
-+}
-+
- static inline int PageAnon(struct page *page)
+diff --git a/fs/nfs/pagelist.c b/fs/nfs/pagelist.c
+index 9ef8b3c..7de1646 100644
+--- a/fs/nfs/pagelist.c
++++ b/fs/nfs/pagelist.c
+@@ -70,7 +70,7 @@ void nfs_set_pgio_error(struct nfs_pgio_header *hdr, int error, loff_t pos)
+ static inline struct nfs_page *
+ nfs_page_alloc(void)
  {
- 	return ((unsigned long)page->mapping & PAGE_MAPPING_ANON) != 0;
-@@ -821,6 +832,20 @@ static inline pgoff_t page_index(struct page *page)
- 	return page->index;
- }
+-	struct nfs_page	*p = kmem_cache_zalloc(nfs_page_cachep, GFP_KERNEL);
++	struct nfs_page	*p = kmem_cache_zalloc(nfs_page_cachep, GFP_NOIO);
+ 	if (p)
+ 		INIT_LIST_HEAD(&p->wb_list);
+ 	return p;
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index 947e1e6..0f7fdb7 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -52,7 +52,7 @@ static mempool_t *nfs_commit_mempool;
  
-+extern pgoff_t __page_file_index(struct page *page);
-+
-+/*
-+ * Return the file index of the page. Regular pagecache pages use ->index
-+ * whereas swapcache pages use swp_offset(->private)
-+ */
-+static inline pgoff_t page_file_index(struct page *page)
-+{
-+	if (unlikely(PageSwapCache(page)))
-+		return __page_file_index(page);
-+
-+	return page->index;
-+}
-+
- /*
-  * Return true if this page is mapped into pagetables.
-  */
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index 7cfad3b..e42c762 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -286,6 +286,11 @@ static inline loff_t page_offset(struct page *page)
- 	return ((loff_t)page->index) << PAGE_CACHE_SHIFT;
- }
+ struct nfs_commit_data *nfs_commitdata_alloc(void)
+ {
+-	struct nfs_commit_data *p = mempool_alloc(nfs_commit_mempool, GFP_NOFS);
++	struct nfs_commit_data *p = mempool_alloc(nfs_commit_mempool, GFP_NOIO);
  
-+static inline loff_t page_file_offset(struct page *page)
-+{
-+	return ((loff_t)page_file_index(page)) << PAGE_CACHE_SHIFT;
-+}
-+
- extern pgoff_t linear_hugepage_index(struct vm_area_struct *vma,
- 				     unsigned long address);
+ 	if (p) {
+ 		memset(p, 0, sizeof(*p));
+@@ -70,7 +70,7 @@ EXPORT_SYMBOL_GPL(nfs_commit_free);
  
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 64408be..f4e02bd 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -33,6 +33,7 @@
- #include <linux/oom.h>
- #include <linux/frontswap.h>
- #include <linux/swapfile.h>
-+#include <linux/export.h>
+ struct nfs_write_header *nfs_writehdr_alloc(void)
+ {
+-	struct nfs_write_header *p = mempool_alloc(nfs_wdata_mempool, GFP_NOFS);
++	struct nfs_write_header *p = mempool_alloc(nfs_wdata_mempool, GFP_NOIO);
  
- #include <asm/pgtable.h>
- #include <asm/tlbflush.h>
-@@ -2299,6 +2300,24 @@ int swapcache_prepare(swp_entry_t entry)
- }
- 
- /*
-+ * out-of-line __page_file_ methods to avoid include hell.
-+ */
-+struct address_space *__page_file_mapping(struct page *page)
-+{
-+	VM_BUG_ON(!PageSwapCache(page));
-+	return page_swap_info(page)->swap_file->f_mapping;
-+}
-+EXPORT_SYMBOL_GPL(__page_file_mapping);
-+
-+pgoff_t __page_file_index(struct page *page)
-+{
-+	swp_entry_t swap = { .val = page_private(page) };
-+	VM_BUG_ON(!PageSwapCache(page));
-+	return swp_offset(swap);
-+}
-+EXPORT_SYMBOL_GPL(__page_file_index);
-+
-+/*
-  * add_swap_count_continuation - called when a swap count is duplicated
-  * beyond SWAP_MAP_MAX, it allocates a new page and links that to the entry's
-  * page of the original vmalloc'ed swap_map, to hold the continuation count
+ 	if (p) {
+ 		struct nfs_pgio_header *hdr = &p->header;
 -- 
 1.7.9.2
 
