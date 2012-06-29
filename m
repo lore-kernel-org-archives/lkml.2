@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab2F2Crv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 22:47:51 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:56955 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467Ab2F2Crt (ORCPT
+	id S1754047Ab2F2C5c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 22:57:32 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:52577 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab2F2C5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 22:47:49 -0400
-Date: Fri, 29 Jun 2012 12:47:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jikos@jikos.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the hid tree
-Message-Id: <20120629124731.4577c98083269ca2d20c8d5f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__29_Jun_2012_12_47_31_+1000_PDICZniwoS56VR9e"
+	Thu, 28 Jun 2012 22:57:31 -0400
+Date: Fri, 29 Jun 2012 03:57:24 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: joeyli <jlee@suse.com>
+Cc: seth.forshee@canonical.com, Richard Purdie <rpurdie@rpsys.net>,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        Corentin Chary <corentin.chary@gmail.com>
+Subject: Re: [PATCH] backlight: add support for disabling backlights via
+ sysfs
+Message-ID: <20120629025724.GB18605@srcf.ucam.org>
+References: <1340910426-13269-1-git-send-email-seth.forshee@canonical.com>
+ <20120628191043.GA9777@srcf.ucam.org>
+ <20120628193017.GA29456@thinkpad-t410>
+ <20120628193652.GB10945@srcf.ucam.org>
+ <20120628211600.GB29456@thinkpad-t410>
+ <20120628211936.GA14286@srcf.ucam.org>
+ <1340937839.6196.212.camel@linux-s257.site>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340937839.6196.212.camel@linux-s257.site>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__29_Jun_2012_12_47_31_+1000_PDICZniwoS56VR9e
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jun 29, 2012 at 10:43:59AM +0800, joeyli wrote:
 
-Hi Jiri,
+> 	http://msdn.microsoft.com/en-us/windows/hardware/gg487382.aspx
+>
+> In WDDM architecture, in spec p.5, there have a "Monitor" driver to
+> check the WDDM driver support brightness DDI, if not, then it will use
+> standard acpi method to control brightness.
 
-After merging the hid tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
-
-drivers/hid/Kconfig:698: unexpected 'endif' within menu block
-drivers/hid/Kconfig:702: unexpected 'endmenu' within if block
-drivers/Kconfig:151: 'endmenu' in different file than 'menu'
-drivers/hid/Kconfig:79: location of the 'menu'
-arch/powerpc/kvm/Kconfig:153: syntax error
-drivers/Kconfig:1: missing end statement for this entry
-
-Caused by bad merge 8494746044bf ("Merge branch 'roccat' into
-for-next").  This added a second copy of
-
-menu "Special HID drivers"
-
-I have used the hid tree from next-20120628 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__29_Jun_2012_12_47_31_+1000_PDICZniwoS56VR9e
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP7RdDAAoJEECxmPOUX5FEzKcQAJfv6OoYw+pCdPlcf5p19ALo
-em4h7Etgt14dQiSjP3H/BilPbrOuMyVZzFzBd6Wx1+SI0GVyn+j/IwkKsOtfdraT
-xfyydiD6FDAzi/80SXkr8jPOy7cUb1v/Ei+MfFtiJJh22aS1lGaWBo51ebcMyXXE
-dpa57vjBtSO7ZfVvMdOWckDW8nS7J8bqZZVmzGkBdfybreWzI6g07EpYeu5lAKr0
-//8Sq2rMJSzZroKSCEYqeZ2AVLaXS+Lz634nIE95yKlbDrYHmTvw9Sceu3B25hR9
-y2t0KprZTUHN1aKK7PYDjMc40cqA+02VMsy/2p+p2D4ZpsjqizOyli8NJt+F9GvP
-JnXYuZJt0N28ZI6k2Uwaan5TygE+c318m+fC65gaavmTzplesEQxxbySPC9+DZrP
-0W4Pb9mJy31CyN6owrjhqAFNq7m3TZKzOy7Jj0M0DrYuf0MJaojmlbB/EyuuxWSK
-1eq3kh+vwz1RZmDP8yXj7nmiEHVsWEYJkaw8v/O/trmO+H26nr6Ejobr35l/HbRO
-kU6KnvHBuQ8CfqgowkrreB/3Rkvy4jyEnohk3ve0WrNBtHDq2hFXtIN78FuC0OQ2
-y52mT+hZhhqWy5HNa/ByuYbpdk4BAmbwJDLATSuZBJtv4ytl3wkCfbU1/IzQZ2x8
-Aj5QQoZEz8avlRJ9XIAZ
-=P57k
------END PGP SIGNATURE-----
-
---Signature=_Fri__29_Jun_2012_12_47_31_+1000_PDICZniwoS56VR9e--
+What's the interaction between GPU drivers and platform drivers? For 
+instance, on acer systems that have backlight control via WMI, does 
+Windows use WMI, the GPU driver or ACPI?
+ 
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
