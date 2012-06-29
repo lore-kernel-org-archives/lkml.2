@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421Ab2F2QQM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 12:16:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44444 "EHLO
+	id S932395Ab2F2QRB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 12:17:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44461 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754723Ab2F2QQJ (ORCPT
+	with ESMTP id S1754723Ab2F2QQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 12:16:09 -0400
-Date: Fri, 29 Jun 2012 09:15:45 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-35a468732289372aab506d7cf73f98f0379888ae@git.kernel.org>
+	Fri, 29 Jun 2012 12:16:59 -0400
+Date: Fri, 29 Jun 2012 09:16:38 -0700
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-7a25b2d32b9cb0b813d56ee6109acf90f3c9f1e5@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, jolsa@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@kernel.org
-In-Reply-To: <1340268772-5737-1-git-send-email-namhyung@kernel.org>
-References: <1340268772-5737-1-git-send-email-namhyung@kernel.org>
+        tglx@linutronix.de, jolsa@redhat.com
+In-Reply-To: <1340274316-5161-1-git-send-email-jolsa@redhat.com>
+References: <1340274316-5161-1-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evsel:
-  Fix a build failure on cross compilation
-Git-Commit-ID: 35a468732289372aab506d7cf73f98f0379888ae
+Subject: [tip:perf/core] perf test:
+  Fix parse events test to follow proper raw event name
+Git-Commit-ID: 7a25b2d32b9cb0b813d56ee6109acf90f3c9f1e5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,54 +30,66 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 29 Jun 2012 09:15:52 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 29 Jun 2012 09:16:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  35a468732289372aab506d7cf73f98f0379888ae
-Gitweb:     http://git.kernel.org/tip/35a468732289372aab506d7cf73f98f0379888ae
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Thu, 21 Jun 2012 17:52:52 +0900
+Commit-ID:  7a25b2d32b9cb0b813d56ee6109acf90f3c9f1e5
+Gitweb:     http://git.kernel.org/tip/7a25b2d32b9cb0b813d56ee6109acf90f3c9f1e5
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Thu, 21 Jun 2012 12:25:16 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Mon, 25 Jun 2012 14:55:24 -0300
 
-perf evsel: Fix a build failure on cross compilation
+perf test: Fix parse events test to follow proper raw event name
 
-The commit c410431cefefd ("perf tools: Reconstruct event with modifiers
-from perf_event_attr") added the line, but it's broken since it needs to
-go up 3 directories to get to the kernel root directory, not 2.
+Following commit changed raw event names to carry event modificator.
 
-However host gcc contains /usr/local/include in its search path, so that
-it can find the perf_event.h in /usr/include. This why we didn't notice
-the problem yet.  But when I tried to cross compile it appears like:
+  perf evsel: Reconstruct raw event with modifiers from perf_event_attr
+  commit 6eef3d9c2bcf52b7a3c18e609f5838c007b989a4
+  Author: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-      CC util/evsel.o
-  util/evsel.c:18:44: error: ../../include/linux/perf_event.h: No such file or directory
-  make: *** [util/evsel.o] Error 1
+The perf_evsel__name function now returns ':mod' suffix for raw events,
+so we need to follow that in current tests.
 
-Looking at the source, it isn't needed at all as evsel.h already
-included the perf_event.h. So simply remove it would solve the problem.
+All tests pass now for 'perf test parse' suite.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1340268772-5737-1-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1340274316-5161-1-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evsel.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ tools/perf/util/parse-events-test.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 876f639..3d1f696 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -15,7 +15,6 @@
- #include "cpumap.h"
- #include "thread_map.h"
- #include "target.h"
--#include "../../include/linux/perf_event.h"
+diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
+index 229af6d..a0f61a2 100644
+--- a/tools/perf/util/parse-events-test.c
++++ b/tools/perf/util/parse-events-test.c
+@@ -413,19 +413,20 @@ static int test__checkevent_pmu_name(struct perf_evlist *evlist)
+ {
+ 	struct perf_evsel *evsel;
  
- #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
- #define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
+-	/* cpu/config=1,name=krava1/u */
++	/* cpu/config=1,name=krava/u */
+ 	evsel = list_entry(evlist->entries.next, struct perf_evsel, node);
+ 	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
+ 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
+ 	TEST_ASSERT_VAL("wrong config",  1 == evsel->attr.config);
+ 	TEST_ASSERT_VAL("wrong name", !strcmp(perf_evsel__name(evsel), "krava"));
+ 
+-	/* cpu/config=2/" */
++	/* cpu/config=2/u" */
+ 	evsel = list_entry(evsel->node.next, struct perf_evsel, node);
+ 	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
+ 	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
+ 	TEST_ASSERT_VAL("wrong config",  2 == evsel->attr.config);
+-	TEST_ASSERT_VAL("wrong name", !strcmp(perf_evsel__name(evsel), "raw 0x2"));
++	TEST_ASSERT_VAL("wrong name",
++			!strcmp(perf_evsel__name(evsel), "raw 0x2:u"));
+ 
+ 	return 0;
+ }
