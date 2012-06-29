@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab2F2SkX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 14:40:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29164 "EHLO mx1.redhat.com"
+	id S1756268Ab2F2Sle (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 14:41:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44178 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751055Ab2F2SkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:40:20 -0400
-Message-ID: <4FEDF667.2090400@redhat.com>
-Date: Fri, 29 Jun 2012 14:39:35 -0400
+	id S1755563Ab2F2Sld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 14:41:33 -0400
+Message-ID: <4FEDF5FD.3000608@redhat.com>
+Date: Fri, 29 Jun 2012 14:37:49 -0400
 From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -32,9 +32,9 @@ CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 18/40] autonuma: call autonuma_setup_new_exec()
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-19-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1340888180-15355-19-git-send-email-aarcange@redhat.com>
+Subject: Re: [PATCH 17/40] autonuma: autonuma_enter/exit
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-18-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1340888180-15355-18-git-send-email-aarcange@redhat.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -42,10 +42,16 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
-> This resets all per-thread and per-process statistics across exec
-> syscalls or after kernel threads detached from the mm. The past
-> statistical NUMA information is unlikely to be relevant for the future
-> in these cases.
+> The first gear in the whole AutoNUMA algorithm is knuma_scand. If
+> knuma_scand doesn't run AutoNUMA is a full bypass. If knuma_scand is
+> stopped, soon all other AutoNUMA gears will settle down too.
+>
+> knuma_scand is the daemon that sets the pmd_numa and pte_numa and
+> allows the NUMA hinting page faults to start and then all other
+> actions follows as a reaction to that.
+>
+> knuma_scand scans a list of "mm" and this is where we register and
+> unregister the "mm" into AutoNUMA for knuma_scand to scan them.
 >
 > Signed-off-by: Andrea Arcangeli<aarcange@redhat.com>
 
