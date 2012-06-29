@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932775Ab2F2TRW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 15:17:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29618 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932074Ab2F2TRV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 15:17:21 -0400
-X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=2lFTh0urSm0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=1XWaLZrsAAAA:8 a=xObNR3zwMkV8poFXCdEA:9 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340997439.16702.151.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] tracing: Update entries counter when removing pages
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: Justin Teravest <teravest@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 29 Jun 2012 15:17:19 -0400
-In-Reply-To: <1340972741.16702.105.camel@gandalf.stny.rr.com>
-References: <1340046722-11477-1-git-send-email-vnagarnaik@google.com>
-	 <1340972741.16702.105.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
+	id S932841Ab2F2TVM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 15:21:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56251 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932067Ab2F2TVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 15:21:10 -0400
+Message-ID: <4FEDFFB5.3010401@redhat.com>
+Date: Fri, 29 Jun 2012 15:19:17 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: dlaor@redhat.com, Ingo Molnar <mingo@kernel.org>,
+        Hillf Danton <dhillf@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 13/40] autonuma: CPU follow memory algorithm
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>  <1340888180-15355-14-git-send-email-aarcange@redhat.com>  <1340895238.28750.49.camel@twins>  <CAJd=RBA+FPgB9iq07YG0Pd=tN65SGK1ifmj98tomBDbYeKOE-Q@mail.gmail.com>  <20120629125517.GD32637@gmail.com> <4FEDDD0C.60609@redhat.com>  <1340995260.28750.103.camel@twins> <4FEDF81C.1010401@redhat.com>  <1340996224.28750.116.camel@twins> <1340996586.28750.122.camel@twins>
+In-Reply-To: <1340996586.28750.122.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-29 at 08:25 -0400, Steven Rostedt wrote:
-> On Mon, 2012-06-18 at 12:12 -0700, Vaibhav Nagarnaik wrote:
-> > When removing pages from the ring buffer, its state is not reset. This
-> > means that the counters need to be correctly updated to account for the
-> > pages removed.
-> > 
-> > Update the entries counter to reflect the removed events from the
-> > pages just like entries_bytes counter.
-> > 
-> > Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
-> > ---
-> >  kernel/trace/ring_buffer.c |    6 +++---
-> >  1 files changed, 3 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-> > index 96c2dd1..a2bec4c 100644
-> > --- a/kernel/trace/ring_buffer.c
-> > +++ b/kernel/trace/ring_buffer.c
-> > @@ -1346,10 +1346,10 @@ rb_remove_pages(struct ring_buffer_per_cpu *cpu_buffer, unsigned int nr_pages)
-> >  			 * If something was added to this page, it was full
-> >  			 * since it is not the tail page. So we deduct the
-> >  			 * bytes consumed in ring buffer from here.
-> > -			 * No need to update overruns, since this page is
-> > -			 * deleted from ring buffer and its entries are
-> > -			 * already accounted for.
-> > +			 * No need to update overruns, since updating
-> > +			 * 'entries' accounts for that.
-> >  			 */
-> > +			local_sub(page_entries, &cpu_buffer->entries);
-> 
-> Actually, I think it would be better to increment overrun instead. As
-> these are lost events, and that is what overrun counts. I just tested it
-> with: local_add(page_entries, &cpu_buffer->overrun); and it works well.
-> Showing the lost events.
+On 06/29/2012 03:03 PM, Peter Zijlstra wrote:
+> On Fri, 2012-06-29 at 20:57 +0200, Peter Zijlstra wrote:
+>> On Fri, 2012-06-29 at 14:46 -0400, Rik van Riel wrote:
+>>>
+>>> I am not convinced all architectures that have CONFIG_NUMA
+>>> need to be a requirement, since some of them (eg. Alpha)
+>>> seem to be lacking a maintainer nowadays.
+>>
+>> Still, this NUMA balancing stuff is not a small tweak to load-balancing.
+>> Its a very significant change is how you schedule. Having such great
+>> differences over architectures isn't something I look forward to.
 
-Can you make this change and repost the patch. I'll start testing it if
-you can ASAP. Otherwise it will have to wait till next week.
+I am not too worried about the performance of architectures
+that are essentially orphaned :)
 
--- Steve
+> Also, Andrea keeps insisting arch support is trivial, so I don't see the
+> problem.
 
-> >  			local_sub(BUF_PAGE_SIZE, &cpu_buffer->entries_bytes);
-> >  		}
-> >  
-> 
+Getting it implemented in one or two additional architectures
+would be good, to get a template out there that can be used by
+other architecture maintainers.
 
-
+-- 
+All rights reversed
