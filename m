@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab2F2PtI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 11:49:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5216 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752881Ab2F2PtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 11:49:06 -0400
-Message-ID: <4FEDCE2B.9010908@redhat.com>
-Date: Fri, 29 Jun 2012 11:47:55 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756190Ab2F2Pw2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 11:52:28 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10889 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752881Ab2F2Pw2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 11:52:28 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 29 Jun 2012 08:49:12 -0700
+Message-ID: <4FEDCE89.8020804@nvidia.com>
+Date: Fri, 29 Jun 2012 21:19:29 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 10/40] autonuma: mm_autonuma and sched_autonuma data structures
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-11-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1340888180-15355-11-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Takashi Iwai <tiwai@suse.de>
+CC: "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        Stephen Warren <swarren@nvidia.com>, "perex@perex.cz" <perex@perex.cz>,
+        "clemens@ladisch.de" <clemens@ladisch.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] ASoC: Move pcm writecombine dma buffer allocation
+ to core
+References: <1340965398-20872-1-git-send-email-ldewangan@nvidia.com>	<s5h7guqxqnd.wl%tiwai@suse.de>	<4FEDC3F8.8000501@nvidia.com> <s5hd34iw3al.wl%tiwai@suse.de>
+In-Reply-To: <s5hd34iw3al.wl%tiwai@suse.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
+On Friday 29 June 2012 08:52 PM, Takashi Iwai wrote:
+> At Fri, 29 Jun 2012 20:34:24 +0530,
+> Laxman Dewangan wrote:
+>> Hi Takashi,
+>> Thanks for sample code. It helps lot.
+>>
+>> int snd_pcm_lib_malloc_pages(struct snd_pcm_substream *substream, size_t
+>> size)
+>> {
+>>           struct snd_pcm_runtime *runtime;
+>>           struct snd_dma_buffer *dmab = NULL;
+>>
+>>           if (PCM_RUNTIME_CHECK(substream))
+>>                   return -EINVAL;
+>>
+>>           if (snd_BUG_ON(substream->dma_buffer.dev.type ==
+>>                          SNDRV_DMA_TYPE_UNKNOWN))
+>>                   return -EINVAL;
+>>
+>>           runtime = substream->runtime;
+>>
+>>           if (runtime->dma_buffer_p) {
+>> ---------------Kernel crash at this point ----------
+>>
+>> So I used the snd_dma_alloc_pages() from the driver to allocate WC memory.
+> snd_pcm_lib_malloc_pages() should be called only from hw_params.
+> Prior to that, you need to set up the dam_buffer type by calling
+> snd_pcm_lib_preallocate_pages() or
+> snd_pcm_lib_preallocate_pages_for_all() at the time to create a PCM
+> instance.  The size can be 0 if not necessary to allocate there but
+> later on demand.
 
-You tell us when the data structures are not allocated, but
-you do not tell us how the data structures is used, or what
-the fields inside the data structures mean.
+It worked well. Cool implementation.
 
-This makes it very hard for other people to figure out the
-code later. Please document these kinds of things properly.
+I will send the patch of memalloc and for Tegra actually using this feature.
 
-> +/*
-> + * Per-mm (process) structure dynamically allocated only if autonuma
-> + * is not impossible. This links the mm to scan into the
-> + * knuma_scand.mm_head and it contains the NUMA memory placement
-> + * statistics for the process (generated by knuma_scand).
-> + */
-> +struct mm_autonuma {
-> +	/* list node to link the "mm" into the knuma_scand.mm_head */
-> +	struct list_head mm_node;
-> +	struct mm_struct *mm;
-> +	unsigned long mm_numa_fault_pass; /* zeroed from here during allocation */
-> +	unsigned long mm_numa_fault_tot;
-> +	unsigned long mm_numa_fault[0];
-> +};
-
-> +/*
-> + * Per-task (thread) structure dynamically allocated only if autonuma
-> + * is not impossible. This contains the preferred autonuma_node where
-> + * the userland thread should be scheduled into (only relevant if
-> + * tsk->mm is not null) and the per-thread NUMA accesses statistics
-> + * (generated by the NUMA hinting page faults).
-> + */
-> +struct task_autonuma {
-> +	int autonuma_node;
-> +	/* zeroed from the below field during allocation */
-> +	unsigned long task_numa_fault_pass;
-> +	unsigned long task_numa_fault_tot;
-> +	unsigned long task_numa_fault[0];
-> +};
-
+Thanks for suggestion and help.
 
 
--- 
-All rights reversed
+Laxman
