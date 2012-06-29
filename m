@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab2F2PRd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 11:17:33 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S932105Ab2F2PVL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 11:21:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43235 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755689Ab2F2POj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 11:14:39 -0400
-From: Richard Weinberger <richard@nod.at>
-To: linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
-        Heinz.Egger@linutronix.de, thomas.wucher@linutronix.de,
-        shmulik.ladkani@gmail.com, tglx@linutronix.de, tim.bird@am.sony.com,
-        Marius.Mazarel@ugal.ro, artem.bityutskiy@linux.intel.com,
-        nyoushchenko@mvista.com
-Subject: UBI fastmap updates
-Date: Fri, 29 Jun 2012 17:14:18 +0200
-Message-Id: <1340982869-77042-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.6.5
+	id S1753008Ab2F2PVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 11:21:10 -0400
+Message-ID: <4FEDC618.3040007@redhat.com>
+Date: Fri, 29 Jun 2012 11:13:28 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 07/40] autonuma: generic pte_numa() and pmd_numa()
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-8-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1340888180-15355-8-git-send-email-aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the next round of UBI fastmap updates.
+On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
+> Implement generic version of the methods. They're used when
+> CONFIG_AUTONUMA=n, and they're a noop.
+>
+> Signed-off-by: Andrea Arcangeli<aarcange@redhat.com>
 
-Fastmap is now disabled by default.
-If you attach an image it will not automatically convert it
-to the fastmap format.
-UBI has a new module parameter "fm_auto".
-If set to 1 UBI will create a fastmap automatically on your
-flash device.
-Please see commit "Add a module parameter to enable fastmap"
-for more details.
+Acked-by: Rik van Riel <riel@redhat.com>
 
-If you want to test fastmap you can use my git repo:
-git://git.kernel.org/pub/scm/linux/kernel/git/rw/ubi2.git ubi2/v15
-
-Enjoy!
-//richard
-
-[PATCH 01/11] UBI: Fastmap: Fix mem leak in error path
-[PATCH 02/11] UBI: Fastmap: Amend self_check_eba()
-[PATCH 03/11] UBI: Fastmap: Remove forward declaration
-[PATCH 04/11] UBI: Fastmap: Move fastmap specific code into
-[PATCH 05/11] UBI: Fastmap: Kill TODO
-[PATCH 06/11] UBI: Fastmap: Remove unused variable
-[PATCH 07/11] UBI: Fastmap: Fix scan regression
-[PATCH 08/11] ubi: fastmap: Remove 'ubi' parameter of 'destroy_ai()'
-[PATCH 09/11] ubi: fastmap: Do not free 'ai' in 'scan_all()'
-[PATCH 10/11] UBI: Fastmap: Disable fastmap per default
-[PATCH 11/11] UBI: Fastmap: Add a module parameter to enable fastmap
+-- 
+All rights reversed
