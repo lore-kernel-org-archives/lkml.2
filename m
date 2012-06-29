@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab2F2MTI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 08:19:08 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:47023 "EHLO
+	id S1754689Ab2F2MVj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 08:21:39 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:51625 "EHLO
 	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab2F2MTG convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751917Ab2F2MVh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 08:19:06 -0400
+	Fri, 29 Jun 2012 08:21:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120626221907.GC26614@kamineko.org>
-References: <1339572727-24744-1-git-send-email-corentin.chary@gmail.com>
-	<1339572727-24744-2-git-send-email-corentin.chary@gmail.com>
-	<20120626221907.GC26614@kamineko.org>
-Date: Fri, 29 Jun 2012 14:19:04 +0200
-Message-ID: <CAHR064i0J32kpOh3v2SMhVQ=wofkm5wyiPRwyJOzqwMq+y3LPA@mail.gmail.com>
-Subject: Re: [PATCH 1/7] acpi: add a way to promote/demote vendor backlight drivers
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Mattia Dongili <malattia@linux.it>
-Cc: Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        linux-acpi@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <1340164055-1062-1-git-send-email-alex.hung@canonical.com>
+References: <1340164055-1062-1-git-send-email-alex.hung@canonical.com>
+Date: Fri, 29 Jun 2012 14:21:35 +0200
+X-Google-Sender-Auth: Flu87gIpHSsk9fX8BR_u4Gqp4fY
+Message-ID: <CAHR064jYsmaoSBGACY9u_EZmHfGekgtaOioT_caXUH2XgiJyAQ@mail.gmail.com>
+Subject: Re: [PATCH] asus-wmi: use ASUS_WMI_METHODID_DSTS2 as default DSTS ID.
+From: Corentin Chary <corentincj@iksaif.net>
+To: mjg@redhat.com
+Cc: Alex Hung <alex.hung@canonical.com>, acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 12:19 AM, Mattia Dongili <malattia@linux.it> wrote:
-> Hi Corentin,
+On Wed, Jun 20, 2012 at 5:47 AM, Alex Hung <alex.hung@canonical.com> wrote:
+> According to responses from the BIOS team, ASUS_WMI_METHODID_DSTS2
+> (0x53545344) will be used as future DSTS ID. In addition, calling
+> asus_wmi_evaluate_method(ASUS_WMI_METHODID_DSTS2, 0, 0, NULL) returns
+> ASUS_WMI_UNSUPPORTED_METHOD in new ASUS laptop PCs. This patch fixes
+> no DSTS ID will be assigned in this case.
 >
-> On Wed, Jun 13, 2012 at 09:32:01AM +0200, Corentin Chary wrote:
-> ...
->> +/* Promote the vendor interface instead of the generic video module.
->> + * This function allow DMI blacklists to be implemented by externals
->> + * platform drivers instead of putting a big blacklist in video_detect.c
->> + * After calling this function you will probably want to call
->> + * acpi_video_unregister() to make sure the video module is not loaded
->> + */
->> +void acpi_video_dmi_promote_vendor(void)
->> +{
->> +     acpi_video_caps_check();
->> +     acpi_video_support |= ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
->> +}
->> +EXPORT_SYMBOL(acpi_video_dmi_promote_vendor);
+> Signed-off-by: Alex Hung <alex.hung@canonical.com>
+> ---
+>  drivers/platform/x86/asus-wmi.c |    7 +------
+>  1 files changed, 1 insertions(+), 6 deletions(-)
 >
-> I think having the promote_vendor() function do the sanity check on the
-> acpi_backlight parameter and the unregistering of the acpi_video device
-> may make the code cleaner and more acpi_video-agnostic in the drivers.
-> I.e. (untested sample code):
+> diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
+> index 25e3093..0f69a97 100644
+> --- a/drivers/platform/x86/asus-wmi.c
+> +++ b/drivers/platform/x86/asus-wmi.c
+> @@ -1461,14 +1461,9 @@ static int asus_wmi_platform_init(struct asus_wmi *asus)
+>         */
+>        if (!asus_wmi_evaluate_method(ASUS_WMI_METHODID_DSTS, 0, 0, NULL))
+>                asus->dsts_id = ASUS_WMI_METHODID_DSTS;
+> -       else if (!asus_wmi_evaluate_method(ASUS_WMI_METHODID_DSTS2, 0, 0, NULL))
+> +       else
+>                asus->dsts_id = ASUS_WMI_METHODID_DSTS2;
 >
-> bool acpi_video_promote_vendor(void)
-> {
->        if (acpi_video_backlight_support())
->                return false;
->
->        acpi_video_support |= ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
->        pr_info("Disabling ACPI video driver\n");
->        acpi_video_unregister();
->        return true;
-> }
-> EXPORT_SYMBOL(acpi_video_promote_vendor);
->
-> and in the drivers you do
->
->        if (my_drv->broken_acpi_video) {
->                if (acpi_video_promote_vendor())
->                        do_backlight_init();
->        } else if (!acpi_video_backlight_support())
->                do_backlight_init();
->
-> or something along these lines.
-> If you give a boolean parameter to acpi_video_promote_vendor to force
-> vendor backlight we could make the drivers' code even simpler but that
-> would change the semantics of the "promotion" to something more of a
-> "take-over".
->
-> PS: I will need to promote backlight control in sony-laptop.ko
-> eventually as well but I don't have a DMI based list but rather I should
-> look at a specific handle (or say Method) presence in the SNC Device.
-> I guess I'm just bothered by the function naming here but not a big
-> deal. :)
+> -       if (!asus->dsts_id) {
+> -               pr_err("Can't find DSTS");
+> -               return -ENODEV;
+> -       }
+> -
+>        /* CWAP allow to define the behavior of the Fn+F2 key,
+>         * this method doesn't seems to be present on Eee PCs */
+>        if (asus->driver->quirks->wapf >= 0)
 > --
-> mattia
-> :wq!
+> 1.7.0.4
+>
 
-I had something like that in mind, but it makes acpi.ko use symbols
-from video.ko, and video.ko already uses symbols from acpi.ko, and I
-didn't want to mess with circular dependencies. But if you manage to
-make it work, and if you want to remove dmi_, I'll hapilly Ack it !
+Hum, I don't like acking patches referencing documentation I can't
+read, but I don't really have the choice !
 
+Matthew, could you merge this one ?
+Thanks,
+
+Acked-By: Corentin Chary <corentin.chary@gmail.com>
 
 
 -- 
