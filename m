@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab2F2J0A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 05:26:00 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:39205 "EHLO
+	id S1753941Ab2F2J0Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 05:26:16 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:39259 "EHLO
 	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823Ab2F2JZ6 (ORCPT
+	with ESMTP id S1753784Ab2F2J0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 05:25:58 -0400
-X-AuditID: b753bd60-a3089ba000000655-7d-4fed74a4d1b7
-X-AuditID: b753bd60-a3089ba000000655-7d-4fed74a4d1b7
-Message-ID: <4FED74AA.7020709@hitachi.com>
-Date: Fri, 29 Jun 2012 18:26:02 +0900
+	Fri, 29 Jun 2012 05:26:13 -0400
+X-AuditID: b753bd60-914c2ba0000047ca-5e-4fed74b3458a
+X-AuditID: b753bd60-914c2ba0000047ca-5e-4fed74b3458a
+Message-ID: <4FED74B9.3020308@hitachi.com>
+Date: Fri, 29 Jun 2012 18:26:17 +0900
 From: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -18,9 +18,10 @@ To: avi@redhat.com
 Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
         yrl.pp-manager.tt@hitachi.com, mtosatti@redhat.com, tglx@linutronix.de,
         mingo@redhat.com, hpa@zytor.com
-Subject: Re: [RFC PATCH 06/18] KVM: Add facility to run guests on slave CPUs
-References: <20120628060719.19298.43879.stgit@localhost.localdomain> <20120628060751.19298.39801.stgit@localhost.localdomain> <4FEC8E22.4000208@redhat.com>
-In-Reply-To: <4FEC8E22.4000208@redhat.com>
+Subject: Re: [RFC PATCH 16/18] KVM: add kvm_arch_vcpu_prevent_run to prevent
+ VM ENTER when NMI is received
+References: <20120628060719.19298.43879.stgit@localhost.localdomain> <20120628060842.19298.14653.stgit@localhost.localdomain> <4FEC8AFB.8060606@redhat.com>
+In-Reply-To: <4FEC8AFB.8060606@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
@@ -28,66 +29,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/06/29 2:02, Avi Kivity wrote:
-> On 06/28/2012 09:07 AM, Tomoki Sekiyama wrote:
->> Add path to migrate execution of vcpu_enter_guest to a slave CPU when
->> vcpu->arch.slave_cpu is set.
+On 2012/06/29 1:48, Avi Kivity wrote:
+> On 06/28/2012 09:08 AM, Tomoki Sekiyama wrote:
+>> Since NMI can not be disabled around VM enter, there is a race between
+>> receiving NMI to kick a guest and entering the guests on slave CPUs.If the
+>> NMI is received just before entering VM, after the NMI handler is invoked,
+>> it continues entering the guest and the effect of the NMI will be lost.
 >>
->> After moving to the slave CPU, it goes back to the online CPU when the
->> guest is exited by reasons that cannot be handled by the slave CPU only
->> (e.g. handling async page faults).
-> 
-> What about, say, instruction emulation?  It may need to touch guest
-> memory, which cannot be done from interrupt disabled context.
-
-Hmm, it seems difficult to resolve this in interrupt disabled context.
-
-Within partitioning scenario, it might be possible to give up execution
-if the memory is not pinned down, but I'm not sure that is acceptable.
-
-It looks better to make the slave core interruptible and sleepable.
-
->> +
->> +static  int vcpu_post_run(struct kvm_vcpu *vcpu, struct task_struct *task,
->> +			 int *can_complete_async_pf)
+>> This patch adds kvm_arch_vcpu_prevent_run(), which causes VM exit right
+>> after VM enter. The NMI handler uses this to ensure the execution of the
+>> guest is cancelled after NMI.
+>>
+>>  
+>> +/*
+>> + * Make VMRESUME fail using preemption timer with timer value = 0.
+>> + * On processors that doesn't support preemption timer, VMRESUME will fail
+>> + * by internal error.
+>> + */
+>> +static void vmx_prevent_run(struct kvm_vcpu *vcpu, int prevent)
 >> +{
->> +	int r = LOOP_ONLINE;
->> +
->> +	clear_bit(KVM_REQ_PENDING_TIMER, &vcpu->requests);
->> +	if (kvm_cpu_has_pending_timer(vcpu))
->> +		kvm_inject_pending_timer_irqs(vcpu);
->> +
->> +	if (dm_request_for_irq_injection(vcpu)) {
->> +		r = -EINTR;
->> +		vcpu->run->exit_reason = KVM_EXIT_INTR;
->> +		++vcpu->stat.request_irq_exits;
->> +	}
->> +
->> +	if (can_complete_async_pf) {
->> +		*can_complete_async_pf = kvm_can_complete_async_pf(vcpu);
->> +		if (r == LOOP_ONLINE)
->> +			r = *can_complete_async_pf ? LOOP_APF : LOOP_SLAVE;
->> +	} else
->> +		kvm_check_async_pf_completion(vcpu);
->> +
->> +	if (signal_pending(task)) {
->> +		r = -EINTR;
->> +		vcpu->run->exit_reason = KVM_EXIT_INTR;
->> +		++vcpu->stat.signal_exits;
->> +	}
+>> +	if (prevent)
+>> +		vmcs_set_bits(PIN_BASED_VM_EXEC_CONTROL,
+>> +			      PIN_BASED_PREEMPTION_TIMER);
+>> +	else
+>> +		vmcs_clear_bits(PIN_BASED_VM_EXEC_CONTROL,
+>> +				PIN_BASED_PREEMPTION_TIMER);
+>> +}
 > 
-> Isn't this racy?  The signal can come right after this.
+> This may interrupt another RMW sequence, which will then overwrite the
+> control.  So it needs to be called only if inside the entry sequence
+> (otherwise can just set a KVM_REQ_IMMEDIATE_EXIT in vcpu->requests).
+> 
 
-Oops, this is racy here.
-However, this is resolved if later patch [RFC PATCH 16/18] is applied.
-I will reorder patches.
-
-Signals will wake up vCPU user thread (sleeping in
-vcpu_enter_guest_slave > wait_for_completion_interruptible in an online CPU)
-and the thread kicks vcpu(by NMI). Then, kvm_arch_vcpu_prevent_run is
-called in NMI handler to fail the VM enter again.
-
-(But kvm_arch_vcpu_prevent_run still has another problem, as you replied.)
+I agree. I will add the check whether it is in the entry sequence.
 
 Thanks,
 -- 
