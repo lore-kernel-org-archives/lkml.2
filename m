@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268Ab2F2Sle (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 14:41:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44178 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755563Ab2F2Sld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:41:33 -0400
-Message-ID: <4FEDF5FD.3000608@redhat.com>
-Date: Fri, 29 Jun 2012 14:37:49 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	id S932420Ab2F2Sly (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 14:41:54 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53318 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932277Ab2F2Slr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 14:41:47 -0400
+Message-ID: <1340995260.28750.103.camel@twins>
+Subject: Re: [PATCH 13/40] autonuma: CPU follow memory algorithm
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: dlaor@redhat.com
+Cc: Ingo Molnar <mingo@kernel.org>, Hillf Danton <dhillf@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dan Smith <danms@us.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
@@ -25,37 +24,35 @@ CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Lai Jiangshan <laijs@cn.fujitsu.com>,
         Bharata B Rao <bharata.rao@gmail.com>,
         Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
         Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 17/40] autonuma: autonuma_enter/exit
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-18-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1340888180-15355-18-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Fri, 29 Jun 2012 20:41:00 +0200
+In-Reply-To: <4FEDDD0C.60609@redhat.com>
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
+	 <1340888180-15355-14-git-send-email-aarcange@redhat.com>
+	 <1340895238.28750.49.camel@twins>
+	 <CAJd=RBA+FPgB9iq07YG0Pd=tN65SGK1ifmj98tomBDbYeKOE-Q@mail.gmail.com>
+	 <20120629125517.GD32637@gmail.com> <4FEDDD0C.60609@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
-> The first gear in the whole AutoNUMA algorithm is knuma_scand. If
-> knuma_scand doesn't run AutoNUMA is a full bypass. If knuma_scand is
-> stopped, soon all other AutoNUMA gears will settle down too.
->
-> knuma_scand is the daemon that sets the pmd_numa and pte_numa and
-> allows the NUMA hinting page faults to start and then all other
-> actions follows as a reaction to that.
->
-> knuma_scand scans a list of "mm" and this is where we register and
-> unregister the "mm" into AutoNUMA for knuma_scand to scan them.
->
-> Signed-off-by: Andrea Arcangeli<aarcange@redhat.com>
+On Fri, 2012-06-29 at 12:51 -0400, Dor Laor wrote:
+> t's hard to say whether Peter's like to add ia64 support or 
+> just like to get rid of the forceful migration as a whole. 
 
-Acked-by: Rik van Riel <riel@redhat.com>
+I've stated several times that all archs that have CONFIG_NUMA must be
+supported before we can consider any of this. I've no intention of doing
+so myself. Andrea wants this, Andrea gets to do it.
 
--- 
-All rights reversed
+I've also stated several times that forceful migration in the context of
+numa balancing must go.
