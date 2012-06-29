@@ -1,99 +1,393 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236Ab2F2B3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 21:29:15 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:48300 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754036Ab2F2B3O (ORCPT
+	id S1755866Ab2F2BbS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 21:31:18 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42866 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754465Ab2F2BbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 21:29:14 -0400
-From: Sebastian Benvenuti <sebastianbenvenuti@gmail.com>
-To: abbotti@mev.co.uk
-Cc: fmhess@users.sourceforge.net, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org,
-        Sebastian Benvenuti <sebastianbenvenuti@gmail.com>
-Subject: [PATCH] Staging: comedi: vmk80xx: All syntax issues fixed
-Date: Thu, 28 Jun 2012 22:28:57 -0300
-Message-Id: <1340933337-2752-1-git-send-email-sebastianbenvenuti@gmail.com>
-X-Mailer: git-send-email 1.7.11.1
+	Thu, 28 Jun 2012 21:31:16 -0400
+X-AuditID: 9c93016f-b7c85ae00000559e-72-4fed05621299
+From: Namhyung Kim <namhyung@kernel.org>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Subject: Re: [PATCH 04/16] sched: maintain the load contribution of blocked entities
+References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
+	<20120628022414.30496.4580.stgit@kitami.mtv.corp.google.com>
+Date: Fri, 29 Jun 2012 10:27:29 +0900
+In-Reply-To: <20120628022414.30496.4580.stgit@kitami.mtv.corp.google.com>
+	(Paul Turner's message of "Wed, 27 Jun 2012 19:24:14 -0700")
+Message-ID: <877guqykji.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changed "printk(KERN_INFO" to "pr_info("
-and "printk(KERN_DEBUG" to "pr_debug("
-Fixed a "quoted string split across lines" issue
-no warnings after that
+Hi,
 
-Signed-off-by: Sebastian Benvenuti <sebastianbenvenuti@gmail.com>
----
- drivers/staging/comedi/drivers/vmk80xx.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+On Wed, 27 Jun 2012 19:24:14 -0700, Paul Turner wrote:
+> We are currently maintaining:
+>   runnable_load(cfs_rq) = \Sum task_load(t)
+>
+> For all running children t of cfs_rq.  While this can be naturally updated for
+> tasks in a runnable state (as they are scheduled); this does not account for
+> the load contributed by blocked task entities.
+>
+> This can be solved by introducing a separate accounting for blocked load:
+>   blocked_load(cfs_rq) = \Sum runnable(b) * weight(b)
+>
+> Obviously we do not want to iterate over all blocked entities to account for
+> their decay, we instead observe that:
+>   runnable_load(t) = \Sum p_i*y^i
+>
+> and that to account for an additional idle period we only need to compute:
+>   y*runnable_load(t).
+>
+> This means that we can compute all blocked entities at once by evaluating:
+>   blocked_load(cfs_rq)` = y * blocked_load(cfs_rq)
+>
+> Finally we maintain a decay counter so that when a sleeping entity re-awakens
+> we can determine how much of its load should be removed from the blocked sum.
+>
+> Signed-off-by: Paul Turner <pjt@google.com>
+> Signed-off-by: Ben Segall <bsegall@google.com>
+> ---
+>  include/linux/sched.h |    1 
+>  kernel/sched/core.c   |    3 +
+>  kernel/sched/debug.c  |    3 +
+>  kernel/sched/fair.c   |  130 ++++++++++++++++++++++++++++++++++++++++++++-----
+>  kernel/sched/sched.h  |    4 +-
+>  5 files changed, 126 insertions(+), 15 deletions(-)
+>
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 0c54ce0..842c4df 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1139,6 +1139,7 @@ struct load_weight {
+>  struct sched_avg {
+>  	u32 runnable_avg_sum, runnable_avg_period;
+>  	u64 last_runnable_update;
+> +	s64 decay_count;
+>  	unsigned long load_avg_contrib;
+>  };
+>  
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 9bb7d28..aeb8e56 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1713,6 +1713,9 @@ static void __sched_fork(struct task_struct *p)
+>  	p->se.vruntime			= 0;
+>  	INIT_LIST_HEAD(&p->se.group_node);
+>  
+> +#if defined(CONFIG_FAIR_GROUP_SCHED) && defined(CONFIG_SMP)
+> +	p->se.avg.decay_count = 0;
+> +#endif
+>  #ifdef CONFIG_SCHEDSTATS
+>  	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
+>  #endif
+> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+> index aeb74e3..2aa60cf 100644
+> --- a/kernel/sched/debug.c
+> +++ b/kernel/sched/debug.c
+> @@ -95,6 +95,7 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
+>  	P(se->avg.runnable_avg_sum);
+>  	P(se->avg.runnable_avg_period);
+>  	P(se->avg.load_avg_contrib);
+> +	P(se->avg.decay_count);
+>  #endif
+>  #undef PN
+>  #undef P
+> @@ -230,6 +231,8 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+>  			atomic_read(&cfs_rq->tg->load_weight));
+>  	SEQ_printf(m, "  .%-30s: %lld\n", "runnable_load_avg",
+>  			cfs_rq->runnable_load_avg);
+> +	SEQ_printf(m, "  .%-30s: %lld\n", "blocked_load_avg",
+> +			cfs_rq->blocked_load_avg);
+>  #endif
+>  
+>  	print_cfs_group_stats(m, cpu, cfs_rq->tg);
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 8229766..6200d20 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1085,6 +1085,20 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
+>  	return decayed;
+>  }
+>  
+> +/* Synchronize an entity's decay with its parentin cfs_rq.*/
+                                             parenting
 
-diff --git a/drivers/staging/comedi/drivers/vmk80xx.c b/drivers/staging/comedi/drivers/vmk80xx.c
-index baee8d7..4b4b183 100644
---- a/drivers/staging/comedi/drivers/vmk80xx.c
-+++ b/drivers/staging/comedi/drivers/vmk80xx.c
-@@ -160,7 +160,7 @@ static int dbgcm;
- #define dbgcm(fmt, arg...)                     \
- do {                                           \
- 	if (dbgcm)                             \
--		printk(KERN_DEBUG fmt, ##arg); \
-+		pr_debug(fmt, ##arg); \
- } while (0)
- 
- enum vmk80xx_model {
-@@ -1240,8 +1240,7 @@ static int vmk80xx_attach(struct comedi_device *cdev,
- 
- 	minor = cdev->minor;
- 
--	printk(KERN_INFO
--	       "comedi%d: vmk80xx: board #%d [%s] attached to comedi\n",
-+	pr_info("comedi%d: vmk80xx: board #%d [%s] attached to comedi\n",
- 	       minor, dev->count, dev->board.name);
- 
- 	up(&dev->limit_sem);
-@@ -1384,11 +1383,11 @@ static int vmk80xx_probe(struct usb_interface *intf,
- 
- 	if (dev->board.model == VMK8061_MODEL) {
- 		vmk80xx_read_eeprom(dev, IC3_VERSION);
--		printk(KERN_INFO "comedi#: vmk80xx: %s\n", dev->fw.ic3_vers);
-+		pr_info("comedi#: vmk80xx: %s\n", dev->fw.ic3_vers);
- 
- 		if (vmk80xx_check_data_link(dev)) {
- 			vmk80xx_read_eeprom(dev, IC6_VERSION);
--			printk(KERN_INFO "comedi#: vmk80xx: %s\n",
-+			pr_info("comedi#: vmk80xx: %s\n",
- 			       dev->fw.ic6_vers);
- 		} else {
- 			dbgcm("comedi#: vmk80xx: no conn. to CPU\n");
-@@ -1400,7 +1399,7 @@ static int vmk80xx_probe(struct usb_interface *intf,
- 
- 	dev->probed = 1;
- 
--	printk(KERN_INFO "comedi#: vmk80xx: board #%d [%s] now attached\n",
-+	pr_info("comedi#: vmk80xx: board #%d [%s] now attached\n",
- 	       dev->count, dev->board.name);
- 
- 	mutex_unlock(&glb_mutex);
-@@ -1435,7 +1434,7 @@ static void vmk80xx_disconnect(struct usb_interface *intf)
- 	kfree(dev->usb_rx_buf);
- 	kfree(dev->usb_tx_buf);
- 
--	printk(KERN_INFO "comedi#: vmk80xx: board #%d [%s] now detached\n",
-+	pr_info("comedi#: vmk80xx: board #%d [%s] now detached\n",
- 	       dev->count, dev->board.name);
- 
- 	up(&dev->limit_sem);
-@@ -1462,7 +1461,7 @@ static int __init vmk80xx_init(void)
- {
- 	int retval;
- 
--	printk(KERN_INFO "vmk80xx: version 0.8.01 "
-+	pr_info("vmk80xx: version 0.8.01 " \
- 	       "Manuel Gebele <forensixs@gmx.de>\n");
- 
- 	retval = comedi_driver_register(&driver_vmk80xx);
--- 
-1.7.11.1
+> +static inline void __synchronize_entity_decay(struct sched_entity *se)
+> +{
+> +	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+> +	u64 decays = atomic64_read(&cfs_rq->decay_counter);
+> +
+> +	decays -= se->avg.decay_count;
+> +	if (!decays)
+> +		return;
+> +
+> +	se->avg.load_avg_contrib = decay_load(se->avg.load_avg_contrib, decays);
+> +	se->avg.decay_count += decays;
+> +}
+> +
+>  /* Compute the current contribution to load_avg by se, return any delta */
+>  static long __update_entity_load_avg_contrib(struct sched_entity *se)
+>  {
+> @@ -1100,8 +1114,18 @@ static long __update_entity_load_avg_contrib(struct sched_entity *se)
+>  	return se->avg.load_avg_contrib - old_contrib;
+>  }
+>  
+> +static inline void subtract_blocked_load_contrib(struct cfs_rq *cfs_rq,
+> +						 long load_contrib)
+> +{
+> +	if (likely(load_contrib < cfs_rq->blocked_load_avg))
+> +		cfs_rq->blocked_load_avg -= load_contrib;
+> +	else
+> +		cfs_rq->blocked_load_avg = 0;
+> +}
+> +
+>  /* Update a sched_entity's runnable average */
+> -static inline void update_entity_load_avg(struct sched_entity *se)
+> +static inline void update_entity_load_avg(struct sched_entity *se,
+> +					  int update_cfs_rq)
+>  {
+>  	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+>  	long contrib_delta;
+> @@ -1111,8 +1135,34 @@ static inline void update_entity_load_avg(struct sched_entity *se)
+>  		return;
+>  
+>  	contrib_delta = __update_entity_load_avg_contrib(se);
+> +
+> +	if (!update_cfs_rq)
+> +		return;
+> +
+>  	if (se->on_rq)
+>  		cfs_rq->runnable_load_avg += contrib_delta;
+> +	else
+> +		subtract_blocked_load_contrib(cfs_rq, -contrib_delta);
 
+Subtracting negative delta means an addition, right?
+
+
+> +}
+> +
+> +/*
+> + * Decay the load contributed by all blocked children and account this so that
+> + * they their contribution may appropriately discounted when they wake up.
+
+s/they their/their/ ?
+
+
+> + */
+> +static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq)
+
+I guess update_cfs_blocked_load is a bit more consistent name with
+update_cfs_{load,shares}.
+
+Thanks,
+Namhyung
+
+
+> +{
+> +	u64 now = rq_of(cfs_rq)->clock_task >> 20;
+> +	u64 decays;
+> +
+> +	decays = now - cfs_rq->last_decay;
+> +	if (!decays)
+> +		return;
+> +
+> +	cfs_rq->blocked_load_avg = decay_load(cfs_rq->blocked_load_avg,
+> +					      decays);
+> +	atomic64_add(decays, &cfs_rq->decay_counter);
+> +
+> +	cfs_rq->last_decay = now;
+>  }
+>  
+>  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+> @@ -1122,26 +1172,56 @@ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+>  
+>  /* Add the load generated by se into cfs_rq's child load-average */
+>  static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+> -						  struct sched_entity *se)
+> -{
+> -	update_entity_load_avg(se);
+> +						  struct sched_entity *se,
+> +						  int wakeup)
+> +{
+> +	/* we track migrations using entity decay_count == 0 */
+> +	if (unlikely(!se->avg.decay_count)) {
+> +		se->avg.last_runnable_update = rq_of(cfs_rq)->clock_task;
+> +		se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
+> +		wakeup = 0;
+> +	} else {
+> +		__synchronize_entity_decay(se);
+> +	}
+> +
+> +	if (wakeup)
+> +		subtract_blocked_load_contrib(cfs_rq, se->avg.load_avg_contrib);
+> +
+> +	update_entity_load_avg(se, 0);
+>  	cfs_rq->runnable_load_avg += se->avg.load_avg_contrib;
+> +	update_cfs_rq_blocked_load(cfs_rq);
+>  }
+>  
+> -/* Remove se's load from this cfs_rq child load-average */
+> +/*
+> + * Remove se's load from this cfs_rq child load-average, if the entity is
+> + * transitioning to a blocked state we track its projected decay using
+> + * blocked_load_avg.
+> + */
+>  static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
+> -						  struct sched_entity *se)
+> +						  struct sched_entity *se,
+> +						  int sleep)
+>  {
+> -	update_entity_load_avg(se);
+> +	update_entity_load_avg(se, 1);
+> +
+>  	cfs_rq->runnable_load_avg -= se->avg.load_avg_contrib;
+> +	if (sleep) {
+> +		cfs_rq->blocked_load_avg += se->avg.load_avg_contrib;
+> +		se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
+> +	} else {
+> +		se->avg.decay_count = 0;
+> +	}
+>  }
+>  #else
+> -static inline void update_entity_load_avg(struct sched_entity *se) {}
+> +static inline void update_entity_load_avg(struct sched_entity *se,
+> +					  int update_cfs_rq) {}
+>  static inline void update_rq_runnable_avg(struct rq *rq, int runnable) {}
+>  static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+> -						  struct sched_entity *se) {}
+> +					   struct sched_entity *se,
+> +					   int wakeup) {}
+>  static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
+> -						  struct sched_entity *se) {}
+> +					   struct sched_entity *se,
+> +					   int sleep) {}
+> +static inline void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq) {}
+>  #endif
+>  
+>  static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
+> @@ -1270,7 +1350,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+>  	 */
+>  	update_curr(cfs_rq);
+>  	update_cfs_load(cfs_rq, 0);
+> -	enqueue_entity_load_avg(cfs_rq, se);
+> +	enqueue_entity_load_avg(cfs_rq, se, flags & ENQUEUE_WAKEUP);
+>  	account_entity_enqueue(cfs_rq, se);
+>  	update_cfs_shares(cfs_rq);
+>  
+> @@ -1345,7 +1425,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+>  	 * Update run-time statistics of the 'current'.
+>  	 */
+>  	update_curr(cfs_rq);
+> -	dequeue_entity_load_avg(cfs_rq, se);
+> +	dequeue_entity_load_avg(cfs_rq, se, flags & DEQUEUE_SLEEP);
+>  
+>  	update_stats_dequeue(cfs_rq, se);
+>  	if (flags & DEQUEUE_SLEEP) {
+> @@ -1516,7 +1596,7 @@ static void put_prev_entity(struct cfs_rq *cfs_rq, struct sched_entity *prev)
+>  		/* Put 'current' back into the tree. */
+>  		__enqueue_entity(cfs_rq, prev);
+>  		/* in !on_rq case, update occurred at dequeue */
+> -		update_entity_load_avg(prev);
+> +		update_entity_load_avg(prev, 1);
+>  	}
+>  	cfs_rq->curr = NULL;
+>  }
+> @@ -1532,7 +1612,8 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
+>  	/*
+>  	 * Ensure that runnable average is periodically updated.
+>  	 */
+> -	update_entity_load_avg(curr);
+> +	update_entity_load_avg(curr, 1);
+> +	update_cfs_rq_blocked_load(cfs_rq);
+>  
+>  	/*
+>  	 * Update share accounting for long-running entities.
+> @@ -2391,6 +2472,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>  
+>  		update_cfs_load(cfs_rq, 0);
+>  		update_cfs_shares(cfs_rq);
+> +		update_entity_load_avg(se, 1);
+>  	}
+>  
+>  	if (!se) {
+> @@ -2452,6 +2534,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>  
+>  		update_cfs_load(cfs_rq, 0);
+>  		update_cfs_shares(cfs_rq);
+> +		update_entity_load_avg(se, 1);
+>  	}
+>  
+>  	if (!se) {
+> @@ -3557,6 +3640,7 @@ static int update_shares_cpu(struct task_group *tg, int cpu)
+>  
+>  	update_rq_clock(rq);
+>  	update_cfs_load(cfs_rq, 1);
+> +	update_cfs_rq_blocked_load(cfs_rq);
+>  
+>  	/*
+>  	 * We need to update shares after updating tg->load_weight in
+> @@ -5379,6 +5463,21 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
+>  		place_entity(cfs_rq, se, 0);
+>  		se->vruntime -= cfs_rq->min_vruntime;
+>  	}
+> +
+> +#if defined(CONFIG_FAIR_GROUP_SCHED) && defined(CONFIG_SMP)
+> +	/*
+> +	* Remove our load from contribution when we leave sched_fair
+> +	* and ensure we don't carry in an old decay_count if we
+> +	* switch back.
+> +	*/
+> +	if (p->se.avg.decay_count) {
+> +		struct cfs_rq *cfs_rq = cfs_rq_of(&p->se);
+> +		__synchronize_entity_decay(&p->se);
+> +		subtract_blocked_load_contrib(cfs_rq,
+> +				p->se.avg.load_avg_contrib);
+> +		p->se.avg.decay_count = 0;
+> +	}
+> +#endif
+>  }
+>  
+>  /*
+> @@ -5425,6 +5524,9 @@ void init_cfs_rq(struct cfs_rq *cfs_rq)
+>  #ifndef CONFIG_64BIT
+>  	cfs_rq->min_vruntime_copy = cfs_rq->min_vruntime;
+>  #endif
+> +#if defined(CONFIG_FAIR_GROUP_SCHED) && defined(CONFIG_SMP)
+> +	atomic64_set(&cfs_rq->decay_counter, 1);
+> +#endif
+>  }
+>  
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 26cc36f..a96adf1 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -229,7 +229,9 @@ struct cfs_rq {
+>  	 * This allows for the description of both thread and group usage (in
+>  	 * the FAIR_GROUP_SCHED case).
+>  	 */
+> -	u64 runnable_load_avg;
+> +	u64 runnable_load_avg, blocked_load_avg;
+> +	atomic64_t decay_counter;
+> +	u64 last_decay;
+>  #endif
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+>  	struct rq *rq;	/* cpu runqueue to which this cfs_rq is attached */
