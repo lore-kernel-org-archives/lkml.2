@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab2F2W2b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 18:28:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39671 "EHLO mx1.redhat.com"
+	id S1753035Ab2F2WaK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 18:30:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50602 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751401Ab2F2W2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 18:28:00 -0400
-Message-ID: <1341008877.1207.372.camel@bling.home>
-Subject: Re: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, avi@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Fri, 29 Jun 2012 16:27:57 -0600
-In-Reply-To: <20120628084611.GP6533@redhat.com>
-References: <20120627044758.23698.249.stgit@bling.home>
-	 <20120627050937.23698.68442.stgit@bling.home>
-	 <20120627152624.GC21393@redhat.com> <1340834658.1207.261.camel@bling.home>
-	 <20120627223128.GB27885@redhat.com> <20120628063431.GI6533@redhat.com>
-	 <20120628083435.GC12447@redhat.com> <20120628083541.GN6533@redhat.com>
-	 <20120628084105.GE12447@redhat.com> <20120628084611.GP6533@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1751054Ab2F2WaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 18:30:08 -0400
+Message-ID: <4FEE2C4B.7040405@zytor.com>
+Date: Fri, 29 Jun 2012 15:29:31 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Cyclonus J <cyclonusj@gmail.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        marmarek@invisiblethingslab.com, xen-devel@lists.xensource.com,
+        x86@kernel.org, Jason Garrett-Glaser <jason@x264.com>,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org, mingo@redhat.com,
+        tglx@linutronix.de, "Siddha, Suresh B" <suresh.b.siddha@intel.com>
+Subject: Re: [Xen-devel] [PATCH] x86 fixes for 3.3 impacting distros (v1).
+References: <1328888091-9692-1-git-send-email-konrad.wilk@oracle.com> <CABS55+BFrDUV-WR=nx+d6+ZJngpuZnh41DZ3NYU4adFqaxqaNA@mail.gmail.com> <20120510153457.GB6389@phenom.dumpdata.com> <20120627231755.GA1021@gmail.com> <20120628142836.GE8956@phenom.dumpdata.com> <4FEC6D44.8080807@zytor.com> <20120629215225.GA7544@gmail.com>
+In-Reply-To: <20120629215225.GA7544@gmail.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-28 at 11:46 +0300, Gleb Natapov wrote:
-> On Thu, Jun 28, 2012 at 11:41:05AM +0300, Michael S. Tsirkin wrote:
-> > On Thu, Jun 28, 2012 at 11:35:41AM +0300, Gleb Natapov wrote:
-> > > On Thu, Jun 28, 2012 at 11:34:35AM +0300, Michael S. Tsirkin wrote:
-> > > > On Thu, Jun 28, 2012 at 09:34:31AM +0300, Gleb Natapov wrote:
-> > > > > On Thu, Jun 28, 2012 at 01:31:29AM +0300, Michael S. Tsirkin wrote:
-> > > > > > On Wed, Jun 27, 2012 at 04:04:18PM -0600, Alex Williamson wrote:
-> > > > > > > On Wed, 2012-06-27 at 18:26 +0300, Michael S. Tsirkin wrote:
-> > > > > > > > On Tue, Jun 26, 2012 at 11:09:46PM -0600, Alex Williamson wrote:
-> > > > > > > > > @@ -71,6 +130,14 @@ irqfd_inject(struct work_struct *work)
-> > > > > > > > >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
-> > > > > > > > >  }
-> > > > > > > > >  
-> > > > > > > > > +static void
-> > > > > > > > > +irqfd_inject_level(struct work_struct *work)
-> > > > > > > > > +{
-> > > > > > > > > +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
-> > > > > > > > > +
-> > > > > > > > > +	kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
-> > > > > > > > > +}
-> > > > > > > > > +
-> > > > > > > > >  /*
-> > > > > > > > >   * Race-free decouple logic (ordering is critical)
-> > > > > > > > >   */
-> > > > > > > > 
-> > > > > > > > 
-> > > > > > > > Why is it safe to ignore return value here?
-> > > > > > > > needs a comment.
-> > > > > > > 
-> > > > > > > Well, it seems like you and Gleb came to the conclusion that it's safe,
-> > > > > > > but I can really follow from the list thread.  Can you explain and I'll
-> > > > > > > add a comment?  Thanks,
-> > > > > > > 
-> > > > > > > Alex
-> > > > > > 
-> > > > > > We merely talked about edge interrupts.
-> > > > > > 
-> > > > > In fact it would have been nice to return -EBUSY when write() to level
-> > > > > irqfd is coalesced.
-> > > > 
-> > > > Possibly nice but not really practical.
-> > > > 
-> > > What do you mean by that? Impossible to implement or not useful?
-> > 
-> > Impossible to implement and also does not match normal eventfd
-> > semantics.
-> > 
-> Hmm, I remember we discussed using irqfd for level triggered interrupt ~2
-> years ago and came to a conclusion that eventfd is a bad fit for it,
-> was true than is true now. Not be able to detect coalescing will make
-> irqfd level interrupts inferior to IRQ_LINE ioctl.
+On 06/29/2012 02:52 PM, Cyclonus J wrote:
+> 
+> Peter,
+> 
+> hmm, It looks like option 1 doesn't have any perf regression, but it is still
+> not acceptable? That is fine. If you prefer to have a software PAT table lookup, could you provide
+> some details so I can try to get something align that direction?
+> 
 
-Why do we care about coalescing?  I've been worried we need to re-inject
-based on the return value of kvm_set_irq(), but re-reading specs and
-code, we always post the interrupt to the irr.  For device assignment we
-don't really care if kvm_set_irq() managed to actually inject the
-interrupt, we're happy as long as it eventually hits the vcpu.  Current
-device assignment uses kvm_set_irq() without looking for coalescing.
-KVM_LINE_STATUS is the only caller that does something with the return
-value and neither apic nor ioapic code in qemu do anything with the
-value other than update accounting stats.  What am I missing that makes
-the return value worth knowing?  Thanks,
+It has no perf regression, but it really buries deep in the code a
+strange abstraction which only happens to work on Xen and is confusing
+as hell.
 
-Alex
+The idea with a software PAT table is that the PAT numbers used by the
+kernel should come from a table in the kernel instead of being
+hard-coded.  That might take some work, and it remains to be seen if it
+is practical.
 
+It *may* be that we need to hard-code 0 as WB, still, but that should be
+true on any sane platform.
+
+	-hpa
