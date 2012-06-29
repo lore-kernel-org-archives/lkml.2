@@ -1,73 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216Ab2F2Fbf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 01:31:35 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:33908 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab2F2Fbd (ORCPT
+	id S1751446Ab2F2Fb6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 01:31:58 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50140 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890Ab2F2Fb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 01:31:33 -0400
-Message-ID: <1340947838.2293.2.camel@falcor>
-Subject: Re: [PATCH 0/4] Was: deferring __fput()
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        ". James Morris" <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Date: Fri, 29 Jun 2012 01:30:38 -0400
-In-Reply-To: <20120628043836.GW14083@ZenIV.linux.org.uk>
-References: <1340369098.2464.20.camel@falcor>
-	 <20120623092049.GH14083@ZenIV.linux.org.uk>
-	 <20120623194505.GI14083@ZenIV.linux.org.uk>
-	 <20120623203800.GA10306@redhat.com>
-	 <20120623210141.GK14083@ZenIV.linux.org.uk>
-	 <20120624041652.GN14083@ZenIV.linux.org.uk>
-	 <20120624153310.GB24596@redhat.com>
-	 <20120625060357.GT14083@ZenIV.linux.org.uk>
-	 <20120625151812.GA16062@redhat.com> <20120627183721.GA23086@redhat.com>
-	 <20120628043836.GW14083@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	Fri, 29 Jun 2012 01:31:57 -0400
+X-AuditID: 9c93016f-b7c85ae00000559e-b0-4fed3dc74347
+Message-ID: <4FED3DDB.1000903@kernel.org>
+Date: Fri, 29 Jun 2012 14:32:11 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Rafael Aquini <aquini@redhat.com>
+CC: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2 1/4] mm: introduce compaction and migration for virtio
+ ballooned pages
+References: <cover.1340916058.git.aquini@redhat.com> <d0f33a6492501a0d420abbf184f9b956cff3e3fc.1340916058.git.aquini@redhat.com>
+In-Reply-To: <d0f33a6492501a0d420abbf184f9b956cff3e3fc.1340916058.git.aquini@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12062905-4242-0000-0000-00000229B1C1
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-06-28 at 05:38 +0100, Al Viro wrote:
-> On Wed, Jun 27, 2012 at 08:37:21PM +0200, Oleg Nesterov wrote:
-> > On 06/25, Oleg Nesterov wrote:
-> > >
-> > > And if it always takes ->pi_lock we do not need the new PF_ or something
-> > > else, exit_task_work() can set task->task_works = NO_MORE under ->pi_lock
-> > > (task_work_run() can check PF_EXITING), and task_work_add() ensures that
-> > > task_works != NO_MORE.
-> > >
-> > > What do you think?
-> > 
-> > It is not clear to me if you agree or not. So I am simply sending the
-> > patches I have.
-> > 
-> > Feel free to ignore or re-do.
-> > 
-> > Seriously, why should we add 2 pointers into task_struct? Sure, this
-> > is minor, but still... But perhaps task_work.c should not play tricks
-> > with the circular list, task_work_run() can reverse the list as you
-> > initially suggested.
-> > 
-> > Also, I am not sure about "define rcu_head callback_head", this series
-> > doesn't do this. But again, up to you.
+On 06/29/2012 06:49 AM, Rafael Aquini wrote:
+
+> This patch introduces the helper functions as well as the necessary changes
+> to teach compaction and migration bits how to cope with pages which are
+> part of a guest memory balloon, in order to make them movable by memory
+> compaction procedures.
 > 
-> Umm...  FWIW, my variant circa yesterday is in vfs.git#untested; it seems to survive
-> on uml/amd64 at least.  I'll look through your patches and see what can be nicked.
-> The list removal logics in mine looks really ugly ;-/
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
 
-Still failing to boot.  Fails to boot starting with commit "b24dfa6
-switch fput to task_work_add".
 
-Mimi
+Just a few comment but not critical. :)
 
+> ---
+>  include/linux/mm.h |   16 ++++++++
+>  mm/compaction.c    |  110 +++++++++++++++++++++++++++++++++++++++++++---------
+>  mm/migrate.c       |   30 +++++++++++++-
+>  3 files changed, 136 insertions(+), 20 deletions(-)
+> 
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index b36d08c..35568fc 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1629,5 +1629,21 @@ static inline unsigned int debug_guardpage_minorder(void) { return 0; }
+>  static inline bool page_is_guard(struct page *page) { return false; }
+>  #endif /* CONFIG_DEBUG_PAGEALLOC */
+>  
+> +#if (defined(CONFIG_VIRTIO_BALLOON) || \
+> +	defined(CONFIG_VIRTIO_BALLOON_MODULE)) && defined(CONFIG_COMPACTION)
+> +extern bool isolate_balloon_page(struct page *);
+> +extern bool putback_balloon_page(struct page *);
+> +extern struct address_space *balloon_mapping;
+> +
+> +static inline bool is_balloon_page(struct page *page)
+> +{
+> +        return (page->mapping == balloon_mapping) ? true : false;
+> +}
+
+
+What lock should it protect?
+
+> +#else
+> +static inline bool is_balloon_page(struct page *page)       { return false; }
+> +static inline bool isolate_balloon_page(struct page *page)  { return false; }
+> +static inline bool putback_balloon_page(struct page *page)  { return false; }
+> +#endif /* (VIRTIO_BALLOON || VIRTIO_BALLOON_MODULE) && COMPACTION */
+> +
+>  #endif /* __KERNEL__ */
+>  #endif /* _LINUX_MM_H */
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 7ea259d..6c6e572 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/backing-dev.h>
+>  #include <linux/sysctl.h>
+>  #include <linux/sysfs.h>
+> +#include <linux/export.h>
+>  #include "internal.h"
+>  
+>  #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+> @@ -312,32 +313,40 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  			continue;
+>  		}
+>  
+> -		if (!PageLRU(page))
+> -			continue;
+> -
+>  		/*
+> -		 * PageLRU is set, and lru_lock excludes isolation,
+> -		 * splitting and collapsing (collapsing has already
+> -		 * happened if PageLRU is set).
+> +		 * It is possible to migrate LRU pages and balloon pages.
+> +		 * Skip any other type of page.
+>  		 */
+> -		if (PageTransHuge(page)) {
+> -			low_pfn += (1 << compound_order(page)) - 1;
+> -			continue;
+> -		}
+> +		if (likely(PageLRU(page))) {
+
+
+We can't make sure it is likely because there might be so many pages for kernel.
+
+> +			/*
+> +			 * PageLRU is set, and lru_lock excludes isolation,
+> +			 * splitting and collapsing (collapsing has already
+> +			 * happened if PageLRU is set).
+> +			 */
+> +			if (PageTransHuge(page)) {
+> +				low_pfn += (1 << compound_order(page)) - 1;
+> +				continue;
+> +			}
+>  
+> -		if (!cc->sync)
+> -			mode |= ISOLATE_ASYNC_MIGRATE;
+> +			if (!cc->sync)
+> +				mode |= ISOLATE_ASYNC_MIGRATE;
+>  
+> -		lruvec = mem_cgroup_page_lruvec(page, zone);
+> +			lruvec = mem_cgroup_page_lruvec(page, zone);
+>  
+> -		/* Try isolate the page */
+> -		if (__isolate_lru_page(page, mode) != 0)
+> -			continue;
+> +			/* Try isolate the page */
+> +			if (__isolate_lru_page(page, mode) != 0)
+> +				continue;
+>  
+> -		VM_BUG_ON(PageTransCompound(page));
+> +			VM_BUG_ON(PageTransCompound(page));
+> +
+> +			/* Successfully isolated */
+> +			del_page_from_lru_list(page, lruvec, page_lru(page));
+> +		} else if (is_balloon_page(page)) {
+> +			if (!isolate_balloon_page(page))
+> +				continue;
+> +		} else
+> +			continue;
+>  
+> -		/* Successfully isolated */
+> -		del_page_from_lru_list(page, lruvec, page_lru(page));
+>  		list_add(&page->lru, migratelist);
+>  		cc->nr_migratepages++;
+>  		nr_isolated++;
+> @@ -903,4 +912,67 @@ void compaction_unregister_node(struct node *node)
+>  }
+>  #endif /* CONFIG_SYSFS && CONFIG_NUMA */
+>  
+> +#if defined(CONFIG_VIRTIO_BALLOON) || defined(CONFIG_VIRTIO_BALLOON_MODULE)
+> +/*
+> + * Balloon pages special page->mapping.
+> + * users must properly allocate and initialize an instance of balloon_mapping,
+> + * and set it as the page->mapping for balloon enlisted page instances.
+> + *
+> + * address_space_operations necessary methods for ballooned pages:
+> + *   .migratepage    - used to perform balloon's page migration (as is)
+> + *   .invalidatepage - used to isolate a page from balloon's page list
+> + *   .freepage       - used to reinsert an isolated page to balloon's page list
+> + */
+> +struct address_space *balloon_mapping;
+> +EXPORT_SYMBOL_GPL(balloon_mapping);
+> +
+> +/* __isolate_lru_page() counterpart for a ballooned page */
+> +bool isolate_balloon_page(struct page *page)
+> +{
+> +	if (WARN_ON(!is_balloon_page(page)))
+> +		return false;
+> +
+> +	if (likely(get_page_unless_zero(page))) {
+> +		/*
+> +		 * We can race against move_to_new_page() & __unmap_and_move().
+> +		 * If we stumble across a locked balloon page and succeed on
+> +		 * isolating it, the result tends to be disastrous.
+> +		 */
+> +		if (likely(trylock_page(page))) {
+> +			/*
+> +			 * A ballooned page, by default, has just one refcount.
+> +			 * Prevent concurrent compaction threads from isolating
+> +			 * an already isolated balloon page.
+> +			 */
+> +			if (is_balloon_page(page) && (page_count(page) == 2)) {
+> +				page->mapping->a_ops->invalidatepage(page, 0);
+
+
+Could you add more meaningful name wrapping raw invalidatepage?
+But I don't know what is proper name. ;)
+
+
+> +				unlock_page(page);
+> +				return true;
+> +			}
+> +			unlock_page(page);
+> +		}
+> +		/* Drop refcount taken for this already isolated page */
+> +		put_page(page);
+> +	}
+> +	return false;
+> +}
+> +
+> +/* putback_lru_page() counterpart for a ballooned page */
+> +bool putback_balloon_page(struct page *page)
+> +{
+> +	if (WARN_ON(!is_balloon_page(page)))
+> +		return false;
+> +
+> +	if (likely(trylock_page(page))) {
+> +		if(is_balloon_page(page)) {
+> +			page->mapping->a_ops->freepage(page);
+
+
+Ditto.
+
+> +			put_page(page);
+> +			unlock_page(page);
+> +			return true;
+> +		}
+> +		unlock_page(page);
+> +	}
+> +	return false;
+> +}
+> +#endif /* CONFIG_VIRTIO_BALLOON || CONFIG_VIRTIO_BALLOON_MODULE */
+>  #endif /* CONFIG_COMPACTION */
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index be26d5c..59c7bc5 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -78,7 +78,10 @@ void putback_lru_pages(struct list_head *l)
+>  		list_del(&page->lru);
+>  		dec_zone_page_state(page, NR_ISOLATED_ANON +
+>  				page_is_file_cache(page));
+> -		putback_lru_page(page);
+> +		if (unlikely(is_balloon_page(page)))
+> +			WARN_ON(!putback_balloon_page(page));
+> +		else
+> +			putback_lru_page(page);
+>  	}
+>  }
+>  
+> @@ -783,6 +786,17 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
+>  		}
+>  	}
+>  
+> +	if (is_balloon_page(page)) {
+> +		/*
+> +		 * A ballooned page does not need any special attention from
+> +		 * physical to virtual reverse mapping procedures.
+> +		 * Skip any attempt to unmap PTEs or to remap swap cache,
+> +		 * in order to avoid burning cycles at rmap level.
+> +		 */
+> +		remap_swapcache = 0;
+> +		goto skip_unmap;
+> +	}
+> +
+>  	/*
+>  	 * Corner case handling:
+>  	 * 1. When a new swap-cache page is read into, it is added to the LRU
+> @@ -852,6 +866,20 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+>  			goto out;
+>  
+>  	rc = __unmap_and_move(page, newpage, force, offlining, mode);
+> +
+> +	if (is_balloon_page(newpage)) {
+> +		/*
+> +		 * A ballooned page has been migrated already. Now, it is the
+> +		 * time to wrap-up counters, handle the old page back to Buddy
+> +		 * and return.
+> +		 */
+> +		list_del(&page->lru);
+> +		dec_zone_page_state(page, NR_ISOLATED_ANON +
+> +				    page_is_file_cache(page));
+> +		put_page(page);
+> +		__free_page(page);
+> +		return rc;
+> +	}
+>  out:
+>  	if (rc != -EAGAIN) {
+>  		/*
+
+
+
+-- 
+Kind regards,
+Minchan Kim
