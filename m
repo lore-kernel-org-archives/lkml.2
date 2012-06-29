@@ -1,46 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab2F2JBt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 05:01:49 -0400
-Received: from mail-yw0-f42.google.com ([209.85.213.42]:38982 "EHLO
-	mail-yw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652Ab2F2JBq (ORCPT
+	id S1753153Ab2F2JGm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 05:06:42 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45492 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751315Ab2F2JGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 05:01:46 -0400
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20120629133046.f6c65d4d6017d2ae486cfd2b@canb.auug.org.au>
-References: <20120629133046.f6c65d4d6017d2ae486cfd2b@canb.auug.org.au>
-Date: Fri, 29 Jun 2012 11:01:45 +0200
-Message-ID: <CAKMK7uE=Jh8Sh_knC7L2=nmCiwPrt0Q5f4Cv4djpgsncOxFfpQ@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the drm tree with Linus' tree
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Dave Airlie <airlied@linux.ie>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 29 Jun 2012 05:06:40 -0400
+Message-ID: <1340960795.2907.34.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [set5 PATCH 0/6] scsi, async: asynchronous probing rework /
+ fixes
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Arjan van de Ven <arjan@infradead.org>
+Date: Fri, 29 Jun 2012 10:06:35 +0100
+In-Reply-To: <CAA9_cmejubhZRXkUc_-FYhgD3B0sjR8p4YO3VkgcxWvisd-RWg@mail.gmail.com>
+References: <20120622064657.21538.61711.stgit@dwillia2-linux.jf.intel.com>
+	 <CAA9_cmejubhZRXkUc_-FYhgD3B0sjR8p4YO3VkgcxWvisd-RWg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 29, 2012 at 5:30 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Dave,
->
-> Today's linux-next merge of the drm tree got a conflict in
-> drivers/gpu/drm/i915/intel_display.c between commit 7aa1e7f06d6e ("Revert
-> "drm/i915: allow PCH PWM override on IVB"") from Linus' tree and commit
-> 7cf416014813 ("drm/i915: clear up backlight #define confusion on gen4+")
-> from the drm tree.
->
-> The former removed the function ivb_pch_pwm_override() that is modified
-> by the latter, so I did that - or should I have just ignored the revert
-> patch?
+On Thu, 2012-06-28 at 15:22 -0700, Dan Williams wrote:
+> On Thu, Jun 21, 2012 at 11:46 PM, Dan Williams <dan.j.williams@intel.com> wrote:
+> > Set5 of 5 patchsets to update scsi, libsas, and libata in
+> > support of the isci driver.
+> >
+> > Commit 43a8d39d "[SCSI] fix async probe regression" found that
+> > async_synchronize_full() was missing async work that was scheduled to
+> > its own domain.  This led James to note:
+> >
+> >      "My theory is that this is an init problem: The assumption in a lot of
+> >       our code is that async_synchronize_full() waits for everything ... even
+> >       the domain specific async schedules, which isn't true."
+> >
+> > ...and this set aims to make that assumption true, but also with the
+> > ability to opt-out for "private" async work.
+> >
+> > The other async probe fix is in the area of unplug events that occur in
+> > the scsi async scanning interval.  Essentially scsi_remove_target() can
+> > now see semi-initialized scsi_targets that have yet to be added via
+> > device_add().
+> >
+> > If there are no objections I'll put these in -next.  But I expect at
+> > least patch1 and patch2 will need an ack from Arjan before the set shows
+> > up in scsi.git.
+> >
+> > ---
+> 
+> James,
+> 
+> I caught a couple conflicts with scsi.git/for-next and was able to fix
+> them up without rebasing on top of your tree.  I'll resend the series
+> after letting these sit in -next for a while, or I can prepare a tag
+> for you to pull with the whole pending set.
 
-Nope, the revert should take precedence because that code is bogus -
-the change in -next is just replacing a magic value with a proper
-#define.
+Ideally, I'd like acks from Arjan as the original async author before we
+commit it in stone (which is what effectively happens for a signed tag).
 
-Cheers, Daniel
--- 
-Daniel Vetter
-daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Could you resend the series now and I'll bother him for the two we need
+his ack on.
+
+Thanks,
+
+James
+
+
+> >
+> > Dan Williams (6):
+> >      async: introduce 'async_domain' type
+> 
+> dropped the include of async.h
+> 
+> >      async: make async_synchronize_full() flush all work regardless of domain
+> >      scsi: queue async scan work to an async_schedule domain
+> >      scsi: cleanup usages of scsi_complete_async_scans
+> 
+> dropped the changes to scsi_wait_scan.c since that file is deleted in
+> your for-next branch.
+
+
+
