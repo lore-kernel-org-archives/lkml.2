@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482Ab2F2NnR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 09:43:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45390 "EHLO mx2.suse.de"
+	id S932234Ab2F2Nrg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 09:47:36 -0400
+Received: from mga11.intel.com ([192.55.52.93]:39272 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755403Ab2F2Ncx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 09:32:53 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 02/16] mm: slub: Optimise the SLUB fast path to avoid pfmemalloc checks
-Date: Fri, 29 Jun 2012 14:32:33 +0100
-Message-Id: <1340976767-5737-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1340976767-5737-1-git-send-email-mgorman@suse.de>
-References: <1340976767-5737-1-git-send-email-mgorman@suse.de>
+	id S932078Ab2F2Nre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 09:47:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="171639053"
+Message-ID: <1340977901.3070.210.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] UBI: Change the default percentage of reserved PEB
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Fri, 29 Jun 2012 16:51:41 +0300
+In-Reply-To: <1340953061-15728-1-git-send-email-richard.genoud@gmail.com>
+References: <1340953061-15728-1-git-send-email-richard.genoud@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-mp4pLt36clgX0v8TR3n8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Lameter <cl@linux.com>
 
-This patch removes the check for pfmemalloc from the alloc hotpath and
-puts the logic after the election of a new per cpu slab. For a pfmemalloc
-page we do not use the fast path but force the use of the slow path which
-is also used for the debug case.
+--=-mp4pLt36clgX0v8TR3n8
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-This has the side-effect of weakening pfmemalloc processing in the
-following way;
+On Fri, 2012-06-29 at 08:57 +0200, Richard Genoud wrote:
+> The actual value (1%) is too low for actual NAND devices, a huge
+> majority of device has 2% maximum bad blocks (SLC or MLC).
+> (Actually it's 20 blocks on a 1024 blocks device, 40/2048...)
+>=20
+> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 
-1. A process that is allocating for network swap calls __slab_alloc.
-   pfmemalloc_match is true so the freelist is loaded and c->freelist is
-   now pointing to a pfmemalloc page.
+Thanks. But I'd like to wait a bit - Shmulik's point is fair and the
+current way UBI reserves PEBs is probably not the right thing to do. If
+we are going to change it, I'd like to have this patch to go together
+with that change. Just because it is better to change the default
+behavior once, than 2 times, to possibly upset/surprise users less
+times :-)
 
-2. A process that is attempting normal allocations calls slab_alloc,
-   finds the pfmemalloc page on the freelist and uses it because it did
-   not check pfmemalloc_match()
+--=20
+Best Regards,
+Artem Bityutskiy
 
-The patch allows non-pfmemalloc allocations to use pfmemalloc pages with
-the kmalloc slabs being the most vunerable caches on the grounds they
-are most likely to have a mix of pfmemalloc and !pfmemalloc requests. A
-later patch will still protect the system as processes will get throttled
-if the pfmemalloc reserves get depleted but performance will not degrade
-as smoothly.
+--=-mp4pLt36clgX0v8TR3n8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-[mgorman@suse.de: Expanded changelog]
-Signed-off-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/slub.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 05929df..87d59ea 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2287,11 +2287,11 @@ new_slab:
- 	}
- 
- 	page = c->page;
--	if (likely(!kmem_cache_debug(s)))
-+	if (likely(!kmem_cache_debug(s) && pfmemalloc_match(page, gfpflags)))
- 		goto load_freelist;
- 
- 	/* Only entered in the debug case */
--	if (!alloc_debug_processing(s, page, freelist, addr))
-+	if (kmem_cache_debug(s) && !alloc_debug_processing(s, page, freelist, addr))
- 		goto new_slab;	/* Slab failed checks. Next slab needed */
- 
- 	deactivate_slab(s, page, get_freepointer(s, freelist));
-@@ -2343,8 +2343,7 @@ redo:
- 
- 	object = c->freelist;
- 	page = c->page;
--	if (unlikely(!object || !node_match(page, node)
--					!pfmemalloc_match(page, gfpflags)))
-+	if (unlikely(!object || !node_match(page, node)))
- 		object = __slab_alloc(s, gfpflags, node, addr, c);
- 
- 	else {
--- 
-1.7.9.2
+iQIcBAABAgAGBQJP7bLtAAoJECmIfjd9wqK0e4YP/1MT5dnqEE9H5nCk/bvwTQ+N
+8irFKi8ueUo2QxxxlHz8TWlSGpPLOd3yNUWUEwT9TuJ2cvOsYacmW3Veh7ddh/sk
+YCLG+BkDsw7pXSXjQFqBrb9zjhpe1gpBQ8AlCSwQc6sv/mAzWJ4YiTyX4B8S8akK
+7G6ID5eRK8vwboEtysSw/b0LgJcF+4i6gl5Zj/PrhU/Wi5oP6nvKPbxVnDGzN7lU
+4hIeh+/GKLLzRH4nDeFmTvs9DTi72r/g3/fcUVtMZkCb+Tjhp8zyEaHv6QNyYSzO
+ArjMiVBKRyPs13flFH2Ui/xqGGBQjZ6/kdXak3/xew8bvRXSXXZD0n3JYdV5wWbE
+qaIhQUWZN+cMsqSIi+8S+zgRi5tPkKfrU6hUI19i6iRz+amDtx0h/R8+U0Or8rru
+STRnC5gc8d79pUcBa9VyXjRpTuaxxKnCcVCL8dQrqz6UWUj0UXWxI/0AcGGQKHnw
+CwgqroQvqT1dSa8VeHad822LuS8G1nDj1ywMX25ACF5RNd+uZI5JeHAK3wjq0hBh
+36TRwgPCi2cav157TTeVUn7f6TmcFbtbrDuLGVR59IMzC+w8qcRCORVcloOSd58d
+5qGXlj8chs/bERHlyFwFM/nceoczeMrw9YEZ3+qaHwmMvC1BK/NHYamP+qDXXdRO
+HzhEWVEBYZ1TOBGpGDvc
+=0kVn
+-----END PGP SIGNATURE-----
+
+--=-mp4pLt36clgX0v8TR3n8--
 
