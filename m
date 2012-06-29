@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124Ab2F2PgO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 11:36:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:23953 "EHLO mga09.intel.com"
+	id S1756127Ab2F2PhZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 11:37:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50297 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751895Ab2F2PgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 11:36:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="159753058"
-Date: Fri, 29 Jun 2012 17:47:21 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Jonas Aaberg <jonas.aberg@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v3] mfd/ab8500: print switch off cause
-Message-ID: <20120629154721.GN22806@sortiz-mobl>
-References: <1338883894-20388-1-git-send-email-linus.walleij@stericsson.com>
+	id S1751895Ab2F2PhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 11:37:24 -0400
+Message-ID: <4FEDCB7A.1060007@redhat.com>
+Date: Fri, 29 Jun 2012 11:36:26 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338883894-20388-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 09/40] autonuma: introduce kthread_bind_node()
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-10-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1340888180-15355-10-git-send-email-aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
 
-On Tue, Jun 05, 2012 at 10:11:34AM +0200, Linus Walleij wrote:
-> From: Jonas Aaberg <jonas.aberg@stericsson.com>
-> 
-> Instead of just printing the register value, also output some
-> description of the value.
-> 
-> Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
-> Reviewed-by: Mattias Wallin <mattias.wallin@stericsson.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> ChangeLog v2->v3:
-> - Use printk() with KERN_CONT instead of separate dev_* or
->   printk() calls. (Review comment from Joe Perches.)
-> ChangeLog v1->v2:
-> - Print each cause on its own line with a tab to avoid missing
->   initial cause heading if loglevel < info.
-> ---
->  drivers/mfd/ab8500-core.c |   25 ++++++++++++++++++++++++-
->  1 file changed, 24 insertions(+), 1 deletion(-)
-Patch applied, sorry for missing this one during the 3.5 merge window.
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1792,7 +1792,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+>   #define PF_SWAPWRITE	0x00800000	/* Allowed to write to swap */
+>   #define PF_SPREAD_PAGE	0x01000000	/* Spread page cache over cpuset */
+>   #define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
+> -#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpu */
+> +#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpus */
+>   #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
+>   #define PF_MEMPOLICY	0x10000000	/* Non-default NUMA mempolicy */
+>   #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
 
-Cheers,
-Samuel.
+Changing the semantics of PF_THREAD_BOUND without so much as
+a comment in your changelog or buy-in from the scheduler
+maintainers is a big no-no.
+
+Is there any reason you even need PF_THREAD_BOUND in your
+kernel numa threads?
+
+I do not see much at all in the scheduler code that uses
+PF_THREAD_BOUND and it is not clear at all that your
+numa threads get any benefit from them...
+
+Why do you think you need it?
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+All rights reversed
