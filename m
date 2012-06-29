@@ -1,156 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338Ab2F2P7O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 11:59:14 -0400
-Received: from mga14.intel.com ([143.182.124.37]:38401 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932087Ab2F2P6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 11:58:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="162286321"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: proski@gnu.org, Andrei Emeltchenko <andrei.emeltchenko@intel.com>,
-        linux-wireless@vger.kernel.org, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [RFC][PATCH 2/2] wireless: at76c50x: eliminate hex2str()
-Date: Fri, 29 Jun 2012 18:58:33 +0300
-Message-Id: <1340985513-15655-2-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1340985513-15655-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <20110930115306.3bc105cb@mj>
- <1340985513-15655-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S932226Ab2F2QCa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 12:02:30 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:26097
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932069Ab2F2QC3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 12:02:29 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VS-6(zzbb2dI98dI9371I1521I1102I1432Izz1202hzz8275bhz2dh2a8h668h839h93fhd25he5bhf0ah)
+Message-ID: <4FEDD07D.3090103@freescale.com>
+Date: Fri, 29 Jun 2012 10:57:49 -0500
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Tabi Timur-B04825 <B04825@freescale.com>
+CC: Zhao Chenhui-B35336 <B35336@freescale.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        Li Yang-R58472 <r58472@freescale.com>
+Subject: Re: [PATCH v6 1/5] powerpc/85xx: implement hardware timebase sync
+References: <1340706359-9455-1-git-send-email-chenhui.zhao@freescale.com> <CAOZdJXWiGOCtP1iJYR2S48XwR2Wpry8+VswctctdVfY9Z+QTiQ@mail.gmail.com>
+In-Reply-To: <CAOZdJXWiGOCtP1iJYR2S48XwR2Wpry8+VswctctdVfY9Z+QTiQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hex2str() is substituted by '%*pMF' specificator.
+On 06/29/2012 10:39 AM, Tabi Timur-B04825 wrote:
+> On Tue, Jun 26, 2012 at 5:25 AM, Zhao Chenhui
+> <chenhui.zhao@freescale.com> wrote:
+>> +static void mpc85xx_give_timebase(void)
+>> +{
+>> +       unsigned long flags;
+>> +
+>> +       local_irq_save(flags);
+>> +
+>> +       while (!tb_req)
+>> +               barrier();
+> 
+> I think tb_req and tb_valid need to be 'volatile'.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/net/wireless/at76c50x-usb.c |   54 ++++++++---------------------------
- 1 file changed, 12 insertions(+), 42 deletions(-)
+No, barrier() and mb() take care of that.
 
-diff --git a/drivers/net/wireless/at76c50x-usb.c b/drivers/net/wireless/at76c50x-usb.c
-index efc162e..f82f76b 100644
---- a/drivers/net/wireless/at76c50x-usb.c
-+++ b/drivers/net/wireless/at76c50x-usb.c
-@@ -498,36 +498,6 @@ exit:
- 	return ret;
- }
- 
--#define HEX2STR_BUFFERS 4
--#define HEX2STR_MAX_LEN 64
--
--/* Convert binary data into hex string */
--static char *hex2str(void *buf, size_t len)
--{
--	static atomic_t a = ATOMIC_INIT(0);
--	static char bufs[HEX2STR_BUFFERS][3 * HEX2STR_MAX_LEN + 1];
--	char *ret = bufs[atomic_inc_return(&a) & (HEX2STR_BUFFERS - 1)];
--	char *obuf = ret;
--	u8 *ibuf = buf;
--
--	if (len > HEX2STR_MAX_LEN)
--		len = HEX2STR_MAX_LEN;
--
--	if (len == 0)
--		goto exit;
--
--	while (len--) {
--		obuf = hex_byte_pack(obuf, *ibuf++);
--		*obuf++ = '-';
--	}
--	obuf--;
--
--exit:
--	*obuf = '\0';
--
--	return ret;
--}
--
- /* LED trigger */
- static int tx_activity;
- static void at76_ledtrig_tx_timerfunc(unsigned long data);
-@@ -1004,9 +974,9 @@ static void at76_dump_mib_mac_wep(struct at76_priv *priv)
- 	    WEP_SMALL_KEY_LEN : WEP_LARGE_KEY_LEN;
- 
- 	for (i = 0; i < WEP_KEYS; i++)
--		at76_dbg(DBG_MIB, "%s: MIB MAC_WEP: key %d: %s",
-+		at76_dbg(DBG_MIB, "%s: MIB MAC_WEP: key %d: %*pMF",
- 			 wiphy_name(priv->hw->wiphy), i,
--			 hex2str(m->wep_default_keyvalue[i], key_len));
-+			 key_len, m->wep_default_keyvalue[i]);
- exit:
- 	kfree(m);
- }
-@@ -1031,7 +1001,7 @@ static void at76_dump_mib_mac_mgmt(struct at76_priv *priv)
- 	at76_dbg(DBG_MIB, "%s: MIB MAC_MGMT: beacon_period %d CFP_max_duration "
- 		 "%d medium_occupancy_limit %d station_id 0x%x ATIM_window %d "
- 		 "CFP_mode %d privacy_opt_impl %d DTIM_period %d CFP_period %d "
--		 "current_bssid %pM current_essid %s current_bss_type %d "
-+		 "current_bssid %pM current_essid %*pMF current_bss_type %d "
- 		 "pm_mode %d ibss_change %d res %d "
- 		 "multi_domain_capability_implemented %d "
- 		 "international_roaming %d country_string %.3s",
-@@ -1041,7 +1011,7 @@ static void at76_dump_mib_mac_mgmt(struct at76_priv *priv)
- 		 le16_to_cpu(m->station_id), le16_to_cpu(m->ATIM_window),
- 		 m->CFP_mode, m->privacy_option_implemented, m->DTIM_period,
- 		 m->CFP_period, m->current_bssid,
--		 hex2str(m->current_essid, IW_ESSID_MAX_SIZE),
-+		 IW_ESSID_MAX_SIZE, m->current_essid,
- 		 m->current_bss_type, m->power_mgmt_mode, m->ibss_change,
- 		 m->res, m->multi_domain_capability_implemented,
- 		 m->multi_domain_capability_enabled, m->country_string);
-@@ -1069,7 +1039,7 @@ static void at76_dump_mib_mac(struct at76_priv *priv)
- 		 "cwmin %d cwmax %d short_retry_time %d long_retry_time %d "
- 		 "scan_type %d scan_channel %d probe_delay %u "
- 		 "min_channel_time %d max_channel_time %d listen_int %d "
--		 "desired_ssid %s desired_bssid %pM desired_bsstype %d",
-+		 "desired_ssid %*pMF desired_bssid %pM desired_bsstype %d",
- 		 wiphy_name(priv->hw->wiphy),
- 		 le32_to_cpu(m->max_tx_msdu_lifetime),
- 		 le32_to_cpu(m->max_rx_lifetime),
-@@ -1080,7 +1050,7 @@ static void at76_dump_mib_mac(struct at76_priv *priv)
- 		 le16_to_cpu(m->min_channel_time),
- 		 le16_to_cpu(m->max_channel_time),
- 		 le16_to_cpu(m->listen_interval),
--		 hex2str(m->desired_ssid, IW_ESSID_MAX_SIZE),
-+		 IW_ESSID_MAX_SIZE, m->desired_ssid,
- 		 m->desired_bssid, m->desired_bsstype);
- exit:
- 	kfree(m);
-@@ -1160,13 +1130,13 @@ static void at76_dump_mib_mdomain(struct at76_priv *priv)
- 		goto exit;
- 	}
- 
--	at76_dbg(DBG_MIB, "%s: MIB MDOMAIN: channel_list %s",
-+	at76_dbg(DBG_MIB, "%s: MIB MDOMAIN: channel_list %*pMF",
- 		 wiphy_name(priv->hw->wiphy),
--		 hex2str(m->channel_list, sizeof(m->channel_list)));
-+		 sizeof(m->channel_list), m->channel_list);
- 
--	at76_dbg(DBG_MIB, "%s: MIB MDOMAIN: tx_powerlevel %s",
-+	at76_dbg(DBG_MIB, "%s: MIB MDOMAIN: tx_powerlevel %*pMF",
- 		 wiphy_name(priv->hw->wiphy),
--		 hex2str(m->tx_powerlevel, sizeof(m->tx_powerlevel)));
-+		 sizeof(m->tx_powerlevel), m->tx_powerlevel);
- exit:
- 	kfree(m);
- }
-@@ -1369,9 +1339,9 @@ static int at76_startup_device(struct at76_priv *priv)
- 	int ret;
- 
- 	at76_dbg(DBG_PARAMS,
--		 "%s param: ssid %.*s (%s) mode %s ch %d wep %s key %d "
-+		 "%s param: ssid %.*s (%*pMF) mode %s ch %d wep %s key %d "
- 		 "keylen %d", wiphy_name(priv->hw->wiphy), priv->essid_size,
--		 priv->essid, hex2str(priv->essid, IW_ESSID_MAX_SIZE),
-+		 priv->essid, IW_ESSID_MAX_SIZE, priv->essid,
- 		 priv->iw_mode == IW_MODE_ADHOC ? "adhoc" : "infra",
- 		 priv->channel, priv->wep_enabled ? "enabled" : "disabled",
- 		 priv->wep_key_id, priv->wep_keys_len[priv->wep_key_id]);
--- 
-1.7.10
+>> +static const struct of_device_id mpc85xx_smp_guts_ids[] = {
+>> +       { .compatible = "fsl,mpc8572-guts", },
+>> +       { .compatible = "fsl,p1020-guts", },
+>> +       { .compatible = "fsl,p1021-guts", },
+>> +       { .compatible = "fsl,p1022-guts", },
+>> +       { .compatible = "fsl,p1023-guts", },
+>> +       { .compatible = "fsl,p2020-guts", },
+>> +       {},
+>> +};
+> 
+> I wonder if it's possible to dynamically generate the compatible
+> string by using the SOC name?
+
+Where are you going to get the SoC name from?
+
+-Scott
 
