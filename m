@@ -1,335 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932492Ab2F2Ngs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 09:36:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41139 "EHLO arroyo.ext.ti.com"
+	id S932454Ab2F2Nhj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 09:37:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45631 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932291Ab2F2Ngo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 09:36:44 -0400
-From: Rajendra Nayak <rnayak@ti.com>
-To: <mturquette@ti.com>, <mturquette@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Rajendra Nayak <rnayak@ti.com>
-Subject: [PATCH v4] clk: Add support for rate table based dividers
-Date: Fri, 29 Jun 2012 19:06:32 +0530
-Message-ID: <1340976992-9316-1-git-send-email-rnayak@ti.com>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932118Ab2F2Nd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 09:33:29 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        Linux-NFS <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Neil Brown <neilb@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 01/12] netvm: Prevent a stream-specific deadlock
+Date: Fri, 29 Jun 2012 14:33:14 +0100
+Message-Id: <1340976805-5799-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1340976805-5799-1-git-send-email-mgorman@suse.de>
+References: <1340976805-5799-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some divider clks do not have any obvious relationship
-between the divider and the value programmed in the
-register. For instance, say a value of 1 could signify divide
-by 6 and a value of 2 could signify divide by 4 etc.
-Also there are dividers where not all values possible
-based on the bitfield width are valid. For instance
-a 3 bit wide bitfield can be used to program a value
-from 0 to 7. However its possible that only 0 to 4
-are valid values.
+It could happen that all !SOCK_MEMALLOC sockets have buffered so
+much data that we're over the global rmem limit. This will prevent
+SOCK_MEMALLOC buffers from receiving data, which will prevent userspace
+from running, which is needed to reduce the buffered data.
 
-All these cases need the platform code to pass a simple
-table of divider/value tuple, so the framework knows
-the exact value to be written based on the divider
-calculation and can also do better error checking.
+Fix this by exempting the SOCK_MEMALLOC sockets from the rmem limit.
+Once this change it applied, it is important that sockets that set
+SOCK_MEMALLOC do not clear the flag until the socket is being torn down.
+If this happens, a warning is generated and the tokens reclaimed to
+avoid accounting errors until the bug is fixed.
 
-This patch adds support for such rate table based
-dividers and as part of the support adds a new
-registration function 'clk_register_divider_table()'
-and a new macro for static definition
-'DEFINE_CLK_DIVIDER_TABLE'.
-
-Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+[davem@davemloft.net: Warning about clearing SOCK_MEMALLOC]
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: David S. Miller <davem@davemloft.net>
+Acked-by: Rik van Riel<riel@redhat.com>
 ---
- drivers/clk/clk-divider.c    |  125 ++++++++++++++++++++++++++++++++++++-----
- include/linux/clk-private.h  |   20 ++++++-
- include/linux/clk-provider.h |   12 ++++
- 3 files changed, 139 insertions(+), 18 deletions(-)
+ include/net/sock.h     |    8 +++++---
+ net/caif/caif_socket.c |    2 +-
+ net/core/sock.c        |   14 +++++++++++++-
+ net/ipv4/tcp_input.c   |   21 +++++++++++----------
+ net/sctp/ulpevent.c    |    3 ++-
+ 5 files changed, 32 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
-index e548c43..02a4da9 100644
---- a/drivers/clk/clk-divider.c
-+++ b/drivers/clk/clk-divider.c
-@@ -32,30 +32,69 @@
- #define div_mask(d)	((1 << (d->width)) - 1)
- #define is_power_of_two(i)	!(i & ~i)
- 
-+static unsigned int _get_table_maxdiv(const struct clk_div_table *table)
-+{
-+	unsigned int maxdiv = 0;
-+	const struct clk_div_table *clkt;
-+
-+	for (clkt = table; clkt->div; clkt++)
-+		if (clkt->div > maxdiv)
-+			maxdiv = clkt->div;
-+	return maxdiv;
-+}
-+
- static unsigned int _get_maxdiv(struct clk_divider *divider)
- {
- 	if (divider->flags & CLK_DIVIDER_ONE_BASED)
- 		return div_mask(divider);
- 	if (divider->flags & CLK_DIVIDER_POWER_OF_TWO)
- 		return 1 << div_mask(divider);
-+	if (divider->table)
-+		return _get_table_maxdiv(divider->table);
- 	return div_mask(divider) + 1;
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 767c443..5faae49 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1326,12 +1326,14 @@ static inline bool sk_wmem_schedule(struct sock *sk, int size)
+ 		__sk_mem_schedule(sk, size, SK_MEM_SEND);
  }
  
-+static unsigned int _get_table_div(const struct clk_div_table *table,
-+							unsigned int val)
-+{
-+	const struct clk_div_table *clkt;
-+
-+	for (clkt = table; clkt->div; clkt++)
-+		if (clkt->val == val)
-+			return clkt->div;
-+	return 0;
-+}
-+
- static unsigned int _get_div(struct clk_divider *divider, unsigned int val)
+-static inline bool sk_rmem_schedule(struct sock *sk, int size)
++static inline bool
++sk_rmem_schedule(struct sock *sk, struct sk_buff *skb, unsigned int size)
  {
- 	if (divider->flags & CLK_DIVIDER_ONE_BASED)
- 		return val;
- 	if (divider->flags & CLK_DIVIDER_POWER_OF_TWO)
- 		return 1 << val;
-+	if (divider->table)
-+		return _get_table_div(divider->table, val);
- 	return val + 1;
+ 	if (!sk_has_account(sk))
+ 		return true;
+-	return size <= sk->sk_forward_alloc ||
+-		__sk_mem_schedule(sk, size, SK_MEM_RECV);
++	return size<= sk->sk_forward_alloc ||
++		__sk_mem_schedule(sk, size, SK_MEM_RECV) ||
++		skb_pfmemalloc(skb);
  }
  
-+static unsigned int _get_table_val(const struct clk_div_table *table,
-+							unsigned int div)
-+{
-+	const struct clk_div_table *clkt;
+ static inline void sk_mem_reclaim(struct sock *sk)
+diff --git a/net/caif/caif_socket.c b/net/caif/caif_socket.c
+index 78f1cda..095259f 100644
+--- a/net/caif/caif_socket.c
++++ b/net/caif/caif_socket.c
+@@ -141,7 +141,7 @@ static int caif_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+ 	err = sk_filter(sk, skb);
+ 	if (err)
+ 		return err;
+-	if (!sk_rmem_schedule(sk, skb->truesize) && rx_flow_is_on(cf_sk)) {
++	if (!sk_rmem_schedule(sk, skb, skb->truesize) && rx_flow_is_on(cf_sk)) {
+ 		set_rx_flow_off(cf_sk);
+ 		net_dbg_ratelimited("sending flow OFF due to rmem_schedule\n");
+ 		caif_flow_ctrl(sk, CAIF_MODEMCMD_FLOW_OFF_REQ);
+diff --git a/net/core/sock.c b/net/core/sock.c
+index c551563..5cbca0e 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -295,6 +295,18 @@ void sk_clear_memalloc(struct sock *sk)
+ 	sock_reset_flag(sk, SOCK_MEMALLOC);
+ 	sk->sk_allocation &= ~__GFP_MEMALLOC;
+ 	static_key_slow_dec(&memalloc_socks);
 +
-+	for (clkt = table; clkt->div; clkt++)
-+		if (clkt->div == div)
-+			return clkt->val;
-+	return 0;
-+}
-+
- static unsigned int _get_val(struct clk_divider *divider, u8 div)
- {
- 	if (divider->flags & CLK_DIVIDER_ONE_BASED)
- 		return div;
- 	if (divider->flags & CLK_DIVIDER_POWER_OF_TWO)
- 		return __ffs(div);
-+	if (divider->table)
-+		return  _get_table_val(divider->table, div);
- 	return div - 1;
++	/*
++	 * SOCK_MEMALLOC is allowed to ignore rmem limits to ensure forward
++	 * progress of swapping. However, if SOCK_MEMALLOC is cleared while
++	 * it has rmem allocations there is a risk that the user of the
++	 * socket cannot make forward progress due to exceeding the rmem
++	 * limits. By rights, sk_clear_memalloc() should only be called
++	 * on sockets being torn down but warn and reset the accounting if
++	 * that assumption breaks.
++	 */
++	if (WARN_ON(sk->sk_forward_alloc))
++		sk_mem_reclaim(sk);
  }
+ EXPORT_SYMBOL_GPL(sk_clear_memalloc);
  
-@@ -84,6 +123,26 @@ static unsigned long clk_divider_recalc_rate(struct clk_hw *hw,
-  */
- #define MULT_ROUND_UP(r, m) ((r) * (m) + (m) - 1)
+@@ -396,7 +408,7 @@ int sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+ 	if (err)
+ 		return err;
  
-+static bool _is_valid_table_div(const struct clk_div_table *table,
-+							 unsigned int div)
-+{
-+	const struct clk_div_table *clkt;
-+
-+	for (clkt = table; clkt->div; clkt++)
-+		if (clkt->div == div)
-+			return true;
-+	return false;
-+}
-+
-+static bool _is_valid_div(struct clk_divider *divider, unsigned int div)
-+{
-+	if (divider->flags & CLK_DIVIDER_POWER_OF_TWO)
-+		return is_power_of_two(div);
-+	if (divider->table)
-+		return _is_valid_table_div(divider->table, div);
-+	return true;
-+}
-+
- static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
- 		unsigned long *best_parent_rate)
+-	if (!sk_rmem_schedule(sk, skb->truesize)) {
++	if (!sk_rmem_schedule(sk, skb, skb->truesize)) {
+ 		atomic_inc(&sk->sk_drops);
+ 		return -ENOBUFS;
+ 	}
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index 8416f8a..7d6ff91 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -4512,19 +4512,20 @@ static void tcp_ofo_queue(struct sock *sk)
+ static bool tcp_prune_ofo_queue(struct sock *sk);
+ static int tcp_prune_queue(struct sock *sk);
+ 
+-static int tcp_try_rmem_schedule(struct sock *sk, unsigned int size)
++static int tcp_try_rmem_schedule(struct sock *sk, struct sk_buff *skb,
++				 unsigned int size)
  {
-@@ -111,8 +170,7 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
- 	maxdiv = min(ULONG_MAX / rate, maxdiv);
+ 	if (atomic_read(&sk->sk_rmem_alloc) > sk->sk_rcvbuf ||
+-	    !sk_rmem_schedule(sk, size)) {
++	    !sk_rmem_schedule(sk, skb, size)) {
  
- 	for (i = 1; i <= maxdiv; i++) {
--		if ((divider->flags & CLK_DIVIDER_POWER_OF_TWO)
--			&& (!is_power_of_two(i)))
-+		if (!_is_valid_div(divider, i))
- 			continue;
- 		parent_rate = __clk_round_rate(__clk_get_parent(hw->clk),
- 				MULT_ROUND_UP(rate, i));
-@@ -176,22 +234,11 @@ const struct clk_ops clk_divider_ops = {
- };
- EXPORT_SYMBOL_GPL(clk_divider_ops);
+ 		if (tcp_prune_queue(sk) < 0)
+ 			return -1;
  
--/**
-- * clk_register_divider - register a divider clock with the clock framework
-- * @dev: device registering this clock
-- * @name: name of this clock
-- * @parent_name: name of clock's parent
-- * @flags: framework-specific flags
-- * @reg: register address to adjust divider
-- * @shift: number of bits to shift the bitfield
-- * @width: width of the bitfield
-- * @clk_divider_flags: divider-specific flags for this clock
-- * @lock: shared register lock for this clock
-- */
--struct clk *clk_register_divider(struct device *dev, const char *name,
-+static struct clk *_register_divider(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
- 		void __iomem *reg, u8 shift, u8 width,
--		u8 clk_divider_flags, spinlock_t *lock)
-+		u8 clk_divider_flags, const struct clk_div_table *table,
-+		spinlock_t *lock)
+-		if (!sk_rmem_schedule(sk, size)) {
++		if (!sk_rmem_schedule(sk, skb, size)) {
+ 			if (!tcp_prune_ofo_queue(sk))
+ 				return -1;
+ 
+-			if (!sk_rmem_schedule(sk, size))
++			if (!sk_rmem_schedule(sk, skb, size))
+ 				return -1;
+ 		}
+ 	}
+@@ -4579,7 +4580,7 @@ static void tcp_data_queue_ofo(struct sock *sk, struct sk_buff *skb)
+ 
+ 	TCP_ECN_check_ce(tp, skb);
+ 
+-	if (tcp_try_rmem_schedule(sk, skb->truesize)) {
++	if (tcp_try_rmem_schedule(sk, skb, skb->truesize)) {
+ 		/* TODO: should increment a counter */
+ 		__kfree_skb(skb);
+ 		return;
+@@ -4710,17 +4711,17 @@ static int __must_check tcp_queue_rcv(struct sock *sk, struct sk_buff *skb, int
+ 
+ int tcp_send_rcvq(struct sock *sk, struct msghdr *msg, size_t size)
  {
- 	struct clk_divider *div;
- 	struct clk *clk;
-@@ -217,6 +264,7 @@ struct clk *clk_register_divider(struct device *dev, const char *name,
- 	div->flags = clk_divider_flags;
- 	div->lock = lock;
- 	div->hw.init = &init;
-+	div->table = table;
+-	struct sk_buff *skb;
++	struct sk_buff *skb = NULL;
+ 	struct tcphdr *th;
+ 	bool fragstolen;
  
- 	/* register the clock */
- 	clk = clk_register(dev, &div->hw);
-@@ -226,3 +274,48 @@ struct clk *clk_register_divider(struct device *dev, const char *name,
+-	if (tcp_try_rmem_schedule(sk, size + sizeof(*th)))
+-		goto err;
+-
+ 	skb = alloc_skb(size + sizeof(*th), sk->sk_allocation);
+ 	if (!skb)
+ 		goto err;
  
- 	return clk;
- }
++	if (tcp_try_rmem_schedule(sk, skb, size + sizeof(*th)))
++		goto err_free;
 +
-+/**
-+ * clk_register_divider - register a divider clock with the clock framework
-+ * @dev: device registering this clock
-+ * @name: name of this clock
-+ * @parent_name: name of clock's parent
-+ * @flags: framework-specific flags
-+ * @reg: register address to adjust divider
-+ * @shift: number of bits to shift the bitfield
-+ * @width: width of the bitfield
-+ * @clk_divider_flags: divider-specific flags for this clock
-+ * @lock: shared register lock for this clock
-+ */
-+struct clk *clk_register_divider(struct device *dev, const char *name,
-+		const char *parent_name, unsigned long flags,
-+		void __iomem *reg, u8 shift, u8 width,
-+		u8 clk_divider_flags, spinlock_t *lock)
-+{
-+	return _register_divider(dev, name, parent_name, flags, reg, shift,
-+			width, clk_divider_flags, NULL, lock);
-+}
-+
-+/**
-+ * clk_register_divider_table - register a table based divider clock with
-+ * the clock framework
-+ * @dev: device registering this clock
-+ * @name: name of this clock
-+ * @parent_name: name of clock's parent
-+ * @flags: framework-specific flags
-+ * @reg: register address to adjust divider
-+ * @shift: number of bits to shift the bitfield
-+ * @width: width of the bitfield
-+ * @clk_divider_flags: divider-specific flags for this clock
-+ * @table: array of divider/value pairs ending with a div set to 0
-+ * @lock: shared register lock for this clock
-+ */
-+struct clk *clk_register_divider_table(struct device *dev, const char *name,
-+		const char *parent_name, unsigned long flags,
-+		void __iomem *reg, u8 shift, u8 width,
-+		u8 clk_divider_flags, const struct clk_div_table *table,
-+		spinlock_t *lock)
-+{
-+	return _register_divider(dev, name, parent_name, flags, reg, shift,
-+			width, clk_divider_flags, table, lock);
-+}
-diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-index eb3f84b..cc9972d 100644
---- a/include/linux/clk-private.h
-+++ b/include/linux/clk-private.h
-@@ -103,9 +103,9 @@ struct clk {
- 	DEFINE_CLK(_name, clk_gate_ops, _flags,			\
- 			_name##_parent_names, _name##_parents);
+ 	th = (struct tcphdr *)skb_put(skb, sizeof(*th));
+ 	skb_reset_transport_header(skb);
+ 	memset(th, 0, sizeof(*th));
+@@ -4791,7 +4792,7 @@ static void tcp_data_queue(struct sock *sk, struct sk_buff *skb)
+ 		if (eaten <= 0) {
+ queue_and_out:
+ 			if (eaten < 0 &&
+-			    tcp_try_rmem_schedule(sk, skb->truesize))
++			    tcp_try_rmem_schedule(sk, skb, skb->truesize))
+ 				goto drop;
  
--#define DEFINE_CLK_DIVIDER(_name, _parent_name, _parent_ptr,	\
-+#define _DEFINE_CLK_DIVIDER(_name, _parent_name, _parent_ptr,	\
- 				_flags, _reg, _shift, _width,	\
--				_divider_flags, _lock)		\
-+				_divider_flags, _table, _lock)	\
- 	static struct clk _name;				\
- 	static const char *_name##_parent_names[] = {		\
- 		_parent_name,					\
-@@ -121,11 +121,27 @@ struct clk {
- 		.shift = _shift,				\
- 		.width = _width,				\
- 		.flags = _divider_flags,			\
-+		.table = _table,				\
- 		.lock = _lock,					\
- 	};							\
- 	DEFINE_CLK(_name, clk_divider_ops, _flags,		\
- 			_name##_parent_names, _name##_parents);
+ 			eaten = tcp_queue_rcv(sk, skb, 0, &fragstolen);
+diff --git a/net/sctp/ulpevent.c b/net/sctp/ulpevent.c
+index 8a84017..1f89add 100644
+--- a/net/sctp/ulpevent.c
++++ b/net/sctp/ulpevent.c
+@@ -702,7 +702,8 @@ struct sctp_ulpevent *sctp_ulpevent_make_rcvmsg(struct sctp_association *asoc,
+ 	if (rx_count >= asoc->base.sk->sk_rcvbuf) {
  
-+#define DEFINE_CLK_DIVIDER(_name, _parent_name, _parent_ptr,	\
-+				_flags, _reg, _shift, _width,	\
-+				_divider_flags, _lock)		\
-+	_DEFINE_CLK_DIVIDER(_name, _parent_name, _parent_ptr,	\
-+				_flags, _reg, _shift, _width,	\
-+				_divider_flags, NULL, _lock)
-+
-+#define DEFINE_CLK_DIVIDER_TABLE(_name, _parent_name,		\
-+				_parent_ptr, _flags, _reg,	\
-+				_shift, _width, _divider_flags,	\
-+				_table, _lock)			\
-+	_DEFINE_CLK_DIVIDER(_name, _parent_name, _parent_ptr,	\
-+				_flags, _reg, _shift, _width,	\
-+				_divider_flags, _table, _lock)	\
-+
- #define DEFINE_CLK_MUX(_name, _parent_names, _parents, _flags,	\
- 				_reg, _shift, _width,		\
- 				_mux_flags, _lock)		\
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 4a0b483..79caee9 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -203,6 +203,11 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
- 		void __iomem *reg, u8 bit_idx,
- 		u8 clk_gate_flags, spinlock_t *lock);
+ 		if ((asoc->base.sk->sk_userlocks & SOCK_RCVBUF_LOCK) ||
+-		    (!sk_rmem_schedule(asoc->base.sk, chunk->skb->truesize)))
++		    (!sk_rmem_schedule(asoc->base.sk, chunk->skb,
++				       chunk->skb->truesize)))
+ 			goto fail;
+ 	}
  
-+struct clk_div_table {
-+	unsigned int	val;
-+	unsigned int	div;
-+};
-+
- /**
-  * struct clk_divider - adjustable divider clock
-  *
-@@ -210,6 +215,7 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
-  * @reg:	register containing the divider
-  * @shift:	shift to the divider bit field
-  * @width:	width of the divider bit field
-+ * @table:	array of value/divider pairs, last entry should have div = 0
-  * @lock:	register lock
-  *
-  * Clock with an adjustable divider affecting its output frequency.  Implements
-@@ -229,6 +235,7 @@ struct clk_divider {
- 	u8		shift;
- 	u8		width;
- 	u8		flags;
-+	const struct clk_div_table	*table;
- 	spinlock_t	*lock;
- };
- 
-@@ -240,6 +247,11 @@ struct clk *clk_register_divider(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
- 		void __iomem *reg, u8 shift, u8 width,
- 		u8 clk_divider_flags, spinlock_t *lock);
-+struct clk *clk_register_divider_table(struct device *dev, const char *name,
-+		const char *parent_name, unsigned long flags,
-+		void __iomem *reg, u8 shift, u8 width,
-+		u8 clk_divider_flags, const struct clk_div_table *table,
-+		spinlock_t *lock);
- 
- /**
-  * struct clk_mux - multiplexer clock
 -- 
-1.7.1
+1.7.9.2
 
