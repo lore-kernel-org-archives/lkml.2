@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141Ab2F2NdD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 09:33:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45445 "EHLO mx2.suse.de"
+	id S932449Ab2F2NlZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 09:41:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45476 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755689Ab2F2Nc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 09:32:59 -0400
+	id S932124Ab2F2NdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 09:33:02 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -17,9 +17,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 07/16] net: Introduce sk_gfp_atomic() to allow addition of GFP flags depending on the individual socket
-Date: Fri, 29 Jun 2012 14:32:38 +0100
-Message-Id: <1340976767-5737-8-git-send-email-mgorman@suse.de>
+Subject: [PATCH 10/16] netvm: Propagate page->pfmemalloc to skb
+Date: Fri, 29 Jun 2012 14:32:41 +0100
+Message-Id: <1340976767-5737-11-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1340976767-5737-1-git-send-email-mgorman@suse.de>
 References: <1340976767-5737-1-git-send-email-mgorman@suse.de>
@@ -27,120 +27,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce sk_gfp_atomic(), this function allows to inject sock specific
-flags to each sock related allocation. It is only used on allocation
-paths that may be required for writing pages back to network storage.
+The skb->pfmemalloc flag gets set to true iff during the slab
+allocation of data in __alloc_skb that the the PFMEMALLOC reserves
+were used. If the packet is fragmented, it is possible that pages
+will be allocated from the PFMEMALLOC reserve without propagating
+this information to the skb. This patch propagates page->pfmemalloc
+from pages allocated for fragments to the skb.
 
-[davem@davemloft.net: Use sk_gfp_atomic only when necessary]
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Acked-by: David S. Miller <davem@davemloft.net>
 ---
- include/net/sock.h    |    5 +++++
- net/ipv4/tcp_output.c |   12 +++++++-----
- net/ipv6/tcp_ipv6.c   |    8 +++++---
- 3 files changed, 17 insertions(+), 8 deletions(-)
+ include/linux/skbuff.h |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index dcb54a0..e61b22c 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -658,6 +658,11 @@ static inline bool sock_flag(const struct sock *sk, enum sock_flags flag)
- 	return test_bit(flag, &sk->sk_flags);
- }
- 
-+static inline gfp_t sk_gfp_atomic(struct sock *sk, gfp_t gfp_mask)
-+{
-+	return GFP_ATOMIC;
-+}
-+
- static inline void sk_acceptq_removed(struct sock *sk)
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 0336f02..b814bb8 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1247,6 +1247,17 @@ static inline void __skb_fill_page_desc(struct sk_buff *skb, int i,
  {
- 	sk->sk_ack_backlog--;
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index c465d3e..05e61b7 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1849,7 +1849,8 @@ void __tcp_push_pending_frames(struct sock *sk, unsigned int cur_mss,
- 	if (unlikely(sk->sk_state == TCP_CLOSE))
- 		return;
+ 	skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
  
--	if (tcp_write_xmit(sk, cur_mss, nonagle, 0, GFP_ATOMIC))
-+	if (tcp_write_xmit(sk, cur_mss, nonagle, 0,
-+			   sk_gfp_atomic(sk, GFP_ATOMIC)))
- 		tcp_check_probe_timer(sk);
- }
- 
-@@ -2470,7 +2471,8 @@ struct sk_buff *tcp_make_synack(struct sock *sk, struct dst_entry *dst,
- 
- 	if (cvp != NULL && cvp->s_data_constant && cvp->s_data_desired)
- 		s_data_desired = cvp->s_data_desired;
--	skb = alloc_skb(MAX_TCP_HEADER + 15 + s_data_desired, GFP_ATOMIC);
-+	skb = alloc_skb(MAX_TCP_HEADER + 15 + s_data_desired,
-+			sk_gfp_atomic(sk, GFP_ATOMIC));
- 	if (unlikely(!skb)) {
- 		dst_release(dst);
- 		return NULL;
-@@ -2769,7 +2771,7 @@ void tcp_send_ack(struct sock *sk)
- 	 * tcp_transmit_skb() will set the ownership to this
- 	 * sock.
- 	 */
--	buff = alloc_skb(MAX_TCP_HEADER, GFP_ATOMIC);
-+	buff = alloc_skb(MAX_TCP_HEADER, sk_gfp_atomic(sk, GFP_ATOMIC));
- 	if (buff == NULL) {
- 		inet_csk_schedule_ack(sk);
- 		inet_csk(sk)->icsk_ack.ato = TCP_ATO_MIN;
-@@ -2784,7 +2786,7 @@ void tcp_send_ack(struct sock *sk)
- 
- 	/* Send it off, this clears delayed acks for us. */
- 	TCP_SKB_CB(buff)->when = tcp_time_stamp;
--	tcp_transmit_skb(sk, buff, 0, GFP_ATOMIC);
-+	tcp_transmit_skb(sk, buff, 0, sk_gfp_atomic(sk, GFP_ATOMIC));
- }
- 
- /* This routine sends a packet with an out of date sequence
-@@ -2804,7 +2806,7 @@ static int tcp_xmit_probe_skb(struct sock *sk, int urgent)
- 	struct sk_buff *skb;
- 
- 	/* We don't queue it, tcp_transmit_skb() sets ownership. */
--	skb = alloc_skb(MAX_TCP_HEADER, GFP_ATOMIC);
-+	skb = alloc_skb(MAX_TCP_HEADER, sk_gfp_atomic(sk, GFP_ATOMIC));
- 	if (skb == NULL)
- 		return -1;
- 
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 9c06eaf..2f3c94b 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1342,7 +1342,8 @@ static struct sock * tcp_v6_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
- 	/* Clone pktoptions received with SYN */
- 	newnp->pktoptions = NULL;
- 	if (treq->pktopts != NULL) {
--		newnp->pktoptions = skb_clone(treq->pktopts, GFP_ATOMIC);
-+		newnp->pktoptions = skb_clone(treq->pktopts,
-+					      sk_gfp_atomic(sk, GFP_ATOMIC));
- 		consume_skb(treq->pktopts);
- 		treq->pktopts = NULL;
- 		if (newnp->pktoptions)
-@@ -1395,7 +1396,8 @@ static struct sock * tcp_v6_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
- 		 * across. Shucks.
- 		 */
- 		tcp_md5_do_add(newsk, (union tcp_md5_addr *)&newnp->daddr,
--			       AF_INET6, key->key, key->keylen, GFP_ATOMIC);
-+			       AF_INET6, key->key, key->keylen,
-+			       sk_gfp_atomic(sk, GFP_ATOMIC));
- 	}
- #endif
- 
-@@ -1490,7 +1492,7 @@ static int tcp_v6_do_rcv(struct sock *sk, struct sk_buff *skb)
- 					       --ANK (980728)
- 	 */
- 	if (np->rxopt.all)
--		opt_skb = skb_clone(skb, GFP_ATOMIC);
-+		opt_skb = skb_clone(skb, sk_gfp_atomic(sk, GFP_ATOMIC));
- 
- 	if (sk->sk_state == TCP_ESTABLISHED) { /* Fast path */
- 		sock_rps_save_rxhash(sk, skb);
++	/*
++	 * Propagate page->pfmemalloc to the skb if we can. The problem is
++	 * that not all callers have unique ownership of the page. If
++	 * pfmemalloc is set, we check the mapping as a mapping implies
++	 * page->index is set (index and pfmemalloc share space).
++	 * If it's a valid mapping, we cannot use page->pfmemalloc but we
++	 * do not lose pfmemalloc information as the pages would not be
++	 * allocated using __GFP_MEMALLOC.
++	 */
++	if (page->pfmemalloc && !page->mapping)
++		skb->pfmemalloc	= true;
+ 	frag->page.p		  = page;
+ 	frag->page_offset	  = off;
+ 	skb_frag_size_set(frag, size);
 -- 
 1.7.9.2
 
