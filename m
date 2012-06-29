@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab2F2C5c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 22:57:32 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:52577 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354Ab2F2C5b (ORCPT
+	id S1754240Ab2F2DAp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 23:00:45 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52473 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab2F2DAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 22:57:31 -0400
-Date: Fri, 29 Jun 2012 03:57:24 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: joeyli <jlee@suse.com>
-Cc: seth.forshee@canonical.com, Richard Purdie <rpurdie@rpsys.net>,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        Corentin Chary <corentin.chary@gmail.com>
-Subject: Re: [PATCH] backlight: add support for disabling backlights via
- sysfs
-Message-ID: <20120629025724.GB18605@srcf.ucam.org>
-References: <1340910426-13269-1-git-send-email-seth.forshee@canonical.com>
- <20120628191043.GA9777@srcf.ucam.org>
- <20120628193017.GA29456@thinkpad-t410>
- <20120628193652.GB10945@srcf.ucam.org>
- <20120628211600.GB29456@thinkpad-t410>
- <20120628211936.GA14286@srcf.ucam.org>
- <1340937839.6196.212.camel@linux-s257.site>
+	Thu, 28 Jun 2012 23:00:44 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FED19D5.5070508@jp.fujitsu.com>
+Date: Fri, 29 Jun 2012 11:58:29 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340937839.6196.212.camel@linux-s257.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Rik van Riel <riel@redhat.com>
+CC: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org, akpm@linux-foundation.org,
+        minchan@kernel.org, linux-kernel@vger.kernel.org, jaschut@sandia.gov
+Subject: Re: [PATCH -mm] mm: have order>0 compaction start off where it left
+References: <20120627233742.53225fc7@annuminas.surriel.com> <20120628102919.GQ8103@csn.ul.ie> <4FEC86BA.9050004@redhat.com>
+In-Reply-To: <4FEC86BA.9050004@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 29, 2012 at 10:43:59AM +0800, joeyli wrote:
-
-> 	http://msdn.microsoft.com/en-us/windows/hardware/gg487382.aspx
+(2012/06/29 1:30), Rik van Riel wrote:
+> On 06/28/2012 06:29 AM, Mel Gorman wrote:
 >
-> In WDDM architecture, in spec p.5, there have a "Monitor" driver to
-> check the WDDM driver support brightness DDI, if not, then it will use
-> standard acpi method to control brightness.
+>> Lets say there are two parallel compactions running. Process A meets
+>> the migration PFN and moves to the end of the zone to restart. Process B
+>> finishes scanning mid-way through the zone and updates last_free_pfn. This
+>> will cause Process A to "jump" to where Process B left off which is not
+>> necessarily desirable.
+>>
+>> Another side effect is that a workload that allocations/frees
+>> aggressively will not compact as well as the "free" scanner is not
+>> scanning the end of the zone each time. It would be better if
+>> last_free_pfn was updated when a full pageblock was encountered
+>>
+>> So;
+>>
+>> 1. Initialise last_free_pfn to the end of the zone
+>> 2. On compaction, scan from last_free_pfn and record where it started
+>> 3. If a pageblock is full, update last_free_pfn
+>> 4. If the migration and free scanner meet, reset last_free_pfn and
+>>     the free scanner. Abort if the free scanner wraps to where it started
+>>
+>> Does that make sense?
+>
+> Yes, that makes sense.  We still have to keep track
+> of whether we have wrapped around, but I guess that
+> allows for a better name for the bool :)
+>
+> Maybe cc->wrapped?
+>
+> Does anyone have a better name?
+>
 
-What's the interaction between GPU drivers and platform drivers? For 
-instance, on acer systems that have backlight control via WMI, does 
-Windows use WMI, the GPU driver or ACPI?
- 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+cc->second_scan ? (I have no sense of naming ;)
+
+> As for point (4), should we abort when we wrap
+> around to where we started, or should we abort
+> when free_pfn and migrate_pfn meet after we
+> wrapped around?
+>
+
+I'd like to vote for aborting earlier.
+
+Regards,
+-Kame
+
