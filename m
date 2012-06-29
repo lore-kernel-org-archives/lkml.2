@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab2F2Mnj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 08:43:39 -0400
-Received: from mga14.intel.com ([143.182.124.37]:3168 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751488Ab2F2Mni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 08:43:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="162225572"
-Message-ID: <1340974064.3070.177.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] UBI: add minimal amount of reserved erase blocks in
- Kconfig
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Cc: Richard Genoud <richard.genoud@gmail.com>, linux-mtd@lists.infradead.org,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Date: Fri, 29 Jun 2012 15:47:44 +0300
-In-Reply-To: <20120628205303.676fa2ea@halley>
-References: <1340636918-7505-1-git-send-email-richard.genoud@gmail.com>
-	 <20120628205303.676fa2ea@halley>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-u/ICHJlh0DvgjjppS7SY"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1754928Ab2F2Mqs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 08:46:48 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:59300 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752710Ab2F2Mqq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 08:46:46 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAHGj7U9bdWOb/2dsb2JhbABFhVqwcoEHgkIPAUY1AiYCYIghqHeTQIEgjw+BEgOVMpADgmE
+X-IronPort-AV: E=Sophos;i="4.77,498,1336341600"; 
+   d="scan'208";a="1011331670"
+From: =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
+To: cascardo@holoscopio.com, don@syst.com.br, mjg@redhat.com
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
+Subject: [PATCH 0/1] Add support for Classmate V3 accelerometer to classmate-laptop
+Date: Fri, 29 Jun 2012 14:46:29 +0200
+Message-Id: <cover.1340971993.git.magomez@igalia.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Classmate V3 has a different accelerometer than the previous versions. Main
+differences between the new  (ACCE0001) and the old one (ACCE0000) are:
 
---=-u/ICHJlh0DvgjjppS7SY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+* ACPI method calls need to receive 4 parameters instead of 2
+* Values returned by the accelerometer are 2 bytes signed integers, instead
+of one unsigned byte
+* New accelerometer has a new attribute (g_select) besides the sensitivity one.
+This attribute's possible values are 0 (meaning 1.5g) and 1 (meaning 6g).
 
-On Thu, 2012-06-28 at 20:53 +0300, Shmulik Ladkani wrote:
-> On Mon, 25 Jun 2012 17:08:38 +0200 Richard Genoud <richard.genoud@gmail.c=
-om> wrote:
-> > diff --git a/drivers/mtd/ubi/misc.c b/drivers/mtd/ubi/misc.c
-> > index f6a7d7a..c2c6db0 100644
-> > --- a/drivers/mtd/ubi/misc.c
-> > +++ b/drivers/mtd/ubi/misc.c
-> > @@ -100,8 +100,9 @@ void ubi_calculate_reserved(struct ubi_device *ubi)
-> >  {
-> >  	ubi->beb_rsvd_level =3D ubi->good_peb_count/100;
-> >  	ubi->beb_rsvd_level *=3D CONFIG_MTD_UBI_BEB_RESERVE;
->=20
-> BTW Artem, I've always had an unresolved issue with this original
-> calculation... maybe you can shed some light here.
->=20
-> Why 'beb_rsvd_level' is set to RESERVE percent of the 'good_peb_count'?
+I haven't been able to find the datasheet of the accelerometer, so I got most
+of the behaviour of the device by looking at the previous model driver and by
+experimenting with the hardware. Due to this, the range of the axis values
+(currently defined as -255-255) may not be exact, and also the fuzz value (16)
+may not be the best. But, with this configuration, the programs handling the
+screen rotation developed for previous versions of Classmate are working
+properly.
 
-I thought it was a good idea I guess :-)
+Initially I thought of modifying the ACCE0000 driver to be able to handle both
+devices, but the patch was quite big and messy, and it might add problems to the
+previous hardware, so I decided to implement it as a new driver, following the
+structure of the ACCE0000 driver. This way the new code won't break the old one.
 
-> As the device gets worn, number of 'good_peb_count' will lessen over
-> time - and as such, the 'beb_rsvd_level' may vary (lessen) over time.
+In order to differenciate the new driver code from the old one, all the
+function names that belong to the new driver end with "v3".
 
-Yeah, probably you are right.
+Hope everything is ok :)
 
-> I'd expect a fixed number of 'beb_rsvd_level' PEBs for a given mtd
-> partition, or more correctly, as Richard suggests, the *sum* of bad PEBs
-> plus the beb reserved PEBs should be constant for a partition - as I
-> do not expect more than a known constant of blocks to go bad during
-> device's (and thus, partition's) lifetime.
+Regards!
 
-Those days we did not have this "vendor-guaranteed max. bad blocks
-count" thing and I thought that UBI would try to always maintain a pool
-of reserved PEBs.
+Miguel Gómez (1):
+  classmate-laptop: Add support for accelerometer in classmate V3.
 
-Would you send a patch?
+ drivers/platform/x86/classmate-laptop.c |  400 ++++++++++++++++++++++++++++++-
+ 1 file changed, 398 insertions(+), 2 deletions(-)
 
-Note, one thing: if I already marked max. possible amount of PEBs as
-bad, I just do not reserve any more. But if I have a plenty of available
-PEBs anyway (my volumes are smaller than they could be, or I shrink one
-of them), and another PEB goes bad, I should just mark it as bad. I may
-print a warning, but should not panic.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-u/ICHJlh0DvgjjppS7SY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJP7aPwAAoJECmIfjd9wqK0i18QAMLQWchq9a+ZO4Dfmoq+M0dX
-ozO+L1Am3e68K5bjPWJmoS1RDknyRH0kTGjoiqhbrvg7xM7HYmslbsLATyMngj1F
-3y4WDKmLWp80ddkzu8pJydDBLDnn4P/lhINOLCpMVmxNdc3gZfMdPMhytyViWSRO
-OQSOybKpOMoTRnwzejv9cRNZZhsOh7y56ELqpQMpnCrBsh66KKvaU+g+bzOvCyjU
-wx1XY/mv4dGbvdcT0Z3d8eg4q5nqQf6oFK2StucJAJI7oobn3tvCxuxoRZwKLhkS
-0OLVc9oZUpPrSzNdFUzgTkT6CgJk+0aLQXXOA0uwuiwFnDZ2BAwRMck43MUBd+5N
-0ZV/b4J+uZ0ovWpUAMyB3iU8siQ1mejkrV8heM/4irkTmPBq60SIh5Q9gJ1yYyyS
-zDqELMl97vCZ7cDn44OgKmGLgcWuY3nFdpvzvKSbHv65FMIkbhmCpqcGHbDBwpL5
-GBV3xWs9PBAFilA3uoEpQJpBvXfmUMx501FH0eH1tqZ+DKRlCCEKuqJB4FYMLvZ4
-QZtI5+Ud0WWmaVPEeJaLcQxDjguwDuvT36nsnFS8hsD+5Vj9fkOlz1QfqIfDw3tV
-iPETJbg0iq3yPz98gS4v/jW79aeqef4ebhFkhayaAWFDtApthsgAKzidNGI0xoVh
-v+dswpLpHE0e/CUg7i/3
-=P/h9
------END PGP SIGNATURE-----
-
---=-u/ICHJlh0DvgjjppS7SY--
+-- 
+1.7.9.5
 
