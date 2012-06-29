@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932577Ab2F2QtY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 12:49:24 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:42796 "EHLO
+	id S932669Ab2F2Qts (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 12:49:48 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:42791 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab2F2Qqa (ORCPT
+	with ESMTP id S1756040Ab2F2Qq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 12:46:30 -0400
+	Fri, 29 Jun 2012 12:46:29 -0400
 From: Vincent Sanders <vincent.sanders@collabora.co.uk>
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>
 Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Alban Crequy <alban.crequy@collabora.co.uk>
-Subject: [PATCH net-next 13/15] netfilter: nfdbus: Add D-bus message parsing
-Date: Fri, 29 Jun 2012 17:45:52 +0100
-Message-Id: <1340988354-26981-14-git-send-email-vincent.sanders@collabora.co.uk>
+Subject: [PATCH net-next 12/15] netlink: connector: Add idx and val identifiers for netfilter D-Bus
+Date: Fri, 29 Jun 2012 17:45:51 +0100
+Message-Id: <1340988354-26981-13-git-send-email-vincent.sanders@collabora.co.uk>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk>
 References: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk>
@@ -24,296 +24,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 
-The netfilter D-Bus module needs to parse D-bus messages sent by
-applications to decide whether a peer can receive or not a D-Bus
-message. Add D-bus message parsing logic to be able to analyze.
+The D-bus IPC system implements a transport that uses AF_BUS sockets to
+send D-Bus messages to the peers. This allows decouple the routing logic
+from the daemon and move it to the kernel which has the advantage of
+reducing the number of context switches and the messages copied to
+user-space.
+
+A D-Bus protocol aware netfilter module decide which peer can recive a
+given message based on a set of D-Bus match rules. These match rules
+are set from user-space using the netlink connector API.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
 ---
- net/netfilter/nfdbus/message.c |  194 ++++++++++++++++++++++++++++++++++++++++
- net/netfilter/nfdbus/message.h |   71 +++++++++++++++
- 2 files changed, 265 insertions(+)
- create mode 100644 net/netfilter/nfdbus/message.c
- create mode 100644 net/netfilter/nfdbus/message.h
+ include/linux/connector.h |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/net/netfilter/nfdbus/message.c b/net/netfilter/nfdbus/message.c
-new file mode 100644
-index 0000000..93c409c
---- /dev/null
-+++ b/net/netfilter/nfdbus/message.c
-@@ -0,0 +1,194 @@
-+/*
-+ * message.c  Basic D-Bus message parsing
-+ *
-+ * Copyright (C) 2010-2012  Collabora Ltd
-+ * Authors:	Alban Crequy <alban.crequy@collabora.co.uk>
-+ * Copyright (C) 2002, 2003, 2004, 2005  Red Hat Inc.
-+ * Copyright (C) 2002, 2003  CodeFactory AB
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-+ *
-+ */
-+
-+#include <linux/slab.h>
-+
-+#include "message.h"
-+
-+int dbus_message_type_from_string(const char *type_str)
-+{
-+	if (strcmp(type_str, "method_call") == 0)
-+		return DBUS_MESSAGE_TYPE_METHOD_CALL;
-+	if (strcmp(type_str, "method_return") == 0)
-+		return DBUS_MESSAGE_TYPE_METHOD_RETURN;
-+	else if (strcmp(type_str, "signal") == 0)
-+		return DBUS_MESSAGE_TYPE_SIGNAL;
-+	else if (strcmp(type_str, "error") == 0)
-+		return DBUS_MESSAGE_TYPE_ERROR;
-+	else
-+		return DBUS_MESSAGE_TYPE_INVALID;
-+}
-+
-+int dbus_message_parse(unsigned char *message, size_t len,
-+		       struct dbus_message *dbus_message)
-+{
-+	unsigned char *cur;
-+	int array_header_len;
-+
-+	dbus_message->message = message;
-+
-+	if (len < 4 + 4 + 4 + 4 || message[1] == 0 || message[1] > 4)
-+		return -EINVAL;
-+
-+	dbus_message->type = message[1];
-+	dbus_message->body_length = *((u32 *)(message + 4));
-+	cur = message + 12;
-+	array_header_len = *(u32 *)cur;
-+	dbus_message->len_offset = 12;
-+	cur += 4;
-+	while (cur < message + len
-+	       && cur < message + 12 + 4 + array_header_len) {
-+		int header_code;
-+		int signature_len;
-+		unsigned char *signature;
-+		int str_len;
-+		unsigned char *str;
-+
-+		/* D-Bus alignment craziness */
-+		if ((cur - message) % 8 != 0)
-+			cur += 8 - (cur - message) % 8;
-+
-+		header_code = *(char *)cur;
-+		cur++;
-+		signature_len = *(char *)cur;
-+		/* All header fields of the current D-Bus spec have a simple
-+		 * type, either o, s, g, or u */
-+		if (signature_len != 1)
-+			return -EINVAL;
-+		cur++;
-+		signature = cur;
-+		cur += signature_len + 1;
-+		if (signature[0] != 'o' &&
-+		    signature[0] != 's' &&
-+		    signature[0] != 'g' &&
-+		    signature[0] != 'u')
-+			return -EINVAL;
-+
-+		if (signature[0] == 'u') {
-+			cur += 4;
-+			continue;
-+		}
-+
-+		if (signature[0] != 'g') {
-+			str_len = *(u32 *)cur;
-+			cur += 4;
-+		} else {
-+			str_len = *(char *)cur;
-+			cur += 1;
-+		}
-+
-+		str = cur;
-+		switch (header_code) {
-+		case 1:
-+			dbus_message->path = str;
-+			break;
-+		case 2:
-+			dbus_message->interface = str;
-+			break;
-+		case 3:
-+			dbus_message->member = str;
-+			break;
-+		case 6:
-+			dbus_message->destination = str;
-+			break;
-+		case 7:
-+			dbus_message->sender = str;
-+			break;
-+		case 8:
-+			dbus_message->body_signature = str;
-+			break;
-+		}
-+		cur += str_len + 1;
-+	}
-+
-+	dbus_message->padding_end = (8 - (cur - message) % 8) % 8;
-+
-+	/* Jump to body D-Bus alignment craziness */
-+	if ((cur - message) % 8 != 0)
-+		cur += 8 - (cur - message) % 8;
-+	dbus_message->new_header_offset = cur - message;
-+
-+	if (dbus_message->new_header_offset
-+	    + dbus_message->body_length != len) {
-+		pr_warn("Message truncated? " \
-+			"Header %d + Body %d != Length %zd\n",
-+			dbus_message->new_header_offset,
-+			dbus_message->body_length, len);
-+		return -EINVAL;
-+	}
-+
-+	if (dbus_message->body_signature &&
-+	    dbus_message->body_signature[0] == 's') {
-+		int str_len;
-+		str_len = *(u32 *)cur;
-+		cur += 4;
-+		dbus_message->arg0 = cur;
-+		cur += str_len + 1;
-+	}
-+
-+	if ((cur - message) % 4 != 0)
-+		cur += 4 - (cur - message) % 4;
-+
-+	if (dbus_message->body_signature &&
-+	    dbus_message->body_signature[0] == 's' &&
-+	    dbus_message->body_signature[1] == 's') {
-+		int str_len;
-+		str_len = *(u32 *)cur;
-+		cur += 4;
-+		dbus_message->arg1 = cur;
-+		cur += str_len + 1;
-+	}
-+
-+	if ((cur - message) % 4 != 0)
-+		cur += 4 - (cur - message) % 4;
-+
-+	if (dbus_message->body_signature &&
-+	    dbus_message->body_signature[0] == 's' &&
-+	    dbus_message->body_signature[1] == 's' &&
-+	    dbus_message->body_signature[2] == 's') {
-+		int str_len;
-+		str_len = *(u32 *)cur;
-+		cur += 4;
-+		dbus_message->arg2 = cur;
-+		cur += str_len + 1;
-+	}
-+
-+	if ((cur - message) % 4 != 0)
-+		cur += 4 - (cur - message) % 4;
-+
-+	if (dbus_message->type == DBUS_MESSAGE_TYPE_SIGNAL &&
-+	    dbus_message->sender && dbus_message->path &&
-+	    dbus_message->interface && dbus_message->member &&
-+	    dbus_message->arg0 &&
-+	    strcmp(dbus_message->sender, "org.freedesktop.DBus") == 0 &&
-+	    strcmp(dbus_message->interface, "org.freedesktop.DBus") == 0 &&
-+	    strcmp(dbus_message->path, "/org/freedesktop/DBus") == 0) {
-+		if (strcmp(dbus_message->member, "NameAcquired") == 0)
-+			dbus_message->name_acquired = dbus_message->arg0;
-+		else if (strcmp(dbus_message->member, "NameLost") == 0)
-+			dbus_message->name_lost = dbus_message->arg0;
-+	}
-+
-+	return 0;
-+}
-diff --git a/net/netfilter/nfdbus/message.h b/net/netfilter/nfdbus/message.h
-new file mode 100644
-index 0000000..e3ea4d3
---- /dev/null
-+++ b/net/netfilter/nfdbus/message.h
-@@ -0,0 +1,71 @@
-+/*
-+ * message.h  Basic D-Bus message parsing
-+ *
-+ * Copyright (C) 2010  Collabora Ltd
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-+ *
-+ */
-+
-+#ifndef DBUS_MESSAGE_H
-+#define DBUS_MESSAGE_H
-+
-+#include <linux/list.h>
-+
-+#define DBUS_MAXIMUM_MATCH_RULE_LENGTH 1024
-+
-+/* Types of message */
-+
-+#define DBUS_MESSAGE_TYPE_INVALID       0
-+#define DBUS_MESSAGE_TYPE_METHOD_CALL   1
-+#define DBUS_MESSAGE_TYPE_METHOD_RETURN 2
-+#define DBUS_MESSAGE_TYPE_ERROR         3
-+#define DBUS_MESSAGE_TYPE_SIGNAL        4
-+#define DBUS_NUM_MESSAGE_TYPES          5
-+
-+/* No need to implement a feature-complete parser. It only implement what is
-+ * needed by the bus. */
-+struct dbus_message {
-+	char *message;
-+	size_t len;
-+	size_t new_len;
-+
-+	/* direct pointers to the fields */
-+	int type;
-+	char *path;
-+	char *interface;
-+	char *member;
-+	char *destination;
-+	char *sender;
-+	char *body_signature;
-+	int body_length;
-+	char *arg0;
-+	char *arg1;
-+	char *arg2;
-+	char *name_acquired;
-+	char *name_lost;
-+
-+	/* How to add the 'sender' field in the headers */
-+	int new_header_offset;
-+	int len_offset;
-+	int padding_end;
-+};
-+
-+int dbus_message_type_from_string(const char *type_str);
-+
-+int dbus_message_parse(unsigned char *message, size_t len,
-+		       struct dbus_message *dbus_message);
-+
-+#endif /* DBUS_MESSAGE_H */
+diff --git a/include/linux/connector.h b/include/linux/connector.h
+index c27be60..519d010 100644
+--- a/include/linux/connector.h
++++ b/include/linux/connector.h
+@@ -44,8 +44,10 @@
+ #define CN_VAL_DRBD			0x1
+ #define CN_KVP_IDX			0x9	/* HyperV KVP */
+ #define CN_KVP_VAL			0x1	/* queries from the kernel */
++#define CN_IDX_NFDBUS                   0xA     /* netfilter D-Bus */
++#define CN_VAL_NFDBUS                   0x1
+ 
+-#define CN_NETLINK_USERS		10	/* Highest index + 1 */
++#define CN_NETLINK_USERS		11	/* Highest index + 1 */
+ 
+ /*
+  * Maximum connector's message size.
 -- 
 1.7.10
 
