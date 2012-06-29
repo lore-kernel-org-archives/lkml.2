@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932792Ab2F2S6a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 14:58:30 -0400
-Received: from mail-yw0-f42.google.com ([209.85.213.42]:59981 "EHLO
+	id S932837Ab2F2S6g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 14:58:36 -0400
+Received: from mail-yw0-f42.google.com ([209.85.213.42]:40749 "EHLO
 	mail-yw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932764Ab2F2S61 (ORCPT
+	with ESMTP id S932796Ab2F2S6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:58:27 -0400
+	Fri, 29 Jun 2012 14:58:31 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v3 14/17] vfs: fix renameat to retry on ESTALE errors
-Date: Fri, 29 Jun 2012 14:57:57 -0400
-Message-Id: <1340996280-27123-15-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v3 17/17] vfs: have faccessat retry once on an ESTALE error
+Date: Fri, 29 Jun 2012 14:58:00 -0400
+Message-Id: <1340996280-27123-18-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
 References: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
@@ -22,72 +22,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-...as always, rename is the messiest of the bunch. We have to track
-whether to retry or not via a separate flag since the error handling
-is already quite complex.
-
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c |   31 ++++++++++++++++++++++++++-----
- 1 files changed, 26 insertions(+), 5 deletions(-)
+ fs/open.c |   70 ++++++++++++++++++++++++++++++++++--------------------------
+ 1 files changed, 40 insertions(+), 30 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 7fadc99..b38d734 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -3392,12 +3392,25 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
- 	char *from;
- 	char *to;
- 	int error;
+diff --git a/fs/open.c b/fs/open.c
+index e813d90..2bdc531 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -313,6 +313,9 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 	struct path path;
+ 	struct inode *inode;
+ 	int res;
++	unsigned int lookup_flags = LOOKUP_FOLLOW;
 +	unsigned int try = 0;
-+	bool should_retry = false;
-+	unsigned int lookup_flags = LOOKUP_PARENT;
++	char *name;
  
--	error = user_path_parent(olddfd, oldname, &oldnd, &from);
--	if (error)
-+	from = getname(oldname);
-+	if (IS_ERR(from))
-+		return PTR_ERR(from);
+ 	if (mode & ~S_IRWXO)	/* where's F_OK, X_OK, W_OK, R_OK? */
+ 		return -EINVAL;
+@@ -334,44 +337,51 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 				override_cred->cap_permitted;
+ 	}
+ 
++	name = getname_flags(filename, lookup_flags, NULL);
++	if (IS_ERR(name))
++		return PTR_ERR(name);
 +
-+	to = getname(newname);
-+	if (IS_ERR(to)) {
-+		error = PTR_ERR(to);
- 		goto exit;
-+	}
-+retry:
-+	error = do_path_lookup(olddfd, from, lookup_flags, &oldnd);
-+	if (error)
-+		goto exit0;
+ 	old_cred = override_creds(override_cred);
  
--	error = user_path_parent(newdfd, newname, &newnd, &to);
-+	error = do_path_lookup(newdfd, to, lookup_flags, &newnd);
- 	if (error)
- 		goto exit1;
+-	res = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
+-	if (res)
+-		goto out;
++	do {
++		res = kern_path_at(dfd, name, lookup_flags, &path);
++		if (res)
++			break;
  
-@@ -3466,13 +3479,21 @@ exit4:
- 	dput(old_dentry);
- exit3:
- 	unlock_rename(new_dir, old_dir);
-+	if (retry_estale(error, try++))
-+		should_retry = true;
- exit2:
- 	path_put(&newnd.path);
--	putname(to);
- exit1:
- 	path_put(&oldnd.path);
--	putname(from);
-+	if (should_retry) {
-+		should_retry = false;
+-	inode = path.dentry->d_inode;
++		inode = path.dentry->d_inode;
+ 
+-	if ((mode & MAY_EXEC) && S_ISREG(inode->i_mode)) {
++		if ((mode & MAY_EXEC) && S_ISREG(inode->i_mode)) {
++			/*
++			 * MAY_EXEC on regular files is denied if the fs is
++			 * mounted with the "noexec" flag.
++			 */
++			res = -EACCES;
++			if (path.mnt->mnt_flags & MNT_NOEXEC)
++				goto out_path_release;
++		}
++
++		res = inode_permission(inode, mode | MAY_ACCESS);
++		/* SuS v2 requires we report a read only fs too */
++		if (res || !(mode & S_IWOTH) || special_file(inode->i_mode))
++			goto out_path_release;
+ 		/*
+-		 * MAY_EXEC on regular files is denied if the fs is mounted
+-		 * with the "noexec" flag.
++		 * This is a rare case where using __mnt_is_readonly()
++		 * is OK without a mnt_want/drop_write() pair.  Since
++		 * no actual write to the fs is performed here, we do
++		 * not need to telegraph to that to anyone.
++		 *
++		 * By doing this, we accept that this access is
++		 * inherently racy and know that the fs may change
++		 * state before we even see this result.
+ 		 */
+-		res = -EACCES;
+-		if (path.mnt->mnt_flags & MNT_NOEXEC)
+-			goto out_path_release;
+-	}
+-
+-	res = inode_permission(inode, mode | MAY_ACCESS);
+-	/* SuS v2 requires we report a read only fs too */
+-	if (res || !(mode & S_IWOTH) || special_file(inode->i_mode))
+-		goto out_path_release;
+-	/*
+-	 * This is a rare case where using __mnt_is_readonly()
+-	 * is OK without a mnt_want/drop_write() pair.  Since
+-	 * no actual write to the fs is performed here, we do
+-	 * not need to telegraph to that to anyone.
+-	 *
+-	 * By doing this, we accept that this access is
+-	 * inherently racy and know that the fs may change
+-	 * state before we even see this result.
+-	 */
+-	if (__mnt_is_readonly(path.mnt))
+-		res = -EROFS;
++		if (__mnt_is_readonly(path.mnt))
++			res = -EROFS;
+ 
+ out_path_release:
+-	path_put(&path);
+-out:
++		path_put(&path);
 +		lookup_flags |= LOOKUP_REVAL;
-+		goto retry;
-+	}
-+exit0:
-+	putname(to);
- exit:
-+	putname(from);
- 	return error;
- }
- 
++	} while (retry_estale(res, try++));
++	putname(name);
+ 	revert_creds(old_cred);
+ 	put_cred(override_cred);
+ 	return res;
 -- 
 1.7.7.6
 
