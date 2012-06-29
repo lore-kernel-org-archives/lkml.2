@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932788Ab2F2TCW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 15:02:22 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:36203 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932389Ab2F2S6P (ORCPT
+	id S932746Ab2F2TCs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 15:02:48 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46821 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932289Ab2F2S6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:58:15 -0400
+	Fri, 29 Jun 2012 14:58:14 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v3 05/17] vfs: remove user_path_at_empty
-Date: Fri, 29 Jun 2012 14:57:48 -0400
-Message-Id: <1340996280-27123-6-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v3 04/17] vfs: fix readlinkat to retry on ESTALE
+Date: Fri, 29 Jun 2012 14:57:47 -0400
+Message-Id: <1340996280-27123-5-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
 References: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
@@ -22,57 +22,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-...there are no more callers.
-
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c            |   12 +++---------
- include/linux/namei.h |    1 -
- 2 files changed, 3 insertions(+), 10 deletions(-)
+ fs/stat.c |   21 +++++++++++++++++----
+ 1 files changed, 17 insertions(+), 4 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 44c7ccd..7945b19 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1926,10 +1926,10 @@ int kern_path_at(int dfd, const char *name, unsigned flags, struct path *path)
- 	return err;
+diff --git a/fs/stat.c b/fs/stat.c
+index 5afeb37..c9d88f7 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -307,14 +307,25 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+ 	struct path path;
+ 	int error;
+ 	int empty = 0;
++	char *name;
++	unsigned int try = 0;
++	unsigned int lookup_flags = LOOKUP_EMPTY;
+ 
+ 	if (bufsiz <= 0)
+ 		return -EINVAL;
+ 
+-	error = user_path_at_empty(dfd, pathname, LOOKUP_EMPTY, &path, &empty);
+-	if (!error) {
+-		struct inode *inode = path.dentry->d_inode;
++	name = getname_flags(pathname, lookup_flags, &empty);
++	if (IS_ERR(name))
++		return PTR_ERR(name);
++
++	do {
++		struct inode *inode;
++
++		error = kern_path_at(dfd, name, lookup_flags, &path);
++		if (error)
++			break;
+ 
++		inode = path.dentry->d_inode;
+ 		error = empty ? -ENOENT : -EINVAL;
+ 		if (inode->i_op->readlink) {
+ 			error = security_inode_readlink(path.dentry);
+@@ -325,7 +336,9 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+ 			}
+ 		}
+ 		path_put(&path);
+-	}
++		lookup_flags |= LOOKUP_REVAL;
++	} while (retry_estale(error, try++));
++	putname(name);
+ 	return error;
  }
  
--int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
--		 struct path *path, int *empty)
-+int user_path_at(int dfd, const char __user *name, unsigned flags,
-+		 struct path *path)
- {
--	char *tmp = getname_flags(name, flags, empty);
-+	char *tmp = getname_flags(name, flags, NULL);
- 	int err;
- 
- 	if (IS_ERR(tmp)) {
-@@ -1941,12 +1941,6 @@ int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
- 	return err;
- }
- 
--int user_path_at(int dfd, const char __user *name, unsigned flags,
--		 struct path *path)
--{
--	return user_path_at_empty(dfd, name, flags, path, NULL);
--}
--
- static int user_path_parent(int dfd, const char __user *path,
- 			struct nameidata *nd, char **name)
- {
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index cd95fcb..1ea93d5 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -68,7 +68,6 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
- 
- extern int kern_path_at(int, const char *, unsigned, struct path *);
- extern int user_path_at(int, const char __user *, unsigned, struct path *);
--extern int user_path_at_empty(int, const char __user *, unsigned, struct path *, int *empty);
- 
- #define user_path(name, path) user_path_at(AT_FDCWD, name, LOOKUP_FOLLOW, path)
- #define user_lpath(name, path) user_path_at(AT_FDCWD, name, 0, path)
 -- 
 1.7.7.6
 
