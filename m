@@ -1,99 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab2F2I7t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 04:59:49 -0400
-Received: from ja.ssi.bg ([178.16.129.10]:44373 "EHLO ja.ssi.bg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751677Ab2F2I7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 04:59:46 -0400
-Date: Fri, 29 Jun 2012 12:04:55 +0300 (EEST)
-From: Julian Anastasov <ja@ssi.bg>
-To: Xiaotian Feng <xtfeng@gmail.com>
-cc: netdev@vger.kernel.org, lvs-devel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        Xiaotian Feng <dannyfeng@tencent.com>,
-        Wensong Zhang <wensong@linux-vs.org>,
-        Simon Horman <horms@verge.net.au>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [RFC PATCH net-next] ipvs: add missing lock in
- ip_vs_ftp_init_conn()
-In-Reply-To: <CAJn8CcFy=K+Aizpi0pvnpXCOYXhgyq12oBgVaPvMthW_fwn4Pg@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1206291125270.1690@ja.ssi.bg>
-References: <1340890587-8169-1-git-send-email-xtfeng@gmail.com> <alpine.LFD.2.00.1206290225490.1722@ja.ssi.bg> <CAJn8CcFy=K+Aizpi0pvnpXCOYXhgyq12oBgVaPvMthW_fwn4Pg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753156Ab2F2JBt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 05:01:49 -0400
+Received: from mail-yw0-f42.google.com ([209.85.213.42]:38982 "EHLO
+	mail-yw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751652Ab2F2JBq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 05:01:46 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811672-1915040808-1340960702=:1690"
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <20120629133046.f6c65d4d6017d2ae486cfd2b@canb.auug.org.au>
+References: <20120629133046.f6c65d4d6017d2ae486cfd2b@canb.auug.org.au>
+Date: Fri, 29 Jun 2012 11:01:45 +0200
+Message-ID: <CAKMK7uE=Jh8Sh_knC7L2=nmCiwPrt0Q5f4Cv4djpgsncOxFfpQ@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the drm tree with Linus' tree
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Dave Airlie <airlied@linux.ie>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Fri, Jun 29, 2012 at 5:30 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Dave,
+>
+> Today's linux-next merge of the drm tree got a conflict in
+> drivers/gpu/drm/i915/intel_display.c between commit 7aa1e7f06d6e ("Revert
+> "drm/i915: allow PCH PWM override on IVB"") from Linus' tree and commit
+> 7cf416014813 ("drm/i915: clear up backlight #define confusion on gen4+")
+> from the drm tree.
+>
+> The former removed the function ivb_pch_pwm_override() that is modified
+> by the latter, so I did that - or should I have just ignored the revert
+> patch?
 
----1463811672-1915040808-1340960702=:1690
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Nope, the revert should take precedence because that code is bogus -
+the change in -next is just replacing a magic value with a proper
+#define.
 
-
-	Hello,
-
-On Fri, 29 Jun 2012, Xiaotian Feng wrote:
-
-> > On Thu, 28 Jun 2012, Xiaotian Feng wrote:
-> >
-> >> We met a kernel panic in 2.6.32.43 kernel:
-> >>
-> >> [2680191.848044] IPVS: ip_vs_conn_hash(): request for already hashed, called from run_timer_softirq+0x175/0x1d0
-> >> <snip>
-> >> [2680311.849009] general protection fault: 0000 [#1] SMP
-
-	What we see here is 120 seconds between 2680191 and
-2680311. It can mean 2 things:
-
-- some state timeout, it depends on your forwarding method.
-What is it? NAT? DR?
-
-- 60 seconds for ip_vs_conn_expire retries
-
-> >> After code review, the only chance that kernel change connection flag without protection is
-> >> in ip_vs_ftp_init_conn().
-> >
-> >        Hm, ip_vs_ftp_init_conn is called before 1st hashing,
-> > from ip_vs_bind_app() in ip_vs_conn_new() before
-> > ip_vs_conn_hash(). It should be another problem with
-> > the flags. How different is IPVS in 2.6.32.43 compared to
-> > recent kernels? If commit aea9d711 is present, I'm not
-> > aware of other similar problems.
-> 
-> ip_vs_bind_app() is also called by ip_vs_try_bind_dest(), which can be
-> traced to ip_vs_proc_conn().
-> I've checked the changes in upstream, but nothing helps since aea9d711
-> has been taken into 2.6.32.28 kernel.
-
-	OK, this fix should make it safe for master-backup
-sync and it should be applied but I suspect you are not
-using sync, right? And then this fix will not solve the oops.
-
-	There are no many places that rehash conn:
-
-ip_vs_conn_fill_cport
-	- used for FTP
-
-ip_vs_check_template:
-	- do you have persistence configured?
-
-	After you provide details for the used forwarding
-method, persistence and sync we should think how such races
-with rehashing can lead to double hlist_del. May be
-you can modify the debug message in ip_vs_conn_hash, so
-that we can see cp->flags and ntohs of cp->cport, cp->dport
-and cp->vport when oops happens again.
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
----1463811672-1915040808-1340960702=:1690--
+Cheers, Daniel
+-- 
+Daniel Vetter
+daniel.vetter@ffwll.ch - +41 (0) 79 365 57 48 - http://blog.ffwll.ch
