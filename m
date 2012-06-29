@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092Ab2F2CUw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 22:20:52 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:18732 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754465Ab2F2CUu (ORCPT
+	id S1756124Ab2F2Coj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 22:44:39 -0400
+Received: from nat.nue.novell.com ([195.135.221.2]:50606 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754992Ab2F2Coh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 22:20:50 -0400
-Message-ID: <4FED10DB.7040500@huawei.com>
-Date: Fri, 29 Jun 2012 10:20:11 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
-MIME-Version: 1.0
-To: "tj@kernel.org" <tj@kernel.org>
-CC: shyju pv <shyju.pv@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Sanil kumar <sanil.kumar@huawei.com>,
-        Masanari Iida <standby24x7@gmail.com>
-Subject: Re: 3.5-rc3: BUG: Dentry still in use (1) [unmount of cgroup cgroup]
-References: <E061084CB90FCE4F89232A6CF839683B32B52291@SZXEML507-MBS.china.huawei.com> <20120627182903.GP15811@google.com> <4FEBF4B7.2070105@huawei.com> <20120628180712.GC22641@google.com>
-In-Reply-To: <20120628180712.GC22641@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.166.88.115]
-X-CFilter-Loop: Reflected
+	Thu, 28 Jun 2012 22:44:37 -0400
+Subject: Re: [PATCH] backlight: add support for disabling backlights via
+ sysfs
+From: joeyli <jlee@suse.com>
+To: seth.forshee@canonical.com
+Cc: Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+In-Reply-To: <20120628211936.GA14286@srcf.ucam.org>
+References: <1340910426-13269-1-git-send-email-seth.forshee@canonical.com>
+	 <20120628191043.GA9777@srcf.ucam.org>
+	 <20120628193017.GA29456@thinkpad-t410>
+	 <20120628193652.GB10945@srcf.ucam.org>
+	 <20120628211600.GB29456@thinkpad-t410>
+	 <20120628211936.GA14286@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Jun 2012 10:43:59 +0800
+Message-ID: <1340937839.6196.212.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/6/29 2:07, tj@kernel.org wrote:
-
-> Hello, Li.
+於 四，2012-06-28 於 22:19 +0100，Matthew Garrett 提到：
+> On Thu, Jun 28, 2012 at 04:16:00PM -0500, Seth Forshee wrote:
 > 
-> On Thu, Jun 28, 2012 at 02:07:51PM +0800, Li Zefan wrote:
->>> Hmm... fa980ca87d "cgroup: superblock can't be released with active
->>> dentries" is supposed to have fixed that.  Looking into it.
->>>
->>
->>
->> I think I know what happened here:
->>
->> umount
->>   deativate_super(sb)
->>                        dput(subdir)
->>                          subdir->d_count--
->>                          d_release(subdir)
->>                            deactivate_super(sb)
->>                              shrink_dcache_for_umount(sb)
->>                                BUG(root->d_count)!!
->>                          root->d_count--
+> > What I still don't understand is your reason for preferring
+> > driver-specific interfaces for disabling backlights to a single generic
+> > interface. Are you afraid that allowing it to be done from userspace
+> > will make it too easy, and as a result quirks will be applied without
+> > attempting to fix the problem (i.e. the quriking should go through a
+> > kernel dev to ensure someone tries to fix the problem is made before
+> > applying a quirk)?
 > 
-> Can you please elaborate a bit?  I'm not really following?  Where does
-> the last root->d_count-- come from?
+> Yup, that. We'll just end up with three billion forum posts telling 
+> people to add a line to a text file and nobody will ever fix the real 
+> problem.
 > 
 
+Yes, we can not just hide this issue. It's entirely a manufacturers'
+problem.
 
->From my limited knowledge about vfs internal, seems the parent's refcnt won't go down
-to 0 before its children. When mkdir, the parent's refcnt will be incremented, and
-after rmdir, dput(subdir) will drop subdir's refcnt and then drop parent's.
+More and more machines have broken _BCM is because ODM didn't really
+follow WDDM spec to maintain standard acpi interface for compatibility,
+e.g. XP or Linux that don't support WDDM:
+	http://msdn.microsoft.com/en-us/windows/hardware/gg487382.aspx
 
-So when dropping the subdir's refcnt and leading the superblock to be killed, the root's
-dentry is still > 0.
+In WDDM architecture, in spec p.5, there have a "Monitor" driver to
+check the WDDM driver support brightness DDI, if not, then it will use
+standard acpi method to control brightness.
 
->> I use this script to reproduce the bug:
->>
->> mount -t cgroup -o cpu xxx /mnt
->> mkdir /mnt/sub
->> sleep 100 < /mnt/sub &
->> kill $!
->> wait $!
->> rmdir /mnt/sub
->> umount /mnt
-> 
-> Unfortunately, this doesn't reproduce the bug here either. :(
-> 
+Unfortunately, no OEM preload Windows XP, now. So, more and more ODM
+didn't test _BCM, actaully, they never test it, ODM QA just test the
+brightness control UI available on newest Windows version (Windows 7).
+
+We cann't just follow windows approach because it causes standard acpi
+method neglected. If we also do that, then _BCM function will have no
+chance to fix by any manufacturers because it's really nobody care.
+
+Currently, on Linux we default use _BCM to control brightness, video
+driver is a fallback. And we enable this fallback in platform driver.
+It can keep still have people pay attention on standard acpi methods.
 
 
-I can reproduce the bug reliably.. Try s/cpu/perf or s/cpu/net_cls, which have fewer
-cgroup files?
+Thanks a lot!
+Joey Lee
+
+
