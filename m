@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab2F2Wad (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 18:30:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50790 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092Ab2F2Wab (ORCPT
+	id S1753280Ab2F2Wco (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 18:32:44 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39499 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751789Ab2F2Wcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 18:30:31 -0400
-Date: Fri, 29 Jun 2012 15:30:28 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Petr Holasek <pholasek@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH v2] KSM: numa awareness sysfs knob
-In-Reply-To: <20120629164706.GA7831@cmpxchg.org>
-Message-ID: <alpine.DEB.2.00.1206291526180.15200@chino.kir.corp.google.com>
-References: <1340970592-25001-1-git-send-email-pholasek@redhat.com> <20120629160510.GA10082@cmpxchg.org> <20120629163033.GA11327@stainedmachine.redhat.com> <20120629164706.GA7831@cmpxchg.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 29 Jun 2012 18:32:43 -0400
+Date: Sat, 30 Jun 2012 07:32:35 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vmscan: remove obsolete comment of shrinker
+Message-ID: <20120629223235.GB2079@barrios>
+References: <1340945500-14566-1-git-send-email-minchan@kernel.org>
+ <jsk9pt$32e$2@dough.gmane.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <jsk9pt$32e$2@dough.gmane.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Jun 2012, Johannes Weiner wrote:
-
-> > I started with exactly same idea as you described above in the first
-> > RFC, link: https://lkml.org/lkml/2011/11/30/91
-> > But this approach turned out to be more complicated than it looked
-> > (see two last emails in thread) and complexity of solution would rise
-> > a lot.
+On Fri, Jun 29, 2012 at 01:15:43PM +0000, Cong Wang wrote:
 > 
-> Oh, I should have checked the archives given that it's v2.  I expected
-> it to get complex but didn't put enough thought into it to see /that/
-> amount of complexity.  Sorry.
+> On Fri, 29 Jun 2012 at 04:51 GMT, Minchan Kim <minchan@kernel.org> wrote:
+> > 09f363c7 fixed shrinker callback returns -1 when nr_to_scan is zero
+> > for preventing excessive the slab scanning. But 635697c6 fixed the
+> > problem, again so we can freely return -1 although nr_to_scan is zero.
+> > So let's revert 09f363c7 because the comment added in 09f363c7 made a
+> > unnecessary rule shrinker user should be aware of.
+> >
 > 
-> Carry on, then :-)
+> Please also include the subject of the commit, not just raw hash number. ;)
 > 
+> For example,
+> 
+> 09f363c7("vmscan: fix shrinker callback bug in fs/super.c")
+> 635697c6("vmscan: fix initial shrinker size handling")
 
-I don't think it's an unfair amount of complexity to ask for, and I don't 
-see the problem with ksm merging two pages that have a distance under the 
-configured threshold and leaving the third page unmerged; by configuring 
-the threshold (which should be a char, not an int) the admin has specified 
-the locality that is necessary for optimal performance so has knowingly 
-restricted ksm in that way.
+Yeb. It seems akpm handled it by himself.
+But I will keep in mind.
 
-I'd rename it to ksm_merge_distance, which is more similar to 
-reclaim_distance, and return to the first version of this patch.
+Thanks, Cong!
+
