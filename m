@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab2F2Rs3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 13:48:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16553 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752984Ab2F2Rs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 13:48:28 -0400
-Message-ID: <4FEDE9B1.5030608@redhat.com>
-Date: Fri, 29 Jun 2012 13:45:21 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752632Ab2F2R5n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 13:57:43 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:33554 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab2F2R5m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 13:57:42 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-2.tower-160.messagelabs.com!1340992651!8239501!36
+X-Originating-IP: [216.166.12.72]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/7] staging: comedi: das_08: cleanup the 8254 timer subdevice
+Date: Fri, 29 Jun 2012 10:57:24 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 10/40] autonuma: mm_autonuma and sched_autonuma data structures
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-11-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1340888180-15355-11-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201206291057.24628.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
-> Define the two data structures that collect the per-process (in the
-> mm) and per-thread (in the task_struct) statistical information that
-> are the input of the CPU follow memory algorithms in the NUMA
-> scheduler.
+The 8253.h header provides all the functionality needed for the 8254
+timer subdevice. Remove all the internal support in the driver and
+use the support provided in the header.
 
-I just noticed the subject of this email is misleading, too.
+H Hartley Sweeten (7):
+  staging: comedi: das_08: use the 8253 helper functions
+  staging: comedi: das_08: unwind the 8254 timer support
+  staging: comedi: das_08: remove the cached 8254 'mode'
+  staging: comedi: das_08: remove the 8254 'logic2phys' usage
+  staging: comedi: das_08: remove the 8254 'channels' usage
+  staging: comedi: das_08: remove the unneeded 8254 variables and
+    defines
+  staging: comedi: das_08: absorb i8254_struct into the private data
 
-This patch does not introduce sched_autonuma at all.
-
-*searches around for the patch that does*
+ drivers/staging/comedi/drivers/das08.c | 110 +++++----------------------------
+ drivers/staging/comedi/drivers/das08.h |  14 +----
+ 2 files changed, 16 insertions(+), 108 deletions(-)
 
 -- 
-All rights reversed
+1.7.11
+
