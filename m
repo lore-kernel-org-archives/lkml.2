@@ -1,150 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932818Ab2F2S6e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 14:58:34 -0400
-Received: from mail-yw0-f42.google.com ([209.85.213.42]:59981 "EHLO
-	mail-yw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932781Ab2F2S6a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:58:30 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
-        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v3 16/17] vfs: have do_sys_truncate retry once on an ESTALE error
-Date: Fri, 29 Jun 2012 14:57:59 -0400
-Message-Id: <1340996280-27123-17-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
-References: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
+	id S932831Ab2F2S7I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 14:59:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24842 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932708Ab2F2S7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 14:59:05 -0400
+Message-ID: <4FEDFAB1.8050305@redhat.com>
+Date: Fri, 29 Jun 2012 14:57:53 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 21/40] autonuma: avoid CFS select_task_rq_fair to return
+ -1
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-22-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1340888180-15355-22-git-send-email-aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/open.c |   92 +++++++++++++++++++++++++++++++++---------------------------
- 1 files changed, 51 insertions(+), 41 deletions(-)
+On 06/28/2012 08:56 AM, Andrea Arcangeli wrote:
+> Fix to avoid -1 retval.
+>
+> Includes fixes from Hillf Danton<dhillf@gmail.com>.
+>
+> Signed-off-by: Andrea Arcangeli<aarcange@redhat.com>
+> ---
+>   kernel/sched/fair.c |    4 ++++
+>   1 files changed, 4 insertions(+), 0 deletions(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index c099cc6..fa96810 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -2789,6 +2789,9 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+>   		if (new_cpu == -1 || new_cpu == cpu) {
+>   			/* Now try balancing at a lower domain level of cpu */
+>   			sd = sd->child;
+> +			if (new_cpu<  0)
+> +				/* Return prev_cpu is find_idlest_cpu failed */
+> +				new_cpu = prev_cpu;
+>   			continue;
+>   		}
+>
+> @@ -2807,6 +2810,7 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+>   unlock:
+>   	rcu_read_unlock();
+>
+> +	BUG_ON(new_cpu<  0);
+>   	return new_cpu;
+>   }
+>   #endif /* CONFIG_SMP */
 
-diff --git a/fs/open.c b/fs/open.c
-index 5af0872..e813d90 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -66,62 +66,72 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
- 	struct path path;
- 	struct inode *inode;
- 	int error;
-+	unsigned int lookup_flags = LOOKUP_FOLLOW;
-+	unsigned int try = 0;
-+	char *name;
- 
--	error = -EINVAL;
- 	if (length < 0)	/* sorry, but loff_t says... */
--		goto out;
-+		return -EINVAL;
- 
--	error = user_path(pathname, &path);
--	if (error)
--		goto out;
--	inode = path.dentry->d_inode;
-+	name = getname_flags(pathname, lookup_flags, NULL);
-+	if (IS_ERR(name))
-+		return PTR_ERR(name);
- 
--	/* For directories it's -EISDIR, for other non-regulars - -EINVAL */
--	error = -EISDIR;
--	if (S_ISDIR(inode->i_mode))
--		goto dput_and_out;
-+	do {
-+		error = kern_path_at(AT_FDCWD, name, lookup_flags, &path);
-+		if (error)
-+			break;
-+		inode = path.dentry->d_inode;
- 
--	error = -EINVAL;
--	if (!S_ISREG(inode->i_mode))
--		goto dput_and_out;
-+		/* For dirs, -EISDIR. For other non-regulars, -EINVAL */
-+		error = -EISDIR;
-+		if (S_ISDIR(inode->i_mode))
-+			goto dput_and_out;
- 
--	error = mnt_want_write(path.mnt);
--	if (error)
--		goto dput_and_out;
-+		error = -EINVAL;
-+		if (!S_ISREG(inode->i_mode))
-+			goto dput_and_out;
- 
--	error = inode_permission(inode, MAY_WRITE);
--	if (error)
--		goto mnt_drop_write_and_out;
-+		error = mnt_want_write(path.mnt);
-+		if (error)
-+			goto dput_and_out;
- 
--	error = -EPERM;
--	if (IS_APPEND(inode))
--		goto mnt_drop_write_and_out;
-+		error = inode_permission(inode, MAY_WRITE);
-+		if (error)
-+			goto mnt_drop_write_and_out;
- 
--	error = get_write_access(inode);
--	if (error)
--		goto mnt_drop_write_and_out;
-+		error = -EPERM;
-+		if (IS_APPEND(inode))
-+			goto mnt_drop_write_and_out;
- 
--	/*
--	 * Make sure that there are no leases.  get_write_access() protects
--	 * against the truncate racing with a lease-granting setlease().
--	 */
--	error = break_lease(inode, O_WRONLY);
--	if (error)
--		goto put_write_and_out;
-+		error = get_write_access(inode);
-+		if (error)
-+			goto mnt_drop_write_and_out;
- 
--	error = locks_verify_truncate(inode, NULL, length);
--	if (!error)
--		error = security_path_truncate(&path);
--	if (!error)
--		error = do_truncate(path.dentry, length, 0, NULL);
-+		/*
-+		 * Make sure that there are no leases. get_write_access()
-+		 * protects against the truncate racing with a lease-granting
-+		 * setlease().
-+		 */
-+		error = break_lease(inode, O_WRONLY);
-+		if (error)
-+			goto put_write_and_out;
-+
-+		error = locks_verify_truncate(inode, NULL, length);
-+		if (!error)
-+			error = security_path_truncate(&path);
-+		if (!error)
-+			error = do_truncate(path.dentry, length, 0, NULL);
- 
- put_write_and_out:
--	put_write_access(inode);
-+		put_write_access(inode);
- mnt_drop_write_and_out:
--	mnt_drop_write(path.mnt);
-+		mnt_drop_write(path.mnt);
- dput_and_out:
--	path_put(&path);
--out:
-+		path_put(&path);
-+		lookup_flags |= LOOKUP_REVAL;
-+	} while (retry_estale(error, try++));
-+	putname(name);
- 	return error;
- }
- 
+Wait, what?
+
+Either this is a scheduler bugfix, in which case you
+are better off submitting it separately and reducing
+the size of your autonuma patch queue, or this is a
+behaviour change in the scheduler that needs better
+arguments than a 1-line changelog.
+
 -- 
-1.7.7.6
-
+All rights reversed
