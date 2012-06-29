@@ -1,130 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157Ab2F2PEf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 11:04:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26896 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751500Ab2F2PEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 11:04:34 -0400
-Message-ID: <4FEDC391.5030502@redhat.com>
-Date: Fri, 29 Jun 2012 11:02:41 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755903Ab2F2PHY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 11:07:24 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19324 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752201Ab2F2PHX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 11:07:23 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 29 Jun 2012 08:07:20 -0700
+Message-ID: <4FEDC3F8.8000501@nvidia.com>
+Date: Fri, 29 Jun 2012 20:34:24 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 06/40] autonuma: x86 pte_numa() and pmd_numa()
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-7-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1340888180-15355-7-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Takashi Iwai <tiwai@suse.de>
+CC: "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        Stephen Warren <swarren@nvidia.com>, "perex@perex.cz" <perex@perex.cz>,
+        "clemens@ladisch.de" <clemens@ladisch.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] ASoC: Move pcm writecombine dma buffer allocation
+ to core
+References: <1340965398-20872-1-git-send-email-ldewangan@nvidia.com> <s5h7guqxqnd.wl%tiwai@suse.de>
+In-Reply-To: <s5h7guqxqnd.wl%tiwai@suse.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
+Hi Takashi,
+Thanks for sample code. It helps lot.
 
->   static inline int pte_file(pte_t pte)
->   {
-> -	return pte_flags(pte)&  _PAGE_FILE;
-> +	return (pte_flags(pte)&  _PAGE_FILE) == _PAGE_FILE;
->   }
-
-Wait, why is this change made?  Surely _PAGE_FILE is just
-one single bit and this change is not useful?
-
-If there is a reason for this change, please document it.
-
-> @@ -405,7 +405,9 @@ static inline int pte_same(pte_t a, pte_t b)
+On Friday 29 June 2012 05:43 PM, Takashi Iwai wrote:
+> At Fri, 29 Jun 2012 15:53:15 +0530,
+> Laxman Dewangan wrote:
+>> Some of the ARM based soc allocate the writecombine dma buffer for
+>> pcm substreams. They have the same codes for managing this buffer.
+>> Moving this to the core/pcm files so that they can use that directly.
+>>
+>> Remove the code from Tegra PCM and use these new library function.
+>>
+>> This is enabled only for ARM specific and can be extended to other
+>> architecture if they support the writecombine dma buffer.
+>>
+>> This patch is based on detail discussion on patch:
+>> [PATCH] ASoC: snd_dmaengine: add common api for pcm_mmap
+>> And suggestion from Lars and Takashi.
+> Looking through your patch, I think an easier integration is just to
+> add writecombine option to memalloc.c which calls
+> dma_alloc_writecombine() instead of dma_alloc_coherent().
 >
->   static inline int pte_present(pte_t a)
->   {
-> -	return pte_flags(a)&  (_PAGE_PRESENT | _PAGE_PROTNONE);
-> +	/* _PAGE_NUMA includes _PAGE_PROTNONE */
-> +	return pte_flags(a)&  (_PAGE_PRESENT | _PAGE_PROTNONE |
-> +			       _PAGE_NUMA_PTE);
->   }
+> The addition for mmap is still an open question.  Again, an easier
+> option so far looks like just add the call of dma_alloc_writecombine()
+> in snd_pcm_lib_default_mmap().  Alternatively, we can create an
+> individual mmap pcm_ops as we discussed.
 >
->   static inline int pte_hidden(pte_t pte)
-> @@ -415,7 +417,46 @@ static inline int pte_hidden(pte_t pte)
+> Below is a totally untested patch, but you can imagine what I meant.
 >
->   static inline int pmd_present(pmd_t pmd)
->   {
-> -	return pmd_flags(pmd)&  _PAGE_PRESENT;
-> +	return pmd_flags(pmd)&  (_PAGE_PRESENT | _PAGE_PROTNONE |
-> +				 _PAGE_NUMA_PMD);
-> +}
+> After this change, replace with snd_pcm_lib_malloc_pages with
+> SNDRV_DMA_TYPE_DEV_WC, and that's all you need in the driver side.
 
-Somewhat subtle. Better documentation in patch 5 will
-help explain this.
+We can not use the snd_pcm_lib_malloc_pages() in the pcm_new callback 
+because at this time the substream->runtime is not initialized and it 
+leads to the kernel crash.
 
-> +#ifdef CONFIG_AUTONUMA
-> +static inline int pte_numa(pte_t pte)
+I used the apis as
+
+int snd_soc_pcm_new_wc_dma_buffer(struct snd_soc_pcm_runtime *rtd,
+                 size_t max_bytes)
+{
+      :::::::::::::
+         substream = pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream;
+         if (substream) {
+                 substream->dma_buffer.dev.type = SNDRV_DMA_TYPE_DEV_WC;
+                 ret = snd_pcm_lib_malloc_pages(substream, max_bytes);
+                 if (ret)
+                         goto err;
+         }
+::::::::
+}
+
+
+int snd_pcm_lib_malloc_pages(struct snd_pcm_substream *substream, size_t 
+size)
+{
+         struct snd_pcm_runtime *runtime;
+         struct snd_dma_buffer *dmab = NULL;
+
+         if (PCM_RUNTIME_CHECK(substream))
+                 return -EINVAL;
+
+         if (snd_BUG_ON(substream->dma_buffer.dev.type ==
+                        SNDRV_DMA_TYPE_UNKNOWN))
+                 return -EINVAL;
+
+         runtime = substream->runtime;
+
+         if (runtime->dma_buffer_p) {
+---------------Kernel crash at this point ----------
+
+So I used the snd_dma_alloc_pages() from the driver to allocate WC memory.
+
+
+> +/* allocate the coherent DMA pages */
+> +static void *snd_malloc_dev_pages(struct device *dev, size_t size, dma_addr_t *dma)
 > +{
-> +	return (pte_flags(pte)&
-> +		(_PAGE_NUMA_PTE|_PAGE_PRESENT)) == _PAGE_NUMA_PTE;
-> +}
-> +
-> +static inline int pmd_numa(pmd_t pmd)
-> +{
-> +	return (pmd_flags(pmd)&
-> +		(_PAGE_NUMA_PMD|_PAGE_PRESENT)) == _PAGE_NUMA_PMD;
-> +}
-> +#endif
+> +	return __snd_malloc_dev_pages(dev, size, dma, dma_alloc_coherent);
 
-These could use a little explanation of how _PAGE_NUMA_* is
-used and what the flags mean.
+This does not get compiled in ARM because dma_alloc_coherant is macro 
+defined as
 
-> +static inline pte_t pte_mknotnuma(pte_t pte)
-> +{
-> +	pte = pte_clear_flags(pte, _PAGE_NUMA_PTE);
-> +	return pte_set_flags(pte, _PAGE_PRESENT|_PAGE_ACCESSED);
-> +}
-> +
-> +static inline pmd_t pmd_mknotnuma(pmd_t pmd)
-> +{
-> +	pmd = pmd_clear_flags(pmd, _PAGE_NUMA_PMD);
-> +	return pmd_set_flags(pmd, _PAGE_PRESENT|_PAGE_ACCESSED);
-> +}
-> +
-> +static inline pte_t pte_mknuma(pte_t pte)
-> +{
-> +	pte = pte_set_flags(pte, _PAGE_NUMA_PTE);
-> +	return pte_clear_flags(pte, _PAGE_PRESENT);
-> +}
-> +
-> +static inline pmd_t pmd_mknuma(pmd_t pmd)
-> +{
-> +	pmd = pmd_set_flags(pmd, _PAGE_NUMA_PMD);
-> +	return pmd_clear_flags(pmd, _PAGE_PRESENT);
->   }
+#define dma_alloc_coherent(d, s, h, f) dma_alloc_attrs(d, s, h, f, NULL)
 
-These functions could use some explanation, too.
+static inline void *dma_alloc_attrs(struct device *dev, size_t size,
+                                        dma_addr_t *dma_handle, gfp_t flag,
+                                        struct dma_attrs *attrs)
 
-Why do the top ones set _PAGE_ACCESSED, while the bottom ones
-leave _PAGE_ACCESSED alone?
 
-I can guess the answer, but it should be documented so it is
-also clear to people with less experience in the VM.
+I fixed this by
+static void *_dma_alloc_coherent(struct device *dev, size_t size,
+                 dma_addr_t *dma_handle, gfp_t flag)
+{
+         return dma_alloc_coherent(dev, size, dma_handle, flag);
+}
 
--- 
-All rights reversed
+/* allocate the coherent DMA pages */
+static void *snd_malloc_dev_pages(struct device *dev, size_t size, 
+dma_addr_t *dma)
+{
+         return _snd_malloc_dev_pages(dev, size, dma, _dma_alloc_coherent);
+}
+
