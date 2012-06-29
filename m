@@ -1,40 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab2F2QgP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 12:36:15 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35151 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753781Ab2F2QgN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 12:36:13 -0400
-Message-ID: <4FEDD97A.7050702@wwwdotorg.org>
-Date: Fri, 29 Jun 2012 10:36:10 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756130Ab2F2QgY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 12:36:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28007 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753781Ab2F2QgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 12:36:21 -0400
+Date: Fri, 29 Jun 2012 13:36:07 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] perf, tool: Add events support for pmu
+Message-ID: <20120629163607.GB7847@infradead.org>
+References: <1339706321-8802-1-git-send-email-jolsa@redhat.com>
+ <1339706321-8802-5-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: grant.likely@secretlab.ca, spi-devel-general@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH] spi: tegra: use dmaengine based dma driver
-References: <1340969480-7702-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1340969480-7702-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339706321-8802-5-git-send-email-jolsa@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2012 05:31 AM, Laxman Dewangan wrote:
-> Use the dmaengine based Tegra APB DMA driver for
-> data transfer between SPI FIFO and memory in
-> place of legacy Tegra APB DMA.
+Em Thu, Jun 14, 2012 at 10:38:39PM +0200, Jiri Olsa escreveu:
+> The pmu sysfs record expose events group attribute with
+> hardware events translations.
 > 
-> The new driver is selected if legacy driver is not
-> selected and new DMA driver is enabled through config
-> file.
+> Adding support to read those and make it available throught:
+> __u64 perf_pmu__event(struct perf_pmu *pmu, unsigned id)
 > 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  tools/perf/util/pmu.c |   98 ++++++++++++++++++++++++++++++++++++++++++++++++-
+>  tools/perf/util/pmu.h |    2 +
+>  2 files changed, 98 insertions(+), 2 deletions(-)
+> 
+> diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+> index 1d73131..bf2a2a9 100644
+> --- a/tools/perf/util/pmu.c
+> +++ b/tools/perf/util/pmu.c
+> @@ -88,6 +88,94 @@ static int pmu_format(char *name, struct list_head *format)
+>  	return 0;
+>  }
+>  
+> +const char *events_files[PERF_COUNT_HW_MAX] = {
+> +	[PERF_COUNT_HW_CPU_CYCLES]              = "cycles",
+> +	[PERF_COUNT_HW_INSTRUCTIONS]            = "instructions",
+> +	[PERF_COUNT_HW_CACHE_REFERENCES]        = "cache_references",
+> +	[PERF_COUNT_HW_CACHE_MISSES]            = "cache_misses",
+> +	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS]     = "branch_instructions",
+> +	[PERF_COUNT_HW_BRANCH_MISSES]           = "branch_misses",
+> +	[PERF_COUNT_HW_BUS_CYCLES]              = "bus_cycles",
+> +	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] = "stalled_cycles_frontend",
+> +	[PERF_COUNT_HW_STALLED_CYCLES_BACKEND]  = "stalled_cycles_backend",
+> +	[PERF_COUNT_HW_REF_CPU_CYCLES]          = "ref_cycles",
 
-Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+we have this one:
 
+static const char *perf_evsel__hw_names[PERF_COUNT_HW_MAX] = {
+
+Can't it be used?
+
+- Arnaldo
