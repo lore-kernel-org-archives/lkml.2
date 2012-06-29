@@ -1,86 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab2F2Q13 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 12:27:29 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:53618 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665Ab2F2Q11 (ORCPT
+	id S1755921Ab2F2Q2u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 12:28:50 -0400
+Received: from smtp-out-134.synserver.de ([212.40.185.134]:1178 "EHLO
+	smtp-out-132.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752665Ab2F2Q2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 12:27:27 -0400
-From: Pablo Vazquez Rodriguez <peibolvigo@gmail.com>
-To: greg@kroah.com
-Cc: swetland@google.com, john.stultz@linaro.org, arve@android.com,
-        ccross@android.com, bringert@android.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Pablo Vazquez Rodriguez <peibolvigo@gmail.com>
-Subject: [PATCH] Staging: android: fix pr_info and pr_err coding style issues in ashmem.c
-Date: Fri, 29 Jun 2012 18:27:12 +0200
-Message-Id: <1340987232-25169-1-git-send-email-peibolvigo@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <y>
-References: <y>
+	Fri, 29 Jun 2012 12:28:49 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 25658
+Message-ID: <4FEDD8A3.8000608@metafoo.de>
+Date: Fri, 29 Jun 2012 18:32:35 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: Laxman Dewangan <ldewangan@nvidia.com>, "lrg@ti.com" <lrg@ti.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Stephen Warren <swarren@nvidia.com>, "perex@perex.cz" <perex@perex.cz>,
+        "clemens@ladisch.de" <clemens@ladisch.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] ASoC: Move pcm writecombine dma buffer allocation
+ to core
+References: <1340965398-20872-1-git-send-email-ldewangan@nvidia.com> <s5h7guqxqnd.wl%tiwai@suse.de> <4FEDC3F8.8000501@nvidia.com> <4FEDD29C.8040209@metafoo.de> <s5h1ukyw0pb.wl%tiwai@suse.de>
+In-Reply-To: <s5h1ukyw0pb.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the ashmem.c file that fixes up several pr_info and pr_err warnings found by the checkpath.pl tool
+On 06/29/2012 06:18 PM, Takashi Iwai wrote:
+> At Fri, 29 Jun 2012 18:06:52 +0200,
+> Lars-Peter Clausen wrote:
+>>
+>> On 06/29/2012 05:04 PM, Laxman Dewangan wrote:
+>>> [...]
+>>>
+>>>
+>>>> +/* allocate the coherent DMA pages */
+>>>> +static void *snd_malloc_dev_pages(struct device *dev, size_t size,
+>>>> dma_addr_t *dma)
+>>>> +{
+>>>> +    return __snd_malloc_dev_pages(dev, size, dma, dma_alloc_coherent);
+>>>
+>>> This does not get compiled in ARM because dma_alloc_coherant is macro
+>>> defined as
+>>>
+>>> #define dma_alloc_coherent(d, s, h, f) dma_alloc_attrs(d, s, h, f, NULL)
+>>>
+>>> static inline void *dma_alloc_attrs(struct device *dev, size_t size,
+>>>                                        dma_addr_t *dma_handle, gfp_t flag,
+>>>                                        struct dma_attrs *attrs)
+>>>
+>>>
+>>> I fixed this by
+>>> static void *_dma_alloc_coherent(struct device *dev, size_t size,
+>>>                 dma_addr_t *dma_handle, gfp_t flag)
+>>> {
+>>>         return dma_alloc_coherent(dev, size, dma_handle, flag);
+>>> }
+>>>
+>>> /* allocate the coherent DMA pages */
+>>> static void *snd_malloc_dev_pages(struct device *dev, size_t size,
+>>> dma_addr_t *dma)
+>>> {
+>>>         return _snd_malloc_dev_pages(dev, size, dma, _dma_alloc_coherent);
+>>> }
+>>
+>> I think all dma_alloc_* functions use dma_alloc_attrs internally these days.
+>> I think it might be a better idea just to use dma_alloc_attrs in
+>> __snd_malloc_dev_pages and just pass a dma_attrs struct instead of a function.
+>>
+>> Something like:
+>>
+>> static void *__snd_malloc_dev_pages(struct device *dev, size_t size,
+>> 			    dma_addr_t *dma, struct dma_attrs *attrs)
+>> {
+>> ....
+>> 	res = dma_alloc_attrs(dev, PAGE_SIZE << pg, dma, gfp_flags, attrs);
+>> ....
+>> }
+>>
+>>
+>> static void *snd_malloc_dev_pages(struct device *dev, size_t size,
+>> 	dma_addr_t *dma)
+>> {
+>> 	return __snd_malloc_dev_pages(dev, size, dma, NULL);
+>> }
+>>
+>> static void *snd_malloc_dev_wc_pages(struct device *dev, size_t size,
+>> 	dma_addr_t *dma)
+>> {
+>> 	DEFINE_DMA_ATTRS(attrs);
+>> 	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
+>>
+>> 	return __snd_malloc_dev_pages(dev, size, dma, &attrs);
+>> }
+>>
+>> Same applies for freeing the memory again.
+> 
+> Yes, that'd be cleaner.
+> But I prefer the code still workable on 3.5-base kernel, which makes
+> easier to test and merge for 3.6, at first. 
 
-Signed-off-by: Pablo Vazquez Rodriguez <peibolvigo@gmail.com>
----
- drivers/staging/android/ashmem.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+Actually that part is already in 3.5. But I've just had a closer look and it
+looks as if even for 3.6 not all archs have been converted to
+dma_alloc_attrs yet :/
 
-diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
-index e84dbec..01e61c9 100644
---- a/drivers/staging/android/ashmem.c
-+++ b/drivers/staging/android/ashmem.c
-@@ -707,7 +707,7 @@ static int __init ashmem_init(void)
- 					  sizeof(struct ashmem_area),
- 					  0, 0, NULL);
- 	if (unlikely(!ashmem_area_cachep)) {
--		printk(KERN_ERR "ashmem: failed to create slab cache\n");
-+		pr_err("ashmem: failed to create slab cache\n");
- 		return -ENOMEM;
- 	}
- 
-@@ -715,19 +715,19 @@ static int __init ashmem_init(void)
- 					  sizeof(struct ashmem_range),
- 					  0, 0, NULL);
- 	if (unlikely(!ashmem_range_cachep)) {
--		printk(KERN_ERR "ashmem: failed to create slab cache\n");
-+		pr_err("ashmem: failed to create slab cache\n");
- 		return -ENOMEM;
- 	}
- 
- 	ret = misc_register(&ashmem_misc);
- 	if (unlikely(ret)) {
--		printk(KERN_ERR "ashmem: failed to register misc device!\n");
-+		pr_err("ashmem: failed to register misc device!\n");
- 		return ret;
- 	}
- 
- 	register_shrinker(&ashmem_shrinker);
- 
--	printk(KERN_INFO "ashmem: initialized\n");
-+	pr_info("ashmem: initialized\n");
- 
- 	return 0;
- }
-@@ -740,12 +740,12 @@ static void __exit ashmem_exit(void)
- 
- 	ret = misc_deregister(&ashmem_misc);
- 	if (unlikely(ret))
--		printk(KERN_ERR "ashmem: failed to unregister misc device!\n");
-+		pr_err("ashmem: failed to unregister misc device!\n");
- 
- 	kmem_cache_destroy(ashmem_range_cachep);
- 	kmem_cache_destroy(ashmem_area_cachep);
- 
--	printk(KERN_INFO "ashmem: unloaded\n");
-+	pr_info("ashmem: unloaded\n");
- }
- 
- module_init(ashmem_init);
--- 
-1.7.7.6
 
