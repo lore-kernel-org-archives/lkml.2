@@ -1,84 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626Ab2F2SHF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 14:07:05 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:39752 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab2F2SHB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:07:01 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "Steven J. Magnani" <steve@digidescorp.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fat: Fix non-atomic NFS i_pos read
-References: <1340990350-9565-1-git-send-email-steve@digidescorp.com>
-Date: Sat, 30 Jun 2012 03:06:56 +0900
-In-Reply-To: <1340990350-9565-1-git-send-email-steve@digidescorp.com> (Steven
-	J. Magnani's message of "Fri, 29 Jun 2012 12:19:10 -0500")
-Message-ID: <877guqt2kf.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+	id S1755736Ab2F2SJJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 14:09:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28948 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753290Ab2F2SJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 14:09:07 -0400
+Message-ID: <4FEDEE9F.4080103@redhat.com>
+Date: Fri, 29 Jun 2012 14:06:23 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 14/40] autonuma: add page structure fields
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-15-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1340888180-15355-15-git-send-email-aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Steven J. Magnani" <steve@digidescorp.com> writes:
-
-> fat_encode_fh() can fetch an invalid i_pos value on systems
-> where 64-bit accesses are not atomic. Make it use the same
-> accessor as the rest of the FAT code.
+On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
+> On 64bit archs, 20 bytes are used for async memory migration (specific
+> to the knuma_migrated per-node threads), and 4 bytes are used for the
+> thread NUMA false sharing detection logic.
 >
-> Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
-> ---
-> diff -uprN linux-3.5-rc4/fs/fat/inode.c new/fs/fat/inode.c
-> --- linux-3.5-rc4/fs/fat/inode.c	2012-06-29 11:20:12.781348652 -0500
-> +++ new/fs/fat/inode.c	2012-06-29 11:25:29.484713183 -0500
-> @@ -738,22 +738,22 @@ static int
->  fat_encode_fh(struct inode *inode, __u32 *fh, int *lenp, struct inode *parent)
->  {
->  	int len = *lenp;
-> -	u32 ipos_h, ipos_m, ipos_l;
-> +	struct super_block *sb = inode->i_sb;
-> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+> This is a bad implementation due lack of time to do a proper one.
 
-sb seems to be unused. So, we can just
+It is not ideal, no.
 
-	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
+If you document what everything does, maybe somebody else
+will understand the code well enough to help fix it.
 
-true? Otherwise, ack.
-
-Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-
-Just curious, this happened on the real system? I recently heard about
-NFS issue.
-
-Thanks.
-
-> +	loff_t i_pos;
->  
->  	if (len < 5) {
->  		*lenp = 5;
->  		return 255; /* no room */
->  	}
->  
-> -	ipos_h = MSDOS_I(inode)->i_pos >> 8;
-> -	ipos_m = (MSDOS_I(inode)->i_pos & 0xf0) << 24;
-> -	ipos_l = (MSDOS_I(inode)->i_pos & 0x0f) << 28;
-> +	i_pos = fat_i_pos_read(sbi, inode);
->  	*lenp = 5;
->  	fh[0] = inode->i_ino;
->  	fh[1] = inode->i_generation;
-> -	fh[2] = ipos_h;
-> -	fh[3] = ipos_m | MSDOS_I(inode)->i_logstart;
-> -	fh[4] = ipos_l;
-> +	fh[2] = i_pos >> 8;
-> +	fh[3] = ((i_pos & 0xf0) << 24) | MSDOS_I(inode)->i_logstart;
-> +	fh[4] = (i_pos & 0x0f) << 28;
->  	if (parent)
->  		fh[4] |= MSDOS_I(parent)->i_logstart;
->  	return 3;
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -136,6 +136,32 @@ struct page {
+>   		struct page *first_page;	/* Compound tail pages */
+>   	};
 >
+> +#ifdef CONFIG_AUTONUMA
+> +	/*
+> +	 * FIXME: move to pgdat section along with the memcg and allocate
+> +	 * at runtime only in presence of a numa system.
+> +	 */
+
+Once you fix it, could you fold the fix into this patch?
+
+> +	/*
+> +	 * To modify autonuma_last_nid lockless the architecture,
+> +	 * needs SMP atomic granularity<  sizeof(long), not all archs
+> +	 * have that, notably some ancient alpha (but none of those
+> +	 * should run in NUMA systems). Archs without that requires
+> +	 * autonuma_last_nid to be a long.
+> +	 */
+> +#if BITS_PER_LONG>  32
+> +	int autonuma_migrate_nid;
+> +	int autonuma_last_nid;
+> +#else
+> +#if MAX_NUMNODES>= 32768
+> +#error "too many nodes"
+> +#endif
+> +	/* FIXME: remember to check the updates are atomic */
+> +	short autonuma_migrate_nid;
+> +	short autonuma_last_nid;
+> +#endif
+> +	struct list_head autonuma_migrate_node;
+> +#endif
+
+Please document what these fields mean.
+
 
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+All rights reversed
