@@ -1,111 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932960Ab2F2UjY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 16:39:24 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55099 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932615Ab2F2UjX (ORCPT
+	id S932967Ab2F2UpH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 16:45:07 -0400
+Received: from hulk.biessmann.org ([62.75.166.25]:37339 "EHLO
+	hulk.biessmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932770Ab2F2UpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 16:39:23 -0400
-Date: Fri, 29 Jun 2012 22:39:20 +0200
-From: Domenico Andreoli <cavokz@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2] Build a zImage or uImage with dtb already appended
-Message-ID: <20120629203919.GA18617@raptus.dandreoli.com>
-Mail-Followup-To: Grant Likely <grant.likely@secretlab.ca>,
-	linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <20110802143148.21599.22870.stgit@ponder>
+	Fri, 29 Jun 2012 16:45:06 -0400
+Message-ID: <4FEE13C0.10505@biessmann.de>
+Date: Fri, 29 Jun 2012 22:44:48 +0200
+From: =?UTF-8?B?QW5kcmVhcyBCaWXDn21hbm4=?= <andreas@biessmann.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110802143148.21599.22870.stgit@ponder>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+CC: David Howells <dhowells@redhat.com>,
+        Hans Ulli Kroll <ulli.kroll@googlemail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm:gemini: fix irq.c
+References: <1338981778-19938-1-git-send-email-andreas@biessmann.de>
+In-Reply-To: <1338981778-19938-1-git-send-email-andreas@biessmann.de>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SPAM_bar: --
+X-SPAM_score: -28
+X-ChkData-Signature: 82fd85f0510922526535d974951389e0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Domenico Andreoli <domenico.andreoli@linux.com>
+On 06.06.12 13:22, Andreas Bießmann wrote:
+> Commit 9f97da78bf018206fb623cd351d454af2f105fe0 moved disable_hlt() from
+> arch/arm/include/asm/system.h to arch/arm/include/asm/system_misc.h but missed
+> to change arch/arm/mach-gemini/irq.c.
+> 
+> This patch fixes following error:
+> 
+> ---8<---
+> arch/arm/mach-gemini/irq.c: In function 'gemini_init_irq':
+> arch/arm/mach-gemini/irq.c:79:2: error: implicit declaration of function 'disable_hlt' [-Werror=implicit-function-declaration]
+> --->8---
+> 
+> Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
+> cc: Hans Ulli Kroll <ulli.kroll@googlemail.com> 
+> cc: Russell King <linux@arm.linux.org.uk>
+> cc: linux-arm-kernel@lists.infradead.org
+> ---
+> Note: this is broken since 3.4 release, 3.3 is sane.
 
-Add new targets to build zImage and uImage with DTB appended (i.e. make
-'uImage-dtb.am335x-bone' or 'make zImage-dtb.omap3-evm').
+ping
 
-Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Domenico Andreoli <domenico.andreoli@linux.com>
-
----
-
-On Tue, Aug 02, 2011 at 03:31:48PM +0100, Grant Likely wrote:
-> Do not commit to mainline; this is a useful hack only for now.
+> 
+>  arch/arm/mach-gemini/irq.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/mach-gemini/irq.c b/arch/arm/mach-gemini/irq.c
+> index ca70e5f..020852d 100644
+> --- a/arch/arm/mach-gemini/irq.c
+> +++ b/arch/arm/mach-gemini/irq.c
+> @@ -17,6 +17,7 @@
+>  #include <linux/sched.h>
+>  #include <asm/irq.h>
+>  #include <asm/mach/irq.h>
+> +#include <asm/system_misc.h>
+>  #include <mach/hardware.h>
+>  
+>  #define IRQ_SOURCE(base_addr)	(base_addr + 0x00)
 > 
 
-Is this a better moment for this patch?
-
-Anyway, here is an update for v3.5-rc4. Added zImage-dtb.* as a valid
-target and the .gitignore entries.
-
-cheers
-Domenico
-
----
- arch/arm/Makefile        |    6 ++++++
- arch/arm/boot/.gitignore |    2 ++
- arch/arm/boot/Makefile   |    7 +++++++
- 3 files changed, 15 insertions(+)
-
-Index: b/arch/arm/Makefile
-===================================================================
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -283,6 +283,12 @@ zImage Image xipImage bootpImage uImage:
- zinstall uinstall install: vmlinux
- 	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $@
- 
-+zImage-dtb.%:
-+	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/$@
-+
-+uImage-dtb.%:
-+	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/$@
-+
- %.dtb:
- 	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/$@
- 
-Index: b/arch/arm/boot/Makefile
-===================================================================
---- a/arch/arm/boot/Makefile
-+++ b/arch/arm/boot/Makefile
-@@ -55,6 +55,9 @@ $(obj)/zImage:	$(obj)/compressed/vmlinux
- 	$(call if_changed,objcopy)
- 	@echo '  Kernel: $@ is ready'
- 
-+$(obj)/zImage-dtb.%:	$(obj)/%.dtb $(obj)/zImage
-+	cat $(obj)/zImage $< > $@
-+
- endif
- 
- targets += $(dtb-y)
-@@ -90,6 +93,10 @@ $(obj)/uImage:	$(obj)/zImage FORCE
- 	$(call if_changed,uimage)
- 	@echo '  Image $@ is ready'
- 
-+$(obj)/uImage-dtb.%:	$(obj)/zImage-dtb.% FORCE
-+	$(call if_changed,uimage)
-+	@echo '  Image $@ is ready'
-+
- $(obj)/bootp/bootp: $(obj)/zImage initrd FORCE
- 	$(Q)$(MAKE) $(build)=$(obj)/bootp $@
- 	@:
-Index: b/arch/arm/boot/.gitignore
-===================================================================
---- a/arch/arm/boot/.gitignore
-+++ b/arch/arm/boot/.gitignore
-@@ -1,6 +1,8 @@
- Image
- zImage
-+zImage-dtb.*
- xipImage
- bootpImage
- uImage
-+uImage-dtb.*
- *.dtb
