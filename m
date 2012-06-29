@@ -1,20 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab2F2SgH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 14:36:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26333 "EHLO mx1.redhat.com"
+	id S1756202Ab2F2Sgt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 14:36:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55216 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753226Ab2F2SgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:36:04 -0400
-Message-ID: <4FEDF562.1080003@redhat.com>
-Date: Fri, 29 Jun 2012 14:35:14 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+	id S1750988Ab2F2Sgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 14:36:48 -0400
+Date: Fri, 29 Jun 2012 18:30:25 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Nai Xia <nai.xia@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
@@ -25,61 +21,79 @@ CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Lai Jiangshan <laijs@cn.fujitsu.com>,
         Bharata B Rao <bharata.rao@gmail.com>,
         Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
         Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 16/40] autonuma: init knuma_migrated queues
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-17-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1340888180-15355-17-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 13/40] autonuma: CPU follow memory algorithm
+Message-ID: <20120629163025.GP6676@redhat.com>
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
+ <1340888180-15355-14-git-send-email-aarcange@redhat.com>
+ <1340894776.28750.44.camel@twins>
+ <4FEDB797.3050804@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FEDB797.3050804@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
-> Initialize the knuma_migrated queues at boot time.
->
-> Signed-off-by: Andrea Arcangeli<aarcange@redhat.com>
-> ---
->   mm/page_alloc.c |   11 +++++++++++
->   1 files changed, 11 insertions(+), 0 deletions(-)
->
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index a9710a4..48eabe9 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -59,6 +59,7 @@
->   #include<linux/prefetch.h>
->   #include<linux/migrate.h>
->   #include<linux/page-debug-flags.h>
-> +#include<linux/autonuma.h>
->
->   #include<asm/tlbflush.h>
->   #include<asm/div64.h>
-> @@ -4348,8 +4349,18 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
->   	int nid = pgdat->node_id;
->   	unsigned long zone_start_pfn = pgdat->node_start_pfn;
->   	int ret;
-> +#ifdef CONFIG_AUTONUMA
-> +	int node_iter;
-> +#endif
->
->   	pgdat_resize_init(pgdat);
-> +#ifdef CONFIG_AUTONUMA
-> +	spin_lock_init(&pgdat->autonuma_lock);
-> +	init_waitqueue_head(&pgdat->autonuma_knuma_migrated_wait);
-> +	pgdat->autonuma_nr_migrate_pages = 0;
-> +	for_each_node(node_iter)
-> +		INIT_LIST_HEAD(&pgdat->autonuma_migrate_head[node_iter]);
-> +#endif
+Hi Nai,
 
-Should this be a __paginginit function inside one of the
-autonuma files, so we can avoid the ifdefs here?
+On Fri, Jun 29, 2012 at 10:11:35PM +0800, Nai Xia wrote:
+> If one process do very intensive visit of a small set of pages in this
+> node, but occasional visit of a large set of pages in another node.
+> Will this algorithm do a very bad judgment? I guess the answer would
+> be: it's possible and this judgment depends on the racing pattern
+> between the process and your knuma_scand.
 
--- 
-All rights reversed
+Depending if the knuma_scand/scan_pass_sleep_millisecs is more or less
+occasional than the visit of a large set of pages it may behave
+differently correct.
+
+Note that every algorithm will have a limit on how smart it can be.
+
+Just to make a random example: if you lookup some pagecache a million
+times and some other pagecache a dozen times, their "aging"
+information in the pagecache will end up identical. Yet we know one
+set of pages is clearly higher priority than the other. We've only so
+many levels of lrus and so many referenced/active bitflags per
+page. Once you get at the top, then all is equal.
+
+Does this mean the "active" list working set detection is useless just
+because we can't differentiate a million of lookups on a few pages, vs
+a dozen of lookups on lots of pages?
+
+Last but not the least, in the very example you mention it's not even
+clear that the process should be scheduled in the CPU where there is
+the small set of pages accessed frequently, or the CPU where there's
+the large set of pages accessed occasionally. If the small sets of
+pages fits in the 8MBytes of the L2 cache, then it's better to put the
+process in the other CPU where the large set of pages can't fit in the
+L2 cache. Lots of hardware details should be evaluated, to really know
+what's the right thing in such case even if it was you having to
+decide.
+
+But the real reason why the above isn't an issue and why we don't need
+to solve that problem perfectly: there's not just a CPU follow memory
+algorithm in AutoNUMA. There's also the memory follow CPU
+algorithm. AutoNUMA will do its best to change the layout of your
+example to one that has only one clear solution: the occasional lookup
+of the large set of pages, will make those eventually go in the node
+together with the small set of pages (or the other way around), and
+this is how it's solved.
+
+In any case, whatever wrong decision it will take, it will at least be
+a better decision than the numa/sched where there's absolutely zero
+information about what pages the process is accessing. And best of all
+with AutoNUMA you also know which pages the _thread_ is accessing so
+it will also be able to take optimal decisions if there are more
+threads than CPUs in a node (as long as not all thread accesses are
+shared).
+
+Hope this explains things better.
+Andrea
