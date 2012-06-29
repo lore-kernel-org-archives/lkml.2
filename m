@@ -1,83 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932480Ab2F2Ni4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 09:38:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45534 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755112Ab2F2NdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 09:33:07 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 14/16] nbd: Set SOCK_MEMALLOC for access to PFMEMALLOC reserves
-Date: Fri, 29 Jun 2012 14:32:45 +0100
-Message-Id: <1340976767-5737-15-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1340976767-5737-1-git-send-email-mgorman@suse.de>
-References: <1340976767-5737-1-git-send-email-mgorman@suse.de>
+	id S932484Ab2F2NjG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 09:39:06 -0400
+Received: from smtp01-new-4.daemonmail.net ([216.104.162.149]:51460 "EHLO
+	smtp01-new-4.daemonmail.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932204Ab2F2NjD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 09:39:03 -0400
+X-Greylist: delayed 533 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Jun 2012 09:39:03 EDT
+X-Spam-Flag: NO
+X-Spam-Score: 3.206
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Fri, 29 Jun 2012 06:29:32 -0700
+From: Mr Lambert Kweku <great@giovanaofficial.com>
+To: undisclosed-recipients:;
+Subject: GOLD DUST FOR SALE
+Reply-To: <realgoldsale@superposta.com>
+Mail-Reply-To: <realgoldsale@superposta.com>
+Message-ID: <563cbe10f2b65104fef95783099ab828@giovanaofficial.com>
+User-Agent: Roundcube Webmail/0.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set SOCK_MEMALLOC on the NBD socket to allow access to PFMEMALLOC
-reserves so pages backed by NBD, particularly if swap related, can
-be cleaned to prevent the machine being deadlocked. It is still
-possible that the PFMEMALLOC reserves get depleted resulting in
-deadlock but this can be resolved by the administrator by increasing
-min_free_kbytes.
+Hello Sir/Ma,
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- drivers/block/nbd.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+We are small scale Gold miners here on the sub-region of West Africa, 
+Accra, Ghana.We have alluvial Gold Dust for sale at a considerable Price 
+which is below world market price.If you are interested, do not hesitate 
+to get back to us as soon as possible for us to give you our full 
+co-operate offer (FCO). We look forward in doing a long lasting business 
+transaction with you.Regards
 
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index 061427a75d..76bc96f 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -154,6 +154,7 @@ static int sock_xmit(struct nbd_device *nbd, int send, void *buf, int size,
- 	struct msghdr msg;
- 	struct kvec iov;
- 	sigset_t blocked, oldset;
-+	unsigned long pflags = current->flags;
- 
- 	if (unlikely(!sock)) {
- 		dev_err(disk_to_dev(nbd->disk),
-@@ -167,8 +168,9 @@ static int sock_xmit(struct nbd_device *nbd, int send, void *buf, int size,
- 	siginitsetinv(&blocked, sigmask(SIGKILL));
- 	sigprocmask(SIG_SETMASK, &blocked, &oldset);
- 
-+	current->flags |= PF_MEMALLOC;
- 	do {
--		sock->sk->sk_allocation = GFP_NOIO;
-+		sock->sk->sk_allocation = GFP_NOIO | __GFP_MEMALLOC;
- 		iov.iov_base = buf;
- 		iov.iov_len = size;
- 		msg.msg_name = NULL;
-@@ -214,6 +216,7 @@ static int sock_xmit(struct nbd_device *nbd, int send, void *buf, int size,
- 	} while (size > 0);
- 
- 	sigprocmask(SIG_SETMASK, &oldset, NULL);
-+	tsk_restore_flags(current, pflags, PF_MEMALLOC);
- 
- 	return result;
- }
-@@ -405,6 +408,7 @@ static int nbd_do_it(struct nbd_device *nbd)
- 
- 	BUG_ON(nbd->magic != NBD_MAGIC);
- 
-+	sk_set_memalloc(nbd->sock->sk);
- 	nbd->pid = task_pid_nr(current);
- 	ret = device_create_file(disk_to_dev(nbd->disk), &pid_attr);
- 	if (ret) {
--- 
-1.7.9.2
-
+Mr Lambert Kweku.
