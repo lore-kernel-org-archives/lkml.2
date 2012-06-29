@@ -1,76 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932945Ab2F2U7Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 16:59:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62218 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755480Ab2F2U7P (ORCPT
+	id S932867Ab2F2VC2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 17:02:28 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:35520 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755973Ab2F2VC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 16:59:15 -0400
-Date: Sat, 30 Jun 2012 02:29:02 +0530
-From: Rabin Vincent <rabin@rab.in>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: CONFIG_HAVE_MEMBLOCK_NODE ->
- CONFIG_HAVE_MEMBLOCK_NODE_MAP
-Message-ID: <20120629205902.GA12711@latitude>
-References: <1341000877-12068-1-git-send-email-rabin@rab.in>
- <20120629202139.GD21048@google.com>
+	Fri, 29 Jun 2012 17:02:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120629202139.GD21048@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120629163025.GP6676@redhat.com>
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
+	<1340888180-15355-14-git-send-email-aarcange@redhat.com>
+	<1340894776.28750.44.camel@twins>
+	<4FEDB797.3050804@gmail.com>
+	<20120629163025.GP6676@redhat.com>
+Date: Sat, 30 Jun 2012 05:02:25 +0800
+Message-ID: <CAPQyPG62yZrZpAz1un6UABjALbUHNT+VTS3A2MhHKMJW1Ykq8Q@mail.gmail.com>
+Subject: Re: [PATCH 13/40] autonuma: CPU follow memory algorithm
+From: Nai Xia <nai.xia@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 29, 2012 at 01:21:39PM -0700, Tejun Heo wrote:
-> This probably has been doing something weird to 32bit machines w/
-> memory hotplug configured (which probably are extremely rare).  It
-> would be nice if the patch description explained what behavior it
-> actually fixes.  How did you find this?  From config check util or did
-> you actually see something broken?
+On Sat, Jun 30, 2012 at 12:30 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> Hi Nai,
+>
+> On Fri, Jun 29, 2012 at 10:11:35PM +0800, Nai Xia wrote:
+>> If one process do very intensive visit of a small set of pages in this
+>> node, but occasional visit of a large set of pages in another node.
+>> Will this algorithm do a very bad judgment? I guess the answer would
+>> be: it's possible and this judgment depends on the racing pattern
+>> between the process and your knuma_scand.
+>
+> Depending if the knuma_scand/scan_pass_sleep_millisecs is more or less
+> occasional than the visit of a large set of pages it may behave
+> differently correct.
+>
+> Note that every algorithm will have a limit on how smart it can be.
+>
+> Just to make a random example: if you lookup some pagecache a million
+> times and some other pagecache a dozen times, their "aging"
+> information in the pagecache will end up identical. Yet we know one
+> set of pages is clearly higher priority than the other. We've only so
+> many levels of lrus and so many referenced/active bitflags per
+> page. Once you get at the top, then all is equal.
+>
+> Does this mean the "active" list working set detection is useless just
+> because we can't differentiate a million of lookups on a few pages, vs
+> a dozen of lookups on lots of pages?
+>
+> Last but not the least, in the very example you mention it's not even
+> clear that the process should be scheduled in the CPU where there is
+> the small set of pages accessed frequently, or the CPU where there's
+> the large set of pages accessed occasionally. If the small sets of
+> pages fits in the 8MBytes of the L2 cache, then it's better to put the
+> process in the other CPU where the large set of pages can't fit in the
+> L2 cache. Lots of hardware details should be evaluated, to really know
+> what's the right thing in such case even if it was you having to
+> decide.
+>
+> But the real reason why the above isn't an issue and why we don't need
+> to solve that problem perfectly: there's not just a CPU follow memory
+> algorithm in AutoNUMA. There's also the memory follow CPU
+> algorithm. AutoNUMA will do its best to change the layout of your
+> example to one that has only one clear solution: the occasional lookup
+> of the large set of pages, will make those eventually go in the node
+> together with the small set of pages (or the other way around), and
+> this is how it's solved.
+>
+> In any case, whatever wrong decision it will take, it will at least be
+> a better decision than the numa/sched where there's absolutely zero
+> information about what pages the process is accessing. And best of all
+> with AutoNUMA you also know which pages the _thread_ is accessing so
+> it will also be able to take optimal decisions if there are more
+> threads than CPUs in a node (as long as not all thread accesses are
+> shared).
+>
+> Hope this explains things better.
+> Andrea
 
-Neither, I just noticed it while debugging some unrelated problems.  The
-arch I work on (ARM) doesn't even select this so I don't have any
-observed behaviour to describe -- I'll just add a paraphrase of your
-statement about who's affected to the patch description.
+Hi Andrea,
 
-8<--------------------
->From 38c7a50331efa83e4d07cbd1d6364d62e4448482 Mon Sep 17 00:00:00 2001
-From: Rabin Vincent <rabin@rab.in>
-Date: Sat, 30 Jun 2012 01:17:45 +0530
-Subject: [PATCHv2] mm: CONFIG_HAVE_MEMBLOCK_NODE -> CONFIG_HAVE_MEMBLOCK_NODE_MAP
+Sorry for being so negative, but this problem seems so clear to me.
+I might have pointed all these out, if you CC me since the first version,
+I am not always on the list watching posts....
 
-0ee332c14518699 ("memblock: Kill early_node_map[]") wanted to replace
-CONFIG_ARCH_POPULATES_NODE_MAP with CONFIG_HAVE_MEMBLOCK_NODE_MAP but
-ended up replacing one occurence with a reference to the non-existent
-symbol CONFIG_HAVE_MEMBLOCK_NODE.
+Sincerely,
 
-The resulting omission of code would probably have been causing problems
-to 32-bit machines with memory hotplug.
-
-Cc: stable@vger.kernel.org
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Rabin Vincent <rabin@rab.in>
----
- include/linux/mmzone.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 2427706..1d0a9a3 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -773,7 +773,7 @@ extern int movable_zone;
- 
- static inline int zone_movable_is_highmem(void)
- {
--#if defined(CONFIG_HIGHMEM) && defined(CONFIG_HAVE_MEMBLOCK_NODE)
-+#if defined(CONFIG_HIGHMEM) && defined(CONFIG_HAVE_MEMBLOCK_NODE_MAP)
- 	return movable_zone == ZONE_HIGHMEM;
- #else
- 	return 0;
--- 
-1.7.9.5
-
+Nai
