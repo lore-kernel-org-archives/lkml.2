@@ -1,112 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab2F2DJx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 23:09:53 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41397 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752872Ab2F2DJv (ORCPT
+	id S1755832Ab2F2DJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 23:09:59 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35032 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753521Ab2F2DJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 23:09:51 -0400
-Date: Thu, 28 Jun 2012 22:58:48 -0400
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, mtosatti@redhat.com, ebiederm@xmission.com,
-        luto@mit.edu, Joerg Roedel <joerg.roedel@amd.com>, dzickus@redhat.com,
-        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH v3 4/5] Sysfs: Export VMCSINFO via sysfs
-Message-ID: <20120629025848.GC8074@kroah.com>
-References: <4FEAC945.50700@cn.fujitsu.com>
- <4FEACA5E.4090009@cn.fujitsu.com>
- <20120627192236.GB1965@kroah.com>
- <4FEC29D6.5020109@cn.fujitsu.com>
- <20120628113738.GA5499@kroah.com>
+	Thu, 28 Jun 2012 23:09:55 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FED1C65.7010902@jp.fujitsu.com>
+Date: Fri, 29 Jun 2012 12:09:25 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120628113738.GA5499@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
+        <len.brown@intel.com>, <benh@kernel.crashing.org>, <paulus@samba.org>,
+        <cl@linux.com>, <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC PATCH 4/12] memory-hotplug : remove /sys/firmware/memmap/X
+ sysfs
+References: <4FEA9C88.1070800@jp.fujitsu.com> <4FEA9E5F.4070205@jp.fujitsu.com> <4FEBFA8D.5040607@cn.fujitsu.com> <4FEC10CB.3060403@jp.fujitsu.com> <4FEC17F8.1000405@cn.fujitsu.com>
+In-Reply-To: <4FEC17F8.1000405@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 04:37:38AM -0700, Greg KH wrote:
-> On Thu, Jun 28, 2012 at 05:54:30PM +0800, Yanfei Zhang wrote:
-> > 于 2012年06月28日 03:22, Greg KH 写道:
-> > > On Wed, Jun 27, 2012 at 04:54:54PM +0800, Yanfei Zhang wrote:
-> > >> This patch export offsets of fields via /sys/devices/cpu/vmcs/.
-> > >> Individual offsets are contained in subfiles named by the filed's
-> > >> encoding, e.g.: /sys/devices/cpu/vmcs/0800
-> > >>
-> > >> Signed-off-by: zhangyanfei <zhangyanfei@cn.fujitsu.com>
-> > >> ---
-> > >>  drivers/base/core.c |   13 +++++++++++++
-> > >>  1 files changed, 13 insertions(+), 0 deletions(-)
-> > >>
-> > >> diff --git a/drivers/base/core.c b/drivers/base/core.c
-> > >> index 346be8b..dd05ee7 100644
-> > >> --- a/drivers/base/core.c
-> > >> +++ b/drivers/base/core.c
-> > >> @@ -26,6 +26,7 @@
-> > >>  #include <linux/async.h>
-> > >>  #include <linux/pm_runtime.h>
-> > >>  #include <linux/netdevice.h>
-> > >> +#include <asm/vmcsinfo.h>
-> > > 
-> > > Did you just break the build on all other arches?  Not nice.
-> > > 
-> > >> @@ -1038,6 +1039,11 @@ int device_add(struct device *dev)
-> > >>  	error = dpm_sysfs_add(dev);
-> > >>  	if (error)
-> > >>  		goto DPMError;
-> > >> +#if defined(CONFIG_KVM_INTEL) || defined(CONFIG_KVM_INTEL_MODULE)
-> > >> +	error = vmcs_sysfs_add(dev);
-> > >> +	if (error)
-> > >> +		goto VMCSError;
-> > >> +#endif
-> > > 
-> > > Oh my no, that's no way to ever do this, you know better than that,
-> > > please fix.
-> > > 
-> > > greg k-h
-> > > 
-> > 
-> > Sorry for my thoughtless, Here is the new patch.
-> > 
-> > ---
-> >  drivers/base/core.c |   13 +++++++++++++
-> >  1 files changed, 13 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/base/core.c b/drivers/base/core.c
-> > index 346be8b..7b5266a 100644
-> > --- a/drivers/base/core.c
-> > +++ b/drivers/base/core.c
-> > @@ -30,6 +30,13 @@
-> >  #include "base.h"
-> >  #include "power/power.h"
-> >  
-> > +#if defined(CONFIG_KVM_INTEL) || defined(CONFIG_KVM_INTEL_MODULE)
-> > +#include <asm/vmcsinfo.h>
-> > +#else
-> > +static inline int vmcs_sysfs_add(struct device *dev) { return 0; }
-> > +static inline void vmcs_sysfs_remove(struct device *dev) { }
-> > +#endif
-> 
-> {sigh}  No, again, you know better, don't do this.
+Hi Wen,
 
-Ok, as others have rightly pointed out, this wasn't the most helpful
-review comment, sorry about that.
+2012/06/28 17:38, Wen Congyang wrote:
+> At 06/28/2012 04:07 PM, Yasuaki Ishimatsu Wrote:
+>> Hi Wen,
+>>
+>> 2012/06/28 15:32, Wen Congyang wrote:
+>>> At 06/27/2012 01:47 PM, Yasuaki Ishimatsu Wrote:
+>>>> When (hot)adding memory into system, /sys/firmware/memmap/X/{end,
+>>>> start, type}
+>>>> sysfs files are created. But there is no code to remove these files.
+>>>> The patch
+>>>> implements the function to remove them.
+>>>>
+>>>> Note : The code does not free firmware_map_entry since there is no
+>>>> way to free
+>>>>          memory which is allocated by bootmem.
+>>>>
+>>>> CC: Len Brown <len.brown@intel.com>
+>>>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>>>> CC: Paul Mackerras <paulus@samba.org>
+>>>> CC: Christoph Lameter <cl@linux.com>
+>>>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>>>> CC: Andrew Morton <akpm@linux-foundation.org>
+>>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>>> CC: Wen Congyang <wency@cn.fujitsu.com>
+>>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>>
+>>>> ---
+>>>>    drivers/firmware/memmap.c    |   71
+>>>> +++++++++++++++++++++++++++++++++++++++++++
+>>>>    include/linux/firmware-map.h |    6 +++
+>>>>    mm/memory_hotplug.c          |    6 +++
+>>>>    3 files changed, 82 insertions(+), 1 deletion(-)
+>>>>
+>>>> Index: linux-3.5-rc4/mm/memory_hotplug.c
+>>>> ===================================================================
+>>>> --- linux-3.5-rc4.orig/mm/memory_hotplug.c    2012-06-26
+>>>> 13:37:30.546288901 +0900
+>>>> +++ linux-3.5-rc4/mm/memory_hotplug.c    2012-06-26
+>>>> 13:44:37.069955820 +0900
+>>>> @@ -661,7 +661,11 @@ EXPORT_SYMBOL_GPL(add_memory);
+>>>>
+>>>>    int remove_memory(int nid, u64 start, u64 size)
+>>>>    {
+>>>> -    return -EBUSY;
+>>>> +    lock_memory_hotplug();
+>>>> +    /* remove memmap entry */
+>>>> +    firmware_map_remove(start, start + size, "System RAM");
+>>>> +    unlock_memory_hotplug();
+>>>> +    return 0;
+>>>>
+>>>>    }
+>>>>    EXPORT_SYMBOL_GPL(remove_memory);
+>>>> Index: linux-3.5-rc4/include/linux/firmware-map.h
+>>>> ===================================================================
+>>>> --- linux-3.5-rc4.orig/include/linux/firmware-map.h    2012-06-25
+>>>> 04:53:04.000000000 +0900
+>>>> +++ linux-3.5-rc4/include/linux/firmware-map.h    2012-06-26
+>>>> 13:44:37.070955807 +0900
+>>>> @@ -25,6 +25,7 @@
+>>>>
+>>>>    int firmware_map_add_early(u64 start, u64 end, const char *type);
+>>>>    int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
+>>>> +int firmware_map_remove(u64 start, u64 end, const char *type);
+>>>>
+>>>>    #else /* CONFIG_FIRMWARE_MEMMAP */
+>>>>
+>>>> @@ -38,6 +39,11 @@ static inline int firmware_map_add_hotpl
+>>>>        return 0;
+>>>>    }
+>>>>
+>>>> +static inline int firmware_map_remove(u64 start, u64 end, const char
+>>>> *type)
+>>>> +{
+>>>> +    return 0;
+>>>> +}
+>>>> +
+>>>>    #endif /* CONFIG_FIRMWARE_MEMMAP */
+>>>>
+>>>>    #endif /* _LINUX_FIRMWARE_MAP_H */
+>>>> Index: linux-3.5-rc4/drivers/firmware/memmap.c
+>>>> ===================================================================
+>>>> --- linux-3.5-rc4.orig/drivers/firmware/memmap.c    2012-06-25
+>>>> 04:53:04.000000000 +0900
+>>>> +++ linux-3.5-rc4/drivers/firmware/memmap.c    2012-06-26
+>>>> 13:47:17.606948898 +0900
+>>>> @@ -123,6 +123,16 @@ static int firmware_map_add_entry(u64 st
+>>>>        return 0;
+>>>>    }
+>>>>
+>>>> +/**
+>>>> + * firmware_map_remove_entry() - Does the real work to remove a
+>>>> firmware
+>>>> + * memmap entry.
+>>>> + * @entry: removed entry.
+>>>> + **/
+>>>> +static inline void firmware_map_remove_entry(struct
+>>>> firmware_map_entry *entry)
+>>>> +{
+>>>> +    list_del(&entry->list);
+>>>> +}
+>>>> +
+>>>>    /*
+>>>>     * Add memmap entry on sysfs
+>>>>     */
+>>>> @@ -144,6 +154,31 @@ static int add_sysfs_fw_map_entry(struct
+>>>>        return 0;
+>>>>    }
+>>>>
+>>>> +/*
+>>>> + * Remove memmap entry on sysfs
+>>>> + */
+>>>> +static inline void remove_sysfs_fw_map_entry(struct
+>>>> firmware_map_entry *entry)
+>>>> +{
+>>>> +    kobject_del(&entry->kobj);
+>>>> +}
+>>>> +
+>>>> +/*
+>>>> + * Search memmap entry
+>>>> + */
+>>>> +
+>>>> +struct firmware_map_entry * __meminit
+>>>> +find_firmware_map_entry(u64 start, u64 end, const char *type)
+>>>> +{
+>>>> +    struct firmware_map_entry *entry;
+>>>> +
+>>>> +    list_for_each_entry(entry, &map_entries, list)
+>>>> +        if ((entry->start == start) && (entry->end == end) &&
+>>>> +            (!strcmp(entry->type, type)))
+>>>> +            return entry;
+>>>> +
+>>>> +    return NULL;
+>>>> +}
+>>>> +
+>>>>    /**
+>>>>     * firmware_map_add_hotplug() - Adds a firmware mapping entry when
+>>>> we do
+>>>>     * memory hotplug.
+>>>> @@ -196,6 +231,42 @@ int __init firmware_map_add_early(u64 st
+>>>>        return firmware_map_add_entry(start, end, type, entry);
+>>>>    }
+>>>>
+>>>> +void release_firmware_map_entry(struct firmware_map_entry *entry)
+>>>> +{
+>>>> +    /*
+>>>> +     * FIXME : There is no idea.
+>>>> +     *         How to free the entry which allocated bootmem?
+>>>> +     */
+>>>> +}
+>>>> +
+>>>> +/**
+>>>> + * firmware_map_remove() - remove a firmware mapping entry
+>>>> + * @start: Start of the memory range.
+>>>> + * @end:   End of the memory range (inclusive).
+>>>> + * @type:  Type of the memory range.
+>>>> + *
+>>>> + * removes a firmware mapping entry.
+>>>> + *
+>>>> + * Returns 0 on success, or -EINVAL if no entry.
+>>>> + **/
+>>>> +int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
+>>>> +{
+>>>> +    struct firmware_map_entry *entry;
+>>>> +
+>>>> +    entry = find_firmware_map_entry(start, end, type);
+>>>
+>>> Hmm, we cannot find the entry easily, because the end can be:
+>>> 1. start + size
+>>> 2. start + size - 1
+>>>
+>>> So, We should fix this bug first.
+>>
+>> This is not a bug.
+>>
+>> start and size arguments of firmware_map_remove() include
+>> acpi_memory_info->{start_addr, length}. And when creating a
+>> firmware_map_entry,
+>> the entry is created by acpi_memory_info->{start_addr, length}. So I don't
+>> think that we need care your comment.
+>
+> If the memory device is hotpluged before the os starts, and the memory
+> map is included in e820 map, the entry will be created by firmware_map_add_early().
+>
+> The function firmware_map_add_early() is called by e820_reserve_resources():
+> =====================
+> 	for (i = 0; i < e820_saved.nr_map; i++) {
+> 		struct e820entry *entry = &e820_saved.map[i];
+> 		firmware_map_add_early(entry->addr,
+> 			entry->addr + entry->size - 1,
+> 			e820_type_to_string(entry->type));
+> 	}
+> =====================
+>
+> Note: the end is addr + size - 1, not addr + size.
+>
+> In such case, you cannot find the entry.
 
-In Linux, we don't put ifdefs in .c files, we put them in .h files.  See
-many examples of this all over the place.  That's my main complaints the
-past two times of this patch.
+Thank you for your explanation. I understood it.
+end argument of firmware_map_add_hotplug() has always "addr + size",
+not "addr + size - 1". I think that changing argument of
+firmware_map_add_early() is high risk since the function has been used
+since early times. So, I will unify to "addr + size - 1".
 
-But, for this, I would question why you even want / need to do this in
-the drivers/base/core/ file in the first place.  Shouldn't it be in some
-arch or cpu specific file instead that already handles the cpu files?
+Thanks,
+Yasuaki Ishimatsu
 
-thanks,
+> Thanks
+> Wen Congyang
+>
+>>
+>>>
+>>>> +    if (!entry)
+>>>> +        return -EINVAL;
+>>>> +
+>>>> +    /* remove the memmap entry */
+>>>> +    remove_sysfs_fw_map_entry(entry);
+>>>> +
+>>>> +    firmware_map_remove_entry(entry);
+>>>> +
+>>>> +    release_firmware_map_entry(entry);
+>>>
+>>> I guess you want to free the memory in the above function. But I think
+>>> it is
+>>> not a good idea to free it here. We should free it when the
+>>> entry->kobj's kref
+>>> is decreased to 0.
+>>
+>> Thanks.
+>> I'll update your comment at next version.
+>>
+>> Thanks,
+>> Yasuaki Ishimatsu
+>>
+>>>
+>>> Thanks
+>>> Wen Congyang
+>>>
+>>>> +
+>>>> +    return 0;
+>>>> +}
+>>>> +
+>>>>    /*
+>>>>     * Sysfs functions
+>>>> -------------------------------------------------------------
+>>>>     */
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe
+>>>> linux-kernel" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>
+>>>
+>>> --
+>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>>> see: http://www.linux-mm.org/ .
+>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>>
+>>
+>>
+>>
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-greg k-h
+
+
