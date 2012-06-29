@@ -1,175 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706Ab2F2LXc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 07:23:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33487 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750991Ab2F2LXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 07:23:31 -0400
-Date: Fri, 29 Jun 2012 12:23:28 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [MMTests] IO metadata on ext3
-Message-ID: <20120629112328.GD14154@suse.de>
-References: <20120620113252.GE4011@suse.de>
- <20120629111932.GA14154@suse.de>
+	id S1754132Ab2F2LYA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 07:24:00 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:39944 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab2F2LX6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 07:23:58 -0400
+Date: Fri, 29 Jun 2012 13:23:51 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>, acme@redhat.com, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, gorcunov@openvz.org,
+        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
+        fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH 03/23] perf: Add ability to attach user level registers
+ dump to sample
+Message-ID: <20120629112347.GB2110@somewhere.redhat.com>
+References: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
+ <1340120894-9465-4-git-send-email-jolsa@redhat.com>
+ <20120627151059.GG20638@somewhere.redhat.com>
+ <CABPqkBTdL7rt4YF1SYdo4N7BaK3TOvXJqfs3Te2Asmm_-jA_Ag@mail.gmail.com>
+ <20120627152359.GI20638@somewhere.redhat.com>
+ <1340810729.10063.66.camel@twins>
+ <20120627153002.GJ20638@somewhere.redhat.com>
+ <20120629075043.GD940@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120629111932.GA14154@suse.de>
+In-Reply-To: <20120629075043.GD940@krava.brq.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Configuration:	global-dhp__io-metadata-ext3
-Benchmarks:	dbench3, fsmark-single, fsmark-threaded
+On Fri, Jun 29, 2012 at 09:50:43AM +0200, Jiri Olsa wrote:
+> On Wed, Jun 27, 2012 at 05:30:05PM +0200, Frederic Weisbecker wrote:
+> > On Wed, Jun 27, 2012 at 05:25:29PM +0200, Peter Zijlstra wrote:
+> > > On Wed, 2012-06-27 at 17:24 +0200, Frederic Weisbecker wrote:
+> > > > On Wed, Jun 27, 2012 at 05:13:44PM +0200, Stephane Eranian wrote:
+> > > > > On Wed, Jun 27, 2012 at 5:11 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > > > > > On Tue, Jun 19, 2012 at 05:47:54PM +0200, Jiri Olsa wrote:
+> > > > > >> @@ -4061,6 +4105,19 @@ void perf_prepare_sample(struct perf_event_header *header,
+> > > > > >>               }
+> > > > > >>               header->size += size;
+> > > > > >>       }
+> > > > > >> +
+> > > > > >> +     if (sample_type & PERF_SAMPLE_REGS_USER) {
+> > > > > >> +             /* regs dump available bool */
+> > > > > >> +             int size = sizeof(u64);
+> > > > > >> +
+> > > > > >> +             data->regs_user = perf_sample_regs_user(regs);
+> > > > > >> +             if (data->regs_user) {
+> > > > > >> +                     u64 mask = event->attr.sample_regs_user;
+> > > > > >> +                     size += hweight64(mask) * sizeof(u64);
+> > > > > >> +             }
+> > > > > >> +
+> > > > > >> +             header->size += size;
+> > > > > >
+> > > > > > We'll need to remove the 64 bits registers for compat tasks but other than
+> > > > > > that, it looks ok.
+> > > > > You cannot do this. You cannot remove register values from under the hood.
+> > > > > The only way the user has to parse the sample is the sample_regs_users bitmask.
+> > > > > You have to return 0 for those unexisting regs for compat tasks.
+> > > > 
+> > > > You mean fill unexisting reg values with 0? Yeah that works.
+> > > 
+> > > What does x32 look like? Is that still reported as a compat task? If so,
+> > > we should record all registers and not 0 out anything.
+> > 
+> > To make it simple, we could always use the x86-64 registers mask interface for everyone:
+> > native 32 bits kernel, compat 32 bits task, 64 bits everything. And we can't fill an x86-64
+> > value because we are dealing with a native/compat 32 task we just fill out the requested value
+> > with 0.
+> > 
+> > On post processing time, userspace can know if it's dealing with 32 bits task or not anyway, so
+> > it knows what to skip and what is relevant.
+> 
+> well, thats basically what we have now..
+> 
+> when the kernel is compiled for 32 bits, the bitmask allows to store:
+> 
+> ax, bx, cx, dx, si, di, bp, sp, ip, flags, cs, ds, es, fs, gs, ss
+> 
+> and when  kernel is compiled for 64 bits, the bitmask adds 64bit stuff:
+> 
+> ax, bx, cx, dx, si, di, bp, sp, ip, flags, cs, ds, es, fs, gs, ss
+> r8, r9, r10, r11, r12, r13, r14, r15
+> 
+> 
+> - 32 bits kernel is straightforward
+> 
+> - for 64 bits kernel we store whatever bitmask instructs to,
+>   regardless if we are in compat task or native 64,
+>   user space will deal with that in post processing
 
-Summary
-=======
+I can think of the crazy scenario where perf itself is compat and there
+are 64 bits apps that will be profiled by perf. It means perf must check
+if the kernel is 32 or 64 and depending on this, request r8-r15 or not.
 
-  While the fsmark figures look ok, fsmark in single threaded mode has
-  a small number of large outliers towards the min end of the scale. The
-  resulting standard deviation fuzzes results but filtering is not necessarily
-  the best answer. A similar effect is visible when running in threaded
-  mode except that there is clustering around some values that could be
-  presented better. Arithmetic mean is unsuitable for this sort of data.
-
-Benchmark notes
-===============
-
-mkfs was run on system startup. No attempt was made to age it. No
-special mkfs or mount options were used.
-
-dbench3 was chosen as it's metadata intensive.
-  o Duration was 180 seconds
-  o OSYNC, OSYNC_DIRECTORY and FSYNC were all off
-
-  As noted in the MMTests, dbench3 can be a random number generator
-  particularly when run in asynchronous mode. Even with the limitations,
-  it can be useful as an early warning system and as it's still used by
-  QA teams it's still worth keeping an eye on.
-
-FSMark
-  o Parallel directories were used
-  o 1 Thread per CPU
-  o 0 Filesize
-  o 225 directories
-  o 22500 files per directory
-  o 50000 files per iteration
-  o 15 iterations
-  Single: ./fs_mark  -d  /tmp/fsmark-9227/1  -D  225  -N  22500  -n  50000  -L  15  -S0  -s  0
-  Thread: ./fs_mark  -d  /tmp/fsmark-9407/1  -d  /tmp/fsmark-9407/2  -D  225  -N  22500  -n  25000  -L  15  -S0  -s  0
- 
-  FSMark is a more realistic indicator of metadata intensive workloads.
-
-
-===========================================================
-Machine:	arnold
-Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__io-metadata-ext3/arnold/comparison.html
-Arch:		x86
-CPUs:		1 socket, 2 threads
-Model:		Pentium 4
-Disk:		Single Rotary Disk
-Status:		Fine
-===========================================================
-
-dbench
-------
-  For single clients, we're doing reasonably well. There was a big spike
-  for large number of clients in 2.6.34 and to a lesser extent in 2.6.39.4
-  but much of this is due to the operations taking place in memory without
-  reaching disk. There were also fairness issues and the indicated throughput
-  figures are far higher than the disks capabilities so I do not consider
-  this to be a regression.
-
-  There was a mild dip for 3.2.x and 3.3.x that has been recovered somewhat
-  in 3.4. As this was when IO-Less Dirty Throttling got merged it is hardly
-  a surprise and a dip in dbench is not worth backing that out for.
-
-  Recent kernels appear to deal worse for large number of clients. However,
-  I very strongly suspect this is due to improved fairness in IO. The
-  high throughput figures are due to one client making an unfair amount
-  of progress while other clients stall.
-
-fsmark-single
--------------
-  Again, this is looking good. Files/sec has improved slightly with the
-  exception of a dip in 3.2 and 3.3 which again may be due to IO-Less
-  dirty throttling.
-
-  I have a slight concern with the overhead measurements. Somewhere
-  between 3.0.23 and 3.1.10 the overhead started deviating a lot more.
-  Ideally this should be bisected because it difficult to blame
-  IO-Less throttling with any certainity.
-  IO-Less Throttling.
-
-fsmark-threaded
----------------
-  Looks better but due to high deviations it's hard to be 100% sure.
-  If this is of interest then the thing to do is do a proper measurement
-  of whether the results are significant or not although with 15 samples
-  it still will be fuzzy.
-
-  Right now, there is little to be concerned about.
-
-==========================================================
-Machine:	hydra
-Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__io-metadata-ext3/hydra/comparison.html
-Arch:		x86-64
-CPUs:		1 socket, 4 threads
-Model:		AMD Phenom II X4 940
-Disk:		Single Rotary Disk
-Status:		Fine
-==========================================================
-
-dbench
-------
- Very similar story to the arnold machine. Big spike in 2.6.34 and then
- drops off.
-
-fsmark-single
--------------
-  Nothing really notable here. Deviations are too high to draw reasonable
-  conclusions from. Looking at the raw results it's due to a small number
-  of low outliers. These could be filtered but it would mask the fact that
-  throughput is not consistent so strong justification would be required.
-
-fsmark-threaded
----------------
-  Similar to fsmark-single. Figures look ok but large deviations are
-  a problem Unlike the single-threaded case the raw data shows that we
-  cluster around two points that are very far apart from each other. It
-  is worth investigating if this can be presented in some sensible
-  manner such as k-means clustering because arithmetic mean with this
-  sort of data is crap.
-
-==========================================================
-Machine:	sandy
-Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__io-metadata-ext3/sandy/comparison.html
-Arch:		x86-64
-CPUs:		1 socket, 8 threads
-Model:		Intel Core i7-2600
-Disk:		Single Rotary Disk
-Status:		Fine
-==========================================================
-
-dbench
-------
-  Same as the other two complete with spikes.
-
-fsmark-single
--------------
-  Other than overhead going crazy in 3.2 there is nothing notable either.
-  As with hydra, there are a small number of outliers that result in large
-  deviations
-
-fsmark-threaded
----------------
-  Similar to hydra. Figures look basically ok but deviations are high with
-  some clustering going on.
-
--- 
-Mel Gorman
-SUSE Labs
+May be that's just too unlikely to matter.
