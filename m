@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab2F2LTi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 07:19:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33133 "EHLO mx2.suse.de"
+	id S1753245Ab2F2LU1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 07:20:27 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751895Ab2F2LTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 07:19:37 -0400
-Date: Fri, 29 Jun 2012 12:19:32 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: MMTests 0.04
-Message-ID: <20120629111932.GA14154@suse.de>
-References: <20120620113252.GE4011@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120620113252.GE4011@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751815Ab2F2LU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 07:20:26 -0400
+Date: Fri, 29 Jun 2012 13:20:11 +0200
+From: Richard Weinberger <richard@nod.at>
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        <Heinz.Egger@linutronix.de>, thomas.wucher@linutronix.de,
+        tglx@linutronix.de, tim.bird@am.sony.com, Marius.Mazarel@ugal.ro,
+        nyoushchenko@mvista.com, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH] ubi: fastmap: Remove 'ubi' parameter of 'destroy_ai()'
+Message-ID: <20120629132011.3f53ca86@spider.haslach.nod.at>
+In-Reply-To: <20120628165239.52cffc64@pixies.home.jungo.com>
+References: <20120628165239.52cffc64@pixies.home.jungo.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 12:32:52PM +0100, Mel Gorman wrote:
-> MMTests 0.04 is a configurable test suite that runs a number of common
-> workloads of interest to MM developers. Apparently I never sent a release
-> note for 0.03 so here is the changelog for both
+Am Thu, 28 Jun 2012 16:52:39 +0300
+schrieb Shmulik Ladkani <shmulik.ladkani@gmail.com>:
+
+> From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
 > 
+> The 'ubi' argument of 'destroy_ai' was added during fastmap
+> development, but it is no longer used.
+> 
+> Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+> ---
 
-Using MMTests 0.04 I ran a number of tests between 2.6.32 and 3.4 on three
-test machines. None of them are particularly powerful but the results are
-still useful because it's worth knowing how we are doing for some ordinary
-cases over time.
+Applied!
 
-There were 34 test configurations in all taking between 3-5 days to run all
-the tests for a single kernel. I expect that not all the results will be
-useful when I look closer but that can be improved. I have not looked at
-all the results yet and will only talk about the ones I have had a chance
-to read.
-
-I know the presentation is ugly but it was not a high priority to make
-them very pretty. The analysis is also superficial as it's time consuming
-to do a full analysis for any of these tests. In general the stats need
-improving but this is also something that can be improved over time once
-the raw data can be collected. Right now I tend to look closer at the
-data when I am trying to narrow a problem down to a specific area or when
-a regression might have been introduced.  When this happens I can usually
-apply what stats I need manually or rerun the specific test with additional
-monitoring which is less than ideal for automation.
-
-Due to the superficial nature I suggest you take these summaries with a
-grain of salt and draw your own conclusions.
-
--- 
-Mel Gorman
-SUSE Labs
+Thanks,
+//richard
