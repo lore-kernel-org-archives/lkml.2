@@ -1,122 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529Ab2F2Vn6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 17:43:58 -0400
-Received: from exprod6og115.obsmtp.com ([64.18.1.35]:36897 "EHLO
-	exprod6og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab2F2Vn4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 17:43:56 -0400
-Message-ID: <6.2.5.6.2.20120629140909.04bb0a40@adobe.com>
-X-Mailer: QUALCOMM Windows Eudora Version 6.2.5.6
-Date: Fri, 29 Jun 2012 14:43:06 -0700
-To: Christof Meerwald <cmeerw@cmeerw.org>
-From: "Paton J. Lewis" <palewis@adobe.com>
-Subject: Re: [PATCH] epoll: Improved support for multi-threaded clients
-CC: Alexander Viro <viro@zeniv.linux.org.uk>, Jason Baron <jbaron@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Holland <pholland@adobe.com>,
-        Davide Libenzi <davidel@xmailserver.org>
-In-Reply-To: <20120619181711.GE1281@edge.cmeerw.net>
-References: <F044A95E1307394EBA6055B1B7144CD2010CFB1B748F@NAMBX02.corp.adobe.com>
- <20120616184707.GA22656@edge.cmeerw.net>
- <6.2.5.6.2.20120618161807.031eb6c8@adobe.com>
- <20120619181711.GE1281@edge.cmeerw.net>
+	id S1751969Ab2F2Vqe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 17:46:34 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:46722 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751109Ab2F2Vqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 17:46:32 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Thadeu Cascardo <cascardo@holoscopio.com>
+Subject: Re: [PATCH missing/21] classmate-laptop: Use struct dev_pm_ops for power management
+Date: Fri, 29 Jun 2012 23:52:00 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        platform-driver-x86@vger.kernel.org,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Mattia Dongili <malattia@linux.it>,
+        Harald Welte <laforge@gnumonks.org>,
+        Daniel Oliveira Nascimento <don@syst.com.br>
+References: <201206232306.06602.rjw@sisk.pl> <201206290011.53618.rjw@sisk.pl> <1340969993.24166.2.camel@Nokia-N900>
+In-Reply-To: <1340969993.24166.2.camel@Nokia-N900>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206292352.01078.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 6/19/2012 11:17 AM, Christof Meerwald wrote:
->Hi Paton,
->
->On Mon, Jun 18, 2012 at 04:24:35PM -0700, Paton J. Lewis wrote:
-> > We believe that EPOLLONESHOT is required in order to make any
-> > sensible use of calling epoll_wait on a single epoll set
-> > concurrently in multiple threads.
->
->I guess we have to disagree here - though it might be more difficult.
->
->
-> > >On Mon, 11 Jun 2012 15:34:49 -0700, Paton Lewis wrote:
-> > >> This patch introduces the new epoll_ctl command EPOLL_CTL_DISABLE, which
-> > >> disables the associated epoll item and returns -EBUSY if the
-> > >epoll item is not
-> > >> currently in the epoll ready queue. This allows multiple 
-> threads to use a
-> > >> mutex to determine when it is safe to delete an epoll item and
-> > >its associated
-> > >> resources. This allows epoll items to be deleted and closed 
-> efficiently and
-> > >> without error.
->
->Maybe I am missing something here (as I am not really familiar with
->the kernel internals), but I don't really understand the logic behind
->your patch. Isn't the "expected" case that the item is not on the
->ready list and no I/O is being processed for that item?
+On Friday, June 29, 2012, Thadeu Cascardo wrote:
+> ----- Original message -----
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > 
+> > Make the classmate-laptop driver define its PM callbacks through
+> > a struct dev_pm_ops object rather than by using legacy PM hooks
+> > in struct acpi_device_ops.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
+> > 
+> > Hi all,
+> > 
+> > I overlooked the classmate-laptop driver in the ACPI conversion to PM
+> > handling based on struct dev_pm_ops, so this one should go after [17/21]
+> > and the next patches should be renumbered.
+> > 
+> > Thanks,
+> > Rafael
+> > 
+> > 
+> > ---
+> >   drivers/platform/x86/classmate-laptop.c |     13 ++++++++-----
+> >   1 file changed, 8 insertions(+), 5 deletions(-)
+> > 
+> > Index: linux/drivers/platform/x86/classmate-laptop.c
+> > ===================================================================
+> > --- linux.orig/drivers/platform/x86/classmate-laptop.c
+> > +++ linux/drivers/platform/x86/classmate-laptop.c
+> > @@ -362,15 +362,18 @@ static int cmpc_tablet_remove(struct acp
+> >       return cmpc_remove_acpi_notify_device(acpi);
+> >   }
+> >   
+> > -static int cmpc_tablet_resume(struct acpi_device *acpi)
+> > +static int cmpc_tablet_resume(struct device *dev)
+> >   {
+> > -    struct input_dev *inputdev = dev_get_drvdata(&acpi->dev);
+> > +    struct input_dev *inputdev = dev_get_drvdata(dev);
+> > +
+> >       unsigned long long val = 0;
+> > -    if (ACPI_SUCCESS(cmpc_get_tablet(acpi->handle, &val)))
+> > +    if (ACPI_SUCCESS(cmpc_get_tablet(to_acpi_device(dev)->handle, &val)))
+> >           input_report_switch(inputdev, SW_TABLET_MODE, !val);
+> >       return 0;
+> >   }
+> >   
+> > +static SIMPLE_DEV_PM_OPS(cmpc_tabled_pm, NULL, cmpc_tablet_resume);
+> > +
+> >   static const struct acpi_device_id cmpc_tablet_device_ids[] = {
+> >       {CMPC_TABLET_HID, 0},
+> >       {"", 0}
+> > @@ -384,9 +387,9 @@ static struct acpi_driver cmpc_tablet_ac
+> >       .ops = {
+> >           .add = cmpc_tablet_add,
+> >           .remove = cmpc_tablet_remove,
+> > -        .resume = cmpc_tablet_resume,
+> >           .notify = cmpc_tablet_handler,
+> > -    }
+> > +    },
+> > +    .drv.pm = &cmpc_tabled_pm,
+> >   };
+> >   
+> >   
+> 
+> Aside from the typo tabled,
 
-Consider the case where we want to have a set of threads waiting for 
-'write' events on a set of pipes or sockets. We have no control over 
-when code on the other side of a pipe or socket might write into it, 
-and so have no control over when one of the threads calling 
-epoll_wait will receive events relative to the timing of the thread 
-that is attempting to cancel the pending read operation.
+Fixed now.
 
-I believe there is no "expected" case, because the probability for an 
-item to be on the ready list is a complex function of the number of 
-file descriptors being monitored, the frequency at which those 
-descriptors receive events, the number of threads calling epoll_wait, 
-and the complexity of the code responding to events.
+> Acked-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
 
-Therefore for some clients of epoll it will be the case that items 
-will often be on the ready list, and for others it will not.
-
->So I think instead of checking for the item being on the ready list,
->checking for the event mask would make more sense for me, e.g.
->
->   if (!(epi->event.events & ~EP_PRIVATE_BITS))
-
-I think that would be fine. However, the inlined function 
-ep_is_linked boils down to a call to the inline function list_empty, 
-which is just a single comparison. I haven't compared the 
-disassembly, but I would expect the two methods to be roughly 
-equivalent in terms of performance. Given that the operation of 
-deleting an epoll item is likely to be an exceptional circumstance 
-and therefore not performance-critical, would it be better to test 
-against ep_is_linked for clarity's sake in the code?
-
-However, I believe these discussions are rendered moot by your 
-suggestion below:
-
-
->But, taking one step back - wouldn't an alternative approach be to add
->some mechanism to allow a thread to post a user-event for an fd? So in
->delete_epoll_item you would post a user event (e.g. EPOLLUSER) for the
->fd which you can then handle in your epoll_wait processing thread -
->with no additional synchronisation necessary.
-
-I think this is an excellent suggestion, and in fact your proposal is 
-more similar to what Windows provides when solving this problem. I'll 
-test this idea out with our code and get back to you. Is there an 
-existing kernel technique that you would recommend for posting a user 
-event for an fd, or should I explore using epoll_ctl with EPOLL_CTL_MOD?
-
-I apologize in advance for any delay in responding to you; our office 
-is closed next week.
-
-Thank you,
-Pat
-
->However, this would still require EPOLLONESHOT to be useful for memory
->management.
->
->
->Christof
->
->--
->
->http://cmeerw.org                              sip:cmeerw at cmeerw.org
->mailto:cmeerw at cmeerw.org                   xmpp:cmeerw at cmeerw.org
-
+Thanks!
