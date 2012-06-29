@@ -1,47 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481Ab2F2KpD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 06:45:03 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:46834 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947Ab2F2KpB (ORCPT
+	id S1755288Ab2F2Ks5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 06:48:57 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:28831 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754383Ab2F2Ksz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 06:45:01 -0400
-From: Richard Genoud <richard.genoud@gmail.com>
-To: Rob Landley <rob@landley.net>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCH] usage-model.txt: fix typo machine_init->init_machine
-Date: Fri, 29 Jun 2012 12:44:46 +0200
-Message-Id: <1340966686-26430-1-git-send-email-richard.genoud@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	Fri, 29 Jun 2012 06:48:55 -0400
+Message-ID: <4FED87F2.7000309@oracle.com>
+Date: Fri, 29 Jun 2012 18:48:18 +0800
+From: Junxiao Bi <junxiao.bi@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: ocfs2-devel@oss.oracle.com, linux-aio@kvack.org, mfasheh@suse.com,
+        linux-kernel@vger.kernel.org, joe.jin@oracle.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v4 1/2] aio: make kiocb->private NUll in init_sync_kiocb()
+References: <1340788195-20623-1-git-send-email-junxiao.bi@oracle.com> <1340788195-20623-2-git-send-email-junxiao.bi@oracle.com> <20120628153956.9b7405d9.akpm@linux-foundation.org> <20120629092255.GB12521@dhcp-172-17-9-228.mtv.corp.google.com> <4FED80A7.7040507@oracle.com> <20120629032900.15e36adf.akpm@linux-foundation.org>
+In-Reply-To: <20120629032900.15e36adf.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-machine_init was used intead of init_machine which clearly was not
-intended.
-
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
----
- Documentation/devicetree/usage-model.txt |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/Documentation/devicetree/usage-model.txt b/Documentation/devicetree/usage-model.txt
-index c5a8009..dca90fe 100644
---- a/Documentation/devicetree/usage-model.txt
-+++ b/Documentation/devicetree/usage-model.txt
-@@ -312,7 +312,7 @@ device tree for the NVIDIA Tegra board.
- 	};
- };
- 
--At .machine_init() time, Tegra board support code will need to look at
-+At .init_machine() time, Tegra board support code will need to look at
- this DT and decide which nodes to create platform_devices for.
- However, looking at the tree, it is not immediately obvious what kind
- of device each node represents, or even if a node represents a device
--- 
-1.7.2.5
+On 06/29/2012 06:29 PM, Andrew Morton wrote:
+> On Fri, 29 Jun 2012 18:17:11 +0800 Junxiao Bi <junxiao.bi@oracle.com> wrote:
+>
+>> Andrew had merged this patch to his tree. Do you like the second patch "
+>> ocfs2: clear unaligned io flag when dio fails"?
+> Please go ahead with your patchset for now.  I'll feed the cleanup in
+> later on.
+Ok, thank you.
 
