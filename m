@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932970Ab2F2UtD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 16:49:03 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47662 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932723Ab2F2UtB (ORCPT
+	id S932945Ab2F2U7Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 16:59:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62218 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755480Ab2F2U7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 16:49:01 -0400
-Date: Fri, 29 Jun 2012 22:48:55 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
-        Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 21/40] autonuma: avoid CFS select_task_rq_fair to return
- -1
-Message-ID: <20120629204855.GA4316@gmail.com>
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
- <1340888180-15355-22-git-send-email-aarcange@redhat.com>
- <4FEDFAB1.8050305@redhat.com>
- <1340996749.28750.125.camel@twins>
- <4FEDFD0F.7070207@redhat.com>
+	Fri, 29 Jun 2012 16:59:15 -0400
+Date: Sat, 30 Jun 2012 02:29:02 +0530
+From: Rabin Vincent <rabin@rab.in>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: CONFIG_HAVE_MEMBLOCK_NODE ->
+ CONFIG_HAVE_MEMBLOCK_NODE_MAP
+Message-ID: <20120629205902.GA12711@latitude>
+References: <1341000877-12068-1-git-send-email-rabin@rab.in>
+ <20120629202139.GD21048@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FEDFD0F.7070207@redhat.com>
+In-Reply-To: <20120629202139.GD21048@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 29, 2012 at 01:21:39PM -0700, Tejun Heo wrote:
+> This probably has been doing something weird to 32bit machines w/
+> memory hotplug configured (which probably are extremely rare).  It
+> would be nice if the patch description explained what behavior it
+> actually fixes.  How did you find this?  From config check util or did
+> you actually see something broken?
 
-* Rik van Riel <riel@redhat.com> wrote:
+Neither, I just noticed it while debugging some unrelated problems.  The
+arch I work on (ARM) doesn't even select this so I don't have any
+observed behaviour to describe -- I'll just add a paraphrase of your
+statement about who's affected to the patch description.
 
-> On 06/29/2012 03:05 PM, Peter Zijlstra wrote:
-> >On Fri, 2012-06-29 at 14:57 -0400, Rik van Riel wrote:
-> >>Either this is a scheduler bugfix, in which case you
-> >>are better off submitting it separately and reducing
-> >>the size of your autonuma patch queue, or this is a
-> >>behaviour change in the scheduler that needs better
-> >>arguments than a 1-line changelog.
-> >
-> >I've only said this like 2 or 3 times.. :/
-> 
-> I'll keep saying it until Andrea has fixed it :)
+8<--------------------
+>From 38c7a50331efa83e4d07cbd1d6364d62e4448482 Mon Sep 17 00:00:00 2001
+From: Rabin Vincent <rabin@rab.in>
+Date: Sat, 30 Jun 2012 01:17:45 +0530
+Subject: [PATCHv2] mm: CONFIG_HAVE_MEMBLOCK_NODE -> CONFIG_HAVE_MEMBLOCK_NODE_MAP
 
-But that's just wrong - patch submitters *MUST* be responsive 
-and forthcoming. Mistakes are OK, but this goes well beyond 
-that. A patch-queue must generally not be resubmitted for yet 
-another review round, as long as there are yet unaddressed 
-review feedback items.
+0ee332c14518699 ("memblock: Kill early_node_map[]") wanted to replace
+CONFIG_ARCH_POPULATES_NODE_MAP with CONFIG_HAVE_MEMBLOCK_NODE_MAP but
+ended up replacing one occurence with a reference to the non-existent
+symbol CONFIG_HAVE_MEMBLOCK_NODE.
 
-The thing is, core kernel code maintainers like PeterZ don't 
-scale and the number of patches to review is huge - yet Andrea 
-keeps wasting Peter's time with the same things again and 
-again... How much is too much?
+The resulting omission of code would probably have been causing problems
+to 32-bit machines with memory hotplug.
 
-Thanks,
+Cc: stable@vger.kernel.org
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+---
+ include/linux/mmzone.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-	Ingo
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 2427706..1d0a9a3 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -773,7 +773,7 @@ extern int movable_zone;
+ 
+ static inline int zone_movable_is_highmem(void)
+ {
+-#if defined(CONFIG_HIGHMEM) && defined(CONFIG_HAVE_MEMBLOCK_NODE)
++#if defined(CONFIG_HIGHMEM) && defined(CONFIG_HAVE_MEMBLOCK_NODE_MAP)
+ 	return movable_zone == ZONE_HIGHMEM;
+ #else
+ 	return 0;
+-- 
+1.7.9.5
+
