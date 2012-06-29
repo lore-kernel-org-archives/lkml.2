@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755729Ab2F2NOB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 09:14:01 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:48460 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755429Ab2F2NN7 (ORCPT
+	id S1755706Ab2F2NRA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 09:17:00 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:51669 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753861Ab2F2NQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 09:13:59 -0400
+	Fri, 29 Jun 2012 09:16:58 -0400
+X-Sasl-enc: NIXCuqE8fJ1CftVBLNwt53weeFpTlmevkXSBVmUHYl9I 1340975817
+Message-ID: <4FEDAAC6.2050202@ladisch.de>
+Date: Fri, 29 Jun 2012 15:16:54 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <1340975067.3070.180.camel@sauron.fi.intel.com>
-References: <1340834129-15545-1-git-send-email-stigge@antcom.de>
-	<1340973434.3070.168.camel@sauron.fi.intel.com>
-	<CAAAP30HZ1Z5U44wLwSEfcaJSLmVp8AbXPTCagS31hnoCy_tf-g@mail.gmail.com>
-	<1340975067.3070.180.camel@sauron.fi.intel.com>
-Date: Fri, 29 Jun 2012 10:13:58 -0300
-Message-ID: <CAAAP30FzY5KgYfnX7=UukZ3MTwfWaypZs+H2bNn15yKmx8VnvA@mail.gmail.com>
-Subject: Re: [PATCH v10] MTD: LPC32xx MLC NAND driver
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: dedekind1@gmail.com
-Cc: Roland Stigge <stigge@antcom.de>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, dwmw2@infradead.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
-        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
-        linux@arm.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+CC: linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
+        "'Konrad Rzeszutek Wilk'" <konrad.wilk@oracle.com>,
+        "'David Gibson'" <david@gibson.dropbear.id.au>,
+        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
+        "'Sumit Semwal'" <sumit.semwal@linaro.org>
+Subject: Re: [PATCH] common: dma-mapping: add support for generic dma_mmap_*
+ calls
+References: <1339741135-7841-1-git-send-email-m.szyprowski@samsung.com> <4FED8D03.10507@ladisch.de> <00a501cd55f7$323946f0$96abd4d0$%szyprowski@samsung.com>
+In-Reply-To: <00a501cd55f7$323946f0$96abd4d0$%szyprowski@samsung.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 29, 2012 at 10:04 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> On Fri, 2012-06-29 at 09:56 -0300, Alexandre Pereira da Silva wrote:
->> > @@ @@
->> > +drivers/mtd/nand/lpc32xx_mlc.c: In function 'lpc32xx_nand_probe':
->> > +drivers/mtd/nand/lpc32xx_mlc.c:679:10: warning: variable 'sr' set but not used [-Wunused-but-set-variable]
+Marek Szyprowski wrote:
+> On Friday, June 29, 2012 1:10 PM Clemens Ladisch wrote:
+>> Marek Szyprowski wrote:
+>>> +++ b/drivers/base/dma-mapping.c
+>>> ...
+>>> +int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
+>>> +		    void *cpu_addr, dma_addr_t dma_addr, size_t size)
+>>> +{
+>>> +	int ret = -ENXIO;
+>>> +	...
+>>> +	if (dma_mmap_from_coherent(dev, vma, cpu_addr, size, &ret))
+>>> +		return ret;
+>>
+>> This will return -ENXIO if dma_mmap_from_coherent() succeeds.
 >
-> gcc 4.6, aiaiai uses W=1 when building.
->
->> > +drivers/mtd/nand/lpc32xx_mlc.c:561:24: error: bad constant expression [sparse]
->
-> This is sparse, not gcc.
+> Thanks for spotting this!
 
-Does the oob area need to be ecc protected? If not I suggest to just
-remove the read_oob and write_oob and let this to nand_base. I think
-this is too much overhead to read 6 bytes.
+Sorry, I was wrong; ret is actually set by dma_mmap_from_coherent's
+output parameter.  (That function's documentation appears to be
+incomplete.)
+
+
+Regards,
+Clemens
