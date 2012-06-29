@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab2F2Pmk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 11:42:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6008 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751895Ab2F2Pmj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 11:42:39 -0400
-X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=eVEpPJsPTu0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=gu6fZOg2AAAA:8 a=9K0_nV6UrAJ200Q4cxsA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=GC8p-B92FUEA:10 a=NWVoK91CQyQA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340984558.16702.129.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] printk: Optimize if statement logic where newline exists
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Kay Sievers <kay@vrfy.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Wu Fengguang <fengguang.wu@intel.com>, Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Date: Fri, 29 Jun 2012 11:42:38 -0400
-In-Reply-To: <1340984411.16702.127.camel@gandalf.stny.rr.com>
-References: <1340984411.16702.127.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
+	id S1756168Ab2F2PtI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 11:49:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5216 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752881Ab2F2PtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 11:49:06 -0400
+Message-ID: <4FEDCE2B.9010908@redhat.com>
+Date: Fri, 29 Jun 2012 11:47:55 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 10/40] autonuma: mm_autonuma and sched_autonuma data structures
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-11-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1340888180-15355-11-git-send-email-aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-29 at 11:40 -0400, Steven Rostedt wrote:
-> In reviewing Kay's fix up patch: "printk: Have printk() never buffer its
-> data", I found two if statements that could be combined and optimized.
-> 
-> Put together the two 'cont.len && cont.owner == current' if statements
-> into a single one, and check if we need to call cont_add(). This also
-> removes the unneeded double cont_flush() calls.
-> 
-> Link: http://lkml.kernel.org/r/1340869133.876.10.camel@mop
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
-> 
-> [ This patch is dependent on Kay's patch, referenced at the above Link ]
-> 
+On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
 
-As the above link seems to time out, here's a more direct one:
+You tell us when the data structures are not allocated, but
+you do not tell us how the data structures is used, or what
+the fields inside the data structures mean.
+
+This makes it very hard for other people to figure out the
+code later. Please document these kinds of things properly.
+
+> +/*
+> + * Per-mm (process) structure dynamically allocated only if autonuma
+> + * is not impossible. This links the mm to scan into the
+> + * knuma_scand.mm_head and it contains the NUMA memory placement
+> + * statistics for the process (generated by knuma_scand).
+> + */
+> +struct mm_autonuma {
+> +	/* list node to link the "mm" into the knuma_scand.mm_head */
+> +	struct list_head mm_node;
+> +	struct mm_struct *mm;
+> +	unsigned long mm_numa_fault_pass; /* zeroed from here during allocation */
+> +	unsigned long mm_numa_fault_tot;
+> +	unsigned long mm_numa_fault[0];
+> +};
+
+> +/*
+> + * Per-task (thread) structure dynamically allocated only if autonuma
+> + * is not impossible. This contains the preferred autonuma_node where
+> + * the userland thread should be scheduled into (only relevant if
+> + * tsk->mm is not null) and the per-thread NUMA accesses statistics
+> + * (generated by the NUMA hinting page faults).
+> + */
+> +struct task_autonuma {
+> +	int autonuma_node;
+> +	/* zeroed from the below field during allocation */
+> +	unsigned long task_numa_fault_pass;
+> +	unsigned long task_numa_fault_tot;
+> +	unsigned long task_numa_fault[0];
+> +};
 
 
-http://marc.info/?l=linux-kernel&m=134084777330388
 
--- Steve
-
+-- 
+All rights reversed
