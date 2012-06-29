@@ -1,69 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab2F2Stw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 14:49:52 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37270 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932072Ab2F2Stu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:49:50 -0400
-Message-ID: <1340995742.28750.110.camel@twins>
-Subject: Re: [PATCH 13/40] autonuma: CPU follow memory algorithm
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: dlaor@redhat.com
-Cc: Ingo Molnar <mingo@kernel.org>, Hillf Danton <dhillf@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Fri, 29 Jun 2012 20:49:02 +0200
-In-Reply-To: <4FEDDD0C.60609@redhat.com>
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
-	 <1340888180-15355-14-git-send-email-aarcange@redhat.com>
-	 <1340895238.28750.49.camel@twins>
-	 <CAJd=RBA+FPgB9iq07YG0Pd=tN65SGK1ifmj98tomBDbYeKOE-Q@mail.gmail.com>
-	 <20120629125517.GD32637@gmail.com> <4FEDDD0C.60609@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S932326Ab2F2SuX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 14:50:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932072Ab2F2SuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 14:50:21 -0400
+Date: Fri, 29 Jun 2012 15:49:37 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Subject: Re: [PATCH 12/19] perf, tool: Back [vdso] DSO with real data
+Message-ID: <20120629184937.GD7847@infradead.org>
+References: <1339420814-7379-1-git-send-email-jolsa@redhat.com>
+ <1339420814-7379-13-git-send-email-jolsa@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339420814-7379-13-git-send-email-jolsa@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-29 at 12:51 -0400, Dor Laor wrote:
-> AFAIK, Andrea answered many of Peter's request by reducing the memory 
-> overhead, adding documentation and changing the scheduler integration.
+Em Mon, Jun 11, 2012 at 03:20:07PM +0200, Jiri Olsa escreveu:
+> Storing data for VDSO shared object, because we need it for
+> the unwind process.
 > 
-He ignored even more. Getting him to change anything is like pulling
-teeth. I'm well tired of it. Take for instance this kthread_bind_node()
-nonsense, I've said from the very beginning that wasn't good. Nor is it
-required, yet he persists in including it.
+> The idea is that VDSO shared object is same for all process
+> on a running system, so it makes no difference if we store
+> it inside the tracer - perf.
+> 
+> The record command:
+> When [vdso] map memory is hit, we retrieve [vdso] DSO image
+> and store it into temporary file. During the build-id
+> processing the [vdso] DSO image is stored in build-id db,
+> and build-id refference is made inside perf.data. The temporary
+> file is removed when record is finished.
+> 
+> The report command:
+> We read build-id from perf.data and store [vdso] DSO object.
+> This object is refferenced and attached to map when the MMAP
+> events are processed. Thus during the SAMPLE event processing
+> we have correct mmap/dso attached.
+> 
+> Adding following API for vdso object:
+>   vdso__file
+>     - vdso temp file path
+> 
+>   vdso__get_file
+>     - finds and store VDSO image into temp file,
+>       the temp file path is returned
+> 
+>   vdso__exit
+>     - removes temporary VDSO image if there's any
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  tools/perf/Makefile       |    2 +
+>  tools/perf/util/map.c     |   23 ++++++++++-
+>  tools/perf/util/session.c |    2 +
+>  tools/perf/util/vdso.c    |   90 +++++++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/util/vdso.h    |    8 ++++
+>  5 files changed, 123 insertions(+), 2 deletions(-)
+>  create mode 100644 tools/perf/util/vdso.c
+>  create mode 100644 tools/perf/util/vdso.h
+> 
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 0eee64c..e48b969 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -319,6 +319,7 @@ LIB_H += $(ARCH_INCLUDE)
+>  LIB_H += util/cgroup.h
+>  LIB_H += $(TRACE_EVENT_DIR)event-parse.h
+>  LIB_H += util/target.h
+> +LIB_H += util/vdso.h
+>  
+>  LIB_OBJS += $(OUTPUT)util/abspath.o
+>  LIB_OBJS += $(OUTPUT)util/alias.o
+> @@ -382,6 +383,7 @@ LIB_OBJS += $(OUTPUT)util/xyarray.o
+>  LIB_OBJS += $(OUTPUT)util/cpumap.o
+>  LIB_OBJS += $(OUTPUT)util/cgroup.o
+>  LIB_OBJS += $(OUTPUT)util/target.o
+> +LIB_OBJS += $(OUTPUT)util/vdso.o
+>  
+>  BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+>  
+> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+> index 35ae568..1649ea0 100644
+> --- a/tools/perf/util/map.c
+> +++ b/tools/perf/util/map.c
+> @@ -7,6 +7,7 @@
+>  #include <stdio.h>
+>  #include <unistd.h>
+>  #include "map.h"
+> +#include "vdso.h"
+>  
+>  const char *map_type__name[MAP__NR_TYPES] = {
+>  	[MAP__FUNCTION] = "Functions",
+> @@ -18,10 +19,14 @@ static inline int is_anon_memory(const char *filename)
+>  	return strcmp(filename, "//anon") == 0;
+>  }
+>  
+> +static inline int is_vdso_memory(const char *filename)
+> +{
+> +	return !strcmp(filename, "[vdso]");
+> +}
+> +
+>  static inline int is_no_dso_memory(const char *filename)
+>  {
+>  	return !strcmp(filename, "[stack]") ||
+> -	       !strcmp(filename, "[vdso]")  ||
+>  	       !strcmp(filename, "[heap]");
+>  }
+>  
+> @@ -50,9 +55,10 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+>  	if (self != NULL) {
+>  		char newfilename[PATH_MAX];
+>  		struct dso *dso;
+> -		int anon, no_dso;
+> +		int anon, no_dso, vdso;
+>  
+>  		anon = is_anon_memory(filename);
+> +		vdso = is_vdso_memory(filename);
+>  		no_dso = is_no_dso_memory(filename);
+>  
+>  		if (anon) {
+> @@ -60,10 +66,23 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+>  			filename = newfilename;
+>  		}
+>  
+> +		if (vdso) {
+> +			filename = (char *) vdso__file;
+> +			pgoff = 0;
+> +		}
+> +
+>  		dso = __dsos__findnew(dsos__list, filename);
+>  		if (dso == NULL)
+>  			goto out_delete;
+>  
+> +		if (vdso && !dso->has_build_id) {
+> +			char *file_vdso = vdso__get_file();
+> +			if (file_vdso)
+> +				dso__set_long_name(dso, file_vdso);
+> +			else
+> +				no_dso = 1;
+> +		}
+> +
+>  		map__init(self, type, start, start + len, pgoff, dso);
+>  
+>  		if (anon || no_dso) {
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 2785ce8..f400612 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -14,6 +14,7 @@
+>  #include "sort.h"
+>  #include "util.h"
+>  #include "cpumap.h"
+> +#include "vdso.h"
+>  
+>  static int perf_session__open(struct perf_session *self, bool force)
+>  {
+> @@ -209,6 +210,7 @@ void perf_session__delete(struct perf_session *self)
+>  	machine__exit(&self->host_machine);
+>  	close(self->fd);
+>  	free(self);
+> +	vdso__exit();
+>  }
+>  
+>  void machine__remove_thread(struct machine *self, struct thread *th)
+> diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
+> new file mode 100644
+> index 0000000..e964482
+> --- /dev/null
+> +++ b/tools/perf/util/vdso.c
+> @@ -0,0 +1,90 @@
+> +
+> +#include <unistd.h>
+> +#include <stdio.h>
+> +#include <string.h>
+> +#include <sys/types.h>
+> +#include <sys/stat.h>
+> +#include <fcntl.h>
+> +#include <linux/kernel.h>
+> +#include "vdso.h"
+> +#include "util.h"
+> +
+> +const char vdso__file[] = "/tmp/vdso.so";
 
-The thing is, I would very much like to talk about the design of this
-thing, but there's just nothing coming. Yes Andrea wrote a lot of words,
-but they didn't explain anything much at all.
+Oops, can you please use mkstemp()?
 
-And while I have a fair idea of what and how its working, I still miss a
-number of critical fundamentals of the whole approach.
+> +static bool vdso_found;
+> +
+> +static int find_vdso_map(void **start, void **end)
+> +{
+> +	FILE *maps;
+> +	char line[128];
+> +	int found = 0;
+> +
+> +	maps = fopen("/proc/self/maps", "r");
+> +	if (!maps) {
+> +		pr_err("vdso: cannot open maps\n");
+> +		return -1;
+> +	}
+> +
+> +	while (!found && fgets(line, sizeof(line), maps)) {
+> +		int m = -1;
+> +
+> +		/* We care only about private r-x mappings. */
+> +		if (2 != sscanf(line, "%p-%p r-xp %*x %*x:%*x %*u %n",
+> +				start, end, &m))
+> +			continue;
+> +		if (m < 0)
+> +			continue;
+> +
+> +		if (!strncmp(&line[m], "[vdso]", 6))
+> +			found = 1;
+> +	}
+> +
+> +	fclose(maps);
+> +	return !found;
+> +}
+> +
+> +char *vdso__get_file(void)
+> +{
+> +	char *vdso = NULL;
+> +	char *buf = NULL;
+> +	void *start, *end;
+> +
+> +	do {
+> +		int fd, size;
+> +
+> +		if (vdso_found) {
+> +			vdso = (char *) vdso__file;
 
-And yes I'm tired and I'm cranky.. but wouldn't you be if you'd spend
-days poring over dense and ill documented code, giving comments only to
-have your feedback dismissed and ignored.
+codying stile bzzt, use:
 
+			vdso = (char *)vdso__file;
 
+> +			break;
+> +		}
+> +
+> +		if (find_vdso_map(&start, &end))
+> +			break;
+> +
+> +		size = end - start;
+> +		buf = malloc(size);
+> +		if (!buf)
+> +			break;
+> +
+> +		memcpy(buf, start, size);
+
+Introduce memdup, just like in the kernel we have kmemdup?
+
+> +
+> +		fd = open(vdso__file, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+> +		if (fd < 0)
+> +			break;
+> +
+> +		if (size == write(fd, buf, size))
+> +			vdso = (char *) vdso__file;
+
+coding style
+
+> +
+> +		close(fd);
+> +	} while (0);
+
+And what is the point of this while construct?
+
+> +
+> +	if (buf)
+> +		free(buf);
+
+No need to check, free accepts NULL pointers.
+
+> +
+> +	vdso_found = (vdso != NULL);
+> +	return vdso;
+> +}
+> +
+> +void vdso__exit(void)
+> +{
+> +	if (vdso_found)
+> +		unlink(vdso__file);
+
+What is the point of using a global variable to check if you need to
+call unlink if you don't check unlink's result? Just ditch vdso_found
+and call unlink unconditionally, but on the temp file created.
+
+And be careful how you use that temp filename...
+
+> +}
+> diff --git a/tools/perf/util/vdso.h b/tools/perf/util/vdso.h
+> new file mode 100644
+> index 0000000..908b041
+> --- /dev/null
+> +++ b/tools/perf/util/vdso.h
+> @@ -0,0 +1,8 @@
+> +#ifndef __VDSO__
+> +#define __VDSO__
+
+Better use __PERF_VDSO__
+
+> +
+> +extern const char vdso__file[];
+> +char *vdso__get_file(void);
+> +void  vdso__exit(void);
+> +
+> +#endif /* __VDSO__ */
+> -- 
+> 1.7.7.6
