@@ -1,181 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab2F2Kdx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 06:33:53 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:55342 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947Ab2F2Kdt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 06:33:49 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q5TAXeei009425, This message is released by code: ctlocs8528
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        hayes <hayes@fc17.localdomain>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 1/2] r8169: support RTL8106E
-Date: Fri, 29 Jun 2012 18:34:19 +0800
-Message-ID: <1340966060-2749-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.7.10.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754852Ab2F2Kd5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 06:33:57 -0400
+Received: from mga03.intel.com ([143.182.124.21]:26259 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754077Ab2F2Kdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 06:33:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="162191862"
+Message-ID: <1340966275.3070.146.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 2/4] mtd: lpc32xx_slc: Make wp gpio optional
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Roland Stigge <stigge@antcom.de>
+Cc: linux-mtd@lists.infradead.org, aletes.xgr@gmail.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, dwmw2@infradead.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
+        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
+        linux@arm.linux.org.uk
+Date: Fri, 29 Jun 2012 13:37:55 +0300
+In-Reply-To: <1340812275-1197-2-git-send-email-stigge@antcom.de>
+References: <1340812275-1197-1-git-send-email-stigge@antcom.de>
+	 <1340812275-1197-2-git-send-email-stigge@antcom.de>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-hEM0gfg8rpPhWhZhR78n"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: hayes <hayes@fc17.localdomain>
 
-Support the new chip RTL8106E.
+--=-hEM0gfg8rpPhWhZhR78n
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c |   56 ++++++++++++++++++++++++++++++++++
- 1 file changed, 56 insertions(+)
+On Wed, 2012-06-27 at 17:51 +0200, Roland Stigge wrote:
+> From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+>=20
+> This patch supports missing wp gpio.
+>=20
+> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index d7a04e0..7afc593 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -46,6 +46,7 @@
- #define FIRMWARE_8105E_1	"rtl_nic/rtl8105e-1.fw"
- #define FIRMWARE_8402_1		"rtl_nic/rtl8402-1.fw"
- #define FIRMWARE_8411_1		"rtl_nic/rtl8411-1.fw"
-+#define FIRMWARE_8106E_1	"rtl_nic/rtl8106e-1.fw"
- 
- #ifdef RTL8169_DEBUG
- #define assert(expr) \
-@@ -141,6 +142,7 @@ enum mac_version {
- 	RTL_GIGA_MAC_VER_36,
- 	RTL_GIGA_MAC_VER_37,
- 	RTL_GIGA_MAC_VER_38,
-+	RTL_GIGA_MAC_VER_39,
- 	RTL_GIGA_MAC_NONE   = 0xff,
- };
- 
-@@ -259,6 +261,9 @@ static const struct {
- 	[RTL_GIGA_MAC_VER_38] =
- 		_R("RTL8411",		RTL_TD_1, FIRMWARE_8411_1,
- 							JUMBO_9K, false),
-+	[RTL_GIGA_MAC_VER_39] =
-+		_R("RTL8106e",		RTL_TD_1, FIRMWARE_8106E_1,
-+							JUMBO_1K, true),
- };
- #undef _R
- 
-@@ -431,7 +436,9 @@ enum rtl8168_registers {
- 	RDSAR1			= 0xd0,	/* 8168c only. Undocumented on 8168dp */
- 	MISC			= 0xf0,	/* 8168e only. */
- #define TXPLA_RST			(1 << 29)
-+#define DISABLE_LAN_EN			(1 << 23) /* Enable GPIO pin */
- #define PWM_EN				(1 << 22)
-+#define EARLY_TALLY_EN			(1 << 16)
- };
- 
- enum rtl_register_content {
-@@ -794,6 +801,7 @@ MODULE_FIRMWARE(FIRMWARE_8168F_1);
- MODULE_FIRMWARE(FIRMWARE_8168F_2);
- MODULE_FIRMWARE(FIRMWARE_8402_1);
- MODULE_FIRMWARE(FIRMWARE_8411_1);
-+MODULE_FIRMWARE(FIRMWARE_8106E_1);
- 
- static void rtl_lock_work(struct rtl8169_private *tp)
- {
-@@ -1933,6 +1941,8 @@ static void rtl8169_get_mac_version(struct rtl8169_private *tp,
- 		{ 0x7c800000, 0x30000000,	RTL_GIGA_MAC_VER_11 },
- 
- 		/* 8101 family. */
-+		{ 0x7cf00000, 0x44900000,	RTL_GIGA_MAC_VER_39 },
-+		{ 0x7c800000, 0x44800000,	RTL_GIGA_MAC_VER_39 },
- 		{ 0x7c800000, 0x44000000,	RTL_GIGA_MAC_VER_37 },
- 		{ 0x7cf00000, 0x40b00000,	RTL_GIGA_MAC_VER_30 },
- 		{ 0x7cf00000, 0x40a00000,	RTL_GIGA_MAC_VER_30 },
-@@ -3273,6 +3283,30 @@ static void rtl8402_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x1f, 0x0000);
- }
- 
-+static void rtl8106e_hw_phy_config(struct rtl8169_private *tp)
-+{
-+	void __iomem *ioaddr = tp->mmio_addr;
-+
-+	static const struct phy_reg phy_reg_init[] = {
-+		{ 0x1f, 0x0004 },
-+		{ 0x10, 0xc07f },
-+		{ 0x19, 0x7030 },
-+		{ 0x1f, 0x0000 }
-+	};
-+
-+	/* Disable ALDPS before ram code */
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+	rtl_writephy(tp, 0x18, 0x0310);
-+	msleep(100);
-+
-+	rtl_apply_firmware(tp);
-+
-+	rtl_eri_write(ioaddr, 0x1b0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
-+	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
-+
-+	rtl_eri_write(ioaddr, 0x1d0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
-+}
-+
- static void rtl_hw_phy_config(struct net_device *dev)
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
-@@ -3369,6 +3403,10 @@ static void rtl_hw_phy_config(struct net_device *dev)
- 		rtl8411_hw_phy_config(tp);
- 		break;
- 
-+	case RTL_GIGA_MAC_VER_39:
-+		rtl8106e_hw_phy_config(tp);
-+		break;
-+
- 	default:
- 		break;
- 	}
-@@ -3608,6 +3646,7 @@ static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_34:
- 	case RTL_GIGA_MAC_VER_37:
- 	case RTL_GIGA_MAC_VER_38:
-+	case RTL_GIGA_MAC_VER_39:
- 		RTL_W32(RxConfig, RTL_R32(RxConfig) |
- 			AcceptBroadcast | AcceptMulticast | AcceptMyPhys);
- 		break;
-@@ -3830,6 +3869,7 @@ static void __devinit rtl_init_pll_power_ops(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_29:
- 	case RTL_GIGA_MAC_VER_30:
- 	case RTL_GIGA_MAC_VER_37:
-+	case RTL_GIGA_MAC_VER_39:
- 		ops->down	= r810x_pll_power_down;
- 		ops->up		= r810x_pll_power_up;
- 		break;
-@@ -5123,6 +5163,18 @@ static void rtl_hw_start_8402(struct rtl8169_private *tp)
- 		     ERIAR_EXGMAC);
- }
- 
-+static void rtl_hw_start_8106(struct rtl8169_private *tp)
-+{
-+	void __iomem *ioaddr = tp->mmio_addr;
-+
-+	/* Force LAN exit from ASPM if Rx/Tx are not idle */
-+	RTL_W32(FuncEvent, RTL_R32(FuncEvent) | 0x002800);
-+
-+	RTL_W32(MISC, (RTL_R32(MISC) | DISABLE_LAN_EN) & ~EARLY_TALLY_EN);
-+	RTL_W8(MCU, RTL_R8(MCU) | EN_NDP | EN_OOB_RESET);
-+	RTL_W8(DLLPR, RTL_R8(DLLPR) & ~PFM_EN);
-+}
-+
- static void rtl_hw_start_8101(struct net_device *dev)
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
-@@ -5167,6 +5219,10 @@ static void rtl_hw_start_8101(struct net_device *dev)
- 	case RTL_GIGA_MAC_VER_37:
- 		rtl_hw_start_8402(tp);
- 		break;
-+
-+	case RTL_GIGA_MAC_VER_39:
-+		rtl_hw_start_8106(tp);
-+		break;
- 	}
- 
- 	RTL_W8(Cfg9346, Cfg9346_Lock);
--- 
-1.7.10.2
+Pushed patches 2-4, thanks!
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-hEM0gfg8rpPhWhZhR78n
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJP7YWDAAoJECmIfjd9wqK0ZngP/RJB9GlpABgo2bUDiVMKDdvk
+6Rg6jw+5nLZ1l60TP5NypCBJAL8p000qtnbaMmWUZUW/Pmd0wOwFrlPAOTs0rGQZ
+g7HPQY5sYYHXLpDuZ1LnvaDReJTgbt7MXpor6ppU5+uTvjMLJcO9g7xZ6Tq0j4Q9
+MMXyjY6mggWMOE8ynOI9qjZzzMb8UEf6XX8Lznt2obwmASSV23clSqJMt8YVH/Ru
+4IBPDqfbYujQy27+Hk1l6RINHS2q/P95b8wd1x4SqFiUOzc6NM8Q/NOdfBIEusem
+kRw0BSWGDWuw3uD9uSCgmRhfrGb6A8iOVW9hlVQXrrlXzqHOmKtif0DjASus0fsQ
+xoslRhna4LN0rp15Cprqw/5aHlr03h+ujWbUVo7p2JiIRXGmcKO9RTUUlB9XfUkY
+tVHaicvjH0EgjqXZDOQIkyoyh+bxqpoEZdDeE8jPMfACRAB1aK9Ws6LdfJ1psQ4V
+5NDrD050X9FJ4TPy399pJlo8bzTPp/fVHGNIKOCfaNnLueR8nKdxO/QSaWec4Buj
+fkMQn3F8duMVdyO58rMC2NMtyFQD6DAXYV0uCRpNJezCZK24oPN/jKiFGgY0P90t
+TZ4bAca7OZfJaL1r/qoUtt8zo6pKox/p+ZiJ/JirCe1btwJ6AwjMpbLdDSAvBeCQ
+T5sBqTnSIX1m/+AtLQc+
+=emFQ
+-----END PGP SIGNATURE-----
+
+--=-hEM0gfg8rpPhWhZhR78n--
 
