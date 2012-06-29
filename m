@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932702Ab2F2TDQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 15:03:16 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:45936 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932554Ab2F2S6J (ORCPT
+	id S932739Ab2F2TDn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 15:03:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37768 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932599Ab2F2TDk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:58:09 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
-        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v3 02/17] vfs: add a kern_path_at function
-Date: Fri, 29 Jun 2012 14:57:45 -0400
-Message-Id: <1340996280-27123-3-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
-References: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
+	Fri, 29 Jun 2012 15:03:40 -0400
+Message-ID: <1340996586.28750.122.camel@twins>
+Subject: Re: [PATCH 13/40] autonuma: CPU follow memory algorithm
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: dlaor@redhat.com, Ingo Molnar <mingo@kernel.org>,
+        Hillf Danton <dhillf@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Date: Fri, 29 Jun 2012 21:03:06 +0200
+In-Reply-To: <1340996224.28750.116.camel@twins>
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
+	 <1340888180-15355-14-git-send-email-aarcange@redhat.com>
+	 <1340895238.28750.49.camel@twins>
+	 <CAJd=RBA+FPgB9iq07YG0Pd=tN65SGK1ifmj98tomBDbYeKOE-Q@mail.gmail.com>
+	 <20120629125517.GD32637@gmail.com> <4FEDDD0C.60609@redhat.com>
+	 <1340995260.28750.103.camel@twins> <4FEDF81C.1010401@redhat.com>
+	 <1340996224.28750.116.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will function like user_path_at, but does not do the getname and
-putname, leaving that to the caller.
+On Fri, 2012-06-29 at 20:57 +0200, Peter Zijlstra wrote:
+> On Fri, 2012-06-29 at 14:46 -0400, Rik van Riel wrote:
+> > 
+> > I am not convinced all architectures that have CONFIG_NUMA
+> > need to be a requirement, since some of them (eg. Alpha)
+> > seem to be lacking a maintainer nowadays. 
+> 
+> Still, this NUMA balancing stuff is not a small tweak to load-balancing.
+> Its a very significant change is how you schedule. Having such great
+> differences over architectures isn't something I look forward to.
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/namei.c            |   27 +++++++++++++++++++--------
- include/linux/namei.h |    1 +
- 2 files changed, 20 insertions(+), 8 deletions(-)
-
-diff --git a/fs/namei.c b/fs/namei.c
-index 196f039..3f46b2f 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1912,20 +1912,31 @@ struct dentry *lookup_one_len(const char *name, struct dentry *base, int len)
- 	return __lookup_hash(&this, base, NULL);
- }
- 
-+int kern_path_at(int dfd, const char *name, unsigned flags, struct path *path)
-+{
-+	struct nameidata nd;
-+	int err;
-+
-+	BUG_ON(flags & LOOKUP_PARENT);
-+
-+	err = do_path_lookup(dfd, name, flags, &nd);
-+	if (!err)
-+		*path = nd.path;
-+
-+	return err;
-+}
-+
- int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
- 		 struct path *path, int *empty)
- {
--	struct nameidata nd;
- 	char *tmp = getname_flags(name, flags, empty);
--	int err = PTR_ERR(tmp);
--	if (!IS_ERR(tmp)) {
--
--		BUG_ON(flags & LOOKUP_PARENT);
-+	int err;
- 
--		err = do_path_lookup(dfd, tmp, flags, &nd);
-+	if (IS_ERR(tmp)) {
-+		err = PTR_ERR(tmp);
-+	} else {
-+		err = kern_path_at(dfd, tmp, flags, path);
- 		putname(tmp);
--		if (!err)
--			*path = nd.path;
- 	}
- 	return err;
- }
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index ffc0213..cd95fcb 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -66,6 +66,7 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
- #define LOOKUP_ROOT		0x2000
- #define LOOKUP_EMPTY		0x4000
- 
-+extern int kern_path_at(int, const char *, unsigned, struct path *);
- extern int user_path_at(int, const char __user *, unsigned, struct path *);
- extern int user_path_at_empty(int, const char __user *, unsigned, struct path *, int *empty);
- 
--- 
-1.7.7.6
-
+Also, Andrea keeps insisting arch support is trivial, so I don't see the
+problem.
