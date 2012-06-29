@@ -1,80 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475Ab2F2QVV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 12:21:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44571 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932277Ab2F2QVU (ORCPT
+	id S932485Ab2F2QZn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 12:25:43 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50122 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932285Ab2F2QZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 12:21:20 -0400
-Date: Fri, 29 Jun 2012 09:21:04 -0700
-From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-d9873ab79376d5c0112ed09e14783067dc65e808@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        tim.c.chen@linux.intel.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        tim.c.chen@linux.intel.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de
-In-Reply-To: <1339463612-30937-1-git-send-email-dsahern@gmail.com>
-References: <1339463612-30937-1-git-send-email-dsahern@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Trivial build fix
-Git-Commit-ID: d9873ab79376d5c0112ed09e14783067dc65e808
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 29 Jun 2012 09:21:09 -0700 (PDT)
+	Fri, 29 Jun 2012 12:25:41 -0400
+From: Ohad Ben-Cohen <ohad@wizery.com>
+To: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [PATCH 1/2] rpmsg: avoid premature deallocation of endpoints
+Date: Fri, 29 Jun 2012 19:25:19 +0300
+Message-Id: <1340987120-10588-1-git-send-email-ohad@wizery.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d9873ab79376d5c0112ed09e14783067dc65e808
-Gitweb:     http://git.kernel.org/tip/d9873ab79376d5c0112ed09e14783067dc65e808
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Mon, 11 Jun 2012 19:13:32 -0600
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 27 Jun 2012 13:32:06 -0300
+When an inbound message arrives, the rpmsg core looks up its
+associated endpoint and invokes the registered callback.
 
-perf tools: Trivial build fix
+If a message arrives while its endpoint is being removed (because
+the rpmsg driver was removed, or a recovery of a remote processor
+has kicked in) we must ensure atomicity, i.e.:
 
-References to OUTPUT should not be followed by a '/'. When a build
-output directory is not specified for this case you get:
+- Either the ept is removed before it is found
 
-gcc -o builtin-annotate.o -c ... -I/util ...
+or
 
-which is wrong.
+- The ept is found but will not be freed until the callback returns
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>
-Link: http://lkml.kernel.org/r/1339463612-30937-1-git-send-email-dsahern@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+This is achieved by maintaining a per-ept reference count, which,
+when drops to zero, will trigger deallocation of the ept.
+
+With this in hand, it is now forbidden to directly deallocate
+epts once they have been added to the endpoints idr.
+
+Reported-by: Fernando Guzman Lugo <fernando.lugo@ti.com>
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 ---
- tools/perf/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/rpmsg/virtio_rpmsg_bus.c | 36 ++++++++++++++++++++++++++++++++++--
+ include/linux/rpmsg.h            |  3 +++
+ 2 files changed, 37 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index d698c11..75d74e5 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -155,7 +155,7 @@ endif
+diff --git a/drivers/rpmsg/virtio_rpmsg_bus.c b/drivers/rpmsg/virtio_rpmsg_bus.c
+index 0af7fd3..d89fbc1 100644
+--- a/drivers/rpmsg/virtio_rpmsg_bus.c
++++ b/drivers/rpmsg/virtio_rpmsg_bus.c
+@@ -206,6 +206,26 @@ static int rpmsg_uevent(struct device *dev, struct kobj_uevent_env *env)
+ 					rpdev->id.name);
+ }
  
- ### --- END CONFIGURATION SECTION ---
++/**
++ * __ept_release() - deallocate an rpmsg endpoint
++ * @kref: the ept's reference count
++ *
++ * This function deallocates an ept, and is invoked when its @kref refcount
++ * drops to zero.
++ *
++ * Never invoke this function directly!
++ */
++static void __ept_release(struct kref *kref)
++{
++	struct rpmsg_endpoint *ept = container_of(kref, struct rpmsg_endpoint,
++						  refcount);
++	/*
++	 * At this point no one holds a reference to ept anymore,
++	 * so we can directly free it
++	 */
++	kfree(ept);
++}
++
+ /* for more info, see below documentation of rpmsg_create_ept() */
+ static struct rpmsg_endpoint *__rpmsg_create_ept(struct virtproc_info *vrp,
+ 		struct rpmsg_channel *rpdev, rpmsg_rx_cb_t cb,
+@@ -224,6 +244,8 @@ static struct rpmsg_endpoint *__rpmsg_create_ept(struct virtproc_info *vrp,
+ 		return NULL;
+ 	}
  
--BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)/util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
-+BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- BASIC_LDFLAGS =
++	kref_init(&ept->refcount);
++
+ 	ept->rpdev = rpdev;
+ 	ept->cb = cb;
+ 	ept->priv = priv;
+@@ -256,7 +278,7 @@ rem_idr:
+ 	idr_remove(&vrp->endpoints, request);
+ free_ept:
+ 	mutex_unlock(&vrp->endpoints_lock);
+-	kfree(ept);
++	kref_put(&ept->refcount, __ept_release);
+ 	return NULL;
+ }
  
- # Guard against environment variables
+@@ -324,7 +346,7 @@ __rpmsg_destroy_ept(struct virtproc_info *vrp, struct rpmsg_endpoint *ept)
+ 	idr_remove(&vrp->endpoints, ept->addr);
+ 	mutex_unlock(&vrp->endpoints_lock);
+ 
+-	kfree(ept);
++	kref_put(&ept->refcount, __ept_release);
+ }
+ 
+ /**
+@@ -808,7 +830,13 @@ static void rpmsg_recv_done(struct virtqueue *rvq)
+ 
+ 	/* use the dst addr to fetch the callback of the appropriate user */
+ 	mutex_lock(&vrp->endpoints_lock);
++
+ 	ept = idr_find(&vrp->endpoints, msg->dst);
++
++	/* let's make sure no one deallocates ept while we use it */
++	if (ept)
++		kref_get(&ept->refcount);
++
+ 	mutex_unlock(&vrp->endpoints_lock);
+ 
+ 	if (ept && ept->cb)
+@@ -816,6 +844,10 @@ static void rpmsg_recv_done(struct virtqueue *rvq)
+ 	else
+ 		dev_warn(dev, "msg received with no recepient\n");
+ 
++	/* farewell, ept, we don't need you anymore */
++	if (ept)
++		kref_put(&ept->refcount, __ept_release);
++
+ 	/* publish the real size of the buffer */
+ 	sg_init_one(&sg, msg, RPMSG_BUF_SIZE);
+ 
+diff --git a/include/linux/rpmsg.h b/include/linux/rpmsg.h
+index 140fd67..50233e3 100644
+--- a/include/linux/rpmsg.h
++++ b/include/linux/rpmsg.h
+@@ -38,6 +38,7 @@
+ #include <linux/types.h>
+ #include <linux/device.h>
+ #include <linux/mod_devicetable.h>
++#include <linux/kref.h>
+ 
+ /* The feature bitmap for virtio rpmsg */
+ #define VIRTIO_RPMSG_F_NS	0 /* RP supports name service notifications */
+@@ -120,6 +121,7 @@ typedef void (*rpmsg_rx_cb_t)(struct rpmsg_channel *, void *, int, void *, u32);
+ /**
+  * struct rpmsg_endpoint - binds a local rpmsg address to its user
+  * @rpdev: rpmsg channel device
++ * @refcount: when this drops to zero, the ept is deallocated
+  * @cb: rx callback handler
+  * @addr: local rpmsg address
+  * @priv: private data for the driver's use
+@@ -140,6 +142,7 @@ typedef void (*rpmsg_rx_cb_t)(struct rpmsg_channel *, void *, int, void *, u32);
+  */
+ struct rpmsg_endpoint {
+ 	struct rpmsg_channel *rpdev;
++	struct kref refcount;
+ 	rpmsg_rx_cb_t cb;
+ 	u32 addr;
+ 	void *priv;
+-- 
+1.7.10.rc3.743.gaa3bb87
+
