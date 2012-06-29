@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188Ab2F2P4E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 11:56:04 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:51702 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752881Ab2F2P4D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 11:56:03 -0400
-X-Sasl-enc: df1kYVo8CHw5eLLPMhex4yHFyVRYSWrAzsjcmloVb3fl 1340985361
-Date: Fri, 29 Jun 2012 11:55:59 -0400
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>, Jiri Kosina <jkosina@suse.cz>,
-        H Hartley Sweeten <hartleys@visionengravers.com>
-Subject: Re: linux-next: manual merge of the staging tree with the trivial
- tree
-Message-ID: <20120629155559.GA21039@kroah.com>
-References: <20120629155724.99c0b8d8ad0738fdc7ebca33@canb.auug.org.au>
+	id S932258Ab2F2P4J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 11:56:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36202 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932194Ab2F2P4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 11:56:05 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH v3 0/3] kvm: KVM_IRQFD cleanup, docs, sanitize flags
+To: avi@redhat.com, mst@redhat.com
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, jan.kiszka@siemens.com,
+        cornelia.huck@de.ibm.com
+Date: Fri, 29 Jun 2012 09:56:00 -0600
+Message-ID: <20120629154940.30535.17132.stgit@bling.home>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120629155724.99c0b8d8ad0738fdc7ebca33@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 29, 2012 at 03:57:24PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the staging tree got a conflict in
-> drivers/staging/comedi/drivers/s626.h between commit 6ac7d11527a3
-> ("treewide: Put a space between #include and FILE") from the trivial tree
-> and commit 90fd56af25b7 ("staging: comedi: s626: remove private INLINE
-> macro") from the staging tree.
-> 
-> Just context changes.  I fixed it up and can carry the fix as necessary.
+Before we start fiddling with what we can and can't add to KVM_IRQFD
+we need to figure out if anyone has been sloppy in their use of the
+ioctl flags.  This series has a minor cleanup to pass the struct
+kvm_irqfd to seup functions rather than individual parameters, making
+it more consistent with ioeventfd, adds API documentation for this
+ioctl, and sanitizes the flags.  If anyone screams, we may have to
+revert this last patch.  Thanks,
 
-Sounds fine with me, thanks.
+Alex
 
-greg k-h
+---
+
+Alex Williamson (3):
+      kvm: Sanitize KVM_IRQFD flags
+      kvm: Add missing KVM_IRQFD API documentation
+      kvm: Pass kvm_irqfd to functions
+
+
+ Documentation/virtual/kvm/api.txt |   16 ++++++++++++++++
+ include/linux/kvm_host.h          |    4 ++--
+ virt/kvm/eventfd.c                |   23 +++++++++++++----------
+ virt/kvm/kvm_main.c               |    2 +-
+ 4 files changed, 32 insertions(+), 13 deletions(-)
