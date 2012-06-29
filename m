@@ -1,59 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab2F2PbL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 11:31:11 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:56993 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500Ab2F2PbH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 11:31:07 -0400
-Date: Fri, 29 Jun 2012 17:31:02 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] OProfile fixlet
-Message-ID: <20120629153102.GA2864@gmail.com>
+	id S1755810Ab2F2PcD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 11:32:03 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:40174 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751895Ab2F2PcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 11:32:01 -0400
+Date: Fri, 29 Jun 2012 16:31:57 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v2 1/4] mm: introduce compaction and migration for virtio
+ ballooned pages
+Message-ID: <20120629153157.GB13141@csn.ul.ie>
+References: <cover.1340916058.git.aquini@redhat.com>
+ <d0f33a6492501a0d420abbf184f9b956cff3e3fc.1340916058.git.aquini@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
+In-Reply-To: <d0f33a6492501a0d420abbf184f9b956cff3e3fc.1340916058.git.aquini@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu, Jun 28, 2012 at 06:49:39PM -0300, Rafael Aquini wrote:
+> This patch introduces the helper functions as well as the necessary changes
+> to teach compaction and migration bits how to cope with pages which are
+> part of a guest memory balloon, in order to make them movable by memory
+> compaction procedures.
+> 
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
 
-Please pull the latest perf-urgent-for-linus git tree from:
+I have two minor comments but it is not critical they be addressed. If you
+doa V3 then fix it but if it is picked up as it is, I'm ok with that.
+>From a compaction point of view;
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
-   HEAD: 662f5cedb38c4b88e1cebfd54a88159f2f7ab7b9 Merge branch 'urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile into perf/urgent
+> ---
+>  include/linux/mm.h |   16 ++++++++
+>  mm/compaction.c    |  110 +++++++++++++++++++++++++++++++++++++++++++---------
+>  mm/migrate.c       |   30 +++++++++++++-
+>  3 files changed, 136 insertions(+), 20 deletions(-)
+> 
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index b36d08c..35568fc 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1629,5 +1629,21 @@ static inline unsigned int debug_guardpage_minorder(void) { return 0; }
+>  static inline bool page_is_guard(struct page *page) { return false; }
+>  #endif /* CONFIG_DEBUG_PAGEALLOC */
+>  
+> +#if (defined(CONFIG_VIRTIO_BALLOON) || \
+> +	defined(CONFIG_VIRTIO_BALLOON_MODULE)) && defined(CONFIG_COMPACTION)
+> +extern bool isolate_balloon_page(struct page *);
+> +extern bool putback_balloon_page(struct page *);
+> +extern struct address_space *balloon_mapping;
+> +
+> +static inline bool is_balloon_page(struct page *page)
+> +{
+> +        return (page->mapping == balloon_mapping) ? true : false;
+> +}
+> +#else
+> +static inline bool is_balloon_page(struct page *page)       { return false; }
+> +static inline bool isolate_balloon_page(struct page *page)  { return false; }
+> +static inline bool putback_balloon_page(struct page *page)  { return false; }
+> +#endif /* (VIRTIO_BALLOON || VIRTIO_BALLOON_MODULE) && COMPACTION */
+> +
+>  #endif /* __KERNEL__ */
+>  #endif /* _LINUX_MM_H */
 
- Thanks,
+isolate_balloon_page is only used in compaction.c and could declared static
+to compaction.c. You could move them all between struct compact_control
+and release_pages to avoid forward declarations.
 
-	Ingo
+> <SNIP>
+> +/* putback_lru_page() counterpart for a ballooned page */
+> +bool putback_balloon_page(struct page *page)
+> +{
+> +	if (WARN_ON(!is_balloon_page(page)))
+> +		return false;
+> +
+> +	if (likely(trylock_page(page))) {
+> +		if(is_balloon_page(page)) {
 
------------------->
-Will Deacon (1):
-      oprofile: perf: use NR_CPUS instead or nr_cpumask_bits for static array
+Stick a space in there. Run checkpatch.pl if you haven't already. I suspect
+it would have caught this.
 
+As I said, not worth spinning a V3 for :)
 
- drivers/oprofile/oprofile_perf.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
-index da14432..efc4b7f 100644
---- a/drivers/oprofile/oprofile_perf.c
-+++ b/drivers/oprofile/oprofile_perf.c
-@@ -25,7 +25,7 @@ static int oprofile_perf_enabled;
- static DEFINE_MUTEX(oprofile_perf_mutex);
- 
- static struct op_counter_config *counter_config;
--static struct perf_event **perf_events[nr_cpumask_bits];
-+static struct perf_event **perf_events[NR_CPUS];
- static int num_counters;
- 
- /*
+-- 
+Mel Gorman
+SUSE Labs
