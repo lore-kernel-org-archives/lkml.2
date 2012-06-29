@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756081Ab2F2P0S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 11:26:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22468 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755910Ab2F2P0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 11:26:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="159749506"
-Date: Fri, 29 Jun 2012 17:37:25 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 1/3] mfd: wm8350: Add regmap cache support
-Message-ID: <20120629153725.GK22806@sortiz-mobl>
-References: <1338727044-23960-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1756086Ab2F2P1q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 11:27:46 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64453 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755548Ab2F2P1o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 11:27:44 -0400
+Date: Fri, 29 Jun 2012 17:27:39 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [GIT PULL] RCU fix
+Message-ID: <20120629152739.GA2725@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1338727044-23960-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Linus,
 
-On Sun, Jun 03, 2012 at 01:37:22PM +0100, Mark Brown wrote:
-> Use the most simple possible transformation on the existing code so keep
-> the table sitting around, further patches in this series will delete the
-> existing cache code - the main purpose of this patch is to ensure that
-> we always have a cache for bisection.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/wm8350-core.c       |   29 ++++++++++++--------
->  drivers/mfd/wm8350-i2c.c        |    5 ----
->  drivers/mfd/wm8350-regmap.c     |   56 +++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/wm8350/core.h |    7 ++++-
->  4 files changed, 80 insertions(+), 17 deletions(-)
-This one and the 2 next ones applied, thanks.
+Please pull the latest core-urgent-for-linus git tree from:
 
-Cheers,
-Samuel.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-urgent-for-linus
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+   HEAD: b41772abebc27c61dd578b76da99aa5240b4c99a rcu: Stop rcu_do_batch() from multiplexing the "count" variable
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Paul E. McKenney (1):
+      rcu: Stop rcu_do_batch() from multiplexing the "count" variable
+
+
+ kernel/rcutree.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 3b0f133..38ecdda 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1530,7 +1530,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+ {
+ 	unsigned long flags;
+ 	struct rcu_head *next, *list, **tail;
+-	int bl, count, count_lazy;
++	int bl, count, count_lazy, i;
+ 
+ 	/* If no callbacks are ready, just return.*/
+ 	if (!cpu_has_callbacks_ready_to_invoke(rdp)) {
+@@ -1553,9 +1553,9 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+ 	rdp->nxtlist = *rdp->nxttail[RCU_DONE_TAIL];
+ 	*rdp->nxttail[RCU_DONE_TAIL] = NULL;
+ 	tail = rdp->nxttail[RCU_DONE_TAIL];
+-	for (count = RCU_NEXT_SIZE - 1; count >= 0; count--)
+-		if (rdp->nxttail[count] == rdp->nxttail[RCU_DONE_TAIL])
+-			rdp->nxttail[count] = &rdp->nxtlist;
++	for (i = RCU_NEXT_SIZE - 1; i >= 0; i--)
++		if (rdp->nxttail[i] == rdp->nxttail[RCU_DONE_TAIL])
++			rdp->nxttail[i] = &rdp->nxtlist;
+ 	local_irq_restore(flags);
+ 
+ 	/* Invoke callbacks. */
+@@ -1583,9 +1583,9 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+ 	if (list != NULL) {
+ 		*tail = rdp->nxtlist;
+ 		rdp->nxtlist = list;
+-		for (count = 0; count < RCU_NEXT_SIZE; count++)
+-			if (&rdp->nxtlist == rdp->nxttail[count])
+-				rdp->nxttail[count] = tail;
++		for (i = 0; i < RCU_NEXT_SIZE; i++)
++			if (&rdp->nxtlist == rdp->nxttail[i])
++				rdp->nxttail[i] = tail;
+ 			else
+ 				break;
+ 	}
