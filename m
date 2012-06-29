@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab2F2DAp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 23:00:45 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52473 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354Ab2F2DAo (ORCPT
+	id S1754339Ab2F2DGl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 23:06:41 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35759 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752452Ab2F2DGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 23:00:44 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FED19D5.5070508@jp.fujitsu.com>
-Date: Fri, 29 Jun 2012 11:58:29 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 28 Jun 2012 23:06:40 -0400
+Message-ID: <4FED1BBB.1030303@acm.org>
+Date: Thu, 28 Jun 2012 22:06:35 -0500
+From: Corey Minyard <tcminyard@gmail.com>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org, akpm@linux-foundation.org,
-        minchan@kernel.org, linux-kernel@vger.kernel.org, jaschut@sandia.gov
-Subject: Re: [PATCH -mm] mm: have order>0 compaction start off where it left
-References: <20120627233742.53225fc7@annuminas.surriel.com> <20120628102919.GQ8103@csn.ul.ie> <4FEC86BA.9050004@redhat.com>
-In-Reply-To: <4FEC86BA.9050004@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Andi Kleen <andi@firstfloor.org>
+CC: Srinivas_G_Gowda@Dell.com, tcminyard@gmail.com,
+        linux-kernel@vger.kernel.org,
+        "openipmi-developer@lists.sourceforge.net" 
+	<openipmi-developer@lists.sourceforge.net>
+Subject: Re: [PATCH 1/1 v2 ] ipmi: Setting OS name as Linux in BMC
+References: <4FEC8931.5020001@dell.com> <4FEC8A28.4070806@dell.com> <m2k3yrgf4d.fsf@firstfloor.org>
+In-Reply-To: <m2k3yrgf4d.fsf@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/29 1:30), Rik van Riel wrote:
-> On 06/28/2012 06:29 AM, Mel Gorman wrote:
+Srinivas, what is your use case?
+
+-corey
+
+On 06/28/2012 07:01 PM, Andi Kleen wrote:
+> <Srinivas_G_Gowda@Dell.com> writes:
+>> +	
+>> +	data[0] = param_select;
+>> +	data[1] = set_selector;
+>> +	data[2] = string_encode;
+>> +	data[3] = str_len;
+>> +	data[4] = 'L';
+>> +	data[5] = 'i';
+>> +	data[6] = 'n';
+>> +	data[7] = 'u';
+>> +	data[8] = 'x';
+> Not sure that's all that useful. I can just see BMC's making the ACPI
+> mistake of trying to work around specific issues, by checking for
+> Linux.
 >
->> Lets say there are two parallel compactions running. Process A meets
->> the migration PFN and moves to the end of the zone to restart. Process B
->> finishes scanning mid-way through the zone and updates last_free_pfn. This
->> will cause Process A to "jump" to where Process B left off which is not
->> necessarily desirable.
->>
->> Another side effect is that a workload that allocations/frees
->> aggressively will not compact as well as the "free" scanner is not
->> scanning the end of the zone each time. It would be better if
->> last_free_pfn was updated when a full pageblock was encountered
->>
->> So;
->>
->> 1. Initialise last_free_pfn to the end of the zone
->> 2. On compaction, scan from last_free_pfn and record where it started
->> 3. If a pageblock is full, update last_free_pfn
->> 4. If the migration and free scanner meet, reset last_free_pfn and
->>     the free scanner. Abort if the free scanner wraps to where it started
->>
->> Does that make sense?
+> But since there are so many different Linux that will never work
+> because "Linux" does not describe a fixed release or code base.
 >
-> Yes, that makes sense.  We still have to keep track
-> of whether we have wrapped around, but I guess that
-> allows for a better name for the bool :)
+> Probably dangerous.
 >
-> Maybe cc->wrapped?
+> -Andi
 >
-> Does anyone have a better name?
 >
 
-cc->second_scan ? (I have no sense of naming ;)
-
-> As for point (4), should we abort when we wrap
-> around to where we started, or should we abort
-> when free_pfn and migrate_pfn meet after we
-> wrapped around?
->
-
-I'd like to vote for aborting earlier.
-
-Regards,
--Kame
 
