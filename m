@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932719Ab2F2S6V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 14:58:21 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:47464 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932675Ab2F2S6Q (ORCPT
+	id S932792Ab2F2S6a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 14:58:30 -0400
+Received: from mail-yw0-f42.google.com ([209.85.213.42]:59981 "EHLO
+	mail-yw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932764Ab2F2S61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:58:16 -0400
+	Fri, 29 Jun 2012 14:58:27 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v3 06/17] vfs: turn "empty" arg in getname_flags into a bool
-Date: Fri, 29 Jun 2012 14:57:49 -0400
-Message-Id: <1340996280-27123-7-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v3 14/17] vfs: fix renameat to retry on ESTALE errors
+Date: Fri, 29 Jun 2012 14:57:57 -0400
+Message-Id: <1340996280-27123-15-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
 References: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
@@ -22,63 +22,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-...it's just used as a flag.
+...as always, rename is the messiest of the bunch. We have to track
+whether to retry or not via a separate flag since the error handling
+is already quite complex.
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c         |    4 ++--
- fs/stat.c          |    2 +-
- include/linux/fs.h |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ fs/namei.c |   31 ++++++++++++++++++++++++++-----
+ 1 files changed, 26 insertions(+), 5 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index 7945b19..a20faa5 100644
+index 7fadc99..b38d734 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -117,7 +117,7 @@
-  * POSIX.1 2.4: an empty pathname is invalid (ENOENT).
-  * PATH_MAX includes the nul terminator --RR.
-  */
--char *getname_flags(const char __user *filename, int flags, int *empty)
-+char *getname_flags(const char __user *filename, int flags, bool *empty)
- {
- 	char *result = __getname(), *err;
- 	int len;
-@@ -133,7 +133,7 @@ char *getname_flags(const char __user *filename, int flags, int *empty)
- 	/* The empty path is special. */
- 	if (unlikely(!len)) {
- 		if (empty)
--			*empty = 1;
-+			*empty = true;
- 		err = ERR_PTR(-ENOENT);
- 		if (!(flags & LOOKUP_EMPTY))
- 			goto error;
-diff --git a/fs/stat.c b/fs/stat.c
-index c9d88f7..4f8b6bc 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -306,7 +306,7 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
- {
- 	struct path path;
+@@ -3392,12 +3392,25 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	char *from;
+ 	char *to;
  	int error;
--	int empty = 0;
-+	bool empty = false;
- 	char *name;
- 	unsigned int try = 0;
- 	unsigned int lookup_flags = LOOKUP_EMPTY;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index c7d60db..d044088 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2060,7 +2060,7 @@ extern struct file *file_open_root(struct dentry *, struct vfsmount *,
- extern struct file * dentry_open(struct dentry *, struct vfsmount *, int,
- 				 const struct cred *);
- extern int filp_close(struct file *, fl_owner_t id);
--extern char *getname_flags(const char __user *, int, int *);
-+extern char *getname_flags(const char __user *, int, bool *);
- extern char *getname(const char __user *);
++	unsigned int try = 0;
++	bool should_retry = false;
++	unsigned int lookup_flags = LOOKUP_PARENT;
  
- /**
+-	error = user_path_parent(olddfd, oldname, &oldnd, &from);
+-	if (error)
++	from = getname(oldname);
++	if (IS_ERR(from))
++		return PTR_ERR(from);
++
++	to = getname(newname);
++	if (IS_ERR(to)) {
++		error = PTR_ERR(to);
+ 		goto exit;
++	}
++retry:
++	error = do_path_lookup(olddfd, from, lookup_flags, &oldnd);
++	if (error)
++		goto exit0;
+ 
+-	error = user_path_parent(newdfd, newname, &newnd, &to);
++	error = do_path_lookup(newdfd, to, lookup_flags, &newnd);
+ 	if (error)
+ 		goto exit1;
+ 
+@@ -3466,13 +3479,21 @@ exit4:
+ 	dput(old_dentry);
+ exit3:
+ 	unlock_rename(new_dir, old_dir);
++	if (retry_estale(error, try++))
++		should_retry = true;
+ exit2:
+ 	path_put(&newnd.path);
+-	putname(to);
+ exit1:
+ 	path_put(&oldnd.path);
+-	putname(from);
++	if (should_retry) {
++		should_retry = false;
++		lookup_flags |= LOOKUP_REVAL;
++		goto retry;
++	}
++exit0:
++	putname(to);
+ exit:
++	putname(from);
+ 	return error;
+ }
+ 
 -- 
 1.7.7.6
 
