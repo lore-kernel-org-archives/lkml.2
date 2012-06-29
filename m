@@ -1,63 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349Ab2F2Vlr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 17:41:47 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:55850 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732Ab2F2Vlp (ORCPT
+	id S1751529Ab2F2Vn6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 17:43:58 -0400
+Received: from exprod6og115.obsmtp.com ([64.18.1.35]:36897 "EHLO
+	exprod6og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab2F2Vn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 17:41:45 -0400
-Message-ID: <1341005929.2194.9.camel@falcor.watson.ibm.com>
-Subject: Re: [PATCH 0/4] Was: deferring __fput()
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        ". James Morris" <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Date: Fri, 29 Jun 2012 17:38:49 -0400
-In-Reply-To: <20120629174130.GY14083@ZenIV.linux.org.uk>
-References: <20120623210141.GK14083@ZenIV.linux.org.uk>
-	 <20120624041652.GN14083@ZenIV.linux.org.uk>
-	 <20120624153310.GB24596@redhat.com>
-	 <20120625060357.GT14083@ZenIV.linux.org.uk>
-	 <20120625151812.GA16062@redhat.com> <20120627183721.GA23086@redhat.com>
-	 <20120628043836.GW14083@ZenIV.linux.org.uk>
-	 <1340947838.2293.2.camel@falcor>
-	 <20120629083311.GX14083@ZenIV.linux.org.uk>
-	 <1340974925.2309.13.camel@falcor>
-	 <20120629174130.GY14083@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12062921-2398-0000-0000-000008061FAF
+	Fri, 29 Jun 2012 17:43:56 -0400
+Message-ID: <6.2.5.6.2.20120629140909.04bb0a40@adobe.com>
+X-Mailer: QUALCOMM Windows Eudora Version 6.2.5.6
+Date: Fri, 29 Jun 2012 14:43:06 -0700
+To: Christof Meerwald <cmeerw@cmeerw.org>
+From: "Paton J. Lewis" <palewis@adobe.com>
+Subject: Re: [PATCH] epoll: Improved support for multi-threaded clients
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, Jason Baron <jbaron@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Holland <pholland@adobe.com>,
+        Davide Libenzi <davidel@xmailserver.org>
+In-Reply-To: <20120619181711.GE1281@edge.cmeerw.net>
+References: <F044A95E1307394EBA6055B1B7144CD2010CFB1B748F@NAMBX02.corp.adobe.com>
+ <20120616184707.GA22656@edge.cmeerw.net>
+ <6.2.5.6.2.20120618161807.031eb6c8@adobe.com>
+ <20120619181711.GE1281@edge.cmeerw.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-29 at 18:41 +0100, Al Viro wrote:
-> On Fri, Jun 29, 2012 at 09:02:05AM -0400, Mimi Zohar wrote:
-> 
-> > In addition to failing with my tailored .config (eg. IMA, TPM builtin),
-> > it fails with config-3.4.2-1.fc16.x86_64, with new default options,
-> > running on a Lenovo W520.
-> > 
-> > /dev/sda7 on / type ext4 (rw,relatime,seclabel,i_version,data=ordered)
-> 
-> Lovely...  Smells like something making dracut unhappy.  Does it say
-> anything interesting when booting with rdinitdebug in command line?
-> What happens with rdshell in there?
-> 
-> I don't have easily accessible Fedora boxen at the moment and it does
-> look like something fishy going on while initramfs stuff runs...
+At 6/19/2012 11:17 AM, Christof Meerwald wrote:
+>Hi Paton,
+>
+>On Mon, Jun 18, 2012 at 04:24:35PM -0700, Paton J. Lewis wrote:
+> > We believe that EPOLLONESHOT is required in order to make any
+> > sensible use of calling epoll_wait on a single epoll set
+> > concurrently in multiple threads.
+>
+>I guess we have to disagree here - though it might be more difficult.
+>
+>
+> > >On Mon, 11 Jun 2012 15:34:49 -0700, Paton Lewis wrote:
+> > >> This patch introduces the new epoll_ctl command EPOLL_CTL_DISABLE, which
+> > >> disables the associated epoll item and returns -EBUSY if the
+> > >epoll item is not
+> > >> currently in the epoll ready queue. This allows multiple 
+> threads to use a
+> > >> mutex to determine when it is safe to delete an epoll item and
+> > >its associated
+> > >> resources. This allows epoll items to be deleted and closed 
+> efficiently and
+> > >> without error.
+>
+>Maybe I am missing something here (as I am not really familiar with
+>the kernel internals), but I don't really understand the logic behind
+>your patch. Isn't the "expected" case that the item is not on the
+>ready list and no I/O is being processed for that item?
 
-No difference with rdinitdebug, rdshell, but the message 
-"ata5: SATA link down (SStatus 0 SControl 300)" prior to "Freeing unused
-kernel memory... ", "Failed to execute /init" and the trace back,
-probably helps.  Don't know how I missed that.
+Consider the case where we want to have a set of threads waiting for 
+'write' events on a set of pipes or sockets. We have no control over 
+when code on the other side of a pipe or socket might write into it, 
+and so have no control over when one of the threads calling 
+epoll_wait will receive events relative to the timing of the thread 
+that is attempting to cancel the pending read operation.
 
-Mimi
+I believe there is no "expected" case, because the probability for an 
+item to be on the ready list is a complex function of the number of 
+file descriptors being monitored, the frequency at which those 
+descriptors receive events, the number of threads calling epoll_wait, 
+and the complexity of the code responding to events.
+
+Therefore for some clients of epoll it will be the case that items 
+will often be on the ready list, and for others it will not.
+
+>So I think instead of checking for the item being on the ready list,
+>checking for the event mask would make more sense for me, e.g.
+>
+>   if (!(epi->event.events & ~EP_PRIVATE_BITS))
+
+I think that would be fine. However, the inlined function 
+ep_is_linked boils down to a call to the inline function list_empty, 
+which is just a single comparison. I haven't compared the 
+disassembly, but I would expect the two methods to be roughly 
+equivalent in terms of performance. Given that the operation of 
+deleting an epoll item is likely to be an exceptional circumstance 
+and therefore not performance-critical, would it be better to test 
+against ep_is_linked for clarity's sake in the code?
+
+However, I believe these discussions are rendered moot by your 
+suggestion below:
+
+
+>But, taking one step back - wouldn't an alternative approach be to add
+>some mechanism to allow a thread to post a user-event for an fd? So in
+>delete_epoll_item you would post a user event (e.g. EPOLLUSER) for the
+>fd which you can then handle in your epoll_wait processing thread -
+>with no additional synchronisation necessary.
+
+I think this is an excellent suggestion, and in fact your proposal is 
+more similar to what Windows provides when solving this problem. I'll 
+test this idea out with our code and get back to you. Is there an 
+existing kernel technique that you would recommend for posting a user 
+event for an fd, or should I explore using epoll_ctl with EPOLL_CTL_MOD?
+
+I apologize in advance for any delay in responding to you; our office 
+is closed next week.
+
+Thank you,
+Pat
+
+>However, this would still require EPOLLONESHOT to be useful for memory
+>management.
+>
+>
+>Christof
+>
+>--
+>
+>http://cmeerw.org                              sip:cmeerw at cmeerw.org
+>mailto:cmeerw at cmeerw.org                   xmpp:cmeerw at cmeerw.org
 
