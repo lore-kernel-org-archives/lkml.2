@@ -1,228 +1,490 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab2F2Njt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 09:39:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45519 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932149Ab2F2NdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 09:33:05 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 12/16] netvm: Set PF_MEMALLOC as appropriate during SKB processing
-Date: Fri, 29 Jun 2012 14:32:43 +0100
-Message-Id: <1340976767-5737-13-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1340976767-5737-1-git-send-email-mgorman@suse.de>
-References: <1340976767-5737-1-git-send-email-mgorman@suse.de>
+	id S932510Ab2F2NkK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 09:40:10 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:54921 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932179Ab2F2NkG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 09:40:06 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av4EAD+v7U9bdWOb/2dsb2JhbABFhVqwfYEHghkBBSMECwFGECUCJgICVwcSiA+ofJM9gSCPD4ESA5UzkAOCYYFUIg
+X-IronPort-AV: E=Sophos;i="4.77,498,1336341600"; 
+   d="scan'208";a="925260643"
+From: =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
+To: cascardo@holoscopio.com, don@syst.com.br, mjg@redhat.com
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
+Subject: [PATCH 1/1 v2] classmate-laptop: Add support for Classmate V4 accelerometer.
+Date: Fri, 29 Jun 2012 15:39:48 +0200
+Message-Id: <39ac42c709e498fbef4f0f0f24edc5331e5f4473.1340976795.git.magomez@igalia.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1340976795.git.magomez@igalia.com>
+References: <cover.1340971993.git.magomez@igalia.com>
+ <cover.1340976795.git.magomez@igalia.com>
+In-Reply-To: <cover.1340976795.git.magomez@igalia.com>
+References: <cover.1340976795.git.magomez@igalia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to make sure pfmemalloc packets receive all memory
-needed to proceed, ensure processing of pfmemalloc SKBs happens
-under PF_MEMALLOC. This is limited to a subset of protocols that
-are expected to be used for writing to swap. Taps are not allowed to
-use PF_MEMALLOC as these are expected to communicate with userspace
-processes which could be paged out.
+Classmate V4 laptop includes a new accelerometer that can't be handled by
+previous driver. This patch adds a new driver to handle it.
 
-[a.p.zijlstra@chello.nl: Ideas taken from various patches]
-[jslaby@suse.cz: Lock imbalance fix]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Miguel Gómez <magomez@igalia.com>
 ---
- include/net/sock.h |    5 +++++
- net/core/dev.c     |   53 ++++++++++++++++++++++++++++++++++++++++++++++------
- net/core/sock.c    |   16 ++++++++++++++++
- 3 files changed, 68 insertions(+), 6 deletions(-)
+ drivers/platform/x86/classmate-laptop.c |  400 ++++++++++++++++++++++++++++++-
+ 1 file changed, 398 insertions(+), 2 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 7c3c9d3..767c443 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -754,8 +754,13 @@ static inline __must_check int sk_add_backlog(struct sock *sk, struct sk_buff *s
- 	return 0;
+diff --git a/drivers/platform/x86/classmate-laptop.c b/drivers/platform/x86/classmate-laptop.c
+index 94f93b6..5de01bc 100644
+--- a/drivers/platform/x86/classmate-laptop.c
++++ b/drivers/platform/x86/classmate-laptop.c
+@@ -31,12 +31,18 @@ MODULE_LICENSE("GPL");
+ 
+ struct cmpc_accel {
+ 	int sensitivity;
++	int g_select;
++	int inputdev_state;
+ };
+ 
+-#define CMPC_ACCEL_SENSITIVITY_DEFAULT		5
++#define CMPC_ACCEL_DEV_STATE_CLOSED	0
++#define CMPC_ACCEL_DEV_STATE_OPEN	1
+ 
++#define CMPC_ACCEL_SENSITIVITY_DEFAULT		5
++#define CMPC_ACCEL_G_SELECT_DEFAULT		0
+ 
+ #define CMPC_ACCEL_HID		"ACCE0000"
++#define CMPC_ACCEL_HID_V4	"ACCE0001"
+ #define CMPC_TABLET_HID		"TBLT0000"
+ #define CMPC_IPML_HID	"IPML200"
+ #define CMPC_KEYS_HID		"FnBT0000"
+@@ -76,7 +82,388 @@ static int cmpc_remove_acpi_notify_device(struct acpi_device *acpi)
  }
  
-+extern int __sk_backlog_rcv(struct sock *sk, struct sk_buff *skb);
-+
- static inline int sk_backlog_rcv(struct sock *sk, struct sk_buff *skb)
- {
-+	if (sk_memalloc_socks() && skb_pfmemalloc(skb))
-+		return __sk_backlog_rcv(sk, skb);
-+
- 	return sk->sk_backlog_rcv(sk, skb);
- }
- 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 9da3b69..2ce93f8 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3138,6 +3138,23 @@ void netdev_rx_handler_unregister(struct net_device *dev)
- }
- EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
- 
-+/*
-+ * Limit the use of PFMEMALLOC reserves to those protocols that implement
-+ * the special handling of PFMEMALLOC skbs.
+ /*
+- * Accelerometer code.
++ * Accelerometer code for Classmate V4
 + */
-+static bool skb_pfmemalloc_protocol(struct sk_buff *skb)
++static acpi_status cmpc_start_accel_v4(acpi_handle handle)
 +{
-+	switch (skb->protocol) {
-+	case __constant_htons(ETH_P_ARP):
-+	case __constant_htons(ETH_P_IP):
-+	case __constant_htons(ETH_P_IPV6):
-+	case __constant_htons(ETH_P_8021Q):
-+		return true;
-+	default:
-+		return false;
++	union acpi_object param[4];
++	struct acpi_object_list input;
++	acpi_status status;
++
++	param[0].type = ACPI_TYPE_INTEGER;
++	param[0].integer.value = 0x3;
++	param[1].type = ACPI_TYPE_INTEGER;
++	param[1].integer.value = 0;
++	param[2].type = ACPI_TYPE_INTEGER;
++	param[2].integer.value = 0;
++	param[3].type = ACPI_TYPE_INTEGER;
++	param[3].integer.value = 0;
++	input.count = 4;
++	input.pointer = param;
++	status = acpi_evaluate_object(handle, "ACMD", &input, NULL);
++	return status;
++}
++
++static acpi_status cmpc_stop_accel_v4(acpi_handle handle)
++{
++	union acpi_object param[4];
++	struct acpi_object_list input;
++	acpi_status status;
++
++	param[0].type = ACPI_TYPE_INTEGER;
++	param[0].integer.value = 0x4;
++	param[1].type = ACPI_TYPE_INTEGER;
++	param[1].integer.value = 0;
++	param[2].type = ACPI_TYPE_INTEGER;
++	param[2].integer.value = 0;
++	param[3].type = ACPI_TYPE_INTEGER;
++	param[3].integer.value = 0;
++	input.count = 4;
++	input.pointer = param;
++	status = acpi_evaluate_object(handle, "ACMD", &input, NULL);
++	return status;
++}
++
++static acpi_status cmpc_accel_set_sensitivity_v4(acpi_handle handle, int val)
++{
++	union acpi_object param[4];
++	struct acpi_object_list input;
++
++	param[0].type = ACPI_TYPE_INTEGER;
++	param[0].integer.value = 0x02;
++	param[1].type = ACPI_TYPE_INTEGER;
++	param[1].integer.value = val;
++	param[2].type = ACPI_TYPE_INTEGER;
++	param[2].integer.value = 0;
++	param[3].type = ACPI_TYPE_INTEGER;
++	param[3].integer.value = 0;
++	input.count = 4;
++	input.pointer = param;
++	return acpi_evaluate_object(handle, "ACMD", &input, NULL);
++}
++
++static acpi_status cmpc_accel_set_g_select_v4(acpi_handle handle, int val)
++{
++	union acpi_object param[4];
++	struct acpi_object_list input;
++
++	param[0].type = ACPI_TYPE_INTEGER;
++	param[0].integer.value = 0x05;
++	param[1].type = ACPI_TYPE_INTEGER;
++	param[1].integer.value = val;
++	param[2].type = ACPI_TYPE_INTEGER;
++	param[2].integer.value = 0;
++	param[3].type = ACPI_TYPE_INTEGER;
++	param[3].integer.value = 0;
++	input.count = 4;
++	input.pointer = param;
++	return acpi_evaluate_object(handle, "ACMD", &input, NULL);
++}
++
++static acpi_status cmpc_get_accel_v4(acpi_handle handle,
++				     int16_t *x,
++				     int16_t *y,
++				     int16_t *z)
++{
++	union acpi_object param[4];
++	struct acpi_object_list input;
++	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
++	int16_t *locs;
++	acpi_status status;
++
++	param[0].type = ACPI_TYPE_INTEGER;
++	param[0].integer.value = 0x01;
++	param[1].type = ACPI_TYPE_INTEGER;
++	param[1].integer.value = 0;
++	param[2].type = ACPI_TYPE_INTEGER;
++	param[2].integer.value = 0;
++	param[3].type = ACPI_TYPE_INTEGER;
++	param[3].integer.value = 0;
++	input.count = 4;
++	input.pointer = param;
++	status = acpi_evaluate_object(handle, "ACMD", &input, &output);
++	if (ACPI_SUCCESS(status)) {
++		union acpi_object *obj;
++		obj = output.pointer;
++		locs = (int16_t *) obj->buffer.pointer;
++		*x = locs[0];
++		*y = locs[1];
++		*z = locs[2];
++		kfree(output.pointer);
++	}
++	return status;
++}
++
++static void cmpc_accel_handler_v4(struct acpi_device *dev, u32 event)
++{
++	if (event == 0x81) {
++		int16_t x, y, z;
++		acpi_status status;
++
++		status = cmpc_get_accel_v4(dev->handle, &x, &y, &z);
++		if (ACPI_SUCCESS(status)) {
++			struct input_dev *inputdev = dev_get_drvdata(&dev->dev);
++
++			input_report_abs(inputdev, ABS_X, x);
++			input_report_abs(inputdev, ABS_Y, y);
++			input_report_abs(inputdev, ABS_Z, z);
++			input_sync(inputdev);
++		}
 +	}
 +}
 +
- static int __netif_receive_skb(struct sk_buff *skb)
- {
- 	struct packet_type *ptype, *pt_prev;
-@@ -3147,14 +3164,27 @@ static int __netif_receive_skb(struct sk_buff *skb)
- 	bool deliver_exact = false;
- 	int ret = NET_RX_DROP;
- 	__be16 type;
-+	unsigned long pflags = current->flags;
- 
- 	net_timestamp_check(!netdev_tstamp_prequeue, skb);
- 
- 	trace_netif_receive_skb(skb);
- 
-+	/*
-+	 * PFMEMALLOC skbs are special, they should
-+	 * - be delivered to SOCK_MEMALLOC sockets only
-+	 * - stay away from userspace
-+	 * - have bounded memory usage
-+	 *
-+	 * Use PF_MEMALLOC as this saves us from propagating the allocation
-+	 * context down to all allocation sites.
-+	 */
-+	if (sk_memalloc_socks() && skb_pfmemalloc(skb))
-+		current->flags |= PF_MEMALLOC;
-+
- 	/* if we've gotten here through NAPI, check netpoll */
- 	if (netpoll_receive_skb(skb))
--		return NET_RX_DROP;
-+		goto out;
- 
- 	if (!skb->skb_iif)
- 		skb->skb_iif = skb->dev->ifindex;
-@@ -3175,7 +3205,7 @@ another_round:
- 	if (skb->protocol == cpu_to_be16(ETH_P_8021Q)) {
- 		skb = vlan_untag(skb);
- 		if (unlikely(!skb))
--			goto out;
-+			goto unlock;
- 	}
- 
- #ifdef CONFIG_NET_CLS_ACT
-@@ -3185,6 +3215,9 @@ another_round:
- 	}
- #endif
- 
-+	if (sk_memalloc_socks() && skb_pfmemalloc(skb))
-+		goto skip_taps;
-+
- 	list_for_each_entry_rcu(ptype, &ptype_all, list) {
- 		if (!ptype->dev || ptype->dev == skb->dev) {
- 			if (pt_prev)
-@@ -3193,13 +3226,18 @@ another_round:
- 		}
- 	}
- 
-+skip_taps:
- #ifdef CONFIG_NET_CLS_ACT
- 	skb = handle_ing(skb, &pt_prev, &ret, orig_dev);
- 	if (!skb)
--		goto out;
-+		goto unlock;
- ncls:
- #endif
- 
-+	if (sk_memalloc_socks() && skb_pfmemalloc(skb)
-+				&& !skb_pfmemalloc_protocol(skb))
-+		goto drop;
-+
- 	rx_handler = rcu_dereference(skb->dev->rx_handler);
- 	if (vlan_tx_tag_present(skb)) {
- 		if (pt_prev) {
-@@ -3209,7 +3247,7 @@ ncls:
- 		if (vlan_do_receive(&skb, !rx_handler))
- 			goto another_round;
- 		else if (unlikely(!skb))
--			goto out;
-+			goto unlock;
- 	}
- 
- 	if (rx_handler) {
-@@ -3219,7 +3257,7 @@ ncls:
- 		}
- 		switch (rx_handler(&skb)) {
- 		case RX_HANDLER_CONSUMED:
--			goto out;
-+			goto unlock;
- 		case RX_HANDLER_ANOTHER:
- 			goto another_round;
- 		case RX_HANDLER_EXACT:
-@@ -3249,6 +3287,7 @@ ncls:
- 	if (pt_prev) {
- 		ret = pt_prev->func(skb, skb->dev, pt_prev, orig_dev);
- 	} else {
-+drop:
- 		atomic_long_inc(&skb->dev->rx_dropped);
- 		kfree_skb(skb);
- 		/* Jamal, now you will not able to escape explaining
-@@ -3257,8 +3296,10 @@ ncls:
- 		ret = NET_RX_DROP;
- 	}
- 
--out:
-+unlock:
- 	rcu_read_unlock();
-+out:
-+	tsk_restore_flags(current, pflags, PF_MEMALLOC);
- 	return ret;
- }
- 
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 159dccc..c551563 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -298,6 +298,22 @@ void sk_clear_memalloc(struct sock *sk)
- }
- EXPORT_SYMBOL_GPL(sk_clear_memalloc);
- 
-+int __sk_backlog_rcv(struct sock *sk, struct sk_buff *skb)
++static ssize_t cmpc_accel_sensitivity_show_v4(struct device *dev,
++					      struct device_attribute *attr,
++					      char *buf)
 +{
-+	int ret;
-+	unsigned long pflags = current->flags;
++	struct acpi_device *acpi;
++	struct input_dev *inputdev;
++	struct cmpc_accel *accel;
 +
-+	/* these should have been dropped before queueing */
-+	BUG_ON(!sock_flag(sk, SOCK_MEMALLOC));
++	acpi = to_acpi_device(dev);
++	inputdev = dev_get_drvdata(&acpi->dev);
++	accel = dev_get_drvdata(&inputdev->dev);
 +
-+	current->flags |= PF_MEMALLOC;
-+	ret = sk->sk_backlog_rcv(sk, skb);
-+	tsk_restore_flags(current, pflags, PF_MEMALLOC);
-+
-+	return ret;
++	return sprintf(buf, "%d\n", accel->sensitivity);
 +}
-+EXPORT_SYMBOL(__sk_backlog_rcv);
 +
- #if defined(CONFIG_CGROUPS)
- #if !defined(CONFIG_NET_CLS_CGROUP)
- int net_cls_subsys_id = -1;
++static ssize_t cmpc_accel_sensitivity_store_v4(struct device *dev,
++					       struct device_attribute *attr,
++					       const char *buf, size_t count)
++{
++	struct acpi_device *acpi;
++	struct input_dev *inputdev;
++	struct cmpc_accel *accel;
++	unsigned long sensitivity;
++	int r;
++
++	acpi = to_acpi_device(dev);
++	inputdev = dev_get_drvdata(&acpi->dev);
++	accel = dev_get_drvdata(&inputdev->dev);
++
++	r = kstrtoul(buf, 0, &sensitivity);
++	if (r)
++		return r;
++
++	/* sensitivity must be between 1 and 127 */
++	if (sensitivity < 1 || sensitivity > 127)
++		return -EINVAL;
++
++	accel->sensitivity = sensitivity;
++	cmpc_accel_set_sensitivity_v4(acpi->handle, sensitivity);
++
++	return strnlen(buf, count);
++}
++
++static struct device_attribute cmpc_accel_sensitivity_attr_v4 = {
++	.attr = { .name = "sensitivity", .mode = 0660 },
++	.show = cmpc_accel_sensitivity_show_v4,
++	.store = cmpc_accel_sensitivity_store_v4
++};
++
++static ssize_t cmpc_accel_g_select_show_v4(struct device *dev,
++					   struct device_attribute *attr,
++					   char *buf)
++{
++	struct acpi_device *acpi;
++	struct input_dev *inputdev;
++	struct cmpc_accel *accel;
++
++	acpi = to_acpi_device(dev);
++	inputdev = dev_get_drvdata(&acpi->dev);
++	accel = dev_get_drvdata(&inputdev->dev);
++
++	return sprintf(buf, "%d\n", accel->g_select);
++}
++
++static ssize_t cmpc_accel_g_select_store_v4(struct device *dev,
++					    struct device_attribute *attr,
++					    const char *buf, size_t count)
++{
++	struct acpi_device *acpi;
++	struct input_dev *inputdev;
++	struct cmpc_accel *accel;
++	unsigned long g_select;
++	int r;
++
++	acpi = to_acpi_device(dev);
++	inputdev = dev_get_drvdata(&acpi->dev);
++	accel = dev_get_drvdata(&inputdev->dev);
++
++	r = kstrtoul(buf, 0, &g_select);
++	if (r)
++		return r;
++
++	/* 0 means 1.5g, 1 means 6g, everything else is wrong */
++	if (g_select != 0 && g_select != 1)
++		return -EINVAL;
++
++	accel->g_select = g_select;
++	cmpc_accel_set_g_select_v4(acpi->handle, g_select);
++
++	return strnlen(buf, count);
++}
++
++static struct device_attribute cmpc_accel_g_select_attr_v4 = {
++	.attr = { .name = "g_select", .mode = 0660 },
++	.show = cmpc_accel_g_select_show_v4,
++	.store = cmpc_accel_g_select_store_v4
++};
++
++static int cmpc_accel_open_v4(struct input_dev *input)
++{
++	struct acpi_device *acpi;
++	struct cmpc_accel *accel;
++
++	acpi = to_acpi_device(input->dev.parent);
++	accel = dev_get_drvdata(&input->dev);
++
++	cmpc_accel_set_sensitivity_v4(acpi->handle, accel->sensitivity);
++	cmpc_accel_set_g_select_v4(acpi->handle, accel->g_select);
++
++	if (ACPI_SUCCESS(cmpc_start_accel_v4(acpi->handle))) {
++		accel->inputdev_state = CMPC_ACCEL_DEV_STATE_OPEN;
++		return 0;
++	}
++	return -EIO;
++}
++
++static void cmpc_accel_close_v4(struct input_dev *input)
++{
++	struct acpi_device *acpi;
++	struct cmpc_accel *accel;
++
++	acpi = to_acpi_device(input->dev.parent);
++	accel = dev_get_drvdata(&input->dev);
++
++	cmpc_stop_accel_v4(acpi->handle);
++	accel->inputdev_state = CMPC_ACCEL_DEV_STATE_CLOSED;
++}
++
++static void cmpc_accel_idev_init_v4(struct input_dev *inputdev)
++{
++	set_bit(EV_ABS, inputdev->evbit);
++	input_set_abs_params(inputdev, ABS_X, -255, 255, 16, 0);
++	input_set_abs_params(inputdev, ABS_Y, -255, 255, 16, 0);
++	input_set_abs_params(inputdev, ABS_Z, -255, 255, 16, 0);
++	inputdev->open = cmpc_accel_open_v4;
++	inputdev->close = cmpc_accel_close_v4;
++}
++
++static int cmpc_accel_suspend_v4(struct acpi_device *acpi, pm_message_t state)
++{
++	struct input_dev *inputdev;
++	struct cmpc_accel *accel;
++
++	inputdev = dev_get_drvdata(&acpi->dev);
++	accel = dev_get_drvdata(&inputdev->dev);
++
++	if (accel->inputdev_state == CMPC_ACCEL_DEV_STATE_OPEN)
++		return cmpc_stop_accel_v4(acpi->handle);
++
++	return 0;
++}
++
++static int cmpc_accel_resume_v4(struct acpi_device *acpi)
++{
++
++	struct input_dev *inputdev;
++	struct cmpc_accel *accel;
++
++	inputdev = dev_get_drvdata(&acpi->dev);
++	accel = dev_get_drvdata(&inputdev->dev);
++
++	if (accel->inputdev_state == CMPC_ACCEL_DEV_STATE_OPEN) {
++		cmpc_accel_set_sensitivity_v4(acpi->handle, accel->sensitivity);
++		cmpc_accel_set_g_select_v4(acpi->handle, accel->g_select);
++
++		if (ACPI_FAILURE(cmpc_start_accel_v4(acpi->handle)))
++			return -EIO;
++	}
++
++	return 0;
++}
++
++static int cmpc_accel_add_v4(struct acpi_device *acpi)
++{
++	int error;
++	struct input_dev *inputdev;
++	struct cmpc_accel *accel;
++
++	accel = kmalloc(sizeof(*accel), GFP_KERNEL);
++	if (!accel)
++		return -ENOMEM;
++
++	accel->inputdev_state = CMPC_ACCEL_DEV_STATE_CLOSED;
++
++	accel->sensitivity = CMPC_ACCEL_SENSITIVITY_DEFAULT;
++	cmpc_accel_set_sensitivity_v4(acpi->handle, accel->sensitivity);
++
++	error = device_create_file(&acpi->dev, &cmpc_accel_sensitivity_attr_v4);
++	if (error)
++		goto failed_sensitivity;
++
++	accel->g_select = CMPC_ACCEL_G_SELECT_DEFAULT;
++	cmpc_accel_set_g_select_v4(acpi->handle, accel->g_select);
++
++	error = device_create_file(&acpi->dev, &cmpc_accel_g_select_attr_v4);
++	if (error)
++		goto failed_g_select;
++
++	error = cmpc_add_acpi_notify_device(acpi, "cmpc_accel_v4",
++					    cmpc_accel_idev_init_v4);
++	if (error)
++		goto failed_input;
++
++	inputdev = dev_get_drvdata(&acpi->dev);
++	dev_set_drvdata(&inputdev->dev, accel);
++
++	return 0;
++
++failed_input:
++	device_remove_file(&acpi->dev, &cmpc_accel_g_select_attr_v4);
++failed_g_select:
++	device_remove_file(&acpi->dev, &cmpc_accel_sensitivity_attr_v4);
++failed_sensitivity:
++	kfree(accel);
++	return error;
++}
++
++static int cmpc_accel_remove_v4(struct acpi_device *acpi, int type)
++{
++	struct input_dev *inputdev;
++	struct cmpc_accel *accel;
++
++	inputdev = dev_get_drvdata(&acpi->dev);
++	accel = dev_get_drvdata(&inputdev->dev);
++
++	device_remove_file(&acpi->dev, &cmpc_accel_sensitivity_attr_v4);
++	device_remove_file(&acpi->dev, &cmpc_accel_g_select_attr_v4);
++	return cmpc_remove_acpi_notify_device(acpi);
++}
++
++static const struct acpi_device_id cmpc_accel_device_ids_v4[] = {
++	{CMPC_ACCEL_HID_V4, 0},
++	{"", 0}
++};
++
++static struct acpi_driver cmpc_accel_acpi_driver_v4 = {
++	.owner = THIS_MODULE,
++	.name = "cmpc_accel_v4",
++	.class = "cmpc_accel_v4",
++	.ids = cmpc_accel_device_ids_v4,
++	.ops = {
++		.add = cmpc_accel_add_v4,
++		.remove = cmpc_accel_remove_v4,
++		.notify = cmpc_accel_handler_v4,
++		.suspend = cmpc_accel_suspend_v4,
++		.resume = cmpc_accel_resume_v4,
++	}
++};
++
++
++/*
++ * Accelerometer code for Classmate versions prior to V4
+  */
+ static acpi_status cmpc_start_accel(acpi_handle handle)
+ {
+@@ -723,8 +1110,15 @@ static int cmpc_init(void)
+ 	if (r)
+ 		goto failed_accel;
+ 
++	r = acpi_bus_register_driver(&cmpc_accel_acpi_driver_v4);
++	if (r)
++		goto failed_accel_v4;
++
+ 	return r;
+ 
++failed_accel_v4:
++	acpi_bus_unregister_driver(&cmpc_accel_acpi_driver);
++
+ failed_accel:
+ 	acpi_bus_unregister_driver(&cmpc_tablet_acpi_driver);
+ 
+@@ -740,6 +1134,7 @@ failed_keys:
+ 
+ static void cmpc_exit(void)
+ {
++	acpi_bus_unregister_driver(&cmpc_accel_acpi_driver_v4);
+ 	acpi_bus_unregister_driver(&cmpc_accel_acpi_driver);
+ 	acpi_bus_unregister_driver(&cmpc_tablet_acpi_driver);
+ 	acpi_bus_unregister_driver(&cmpc_ipml_acpi_driver);
+@@ -751,6 +1146,7 @@ module_exit(cmpc_exit);
+ 
+ static const struct acpi_device_id cmpc_device_ids[] = {
+ 	{CMPC_ACCEL_HID, 0},
++	{CMPC_ACCEL_HID_V4, 0},
+ 	{CMPC_TABLET_HID, 0},
+ 	{CMPC_IPML_HID, 0},
+ 	{CMPC_KEYS_HID, 0},
 -- 
-1.7.9.2
+1.7.9.5
 
