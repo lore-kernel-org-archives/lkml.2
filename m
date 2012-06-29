@@ -1,169 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab2F2LZL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 07:25:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33830 "EHLO mx2.suse.de"
+	id S1752510Ab2F2La4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 07:30:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9104 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751162Ab2F2LZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 07:25:09 -0400
-Date: Fri, 29 Jun 2012 12:25:06 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: [MMTests] IO metadata on XFS
-Message-ID: <20120629112505.GF14154@suse.de>
-References: <20120620113252.GE4011@suse.de>
- <20120629111932.GA14154@suse.de>
+	id S1750991Ab2F2Laz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 07:30:55 -0400
+Date: Fri, 29 Jun 2012 13:30:12 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>, acme@redhat.com, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, gorcunov@openvz.org,
+        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
+        fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH 03/23] perf: Add ability to attach user level registers
+ dump to sample
+Message-ID: <20120629113012.GF6978@krava.brq.redhat.com>
+References: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
+ <1340120894-9465-4-git-send-email-jolsa@redhat.com>
+ <20120627151059.GG20638@somewhere.redhat.com>
+ <CABPqkBTdL7rt4YF1SYdo4N7BaK3TOvXJqfs3Te2Asmm_-jA_Ag@mail.gmail.com>
+ <20120627152359.GI20638@somewhere.redhat.com>
+ <1340810729.10063.66.camel@twins>
+ <20120627153002.GJ20638@somewhere.redhat.com>
+ <20120629075043.GD940@krava.brq.redhat.com>
+ <20120629112347.GB2110@somewhere.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120629111932.GA14154@suse.de>
+In-Reply-To: <20120629112347.GB2110@somewhere.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Configuration:	global-dhp__io-metadata-xfs
-Benchmarks:	dbench3, fsmark-single, fsmark-threaded
+On Fri, Jun 29, 2012 at 01:23:51PM +0200, Frederic Weisbecker wrote:
 
-Summary
-=======
-Most of the figures look good and in general there has been consistent good
-performance from XFS. However, fsmark-single is showing a severe performance
-dip in a few cases somewhere between 3.1 and 3.4. fs-mark running a single
-thread took a particularly bad dive in 3.4 for two machines that is worth
-examining closer. Unfortunately it is harder to easy conclusions as the
-gains/losses are not consistent between machines which may be related to
-the available number of CPU threads.
+SNIP
 
-Benchmark notes
-===============
+> > 
+> > well, thats basically what we have now..
+> > 
+> > when the kernel is compiled for 32 bits, the bitmask allows to store:
+> > 
+> > ax, bx, cx, dx, si, di, bp, sp, ip, flags, cs, ds, es, fs, gs, ss
+> > 
+> > and when  kernel is compiled for 64 bits, the bitmask adds 64bit stuff:
+> > 
+> > ax, bx, cx, dx, si, di, bp, sp, ip, flags, cs, ds, es, fs, gs, ss
+> > r8, r9, r10, r11, r12, r13, r14, r15
+> > 
+> > 
+> > - 32 bits kernel is straightforward
+> > 
+> > - for 64 bits kernel we store whatever bitmask instructs to,
+> >   regardless if we are in compat task or native 64,
+> >   user space will deal with that in post processing
+> 
+> I can think of the crazy scenario where perf itself is compat and there
+> are 64 bits apps that will be profiled by perf. It means perf must check
+> if the kernel is 32 or 64 and depending on this, request r8-r15 or not.
+> 
+> May be that's just too unlikely to matter.
 
-mkfs was run on system startup.
-mkfs parameters -f -d agcount=8
-mount options inode64,delaylog,logbsize=262144,nobarrier for the most part.
-	On kernels to old to support delaylog was removed. On kernels
-	where it was the default, it was specified and the warning ignored.
+hopefully ;) anyway the kernel interface stays the same in this case as well
 
-dbench3 was chosen as it's metadata intensive.
-  o Duration was 180 seconds
-  o OSYNC, OSYNC_DIRECTORY and FSYNC were all off
+we can add this check later when/if we deal with compat tasks
 
-  As noted in the MMTests, dbench3 can be a random number generator
-  particularly when run in asynchronous mode. Even with the limitations,
-  it can be useful as an early warning system and as it's still used by
-  QA teams it's still worth keeping an eye on.
-
-FSMark
-  o Parallel directories were used
-  o 1 Thread per CPU
-  o 0 Filesize
-  o 225 directories
-  o 22500 files per directory
-  o 50000 files per iteration
-  o 15 iterations
-  Single: ./fs_mark  -d  /tmp/fsmark-9227/1  -D  225  -N  22500  -n  50000  -L  15  -S0  -s  0
-  Thread: ./fs_mark  -d  /tmp/fsmark-9407/1  -d  /tmp/fsmark-9407/2  -D  225  -N  22500  -n  25000  -L  15  -S0  -s  0
- 
-  FSMark is a more realistic indicator of metadata intensive workloads.
-
-
-===========================================================
-Machine:	arnold
-Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__io-metadata-xfs/arnold/comparison.html
-Arch:		x86
-CPUs:		1 socket, 2 threads
-Model:		Pentium 4
-Disk:		Single Rotary Disk
-Status:		Great
-===========================================================
-
-dbench
-------
-  XFS is showing steady improvements with a large gain for single client
-  in 2.6.39 and more or less retained since then. This is also true for
-  higher number of clients although 64 clients was suspiciously poor even
-  though 128 clients looked better. I didn't re-examine the raw data to
-  see why.
-
-  In general, dbench is looking very good.
-
-fsmark-single
--------------
-  Again, this is looking good. Files/sec has improved slightly with the
-  exception of a small dip in 3.2 and 3.3 which may be due to IO-Less
-  dirty throttling.
-
-  Overhead measurements are a bit all over the place. Not clear if
-  this is cause for concern or not.
-
-fsmark-threaded
----------------
-  Improved since 2.6.32 and has been steadily good for some time. Overhead
-  measurements are all over the place. Again, not clear if this is a cause
-  for concern.
-
-==========================================================
-Machine:	hydra
-Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__io-metadata-ext3/hydra/comparison.html
-Arch:		x86-64
-CPUs:		1 socket, 4 threads
-Model:		AMD Phenom II X4 940
-Disk:		Single Rotary Disk
-Status:		Ok
-==========================================================
-
-dbench
-------
-  The results here look very different to the arnold machine. This is curious
-  because the disks have similar size and performance characteristics. It is
-  doubtful that the difference is between 32 bit and 64 bit architectures.
-  The discrepency may be more due to the different number of CPUs and how
-  XFS does locking. One possibility is that fewer CPUs has the side-effect
-  of better batching of some operations but this is a case.
-
-  Figures areis showing that throughput is worse and highly variable in
-  3.4 for single clients. For higher number of clients figures look better
-  overall. There was a dip in 3.1-based kernels though for an unknown
-  reason. This does not exactly correlate with the ext3 figures although
-  it showed a dip in performance at 3.2.
-
-fsmark-single
--------------
-  While performance is better than 2.6.32, there was a dip in performance
-  in 3.3 and a very large dip in 3.4. 
-
-fsmark-threaded
----------------
-  The same dip in 3.4 is visibile when multiple threads are used but it is
-  not as severe.
-
-==========================================================
-Machine:	sandy
-Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__io-metadata-ext3/sandy/comparison.html
-Arch:		x86-64
-CPUs:		1 socket, 8 threads
-Model:		Intel Core i7-2600
-Disk:		Single Rotary Disk
-Status:		Fine
-==========================================================
-
-dbench
-------
- Like seen on other filesystems, this data shows that there was a large dip
- in performance around 3.2 for single threads. Unlike the hydra machine,
- this was recovered in 3.4. As higher number of threads are used the gains
- and losses are inconsistent making it hard to draw a solid conclusion.
-
-fsmark-single
--------------
-  This was doing great until 3.4 where there is a large drop.
-
-fsmark-threaded
----------------
-  Unlike the single threaded case, things are looking great here.
-
--- 
-Mel Gorman
-SUSE Labs
+jirka
