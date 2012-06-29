@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab2F2Ku0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 06:50:26 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:29566 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947Ab2F2KuY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 06:50:24 -0400
-Message-ID: <4FED8847.9000204@oracle.com>
-Date: Fri, 29 Jun 2012 18:49:43 +0800
-From: Junxiao Bi <junxiao.bi@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, ocfs2-devel@oss.oracle.com,
-        linux-aio@kvack.org, mfasheh@suse.com, linux-kernel@vger.kernel.org,
-        joe.jin@oracle.com, stable@vger.kernel.org, jlbec@evilplan.org
-Subject: Re: [PATCH v4 1/2] aio: make kiocb->private NUll in init_sync_kiocb()
-References: <1340788195-20623-1-git-send-email-junxiao.bi@oracle.com> <1340788195-20623-2-git-send-email-junxiao.bi@oracle.com> <20120628153956.9b7405d9.akpm@linux-foundation.org> <20120629092255.GB12521@dhcp-172-17-9-228.mtv.corp.google.com>
-In-Reply-To: <20120629092255.GB12521@dhcp-172-17-9-228.mtv.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1754616Ab2F2LDn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 07:03:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:58665 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752588Ab2F2LDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 07:03:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="186563056"
+Message-ID: <1340968069.3070.148.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH v2] ubifs: Fix build warning
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 29 Jun 2012 14:07:49 +0300
+In-Reply-To: <1340657269-8588-1-git-send-email-aletes.xgr@gmail.com>
+References: <1340657269-8588-1-git-send-email-aletes.xgr@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-jxI3kNP2xoremLEeHj8C"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2012 05:22 PM, Joel Becker wrote:
-> On Thu, Jun 28, 2012 at 03:39:56PM -0700, Andrew Morton wrote:
->> On Wed, 27 Jun 2012 17:09:54 +0800
->> Junxiao Bi <junxiao.bi@oracle.com> wrote:
->>
->>> Ocfs2 uses kiocb.*private as a flag of unsigned long size. In
->>> commit a11f7e6 ocfs2: serialize unaligned aio, the unaligned
->>> io flag is involved in it to serialize the unaligned aio. As
->>> *private is not initialized in init_sync_kiocb() of do_sync_write(),
->>> this unaligned io flag may be unexpectly set in an aligned dio.
->>> And this will cause OCFS2_I(inode)->ip_unaligned_aio decreased
->>> to -1 in ocfs2_dio_end_io(), thus the following unaligned dio
->>> will hang forever at ocfs2_aiodio_wait() in ocfs2_file_aio_write().
->>>
->>> Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
->>> Cc: stable@vger.kernel.org
->>> Acked-by: Jeff Moyer <jmoyer@redhat.com>
->>> Acked-by: Joel Becker <jlbec@evilplan.org>
->>> ---
->>>  include/linux/aio.h |    1 +
->>>  1 file changed, 1 insertion(+)
->>>
->>> diff --git a/include/linux/aio.h b/include/linux/aio.h
->>> index 2314ad8..b1a520e 100644
->>> --- a/include/linux/aio.h
->>> +++ b/include/linux/aio.h
->>> @@ -140,6 +140,7 @@ struct kiocb {
->>>  		(x)->ki_dtor = NULL;			\
->>>  		(x)->ki_obj.tsk = tsk;			\
->>>  		(x)->ki_user_data = 0;                  \
->>> +		(x)->private = NULL;			\
->>>  	} while (0)
->>>  
->>>  #define AIO_RING_MAGIC			0xa10a10a1
->> hm, that code is rather cruddy.  Pointless macromania.
-> Agreed.
->
->> If we do this:
->>
->> static inline void init_sync_kiocb(struct kiocb *kiocb, struct file *filp)
->> {
->> 	*kiocb = (struct kiocb) {
->> 			.ki_users = 1,
->> 			.ki_key = KIOCB_SYNC_KEY,
->> 			.ki_filp = filp,
->> 			.ki_obj.tsk = current,
->> 		};
->> }
->>
->> then fs/read_write.o's .text is shrunk from 9857 bytes to 9714, which
->> is rather a lot.
->>
->> But that's all rather irrelevant to your bugfix.
-> 	I like your solution.  Junxiao, if you send me that version, I'd
-> be happy to take it.
-Joel, since Andrew will feed his cleanup patch later on. Please help
-merge my patches. Though it is covered by the cleanup patch, but I think
-it's useful to merge it, at least we can see from the git log this is
-for an ocfs2 hang bug.
->
-> Joel
->
+
+--=-jxI3kNP2xoremLEeHj8C
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, 2012-06-25 at 17:47 -0300, Alexandre Pereira da Silva wrote:
+>  #include "ubifs.h"
+> +#include <linux/compiler.h>
+
+This is not needed, I've removed this chunk and pushed to
+linux-ubifs.git, thanks!
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-jxI3kNP2xoremLEeHj8C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJP7YyFAAoJECmIfjd9wqK0mkMP/iE4463WSYETj0SxmddII1k+
+9j8z6iZdM0lRPIlzIjUnmjB6gsmos4pGIm4aLltd37k2l+jlw1WJ2Bdh1k0480IC
+uf1WVmTh/8m8nJh0bm/ctOygoxqcNQjUj6rGFHK6DBk6qPJ5yKnM6GeZ9z2kNqpF
+F+8cP5n2a05mWqkmGwijJaFcbqhOJEKJgaT9y3t+bKPaYRbBowCj25MHgL1HDX0T
+a9yQiOw2/WPDcj/0FOdEe0MSN96sM/H99m2YzegVH3tv2K4zu8DpQby+C0S5x44d
+kUmgpeUHAXbtAiS/Z22fd5cgRYBZlER9A7gW9M0RaHzhPxK8D6wll2LOn9RqFQEO
+nwH2iSc6IeHQKHcg0iIasMzD9HrRwu+fjuQgNTMVqKmDydtCt4WVoWbrKX9aIGN3
+UgiwJUeo4y/QXaf8fV+9G4UpPbQo3BvT04o128V8NxcoUm1DYFdZacNjwUwP1zNX
+mEW7WBy5qPadu8+SfGYA9Kv9PVsaMe1mb943RfTKxU9PsgMcQiPi7ieZRyGTkd5j
+jMJIithaSV0JK6EQ5jMHyMUZc0j6bHfV65hmZhmtW1jPpeYeOQHyweulkqwf5yvH
+EeTKB3JAutGu3PoNo21B65SyxpkWn+TxnSC9ryjb5No+vdmfanYwUUXi777auyj1
+VJDyubZXLDFPSxP611PM
+=ve2X
+-----END PGP SIGNATURE-----
+
+--=-jxI3kNP2xoremLEeHj8C--
 
