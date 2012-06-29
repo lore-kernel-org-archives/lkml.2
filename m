@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562Ab2F2Qsj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 12:48:39 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:42798 "EHLO
+	id S932577Ab2F2QtY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 12:49:24 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:42796 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932257Ab2F2Qqb (ORCPT
+	with ESMTP id S932238Ab2F2Qqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 12:46:31 -0400
+	Fri, 29 Jun 2012 12:46:30 -0400
 From: Vincent Sanders <vincent.sanders@collabora.co.uk>
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>
-Cc: Alban Crequy <alban.crequy@collabora.co.uk>
-Subject: [PATCH net-next 15/15] netfilter: add netfilter D-Bus module
-Date: Fri, 29 Jun 2012 17:45:54 +0100
-Message-Id: <1340988354-26981-16-git-send-email-vincent.sanders@collabora.co.uk>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Alban Crequy <alban.crequy@collabora.co.uk>
+Subject: [PATCH net-next 13/15] netfilter: nfdbus: Add D-bus message parsing
+Date: Fri, 29 Jun 2012 17:45:52 +0100
+Message-Id: <1340988354-26981-14-git-send-email-vincent.sanders@collabora.co.uk>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk>
 References: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk>
@@ -21,551 +22,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alban Crequy <alban.crequy@collabora.co.uk>
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 
-AF_BUS has netfilter hooks on the packet sending path. This allows the
-netfilter subsystem to register netfilter hook handlers.
+The netfilter D-Bus module needs to parse D-bus messages sent by
+applications to decide whether a peer can receive or not a D-Bus
+message. Add D-bus message parsing logic to be able to analyze.
 
-The netfilter_dbus module allows to inspect D-Bus messages and take
-actions based on the information contained on these messages.
-
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
 ---
- net/netfilter/Kconfig         |    2 +
- net/netfilter/Makefile        |    3 +
- net/netfilter/nfdbus/Kconfig  |   12 ++
- net/netfilter/nfdbus/Makefile |    6 +
- net/netfilter/nfdbus/nfdbus.c |  456 +++++++++++++++++++++++++++++++++++++++++
- net/netfilter/nfdbus/nfdbus.h |   44 ++++
- 6 files changed, 523 insertions(+)
- create mode 100644 net/netfilter/nfdbus/Kconfig
- create mode 100644 net/netfilter/nfdbus/Makefile
- create mode 100644 net/netfilter/nfdbus/nfdbus.c
- create mode 100644 net/netfilter/nfdbus/nfdbus.h
+ net/netfilter/nfdbus/message.c |  194 ++++++++++++++++++++++++++++++++++++++++
+ net/netfilter/nfdbus/message.h |   71 +++++++++++++++
+ 2 files changed, 265 insertions(+)
+ create mode 100644 net/netfilter/nfdbus/message.c
+ create mode 100644 net/netfilter/nfdbus/message.h
 
-diff --git a/net/netfilter/Kconfig b/net/netfilter/Kconfig
-index c19b214..a105d9b 100644
---- a/net/netfilter/Kconfig
-+++ b/net/netfilter/Kconfig
-@@ -1187,3 +1187,5 @@ endmenu
- source "net/netfilter/ipset/Kconfig"
- 
- source "net/netfilter/ipvs/Kconfig"
-+
-+source "net/netfilter/nfdbus/Kconfig"
-diff --git a/net/netfilter/Makefile b/net/netfilter/Makefile
-index 1c5160f..6dd4ade 100644
---- a/net/netfilter/Makefile
-+++ b/net/netfilter/Makefile
-@@ -123,3 +123,6 @@ obj-$(CONFIG_IP_SET) += ipset/
- 
- # IPVS
- obj-$(CONFIG_IP_VS) += ipvs/
-+
-+# Dbus
-+obj-$(CONFIG_NETFILTER_DBUS) += nfdbus/
-diff --git a/net/netfilter/nfdbus/Kconfig b/net/netfilter/nfdbus/Kconfig
+diff --git a/net/netfilter/nfdbus/message.c b/net/netfilter/nfdbus/message.c
 new file mode 100644
-index 0000000..25699a1
+index 0000000..93c409c
 --- /dev/null
-+++ b/net/netfilter/nfdbus/Kconfig
-@@ -0,0 +1,12 @@
-+#
-+# Netfilter D-Bus module configuration
-+#
-+config NETFILTER_DBUS
-+	tristate "Netfilter D-bus (EXPERIMENTAL)"
-+	depends on AF_BUS && CONNECTOR && EXPERIMENTAL
-+	---help---
-+	  If you say Y here, you will include support for a netfilter hook to
-+	  parse D-Bus messages sent using the AF_BUS socket address family.
-+
-+	  To compile this as a module, choose M here: the module will be
-+	  called netfilter_dbus.
-diff --git a/net/netfilter/nfdbus/Makefile b/net/netfilter/nfdbus/Makefile
-new file mode 100644
-index 0000000..1a825f8
---- /dev/null
-+++ b/net/netfilter/nfdbus/Makefile
-@@ -0,0 +1,6 @@
-+#
-+# Makefile for the netfilter D-Bus module
-+#
-+obj-$(CONFIG_NETFILTER_DBUS) += netfilter_dbus.o
-+
-+netfilter_dbus-y := nfdbus.o message.o matchrule.o
-diff --git a/net/netfilter/nfdbus/nfdbus.c b/net/netfilter/nfdbus/nfdbus.c
-new file mode 100644
-index 0000000..f6642e2
---- /dev/null
-+++ b/net/netfilter/nfdbus/nfdbus.c
-@@ -0,0 +1,456 @@
++++ b/net/netfilter/nfdbus/message.c
+@@ -0,0 +1,194 @@
 +/*
-+ *  nfdbus.c - Netfilter module for AF_BUS/BUS_PROTO_DBUS.
-+ */
-+
-+#define DRIVER_AUTHOR "Alban Crequy"
-+#define DRIVER_DESC   "Netfilter module for AF_BUS/BUS_PROTO_DBUS."
-+
-+#include "nfdbus.h"
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/skbuff.h>
-+#include <linux/netfilter.h>
-+#include <linux/connector.h>
-+#include <net/af_bus.h>
-+
-+#include "message.h"
-+#include "matchrule.h"
-+
-+static struct nf_hook_ops nfho_dbus;
-+
-+static struct cb_id cn_cmd_id = { CN_IDX_NFDBUS, CN_VAL_NFDBUS };
-+
-+static unsigned int hash;
-+
-+/* Scoped by AF_BUS address */
-+struct hlist_head matchrules_table[BUS_HASH_SIZE];
-+DEFINE_SPINLOCK(matchrules_lock);
-+
-+static struct bus_match_maker *find_match_maker(struct sockaddr_bus *addr,
-+		bool create, bool delete)
-+{
-+	u64 hash;
-+	struct hlist_node *node;
-+	struct bus_match_maker *matchmaker;
-+	int path_len = strlen(addr->sbus_path);
-+
-+	hash = csum_partial(addr->sbus_path,
-+			    strlen(addr->sbus_path), 0);
-+	hash ^= addr->sbus_addr.s_addr;
-+	hash ^= hash >> 32;
-+	hash ^= hash >> 16;
-+	hash ^= hash >> 8;
-+	hash &= 0xff;
-+
-+	spin_lock(&matchrules_lock);
-+	hlist_for_each_entry(matchmaker, node, &matchrules_table[hash],
-+			     table_node) {
-+		if (addr->sbus_family == matchmaker->addr.sbus_family &&
-+		    addr->sbus_addr.s_addr == matchmaker->addr.sbus_addr.s_addr &&
-+		    !memcmp(addr->sbus_path, matchmaker->addr.sbus_path,
-+			   path_len)) {
-+			kref_get(&matchmaker->kref);
-+			if (delete)
-+				hlist_del(&matchmaker->table_node);
-+			spin_unlock(&matchrules_lock);
-+			pr_debug("Found matchmaker for hash %llu", hash);
-+			return matchmaker;
-+		}
-+	}
-+	spin_unlock(&matchrules_lock);
-+
-+	if (!create) {
-+		pr_debug("Matchmaker for hash %llu not found", hash);
-+		return NULL;
-+	}
-+
-+	matchmaker = bus_matchmaker_new(GFP_ATOMIC);
-+	matchmaker->addr.sbus_family = addr->sbus_family;
-+	matchmaker->addr.sbus_addr.s_addr = addr->sbus_addr.s_addr;
-+	memcpy(matchmaker->addr.sbus_path, addr->sbus_path, BUS_PATH_MAX);
-+
-+	pr_debug("Create new matchmaker for hash %llu\n", hash);
-+	spin_lock(&matchrules_lock);
-+	hlist_add_head(&matchmaker->table_node, &matchrules_table[hash]);
-+	kref_get(&matchmaker->kref);
-+	spin_unlock(&matchrules_lock);
-+	return matchmaker;
-+}
-+
-+static unsigned int dbus_filter(unsigned int hooknum,
-+				struct sk_buff *skb,
-+				const struct net_device *in,
-+				const struct net_device *out,
-+				int (*okfn)(struct sk_buff *))
-+{
-+	struct bus_send_context	*sendctx;
-+	struct bus_match_maker *matchmaker = NULL;
-+	struct bus_match_maker *sender = NULL;
-+	struct dbus_message msg = {0,};
-+	unsigned char *data;
-+	size_t len;
-+	int err;
-+	int ret;
-+
-+	if (!skb->sk || skb->sk->sk_family != PF_BUS) {
-+		WARN(1, "netfilter_dbus received an invalid skb");
-+		return NF_DROP;
-+	}
-+
-+	data = skb->data;
-+	sendctx = BUSCB(skb).sendctx;
-+	if (!sendctx || !sendctx->sender || !sendctx->sender_socket) {
-+		WARN(1, "netfilter_dbus received an AF_BUS packet" \
-+		     " without context. This is a bug. Dropping the"
-+			" packet.");
-+		return NF_DROP;
-+	}
-+
-+	if (sendctx->sender_socket->sk->sk_protocol != BUS_PROTO_DBUS) {
-+		/* This kernel module is for D-Bus. It must not
-+		 * interfere with other users of AF_BUS. */
-+		return NF_ACCEPT;
-+	}
-+	if (sendctx->recipient)
-+		matchmaker = find_match_maker(sendctx->recipient, false, false);
-+
-+	len =  skb_tail_pointer(skb) - data;
-+
-+	if (sendctx->to_master && sendctx->main_recipient) {
-+		pr_debug("AF_BUS packet to the bus master. ACCEPT.\n");
-+		ret = NF_ACCEPT;
-+		goto out;
-+	}
-+
-+	if (sendctx->main_recipient && !sendctx->bus_master_side) {
-+		pr_debug("AF_BUS packet from a peer to a peer (unicast). ACCEPT.\n");
-+		ret = NF_ACCEPT;
-+		goto out;
-+	}
-+
-+	err = dbus_message_parse(data, len, &msg);
-+	if (err) {
-+		if (!sendctx->main_recipient) {
-+			pr_debug("AF_BUS packet for an eavesdropper or " \
-+				 "multicast is not parsable. DROP.\n");
-+			ret = NF_DROP;
-+			goto out;
-+		} else if (sendctx->bus_master_side) {
-+			pr_debug("AF_BUS packet from bus master is not parsable. ACCEPT.\n");
-+			ret = NF_ACCEPT;
-+			goto out;
-+		} else {
-+			pr_debug("AF_BUS packet from peer is not parsable. DROP.\n");
-+			ret = NF_DROP;
-+			goto out;
-+		}
-+	}
-+
-+	if (sendctx->bus_master_side && !sendctx->main_recipient) {
-+		pr_debug("AF_BUS packet '%s' from the bus master is for an " \
-+			 "eavesdropper. DROP.\n",
-+		       msg.member ? msg.member : "");
-+		ret = NF_DROP;
-+		goto out;
-+	}
-+	if (sendctx->bus_master_side) {
-+		if (msg.name_acquired) {
-+			pr_debug("New name: %s [%p %p].\n",
-+				 msg.name_acquired, sendctx->sender,
-+				 sendctx->recipient);
-+
-+			sender = find_match_maker(sendctx->sender, true, false);
-+			bus_matchmaker_add_name(sender, msg.name_acquired,
-+						GFP_ATOMIC);
-+		}
-+		if (msg.name_lost) {
-+			pr_debug("Lost name: %s [%p %p].\n",
-+				 msg.name_lost, sendctx->sender,
-+				 sendctx->recipient);
-+
-+			sender = find_match_maker(sendctx->sender, true, false);
-+			bus_matchmaker_remove_name(sender, msg.name_acquired);
-+		}
-+
-+		pr_debug("AF_BUS packet '%s' from the bus master. ACCEPT.\n",
-+			 msg.member ? msg.member : "");
-+		ret = NF_ACCEPT;
-+		goto out;
-+	}
-+
-+	pr_debug("Multicast AF_BUS packet, %ld bytes, " \
-+		 "considering recipient %lld...\n", len,
-+		 sendctx->recipient ? sendctx->recipient->sbus_addr.s_addr : 0);
-+
-+	pr_debug("Message type %d %s->%s [iface: %s][member: %s][matchmaker=%p]...\n",
-+		 msg.type,
-+		 msg.sender ? msg.sender : "",
-+		 msg.destination ? msg.destination : "",
-+		 msg.interface ? msg.interface : "",
-+		 msg.member ? msg.member : "",
-+		 matchmaker);
-+
-+	if (!matchmaker) {
-+		pr_debug("No match rules for this recipient. DROP.\n");
-+		ret = NF_DROP;
-+		goto out;
-+	}
-+
-+	sender = find_match_maker(sendctx->sender, true, false);
-+	err = bus_matchmaker_filter(matchmaker, sender, sendctx->eavesdropper,
-+				    &msg);
-+	if (err) {
-+		pr_debug("Matchmaker: ACCEPT.\n");
-+		ret = NF_ACCEPT;
-+		goto out;
-+	} else {
-+		pr_debug("Matchmaker: DROP.\n");
-+		ret = NF_DROP;
-+		goto out;
-+	}
-+
-+out:
-+	if (matchmaker)
-+		kref_put(&matchmaker->kref, bus_matchmaker_free);
-+	if (sender)
-+		kref_put(&sender->kref, bus_matchmaker_free);
-+	return ret;
-+}
-+
-+/* Taken from drbd_nl_send_reply() */
-+static void nfdbus_nl_send_reply(struct cn_msg *msg, int ret_code)
-+{
-+	char buffer[sizeof(struct cn_msg)+sizeof(struct nfdbus_nl_cfg_reply)];
-+	struct cn_msg *cn_reply = (struct cn_msg *) buffer;
-+	struct nfdbus_nl_cfg_reply *reply =
-+		(struct nfdbus_nl_cfg_reply *)cn_reply->data;
-+	int rr;
-+
-+	memset(buffer, 0, sizeof(buffer));
-+	cn_reply->id = msg->id;
-+
-+	cn_reply->seq = msg->seq;
-+	cn_reply->ack = msg->ack  + 1;
-+	cn_reply->len = sizeof(struct nfdbus_nl_cfg_reply);
-+	cn_reply->flags = 0;
-+
-+	reply->ret_code = ret_code;
-+
-+	rr = cn_netlink_send(cn_reply, 0, GFP_NOIO);
-+	if (rr && rr != -ESRCH)
-+		pr_debug("nfdbus: cn_netlink_send()=%d\n", rr);
-+}
-+
-+/**
-+ * nfdbus_check_perm - check if a pid is allowed to update match rules
-+ * @sockaddr_bus: the socket address of the bus
-+ * @pid: the process id that wants to update the match rules set
++ * message.c  Basic D-Bus message parsing
 + *
-+ * Test if a given process id is allowed to update the match rules set
-+ * for this bus. Only the process that owns the bus master listen socket
-+ * is allowed to update the match rules set for the bus.
-+ */
-+static bool nfdbus_check_perm(struct sockaddr_bus *sbusname, pid_t pid)
-+{
-+	struct net *net = get_net_ns_by_pid(pid);
-+	struct sock *s;
-+	struct bus_address *addr;
-+	struct hlist_node *node;
-+	int offset = (sbusname->sbus_path[0] == '\0');
-+	int path_len = strnlen(sbusname->sbus_path + offset, BUS_PATH_MAX);
-+	int len;
-+	if (!net)
-+		return false;
-+
-+	len = path_len + 1 + sizeof(__kernel_sa_family_t) +
-+	      sizeof(struct bus_addr);
-+
-+	spin_lock(&bus_address_lock);
-+
-+	hlist_for_each_entry(addr, node, &bus_address_table[hash],
-+			     table_node) {
-+		s = addr->sock;
-+
-+		if (s->sk_protocol != BUS_PROTO_DBUS)
-+			continue;
-+
-+		if (!net_eq(sock_net(s), net))
-+			continue;
-+
-+		if (addr->len == len &&
-+		    addr->name->sbus_family == sbusname->sbus_family &&
-+		    addr->name->sbus_addr.s_addr == BUS_MASTER_ADDR &&
-+		    bus_same_bus(addr->name, sbusname) &&
-+		    pid_nr(s->sk_peer_pid) == pid) {
-+			spin_unlock(&bus_address_lock);
-+			return true;
-+		}
-+	}
-+
-+	spin_unlock(&bus_address_lock);
-+
-+	return false;
-+}
-+
-+static void cn_cmd_cb(struct cn_msg *msg, struct netlink_skb_parms *nsp)
-+{
-+	struct nfdbus_nl_cfg_req *nlp = (struct nfdbus_nl_cfg_req *)msg->data;
-+	struct cn_msg *cn_reply;
-+	struct nfdbus_nl_cfg_reply *reply;
-+	int retcode, rr;
-+	pid_t pid = task_tgid_vnr(current);
-+	int reply_size = sizeof(struct cn_msg)
-+		+ sizeof(struct nfdbus_nl_cfg_reply);
-+
-+	pr_debug("nfdbus: %s nsp->pid=%d pid=%d\n", __func__, nsp->pid, pid);
-+
-+	if (!nfdbus_check_perm(&nlp->addr, pid)) {
-+		pr_debug(KERN_ERR "nfdbus: pid=%d is not allowed!\n", pid);
-+		retcode = EPERM;
-+		goto fail;
-+	}
-+
-+	cn_reply = kzalloc(reply_size, GFP_KERNEL);
-+	if (!cn_reply) {
-+		retcode = ENOMEM;
-+		goto fail;
-+	}
-+	reply = (struct nfdbus_nl_cfg_reply *) cn_reply->data;
-+
-+	if (msg->len < sizeof(struct nfdbus_nl_cfg_req)) {
-+		reply->ret_code = EINVAL;
-+	} else if (nlp->cmd == NFDBUS_CMD_ADDMATCH) {
-+		struct bus_match_rule *rule;
-+		struct bus_match_maker *matchmaker;
-+		reply->ret_code = 0;
-+
-+		if (msg->len == 0)
-+			reply->ret_code = EINVAL;
-+
-+		rule = bus_match_rule_parse(nlp->data, GFP_ATOMIC);
-+		if (rule) {
-+			matchmaker = find_match_maker(&nlp->addr, true, false);
-+			pr_debug("Add match rule for matchmaker %p\n",
-+				 matchmaker);
-+			bus_matchmaker_add_rule(matchmaker, rule);
-+			kref_put(&matchmaker->kref, bus_matchmaker_free);
-+		} else {
-+			reply->ret_code = EINVAL;
-+		}
-+	} else if (nlp->cmd == NFDBUS_CMD_REMOVEMATCH) {
-+		struct bus_match_rule *rule;
-+		struct bus_match_maker *matchmaker;
-+
-+		rule = bus_match_rule_parse(nlp->data, GFP_ATOMIC);
-+		matchmaker = find_match_maker(&nlp->addr, false, false);
-+		if (!matchmaker) {
-+			reply->ret_code = EINVAL;
-+		} else {
-+			pr_debug("Remove match rule for matchmaker %p\n",
-+				 matchmaker);
-+			bus_matchmaker_remove_rule_by_value(matchmaker, rule);
-+			kref_put(&matchmaker->kref, bus_matchmaker_free);
-+			reply->ret_code = 0;
-+		}
-+		bus_match_rule_free(rule);
-+
-+	} else if (nlp->cmd == NFDBUS_CMD_REMOVEALLMATCH) {
-+		struct bus_match_maker *matchmaker;
-+
-+		matchmaker = find_match_maker(&nlp->addr, false, true);
-+		if (!matchmaker) {
-+			reply->ret_code = EINVAL;
-+		} else {
-+			pr_debug("Remove matchmaker %p\n", matchmaker);
-+			kref_put(&matchmaker->kref, bus_matchmaker_free);
-+			kref_put(&matchmaker->kref, bus_matchmaker_free);
-+			reply->ret_code = 0;
-+		}
-+
-+	} else {
-+		reply->ret_code = EINVAL;
-+	}
-+
-+	cn_reply->id = msg->id;
-+	cn_reply->seq = msg->seq;
-+	cn_reply->ack = msg->ack  + 1;
-+	cn_reply->len = sizeof(struct nfdbus_nl_cfg_reply);
-+	cn_reply->flags = 0;
-+
-+	rr = cn_netlink_reply(cn_reply, nsp->pid, GFP_KERNEL);
-+	if (rr && rr != -ESRCH)
-+		pr_debug("nfdbus: cn_netlink_send()=%d\n", rr);
-+	pr_debug("nfdbus: cn_netlink_reply(pid=%d)=%d\n", nsp->pid, rr);
-+
-+	kfree(cn_reply);
-+	return;
-+fail:
-+	nfdbus_nl_send_reply(msg, retcode);
-+}
-+
-+static int __init nfdbus_init(void)
-+{
-+	int err;
-+	struct bus_addr master_addr;
-+
-+	master_addr.s_addr = BUS_MASTER_ADDR;
-+	hash = bus_compute_hash(master_addr);
-+
-+	pr_debug("Loading netfilter_dbus\n");
-+
-+	/* Install D-Bus netfilter hook */
-+	nfho_dbus.hook     = dbus_filter;
-+	nfho_dbus.hooknum  = NF_BUS_SENDING;
-+	nfho_dbus.pf       = NFPROTO_BUS; /* Do not use PF_BUS, you fool! */
-+	nfho_dbus.priority = 0;
-+	nfho_dbus.owner = THIS_MODULE;
-+	err = nf_register_hook(&nfho_dbus);
-+	if (err)
-+		return err;
-+	pr_debug("Netfilter hook for D-Bus: installed.\n");
-+
-+	/* Install connector hook */
-+	err = cn_add_callback(&cn_cmd_id, "nfdbus", cn_cmd_cb);
-+	if (err)
-+		goto err_cn_cmd_out;
-+	pr_debug("Connector hook: installed.\n");
-+
-+	return 0;
-+
-+err_cn_cmd_out:
-+	nf_unregister_hook(&nfho_dbus);
-+
-+	return err;
-+}
-+
-+static void __exit nfdbus_cleanup(void)
-+{
-+	int i;
-+	struct hlist_node *node, *tmp;
-+	struct bus_match_maker *matchmaker;
-+	nf_unregister_hook(&nfho_dbus);
-+
-+	cn_del_callback(&cn_cmd_id);
-+
-+	spin_lock(&matchrules_lock);
-+	for (i = 0; i < BUS_HASH_SIZE; i++) {
-+		hlist_for_each_entry_safe(matchmaker, node, tmp,
-+					  &matchrules_table[i], table_node) {
-+			hlist_del(&matchmaker->table_node);
-+			kref_put(&matchmaker->kref, bus_matchmaker_free);
-+		}
-+	}
-+	spin_unlock(&matchrules_lock);
-+
-+	pr_debug("Unloading netfilter_dbus\n");
-+}
-+
-+module_init(nfdbus_init);
-+module_exit(nfdbus_cleanup);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR(DRIVER_AUTHOR);
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_ALIAS_NET_PF_PROTO(PF_BUS, BUS_PROTO_DBUS);
-diff --git a/net/netfilter/nfdbus/nfdbus.h b/net/netfilter/nfdbus/nfdbus.h
-new file mode 100644
-index 0000000..477bde3
---- /dev/null
-+++ b/net/netfilter/nfdbus/nfdbus.h
-@@ -0,0 +1,44 @@
-+/*
-+ * nfdbus.h  Netfilter module for AF_BUS/BUS_PROTO_DBUS.
-+ *
-+ * Copyright (C) 2012  Collabora Ltd
++ * Copyright (C) 2010-2012  Collabora Ltd
++ * Authors:	Alban Crequy <alban.crequy@collabora.co.uk>
++ * Copyright (C) 2002, 2003, 2004, 2005  Red Hat Inc.
++ * Copyright (C) 2002, 2003  CodeFactory AB
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -583,29 +67,253 @@ index 0000000..477bde3
 + *
 + */
 +
-+#ifndef NETFILTER_DBUS_H
-+#define NETFILTER_DBUS_H
++#include <linux/slab.h>
 +
-+#include <linux/types.h>
-+#include <linux/bus.h>
++#include "message.h"
 +
-+#define NFDBUS_CMD_ADDMATCH        0x01
-+#define NFDBUS_CMD_REMOVEMATCH     0x02
-+#define NFDBUS_CMD_REMOVEALLMATCH  0x03
++int dbus_message_type_from_string(const char *type_str)
++{
++	if (strcmp(type_str, "method_call") == 0)
++		return DBUS_MESSAGE_TYPE_METHOD_CALL;
++	if (strcmp(type_str, "method_return") == 0)
++		return DBUS_MESSAGE_TYPE_METHOD_RETURN;
++	else if (strcmp(type_str, "signal") == 0)
++		return DBUS_MESSAGE_TYPE_SIGNAL;
++	else if (strcmp(type_str, "error") == 0)
++		return DBUS_MESSAGE_TYPE_ERROR;
++	else
++		return DBUS_MESSAGE_TYPE_INVALID;
++}
 +
-+struct nfdbus_nl_cfg_req {
-+	__u32 cmd;
-+	__u32 len;
-+	struct sockaddr_bus addr;
-+	__u64 pad;
-+	unsigned char data[0];
++int dbus_message_parse(unsigned char *message, size_t len,
++		       struct dbus_message *dbus_message)
++{
++	unsigned char *cur;
++	int array_header_len;
++
++	dbus_message->message = message;
++
++	if (len < 4 + 4 + 4 + 4 || message[1] == 0 || message[1] > 4)
++		return -EINVAL;
++
++	dbus_message->type = message[1];
++	dbus_message->body_length = *((u32 *)(message + 4));
++	cur = message + 12;
++	array_header_len = *(u32 *)cur;
++	dbus_message->len_offset = 12;
++	cur += 4;
++	while (cur < message + len
++	       && cur < message + 12 + 4 + array_header_len) {
++		int header_code;
++		int signature_len;
++		unsigned char *signature;
++		int str_len;
++		unsigned char *str;
++
++		/* D-Bus alignment craziness */
++		if ((cur - message) % 8 != 0)
++			cur += 8 - (cur - message) % 8;
++
++		header_code = *(char *)cur;
++		cur++;
++		signature_len = *(char *)cur;
++		/* All header fields of the current D-Bus spec have a simple
++		 * type, either o, s, g, or u */
++		if (signature_len != 1)
++			return -EINVAL;
++		cur++;
++		signature = cur;
++		cur += signature_len + 1;
++		if (signature[0] != 'o' &&
++		    signature[0] != 's' &&
++		    signature[0] != 'g' &&
++		    signature[0] != 'u')
++			return -EINVAL;
++
++		if (signature[0] == 'u') {
++			cur += 4;
++			continue;
++		}
++
++		if (signature[0] != 'g') {
++			str_len = *(u32 *)cur;
++			cur += 4;
++		} else {
++			str_len = *(char *)cur;
++			cur += 1;
++		}
++
++		str = cur;
++		switch (header_code) {
++		case 1:
++			dbus_message->path = str;
++			break;
++		case 2:
++			dbus_message->interface = str;
++			break;
++		case 3:
++			dbus_message->member = str;
++			break;
++		case 6:
++			dbus_message->destination = str;
++			break;
++		case 7:
++			dbus_message->sender = str;
++			break;
++		case 8:
++			dbus_message->body_signature = str;
++			break;
++		}
++		cur += str_len + 1;
++	}
++
++	dbus_message->padding_end = (8 - (cur - message) % 8) % 8;
++
++	/* Jump to body D-Bus alignment craziness */
++	if ((cur - message) % 8 != 0)
++		cur += 8 - (cur - message) % 8;
++	dbus_message->new_header_offset = cur - message;
++
++	if (dbus_message->new_header_offset
++	    + dbus_message->body_length != len) {
++		pr_warn("Message truncated? " \
++			"Header %d + Body %d != Length %zd\n",
++			dbus_message->new_header_offset,
++			dbus_message->body_length, len);
++		return -EINVAL;
++	}
++
++	if (dbus_message->body_signature &&
++	    dbus_message->body_signature[0] == 's') {
++		int str_len;
++		str_len = *(u32 *)cur;
++		cur += 4;
++		dbus_message->arg0 = cur;
++		cur += str_len + 1;
++	}
++
++	if ((cur - message) % 4 != 0)
++		cur += 4 - (cur - message) % 4;
++
++	if (dbus_message->body_signature &&
++	    dbus_message->body_signature[0] == 's' &&
++	    dbus_message->body_signature[1] == 's') {
++		int str_len;
++		str_len = *(u32 *)cur;
++		cur += 4;
++		dbus_message->arg1 = cur;
++		cur += str_len + 1;
++	}
++
++	if ((cur - message) % 4 != 0)
++		cur += 4 - (cur - message) % 4;
++
++	if (dbus_message->body_signature &&
++	    dbus_message->body_signature[0] == 's' &&
++	    dbus_message->body_signature[1] == 's' &&
++	    dbus_message->body_signature[2] == 's') {
++		int str_len;
++		str_len = *(u32 *)cur;
++		cur += 4;
++		dbus_message->arg2 = cur;
++		cur += str_len + 1;
++	}
++
++	if ((cur - message) % 4 != 0)
++		cur += 4 - (cur - message) % 4;
++
++	if (dbus_message->type == DBUS_MESSAGE_TYPE_SIGNAL &&
++	    dbus_message->sender && dbus_message->path &&
++	    dbus_message->interface && dbus_message->member &&
++	    dbus_message->arg0 &&
++	    strcmp(dbus_message->sender, "org.freedesktop.DBus") == 0 &&
++	    strcmp(dbus_message->interface, "org.freedesktop.DBus") == 0 &&
++	    strcmp(dbus_message->path, "/org/freedesktop/DBus") == 0) {
++		if (strcmp(dbus_message->member, "NameAcquired") == 0)
++			dbus_message->name_acquired = dbus_message->arg0;
++		else if (strcmp(dbus_message->member, "NameLost") == 0)
++			dbus_message->name_lost = dbus_message->arg0;
++	}
++
++	return 0;
++}
+diff --git a/net/netfilter/nfdbus/message.h b/net/netfilter/nfdbus/message.h
+new file mode 100644
+index 0000000..e3ea4d3
+--- /dev/null
++++ b/net/netfilter/nfdbus/message.h
+@@ -0,0 +1,71 @@
++/*
++ * message.h  Basic D-Bus message parsing
++ *
++ * Copyright (C) 2010  Collabora Ltd
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ *
++ */
++
++#ifndef DBUS_MESSAGE_H
++#define DBUS_MESSAGE_H
++
++#include <linux/list.h>
++
++#define DBUS_MAXIMUM_MATCH_RULE_LENGTH 1024
++
++/* Types of message */
++
++#define DBUS_MESSAGE_TYPE_INVALID       0
++#define DBUS_MESSAGE_TYPE_METHOD_CALL   1
++#define DBUS_MESSAGE_TYPE_METHOD_RETURN 2
++#define DBUS_MESSAGE_TYPE_ERROR         3
++#define DBUS_MESSAGE_TYPE_SIGNAL        4
++#define DBUS_NUM_MESSAGE_TYPES          5
++
++/* No need to implement a feature-complete parser. It only implement what is
++ * needed by the bus. */
++struct dbus_message {
++	char *message;
++	size_t len;
++	size_t new_len;
++
++	/* direct pointers to the fields */
++	int type;
++	char *path;
++	char *interface;
++	char *member;
++	char *destination;
++	char *sender;
++	char *body_signature;
++	int body_length;
++	char *arg0;
++	char *arg1;
++	char *arg2;
++	char *name_acquired;
++	char *name_lost;
++
++	/* How to add the 'sender' field in the headers */
++	int new_header_offset;
++	int len_offset;
++	int padding_end;
 +};
 +
-+struct nfdbus_nl_cfg_reply {
-+	__u32 ret_code;
-+};
++int dbus_message_type_from_string(const char *type_str);
 +
-+#endif /* NETFILTER_DBUS_H */
++int dbus_message_parse(unsigned char *message, size_t len,
++		       struct dbus_message *dbus_message);
++
++#endif /* DBUS_MESSAGE_H */
 -- 
 1.7.10
 
