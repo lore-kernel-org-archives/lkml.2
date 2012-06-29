@@ -1,393 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab2F2BbS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 21:31:18 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42866 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754465Ab2F2BbQ (ORCPT
+	id S1755984Ab2F2BdY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 21:33:24 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34786 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754465Ab2F2BdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 21:31:16 -0400
-X-AuditID: 9c93016f-b7c85ae00000559e-72-4fed05621299
-From: Namhyung Kim <namhyung@kernel.org>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Subject: Re: [PATCH 04/16] sched: maintain the load contribution of blocked entities
-References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
-	<20120628022414.30496.4580.stgit@kitami.mtv.corp.google.com>
-Date: Fri, 29 Jun 2012 10:27:29 +0900
-In-Reply-To: <20120628022414.30496.4580.stgit@kitami.mtv.corp.google.com>
-	(Paul Turner's message of "Wed, 27 Jun 2012 19:24:14 -0700")
-Message-ID: <877guqykji.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 28 Jun 2012 21:33:22 -0400
+Date: Fri, 29 Jun 2012 11:33:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg Ungerer <gerg@snapgear.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Steven King <sfking@fdwdc.com>
+Subject: linux-next: manual merge of the m68knommu tree with Linus' tree
+Message-Id: <20120629113310.e578f61aa71e9350a3596833@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__29_Jun_2012_11_33_10_+1000_3MPnUikOMb5.3s/R"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Signature=_Fri__29_Jun_2012_11_33_10_+1000_3MPnUikOMb5.3s/R
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, 27 Jun 2012 19:24:14 -0700, Paul Turner wrote:
-> We are currently maintaining:
->   runnable_load(cfs_rq) = \Sum task_load(t)
->
-> For all running children t of cfs_rq.  While this can be naturally updated for
-> tasks in a runnable state (as they are scheduled); this does not account for
-> the load contributed by blocked task entities.
->
-> This can be solved by introducing a separate accounting for blocked load:
->   blocked_load(cfs_rq) = \Sum runnable(b) * weight(b)
->
-> Obviously we do not want to iterate over all blocked entities to account for
-> their decay, we instead observe that:
->   runnable_load(t) = \Sum p_i*y^i
->
-> and that to account for an additional idle period we only need to compute:
->   y*runnable_load(t).
->
-> This means that we can compute all blocked entities at once by evaluating:
->   blocked_load(cfs_rq)` = y * blocked_load(cfs_rq)
->
-> Finally we maintain a decay counter so that when a sleeping entity re-awakens
-> we can determine how much of its load should be removed from the blocked sum.
->
-> Signed-off-by: Paul Turner <pjt@google.com>
-> Signed-off-by: Ben Segall <bsegall@google.com>
-> ---
->  include/linux/sched.h |    1 
->  kernel/sched/core.c   |    3 +
->  kernel/sched/debug.c  |    3 +
->  kernel/sched/fair.c   |  130 ++++++++++++++++++++++++++++++++++++++++++++-----
->  kernel/sched/sched.h  |    4 +-
->  5 files changed, 126 insertions(+), 15 deletions(-)
->
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 0c54ce0..842c4df 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1139,6 +1139,7 @@ struct load_weight {
->  struct sched_avg {
->  	u32 runnable_avg_sum, runnable_avg_period;
->  	u64 last_runnable_update;
-> +	s64 decay_count;
->  	unsigned long load_avg_contrib;
->  };
->  
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 9bb7d28..aeb8e56 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1713,6 +1713,9 @@ static void __sched_fork(struct task_struct *p)
->  	p->se.vruntime			= 0;
->  	INIT_LIST_HEAD(&p->se.group_node);
->  
-> +#if defined(CONFIG_FAIR_GROUP_SCHED) && defined(CONFIG_SMP)
-> +	p->se.avg.decay_count = 0;
-> +#endif
->  #ifdef CONFIG_SCHEDSTATS
->  	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
->  #endif
-> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-> index aeb74e3..2aa60cf 100644
-> --- a/kernel/sched/debug.c
-> +++ b/kernel/sched/debug.c
-> @@ -95,6 +95,7 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
->  	P(se->avg.runnable_avg_sum);
->  	P(se->avg.runnable_avg_period);
->  	P(se->avg.load_avg_contrib);
-> +	P(se->avg.decay_count);
->  #endif
->  #undef PN
->  #undef P
-> @@ -230,6 +231,8 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
->  			atomic_read(&cfs_rq->tg->load_weight));
->  	SEQ_printf(m, "  .%-30s: %lld\n", "runnable_load_avg",
->  			cfs_rq->runnable_load_avg);
-> +	SEQ_printf(m, "  .%-30s: %lld\n", "blocked_load_avg",
-> +			cfs_rq->blocked_load_avg);
->  #endif
->  
->  	print_cfs_group_stats(m, cpu, cfs_rq->tg);
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 8229766..6200d20 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1085,6 +1085,20 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
->  	return decayed;
->  }
->  
-> +/* Synchronize an entity's decay with its parentin cfs_rq.*/
-                                             parenting
+Hi Greg,
 
-> +static inline void __synchronize_entity_decay(struct sched_entity *se)
-> +{
-> +	struct cfs_rq *cfs_rq = cfs_rq_of(se);
-> +	u64 decays = atomic64_read(&cfs_rq->decay_counter);
-> +
-> +	decays -= se->avg.decay_count;
-> +	if (!decays)
-> +		return;
-> +
-> +	se->avg.load_avg_contrib = decay_load(se->avg.load_avg_contrib, decays);
-> +	se->avg.decay_count += decays;
-> +}
-> +
->  /* Compute the current contribution to load_avg by se, return any delta */
->  static long __update_entity_load_avg_contrib(struct sched_entity *se)
->  {
-> @@ -1100,8 +1114,18 @@ static long __update_entity_load_avg_contrib(struct sched_entity *se)
->  	return se->avg.load_avg_contrib - old_contrib;
->  }
->  
-> +static inline void subtract_blocked_load_contrib(struct cfs_rq *cfs_rq,
-> +						 long load_contrib)
-> +{
-> +	if (likely(load_contrib < cfs_rq->blocked_load_avg))
-> +		cfs_rq->blocked_load_avg -= load_contrib;
-> +	else
-> +		cfs_rq->blocked_load_avg = 0;
-> +}
-> +
->  /* Update a sched_entity's runnable average */
-> -static inline void update_entity_load_avg(struct sched_entity *se)
-> +static inline void update_entity_load_avg(struct sched_entity *se,
-> +					  int update_cfs_rq)
->  {
->  	struct cfs_rq *cfs_rq = cfs_rq_of(se);
->  	long contrib_delta;
-> @@ -1111,8 +1135,34 @@ static inline void update_entity_load_avg(struct sched_entity *se)
->  		return;
->  
->  	contrib_delta = __update_entity_load_avg_contrib(se);
-> +
-> +	if (!update_cfs_rq)
-> +		return;
-> +
->  	if (se->on_rq)
->  		cfs_rq->runnable_load_avg += contrib_delta;
-> +	else
-> +		subtract_blocked_load_contrib(cfs_rq, -contrib_delta);
+Today's linux-next merge of the m68knommu tree got a conflict in
+arch/m68k/platform/coldfire/clk.c between commit 19a1d332cc8c
+("m68knommu: define a local devm_clk_get() function") from Linus' tree
+and commit a0412a2ddaa3 ("m68knommu: Add support for the Coldfire
+m5441x") from the m68knommu tree.
 
-Subtracting negative delta means an addition, right?
+I fixed it up (I think - see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc arch/m68k/platform/coldfire/clk.c
+index 44da406,d96405c..0000000
+--- a/arch/m68k/platform/coldfire/clk.c
++++ b/arch/m68k/platform/coldfire/clk.c
+@@@ -43,10 -49,102 +49,107 @@@ unsigned long clk_get_rate(struct clk *
+  }
+  EXPORT_SYMBOL(clk_get_rate);
+ =20
+ +struct clk *devm_clk_get(struct device *dev, const char *id)
+ +{
+ +	return NULL;
+ +}
+ +EXPORT_SYMBOL(devm_clk_get);
+ +
++ #else
++ static DEFINE_SPINLOCK(clk_lock);
++=20
++ struct clk *clk_get(struct device *dev, const char *id)
++ {
++ 	const char *clk_name =3D dev ? dev_name(dev) : id ? id : NULL;
++ 	struct clk *clk;
++ 	unsigned i;
++=20
++ 	for (i =3D 0; (clk =3D mcf_clks[i]) !=3D NULL; ++i)
++ 		if (!strcmp(clk->name, clk_name))
++ 			return clk;
++ 	pr_warn("clk_get: didn't find clock %s\n", clk_name);
++ 	return ERR_PTR(-ENOENT);
++ }
++ EXPORT_SYMBOL(clk_get);
++=20
++ int clk_enable(struct clk *clk)
++ {
++ 	unsigned long flags;
++ 	spin_lock_irqsave(&clk_lock, flags);
++ 	if ((clk->enabled++ =3D=3D 0) && clk->clk_ops)
++ 		clk->clk_ops->enable(clk);
++ 	spin_unlock_irqrestore(&clk_lock, flags);
++=20
++ 	return 0;
++ }
++ EXPORT_SYMBOL(clk_enable);
++=20
++ void clk_disable(struct clk *clk)
++ {
++ 	unsigned long flags;
++ 	spin_lock_irqsave(&clk_lock, flags);
++ 	if ((--clk->enabled =3D=3D 0) && clk->clk_ops)
++ 		clk->clk_ops->disable(clk);
++ 	spin_unlock_irqrestore(&clk_lock, flags);
++ }
++ EXPORT_SYMBOL(clk_disable);
++=20
++ void clk_put(struct clk *clk)
++ {
++ 	if (clk->enabled !=3D 0)
++ 		pr_warn("clk_put %s still enabled\n", clk->name);
++ }
++ EXPORT_SYMBOL(clk_put);
++=20
++ unsigned long clk_get_rate(struct clk *clk)
++ {
++ 	return clk->rate;
++ }
++ EXPORT_SYMBOL(clk_get_rate);
++=20
+ -
+  /************************************************************************=
+***/
++=20
++ void __clk_init_enabled(struct clk *clk)
++ {
++ 	clk->enabled =3D 1;
++ 	clk->clk_ops->enable(clk);
++ }
++=20
++ void __clk_init_disabled(struct clk *clk)
++ {
++ 	clk->enabled =3D 0;
++ 	clk->clk_ops->disable(clk);
++ }
++=20
++ static void __clk_enable0(struct clk *clk)
++ {
++ 	__raw_writeb(clk->slot, MCFPM_PPMCR0);
++ }
++=20
++ static void __clk_disable0(struct clk *clk)
++ {
++ 	__raw_writeb(clk->slot, MCFPM_PPMSR0);
++ }
++=20
++ struct clk_ops clk_ops0 =3D {
++ 	.enable		=3D __clk_enable0,
++ 	.disable	=3D __clk_disable0,
++ };
++=20
++ #ifdef MCFPM_PPMCR1
++ static void __clk_enable1(struct clk *clk)
++ {
++ 	__raw_writeb(clk->slot, MCFPM_PPMCR1);
++ }
++=20
++ static void __clk_disable1(struct clk *clk)
++ {
++ 	__raw_writeb(clk->slot, MCFPM_PPMSR1);
++ }
++=20
++ struct clk_ops clk_ops1 =3D {
++ 	.enable		=3D __clk_enable1,
++ 	.disable	=3D __clk_disable1,
++ };
++ #endif /* MCFPM_PPMCR1 */
++ #endif /* MCFPM_PPMCR0 */
 
-> +}
-> +
-> +/*
-> + * Decay the load contributed by all blocked children and account this so that
-> + * they their contribution may appropriately discounted when they wake up.
+--Signature=_Fri__29_Jun_2012_11_33_10_+1000_3MPnUikOMb5.3s/R
+Content-Type: application/pgp-signature
 
-s/they their/their/ ?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJP7QXWAAoJEECxmPOUX5FE4JkP+gMk24MGNfr3QI6VPYDg2t+r
+fmA0y2WkyZfUpGqBWYK6TVBMohqYzNmacXYtI6nP/2XUiSkTwbqPGpFdZp+bgv1h
+KeOYCuNaQbXqjHU/FfrrBRuRiQ0dLLBMRFY29tZ+NdW69B3ykyDoUZMYjDxY3I7i
+uN+C5kbhiAZBY5i22XiZfCZ/0rKEgmgf4RR0I0Nn2OS5xW15e1PXgNPtlXlEkncD
+Imm4fDq3UR5Ucs566PtTVwnUMWcObUZ/80qVcgpeIBo3qnbic7r1NAfTCfEK5r+F
+8u6oJRRuO6P3ynZxFBZ9bTsXs8dye2sMTrQzR/AqQyfNQcLVqvDs1m1gbYj1FuKa
+TzkIh75FeKV6poUKnZD7K1mMK919NxR/5FK2nulpthsd68LYEH5PK6zOp0YRWDfQ
+bBIwNpm/AwLlsShxDLGwJQPPKNxzDh/bajfiNsmrBBK5bckMSm7pBvPmavKyrcZk
+tXIrnBgbjvLndQPzczQuGTrPlka0VEsInM7jbiE+kQAzBsxhNE87aKu4F9xHs/HT
+EMMul92vdnonSS/RL0qhZtXdBxlAjUvrwWteGdSGjTRRtxsTreQzv4h0t1E4thXw
+Y+epQW2OXKafB3CYux2nWTSmhifCZ1jgVOOoznxpCEFyHOlGPgxfm7nn60pFAIU+
+ppXd/slnWsINfCiOx61g
+=9ZN/
+-----END PGP SIGNATURE-----
 
-> + */
-> +static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq)
-
-I guess update_cfs_blocked_load is a bit more consistent name with
-update_cfs_{load,shares}.
-
-Thanks,
-Namhyung
-
-
-> +{
-> +	u64 now = rq_of(cfs_rq)->clock_task >> 20;
-> +	u64 decays;
-> +
-> +	decays = now - cfs_rq->last_decay;
-> +	if (!decays)
-> +		return;
-> +
-> +	cfs_rq->blocked_load_avg = decay_load(cfs_rq->blocked_load_avg,
-> +					      decays);
-> +	atomic64_add(decays, &cfs_rq->decay_counter);
-> +
-> +	cfs_rq->last_decay = now;
->  }
->  
->  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
-> @@ -1122,26 +1172,56 @@ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
->  
->  /* Add the load generated by se into cfs_rq's child load-average */
->  static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
-> -						  struct sched_entity *se)
-> -{
-> -	update_entity_load_avg(se);
-> +						  struct sched_entity *se,
-> +						  int wakeup)
-> +{
-> +	/* we track migrations using entity decay_count == 0 */
-> +	if (unlikely(!se->avg.decay_count)) {
-> +		se->avg.last_runnable_update = rq_of(cfs_rq)->clock_task;
-> +		se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
-> +		wakeup = 0;
-> +	} else {
-> +		__synchronize_entity_decay(se);
-> +	}
-> +
-> +	if (wakeup)
-> +		subtract_blocked_load_contrib(cfs_rq, se->avg.load_avg_contrib);
-> +
-> +	update_entity_load_avg(se, 0);
->  	cfs_rq->runnable_load_avg += se->avg.load_avg_contrib;
-> +	update_cfs_rq_blocked_load(cfs_rq);
->  }
->  
-> -/* Remove se's load from this cfs_rq child load-average */
-> +/*
-> + * Remove se's load from this cfs_rq child load-average, if the entity is
-> + * transitioning to a blocked state we track its projected decay using
-> + * blocked_load_avg.
-> + */
->  static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
-> -						  struct sched_entity *se)
-> +						  struct sched_entity *se,
-> +						  int sleep)
->  {
-> -	update_entity_load_avg(se);
-> +	update_entity_load_avg(se, 1);
-> +
->  	cfs_rq->runnable_load_avg -= se->avg.load_avg_contrib;
-> +	if (sleep) {
-> +		cfs_rq->blocked_load_avg += se->avg.load_avg_contrib;
-> +		se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
-> +	} else {
-> +		se->avg.decay_count = 0;
-> +	}
->  }
->  #else
-> -static inline void update_entity_load_avg(struct sched_entity *se) {}
-> +static inline void update_entity_load_avg(struct sched_entity *se,
-> +					  int update_cfs_rq) {}
->  static inline void update_rq_runnable_avg(struct rq *rq, int runnable) {}
->  static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
-> -						  struct sched_entity *se) {}
-> +					   struct sched_entity *se,
-> +					   int wakeup) {}
->  static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
-> -						  struct sched_entity *se) {}
-> +					   struct sched_entity *se,
-> +					   int sleep) {}
-> +static inline void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq) {}
->  #endif
->  
->  static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
-> @@ -1270,7 +1350,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
->  	 */
->  	update_curr(cfs_rq);
->  	update_cfs_load(cfs_rq, 0);
-> -	enqueue_entity_load_avg(cfs_rq, se);
-> +	enqueue_entity_load_avg(cfs_rq, se, flags & ENQUEUE_WAKEUP);
->  	account_entity_enqueue(cfs_rq, se);
->  	update_cfs_shares(cfs_rq);
->  
-> @@ -1345,7 +1425,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
->  	 * Update run-time statistics of the 'current'.
->  	 */
->  	update_curr(cfs_rq);
-> -	dequeue_entity_load_avg(cfs_rq, se);
-> +	dequeue_entity_load_avg(cfs_rq, se, flags & DEQUEUE_SLEEP);
->  
->  	update_stats_dequeue(cfs_rq, se);
->  	if (flags & DEQUEUE_SLEEP) {
-> @@ -1516,7 +1596,7 @@ static void put_prev_entity(struct cfs_rq *cfs_rq, struct sched_entity *prev)
->  		/* Put 'current' back into the tree. */
->  		__enqueue_entity(cfs_rq, prev);
->  		/* in !on_rq case, update occurred at dequeue */
-> -		update_entity_load_avg(prev);
-> +		update_entity_load_avg(prev, 1);
->  	}
->  	cfs_rq->curr = NULL;
->  }
-> @@ -1532,7 +1612,8 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
->  	/*
->  	 * Ensure that runnable average is periodically updated.
->  	 */
-> -	update_entity_load_avg(curr);
-> +	update_entity_load_avg(curr, 1);
-> +	update_cfs_rq_blocked_load(cfs_rq);
->  
->  	/*
->  	 * Update share accounting for long-running entities.
-> @@ -2391,6 +2472,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
->  
->  		update_cfs_load(cfs_rq, 0);
->  		update_cfs_shares(cfs_rq);
-> +		update_entity_load_avg(se, 1);
->  	}
->  
->  	if (!se) {
-> @@ -2452,6 +2534,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
->  
->  		update_cfs_load(cfs_rq, 0);
->  		update_cfs_shares(cfs_rq);
-> +		update_entity_load_avg(se, 1);
->  	}
->  
->  	if (!se) {
-> @@ -3557,6 +3640,7 @@ static int update_shares_cpu(struct task_group *tg, int cpu)
->  
->  	update_rq_clock(rq);
->  	update_cfs_load(cfs_rq, 1);
-> +	update_cfs_rq_blocked_load(cfs_rq);
->  
->  	/*
->  	 * We need to update shares after updating tg->load_weight in
-> @@ -5379,6 +5463,21 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
->  		place_entity(cfs_rq, se, 0);
->  		se->vruntime -= cfs_rq->min_vruntime;
->  	}
-> +
-> +#if defined(CONFIG_FAIR_GROUP_SCHED) && defined(CONFIG_SMP)
-> +	/*
-> +	* Remove our load from contribution when we leave sched_fair
-> +	* and ensure we don't carry in an old decay_count if we
-> +	* switch back.
-> +	*/
-> +	if (p->se.avg.decay_count) {
-> +		struct cfs_rq *cfs_rq = cfs_rq_of(&p->se);
-> +		__synchronize_entity_decay(&p->se);
-> +		subtract_blocked_load_contrib(cfs_rq,
-> +				p->se.avg.load_avg_contrib);
-> +		p->se.avg.decay_count = 0;
-> +	}
-> +#endif
->  }
->  
->  /*
-> @@ -5425,6 +5524,9 @@ void init_cfs_rq(struct cfs_rq *cfs_rq)
->  #ifndef CONFIG_64BIT
->  	cfs_rq->min_vruntime_copy = cfs_rq->min_vruntime;
->  #endif
-> +#if defined(CONFIG_FAIR_GROUP_SCHED) && defined(CONFIG_SMP)
-> +	atomic64_set(&cfs_rq->decay_counter, 1);
-> +#endif
->  }
->  
->  #ifdef CONFIG_FAIR_GROUP_SCHED
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 26cc36f..a96adf1 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -229,7 +229,9 @@ struct cfs_rq {
->  	 * This allows for the description of both thread and group usage (in
->  	 * the FAIR_GROUP_SCHED case).
->  	 */
-> -	u64 runnable_load_avg;
-> +	u64 runnable_load_avg, blocked_load_avg;
-> +	atomic64_t decay_counter;
-> +	u64 last_decay;
->  #endif
->  #ifdef CONFIG_FAIR_GROUP_SCHED
->  	struct rq *rq;	/* cpu runqueue to which this cfs_rq is attached */
+--Signature=_Fri__29_Jun_2012_11_33_10_+1000_3MPnUikOMb5.3s/R--
