@@ -1,211 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711Ab2F2Iem (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 04:34:42 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3521 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500Ab2F2Ieh (ORCPT
+	id S1752790Ab2F2Ijd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 04:39:33 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35529 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677Ab2F2Ij1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 04:34:37 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 29 Jun 2012 01:34:29 -0700
-Message-ID: <4FED688E.9090408@nvidia.com>
-Date: Fri, 29 Jun 2012 14:04:22 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 29 Jun 2012 04:39:27 -0400
+Message-ID: <4FED69BE.20707@linaro.org>
+Date: Fri, 29 Jun 2012 10:39:26 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@ti.com>
-CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Subject: Re: [PATCH 4/6] ARM: tegra: Add clk_tegra structure and helper functions
-References: <1340879846-12900-1-git-send-email-pgaikwad@nvidia.com> <1340879846-12900-5-git-send-email-pgaikwad@nvidia.com> <20120628182759.GA28424@gmail.com>
-In-Reply-To: <20120628182759.GA28424@gmail.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: lenb@kernel.org, trenn@suse.de, srivatsa.bhat@linux.vnet.ibm.com,
+        deepthi@linux.vnet.ibm.com, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, linux-pm@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, Colin Cross <ccross@android.com>
+Subject: Re: [PATCH v2] acpi: intel_idle : break dependency between modules
+References: <201206271506.29034.trenn@suse.de> <1340873202-2476-1-git-send-email-daniel.lezcano@linaro.org> <201206282124.09857.rjw@sisk.pl>
+In-Reply-To: <201206282124.09857.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 28 June 2012 11:58 PM, Mike Turquette wrote:
-> On 20120628-16:07, Prashant Gaikwad wrote:
->> Add Tegra platform specific clock structure clk_tegra and
->> some helper functions for generic clock framework.
+On 06/28/2012 09:24 PM, Rafael J. Wysocki wrote:
+> On Thursday, June 28, 2012, Daniel Lezcano wrote:
+>> When the system is booted with some cpus offline, the idle
+>> driver is not initialized. When a cpu is set online, the
+>> acpi code call the intel idle init function. Unfortunately
+>> this code introduce a dependency between intel_idle and acpi.
 >>
->> struct clk_tegra is the single strcture used for all types of
->> clocks. reset and cfg_ex ops moved to clk_tegra from clk_ops.
+>> This patch is intended to remove this dependency by using the
+>> notifier of intel_idle. This patch has the benefit of
+>> encapsulating the intel_idle driver and remove some exported
+>> functions.
 >>
->> Signed-off-by: Prashant Gaikwad<pgaikwad@nvidia.com>
-> Hi Prashant,
->
-> I'm happy to see Tegra getting ported over to the common clk framework.
+>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> 
+> This one looks good to me too.
+> 
+> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-Thanks Mike!! It will help to get in-line with recent developments.
+Thanks for the review Rafael.
 
-> <snip>
->> +void tegra_clk_add(struct clk *clk)
->> +{
->> +	struct clk_tegra *c = to_clk_tegra(__clk_get_hw(clk));
->> +
->> +	mutex_lock(&clock_list_lock);
->> +	list_add(&c->node,&clocks);
->> +	mutex_unlock(&clock_list_lock);
->> +}
->> +
->> +struct clk *tegra_get_clock_by_name(const char *name)
->> +{
->> +	struct clk_tegra *c;
->> +	struct clk *ret = NULL;
->> +	mutex_lock(&clock_list_lock);
->> +	list_for_each_entry(c,&clocks, node) {
->> +		if (strcmp(__clk_get_name(c->hw.clk), name) == 0) {
->> +			ret = c->hw.clk;
->> +			break;
->> +		}
->> +	}
->> +	mutex_unlock(&clock_list_lock);
->> +	return ret;
->> +}
->> +
-> Are you planning to continue using an internal list of struct clk_tegra?
-> OMAP had a similar list for the legacy clock framework but that was
-> since removed and now lookups are done solely through clkdev.
+> Len, are you going to take it?
 
-No, will move to clkdev later.
+Rafael, Len,
 
-> <snip>
->> +void tegra_periph_reset_deassert(struct clk *c)
->> +{
->> +	struct clk_tegra *clk = to_clk_tegra(__clk_get_hw(c));
->> +	BUG_ON(!clk->reset);
->> +	clk->reset(__clk_get_hw(c), false);
->> +}
->> +EXPORT_SYMBOL(tegra_periph_reset_deassert);
->> +
->> +void tegra_periph_reset_assert(struct clk *c)
->> +{
->> +	struct clk_tegra *clk = to_clk_tegra(__clk_get_hw(c));
->> +	BUG_ON(!clk->reset);
->> +	clk->reset(__clk_get_hw(c), true);
->> +}
->> +EXPORT_SYMBOL(tegra_periph_reset_assert);
->> +
->> +/* Several extended clock configuration bits (e.g., clock routing, clock
->> + * phase control) are included in PLL and peripheral clock source
->> + * registers. */
->> +int tegra_clk_cfg_ex(struct clk *c, enum tegra_clk_ex_param p, u32 setting)
->> +{
->> +	int ret = 0;
->> +	struct clk_tegra *clk = to_clk_tegra(__clk_get_hw(c));
->> +
->> +	if (!clk->clk_cfg_ex) {
->> +		ret = -ENOSYS;
->> +		goto out;
->> +	}
->> +	ret = clk->clk_cfg_ex(__clk_get_hw(c), p, setting);
->> +
->> +out:
->> +	return ret;
->> +}
-> We had some discussions in the past on your clock reset and external
-> line request operations which you've had to put into struct clk_tegra.
->
-> Do you need to expose those ops to code in drivers/*?  I consider that a
-> reasonable litmus test to start considering if something should be moved
-> into the generic clk.h api.
+After the discussion [1], I put in place a tree at:
 
-Yes, we need these ops in drivers. Peter has sent a patch proposing to 
-move these ops to generic clk.
+ssh://git.linaro.org/srv/git.linaro.org/git/people/dlezcano/cpuidle-next.git
+#cpuidle-next
 
-In addition, we also need mechanism/ops to change rate and parent from 
-clk_ops implementation. There was some discussion but I do not know the 
-latest status.
+I proposed this tree to group the cpuidle modifications and prevent the
+last minutes conflict when Len will apply them.
 
-> <snip>
->> +enum clk_state {
->> +	UNINITIALIZED = 0,
->> +	ON,
->> +	OFF,
->> +};
-> How is clk_state used?  Might it be helpful to you if that was in the
-> generic code in drivers/clk/clk.c?
+I also included the tree into linux-next for wider testing.
 
-clk_state is used to store the clock state. I am planning to remove this 
-since is_enabled ops should work.
+If you want I can take this patch even if it is related to acpi also and
+in the future if you agree, Len or you could pull from there.
 
-> <snip>
->> +struct clk_tegra {
->> +	/* node for master clocks list */
->> +	struct list_head	node;	/* node for list of all clocks */
->> +	struct clk_lookup	lookup;
->> +	struct clk_hw		hw;
->> +
->> +	bool			set;
->> +	unsigned long		fixed_rate;
->> +	unsigned long		max_rate;
->> +	unsigned long		min_rate;
->> +	u32			flags;
->> +	const char		*name;
->> +
->> +	enum clk_state		state;
->> +	u32			div;
->> +	u32			mul;
->> +
->> +	u32				reg;
->> +	u32				reg_shift;
->> +
->> +	struct list_head		shared_bus_list;
->> +
->> +	union {
->> +		struct {
->> +			unsigned int			clk_num;
->> +		} periph;
->> +		struct {
->> +			unsigned long			input_min;
->> +			unsigned long			input_max;
->> +			unsigned long			cf_min;
->> +			unsigned long			cf_max;
->> +			unsigned long			vco_min;
->> +			unsigned long			vco_max;
->> +			const struct clk_pll_freq_table	*freq_table;
->> +			int				lock_delay;
->> +			unsigned long			fixed_rate;
->> +		} pll;
->> +		struct {
->> +			u32				sel;
->> +			u32				reg_mask;
->> +		} mux;
->> +		struct {
->> +			struct clk			*main;
->> +			struct clk			*backup;
->> +		} cpu;
->> +		struct {
->> +			struct list_head		node;
->> +			bool				enabled;
->> +			unsigned long			rate;
->> +		} shared_bus_user;
->> +	} u;
->> +
->> +	void (*reset)(struct clk_hw *, bool);
->> +	int (*clk_cfg_ex)(struct clk_hw *, enum tegra_clk_ex_param, u32);
->> +};
-> I know this is an initial effort but I hope in time that struct
-> clk_tegra can be broken up into separate clk types.  It would be even
-> better if some of the Tegra clocks code be converted over to the common
-> clk types in drivers/clk/clk-*.c
+Thanks
+  -- Daniel
 
-Yes, that is next in my action list. One approach I am working on is to 
-model the clock as Mux -> Divider -> Gate by which we can use some of 
-common clock types.
-But this will take time.
+[1] https://lkml.org/lkml/2012/6/18/113
 
-> Regards,
-> Mike
+> 
+> Rafael
+> 
+> 
+>> ---
+>>  drivers/acpi/processor_driver.c |    7 ------
+>>  drivers/idle/intel_idle.c       |   41 +++++++++++++++++++++++++-------------
+>>  include/linux/cpuidle.h         |    7 ------
+>>  3 files changed, 27 insertions(+), 28 deletions(-)
+>>
+>> diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+>> index 0734086..8648b29 100644
+>> --- a/drivers/acpi/processor_driver.c
+>> +++ b/drivers/acpi/processor_driver.c
+>> @@ -427,18 +427,11 @@ static int acpi_cpu_soft_notify(struct notifier_block *nfb,
+>>  		 * Initialize missing things
+>>  		 */
+>>  		if (pr->flags.need_hotplug_init) {
+>> -			struct cpuidle_driver *idle_driver =
+>> -				cpuidle_get_driver();
+>> -
+>>  			printk(KERN_INFO "Will online and init hotplugged "
+>>  			       "CPU: %d\n", pr->id);
+>>  			WARN(acpi_processor_start(pr), "Failed to start CPU:"
+>>  				" %d\n", pr->id);
+>>  			pr->flags.need_hotplug_init = 0;
+>> -			if (idle_driver && !strcmp(idle_driver->name,
+>> -						   "intel_idle")) {
+>> -				intel_idle_cpu_init(pr->id);
+>> -			}
+>>  		/* Normal CPU soft online event */
+>>  		} else {
+>>  			acpi_processor_ppc_has_changed(pr, 0);
+>> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+>> index d0f59c3..fe95d54 100644
+>> --- a/drivers/idle/intel_idle.c
+>> +++ b/drivers/idle/intel_idle.c
+>> @@ -96,6 +96,7 @@ static const struct idle_cpu *icpu;
+>>  static struct cpuidle_device __percpu *intel_idle_cpuidle_devices;
+>>  static int intel_idle(struct cpuidle_device *dev,
+>>  			struct cpuidle_driver *drv, int index);
+>> +static int intel_idle_cpu_init(int cpu);
+>>  
+>>  static struct cpuidle_state *cpuidle_state_table;
+>>  
+>> @@ -302,22 +303,35 @@ static void __setup_broadcast_timer(void *arg)
+>>  	clockevents_notify(reason, &cpu);
+>>  }
+>>  
+>> -static int setup_broadcast_cpuhp_notify(struct notifier_block *n,
+>> -		unsigned long action, void *hcpu)
+>> +static int cpu_hotplug_notify(struct notifier_block *n,
+>> +			      unsigned long action, void *hcpu)
+>>  {
+>>  	int hotcpu = (unsigned long)hcpu;
+>> +	struct cpuidle_device *dev;
+>>  
+>>  	switch (action & 0xf) {
+>>  	case CPU_ONLINE:
+>> -		smp_call_function_single(hotcpu, __setup_broadcast_timer,
+>> -			(void *)true, 1);
+>> +
+>> +		if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE)
+>> +			smp_call_function_single(hotcpu, __setup_broadcast_timer,
+>> +						 (void *)true, 1);
+>> +
+>> +		/*
+>> +		 * Some systems can hotplug a cpu at runtime after
+>> +		 * the kernel has booted, we have to initialize the
+>> +		 * driver in this case
+>> +		 */
+>> +		dev = per_cpu_ptr(intel_idle_cpuidle_devices, hotcpu);
+>> +		if (!dev->registered)
+>> +			intel_idle_cpu_init(hotcpu);
+>> +
+>>  		break;
+>>  	}
+>>  	return NOTIFY_OK;
+>>  }
+>>  
+>> -static struct notifier_block setup_broadcast_notifier = {
+>> -	.notifier_call = setup_broadcast_cpuhp_notify,
+>> +static struct notifier_block cpu_hotplug_notifier = {
+>> +	.notifier_call = cpu_hotplug_notify,
+>>  };
+>>  
+>>  static void auto_demotion_disable(void *dummy)
+>> @@ -405,10 +419,10 @@ static int intel_idle_probe(void)
+>>  
+>>  	if (boot_cpu_has(X86_FEATURE_ARAT))	/* Always Reliable APIC Timer */
+>>  		lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
+>> -	else {
+>> +	else
+>>  		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
+>> -		register_cpu_notifier(&setup_broadcast_notifier);
+>> -	}
+>> +
+>> +	register_cpu_notifier(&cpu_hotplug_notifier);
+>>  
+>>  	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
+>>  		" model 0x%X\n", boot_cpu_data.x86_model);
+>> @@ -494,7 +508,7 @@ static int intel_idle_cpuidle_driver_init(void)
+>>   * allocate, initialize, register cpuidle_devices
+>>   * @cpu: cpu/core to initialize
+>>   */
+>> -int intel_idle_cpu_init(int cpu)
+>> +static int intel_idle_cpu_init(int cpu)
+>>  {
+>>  	int cstate;
+>>  	struct cpuidle_device *dev;
+>> @@ -539,7 +553,6 @@ int intel_idle_cpu_init(int cpu)
+>>  
+>>  	return 0;
+>>  }
+>> -EXPORT_SYMBOL_GPL(intel_idle_cpu_init);
+>>  
+>>  static int __init intel_idle_init(void)
+>>  {
+>> @@ -581,10 +594,10 @@ static void __exit intel_idle_exit(void)
+>>  	intel_idle_cpuidle_devices_uninit();
+>>  	cpuidle_unregister_driver(&intel_idle_driver);
+>>  
+>> -	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE) {
+>> +
+>> +	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE)
+>>  		on_each_cpu(__setup_broadcast_timer, (void *)false, 1);
+>> -		unregister_cpu_notifier(&setup_broadcast_notifier);
+>> -	}
+>> +	unregister_cpu_notifier(&cpu_hotplug_notifier);
+>>  
+>>  	return;
+>>  }
+>> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+>> index 5ab7183..66d7e0d 100644
+>> --- a/include/linux/cpuidle.h
+>> +++ b/include/linux/cpuidle.h
+>> @@ -213,14 +213,7 @@ struct cpuidle_governor {
+>>  extern int cpuidle_register_governor(struct cpuidle_governor *gov);
+>>  extern void cpuidle_unregister_governor(struct cpuidle_governor *gov);
+>>  
+>> -#ifdef CONFIG_INTEL_IDLE
+>> -extern int intel_idle_cpu_init(int cpu);
+>>  #else
+>> -static inline int intel_idle_cpu_init(int cpu) { return -1; }
+>> -#endif
+>> -
+>> -#else
+>> -static inline int intel_idle_cpu_init(int cpu) { return -1; }
+>>  
+>>  static inline int cpuidle_register_governor(struct cpuidle_governor *gov)
+>>  {return 0;}
+>>
+> 
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
