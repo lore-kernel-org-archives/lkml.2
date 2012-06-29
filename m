@@ -1,124 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832Ab2F2Xqp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 19:46:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34951 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702Ab2F2Xqn (ORCPT
+	id S1755548Ab2F2Xu0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 19:50:26 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39088 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab2F2XuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 19:46:43 -0400
-Date: Fri, 29 Jun 2012 16:46:38 -0700
-From: Michel Lespinasse <walken@google.com>
-To: Rik van Riel <riel@surriel.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, aarcange@redhat.com,
-        peterz@infradead.org, minchan@gmail.com, kosaki.motohiro@gmail.com,
-        andi@firstfloor.org, hannes@cmpxchg.org, mel@csn.ul.ie,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH -mm v2 01/11] mm: track free size between VMAs in VMA
- rbtree
-Message-ID: <20120629234638.GA27797@google.com>
-References: <1340315835-28571-1-git-send-email-riel@surriel.com>
- <1340315835-28571-2-git-send-email-riel@surriel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340315835-28571-2-git-send-email-riel@surriel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 29 Jun 2012 19:50:24 -0400
+Date: Fri, 29 Jun 2012 16:50:23 -0700 (PDT)
+Message-Id: <20120629.165023.1605284574408858612.davem@davemloft.net>
+To: vincent.sanders@collabora.co.uk
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: AF_BUS socket address family
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120629234230.GA11480@kyllikki.org>
+References: <20120629231236.GA28593@mail.collabora.co.uk>
+	<20120629.161821.948325645333976311.davem@davemloft.net>
+	<20120629234230.GA11480@kyllikki.org>
+X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 05:57:05PM -0400, Rik van Riel wrote:
->  /*
-> + * largest_free_gap - returns the largest free gap "nearby"
-> + *
-> + * This function is called when propagating information on the
-> + * free spaces between VMAs "up" the VMA rbtree. It returns the
-> + * largest of:
-> + *
-> + * 1. The gap between this VMA and vma->vm_prev.
-> + * 2. The largest gap below us and to our left in the rbtree.
-> + * 3. The largest gap below us and to our right in the rbtree.
-> + */
-> +static unsigned long largest_free_gap(struct rb_node *node)
-> +{
-> +	struct vm_area_struct *vma, *prev, *left = NULL, *right = NULL;
-> +	unsigned long largest = 0;
-> +
-> +	if (node->rb_left)
-> +		left = rb_to_vma(node->rb_left);
-> +	if (node->rb_right)
-> +		right = rb_to_vma(node->rb_right);
-> +
-> +	/* Calculate the free gap size between us and the VMA to our left. */
-> +	vma = rb_to_vma(node);
-> +	prev = vma->vm_prev;
-> +
-> +	if (prev)
-> +		largest = vma->vm_start - prev->vm_end;
-> +	else
-> +		largest = vma->vm_start;
-> +
-> +	/* We propagate the largest of our own, or our children's free gaps. */
-> +	if (left)
-> +		largest = max(largest, left->free_gap);
-> +	if (right)
-> +		largest = max(largest, right->free_gap);
-> +
-> +	return largest;
-> +}
+From: Vincent Sanders <vincent.sanders@collabora.co.uk>
+Date: Sat, 30 Jun 2012 00:42:30 +0100
 
-I second PeterZ's suggestion of having an helper function
+> Basically you are indicating you would be completely opposed to any
+> mechanism involving D-Bus IPC and the kernel? 
 
-static unsigned long free_gap(struct rb_node *node)
-{
-	struct vm_area_struct *vma = rb_to_vma(node);
-	unsigned long gap = vma->vm_start;
-	if (vma->vm_prev)
-		gap -= vma->vm_prev->vm_end;
-	return gap;
-}
+I would not oppose existing mechanisms, which I do not believe is
+impossible to use in your scenerio.
 
-Which you can then use to simplify the largest_free_gap() implementation.
+What you really don't get is that packet drops and event losses are
+absolutely fundamental.
 
-> +/*
-> + * Use the augmented rbtree code to propagate info on the largest
-> + * free gap between VMAs up the VMA rbtree.
-> + */
-> +static void adjust_free_gap(struct vm_area_struct *vma)
-> +{
-> +	rb_augment_erase_end(&vma->vm_rb, vma_rb_augment_cb, NULL);
-> +}
-> @@ -398,6 +454,10 @@ void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma,
->  {
->  	rb_link_node(&vma->vm_rb, rb_parent, rb_link);
->  	rb_insert_color(&vma->vm_rb, &mm->mm_rb);
-> +	adjust_free_gap(vma);
-> +	/* Propagate the new free gap between next and us up the tree. */
-> +	if (vma->vm_next)
-> +		adjust_free_gap(vma->vm_next);
->  }
+As long as receivers lack infinite receive queue this will always be
+the case.
 
-So this will work, and may be fine for a first implementation. However,
-the augmented rbtree support really seems inadequate here. What we
-would want is for adjust_free_gap to adjust the node's free_gap as
-well as its parents, and *stop* when it reaches a node that already
-has the desired free_gap instead of going all the way to the root as
-it does now. But, to do that we would also need rb_insert_color() to
-adjust free_gap as needed when doing tree rotations, and it doesn't
-have the necessary support there.
+Multicast operates in non-reliable transports only so that one stuck
+or malfunctioning receiver doesn't screw things over for everyone nor
+unduly brudon the sender.
 
-Basically, I think lib/rbtree.c should provide augmented rbtree support
-in the form of (versions of) rb_insert_color() and rb_erase() being able to
-callback to adjust the augmented node information around tree rotations,
-instead of using (conservative, overkill) loops to adjust the augmented
-node information after the fact in all places that might have been affected
-by such rotations. Doing it after the fact is necessarity overkill because
-it visits O(log N) nodes, while the number of rotations that might have
-occured is only O(1).
-
-I'm interested in this stuff, please CC me if you do a v3 :)
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
