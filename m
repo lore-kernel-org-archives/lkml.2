@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259Ab2F2S5e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 14:57:34 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56485 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755480Ab2F2S5d convert rfc822-to-8bit (ORCPT
+	id S932614Ab2F2S6L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 14:58:11 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:36203 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932289Ab2F2S6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:57:33 -0400
-Message-ID: <1340996224.28750.116.camel@twins>
-Subject: Re: [PATCH 13/40] autonuma: CPU follow memory algorithm
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Rik van Riel <riel@redhat.com>
-Cc: dlaor@redhat.com, Ingo Molnar <mingo@kernel.org>,
-        Hillf Danton <dhillf@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Fri, 29 Jun 2012 20:57:04 +0200
-In-Reply-To: <4FEDF81C.1010401@redhat.com>
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
-	  <1340888180-15355-14-git-send-email-aarcange@redhat.com>
-	  <1340895238.28750.49.camel@twins>
-	  <CAJd=RBA+FPgB9iq07YG0Pd=tN65SGK1ifmj98tomBDbYeKOE-Q@mail.gmail.com>
-	  <20120629125517.GD32637@gmail.com> <4FEDDD0C.60609@redhat.com>
-	 <1340995260.28750.103.camel@twins> <4FEDF81C.1010401@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 29 Jun 2012 14:58:08 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
+        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
+Subject: [PATCH v3 01/17] vfs: add a retry_estale helper function to handle retries on ESTALE
+Date: Fri, 29 Jun 2012 14:57:44 -0400
+Message-Id: <1340996280-27123-2-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
+References: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-29 at 14:46 -0400, Rik van Riel wrote:
-> 
-> I am not convinced all architectures that have CONFIG_NUMA
-> need to be a requirement, since some of them (eg. Alpha)
-> seem to be lacking a maintainer nowadays. 
+This function is expected to be called from path-based syscalls to help
+them decide whether to try the lookup and call again in the event that
+they got an -ESTALE return back on an earier try.
 
-Still, this NUMA balancing stuff is not a small tweak to load-balancing.
-Its a very significant change is how you schedule. Having such great
-differences over architectures isn't something I look forward to.
+Currently, we only retry the call once on an ESTALE error, but in the
+event that we decide that that's not enough in the future, we should be
+able to change the logic in this helper without too much effort.
+
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ include/linux/fs.h |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 17fd887..4a2aa04 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2062,6 +2062,27 @@ extern struct file * dentry_open(struct dentry *, struct vfsmount *, int,
+ extern int filp_close(struct file *, fl_owner_t id);
+ extern char * getname(const char __user *);
+ 
++/**
++ * retry_estale - determine whether the caller should retry an operation
++ *
++ * @error: the error we'll be returning
++ * @try: number of retries already performed
++ *
++ * Check to see if the error code was -ESTALE, and then determine whether
++ * to retry the call based on the number of retries so far. Currently, we only
++ * retry the call once.
++ *
++ * Returns true if the caller should try again.
++ */
++static inline bool
++retry_estale(const long error, const unsigned int try)
++{
++	if (likely(error != -ESTALE))
++		return false;
++
++	return !try;
++}
++
+ /* fs/ioctl.c */
+ 
+ extern int ioctl_preallocate(struct file *filp, void __user *argp);
+-- 
+1.7.7.6
+
