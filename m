@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127Ab2F2PhZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 11:37:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50297 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751895Ab2F2PhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 11:37:24 -0400
-Message-ID: <4FEDCB7A.1060007@redhat.com>
-Date: Fri, 29 Jun 2012 11:36:26 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 09/40] autonuma: introduce kthread_bind_node()
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-10-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1340888180-15355-10-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S932160Ab2F2PjA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 11:39:00 -0400
+Received: from zimbra.linbit.com ([212.69.161.123]:59312 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752557Ab2F2Pi6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 11:38:58 -0400
+Message-ID: <1340984335.25450.24.camel@gurkel.linbit>
+Subject: Re: [RFC] [TCP 1/3] tcp: Add MSG_NEW_PACKET flag to indicate
+ preferable packet boundaries
+From: Andreas Gruenbacher <agruen@linbit.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Fri, 29 Jun 2012 17:38:55 +0200
+In-Reply-To: <1340982666.21162.3.camel@edumazet-glaptop>
+References: <1340981690.25226.3.camel@gurkel.linbit>
+	 <1340982666.21162.3.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
+On Fri, 2012-06-29 at 17:11 +0200, Eric Dumazet wrote:
+> On Fri, 2012-06-29 at 16:54 +0200, Andreas Gruenbacher wrote:
+> > The MSG_NEW_PACKET flag indicates to sendmsg / sendpage that the message or
+> > page should be put into a new packet even when there is still room left in the
+> > previous packet.
+> > 
+> > In the tcp protocol, messages which are not sent immediately are queued.  When
+> > more data is sent, it will be added to the last segment in that queue until
+> > that segment is "full" whenever possible; only then is a new segment added.
+> > Right now, there is no way to indicate when tcp should start a new segment.
+> > The new flag allows to control that.
+> > 
+> > Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
+> > ---
+> 
+> I don't understand how maintaining any message boundaries at sender can
+> prevent any middlebox or the receiver to coalesce frames to any
+> boundaries it prefers ?
 
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1792,7 +1792,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
->   #define PF_SWAPWRITE	0x00800000	/* Allowed to write to swap */
->   #define PF_SPREAD_PAGE	0x01000000	/* Spread page cache over cpuset */
->   #define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
-> -#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpu */
-> +#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpus */
->   #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
->   #define PF_MEMPOLICY	0x10000000	/* Non-default NUMA mempolicy */
->   #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
+The primary use case is fast Gigabit (10 or more) Ethernet connections
+with jumbo frames and switches that support them.  There, frames will go
+through unchanged and you can zero-copy receive all the time.
 
-Changing the semantics of PF_THREAD_BOUND without so much as
-a comment in your changelog or buy-in from the scheduler
-maintainers is a big no-no.
+Not sure how well the approach scales to other kinds of connections; it
+may work often enough to be worth it.  When things get distorted between
+the sender and the receiver and tcp_recvbio() fails, the data can still
+be copied out of the socket as before.
 
-Is there any reason you even need PF_THREAD_BOUND in your
-kernel numa threads?
+Andreas
 
-I do not see much at all in the scheduler code that uses
-PF_THREAD_BOUND and it is not clear at all that your
-numa threads get any benefit from them...
-
-Why do you think you need it?
-
--- 
-All rights reversed
