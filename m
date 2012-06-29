@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769Ab2F2LLe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 07:11:34 -0400
-Received: from mga03.intel.com ([143.182.124.21]:23224 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751252Ab2F2LLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 07:11:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="162203019"
-Date: Fri, 29 Jun 2012 13:22:40 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 2/2] mfd: max77693: Remove unused iolock mutex
-Message-ID: <20120629112240.GJ4846@sortiz-mobl>
-References: <1337849788.1028.0.camel@phoenix>
- <1337849866.1028.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337849866.1028.1.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752785Ab2F2LSm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 07:18:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32504 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895Ab2F2LSl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 07:18:41 -0400
+X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=EvKSwpK77UAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=59w9SamwkGhfydPAhz8A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340968718.16702.98.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kay Sievers <kay@vrfy.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Wu Fengguang <fengguang.wu@intel.com>, Joe Perches <joe@perches.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>
+Date: Fri, 29 Jun 2012 07:18:38 -0400
+In-Reply-To: <20120629053027.GA9841@kroah.com>
+References: <20120626002307.GA4389@kroah.com>
+	 <CA+55aFxhYRqcU2EUmcsuLrhgo4FEO6-b+mB57wB3JRiXEp3ZrA@mail.gmail.com>
+	 <CAPXgP10cPFSmZ5yr6Z4wVtDa+x2J1yQDF57NJXtxjUuxMHm=Lw@mail.gmail.com>
+	 <CA+55aFzkX=jCC1O6+2oz8meswOqZQ+Q8Ao60q8eAS1G3AuEStQ@mail.gmail.com>
+	 <1340726856.977.6.camel@mop>
+	 <1340810038.16702.16.camel@gandalf.stny.rr.com>
+	 <1340810283.16702.19.camel@gandalf.stny.rr.com>
+	 <CAPXgP121+zA_p4x9VdSMWtu-SqqqiNC51CKkYKY4YkAL+QsQ4g@mail.gmail.com>
+	 <1340869133.876.10.camel@mop>
+	 <1340852129.16702.73.camel@gandalf.stny.rr.com>
+	 <20120629053027.GA9841@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
-
-On Thu, May 24, 2012 at 04:57:46PM +0800, Axel Lin wrote:
-> Now this driver is using regmap APIs, the iolock mutex is not used and can be
-> removed.
+On Fri, 2012-06-29 at 01:30 -0400, Greg Kroah-Hartman wrote:
+>  
+> > I wonder if it would be better to do the following for the above two
+> > ifs:
+> > 
+> > 	if (cont.len && cont.owner == current) {
+> > 		if (!prefix)
+> > 			stored = cont_add(facility, level, text, text_len);
+> > 		cont_flush();
+> > 	}
+> > 
+> > If the prefix was true, then the cont.flush would be set when cont_add()
+> > is called, and the first thing that cont_add() does:
+> > 
+> > 	if (cont.len && cont.flushed)
+> > 		return false;
+> > 
+> > which would always be true (returning false) if prefix was set.
+> > 
+> > And the second cont_flush() is a nop due to it doing:
+> > 
+> > 	if (cont.flushed)
+> > 		return;
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/mfd/max77693.c               |    2 --
->  include/linux/mfd/max77693-private.h |    1 -
->  2 files changed, 0 insertions(+), 3 deletions(-)
-Patch applied, thanks.
+> It might be "better", and this would be a nice optimization, but is it
+> needed right now?  In other words, I'd like to get this patch into
+> linux-next soon to get testing to get to Linus before 3.5-final comes
+> out, don't you?
 
-Cheers,
-Samuel.
+Sure, pull it as is, and you can add my Tested-by, and Acked-by tags
+(Steven Rostedt <rostedt@goodmis.org>).
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+I'll send you a patch to do this update that you can queue for 3.6.
+OK?
+
+-- Steve
+
+
