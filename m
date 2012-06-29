@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab2F2LSm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 07:18:42 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32504 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751895Ab2F2LSl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 07:18:41 -0400
-X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=EvKSwpK77UAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=59w9SamwkGhfydPAhz8A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1340968718.16702.98.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Kay Sievers <kay@vrfy.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Wu Fengguang <fengguang.wu@intel.com>, Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Date: Fri, 29 Jun 2012 07:18:38 -0400
-In-Reply-To: <20120629053027.GA9841@kroah.com>
-References: <20120626002307.GA4389@kroah.com>
-	 <CA+55aFxhYRqcU2EUmcsuLrhgo4FEO6-b+mB57wB3JRiXEp3ZrA@mail.gmail.com>
-	 <CAPXgP10cPFSmZ5yr6Z4wVtDa+x2J1yQDF57NJXtxjUuxMHm=Lw@mail.gmail.com>
-	 <CA+55aFzkX=jCC1O6+2oz8meswOqZQ+Q8Ao60q8eAS1G3AuEStQ@mail.gmail.com>
-	 <1340726856.977.6.camel@mop>
-	 <1340810038.16702.16.camel@gandalf.stny.rr.com>
-	 <1340810283.16702.19.camel@gandalf.stny.rr.com>
-	 <CAPXgP121+zA_p4x9VdSMWtu-SqqqiNC51CKkYKY4YkAL+QsQ4g@mail.gmail.com>
-	 <1340869133.876.10.camel@mop>
-	 <1340852129.16702.73.camel@gandalf.stny.rr.com>
-	 <20120629053027.GA9841@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752872Ab2F2LTi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 07:19:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33133 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751895Ab2F2LTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 07:19:37 -0400
+Date: Fri, 29 Jun 2012 12:19:32 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: MMTests 0.04
+Message-ID: <20120629111932.GA14154@suse.de>
+References: <20120620113252.GE4011@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120620113252.GE4011@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-29 at 01:30 -0400, Greg Kroah-Hartman wrote:
->  
-> > I wonder if it would be better to do the following for the above two
-> > ifs:
-> > 
-> > 	if (cont.len && cont.owner == current) {
-> > 		if (!prefix)
-> > 			stored = cont_add(facility, level, text, text_len);
-> > 		cont_flush();
-> > 	}
-> > 
-> > If the prefix was true, then the cont.flush would be set when cont_add()
-> > is called, and the first thing that cont_add() does:
-> > 
-> > 	if (cont.len && cont.flushed)
-> > 		return false;
-> > 
-> > which would always be true (returning false) if prefix was set.
-> > 
-> > And the second cont_flush() is a nop due to it doing:
-> > 
-> > 	if (cont.flushed)
-> > 		return;
+On Wed, Jun 20, 2012 at 12:32:52PM +0100, Mel Gorman wrote:
+> MMTests 0.04 is a configurable test suite that runs a number of common
+> workloads of interest to MM developers. Apparently I never sent a release
+> note for 0.03 so here is the changelog for both
 > 
-> It might be "better", and this would be a nice optimization, but is it
-> needed right now?  In other words, I'd like to get this patch into
-> linux-next soon to get testing to get to Linus before 3.5-final comes
-> out, don't you?
 
-Sure, pull it as is, and you can add my Tested-by, and Acked-by tags
-(Steven Rostedt <rostedt@goodmis.org>).
+Using MMTests 0.04 I ran a number of tests between 2.6.32 and 3.4 on three
+test machines. None of them are particularly powerful but the results are
+still useful because it's worth knowing how we are doing for some ordinary
+cases over time.
 
-I'll send you a patch to do this update that you can queue for 3.6.
-OK?
+There were 34 test configurations in all taking between 3-5 days to run all
+the tests for a single kernel. I expect that not all the results will be
+useful when I look closer but that can be improved. I have not looked at
+all the results yet and will only talk about the ones I have had a chance
+to read.
 
--- Steve
+I know the presentation is ugly but it was not a high priority to make
+them very pretty. The analysis is also superficial as it's time consuming
+to do a full analysis for any of these tests. In general the stats need
+improving but this is also something that can be improved over time once
+the raw data can be collected. Right now I tend to look closer at the
+data when I am trying to narrow a problem down to a specific area or when
+a regression might have been introduced.  When this happens I can usually
+apply what stats I need manually or rerun the specific test with additional
+monitoring which is less than ideal for automation.
 
+Due to the superficial nature I suggest you take these summaries with a
+grain of salt and draw your own conclusions.
 
+-- 
+Mel Gorman
+SUSE Labs
