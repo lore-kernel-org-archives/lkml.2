@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab2F2QF6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 12:05:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47477 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751500Ab2F2QF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 12:05:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="159763528"
-Date: Fri, 29 Jun 2012 18:17:05 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: max8925: transfer rtc irq in resources
-Message-ID: <20120629161705.GP22806@sortiz-mobl>
-References: <1338890930-24724-1-git-send-email-haojian.zhuang@gmail.com>
+	id S932297Ab2F2QGl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 12:06:41 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40278 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751336Ab2F2QGk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 12:06:40 -0400
+Message-ID: <4FEDD28D.1000303@wwwdotorg.org>
+Date: Fri, 29 Jun 2012 10:06:37 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338890930-24724-1-git-send-email-haojian.zhuang@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Courbot <acourbot@nvidia.com>
+CC: Stephen Warren <swarren@nvidia.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: tegra: add Ventana backlight device
+References: <1340976299-27601-1-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1340976299-27601-1-git-send-email-acourbot@nvidia.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Haojian,
+On 06/29/2012 07:24 AM, Alexandre Courbot wrote:
+> Add the backlight device to the Ventana device tree.
 
-On Tue, Jun 05, 2012 at 06:08:50PM +0800, Haojian Zhuang wrote:
-> MAX8925 rtc irq is transfered from mfd resources now.
-> 
-> Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-> ---
->  drivers/mfd/max8925-core.c |    8 ++++----
->  drivers/rtc/rtc-max8925.c  |   13 +++++++------
->  2 files changed, 11 insertions(+), 10 deletions(-)
-Applied, thanks.
+As I mentioned downstream, I have a patch to add all the regulators for
+Ventana to DT. This patch should be rebased on top of that, since it
+adds the backlight regulator node too, but co-locates it with a bunch of
+other regulators, so won't merge with this patch.
 
-Cheers,
-Samuel.
+I hope I'll be able to publish an updated version of the Ventana patch
+today.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+But aside from that, this patch looks reasonable.
