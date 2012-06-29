@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab2F2Qhy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 12:37:54 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:58780 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755112Ab2F2Qhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 12:37:53 -0400
-Message-ID: <1340987872.6562.47.camel@joe2Laptop>
-Subject: Re: [PATCH] Staging: android: fix pr_info and pr_err coding style
- issues in ashmem.c
-From: Joe Perches <joe@perches.com>
-To: Pablo Vazquez Rodriguez <peibolvigo@gmail.com>
-Cc: greg@kroah.com, swetland@google.com, john.stultz@linaro.org,
-        arve@android.com, ccross@android.com, bringert@android.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Fri, 29 Jun 2012 09:37:52 -0700
-In-Reply-To: <1340987232-25169-1-git-send-email-peibolvigo@gmail.com>
-References: <y> <1340987232-25169-1-git-send-email-peibolvigo@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S932162Ab2F2Qii (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 12:38:38 -0400
+Received: from smtp-out-134.synserver.de ([212.40.185.134]:1038 "EHLO
+	smtp-out-132.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755112Ab2F2Qih (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 12:38:37 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 20396
+Message-ID: <4FEDDAEF.5020609@metafoo.de>
+Date: Fri, 29 Jun 2012 18:42:23 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: Laxman Dewangan <ldewangan@nvidia.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lrg@ti.com" <lrg@ti.com>, Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [alsa-devel] [PATCH] ASoC: snd_dmaengine: add common api for
+ pcm_mmap
+References: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com> <4FEC3B70.5030902@metafoo.de> <s5hobo3zl79.wl%tiwai@suse.de> <20120628121816.GB21029@sirena.org.uk> <4FEC4E62.3020101@metafoo.de> <20120628122830.GJ28922@opensource.wolfsonmicro.com> <4FEC4FA9.20004@nvidia.com> <s5hlij7zja0.wl%tiwai@suse.de> <4FEC5642.9080908@nvidia.com> <s5hk3yrzhte.wl%tiwai@suse.de> <4FEC5DC7.5060600@nvidia.com> <s5hd34jzgs0.wl%tiwai@suse.de>
+In-Reply-To: <s5hd34jzgs0.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-29 at 18:27 +0200, Pablo Vazquez Rodriguez wrote:
-> This is a patch to the ashmem.c file that fixes up several pr_info and pr_err warnings found by the checkpath.pl tool
-[]
-> diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
-[]
-> @@ -707,7 +707,7 @@ static int __init ashmem_init(void)
+On 06/28/2012 03:51 PM, Takashi Iwai wrote:
+> At Thu, 28 Jun 2012 19:06:07 +0530,
+> Laxman Dewangan wrote:
+> [...]
+> 
+> But, still we need to be careful about this.  As mentioned, there is
+> no flag to know the possibility of writecombine mmap beforehand.
+> It'd be nice if we have either a compile-time or a run-time flag /
+> function to check that.  Then the driver can also expose the mmap
+> capability to user-space depending on the flag.
+> 
 
-Try adding
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-before any other #include
+If writecombine is not supported it will fallback to a "normal" mmap.
+Here's an excerpt from the DMA mapping documentation:
 
->  					  sizeof(struct ashmem_area),
->  					  0, 0, NULL);
->  	if (unlikely(!ashmem_area_cachep)) {
-> -		printk(KERN_ERR "ashmem: failed to create slab cache\n");
-> +		pr_err("ashmem: failed to create slab cache\n");
+DMA_ATTR_WRITE_COMBINE
+----------------------
 
-these then become
-		pr_err("failed to create slab cache\n");
+DMA_ATTR_WRITE_COMBINE specifies that writes to the mapping may be
+buffered to improve performance.
 
-> @@ -715,19 +715,19 @@ static int __init ashmem_init(void)
-> +		pr_err("ashmem: failed to create slab cache\n");
-		pr_err("failed to create slab cache\n");
-[]
-> +		pr_err("ashmem: failed to register misc device!\n");
-		pr_err("failed ...");
+Since it is optional for platforms to implement DMA_ATTR_WRITE_COMBINE,
+those that do not will simply ignore the attribute and exhibit default
+behavior.
 
-etc.
-
-
+- Lars
