@@ -1,245 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043Ab2F2PQw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 11:16:52 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47837 "EHLO radon.swed.at"
+	id S1756054Ab2F2PRd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 11:17:33 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932106Ab2F2POm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 11:14:42 -0400
+	id S1755689Ab2F2POj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 11:14:39 -0400
 From: Richard Weinberger <richard@nod.at>
 To: linux-mtd@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
         Heinz.Egger@linutronix.de, thomas.wucher@linutronix.de,
         shmulik.ladkani@gmail.com, tglx@linutronix.de, tim.bird@am.sony.com,
         Marius.Mazarel@ugal.ro, artem.bityutskiy@linux.intel.com,
-        nyoushchenko@mvista.com, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 03/11] UBI: Fastmap: Remove forward declaration
-Date: Fri, 29 Jun 2012 17:14:21 +0200
-Message-Id: <1340982869-77042-4-git-send-email-richard@nod.at>
+        nyoushchenko@mvista.com
+Subject: UBI fastmap updates
+Date: Fri, 29 Jun 2012 17:14:18 +0200
+Message-Id: <1340982869-77042-1-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1340982869-77042-1-git-send-email-richard@nod.at>
-References: <1340982869-77042-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/mtd/ubi/attach.c |  186 ++++++++++++++++++++++------------------------
- 1 files changed, 89 insertions(+), 97 deletions(-)
+This is the next round of UBI fastmap updates.
 
-diff --git a/drivers/mtd/ubi/attach.c b/drivers/mtd/ubi/attach.c
-index f1dfb63..e88521b 100644
---- a/drivers/mtd/ubi/attach.c
-+++ b/drivers/mtd/ubi/attach.c
-@@ -89,15 +89,7 @@
- #include <linux/random.h>
- #include "ubi.h"
- 
--/*
-- * TODO: please, no forward declarations. We do not use them in UBI code.
-- * Actually initially I did use them a lot, but when upstreaming, I was asked
-- * to remove. Please, follow this convention as well. Please, change globally.
-- * I mean, I am already used to that _all_ the code is upside-down, let's keep
-- * it that way, or re-structure all the code. :-)
-- */
- static int self_check_ai(struct ubi_device *ubi, struct ubi_attach_info *ai);
--static void destroy_ai(struct ubi_device *ubi, struct ubi_attach_info *ai);
- 
- /* Temporary variables used during scanning */
- static struct ubi_ec_hdr *ech;
-@@ -1132,6 +1124,95 @@ static int late_analysis(struct ubi_device *ubi, struct ubi_attach_info *ai)
- }
- 
- /**
-+ * destroy_av - free volume attaching information.
-+ * @av: volume attaching information
-+ * @ai: attaching information
-+ *
-+ * This function destroys the volume attaching information.
-+ */
-+static void destroy_av(struct ubi_attach_info *ai, struct ubi_ainf_volume *av)
-+{
-+	struct ubi_ainf_peb *aeb;
-+	struct rb_node *this = av->root.rb_node;
-+
-+	while (this) {
-+		if (this->rb_left)
-+			this = this->rb_left;
-+		else if (this->rb_right)
-+			this = this->rb_right;
-+		else {
-+			aeb = rb_entry(this, struct ubi_ainf_peb, u.rb);
-+			this = rb_parent(this);
-+			if (this) {
-+				if (this->rb_left == &aeb->u.rb)
-+					this->rb_left = NULL;
-+				else
-+					this->rb_right = NULL;
-+			}
-+
-+			kmem_cache_free(ai->aeb_slab_cache, aeb);
-+		}
-+	}
-+	kfree(av);
-+}
-+
-+/**
-+ * destroy_ai - destroy attaching information.
-+ * @ubi: UBI device object
-+ * @ai: attaching information
-+ */
-+static void destroy_ai(struct ubi_device *ubi, struct ubi_attach_info *ai)
-+{
-+	struct ubi_ainf_peb *aeb, *aeb_tmp;
-+	struct ubi_ainf_volume *av;
-+	struct rb_node *rb;
-+
-+	list_for_each_entry_safe(aeb, aeb_tmp, &ai->alien, u.list) {
-+		list_del(&aeb->u.list);
-+		kmem_cache_free(ai->aeb_slab_cache, aeb);
-+	}
-+	list_for_each_entry_safe(aeb, aeb_tmp, &ai->erase, u.list) {
-+		list_del(&aeb->u.list);
-+		kmem_cache_free(ai->aeb_slab_cache, aeb);
-+	}
-+	list_for_each_entry_safe(aeb, aeb_tmp, &ai->corr, u.list) {
-+		list_del(&aeb->u.list);
-+		kmem_cache_free(ai->aeb_slab_cache, aeb);
-+	}
-+	list_for_each_entry_safe(aeb, aeb_tmp, &ai->free, u.list) {
-+		list_del(&aeb->u.list);
-+		kmem_cache_free(ai->aeb_slab_cache, aeb);
-+	}
-+
-+	/* Destroy the volume RB-tree */
-+	rb = ai->volumes.rb_node;
-+	while (rb) {
-+		if (rb->rb_left)
-+			rb = rb->rb_left;
-+		else if (rb->rb_right)
-+			rb = rb->rb_right;
-+		else {
-+			av = rb_entry(rb, struct ubi_ainf_volume, rb);
-+
-+			rb = rb_parent(rb);
-+			if (rb) {
-+				if (rb->rb_left == &av->rb)
-+					rb->rb_left = NULL;
-+				else
-+					rb->rb_right = NULL;
-+			}
-+
-+			destroy_av(ai, av);
-+		}
-+	}
-+
-+	if (ai->aeb_slab_cache)
-+		kmem_cache_destroy(ai->aeb_slab_cache);
-+
-+	kfree(ai);
-+}
-+
-+/**
-  * scan_all - scan entire MTD device.
-  * @ubi: UBI device description object
-  * @ai: attach info object
-@@ -1354,95 +1435,6 @@ out_ai:
- }
- 
- /**
-- * destroy_av - free volume attaching information.
-- * @av: volume attaching information
-- * @ai: attaching information
-- *
-- * This function destroys the volume attaching information.
-- */
--static void destroy_av(struct ubi_attach_info *ai, struct ubi_ainf_volume *av)
--{
--	struct ubi_ainf_peb *aeb;
--	struct rb_node *this = av->root.rb_node;
--
--	while (this) {
--		if (this->rb_left)
--			this = this->rb_left;
--		else if (this->rb_right)
--			this = this->rb_right;
--		else {
--			aeb = rb_entry(this, struct ubi_ainf_peb, u.rb);
--			this = rb_parent(this);
--			if (this) {
--				if (this->rb_left == &aeb->u.rb)
--					this->rb_left = NULL;
--				else
--					this->rb_right = NULL;
--			}
--
--			kmem_cache_free(ai->aeb_slab_cache, aeb);
--		}
--	}
--	kfree(av);
--}
--
--/**
-- * destroy_ai - destroy attaching information.
-- * @ubi: UBI device object
-- * @ai: attaching information
-- */
--static void destroy_ai(struct ubi_device *ubi, struct ubi_attach_info *ai)
--{
--	struct ubi_ainf_peb *aeb, *aeb_tmp;
--	struct ubi_ainf_volume *av;
--	struct rb_node *rb;
--
--	list_for_each_entry_safe(aeb, aeb_tmp, &ai->alien, u.list) {
--		list_del(&aeb->u.list);
--		kmem_cache_free(ai->aeb_slab_cache, aeb);
--	}
--	list_for_each_entry_safe(aeb, aeb_tmp, &ai->erase, u.list) {
--		list_del(&aeb->u.list);
--		kmem_cache_free(ai->aeb_slab_cache, aeb);
--	}
--	list_for_each_entry_safe(aeb, aeb_tmp, &ai->corr, u.list) {
--		list_del(&aeb->u.list);
--		kmem_cache_free(ai->aeb_slab_cache, aeb);
--	}
--	list_for_each_entry_safe(aeb, aeb_tmp, &ai->free, u.list) {
--		list_del(&aeb->u.list);
--		kmem_cache_free(ai->aeb_slab_cache, aeb);
--	}
--
--	/* Destroy the volume RB-tree */
--	rb = ai->volumes.rb_node;
--	while (rb) {
--		if (rb->rb_left)
--			rb = rb->rb_left;
--		else if (rb->rb_right)
--			rb = rb->rb_right;
--		else {
--			av = rb_entry(rb, struct ubi_ainf_volume, rb);
--
--			rb = rb_parent(rb);
--			if (rb) {
--				if (rb->rb_left == &av->rb)
--					rb->rb_left = NULL;
--				else
--					rb->rb_right = NULL;
--			}
--
--			destroy_av(ai, av);
--		}
--	}
--
--	if (ai->aeb_slab_cache)
--		kmem_cache_destroy(ai->aeb_slab_cache);
--
--	kfree(ai);
--}
--
--/**
-  * self_check_ai - check the attaching information.
-  * @ubi: UBI device description object
-  * @ai: attaching information
--- 
-1.7.6.5
+Fastmap is now disabled by default.
+If you attach an image it will not automatically convert it
+to the fastmap format.
+UBI has a new module parameter "fm_auto".
+If set to 1 UBI will create a fastmap automatically on your
+flash device.
+Please see commit "Add a module parameter to enable fastmap"
+for more details.
 
+If you want to test fastmap you can use my git repo:
+git://git.kernel.org/pub/scm/linux/kernel/git/rw/ubi2.git ubi2/v15
+
+Enjoy!
+//richard
+
+[PATCH 01/11] UBI: Fastmap: Fix mem leak in error path
+[PATCH 02/11] UBI: Fastmap: Amend self_check_eba()
+[PATCH 03/11] UBI: Fastmap: Remove forward declaration
+[PATCH 04/11] UBI: Fastmap: Move fastmap specific code into
+[PATCH 05/11] UBI: Fastmap: Kill TODO
+[PATCH 06/11] UBI: Fastmap: Remove unused variable
+[PATCH 07/11] UBI: Fastmap: Fix scan regression
+[PATCH 08/11] ubi: fastmap: Remove 'ubi' parameter of 'destroy_ai()'
+[PATCH 09/11] ubi: fastmap: Do not free 'ai' in 'scan_all()'
+[PATCH 10/11] UBI: Fastmap: Disable fastmap per default
+[PATCH 11/11] UBI: Fastmap: Add a module parameter to enable fastmap
