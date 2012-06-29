@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755999Ab2F2B0K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 21:26:10 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36196 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755856Ab2F2BZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 21:25:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="159473167"
-Date: Fri, 29 Jun 2012 09:21:24 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v3 3/3] perf script/python: Pass event/thread/dso name
- and symbol info to event handler in python
-Message-ID: <20120629092124.73428410@feng-i7>
-In-Reply-To: <20120628172931.GA18586@infradead.org>
-References: <1339999839-14007-1-git-send-email-feng.tang@intel.com>
-	<1339999839-14007-4-git-send-email-feng.tang@intel.com>
-	<20120627185817.GD20530@infradead.org>
-	<20120628165027.43806b3d@feng-i7>
-	<20120628172931.GA18586@infradead.org>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755236Ab2F2B3P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 21:29:15 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48300 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754036Ab2F2B3O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 21:29:14 -0400
+From: Sebastian Benvenuti <sebastianbenvenuti@gmail.com>
+To: abbotti@mev.co.uk
+Cc: fmhess@users.sourceforge.net, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org,
+        Sebastian Benvenuti <sebastianbenvenuti@gmail.com>
+Subject: [PATCH] Staging: comedi: vmk80xx: All syntax issues fixed
+Date: Thu, 28 Jun 2012 22:28:57 -0300
+Message-Id: <1340933337-2752-1-git-send-email-sebastianbenvenuti@gmail.com>
+X-Mailer: git-send-email 1.7.11.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Jun 2012 14:29:31 -0300
-Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+Changed "printk(KERN_INFO" to "pr_info("
+and "printk(KERN_DEBUG" to "pr_debug("
+Fixed a "quoted string split across lines" issue
+no warnings after that
 
-> Em Thu, Jun 28, 2012 at 04:50:27PM +0800, Feng Tang escreveu:
-> > On Wed, 27 Jun 2012 15:58:17 -0300
-> > Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
-> > > Now old scrips will break, as the tuple they expect:
-> > > 
-> > >  (attr, sample, raw_data)
-> > > 
-> > > will not be there.
-> > 
-> > Actually, there are no such scripts out. Current perf python script only
-> > supports the trace point type, while perl scriptt has the support for
-> > general events. It is my first patch "perf script: Add general python 
-> > handler to process non-tracepoint events" which bring this (attr, sample,
-> > raw_data) in to be on the same page as perl. So this won't be a problem
-> > when the 3 patches are merged together. 
-> 
-> Cool, I forgot about that, thanks for correcting me :-)
-> 
-> But even then, perf and python diverged in this... anyway, not a big
-> deal, I guess, the info available for perl scripts will be available in
-> the dict as well, right?
+Signed-off-by: Sebastian Benvenuti <sebastianbenvenuti@gmail.com>
+---
+ drivers/staging/comedi/drivers/vmk80xx.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-No, current perl code will pass 4 rather raw data structures to the
-script's "process_event": pevent->header, evel->attr, sample, sample->raw_data
+diff --git a/drivers/staging/comedi/drivers/vmk80xx.c b/drivers/staging/comedi/drivers/vmk80xx.c
+index baee8d7..4b4b183 100644
+--- a/drivers/staging/comedi/drivers/vmk80xx.c
++++ b/drivers/staging/comedi/drivers/vmk80xx.c
+@@ -160,7 +160,7 @@ static int dbgcm;
+ #define dbgcm(fmt, arg...)                     \
+ do {                                           \
+ 	if (dbgcm)                             \
+-		printk(KERN_DEBUG fmt, ##arg); \
++		pr_debug(fmt, ##arg); \
+ } while (0)
+ 
+ enum vmk80xx_model {
+@@ -1240,8 +1240,7 @@ static int vmk80xx_attach(struct comedi_device *cdev,
+ 
+ 	minor = cdev->minor;
+ 
+-	printk(KERN_INFO
+-	       "comedi%d: vmk80xx: board #%d [%s] attached to comedi\n",
++	pr_info("comedi%d: vmk80xx: board #%d [%s] attached to comedi\n",
+ 	       minor, dev->count, dev->board.name);
+ 
+ 	up(&dev->limit_sem);
+@@ -1384,11 +1383,11 @@ static int vmk80xx_probe(struct usb_interface *intf,
+ 
+ 	if (dev->board.model == VMK8061_MODEL) {
+ 		vmk80xx_read_eeprom(dev, IC3_VERSION);
+-		printk(KERN_INFO "comedi#: vmk80xx: %s\n", dev->fw.ic3_vers);
++		pr_info("comedi#: vmk80xx: %s\n", dev->fw.ic3_vers);
+ 
+ 		if (vmk80xx_check_data_link(dev)) {
+ 			vmk80xx_read_eeprom(dev, IC6_VERSION);
+-			printk(KERN_INFO "comedi#: vmk80xx: %s\n",
++			pr_info("comedi#: vmk80xx: %s\n",
+ 			       dev->fw.ic6_vers);
+ 		} else {
+ 			dbgcm("comedi#: vmk80xx: no conn. to CPU\n");
+@@ -1400,7 +1399,7 @@ static int vmk80xx_probe(struct usb_interface *intf,
+ 
+ 	dev->probed = 1;
+ 
+-	printk(KERN_INFO "comedi#: vmk80xx: board #%d [%s] now attached\n",
++	pr_info("comedi#: vmk80xx: board #%d [%s] now attached\n",
+ 	       dev->count, dev->board.name);
+ 
+ 	mutex_unlock(&glb_mutex);
+@@ -1435,7 +1434,7 @@ static void vmk80xx_disconnect(struct usb_interface *intf)
+ 	kfree(dev->usb_rx_buf);
+ 	kfree(dev->usb_tx_buf);
+ 
+-	printk(KERN_INFO "comedi#: vmk80xx: board #%d [%s] now detached\n",
++	pr_info("comedi#: vmk80xx: board #%d [%s] now detached\n",
+ 	       dev->count, dev->board.name);
+ 
+ 	up(&dev->limit_sem);
+@@ -1462,7 +1461,7 @@ static int __init vmk80xx_init(void)
+ {
+ 	int retval;
+ 
+-	printk(KERN_INFO "vmk80xx: version 0.8.01 "
++	pr_info("vmk80xx: version 0.8.01 " \
+ 	       "Manuel Gebele <forensixs@gmx.de>\n");
+ 
+ 	retval = comedi_driver_register(&driver_vmk80xx);
+-- 
+1.7.11.1
 
-	XPUSHs(sv_2mortal(newSVpvn((const char *)pevent, pevent->header.size)));
-	XPUSHs(sv_2mortal(newSVpvn((const char *)&evsel->attr, sizeof(evsel->attr))));
-	XPUSHs(sv_2mortal(newSVpvn((const char *)sample, sizeof(*sample))));
-	XPUSHs(sv_2mortal(newSVpvn((const char *)sample->raw_data, sample->raw_size)));
-
-my patch only have the last 3 ones plus extra event_name/dso_name/symobl,
-while missing the "pevent->header", do you want me to add it?
-
->  
-> > > The first two patches in this series don't apply anymore, please find
-> > > them attached fixed, please check if they work as expected.
-> 
-> > Thanks a lot for fixing them, I'll generate perf tool patch against the
-> > "perf/core" branch of your git tree on kernel.org from now on.
-> > 
-> > Btw, I have 2 more python scripts based on these patches, will add them
-> > to this serie for your review.
-> 
-> Ok, will take a look at them.
-
-Thanks,
-
-- Feng
