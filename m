@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab2F2OM2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 10:12:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37712 "EHLO mx1.redhat.com"
+	id S1755751Ab2F2OMq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 10:12:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58748 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751336Ab2F2OMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 10:12:25 -0400
-Message-ID: <4FEDB76D.5080508@redhat.com>
-Date: Fri, 29 Jun 2012 10:10:53 -0400
+	id S1754869Ab2F2OMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 10:12:45 -0400
+Message-ID: <4FEDB789.70200@redhat.com>
+Date: Fri, 29 Jun 2012 10:11:21 -0400
 From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -32,9 +32,10 @@ CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 02/40] autonuma: make set_pmd_at always available
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-3-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1340888180-15355-3-git-send-email-aarcange@redhat.com>
+Subject: Re: [PATCH 03/40] autonuma: export is_vma_temporary_stack() even
+ if CONFIG_TRANSPARENT_HUGEPAGE=n
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-4-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1340888180-15355-4-git-send-email-aarcange@redhat.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -42,10 +43,10 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
-> set_pmd_at() will also be used for the knuma_scand/pmd = 1 (default)
-> mode even when TRANSPARENT_HUGEPAGE=n. Make it available so the build
-> won't fail.
+> is_vma_temporary_stack() is needed by mm/autonuma.c too, and without
+> this the build breaks with CONFIG_TRANSPARENT_HUGEPAGE=n.
 >
+> Reported-by: Petr Holasek<pholasek@redhat.com>
 > Signed-off-by: Andrea Arcangeli<aarcange@redhat.com>
 
 Acked-by: Rik van Riel <riel@redhat.com>
