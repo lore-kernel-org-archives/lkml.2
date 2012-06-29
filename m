@@ -1,114 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755921Ab2F2Q2u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 12:28:50 -0400
-Received: from smtp-out-134.synserver.de ([212.40.185.134]:1178 "EHLO
-	smtp-out-132.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752665Ab2F2Q2t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 12:28:49 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 25658
-Message-ID: <4FEDD8A3.8000608@metafoo.de>
-Date: Fri, 29 Jun 2012 18:32:35 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	id S1756025Ab2F2Qas (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 12:30:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37136 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754249Ab2F2Qar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 12:30:47 -0400
+Date: Fri, 29 Jun 2012 18:30:33 +0200
+From: Petr Holasek <pholasek@redhat.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Anton Arapov <anton@redhat.com>
+Subject: Re: [PATCH v2] KSM: numa awareness sysfs knob
+Message-ID: <20120629163033.GA11327@stainedmachine.redhat.com>
+References: <1340970592-25001-1-git-send-email-pholasek@redhat.com>
+ <20120629160510.GA10082@cmpxchg.org>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Laxman Dewangan <ldewangan@nvidia.com>, "lrg@ti.com" <lrg@ti.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Stephen Warren <swarren@nvidia.com>, "perex@perex.cz" <perex@perex.cz>,
-        "clemens@ladisch.de" <clemens@ladisch.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] ASoC: Move pcm writecombine dma buffer allocation
- to core
-References: <1340965398-20872-1-git-send-email-ldewangan@nvidia.com> <s5h7guqxqnd.wl%tiwai@suse.de> <4FEDC3F8.8000501@nvidia.com> <4FEDD29C.8040209@metafoo.de> <s5h1ukyw0pb.wl%tiwai@suse.de>
-In-Reply-To: <s5h1ukyw0pb.wl%tiwai@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120629160510.GA10082@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2012 06:18 PM, Takashi Iwai wrote:
-> At Fri, 29 Jun 2012 18:06:52 +0200,
-> Lars-Peter Clausen wrote:
->>
->> On 06/29/2012 05:04 PM, Laxman Dewangan wrote:
->>> [...]
->>>
->>>
->>>> +/* allocate the coherent DMA pages */
->>>> +static void *snd_malloc_dev_pages(struct device *dev, size_t size,
->>>> dma_addr_t *dma)
->>>> +{
->>>> +    return __snd_malloc_dev_pages(dev, size, dma, dma_alloc_coherent);
->>>
->>> This does not get compiled in ARM because dma_alloc_coherant is macro
->>> defined as
->>>
->>> #define dma_alloc_coherent(d, s, h, f) dma_alloc_attrs(d, s, h, f, NULL)
->>>
->>> static inline void *dma_alloc_attrs(struct device *dev, size_t size,
->>>                                        dma_addr_t *dma_handle, gfp_t flag,
->>>                                        struct dma_attrs *attrs)
->>>
->>>
->>> I fixed this by
->>> static void *_dma_alloc_coherent(struct device *dev, size_t size,
->>>                 dma_addr_t *dma_handle, gfp_t flag)
->>> {
->>>         return dma_alloc_coherent(dev, size, dma_handle, flag);
->>> }
->>>
->>> /* allocate the coherent DMA pages */
->>> static void *snd_malloc_dev_pages(struct device *dev, size_t size,
->>> dma_addr_t *dma)
->>> {
->>>         return _snd_malloc_dev_pages(dev, size, dma, _dma_alloc_coherent);
->>> }
->>
->> I think all dma_alloc_* functions use dma_alloc_attrs internally these days.
->> I think it might be a better idea just to use dma_alloc_attrs in
->> __snd_malloc_dev_pages and just pass a dma_attrs struct instead of a function.
->>
->> Something like:
->>
->> static void *__snd_malloc_dev_pages(struct device *dev, size_t size,
->> 			    dma_addr_t *dma, struct dma_attrs *attrs)
->> {
->> ....
->> 	res = dma_alloc_attrs(dev, PAGE_SIZE << pg, dma, gfp_flags, attrs);
->> ....
->> }
->>
->>
->> static void *snd_malloc_dev_pages(struct device *dev, size_t size,
->> 	dma_addr_t *dma)
->> {
->> 	return __snd_malloc_dev_pages(dev, size, dma, NULL);
->> }
->>
->> static void *snd_malloc_dev_wc_pages(struct device *dev, size_t size,
->> 	dma_addr_t *dma)
->> {
->> 	DEFINE_DMA_ATTRS(attrs);
->> 	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
->>
->> 	return __snd_malloc_dev_pages(dev, size, dma, &attrs);
->> }
->>
->> Same applies for freeing the memory again.
+On Fri, 29 Jun 2012, Johannes Weiner wrote:
+> On Fri, Jun 29, 2012 at 01:49:52PM +0200, Petr Holasek wrote:
+> > Introduces new sysfs boolean knob /sys/kernel/mm/ksm/merge_nodes
+> > which control merging pages across different numa nodes.
+> > When it is set to zero only pages from the same node are merged,
+> > otherwise pages from all nodes can be merged together (default behavior).
 > 
-> Yes, that'd be cleaner.
-> But I prefer the code still workable on 3.5-base kernel, which makes
-> easier to test and merge for 3.6, at first. 
+> Is it conceivable that admins may (in the future) want to merge only
+> across nodes that are below a given distance threshold?
+> 
+> I'm not asking to implement this, just whether the knob can be
+> introduced such that it's future-compatible.  Make it default to a
+> Very High Number and only allow setting it to 0 for now e.g.?  And
+> name it max_node_merge_distance (I'm bad at names)?
+> 
+> What do you think?
 
-Actually that part is already in 3.5. But I've just had a closer look and it
-looks as if even for 3.6 not all archs have been converted to
-dma_alloc_attrs yet :/
+I started with exactly same idea as you described above in the first
+RFC, link: https://lkml.org/lkml/2011/11/30/91
+But this approach turned out to be more complicated than it looked
+(see two last emails in thread) and complexity of solution would rise
+a lot.
 
-
+Regards,
+Petr H
