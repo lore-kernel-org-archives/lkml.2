@@ -1,202 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390Ab2F2XoJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 19:44:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51404 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664Ab2F2XoH (ORCPT
+	id S1755832Ab2F2Xqp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 19:46:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34951 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752702Ab2F2Xqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 19:44:07 -0400
-Date: Fri, 29 Jun 2012 16:43:54 -0700
-From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
-Message-ID: <tip-954e482bde20b0e208fd4d34ef26e10afd194600@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1337908785-14015-1-git-send-email-fenghua.yu@intel.com>
-References: <1337908785-14015-1-git-send-email-fenghua.yu@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86/copy_user_generic:
-  Optimize copy_user_generic with CPU erms feature
-Git-Commit-ID: 954e482bde20b0e208fd4d34ef26e10afd194600
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 29 Jun 2012 19:46:43 -0400
+Date: Fri, 29 Jun 2012 16:46:38 -0700
+From: Michel Lespinasse <walken@google.com>
+To: Rik van Riel <riel@surriel.com>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, aarcange@redhat.com,
+        peterz@infradead.org, minchan@gmail.com, kosaki.motohiro@gmail.com,
+        andi@firstfloor.org, hannes@cmpxchg.org, mel@csn.ul.ie,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH -mm v2 01/11] mm: track free size between VMAs in VMA
+ rbtree
+Message-ID: <20120629234638.GA27797@google.com>
+References: <1340315835-28571-1-git-send-email-riel@surriel.com>
+ <1340315835-28571-2-git-send-email-riel@surriel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 29 Jun 2012 16:44:00 -0700 (PDT)
+In-Reply-To: <1340315835-28571-2-git-send-email-riel@surriel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  954e482bde20b0e208fd4d34ef26e10afd194600
-Gitweb:     http://git.kernel.org/tip/954e482bde20b0e208fd4d34ef26e10afd194600
-Author:     Fenghua Yu <fenghua.yu@intel.com>
-AuthorDate: Thu, 24 May 2012 18:19:45 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 29 Jun 2012 15:33:34 -0700
+On Thu, Jun 21, 2012 at 05:57:05PM -0400, Rik van Riel wrote:
+>  /*
+> + * largest_free_gap - returns the largest free gap "nearby"
+> + *
+> + * This function is called when propagating information on the
+> + * free spaces between VMAs "up" the VMA rbtree. It returns the
+> + * largest of:
+> + *
+> + * 1. The gap between this VMA and vma->vm_prev.
+> + * 2. The largest gap below us and to our left in the rbtree.
+> + * 3. The largest gap below us and to our right in the rbtree.
+> + */
+> +static unsigned long largest_free_gap(struct rb_node *node)
+> +{
+> +	struct vm_area_struct *vma, *prev, *left = NULL, *right = NULL;
+> +	unsigned long largest = 0;
+> +
+> +	if (node->rb_left)
+> +		left = rb_to_vma(node->rb_left);
+> +	if (node->rb_right)
+> +		right = rb_to_vma(node->rb_right);
+> +
+> +	/* Calculate the free gap size between us and the VMA to our left. */
+> +	vma = rb_to_vma(node);
+> +	prev = vma->vm_prev;
+> +
+> +	if (prev)
+> +		largest = vma->vm_start - prev->vm_end;
+> +	else
+> +		largest = vma->vm_start;
+> +
+> +	/* We propagate the largest of our own, or our children's free gaps. */
+> +	if (left)
+> +		largest = max(largest, left->free_gap);
+> +	if (right)
+> +		largest = max(largest, right->free_gap);
+> +
+> +	return largest;
+> +}
 
-x86/copy_user_generic: Optimize copy_user_generic with CPU erms feature
+I second PeterZ's suggestion of having an helper function
 
-According to Intel 64 and IA-32 SDM and Optimization Reference Manual, beginning
-with Ivybridge, REG string operation using MOVSB and STOSB can provide both
-flexible and high-performance REG string operations in cases like memory copy.
-Enhancement availability is indicated by CPUID.7.0.EBX[9] (Enhanced REP MOVSB/
-STOSB).
+static unsigned long free_gap(struct rb_node *node)
+{
+	struct vm_area_struct *vma = rb_to_vma(node);
+	unsigned long gap = vma->vm_start;
+	if (vma->vm_prev)
+		gap -= vma->vm_prev->vm_end;
+	return gap;
+}
 
-If CPU erms feature is detected, patch copy_user_generic with enhanced fast
-string version of copy_user_generic.
+Which you can then use to simplify the largest_free_gap() implementation.
 
-A few new macros are defined to reduce duplicate code in ALTERNATIVE and
-ALTERNATIVE_2.
+> +/*
+> + * Use the augmented rbtree code to propagate info on the largest
+> + * free gap between VMAs up the VMA rbtree.
+> + */
+> +static void adjust_free_gap(struct vm_area_struct *vma)
+> +{
+> +	rb_augment_erase_end(&vma->vm_rb, vma_rb_augment_cb, NULL);
+> +}
+> @@ -398,6 +454,10 @@ void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma,
+>  {
+>  	rb_link_node(&vma->vm_rb, rb_parent, rb_link);
+>  	rb_insert_color(&vma->vm_rb, &mm->mm_rb);
+> +	adjust_free_gap(vma);
+> +	/* Propagate the new free gap between next and us up the tree. */
+> +	if (vma->vm_next)
+> +		adjust_free_gap(vma->vm_next);
+>  }
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1337908785-14015-1-git-send-email-fenghua.yu@intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/alternative.h |   74 ++++++++++++++++++++++++++++-------
- arch/x86/include/asm/uaccess_64.h  |   11 +++++-
- arch/x86/kernel/x8664_ksyms_64.c   |    1 +
- 3 files changed, 70 insertions(+), 16 deletions(-)
+So this will work, and may be fine for a first implementation. However,
+the augmented rbtree support really seems inadequate here. What we
+would want is for adjust_free_gap to adjust the node's free_gap as
+well as its parents, and *stop* when it reaches a node that already
+has the desired free_gap instead of going all the way to the root as
+it does now. But, to do that we would also need rb_insert_color() to
+adjust free_gap as needed when doing tree rotations, and it doesn't
+have the necessary support there.
 
-diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
-index 49331be..7078068 100644
---- a/arch/x86/include/asm/alternative.h
-+++ b/arch/x86/include/asm/alternative.h
-@@ -75,23 +75,54 @@ static inline int alternatives_text_reserved(void *start, void *end)
- }
- #endif	/* CONFIG_SMP */
- 
-+#define OLDINSTR(oldinstr)	"661:\n\t" oldinstr "\n662:\n"
-+
-+#define b_replacement(number)	"663"#number
-+#define e_replacement(number)	"664"#number
-+
-+#define alt_slen "662b-661b"
-+#define alt_rlen(number) e_replacement(number)"f-"b_replacement(number)"f"
-+
-+#define ALTINSTR_ENTRY(feature, number)					      \
-+	" .long 661b - .\n"				/* label           */ \
-+	" .long " b_replacement(number)"f - .\n"	/* new instruction */ \
-+	" .word " __stringify(feature) "\n"		/* feature bit     */ \
-+	" .byte " alt_slen "\n"				/* source len      */ \
-+	" .byte " alt_rlen(number) "\n"			/* replacement len */
-+
-+#define DISCARD_ENTRY(number)				/* rlen <= slen */    \
-+	" .byte 0xff + (" alt_rlen(number) ") - (" alt_slen ")\n"
-+
-+#define ALTINSTR_REPLACEMENT(newinstr, feature, number)	/* replacement */     \
-+	b_replacement(number)":\n\t" newinstr "\n" e_replacement(number) ":\n\t"
-+
- /* alternative assembly primitive: */
- #define ALTERNATIVE(oldinstr, newinstr, feature)			\
--									\
--      "661:\n\t" oldinstr "\n662:\n"					\
--      ".section .altinstructions,\"a\"\n"				\
--      "	 .long 661b - .\n"			/* label           */	\
--      "	 .long 663f - .\n"			/* new instruction */	\
--      "	 .word " __stringify(feature) "\n"	/* feature bit     */	\
--      "	 .byte 662b-661b\n"			/* sourcelen       */	\
--      "	 .byte 664f-663f\n"			/* replacementlen  */	\
--      ".previous\n"							\
--      ".section .discard,\"aw\",@progbits\n"				\
--      "	 .byte 0xff + (664f-663f) - (662b-661b)\n" /* rlen <= slen */	\
--      ".previous\n"							\
--      ".section .altinstr_replacement, \"ax\"\n"			\
--      "663:\n\t" newinstr "\n664:\n"		/* replacement     */	\
--      ".previous"
-+	OLDINSTR(oldinstr)						\
-+	".section .altinstructions,\"a\"\n"				\
-+	ALTINSTR_ENTRY(feature, 1)					\
-+	".previous\n"							\
-+	".section .discard,\"aw\",@progbits\n"				\
-+	DISCARD_ENTRY(1)						\
-+	".previous\n"							\
-+	".section .altinstr_replacement, \"ax\"\n"			\
-+	ALTINSTR_REPLACEMENT(newinstr, feature, 1)			\
-+	".previous"
-+
-+#define ALTERNATIVE_2(oldinstr, newinstr1, feature1, newinstr2, feature2)\
-+	OLDINSTR(oldinstr)						\
-+	".section .altinstructions,\"a\"\n"				\
-+	ALTINSTR_ENTRY(feature1, 1)					\
-+	ALTINSTR_ENTRY(feature2, 2)					\
-+	".previous\n"							\
-+	".section .discard,\"aw\",@progbits\n"				\
-+	DISCARD_ENTRY(1)						\
-+	DISCARD_ENTRY(2)						\
-+	".previous\n"							\
-+	".section .altinstr_replacement, \"ax\"\n"			\
-+	ALTINSTR_REPLACEMENT(newinstr1, feature1, 1)			\
-+	ALTINSTR_REPLACEMENT(newinstr2, feature2, 2)			\
-+	".previous"
- 
- /*
-  * This must be included *after* the definition of ALTERNATIVE due to
-@@ -140,6 +171,19 @@ static inline int alternatives_text_reserved(void *start, void *end)
- 		: output : [old] "i" (oldfunc), [new] "i" (newfunc), ## input)
- 
- /*
-+ * Like alternative_call, but there are two features and respective functions.
-+ * If CPU has feature2, function2 is used.
-+ * Otherwise, if CPU has feature1, function1 is used.
-+ * Otherwise, old function is used.
-+ */
-+#define alternative_call_2(oldfunc, newfunc1, feature1, newfunc2, feature2,   \
-+			   output, input...)				      \
-+	asm volatile (ALTERNATIVE_2("call %P[old]", "call %P[new1]", feature1,\
-+		"call %P[new2]", feature2)				      \
-+		: output : [old] "i" (oldfunc), [new1] "i" (newfunc1),	      \
-+		[new2] "i" (newfunc2), ## input)
-+
-+/*
-  * use this macro(s) if you need more than one output parameter
-  * in alternative_io
-  */
-diff --git a/arch/x86/include/asm/uaccess_64.h b/arch/x86/include/asm/uaccess_64.h
-index 8e796fb..d8def8b 100644
---- a/arch/x86/include/asm/uaccess_64.h
-+++ b/arch/x86/include/asm/uaccess_64.h
-@@ -17,6 +17,8 @@
- 
- /* Handles exceptions in both to and from, but doesn't do access_ok */
- __must_check unsigned long
-+copy_user_enhanced_fast_string(void *to, const void *from, unsigned len);
-+__must_check unsigned long
- copy_user_generic_string(void *to, const void *from, unsigned len);
- __must_check unsigned long
- copy_user_generic_unrolled(void *to, const void *from, unsigned len);
-@@ -26,9 +28,16 @@ copy_user_generic(void *to, const void *from, unsigned len)
- {
- 	unsigned ret;
- 
--	alternative_call(copy_user_generic_unrolled,
-+	/*
-+	 * If CPU has ERMS feature, use copy_user_enhanced_fast_string.
-+	 * Otherwise, if CPU has rep_good feature, use copy_user_generic_string.
-+	 * Otherwise, use copy_user_generic_unrolled.
-+	 */
-+	alternative_call_2(copy_user_generic_unrolled,
- 			 copy_user_generic_string,
- 			 X86_FEATURE_REP_GOOD,
-+			 copy_user_enhanced_fast_string,
-+			 X86_FEATURE_ERMS,
- 			 ASM_OUTPUT2("=a" (ret), "=D" (to), "=S" (from),
- 				     "=d" (len)),
- 			 "1" (to), "2" (from), "3" (len)
-diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
-index 9796c2f..6020f6f 100644
---- a/arch/x86/kernel/x8664_ksyms_64.c
-+++ b/arch/x86/kernel/x8664_ksyms_64.c
-@@ -28,6 +28,7 @@ EXPORT_SYMBOL(__put_user_8);
- 
- EXPORT_SYMBOL(copy_user_generic_string);
- EXPORT_SYMBOL(copy_user_generic_unrolled);
-+EXPORT_SYMBOL(copy_user_enhanced_fast_string);
- EXPORT_SYMBOL(__copy_user_nocache);
- EXPORT_SYMBOL(_copy_from_user);
- EXPORT_SYMBOL(_copy_to_user);
+Basically, I think lib/rbtree.c should provide augmented rbtree support
+in the form of (versions of) rb_insert_color() and rb_erase() being able to
+callback to adjust the augmented node information around tree rotations,
+instead of using (conservative, overkill) loops to adjust the augmented
+node information after the fact in all places that might have been affected
+by such rotations. Doing it after the fact is necessarity overkill because
+it visits O(log N) nodes, while the number of rotations that might have
+occured is only O(1).
+
+I'm interested in this stuff, please CC me if you do a v3 :)
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
