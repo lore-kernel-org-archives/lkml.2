@@ -1,92 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab2F2OzP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 10:55:15 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:11118 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755548Ab2F2OzO (ORCPT
+	id S1755898Ab2F2Ozj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 10:55:39 -0400
+Received: from zimbra.linbit.com ([212.69.161.123]:57359 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755157Ab2F2Ozg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 10:55:14 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: lenb@kernel.org, linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH] ACPI: Add ACPI CPU hot-remove support
-Date: Fri, 29 Jun 2012 08:51:19 -0600
-Message-Id: <1340981479-6521-1-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.7.7.6
+	Fri, 29 Jun 2012 10:55:36 -0400
+Message-ID: <1340981735.25226.4.camel@gurkel.linbit>
+Subject: [RFC] [TCP 2/3] tcp: Zero-copy receive from a socket into a bio
+From: Andreas Gruenbacher <agruen@linbit.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Fri, 29 Jun 2012 16:55:35 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added CPU hot-remove support through an ACPI eject notification.
-It calls acpi_bus_hot_remove_device(), which shares the same code
-path with the sysfs eject operation.  acpi_os_hotplug_execute()
-serializes hot-remove operations between ACPI hot-remove and sysfs
-eject requests.
+"Receive" data from a tcp socket by directly mapping sectors in the socket receive
+buffers into a bio without copying.  This requires that the receive buffer
+contains contiguous sectors which are well-enough aligned for the block device
+associated with the bio.
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Any data that cannot be mapped into the bio is left in the socket receive
+buffers and can be received conventionally, by copying it out of the buffers.
 
+Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
 ---
-This patch applies on top of the patchset below.
+ include/net/tcp.h      |    3 +
+ net/ipv4/Makefile      |    3 +-
+ net/ipv4/tcp_recvbio.c |  168 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 173 insertions(+), 1 deletion(-)
+ create mode 100644 net/ipv4/tcp_recvbio.c
 
-[PATCH v6 0/6] ACPI: Add _OST support for ACPI hotplug
-http://marc.info/?l=linux-acpi&m=134074381322973&w=2
-
----
- drivers/acpi/processor_driver.c |   27 +++++++++++++++++----------
- 1 files changed, 17 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index f9fa1b2..a6f6bde 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -699,8 +699,8 @@ int acpi_processor_device_add(acpi_handle handle, struct acpi_device **device)
- static void acpi_processor_hotplug_notify(acpi_handle handle,
- 					  u32 event, void *data)
- {
--	struct acpi_processor *pr;
- 	struct acpi_device *device = NULL;
-+	struct acpi_eject_event *ej_event = NULL;
- 	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
- 	int result;
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index e79aa48..c4d924b 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -538,6 +538,9 @@ typedef int (*sk_read_actor_t)(read_descriptor_t *, struct sk_buff *,
+ extern int tcp_read_sock(struct sock *sk, read_descriptor_t *desc,
+ 			 sk_read_actor_t recv_actor);
  
-@@ -732,20 +732,27 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
- 				  "received ACPI_NOTIFY_EJECT_REQUEST\n"));
++/* tcp_recvbio.c */
++extern int tcp_recvbio(struct sock *sk, struct bio *bio, size_t size);
++
+ extern void tcp_initialize_rcv_mss(struct sock *sk);
  
- 		if (acpi_bus_get_device(handle, &device)) {
--			printk(KERN_ERR PREFIX
--				    "Device don't exist, dropping EJECT\n");
-+			pr_err(PREFIX "Device don't exist, dropping EJECT\n");
- 			break;
- 		}
--		pr = acpi_driver_data(device);
--		if (!pr) {
--			printk(KERN_ERR PREFIX
--				    "Driver data is NULL, dropping EJECT\n");
-+		if (!acpi_driver_data(device)) {
-+			pr_err(PREFIX "Driver data is NULL, dropping EJECT\n");
- 			break;
- 		}
+ extern int tcp_mtu_to_mss(struct sock *sk, int pmtu);
+diff --git a/net/ipv4/Makefile b/net/ipv4/Makefile
+index ff75d3b..7ee9f92 100644
+--- a/net/ipv4/Makefile
++++ b/net/ipv4/Makefile
+@@ -11,7 +11,8 @@ obj-y     := route.o inetpeer.o protocol.o \
+ 	     datagram.o raw.o udp.o udplite.o \
+ 	     arp.o icmp.o devinet.o af_inet.o  igmp.o \
+ 	     fib_frontend.o fib_semantics.o fib_trie.o \
+-	     inet_fragment.o ping.o
++	     inet_fragment.o ping.o \
++	     tcp_recvbio.o
  
--		/* REVISIT: update when eject is supported */
--		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
--		break;
-+		ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
-+		if (!ej_event) {
-+			pr_err(PREFIX "No memory, dropping EJECT\n");
-+			break;
+ obj-$(CONFIG_SYSCTL) += sysctl_net_ipv4.o
+ obj-$(CONFIG_PROC_FS) += proc.o
+diff --git a/net/ipv4/tcp_recvbio.c b/net/ipv4/tcp_recvbio.c
+new file mode 100644
+index 0000000..4d6f833
+--- /dev/null
++++ b/net/ipv4/tcp_recvbio.c
+@@ -0,0 +1,168 @@
++#include <linux/module.h>
++#include <net/tcp.h>
++#include <linux/bio.h>
++#include <linux/blkdev.h>
++
++static int tcp_recvbio_add(struct bio *bio, struct sk_buff *skb,
++			   struct bio_vec *last)
++{
++	struct request_queue *q = bio->bi_bdev->bd_disk->queue;
++	unsigned short vcnt = bio->bi_vcnt;
++	int ret;
++
++	if (vcnt == queue_max_segments(q))
++		return 0;
++	if (!blk_rq_aligned(q, last->bv_offset, last->bv_len))
++		return -EOPNOTSUPP;
++	ret = bio_add_page(bio, last->bv_page, last->bv_len, last->bv_offset);
++	if (vcnt != bio->bi_vcnt)
++		get_page(last->bv_page);
++	return ret;
++}
++
++static int tcp_recvbio_data(read_descriptor_t *rd_desc, struct sk_buff *skb,
++			    unsigned int offset, size_t len)
++{
++	struct bio *bio = rd_desc->arg.data;
++	int start = skb_headlen(skb), consumed = 0, frag_len, i;
++	struct sk_buff *frag_iter;
++	struct bio_vec last = { };
++	int ret = 0;
++
++	if (offset > (int)skb->len - len)
++		return -EFAULT;
++
++	/* Do not consume more data than we need.  */
++	if (len > rd_desc->count)
++		len = rd_desc->count;
++
++	/* Head of the skb */
++	frag_len = start - offset;
++	if (frag_len > 0) {
++		ret = -EOPNOTSUPP;
++		goto out;
++	}
++
++	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
++		skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
++		int end;
++
++		WARN_ON(start > offset + len);
++
++		end = start + skb_frag_size(frag);
++		frag_len = end - offset;
++		if (frag_len > 0) {
++			if (frag_len > len)
++				frag_len = len;
++
++			last.bv_page = skb_frag_page(frag);
++			last.bv_offset = frag->page_offset + offset - start;
++			last.bv_len = frag_len;
++			ret = tcp_recvbio_add(bio, skb, &last);
++			if (ret <= 0)
++				goto out;
++			consumed += frag_len;
++			len -= frag_len;
++			if (!len)
++				break;
++			offset += frag_len;
 +		}
++		start = end;
++	}
 +
-+		ej_event->handle = handle;
-+		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
-+		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
-+					(void *)ej_event);
++	skb_walk_frags(skb, frag_iter) {
++		int end;
 +
-+		/* eject is performed asynchronously */
-+		return;
- 
- 	default:
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++		WARN_ON(start > offset + len);
++
++		end = start + frag_iter->len;
++		frag_len = end - offset;
++		if (frag_len > 0) {
++			if (frag_len > len)
++				frag_len = len;
++
++			ret = tcp_recvbio_data(rd_desc, frag_iter, offset -
++					       start, frag_len);
++			if (ret <= 0)
++				goto out;
++			consumed += frag_len;
++			len -= frag_len;
++			if (!len)
++				break;
++			offset += frag_len;
++		}
++		start = end;
++	}
++
++out:
++	rd_desc->written += consumed;
++	rd_desc->count -= consumed;
++	return consumed ? consumed : ret;
++}
++
++/**
++ * tcp_recvbio  -  zero-copy receive from a socket into a bio
++ * @sk: socket to receive from
++ * @bio: empty bio to receive into
++ * @size: number of bytes to receive
++ *
++ * Directly add page fragments from @sk's receive buffer to @bio.  The page
++ * fragments are held referenced with get_page().  Release those references
++ * with bio_release_pages() when done.
++ *
++ * Returns the number of bytes received into @bio.
++ */
++int tcp_recvbio(struct sock *sk, struct bio *bio, size_t size)
++{
++	long timeo = sock_rcvtimeo(sk, 0);
++	read_descriptor_t rd_desc = {
++		.count = size,
++		.arg = { .data = bio },
++	};
++	int ret = 0;
++
++	BUG_ON(bio->bi_idx != 0);
++
++	lock_sock(sk);
++	while (rd_desc.count) {
++		read_lock(&sk->sk_callback_lock);
++		ret = tcp_read_sock(sk, &rd_desc, tcp_recvbio_data);
++		read_unlock(&sk->sk_callback_lock);
++		if (ret < 0)
++			break;
++		else if (ret > 0)
++			timeo = sock_rcvtimeo(sk, 0);
++		else {
++			if (sock_flag(sk, SOCK_DONE))
++				break;
++			if (sk->sk_err) {
++				ret = sock_error(sk);
++				break;
++			}
++			if (sk->sk_shutdown & RCV_SHUTDOWN)
++				break;
++			if (sk->sk_state == TCP_CLOSE) {
++				/*
++				 * This occurs when user tries to read
++				 * from never connected socket.
++				 */
++				if (!sock_flag(sk, SOCK_DONE))
++					ret = -ENOTCONN;
++				break;
++                        }
++			if (!timeo) {
++				ret = -EAGAIN;
++				break;
++			}
++			sk_wait_data(sk, &timeo);
++			if (signal_pending(current)) {
++				ret = timeo ? sock_intr_errno(timeo) : -EAGAIN;
++				break;
++			}
++			timeo = 0;
++		}
++	}
++	release_sock(sk);
++	return rd_desc.written ? rd_desc.written : ret;
++}
++EXPORT_SYMBOL(tcp_recvbio);
 -- 
-1.7.7.6
+1.7.10.2
+
+
 
