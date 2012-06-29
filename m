@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227Ab2F2QLD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 12:11:03 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:39014
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751727Ab2F2QLB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 12:11:01 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zzbb2dI98dI9371I1521I1432Izz1202hzzz2dh2a8h668h839h93fhd25he5bhf0ah)
-Message-ID: <4FEDD383.40804@freescale.com>
-Date: Fri, 29 Jun 2012 11:10:43 -0500
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1756234Ab2F2QLi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 12:11:38 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44899 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751336Ab2F2QLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 12:11:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="171683566"
+Date: Fri, 29 Jun 2012 18:22:46 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd/ab5500: delete ab5500-core.h
+Message-ID: <20120629162246.GS22806@sortiz-mobl>
+References: <1339017911.21725.20.camel@x61.thuisdomein>
 MIME-Version: 1.0
-To: Timur Tabi <b04825@freescale.com>
-CC: Zhao Chenhui-B35336 <B35336@freescale.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        Li Yang-R58472 <r58472@freescale.com>
-Subject: Re: [PATCH v6 1/5] powerpc/85xx: implement hardware timebase sync
-References: <1340706359-9455-1-git-send-email-chenhui.zhao@freescale.com> <CAOZdJXWiGOCtP1iJYR2S48XwR2Wpry8+VswctctdVfY9Z+QTiQ@mail.gmail.com> <4FEDD07D.3090103@freescale.com> <4FEDD1F0.1060000@freescale.com>
-In-Reply-To: <4FEDD1F0.1060000@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1339017911.21725.20.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2012 11:04 AM, Timur Tabi wrote:
-> Scott Wood wrote:
+Hi Paul,
+
+On Wed, Jun 06, 2012 at 11:25:11PM +0200, Paul Bolle wrote:
+> Commit 72fb92200d6c31b9982c06784e4bcff2f5b7d8b6 ("mfd/ab5500: delete
+> AB5500 support") deleted all files that used ab5500-core.h. That file
+> apparently was simply overlooked. Delete it too.
 > 
->>> I wonder if it's possible to dynamically generate the compatible
->>> string by using the SOC name?
->>
->> Where are you going to get the SoC name from?
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Tested with "git grep" only.
 > 
-> Well, that is why I said "I wonder".   I'm disappointed that the "cpus"
-> node doesn't help much.  You'd think the name of the CPU would be in the
-> CPU node somewhere.
+>  drivers/mfd/ab5500-core.h |   87 ---------------------------------------------
+>  1 files changed, 0 insertions(+), 87 deletions(-)
+>  delete mode 100644 drivers/mfd/ab5500-core.h
+Patch applied to my for-linus branch, thanks.
 
-The SoC is not the CPU.  The CPU is e500v2.
+Cheers,
+Samuel.
 
-Why is this different from anywhere else where we have a list of
-compatibles to match, often based on various SoCs?  Note that we
-explicitly want to match only certain SoCs here.
-
--Scott
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
