@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265Ab2F2JX1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 05:23:27 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57373 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315Ab2F2JXZ (ORCPT
+	id S1753529Ab2F2JZk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 05:25:40 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:39143 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750Ab2F2JZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 05:23:25 -0400
-Date: Fri, 29 Jun 2012 02:22:56 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Junxiao Bi <junxiao.bi@oracle.com>, ocfs2-devel@oss.oracle.com,
-        linux-aio@kvack.org, mfasheh@suse.com, linux-kernel@vger.kernel.org,
-        joe.jin@oracle.com, stable@vger.kernel.org
-Subject: Re: [PATCH v4 1/2] aio: make kiocb->private NUll in
- init_sync_kiocb()
-Message-ID: <20120629092255.GB12521@dhcp-172-17-9-228.mtv.corp.google.com>
-Mail-Followup-To: Andrew Morton <akpm@linux-foundation.org>,
-	Junxiao Bi <junxiao.bi@oracle.com>, ocfs2-devel@oss.oracle.com,
-	linux-aio@kvack.org, mfasheh@suse.com, linux-kernel@vger.kernel.org,
-	joe.jin@oracle.com, stable@vger.kernel.org
-References: <1340788195-20623-1-git-send-email-junxiao.bi@oracle.com>
- <1340788195-20623-2-git-send-email-junxiao.bi@oracle.com>
- <20120628153956.9b7405d9.akpm@linux-foundation.org>
+	Fri, 29 Jun 2012 05:25:38 -0400
+X-Greylist: delayed 98289 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Jun 2012 05:25:38 EDT
+X-AuditID: b753bd60-91ec3ba0000047ca-2b-4fed7490afcf
+X-AuditID: b753bd60-91ec3ba0000047ca-2b-4fed7490afcf
+Message-ID: <4FED7495.30707@hitachi.com>
+Date: Fri, 29 Jun 2012 18:25:41 +0900
+From: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120628153956.9b7405d9.akpm@linux-foundation.org>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: avi@redhat.com, jan.kiszka@siemens.com
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH 00/18] KVM: x86: CPU isolation and direct interrupts
+ handling by guests
+References: <20120628060719.19298.43879.stgit@localhost.localdomain> <4FEC8D31.3070406@redhat.com> <4FEC93BD.2070809@siemens.com> <4FEC95BC.200@redhat.com>
+In-Reply-To: <4FEC95BC.200@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 03:39:56PM -0700, Andrew Morton wrote:
-> On Wed, 27 Jun 2012 17:09:54 +0800
-> Junxiao Bi <junxiao.bi@oracle.com> wrote:
-> 
-> > Ocfs2 uses kiocb.*private as a flag of unsigned long size. In
-> > commit a11f7e6 ocfs2: serialize unaligned aio, the unaligned
-> > io flag is involved in it to serialize the unaligned aio. As
-> > *private is not initialized in init_sync_kiocb() of do_sync_write(),
-> > this unaligned io flag may be unexpectly set in an aligned dio.
-> > And this will cause OCFS2_I(inode)->ip_unaligned_aio decreased
-> > to -1 in ocfs2_dio_end_io(), thus the following unaligned dio
-> > will hang forever at ocfs2_aiodio_wait() in ocfs2_file_aio_write().
-> > 
-> > Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-> > Cc: stable@vger.kernel.org
-> > Acked-by: Jeff Moyer <jmoyer@redhat.com>
-> > Acked-by: Joel Becker <jlbec@evilplan.org>
-> > ---
-> >  include/linux/aio.h |    1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/include/linux/aio.h b/include/linux/aio.h
-> > index 2314ad8..b1a520e 100644
-> > --- a/include/linux/aio.h
-> > +++ b/include/linux/aio.h
-> > @@ -140,6 +140,7 @@ struct kiocb {
-> >  		(x)->ki_dtor = NULL;			\
-> >  		(x)->ki_obj.tsk = tsk;			\
-> >  		(x)->ki_user_data = 0;                  \
-> > +		(x)->private = NULL;			\
-> >  	} while (0)
-> >  
-> >  #define AIO_RING_MAGIC			0xa10a10a1
-> 
-> hm, that code is rather cruddy.  Pointless macromania.
+Hi, thanks for your comments.
 
-Agreed.
+On 2012/06/29 2:34, Avi Kivity wrote:
+> On 06/28/2012 08:26 PM, Jan Kiszka wrote:
+>>> This is both impressive and scary.  What is the target scenario here?
+>>> Partitioning?  I don't see this working for generic consolidation.
+>>
+>> From my POV, partitioning - including hard realtime partitions - would
+>> provide some use cases. But, as far as I saw, there are still major
+>> restrictions in this approach, e.g. that you can't return to userspace
+>> on the slave core. Or even execute the in-kernel device models on that core.
 
-> If we do this:
-> 
-> static inline void init_sync_kiocb(struct kiocb *kiocb, struct file *filp)
-> {
-> 	*kiocb = (struct kiocb) {
-> 			.ki_users = 1,
-> 			.ki_key = KIOCB_SYNC_KEY,
-> 			.ki_filp = filp,
-> 			.ki_obj.tsk = current,
-> 		};
-> }
-> 
-> then fs/read_write.o's .text is shrunk from 9857 bytes to 9714, which
-> is rather a lot.
-> 
-> But that's all rather irrelevant to your bugfix.
+Exactly this is for partitioning that requires bare-metal performance
+with low latency and realtime. I think it is also useful for workload
+like HPC with MPI, that is CPU intensive and that needs low latency.
 
-	I like your solution.  Junxiao, if you send me that version, I'd
-be happy to take it.
+>> I think we need something based on the no-hz work on the long run, ie.
+>> the ability to run a single VCPU thread of the userland hypervisor on a
+>> single core with zero rescheduling and unrelated interruptions - as far
+>> as the guest load scenario allows this (we have some here).
 
-Joel
+With no-hz approach, we can ease some problems such as accessing userspace
+memory from interrupt disabled context. Still we need IRQ vector remappping
+or something like para-virtualized vector assignment for IRQs to reduce VM
+exit on interrupts handling.
 
+> What we can do perhaps is switch from direct mode to indirect mode on
+> exit.  Instead of running with interrupts disabled, enable interrupts
+> and make sure they are forwarded to the guest on the next entry.
+
+Already with current implementation, the slave host kernel receives
+interrupts while the guest execution is stopped for handling events like
+qemu devices emulation on online CPUs. In that case, the interrupts are
+forwarded to the guest as vIRQs.
+I will reconsider about enabling interrupts on slave CPU for accessing
+userspace memory and so on.
+
+>> Well, and we need proper hardware support for direct IRQ injection on x86...
+
+I really hope this feature ...
+
+> Hardware support always helps, but it always seems to come after the
+> software support is in place and needs to be supported forever.
+
+Thanks,
 -- 
+Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
+Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
 
-"I'm drifting and drifting
- Just like a ship out on the sea.
- Cause I ain't got nobody, baby,
- In this world to care for me."
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
