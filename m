@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932758Ab2F2S6Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 14:58:25 -0400
-Received: from mail-yw0-f42.google.com ([209.85.213.42]:59981 "EHLO
-	mail-yw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932725Ab2F2S6W (ORCPT
+	id S932825Ab2F2S7t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 14:59:49 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46821 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932762Ab2F2S60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:58:22 -0400
+	Fri, 29 Jun 2012 14:58:26 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v3 10/17] vfs: fix symlinkat to retry on ESTALE errors
-Date: Fri, 29 Jun 2012 14:57:53 -0400
-Message-Id: <1340996280-27123-11-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v3 13/17] vfs: make do_unlinkat retry on ESTALE errors
+Date: Fri, 29 Jun 2012 14:57:56 -0400
+Message-Id: <1340996280-27123-14-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
 References: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
@@ -24,73 +24,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c |   43 ++++++++++++++++++++++++++-----------------
- 1 files changed, 26 insertions(+), 17 deletions(-)
+ fs/namei.c |   12 +++++++++++-
+ 1 files changed, 11 insertions(+), 1 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index dec5713..a2d691a 100644
+index 7fccc1c..7fadc99 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -3033,33 +3033,42 @@ SYSCALL_DEFINE3(symlinkat, const char __user *, oldname,
- 		int, newdfd, const char __user *, newname)
- {
- 	int error;
--	char *from;
-+	char *from, *to;
+@@ -2955,8 +2955,14 @@ static long do_unlinkat(int dfd, const char __user *pathname)
  	struct dentry *dentry;
- 	struct path path;
+ 	struct nameidata nd;
+ 	struct inode *inode = NULL;
 +	unsigned int try = 0;
++	unsigned int lookup_flags = LOOKUP_PARENT;
  
- 	from = getname(oldname);
- 	if (IS_ERR(from))
- 		return PTR_ERR(from);
+-	error = user_path_parent(dfd, pathname, &nd, &name);
++	name = getname(pathname);
++	if (IS_ERR(name))
++		return PTR_ERR(name);
++retry:
++	error = do_path_lookup(dfd, name, lookup_flags, &nd);
+ 	if (error)
+ 		return error;
  
--	dentry = user_path_create(newdfd, newname, &path, 0);
--	error = PTR_ERR(dentry);
--	if (IS_ERR(dentry))
--		goto out_putname;
-+	to = getname(newname);
-+	if (IS_ERR(to)) {
-+		putname(from);
-+		return PTR_ERR(to);
+@@ -2994,6 +3000,10 @@ exit3:
+ 		iput(inode);	/* truncate the inode here */
+ exit1:
+ 	path_put(&nd.path);
++	if (retry_estale(error, try++)) {
++		lookup_flags |= LOOKUP_REVAL;
++		goto retry;
 +	}
- 
--	error = mnt_want_write(path.mnt);
--	if (error)
--		goto out_dput;
--	error = security_path_symlink(&path, dentry, from);
--	if (error)
--		goto out_drop_write;
--	error = vfs_symlink(path.dentry->d_inode, dentry, from);
-+	do {
-+		dentry = kern_path_create(newdfd, to, &path, 0, try);
-+		error = PTR_ERR(dentry);
-+		if (IS_ERR(dentry))
-+			break;
-+
-+		error = mnt_want_write(path.mnt);
-+		if (error)
-+			goto out_dput;
-+		error = security_path_symlink(&path, dentry, from);
-+		if (error)
-+			goto out_drop_write;
-+		error = vfs_symlink(path.dentry->d_inode, dentry, from);
- out_drop_write:
--	mnt_drop_write(path.mnt);
-+		mnt_drop_write(path.mnt);
- out_dput:
--	dput(dentry);
--	mutex_unlock(&path.dentry->d_inode->i_mutex);
--	path_put(&path);
--out_putname:
-+		dput(dentry);
-+		mutex_unlock(&path.dentry->d_inode->i_mutex);
-+		path_put(&path);
-+	} while (retry_estale(error, try++));
-+	putname(to);
- 	putname(from);
+ 	putname(name);
  	return error;
- }
+ 
 -- 
 1.7.7.6
 
