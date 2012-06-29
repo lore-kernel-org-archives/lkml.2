@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932347Ab2F2QE4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 12:04:56 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53335 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932144Ab2F2QEy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 12:04:54 -0400
-Message-ID: <4FEDD222.7050905@wwwdotorg.org>
-Date: Fri, 29 Jun 2012 10:04:50 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756211Ab2F2QFV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 12:05:21 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53162 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751336Ab2F2QFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 12:05:20 -0400
+Date: Fri, 29 Jun 2012 18:05:10 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Petr Holasek <pholasek@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Anton Arapov <anton@redhat.com>
+Subject: Re: [PATCH v2] KSM: numa awareness sysfs knob
+Message-ID: <20120629160510.GA10082@cmpxchg.org>
+References: <1340970592-25001-1-git-send-email-pholasek@redhat.com>
 MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH] pwm-backlight: add regulator and GPIO support
-References: <1340976167-27298-1-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1340976167-27298-1-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340970592-25001-1-git-send-email-pholasek@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2012 07:22 AM, Alexandre Courbot wrote:
-> Add support for an optional power regulator and enable/disable GPIO.
-> This scheme is commonly used in embedded systems.
+On Fri, Jun 29, 2012 at 01:49:52PM +0200, Petr Holasek wrote:
+> Introduces new sysfs boolean knob /sys/kernel/mm/ksm/merge_nodes
+> which control merging pages across different numa nodes.
+> When it is set to zero only pages from the same node are merged,
+> otherwise pages from all nodes can be merged together (default behavior).
 
-> diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+Is it conceivable that admins may (in the future) want to merge only
+across nodes that are below a given distance threshold?
 
-> -	dev_dbg(&pdev->dev, "got pwm for backlight\n");
-> -
+I'm not asking to implement this, just whether the knob can be
+introduced such that it's future-compatible.  Make it default to a
+Very High Number and only allow setting it to 0 for now e.g.?  And
+name it max_node_merge_distance (I'm bad at names)?
 
-That seems like an unrelated change?
-
-> @@ -231,6 +271,22 @@ static int pwm_backlight_probe(struct platform_device *pdev)
->  	if (data->pwm_period_ns > 0)
->  		pwm_set_period(pb->pwm, data->pwm_period_ns);
->  
-> +
-> +	pb->power_reg = devm_regulator_get(&pdev->dev, "power");
-
-There's an extra blank line there.
-
-> +	if (IS_ERR(pb->power_reg))
-> +		return PTR_ERR(pb->power_reg);
-> +
-> +	pb->enable_gpio = -EINVAL;
-> +	if (data->use_enable_gpio) {
-> +		ret = devm_gpio_request_one(&pdev->dev, data->enable_gpio,
-> +				GPIOF_OUT_INIT_HIGH, "backlight_enable");
-> +		if (ret)
-> +			dev_warn(&pdev->dev,
-> +				"error %d requesting control gpio\n", ret);
-
-Shouldn't that be a hard error? If the user specified that some GPIO be
-used, and the GPIO could not be requested, shouldn't the driver fail to
-initialize?
-
-> +		else
-> +			pb->enable_gpio = data->enable_gpio;
-
-Aside from that, this looks good to me.
+What do you think?
