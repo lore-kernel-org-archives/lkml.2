@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab2F2JcX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 05:32:23 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:48726 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab2F2JcW (ORCPT
+	id S1753616Ab2F2J7K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 05:59:10 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:7636 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751652Ab2F2J7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 05:32:22 -0400
-Date: Fri, 29 Jun 2012 12:32:00 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Zoltan Kelemen <zoltan.kelemen@digisec.se>
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, willy@meta-x.org
-Subject: Re: [PATCH 1/3] staging:panel: Rewrite for fixing synchronization
- issues
-Message-ID: <20120629093200.GO5333@mwanda>
-References: <4FECC539.8040303@digisec.se>
- <20120629072441.GN5333@mwanda>
- <20120629090516.8845AD52AA77@bmail04.one.com>
+	Fri, 29 Jun 2012 05:59:08 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzzz2dh668h839hd25he5bhf0ah)
+X-WSS-ID: 0M6DIED-01-0N6-02
+X-M-MSG: 
+Message-ID: <4FED7C5F.1040908@amd.com>
+Date: Fri, 29 Jun 2012 11:58:55 +0200
+From: Christoph Egger <Christoph.Egger@amd.com>
+User-Agent: Mozilla/5.0 (X11; NetBSD amd64; rv:11.0) Gecko/20120404 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120629090516.8845AD52AA77@bmail04.one.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+CC: Jan Beulich <JBeulich@suse.com>, "Auld, Will" <will.auld@intel.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "Luck, Tony" <tony.luck@intel.com>, Keir Fraser <keir@xen.org>,
+        "Raj, Ashok" <ashok.raj@intel.com>,
+        "Jiang, Yunhong" <yunhong.jiang@intel.com>,
+        "Li, Susie" <susie.li@intel.com>,
+        "Shan, Haitao" <haitao.shan@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Dugger, Donald D" <donald.d.dugger@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Nakajima, Jun" <jun.nakajima@intel.com>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>
+Subject: Re: [Xen-devel] [xen vMCE RFC V0.2] xen vMCE design
+References: <DE8DF0795D48FD4CA783C40EC829233525D395@SHSMSX101.ccr.corp.intel.com> <4FEB236C020000780008C392@nat28.tlf.novell.com> <DE8DF0795D48FD4CA783C40EC8292335263B9D@SHSMSX101.ccr.corp.intel.com> <4FEC3B4A020000780008C673@nat28.tlf.novell.com> <DE8DF0795D48FD4CA783C40EC8292335263D6C@SHSMSX101.ccr.corp.intel.com> <4FEC463E020000780008C6A7@nat28.tlf.novell.com> <DE8DF0795D48FD4CA783C40EC8292335264914@SHSMSX101.ccr.corp.intel.com> <4FEC7FB8020000780008C885@nat28.tlf.novell.com> <DE8DF0795D48FD4CA783C40EC8292335265284@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC8292335265284@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 29, 2012 at 11:05:16AM +0200, Zoltan Kelemen wrote:
-> On 29 jun 2012 09:24 "Dan Carpenter" <dan.carpenter@oracle.com> wrote:
-> 
-> > Gar...  Don't do this.  :/  Each bullet point here should be a
-> > separate patch.  Please break it apart and resend.
-> 
-> I understand a large patch is harder to audit than small incremental changes, but the patch was the result of a code rewrite, where I attempted to summarize the changes in large in the bulleted list. There isn't a one-to-one correspondence between a bullet and a change in the code. Breaking the rewrite into small pieces would not only be quite hard but to some extent even more confusing to audit since you risk to see the leaves instead of the tree.
-> 
 
-We've done this before.  We can help you break it apart.
+Feedback from the AMD side:
 
-Step 1: Change all the existing spinlocks to spin_lock_bh().
-Step 2: Do all the white space changes.
-Step 3: Shuffle the global variable declarations around.
+slide 2:
+- PV guests are supposed to install a MCE trap handler
+  which reads the MSR values from struct mcinfo_bank.
+  Hence it is unclear where the #GP should come from.
+  Same for HVM guests which have a PV MCE "driver"
+  (those are very rare in reality).
 
-That's half the patch gone already.
+slide 3:
+- unclear what "Weird per-domain MSRs" means
+- unclear what "Unnatural MCE injection semantics" means
 
-regards,
-dan carpenter
+slide 4:
+- typo: interace -> interface :-)
+- enable UCR-related capabilities, but only on Intel machines
+- Filter non-SRAO/SRAR banks:
+  Rename it to "Let guest see northbridge bank only to the guest"
+
+slide 7:
+- ignore/disable CMCI and CTL2 on AMD
+
+slide 8:
+- Filter non-SRAO/SRAR banks:
+  Rename it to "Let guest see northbridge bank only to the guest"
+- Question: Should we allow the guest to inject errors? Does it make
+  sense?
+- always disable MCi_CTL2 on AMD
+
+slide 9:
+- Model specific issue: Also affects AMD as some models have
+  l3 cache and some do not.
+  E.g. it does not make sense to report l3 cache errors to guests
+
+
+-- 
+---to satisfy European Law for business letters:
+Advanced Micro Devices GmbH
+Einsteinring 24, 85689 Dornach b. Muenchen
+Geschaeftsfuehrer: Alberto Bozzo, Andrew Bowd
+Sitz: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
 
