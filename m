@@ -1,38 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932484Ab2F2NjG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 09:39:06 -0400
-Received: from smtp01-new-4.daemonmail.net ([216.104.162.149]:51460 "EHLO
-	smtp01-new-4.daemonmail.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932204Ab2F2NjD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 09:39:03 -0400
-X-Greylist: delayed 533 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Jun 2012 09:39:03 EDT
-X-Spam-Flag: NO
-X-Spam-Score: 3.206
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Fri, 29 Jun 2012 06:29:32 -0700
-From: Mr Lambert Kweku <great@giovanaofficial.com>
-To: undisclosed-recipients:;
-Subject: GOLD DUST FOR SALE
-Reply-To: <realgoldsale@superposta.com>
-Mail-Reply-To: <realgoldsale@superposta.com>
-Message-ID: <563cbe10f2b65104fef95783099ab828@giovanaofficial.com>
-User-Agent: Roundcube Webmail/0.5.4
+	id S932164Ab2F2NdG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 09:33:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45437 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755112Ab2F2Nc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 09:32:58 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 06/16] mm: Ignore mempolicies when using ALLOC_NO_WATERMARK
+Date: Fri, 29 Jun 2012 14:32:37 +0100
+Message-Id: <1340976767-5737-7-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1340976767-5737-1-git-send-email-mgorman@suse.de>
+References: <1340976767-5737-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sir/Ma,
+The reserve is proportionally distributed over all !highmem zones
+in the system. So we need to allow an emergency allocation access to
+all zones.  In order to do that we need to break out of any mempolicy
+boundaries we might have.
 
-We are small scale Gold miners here on the sub-region of West Africa, 
-Accra, Ghana.We have alluvial Gold Dust for sale at a considerable Price 
-which is below world market price.If you are interested, do not hesitate 
-to get back to us as soon as possible for us to give you our full 
-co-operate offer (FCO). We look forward in doing a long lasting business 
-transaction with you.Regards
+In my opinion that does not break mempolicies as those are user
+oriented and not system oriented. That is, system allocations are
+not guaranteed to be within mempolicy boundaries. For instance IRQs
+do not even have a mempolicy.
 
-Mr Lambert Kweku.
+So breaking out of mempolicy boundaries for 'rare' emergency
+allocations, which are always system allocations (as opposed to user)
+is ok.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/page_alloc.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 9883cf7..981272d 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2347,6 +2347,13 @@ rebalance:
+ 
+ 	/* Allocate without watermarks if the context allows */
+ 	if (alloc_flags & ALLOC_NO_WATERMARKS) {
++		/*
++		 * Ignore mempolicies if ALLOC_NO_WATERMARKS on the grounds
++		 * the allocation is high priority and these type of
++		 * allocations are system rather than user orientated
++		 */
++		zonelist = node_zonelist(numa_node_id(), gfp_mask);
++
+ 		page = __alloc_pages_high_priority(gfp_mask, order,
+ 				zonelist, high_zoneidx, nodemask,
+ 				preferred_zone, migratetype);
+-- 
+1.7.9.2
+
