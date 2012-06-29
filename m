@@ -1,53 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756180Ab2F2Rlr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 13:41:47 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56764 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755819Ab2F2Rlq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 13:41:46 -0400
-Date: Fri, 29 Jun 2012 18:41:31 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        ". James Morris" <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 0/4] Was: deferring __fput()
-Message-ID: <20120629174130.GY14083@ZenIV.linux.org.uk>
-References: <20120623210141.GK14083@ZenIV.linux.org.uk>
- <20120624041652.GN14083@ZenIV.linux.org.uk>
- <20120624153310.GB24596@redhat.com>
- <20120625060357.GT14083@ZenIV.linux.org.uk>
- <20120625151812.GA16062@redhat.com>
- <20120627183721.GA23086@redhat.com>
- <20120628043836.GW14083@ZenIV.linux.org.uk>
- <1340947838.2293.2.camel@falcor>
- <20120629083311.GX14083@ZenIV.linux.org.uk>
- <1340974925.2309.13.camel@falcor>
+	id S932173Ab2F2Roi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 13:44:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59236 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756114Ab2F2Roh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 13:44:37 -0400
+Date: Fri, 29 Jun 2012 14:43:59 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v2 1/4] mm: introduce compaction and migration for virtio
+ ballooned pages
+Message-ID: <20120629174358.GB1774@t510.redhat.com>
+References: <cover.1340916058.git.aquini@redhat.com>
+ <d0f33a6492501a0d420abbf184f9b956cff3e3fc.1340916058.git.aquini@redhat.com>
+ <20120629153157.GB13141@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340974925.2309.13.camel@falcor>
+In-Reply-To: <20120629153157.GB13141@csn.ul.ie>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 29, 2012 at 09:02:05AM -0400, Mimi Zohar wrote:
-
-> In addition to failing with my tailored .config (eg. IMA, TPM builtin),
-> it fails with config-3.4.2-1.fc16.x86_64, with new default options,
-> running on a Lenovo W520.
+On Fri, Jun 29, 2012 at 04:31:57PM +0100, Mel Gorman wrote:
+> On Thu, Jun 28, 2012 at 06:49:39PM -0300, Rafael Aquini wrote:
+> > This patch introduces the helper functions as well as the necessary changes
+> > to teach compaction and migration bits how to cope with pages which are
+> > part of a guest memory balloon, in order to make them movable by memory
+> > compaction procedures.
+> > 
+> > Signed-off-by: Rafael Aquini <aquini@redhat.com>
 > 
-> /dev/sda7 on / type ext4 (rw,relatime,seclabel,i_version,data=ordered)
+> I have two minor comments but it is not critical they be addressed. If you
+> doa V3 then fix it but if it is picked up as it is, I'm ok with that.
+> From a compaction point of view;
+> 
+> Acked-by: Mel Gorman <mel@csn.ul.ie>
+> 
+Thanks Mel!
 
-Lovely...  Smells like something making dracut unhappy.  Does it say
-anything interesting when booting with rdinitdebug in command line?
-What happens with rdshell in there?
+> > ---
+> >  include/linux/mm.h |   16 ++++++++
+> >  mm/compaction.c    |  110 +++++++++++++++++++++++++++++++++++++++++++---------
+> >  mm/migrate.c       |   30 +++++++++++++-
+> >  3 files changed, 136 insertions(+), 20 deletions(-)
+> > 
+> > diff --git a/include/linux/mm.h b/include/linux/mm.h
+> > index b36d08c..35568fc 100644
+> > --- a/include/linux/mm.h
+> > +++ b/include/linux/mm.h
+> > @@ -1629,5 +1629,21 @@ static inline unsigned int debug_guardpage_minorder(void) { return 0; }
+> >  static inline bool page_is_guard(struct page *page) { return false; }
+> >  #endif /* CONFIG_DEBUG_PAGEALLOC */
+> >  
+> > +#if (defined(CONFIG_VIRTIO_BALLOON) || \
+> > +	defined(CONFIG_VIRTIO_BALLOON_MODULE)) && defined(CONFIG_COMPACTION)
+> > +extern bool isolate_balloon_page(struct page *);
+> > +extern bool putback_balloon_page(struct page *);
+> > +extern struct address_space *balloon_mapping;
+> > +
+> > +static inline bool is_balloon_page(struct page *page)
+> > +{
+> > +        return (page->mapping == balloon_mapping) ? true : false;
+> > +}
+> > +#else
+> > +static inline bool is_balloon_page(struct page *page)       { return false; }
+> > +static inline bool isolate_balloon_page(struct page *page)  { return false; }
+> > +static inline bool putback_balloon_page(struct page *page)  { return false; }
+> > +#endif /* (VIRTIO_BALLOON || VIRTIO_BALLOON_MODULE) && COMPACTION */
+> > +
+> >  #endif /* __KERNEL__ */
+> >  #endif /* _LINUX_MM_H */
+> 
+> isolate_balloon_page is only used in compaction.c and could declared static
+> to compaction.c. You could move them all between struct compact_control
+> and release_pages to avoid forward declarations.
+> 
+Sounds good, will do it.
 
-I don't have easily accessible Fedora boxen at the moment and it does
-look like something fishy going on while initramfs stuff runs...
+
+> > <SNIP>
+> > +/* putback_lru_page() counterpart for a ballooned page */
+> > +bool putback_balloon_page(struct page *page)
+> > +{
+> > +	if (WARN_ON(!is_balloon_page(page)))
+> > +		return false;
+> > +
+> > +	if (likely(trylock_page(page))) {
+> > +		if(is_balloon_page(page)) {
+> 
+> Stick a space in there. Run checkpatch.pl if you haven't already. I suspect
+> it would have caught this.
+> 
+Ugh! Sorry, that one has completely escaped me... :( I'll fix it right away.
+
+
+> As I said, not worth spinning a V3 for :)
+> 
+I'll respin a v3 to address your suggestions and a couple extra points Minchan
+has raised. If anything else pops up to your eyes, please, let me know.
+
+Rafael
