@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932646Ab2F2Qtq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 12:49:46 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:42786 "EHLO
+	id S932589Ab2F2Qtp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 12:49:45 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:42790 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756026Ab2F2Qq3 (ORCPT
+	with ESMTP id S1756036Ab2F2Qq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 29 Jun 2012 12:46:29 -0400
 From: Vincent Sanders <vincent.sanders@collabora.co.uk>
@@ -12,9 +12,9 @@ To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>
 Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Vincent Sanders <vincent.sanders@collabora.co.uk>
-Subject: [PATCH net-next 09/15] net: bus: Add garbage collector for AF_BUS sockets.
-Date: Fri, 29 Jun 2012 17:45:48 +0100
-Message-Id: <1340988354-26981-10-git-send-email-vincent.sanders@collabora.co.uk>
+Subject: [PATCH net-next 10/15] net: bus: Add the AF_BUS socket address family to KBuild
+Date: Fri, 29 Jun 2012 17:45:49 +0100
+Message-Id: <1340988354-26981-11-git-send-email-vincent.sanders@collabora.co.uk>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk>
 References: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk>
@@ -24,343 +24,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 
-This patch adds a garbage collector for AF_BUS sockets.
+This patch adds the AF_BUS code to the Linux Kernel build system.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 Signed-off-by: Vincent Sanders <vincent.sanders@collabora.co.uk>
 ---
- net/bus/garbage.c |  322 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 322 insertions(+)
- create mode 100644 net/bus/garbage.c
+ net/Kconfig      |    1 +
+ net/Makefile     |    1 +
+ net/bus/Kconfig  |   15 +++++++++++++++
+ net/bus/Makefile |    7 +++++++
+ 4 files changed, 24 insertions(+)
+ create mode 100644 net/bus/Kconfig
+ create mode 100644 net/bus/Makefile
 
-diff --git a/net/bus/garbage.c b/net/bus/garbage.c
+diff --git a/net/Kconfig b/net/Kconfig
+index 245831b..339a630 100644
+--- a/net/Kconfig
++++ b/net/Kconfig
+@@ -47,6 +47,7 @@ menu "Networking options"
+ 
+ source "net/packet/Kconfig"
+ source "net/unix/Kconfig"
++source "net/bus/Kconfig"
+ source "net/xfrm/Kconfig"
+ source "net/iucv/Kconfig"
+ 
+diff --git a/net/Makefile b/net/Makefile
+index 4f4ee08..ad0e900 100644
+--- a/net/Makefile
++++ b/net/Makefile
+@@ -19,6 +19,7 @@ obj-$(CONFIG_NETFILTER)		+= netfilter/
+ obj-$(CONFIG_INET)		+= ipv4/
+ obj-$(CONFIG_XFRM)		+= xfrm/
+ obj-$(CONFIG_UNIX)		+= unix/
++obj-$(CONFIG_AF_BUS)		+= bus/
+ obj-$(CONFIG_NET)		+= ipv6/
+ obj-$(CONFIG_PACKET)		+= packet/
+ obj-$(CONFIG_NET_KEY)		+= key/
+diff --git a/net/bus/Kconfig b/net/bus/Kconfig
 new file mode 100644
-index 0000000..2435f38
+index 0000000..5f01410
 --- /dev/null
-+++ b/net/bus/garbage.c
-@@ -0,0 +1,322 @@
-+/*
-+ * Garbage Collector For AF_BUS sockets
-+ *
-+ * Based on Garbage Collector For AF_UNIX sockets (net/unix/garbage.c).
-+ */
++++ b/net/bus/Kconfig
+@@ -0,0 +1,15 @@
++#
++# Bus Domain Sockets
++#
 +
-+#include <linux/kernel.h>
-+#include <linux/string.h>
-+#include <linux/socket.h>
-+#include <linux/un.h>
-+#include <linux/net.h>
-+#include <linux/fs.h>
-+#include <linux/skbuff.h>
-+#include <linux/netdevice.h>
-+#include <linux/file.h>
-+#include <linux/proc_fs.h>
-+#include <linux/mutex.h>
-+#include <linux/wait.h>
++config AF_BUS
++	tristate "Bus domain sockets (EXPERIMENTAL)"
++	depends on EXPERIMENTAL
++	---help---
++	  If you say Y here, you will include support for Bus domain sockets.
++	  These sockets are used to create communication buses for IPC.
 +
-+#include <net/sock.h>
-+#include <net/af_bus.h>
-+#include <net/scm.h>
-+#include <net/tcp_states.h>
++	  To compile this driver as a module, choose M here: the module will be
++	  called bus.
 +
-+/* Internal data structures and random procedures: */
++	  Say N unless you know what you are doing.
+diff --git a/net/bus/Makefile b/net/bus/Makefile
+new file mode 100644
+index 0000000..8c1fea2
+--- /dev/null
++++ b/net/bus/Makefile
+@@ -0,0 +1,7 @@
++#
++# Makefile for the Linux bus domain socket layer.
++#
 +
-+static LIST_HEAD(gc_inflight_list);
-+static LIST_HEAD(gc_candidates);
-+static DEFINE_SPINLOCK(bus_gc_lock);
-+static DECLARE_WAIT_QUEUE_HEAD(bus_gc_wait);
++obj-$(CONFIG_AF_BUS)	+= af-bus.o
 +
-+unsigned int bus_tot_inflight;
-+
-+
-+struct sock *bus_get_socket(struct file *filp)
-+{
-+	struct sock *u_sock = NULL;
-+	struct inode *inode = filp->f_path.dentry->d_inode;
-+
-+	/*
-+	 *	Socket ?
-+	 */
-+	if (S_ISSOCK(inode->i_mode) && !(filp->f_mode & FMODE_PATH)) {
-+		struct socket *sock = SOCKET_I(inode);
-+		struct sock *s = sock->sk;
-+
-+		/*
-+		 *	PF_BUS ?
-+		 */
-+		if (s && sock->ops && sock->ops->family == PF_BUS)
-+			u_sock = s;
-+	}
-+	return u_sock;
-+}
-+
-+/*
-+ *	Keep the number of times in flight count for the file
-+ *	descriptor if it is for an AF_BUS socket.
-+ */
-+
-+void bus_inflight(struct file *fp)
-+{
-+	struct sock *s = bus_get_socket(fp);
-+	if (s) {
-+		struct bus_sock *u = bus_sk(s);
-+		spin_lock(&bus_gc_lock);
-+		if (atomic_long_inc_return(&u->inflight) == 1) {
-+			BUG_ON(!list_empty(&u->link));
-+			list_add_tail(&u->link, &gc_inflight_list);
-+		} else {
-+			BUG_ON(list_empty(&u->link));
-+		}
-+		bus_tot_inflight++;
-+		spin_unlock(&bus_gc_lock);
-+	}
-+}
-+
-+void bus_notinflight(struct file *fp)
-+{
-+	struct sock *s = bus_get_socket(fp);
-+	if (s) {
-+		struct bus_sock *u = bus_sk(s);
-+		spin_lock(&bus_gc_lock);
-+		BUG_ON(list_empty(&u->link));
-+		if (atomic_long_dec_and_test(&u->inflight))
-+			list_del_init(&u->link);
-+		bus_tot_inflight--;
-+		spin_unlock(&bus_gc_lock);
-+	}
-+}
-+
-+static void scan_inflight(struct sock *x, void (*func)(struct bus_sock *),
-+			  struct sk_buff_head *hitlist)
-+{
-+	struct sk_buff *skb;
-+	struct sk_buff *next;
-+
-+	spin_lock(&x->sk_receive_queue.lock);
-+	skb_queue_walk_safe(&x->sk_receive_queue, skb, next) {
-+		/*
-+		 *	Do we have file descriptors ?
-+		 */
-+		if (BUSCB(skb).fp) {
-+			bool hit = false;
-+			/*
-+			 *	Process the descriptors of this socket
-+			 */
-+			int nfd = BUSCB(skb).fp->count;
-+			struct file **fp = BUSCB(skb).fp->fp;
-+			while (nfd--) {
-+				/*
-+				 *	Get the socket the fd matches
-+				 *	if it indeed does so
-+				 */
-+				struct sock *sk = bus_get_socket(*fp++);
-+				if (sk) {
-+					struct bus_sock *u = bus_sk(sk);
-+
-+					/*
-+					 * Ignore non-candidates, they could
-+					 * have been added to the queues after
-+					 * starting the garbage collection
-+					 */
-+					if (u->gc_candidate) {
-+						hit = true;
-+						func(u);
-+					}
-+				}
-+			}
-+			if (hit && hitlist != NULL) {
-+				__skb_unlink(skb, &x->sk_receive_queue);
-+				__skb_queue_tail(hitlist, skb);
-+			}
-+		}
-+	}
-+	spin_unlock(&x->sk_receive_queue.lock);
-+}
-+
-+static void scan_children(struct sock *x, void (*func)(struct bus_sock *),
-+			  struct sk_buff_head *hitlist)
-+{
-+	if (x->sk_state != TCP_LISTEN)
-+		scan_inflight(x, func, hitlist);
-+	else {
-+		struct sk_buff *skb;
-+		struct sk_buff *next;
-+		struct bus_sock *u;
-+		LIST_HEAD(embryos);
-+
-+		/*
-+		 * For a listening socket collect the queued embryos
-+		 * and perform a scan on them as well.
-+		 */
-+		spin_lock(&x->sk_receive_queue.lock);
-+		skb_queue_walk_safe(&x->sk_receive_queue, skb, next) {
-+			u = bus_sk(skb->sk);
-+
-+			/*
-+			 * An embryo cannot be in-flight, so it's safe
-+			 * to use the list link.
-+			 */
-+			BUG_ON(!list_empty(&u->link));
-+			list_add_tail(&u->link, &embryos);
-+		}
-+		spin_unlock(&x->sk_receive_queue.lock);
-+
-+		while (!list_empty(&embryos)) {
-+			u = list_entry(embryos.next, struct bus_sock, link);
-+			scan_inflight(&u->sk, func, hitlist);
-+			list_del_init(&u->link);
-+		}
-+	}
-+}
-+
-+static void dec_inflight(struct bus_sock *usk)
-+{
-+	atomic_long_dec(&usk->inflight);
-+}
-+
-+static void inc_inflight(struct bus_sock *usk)
-+{
-+	atomic_long_inc(&usk->inflight);
-+}
-+
-+static void inc_inflight_move_tail(struct bus_sock *u)
-+{
-+	atomic_long_inc(&u->inflight);
-+	/*
-+	 * If this still might be part of a cycle, move it to the end
-+	 * of the list, so that it's checked even if it was already
-+	 * passed over
-+	 */
-+	if (u->gc_maybe_cycle)
-+		list_move_tail(&u->link, &gc_candidates);
-+}
-+
-+static bool gc_in_progress = false;
-+#define BUS_INFLIGHT_TRIGGER_GC 16000
-+
-+void wait_for_bus_gc(void)
-+{
-+	/*
-+	 * If number of inflight sockets is insane,
-+	 * force a garbage collect right now.
-+	 */
-+	if (bus_tot_inflight > BUS_INFLIGHT_TRIGGER_GC && !gc_in_progress)
-+		bus_gc();
-+	wait_event(bus_gc_wait, gc_in_progress == false);
-+}
-+
-+/* The external entry point: bus_gc() */
-+void bus_gc(void)
-+{
-+	struct bus_sock *u;
-+	struct bus_sock *next;
-+	struct sk_buff_head hitlist;
-+	struct list_head cursor;
-+	LIST_HEAD(not_cycle_list);
-+
-+	spin_lock(&bus_gc_lock);
-+
-+	/* Avoid a recursive GC. */
-+	if (gc_in_progress)
-+		goto out;
-+
-+	gc_in_progress = true;
-+	/*
-+	 * First, select candidates for garbage collection.  Only
-+	 * in-flight sockets are considered, and from those only ones
-+	 * which don't have any external reference.
-+	 *
-+	 * Holding bus_gc_lock will protect these candidates from
-+	 * being detached, and hence from gaining an external
-+	 * reference.  Since there are no possible receivers, all
-+	 * buffers currently on the candidates' queues stay there
-+	 * during the garbage collection.
-+	 *
-+	 * We also know that no new candidate can be added onto the
-+	 * receive queues.  Other, non candidate sockets _can_ be
-+	 * added to queue, so we must make sure only to touch
-+	 * candidates.
-+	 */
-+	list_for_each_entry_safe(u, next, &gc_inflight_list, link) {
-+		long total_refs;
-+		long inflight_refs;
-+
-+		total_refs = file_count(u->sk.sk_socket->file);
-+		inflight_refs = atomic_long_read(&u->inflight);
-+
-+		BUG_ON(inflight_refs < 1);
-+		BUG_ON(total_refs < inflight_refs);
-+		if (total_refs == inflight_refs) {
-+			list_move_tail(&u->link, &gc_candidates);
-+			u->gc_candidate = 1;
-+			u->gc_maybe_cycle = 1;
-+		}
-+	}
-+
-+	/*
-+	 * Now remove all internal in-flight reference to children of
-+	 * the candidates.
-+	 */
-+	list_for_each_entry(u, &gc_candidates, link)
-+		scan_children(&u->sk, dec_inflight, NULL);
-+
-+	/*
-+	 * Restore the references for children of all candidates,
-+	 * which have remaining references.  Do this recursively, so
-+	 * only those remain, which form cyclic references.
-+	 *
-+	 * Use a "cursor" link, to make the list traversal safe, even
-+	 * though elements might be moved about.
-+	 */
-+	list_add(&cursor, &gc_candidates);
-+	while (cursor.next != &gc_candidates) {
-+		u = list_entry(cursor.next, struct bus_sock, link);
-+
-+		/* Move cursor to after the current position. */
-+		list_move(&cursor, &u->link);
-+
-+		if (atomic_long_read(&u->inflight) > 0) {
-+			list_move_tail(&u->link, &not_cycle_list);
-+			u->gc_maybe_cycle = 0;
-+			scan_children(&u->sk, inc_inflight_move_tail, NULL);
-+		}
-+	}
-+	list_del(&cursor);
-+
-+	/*
-+	 * not_cycle_list contains those sockets which do not make up a
-+	 * cycle.  Restore these to the inflight list.
-+	 */
-+	while (!list_empty(&not_cycle_list)) {
-+		u = list_entry(not_cycle_list.next, struct bus_sock, link);
-+		u->gc_candidate = 0;
-+		list_move_tail(&u->link, &gc_inflight_list);
-+	}
-+
-+	/*
-+	 * Now gc_candidates contains only garbage.  Restore original
-+	 * inflight counters for these as well, and remove the skbuffs
-+	 * which are creating the cycle(s).
-+	 */
-+	skb_queue_head_init(&hitlist);
-+	list_for_each_entry(u, &gc_candidates, link)
-+	scan_children(&u->sk, inc_inflight, &hitlist);
-+
-+	spin_unlock(&bus_gc_lock);
-+
-+	/* Here we are. Hitlist is filled. Die. */
-+	__skb_queue_purge(&hitlist);
-+
-+	spin_lock(&bus_gc_lock);
-+
-+	/* All candidates should have been detached by now. */
-+	BUG_ON(!list_empty(&gc_candidates));
-+	gc_in_progress = false;
-+	wake_up(&bus_gc_wait);
-+
-+ out:
-+	spin_unlock(&bus_gc_lock);
-+}
++af-bus-y		:= af_bus.o garbage.o
 -- 
 1.7.10
 
