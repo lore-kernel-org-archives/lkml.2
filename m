@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab2F2AB7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 20:01:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36147 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752460Ab2F2AB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 20:01:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="159452572"
-From: Andi Kleen <andi@firstfloor.org>
-To: <Srinivas_G_Gowda@Dell.com>
-Cc: <tcminyard@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <openipmi@mvista.com>
-Subject: Re: [PATCH 1/1 v2 ] ipmi: Setting OS name as Linux in BMC
-References: <4FEC8931.5020001@dell.com> <4FEC8A28.4070806@dell.com>
-Date: Thu, 28 Jun 2012 17:01:54 -0700
-In-Reply-To: <4FEC8A28.4070806@dell.com> (Srinivas G. Gowda's message of "Thu,
-	28 Jun 2012 09:45:28 -0700")
-Message-ID: <m2k3yrgf4d.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1754177Ab2F2AOI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 20:14:08 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34595 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752282Ab2F2AOG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 20:14:06 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FECF2B4.5040500@jp.fujitsu.com>
+Date: Fri, 29 Jun 2012 09:11:32 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Tejun Heo <tj@kernel.org>
+CC: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Zhouping Liu <zliu@redhat.com>, linux-mm@kvack.org,
+        Li Zefan <lizefan@huawei.com>, CAI Qian <caiqian@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        aneesh.kumar@linux.vnet.ibm.com
+Subject: Re: memcg: cat: memory.memsw.* : Operation not supported
+References: <2a1a74bf-fbb5-4a6e-b958-44fff8debff2@zmail13.collab.prod.int.phx2.redhat.com> <34bb8049-8007-496c-8ffb-11118c587124@zmail13.collab.prod.int.phx2.redhat.com> <20120627154827.GA4420@tiehlicka.suse.cz> <alpine.DEB.2.00.1206271256120.22162@chino.kir.corp.google.com> <20120628123611.GA16042@tiehlicka.suse.cz> <20120628182934.GD22641@google.com>
+In-Reply-To: <20120628182934.GD22641@google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<Srinivas_G_Gowda@Dell.com> writes:
-> +	
-> +	data[0] = param_select;
-> +	data[1] = set_selector;
-> +	data[2] = string_encode;
-> +	data[3] = str_len;
-> +	data[4] = 'L';
-> +	data[5] = 'i';
-> +	data[6] = 'n';
-> +	data[7] = 'u';
-> +	data[8] = 'x';
+(2012/06/29 3:29), Tejun Heo wrote:
+> Hello, Michal.
+>
+> On Thu, Jun 28, 2012 at 02:36:11PM +0200, Michal Hocko wrote:
+>> @@ -2726,6 +2726,9 @@ static int cgroup_addrm_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+>>   	int err, ret = 0;
+>>
+>>   	for (cft = cfts; cft->name[0] != '\0'; cft++) {
+>> +		if (subsys->cftype_enabled && !subsys->cftype_enabled(cft->name))
+>> +			continue;
+>> +
+>>   		if (is_add)
+>>   			err = cgroup_add_file(cgrp, subsys, cft);
+>>   		else
+>
+> I hope we could avoid this dynamic decision.  That was one of the main
+> reasons behind doing the cftype thing.  It's better to be able to
+> "declare" these kind of things rather than being able to implement
+> fully flexible dynamic logic.  Too much flexibility often doesn't
+> achieve much while being a hindrance to evolution of code base (trying
+> to improve / simplify X - ooh... there's this single wacko corner case
+> YYY here which is really different from all other users).
+>
+> really_do_swap_account can't change once booted, right?  Why not just
+> separate out memsw cfts into a separate array and call
+> cgroup_add_cftypes() from init path?  Can't we do that from
+> enable_swap_cgroup()?
+>
 
-Not sure that's all that useful. I can just see BMC's making the ACPI
-mistake of trying to work around specific issues, by checking for
-Linux.
+Yes, that's will be good.
 
-But since there are so many different Linux that will never work
-because "Linux" does not describe a fixed release or code base.
-
-Probably dangerous.
-
--Andi
+Thanks,
+-Kame
 
 
--- 
-ak@linux.intel.com -- Speaking for myself only
