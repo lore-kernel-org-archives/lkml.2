@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932390Ab2F2QMg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 12:12:36 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:4854
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932363Ab2F2QMd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 12:12:33 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zz98dIzz1202hzzz2dh2a8h668h839hd25he5bhf0ah)
-Message-ID: <4FEDD3EB.7090606@freescale.com>
-Date: Fri, 29 Jun 2012 11:12:27 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
+	id S932412Ab2F2QMy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 12:12:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52291 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932140Ab2F2QMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 12:12:30 -0400
+Message-ID: <4FEDD38F.4000601@redhat.com>
+Date: Fri, 29 Jun 2012 12:10:55 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: Zhao Chenhui-B35336 <B35336@freescale.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        Li Yang-R58472 <r58472@freescale.com>
-Subject: Re: [PATCH v6 1/5] powerpc/85xx: implement hardware timebase sync
-References: <1340706359-9455-1-git-send-email-chenhui.zhao@freescale.com> <CAOZdJXWiGOCtP1iJYR2S48XwR2Wpry8+VswctctdVfY9Z+QTiQ@mail.gmail.com> <4FEDD07D.3090103@freescale.com> <4FEDD1F0.1060000@freescale.com> <4FEDD383.40804@freescale.com>
-In-Reply-To: <4FEDD383.40804@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 11/40] autonuma: define the autonuma flags
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-12-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1340888180-15355-12-git-send-email-aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Scott Wood wrote:
-> Why is this different from anywhere else where we have a list of
-> compatibles to match, often based on various SoCs?  Note that we
-> explicitly want to match only certain SoCs here.
+On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
+> These flags are the ones tweaked through sysfs, they control the
+> behavior of autonuma, from enabling disabling it, to selecting various
+> runtime options.
 
-I was just hoping to find a way to avoid an ever increasing list of
-compatible strings.  Other posts on this thread imply that this code could
-work for all multi-core e500 parts.
+That's all fine and dandy, but what do these flags mean?
+
+How do you expect people to be able to maintain this code,
+or control autonuma behaviour, when these flags are not
+documented at all?
+
+Please document them.
+
+> +enum autonuma_flag {
+> +	AUTONUMA_FLAG,
+> +	AUTONUMA_IMPOSSIBLE_FLAG,
+> +	AUTONUMA_DEBUG_FLAG,
+> +	AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG,
+> +	AUTONUMA_SCHED_CLONE_RESET_FLAG,
+> +	AUTONUMA_SCHED_FORK_RESET_FLAG,
+> +	AUTONUMA_SCAN_PMD_FLAG,
+> +	AUTONUMA_SCAN_USE_WORKING_SET_FLAG,
+> +	AUTONUMA_MIGRATE_DEFER_FLAG,
+> +};
+
 
 -- 
-Timur Tabi
-Linux kernel developer at Freescale
-
+All rights reversed
