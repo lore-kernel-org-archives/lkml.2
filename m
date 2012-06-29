@@ -1,209 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab2F2Lh4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 07:37:56 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19628 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab2F2Lhy (ORCPT
+	id S1753605Ab2F2Ljd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 07:39:33 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:44809 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258Ab2F2Ljc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 07:37:54 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 29 Jun 2012 04:37:41 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <tiwai@suse.de>, <perex@perex.cz>, <swarren@nvidia.com>,
-        <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>
-CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] ARM: tegra: apbio: use dmaengine based dma driver
-Date: Fri, 29 Jun 2012 17:04:32 +0530
-Message-ID: <1340969673-7776-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Fri, 29 Jun 2012 07:39:32 -0400
+Date: Fri, 29 Jun 2012 13:39:25 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>, acme@redhat.com, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, gorcunov@openvz.org,
+        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
+        fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH 03/23] perf: Add ability to attach user level registers
+ dump to sample
+Message-ID: <20120629113922.GD2110@somewhere.redhat.com>
+References: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
+ <1340120894-9465-4-git-send-email-jolsa@redhat.com>
+ <20120627151059.GG20638@somewhere.redhat.com>
+ <CABPqkBTdL7rt4YF1SYdo4N7BaK3TOvXJqfs3Te2Asmm_-jA_Ag@mail.gmail.com>
+ <20120627152359.GI20638@somewhere.redhat.com>
+ <1340810729.10063.66.camel@twins>
+ <20120627153002.GJ20638@somewhere.redhat.com>
+ <20120629075043.GD940@krava.brq.redhat.com>
+ <20120629112347.GB2110@somewhere.redhat.com>
+ <20120629113012.GF6978@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120629113012.GF6978@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the dmaengine based Tegra APB DMA driver for
-apbio access in place of legacy Tegra APB DMA.
+On Fri, Jun 29, 2012 at 01:30:12PM +0200, Jiri Olsa wrote:
+> On Fri, Jun 29, 2012 at 01:23:51PM +0200, Frederic Weisbecker wrote:
+> 
+> SNIP
+> 
+> > > 
+> > > well, thats basically what we have now..
+> > > 
+> > > when the kernel is compiled for 32 bits, the bitmask allows to store:
+> > > 
+> > > ax, bx, cx, dx, si, di, bp, sp, ip, flags, cs, ds, es, fs, gs, ss
+> > > 
+> > > and when  kernel is compiled for 64 bits, the bitmask adds 64bit stuff:
+> > > 
+> > > ax, bx, cx, dx, si, di, bp, sp, ip, flags, cs, ds, es, fs, gs, ss
+> > > r8, r9, r10, r11, r12, r13, r14, r15
+> > > 
+> > > 
+> > > - 32 bits kernel is straightforward
+> > > 
+> > > - for 64 bits kernel we store whatever bitmask instructs to,
+> > >   regardless if we are in compat task or native 64,
+> > >   user space will deal with that in post processing
+> > 
+> > I can think of the crazy scenario where perf itself is compat and there
+> > are 64 bits apps that will be profiled by perf. It means perf must check
+> > if the kernel is 32 or 64 and depending on this, request r8-r15 or not.
+> > 
+> > May be that's just too unlikely to matter.
+> 
+> hopefully ;) anyway the kernel interface stays the same in this case as well
+> 
+> we can add this check later when/if we deal with compat tasks
 
-The new driver is selected if legacy driver is not
-selected and new DMA driver is enabled through config
-file.
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- arch/arm/mach-tegra/apbio.c |  135 +++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 131 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/mach-tegra/apbio.c b/arch/arm/mach-tegra/apbio.c
-index 74ac0db..00405be 100644
---- a/arch/arm/mach-tegra/apbio.c
-+++ b/arch/arm/mach-tegra/apbio.c
-@@ -17,8 +17,7 @@
- #include <linux/io.h>
- #include <mach/iomap.h>
- #include <linux/of.h>
--
--#ifdef CONFIG_TEGRA_SYSTEM_DMA
-+#include <linux/dmaengine.h>
- #include <linux/dma-mapping.h>
- #include <linux/spinlock.h>
- #include <linux/completion.h>
-@@ -29,9 +28,8 @@
- 
- #include "apbio.h"
- 
-+#if defined(CONFIG_TEGRA_SYSTEM_DMA) || defined(CONFIG_TEGRA20_APB_DMA)
- static DEFINE_MUTEX(tegra_apb_dma_lock);
--
--static struct tegra_dma_channel *tegra_apb_dma;
- static u32 *tegra_apb_bb;
- static dma_addr_t tegra_apb_bb_phys;
- static DECLARE_COMPLETION(tegra_apb_wait);
-@@ -39,6 +37,9 @@ static DECLARE_COMPLETION(tegra_apb_wait);
- static u32 tegra_apb_readl_direct(unsigned long offset);
- static void tegra_apb_writel_direct(u32 value, unsigned long offset);
- 
-+#if defined(CONFIG_TEGRA_SYSTEM_DMA)
-+static struct tegra_dma_channel *tegra_apb_dma;
-+
- bool tegra_apb_init(void)
- {
- 	struct tegra_dma_channel *ch;
-@@ -149,6 +150,132 @@ static void tegra_apb_writel_using_dma(u32 value, unsigned long offset)
- 
- 	mutex_unlock(&tegra_apb_dma_lock);
- }
-+
-+#else
-+static struct dma_chan *tegra_apb_dma_chan;
-+static struct dma_slave_config dma_sconfig;
-+
-+bool tegra_apb_dma_init(void)
-+{
-+	dma_cap_mask_t mask;
-+
-+	mutex_lock(&tegra_apb_dma_lock);
-+
-+	/* Check to see if we raced to setup */
-+	if (tegra_apb_dma_chan)
-+		goto skip_init;
-+
-+	dma_cap_zero(mask);
-+	dma_cap_set(DMA_SLAVE, mask);
-+	tegra_apb_dma_chan = dma_request_channel(mask, NULL, NULL);
-+	if (!tegra_apb_dma_chan) {
-+		pr_err("%s: can not allocate dma channel\n", __func__);
-+		goto err_dma_alloc;
-+	}
-+
-+	tegra_apb_bb = dma_alloc_coherent(NULL, sizeof(u32),
-+		&tegra_apb_bb_phys, GFP_KERNEL);
-+	if (!tegra_apb_bb) {
-+		pr_err("%s: can not allocate bounce buffer\n", __func__);
-+		goto err_buff_alloc;
-+	}
-+
-+	dma_sconfig.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
-+	dma_sconfig.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
-+	dma_sconfig.slave_id = TEGRA_DMA_REQ_SEL_CNTR;
-+	dma_sconfig.src_maxburst = 1;
-+	dma_sconfig.dst_maxburst = 1;
-+
-+skip_init:
-+	mutex_unlock(&tegra_apb_dma_lock);
-+	return true;
-+
-+err_buff_alloc:
-+	dma_release_channel(tegra_apb_dma_chan);
-+	tegra_apb_dma_chan = NULL;
-+
-+err_dma_alloc:
-+	mutex_unlock(&tegra_apb_dma_lock);
-+	return false;
-+}
-+
-+static void apb_dma_complete(void *args)
-+{
-+	complete(&tegra_apb_wait);
-+}
-+
-+static int do_dma_transfer(unsigned long apb_add,
-+		enum dma_transfer_direction dir)
-+{
-+	struct dma_async_tx_descriptor *dma_desc;
-+	int ret;
-+
-+	if (dir == DMA_DEV_TO_MEM)
-+		dma_sconfig.src_addr = apb_add;
-+	else
-+		dma_sconfig.dst_addr = apb_add;
-+
-+	ret = dmaengine_slave_config(tegra_apb_dma_chan, &dma_sconfig);
-+	if (ret)
-+		return ret;
-+
-+	dma_desc = dmaengine_prep_slave_single(tegra_apb_dma_chan,
-+			tegra_apb_bb_phys, sizeof(u32), dir,
-+			DMA_PREP_INTERRUPT |  DMA_CTRL_ACK);
-+	if (!dma_desc)
-+		return -EINVAL;
-+
-+	dma_desc->callback = apb_dma_complete;
-+	dma_desc->callback_param = NULL;
-+
-+	INIT_COMPLETION(tegra_apb_wait);
-+
-+	dmaengine_submit(dma_desc);
-+	dma_async_issue_pending(tegra_apb_dma_chan);
-+	ret = wait_for_completion_timeout(&tegra_apb_wait,
-+		msecs_to_jiffies(50));
-+
-+	if (WARN(ret == 0, "apb read dma timed out")) {
-+		dmaengine_terminate_all(tegra_apb_dma_chan);
-+		return -EFAULT;
-+	}
-+	return 0;
-+}
-+
-+static u32 tegra_apb_readl_using_dma(unsigned long offset)
-+{
-+	int ret;
-+
-+	if (!tegra_apb_dma_chan && !tegra_apb_dma_init())
-+		return tegra_apb_readl_direct(offset);
-+
-+	mutex_lock(&tegra_apb_dma_lock);
-+	ret = do_dma_transfer(offset, DMA_DEV_TO_MEM);
-+	if (ret < 0) {
-+		pr_err("error in reading offset 0x%08lx using dma\n", offset);
-+		*(u32 *)tegra_apb_bb = 0;
-+	}
-+	mutex_unlock(&tegra_apb_dma_lock);
-+	return *((u32 *)tegra_apb_bb);
-+}
-+
-+static void tegra_apb_writel_using_dma(u32 value, unsigned long offset)
-+{
-+	int ret;
-+
-+	if (!tegra_apb_dma_chan && !tegra_apb_dma_init()) {
-+		tegra_apb_writel_direct(value, offset);
-+		return;
-+	}
-+
-+	mutex_lock(&tegra_apb_dma_lock);
-+	*((u32 *)tegra_apb_bb) = value;
-+	ret = do_dma_transfer(offset, DMA_MEM_TO_DEV);
-+	if (ret < 0)
-+		pr_err("error in writing offset 0x%08lx using dma\n", offset);
-+	mutex_unlock(&tegra_apb_dma_lock);
-+}
-+#endif
- #else
- #define tegra_apb_readl_using_dma tegra_apb_readl_direct
- #define tegra_apb_writel_using_dma tegra_apb_writel_direct
--- 
-1.7.1.1
-
+Right!
