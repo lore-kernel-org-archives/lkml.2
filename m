@@ -1,37 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756388Ab2F2UJp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 16:09:45 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:39776 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756283Ab2F2UJo (ORCPT
+	id S1756409Ab2F2UPD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 16:15:03 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40757 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753549Ab2F2UPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 16:09:44 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "Steven J. Magnani" <steve@digidescorp.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fat: Refactor shortname parsing
-References: <1340993528-12111-1-git-send-email-steve@digidescorp.com>
-	<87r4syrl4y.fsf@devron.myhome.or.jp>
-	<1340997235.9826.7.camel@iscandar.digidescorp.com>
-	<87bok1sx6j.fsf@devron.myhome.or.jp>
-Date: Sat, 30 Jun 2012 05:09:41 +0900
-In-Reply-To: <87bok1sx6j.fsf@devron.myhome.or.jp> (OGAWA Hirofumi's message of
-	"Sat, 30 Jun 2012 05:03:16 +0900")
-Message-ID: <87zk7lribe.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 29 Jun 2012 16:15:01 -0400
+From: Rabin Vincent <rabin@rab.in>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Rabin Vincent <rabin@rab.in>
+Subject: [PATCH] mm: CONFIG_HAVE_MEMBLOCK_NODE -> CONFIG_HAVE_MEMBLOCK_NODE_MAP
+Date: Sat, 30 Jun 2012 01:44:37 +0530
+Message-Id: <1341000877-12068-1-git-send-email-rabin@rab.in>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
+0ee332c14518699 ("memblock: Kill early_node_map[]") wanted to replace
+CONFIG_ARCH_POPULATES_NODE_MAP with CONFIG_HAVE_MEMBLOCK_NODE_MAP but
+ended up replacing one occurence with a reference to the non-existent
+symbol CONFIG_HAVE_MEMBLOCK_NODE.
 
->
-> 			if (is_vfat)
-> 				ptname[i++] = fat_tolower(!nocase, c);
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+---
+ include/linux/mmzone.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Of course, if (!is_vfat). Sorry.
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 2427706..1d0a9a3 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -773,7 +773,7 @@ extern int movable_zone;
+ 
+ static inline int zone_movable_is_highmem(void)
+ {
+-#if defined(CONFIG_HIGHMEM) && defined(CONFIG_HAVE_MEMBLOCK_NODE)
++#if defined(CONFIG_HIGHMEM) && defined(CONFIG_HAVE_MEMBLOCK_NODE_MAP)
+ 	return movable_zone == ZONE_HIGHMEM;
+ #else
+ 	return 0;
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+1.7.9.5
+
