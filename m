@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab2F2DbF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 23:31:05 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38926 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754002Ab2F2DbB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 23:31:01 -0400
-Date: Fri, 29 Jun 2012 13:30:46 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: linux-next: manual merge of the drm tree with Linus' tree
-Message-Id: <20120629133046.f6c65d4d6017d2ae486cfd2b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__29_Jun_2012_13_30_46_+1000_iJ1qK3BsjEMNcDQj"
+	id S1754494Ab2F2Dfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 23:35:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:25732 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753178Ab2F2Dfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jun 2012 23:35:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="159511086"
+Date: Thu, 28 Jun 2012 20:35:46 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf, x86: Enabled PEBS event to be exported in a raw
+ format
+Message-ID: <20120629033546.GV4152@tassilo.jf.intel.com>
+References: <1340899250-26803-1-git-send-email-feng.tang@intel.com>
+ <1340899974.28750.66.camel@twins>
+ <20120628182030.GR4152@tassilo.jf.intel.com>
+ <1340916697.28750.91.camel@twins>
+ <20120629093253.3e99ca0e@feng-i7>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120629093253.3e99ca0e@feng-i7>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__29_Jun_2012_13_30_46_+1000_iJ1qK3BsjEMNcDQj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Yeah, that number scared me too when I first saw it, as the time will make
+> the script totally useless. Then after migrating to the RAM based database
+> file, the database handling time could be cut down to 1 second.
 
-Hi Dave,
+The problem is just that sqlite does a fdatasync for every insert.
+Just need to figure out how to tell it to stop doing that.
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/i915/intel_display.c between commit 7aa1e7f06d6e ("Revert
-"drm/i915: allow PCH PWM override on IVB"") from Linus' tree and commit
-7cf416014813 ("drm/i915: clear up backlight #define confusion on gen4+")
-from the drm tree.
+Shouldn't be too hard ...
 
-The former removed the function ivb_pch_pwm_override() that is modified
-by the latter, so I did that - or should I have just ignored the revert
-patch?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+But yes /dev/shm should work well enough for now.
 
---Signature=_Fri__29_Jun_2012_13_30_46_+1000_iJ1qK3BsjEMNcDQj
-Content-Type: application/pgp-signature
+> 
+> I guess the sqlite itself realize the shortcoming too, it also provide a
+> native way to use in-memory database by specifying ":memory":
+> 	con = sqlite3.connect(":memory:")
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I think it's better to have a file on disk, then you can easily query
+more properties just from the command line.
 
-iQIcBAEBCAAGBQJP7SFmAAoJEECxmPOUX5FEdA4QAIE3XivrTKscl1DvaOJfbgh2
-UKbD4Z3QcKPWmLrY+E/38Hkhgq+UqVQzjmetzAzoGvSjI4fHu6tXYFdp1FlvODhB
-su+FSYqGnqqHnEAtq/VhfCtW8dPZfoSu33E8gtyEfXlYcuORVNWNDwRGS0s4hLm3
-yb93heBzM7ziSL7GWpkVOULgRNc0WCrz3CmiVK/2MoNgFSKQsqv/pmh51TmGL4Ur
-ydFGkhUWxcDQ3DNZjTC9Batjn6B0XZRkc3nCRGTdTJ+ra+lkN1U7N1XW9N4dvwDz
-/NJ9CA59gkILN8EbifNFZFDzU/D7KaCM2I28UPV+BX5GcqW9FBgj5QHCtjEtsOpr
-og5eYLcqrSVkzjCEI26ODs7stg3szwyzxjfr/en5aHme1bViL8cZQy84Ad4+SbTE
-qMk70N9m7qZLtRuCM7uYfNwhypBrmreUQK9S0+gcfjoDpjlVtGS5hbdeCV1glSnJ
-hLpsFMM0lWLvSnmMS3ses5T3Dz7qpg2xojmZpbng7+Pdk9TBsnZkR8lvR9KgJ55v
-sKZlGB+JCg4EbhJCiofKro3rlE2390LP5NQeHPgVt+AQ5rMn4CV/LBRlNvSB9URX
-L97GwQPl/dfD7HSO0g07KxHWx+HK5lGFbiu7N7X4hCNGw5xgEAZwuD2gBbcXnJXW
-TOZFWa14Ph3Rq/ZFtGzC
-=P84T
------END PGP SIGNATURE-----
+I can see all kinds of interesting data mining on the events
+to be enabled by this. They have all the register values and various
+other information.
 
---Signature=_Fri__29_Jun_2012_13_30_46_+1000_iJ1qK3BsjEMNcDQj--
+For example if you look for string operations you could do
+a histogram over the ECX values and so do a histogram of
+memcpy/memset sizes. 
+
+[Would be easier if perf could pass in the assembler opcode,
+but could be done without)
+
+Or when sampling spinlocks look at the addresses.
+Or lots of other things people could imagine.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only
