@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab2F2Nrg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 09:47:36 -0400
-Received: from mga11.intel.com ([192.55.52.93]:39272 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932078Ab2F2Nre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 09:47:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="171639053"
-Message-ID: <1340977901.3070.210.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] UBI: Change the default percentage of reserved PEB
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Fri, 29 Jun 2012 16:51:41 +0300
-In-Reply-To: <1340953061-15728-1-git-send-email-richard.genoud@gmail.com>
-References: <1340953061-15728-1-git-send-email-richard.genoud@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-mp4pLt36clgX0v8TR3n8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1752445Ab2F2Nzo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 09:55:44 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55999 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750879Ab2F2Nzn (ORCPT
+	<rfc822;linux-kernel@Vger.kernel.org>);
+	Fri, 29 Jun 2012 09:55:43 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/2] mfd: wm8994: Also restore GPIO IRQ masks after reset
+Date: Fri, 29 Jun 2012 14:55:40 +0100
+Message-Id: <1340978140-11572-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1340978140-11572-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1340978140-11572-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This ensures that if we are using a GPIO as a wake source it continues to
+function while we're suspended.
 
---=-mp4pLt36clgX0v8TR3n8
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm8994-core.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-On Fri, 2012-06-29 at 08:57 +0200, Richard Genoud wrote:
-> The actual value (1%) is too low for actual NAND devices, a huge
-> majority of device has 2% maximum bad blocks (SLC or MLC).
-> (Actually it's 20 blocks on a 1024 blocks device, 40/2048...)
->=20
-> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-
-Thanks. But I'd like to wait a bit - Shmulik's point is fair and the
-current way UBI reserves PEBs is probably not the right thing to do. If
-we are going to change it, I'd like to have this patch to go together
-with that change. Just because it is better to change the default
-behavior once, than 2 times, to possibly upset/surprise users less
-times :-)
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-mp4pLt36clgX0v8TR3n8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJP7bLtAAoJECmIfjd9wqK0e4YP/1MT5dnqEE9H5nCk/bvwTQ+N
-8irFKi8ueUo2QxxxlHz8TWlSGpPLOd3yNUWUEwT9TuJ2cvOsYacmW3Veh7ddh/sk
-YCLG+BkDsw7pXSXjQFqBrb9zjhpe1gpBQ8AlCSwQc6sv/mAzWJ4YiTyX4B8S8akK
-7G6ID5eRK8vwboEtysSw/b0LgJcF+4i6gl5Zj/PrhU/Wi5oP6nvKPbxVnDGzN7lU
-4hIeh+/GKLLzRH4nDeFmTvs9DTi72r/g3/fcUVtMZkCb+Tjhp8zyEaHv6QNyYSzO
-ArjMiVBKRyPs13flFH2Ui/xqGGBQjZ6/kdXak3/xew8bvRXSXXZD0n3JYdV5wWbE
-qaIhQUWZN+cMsqSIi+8S+zgRi5tPkKfrU6hUI19i6iRz+amDtx0h/R8+U0Or8rru
-STRnC5gc8d79pUcBa9VyXjRpTuaxxKnCcVCL8dQrqz6UWUj0UXWxI/0AcGGQKHnw
-CwgqroQvqT1dSa8VeHad822LuS8G1nDj1ywMX25ACF5RNd+uZI5JeHAK3wjq0hBh
-36TRwgPCi2cav157TTeVUn7f6TmcFbtbrDuLGVR59IMzC+w8qcRCORVcloOSd58d
-5qGXlj8chs/bERHlyFwFM/nceoczeMrw9YEZ3+qaHwmMvC1BK/NHYamP+qDXXdRO
-HzhEWVEBYZ1TOBGpGDvc
-=0kVn
------END PGP SIGNATURE-----
-
---=-mp4pLt36clgX0v8TR3n8--
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index 53293c7..eec74aa 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -293,6 +293,13 @@ static int wm8994_suspend(struct device *dev)
+ 	if (ret != 0)
+ 		dev_err(dev, "Failed to restore GPIO registers: %d\n", ret);
+ 
++	/* In case one of the GPIOs is used as a wake input. */
++	ret = regcache_sync_region(wm8994->regmap,
++				   WM8994_INTERRUPT_STATUS_1_MASK,
++				   WM8994_INTERRUPT_STATUS_1_MASK);
++	if (ret != 0)
++		dev_err(dev, "Failed to restore interrupt mask: %d\n", ret);
++
+ 	regcache_cache_only(wm8994->regmap, true);
+ 	wm8994->suspended = true;
+ 
+-- 
+1.7.10
 
