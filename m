@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932746Ab2F2TCs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 15:02:48 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:46821 "EHLO
+	id S932585Ab2F2S6J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 14:58:09 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:41418 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932289Ab2F2S6O (ORCPT
+	with ESMTP id S932101Ab2F2S6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:58:14 -0400
+	Fri, 29 Jun 2012 14:58:07 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v3 04/17] vfs: fix readlinkat to retry on ESTALE
-Date: Fri, 29 Jun 2012 14:57:47 -0400
-Message-Id: <1340996280-27123-5-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v3 00/17] vfs: add the ability to retry on ESTALE to several syscalls
+Date: Fri, 29 Jun 2012 14:57:43 -0400
+Message-Id: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
-References: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/stat.c |   21 +++++++++++++++++----
- 1 files changed, 17 insertions(+), 4 deletions(-)
+This patchset is the third version of the patchset to add ESTALE
+handling to several syscalls. The basic idea is to allow the client to
+gracefully retry the lookup and call when a NFS server returns ESTALE.
 
-diff --git a/fs/stat.c b/fs/stat.c
-index 5afeb37..c9d88f7 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -307,14 +307,25 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
- 	struct path path;
- 	int error;
- 	int empty = 0;
-+	char *name;
-+	unsigned int try = 0;
-+	unsigned int lookup_flags = LOOKUP_EMPTY;
- 
- 	if (bufsiz <= 0)
- 		return -EINVAL;
- 
--	error = user_path_at_empty(dfd, pathname, LOOKUP_EMPTY, &path, &empty);
--	if (!error) {
--		struct inode *inode = path.dentry->d_inode;
-+	name = getname_flags(pathname, lookup_flags, &empty);
-+	if (IS_ERR(name))
-+		return PTR_ERR(name);
-+
-+	do {
-+		struct inode *inode;
-+
-+		error = kern_path_at(dfd, name, lookup_flags, &path);
-+		if (error)
-+			break;
- 
-+		inode = path.dentry->d_inode;
- 		error = empty ? -ENOENT : -EINVAL;
- 		if (inode->i_op->readlink) {
- 			error = security_inode_readlink(path.dentry);
-@@ -325,7 +336,9 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
- 			}
- 		}
- 		path_put(&path);
--	}
-+		lookup_flags |= LOOKUP_REVAL;
-+	} while (retry_estale(error, try++));
-+	putname(name);
- 	return error;
- }
- 
+The previous version of this patchset is here:
+
+    http://lwn.net/Articles/496103/
+
+When discussing my v2 patchset, Al pointed out that the problems with
+audit go beyond just doing multiple getname() calls per syscall attempt.
+While that is a problem, the most insidious issue is some very brittle
+logic in audit_inode_child(). I believe I now have a solution to that
+problem in the patchset that I posted earlier this week:
+
+	https://lkml.org/lkml/2012/6/26/306
+
+The above patchset should make it safe to do retries of path-based
+syscalls. The main caveat when doing that is that it's important to only
+call getname() once per __user string. That ensures that you don't end
+up with duplicate audit_names entries per syscall. As a side benefit, it
+turns out that that's more efficient on a retry, but it does mean that
+we can't use the nice user_path_* helpers in many cases.
+
+I've tried to keep this patchset pretty granular. Some of these patches
+could be combined if that's desirable. I'd like to see this go into 3.6,
+but it obviously needs to go in after the above-referenced set of audit
+related patches is merged.
+
+Jeff Layton (17):
+  vfs: add a retry_estale helper function to handle retries on ESTALE
+  vfs: add a kern_path_at function
+  vfs: make fstatat retry on ESTALE errors from getattr call
+  vfs: fix readlinkat to retry on ESTALE
+  vfs: remove user_path_at_empty
+  vfs: turn "empty" arg in getname_flags into a bool
+  vfs: add new "reval" argument to kern_path_create
+  vfs: fix mknodat to retry on ESTALE errors
+  vfs: fix mkdir to retry on ESTALE errors
+  vfs: fix symlinkat to retry on ESTALE errors
+  vfs: fix linkat to retry on ESTALE errors
+  vfs: make rmdir retry on ESTALE errors
+  vfs: make do_unlinkat retry on ESTALE errors
+  vfs: fix renameat to retry on ESTALE errors
+  vfs: remove user_path_parent
+  vfs: have do_sys_truncate retry once on an ESTALE error
+  vfs: have faccessat retry once on an ESTALE error
+
+ drivers/base/devtmpfs.c |    7 +-
+ fs/namei.c              |  407 ++++++++++++++++++++++++++++-------------------
+ fs/open.c               |  162 +++++++++++--------
+ fs/stat.c               |   44 ++++--
+ include/linux/fs.h      |   24 +++-
+ include/linux/namei.h   |    4 +-
+ net/unix/af_unix.c      |    3 +-
+ 7 files changed, 401 insertions(+), 250 deletions(-)
+
 -- 
 1.7.7.6
 
