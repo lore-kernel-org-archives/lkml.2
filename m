@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab2F2LKF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 07:10:05 -0400
-Received: from smtprelay05.ispgateway.de ([80.67.31.99]:54447 "EHLO
-	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048Ab2F2LKD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 07:10:03 -0400
-Message-ID: <4FED8D03.10507@ladisch.de>
-Date: Fri, 29 Jun 2012 13:09:55 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1752769Ab2F2LLe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 07:11:34 -0400
+Received: from mga03.intel.com ([143.182.124.21]:23224 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751252Ab2F2LLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 07:11:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="162203019"
+Date: Fri, 29 Jun 2012 13:22:40 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 2/2] mfd: max77693: Remove unused iolock mutex
+Message-ID: <20120629112240.GJ4846@sortiz-mobl>
+References: <1337849788.1028.0.camel@phoenix>
+ <1337849866.1028.1.camel@phoenix>
 MIME-Version: 1.0
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-CC: linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Subash Patel <subash.ramaswamy@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: Re: [PATCH] common: dma-mapping: add support for generic dma_mmap_*
- calls
-References: <1339741135-7841-1-git-send-email-m.szyprowski@samsung.com>
-In-Reply-To: <1339741135-7841-1-git-send-email-m.szyprowski@samsung.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
+Content-Disposition: inline
+In-Reply-To: <1337849866.1028.1.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marek Szyprowski wrote:
-> +++ b/drivers/base/dma-mapping.c
-> ...
-> +int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
-> +		    void *cpu_addr, dma_addr_t dma_addr, size_t size)
-> +{
-> +	int ret = -ENXIO;
-> +	...
-> +	if (dma_mmap_from_coherent(dev, vma, cpu_addr, size, &ret))
-> +		return ret;
+Hi Axel,
 
-This will return -ENXIO if dma_mmap_from_coherent() succeeds.
+On Thu, May 24, 2012 at 04:57:46PM +0800, Axel Lin wrote:
+> Now this driver is using regmap APIs, the iolock mutex is not used and can be
+> removed.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/mfd/max77693.c               |    2 --
+>  include/linux/mfd/max77693-private.h |    1 -
+>  2 files changed, 0 insertions(+), 3 deletions(-)
+Patch applied, thanks.
 
+Cheers,
+Samuel.
 
-Regards,
-Clemens
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
