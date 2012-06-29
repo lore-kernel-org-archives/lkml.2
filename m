@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab2F2OG3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 10:06:29 -0400
-Received: from mga03.intel.com ([143.182.124.21]:2624 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753374Ab2F2OG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 10:06:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="162249548"
-Message-ID: <1340979030.3070.216.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] UBI: add minimal amount of reserved erase blocks in
- Kconfig
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Date: Fri, 29 Jun 2012 17:10:30 +0300
-In-Reply-To: <CACQ1gAgGbYvTO=_vVW11Ru9OXpra7oiJinbpX=DBiOHmoUtA8g@mail.gmail.com>
-References: <1340636918-7505-1-git-send-email-richard.genoud@gmail.com>
-	 <1340894351.3070.121.camel@sauron.fi.intel.com>
-	 <CACQ1gAjLdR-ZRUS6gxMrJzVpRdvdMK2JRceyiFmeSq-FQkZbZg@mail.gmail.com>
-	 <1340900549.3070.130.camel@sauron.fi.intel.com>
-	 <CACQ1gAgGbYvTO=_vVW11Ru9OXpra7oiJinbpX=DBiOHmoUtA8g@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-kkzkWzXw6RU6ALgD8oO8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1754038Ab2F2OLL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 10:11:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38336 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab2F2OLJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 10:11:09 -0400
+Date: Fri, 29 Jun 2012 09:11:00 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Corentin Chary <corentin.chary@gmail.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Richard Purdie <rpurdie@rpsys.net>,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] backlight: add support for disabling backlights via sysfs
+Message-ID: <20120629141100.GB23192@thinkpad-t410>
+Mail-Followup-To: Corentin Chary <corentin.chary@gmail.com>,
+	Matthew Garrett <mjg59@srcf.ucam.org>,
+	Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
+	platform-driver-x86@vger.kernel.org
+References: <1340910426-13269-1-git-send-email-seth.forshee@canonical.com>
+ <20120628191043.GA9777@srcf.ucam.org>
+ <20120628193017.GA29456@thinkpad-t410>
+ <20120628193652.GB10945@srcf.ucam.org>
+ <CAHR064jEbtT9-+hNSq6Kr+uYCQX2fjcQb+kmkX2V46heCLO8vg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHR064jEbtT9-+hNSq6Kr+uYCQX2fjcQb+kmkX2V46heCLO8vg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-kkzkWzXw6RU6ALgD8oO8
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, 2012-06-29 at 09:17 +0200, Richard Genoud wrote:
-> 2012/6/28 Artem Bityutskiy <dedekind1@gmail.com>:
-> > On Thu, 2012-06-28 at 18:07 +0200, Richard Genoud wrote:
-> >> Agreed, it seems that 2% of the whole flash (at least for SLC device)
-> >> is more realistic.
+On Fri, Jun 29, 2012 at 02:24:38PM +0200, Corentin Chary wrote:
+> On Thu, Jun 28, 2012 at 9:36 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> > On Thu, Jun 28, 2012 at 02:30:17PM -0500, Seth Forshee wrote:
 > >
-> > Agree, feel free to send a separate patch for this.
-> Done !
+> >> I actually don't think Corentin's solution is a bad one. It does suffer
+> >> from a couple of shortcomings though. First, it only works for broken
+> >> ACPI backlights, and some platforms have other backlight interfaces that
+> >> are broken (e.g. the i915 backlight on the MacBook Pro 8,2). Second,
+> >> marking backlights as broken in the kernel necessitates ever-expanding
+> >> dmi blacklists in some of the platform drivers, unless we can get
+> >> vendors to stop providing broken backlight interfaces.
 > >
-> >> > Frankly, I do not understand this logic :-) And your patch looks wro=
-ng -
-> >> > it touches the "auto-format" code which you may consider more like a
-> >> > "debugging" feature and should not rely on this in production.
-> >> Sorry, but I don't understand what you mean by the "auto-format" code.
-> >
-> > Yeah, right, this comment was incorrect, sorry.
-> >
->=20
-> I was thinking that instead of giving to ubiattach the MBB, we could
-> give it the MBB percentage (maximum bad blocks percentage of the whole
-> flash device).
-> From this % and the whole flash size, we get the MBB number, and set
-> beb_rsvd_level for each MTD part.
+> > Userspace should already be prioritising platform interfaces over raw
+> > interfaces, so if gmux works on the Mac then there's no problem.
+> 
+> Hehe, sometime the platform interface doesn't work and the raw does.
+> That's the case on various samsung-laptop since we have absolutely no
+> documentation about SABI and no known way to probe if the
+> implementation is working or not. But anyway, for samsung-laptop it's
+> disabled by default in favor of acpi_video (which is also broken most
+> of the time on samsung laptops).
 
-Well, I thought that it may be not flexible enough for some people,
-because you cannot give 1.5%, since flaoting-point arithmetic in the
-kernel is not used.
-
-> It will be easier for userspace, as we won't have to set a different
-> value for different flash size. The default 2% value will (almost)
-> always be correct.
-> We can even get rid of the CONFIG_MTD_UBI_BEB_RESERVE option.
-
-Yes, this option would be killed.
-
-> BTW, the real killer feature would be that the flash gives its NVB or
-> MBB value in response to the READ_ID command, but unfortunately that's
-> not the case...
-
-Sure, you can also implement this. Add the corresponding field to
-'struct mtd_info', 0 will mean "not known". UBI could pick it.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-kkzkWzXw6RU6ALgD8oO8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJP7bdXAAoJECmIfjd9wqK0b3cP/A9WH5Zoz4yYK48HNrNz4jV2
-vUm1jBi1bFIXjadd67Tmtv5YmlW+R4DSa97PqCnDg5jdYVduuDQb8atemyUHf7sM
-ORQ3e1ePkOFtNr2wPhV9X81+nEtluB4UPTucFk0/xng9BILeQdeQu4664y56sF2m
-iknKEiR//aptSF21Pxd3tQIpLKLsWvB4LMFkjJMdXVmg2hzuOAlxnwwDkDxcSXq0
-GtuwzHxxUwuJAyPSHPkXPWPYlLylv4QXrXR+M66y664XknONY0VN+g/Stln8Awuc
-sz1IcXahDaZufQPXBm8iUv/0APSriYEFxMfRf5QoglOUs6fJokz5zZspaU3DqSUJ
-77nTyVf5YsUSmkFuEB+/AxV/iWKvfPTunrabmL5fBLeI+rwPmcsTpOb2btKw24Wb
-FWmFzhm8sd8XPcEZ5wy4HtQrJSQ96ikB3PWbXuhHJ7NaXakJ4mItQ4bpmSlO4Dyj
-/UeCg+KWfV8TwrmrqWunv/Zdz2fJT///eAV9oHSD47WP3eFmT8u1fxdE09ubNPlu
-6Xj4S0NRKtZosPboxYL1J2I3R2amzMAkwtfH5GrRmAMMEzfCKXro+OZTKq1NMkJp
-zQ00P1Hj9Kuh643Z9c5488leZDU0QhxI0F6ouywBPcB7sHV11OQXEnvkICHZff01
-XvrBtfiENQ4izLj0SK1M
-=ElyE
------END PGP SIGNATURE-----
-
---=-kkzkWzXw6RU6ALgD8oO8--
+The situation is similar with Toshibas. On some the raw interface is
+still the only reliable way to change the backlight. I just got my hands
+on one of these models though, so I'm hoping to make some progress on
+that front in the near future.
 
