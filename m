@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064Ab2F2QkA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 12:40:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2396 "EHLO mx1.redhat.com"
+	id S932136Ab2F2QnT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 12:43:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30973 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755112Ab2F2Qj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 12:39:58 -0400
-Date: Fri, 29 Jun 2012 18:38:20 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 09/40] autonuma: introduce kthread_bind_node()
-Message-ID: <20120629163820.GQ6676@redhat.com>
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
- <1340888180-15355-10-git-send-email-aarcange@redhat.com>
- <4FEDCB7A.1060007@redhat.com>
+	id S1755112Ab2F2QnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 12:43:18 -0400
+Date: Fri, 29 Jun 2012 18:43:04 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] perf, tool: Add events support for pmu
+Message-ID: <20120629164304.GG6978@krava.brq.redhat.com>
+References: <1339706321-8802-1-git-send-email-jolsa@redhat.com>
+ <1339706321-8802-5-git-send-email-jolsa@redhat.com>
+ <20120629163607.GB7847@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FEDCB7A.1060007@redhat.com>
+In-Reply-To: <20120629163607.GB7847@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 29, 2012 at 11:36:26AM -0400, Rik van Riel wrote:
-> On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
+On Fri, Jun 29, 2012 at 01:36:07PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Jun 14, 2012 at 10:38:39PM +0200, Jiri Olsa escreveu:
+> > The pmu sysfs record expose events group attribute with
+> > hardware events translations.
+> > 
+> > Adding support to read those and make it available throught:
+> > __u64 perf_pmu__event(struct perf_pmu *pmu, unsigned id)
+> > 
+> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> > ---
+> >  tools/perf/util/pmu.c |   98 ++++++++++++++++++++++++++++++++++++++++++++++++-
+> >  tools/perf/util/pmu.h |    2 +
+> >  2 files changed, 98 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+> > index 1d73131..bf2a2a9 100644
+> > --- a/tools/perf/util/pmu.c
+> > +++ b/tools/perf/util/pmu.c
+> > @@ -88,6 +88,94 @@ static int pmu_format(char *name, struct list_head *format)
+> >  	return 0;
+> >  }
+> >  
+> > +const char *events_files[PERF_COUNT_HW_MAX] = {
+> > +	[PERF_COUNT_HW_CPU_CYCLES]              = "cycles",
+> > +	[PERF_COUNT_HW_INSTRUCTIONS]            = "instructions",
+> > +	[PERF_COUNT_HW_CACHE_REFERENCES]        = "cache_references",
+> > +	[PERF_COUNT_HW_CACHE_MISSES]            = "cache_misses",
+> > +	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS]     = "branch_instructions",
+> > +	[PERF_COUNT_HW_BRANCH_MISSES]           = "branch_misses",
+> > +	[PERF_COUNT_HW_BUS_CYCLES]              = "bus_cycles",
+> > +	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] = "stalled_cycles_frontend",
+> > +	[PERF_COUNT_HW_STALLED_CYCLES_BACKEND]  = "stalled_cycles_backend",
+> > +	[PERF_COUNT_HW_REF_CPU_CYCLES]          = "ref_cycles",
 > 
-> > --- a/include/linux/sched.h
-> > +++ b/include/linux/sched.h
-> > @@ -1792,7 +1792,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
-> >   #define PF_SWAPWRITE	0x00800000	/* Allowed to write to swap */
-> >   #define PF_SPREAD_PAGE	0x01000000	/* Spread page cache over cpuset */
-> >   #define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
-> > -#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpu */
-> > +#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpus */
-> >   #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
-> >   #define PF_MEMPOLICY	0x10000000	/* Non-default NUMA mempolicy */
-> >   #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
+> we have this one:
 > 
-> Changing the semantics of PF_THREAD_BOUND without so much as
-> a comment in your changelog or buy-in from the scheduler
-> maintainers is a big no-no.
+> static const char *perf_evsel__hw_names[PERF_COUNT_HW_MAX] = {
 > 
-> Is there any reason you even need PF_THREAD_BOUND in your
-> kernel numa threads?
-> 
-> I do not see much at all in the scheduler code that uses
-> PF_THREAD_BOUND and it is not clear at all that your
-> numa threads get any benefit from them...
-> 
-> Why do you think you need it?
+> Can't it be used?
 
-Nobody needs that flag anyway, you can drop the flag from the kernel
-in all places it used, it is never "needed", but since somebody
-bothered to add this reliability feature to the kernel, why not to
-take advantage of it whenever possible?
+right, probably yes... I need to redesign the patch anyway,
+I'll see if I can use it
 
-This flag is only used to prevent userland to mess with the kernel CPU
-binds of kernel threads. It is used to avoid the root user to shoot
-itself in the foot.
-
-So far it has been used to prevent changing bindings to a single
-CPU. I'm setting it also after making a multiple-cpu bind (all CPUs of
-the node, instead of just 1 CPU). I hope it's clear to everybody that
-this is perfectly ok usage and if it the bind is done on 1 CPU or 10 CPUs
-or all CPUs, nothing changes for how the bitflag works.
-
-There's no legitimate reason to allow the root user to change the CPU
-binding of knuma_migratedN. Any change would be a guaranteed
-regression. So there's no reason not to enforce the NODE wide binding,
-if nothing else to document that the binding enforced is the ideal one
-in all possible conditions.
+thanks,
+jirka
