@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476Ab2F2Szv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 14:55:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5563 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932072Ab2F2Szu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:55:50 -0400
-Message-ID: <4FEDF9D4.2080504@redhat.com>
-Date: Fri, 29 Jun 2012 14:54:12 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	id S1756259Ab2F2S5e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 14:57:34 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56485 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755480Ab2F2S5d convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 14:57:33 -0400
+Message-ID: <1340996224.28750.116.camel@twins>
+Subject: Re: [PATCH 13/40] autonuma: CPU follow memory algorithm
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Rik van Riel <riel@redhat.com>
+Cc: dlaor@redhat.com, Ingo Molnar <mingo@kernel.org>,
+        Hillf Danton <dhillf@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dan Smith <danms@us.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
@@ -32,28 +32,28 @@ CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 20/40] autonuma: alloc/free/init mm_autonuma
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-21-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1340888180-15355-21-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Fri, 29 Jun 2012 20:57:04 +0200
+In-Reply-To: <4FEDF81C.1010401@redhat.com>
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
+	  <1340888180-15355-14-git-send-email-aarcange@redhat.com>
+	  <1340895238.28750.49.camel@twins>
+	  <CAJd=RBA+FPgB9iq07YG0Pd=tN65SGK1ifmj98tomBDbYeKOE-Q@mail.gmail.com>
+	  <20120629125517.GD32637@gmail.com> <4FEDDD0C.60609@redhat.com>
+	 <1340995260.28750.103.camel@twins> <4FEDF81C.1010401@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 08:56 AM, Andrea Arcangeli wrote:
-> This is where the mm_autonuma structure is being handled. Just like
-> sched_autonuma, this is only allocated at runtime if the hardware the
-> kernel is running on has been detected as NUMA. On not NUMA hardware
-> the memory cost is reduced to one pointer per mm.
->
-> To get rid of the pointer in the each mm, the kernel can be compiled
-> with CONFIG_AUTONUMA=n.
->
-> Signed-off-by: Andrea Arcangeli<aarcange@redhat.com>
+On Fri, 2012-06-29 at 14:46 -0400, Rik van Riel wrote:
+> 
+> I am not convinced all architectures that have CONFIG_NUMA
+> need to be a requirement, since some of them (eg. Alpha)
+> seem to be lacking a maintainer nowadays. 
 
-Same comments as before.  A description of what the data
-structure is used for and how would be good.
-
--- 
-All rights reversed
+Still, this NUMA balancing stuff is not a small tweak to load-balancing.
+Its a very significant change is how you schedule. Having such great
+differences over architectures isn't something I look forward to.
