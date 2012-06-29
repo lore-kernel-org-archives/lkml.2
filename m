@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab2F2PIu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 11:08:50 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49406 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207Ab2F2PIt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 11:08:49 -0400
-Subject: Re: [RFC] [TCP 0/3] Receive from socket into bio without copying
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andreas Gruenbacher <agruen@linbit.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-In-Reply-To: <1340981632.25226.2.camel@gurkel.linbit>
-References: <1340981632.25226.2.camel@gurkel.linbit>
+	id S1755998Ab2F2PJo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 11:09:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39585 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754627Ab2F2PJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 11:09:42 -0400
+Message-ID: <1340982580.1207.332.camel@bling.home>
+Subject: Re: [PATCH v2 5/6] kvm: KVM_EOIFD, an eventfd for EOIs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com
+Date: Fri, 29 Jun 2012 09:09:40 -0600
+In-Reply-To: <20120628192927.GB14787@redhat.com>
+References: <20120627044758.23698.249.stgit@bling.home>
+	 <20120627050952.23698.37235.stgit@bling.home>
+	 <20120628192927.GB14787@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 29 Jun 2012 17:08:43 +0200
-Message-ID: <1340982523.21162.1.camel@edumazet-glaptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-29 at 16:53 +0200, Andreas Gruenbacher wrote:
-> Hello,
+On Thu, 2012-06-28 at 22:29 +0300, Michael S. Tsirkin wrote:
+> On Tue, Jun 26, 2012 at 11:10:08PM -0600, Alex Williamson wrote:
+> > diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+> > index b216709..87a2558 100644
+> > --- a/Documentation/virtual/kvm/api.txt
+> > +++ b/Documentation/virtual/kvm/api.txt
+> > @@ -1987,6 +1987,30 @@ interrupts with those injected through KVM_IRQ_LINE.  IRQFDs created
+> >  with KVM_IRQFD_FLAG_LEVEL must also set this flag when de-assiging.
+> >  KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
+> >  
+> > +4.77 KVM_EOIFD
+> > +
+> > +Capability: KVM_CAP_EOIFD
+> > +Architectures: x86
+> > +Type: vm ioctl
+> > +Parameters: struct kvm_eoifd (in)
+> > +Returns: 0 on success, -1 on error
+> > +
+> > +KVM_EOIFD allows userspace to receive EOI notification through an
+> > +eventfd for level triggered irqchip interrupts.  Behavior for edge
+> > +triggered interrupts is undefined.  kvm_eoifd.fd specifies the eventfd
+> > +used for notification and kvm_eoifd.gsi specifies the irchip pin,
+> > +similar to KVM_IRQFD.  KVM_EOIFD_FLAG_DEASSIGN is used to deassign
+> > +a previously enabled eoifd and should also set fd and gsi to match.
+> > +
+> > +The KVM_EOIFD_FLAG_LEVEL_IRQFD flag indicates that the EOI is for
+> > +a level triggered EOI and the kvm_eoifd structure includes
+> > +kvm_eoifd.irqfd, which must be previously configured using KVM_IRQFD
+> > +with the KVM_IRQFD_FLAG_LEVEL flag.  This allows both EOI notification
+> > +through kvm_eoifd.fd as well as automatically de-asserting level
+> > +irqfds on EOI.  Both KVM_EOIFD_FLAG_DEASSIGN and
+> > +KVM_EOIFD_FLAG_LEVEL_IRQFD should be used to de-assign an eoifd
+> > +initially setup with KVM_EOIFD_FLAG_LEVEL_IRQFD.
+> > +
 > 
-> I'm (still) trying to pass data from the network to the block layer without
-> copying. The block layer needs blocks to be contiguous in memory, and may have
-> some alignment restrictions as well.  A lot of modern network hardware will
-> receive large packets into separate buffers, so individual large packets will
-> end up in contiguous, aligned buffers.  I would like to make use of that, but
-> tcp currently doesn't allow me to control what ends up in which packets.
+> OK so thinking about this some more, does the below makes sense:
+> it is enough to have LEVEL either in IRQFD or in EOIFD but not both.
+> I weakly prefer it in EOIFD: when you bind it to irqfd you
+> also assign a source id to that irqfd.
 > 
-> This patch series introduces a new flag for indicating to tcp when it should
-> start a new segment. Using that on the sender side, I can get data over the
-> network with no cpu copying at all.
+> We also can make is a bit clearer: rename KVM_EOIFD_FLAG_LEVEL_IRQFD
+> to KVM_EOIFD_FLAG_LEVEL_CLEAR which makes it explicit that we clear
+> on EOI and that it is for a level interrupt. The fact that it needs
+> an irqfd is less important IMHO.
+> Make this flag mandatory for now, we'll see later how to handle
+> vcpu filtering and edge.
 > 
-> [My last posting on this topic from May 8 is archived here:
->  http://www.spinics.net/lists/netdev/msg197788.html ]
-> 
-> Thanks,
-> Andreas
-> 
-> Andreas Gruenbacher (3):
->   tcp: Add MSG_NEW_PACKET flag to indicate preferable packet boundaries
->   tcp: Zero-copy receive from a socket into a bio
->   fs: Export bio_release_pages()
+> How does it sound?
 
-This looks like yet another zero copy, needing another couple of hundred
-of lines.
+Honestly, I don't like it at all.  We're designing the interface
+assuming that we can't modify KVM_IRQFD flags.  Let's do as Avi suggests
+and test whether KVM_IRQFD is a beyond broken first.  Given that we do
+make use of 1 bit in the flags for de-assert, I'm optimistic that nobody
+is leaving random garbage in the rest of it.
 
-Why splice infrastructure doesnt fit your needs ?
+Your idea may work, but I really don't like that KVM_EOIFD can reach
+across and change the behavior of KVM_IRQFD.  That's not an intuitive
+interface.  The LEVEL_IRQFD flag is specifying that the struct kvm_eoifd
+includes an irqfd for a level triggered interrupt.  AFAICT, there's no
+reason to specify that except to clear it since the EOI notification is
+not per source ID.  However, it's still valid to ask for EOI
+notification without binding it to a level irqfd, in which case it
+really is just EOI notification.  Thanks,
 
-
+Alex
 
