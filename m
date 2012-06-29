@@ -1,109 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab2F2OLr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 10:11:47 -0400
-Received: from mga03.intel.com ([143.182.124.21]:64294 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751677Ab2F2OLq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 10:11:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="117376625"
-From: Andrei Emeltchenko <Andrei.Emeltchenko.news@gmail.com>
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [RFC] vsprintf: Add %pb[1-64] specifier to print hex memory dump
-Date: Fri, 29 Jun 2012 17:11:44 +0300
-Message-Id: <1340979104-19377-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755164Ab2F2OL5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 10:11:57 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59052 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754164Ab2F2OLy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 10:11:54 -0400
+Message-ID: <4FEDB797.3050804@gmail.com>
+Date: Fri, 29 Jun 2012 22:11:35 +0800
+From: Nai Xia <nai.xia@gmail.com>
+Reply-To: nai.xia@gmail.com
+Organization: NJU
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
+        Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 13/40] autonuma: CPU follow memory algorithm
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>  <1340888180-15355-14-git-send-email-aarcange@redhat.com> <1340894776.28750.44.camel@twins>
+In-Reply-To: <1340894776.28750.44.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrei Emeltchenko <andrei.emeltchenko@intel.com>
 
-Add new specifier which may be used to print 1-64 bytes of memory.
-There is often a need to print small (up to 64 bytes) objects like
-bluetooth keys in debug purposes. Currently we have to create special
-function for that.
 
-Signed-off-by: Andrei Emeltchenko <andrei.emeltchenko@intel.com>
----
- lib/vsprintf.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
+On 2012年06月28日 22:46, Peter Zijlstra wrote:
+> On Thu, 2012-06-28 at 14:55 +0200, Andrea Arcangeli wrote:
+>> +/*
+>> + * This function sched_autonuma_balance() is responsible for deciding
+>> + * which is the best CPU each process should be running on according
+>> + * to the NUMA statistics collected in mm->mm_autonuma and
+>> + * tsk->task_autonuma.
+>> + *
+>> + * The core math that evaluates the current CPU against the CPUs of
+>> + * all _other_ nodes is this:
+>> + *
+>> + *     if (w_nid>  w_other&&  w_nid>  w_cpu_nid)
+>> + *             weight = w_nid - w_other + w_nid - w_cpu_nid;
+>> + *
+>> + * w_nid: NUMA affinity of the current thread/process if run on the
+>> + * other CPU.
+>> + *
+>> + * w_other: NUMA affinity of the other thread/process if run on the
+>> + * other CPU.
+>> + *
+>> + * w_cpu_nid: NUMA affinity of the current thread/process if run on
+>> + * the current CPU.
+>> + *
+>> + * weight: combined NUMA affinity benefit in moving the current
+>> + * thread/process to the other CPU taking into account both the
+>> higher
+>> + * NUMA affinity of the current process if run on the other CPU, and
+>> + * the increase in NUMA affinity in the other CPU by replacing the
+>> + * other process.
+>
+> A lot of words, all meaningless without a proper definition of w_*
+> stuff. How are they calculated and why.
+>
+>> + * We run the above math on every CPU not part of the current NUMA
+>> + * node, and we compare the current process against the other
+>> + * processes running in the other CPUs in the remote NUMA nodes. The
+>> + * objective is to select the cpu (in selected_cpu) with a bigger
+>> + * "weight". The bigger the "weight" the biggest gain we'll get by
+>> + * moving the current process to the selected_cpu (not only the
+>> + * biggest immediate CPU gain but also the fewer async memory
+>> + * migrations that will be required to reach full convergence
+>> + * later). If we select a cpu we migrate the current process to it.
+>
+> So you do something like:
+>
+> 	max_(i, node(i) != curr_node) { weight_i }
+>
+> That is, you have this weight, then what do you do?
+>
+>> + * Checking that the current process has higher NUMA affinity than
+>> the
+>> + * other process on the other CPU (w_nid>  w_other) and not only that
+>> + * the current process has higher NUMA affinity on the other CPU than
+>> + * on the current CPU (w_nid>  w_cpu_nid) completely avoids ping
+>> pongs
+>> + * and ensures (temporary) convergence of the algorithm (at least
+>> from
+>> + * a CPU standpoint).
+>
+> How does that follow?
+>
+>> + * It's then up to the idle balancing code that will run as soon as
+>> + * the current CPU goes idle to pick the other process and move it
+>> + * here (or in some other idle CPU if any).
+>> + *
+>> + * By only evaluating running processes against running processes we
+>> + * avoid interfering with the CFS stock active idle balancing, which
+>> + * is critical to optimal performance with HT enabled. (getting HT
+>> + * wrong is worse than running on remote memory so the active idle
+>> + * balancing has priority)
+>
+> what?
+>
+>> + * Idle balancing and all other CFS load balancing become NUMA
+>> + * affinity aware through the introduction of
+>> + * sched_autonuma_can_migrate_task(). CFS searches CPUs in the task's
+>> + * autonuma_node first when it needs to find idle CPUs during idle
+>> + * balancing or tasks to pick during load balancing.
+>
+> You talk a lot about idle balance, but there's zero mention of fairness.
+> This is worrysome.
+>
+>> + * The task's autonuma_node is the node selected by
+>> + * sched_autonuma_balance() when it migrates a task to the
+>> + * selected_cpu in the selected_nid
+>
+> I think I already said that strict was out of the question and hard
+> movement like that simply didn't make sense.
+>
+>> + * Once a process/thread has been moved to another node, closer to
+>> the
+>> + * much of memory it has recently accessed,
+>
+> closer to the recently accessed memory you mean?
+>
+>>   any memory for that task
+>> + * not in the new node moves slowly (asynchronously in the
+>> background)
+>> + * to the new node. This is done by the knuma_migratedN (where the
+>> + * suffix N is the node id) daemon described in mm/autonuma.c.
+>> + *
+>> + * One non trivial bit of this logic that deserves an explanation is
+>> + * how the three crucial variables of the core math
+>> + * (w_nid/w_other/wcpu_nid) are going to change depending on whether
+>> + * the other CPU is running a thread of the current process, or a
+>> + * thread of a different process.
+>
+> No no no,.. its not a friggin detail, its absolutely crucial. Also, if
+> you'd given proper definition you wouldn't need to hand wave your way
+> around the dynamics either because that would simply follow from the
+> definition.
+>
+> <snip terrible example>
+>
+>> + * Before scanning all other CPUs' runqueues to compute the above
+>> + * math,
+>
+> OK, lets stop calling the one isolated conditional you mentioned 'math'.
+> On its own its useless.
+>
+>>   we also verify that the current CPU is not already in the
+>> + * preferred NUMA node from the point of view of both the process
+>> + * statistics and the thread statistics. In such case we can return
+>> to
+>> + * the caller without having to check any other CPUs' runqueues
+>> + * because full convergence has been already reached.
+>
+> Things being in the 'preferred' place don't have much to do with
+> convergence. Does your model have local minima/maxima where it can get
+> stuck, or does it always find a global min/max?
+>
+>
+>> + * This algorithm might be expanded to take all runnable processes
+>> + * into account but examining just the currently running processes is
+>> + * a good enough approximation because some runnable processes may
+>> run
+>> + * only for a short time so statistically there will always be a bias
+>> + * on the processes that uses most the of the CPU. This is ideal
+>> + * because it doesn't matter if NUMA balancing isn't optimal for
+>> + * processes that run only for a short time.
+>
+> Almost, but not quite.. it would be so if the sampling could be proven
+> to be unbiased. But its quite possible for a task to consume most cpu
+> time and never show up as the current task in your load-balance run.
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 7369745..59835a7 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -655,6 +655,51 @@ char *resource_string(char *buf, char *end, struct resource *res,
- }
- 
- static noinline_for_stack
-+char *hex_memory_string(char *buf, char *end, const u8 *addr,
-+			struct printf_spec spec, const char *fmt)
-+{
-+	const char *p_fmt = fmt + 1;
-+	size_t len, bytes = 0;
-+
-+	p_fmt = &fmt[1];
-+	if (isdigit(*p_fmt))
-+		bytes = skip_atoi(&p_fmt);
-+
-+	/* Print up to 64 bytes */
-+	if (!bytes || bytes > 64)
-+		return string(buf, end, "(%pb[1-64])", spec);
-+
-+	/* for each byte 2 chars + separator; + terminator; + 1st newline */
-+	len = bytes * (sizeof(char) * 3) + 2 * sizeof(char);
-+	if (end - buf > len) {
-+		char mem_str[len];
-+		char *p = mem_str;
-+		const char separator = ' ';
-+		u16 columns = 15;
-+		int i;
-+
-+		for (i = 0; i < bytes; i++, columns--) {
-+			p = hex_byte_pack(p, addr[i]);
-+
-+			if (columns) {
-+				*p++ = separator;
-+			} else {
-+				if (i < bytes - 1)
-+					*p++ = '\n';
-+
-+				columns = 16;
-+			}
-+		}
-+
-+		*p = '\0';
-+
-+		return string(buf, end, mem_str, spec);
-+	}
-+
-+	return string(buf, end, "(too big)", spec);
-+}
-+
-+static noinline_for_stack
- char *mac_address_string(char *buf, char *end, u8 *addr,
- 			 struct printf_spec spec, const char *fmt)
- {
-@@ -934,6 +979,7 @@ int kptr_restrict __read_mostly;
-  *
-  * Right now we handle:
-  *
-+ * - 'b[1-64]' For printing memory dump 1-64 bytes long
-  * - 'F' For symbolic function descriptor pointers with offset
-  * - 'f' For simple symbolic function names without offset
-  * - 'S' For symbolic direct pointers with offset
-@@ -996,6 +1042,8 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
- 	}
- 
- 	switch (*fmt) {
-+	case 'b':
-+		return hex_memory_string(buf, end, ptr, spec, fmt);
- 	case 'F':
- 	case 'f':
- 		ptr = dereference_function_descriptor(ptr);
--- 
-1.7.9.5
+Same here, I have another similar question regarding sampling:
+If one process do very intensive visit of a small set of pages in this
+node, but occasional visit of a large set of pages in another node.
+Will this algorithm do a very bad judgment? I guess the answer would
+be: it's possible and this judgment depends on the racing pattern
+between the process and your knuma_scand.
 
+Usually, if we are using sampling, we are on the assumption that if
+this sampling would not be accurate, we only lose chance to
+better optimization, but NOT to do bad/false judgment.
+
+Andrea, sorry, I don't have enough time to look into all your patches
+details(and also since I'm not on the CCs ;-) ),
+But my intuition tells me that your current sampling and weight
+algorithm is far from optimal.
+
+>
+>
+>
+> As it stands you wrote a lot of words.. but none of them were really
+> helpful in understanding what you do.
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email:<a href=ilto:"dont@kvack.org">  email@kvack.org</a>
