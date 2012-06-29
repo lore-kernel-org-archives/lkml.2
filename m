@@ -1,60 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336Ab2F2ViT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 17:38:19 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:46694 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751336Ab2F2ViS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 17:38:18 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] Power management fixes for 3.5-rc5
-Date: Fri, 29 Jun 2012 23:43:44 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Mandeep Singh Baines <msb@chromium.org>, Len Brown <lenb@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+	id S1751177Ab2F2Vjy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 17:39:54 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:49826 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab2F2Vjx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 17:39:53 -0400
+Message-ID: <1341006040.26928.4.camel@lappy>
+Subject: Re: rcu: BUG: spinlock recursion on CPU#3, trinity-child19/5970
+From: Sasha Levin <levinsasha928@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Fri, 29 Jun 2012 23:40:40 +0200
+In-Reply-To: <20120629172320.GA2416@linux.vnet.ibm.com>
+References: <1340964584.2936.40.camel@lappy>
+	 <20120629172320.GA2416@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201206292343.44673.rjw@sisk.pl>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 2012-06-29 at 10:23 -0700, Paul E. McKenney wrote:
+> On Fri, Jun 29, 2012 at 12:09:44PM +0200, Sasha Levin wrote:
+> > Hi Paul,
+> > 
+> > I think I've stumbled on another bug that will increase your paranoia levels even further.
+> > 
+> > I got the following lockup when fuzzing with trinity inside a KVM tools guest, using latest linux-next.
+> > 
+> > It appears that it was caused by a03d6178 ("rcu: Move RCU grace-period cleanup into kthread"). This issue doesn't reproduce easily though, it took some fuzzing before hitting it.
+> 
+> Hmmm...  If the preemption at that point in __rcu_read_unlock() is
+> required to make this happen, then it would be pretty hard to hit.
+> I suspect that you can make it reproduce more quickly by putting
+> a udelay(10) or similar right after the assignment of INT_MIN to
+> t->rcu_read_lock_nesting in __rcu_read_unlock() in kernel/rcupdate.c.
+> Can this be reproduced while running with lockdep enabled?
 
-Please pull power management fixes for 3.5-rc5 since commit
-6b16351acbd415e66ba16bf7d473ece1574cf0bc:
+The good news are that it is much easier to reproduce it by adding a udelay(10) at the point you've mentioned.
 
-  Linux 3.5-rc4
+The bad news are that what you saw was a lockdep enabled run (CONFIG_PROVE_RCU is enabled, and lockdep was enabled). There were no lockdep warnings at any point while reproducing it.
 
-with top-most commit 75cc52358799bd6001e7d1a47847f997f5ae99f0
+> Please see below for an untested patch that gets RCU out of this loop,
+> but it is quite possible that something else is involved here, so it would
+> be very good to get a lockdep run, if possible.  My concern stems from the
+> fact that interrupts were enabled during the call to __rcu_read_unlock()
+> -- otherwise it would not have been preempted -- so the runqueue locks
+> were presumably not held on entry to __rcu_read_unlock().
 
-  PM / ACPI: Fix suspend/resume regression caused by cpuidle cleanup.
+I've scheduled to try this patch tomorrow after a sleep, unless you preempt me first :)
 
-from the git repository at:
+> 							Thanx, Paul
+> 
+> ------------------------------------------------------------------------
+> 
+> rcu: Avoid grace-period kthread wakeups from unsafe environments
+> 
+> A soft lockup involving the run-queue locks involved the wakeup of
+> the grace-period kthread.  This commit therefore defers the wakeup
+> to softirq context.
+> 
+> Reported-by: Sasha Levin <levinsasha928@gmail.com>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index c0e0454..cd0076e 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1262,6 +1262,15 @@ static int rcu_gp_kthread(void *arg)
+>  }
+>  
+>  /*
+> + * Signal the RCU core to wake up the grace-period kthread, as we might
+> + * not be in a context where it is safe to do the wakeup directly.
+> + */
+> +static void rcu_wake_gp_kthread(struct rcu_state *rsp)
+> +{
+> +	ACCESS_ONCE(rsp->wake_gp_kthread) = 1;
+> +}
+> +
+> +/*
+>   * Start a new RCU grace period if warranted, re-initializing the hierarchy
+>   * in preparation for detecting the next grace period.  The caller must hold
+>   * the root node's ->lock, which is released before return.  Hard irqs must
+> @@ -1291,7 +1300,7 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
+>  
+>  	rsp->gp_flags = 1;
+>  	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> -	wake_up(&rsp->gp_wq);
+> +	rcu_wake_gp_kthread(rsp);
+>  }
+>  
+>  /*
+> @@ -1306,7 +1315,7 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
+>  {
+>  	WARN_ON_ONCE(!rcu_gp_in_progress(rsp));
+>  	raw_spin_unlock_irqrestore(&rcu_get_root(rsp)->lock, flags);
+> -	wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
+> +	rcu_wake_gp_kthread(rsp); /* smp_mb() implied by wakeup. */
+>  }
+>  
+>  /*
+> @@ -1889,6 +1898,12 @@ __rcu_process_callbacks(struct rcu_state *rsp)
+>  
+>  	WARN_ON_ONCE(rdp->beenonline == 0);
+>  
+> +	/* Awaken the grace-period kthread if needed. */
+> +	if (ACCESS_ONCE(rsp->wake_gp_kthread)) {
+> +		if (xchg(&rsp->wake_gp_kthread, 0)) /* Prevent wakeup storms. */
+> +			wake_up(&rsp->gp_wq);
+> +	}
+> +
+>  	/*
+>  	 * Advance callbacks in response to end of earlier grace
+>  	 * period that some other CPU ended.
+> @@ -2304,6 +2319,12 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+>  		return 1;
+>  	}
+>  
+> +	/* Does the grace-period kthread need to be awakened? */
+> +	if (ACCESS_ONCE(rsp->wake_gp_kthread)) {
+> +		rdp->n_wake_gp_kthread++;
+> +		return 1;
+> +	}
+> +
+>  	/* nothing to do */
+>  	rdp->n_rp_need_nothing++;
+>  	return 0;
+> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+> index 280ad7c..89a190c 100644
+> --- a/kernel/rcutree.h
+> +++ b/kernel/rcutree.h
+> @@ -313,6 +313,7 @@ struct rcu_data {
+>  	unsigned long n_rp_cpu_needs_gp;
+>  	unsigned long n_rp_gp_completed;
+>  	unsigned long n_rp_gp_started;
+> +	unsigned long n_wake_gp_kthread;
+>  	unsigned long n_rp_need_nothing;
+>  
+>  	/* 6) _rcu_barrier() callback. */
+> @@ -381,6 +382,7 @@ struct rcu_state {
+>  	struct task_struct *gp_kthread;		/* Task for grace periods. */
+>  	wait_queue_head_t gp_wq;		/* Where GP task waits. */
+>  	int gp_flags;				/* Commands for GP task. */
+> +	int wake_gp_kthread;			/* Awaken GP task? */
+>  
+>  	/* End of fields guarded by root rcu_node's lock. */
+>  
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-for-3.5-rc5
-
-They are a fix for a bug in async suspend error code path causing parents to
-wait forever for their children in case of a suspend error (-stable material)
-and an ACPI cpuidle regression fix.
-
-Thanks!
-
-
- drivers/acpi/processor_idle.c | 32 ++++++++++++++++++++++++++++++--
- drivers/base/power/main.c     |  6 ++++--
- 2 files changed, 34 insertions(+), 4 deletions(-)
-
----------------
-
-Deepthi Dharwar (1):
-      PM / ACPI: Fix suspend/resume regression caused by cpuidle cleanup.
-
-Mandeep Singh Baines (1):
-      PM / Sleep: Prevent waiting forever on asynchronous suspend after abort
 
