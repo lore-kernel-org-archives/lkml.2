@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab2F2NAZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 09:00:25 -0400
-Received: from mga14.intel.com ([143.182.124.37]:63798 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751946Ab2F2NAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 09:00:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="162229285"
-Message-ID: <1340975067.3070.180.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v10] MTD: LPC32xx MLC NAND driver
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Cc: Roland Stigge <stigge@antcom.de>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, dwmw2@infradead.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
-        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
-        linux@arm.linux.org.uk
-Date: Fri, 29 Jun 2012 16:04:27 +0300
-In-Reply-To: <CAAAP30HZ1Z5U44wLwSEfcaJSLmVp8AbXPTCagS31hnoCy_tf-g@mail.gmail.com>
-References: <1340834129-15545-1-git-send-email-stigge@antcom.de>
-	 <1340973434.3070.168.camel@sauron.fi.intel.com>
-	 <CAAAP30HZ1Z5U44wLwSEfcaJSLmVp8AbXPTCagS31hnoCy_tf-g@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-B38n0FokRUfCGVsXP7DU"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1755441Ab2F2NA6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 09:00:58 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:49198 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754723Ab2F2NAz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 09:00:55 -0400
+X-AuditID: cbfee61b-b7f776d000002f3f-82-4feda706d738
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: "'Clemens Ladisch'" <clemens@ladisch.de>
+Cc: linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
+        "'Konrad Rzeszutek Wilk'" <konrad.wilk@oracle.com>,
+        "'David Gibson'" <david@gibson.dropbear.id.au>,
+        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
+        "'Sumit Semwal'" <sumit.semwal@linaro.org>
+References: <1339741135-7841-1-git-send-email-m.szyprowski@samsung.com>
+ <4FED8D03.10507@ladisch.de>
+In-reply-to: <4FED8D03.10507@ladisch.de>
+Subject: RE: [PATCH] common: dma-mapping: add support for generic dma_mmap_*
+ calls
+Date: Fri, 29 Jun 2012 15:00:37 +0200
+Organization: SPRC
+Message-id: <00a501cd55f7$323946f0$96abd4d0$%szyprowski@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1V57vKxP88kqEOQMOKJoqJe7/9qgADmtWQ
+Content-language: pl
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t9jAV225W/9DW6cF7Ho2PWVxeLyrjls
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGVs+aNR8IGl4ub0sywNjI+Zuxg5OSQETCQerrzBBGGL
+	SVy4t56ti5GLQ0hgEaPExle7WSCcn4wSL16sYAOpYhMwlOh62wVmiwhoSZz5tpwdpIhZYDuL
+	xP/eiWCjhARSJTbNu8QKYnMKaEgc3P6UHcQWFgiR2LNlB1icRUBV4t6tBUD1HBz8AkISE2cp
+	gIR5BVwkmnt+sELYghI/Jt9jAbGZgXat33mcCcKWl9i85i0zSKuEgLrEo7+6EOcYSSyf3sYI
+	USIicbfhOesERuFZSCbNQjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kR
+	HOjPpHcwrmqwOMQowMGoxMOrsOitvxBrYllxZe4hRgkOZiUR3oeLgUK8KYmVValF+fFFpTmp
+	xYcYpTlYlMR5m6wv+AsJpCeWpGanphakFsFkmTg4pRoYC44wWRyRPGP3r63RRdjRe96cRWqN
+	85q7Z6j7xdot7Cp7fcTz0T9GMc0dWsdveK2Y6BFz46rc9qWqa19VNTxd9INfx+vxnY/5vz0n
+	X45h35XwZFfQ+xuLk2+ePROXGado/yXr7UOPwk36Z0v/7tPauuft+kn31m2VUfm56t/6srNs
+	Xbq1341+JCmxFGckGmoxFxUnAgAnUu5bcAIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---=-B38n0FokRUfCGVsXP7DU
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Friday, June 29, 2012 1:10 PM Clemens Ladisch wrote:
 
-On Fri, 2012-06-29 at 09:56 -0300, Alexandre Pereira da Silva wrote:
-> > @@ @@
-> > +drivers/mtd/nand/lpc32xx_mlc.c: In function 'lpc32xx_nand_probe':
-> > +drivers/mtd/nand/lpc32xx_mlc.c:679:10: warning: variable 'sr' set but =
-not used [-Wunused-but-set-variable]
+> Marek Szyprowski wrote:
+> > +++ b/drivers/base/dma-mapping.c
+> > ...
+> > +int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
+> > +		    void *cpu_addr, dma_addr_t dma_addr, size_t size)
+> > +{
+> > +	int ret = -ENXIO;
+> > +	...
+> > +	if (dma_mmap_from_coherent(dev, vma, cpu_addr, size, &ret))
+> > +		return ret;
+> 
+> This will return -ENXIO if dma_mmap_from_coherent() succeeds.
+ 
+Thanks for spotting this! I will fix it in the next version of the patch.
 
-gcc 4.6, aiaiai uses W=3D1 when building.
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
 
-> > +drivers/mtd/nand/lpc32xx_mlc.c:561:24: error: bad constant expression =
-[sparse]
-
-This is sparse, not gcc.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-B38n0FokRUfCGVsXP7DU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJP7afbAAoJECmIfjd9wqK0hNIP/1RyhN3l041+KGPGjWa9LSxP
-slXQ5VinUb2uYcmruYPkTTcCMI+sXSxMwv0FwX5JyQxEKumtcBlYDFLeAc2e9eyG
-vyhY0jwvtZBluqWqw0qcq3eFulbkAAhGT2kXBDMhJT/JoUQB46gnyExdlSNS99p2
-CFCPirg5VQbDeZGVNUKN/Y9AAjq8PDx8noPieIlzpRRn2vjFHwaGacDSFkvSw2MH
-rrmL25ZRT8vfpig7m+1pTpVBBWT5d/LV/T0ag11kujbblyypazQyIQfh8KgpzTAS
-wl+OKMLVnB9UjJUKjOJ6BxMTJFeIjOB4P2f9/rOeUWoV4Ogu4gcabqfxFtyI2REQ
-rb3eHPiyGfyTXvrw8yw9MqYuyu9zYw+pigMeyaQEZ0PvMFVfMCBSBY2tBoZMC0q9
-4oxq7Q5hqaBSAbF3xJc7KxEcBnF4E1S4bPzbVu5JNJdbG+BJ5diCesHMJTON5PNj
-WPdavmX75q6a4FTAVupS9lI428WoWh7YQYEsLZZkeIfL1zjJbJylEUw/yfYzisuD
-4AvbauEQU8JCiWqFvAAb22j1K0KnKS3AHm4Ym9ikp3T+4M2A58ch0eGWYNnY8aSA
-ibAlvC4jDx8fuAtOjZiOHJjlpMl1b+MhsEWhFzOdtQZPSXhNqBz7Ulm61vuCopYe
-H15CFragPXRWILi9nb4T
-=5mS7
------END PGP SIGNATURE-----
-
---=-B38n0FokRUfCGVsXP7DU--
 
