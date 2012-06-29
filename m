@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751664Ab2F2HaC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 03:30:02 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:53962 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab2F2HaA (ORCPT
+	id S1751971Ab2F2HcM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 03:32:12 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44818 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab2F2HcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 03:30:00 -0400
-X-AuditID: 9c93016f-b7c85ae00000559e-2b-4fed596ff58d
+	Fri, 29 Jun 2012 03:32:11 -0400
+X-AuditID: 9c930179-b7cceae000004195-18-4fed59f7f3e9
 From: Namhyung Kim <namhyung@kernel.org>
 To: Paul Turner <pjt@google.com>
 Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
@@ -21,13 +21,13 @@ Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Morten Rasmussen <Morten.Rasmussen@arm.com>,
         Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Subject: Re: [PATCH 09/16] sched: normalize tg load contributions against runnable time
+Subject: Re: [PATCH 12/16] sched: refactor update_shares_cpu() -> update_blocked_avgs()
 References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
-	<20120628022414.30496.11931.stgit@kitami.mtv.corp.google.com>
-Date: Fri, 29 Jun 2012 16:26:05 +0900
-In-Reply-To: <20120628022414.30496.11931.stgit@kitami.mtv.corp.google.com>
-	(Paul Turner's message of "Wed, 27 Jun 2012 19:24:14 -0700")
-Message-ID: <87txxuwpde.fsf@sejong.aot.lge.com>
+	<20120628022415.30496.57167.stgit@kitami.mtv.corp.google.com>
+Date: Fri, 29 Jun 2012 16:28:22 +0900
+In-Reply-To: <20120628022415.30496.57167.stgit@kitami.mtv.corp.google.com>
+	(Paul Turner's message of "Wed, 27 Jun 2012 19:24:15 -0700")
+Message-ID: <87pq8iwp9l.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -36,146 +36,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jun 2012 19:24:14 -0700, Paul Turner wrote:
-> Entities of equal weight should receive equitable distribution of cpu time.
-> This is challenging in the case of a task_group's shares as execution may be
-> occurring on multiple cpus simultaneously.
->
-> To handle this we divide up the shares into weights proportionate with the load
-> on each cfs_rq.  This does not however, account for the fact that the sum of
-> the parts may be less than one cpu and so we need to normalize:
->   load(tg) = min(runnable_avg(tg), 1) * tg->shares
-> Where runnable_avg is the aggregate time in which the task_group had runnable
-> children.
+On Wed, 27 Jun 2012 19:24:15 -0700, Paul Turner wrote:
+> Now that running entities maintain their own load-averages the work we must do
+> in update_shares() is largely restricted to the periodic decay of blocked
+> entities.  This allows us to be a little less pessimistic regarding our
+> occupancy on rq->lock and the associated rq->clock updates required.
 >
 > Signed-off-by: Paul Turner <pjt@google.com>
-> Signed-off-by: Ben Segall <bsegall@google.com>.
 > ---
->  kernel/sched/debug.c |    4 ++++
->  kernel/sched/fair.c  |   39 +++++++++++++++++++++++++++++++++++++++
->  kernel/sched/sched.h |    2 ++
->  3 files changed, 45 insertions(+), 0 deletions(-)
+>  kernel/sched/fair.c |   59 +++++++++++++++++++++++++++++----------------------
+>  1 files changed, 33 insertions(+), 26 deletions(-)
 >
-> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-> index 9268fb7..9334c68 100644
-> --- a/kernel/sched/debug.c
-> +++ b/kernel/sched/debug.c
-> @@ -237,6 +237,10 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
->  			atomic64_read(&cfs_rq->tg->load_avg));
->  	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_contrib",
->  			cfs_rq->tg_load_contrib);
-> +	SEQ_printf(m, "  .%-30s: %d\n", "tg_runnable_contrib",
-> +			cfs_rq->tg_runnable_contrib);
-> +	SEQ_printf(m, "  .%-30s: %d\n", "tg->runnable_avg",
-> +			atomic_read(&cfs_rq->tg->runnable_avg));
->  #endif
->  
->  	print_cfs_group_stats(m, cpu, cfs_rq->tg);
 > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index a416296..91d0b21 100644
+> index 4a9a828..dd1ef8a 100644
 > --- a/kernel/sched/fair.c
 > +++ b/kernel/sched/fair.c
-> @@ -1117,19 +1117,56 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
+> @@ -3678,23 +3678,20 @@ out:
+>  /*
+>   * update tg->load_weight by folding this cpu's load_avg
+>   */
+> -static int update_shares_cpu(struct task_group *tg, int cpu)
+> +static void __update_blocked_averages_cpu(struct task_group *tg, int cpu)
+>  {
+> -	struct sched_entity *se;
+> -	struct cfs_rq *cfs_rq;
+> -	unsigned long flags;
+> -	struct rq *rq;
+> -
+> -
+> -	rq = cpu_rq(cpu);
+> -	se = tg->se[cpu];
+> -	cfs_rq = tg->cfs_rq[cpu];
+> +	struct sched_entity *se = tg->se[cpu];
+> +	struct cfs_rq *cfs_rq = tg->cfs_rq[cpu];
+>  
+> -	raw_spin_lock_irqsave(&rq->lock, flags);
+> +	/* throttled entities do not contribute to load */
+> +	if (throttled_hierarchy(cfs_rq))
+> +		return;
+>  
+> -	update_rq_clock(rq);
+>  	update_cfs_rq_blocked_load(cfs_rq, 1);
+> -	update_entity_load_avg(tg->se[cpu], 1);
+> +	if (se)
+> +		update_entity_load_avg(se, 1);
+> +	else
+> +		update_rq_runnable_avg(rq_of(cfs_rq), 1);
+>  
+>  	if (se) {
+>  		/*
+> @@ -3707,29 +3704,39 @@ static int update_shares_cpu(struct task_group *tg, int cpu)
+>  		else
+>  			list_del_leaf_cfs_rq(cfs_rq);
 >  	}
+> -
+> -	raw_spin_unlock_irqrestore(&rq->lock, flags);
+> -
+> -	return 0;
 >  }
 >  
-> +/*
-> + * Aggregate cfs_rq runnable averages into an equivalent task_group
-> + * representation for computing load contributions.
-> + */
-> +static inline void __update_tg_runnable_avg(struct sched_avg *sa,
-> +						  struct cfs_rq *cfs_rq)
-> +{
-> +	struct task_group *tg = cfs_rq->tg;
-> +	long contrib;
-> +
-> +	contrib = div_u64(sa->runnable_avg_sum << 12,
-> +			  sa->runnable_avg_period + 1);
-> +	contrib -= cfs_rq->tg_runnable_contrib;
-> +
-> +	if (abs(contrib) > cfs_rq->tg_runnable_contrib / 64) {
-> +		atomic_add(contrib, &tg->runnable_avg);
-> +		cfs_rq->tg_runnable_contrib += contrib;
-> +	}
-> +}
-> +
->  static inline void __update_group_entity_contrib(struct sched_entity *se)
+> -static void update_shares(int cpu)
+> +static void update_blocked_averages(int cpu)
 >  {
->  	struct cfs_rq *cfs_rq = group_cfs_rq(se);
->  	struct task_group *tg = cfs_rq->tg;
-> +	int runnable_avg;
+> -	struct cfs_rq *cfs_rq;
+>  	struct rq *rq = cpu_rq(cpu);
+> +	struct cfs_rq *cfs_rq;
 > +
->  	u64 contrib;
+> +	unsigned long flags;
+> +	int num_updates = 0;
 >  
->  	contrib = cfs_rq->tg_load_contrib * tg->shares;
->  	se->avg.load_avg_contrib = div64_u64(contrib,
->  					     atomic64_read(&tg->load_avg) + 1);
-> +
-> +	/*
-> +	 * Unlike a task-entity, a group entity may be using >=1 cpu globally.
-> +	 * However, in the case that it's using <1 cpu we need to form a
-> +	 * correction term so that we contribute the same load as a task of
-> +	 * equal weight. (Global runnable time is taken as a fraction over
-> +	 * 2^12.)
+>  	rcu_read_lock();
+> +	raw_spin_lock_irqsave(&rq->lock, flags);
+> +	update_rq_clock(rq);
+>  	/*
+>  	 * Iterates the task_group tree in a bottom up fashion, see
+>  	 * list_add_leaf_cfs_rq() for details.
+>  	 */
+>  	for_each_leaf_cfs_rq(rq, cfs_rq) {
+> -		/* throttled entities do not contribute to load */
+> -		if (throttled_hierarchy(cfs_rq))
+> -			continue;
+> +		__update_blocked_averages_cpu(cfs_rq->tg, rq->cpu);
+>  
+> -		update_shares_cpu(cfs_rq->tg, cpu);
+> +		/*
+> +		 * Periodically release the lock so that a cfs_rq with many
+> +		 * children cannot hold it for an arbitrary period of time.
+> +		 */
+> +		if (num_updates++ % 20 == 0) {
 
-Wouldn't it be better using a symbolic name rather than the magic number?
-
-
-> +	 */
-> +	runnable_avg = atomic_read(&tg->runnable_avg);
-> +	if (runnable_avg < (1<<12)) {
-> +		se->avg.load_avg_contrib *= runnable_avg;
-> +		se->avg.load_avg_contrib /= (1<<12);
-
-Ditto.
+Should it be '++num_updates'? Otherwise, it'll release the lock at the
+first iteration?
 
 Thanks,
 Namhyung
 
 
-> +	}
+> +			raw_spin_unlock_irqrestore(&rq->lock, flags);
+> +			cpu_relax();
+> +			raw_spin_lock_irqsave(&rq->lock, flags);
+> +			update_rq_clock(rq);
+> +		}
+>  	}
+> +
+> +	raw_spin_unlock_irqrestore(&rq->lock, flags);
+>  	rcu_read_unlock();
+>  }
+>  
+> @@ -3774,7 +3781,7 @@ unsigned long task_h_load(struct task_struct *p)
+>  	return load;
 >  }
 >  #else
->  static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
->  						 int force_update) {}
-> +static inline void __update_tg_runnable_avg(struct sched_avg *sa,
-> +						  struct cfs_rq *cfs_rq) {}
->  static inline void __update_group_entity_contrib(struct sched_entity *se) {}
->  #endif
->  
-> @@ -1151,6 +1188,7 @@ static long __update_entity_load_avg_contrib(struct sched_entity *se)
->  	if (entity_is_task(se)) {
->  		__update_task_entity_contrib(se);
->  	} else {
-> +		__update_tg_runnable_avg(&se->avg, group_cfs_rq(se));
->  		__update_group_entity_contrib(se);
->  	}
->  
-> @@ -1219,6 +1257,7 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
->  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+> -static inline void update_shares(int cpu)
+> +static inline void update_blocked_averages(int cpu)
 >  {
->  	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
-> +	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
 >  }
 >  
->  /* Add the load generated by se into cfs_rq's child load-average */
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 4d3b3ad..b48bbd7 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -113,6 +113,7 @@ struct task_group {
+> @@ -4936,7 +4943,7 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+>  	 */
+>  	raw_spin_unlock(&this_rq->lock);
 >  
->  	atomic_t load_weight;
->  	atomic64_t load_avg;
-> +	atomic_t runnable_avg;
->  #endif
+> -	update_shares(this_cpu);
+> +	update_blocked_averages(this_cpu);
+>  	rcu_read_lock();
+>  	for_each_domain(this_cpu, sd) {
+>  		unsigned long interval;
+> @@ -5196,7 +5203,7 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+>  	int update_next_balance = 0;
+>  	int need_serialize;
 >  
->  #ifdef CONFIG_RT_GROUP_SCHED
-> @@ -234,6 +235,7 @@ struct cfs_rq {
->  	atomic64_t decay_counter, removed_load;
->  	u64 last_decay;
->  #ifdef CONFIG_FAIR_GROUP_SCHED
-> +	u32 tg_runnable_contrib;
->  	u64 tg_load_contrib;
->  #endif
->  #endif
+> -	update_shares(cpu);
+> +	update_blocked_averages(cpu);
+>  
+>  	rcu_read_lock();
+>  	for_each_domain(cpu, sd) {
