@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311Ab2F2T1K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 15:27:10 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:6776 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750819Ab2F2T1I (ORCPT
+	id S932886Ab2F2Tbq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 15:31:46 -0400
+Received: from mail-wg0-f74.google.com ([74.125.82.74]:49644 "EHLO
+	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932588Ab2F2Tbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 15:27:08 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz98dI9371I1432Izz1202h1082kzzz2dh2a8h668h839hd25he5bhf0ah)
-Message-ID: <4FEE0182.90503@freescale.com>
-Date: Fri, 29 Jun 2012 14:26:58 -0500
-From: Timur Tabi <b04825@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
-MIME-Version: 1.0
-To: Kumar Gala <galak@kernel.crashing.org>
-CC: "Kokoris, Ioannis" <ioannis.kokoris@siemens-enterprise.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH] P1021: set IReady in QE Microcode Upload
-References: <026483A88B848047A08C3F03E20822D0267B1F4A55@MCHP058A.global-ad.net> <4EBD4FB8.2020406@freescale.com> <026483A88B848047A08C3F03E20822D0267B1F4BDB@MCHP058A.global-ad.net> <CAOZdJXXOrSaUgynqu+CL64SnivtOWHBDMcJK9Fh000M_JBK58Q@mail.gmail.com> <DF5BDBFF-A726-4E1C-832E-EF2629F60DC9@kernel.crashing.org> <0154F680-D9F4-4CE1-BF5E-11884AD0ED4A@freescale.com> <AC087E7A-B7BC-43E5-948F-68AEB8251FD3@kernel.crashing.org> <4F63652C.3050108@freescale.com> <9508ABD9-607F-4D41-A169-743ADE625F4A@kernel.crashing.org>
-In-Reply-To: <9508ABD9-607F-4D41-A169-743ADE625F4A@kernel.crashing.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+	Fri, 29 Jun 2012 15:31:44 -0400
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Justin Teravest <teravest@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: [PATCH] tracing: Update overrun counter when removing pages
+Date: Fri, 29 Jun 2012 12:31:41 -0700
+Message-Id: <1340998301-1715-1-git-send-email-vnagarnaik@google.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kumar Gala wrote:
-> 
-> On Mar 16, 2012, at 11:07 AM, Timur Tabi wrote:
-> 
->> Kumar Gala wrote:
->>>>> Haiying said it should be ok, but I haven't tried it yet.  I'll try it on Monday.
->>
->>> Did you ever test this?
->>
->> No, I forgot all about it.  I'll try it today, assuming the lone 8323
->> board in the board farm still works.
-> 
-> Do you remember if you ever tested this?
+When removing pages from the ring buffer, its state is not reset. This
+means that the counters need to be correctly updated to account for the
+pages removed.
 
-No, I forgot again.  Ugh, sorry.  I'll do it now.
+Update the overrun counter to reflect the removed events from the pages.
 
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+---
+ kernel/trace/ring_buffer.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 96c2dd1..40862eb 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -1346,10 +1346,9 @@ rb_remove_pages(struct ring_buffer_per_cpu *cpu_buffer, unsigned int nr_pages)
+ 			 * If something was added to this page, it was full
+ 			 * since it is not the tail page. So we deduct the
+ 			 * bytes consumed in ring buffer from here.
+-			 * No need to update overruns, since this page is
+-			 * deleted from ring buffer and its entries are
+-			 * already accounted for.
++			 * Increment overrun to account for the lost events.
+ 			 */
++			local_add(page_entries, &cpu_buffer->overrun);
+ 			local_sub(BUF_PAGE_SIZE, &cpu_buffer->entries_bytes);
+ 		}
+ 
 -- 
-Timur Tabi
-Linux kernel developer at Freescale
+1.7.7.3
 
