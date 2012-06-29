@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab2F2O5B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 10:57:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7278 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755763Ab2F2O47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 10:56:59 -0400
-Message-ID: <4FEDC22F.9070406@redhat.com>
-Date: Fri, 29 Jun 2012 17:56:47 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1755857Ab2F2O57 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 10:57:59 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:45718 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755434Ab2F2O56 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 10:57:58 -0400
 MIME-Version: 1.0
-To: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-CC: jan.kiszka@siemens.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH 00/18] KVM: x86: CPU isolation and direct interrupts
- handling by guests
-References: <20120628060719.19298.43879.stgit@localhost.localdomain> <4FEC8D31.3070406@redhat.com> <4FEC93BD.2070809@siemens.com> <4FEC95BC.200@redhat.com> <4FED7495.30707@hitachi.com>
-In-Reply-To: <4FED7495.30707@hitachi.com>
-X-Enigmail-Version: 1.4.2
+In-Reply-To: <1340979030.3070.216.camel@sauron.fi.intel.com>
+References: <1340636918-7505-1-git-send-email-richard.genoud@gmail.com>
+ <1340894351.3070.121.camel@sauron.fi.intel.com> <CACQ1gAjLdR-ZRUS6gxMrJzVpRdvdMK2JRceyiFmeSq-FQkZbZg@mail.gmail.com>
+ <1340900549.3070.130.camel@sauron.fi.intel.com> <CACQ1gAgGbYvTO=_vVW11Ru9OXpra7oiJinbpX=DBiOHmoUtA8g@mail.gmail.com>
+ <1340979030.3070.216.camel@sauron.fi.intel.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Fri, 29 Jun 2012 16:57:42 +0200
+Message-ID: <CACQ1gAgF8pUZJUHOOpohhNSC54X+Y72YymupxOMxnpJ8wgss+g@mail.gmail.com>
+Subject: Re: [PATCH] UBI: add minimal amount of reserved erase blocks in Kconfig
+To: dedekind1@gmail.com
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Shmulik Ladkani <shmulik.ladkani@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2012 12:25 PM, Tomoki Sekiyama wrote:
-> Hi, thanks for your comments.
+2012/6/29 Artem Bityutskiy <dedekind1@gmail.com>:
+>> I was thinking that instead of giving to ubiattach the MBB, we could
+>> give it the MBB percentage (maximum bad blocks percentage of the whole
+>> flash device).
+>> From this % and the whole flash size, we get the MBB number, and set
+>> beb_rsvd_level for each MTD part.
 >
-> On 2012/06/29 2:34, Avi Kivity wrote:
-> > On 06/28/2012 08:26 PM, Jan Kiszka wrote:
-> >>> This is both impressive and scary.  What is the target scenario here?
-> >>> Partitioning?  I don't see this working for generic consolidation.
-> >>
-> >> From my POV, partitioning - including hard realtime partitions - would
-> >> provide some use cases. But, as far as I saw, there are still major
-> >> restrictions in this approach, e.g. that you can't return to userspace
-> >> on the slave core. Or even execute the in-kernel device models on that core.
->
-> Exactly this is for partitioning that requires bare-metal performance
-> with low latency and realtime.
+> Well, I thought that it may be not flexible enough for some people,
+> because you cannot give 1.5%, since flaoting-point arithmetic in the
+> kernel is not used.
+So there's 2 ways to bypass that :
+- use per-1024 instead of percent => the default value would be 20.
+- let ubiattach do the conversion from MBB% to MBB
+I like the 1st one because it gives a number close to what we have in
+the datasheets.
+What do you think ?
 
-It's hard for me to evaluate how large that segment is.  Since the
-patchset is so intrusive, it needs a large potential user set to
-justify, or a large reduction in complexity, or both.
-
->  I think it is also useful for workload
-> like HPC with MPI, that is CPU intensive and that needs low latency.
-
-I keep hearing about people virtualizing these types of workloads, but I
-haven't yet understood why.
 
 
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+for me, ck means con kolivas and not calvin klein... does it mean I'm a geek ?
