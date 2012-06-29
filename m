@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751055Ab2F2EvZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 00:51:25 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:55198 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840Ab2F2EvY (ORCPT
+	id S1750969Ab2F2E43 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 00:56:29 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7714 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812Ab2F2E42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 00:51:24 -0400
-X-AuditID: 9c93016f-b7c85ae00000559e-98-4fed344a2a43
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: [PATCH] vmscan: remove obsolete comment of shrinker
-Date: Fri, 29 Jun 2012 13:51:40 +0900
-Message-Id: <1340945500-14566-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 29 Jun 2012 00:56:28 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 28 Jun 2012 21:56:27 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH 0/2] More precise error reporting for of_get_named_gpio
+Date: Fri, 29 Jun 2012 13:57:57 +0900
+Message-ID: <1340945879-11712-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.7.11.1
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-09f363c7 fixed shrinker callback returns -1 when nr_to_scan is zero
-for preventing excessive the slab scanning. But 635697c6 fixed the
-problem, again so we can freely return -1 although nr_to_scan is zero.
-So let's revert 09f363c7 because the comment added in 09f363c7 made a
-unnecessary rule shrinker user should be aware of.
+of_get_named_gpio is a very convenient way to get a GPIO from a device
+tree. However it makes no difference between an invalid property or
+the absence of it and returns -EINVAL in both cases.
 
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- fs/super.c               |    2 +-
- include/linux/shrinker.h |    1 -
- 2 files changed, 1 insertion(+), 2 deletions(-)
+Sometimes a GPIO property can be optional, and so far we need to use
+a separate call to e.g. of_get_property. These two patches make it
+possible to differenciate both cases by having
+of_parse_phandle_with_args return -ENOENT instead of -EINVAL if the
+requested property does not exist, and of_get_named_gpio_flags
+propage the return value of of_parse_phandle_with_args instead of
+invariably returning -EINVAL/
 
-diff --git a/fs/super.c b/fs/super.c
-index c2f3a1f..1c2868c 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -62,7 +62,7 @@ static int prune_super(struct shrinker *shrink, struct shrink_control *sc)
- 		return -1;
- 
- 	if (!grab_super_passive(sb))
--		return !sc->nr_to_scan ? 0 : -1;
-+		return -1;
- 
- 	if (sb->s_op && sb->s_op->nr_cached_objects)
- 		fs_objects = sb->s_op->nr_cached_objects(sb);
-diff --git a/include/linux/shrinker.h b/include/linux/shrinker.h
-index 07ceb97..ac6b8ee 100644
---- a/include/linux/shrinker.h
-+++ b/include/linux/shrinker.h
-@@ -20,7 +20,6 @@ struct shrink_control {
-  * 'nr_to_scan' entries and attempt to free them up.  It should return
-  * the number of objects which remain in the cache.  If it returns -1, it means
-  * it cannot do any scanning at this time (eg. there is a risk of deadlock).
-- * The callback must not return -1 if nr_to_scan is zero.
-  *
-  * The 'gfpmask' refers to the allocation we are currently trying to
-  * fulfil.
+Alexandre Courbot (2):
+  of: return -ENOENT when no property
+  gpio: propagate of_parse_phandle_with_args errors
+
+ drivers/gpio/gpiolib-of.c | 2 +-
+ drivers/of/base.c         | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
 -- 
-1.7.9.5
+1.7.11.1
 
