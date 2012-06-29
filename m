@@ -1,59 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab2F2DGl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 23:06:41 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:35759 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452Ab2F2DGk (ORCPT
+	id S1754779Ab2F2DJx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 23:09:53 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:41397 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752872Ab2F2DJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 23:06:40 -0400
-Message-ID: <4FED1BBB.1030303@acm.org>
-Date: Thu, 28 Jun 2012 22:06:35 -0500
-From: Corey Minyard <tcminyard@gmail.com>
-Reply-To: minyard@acm.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Thu, 28 Jun 2012 23:09:51 -0400
+Date: Thu, 28 Jun 2012 22:58:48 -0400
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, mtosatti@redhat.com, ebiederm@xmission.com,
+        luto@mit.edu, Joerg Roedel <joerg.roedel@amd.com>, dzickus@redhat.com,
+        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        kexec@lists.infradead.org
+Subject: Re: [PATCH v3 4/5] Sysfs: Export VMCSINFO via sysfs
+Message-ID: <20120629025848.GC8074@kroah.com>
+References: <4FEAC945.50700@cn.fujitsu.com>
+ <4FEACA5E.4090009@cn.fujitsu.com>
+ <20120627192236.GB1965@kroah.com>
+ <4FEC29D6.5020109@cn.fujitsu.com>
+ <20120628113738.GA5499@kroah.com>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Srinivas_G_Gowda@Dell.com, tcminyard@gmail.com,
-        linux-kernel@vger.kernel.org,
-        "openipmi-developer@lists.sourceforge.net" 
-	<openipmi-developer@lists.sourceforge.net>
-Subject: Re: [PATCH 1/1 v2 ] ipmi: Setting OS name as Linux in BMC
-References: <4FEC8931.5020001@dell.com> <4FEC8A28.4070806@dell.com> <m2k3yrgf4d.fsf@firstfloor.org>
-In-Reply-To: <m2k3yrgf4d.fsf@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120628113738.GA5499@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Srinivas, what is your use case?
+On Thu, Jun 28, 2012 at 04:37:38AM -0700, Greg KH wrote:
+> On Thu, Jun 28, 2012 at 05:54:30PM +0800, Yanfei Zhang wrote:
+> > 于 2012年06月28日 03:22, Greg KH 写道:
+> > > On Wed, Jun 27, 2012 at 04:54:54PM +0800, Yanfei Zhang wrote:
+> > >> This patch export offsets of fields via /sys/devices/cpu/vmcs/.
+> > >> Individual offsets are contained in subfiles named by the filed's
+> > >> encoding, e.g.: /sys/devices/cpu/vmcs/0800
+> > >>
+> > >> Signed-off-by: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+> > >> ---
+> > >>  drivers/base/core.c |   13 +++++++++++++
+> > >>  1 files changed, 13 insertions(+), 0 deletions(-)
+> > >>
+> > >> diff --git a/drivers/base/core.c b/drivers/base/core.c
+> > >> index 346be8b..dd05ee7 100644
+> > >> --- a/drivers/base/core.c
+> > >> +++ b/drivers/base/core.c
+> > >> @@ -26,6 +26,7 @@
+> > >>  #include <linux/async.h>
+> > >>  #include <linux/pm_runtime.h>
+> > >>  #include <linux/netdevice.h>
+> > >> +#include <asm/vmcsinfo.h>
+> > > 
+> > > Did you just break the build on all other arches?  Not nice.
+> > > 
+> > >> @@ -1038,6 +1039,11 @@ int device_add(struct device *dev)
+> > >>  	error = dpm_sysfs_add(dev);
+> > >>  	if (error)
+> > >>  		goto DPMError;
+> > >> +#if defined(CONFIG_KVM_INTEL) || defined(CONFIG_KVM_INTEL_MODULE)
+> > >> +	error = vmcs_sysfs_add(dev);
+> > >> +	if (error)
+> > >> +		goto VMCSError;
+> > >> +#endif
+> > > 
+> > > Oh my no, that's no way to ever do this, you know better than that,
+> > > please fix.
+> > > 
+> > > greg k-h
+> > > 
+> > 
+> > Sorry for my thoughtless, Here is the new patch.
+> > 
+> > ---
+> >  drivers/base/core.c |   13 +++++++++++++
+> >  1 files changed, 13 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/base/core.c b/drivers/base/core.c
+> > index 346be8b..7b5266a 100644
+> > --- a/drivers/base/core.c
+> > +++ b/drivers/base/core.c
+> > @@ -30,6 +30,13 @@
+> >  #include "base.h"
+> >  #include "power/power.h"
+> >  
+> > +#if defined(CONFIG_KVM_INTEL) || defined(CONFIG_KVM_INTEL_MODULE)
+> > +#include <asm/vmcsinfo.h>
+> > +#else
+> > +static inline int vmcs_sysfs_add(struct device *dev) { return 0; }
+> > +static inline void vmcs_sysfs_remove(struct device *dev) { }
+> > +#endif
+> 
+> {sigh}  No, again, you know better, don't do this.
 
--corey
+Ok, as others have rightly pointed out, this wasn't the most helpful
+review comment, sorry about that.
 
-On 06/28/2012 07:01 PM, Andi Kleen wrote:
-> <Srinivas_G_Gowda@Dell.com> writes:
->> +	
->> +	data[0] = param_select;
->> +	data[1] = set_selector;
->> +	data[2] = string_encode;
->> +	data[3] = str_len;
->> +	data[4] = 'L';
->> +	data[5] = 'i';
->> +	data[6] = 'n';
->> +	data[7] = 'u';
->> +	data[8] = 'x';
-> Not sure that's all that useful. I can just see BMC's making the ACPI
-> mistake of trying to work around specific issues, by checking for
-> Linux.
->
-> But since there are so many different Linux that will never work
-> because "Linux" does not describe a fixed release or code base.
->
-> Probably dangerous.
->
-> -Andi
->
->
+In Linux, we don't put ifdefs in .c files, we put them in .h files.  See
+many examples of this all over the place.  That's my main complaints the
+past two times of this patch.
 
+But, for this, I would question why you even want / need to do this in
+the drivers/base/core/ file in the first place.  Shouldn't it be in some
+arch or cpu specific file instead that already handles the cpu files?
 
+thanks,
+
+greg k-h
