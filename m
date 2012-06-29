@@ -1,44 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531Ab2F2JOJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 05:14:09 -0400
-Received: from webmail-out1.one.com ([91.198.169.16]:49750 "EHLO
-	webmail-out1.one.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823Ab2F2JOH convert rfc822-to-8bit (ORCPT
+	id S1753265Ab2F2JX1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 05:23:27 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57373 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315Ab2F2JXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 05:14:07 -0400
-X-Greylist: delayed 529 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Jun 2012 05:14:07 EDT
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
+	Fri, 29 Jun 2012 05:23:25 -0400
+Date: Fri, 29 Jun 2012 02:22:56 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Junxiao Bi <junxiao.bi@oracle.com>, ocfs2-devel@oss.oracle.com,
+        linux-aio@kvack.org, mfasheh@suse.com, linux-kernel@vger.kernel.org,
+        joe.jin@oracle.com, stable@vger.kernel.org
+Subject: Re: [PATCH v4 1/2] aio: make kiocb->private NUll in
+ init_sync_kiocb()
+Message-ID: <20120629092255.GB12521@dhcp-172-17-9-228.mtv.corp.google.com>
+Mail-Followup-To: Andrew Morton <akpm@linux-foundation.org>,
+	Junxiao Bi <junxiao.bi@oracle.com>, ocfs2-devel@oss.oracle.com,
+	linux-aio@kvack.org, mfasheh@suse.com, linux-kernel@vger.kernel.org,
+	joe.jin@oracle.com, stable@vger.kernel.org
+References: <1340788195-20623-1-git-send-email-junxiao.bi@oracle.com>
+ <1340788195-20623-2-git-send-email-junxiao.bi@oracle.com>
+ <20120628153956.9b7405d9.akpm@linux-foundation.org>
 MIME-Version: 1.0
-From: "Zoltan Kelemen" <zoltan.kelemen@digisec.se>
-To: "Dan Carpenter" <dan.carpenter@oracle.com>
-CC: willy@meta-x.org, gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] staging:panel: Rewrite for fixing synchronization
- issues
-Date: Fri, 29 Jun 2012 11:05:16 +0200
-X-Mailer: One.com webmail
-X-Originating-Ip: 91.198.169.179
-In-Reply-To: <20120629072441.GN5333@mwanda>
-References: <4FECC539.8040303@digisec.se> <20120629072441.GN5333@mwanda>
-Message-Id: <20120629090516.8845AD52AA77@bmail04.one.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120628153956.9b7405d9.akpm@linux-foundation.org>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 jun 2012 09:24 "Dan Carpenter" <dan.carpenter@oracle.com> wrote:
+On Thu, Jun 28, 2012 at 03:39:56PM -0700, Andrew Morton wrote:
+> On Wed, 27 Jun 2012 17:09:54 +0800
+> Junxiao Bi <junxiao.bi@oracle.com> wrote:
+> 
+> > Ocfs2 uses kiocb.*private as a flag of unsigned long size. In
+> > commit a11f7e6 ocfs2: serialize unaligned aio, the unaligned
+> > io flag is involved in it to serialize the unaligned aio. As
+> > *private is not initialized in init_sync_kiocb() of do_sync_write(),
+> > this unaligned io flag may be unexpectly set in an aligned dio.
+> > And this will cause OCFS2_I(inode)->ip_unaligned_aio decreased
+> > to -1 in ocfs2_dio_end_io(), thus the following unaligned dio
+> > will hang forever at ocfs2_aiodio_wait() in ocfs2_file_aio_write().
+> > 
+> > Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+> > Cc: stable@vger.kernel.org
+> > Acked-by: Jeff Moyer <jmoyer@redhat.com>
+> > Acked-by: Joel Becker <jlbec@evilplan.org>
+> > ---
+> >  include/linux/aio.h |    1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/include/linux/aio.h b/include/linux/aio.h
+> > index 2314ad8..b1a520e 100644
+> > --- a/include/linux/aio.h
+> > +++ b/include/linux/aio.h
+> > @@ -140,6 +140,7 @@ struct kiocb {
+> >  		(x)->ki_dtor = NULL;			\
+> >  		(x)->ki_obj.tsk = tsk;			\
+> >  		(x)->ki_user_data = 0;                  \
+> > +		(x)->private = NULL;			\
+> >  	} while (0)
+> >  
+> >  #define AIO_RING_MAGIC			0xa10a10a1
+> 
+> hm, that code is rather cruddy.  Pointless macromania.
 
-> Gar...  Don't do this.  :/  Each bullet point here should be a
-> separate patch.  Please break it apart and resend.
+Agreed.
 
-I understand a large patch is harder to audit than small incremental changes, but the patch was the result of a code rewrite, where I attempted to summarize the changes in large in the bulleted list. There isn't a one-to-one correspondence between a bullet and a change in the code. Breaking the rewrite into small pieces would not only be quite hard but to some extent even more confusing to audit since you risk to see the leaves instead of the tree.
+> If we do this:
+> 
+> static inline void init_sync_kiocb(struct kiocb *kiocb, struct file *filp)
+> {
+> 	*kiocb = (struct kiocb) {
+> 			.ki_users = 1,
+> 			.ki_key = KIOCB_SYNC_KEY,
+> 			.ki_filp = filp,
+> 			.ki_obj.tsk = current,
+> 		};
+> }
+> 
+> then fs/read_write.o's .text is shrunk from 9857 bytes to 9714, which
+> is rather a lot.
+> 
+> But that's all rather irrelevant to your bugfix.
 
-> Do not create lock_pprt() and unlock_pprt() functions.  It doesn't
-> save any lines of code.  It means that Sparse is unable check for
+	I like your solution.  Junxiao, if you send me that version, I'd
+be happy to take it.
 
-Good point. (The functions were a remnant from previous work-in-progress where they were used in common from process/softirq code, and used different lock calls depending on the context of the call).
+Joel
 
-Regards,
-Zoltan
+-- 
+
+"I'm drifting and drifting
+ Just like a ship out on the sea.
+ Cause I ain't got nobody, baby,
+ In this world to care for me."
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
