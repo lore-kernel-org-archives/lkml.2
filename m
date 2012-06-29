@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909Ab2F2MYl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 08:24:41 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55654 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917Ab2F2MYk (ORCPT
+	id S1754993Ab2F2MZo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 08:25:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18733 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752588Ab2F2MZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 08:24:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120628193652.GB10945@srcf.ucam.org>
-References: <1340910426-13269-1-git-send-email-seth.forshee@canonical.com>
-	<20120628191043.GA9777@srcf.ucam.org>
-	<20120628193017.GA29456@thinkpad-t410>
-	<20120628193652.GB10945@srcf.ucam.org>
-Date: Fri, 29 Jun 2012 14:24:38 +0200
-Message-ID: <CAHR064jEbtT9-+hNSq6Kr+uYCQX2fjcQb+kmkX2V46heCLO8vg@mail.gmail.com>
-Subject: Re: [PATCH] backlight: add support for disabling backlights via sysfs
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Fri, 29 Jun 2012 08:25:43 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=2lFTh0urSm0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=1XWaLZrsAAAA:8 a=DhiXXOCnvGlBRRFihSkA:9 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1340972741.16702.105.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] tracing: Update entries counter when removing pages
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Justin Teravest <teravest@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 29 Jun 2012 08:25:41 -0400
+In-Reply-To: <1340046722-11477-1-git-send-email-vnagarnaik@google.com>
+References: <1340046722-11477-1-git-send-email-vnagarnaik@google.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 9:36 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Thu, Jun 28, 2012 at 02:30:17PM -0500, Seth Forshee wrote:
->
->> I actually don't think Corentin's solution is a bad one. It does suffer
->> from a couple of shortcomings though. First, it only works for broken
->> ACPI backlights, and some platforms have other backlight interfaces that
->> are broken (e.g. the i915 backlight on the MacBook Pro 8,2). Second,
->> marking backlights as broken in the kernel necessitates ever-expanding
->> dmi blacklists in some of the platform drivers, unless we can get
->> vendors to stop providing broken backlight interfaces.
->
-> Userspace should already be prioritising platform interfaces over raw
-> interfaces, so if gmux works on the Mac then there's no problem.
+On Mon, 2012-06-18 at 12:12 -0700, Vaibhav Nagarnaik wrote:
+> When removing pages from the ring buffer, its state is not reset. This
+> means that the counters need to be correctly updated to account for the
+> pages removed.
+> 
+> Update the entries counter to reflect the removed events from the
+> pages just like entries_bytes counter.
+> 
+> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+> ---
+>  kernel/trace/ring_buffer.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+> index 96c2dd1..a2bec4c 100644
+> --- a/kernel/trace/ring_buffer.c
+> +++ b/kernel/trace/ring_buffer.c
+> @@ -1346,10 +1346,10 @@ rb_remove_pages(struct ring_buffer_per_cpu *cpu_buffer, unsigned int nr_pages)
+>  			 * If something was added to this page, it was full
+>  			 * since it is not the tail page. So we deduct the
+>  			 * bytes consumed in ring buffer from here.
+> -			 * No need to update overruns, since this page is
+> -			 * deleted from ring buffer and its entries are
+> -			 * already accounted for.
+> +			 * No need to update overruns, since updating
+> +			 * 'entries' accounts for that.
+>  			 */
+> +			local_sub(page_entries, &cpu_buffer->entries);
 
-Hehe, sometime the platform interface doesn't work and the raw does.
-That's the case on various samsung-laptop since we have absolutely no
-documentation about SABI and no known way to probe if the
-implementation is working or not. But anyway, for samsung-laptop it's
-disabled by default in favor of acpi_video (which is also broken most
-of the time on samsung laptops).
+Actually, I think it would be better to increment overrun instead. As
+these are lost events, and that is what overrun counts. I just tested it
+with: local_add(page_entries, &cpu_buffer->overrun); and it works well.
+Showing the lost events.
 
-> DMI
-> lists should, broadly speaking, be unnecessary - they're mostly a
-> symptom of us not understanding how the hardware is expected to work.
->
->> I'm all for fixing integration bugs in the ACPI backlight
->> implementations if we can, but some vendor implementations are just
->> flat-out broken, and it isn't always possible to get vendor cooperation.
->> In the case of Toshiba I've tried reaching out to them to work on ACPI
->> integration issues, but they flat out refused.
->
-> We already know that our implementation of the IGD opregion is broken,
-> but Intel won't hand over newer versions of the spec. If you see
-> problems with the acpi backlight interface on Intel graphics then that
-> should be the default assumption.
->
-> --
-> Matthew Garrett | mjg59@srcf.ucam.org
+-- Steve
+
+>  			local_sub(BUF_PAGE_SIZE, &cpu_buffer->entries_bytes);
+>  		}
+>  
 
 
-
--- 
-Corentin Chary
-http://xf.iksaif.net
