@@ -1,72 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932956Ab2F2U3h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 16:29:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53046 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932796Ab2F2U3g (ORCPT
+	id S932960Ab2F2UjY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 16:39:24 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55099 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932615Ab2F2UjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 16:29:36 -0400
-Date: Fri, 29 Jun 2012 13:29:35 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vikram Mulukutla <markivx@codeaurora.org>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] panic: Fix a possible deadlock in panic()
-Message-Id: <20120629132935.45f731e1.akpm@linux-foundation.org>
-In-Reply-To: <1340926985-8270-1-git-send-email-markivx@codeaurora.org>
-References: <1340926985-8270-1-git-send-email-markivx@codeaurora.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 29 Jun 2012 16:39:23 -0400
+Date: Fri, 29 Jun 2012 22:39:20 +0200
+From: Domenico Andreoli <cavokz@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2] Build a zImage or uImage with dtb already appended
+Message-ID: <20120629203919.GA18617@raptus.dandreoli.com>
+Mail-Followup-To: Grant Likely <grant.likely@secretlab.ca>,
+	linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <20110802143148.21599.22870.stgit@ponder>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110802143148.21599.22870.stgit@ponder>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Jun 2012 16:43:05 -0700
-Vikram Mulukutla <markivx@codeaurora.org> wrote:
+From: Domenico Andreoli <domenico.andreoli@linux.com>
 
-> panic_lock is meant to ensure that panic processing takes
-> place only on one cpu; if any of the other cpus encounter
-> a panic, they will spin waiting to be shut down.
-> 
-> However, this causes a regression in this scenario:
-> 
-> 1. Cpu 0 encounters a panic and acquires the panic_lock
->    and proceeds with the panic processing.
-> 2. There is an interrupt on cpu 0 that also encounters
->    an error condition and invokes panic.
-> 3. This second invocation fails to acquire the panic_lock
->    and enters the infinite while loop in panic_smp_self_stop.
-> 
-> Thus all panic processing is stopped, and the cpu is stuck
-> for eternity in the while(1) inside panic_smp_self_stop.
-> 
-> To address this, disable local interrupts with
-> local_irq_disable before acquiring the panic_lock. This will
-> prevent interrupt handlers from executing during the panic
-> processing, thus avoiding this particular problem.
-> 
-> --- a/kernel/panic.c
-> +++ b/kernel/panic.c
-> @@ -75,6 +75,14 @@ void panic(const char *fmt, ...)
->  	int state = 0;
->  
->  	/*
-> +	 * Disable local interrupts. This will prevent panic_smp_self_stop
-> +	 * from deadlocking the first cpu that invokes the panic, since
-> +	 * there is nothing to prevent an interrupt handler (that runs
-> +	 * after the panic_lock is acquired) from invoking panic again.
-> +	 */
-> +	local_irq_disable();
-> +
-> +	/*
->  	 * It's possible to come here directly from a panic-assertion and
->  	 * not have preempt disabled. Some functions called from here want
->  	 * preempt to be disabled. No point enabling it later though...
+Add new targets to build zImage and uImage with DTB appended (i.e. make
+'uImage-dtb.am335x-bone' or 'make zImage-dtb.omap3-evm').
 
-Seems sane.  panic() *should* work correctly when called with
-interrupts disabled, so there be no bad effects from internally
-disabling interrupts.  If there are bad effects, we should fix them up.
+Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Domenico Andreoli <domenico.andreoli@linux.com>
 
+---
+
+On Tue, Aug 02, 2011 at 03:31:48PM +0100, Grant Likely wrote:
+> Do not commit to mainline; this is a useful hack only for now.
+> 
+
+Is this a better moment for this patch?
+
+Anyway, here is an update for v3.5-rc4. Added zImage-dtb.* as a valid
+target and the .gitignore entries.
+
+cheers
+Domenico
+
+---
+ arch/arm/Makefile        |    6 ++++++
+ arch/arm/boot/.gitignore |    2 ++
+ arch/arm/boot/Makefile   |    7 +++++++
+ 3 files changed, 15 insertions(+)
+
+Index: b/arch/arm/Makefile
+===================================================================
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -283,6 +283,12 @@ zImage Image xipImage bootpImage uImage:
+ zinstall uinstall install: vmlinux
+ 	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $@
+ 
++zImage-dtb.%:
++	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/$@
++
++uImage-dtb.%:
++	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/$@
++
+ %.dtb:
+ 	$(Q)$(MAKE) $(build)=$(boot) MACHINE=$(MACHINE) $(boot)/$@
+ 
+Index: b/arch/arm/boot/Makefile
+===================================================================
+--- a/arch/arm/boot/Makefile
++++ b/arch/arm/boot/Makefile
+@@ -55,6 +55,9 @@ $(obj)/zImage:	$(obj)/compressed/vmlinux
+ 	$(call if_changed,objcopy)
+ 	@echo '  Kernel: $@ is ready'
+ 
++$(obj)/zImage-dtb.%:	$(obj)/%.dtb $(obj)/zImage
++	cat $(obj)/zImage $< > $@
++
+ endif
+ 
+ targets += $(dtb-y)
+@@ -90,6 +93,10 @@ $(obj)/uImage:	$(obj)/zImage FORCE
+ 	$(call if_changed,uimage)
+ 	@echo '  Image $@ is ready'
+ 
++$(obj)/uImage-dtb.%:	$(obj)/zImage-dtb.% FORCE
++	$(call if_changed,uimage)
++	@echo '  Image $@ is ready'
++
+ $(obj)/bootp/bootp: $(obj)/zImage initrd FORCE
+ 	$(Q)$(MAKE) $(build)=$(obj)/bootp $@
+ 	@:
+Index: b/arch/arm/boot/.gitignore
+===================================================================
+--- a/arch/arm/boot/.gitignore
++++ b/arch/arm/boot/.gitignore
+@@ -1,6 +1,8 @@
+ Image
+ zImage
++zImage-dtb.*
+ xipImage
+ bootpImage
+ uImage
++uImage-dtb.*
+ *.dtb
