@@ -1,125 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756022Ab2F2BgT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jun 2012 21:36:19 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63233 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754928Ab2F2BgS (ORCPT
+	id S1756053Ab2F2BhA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jun 2012 21:37:00 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56985 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753692Ab2F2Bg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jun 2012 21:36:18 -0400
-X-AuditID: 9c930179-b7cceae000004195-49-4fed068f66cc
-From: Namhyung Kim <namhyung@kernel.org>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Subject: Re: [PATCH 05/16] sched: add an rq migration call-back to sched_class
-References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
-	<20120628022414.30496.73413.stgit@kitami.mtv.corp.google.com>
-Date: Fri, 29 Jun 2012 10:32:30 +0900
-In-Reply-To: <20120628022414.30496.73413.stgit@kitami.mtv.corp.google.com>
-	(Paul Turner's message of "Wed, 27 Jun 2012 19:24:14 -0700")
-Message-ID: <87395eykb5.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+	Thu, 28 Jun 2012 21:36:59 -0400
+X-AuditID: 9c930197-b7b49ae0000027b8-5b-4fed06b5b15e
+Message-ID: <4FED06C8.1090003@kernel.org>
+Date: Fri, 29 Jun 2012 10:37:12 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Rafael Aquini <aquini@redhat.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v2 0/4] make balloon pages movable by compaction
+References: <cover.1340916058.git.aquini@redhat.com>
+In-Reply-To: <cover.1340916058.git.aquini@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jun 2012 19:24:14 -0700, Paul Turner wrote:
-> Since we are now doing bottom up load accumulation we need explicit
-> notification when a task has been re-parented so that the old hierarchy can be
-> updated.
->
-> Adds task_migrate_rq(struct rq *prev, struct *rq new_rq);
+Hi Rafael,
 
-It should be:
-	migrate_task_rq(struct task_struct *p, int next_cpu);
+On 06/29/2012 06:49 AM, Rafael Aquini wrote:
+
+> This patchset follows the main idea discussed at 2012 LSFMMS section:
+> "Ballooning for transparent huge pages" -- http://lwn.net/Articles/490114/
 
 
->
-> (The alternative is to do this out of __set_task_cpu, but it was suggested that
-> this would be a cleaner encapsulation.)
->
-> Signed-off-by: Paul Turner <pjt@google.com>
-> ---
->  include/linux/sched.h |    1 +
->  kernel/sched/core.c   |    2 ++
->  kernel/sched/fair.c   |   12 ++++++++++++
->  3 files changed, 15 insertions(+), 0 deletions(-)
->
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 842c4df..fdfdfab 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1102,6 +1102,7 @@ struct sched_class {
->  
->  #ifdef CONFIG_SMP
->  	int  (*select_task_rq)(struct task_struct *p, int sd_flag, int flags);
-> +	void (*migrate_task_rq)(struct task_struct *p, int next_cpu);
->  
->  	void (*pre_schedule) (struct rq *this_rq, struct task_struct *task);
->  	void (*post_schedule) (struct rq *this_rq);
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index aeb8e56..c3686eb 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1109,6 +1109,8 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
->  	trace_sched_migrate_task(p, new_cpu);
->  
->  	if (task_cpu(p) != new_cpu) {
-> +		if (p->sched_class->migrate_task_rq)
-> +			p->sched_class->migrate_task_rq(p, new_cpu);
->  		p->se.nr_migrations++;
->  		perf_sw_event(PERF_COUNT_SW_CPU_MIGRATIONS, 1, NULL, 0);
->  	}
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 6200d20..33f582a 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -3089,6 +3089,17 @@ unlock:
->  
->  	return new_cpu;
->  }
-> +
-> +/*
-> + * Called immediately before a task is migrated to a new cpu; task_cpu(p) and
-> + * cfs_rq_of(p) references at time of call are still valid and identify the
-> + * previous cpu.  However, the caller only guarantees p->pi_lock is held; no
-> + * other assumptions, including rq->lock state, should be made.
-> + * Caller guarantees p->pi_lock held, but nothing else.
+Could you summarize the problem, solution instead of link URL in cover-letter?
+IIUC, the problem is that it is hard to get contiguous memory in guest-side 
+after ballooning happens because guest-side memory could be very fragmented
+by ballooned page. It makes THP page allocation of guest-side very poor success ratio.
 
-Duplicate sentence?
+The solution is that when memory ballooning happens, we allocates ballooned page
+as a movable page in guest-side because they can be migrated easily so compaction of
+guest-side could put together them into either side so that we can get contiguous memory.
+For it, compaction should be aware of ballooned page.
 
+Right?
 
-> + */
-> +static void
-> +migrate_task_rq_fair(struct task_struct *p, int next_cpu) {
-
-The opening brace should start on the next line.
-
-Thanks,
-Namhyung
-
-> +}
->  #endif /* CONFIG_SMP */
->  
->  static unsigned long
-> @@ -5754,6 +5765,7 @@ const struct sched_class fair_sched_class = {
->  
->  #ifdef CONFIG_SMP
->  	.select_task_rq		= select_task_rq_fair,
-> +	.migrate_task_rq	= migrate_task_rq_fair,
->  
->  	.rq_online		= rq_online_fair,
->  	.rq_offline		= rq_offline_fair,
+-- 
+Kind regards,
+Minchan Kim
