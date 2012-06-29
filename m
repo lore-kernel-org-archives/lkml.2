@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158Ab2F2Pa5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 11:30:57 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43491 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932069Ab2F2Paz (ORCPT
+	id S1756070Ab2F2PbL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 11:31:11 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56993 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500Ab2F2PbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 11:30:55 -0400
-Message-ID: <4FEDCA2B.3060204@wwwdotorg.org>
-Date: Fri, 29 Jun 2012 09:30:51 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 29 Jun 2012 11:31:07 -0400
+Date: Fri, 29 Jun 2012 17:31:02 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] OProfile fixlet
+Message-ID: <20120629153102.GA2864@gmail.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] regulator: fixed: support deferred probe for DT GPIOs
-References: <1340922692-24092-1-git-send-email-swarren@wwwdotorg.org> <20120629012507.GL28922@opensource.wolfsonmicro.com>
-In-Reply-To: <20120629012507.GL28922@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 07:25 PM, Mark Brown wrote:
-> On Thu, Jun 28, 2012 at 04:31:32PM -0600, Stephen Warren wrote:
-> 
->> static struct fixed_voltage_config * 
->> -of_get_fixed_voltage_config(struct device *dev) 
->> +of_get_fixed_voltage_config(struct device *dev, bool
->> *defer_probe)
-> 
-> This is pretty contorted, we should just be able to pass the
-> return value back more directly and of course ideally gpiolib would
-> be doing the -EPROBE_DEFER for us anyway (I did send a patch for
-> this, Grant didn't apply it due to a mostly unrelated issue in the
-> current probe deferral implementation).  Or just defer if we don't
-> get a config passed back or something.
+Linus,
 
-I did consider making of_get_fixed_voltage_config() return a result
-code, but then it needs some other way of returning the pointer, so
-that seemed just as convoluted. Oh, I suppose it could use ERR_PTR()
-to do that; that'd be nice and simple. Would that do?
+Please pull the latest perf-urgent-for-linus git tree from:
 
-Re: gpiolib doing it: How is that possible? of_get_named_gpio()
-certainly can return -EPROBE_DEFER, but the caller would still need to
-check it. The ideal case might be to just do:
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
 
-ret = gpio_request(of_get_named_gpio(...));
-if (ret)
-    return ret;
+   HEAD: 662f5cedb38c4b88e1cebfd54a88159f2f7ab7b9 Merge branch 'urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile into perf/urgent
 
-and have gpio_request pass -EPROBE_DEFER from input to output.
+ Thanks,
 
-i.e. only check the gpio_request() result code, not the
-of_get_named_gpio() result code, and rely on gpio_request() to do
-validation later.
+	Ingo
 
-But gpio_request takes an unsigned int, so the error code wouldn't
-survive the translation:-(
+------------------>
+Will Deacon (1):
+      oprofile: perf: use NR_CPUS instead or nr_cpumask_bits for static array
+
+
+ drivers/oprofile/oprofile_perf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
+index da14432..efc4b7f 100644
+--- a/drivers/oprofile/oprofile_perf.c
++++ b/drivers/oprofile/oprofile_perf.c
+@@ -25,7 +25,7 @@ static int oprofile_perf_enabled;
+ static DEFINE_MUTEX(oprofile_perf_mutex);
+ 
+ static struct op_counter_config *counter_config;
+-static struct perf_event **perf_events[nr_cpumask_bits];
++static struct perf_event **perf_events[NR_CPUS];
+ static int num_counters;
+ 
+ /*
