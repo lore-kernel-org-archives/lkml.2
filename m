@@ -1,122 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab2F2LiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 07:38:09 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63859 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754280Ab2F2LiG (ORCPT
+	id S1753375Ab2F2Lh4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 07:37:56 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19628 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab2F2Lhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 07:38:06 -0400
-Date: Fri, 29 Jun 2012 13:37:59 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, eranian@google.com, gorcunov@openvz.org,
-        tzanussi@gmail.com, mhiramat@redhat.com, robert.richter@amd.com,
-        fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org, Borislav Petkov <bp@alien8.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Roland McGrath <roland@hack.frob.com>
-Subject: Re: [RFC 09/23] x86_64: Store userspace rsp in system_call fastpath
-Message-ID: <20120629113756.GC2110@somewhere.redhat.com>
-References: <1340120894-9465-1-git-send-email-jolsa@redhat.com>
- <1340120894-9465-10-git-send-email-jolsa@redhat.com>
- <20120628120846.GA28527@somewhere>
- <20120629080327.GE940@krava.brq.redhat.com>
+	Fri, 29 Jun 2012 07:37:54 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Fri, 29 Jun 2012 04:37:41 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <tiwai@suse.de>, <perex@perex.cz>, <swarren@nvidia.com>,
+        <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>
+CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] ARM: tegra: apbio: use dmaengine based dma driver
+Date: Fri, 29 Jun 2012 17:04:32 +0530
+Message-ID: <1340969673-7776-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120629080327.GE940@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 29, 2012 at 10:03:27AM +0200, Jiri Olsa wrote:
-> On Thu, Jun 28, 2012 at 02:08:49PM +0200, Frederic Weisbecker wrote:
-> > On Tue, Jun 19, 2012 at 05:48:00PM +0200, Jiri Olsa wrote:
-> > > hi,
-> > > I'd need help with this change.. basically it works, but I guess
-> > > I could alter the FIXUP_TOP_OF_STACK macro as well, so the rsp is
-> > > not initialized twice in slowpath.
-> > > 
-> > > But it seems quite complex.. so not really sure at the moment ;)
-> > > 
-> > > ideas?
-> > > 
-> > > thanks,
-> > > jirka
-> > > 
-> > > ---
-> > > Storing the userspace rsp into the pt_regs struct for the
-> > > system_call fastpath (syscall instruction handler).
-> > > 
-> > > Following part of the pt_regs is allocated on stack:
-> > > (via KERNEL_STACK_OFFSET)
-> > > 
-> > >     unsigned long ip;
-> > >     unsigned long cs;
-> > >     unsigned long flags;
-> > >     unsigned long sp;
-> > >     unsigned long ss;
-> > > 
-> > > but only ip is actually saved for fastpath.
-> > > 
-> > > For perf post unwind we need at least ip and sp to be able to
-> > > start the unwind, so storing the old_rsp value to the sp.
-> > > 
-> > > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > > Cc: Borislav Petkov <bp@alien8.de>
-> > > Cc: H. Peter Anvin <hpa@zytor.com>
-> > > Cc: Roland McGrath <roland@hack.frob.com>
-> > > ---
-> > >  arch/x86/kernel/entry_64.S |    5 +++++
-> > >  1 files changed, 5 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> > > index 111f6bb..0444917 100644
-> > > --- a/arch/x86/kernel/entry_64.S
-> > > +++ b/arch/x86/kernel/entry_64.S
-> > > @@ -516,6 +516,11 @@ GLOBAL(system_call_after_swapgs)
-> > >  	SAVE_ARGS 8,0
-> > >  	movq  %rax,ORIG_RAX-ARGOFFSET(%rsp)
-> > >  	movq  %rcx,RIP-ARGOFFSET(%rsp)
-> > > +#ifdef CONFIG_PERF_EVENTS
-> > > +	/* We need rsp in fast path for perf post unwind. */
-> > > +	movq  PER_CPU_VAR(old_rsp), %rcx
-> > > +	movq  %rcx,RSP-ARGOFFSET(%rsp)
-> > > +#endif
-> > 
-> > Another solution is to set/unset some TIF flag in perf_event_sched_in/out
-> > such that we take the syscall slow path (tracesys) which records every non-scratch
-> > registers. I can see that old_rsp is not saved in pt_regs by SAVE_REST so this may be
-> > something to add in tracesys.
-> > 
-> > This way we don't bloat the syscall fastpath with a feature only used by some
-> > developers.
-> 
-> ok, this could work for task related events
-> 
-> but will need to think about how to do this for cpu related events which
-> hit the same issue and we dont have a task to flag.. maybe do it the same
-> way as for TIF_SYSCALL_TRACEPOINT and flag everyone ;)
+Use the dmaengine based Tegra APB DMA driver for
+apbio access in place of legacy Tegra APB DMA.
 
-You can also hook into tasks sched_in/out on cpu wide events.
-Just add something like:
+The new driver is selected if legacy driver is not
+selected and new DMA driver is enabled through config
+file.
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 5b06cbb..be8f18a 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5987,7 +5987,8 @@ done:
- 	}
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ arch/arm/mach-tegra/apbio.c |  135 +++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 131 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-tegra/apbio.c b/arch/arm/mach-tegra/apbio.c
+index 74ac0db..00405be 100644
+--- a/arch/arm/mach-tegra/apbio.c
++++ b/arch/arm/mach-tegra/apbio.c
+@@ -17,8 +17,7 @@
+ #include <linux/io.h>
+ #include <mach/iomap.h>
+ #include <linux/of.h>
+-
+-#ifdef CONFIG_TEGRA_SYSTEM_DMA
++#include <linux/dmaengine.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/spinlock.h>
+ #include <linux/completion.h>
+@@ -29,9 +28,8 @@
  
- 	if (!event->parent) {
--		if (event->attach_state & PERF_ATTACH_TASK)
-+		if (event->attach_state & PERF_ATTACH_TASK ||
-+		    event->attr.sample_type & PERF_SAMPLE_USER_REGS)
- 			static_key_slow_inc(&perf_sched_events.key);
- 		if (event->attr.mmap || event->attr.mmap_data)
- 			atomic_inc(&nr_mmap_events);
+ #include "apbio.h"
+ 
++#if defined(CONFIG_TEGRA_SYSTEM_DMA) || defined(CONFIG_TEGRA20_APB_DMA)
+ static DEFINE_MUTEX(tegra_apb_dma_lock);
+-
+-static struct tegra_dma_channel *tegra_apb_dma;
+ static u32 *tegra_apb_bb;
+ static dma_addr_t tegra_apb_bb_phys;
+ static DECLARE_COMPLETION(tegra_apb_wait);
+@@ -39,6 +37,9 @@ static DECLARE_COMPLETION(tegra_apb_wait);
+ static u32 tegra_apb_readl_direct(unsigned long offset);
+ static void tegra_apb_writel_direct(u32 value, unsigned long offset);
+ 
++#if defined(CONFIG_TEGRA_SYSTEM_DMA)
++static struct tegra_dma_channel *tegra_apb_dma;
++
+ bool tegra_apb_init(void)
+ {
+ 	struct tegra_dma_channel *ch;
+@@ -149,6 +150,132 @@ static void tegra_apb_writel_using_dma(u32 value, unsigned long offset)
+ 
+ 	mutex_unlock(&tegra_apb_dma_lock);
+ }
++
++#else
++static struct dma_chan *tegra_apb_dma_chan;
++static struct dma_slave_config dma_sconfig;
++
++bool tegra_apb_dma_init(void)
++{
++	dma_cap_mask_t mask;
++
++	mutex_lock(&tegra_apb_dma_lock);
++
++	/* Check to see if we raced to setup */
++	if (tegra_apb_dma_chan)
++		goto skip_init;
++
++	dma_cap_zero(mask);
++	dma_cap_set(DMA_SLAVE, mask);
++	tegra_apb_dma_chan = dma_request_channel(mask, NULL, NULL);
++	if (!tegra_apb_dma_chan) {
++		pr_err("%s: can not allocate dma channel\n", __func__);
++		goto err_dma_alloc;
++	}
++
++	tegra_apb_bb = dma_alloc_coherent(NULL, sizeof(u32),
++		&tegra_apb_bb_phys, GFP_KERNEL);
++	if (!tegra_apb_bb) {
++		pr_err("%s: can not allocate bounce buffer\n", __func__);
++		goto err_buff_alloc;
++	}
++
++	dma_sconfig.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
++	dma_sconfig.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
++	dma_sconfig.slave_id = TEGRA_DMA_REQ_SEL_CNTR;
++	dma_sconfig.src_maxburst = 1;
++	dma_sconfig.dst_maxburst = 1;
++
++skip_init:
++	mutex_unlock(&tegra_apb_dma_lock);
++	return true;
++
++err_buff_alloc:
++	dma_release_channel(tegra_apb_dma_chan);
++	tegra_apb_dma_chan = NULL;
++
++err_dma_alloc:
++	mutex_unlock(&tegra_apb_dma_lock);
++	return false;
++}
++
++static void apb_dma_complete(void *args)
++{
++	complete(&tegra_apb_wait);
++}
++
++static int do_dma_transfer(unsigned long apb_add,
++		enum dma_transfer_direction dir)
++{
++	struct dma_async_tx_descriptor *dma_desc;
++	int ret;
++
++	if (dir == DMA_DEV_TO_MEM)
++		dma_sconfig.src_addr = apb_add;
++	else
++		dma_sconfig.dst_addr = apb_add;
++
++	ret = dmaengine_slave_config(tegra_apb_dma_chan, &dma_sconfig);
++	if (ret)
++		return ret;
++
++	dma_desc = dmaengine_prep_slave_single(tegra_apb_dma_chan,
++			tegra_apb_bb_phys, sizeof(u32), dir,
++			DMA_PREP_INTERRUPT |  DMA_CTRL_ACK);
++	if (!dma_desc)
++		return -EINVAL;
++
++	dma_desc->callback = apb_dma_complete;
++	dma_desc->callback_param = NULL;
++
++	INIT_COMPLETION(tegra_apb_wait);
++
++	dmaengine_submit(dma_desc);
++	dma_async_issue_pending(tegra_apb_dma_chan);
++	ret = wait_for_completion_timeout(&tegra_apb_wait,
++		msecs_to_jiffies(50));
++
++	if (WARN(ret == 0, "apb read dma timed out")) {
++		dmaengine_terminate_all(tegra_apb_dma_chan);
++		return -EFAULT;
++	}
++	return 0;
++}
++
++static u32 tegra_apb_readl_using_dma(unsigned long offset)
++{
++	int ret;
++
++	if (!tegra_apb_dma_chan && !tegra_apb_dma_init())
++		return tegra_apb_readl_direct(offset);
++
++	mutex_lock(&tegra_apb_dma_lock);
++	ret = do_dma_transfer(offset, DMA_DEV_TO_MEM);
++	if (ret < 0) {
++		pr_err("error in reading offset 0x%08lx using dma\n", offset);
++		*(u32 *)tegra_apb_bb = 0;
++	}
++	mutex_unlock(&tegra_apb_dma_lock);
++	return *((u32 *)tegra_apb_bb);
++}
++
++static void tegra_apb_writel_using_dma(u32 value, unsigned long offset)
++{
++	int ret;
++
++	if (!tegra_apb_dma_chan && !tegra_apb_dma_init()) {
++		tegra_apb_writel_direct(value, offset);
++		return;
++	}
++
++	mutex_lock(&tegra_apb_dma_lock);
++	*((u32 *)tegra_apb_bb) = value;
++	ret = do_dma_transfer(offset, DMA_MEM_TO_DEV);
++	if (ret < 0)
++		pr_err("error in writing offset 0x%08lx using dma\n", offset);
++	mutex_unlock(&tegra_apb_dma_lock);
++}
++#endif
+ #else
+ #define tegra_apb_readl_using_dma tegra_apb_readl_direct
+ #define tegra_apb_writel_using_dma tegra_apb_writel_direct
+-- 
+1.7.1.1
 
