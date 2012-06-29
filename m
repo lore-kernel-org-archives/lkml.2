@@ -1,71 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090Ab2F2SXn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 14:23:43 -0400
-Received: from mail.digidescorp.com ([50.73.98.161]:44722 "EHLO
-	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754512Ab2F2SXm (ORCPT
+	id S1755814Ab2F2S3Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 14:29:16 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:18864 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753226Ab2F2S3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:23:42 -0400
-DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
-	c=simple; q=dns; h=from:message-id;
-	b=E5/TQ8ZPKWn6ogHcpF2Rfd9k6rhKZFcxv/T6wgS069V1vYY9xWIoYRKHgcfw
-	KAzWxWx1okV+4ZAs0nVkjSDZAM8/i38/S8AbXfX6TnfQ1/zpu5rACxqgs
-	lLj1YgNkRu2GqllDi4G14aErgkfk1NkebhQHd1vhJklviVvleCRPeA=;
-X-Spam-Processed: mail.digidescorp.com, Fri, 29 Jun 2012 13:23:40 -0500
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=152756e0c6=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: linux-kernel@vger.kernel.org, "Steven J. Magnani" <steve@digidescorp.com>
-Subject: [PATCH v2] fat: Fix non-atomic NFS i_pos read
-Date: Fri, 29 Jun 2012 13:23:32 -0500
-Message-Id: <1340994212-17153-1-git-send-email-steve@digidescorp.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 29 Jun 2012 14:29:15 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Tejun Heo <tj@kernel.org>, Sasha Levin <levinsasha928@gmail.com>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH for -3.5] memblock: free allocated memblock_reserved_regions later
+Date: Fri, 29 Jun 2012 11:27:57 -0700
+Message-Id: <1340994477-3122-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <CAE9FiQXqb4NVnWeJR75+gfwCkKMtBh2GDwoSijPf4JEezfqcnQ@mail.gmail.com>
+References: <CAE9FiQXqb4NVnWeJR75+gfwCkKMtBh2GDwoSijPf4JEezfqcnQ@mail.gmail.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fat_encode_fh() can fetch an invalid i_pos value on systems
-where 64-bit accesses are not atomic. Make it use the same
-accessor as the rest of the FAT code.
+In memblock_free_reserved_regions, will call memblock_free(),
+but memblock_free() would double reserved.regions too, so we could free
+old range for reserved.regions.
 
-Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
-Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Also tj said there is another bug could be related to this too.
+
+| I don't think we're saving any noticeable
+| amount by doing this "free - give it to page allocator - reserve
+| again" dancing.  We should just allocate regions aligned to page
+| boundaries and free them later when memblock is no longer in use.
+
+So try to allocate that in PAGE_SIZE alignment and free that later.
+
+-v5: Use new_alloc_size, and old_alloc_size to simplify it according to tj.
+
+Repored-by: Sasha Levin <levinsasha928@gmail.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
 ---
-diff -uprN linux-3.5-rc4/fs/fat/inode.c new/fs/fat/inode.c
---- linux-3.5-rc4/fs/fat/inode.c	2012-06-29 11:20:12.781348652 -0500
-+++ new/fs/fat/inode.c	2012-06-29 13:18:13.712940800 -0500
-@@ -738,22 +738,21 @@ static int
- fat_encode_fh(struct inode *inode, __u32 *fh, int *lenp, struct inode *parent)
- {
- 	int len = *lenp;
--	u32 ipos_h, ipos_m, ipos_l;
-+	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
-+	loff_t i_pos;
- 
- 	if (len < 5) {
- 		*lenp = 5;
- 		return 255; /* no room */
- 	}
- 
--	ipos_h = MSDOS_I(inode)->i_pos >> 8;
--	ipos_m = (MSDOS_I(inode)->i_pos & 0xf0) << 24;
--	ipos_l = (MSDOS_I(inode)->i_pos & 0x0f) << 28;
-+	i_pos = fat_i_pos_read(sbi, inode);
- 	*lenp = 5;
- 	fh[0] = inode->i_ino;
- 	fh[1] = inode->i_generation;
--	fh[2] = ipos_h;
--	fh[3] = ipos_m | MSDOS_I(inode)->i_logstart;
--	fh[4] = ipos_l;
-+	fh[2] = i_pos >> 8;
-+	fh[3] = ((i_pos & 0xf0) << 24) | MSDOS_I(inode)->i_logstart;
-+	fh[4] = (i_pos & 0x0f) << 28;
- 	if (parent)
- 		fh[4] |= MSDOS_I(parent)->i_logstart;
- 	return 3;
+ include/linux/memblock.h |    4 ---
+ mm/memblock.c            |   51 +++++++++++++++++++++--------------------------
+ mm/nobootmem.c           |   36 ++++++++++++++++++++-------------
+ 3 files changed, 46 insertions(+), 45 deletions(-)
 
+Index: linux-2.6/include/linux/memblock.h
+===================================================================
+--- linux-2.6.orig/include/linux/memblock.h
++++ linux-2.6/include/linux/memblock.h
+@@ -50,9 +50,7 @@ phys_addr_t memblock_find_in_range_node(
+ 				phys_addr_t size, phys_addr_t align, int nid);
+ phys_addr_t memblock_find_in_range(phys_addr_t start, phys_addr_t end,
+ 				   phys_addr_t size, phys_addr_t align);
+-int memblock_free_reserved_regions(void);
+-int memblock_reserve_reserved_regions(void);
+-
++phys_addr_t get_allocated_memblock_reserved_regions_info(phys_addr_t *addr);
+ void memblock_allow_resize(void);
+ int memblock_add_node(phys_addr_t base, phys_addr_t size, int nid);
+ int memblock_add(phys_addr_t base, phys_addr_t size);
+Index: linux-2.6/mm/memblock.c
+===================================================================
+--- linux-2.6.orig/mm/memblock.c
++++ linux-2.6/mm/memblock.c
+@@ -143,30 +143,6 @@ phys_addr_t __init_memblock memblock_fin
+ 					   MAX_NUMNODES);
+ }
+ 
+-/*
+- * Free memblock.reserved.regions
+- */
+-int __init_memblock memblock_free_reserved_regions(void)
+-{
+-	if (memblock.reserved.regions == memblock_reserved_init_regions)
+-		return 0;
+-
+-	return memblock_free(__pa(memblock.reserved.regions),
+-		 sizeof(struct memblock_region) * memblock.reserved.max);
+-}
+-
+-/*
+- * Reserve memblock.reserved.regions
+- */
+-int __init_memblock memblock_reserve_reserved_regions(void)
+-{
+-	if (memblock.reserved.regions == memblock_reserved_init_regions)
+-		return 0;
+-
+-	return memblock_reserve(__pa(memblock.reserved.regions),
+-		 sizeof(struct memblock_region) * memblock.reserved.max);
+-}
+-
+ static void __init_memblock memblock_remove_region(struct memblock_type *type, unsigned long r)
+ {
+ 	type->total_size -= type->regions[r].size;
+@@ -184,6 +160,18 @@ static void __init_memblock memblock_rem
+ 	}
+ }
+ 
++phys_addr_t __init_memblock get_allocated_memblock_reserved_regions_info(
++					phys_addr_t *addr)
++{
++	if (memblock.reserved.regions == memblock_reserved_init_regions)
++		return 0;
++
++	*addr = __pa(memblock.reserved.regions);
++
++	return PAGE_ALIGN(sizeof(struct memblock_region) *
++			  memblock.reserved.max);
++}
++
+ /**
+  * memblock_double_array - double the size of the memblock regions array
+  * @type: memblock type of the regions array being doubled
+@@ -204,6 +192,7 @@ static int __init_memblock memblock_doub
+ 						phys_addr_t new_area_size)
+ {
+ 	struct memblock_region *new_array, *old_array;
++	phys_addr_t old_alloc_size, new_alloc_size;
+ 	phys_addr_t old_size, new_size, addr;
+ 	int use_slab = slab_is_available();
+ 	int *in_slab;
+@@ -217,6 +206,12 @@ static int __init_memblock memblock_doub
+ 	/* Calculate new doubled size */
+ 	old_size = type->max * sizeof(struct memblock_region);
+ 	new_size = old_size << 1;
++	/*
++	 * We need to allocated new one align to PAGE_SIZE,
++	 *  so late could free them completely.
++	 */
++	old_alloc_size = PAGE_ALIGN(old_size);
++	new_alloc_size = PAGE_ALIGN(new_size);
+ 
+ 	/* Retrieve the slab flag */
+ 	if (type == &memblock.memory)
+@@ -245,11 +240,11 @@ static int __init_memblock memblock_doub
+ 
+ 		addr = memblock_find_in_range(new_area_start + new_area_size,
+ 						memblock.current_limit,
+-						new_size, sizeof(phys_addr_t));
++						new_alloc_size, PAGE_SIZE);
+ 		if (!addr && new_area_size)
+ 			addr = memblock_find_in_range(0,
+ 					min(new_area_start, memblock.current_limit),
+-					new_size, sizeof(phys_addr_t));
++					new_alloc_size, PAGE_SIZE);
+ 
+ 		new_array = addr ? __va(addr) : 0;
+ 	}
+@@ -279,13 +274,13 @@ static int __init_memblock memblock_doub
+ 		kfree(old_array);
+ 	else if (old_array != memblock_memory_init_regions &&
+ 		 old_array != memblock_reserved_init_regions)
+-		memblock_free(__pa(old_array), old_size);
++		memblock_free(__pa(old_array), old_alloc_size);
+ 
+ 	/* Reserve the new array if that comes from the memblock.
+ 	 * Otherwise, we needn't do it
+ 	 */
+ 	if (!use_slab)
+-		BUG_ON(memblock_reserve(addr, new_size));
++		BUG_ON(memblock_reserve(addr, new_alloc_size));
+ 
+ 	/* Update slab flag */
+ 	*in_slab = use_slab;
+Index: linux-2.6/mm/nobootmem.c
+===================================================================
+--- linux-2.6.orig/mm/nobootmem.c
++++ linux-2.6/mm/nobootmem.c
+@@ -105,27 +105,35 @@ static void __init __free_pages_memory(u
+ 		__free_pages_bootmem(pfn_to_page(i), 0);
+ }
+ 
++static unsigned long __init __free_memory_core(phys_addr_t start,
++				 phys_addr_t end)
++{
++	unsigned long start_pfn = PFN_UP(start);
++	unsigned long end_pfn = min_t(unsigned long,
++				      PFN_DOWN(end), max_low_pfn);
++
++	if (start_pfn > end_pfn)
++		return 0;
++
++	__free_pages_memory(start_pfn, end_pfn);
++
++	return end_pfn - start_pfn;
++}
++
+ unsigned long __init free_low_memory_core_early(int nodeid)
+ {
+ 	unsigned long count = 0;
+-	phys_addr_t start, end;
++	phys_addr_t start, end, size;
+ 	u64 i;
+ 
+-	/* free reserved array temporarily so that it's treated as free area */
+-	memblock_free_reserved_regions();
++	for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL)
++		count += __free_memory_core(start, end);
+ 
+-	for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL) {
+-		unsigned long start_pfn = PFN_UP(start);
+-		unsigned long end_pfn = min_t(unsigned long,
+-					      PFN_DOWN(end), max_low_pfn);
+-		if (start_pfn < end_pfn) {
+-			__free_pages_memory(start_pfn, end_pfn);
+-			count += end_pfn - start_pfn;
+-		}
+-	}
++	/* free range that is used for reserved array if we allocate it */
++	size = get_allocated_memblock_reserved_regions_info(&start);
++	if (size)
++		count += __free_memory_core(start, start + size);
+ 
+-	/* put region array back? */
+-	memblock_reserve_reserved_regions();
+ 	return count;
+ }
+ 
