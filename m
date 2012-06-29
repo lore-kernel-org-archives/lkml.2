@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab2F2SkL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 14:40:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55372 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab2F2SkJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:40:09 -0400
-Date: Fri, 29 Jun 2012 11:32:33 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH for -3.5] memblock: free allocated
- memblock_reserved_regions later
-Message-ID: <20120629183233.GC21048@google.com>
-References: <CAE9FiQXqb4NVnWeJR75+gfwCkKMtBh2GDwoSijPf4JEezfqcnQ@mail.gmail.com>
- <1340994477-3122-1-git-send-email-yinghai@kernel.org>
+	id S1756271Ab2F2SkX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 14:40:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29164 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751055Ab2F2SkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 14:40:20 -0400
+Message-ID: <4FEDF667.2090400@redhat.com>
+Date: Fri, 29 Jun 2012 14:39:35 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340994477-3122-1-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 18/40] autonuma: call autonuma_setup_new_exec()
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-19-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1340888180-15355-19-git-send-email-aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Yinghai.
+On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
+> This resets all per-thread and per-process statistics across exec
+> syscalls or after kernel threads detached from the mm. The past
+> statistical NUMA information is unlikely to be relevant for the future
+> in these cases.
+>
+> Signed-off-by: Andrea Arcangeli<aarcange@redhat.com>
 
-Just one nitpick.
-
-On Fri, Jun 29, 2012 at 11:27:57AM -0700, Yinghai Lu wrote:
->  /**
->   * memblock_double_array - double the size of the memblock regions array
->   * @type: memblock type of the regions array being doubled
-> @@ -204,6 +192,7 @@ static int __init_memblock memblock_doub
->  						phys_addr_t new_area_size)
->  {
->  	struct memblock_region *new_array, *old_array;
-> +	phys_addr_t old_alloc_size, new_alloc_size;
->  	phys_addr_t old_size, new_size, addr;
->  	int use_slab = slab_is_available();
->  	int *in_slab;
-> @@ -217,6 +206,12 @@ static int __init_memblock memblock_doub
->  	/* Calculate new doubled size */
->  	old_size = type->max * sizeof(struct memblock_region);
->  	new_size = old_size << 1;
-> +	/*
-> +	 * We need to allocated new one align to PAGE_SIZE,
-> +	 *  so late could free them completely.
-
-An extra space and probably "so we can free them completely later"
-fits better.
-
-Thank you!
+Acked-by: Rik van Riel <riel@redhat.com>
 
 -- 
-tejun
+All rights reversed
