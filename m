@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932819Ab2F2TA6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 15:00:58 -0400
-Received: from mail-yw0-f42.google.com ([209.85.213.42]:40749 "EHLO
-	mail-yw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932731Ab2F2S6X (ORCPT
+	id S932840Ab2F2TBi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 15:01:38 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:47464 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932692Ab2F2S6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 14:58:23 -0400
+	Fri, 29 Jun 2012 14:58:19 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v3 11/17] vfs: fix linkat to retry on ESTALE errors
-Date: Fri, 29 Jun 2012 14:57:54 -0400
-Message-Id: <1340996280-27123-12-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v3 08/17] vfs: fix mknodat to retry on ESTALE errors
+Date: Fri, 29 Jun 2012 14:57:51 -0400
+Message-Id: <1340996280-27123-9-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
 References: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
@@ -24,95 +24,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c |   67 ++++++++++++++++++++++++++++++++++++++---------------------
- 1 files changed, 43 insertions(+), 24 deletions(-)
+ fs/namei.c |   68 +++++++++++++++++++++++++++++++++++------------------------
+ 1 files changed, 40 insertions(+), 28 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index a2d691a..e902770 100644
+index 86aa8ee..ef3ccee 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -3138,6 +3138,8 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
- 	struct path old_path, new_path;
- 	int how = 0;
+@@ -2656,44 +2656,56 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
+ 	struct dentry *dentry;
+ 	struct path path;
  	int error;
-+	char *old, *new;
++	char *name;
 +	unsigned int try = 0;
  
- 	if ((flags & ~(AT_SYMLINK_FOLLOW | AT_EMPTY_PATH)) != 0)
- 		return -EINVAL;
-@@ -3155,34 +3157,51 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
- 	if (flags & AT_SYMLINK_FOLLOW)
- 		how |= LOOKUP_FOLLOW;
+ 	if (S_ISDIR(mode))
+ 		return -EPERM;
  
--	error = user_path_at(olddfd, oldname, how, &old_path);
--	if (error)
--		return error;
-+	old = getname_flags(oldname, how, NULL);
-+	if (IS_ERR(old))
-+		return PTR_ERR(old);
+-	dentry = user_path_create(dfd, filename, &path, 0);
+-	if (IS_ERR(dentry))
+-		return PTR_ERR(dentry);
++	name = getname(filename);
++	if (IS_ERR(name))
++		return PTR_ERR(name);
  
--	new_dentry = user_path_create(newdfd, newname, &new_path, 0);
--	error = PTR_ERR(new_dentry);
--	if (IS_ERR(new_dentry))
--		goto out;
-+	new = getname(newname);
-+	if (IS_ERR(new)) {
-+		putname(old);
-+		return PTR_ERR(new);
-+	}
- 
--	error = -EXDEV;
--	if (old_path.mnt != new_path.mnt)
--		goto out_dput;
--	error = mnt_want_write(new_path.mnt);
+-	if (!IS_POSIXACL(path.dentry->d_inode))
+-		mode &= ~current_umask();
+-	error = may_mknod(mode);
 -	if (error)
 -		goto out_dput;
--	error = security_path_link(old_path.dentry, &new_path, new_dentry);
+-	error = mnt_want_write(path.mnt);
+-	if (error)
+-		goto out_dput;
+-	error = security_path_mknod(&path, dentry, mode, dev);
 -	if (error)
 -		goto out_drop_write;
--	error = vfs_link(old_path.dentry, new_path.dentry->d_inode, new_dentry);
+-	switch (mode & S_IFMT) {
+-		case 0: case S_IFREG:
+-			error = vfs_create(path.dentry->d_inode,dentry,mode,NULL);
 +	do {
-+		error = kern_path_at(olddfd, old, how, &old_path);
-+		if (error)
-+			break;
++		dentry = kern_path_create(dfd, name, &path, false, try);
++		if (IS_ERR(dentry))
++			return PTR_ERR(dentry);
 +
-+		new_dentry = kern_path_create(newdfd, new, &new_path, 0, try);
-+		error = PTR_ERR(new_dentry);
-+		if (IS_ERR(new_dentry)) {
-+			path_put(&old_path);
-+			break;
-+		}
-+
-+		error = -EXDEV;
-+		if (old_path.mnt != new_path.mnt)
-+			goto out_dput;
-+		error = mnt_want_write(new_path.mnt);
++		if (!IS_POSIXACL(path.dentry->d_inode))
++			mode &= ~current_umask();
++		error = may_mknod(mode);
 +		if (error)
 +			goto out_dput;
-+		error = security_path_link(old_path.dentry, &new_path,
-+					new_dentry);
++		error = mnt_want_write(path.mnt);
++		if (error)
++			goto out_dput;
++		error = security_path_mknod(&path, dentry, mode, dev);
 +		if (error)
 +			goto out_drop_write;
-+		error = vfs_link(old_path.dentry, new_path.dentry->d_inode,
-+				new_dentry);
++		switch (mode & S_IFMT) {
++		case 0:
++		case S_IFREG:
++			error = vfs_create(path.dentry->d_inode, dentry,
++					mode, NULL);
+ 			break;
+-		case S_IFCHR: case S_IFBLK:
+-			error = vfs_mknod(path.dentry->d_inode,dentry,mode,
++		case S_IFCHR:
++		case S_IFBLK:
++			error = vfs_mknod(path.dentry->d_inode, dentry, mode,
+ 					new_decode_dev(dev));
+ 			break;
+-		case S_IFIFO: case S_IFSOCK:
+-			error = vfs_mknod(path.dentry->d_inode,dentry,mode,0);
+-			break;
+-	}
++		case S_IFIFO:
++		case S_IFSOCK:
++			error = vfs_mknod(path.dentry->d_inode, dentry,
++					mode, 0);
++		}
  out_drop_write:
--	mnt_drop_write(new_path.mnt);
-+		mnt_drop_write(new_path.mnt);
+-	mnt_drop_write(path.mnt);
++		mnt_drop_write(path.mnt);
  out_dput:
--	dput(new_dentry);
--	mutex_unlock(&new_path.dentry->d_inode->i_mutex);
--	path_put(&new_path);
--out:
--	path_put(&old_path);
+-	dput(dentry);
+-	mutex_unlock(&path.dentry->d_inode->i_mutex);
+-	path_put(&path);
 -
-+		dput(new_dentry);
-+		mutex_unlock(&new_path.dentry->d_inode->i_mutex);
-+		path_put(&new_path);
-+		path_put(&old_path);
-+		how |= LOOKUP_REVAL;
++		dput(dentry);
++		mutex_unlock(&path.dentry->d_inode->i_mutex);
++		path_put(&path);
 +	} while (retry_estale(error, try++));
-+	putname(new);
-+	putname(old);
++	putname(name);
  	return error;
  }
  
