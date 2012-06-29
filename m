@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab2F2Oyy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 10:54:54 -0400
-Received: from zimbra.linbit.com ([212.69.161.123]:57317 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755392Ab2F2Oyw (ORCPT
+	id S1755851Ab2F2OzP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 10:55:15 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:11118 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755548Ab2F2OzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 10:54:52 -0400
-Message-ID: <1340981690.25226.3.camel@gurkel.linbit>
-Subject: [RFC] [TCP 1/3] tcp: Add MSG_NEW_PACKET flag to indicate preferable
- packet boundaries
-From: Andreas Gruenbacher <agruen@linbit.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Fri, 29 Jun 2012 16:54:50 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 29 Jun 2012 10:55:14 -0400
+From: Toshi Kani <toshi.kani@hp.com>
+To: lenb@kernel.org, linux-acpi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH] ACPI: Add ACPI CPU hot-remove support
+Date: Fri, 29 Jun 2012 08:51:19 -0600
+Message-Id: <1340981479-6521-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MSG_NEW_PACKET flag indicates to sendmsg / sendpage that the message or
-page should be put into a new packet even when there is still room left in the
-previous packet.
+Added CPU hot-remove support through an ACPI eject notification.
+It calls acpi_bus_hot_remove_device(), which shares the same code
+path with the sysfs eject operation.  acpi_os_hotplug_execute()
+serializes hot-remove operations between ACPI hot-remove and sysfs
+eject requests.
 
-In the tcp protocol, messages which are not sent immediately are queued.  When
-more data is sent, it will be added to the last segment in that queue until
-that segment is "full" whenever possible; only then is a new segment added.
-Right now, there is no way to indicate when tcp should start a new segment.
-The new flag allows to control that.
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 
-Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
 ---
- include/linux/socket.h |    1 +
- net/ipv4/tcp.c         |    5 +++--
- 2 files changed, 4 insertions(+), 2 deletions(-)
+This patch applies on top of the patchset below.
 
-diff --git a/include/linux/socket.h b/include/linux/socket.h
-index 25d6322..be166de 100644
---- a/include/linux/socket.h
-+++ b/include/linux/socket.h
-@@ -266,6 +266,7 @@ struct ucred {
- #define MSG_MORE	0x8000	/* Sender will send more */
- #define MSG_WAITFORONE	0x10000	/* recvmmsg(): block until 1+ packets avail */
- #define MSG_SENDPAGE_NOTLAST 0x20000 /* sendpage() internal : not the last page */
-+#define MSG_NEW_PACKET	0x40000	/* tcp: try to put message into a new packet */
- #define MSG_EOF         MSG_FIN
+[PATCH v6 0/6] ACPI: Add _OST support for ACPI hotplug
+http://marc.info/?l=linux-acpi&m=134074381322973&w=2
+
+---
+ drivers/acpi/processor_driver.c |   27 +++++++++++++++++----------
+ 1 files changed, 17 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+index f9fa1b2..a6f6bde 100644
+--- a/drivers/acpi/processor_driver.c
++++ b/drivers/acpi/processor_driver.c
+@@ -699,8 +699,8 @@ int acpi_processor_device_add(acpi_handle handle, struct acpi_device **device)
+ static void acpi_processor_hotplug_notify(acpi_handle handle,
+ 					  u32 event, void *data)
+ {
+-	struct acpi_processor *pr;
+ 	struct acpi_device *device = NULL;
++	struct acpi_eject_event *ej_event = NULL;
+ 	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+ 	int result;
  
- #define MSG_CMSG_CLOEXEC 0x40000000	/* Set close_on_exit for file
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 3ba605f..148aebe 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -854,7 +854,8 @@ static ssize_t do_tcp_sendpages(struct sock *sk, struct page **pages, int poffse
- 		int size = min_t(size_t, psize, PAGE_SIZE - offset);
- 		bool can_coalesce;
+@@ -732,20 +732,27 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
+ 				  "received ACPI_NOTIFY_EJECT_REQUEST\n"));
  
--		if (!tcp_send_head(sk) || (copy = size_goal - skb->len) <= 0) {
-+		if (!tcp_send_head(sk) || (copy = size_goal - skb->len) <= 0 ||
-+		    (flags & MSG_NEW_PACKET)) {
- new_segment:
- 			if (!sk_stream_memory_free(sk))
- 				goto wait_for_sndbuf;
-@@ -1044,7 +1045,7 @@ int tcp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 				copy = max - skb->len;
- 			}
+ 		if (acpi_bus_get_device(handle, &device)) {
+-			printk(KERN_ERR PREFIX
+-				    "Device don't exist, dropping EJECT\n");
++			pr_err(PREFIX "Device don't exist, dropping EJECT\n");
+ 			break;
+ 		}
+-		pr = acpi_driver_data(device);
+-		if (!pr) {
+-			printk(KERN_ERR PREFIX
+-				    "Driver data is NULL, dropping EJECT\n");
++		if (!acpi_driver_data(device)) {
++			pr_err(PREFIX "Driver data is NULL, dropping EJECT\n");
+ 			break;
+ 		}
  
--			if (copy <= 0) {
-+			if (copy <= 0 || (flags & MSG_NEW_PACKET)) {
- new_segment:
- 				/* Allocate new segment. If the interface is SG,
- 				 * allocate skb fitting to single page.
+-		/* REVISIT: update when eject is supported */
+-		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+-		break;
++		ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
++		if (!ej_event) {
++			pr_err(PREFIX "No memory, dropping EJECT\n");
++			break;
++		}
++
++		ej_event->handle = handle;
++		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
++		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
++					(void *)ej_event);
++
++		/* eject is performed asynchronously */
++		return;
+ 
+ 	default:
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
 -- 
-1.7.10.2
-
-
-
+1.7.7.6
 
