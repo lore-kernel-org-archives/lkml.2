@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224Ab2F2Rqm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 13:46:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31496 "EHLO mx1.redhat.com"
+	id S1756226Ab2F2Rs3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 13:48:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16553 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752375Ab2F2Rql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 13:46:41 -0400
-Date: Fri, 29 Jun 2012 14:46:25 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v2 0/4] make balloon pages movable by compaction
-Message-ID: <20120629174624.GC1774@t510.redhat.com>
-References: <cover.1340916058.git.aquini@redhat.com>
- <87r4syzqkn.fsf@rustcorp.com.au>
+	id S1752984Ab2F2Rs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 13:48:28 -0400
+Message-ID: <4FEDE9B1.5030608@redhat.com>
+Date: Fri, 29 Jun 2012 13:45:21 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87r4syzqkn.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 10/40] autonuma: mm_autonuma and sched_autonuma data structures
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-11-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1340888180-15355-11-git-send-email-aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 29, 2012 at 02:01:52PM +0930, Rusty Russell wrote:
-> On Thu, 28 Jun 2012 18:49:38 -0300, Rafael Aquini <aquini@redhat.com> wrote:
-> > This patchset follows the main idea discussed at 2012 LSFMMS section:
-> > "Ballooning for transparent huge pages" -- http://lwn.net/Articles/490114/
-> > 
-> > to introduce the required changes to the virtio_balloon driver, as well as
-> > changes to the core compaction & migration bits, in order to allow
-> > memory balloon pages become movable within a guest.
-> > 
-> > Rafael Aquini (4):
-> >   mm: introduce compaction and migration for virtio ballooned pages
-> >   virtio_balloon: handle concurrent accesses to virtio_balloon struct
-> >     elements
-> >   virtio_balloon: introduce migration primitives to balloon pages
-> >   mm: add vm event counters for balloon pages compaction
-> > 
-> >  drivers/virtio/virtio_balloon.c |  142 +++++++++++++++++++++++++++++++++++----
-> >  include/linux/mm.h              |   16 +++++
-> >  include/linux/virtio_balloon.h  |    6 ++
-> >  include/linux/vm_event_item.h   |    2 +
-> >  mm/compaction.c                 |  111 ++++++++++++++++++++++++------
-> >  mm/migrate.c                    |   32 ++++++++-
-> >  mm/vmstat.c                     |    4 ++
-> >  7 files changed, 280 insertions(+), 33 deletions(-)
-> > 
-> > 
-> > V2: address Mel Gorman's review comments
-> 
-> If Mel is happy, I am happy.  Seems sensible that the virtio_baloon
-> changes go in at the same time as the mm changes, so:
-> 
-> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
+> Define the two data structures that collect the per-process (in the
+> mm) and per-thread (in the task_struct) statistical information that
+> are the input of the CPU follow memory algorithms in the NUMA
+> scheduler.
 
-Thanks Rusty!
+I just noticed the subject of this email is misleading, too.
 
-I'll be respinning a v3 to address some extra suggestions Mel did, so if you
-have any concern that you'd like me to address, do not hesitate on letting me
-know! 
+This patch does not introduce sched_autonuma at all.
 
-Cheers!
-Rafael
+*searches around for the patch that does*
+
+-- 
+All rights reversed
