@@ -1,190 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494Ab2F2HXJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 03:23:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22048 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750806Ab2F2HXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 03:23:06 -0400
-Date: Fri, 29 Jun 2012 09:22:54 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Jovi Zhang <bookjovi@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, acme@ghostprotocols.net,
-        a.p.zijlstra@chello.nl, mingo@redhat.com, paulus@samba.org,
+	id S1751685Ab2F2HZG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 03:25:06 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:47556 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab2F2HZE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 03:25:04 -0400
+Date: Fri, 29 Jun 2012 10:24:41 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Zoltan Kelemen <zoltan@digisec.se>
+Cc: willy@meta-x.org, gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCHv2 1/2] perf, tool: Fix hw breakpoint's type modifier parsing
-Message-ID: <20120629072254.GA940@krava.brq.redhat.com>
-References: <20120628103223.GA1055@krava.redhat.com>
- <1340918329-3012-1-git-send-email-jolsa@redhat.com>
- <1340918329-3012-2-git-send-email-jolsa@redhat.com>
- <87hatvx84w.fsf@sejong.aot.lge.com>
- <CACV3sb+ykMp0n_c7GwETPnT8bV5UWnM=bVdh3DakNKksK2QNWA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] staging:panel: Rewrite for fixing synchronization
+ issues
+Message-ID: <20120629072441.GN5333@mwanda>
+References: <4FECC539.8040303@digisec.se>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACV3sb+ykMp0n_c7GwETPnT8bV5UWnM=bVdh3DakNKksK2QNWA@mail.gmail.com>
+In-Reply-To: <4FECC539.8040303@digisec.se>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 29, 2012 at 09:01:05AM +0800, Jovi Zhang wrote:
-> On Fri, Jun 29, 2012 at 8:40 AM, Namhyung Kim <namhyung@kernel.org> wrote:
-> > On Thu, 28 Jun 2012 23:18:48 +0200, Jiri Olsa wrote:
-> >> Fixing the hw breakpoint's type modifier parsing to allow all
-> >> possible combinations of 'rwx' characters.
-> >>
-> >> Adding automated tests to the parsing test suite.
-> >>
-> >
-> > You might need this too:
-> >
-> >  Reported-by: Zovi Zhang <bookzovi@gmail.com>
-> >
-> > Thanks,
-> > Namhyung
-> >
+On Thu, Jun 28, 2012 at 10:57:29PM +0200, Zoltan Kelemen wrote:
+
+> Partial rewrite of panel driver to make it more robust. The old code contains
+> problems potentially leading to kernel oops, deadlocks and memory leaks.
 > 
-> Thanks Namhyung, Jovi Zhang <bookjovi@gmail.com> :)
+> The patch contains the following changes:
+> * Handle asynchronous attach/detach to/from parport.
+> * Proper synchronization of multiple opens to same device.
+> * Proper disabling of softirqs when locking pprt from user context.
+> * Replaced interruptible_sleep_on in keypad_read to avoid race conditions.
+> * Changed to del_timer_sync to make sure timer function finishes before
+>   unloading module.
+> * Added owner to file_operations to avoid module being unloaded with dangling
+>   opens.
+> * Check status of user-mode memory write in keypad_read.
+> * Check for and handle errors in keypad_init.
+> * Properly free memory for logical_inputs to avoid memory leak on unload.
+> 
 
-oops, sry about that.. 
+Gar...  Don't do this.  :/  Each bullet point here should be a
+separate patch.  Please break it apart and resend.
 
-Arnaldo, please take this one
+Put the white space changes and the declaration reshuffles in their
+own patch.
 
-thanks,
-jirka
+Do not create lock_pprt() and unlock_pprt() functions.  It doesn't
+save any lines of code.  It means that Sparse is unable check for
+locking bugs.  It hides information pointlessly so it's considered
+bad style.  The comment is nice though and that should go next to
+the declaration of the "pprt_lock" spinlock.
 
+regards,
+dan carpenter
 
----
-Fixing the hw breakpoint's type modifier parsing to allow all
-possible combinations of 'rwx' characters.
-
-Adding automated tests to the parsing test suite.
-
-Original-patch-by: Namhyung Kim <namhyung@kernel.org>
-Reported-by: Jovi Zhang <bookjovi@gmail.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/util/parse-events-test.c |   37 +++++++++++++++++++++++++++++++++++
- tools/perf/util/parse-events.c      |   16 ++++++++++++--
- tools/perf/util/parse-events.l      |    2 +-
- 3 files changed, 51 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
-index 229af6d..50e6a94 100644
---- a/tools/perf/util/parse-events-test.c
-+++ b/tools/perf/util/parse-events-test.c
-@@ -181,6 +181,22 @@ static int test__checkevent_breakpoint_w(struct perf_evlist *evlist)
- 	return 0;
- }
- 
-+static int test__checkevent_breakpoint_rw(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type",
-+			PERF_TYPE_BREAKPOINT == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong config", 0 == evsel->attr.config);
-+	TEST_ASSERT_VAL("wrong bp_type",
-+		(HW_BREAKPOINT_R|HW_BREAKPOINT_W) == evsel->attr.bp_type);
-+	TEST_ASSERT_VAL("wrong bp_len",
-+			HW_BREAKPOINT_LEN_4 == evsel->attr.bp_len);
-+	return 0;
-+}
-+
- static int test__checkevent_tracepoint_modifier(struct perf_evlist *evlist)
- {
- 	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-@@ -352,6 +368,19 @@ static int test__checkevent_breakpoint_w_modifier(struct perf_evlist *evlist)
- 	return test__checkevent_breakpoint_w(evlist);
- }
- 
-+static int test__checkevent_breakpoint_rw_modifier(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = list_entry(evlist->entries.next,
-+					      struct perf_evsel, node);
-+
-+	TEST_ASSERT_VAL("wrong exclude_user", evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
-+
-+	return test__checkevent_breakpoint_rw(evlist);
-+}
-+
- static int test__checkevent_pmu(struct perf_evlist *evlist)
- {
- 
-@@ -584,6 +613,14 @@ static struct test__event_st test__events[] = {
- 		.name  = "instructions:H",
- 		.check = test__checkevent_exclude_guest_modifier,
- 	},
-+	[26] = {
-+		.name  = "mem:0:rw",
-+		.check = test__checkevent_breakpoint_rw,
-+	},
-+	[27] = {
-+		.name  = "mem:0:rw:kp",
-+		.check = test__checkevent_breakpoint_rw_modifier,
-+	},
- };
- 
- #define TEST__EVENTS_CNT (sizeof(test__events) / sizeof(struct test__event_st))
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 0cc27da..7ae76af 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -383,21 +383,31 @@ parse_breakpoint_type(const char *type, struct perf_event_attr *attr)
- 		if (!type || !type[i])
- 			break;
- 
-+#define CHECK_SET_TYPE(bit)		\
-+do {					\
-+	if (attr->bp_type & bit)	\
-+		return -EINVAL;		\
-+	else				\
-+		attr->bp_type |= bit;	\
-+} while (0)
-+
- 		switch (type[i]) {
- 		case 'r':
--			attr->bp_type |= HW_BREAKPOINT_R;
-+			CHECK_SET_TYPE(HW_BREAKPOINT_R);
- 			break;
- 		case 'w':
--			attr->bp_type |= HW_BREAKPOINT_W;
-+			CHECK_SET_TYPE(HW_BREAKPOINT_W);
- 			break;
- 		case 'x':
--			attr->bp_type |= HW_BREAKPOINT_X;
-+			CHECK_SET_TYPE(HW_BREAKPOINT_X);
- 			break;
- 		default:
- 			return -EINVAL;
- 		}
- 	}
- 
-+#undef CHECK_SET_TYPE
-+
- 	if (!attr->bp_type) /* Default */
- 		attr->bp_type = HW_BREAKPOINT_R | HW_BREAKPOINT_W;
- 
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 488362e..a066894 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -76,7 +76,7 @@ num_hex		0x[a-fA-F0-9]+
- num_raw_hex	[a-fA-F0-9]+
- name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
- modifier_event	[ukhpGH]{1,8}
--modifier_bp	[rwx]
-+modifier_bp	[rwx]{1,3}
- 
- %%
- 
--- 
-1.7.7.6
 
