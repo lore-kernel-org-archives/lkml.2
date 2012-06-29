@@ -1,75 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470Ab2F2NkI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 09:40:08 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:54921 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932149Ab2F2NkC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 09:40:02 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av4EAD+v7U9bdWOb/2dsb2JhbABFhVqwfYEHghkBBSMPAUYQJQImAgJXB4ghqHyTPYEgjw+BEgOVM5ADgmE
-X-IronPort-AV: E=Sophos;i="4.77,498,1336341600"; 
-   d="scan'208";a="925260599"
-From: =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
-To: cascardo@holoscopio.com, don@syst.com.br, mjg@redhat.com
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
-Subject: [PATCH 0/1 v2] Add support for Classmate V4 accelerometer to classmate-laptop
-Date: Fri, 29 Jun 2012 15:39:47 +0200
-Message-Id: <cover.1340976795.git.magomez@igalia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1340971993.git.magomez@igalia.com>
-References: <cover.1340971993.git.magomez@igalia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S932447Ab2F2Nkx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 09:40:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45498 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932140Ab2F2NdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 09:33:04 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 11/16] netvm: Propagate page->pfmemalloc from skb_alloc_page to skb
+Date: Fri, 29 Jun 2012 14:32:42 +0100
+Message-Id: <1340976767-5737-12-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1340976767-5737-1-git-send-email-mgorman@suse.de>
+References: <1340976767-5737-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-************************************************************************
+The skb->pfmemalloc flag gets set to true iff during the slab
+allocation of data in __alloc_skb that the the PFMEMALLOC reserves
+were used. If page splitting is used, it is possible that pages will
+be allocated from the PFMEMALLOC reserve without propagating this
+information to the skb. This patch propagates page->pfmemalloc from
+pages allocated for fragments to the skb.
 
-Sorry, I made a mistake with the version. The patch is for Classmate V4
-and not for V3, so I adjusted it accordingly.
+It works by reintroducing and expanding the skb_alloc_page() API
+to take an skb. If the page was allocated from pfmemalloc reserves,
+it is automatically copied. If the driver allocates the page before
+the skb, it should call skb_propagate_pfmemalloc() after the skb is
+allocated to ensure the flag is copied properly.
 
-************************************************************************
+Failure to do so is not critical. The resulting driver may perform
+slower if it is used for swap-over-NBD or swap-over-NFS but it should
+not result in failure.
 
-Classmate V4 has a different accelerometer than the previous versions. Main
-differences between the new  (ACCE0001) and the old one (ACCE0000) are:
+[davem@davemloft.net: API rename and consistency]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/chelsio/cxgb4/sge.c          |    2 +-
+ drivers/net/ethernet/chelsio/cxgb4vf/sge.c        |    2 +-
+ drivers/net/ethernet/intel/igb/igb_main.c         |    2 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c     |    4 +-
+ drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |    3 +-
+ drivers/net/usb/cdc-phonet.c                      |    2 +-
+ drivers/usb/gadget/f_phonet.c                     |    2 +-
+ include/linux/skbuff.h                            |   55 +++++++++++++++++++++
+ 8 files changed, 64 insertions(+), 8 deletions(-)
 
-* ACPI method calls need to receive 4 parameters instead of 2
-* Values returned by the accelerometer are 2 bytes signed integers, instead
-of one unsigned byte
-* New accelerometer has a new attribute (g_select) besides the sensitivity one.
-This attribute's possible values are 0 (meaning 1.5g) and 1 (meaning 6g).
-
-I haven't been able to find the datasheet of the accelerometer, so I got most
-of the behaviour of the device by looking at the previous model driver and by
-experimenting with the hardware. Due to this, the range of the axis values
-(currently defined as -255-255) may not be exact, and also the fuzz value (16)
-may not be the best. But, with this configuration, the programs handling the
-screen rotation developed for previous versions of Classmate are working
-properly.
-
-Initially I thought of modifying the ACCE0000 driver to be able to handle both
-devices, but the patch was quite big and messy, and it might add problems to the
-previous hardware, so I decided to implement it as a new driver, following the
-structure of the ACCE0000 driver. This way the new code won't break the old one.
-
-In order to differenciate the new driver code from the old one, all the
-function names that belong to the new driver end with "v4".
-
-Hope everything is ok :)
-
-Regards!
-
-Miguel Gómez (1):
-  classmate-laptop: Add support for Classmate V4 accelerometer.
-
- drivers/platform/x86/classmate-laptop.c |  400 ++++++++++++++++++++++++++++++-
- 1 file changed, 398 insertions(+), 2 deletions(-)
-
+diff --git a/drivers/net/ethernet/chelsio/cxgb4/sge.c b/drivers/net/ethernet/chelsio/cxgb4/sge.c
+index 8596aca..d49933e 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4/sge.c
++++ b/drivers/net/ethernet/chelsio/cxgb4/sge.c
+@@ -528,7 +528,7 @@ static unsigned int refill_fl(struct adapter *adap, struct sge_fl *q, int n,
+ #endif
+ 
+ 	while (n--) {
+-		pg = alloc_page(gfp);
++		pg = __skb_alloc_page(gfp, NULL);
+ 		if (unlikely(!pg)) {
+ 			q->alloc_failed++;
+ 			break;
+diff --git a/drivers/net/ethernet/chelsio/cxgb4vf/sge.c b/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
+index f2d1ecd..8877fbf 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
++++ b/drivers/net/ethernet/chelsio/cxgb4vf/sge.c
+@@ -653,7 +653,7 @@ static unsigned int refill_fl(struct adapter *adapter, struct sge_fl *fl,
+ 
+ alloc_small_pages:
+ 	while (n--) {
+-		page = alloc_page(gfp | __GFP_NOWARN | __GFP_COLD);
++		page = __skb_alloc_page(gfp | __GFP_NOWARN, NULL);
+ 		if (unlikely(!page)) {
+ 			fl->alloc_failed++;
+ 			break;
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index 01ced68..16e0892 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -6233,7 +6233,7 @@ static bool igb_alloc_mapped_page(struct igb_ring *rx_ring,
+ 		return true;
+ 
+ 	if (!page) {
+-		page = alloc_page(GFP_ATOMIC | __GFP_COLD);
++		page = __skb_alloc_page(GFP_ATOMIC, bi->skb);
+ 		bi->page = page;
+ 		if (unlikely(!page)) {
+ 			rx_ring->rx_stats.alloc_failed++;
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index 5afbb37..ced0ec7 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -1146,8 +1146,8 @@ static bool ixgbe_alloc_mapped_page(struct ixgbe_ring *rx_ring,
+ 
+ 	/* alloc new page for storage */
+ 	if (likely(!page)) {
+-		page = alloc_pages(GFP_ATOMIC | __GFP_COLD | __GFP_COMP,
+-				   ixgbe_rx_pg_order(rx_ring));
++		page = __skb_alloc_pages(GFP_ATOMIC | __GFP_COLD | __GFP_COMP,
++				 	 bi->skb, ixgbe_rx_pg_order(rx_ring));
+ 		if (unlikely(!page)) {
+ 			rx_ring->rx_stats.alloc_rx_page_failed++;
+ 			return false;
+diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+index f69ec42..0e2d91d 100644
+--- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
++++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+@@ -369,7 +369,7 @@ static void ixgbevf_alloc_rx_buffers(struct ixgbevf_adapter *adapter,
+ 		if (!bi->page_dma &&
+ 		    (adapter->flags & IXGBE_FLAG_RX_PS_ENABLED)) {
+ 			if (!bi->page) {
+-				bi->page = alloc_page(GFP_ATOMIC | __GFP_COLD);
++				bi->page = __skb_alloc_page(GFP_ATOMIC, NULL);
+ 				if (!bi->page) {
+ 					adapter->alloc_rx_page_failed++;
+ 					goto no_buffers;
+@@ -403,6 +403,7 @@ static void ixgbevf_alloc_rx_buffers(struct ixgbevf_adapter *adapter,
+ 			 */
+ 			skb_reserve(skb, NET_IP_ALIGN);
+ 
++			skb_propagate_pfmemalloc(bi->page, skb);
+ 			bi->skb = skb;
+ 		}
+ 		if (!bi->dma) {
+diff --git a/drivers/net/usb/cdc-phonet.c b/drivers/net/usb/cdc-phonet.c
+index 187c144..6461004 100644
+--- a/drivers/net/usb/cdc-phonet.c
++++ b/drivers/net/usb/cdc-phonet.c
+@@ -130,7 +130,7 @@ static int rx_submit(struct usbpn_dev *pnd, struct urb *req, gfp_t gfp_flags)
+ 	struct page *page;
+ 	int err;
+ 
+-	page = alloc_page(gfp_flags);
++	page = __skb_alloc_page(gfp_flags | __GFP_NOMEMALLOC, NULL);
+ 	if (!page)
+ 		return -ENOMEM;
+ 
+diff --git a/drivers/usb/gadget/f_phonet.c b/drivers/usb/gadget/f_phonet.c
+index 965a629..8ee9268 100644
+--- a/drivers/usb/gadget/f_phonet.c
++++ b/drivers/usb/gadget/f_phonet.c
+@@ -301,7 +301,7 @@ pn_rx_submit(struct f_phonet *fp, struct usb_request *req, gfp_t gfp_flags)
+ 	struct page *page;
+ 	int err;
+ 
+-	page = alloc_page(gfp_flags);
++	page = __skb_alloc_page(gfp_flags | __GFP_NOMEMALLOC, NULL);
+ 	if (!page)
+ 		return -ENOMEM;
+ 
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index b814bb8..7632c87 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1774,6 +1774,61 @@ static inline struct sk_buff *netdev_alloc_skb_ip_align(struct net_device *dev,
+ 	return __netdev_alloc_skb_ip_align(dev, length, GFP_ATOMIC);
+ }
+ 
++/*
++ *	__skb_alloc_page - allocate pages for ps-rx on a skb and preserve pfmemalloc data
++ *	@gfp_mask: alloc_pages_node mask. Set __GFP_NOMEMALLOC if not for network packet RX
++ *	@skb: skb to set pfmemalloc on if __GFP_MEMALLOC is used
++ *	@order: size of the allocation
++ *
++ * 	Allocate a new page.
++ *
++ * 	%NULL is returned if there is no free memory.
++*/
++static inline struct page *__skb_alloc_pages(gfp_t gfp_mask,
++					      struct sk_buff *skb,
++					      unsigned int order)
++{
++	struct page *page;
++
++	gfp_mask |= __GFP_COLD;
++
++	if (!(gfp_mask & __GFP_NOMEMALLOC))
++		gfp_mask |= __GFP_MEMALLOC;
++
++	page = alloc_pages_node(NUMA_NO_NODE, gfp_mask, order);
++	if (skb && page && page->pfmemalloc)
++		skb->pfmemalloc = true;
++
++	return page;
++}
++
++/**
++ *	__skb_alloc_page - allocate a page for ps-rx for a given skb and preserve pfmemalloc data
++ *	@gfp_mask: alloc_pages_node mask. Set __GFP_NOMEMALLOC if not for network packet RX
++ *	@skb: skb to set pfmemalloc on if __GFP_MEMALLOC is used
++ *
++ * 	Allocate a new page.
++ *
++ * 	%NULL is returned if there is no free memory.
++ */
++static inline struct page *__skb_alloc_page(gfp_t gfp_mask,
++					     struct sk_buff *skb)
++{
++	return __skb_alloc_pages(gfp_mask, skb, 0);
++}
++
++/**
++ *	skb_propagate_pfmemalloc - Propagate pfmemalloc if skb is allocated after RX page
++ *	@page: The page that was allocated from skb_alloc_page
++ *	@skb: The skb that may need pfmemalloc set
++ */
++static inline void skb_propagate_pfmemalloc(struct page *page,
++					     struct sk_buff *skb)
++{
++	if (page && page->pfmemalloc)
++		skb->pfmemalloc = true;
++}
++
+ /**
+  * skb_frag_page - retrieve the page refered to by a paged fragment
+  * @frag: the paged fragment
 -- 
-1.7.9.5
+1.7.9.2
 
