@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab2F2OUN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 10:20:13 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:40401 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806Ab2F2OUL (ORCPT
+	id S1753584Ab2F2O1Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 10:27:16 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:38559 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321Ab2F2O1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 10:20:11 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjBNAAq57U9V5qg+PGdsb2JhbABFihWsQRkBAQEBHhkNJ4IYAQEEAScTHCMFCwgDDjgUJQoaiBkJvDAUkE1gA5UyhWaDQYk+
-X-IronPort-AV: E=Sophos;i="4.77,498,1336341600"; 
-   d="scan'208";a="365868800"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 29 Jun 2012 16:23:45 +0200
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Nick Dyer <nick.dyer@itdev.co.uk>, Yufeng Shen <miletus@chromium.org>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Benson Leung <bleung@chromium.org>
-Subject: Re: [PATCH 00/23 v6] cleanup atmel_mxt_ts
-Message-ID: <20120629142345.GA8411@polaris.bitmath.org>
-References: <1340888904-15620-1-git-send-email-djkurtz@chromium.org>
+	Fri, 29 Jun 2012 10:27:15 -0400
+Message-ID: <4FEDBB3C.7080105@acm.org>
+Date: Fri, 29 Jun 2012 09:27:08 -0500
+From: Corey Minyard <tcminyard@gmail.com>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340888904-15620-1-git-send-email-djkurtz@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Andi Kleen <andi@firstfloor.org>, Srinivas_G_Gowda@Dell.com,
+        tcminyard@gmail.com, linux-kernel@vger.kernel.org,
+        "openipmi-developer@lists.sourceforge.net" 
+	<openipmi-developer@lists.sourceforge.net>,
+        jharg93@gmail.com
+Subject: Re: [PATCH 1/1 v2 ] ipmi: Setting OS name as Linux in BMC
+References: <4FEC8931.5020001@dell.com> <4FEC8A28.4070806@dell.com> <m2k3yrgf4d.fsf@firstfloor.org> <20120629123001.GA26545@srcf.ucam.org>
+In-Reply-To: <20120629123001.GA26545@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patchset cleans up the atmel_mxt_ts touchscreen driver.
-> 
-> They were tested using an MXT224E, and apply cleanly to input/next.
-> 
-> Changes in v6:
->  * Patches 1-8: No change
->  * Patch 9: refactor per Henrik, and abort on error
->  * Patch 10: rebased
->  * Patch 11: kfree()
->  * Patch 12-17: rebased
->  * Patch 18: refactored per Henrik
->  * Patch 19: Moved init spew from info -> debug & refactor kfree()
->  * Patch 20, 23: refactored per Henrik
->  * Patch 21-22: rebased
->  * Patch 23: refactored per Henrik
-> 
-> Daniel Kurtz (23):
->   Input: atmel_mxt_ts - derive phys from i2c client adapter
->   Input: atmel_mxt_ts - use client name for irq
->   Input: atmel_mxt_ts - detect OOM when creating mt slots
->   Input: atmel_mxt_ts - warn if sysfs could not be created
->   Input: atmel_mxt_ts - don't read T5 when dumping objects
->   Input: atmel_mxt_ts - use scnprintf for object sysfs entry
->   Input: atmel_mxt_ts - optimize reading objects in object sysfs entry
->   Input: atmel_mxt_ts - print less overhead when dumping objects
->   Input: atmel_mxt_ts - print all instances when dumping objects
->   Input: atmel_mxt_ts - return errors from i2c layer
->   Input: atmel_mxt_ts - add variable length __mxt_write_reg
->   Input: atmel_mxt_ts - optimize writing of object table entries
->   Input: atmel_mxt_ts - read ID information block in one i2c
->     transaction
->   Input: atmel_mxt_ts - update driver ID info logging
->   Input: atmel_mxt_ts - add sysfs entries to read fw and hw version
->   Input: atmel_mxt_ts - simplify event reporting
->   Input: atmel_mxt_ts - add detail to touchevent debug message
->   Input: atmel_mxt_ts - refactor when and how object table is freed
->   Input: atmel_mxt_ts - cache T9 reportid range when reading object
->     table
->   Input: atmel_mxt_ts - refactor reportid checking in mxt_interrupt
->   Input: atmel_mxt_ts - use T9 reportid range to init number of mt
->     slots
->   Input: atmel_mxt_ts - send all MT-B slots in one input report
->   Input: atmel_mxt_ts - parse T6 reports
-> 
->  drivers/input/touchscreen/atmel_mxt_ts.c |  468 +++++++++++++++--------------
->  1 files changed, 242 insertions(+), 226 deletions(-)
-> 
-> -- 
-> 1.7.7.3
-> 
+On 06/29/2012 07:30 AM, Matthew Garrett wrote:
+> On Thu, Jun 28, 2012 at 05:01:54PM -0700, Andi Kleen wrote:
+>> Not sure that's all that useful. I can just see BMC's making the ACPI
+>> mistake of trying to work around specific issues, by checking for
+>> Linux.
 
-All 23 patches applied and pushed. Thank you!
+I'm not sure I see that happening, but I suppose you never know.
 
-Henrik
+>>
+>> But since there are so many different Linux that will never work
+>> because "Linux" does not describe a fixed release or code base.
+>>
+>> Probably dangerous.
+> Agreed. Linux doesn't make interface guarantees to hardware, and where
+> we've implied that we do it's ended up breaking things.
+>
+
+This is not really about making interface guarantees to hardware. This 
+is more of a management discovery thing, so that system management 
+software talking to the BMC can know what is running on the target.  
+Something where management software can say "Hey, why is Linux running 
+on that box? It's supposed to be BSD." or "That box has booted Linux but 
+hasn't started its maintenance software". According to the spec, the 
+information is supposed to be cleared if the system powers down or resets.
+
+It seems to me that it's better to directly query what is running on the 
+target to know what is running on it, but perhaps that's a security 
+problem waiting to happen.  And perhaps it's better to have a small 
+program set this at startup, since this operation will currently fail on 
+the majority of systems out there.
+
+-corey
