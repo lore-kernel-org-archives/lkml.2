@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164Ab2F2NdG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 09:33:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45437 "EHLO mx2.suse.de"
+	id S932300Ab2F2Njd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 09:39:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45528 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755112Ab2F2Nc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 09:32:58 -0400
+	id S932162Ab2F2NdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 09:33:06 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
@@ -17,9 +17,9 @@ Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 06/16] mm: Ignore mempolicies when using ALLOC_NO_WATERMARK
-Date: Fri, 29 Jun 2012 14:32:37 +0100
-Message-Id: <1340976767-5737-7-git-send-email-mgorman@suse.de>
+Subject: [PATCH 13/16] mm: Micro-optimise slab to avoid a function call
+Date: Fri, 29 Jun 2012 14:32:44 +0100
+Message-Id: <1340976767-5737-14-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1340976767-5737-1-git-send-email-mgorman@suse.de>
 References: <1340976767-5737-1-git-send-email-mgorman@suse.de>
@@ -27,44 +27,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The reserve is proportionally distributed over all !highmem zones
-in the system. So we need to allow an emergency allocation access to
-all zones.  In order to do that we need to break out of any mempolicy
-boundaries we might have.
+Getting and putting objects in SLAB currently requires a function call
+but the bulk of the work is related to PFMEMALLOC reserves which are
+only consumed when network-backed storage is critical. Use an inline
+function to determine if the function call is required.
 
-In my opinion that does not break mempolicies as those are user
-oriented and not system oriented. That is, system allocations are
-not guaranteed to be within mempolicy boundaries. For instance IRQs
-do not even have a mempolicy.
-
-So breaking out of mempolicy boundaries for 'rare' emergency
-allocations, which are always system allocations (as opposed to user)
-is ok.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/page_alloc.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ mm/slab.c |   28 ++++++++++++++++++++++++++--
+ 1 file changed, 26 insertions(+), 2 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9883cf7..981272d 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2347,6 +2347,13 @@ rebalance:
+diff --git a/mm/slab.c b/mm/slab.c
+index d9fe508..84f471e 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -117,6 +117,8 @@
+ #include	<linux/memory.h>
+ #include	<linux/prefetch.h>
  
- 	/* Allocate without watermarks if the context allows */
- 	if (alloc_flags & ALLOC_NO_WATERMARKS) {
-+		/*
-+		 * Ignore mempolicies if ALLOC_NO_WATERMARKS on the grounds
-+		 * the allocation is high priority and these type of
-+		 * allocations are system rather than user orientated
-+		 */
-+		zonelist = node_zonelist(numa_node_id(), gfp_mask);
++#include	<net/sock.h>
 +
- 		page = __alloc_pages_high_priority(gfp_mask, order,
- 				zonelist, high_zoneidx, nodemask,
- 				preferred_zone, migratetype);
+ #include	<asm/cacheflush.h>
+ #include	<asm/tlbflush.h>
+ #include	<asm/page.h>
+@@ -991,7 +993,7 @@ out:
+ 	spin_unlock_irqrestore(&l3->list_lock, flags);
+ }
+ 
+-static void *ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
++static void *__ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
+ 						gfp_t flags, bool force_refill)
+ {
+ 	int i;
+@@ -1038,7 +1040,20 @@ static void *ac_get_obj(struct kmem_cache *cachep, struct array_cache *ac,
+ 	return objp;
+ }
+ 
+-static void ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
++static inline void *ac_get_obj(struct kmem_cache *cachep,
++			struct array_cache *ac, gfp_t flags, bool force_refill)
++{
++	void *objp;
++
++	if (unlikely(sk_memalloc_socks()))
++		objp = __ac_get_obj(cachep, ac, flags, force_refill);
++	else
++		objp = ac->entry[--ac->avail];
++
++	return objp;
++}
++
++static void *__ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
+ 								void *objp)
+ {
+ 	if (unlikely(pfmemalloc_active)) {
+@@ -1048,6 +1063,15 @@ static void ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
+ 			set_obj_pfmemalloc(&objp);
+ 	}
+ 
++	return objp;
++}
++
++static inline void ac_put_obj(struct kmem_cache *cachep, struct array_cache *ac,
++								void *objp)
++{
++	if (unlikely(sk_memalloc_socks()))
++		objp = __ac_put_obj(cachep, ac, objp);
++
+ 	ac->entry[ac->avail++] = objp;
+ }
+ 
 -- 
 1.7.9.2
 
