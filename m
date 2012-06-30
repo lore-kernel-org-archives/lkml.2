@@ -1,52 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941Ab2F3UMp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 16:12:45 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:51728 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158Ab2F3UMn (ORCPT
+	id S1752201Ab2F3UPt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 16:15:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38348 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158Ab2F3UPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 16:12:43 -0400
-From: Arnd Bergmann <arnd.bergmann@linaro.org>
-Organization: Linaro Limited 
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: linux-next: build failure after merge of the final tree (pwm tree related)
-Date: Sat, 30 Jun 2012 20:12:32 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>
-References: <20120629174826.546cc991459b12833f2aaebd@canb.auug.org.au> <201206301920.21158.arnd.bergmann@linaro.org> <20120630194139.GA24300@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20120630194139.GA24300@avionic-0098.mockup.avionic-design.de>
+	Sat, 30 Jun 2012 16:15:47 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201206302012.32476.arnd.bergmann@linaro.org>
-X-Provags-ID: V02:K0:2cl8ZuKAQj7Q/5x4BeyaBWsVxWJxMOZFj3l7ZE1GM6n
- GBS/+lEviIms9R3fgwx6l177ub9G8bkobw6dwU64EQT/99i8pM
- GwBxlNMLSIVKE2HwqOneQ3EoF4EMwqv0oglXMqL6TxZ/AaFtRT
- +DWaenItnX8dBIaU8uEMzrqHOrZwK9sO1h1RKDm3WuWRGKX0wA
- S3S+9yWjvMXYBBbXdVo72/4Xu43gzodXie+ss9IekKEj8k8Pr+
- RfE4vlNANeJcLcgVJdgrdeU8y9jXG+GMlGHx1IIzQyjMmctDkd
- 7BNdLOho0PSX/VJ5lDblrFHvuKbnWsb+n/OrE7mKaKKEV5umEL
- uPQ1O8pH1D7321aNfoVONrXq/PGbZVJBdGooZrTvk
+In-Reply-To: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com>
+References: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com>
+Date: Sat, 30 Jun 2012 13:15:46 -0700
+X-Google-Sender-Auth: 5YdSap12FOqSs_Ljb3hdLf2bf60
+Message-ID: <CAE9FiQWzfLkeQs8O22MUEmuGUx=jPi5s=wZt2fcpFMcwrzt3uA@mail.gmail.com>
+Subject: Re: [PATCH] mm: setup pageblock_order before it's used by sparse
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Tony Luck <tony.luck@intel.com>, Xishi Qiu <qiuxishi@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>
+Content-Type: multipart/mixed; boundary=f46d042f9e84eb415f04c3b63a76
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 30 June 2012, Thierry Reding wrote:
-> > I think that all the drivers that are not converted to the common PWM
-> > layer yet should depend on not enabling the common code. Once they
-> > are all moved over, that dependency will go away.
-> 
-> Right. That's exactly what I meant. If we add depends on !HAVE_PWM to
-> the PWM symbol that should result in both options conflicting, and
-> therefore not being built at the same time.
+--f46d042f9e84eb415f04c3b63a76
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-But I would add it to all other ones then, not the generic one!
+On Sat, Jun 30, 2012 at 2:07 AM, Jiang Liu <jiang.liu@huawei.com> wrote:
+> From: Xishi Qiu <qiuxishi@huawei.com>
+>
+> On architectures with CONFIG_HUGETLB_PAGE_SIZE_VARIABLE set, such as Itan=
+ium,
+> pageblock_order is a variable with default value of 0. It's set to the ri=
+ght
+> value by set_pageblock_order() in function free_area_init_core().
+>
+> But pageblock_order may be used by sparse_init() before free_area_init_co=
+re()
+> is called along path:
+> sparse_init()
+> =A0 =A0->sparse_early_usemaps_alloc_node()
+> =A0 =A0 =A0 =A0->usemap_size()
+> =A0 =A0 =A0 =A0 =A0 =A0->SECTION_BLOCKFLAGS_BITS
+> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0->((1UL << (PFN_SECTION_SHIFT - pageblock_=
+order)) *
+> NR_PAGEBLOCK_BITS)
+>
+> The uninitialized pageblock_size will cause memory wasting because usemap=
+_size()
+> returns a much bigger value then it's really needed.
+>
+> For example, on an Itanium platform,
+> sparse_init() pageblock_order=3D0 usemap_size=3D24576
+> free_area_init_core() before pageblock_order=3D0, usemap_size=3D24576
+> free_area_init_core() after pageblock_order=3D12, usemap_size=3D8
+>
+> That means 24K memory has been wasted for each section, so fix it by call=
+ing
+> set_pageblock_order() from sparse_init().
+>
 
-One question though: if the generic pwm implementation does not set
-HAVE_PWM, how can a driver check its presence?
+can you check attached patch?
 
-	Arnd
+That will kill more lines code instead.
 
+Thanks
+
+Yinghai
+
+--f46d042f9e84eb415f04c3b63a76
+Content-Type: application/octet-stream; 
+	name="kill_set_pageblock_order.patch"
+Content-Disposition: attachment; filename="kill_set_pageblock_order.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h434r2q20
+
+U3ViamVjdDogW1BBVENIXSBtbTogc2V0IHBhZ2VibG9ja19vcmRlciBpbiBjb21waWxpbmcgdGlt
+ZQoKVGhhdCBpcyBpbml0aWFsIHNldHRpbmcsIGFuZCBjb3VsZCBiZSBvdmVycmlkZSBieSBjb21t
+YW5kIGxpbmUuCgpTaWduZWQtb2ZmLWJ5OiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+
+CgotLS0KIG1tL3BhZ2VfYWxsb2MuYyB8ICAgNDUgKysrKysrLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tCiAxIGZpbGUgY2hhbmdlZCwgNiBpbnNlcnRpb25zKCspLCAzOSBk
+ZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYvbW0vcGFnZV9hbGxvYy5jCj09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0K
+LS0tIGxpbnV4LTIuNi5vcmlnL21tL3BhZ2VfYWxsb2MuYworKysgbGludXgtMi42L21tL3BhZ2Vf
+YWxsb2MuYwpAQCAtMTQ3LDcgKzE0NywxMiBAQCBib29sIHBtX3N1c3BlbmRlZF9zdG9yYWdlKHZv
+aWQpCiAjZW5kaWYgLyogQ09ORklHX1BNX1NMRUVQICovCiAKICNpZmRlZiBDT05GSUdfSFVHRVRM
+Ql9QQUdFX1NJWkVfVkFSSUFCTEUKLWludCBwYWdlYmxvY2tfb3JkZXIgX19yZWFkX21vc3RseTsK
+Ky8qCisgKiBBc3N1bWUgdGhlIGxhcmdlc3QgY29udGlndW91cyBvcmRlciBvZiBpbnRlcmVzdCBp
+cyBhIGh1Z2UgcGFnZS4KKyAqIFRoaXMgdmFsdWUgbWF5IGJlIHZhcmlhYmxlIGRlcGVuZGluZyBv
+biBib290IHBhcmFtZXRlcnMgb24gSUE2NCBhbmQKKyAqIHBvd2VycGMuCisgKi8KK2ludCBwYWdl
+YmxvY2tfb3JkZXIgPSAoKEhQQUdFX1NISVQgPiBQQUdFX1NISUZUKSA/IEhVR0VUTEJfUEFHRV9P
+UkRFUiA6IChNQVhfT1JERVIgLSAxKSkgX19yZWFkX21vc3RseTsKICNlbmRpZgogCiBzdGF0aWMg
+dm9pZCBfX2ZyZWVfcGFnZXNfb2soc3RydWN0IHBhZ2UgKnBhZ2UsIHVuc2lnbmVkIGludCBvcmRl
+cik7CkBAIC00Mjk4LDQzICs0MzAzLDYgQEAgc3RhdGljIGlubGluZSB2b2lkIHNldHVwX3VzZW1h
+cChzdHJ1Y3QgcAogCQkJCXN0cnVjdCB6b25lICp6b25lLCB1bnNpZ25lZCBsb25nIHpvbmVzaXpl
+KSB7fQogI2VuZGlmIC8qIENPTkZJR19TUEFSU0VNRU0gKi8KIAotI2lmZGVmIENPTkZJR19IVUdF
+VExCX1BBR0VfU0laRV9WQVJJQUJMRQotCi0vKiBJbml0aWFsaXNlIHRoZSBudW1iZXIgb2YgcGFn
+ZXMgcmVwcmVzZW50ZWQgYnkgTlJfUEFHRUJMT0NLX0JJVFMgKi8KLXN0YXRpYyBpbmxpbmUgdm9p
+ZCBfX2luaXQgc2V0X3BhZ2VibG9ja19vcmRlcih2b2lkKQotewotCXVuc2lnbmVkIGludCBvcmRl
+cjsKLQotCS8qIENoZWNrIHRoYXQgcGFnZWJsb2NrX25yX3BhZ2VzIGhhcyBub3QgYWxyZWFkeSBi
+ZWVuIHNldHVwICovCi0JaWYgKHBhZ2VibG9ja19vcmRlcikKLQkJcmV0dXJuOwotCi0JaWYgKEhQ
+QUdFX1NISUZUID4gUEFHRV9TSElGVCkKLQkJb3JkZXIgPSBIVUdFVExCX1BBR0VfT1JERVI7Ci0J
+ZWxzZQotCQlvcmRlciA9IE1BWF9PUkRFUiAtIDE7Ci0KLQkvKgotCSAqIEFzc3VtZSB0aGUgbGFy
+Z2VzdCBjb250aWd1b3VzIG9yZGVyIG9mIGludGVyZXN0IGlzIGEgaHVnZSBwYWdlLgotCSAqIFRo
+aXMgdmFsdWUgbWF5IGJlIHZhcmlhYmxlIGRlcGVuZGluZyBvbiBib290IHBhcmFtZXRlcnMgb24g
+SUE2NCBhbmQKLQkgKiBwb3dlcnBjLgotCSAqLwotCXBhZ2VibG9ja19vcmRlciA9IG9yZGVyOwot
+fQotI2Vsc2UgLyogQ09ORklHX0hVR0VUTEJfUEFHRV9TSVpFX1ZBUklBQkxFICovCi0KLS8qCi0g
+KiBXaGVuIENPTkZJR19IVUdFVExCX1BBR0VfU0laRV9WQVJJQUJMRSBpcyBub3Qgc2V0LCBzZXRf
+cGFnZWJsb2NrX29yZGVyKCkKLSAqIGlzIHVudXNlZCBhcyBwYWdlYmxvY2tfb3JkZXIgaXMgc2V0
+IGF0IGNvbXBpbGUtdGltZS4gU2VlCi0gKiBpbmNsdWRlL2xpbnV4L3BhZ2VibG9jay1mbGFncy5o
+IGZvciB0aGUgdmFsdWVzIG9mIHBhZ2VibG9ja19vcmRlciBiYXNlZCBvbgotICogdGhlIGtlcm5l
+bCBjb25maWcKLSAqLwotc3RhdGljIGlubGluZSB2b2lkIHNldF9wYWdlYmxvY2tfb3JkZXIodm9p
+ZCkKLXsKLX0KLQotI2VuZGlmIC8qIENPTkZJR19IVUdFVExCX1BBR0VfU0laRV9WQVJJQUJMRSAq
+LwotCiAvKgogICogU2V0IHVwIHRoZSB6b25lIGRhdGEgc3RydWN0dXJlczoKICAqICAgLSBtYXJr
+IGFsbCBwYWdlcyByZXNlcnZlZApAQCAtNDQxMyw3ICs0MzgxLDYgQEAgc3RhdGljIHZvaWQgX19w
+YWdpbmdpbml0IGZyZWVfYXJlYV9pbml0XwogCQlpZiAoIXNpemUpCiAJCQljb250aW51ZTsKIAot
+CQlzZXRfcGFnZWJsb2NrX29yZGVyKCk7CiAJCXNldHVwX3VzZW1hcChwZ2RhdCwgem9uZSwgc2l6
+ZSk7CiAJCXJldCA9IGluaXRfY3VycmVudGx5X2VtcHR5X3pvbmUoem9uZSwgem9uZV9zdGFydF9w
+Zm4sCiAJCQkJCQlzaXplLCBNRU1NQVBfRUFSTFkpOwo=
+--f46d042f9e84eb415f04c3b63a76--
