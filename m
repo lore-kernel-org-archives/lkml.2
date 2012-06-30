@@ -1,113 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab2F3M3i (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 08:29:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36080 "EHLO mx1.redhat.com"
+	id S1755297Ab2F3McW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 08:32:22 -0400
+Received: from antcom.de ([188.40.178.216]:49041 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754249Ab2F3M3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 08:29:37 -0400
-Date: Sat, 30 Jun 2012 14:29:23 +0200
-From: Petr Holasek <pholasek@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH v2] KSM: numa awareness sysfs knob
-Message-ID: <20120630122919.GB3036@stainedmachine.redhat.com>
-References: <1340970592-25001-1-git-send-email-pholasek@redhat.com>
- <20120629141759.3312b49e.akpm@linux-foundation.org>
+	id S1754613Ab2F3McU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jun 2012 08:32:20 -0400
+Message-ID: <4FEEF1D0.5060404@antcom.de>
+Date: Sat, 30 Jun 2012 14:32:16 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120629141759.3312b49e.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
+        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
+        linux@arm.linux.org.uk,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Subject: Re: [PATCH v10] MTD: LPC32xx MLC NAND driver
+References: <1340834129-15545-1-git-send-email-stigge@antcom.de> <1340973434.3070.168.camel@sauron.fi.intel.com>
+In-Reply-To: <1340973434.3070.168.camel@sauron.fi.intel.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Jun 2012, Andrew Morton wrote:
+Hi Artem!
 
-> On Fri, 29 Jun 2012 13:49:52 +0200
-> Petr Holasek <pholasek@redhat.com> wrote:
-> 
-> > Introduces new sysfs boolean knob /sys/kernel/mm/ksm/merge_nodes
-> > which control merging pages across different numa nodes.
-> > When it is set to zero only pages from the same node are merged,
-> > otherwise pages from all nodes can be merged together (default behavior).
-> > 
-> > Typical use-case could be a lot of KVM guests on NUMA machine
-> > and cpus from more distant nodes would have significant increase
-> > of access latency to the merged ksm page. Sysfs knob was choosen
-> > for higher scalability.
-> > 
-> > Every numa node has its own stable & unstable trees because
-> > of faster searching and inserting. Changing of merge_nodes
-> > value is possible only when there are not any ksm shared pages in system.
-> 
-> It would be neat to have a knob which enables KSM for all anon
-> mappings.  ie: pretend that MADV_MERGEABLE is always set.  For testing
-> coverage purposes.
+Thanks for the notes!
 
-Interesting idea, I'll try to add it in next release if /sys/kernel/mm/ksm
-directory is the right place for such debug knob.
-
-> > --- a/Documentation/vm/ksm.txt
-> > +++ b/Documentation/vm/ksm.txt
-> > @@ -58,6 +58,12 @@ sleep_millisecs  - how many milliseconds ksmd should sleep before next scan
-> >                     e.g. "echo 20 > /sys/kernel/mm/ksm/sleep_millisecs"
-> >                     Default: 20 (chosen for demonstration purposes)
-> >  
-> > +merge_nodes      - specifies if pages from different numa nodes can be merged.
-> > +                   When set to 0, ksm merges only pages which physically
-> > +                   resides in the memory area of same NUMA node. It brings
-> > +                   lower latency to access to shared page.
-> > +                   Default: 1
+On 29/06/12 14:37, Artem Bityutskiy wrote:
+> Successfully built configuration
+> "arm-lpc32xx_defconfig,arm,arm-unknown-linux-gnueabi-", results:
 > 
-> s/resides/reside/.
-> 
-> This doc should mention that /sys/kernel/mm/ksm/run should be zeroed to
-> alter merge_nodes.  Otherwise confusion will reign.
-> 
+> --- before_patching.log +++ after_patching.log @@ @@ 
+> +drivers/mtd/nand/lpc32xx_mlc.c: In function 'lpc32xx_nand_probe': 
+> +drivers/mtd/nand/lpc32xx_mlc.c:679:10: warning: variable 'sr' set
+> but not used [-Wunused-but-set-variable] 
+> +drivers/mtd/nand/lpc32xx_mlc.c:561:24: error: bad constant
+> expression [sparse]
 
-Oh, forgot to mention it. I'll fix it.
+This is because sparse doesn't understand this local variable:
 
-> >
-> > ...
-> >
-> > +static ssize_t merge_nodes_store(struct kobject *kobj,
-> > +				   struct kobj_attribute *attr,
-> > +				   const char *buf, size_t count)
-> > +{
-> > +	int err;
-> > +	unsigned long knob;
-> > +
-> > +	err = kstrtoul(buf, 10, &knob);
-> > +	if (err)
-> > +		return err;
-> > +	if (knob > 1)
-> > +		return -EINVAL;
-> > +
-> > +	if (ksm_run & KSM_RUN_MERGE)
-> > +		return -EBUSY;
-> > +
-> > +	mutex_lock(&ksm_thread_mutex);
-> > +	if (ksm_merge_nodes != knob) {
-> > +		if (ksm_pages_shared > 0)
-> > +			return -EBUSY;
-> > +		else
-> > +			ksm_merge_nodes = knob;
-> > +	}
-> > +	mutex_unlock(&ksm_thread_mutex);
-> > +
-> > +	return count;
-> > +}
-> 
-> Seems a bit racy.  Shouldn't the test of ksm_run be inside the locked
-> region?
-> 
+uint8_t buf[mtd->writesize];
 
-Agreed.
+(but gcc does).
 
-Thanks for your review!
+Are you sure we need to support sparse?
+
+The above construction is quite convenient for this case and I'd
+prefer this to allocating another buffer dynamically.
+
+Thanks in advance,
+
+Roland
