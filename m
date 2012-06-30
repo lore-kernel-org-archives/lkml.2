@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089Ab2F3Ahb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 20:37:31 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:47107 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971Ab2F3Aha (ORCPT
+	id S1756124Ab2F3Aho (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 20:37:44 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:56969 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755290Ab2F3Ahn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 20:37:30 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-13.tower-131.messagelabs.com!1341016649!12979292!1
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 04/10] staging: comedi: ni_670x: remove n_ni_670x_boards macro
-Date: Fri, 29 Jun 2012 17:37:25 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Fri, 29 Jun 2012 20:37:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206291737.26090.hartleys@visionengravers.com>
+In-Reply-To: <20120629230237.GF21048@google.com>
+References: <20120626155332.GJ22557@redhat.com>
+	<CAKA=qzYoX-1nTZ6QfdD7RhWf=KU7J6tWOJXgt-F+Kz2c3Xn0TQ@mail.gmail.com>
+	<20120626205651.GW3869@google.com>
+	<CAKA=qzbBtteDjHiPogCvN5jOSiPrDxx=vn96p02bXUy=6=jAgA@mail.gmail.com>
+	<CAKA=qzaZweeeYUFD2OHDeAO-SQihSvExAZ=ZnXeY5o5sMWpxJg@mail.gmail.com>
+	<CAKA=qzbaM-z7CbASUgq-A7CZWiUq6pdb93e4giYAw63hQK=MCg@mail.gmail.com>
+	<20120627173822.GK15811@google.com>
+	<CAKA=qzY5FT8rWU=z8DwGB7aF6AvCuT=bH2sOJQafyEPqtbkduQ@mail.gmail.com>
+	<20120627175458.GL15811@google.com>
+	<CAKA=qzaArsuwuuqHVKgTqwszY_Zx8d690e6UJsOQUvq_4--hjQ@mail.gmail.com>
+	<20120629230237.GF21048@google.com>
+Date: Fri, 29 Jun 2012 19:37:42 -0500
+Message-ID: <CAKA=qzZVVvhjw4gxxAcaDG1e0Lxwf7ROTm1XgXhavgMAExrAVg@mail.gmail.com>
+Subject: Re: multi-second application stall in open()
+From: Josh Hunt <joshhunt00@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This macro is simply the ARRAY_SIZE() of the boardinfo. Just use
-the ARRAY_SIZE and remove the macro.
+On Fri, Jun 29, 2012 at 6:02 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, Josh.
+>
+> Can you please test the followign patch?  It's on top of 3.5-rc4.  It
+> seems to work here but is still quite experimental and may cause
+> crashes or alien invasion especially across cpu hotplugs.
+>
+> Thanks.
+>
+Wow. Thanks Tejun. I will try and get to this over the weekend, but it
+may not be until Monday before I can test it.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/ni_670x.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/ni_670x.c b/drivers/staging/comedi/drivers/ni_670x.c
-index b75eed4..d53d20c 100644
---- a/drivers/staging/comedi/drivers/ni_670x.c
-+++ b/drivers/staging/comedi/drivers/ni_670x.c
-@@ -96,8 +96,6 @@ struct ni_670x_private {
- 	unsigned int ao_readback[32];
- };
- 
--#define n_ni_670x_boards ARRAY_SIZE(ni_670x_boards)
--
- static struct comedi_lrange range_0_20mA = { 1, {RANGE_mA(0, 20)} };
- 
- static int ni_670x_ao_winsn(struct comedi_device *dev,
-@@ -210,7 +208,7 @@ static int ni_670x_find_device(struct comedi_device *dev, int bus, int slot)
- 				continue;
- 		}
- 
--		for (i = 0; i < n_ni_670x_boards; i++) {
-+		for (i = 0; i < ARRAY_SIZE(ni_670x_boards); i++) {
- 			if (mite_device_id(mite) == ni_670x_boards[i].dev_id) {
- 				dev->board_ptr = ni_670x_boards + i;
- 				devpriv->mite = mite;
 -- 
-1.7.11
-
+Josh
