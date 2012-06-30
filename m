@@ -1,84 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab2F2X6M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 19:58:12 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:47551 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702Ab2F2X6K (ORCPT
+	id S1755722Ab2F3ABC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 20:01:02 -0400
+Received: from mail-bk0-f74.google.com ([209.85.214.74]:39332 "EHLO
+	mail-bk0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752702Ab2F3AA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 19:58:10 -0400
-Message-ID: <1341014197.2342.7.camel@falcor.watson.ibm.com>
-Subject: Re: [PATCH 0/4] Was: deferring __fput()
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        ". James Morris" <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Date: Fri, 29 Jun 2012 19:56:37 -0400
-In-Reply-To: <1341005929.2194.9.camel@falcor.watson.ibm.com>
-References: <20120623210141.GK14083@ZenIV.linux.org.uk>
-	 <20120624041652.GN14083@ZenIV.linux.org.uk>
-	 <20120624153310.GB24596@redhat.com>
-	 <20120625060357.GT14083@ZenIV.linux.org.uk>
-	 <20120625151812.GA16062@redhat.com> <20120627183721.GA23086@redhat.com>
-	 <20120628043836.GW14083@ZenIV.linux.org.uk>
-		 <1340947838.2293.2.camel@falcor>
-	 <20120629083311.GX14083@ZenIV.linux.org.uk>
-	 <1340974925.2309.13.camel@falcor>
-	 <20120629174130.GY14083@ZenIV.linux.org.uk>
-	 <1341005929.2194.9.camel@falcor.watson.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12062923-7282-0000-0000-00000A70A442
+	Fri, 29 Jun 2012 20:00:58 -0400
+Subject: mmotm 2012-06-29-17-00 uploaded
+To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
+From: akpm@linux-foundation.org
+Date: Fri, 29 Jun 2012 17:00:54 -0700
+Message-Id: <20120630000055.AF381A02DE@akpm.mtv.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-29 at 17:38 -0400, Mimi Zohar wrote:
-> On Fri, 2012-06-29 at 18:41 +0100, Al Viro wrote:
-> > On Fri, Jun 29, 2012 at 09:02:05AM -0400, Mimi Zohar wrote:
-> > 
-> > > In addition to failing with my tailored .config (eg. IMA, TPM builtin),
-> > > it fails with config-3.4.2-1.fc16.x86_64, with new default options,
-> > > running on a Lenovo W520.
-> > > 
-> > > /dev/sda7 on / type ext4 (rw,relatime,seclabel,i_version,data=ordered)
-> > 
-> > Lovely...  Smells like something making dracut unhappy.  Does it say
-> > anything interesting when booting with rdinitdebug in command line?
-> > What happens with rdshell in there?
-> > 
-> > I don't have easily accessible Fedora boxen at the moment and it does
-> > look like something fishy going on while initramfs stuff runs...
-> 
-> No difference with rdinitdebug, rdshell, but the message 
-> "ata5: SATA link down (SStatus 0 SControl 300)" prior to "Freeing unused
-> kernel memory... ", "Failed to execute /init" and the trace back,
-> probably helps.  Don't know how I missed that.
+The mm-of-the-moment snapshot 2012-06-29-17-00 has been uploaded to
 
-Looking at /var/log/messages, seems like the ata4 and ata5 "SATA link
-down (SStatus 0 SControl 300)" messages are normal.
+   http://www.ozlabs.org/~akpm/mmotm/
 
-ata5: SATA link down (SStatus 0 SControl 300)
-Freeing unused kernel memory: 1016k freed
-Write protecting the kernel read-only data: 12288k
-Freeing unused kernel memory: 1964k freed
-Freeing unused kernel memory: 1468k freed
-Failed to execute /init
-Kernel panic - not syncing. No init Found.  Try passing init= option ...
-Pid: 1, comm: swapper/0 not tainted 3.5.0-rc1+
-Call Trace:
-	panic
-	init_post
-	kernel_init
-	?do_early_param
-	kernel_thread_helper
-	start_kernel
+It contains the following patches against 3.5-rc4:
+(patches marked "*" will be included in linux-next)
 
-Mimi
-
+  origin.patch
+* selinux-fix-something.patch
+  linux-next.patch
+  linux-next-git-rejects.patch
+  i-need-old-gcc.patch
+  arch-alpha-kernel-systblss-remove-debug-check.patch
+  drivers-block-nvmec-stop-breaking-my-i386-build.patch
+  thermal-constify-type-argument-for-the-registration-routine.patch
+* memory-hotplug-fix-invalid-memory-access-caused-by-stale-kswapd-pointer.patch
+* memory-hotplug-fix-invalid-memory-access-caused-by-stale-kswapd-pointer-fix.patch
+* drivers-rtc-rtc-spearc-fix-use-after-free-in-spear_rtc_remove.patch
+* mn10300-move-setup_jiffies_interrupt-to-cevt-mn10300c.patch
+* mn10300-remove-duplicate-definition-of-ptrace_o_tracesysgood.patch
+* mn10300-kernel-internalh-needs-linux-irqreturnh.patch
+* mn10300-kernel-trapsc-needs-linux-exporth.patch
+* mn10300-mm-dma-allocc-needs-linux-exporth.patch
+* mn10300-use-elif-definedconfig_-instead-of-elif-config_.patch
+* ocfs2-fix-null-pointer-dereferrence-in-__ocfs2_change_file_space.patch
+* c-r-prctl-less-paranoid-prctl_set_mm_exe_file.patch
+* drivers-gpio-devresc-export-devm_gpio_request_one-to-modules.patch
+* mm-thp-abort-compaction-if-migration-page-cannot-be-charged-to-memcg.patch
+* drivers-rtc-rtc-ab8500c-use-irqf_oneshot-when-requesting-a-threaded-irq.patch
+* rtc-ensure-correct-probing-of-the-ab8500-rtc-when-device-tree-is-enabled.patch
+* rtc-ensure-correct-probing-of-the-ab8500-rtc-when-device-tree-is-enabled-checkpatch-fixes.patch
+* mm-fix-goal-calculating-with-usemap.patch
+* h8300-pgtable-add-missing-include-asm-generic-pgtableh.patch
+* h8300-signal-fix-typo-statis.patch
+* h8300-time-add-missing-include-asm-irq_regsh.patch
+* h8300-uaccess-remove-assignment-to-__gu_val-in-unhandled-case-of-get_user.patch
+* h8300-uaccess-add-mising-__clear_user.patch
+* mm-memory_hotplugc-release-memory-resources-if-hotadd_new_pgdat-fails.patch
+* drivers-rtc-rtc-mxcc-fix-irq-enabled-interrupts-warning.patch
+* fs-ramfs-file-nommu-add-setpageuptodate.patch
+* sgi-xp-nested-calls-to-spin_lock_irqsave.patch
+* maintainers-add-omap-cpufreq-driver-to-omap-power-management-section.patch
+* memblock-free-allocated-memblock_reserved_regions-later.patch
+* fat-fix-non-atomic-nfs-i_pos-read.patch
+* cciss-fix-incorrect-scsi-status-reporting.patch
+* arch-x86-platform-iris-irisc-register-a-platform-device-and-a-platform-driver.patch
+* arch-x86-include-asm-spinlockh-fix-comment.patch
+* arch-x86-kernel-cpu-perf_event_intel_uncoreh-make-uncore_pmu_hrtimer_interval-64-bit.patch
+* cpuidle-move-field-disable-from-per-driver-to-per-cpu.patch
+* prctl-remove-redunant-assignment-of-error-to-zero.patch
+  cyber2000fb-avoid-palette-corruption-at-higher-clocks.patch
+* timeconstpl-remove-deprecated-defined-array.patch
+* time-dont-inline-export_symbol-functions.patch
+* include-linux-timeh-make-nsec_per_sec-64-bit-on-32-bit-architectures.patch
+* include-linux-timeh-make-nsec_per_sec-64-bit-on-32-bit-architectures-fix.patch
+* include-linux-timeh-make-nsec_per_sec-64-bit-on-32-bit-architectures-fix-fix.patch
+* include-linux-timeh-make-nsec_per_sec-64-bit-on-32-bit-architectures-fix-fix-fix.patch
+* include-linux-timeh-make-nsec_per_sec-64-bit-on-32-bit-architectures-fix-fix-fix-fix.patch
+* thermal-fix-potential-out-of-bounds-memory-access.patch
+* ocfs2-use-find_last_bit.patch
+* ocfs2-use-bitmap_weight.patch
+* drivers-scsi-ufs-use-module_pci_driver.patch
+* drivers-scsi-ufs-reverse-the-ufshcd_is_device_present-logic.patch
+* ufs-fix-incorrect-return-value-about-success-and-failed.patch
+* drivers-scsi-atp870uc-fix-bad-use-of-udelay.patch
+* vfs-increment-iversion-when-a-file-is-truncated.patch
+* fs-push-rcu_barrier-from-deactivate_locked_super-to-filesystems.patch
+* hfs-push-lock_super-down.patch
+* hfs-get-rid-of-lock_super.patch
+* hfs-remove-extra-mdb-write-on-unmount.patch
+* hfs-simplify-a-bit-checking-for-r-o.patch
+* hfs-introduce-vfs-superblock-object-back-reference.patch
+* hfs-get-rid-of-hfs_sync_super.patch
+* hfs-get-rid-of-hfs_sync_super-checkpatch-fixes.patch
+* fs-xattrc-getxattr-improve-handling-of-allocation-failures.patch
+* fs-add-link-restrictions.patch
+* fs-add-link-restriction-audit-reporting.patch
+* fs-make-dumpable=2-require-fully-qualified-path.patch
+* coredump-warn-about-unsafe-suid_dumpable-core_pattern-combo.patch
+* xtensa-mm-faultc-port-oom-changes-to-do_page_fault.patch
+* mm-slab-remove-duplicate-check.patch
+* slab-move-full-state-transition-to-an-initcall.patch
+* slab-do-not-call-compound_head-in-page_get_cache.patch
+  mm.patch
+* vmalloc-walk-vmap_areas-by-sorted-list-instead-of-rb_next.patch
+* mm-make-vb_alloc-more-foolproof.patch
+* mm-make-vb_alloc-more-foolproof-fix.patch
+* memcg-rename-mem_cgroup_stat_swapout-as-mem_cgroup_stat_swap.patch
+* memcg-rename-mem_cgroup_charge_type_mapped-as-mem_cgroup_charge_type_anon.patch
+* memcg-remove-mem_cgroup_charge_type_force.patch
+* swap-allow-swap-readahead-to-be-merged.patch
+* documentation-update-how-page-cluster-affects-swap-i-o.patch
+* mm-account-the-total_vm-in-the-vm_stat_account.patch
+* mm-buddy-cleanup-on-should_fail_alloc_page.patch
+* mm-prepare-for-removal-of-obsolete-proc-sys-vm-nr_pdflush_threads.patch
+* hugetlb-rename-max_hstate-to-hugetlb_max_hstate.patch
+* hugetlb-dont-use-err_ptr-with-vm_fault-values.patch
+* hugetlb-add-an-inline-helper-for-finding-hstate-index.patch
+* hugetlb-use-mmu_gather-instead-of-a-temporary-linked-list-for-accumulating-pages.patch
+* hugetlb-avoid-taking-i_mmap_mutex-in-unmap_single_vma-for-hugetlb.patch
+* hugetlb-simplify-migrate_huge_page.patch
+* hugetlb-add-a-list-for-tracking-in-use-hugetlb-pages.patch
+* hugetlb-make-some-static-variables-global.patch
+* hugetlb-make-some-static-variables-global-mark-hugelb_max_hstate-__read_mostly.patch
+* mm-hugetlb-add-new-hugetlb-cgroup.patch
+* mm-hugetlb-add-new-hugetlb-cgroup-fix.patch
+* mm-hugetlb-add-new-hugetlb-cgroup-fix-fix.patch
+* mm-hugetlb-add-new-hugetlb-cgroup-fix-3.patch
+* mm-hugetlb-add-new-hugetlb-cgroup-mark-root_h_cgroup-static.patch
+* hugetlb-cgroup-add-the-cgroup-pointer-to-page-lru.patch
+* hugetlb-cgroup-add-charge-uncharge-routines-for-hugetlb-cgroup.patch
+* hugetlb-cgroup-add-charge-uncharge-routines-for-hugetlb-cgroup-fix.patch
+* hugetlb-cgroup-add-support-for-cgroup-removal.patch
+* hugetlb-cgroup-add-hugetlb-cgroup-control-files.patch
+* hugetlb-cgroup-add-hugetlb-cgroup-control-files-fix.patch
+* hugetlb-cgroup-add-hugetlb-cgroup-control-files-fix-fix.patch
+* hugetlb-cgroup-migrate-hugetlb-cgroup-info-from-oldpage-to-new-page-during-migration.patch
+* hugetlb-cgroup-add-hugetlb-controller-documentation.patch
+* hugetlb-move-all-the-in-use-pages-to-active-list.patch
+* hugetlb-cgroup-assign-the-page-hugetlb-cgroup-when-we-move-the-page-to-active-list.patch
+* hugetlb-cgroup-remove-exclude-and-wakeup-rmdir-calls-from-migrate.patch
+* mm-oom-do-not-schedule-if-current-has-been-killed.patch
+* mm-memblockc-memblock_double_array-cosmetic-cleanups.patch
+* memcg-remove-check-for-signal_pending-during-rmdir.patch
+* memcg-clean-up-force_empty_list-return-value-check.patch
+* memcg-mem_cgroup_move_parent-doesnt-need-gfp_mask.patch
+* memcg-make-mem_cgroup_force_empty_list-return-bool.patch
+* memcg-make-mem_cgroup_force_empty_list-return-bool-fix.patch
+* mm-compaction-cleanup-on-compaction_deferred.patch
+* memcg-prevent-oom-with-too-many-dirty-pages.patch
+* mm-fadvise-dont-return-einval-when-filesystem-cannot-implement-fadvise.patch
+* mm-fadvise-dont-return-einval-when-filesystem-cannot-implement-fadvise-checkpatch-fixes.patch
+* mm-clear-pages_scanned-only-if-draining-a-pcp-adds-pages-to-the-buddy-allocator-again.patch
+* mm-oom-fix-potential-killing-of-thread-that-is-disabled-from-oom-killing.patch
+* mm-oom-replace-some-information-in-tasklist-dump.patch
+* mm-do-not-use-page_count-without-a-page-pin.patch
+* mm-clean-up-__count_immobile_pages.patch
+* memcg-rename-config-variables.patch
+* memcg-rename-config-variables-fix.patch
+* memcg-rename-config-variables-fix-fix.patch
+* mm-remove-unused-lru_all_evictable.patch
+* memcg-fix-bad-behavior-in-use_hierarchy-file.patch
+* memcg-rename-mem_control_xxx-to-memcg_xxx.patch
+* mm-have-order-0-compaction-start-off-where-it-left.patch
+* mm-have-order-0-compaction-start-off-where-it-left-checkpatch-fixes.patch
+* mm-config_have_memblock_node-config_have_memblock_node_map.patch
+* vmscan-remove-obsolete-shrink_control-comment.patch
+* mm-memoryc-print_vma_addr-call-up_readmm-mmap_sem-directly.patch
+* tmpfs-implement-numa-node-interleaving.patch
+* tmpfs-implement-numa-node-interleaving-fix.patch
+* isolate_freepages-check-that-high_pfn-is-aligned-as-expected.patch
+* frv-kill-used-but-uninitialized-variable.patch
+* avr32-mm-faultc-port-oom-changes-to-do_page_fault.patch
+* avr32-mm-faultc-port-oom-changes-to-do_page_fault-fix.patch
+* clk-add-non-config_have_clk-routines.patch
+* clk-remove-redundant-depends-on-from-drivers-kconfig.patch
+* i2c-i2c-pxa-remove-conditional-compilation-of-clk-code.patch
+* usb-marvell-remove-conditional-compilation-of-clk-code.patch
+* usb-musb-remove-conditional-compilation-of-clk-code.patch
+* ata-pata_arasan-remove-conditional-compilation-of-clk-code.patch
+* net-c_can-remove-conditional-compilation-of-clk-code.patch
+* net-stmmac-remove-conditional-compilation-of-clk-code.patch
+* gadget-m66592-remove-conditional-compilation-of-clk-code.patch
+* gadget-r8a66597-remove-conditional-compilation-of-clk-code.patch
+* usb-host-r8a66597-remove-conditional-compilation-of-clk-code.patch
+* arch-arm-mach-netx-fbc-reuse-dummy-clk-routines-for-config_have_clk=n.patch
+* clk-validate-pointer-in-__clk_disable.patch
+* panic-fix-a-possible-deadlock-in-panic.patch
+* nmi-watchdog-fix-for-lockup-detector-breakage-on-resume.patch
+* kmsg-dev-kmsg-properly-return-possible-copy_from_user-failure.patch
+* printk-add-generic-functions-to-find-kern_level-headers.patch
+* printk-add-generic-functions-to-find-kern_level-headers-fix.patch
+* printk-add-kern_levelsh-to-make-kern_level-available-for-asm-use.patch
+* arch-remove-direct-definitions-of-kern_level-uses.patch
+* btrfs-use-printk_get_level-and-printk_skip_level-add-__printf-fix-fallout.patch
+* btrfs-use-printk_get_level-and-printk_skip_level-add-__printf-fix-fallout-fix.patch
+* btrfs-use-printk_get_level-and-printk_skip_level-add-__printf-fix-fallout-checkpatch-fixes.patch
+* sound-use-printk_get_level-and-printk_skip_level.patch
+* printk-convert-the-format-for-kern_level-to-a-2-byte-pattern.patch
+* printk-only-look-for-prefix-levels-in-kernel-messages.patch
+* printk-remove-the-now-unnecessary-c-annotation-for-kern_cont.patch
+* vsprintf-add-%pmr-for-bluetooth-mac-address.patch
+* vsprintf-add-%pmr-for-bluetooth-mac-address-fix.patch
+* lib-vsprintfc-remind-people-to-update-documentation-printk-formatstxt-when-adding-printk-formats.patch
+* drivers-video-backlight-atmel-pwm-blc-use-devm_-functions.patch
+* drivers-video-backlight-ot200_blc-use-devm_-functions.patch
+* drivers-video-backlight-lm3533_blc-use-devm_-functions.patch
+* backlight-atmel-pwm-bl-use-devm_gpio_request.patch
+* backlight-ot200_bl-use-devm_gpio_request.patch
+* backlight-tosa_lcd-use-devm_gpio_request.patch
+* backlight-tosa_bl-use-devm_gpio_request.patch
+* backlight-lms283gf05-use-devm_gpio_request.patch
+* backlight-corgi_lcd-use-devm_gpio_request.patch
+* backlight-l4f00242t03-use-devm_gpio_request_one.patch
+* string-introduce-memweight.patch
+* string-introduce-memweight-fix.patch
+* string-introduce-memweight-fix-build-error-caused-by-memweight-introduction.patch
+* qnx4fs-use-memweight.patch
+* dm-use-memweight.patch
+* affs-use-memweight.patch
+* video-uvc-use-memweight.patch
+* ocfs2-use-memweight.patch
+* ext2-use-memweight.patch
+* ext3-use-memweight.patch
+* ext4-use-memweight.patch
+* checkpatch-update-alignment-check.patch
+* checkpatch-test-for-non-standard-signatures.patch
+* checkpatch-check-usleep_range-arguments.patch
+* drivers-rtc-rtc-coh901331c-use-clk_prepare-unprepare.patch
+* drivers-rtc-rtc-coh901331c-use-devm-allocation.patch
+* rtc-pl031-encapsulate-per-vendor-ops.patch
+* rtc-pl031-use-per-vendor-variables-for-special-init.patch
+* rtc-pl031-fix-up-irq-flags.patch
+* drivers-rtc-rtc-ab8500c-use-uie-emulation.patch
+* drivers-rtc-rtc-ab8500c-use-uie-emulation-checkpatch-fixes.patch
+* drivers-rtc-rtc-ab8500c-remove-fix-for-ab8500-ed-version.patch
+* drivers-rtc-rtc-r9701c-avoid-second-call-to-rtc_valid_tm.patch
+* drivers-rtc-rtc-r9701c-check-that-r9701_set_datetime-succeeded.patch
+* hfsplus-use-enomem-when-kzalloc-fails.patch
+* hfsplus-make-hfsplus_sync_fs-static.patch
+* hfsplus-amend-debugging-print.patch
+* hfsplus-remove-useless-check.patch
+* hfsplus-get-rid-of-write_super.patch
+* hfsplus-get-rid-of-write_super-checkpatch-fixes.patch
+* fat-accessors-for-msdos_dir_entry-start-fields.patch
+* kmod-avoid-deadlock-from-recursive-kmod-call.patch
+* fork-use-vma_pages-to-simplify-the-code.patch
+* fork-use-vma_pages-to-simplify-the-code-fix.patch
+* ipc-semc-alternatives-to-preempt_disable.patch
+* fs-cachefiles-add-support-for-large-files-in-filesystem-caching.patch
+* fs-cachefiles-add-support-for-large-files-in-filesystem-caching-fix.patch
+* include-linux-aioh-cpp-c-conversions.patch
+* c-r-fcntl-add-f_getowner_uids-option.patch
+  make-sure-nobodys-leaking-resources.patch
+  journal_add_journal_head-debug.patch
+  releasing-resources-with-children.patch
+  make-frame_pointer-default=y.patch
+  mutex-subsystem-synchro-test-module.patch
+  mutex-subsystem-synchro-test-module-fix.patch
+  slab-leaks3-default-y.patch
+  put_bh-debug.patch
+  add-debugging-aid-for-memory-initialisation-problems.patch
+  workaround-for-a-pci-restoring-bug.patch
+  prio_tree-debugging-patch.patch
+  single_open-seq_release-leak-diagnostics.patch
+  add-a-refcount-check-in-dput.patch
