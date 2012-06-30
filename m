@@ -1,261 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab2F3RAd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 13:00:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:2273 "EHLO mga09.intel.com"
+	id S1753556Ab2F3Rny (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 13:43:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40716 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932092Ab2F3RAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 13:00:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="165150797"
-From: Saranya Gopal <saranya.gopal@intel.com>
-To: lars@metafoo.de, cbou@mail.ru, dwmw2@infradead.org
-Cc: linux-kernel@vger.kernel.org, Saranya Gopal <saranya.gopal@intel.com>
-Subject: [PATCHv3] bq27x00_battery: Add support for BQ27425 chip
-Date: Sat, 30 Jun 2012 22:26:14 +0530
-Message-Id: <1341075374-31704-1-git-send-email-saranya.gopal@intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752256Ab2F3Rnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jun 2012 13:43:52 -0400
+Date: Sat, 30 Jun 2012 19:41:33 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        ". James Morris" <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 0/4] Was: deferring __fput()
+Message-ID: <20120630174133.GA23411@redhat.com>
+References: <20120623210141.GK14083@ZenIV.linux.org.uk> <20120624041652.GN14083@ZenIV.linux.org.uk> <20120624153310.GB24596@redhat.com> <20120625060357.GT14083@ZenIV.linux.org.uk> <20120625151812.GA16062@redhat.com> <20120627183721.GA23086@redhat.com> <20120628043836.GW14083@ZenIV.linux.org.uk> <20120628162253.GA25357@redhat.com> <20120628164539.GA26350@redhat.com> <20120630062453.GA14083@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120630062453.GA14083@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for BQ27425 (TI) chip. This chip is same as
-BQ27500 with few registers removed and register address map changed.
-The data sheet for this chip is publicly available at
- http://www.ti.com/product/bq27425-g1
+On 06/30, Al Viro wrote:
+>
+> On Thu, Jun 28, 2012 at 06:45:39PM +0200, Oleg Nesterov wrote:
+> > Forgot to mention...
+> >
+> > And I still think that task_work_add() should not succeed unconditionally,
+> > it synchronize with exit_task_work(). Otherwise keyctl_session_to_parent()
+> > is broken.
+>
+> Hmm...  Look: if nothing else, we have
+>         /* the parent mustn't be init and mustn't be a kernel thread */
+>         if (parent->pid <= 1 || !parent->mm)
+>                 goto unlock;
+> in the caller.  OTOH, on the exit side we have exit_mm() done first.  And
+> that will have ->mm set to NULL.  So we are closing a very narrow race to start
+> with.  So why not do the following and be done with that?
 
-Changes since v2:
-        Remove register address definitions of bq27425 and
-          use register address offset instead.
-        Add a small helper function to decide if the chip version
-          is higher than bq27200 to make it less noisy
-          to add another chip with similar register layout.
+Of course we can fix keyctl_session_to_parent(). But why? I mean, why
+do you dislike the idea to put this synchronization into add/run ?
 
-Signed-off-by: Saranya Gopal <saranya.gopal@intel.com>
----
- drivers/power/bq27x00_battery.c |   88 +++++++++++++++++++++++++++++++-------
- 1 files changed, 71 insertions(+), 17 deletions(-)
+IMO, this makes task_work much less useful/convenient. Every caller
+has to fight with this race somehow. And the lock it can take depends
+on the context, say, you can't use task_lock() in irq.
 
-diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
-index f5d6d37..ec6ed18 100644
---- a/drivers/power/bq27x00_battery.c
-+++ b/drivers/power/bq27x00_battery.c
-@@ -22,6 +22,7 @@
-  * Datasheets:
-  * http://focus.ti.com/docs/prod/folders/print/bq27000.html
-  * http://focus.ti.com/docs/prod/folders/print/bq27500.html
-+ * http://www.ti.com/product/bq27425-g1
-  */
- 
- #include <linux/module.h>
-@@ -67,6 +68,10 @@
- #define BQ27500_FLAG_SOC1		BIT(2) /* State-of-Charge threshold 1 */
- #define BQ27500_FLAG_FC			BIT(9)
- 
-+/* bq27425 register addresses are same as bq27x00 addresses minus 4 */
-+#define BQ27425_REG_OFFSET		0x04
-+#define BQ27425_REG_SOC			0x1C
-+
- #define BQ27000_RS			20 /* Resistor sense */
- 
- struct bq27x00_device_info;
-@@ -74,7 +79,7 @@ struct bq27x00_access_methods {
- 	int (*read)(struct bq27x00_device_info *di, u8 reg, bool single);
- };
- 
--enum bq27x00_chip { BQ27000, BQ27500 };
-+enum bq27x00_chip { BQ27000, BQ27500, BQ27425};
- 
- struct bq27x00_reg_cache {
- 	int temperature;
-@@ -125,6 +130,20 @@ static enum power_supply_property bq27x00_battery_props[] = {
- 	POWER_SUPPLY_PROP_ENERGY_NOW,
- };
- 
-+static enum power_supply_property bq27425_battery_props[] = {
-+	POWER_SUPPLY_PROP_STATUS,
-+	POWER_SUPPLY_PROP_PRESENT,
-+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-+	POWER_SUPPLY_PROP_CURRENT_NOW,
-+	POWER_SUPPLY_PROP_CAPACITY,
-+	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
-+	POWER_SUPPLY_PROP_TEMP,
-+	POWER_SUPPLY_PROP_TECHNOLOGY,
-+	POWER_SUPPLY_PROP_CHARGE_FULL,
-+	POWER_SUPPLY_PROP_CHARGE_NOW,
-+	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
-+};
-+
- static unsigned int poll_interval = 360;
- module_param(poll_interval, uint, 0644);
- MODULE_PARM_DESC(poll_interval, "battery poll interval in seconds - " \
-@@ -137,10 +156,24 @@ MODULE_PARM_DESC(poll_interval, "battery poll interval in seconds - " \
- static inline int bq27x00_read(struct bq27x00_device_info *di, u8 reg,
- 		bool single)
- {
-+	if (di->chip == BQ27425)
-+		return di->bus.read(di, reg - BQ27425_REG_OFFSET, single);
- 	return di->bus.read(di, reg, single);
- }
- 
- /*
-+ * Higher versions of the chip like BQ27425 and BQ27500
-+ * differ from BQ27000 and BQ27200 in calculation of certain
-+ * parameters. Hence we need to check for the chip type.
-+ */
-+static bool is_chip_version_higher(struct bq27x00_device_info *di)
-+{
-+	if (di->chip == BQ27425 || di->chip == BQ27500)
-+		return true;
-+	return false;
-+}
-+
-+/*
-  * Return the battery Relative State-of-Charge
-  * Or < 0 if something fails.
-  */
-@@ -150,6 +183,9 @@ static int bq27x00_battery_read_rsoc(struct bq27x00_device_info *di)
- 
- 	if (di->chip == BQ27500)
- 		rsoc = bq27x00_read(di, BQ27500_REG_SOC, false);
-+	else if (di->chip == BQ27425)
-+		rsoc = bq27x00_read(di, BQ27425_REG_SOC + BQ27425_REG_OFFSET,
-+								false);
- 	else
- 		rsoc = bq27x00_read(di, BQ27000_REG_RSOC, true);
- 
-@@ -174,7 +210,7 @@ static int bq27x00_battery_read_charge(struct bq27x00_device_info *di, u8 reg)
- 		return charge;
- 	}
- 
--	if (di->chip == BQ27500)
-+	if (is_chip_version_higher(di))
- 		charge *= 1000;
- 	else
- 		charge = charge * 3570 / BQ27000_RS;
-@@ -208,7 +244,7 @@ static int bq27x00_battery_read_ilmd(struct bq27x00_device_info *di)
- {
- 	int ilmd;
- 
--	if (di->chip == BQ27500)
-+	if (is_chip_version_higher(di))
- 		ilmd = bq27x00_read(di, BQ27500_REG_DCAP, false);
- 	else
- 		ilmd = bq27x00_read(di, BQ27000_REG_ILMD, true);
-@@ -218,7 +254,7 @@ static int bq27x00_battery_read_ilmd(struct bq27x00_device_info *di)
- 		return ilmd;
- 	}
- 
--	if (di->chip == BQ27500)
-+	if (is_chip_version_higher(di))
- 		ilmd *= 1000;
- 	else
- 		ilmd = ilmd * 256 * 3570 / BQ27000_RS;
-@@ -262,7 +298,7 @@ static int bq27x00_battery_read_temperature(struct bq27x00_device_info *di)
- 		return temp;
- 	}
- 
--	if (di->chip == BQ27500)
-+	if (is_chip_version_higher(di))
- 		temp -= 2731;
- 	else
- 		temp = ((temp * 5) - 5463) / 2;
-@@ -310,10 +346,12 @@ static void bq27x00_update(struct bq27x00_device_info *di)
- {
- 	struct bq27x00_reg_cache cache = {0, };
- 	bool is_bq27500 = di->chip == BQ27500;
-+	bool is_bq27425 = di->chip == BQ27425;
- 
- 	cache.flags = bq27x00_read(di, BQ27x00_REG_FLAGS, !is_bq27500);
- 	if (cache.flags >= 0) {
--		if (!is_bq27500 && (cache.flags & BQ27000_FLAG_CI)) {
-+		if (!is_bq27500 && !is_bq27425
-+				&& (cache.flags & BQ27000_FLAG_CI)) {
- 			dev_info(di->dev, "battery is not calibrated! ignoring capacity values\n");
- 			cache.capacity = -ENODATA;
- 			cache.energy = -ENODATA;
-@@ -323,14 +361,23 @@ static void bq27x00_update(struct bq27x00_device_info *di)
- 			cache.charge_full = -ENODATA;
- 		} else {
- 			cache.capacity = bq27x00_battery_read_rsoc(di);
--			cache.energy = bq27x00_battery_read_energy(di);
--			cache.time_to_empty = bq27x00_battery_read_time(di, BQ27x00_REG_TTE);
--			cache.time_to_empty_avg = bq27x00_battery_read_time(di, BQ27x00_REG_TTECP);
--			cache.time_to_full = bq27x00_battery_read_time(di, BQ27x00_REG_TTF);
-+			if (!is_bq27425) {
-+				cache.energy = bq27x00_battery_read_energy(di);
-+				cache.time_to_empty =
-+					bq27x00_battery_read_time(di,
-+							BQ27x00_REG_TTE);
-+				cache.time_to_empty_avg =
-+					bq27x00_battery_read_time(di,
-+							BQ27x00_REG_TTECP);
-+				cache.time_to_full =
-+					bq27x00_battery_read_time(di,
-+							BQ27x00_REG_TTF);
-+			}
- 			cache.charge_full = bq27x00_battery_read_lmd(di);
- 		}
- 		cache.temperature = bq27x00_battery_read_temperature(di);
--		cache.cycle_count = bq27x00_battery_read_cyct(di);
-+		if (!is_bq27425)
-+			cache.cycle_count = bq27x00_battery_read_cyct(di);
- 
- 		/* We only have to read charge design full once */
- 		if (di->charge_design_full <= 0)
-@@ -376,7 +423,7 @@ static int bq27x00_battery_current(struct bq27x00_device_info *di,
- 		return curr;
- 	}
- 
--	if (di->chip == BQ27500) {
-+	if (is_chip_version_higher(di)) {
- 		/* bq27500 returns signed value */
- 		val->intval = (int)((s16)curr) * 1000;
- 	} else {
-@@ -397,7 +444,7 @@ static int bq27x00_battery_status(struct bq27x00_device_info *di,
- {
- 	int status;
- 
--	if (di->chip == BQ27500) {
-+	if (is_chip_version_higher(di)) {
- 		if (di->cache.flags & BQ27500_FLAG_FC)
- 			status = POWER_SUPPLY_STATUS_FULL;
- 		else if (di->cache.flags & BQ27500_FLAG_DSC)
-@@ -425,7 +472,7 @@ static int bq27x00_battery_capacity_level(struct bq27x00_device_info *di,
- {
- 	int level;
- 
--	if (di->chip == BQ27500) {
-+	if (is_chip_version_higher(di)) {
- 		if (di->cache.flags & BQ27500_FLAG_FC)
- 			level = POWER_SUPPLY_CAPACITY_LEVEL_FULL;
- 		else if (di->cache.flags & BQ27500_FLAG_SOC1)
-@@ -570,8 +617,14 @@ static int bq27x00_powersupply_init(struct bq27x00_device_info *di)
- 	int ret;
- 
- 	di->bat.type = POWER_SUPPLY_TYPE_BATTERY;
--	di->bat.properties = bq27x00_battery_props;
--	di->bat.num_properties = ARRAY_SIZE(bq27x00_battery_props);
-+	di->chip = BQ27425;
-+	if (di->chip == BQ27425) {
-+		di->bat.properties = bq27425_battery_props;
-+		di->bat.num_properties = ARRAY_SIZE(bq27425_battery_props);
-+	} else {
-+		di->bat.properties = bq27x00_battery_props;
-+		di->bat.num_properties = ARRAY_SIZE(bq27x00_battery_props);
-+	}
- 	di->bat.get_property = bq27x00_battery_get_property;
- 	di->bat.external_power_changed = bq27x00_external_power_changed;
- 
-@@ -729,6 +782,7 @@ static int bq27x00_battery_remove(struct i2c_client *client)
- static const struct i2c_device_id bq27x00_id[] = {
- 	{ "bq27200", BQ27000 },	/* bq27200 is same as bq27000, but with i2c */
- 	{ "bq27500", BQ27500 },
-+	{ "bq27425", BQ27425 },
- 	{},
- };
- MODULE_DEVICE_TABLE(i2c, bq27x00_id);
--- 
-1.7.1
+IOW, what is wrong with
+
+	[PATCH 2/4] task_work: don't rely on PF_EXITING
+	http://marc.info/?l=linux-kernel&m=134082265321691
+
+and
+	[PATCH 3/4] task_work: deal with task_work callbacks adding more work
+	http://marc.info/?t=134082275400004
+
+?
+
+perhaps you do not like the fact that the exiting task takes pi_lock
+unconditionally?
+
+
+
+and in fact I think that probably it makes sense to change fput,
+
+	- task_work_add(current, ...);
+	+ BUG_ON(task_work_add(current, ...) != 0);
+
+Oleg.
 
