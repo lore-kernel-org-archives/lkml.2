@@ -1,279 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027Ab2F3GEO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 02:04:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47981 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab2F3GEM (ORCPT
+	id S1752168Ab2F3GOA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 02:14:00 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:1787 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab2F3GN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 02:04:12 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Dave Jones <davej@redhat.com>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: [PATCH] fault-injection: add tool to run command with failslab or fail_page_alloc
-Date: Sat, 30 Jun 2012 15:03:55 +0900
-Message-Id: <1341036235-23518-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 30 Jun 2012 02:13:59 -0400
+Message-ID: <4FEE98EE.1050409@huawei.com>
+Date: Sat, 30 Jun 2012 14:13:02 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
+MIME-Version: 1.0
+To: "tj@kernel.org" <tj@kernel.org>
+CC: shyju pv <shyju.pv@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Sanil kumar <sanil.kumar@huawei.com>,
+        Masanari Iida <standby24x7@gmail.com>
+Subject: Re: 3.5-rc3: BUG: Dentry still in use (1) [unmount of cgroup cgroup]
+References: <E061084CB90FCE4F89232A6CF839683B32B52291@SZXEML507-MBS.china.huawei.com> <20120627182903.GP15811@google.com> <4FEBF4B7.2070105@huawei.com> <20120628180712.GC22641@google.com> <4FED10DB.7040500@huawei.com> <20120629165809.GB21048@google.com>
+In-Reply-To: <20120629165809.GB21048@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.166.88.115]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds tools/testing/fault-injection/failcmd.sh to run command with
-injecting slab/page allocation failures by fault injection.
+On 2012/6/30 0:58, tj@kernel.org wrote:
 
-Example:
+> Hey,
+> 
+> On Fri, Jun 29, 2012 at 10:20:11AM +0800, Li Zefan wrote:
+>>> Can you please elaborate a bit?  I'm not really following?  Where does
+>>> the last root->d_count-- come from?
+>>
+>>
+>> From my limited knowledge about vfs internal, seems the parent's refcnt won't go down
+>> to 0 before its children. When mkdir, the parent's refcnt will be incremented, and
+>> after rmdir, dput(subdir) will drop subdir's refcnt and then drop parent's.
+>>
+>> So when dropping the subdir's refcnt and leading the superblock to be killed, the root's
+>> dentry is still > 0.
+> 
+> Heh, yeah, I thought you found who was holding out on the refcnt. :)
+> 
 
-Run a command "make -C tools/testing/selftests/ run_tests" with
-injecting slab allocation failure.
 
-	# ./tools/testing/fault-injection/failcmd.sh \
-		-- make -C tools/testing/selftests/ run_tests
+dput will drop both the subdir and the root's dentry refcnt, but kill_sb will be called
+inbetween.
 
-Same as above except to specify 100 times failures at most instead of
-one time at most by default.
-
-	# ./tools/testing/fault-injection/failcmd.sh --times=100 \
-		-- make -C tools/testing/selftests/ run_tests
-
-Same as above except to inject page allocation failure instead of slab
-allocation failure.
-
-	# env FAILCMD_TYPE=fail_page_alloc \
-		./tools/testing/fault-injection/failcmd.sh --times=100 \
-		-- make -C tools/testing/selftests/ run_tests
-
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
----
- tools/testing/fault-injection/failcmd.sh |  219 ++++++++++++++++++++++++++++++
- 1 file changed, 219 insertions(+)
- create mode 100755 tools/testing/fault-injection/failcmd.sh
-
-diff --git a/tools/testing/fault-injection/failcmd.sh b/tools/testing/fault-injection/failcmd.sh
-new file mode 100755
-index 0000000..1776e92
---- /dev/null
-+++ b/tools/testing/fault-injection/failcmd.sh
-@@ -0,0 +1,219 @@
-+#!/bin/bash
-+#
-+# NAME
-+#	failcmd.sh - run a command with injecting slab/page allocation failures
-+#
-+# SYNOPSIS
-+#	failcmd.sh --help
-+#	failcmd.sh [<options>] command [arguments]
-+#
-+# DESCRIPTION
-+#	Run command with injecting slab/page allocation failures by fault
-+#	injection.
-+#
-+#	NOTE: you need to run this script as root.
-+#
-+
-+usage()
-+{
-+	cat >&2 <<EOF
-+Usage: $0 [options] command [arguments]
-+
-+OPTIONS
-+	-p percent
-+	--probability=percent
-+		likelihood of failure injection, in percent.
-+		Default value is 1
-+
-+	-t value
-+	--times=value
-+		specifies how many times failures may happen at most.
-+		Default value is 1
-+
-+	--oom-kill-allocating-task=value
-+		set /proc/sys/vm/oom_kill_allocating_task to specified value
-+		before running the command.
-+		Default value is 1
-+
-+	-h, --help
-+		Display a usage message and exit
-+
-+	--interval=value, --space=value, --verbose=value, --task-filter=value,
-+	--stacktrace-depth=value, --require-start=value, --require-end=value,
-+	--reject-start=value, --reject-end=value, --ignore-gfp-wait=value
-+		See Documentation/fault-injection/fault-injection.txt for more
-+		information
-+
-+	failslab options:
-+	--cache-filter=value
-+
-+	fail_page_alloc options:
-+	--ignore-gfp-highmem=value, --min-order=value
-+
-+ENVIRONMENT
-+	FAILCMD_TYPE
-+		The following values for FAILCMD_TYPE are recognized:
-+
-+		failslab
-+			inject slab allocation failures
-+		fail_page_alloc
-+			inject page allocation failures
-+
-+		If FAILCMD_TYPE is not defined, then failslab is used.
-+EOF
-+}
-+
-+if [ $UID != 0 ]; then
-+	echo must be run as root >&2
-+	exit 1
-+fi
-+
-+DEBUGFS=`mount -t debugfs | head -1 | awk '{ print $3}'`
-+
-+if [ ! -d "$DEBUGFS" ]; then
-+	echo debugfs is not mounted >&2
-+	exit 1
-+fi
-+
-+FAILCMD_TYPE=${FAILCMD_TYPE:-failslab}
-+FAULTATTR=$DEBUGFS/$FAILCMD_TYPE
-+
-+if [ ! -d $FAULTATTR ]; then
-+	echo $FAILCMD_TYPE is not available >&2
-+	exit 1
-+fi
-+
-+LONGOPTS=probability:,interval:,times:,space:,verbose:,task-filter:
-+LONGOPTS=$LONGOPTS,stacktrace-depth:,require-start:,require-end:
-+LONGOPTS=$LONGOPTS,reject-start:,reject-end:,oom-kill-allocating-task:,help
-+
-+if [ $FAILCMD_TYPE = failslab ]; then
-+	LONGOPTS=$LONGOPTS,ignore-gfp-wait:,cache-filter:
-+elif [ $FAILCMD_TYPE = fail_page_alloc ]; then
-+	LONGOPTS=$LONGOPTS,ignore-gfp-wait:,ignore-gfp-highmem:,min-order:
-+fi
-+
-+TEMP=`getopt -o p:i:t:s:v:h --long $LONGOPTS -n 'failcmd.sh' -- "$@"`
-+
-+if [ $? != 0 ]; then
-+	usage
-+	exit 1
-+fi
-+
-+eval set -- "$TEMP"
-+
-+fault_attr_default()
-+{
-+	echo N > $FAULTATTR/task-filter
-+	echo 0 > $FAULTATTR/probability
-+	echo 1 > $FAULTATTR/times
-+}
-+
-+fault_attr_default
-+
-+oom_kill_allocating_task_saved=`cat /proc/sys/vm/oom_kill_allocating_task`
-+
-+restore_values()
-+{
-+	fault_attr_default
-+	echo $oom_kill_allocating_task_saved \
-+		> /proc/sys/vm/oom_kill_allocating_task
-+}
-+
-+#
-+# Default options
-+#
-+declare -i oom_kill_allocating_task=1
-+declare task_filter=Y
-+declare -i probability=1
-+declare -i times=1
-+
-+while true; do
-+	case "$1" in
-+	-p|--probability)
-+		probability=$2
-+		shift 2
-+		;;
-+	-i|--interval)
-+		echo $2 > $FAULTATTR/interval
-+		shift 2
-+		;;
-+	-t|--times)
-+		times=$2
-+		shift 2
-+		;;
-+	-s|--space)
-+		echo $2 > $FAULTATTR/space
-+		shift 2
-+		;;
-+	-v|--verbose)
-+		echo $2 > $FAULTATTR/verbose
-+		shift 2
-+		;;
-+	--task-filter)
-+		task_filter=$2
-+		shift 2
-+		;;
-+	--stacktrace-depth)
-+		echo $2 > $FAULTATTR/stacktrace-depth
-+		shift 2
-+		;;
-+	--require-start)
-+		echo $2 > $FAULTATTR/require-start
-+		shift 2
-+		;;
-+	--require-end)
-+		echo $2 > $FAULTATTR/require-end
-+		shift 2
-+		;;
-+	--reject-start)
-+		echo $2 > $FAULTATTR/reject-start
-+		shift 2
-+		;;
-+	--reject-end)
-+		echo $2 > $FAULTATTR/reject-end
-+		shift 2
-+		;;
-+	--oom-kill-allocating-task)
-+		oom_kill_allocating_task=$2
-+		shift 2
-+		;;
-+	--ignore-gfp-wait)
-+		echo $2 > $FAULTATTR/ignore-gfp-wait
-+		shift 2
-+		;;
-+	--cache-filter)
-+		echo $2 > $FAULTATTR/cache_filter
-+		shift 2
-+		;;
-+	--ignore-gfp-highmem)
-+		echo $2 > $FAULTATTR/ignore-gfp-highmem
-+		shift 2
-+		;;
-+	--min-order)
-+		echo $2 > $FAULTATTR/min-order
-+		shift 2
-+		;;
-+	-h|--help)
-+		usage
-+		exit 0
-+		shift
-+		;;
-+	--)
-+		shift
-+		break
-+		;;
-+	esac
-+done
-+
-+[ -z "$@" ] && exit 0
-+
-+echo $oom_kill_allocating_task > /proc/sys/vm/oom_kill_allocating_task
-+echo $task_filter > $FAULTATTR/task-filter
-+echo $probability > $FAULTATTR/probability
-+echo $times > $FAULTATTR/times
-+
-+trap "restore_values" SIGINT SIGTERM EXIT
-+
-+cmd="echo 1 > /proc/self/make-it-fail && exec $@"
-+bash -c "$cmd"
--- 
-1.7.10.4
+So it's bad to have dentry refcnts dangling after umount. I've made a patch so css will
+pin cgroup instead of cgroup dentry.
 
