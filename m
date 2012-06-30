@@ -1,56 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab2F3Dmm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 23:42:42 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7406 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab2F3Dmk (ORCPT
+	id S1753393Ab2F3Dnh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 23:43:37 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52068 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab2F3Dnf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 23:42:40 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 29 Jun 2012 20:42:40 -0700
-Message-ID: <4FEE785C.306@nvidia.com>
-Date: Sat, 30 Jun 2012 12:54:04 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0.1
+	Fri, 29 Jun 2012 23:43:35 -0400
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH] pwm-backlight: add regulator and GPIO support
-References: <1340976167-27298-1-git-send-email-acourbot@nvidia.com> <4FEDD222.7050905@wwwdotorg.org>
-In-Reply-To: <4FEDD222.7050905@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120630032333.GB3972@kroah.com>
+References: <1340998590-23042-1-git-send-email-andrew.p.boie@intel.com>
+	<20120630032333.GB3972@kroah.com>
+Date: Fri, 29 Jun 2012 20:43:34 -0700
+X-Google-Sender-Auth: 0SR7NCgisdgLCNtmLK50Qngpaww
+Message-ID: <CAMbhsRSYL3oE_mbdjyNbV453DddPNUyJBU2eLJhUNaASF1+MtA@mail.gmail.com>
+Subject: Re: [PATCH] bcb: Android bootloader control block driver
+From: Colin Cross <ccross@android.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Andrew Boie <andrew.p.boie@intel.com>, arve@android.com,
+        rebecca@android.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2012 01:04 AM, Stephen Warren wrote:
- >> -	dev_dbg(&pdev->dev, "got pwm for backlight\n");
- >> -
- >
- > That seems like an unrelated change?
+On Fri, Jun 29, 2012 at 8:23 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Fri, Jun 29, 2012 at 12:36:30PM -0700, Andrew Boie wrote:
+>> Android userspace tells the kernel that it wants to boot into recovery
+>> or some other non-default OS environment by passing a string argument
+>> to reboot(). It is left to the OEM to hook this up to their specific
+>> bootloader.
+>
+> How does userspace "tell" the kernel this?  You are creating a new
+> user/kernel api here, and haven't documented it at all.  That's not
+> generally a wise idea.
 
-Dammit, I hoped that would have gone unnoticed. ;)
+Android's libcutils uses the existing reboot syscall with
+reboot(LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2,
+LINUX_REBOOT_CMD_MAGIC2, <string>).  According to "man 2 reboot":
+       LINUX_REBOOT_CMD_RESTART2
+              (0xa1b2c3d4; since 2.1.30).  The message "Restarting system with
+              command  '%s'"  is  printed,  and  a  restart (using the command
+              string given in arg) is performed immediately.  If not  preceded
+              by a sync(2), data will be lost.
 
- >> +	pb->enable_gpio = -EINVAL;
- >> +	if (data->use_enable_gpio) {
- >> +		ret = devm_gpio_request_one(&pdev->dev, data->enable_gpio,
- >> +				GPIOF_OUT_INIT_HIGH, "backlight_enable");
- >> +		if (ret)
- >> +			dev_warn(&pdev->dev,
- >> +				"error %d requesting control gpio\n", ret);
- >
- > Shouldn't that be a hard error? If the user specified that some GPIO be
- > used, and the GPIO could not be requested, shouldn't the driver fail to
- > initialize?
+>> This driver uses the bootloader control block (BCB) in the 'misc'
+>> partition, which is the AOSP mechanism used to communicate with
+>> the bootloader. Writing 'bootonce-NNN' to the command field
+>> will cause the bootloader to do a oneshot boot into an alternate
+>> boot label NNN if it exists. The device and partition number are
+>> passed in via kernel command line.
+>
+> I don't understand still, why userspace can't just do this as it is the
+> one that knws where the device and partition is, and it knows what it
+> wants to have written in this area, why have the kernel do this?  Why
+> not just modify userspace to do it instead?
 
-Yes, you are right.
+In this particular case, userspace could handle writing the data.  On
+many SoCs, reboot mode is written to a register or to internal IO
+mapped memory.  Supporting the REBOOT2 argument to the syscall
+requires something in the kernel to save that message, this driver
+seems to commonize saving that to a disk partition, which is the least
+common denominator way to handle it.
 
-Thanks,
-Alex.
+<snip>
 
+>>
+>> diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
+>> index 9a99238..c30fd20 100644
+>> --- a/drivers/staging/android/Kconfig
+>> +++ b/drivers/staging/android/Kconfig
+>> @@ -78,6 +78,17 @@ config ANDROID_INTF_ALARM_DEV
+>>         elapsed realtime, and a non-wakeup alarm on the monotonic clock.
+>>         Also exports the alarm interface to user-space.
+>>
+>> +config BOOTLOADER_CONTROL
+>> +     tristate "Bootloader Control Block module"
+>> +     default n
+>> +     help
+>> +       This driver installs a reboot hook, such that if reboot() is invoked
+>> +       with a string argument NNN, "bootonce-NNN" is copied to the command
+>> +       field in the Bootloader Control Block on the /misc partition, to be
+>> +       read by the bootloader. If the string matches one of the boot labels
+>> +       defined in its configuration, it will boot once into that label. The
+>> +       device and partition number are specified on the kernel command line.
+>> +
+>>  endif # if ANDROID
+>>
+>>  endmenu
+
+Most of this driver is not unique to Android.  If you remove the
+status and recovery fields in the partition and the list of possible
+command values, it becomes a neutral way to pass the REBOOT2 argument
+from userspace to the bootloader.  status and recovery are a separate
+contract between userspace and the bootloader, and could go into a
+separate block in the same partition for systems that need it.
