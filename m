@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496Ab2F3LlQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 07:41:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30937 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754173Ab2F3LlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 07:41:15 -0400
-Date: Sat, 30 Jun 2012 13:40:57 +0200
-From: Petr Holasek <pholasek@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH v2] KSM: numa awareness sysfs knob
-Message-ID: <20120630114053.GA3036@stainedmachine.redhat.com>
-References: <1340970592-25001-1-git-send-email-pholasek@redhat.com>
- <20120629160510.GA10082@cmpxchg.org>
- <20120629163033.GA11327@stainedmachine.redhat.com>
- <20120629164706.GA7831@cmpxchg.org>
- <alpine.DEB.2.00.1206291526180.15200@chino.kir.corp.google.com>
+	id S1754670Ab2F3LtN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 07:49:13 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47436 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754433Ab2F3LtA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jun 2012 07:49:00 -0400
+Date: Sat, 30 Jun 2012 12:48:58 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] regulator: fixed: support deferred probe for DT GPIOs
+Message-ID: <20120630114857.GW28922@opensource.wolfsonmicro.com>
+References: <1340922692-24092-1-git-send-email-swarren@wwwdotorg.org>
+ <20120629012507.GL28922@opensource.wolfsonmicro.com>
+ <4FEDCA2B.3060204@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hSsVBZHIO2Q9XETc"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1206291526180.15200@chino.kir.corp.google.com>
+In-Reply-To: <4FEDCA2B.3060204@wwwdotorg.org>
+X-Cookie: Advancement in position.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Jun 2012, David Rientjes wrote:
-> On Fri, 29 Jun 2012, Johannes Weiner wrote:
-> 
-> > > I started with exactly same idea as you described above in the first
-> > > RFC, link: https://lkml.org/lkml/2011/11/30/91
-> > > But this approach turned out to be more complicated than it looked
-> > > (see two last emails in thread) and complexity of solution would rise
-> > > a lot.
-> > 
-> > Oh, I should have checked the archives given that it's v2.  I expected
-> > it to get complex but didn't put enough thought into it to see /that/
-> > amount of complexity.  Sorry.
-> > 
-> > Carry on, then :-)
-> > 
-> 
-> I don't think it's an unfair amount of complexity to ask for, and I don't 
-> see the problem with ksm merging two pages that have a distance under the 
-> configured threshold and leaving the third page unmerged; by configuring 
-> the threshold (which should be a char, not an int) the admin has specified 
-> the locality that is necessary for optimal performance so has knowingly 
-> restricted ksm in that way.
-> 
-> I'd rename it to ksm_merge_distance, which is more similar to 
-> reclaim_distance, and return to the first version of this patch.
 
-The problem of the first patch/RFC was that merging algorithm was unstable
-and could merge pages with distance higher than was set up (described by 
-Nai Xia in RFC thread [1]). Sure, this instability could be solved, but for
-ksm pages shared by many other pages on different nodes we would have to still
-recalculate which page is "in the middle" and in case of change migrate it 
-between nodes every time when ksmd reach new shareable page or when some 
-sharing page is removed.
+--hSsVBZHIO2Q9XETc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-But please correct me if I understand you wrong.
+On Fri, Jun 29, 2012 at 09:30:51AM -0600, Stephen Warren wrote:
 
-[1] https://lkml.org/lkml/2011/12/1/167
+> I did consider making of_get_fixed_voltage_config() return a result
+> code, but then it needs some other way of returning the pointer, so
+> that seemed just as convoluted. Oh, I suppose it could use ERR_PTR()
+> to do that; that'd be nice and simple. Would that do?
+
+Meh, or just have the caller pass in the platform data rather than
+allocate it in the function.
+
+> Re: gpiolib doing it: How is that possible? of_get_named_gpio()
+> certainly can return -EPROBE_DEFER, but the caller would still need to
+> check it. The ideal case might be to just do:
+
+> ret = gpio_request(of_get_named_gpio(...));
+> if (ret)
+>     return ret;
+
+> and have gpio_request pass -EPROBE_DEFER from input to output.
+
+Even better just have gpio_request() just return -EPROBE_DEFER instead
+of -ENODEV.  There is no sane case where you'd request a GPIO you didn't
+have a reasonable idea was going to be registered at some point (or
+could be with appropriate system configuration) so we should just assume
+that might happen.
+
+--hSsVBZHIO2Q9XETc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP7ueYAAoJEBus8iNuMP3dSzIP/3C8mCJVtNH739AedGbU6bdp
+X5EL6/ibfl6YvAHrQ2AHUdavAunD20CG4dF36/GUORnjYML/8GCaTwiZAJjapLBU
+uw43g8DgMeHxtYZij8zuiSStlB6yYvZErRcUbobV6EwJZ27w1k+GzVBf7tMMkmaU
+6UNSKHmrXEVhOldp6b3uP7mpK8V92WlQUtrdgD00ECivd1PSV0BnGiYX3+t8N2pZ
+Bzkykc0pbM6auax7mZyiE2owSCZHLUzcNw5VccLXU+cN4Z6simsJ5WzfXayppEd5
+LwWaQfHMky2XDazYpCbVjWJ1Y70KEyUnzY/qms2xQt+lyccuTD1amYITyS/0y3VL
+sR6BFe2DXo+F0yYRh7fSLjgjybgC7+AJPtoYc1uFdxRaWSzXlSvJ6lfS3ZJEeLLa
+jAROsYKQEJIZOeLWKAR72HZpa0vzLP6ns4y6oK6wOV+PBszv6i0Jxtxtp87/beXG
+tjMPlSmYJMYZkhdYbbJEuQyke6lIai9apItlr7r7d9ON4YLQuZRKlc3oh5lf1tI4
+c9GwFnzgO3b3W808s/yR4BL7blAS7AG/P7vH5OhDHabFoDdhh+rPAC8XysYBIvcj
+3rSNWzGYyBFtyWtgu1HekXJg4ZGQPSHQSBdAKoQZf0Tt9RuMRZqy6OSFWMiaNLqn
+usfHZkZoFIXBibvF7dbv
+=ApzA
+-----END PGP SIGNATURE-----
+
+--hSsVBZHIO2Q9XETc--
