@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897Ab2F3AN5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 20:13:57 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:56043 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754115Ab2F3ANy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 20:13:54 -0400
-Date: Fri, 29 Jun 2012 20:13:50 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Vincent Sanders <vincent.sanders@collabora.co.uk>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: AF_BUS socket address family
-Message-ID: <20120630001350.GS21968@kvack.org>
-References: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk> <20120629.153656.1141845894730637434.davem@davemloft.net> <20120629231236.GA28593@mail.collabora.co.uk> <20120629.161821.948325645333976311.davem@davemloft.net> <20120629234230.GA11480@kyllikki.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755788Ab2F3Ae0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 20:34:26 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:19957 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752366Ab2F3AeZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 20:34:25 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-8.tower-131.messagelabs.com!1341016463!6151991!1
+X-Originating-IP: [216.166.12.98]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 00/10] staging: comedi: ni_670x: cleanup driver
+Date: Fri, 29 Jun 2012 17:34:18 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20120629234230.GA11480@kyllikki.org>
-User-Agent: Mutt/1.4.2.2i
+Message-ID: <201206291734.19249.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 30, 2012 at 12:42:30AM +0100, Vincent Sanders wrote:
-> The current users are suffering from the issues outlined in my
-> introductory mail all the time. These issues are caused by emulating an
-> IPC system over AF_UNIX in userspace.
+Cleanup the driver based on the changes to the other comedi
+pci drivers.
 
-Nothing in your introductory statements indicate how your requirements 
-can't be met through a hybrid socket + shared memory solution.  The IPC 
-facilities of the kernel are already quite rich, and sufficient for 
-building many kinds of complex systems.  What's so different about DBus' 
-requirements?
+H Hartley Sweeten (10):
+  staging: comedi: ni_670x: use module_comedi_pci_driver
+  staging: comedi: ni_670x: remove forward declarations
+  staging: comedi: ni_670x: remove thisboard and devpriv macros
+  staging: comedi: ni_670x: remove n_ni_670x_boards macro
+  staging: comedi: ni_670x: change printk's to cleaned up dev_printk's
+  staging: comedi: ni_670x: return '0' for successful attach
+  staging: comedi: ni_670x: fix dereference of an invalid pointer
+  staging: comedi: ni_670x: cleanup the boardinfo
+  staging: comedi: ni_670x: cleanup ni_670x_dio_insn_bits()
+  staging: comedi: ni_670x: remove unused 'ao_bits'
 
-		-ben
+ drivers/staging/comedi/drivers/ni_670x.c | 348 ++++++++++++++-----------------
+ 1 file changed, 156 insertions(+), 192 deletions(-)
+
 -- 
-"Thought is the essence of where you are now."
+1.7.11
+
