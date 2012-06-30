@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab2F3Rny (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 13:43:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40716 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752256Ab2F3Rnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 13:43:52 -0400
-Date: Sat, 30 Jun 2012 19:41:33 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        ". James Morris" <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 0/4] Was: deferring __fput()
-Message-ID: <20120630174133.GA23411@redhat.com>
-References: <20120623210141.GK14083@ZenIV.linux.org.uk> <20120624041652.GN14083@ZenIV.linux.org.uk> <20120624153310.GB24596@redhat.com> <20120625060357.GT14083@ZenIV.linux.org.uk> <20120625151812.GA16062@redhat.com> <20120627183721.GA23086@redhat.com> <20120628043836.GW14083@ZenIV.linux.org.uk> <20120628162253.GA25357@redhat.com> <20120628164539.GA26350@redhat.com> <20120630062453.GA14083@ZenIV.linux.org.uk>
+	id S1753799Ab2F3RpN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 13:45:13 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:60824 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752797Ab2F3RpK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jun 2012 13:45:10 -0400
+Date: Sat, 30 Jun 2012 19:45:03 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+Cc: X86-ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH -v2 0/2] x86, microcode: Reload ucode only per-system
+Message-ID: <20120630174503.GA24854@aftab.osrc.amd.com>
+References: <1340280437-7718-1-git-send-email-bp@amd64.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120630062453.GA14083@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1340280437-7718-1-git-send-email-bp@amd64.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30, Al Viro wrote:
->
-> On Thu, Jun 28, 2012 at 06:45:39PM +0200, Oleg Nesterov wrote:
-> > Forgot to mention...
-> >
-> > And I still think that task_work_add() should not succeed unconditionally,
-> > it synchronize with exit_task_work(). Otherwise keyctl_session_to_parent()
-> > is broken.
->
-> Hmm...  Look: if nothing else, we have
->         /* the parent mustn't be init and mustn't be a kernel thread */
->         if (parent->pid <= 1 || !parent->mm)
->                 goto unlock;
-> in the caller.  OTOH, on the exit side we have exit_mm() done first.  And
-> that will have ->mm set to NULL.  So we are closing a very narrow race to start
-> with.  So why not do the following and be done with that?
+Assuming there are no more objections to those, can we get them into,
+say, tip:x86/microcode for a wider, linux-next testing?
 
-Of course we can fix keyctl_session_to_parent(). But why? I mean, why
-do you dislike the idea to put this synchronization into add/run ?
+Peter's stuff could go there too or through the perf tree - it's kinda
+arbitrary though.
 
-IMO, this makes task_work much less useful/convenient. Every caller
-has to fight with this race somehow. And the lock it can take depends
-on the context, say, you can't use task_lock() in irq.
+Thanks.
 
-IOW, what is wrong with
+On Thu, Jun 21, 2012 at 02:07:15PM +0200, Borislav Petkov wrote:
+> From: Borislav Petkov <borislav.petkov@amd.com>
+> 
+> Ok, here's the second version with all review comments addressed. I've
+> dropped the stable tag since this has been that way (and b0rked) since
+> forever so stable rules don't apply.
+> 
+> We can probably do single backports if distros want it.
+> 
+> 
+> 
+> Changelog:
+> 
+> -v1:
+> 
+> Once upon a time there was this microcode reloading interface
+> /sys/devices/system/cpu/cpuX/microcode/reload, where X is an online
+> cpu on the system, which allowed the loading of microcode in a per-cpu
+> manner.
+> 
+> This had problems like having different ucode revisions on an otherwise
+> homogeneous system and needed O(n^2) overhead when tracking minimum
+> microcode revision per-core.
+> 
+> So make this interface per-system so that it does microcode reloading on
+> the whole system only.
+> 
+> Single commit messages have more info too.
+> 
+> The first patch has a stable tag which I'd like to see in stable but
+> since it is not fixing a direct regression, I'd like to not push it
+> upstream now but have it get tested in linux-next and go upstream during
+> the next merge window from where it can trickle slowly to stable.
+> 
+> Patches have been tested on all AMD families, it wouldn't hurt if it saw
+> some Intel testing too, although it should just work.
+> 
+> Holler if you see regressions/problems with it.
+> 
+> Thanks.
+> 
 
-	[PATCH 2/4] task_work: don't rely on PF_EXITING
-	http://marc.info/?l=linux-kernel&m=134082265321691
+-- 
+Regards/Gruss,
+Boris.
 
-and
-	[PATCH 3/4] task_work: deal with task_work callbacks adding more work
-	http://marc.info/?t=134082275400004
-
-?
-
-perhaps you do not like the fact that the exiting task takes pi_lock
-unconditionally?
-
-
-
-and in fact I think that probably it makes sense to change fput,
-
-	- task_work_add(current, ...);
-	+ BUG_ON(task_work_add(current, ...) != 0);
-
-Oleg.
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
