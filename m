@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360Ab2F3Os4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 10:48:56 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:45333 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754634Ab2F3Osz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 10:48:55 -0400
-Message-ID: <1341067733.10253.2.camel@joe2Laptop>
-Subject: Re: [RFC][PATCH 1/2] lib: printf: append support of '%*p[Mm][FR]'
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>, proski@gnu.org,
-        Andrei Emeltchenko <andrei.emeltchenko@intel.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 30 Jun 2012 07:48:53 -0700
-In-Reply-To: <20120629162649.f277177f.akpm@linux-foundation.org>
-References: <20110930115306.3bc105cb@mj>
-	 <1340985513-15655-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1340986086.6562.36.camel@joe2Laptop>
-	 <20120629162649.f277177f.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1755442Ab2F3PEb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 11:04:31 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:12009 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755138Ab2F3PE3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jun 2012 11:04:29 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sat, 30 Jun 2012 08:01:13 -0700
+Message-ID: <4FEF14BC.1080703@nvidia.com>
+Date: Sat, 30 Jun 2012 20:31:16 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: tegra: apbio: use dmaengine based dma driver
+References: <1340969407-7662-1-git-send-email-ldewangan@nvidia.com> <4FEDE035.6040005@wwwdotorg.org>
+In-Reply-To: <4FEDE035.6040005@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-29 at 16:26 -0700, Andrew Morton wrote:
-> On Fri, 29 Jun 2012 09:08:06 -0700
-> Joe Perches <joe@perches.com> wrote:
-> 
-> > > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> > []
-> > > @@ -655,11 +655,12 @@ char *resource_string(char *buf, char *end, struct resource *res,
-> > >  }
-> > >  
-> > >  static noinline_for_stack
-> > > -char *mac_address_string(char *buf, char *end, u8 *addr,
-> > > -			 struct printf_spec spec, const char *fmt)
-> > > +char *hex_string(char *buf, char *end, u8 *addr, struct printf_spec spec,
-> > > +		 const char *fmt)
-> > >  {
-> > > -	char mac_addr[sizeof("xx:xx:xx:xx:xx:xx")];
-> > > -	char *p = mac_addr;
-> > > +	char hex_str[64*3];	/* support up to 64 bytes to print */
-> > 
-> > Might be too much stack though.
-> 
-> Yes, it's a bit marginal, as this new capability might be used in debug
-> or crash situations where we're deep into the stack.  The average case
-> could be improved by using alloca()-style allocation.
+On Friday 29 June 2012 10:34 PM, Stephen Warren wrote:
+> On 06/29/2012 05:30 AM, Laxman Dewangan wrote:
+>> Use the dmaengine based Tegra APB DMA driver for
+>> apbio access in place of legacy Tegra APB DMA.
+>>
+>> The new driver is selected if legacy driver is not
+>> selected and new DMA driver is enabled through config
+>> file.
+>> +bool tegra_apb_dma_init(void)
+>> +{
+> ...
+>> +	tegra_apb_dma_chan = dma_request_channel(mask, NULL, NULL);
+>> +	if (!tegra_apb_dma_chan) {
+>> +		pr_err("%s: can not allocate dma channel\n", __func__);
+>> +		goto err_dma_alloc;
+>> +	}
+> That fires quite a few times during boot, before the DMA driver is
+> probed. I think the message should be down-graded to a pr_dbg(). Do you
+> agree? I can fix that myself when applying this if you're OK with the
+> change.
+>
 
-Or maybe support larger sizes with a smaller
-stack buffer and a while loop.
+I saw that you already applied it. But for record, I am fine to change 
+it to pr_debug.
+
+> Aside from that, this looks fine to me.
 
