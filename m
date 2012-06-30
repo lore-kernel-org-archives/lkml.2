@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176Ab2F3Cmd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 22:42:33 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:34508 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021Ab2F3Cmc convert rfc822-to-8bit (ORCPT
+	id S1752160Ab2F3DIm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 23:08:42 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:42749 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989Ab2F3DIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 22:42:32 -0400
+	Fri, 29 Jun 2012 23:08:41 -0400
+Date: Fri, 29 Jun 2012 23:08:36 -0400
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: "Boie, Andrew P" <andrew.p.boie@intel.com>
+Cc: NeilBrown <neilb@suse.de>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arve@android.com" <arve@android.com>,
+        "ccross@android.com" <ccross@android.com>,
+        "rebecca@android.com" <rebecca@android.com>
+Subject: Re: [PATCH] bcb: Android bootloader control block driver
+Message-ID: <20120630030836.GA3972@kroah.com>
+References: <1340998590-23042-1-git-send-email-andrew.p.boie@intel.com>
+ <20120630072519.71835f43@notabene.brown>
+ <2E57EB624252DB47AFBC064A9AFBA980077EE18B@ORSMSX105.amr.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1340315835-28571-6-git-send-email-riel@surriel.com>
-References: <1340315835-28571-1-git-send-email-riel@surriel.com>
-	<1340315835-28571-6-git-send-email-riel@surriel.com>
-Date: Fri, 29 Jun 2012 19:42:31 -0700
-Message-ID: <CANN689GtyRXcZ4OisN+DeiaA63RC8h2YLwif5fgvK8u4tzzuSA@mail.gmail.com>
-Subject: Re: [PATCH -mm v2 05/11] mm: get unmapped area from VMA tree
-From: Michel Lespinasse <walken@google.com>
-To: Rik van Riel <riel@surriel.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, aarcange@redhat.com,
-        peterz@infradead.org, minchan@gmail.com, kosaki.motohiro@gmail.com,
-        andi@firstfloor.org, hannes@cmpxchg.org, mel@csn.ul.ie,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2E57EB624252DB47AFBC064A9AFBA980077EE18B@ORSMSX105.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 21, 2012 at 2:57 PM, Rik van Riel <riel@surriel.com> wrote:
-> For topdown allocations, we need to keep track of the highest
-> mapped VMA address, because it might be below mm->mmap_base,
-> and we only keep track of free space to the left of each VMA
-> in the VMA tree.  It is tempting to try and keep track of
-> the free space to the right of each VMA when running in
-> topdown mode, but that gets us into trouble when running on
-> x86, where a process can switch direction in the middle of
-> execve.
+On Fri, Jun 29, 2012 at 09:56:36PM +0000, Boie, Andrew P wrote:
+> > From: NeilBrown [mailto:neilb@suse.de]
+> > Sent: Friday, June 29, 2012 2:25 PM
+> > 
+> > On Fri, 29 Jun 2012 12:36:30 -0700 Andrew Boie <andrew.p.boie@intel.com>
+> > wrote:
+> > 
+> > > Android userspace tells the kernel that it wants to boot into recovery
+> > > or some other non-default OS environment by passing a string argument
+> > > to reboot(). It is left to the OEM to hook this up to their specific
+> > > bootloader.
+> 
+> > Maybe I'm missing something obvious, but why does this need to be
+> > implemented
+> > in the kernel?  Can't some user-space process just write to that partition
+> > using open/read/seek/write/close before calling 'reboot'.
+> 
+> Thanks for reviewing. The way Android is currently designed, all calls
+> to reboot the system into an alternate target go into android_reboot()
+> in libcutils which then make the reboot() system call with a string
+> argument. How this is actually done on a particular board is not
+> specified in the Android Open Source Project as far as I can see. The
+> particular bootloader is not specified either, many different ones are
+> being used in practice.
 
-Just a random thought - one way to handle this could be to always have
-some sentinel VMA at the end of the address space. Some architectures
-might already have it in the form of the vsyscall page, or we could
-always have some other sentinel right above the last usable user page
-?
+Which is fine, the kernel doesn't, and shouldn't care about this.
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+> Not  every architecture is going to be using the Bootloader Control
+> Block to handle these boots into alternate targets. For example, I
+> worked on one Android-based device that didn't have a traditional
+> bootloader at all and the reboot hook in the kernel was radically
+> different. In this case the BCB ended up only being used by the
+> recovery console to stash its command line arguments.
+
+So what architectures are going to be using this?
+
+> If this were all done in userspace, then I think there would have to
+> be separate code paths in libcutils for different board
+> implementations of this policy. As of right now libcutils doesn't have
+> any hardware-specific stuff in it and the mechanism to effect these
+> policies is left to the kernel, libcutils works everywhere without
+> modification.
+
+So, without that, the kernel is setting the policy here instead?  That's
+generally the opposite of what we want to do, it's up to userspace to
+determine things like this.
+
+confused,
+
+greg k-h
