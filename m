@@ -1,149 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751184Ab2F3BfI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 21:35:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3791 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750804Ab2F3BfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 21:35:06 -0400
-Date: Fri, 29 Jun 2012 22:34:48 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 1/4] mm: introduce compaction and migration for virtio
- ballooned pages
-Message-ID: <20120630013447.GA1545@x61.redhat.com>
-References: <cover.1340916058.git.aquini@redhat.com>
- <d0f33a6492501a0d420abbf184f9b956cff3e3fc.1340916058.git.aquini@redhat.com>
- <4FED3DDB.1000903@kernel.org>
- <20120629173653.GA1774@t510.redhat.com>
- <20120629220333.GA2079@barrios>
+	id S1751780Ab2F3CWp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 22:22:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39932 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833Ab2F3CWn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jun 2012 22:22:43 -0400
+Date: Fri, 29 Jun 2012 19:22:39 -0700
+From: Michel Lespinasse <walken@google.com>
+To: Rik van Riel <riel@surriel.com>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, aarcange@redhat.com,
+        peterz@infradead.org, minchan@gmail.com, kosaki.motohiro@gmail.com,
+        andi@firstfloor.org, hannes@cmpxchg.org, mel@csn.ul.ie,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH -mm v2 07/11] mm: make cache alignment code generic
+Message-ID: <20120630022239.GA23735@google.com>
+References: <1340315835-28571-1-git-send-email-riel@surriel.com>
+ <1340315835-28571-8-git-send-email-riel@surriel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120629220333.GA2079@barrios>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1340315835-28571-8-git-send-email-riel@surriel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Howdy Minchan,
-
-On Sat, Jun 30, 2012 at 07:03:33AM +0900, Minchan Kim wrote:
-> > > > +static inline bool is_balloon_page(struct page *page)
-> > > > +{
-> > > > +        return (page->mapping == balloon_mapping) ? true : false;
-> > > > +}
-> > > 
-> > > 
-> > > What lock should it protect?
-> > > 
-> > I'm afraid I didn't quite get what you meant by that question. If you were
-> > referring to lock protection to the address_space balloon_mapping, we don't need
-> > it. balloon_mapping, once initialized lives forever (as long as driver is
-> > loaded, actually) as a static reference that just helps us on identifying pages 
-> > that are enlisted in a memory balloon as well as it keeps the callback pointers 
-> > to functions that will make those pages mobility magic happens.
-> 
-> Thanks. That's what I want to know.
-> If anyone(like me don't know of ballooning in detail) see this, it would be very helpful.
-> 
-Good point! I'll make sure this explanation gets properly registered either at commit log or
-at a comment along with balloon_mapping declaration, then.
+On Thu, Jun 21, 2012 at 05:57:11PM -0400, Rik van Riel wrote:
+>  				/* Is this gap large enough? Remember it. */
+>  				vma_start = max(vma->vm_prev->vm_end, lower_limit);
+> +				vma_start = arch_align_addr(vma_start, filp,
+> +						pgoff, flags, ALLOC_UP);
+>  				if (vma->vm_start - len >= vma_start) {
+>  					addr = vma_start;
+>  					found_here = true;
 
 
+So, right there you're losing the benefit of O(log N) allocations on these
+vmas that require alignment. The rbtree lets you quickly find an allocation
+that has the desired size, but you may see any number of them without ever
+finding one that is large enough after alignment.
 
-> > > > +		if (likely(PageLRU(page))) {
-> > > 
-> > > 
-> > > We can't make sure it is likely because there might be so many pages for kernel.
-> > > 
-> > I thought that by that far in codepath that would be the likelihood since most
-> > pages of an ordinary workload will be at LRU lists. Following that idea, it
-> > sounded neat to hint the compiler to not branch for that block. But, if in the
-> > end that is just a "bad hint", I'll get rid of it right away.
-> 
-> Yeb. I hope you remove this.
-> If you want really, it should be separated patch because it's not related to your
-> series.
-> 
-That will be removed, then.
+I wonder if one could go with a two-stage process:
 
+1- figure out what gap size would guarantee a successful, aligned allocation.
+basically it's desired size + desired alignment - PAGE_SIZE. See if you
+can find a gap of that size, and carve your aligned allocation into it
+if possible.
 
+2- if that failed, look for all gaps of at least the desired size,
+as you are proposing, and see if any of them is aligned enough for
+your requirements.
 
-> > > > +/* __isolate_lru_page() counterpart for a ballooned page */
-> > > > +bool isolate_balloon_page(struct page *page)
-> > > > +{
-> > > > +	if (WARN_ON(!is_balloon_page(page)))
-> > > > +		return false;
-> > > > +
-> > > > +	if (likely(get_page_unless_zero(page))) {
-> > > > +		/*
-> > > > +		 * We can race against move_to_new_page() & __unmap_and_move().
-> > > > +		 * If we stumble across a locked balloon page and succeed on
-> > > > +		 * isolating it, the result tends to be disastrous.
-> > > > +		 */
-> > > > +		if (likely(trylock_page(page))) {
-> > > > +			/*
-> > > > +			 * A ballooned page, by default, has just one refcount.
-> > > > +			 * Prevent concurrent compaction threads from isolating
-> > > > +			 * an already isolated balloon page.
-> > > > +			 */
-> > > > +			if (is_balloon_page(page) && (page_count(page) == 2)) {
-> > > > +				page->mapping->a_ops->invalidatepage(page, 0);
-> > > 
-> > > 
-> > > Could you add more meaningful name wrapping raw invalidatepage?
-> > > But I don't know what is proper name. ;)
-> > > 
-> > If I understood you correctely, your suggestion is to add two extra callback
-> > pointers to struct address_space_operations, instead of re-using those which are
-> > already there, and are suitable for the mission. Is this really necessary? It
-> > seems just like unecessary bloat to struct address_space_operations, IMHO.
-> 
-> I meant this. :)
-> 
-> void isolate_page_from_balloonlist(struct page* page)
-> {
-> 	page->mapping->a_ops->invalidatepage(page, 0);
-> }
-> 
-> 	if (is_balloon_page(page) && (page_count(page) == 2)) {
-> 		isolate_page_from_balloonlist(page);
-> 	}
-> 
-Humm, my feelings on your approach here: just an unecessary indirection that
-doesn't bring the desired code readability improvement.
-If the header comment statement on balloon_mapping->a_ops is not clear enough 
-on those methods usage for ballooned pages:
+This would possibly cause a bit more virtual address space fragmentation,
+but I think this should still work ?
 
-..... 
-/*
- * Balloon pages special page->mapping.
- * users must properly allocate and initialize an instance of balloon_mapping,
- * and set it as the page->mapping for balloon enlisted page instances.
- *
- * address_space_operations necessary methods for ballooned pages:
- *   .migratepage    - used to perform balloon's page migration (as is)
- *   .invalidatepage - used to isolate a page from balloon's page list
- *   .freepage       - used to reinsert an isolated page to balloon's page list
- */
-struct address_space *balloon_mapping;
-EXPORT_SYMBOL_GPL(balloon_mapping);
-.....
-
-I can add an extra commentary, to recollect folks about that usage, next to the
-points where those callbacks are used at isolate_balloon_page() &
-putback_balloon_page(). What do you think?
-
-
-> Thanks!
-> 
-Thank you for such attention and valuable feedback! Have a nice weekend!
-
-Rafael
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
