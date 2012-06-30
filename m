@@ -1,109 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751393Ab2F3FEc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 01:04:32 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:50926 "EHLO
+	id S1751346Ab2F3FH4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 01:07:56 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:50180 "EHLO
 	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab2F3FEa (ORCPT
+	with ESMTP id S1750909Ab2F3FHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 01:04:30 -0400
-Date: Sat, 30 Jun 2012 01:04:26 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 18/40] autonuma: call autonuma_setup_new_exec()
-Message-ID: <20120630050425.GE3975@localhost.localdomain>
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
- <1340888180-15355-19-git-send-email-aarcange@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340888180-15355-19-git-send-email-aarcange@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 30 Jun 2012 01:07:54 -0400
+From: Len Brown <lenb@kernel.org>
+To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Pavel Vasilyev <pavel@pavlinux.ru>,
+        Len Brown <len.brown@intel.com>
+Subject: [PATCH 1/8] ACPI sysfs.c strlen fix
+Date: Sat, 30 Jun 2012 01:07:28 -0400
+Message-Id: <9f132652d94c96476b0b0a8caf0c10e96ab10fa8.1341032550.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.7.11.1.104.ge7b44f1
+In-Reply-To: <1341032855-27139-1-git-send-email-lenb@kernel.org>
+References: <1341032855-27139-1-git-send-email-lenb@kernel.org>
+Reply-To: Len Brown <lenb@kernel.org>
+Organization: Intel Open Source Technology Center
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 02:55:58PM +0200, Andrea Arcangeli wrote:
-> This resets all per-thread and per-process statistics across exec
-> syscalls or after kernel threads detached from the mm. The past
-> statistical NUMA information is unlikely to be relevant for the future
-> in these cases.
+From: Pavel Vasilyev <pavel@pavlinux.ru>
 
-The previous patch mentioned that it can run in bypass mode. Is
-this also able to do so? Meaning that these calls end up doing nops?
+Current code is ignoring the last character of "enable" and "disable"
+in comparisons.
 
-Thanks!
-> 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> ---
->  fs/exec.c        |    3 +++
->  mm/mmu_context.c |    2 ++
->  2 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/exec.c b/fs/exec.c
-> index da27b91..146ced2 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -55,6 +55,7 @@
->  #include <linux/pipe_fs_i.h>
->  #include <linux/oom.h>
->  #include <linux/compat.h>
-> +#include <linux/autonuma.h>
->  
->  #include <asm/uaccess.h>
->  #include <asm/mmu_context.h>
-> @@ -1172,6 +1173,8 @@ void setup_new_exec(struct linux_binprm * bprm)
->  			
->  	flush_signal_handlers(current, 0);
->  	flush_old_files(current->files);
-> +
-> +	autonuma_setup_new_exec(current);
->  }
->  EXPORT_SYMBOL(setup_new_exec);
->  
-> diff --git a/mm/mmu_context.c b/mm/mmu_context.c
-> index 3dcfaf4..40f0f13 100644
-> --- a/mm/mmu_context.c
-> +++ b/mm/mmu_context.c
-> @@ -7,6 +7,7 @@
->  #include <linux/mmu_context.h>
->  #include <linux/export.h>
->  #include <linux/sched.h>
-> +#include <linux/autonuma.h>
->  
->  #include <asm/mmu_context.h>
->  
-> @@ -58,5 +59,6 @@ void unuse_mm(struct mm_struct *mm)
->  	/* active_mm is still 'mm' */
->  	enter_lazy_tlb(mm, tsk);
->  	task_unlock(tsk);
-> +	autonuma_setup_new_exec(tsk);
->  }
->  EXPORT_SYMBOL_GPL(unuse_mm);
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+https://bugzilla.kernel.org/show_bug.cgi?id=33732
+
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
+ drivers/acpi/sysfs.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/acpi/sysfs.c b/drivers/acpi/sysfs.c
+index 9f66181..240a244 100644
+--- a/drivers/acpi/sysfs.c
++++ b/drivers/acpi/sysfs.c
+@@ -173,7 +173,7 @@ static int param_set_trace_state(const char *val, struct kernel_param *kp)
+ {
+ 	int result = 0;
+ 
+-	if (!strncmp(val, "enable", strlen("enable") - 1)) {
++	if (!strncmp(val, "enable", strlen("enable"))) {
+ 		result = acpi_debug_trace(trace_method_name, trace_debug_level,
+ 					  trace_debug_layer, 0);
+ 		if (result)
+@@ -181,7 +181,7 @@ static int param_set_trace_state(const char *val, struct kernel_param *kp)
+ 		goto exit;
+ 	}
+ 
+-	if (!strncmp(val, "disable", strlen("disable") - 1)) {
++	if (!strncmp(val, "disable", strlen("disable"))) {
+ 		int name = 0;
+ 		result = acpi_debug_trace((char *)&name, trace_debug_level,
+ 					  trace_debug_layer, 0);
+-- 
+1.7.11.1.104.ge7b44f1
+
