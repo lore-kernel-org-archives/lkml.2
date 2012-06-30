@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab2F3PrM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 11:47:12 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48423 "EHLO
+	id S1755746Ab2F3Pvd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 11:51:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57843 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab2F3PrI (ORCPT
+	with ESMTP id S1751155Ab2F3Pvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 11:47:08 -0400
-Message-ID: <4FEF1F6A.6090705@gmail.com>
-Date: Sat, 30 Jun 2012 23:46:50 +0800
+	Sat, 30 Jun 2012 11:51:31 -0400
+Message-ID: <4FEF2075.2050603@gmail.com>
+Date: Sat, 30 Jun 2012 23:51:17 +0800
 From: Jiang Liu <liuj97@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
@@ -65,9 +65,9 @@ On 06/27/2012 01:44 PM, Yasuaki Ishimatsu wrote:
 > +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
 > +		section_nr = pfn_to_section_nr(pfn);
 > +		section = __nr_to_section(section_nr);
-Is it possible for __nr_to_section return NULL here?
-
 > +		mem = find_memory_block(section);
+Seems find_memory_block_hinted() is more efficient than find_memory_block() here.
+
 > +		if (!mem)
 > +			continue;
 > +		if (mem->state == MEM_OFFLINE)
@@ -77,8 +77,6 @@ Is it possible for __nr_to_section return NULL here?
 > +
 > +	return true;
 > +}
-Need a put_dev(&mem->dev) for the last memory block device handled before return.
-
 > +
 >  /*
 >   * register_memory - Setup a sysfs device for a memory block
