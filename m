@@ -1,179 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362Ab2F3GBO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 02:01:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41368 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729Ab2F3GAB (ORCPT
+	id S1752027Ab2F3GEO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 02:04:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47981 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab2F3GEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 02:00:01 -0400
+	Sat, 30 Jun 2012 02:04:12 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Dave Jones <davej@redhat.com>
 Cc: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: [PATCH -v5 2/6] cpu: rewrite cpu-notifier-error-inject module
-Date: Sat, 30 Jun 2012 14:59:26 +0900
-Message-Id: <1341035970-20490-3-git-send-email-akinobu.mita@gmail.com>
+Subject: [PATCH] fault-injection: add tool to run command with failslab or fail_page_alloc
+Date: Sat, 30 Jun 2012 15:03:55 +0900
+Message-Id: <1341036235-23518-1-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1341035970-20490-1-git-send-email-akinobu.mita@gmail.com>
-References: <1341035970-20490-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rewrite existing cpu-notifier-error-inject module to use debugfs based
-new framework.
+This adds tools/testing/fault-injection/failcmd.sh to run command with
+injecting slab/page allocation failures by fault injection.
 
-This change removes cpu_up_prepare_error and cpu_down_prepare_error module
-parameters which were used to specify error code to be injected.  We could
-keep these module parameters for backward compatibility by module_param_cb
-but it seems overkill for this module.
+Example:
 
-This provides the ability to inject artifical errors to CPU notifier chain
-callbacks.  It is controlled through debugfs interface under
-/sys/kernel/debug/notifier-error-inject/cpu
+Run a command "make -C tools/testing/selftests/ run_tests" with
+injecting slab allocation failure.
 
-If the notifier call chain should be failed with some events
-notified, write the error code to "actions/<notifier event>/error".
+	# ./tools/testing/fault-injection/failcmd.sh \
+		-- make -C tools/testing/selftests/ run_tests
 
-Example1: inject CPU offline error (-1 == -EPERM)
+Same as above except to specify 100 times failures at most instead of
+one time at most by default.
 
-	# cd /sys/kernel/debug/notifier-error-inject/cpu
-	# echo -1 > actions/CPU_DOWN_PREPARE/error
-	# echo 0 > /sys/devices/system/cpu/cpu1/online
-	bash: echo: write error: Operation not permitted
+	# ./tools/testing/fault-injection/failcmd.sh --times=100 \
+		-- make -C tools/testing/selftests/ run_tests
 
-Example2: inject CPU online error (-2 == -ENOENT)
+Same as above except to inject page allocation failure instead of slab
+allocation failure.
 
-	# cd /sys/kernel/debug/notifier-error-inject/cpu
-	# echo -2 > actions/CPU_UP_PREPARE/error
-	# echo 1 > /sys/devices/system/cpu/cpu1/online
-	bash: echo: write error: No such file or directory
+	# env FAILCMD_TYPE=fail_page_alloc \
+		./tools/testing/fault-injection/failcmd.sh --times=100 \
+		-- make -C tools/testing/selftests/ run_tests
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
 ---
-No changes since v4
+ tools/testing/fault-injection/failcmd.sh |  219 ++++++++++++++++++++++++++++++
+ 1 file changed, 219 insertions(+)
+ create mode 100755 tools/testing/fault-injection/failcmd.sh
 
- lib/Kconfig.debug               |   16 ++++++++--
- lib/cpu-notifier-error-inject.c |   63 ++++++++++++++++-----------------------
- 2 files changed, 39 insertions(+), 40 deletions(-)
-
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index c848758..be0c197 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1097,10 +1097,22 @@ config NOTIFIER_ERROR_INJECTION
- 
- config CPU_NOTIFIER_ERROR_INJECT
- 	tristate "CPU notifier error injection module"
--	depends on HOTPLUG_CPU && DEBUG_KERNEL
-+	depends on HOTPLUG_CPU && NOTIFIER_ERROR_INJECTION
- 	help
- 	  This option provides a kernel module that can be used to test
--	  the error handling of the cpu notifiers
-+	  the error handling of the cpu notifiers by injecting artifical
-+	  errors to CPU notifier chain callbacks.  It is controlled through
-+	  debugfs interface under /sys/kernel/debug/notifier-error-inject/cpu
+diff --git a/tools/testing/fault-injection/failcmd.sh b/tools/testing/fault-injection/failcmd.sh
+new file mode 100755
+index 0000000..1776e92
+--- /dev/null
++++ b/tools/testing/fault-injection/failcmd.sh
+@@ -0,0 +1,219 @@
++#!/bin/bash
++#
++# NAME
++#	failcmd.sh - run a command with injecting slab/page allocation failures
++#
++# SYNOPSIS
++#	failcmd.sh --help
++#	failcmd.sh [<options>] command [arguments]
++#
++# DESCRIPTION
++#	Run command with injecting slab/page allocation failures by fault
++#	injection.
++#
++#	NOTE: you need to run this script as root.
++#
 +
-+	  If the notifier call chain should be failed with some events
-+	  notified, write the error code to "actions/<notifier event>/error".
++usage()
++{
++	cat >&2 <<EOF
++Usage: $0 [options] command [arguments]
 +
-+	  Example: Inject CPU offline error (-1 == -EPERM)
++OPTIONS
++	-p percent
++	--probability=percent
++		likelihood of failure injection, in percent.
++		Default value is 1
 +
-+	  # cd /sys/kernel/debug/notifier-error-inject/cpu
-+	  # echo -1 > actions/CPU_DOWN_PREPARE/error
-+	  # echo 0 > /sys/devices/system/cpu/cpu1/online
-+	  bash: echo: write error: Operation not permitted
- 
- 	  To compile this code as a module, choose M here: the module will
- 	  be called cpu-notifier-error-inject.
-diff --git a/lib/cpu-notifier-error-inject.c b/lib/cpu-notifier-error-inject.c
-index 4dc2032..707ca24 100644
---- a/lib/cpu-notifier-error-inject.c
-+++ b/lib/cpu-notifier-error-inject.c
-@@ -1,58 +1,45 @@
- #include <linux/kernel.h>
--#include <linux/cpu.h>
- #include <linux/module.h>
--#include <linux/notifier.h>
-+#include <linux/cpu.h>
- 
--static int priority;
--static int cpu_up_prepare_error;
--static int cpu_down_prepare_error;
-+#include "notifier-error-inject.h"
- 
-+static int priority;
- module_param(priority, int, 0);
- MODULE_PARM_DESC(priority, "specify cpu notifier priority");
- 
--module_param(cpu_up_prepare_error, int, 0644);
--MODULE_PARM_DESC(cpu_up_prepare_error,
--		"specify error code to inject CPU_UP_PREPARE action");
--
--module_param(cpu_down_prepare_error, int, 0644);
--MODULE_PARM_DESC(cpu_down_prepare_error,
--		"specify error code to inject CPU_DOWN_PREPARE action");
--
--static int err_inject_cpu_callback(struct notifier_block *nfb,
--				unsigned long action, void *hcpu)
--{
--	int err = 0;
--
--	switch (action) {
--	case CPU_UP_PREPARE:
--	case CPU_UP_PREPARE_FROZEN:
--		err = cpu_up_prepare_error;
--		break;
--	case CPU_DOWN_PREPARE:
--	case CPU_DOWN_PREPARE_FROZEN:
--		err = cpu_down_prepare_error;
--		break;
-+static struct notifier_err_inject cpu_notifier_err_inject = {
-+	.actions = {
-+		{ NOTIFIER_ERR_INJECT_ACTION(CPU_UP_PREPARE) },
-+		{ NOTIFIER_ERR_INJECT_ACTION(CPU_UP_PREPARE_FROZEN) },
-+		{ NOTIFIER_ERR_INJECT_ACTION(CPU_DOWN_PREPARE) },
-+		{ NOTIFIER_ERR_INJECT_ACTION(CPU_DOWN_PREPARE_FROZEN) },
-+		{}
- 	}
--	if (err)
--		printk(KERN_INFO "Injecting error (%d) at cpu notifier\n", err);
--
--	return notifier_from_errno(err);
--}
--
--static struct notifier_block err_inject_cpu_notifier = {
--	.notifier_call = err_inject_cpu_callback,
- };
- 
-+static struct dentry *dir;
++	-t value
++	--times=value
++		specifies how many times failures may happen at most.
++		Default value is 1
 +
- static int err_inject_init(void)
- {
--	err_inject_cpu_notifier.priority = priority;
-+	int err;
++	--oom-kill-allocating-task=value
++		set /proc/sys/vm/oom_kill_allocating_task to specified value
++		before running the command.
++		Default value is 1
 +
-+	dir = notifier_err_inject_init("cpu", notifier_err_inject_dir,
-+					&cpu_notifier_err_inject, priority);
-+	if (IS_ERR(dir))
-+		return PTR_ERR(dir);
++	-h, --help
++		Display a usage message and exit
 +
-+	err = register_hotcpu_notifier(&cpu_notifier_err_inject.nb);
-+	if (err)
-+		debugfs_remove_recursive(dir);
- 
--	return register_hotcpu_notifier(&err_inject_cpu_notifier);
-+	return err;
- }
- 
- static void err_inject_exit(void)
- {
--	unregister_hotcpu_notifier(&err_inject_cpu_notifier);
-+	unregister_hotcpu_notifier(&cpu_notifier_err_inject.nb);
-+	debugfs_remove_recursive(dir);
- }
- 
- module_init(err_inject_init);
++	--interval=value, --space=value, --verbose=value, --task-filter=value,
++	--stacktrace-depth=value, --require-start=value, --require-end=value,
++	--reject-start=value, --reject-end=value, --ignore-gfp-wait=value
++		See Documentation/fault-injection/fault-injection.txt for more
++		information
++
++	failslab options:
++	--cache-filter=value
++
++	fail_page_alloc options:
++	--ignore-gfp-highmem=value, --min-order=value
++
++ENVIRONMENT
++	FAILCMD_TYPE
++		The following values for FAILCMD_TYPE are recognized:
++
++		failslab
++			inject slab allocation failures
++		fail_page_alloc
++			inject page allocation failures
++
++		If FAILCMD_TYPE is not defined, then failslab is used.
++EOF
++}
++
++if [ $UID != 0 ]; then
++	echo must be run as root >&2
++	exit 1
++fi
++
++DEBUGFS=`mount -t debugfs | head -1 | awk '{ print $3}'`
++
++if [ ! -d "$DEBUGFS" ]; then
++	echo debugfs is not mounted >&2
++	exit 1
++fi
++
++FAILCMD_TYPE=${FAILCMD_TYPE:-failslab}
++FAULTATTR=$DEBUGFS/$FAILCMD_TYPE
++
++if [ ! -d $FAULTATTR ]; then
++	echo $FAILCMD_TYPE is not available >&2
++	exit 1
++fi
++
++LONGOPTS=probability:,interval:,times:,space:,verbose:,task-filter:
++LONGOPTS=$LONGOPTS,stacktrace-depth:,require-start:,require-end:
++LONGOPTS=$LONGOPTS,reject-start:,reject-end:,oom-kill-allocating-task:,help
++
++if [ $FAILCMD_TYPE = failslab ]; then
++	LONGOPTS=$LONGOPTS,ignore-gfp-wait:,cache-filter:
++elif [ $FAILCMD_TYPE = fail_page_alloc ]; then
++	LONGOPTS=$LONGOPTS,ignore-gfp-wait:,ignore-gfp-highmem:,min-order:
++fi
++
++TEMP=`getopt -o p:i:t:s:v:h --long $LONGOPTS -n 'failcmd.sh' -- "$@"`
++
++if [ $? != 0 ]; then
++	usage
++	exit 1
++fi
++
++eval set -- "$TEMP"
++
++fault_attr_default()
++{
++	echo N > $FAULTATTR/task-filter
++	echo 0 > $FAULTATTR/probability
++	echo 1 > $FAULTATTR/times
++}
++
++fault_attr_default
++
++oom_kill_allocating_task_saved=`cat /proc/sys/vm/oom_kill_allocating_task`
++
++restore_values()
++{
++	fault_attr_default
++	echo $oom_kill_allocating_task_saved \
++		> /proc/sys/vm/oom_kill_allocating_task
++}
++
++#
++# Default options
++#
++declare -i oom_kill_allocating_task=1
++declare task_filter=Y
++declare -i probability=1
++declare -i times=1
++
++while true; do
++	case "$1" in
++	-p|--probability)
++		probability=$2
++		shift 2
++		;;
++	-i|--interval)
++		echo $2 > $FAULTATTR/interval
++		shift 2
++		;;
++	-t|--times)
++		times=$2
++		shift 2
++		;;
++	-s|--space)
++		echo $2 > $FAULTATTR/space
++		shift 2
++		;;
++	-v|--verbose)
++		echo $2 > $FAULTATTR/verbose
++		shift 2
++		;;
++	--task-filter)
++		task_filter=$2
++		shift 2
++		;;
++	--stacktrace-depth)
++		echo $2 > $FAULTATTR/stacktrace-depth
++		shift 2
++		;;
++	--require-start)
++		echo $2 > $FAULTATTR/require-start
++		shift 2
++		;;
++	--require-end)
++		echo $2 > $FAULTATTR/require-end
++		shift 2
++		;;
++	--reject-start)
++		echo $2 > $FAULTATTR/reject-start
++		shift 2
++		;;
++	--reject-end)
++		echo $2 > $FAULTATTR/reject-end
++		shift 2
++		;;
++	--oom-kill-allocating-task)
++		oom_kill_allocating_task=$2
++		shift 2
++		;;
++	--ignore-gfp-wait)
++		echo $2 > $FAULTATTR/ignore-gfp-wait
++		shift 2
++		;;
++	--cache-filter)
++		echo $2 > $FAULTATTR/cache_filter
++		shift 2
++		;;
++	--ignore-gfp-highmem)
++		echo $2 > $FAULTATTR/ignore-gfp-highmem
++		shift 2
++		;;
++	--min-order)
++		echo $2 > $FAULTATTR/min-order
++		shift 2
++		;;
++	-h|--help)
++		usage
++		exit 0
++		shift
++		;;
++	--)
++		shift
++		break
++		;;
++	esac
++done
++
++[ -z "$@" ] && exit 0
++
++echo $oom_kill_allocating_task > /proc/sys/vm/oom_kill_allocating_task
++echo $task_filter > $FAULTATTR/task-filter
++echo $probability > $FAULTATTR/probability
++echo $times > $FAULTATTR/times
++
++trap "restore_values" SIGINT SIGTERM EXIT
++
++cmd="echo 1 > /proc/self/make-it-fail && exec $@"
++bash -c "$cmd"
 -- 
 1.7.10.4
 
