@@ -1,76 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751219Ab2F3Ewt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 00:52:49 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:51435 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782Ab2F3Ews (ORCPT
+	id S1751074Ab2F3E6c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 00:58:32 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:49865 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab2F3E6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 00:52:48 -0400
-Date: Sat, 30 Jun 2012 00:52:44 -0400
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>
-Subject: [GIT PATCH] driver core fixes for 3.5-rc5
-Message-ID: <20120630045244.GA2333@kroah.com>
+	Sat, 30 Jun 2012 00:58:30 -0400
+Date: Sat, 30 Jun 2012 00:58:25 -0400
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 11/40] autonuma: define the autonuma flags
+Message-ID: <20120630045825.GC3975@localhost.localdomain>
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
+ <1340888180-15355-12-git-send-email-aarcange@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1340888180-15355-12-git-send-email-aarcange@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 6b16351acbd415e66ba16bf7d473ece1574cf0bc:
+On Thu, Jun 28, 2012 at 02:55:51PM +0200, Andrea Arcangeli wrote:
+> These flags are the ones tweaked through sysfs, they control the
+> behavior of autonuma, from enabling disabling it, to selecting various
+> runtime options.
+> 
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> ---
+>  include/linux/autonuma_flags.h |   62 ++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 62 insertions(+), 0 deletions(-)
+>  create mode 100644 include/linux/autonuma_flags.h
+> 
+> diff --git a/include/linux/autonuma_flags.h b/include/linux/autonuma_flags.h
+> new file mode 100644
+> index 0000000..5e29a75
+> --- /dev/null
+> +++ b/include/linux/autonuma_flags.h
+> @@ -0,0 +1,62 @@
+> +#ifndef _LINUX_AUTONUMA_FLAGS_H
+> +#define _LINUX_AUTONUMA_FLAGS_H
+> +
+> +enum autonuma_flag {
 
-  Linux 3.5-rc4 (2012-06-24 12:53:04 -0700)
+These aren't really flags. They are bit-fields.
+A
+> +	AUTONUMA_FLAG,
 
-are available in the git repository at:
+Looking at the code, this is to turn it on. Perhaps a better name such
+as: AUTONUMA_ACTIVE_FLAG ?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.5-rc5
 
-for you to fetch changes up to d36208227d03c44c0a74cd702cc94528162e1703:
+> +	AUTONUMA_IMPOSSIBLE_FLAG,
+> +	AUTONUMA_DEBUG_FLAG,
+> +	AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG,
 
-  printk: Optimize if statement logic where newline exists (2012-06-29 16:55:35 -0400)
+I might have gotten my math wrong, but if you have
+AUTONUMA_SCHED_LOAD_BALACE.. set (so 3), that also means
+that bit 0 and 1 are on. In other words AUTONUMA_FLAG
+and AUTONUMA_IMPOSSIBLE_FLAG are turned on.
 
-----------------------------------------------------------------
-Driver Core fixes for 3.5-rc5
+> +	AUTONUMA_SCHED_CLONE_RESET_FLAG,
+> +	AUTONUMA_SCHED_FORK_RESET_FLAG,
+> +	AUTONUMA_SCAN_PMD_FLAG,
 
-Here is a number of printk() fixes, specifically a few reported by the
-crazy blog program that ships in SUSE releases (that's "boot log" and
-not "web log", it predates the general "blog" terminology by many
-years), and the restoration of the continuation line functionality
-reported by Stephen and others.  Yes, the changes seem a bit big this
-late in the cycle, but I've been beating on them for a while now, and
-Stephen has even optimized it a bit, so all looks good to me.
+So this is 6, which means 110 bits. So AUTONUMA_FLAG
+gets turned off.
 
-The other change in here is a Documentation update for the stable kernel
-rules describing how some distro patches should be backported, to
-hopefully drive a bit more response from the distros to the stable
-kernel releases.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Alan Stern (1):
-      printk: fix regression in SYSLOG_ACTION_CLEAR
-
-Greg Kroah-Hartman (1):
-      Revert "printk: return -EINVAL if the message len is bigger than the buf size"
-
-Jan Beulich (1):
-      syslog: fill buffer with more than a single message for SYSLOG_ACTION_READ
-
-Kay Sievers (1):
-      printk: flush continuation lines immediately to console
-
-Mel Gorman (1):
-      stable: Allow merging of backports for serious user-visible performance issues
-
-Steven Rostedt (1):
-      printk: Optimize if statement logic where newline exists
-
- Documentation/stable_kernel_rules.txt |   6 +
- kernel/printk.c                       | 297 ++++++++++++++++++++++++----------
- 2 files changed, 219 insertions(+), 84 deletions(-)
+You definitly want to convert these to #defines or
+at least define the proper numbers.
+> +	AUTONUMA_SCAN_USE_WORKING_SET_FLAG,
+> +	AUTONUMA_MIGRATE_DEFER_FLAG,
+> +};
+> +
+> +extern unsigned long autonuma_flags;
+> +
+> +static inline bool autonuma_enabled(void)
+> +{
+> +	return !!test_bit(AUTONUMA_FLAG, &autonuma_flags);
+> +}
+> +
+> +static inline bool autonuma_debug(void)
+> +{
+> +	return !!test_bit(AUTONUMA_DEBUG_FLAG, &autonuma_flags);
+> +}
+> +
+> +static inline bool autonuma_sched_load_balance_strict(void)
+> +{
+> +	return !!test_bit(AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG,
+> +			  &autonuma_flags);
+> +}
+> +
+> +static inline bool autonuma_sched_clone_reset(void)
+> +{
+> +	return !!test_bit(AUTONUMA_SCHED_CLONE_RESET_FLAG,
+> +			  &autonuma_flags);
+> +}
+> +
+> +static inline bool autonuma_sched_fork_reset(void)
+> +{
+> +	return !!test_bit(AUTONUMA_SCHED_FORK_RESET_FLAG,
+> +			  &autonuma_flags);
+> +}
+> +
+> +static inline bool autonuma_scan_pmd(void)
+> +{
+> +	return !!test_bit(AUTONUMA_SCAN_PMD_FLAG, &autonuma_flags);
+> +}
+> +
+> +static inline bool autonuma_scan_use_working_set(void)
+> +{
+> +	return !!test_bit(AUTONUMA_SCAN_USE_WORKING_SET_FLAG,
+> +			  &autonuma_flags);
+> +}
+> +
+> +static inline bool autonuma_migrate_defer(void)
+> +{
+> +	return !!test_bit(AUTONUMA_MIGRATE_DEFER_FLAG, &autonuma_flags);
+> +}
+> +
+> +#endif /* _LINUX_AUTONUMA_FLAGS_H */
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
