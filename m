@@ -1,220 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab2F3P61 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 11:58:27 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39109 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab2F3P6Z (ORCPT
+	id S1755743Ab2F3QWL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 12:22:11 -0400
+Received: from charybdis-ext.suse.de ([195.135.221.2]:33492 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753179Ab2F3QWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 11:58:25 -0400
-Message-ID: <4FEF2214.4000205@gmail.com>
-Date: Sat, 30 Jun 2012 23:58:12 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
-        cl@linux.com, minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, wency@cn.fujitsu.com
-Subject: Re: [RFC PATCH 10/12] memory-hotplug : free memmap of sparse-vmemmap
-References: <4FEA9C88.1070800@jp.fujitsu.com> <4FEAA09F.5000907@jp.fujitsu.com>
-In-Reply-To: <4FEAA09F.5000907@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Sat, 30 Jun 2012 12:22:10 -0400
+Subject: Re: Fwd: UEFI Secure boot using qemu-kvm
+From: joeyli <jlee@suse.com>
+To: linux-kernel@vger.kernel.org
+Cc: JBottomley@parallels.com
+In-Reply-To: <1340879091.6196.147.camel@linux-s257.site>
+References: <1340877668.6196.143.camel@linux-s257.site>
+	 <CAGLnvc-hLpUZaaOkeWMRtYefwL5goxuWP_99FyAzem7s_mncPg@mail.gmail.com>
+	 <1340879091.6196.147.camel@linux-s257.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 01 Jul 2012 00:21:29 +0800
+Message-ID: <1341073290.16691.14.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2012 01:56 PM, Yasuaki Ishimatsu wrote:
-> I don't think that all pages of virtual mapping in removed memory can be
-> freed, since page which type is MIX_SECTION_INFO is difficult to free.
-> So, the patch only frees page which type is SECTION_INFO at first.
+於 四，2012-06-28 於 18:24 +0800，joeyli 提到：
+> Hi James, 
 > 
-> CC: Len Brown <len.brown@intel.com>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 於 四，2012-06-28 於 18:11 +0800，lee joey 提到：
+> > 
+> > 
+> > ---------- Forwarded message ----------
+> > From: joeyli <jlee@suse.com>
+> > Date: 2012/6/28
+> > Subject: Re: UEFI Secure boot using qemu-kvm
+> > To: JBottomley@parallels.com
+> > Cc: linux-kernel@vger.kernel.org
+> > 
+> > 
+> > Hi James,
+> > 
+> > On Wed, Jun 27, 2012 at 06:34:05PM +0100, James Bottomley wrote:
+> > 
+> > > The purpose of this email is to widen the pool of people who are
+> > playing
+> > > with UEFI Secure boot.  The Linux Foundation Technical Advisory
+> > Board
+> > > have been looking into this because it turns out to be rather
+> > difficult
+> > > to lay your hands on real UEFI Secure Boot enabled hardware.
+> > 
+> > 
+> > 
+> > I am following your approach to reproduce your UEFI environment with
+> > qemu-kvm. After run qemu-system-x86_64 the kvm launched and go to UEFI
+> > shell success. So far so good!
+> > 
+> > But, I got a problem is the keyboard layout is not US keyboard, So I
+> > need build a mapping table for reference when key-in any letter:
+> > 
+> > [               e
+> > /               x
+> > s               i
+> > enter           t
+> > down            enter
+> > page up         down
+> > ...
+> > 
+> > 
+> > Did you meet this issue on your side?
+> > 
 > 
-> ---
->  arch/x86/mm/init_64.c |   89 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/mm.h    |    2 +
->  mm/memory_hotplug.c   |    5 ++
->  mm/sparse.c           |    5 +-
->  4 files changed, 99 insertions(+), 2 deletions(-)
+> I just found this issue only happen on when I used ssh connect to the
+> machine that setup environment then run qemu-kvm.
 > 
-> Index: linux-3.5-rc4/include/linux/mm.h
-> ===================================================================
-> --- linux-3.5-rc4.orig/include/linux/mm.h	2012-06-27 09:11:13.790150442 +0900
-> +++ linux-3.5-rc4/include/linux/mm.h	2012-06-27 09:11:16.433117400 +0900
-> @@ -1588,6 +1588,8 @@ int vmemmap_populate(struct page *start_
->  void vmemmap_populate_print_last(void);
->  void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
->  				  unsigned long size);
-> +void vmemmap_kfree(struct page *memmpa, unsigned long nr_pages);
-> +void vmemmap_free_bootmem(struct page *memmpa, unsigned long nr_pages);
+> When direct launch qemu-kvm on the machine, there have no keyboard
+> layout problem. Not sure this problem is dependent to qemu or UEFI
+> image.
 > 
->  enum mf_flags {
->  	MF_COUNT_INCREASED = 1 << 0,
-> Index: linux-3.5-rc4/mm/sparse.c
-> ===================================================================
-> --- linux-3.5-rc4.orig/mm/sparse.c	2012-06-27 09:06:35.317631878 +0900
-> +++ linux-3.5-rc4/mm/sparse.c	2012-06-27 09:11:16.434117388 +0900
-> @@ -614,12 +614,13 @@ static inline struct page *kmalloc_secti
->  	/* This will make the necessary allocations eventually. */
->  	return sparse_mem_map_populate(pnum, nid);
->  }
-> -static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
-> +static void __kfree_section_memmap(struct page *page, unsigned long nr_pages)
->  {
-> -	return; /* XXX: Not implemented yet */
-> +	vmemmap_kfree(page, nr_pages);
->  }
->  static void free_map_bootmem(struct page *page, unsigned long nr_pages)
->  {
-> +	vmemmap_free_bootmem(page, nr_pages);
->  }
->  #else
->  static struct page *__kmalloc_section_memmap(unsigned long nr_pages)
-> Index: linux-3.5-rc4/arch/x86/mm/init_64.c
-> ===================================================================
-> --- linux-3.5-rc4.orig/arch/x86/mm/init_64.c	2012-06-27 09:11:13.791150430 +0900
-> +++ linux-3.5-rc4/arch/x86/mm/init_64.c	2012-06-27 09:11:59.254581998 +0900
-> @@ -978,6 +978,95 @@ vmemmap_populate(struct page *start_page
->  	return 0;
->  }
 > 
-> +unsigned long find_and_clear_pte_page(unsigned long addr, unsigned long end,
-> +				      struct page *page)
-I think the third parameter should be "struct page **pp" instead of "struct page *page".
-And "page = pte_page(*pte)" should be "*pp = pte_page(*pte)".
-Otherwise the found page pointer can't be returned to the caller and vmemmap_kfree()
-just sees random value in variable "page".
-
-> +{
-> +	pgd_t *pgd;
-> +	pud_t *pud;
-> +	pmd_t *pmd;
-> +	pte_t *pte;
-> +	unsigned long next;
-> +
-> +	page = NULL;
-> +
-> +	pgd = pgd_offset_k(addr);
-> +	if (pgd_none(*pgd))
-> +		return PAGE_SIZE;
-> +
-> +	pud = pud_offset(pgd, addr);
-> +	if (pud_none(*pud))
-> +		return PAGE_SIZE;
-> +
-> +	if (!cpu_has_pse) {
-> +		next = (addr + PAGE_SIZE) & PAGE_MASK;
-> +		pmd = pmd_offset(pud, addr);
-> +		if (pmd_none(*pmd))
-> +			return next;
-> +
-> +		pte = pte_offset_kernel(pmd, addr);
-> +		if (pte_none(*pte))
-> +			return next;
-> +
-> +		page = pte_page(*pte);
-> +		pte_clear(&init_mm, addr, pte);
-> +	} else {
-> +		next = pmd_addr_end(addr, end);
-> +
-> +		pmd = pmd_offset(pud, addr);
-> +		if (pmd_none(*pmd))
-> +			return next;
-> +
-> +		page = pmd_page(*pmd);
-> +		pmd_clear(pmd);
-> +	}
-> +
-> +	return next;
-> +}
-> +
-> +void __meminit
-> +vmemmap_kfree(struct page *memmap, unsigned long nr_pages)
-> +{
-> +	unsigned long addr = (unsigned long)memmap;
-> +	unsigned long end = (unsigned long)(memmap + nr_pages);
-> +	unsigned long next;
-> +	unsigned int order;
-> +	struct page *page;
-> +
-> +	for (; addr < end; addr = next) {
-> +		next = find_and_clear_pte_page(addr, end, page);
-> +		if (!page)
-> +			continue;
-> +
-> +		if (is_vmalloc_addr(page))
-> +			vfree(page);
-> +		else {
-> +			order = next - addr;
-> +			free_pages((unsigned long)page,
-> +				   get_order(sizeof(struct page) *  order));
-> +		}
-> +	}
-> +}
-> +
-> +void __meminit
-> +vmemmap_free_bootmem(struct page *memmap, unsigned long nr_pages)
-> +{
-> +	unsigned long addr = (unsigned long)memmap;
-> +	unsigned long end = (unsigned long)(memmap + nr_pages);
-> +	unsigned long next;
-> +	struct page *page;
-> +	unsigned long magic;
-> +
-> +	for (; addr < end; addr = next) {
-> +		next = find_and_clear_pte_page(addr, end, page);
-> +		if (!page)
-> +			continue;
-> +
-> +		magic = (unsigned long) page->lru.next;
-> +		if (magic == SECTION_INFO)
-> +			put_page_bootmem(page);
-> +	}
-> +}
-> +
->  void __meminit
->  register_page_bootmem_memmap(unsigned long section_nr, struct page *start_page,
->  			     unsigned long size)
-> Index: linux-3.5-rc4/mm/memory_hotplug.c
-> ===================================================================
-> --- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-06-27 09:11:13.789150454 +0900
-> +++ linux-3.5-rc4/mm/memory_hotplug.c	2012-06-27 09:11:16.436117363 +0900
-> @@ -303,6 +303,8 @@ static int __meminit __add_section(int n
->  #ifdef CONFIG_SPARSEMEM_VMEMMAP
->  static int __remove_section(struct zone *zone, struct mem_section *ms)
->  {
-> +	unsigned long flags;
-> +	struct pglist_data *pgdat = zone->zone_pgdat;
->  	int ret;
-> 
->  	if (!valid_section(ms))
-> @@ -310,6 +312,9 @@ static int __remove_section(struct zone
-> 
->  	ret = unregister_memory_section(ms);
-> 
-> +	pgdat_resize_lock(pgdat, &flags);
-> +	sparse_remove_one_section(zone, ms);
-> +	pgdat_resize_unlock(pgdat, &flags);
->  	return ret;
->  }
->  #else
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Thanks a lot!
+> Joey Lee
 > 
 
+Base on James's approach, wrote a wiki page have steps and screenshot:
+	http://en.opensuse.org/KVM/UEFI_Secure_boot_using_qemu-kvm
+
+
+Thanks
+Joey Lee
 
