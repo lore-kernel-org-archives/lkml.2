@@ -1,1126 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab2F3Qvt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 12:51:49 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:57539 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932078Ab2F3Qvr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 12:51:47 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        aletes.xgr@gmail.com, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, dwmw2@infradead.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
-        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
-        linux@arm.linux.org.uk, dedekind1@gmail.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v11] MTD: LPC32xx MLC NAND driver
-Date: Sat, 30 Jun 2012 18:50:38 +0200
-Message-Id: <1341075038-29985-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	id S932144Ab2F3RAd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 13:00:33 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2273 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932092Ab2F3RAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jun 2012 13:00:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="165150797"
+From: Saranya Gopal <saranya.gopal@intel.com>
+To: lars@metafoo.de, cbou@mail.ru, dwmw2@infradead.org
+Cc: linux-kernel@vger.kernel.org, Saranya Gopal <saranya.gopal@intel.com>
+Subject: [PATCHv3] bq27x00_battery: Add support for BQ27425 chip
+Date: Sat, 30 Jun 2012 22:26:14 +0530
+Message-Id: <1341075374-31704-1-git-send-email-saranya.gopal@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a driver for the MLC NAND controller of the LPC32xx SoC.
-
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-
----
-Applies to l2-mtd
-
-Changes since v10:
-* Don't select AMBA_PL08X
-* unsigned -> int wp_gpio; for evaluation of error codes
-* Don't initialize static int use_dma with zero
-* lpc32xx_nand_setup(): remove unused variable sr
-* Only use dma setup/release on use_dma
-* lpc32xx_write_page_lowlevel(): Fix unused dma_buf
-* Added dummy_buf for dummy page reads
-
-Changes since v9:
-* Adjusted to API change in l2-mtd (write function returns int now)
-
-Changes since v8:
-* Use of_get_named_gpio() instead of of_get_named_gpio_flags()
-* probe() returns -EPROBE_DEFER if wp_gpio is deferred from of_get_named_gpio()
-
-Changes since v7:
-* Cleanup: Use mtd nand default functions for single byte read and write
-  operations
-* Support more chips by removing fixed page size and calculating mlc subpages
-  from chip data
-
-Changes since v6:
-* Kconfig: select amba dma driver
-* Make wp_gpio optional by ignoring gpio if property is missing
-
-Changes since v5:
-* Renamed: lpc32xx_nand_mlc.c -> lpc32xx_mlc.c
-
-Changes since v4:
-* This patch erroneously changed Kconfig of the _other_ NAND (SLC) driver from
-  "bool" to "tristate". Moved this fix to the actual SLC driver patch.
-
-Changes since v3:
-* Dropped superfluous error handling of dmaengine_submit()
-* Added unmapping of dma sg buffers
+This patch adds support for BQ27425 (TI) chip. This chip is same as
+BQ27500 with few registers removed and register address map changed.
+The data sheet for this chip is publicly available at
+ http://www.ti.com/product/bq27425-g1
 
 Changes since v2:
-* Adjusted to mtd API changes
+        Remove register address definitions of bq27425 and
+          use register address offset instead.
+        Add a small helper function to decide if the chip version
+          is higher than bq27200 to make it less noisy
+          to add another chip with similar register layout.
 
-Changes since v1:
-* Factored out dmaengine_slave_config() to dma_setup() function in probe()
-* Fixed dma data direction and dma transfer direction differences
-* Removed dma_sync_sg_for_cpu() - not necessary due to unmap
-* Removed dma_set_mask()
+Signed-off-by: Saranya Gopal <saranya.gopal@intel.com>
+---
+ drivers/power/bq27x00_battery.c |   88 +++++++++++++++++++++++++++++++-------
+ 1 files changed, 71 insertions(+), 17 deletions(-)
 
-Thanks to Alexandre Pereira da Silva, Artem Bityutskiy and Russell King for
-reviewing, testing and improvements!
-
- .../devicetree/bindings/mtd/lpc32xx-mlc.txt        |   50 ++
- drivers/mtd/nand/Kconfig                           |   11 +
- drivers/mtd/nand/Makefile                          |    1 +
- drivers/mtd/nand/lpc32xx_mlc.c                     |  936 ++++++++++++++++++++
- 4 files changed, 998 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mtd/lpc32xx-mlc.txt
- create mode 100644 drivers/mtd/nand/lpc32xx_mlc.c
-
-diff --git a/Documentation/devicetree/bindings/mtd/lpc32xx-mlc.txt b/Documentation/devicetree/bindings/mtd/lpc32xx-mlc.txt
-new file mode 100644
-index 0000000..d0a3725
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mtd/lpc32xx-mlc.txt
-@@ -0,0 +1,50 @@
-+NXP LPC32xx SoC NAND MLC controller
-+
-+Required properties:
-+- compatible: "nxp,lpc3220-mlc"
-+- reg: Address and size of the controller
-+- interrupts: The NAND interrupt specification
-+- gpios: GPIO specification for NAND write protect
-+
-+The following required properties are very controller specific. See the LPC32xx
-+User Manual 7.5.14 MLC NAND Timing Register (the values here are specified in
-+Hz, to make them independent of actual clock speed and to provide for good
-+accuracy:)
-+- nxp,tcea_delay: TCEA_DELAY
-+- nxp,busy_delay: BUSY_DELAY
-+- nxp,nand_ta: NAND_TA
-+- nxp,rd_high: RD_HIGH
-+- nxp,rd_low: RD_LOW
-+- nxp,wr_high: WR_HIGH
-+- nxp,wr_low: WR_LOW
-+
-+Optional subnodes:
-+- Partitions, see Documentation/devicetree/bindings/mtd/partition.txt
-+
-+Example:
-+
-+	mlc: flash@200A8000 {
-+		compatible = "nxp,lpc3220-mlc";
-+		reg = <0x200A8000 0x11000>;
-+		interrupts = <11 0>;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+
-+		nxp,tcea-delay = <333333333>;
-+		nxp,busy-delay = <10000000>;
-+		nxp,nand-ta = <18181818>;
-+		nxp,rd-high = <31250000>;
-+		nxp,rd-low = <45454545>;
-+		nxp,wr-high = <40000000>;
-+		nxp,wr-low = <83333333>;
-+		gpios = <&gpio 5 19 1>; /* GPO_P3 19, active low */
-+
-+		mtd0@00000000 {
-+			label = "boot";
-+			reg = <0x00000000 0x00064000>;
-+			read-only;
-+		};
-+
-+		...
-+
-+	};
-diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
-index de69978..64c3a29 100644
---- a/drivers/mtd/nand/Kconfig
-+++ b/drivers/mtd/nand/Kconfig
-@@ -425,6 +425,17 @@ config MTD_NAND_SLC_LPC32XX
- 	  Please check the actual NAND chip connected and its support
- 	  by the SLC NAND controller.
+diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
+index f5d6d37..ec6ed18 100644
+--- a/drivers/power/bq27x00_battery.c
++++ b/drivers/power/bq27x00_battery.c
+@@ -22,6 +22,7 @@
+  * Datasheets:
+  * http://focus.ti.com/docs/prod/folders/print/bq27000.html
+  * http://focus.ti.com/docs/prod/folders/print/bq27500.html
++ * http://www.ti.com/product/bq27425-g1
+  */
  
-+config MTD_NAND_MLC_LPC32XX
-+       tristate "NXP LPC32xx MLC Controller"
-+       depends on ARCH_LPC32XX
-+       help
-+         Uses the LPC32XX MLC (i.e. for Multi Level Cell chips) NAND
-+         controller. This is the default for the WORK92105 controller
-+         board.
+ #include <linux/module.h>
+@@ -67,6 +68,10 @@
+ #define BQ27500_FLAG_SOC1		BIT(2) /* State-of-Charge threshold 1 */
+ #define BQ27500_FLAG_FC			BIT(9)
+ 
++/* bq27425 register addresses are same as bq27x00 addresses minus 4 */
++#define BQ27425_REG_OFFSET		0x04
++#define BQ27425_REG_SOC			0x1C
 +
-+         Please check the actual NAND chip connected and its support
-+         by the MLC NAND controller.
-+
- config MTD_NAND_CM_X270
- 	tristate "Support for NAND Flash on CM-X270 modules"
- 	depends on MACH_ARMCORE
-diff --git a/drivers/mtd/nand/Makefile b/drivers/mtd/nand/Makefile
-index d29a893..ddee818 100644
---- a/drivers/mtd/nand/Makefile
-+++ b/drivers/mtd/nand/Makefile
-@@ -41,6 +41,7 @@ obj-$(CONFIG_MTD_NAND_FSL_ELBC)		+= fsl_elbc_nand.o
- obj-$(CONFIG_MTD_NAND_FSL_IFC)		+= fsl_ifc_nand.o
- obj-$(CONFIG_MTD_NAND_FSL_UPM)		+= fsl_upm.o
- obj-$(CONFIG_MTD_NAND_SLC_LPC32XX)      += lpc32xx_slc.o
-+obj-$(CONFIG_MTD_NAND_MLC_LPC32XX)      += lpc32xx_mlc.o
- obj-$(CONFIG_MTD_NAND_SH_FLCTL)		+= sh_flctl.o
- obj-$(CONFIG_MTD_NAND_MXC)		+= mxc_nand.o
- obj-$(CONFIG_MTD_NAND_SOCRATES)		+= socrates_nand.o
-diff --git a/drivers/mtd/nand/lpc32xx_mlc.c b/drivers/mtd/nand/lpc32xx_mlc.c
-new file mode 100644
-index 0000000..09923ff
---- /dev/null
-+++ b/drivers/mtd/nand/lpc32xx_mlc.c
-@@ -0,0 +1,936 @@
-+/*
-+ * Driver for NAND MLC Controller in LPC32xx
-+ *
-+ * Author: Roland Stigge <stigge@antcom.de>
-+ *
-+ * Copyright (C) 2011 WORK Microwave GmbH
-+ * Copyright (C) 2011, 2012 Roland Stigge
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ *
-+ * NAND Flash Controller Operation:
-+ * - Read: Auto Decode
-+ * - Write: Auto Encode
-+ * - Tested Page Sizes: 2048, 4096
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/mtd/mtd.h>
-+#include <linux/mtd/nand.h>
-+#include <linux/mtd/partitions.h>
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/delay.h>
-+#include <linux/completion.h>
-+#include <linux/interrupt.h>
-+#include <linux/of.h>
-+#include <linux/of_mtd.h>
-+#include <linux/of_gpio.h>
-+#include <linux/amba/pl08x.h>
-+#include <linux/io.h>
-+#include <linux/mm.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/dmaengine.h>
-+#include <linux/mtd/nand_ecc.h>
-+
-+#define DRV_NAME "lpc32xx_mlc"
-+
-+/**********************************************************************
-+* MLC NAND controller register offsets
-+**********************************************************************/
-+
-+#define MLC_BUFF(x)			(x + 0x00000)
-+#define MLC_DATA(x)			(x + 0x08000)
-+#define MLC_CMD(x)			(x + 0x10000)
-+#define MLC_ADDR(x)			(x + 0x10004)
-+#define MLC_ECC_ENC_REG(x)		(x + 0x10008)
-+#define MLC_ECC_DEC_REG(x)		(x + 0x1000C)
-+#define MLC_ECC_AUTO_ENC_REG(x)		(x + 0x10010)
-+#define MLC_ECC_AUTO_DEC_REG(x)		(x + 0x10014)
-+#define MLC_RPR(x)			(x + 0x10018)
-+#define MLC_WPR(x)			(x + 0x1001C)
-+#define MLC_RUBP(x)			(x + 0x10020)
-+#define MLC_ROBP(x)			(x + 0x10024)
-+#define MLC_SW_WP_ADD_LOW(x)		(x + 0x10028)
-+#define MLC_SW_WP_ADD_HIG(x)		(x + 0x1002C)
-+#define MLC_ICR(x)			(x + 0x10030)
-+#define MLC_TIME_REG(x)			(x + 0x10034)
-+#define MLC_IRQ_MR(x)			(x + 0x10038)
-+#define MLC_IRQ_SR(x)			(x + 0x1003C)
-+#define MLC_LOCK_PR(x)			(x + 0x10044)
-+#define MLC_ISR(x)			(x + 0x10048)
-+#define MLC_CEH(x)			(x + 0x1004C)
-+
-+/**********************************************************************
-+* MLC_CMD bit definitions
-+**********************************************************************/
-+#define MLCCMD_RESET			0xFF
-+
-+/**********************************************************************
-+* MLC_ICR bit definitions
-+**********************************************************************/
-+#define MLCICR_WPROT			(1 << 3)
-+#define MLCICR_LARGEBLOCK		(1 << 2)
-+#define MLCICR_LONGADDR			(1 << 1)
-+#define MLCICR_16BIT			(1 << 0)  /* unsupported by LPC32x0! */
-+
-+/**********************************************************************
-+* MLC_TIME_REG bit definitions
-+**********************************************************************/
-+#define MLCTIMEREG_TCEA_DELAY(n)	(((n) & 0x03) << 24)
-+#define MLCTIMEREG_BUSY_DELAY(n)	(((n) & 0x1F) << 19)
-+#define MLCTIMEREG_NAND_TA(n)		(((n) & 0x07) << 16)
-+#define MLCTIMEREG_RD_HIGH(n)		(((n) & 0x0F) << 12)
-+#define MLCTIMEREG_RD_LOW(n)		(((n) & 0x0F) << 8)
-+#define MLCTIMEREG_WR_HIGH(n)		(((n) & 0x0F) << 4)
-+#define MLCTIMEREG_WR_LOW(n)		(((n) & 0x0F) << 0)
-+
-+/**********************************************************************
-+* MLC_IRQ_MR and MLC_IRQ_SR bit definitions
-+**********************************************************************/
-+#define MLCIRQ_NAND_READY		(1 << 5)
-+#define MLCIRQ_CONTROLLER_READY		(1 << 4)
-+#define MLCIRQ_DECODE_FAILURE		(1 << 3)
-+#define MLCIRQ_DECODE_ERROR		(1 << 2)
-+#define MLCIRQ_ECC_READY		(1 << 1)
-+#define MLCIRQ_WRPROT_FAULT		(1 << 0)
-+
-+/**********************************************************************
-+* MLC_LOCK_PR bit definitions
-+**********************************************************************/
-+#define MLCLOCKPR_MAGIC			0xA25E
-+
-+/**********************************************************************
-+* MLC_ISR bit definitions
-+**********************************************************************/
-+#define MLCISR_DECODER_FAILURE		(1 << 6)
-+#define MLCISR_ERRORS			((1 << 4) | (1 << 5))
-+#define MLCISR_ERRORS_DETECTED		(1 << 3)
-+#define MLCISR_ECC_READY		(1 << 2)
-+#define MLCISR_CONTROLLER_READY		(1 << 1)
-+#define MLCISR_NAND_READY		(1 << 0)
-+
-+/**********************************************************************
-+* MLC_CEH bit definitions
-+**********************************************************************/
-+#define MLCCEH_NORMAL			(1 << 0)
-+
-+struct lpc32xx_nand_cfg_mlc {
-+	u32 tcea_delay;
-+	u32 busy_delay;
-+	u32 nand_ta;
-+	u32 rd_high;
-+	u32 rd_low;
-+	u32 wr_high;
-+	u32 wr_low;
-+	int wp_gpio;
-+	struct mtd_partition *parts;
-+	unsigned num_parts;
+ #define BQ27000_RS			20 /* Resistor sense */
+ 
+ struct bq27x00_device_info;
+@@ -74,7 +79,7 @@ struct bq27x00_access_methods {
+ 	int (*read)(struct bq27x00_device_info *di, u8 reg, bool single);
+ };
+ 
+-enum bq27x00_chip { BQ27000, BQ27500 };
++enum bq27x00_chip { BQ27000, BQ27500, BQ27425};
+ 
+ struct bq27x00_reg_cache {
+ 	int temperature;
+@@ -125,6 +130,20 @@ static enum power_supply_property bq27x00_battery_props[] = {
+ 	POWER_SUPPLY_PROP_ENERGY_NOW,
+ };
+ 
++static enum power_supply_property bq27425_battery_props[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_CURRENT_NOW,
++	POWER_SUPPLY_PROP_CAPACITY,
++	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
++	POWER_SUPPLY_PROP_TEMP,
++	POWER_SUPPLY_PROP_TECHNOLOGY,
++	POWER_SUPPLY_PROP_CHARGE_FULL,
++	POWER_SUPPLY_PROP_CHARGE_NOW,
++	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
 +};
 +
-+static struct nand_ecclayout lpc32xx_nand_oob = {
-+	.eccbytes = 40,
-+	.eccpos = { 6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
-+		   22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
-+		   38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
-+		   54, 55, 56, 57, 58, 59, 60, 61, 62, 63 },
-+	.oobfree = {
-+		{ .offset = 0,
-+		  .length = 6, },
-+		{ .offset = 16,
-+		  .length = 6, },
-+		{ .offset = 32,
-+		  .length = 6, },
-+		{ .offset = 48,
-+		  .length = 6, },
-+		},
-+};
-+
-+static struct nand_bbt_descr lpc32xx_nand_bbt = {
-+	.options = NAND_BBT_ABSPAGE | NAND_BBT_2BIT | NAND_BBT_NO_OOB |
-+		   NAND_BBT_WRITE,
-+	.pages = { 524224, 0, 0, 0, 0, 0, 0, 0 },
-+};
-+
-+static struct nand_bbt_descr lpc32xx_nand_bbt_mirror = {
-+	.options = NAND_BBT_ABSPAGE | NAND_BBT_2BIT | NAND_BBT_NO_OOB |
-+		   NAND_BBT_WRITE,
-+	.pages = { 524160, 0, 0, 0, 0, 0, 0, 0 },
-+};
-+
-+struct lpc32xx_nand_host {
-+	struct nand_chip	nand_chip;
-+	struct clk		*clk;
-+	struct mtd_info		mtd;
-+	void __iomem		*io_base;
-+	int			irq;
-+	struct lpc32xx_nand_cfg_mlc	*ncfg;
-+	struct completion       comp_nand;
-+	struct completion       comp_controller;
-+	uint32_t llptr;
-+	/*
-+	 * Physical addresses of ECC buffer, DMA data buffers, OOB data buffer
-+	 */
-+	dma_addr_t		oob_buf_phy;
-+	/*
-+	 * Virtual addresses of ECC buffer, DMA data buffers, OOB data buffer
-+	 */
-+	uint8_t			*oob_buf;
-+	/* Physical address of DMA base address */
-+	dma_addr_t		io_base_phy;
-+
-+	struct completion	comp_dma;
-+	struct dma_chan		*dma_chan;
-+	struct dma_slave_config	dma_slave_config;
-+	struct scatterlist	sgl;
-+	u8			*dma_buf;
-+	u8			*dummy_buf;
-+	int			mlcsubpages; /* number of 512bytes-subpages */
-+};
-+
-+/*
-+ * Activate/Deactivate DMA Operation:
-+ *
-+ * Using the PL080 DMA Controller for transferring the 512 byte subpages
-+ * instead of doing readl() / writel() in a loop slows it down significantly.
-+ * Measurements via getnstimeofday() upon 512 byte subpage reads reveal:
-+ *
-+ * - readl() of 128 x 32 bits in a loop: ~20us
-+ * - DMA read of 512 bytes (32 bit, 4...128 words bursts): ~60us
-+ * - DMA read of 512 bytes (32 bit, no bursts): ~100us
-+ *
-+ * This applies to the transfer itself. In the DMA case: only the
-+ * wait_for_completion() (DMA setup _not_ included).
-+ *
-+ * Note that the 512 bytes subpage transfer is done directly from/to a
-+ * FIFO/buffer inside the NAND controller. Most of the time (~400-800us for a
-+ * 2048 bytes page) is spent waiting for the NAND IRQ, anyway. (The NAND
-+ * controller transferring data between its internal buffer to/from the NAND
-+ * chip.)
-+ *
-+ * Therefore, using the PL080 DMA is disabled by default, for now.
-+ *
+ static unsigned int poll_interval = 360;
+ module_param(poll_interval, uint, 0644);
+ MODULE_PARM_DESC(poll_interval, "battery poll interval in seconds - " \
+@@ -137,10 +156,24 @@ MODULE_PARM_DESC(poll_interval, "battery poll interval in seconds - " \
+ static inline int bq27x00_read(struct bq27x00_device_info *di, u8 reg,
+ 		bool single)
+ {
++	if (di->chip == BQ27425)
++		return di->bus.read(di, reg - BQ27425_REG_OFFSET, single);
+ 	return di->bus.read(di, reg, single);
+ }
+ 
+ /*
++ * Higher versions of the chip like BQ27425 and BQ27500
++ * differ from BQ27000 and BQ27200 in calculation of certain
++ * parameters. Hence we need to check for the chip type.
 + */
-+static int use_dma;
-+
-+static void lpc32xx_nand_setup(struct lpc32xx_nand_host *host)
++static bool is_chip_version_higher(struct bq27x00_device_info *di)
 +{
-+	u32 clkrate, tmp;
-+
-+	/* Reset MLC controller */
-+	writel(MLCCMD_RESET, MLC_CMD(host->io_base));
-+	udelay(1000);
-+
-+	/* Get base clock for MLC block */
-+	clkrate = clk_get_rate(host->clk);
-+	if (clkrate == 0)
-+		clkrate = 104000000;
-+
-+	/* Unlock MLC_ICR
-+	 * (among others, will be locked again automatically) */
-+	writew(MLCLOCKPR_MAGIC, MLC_LOCK_PR(host->io_base));
-+
-+	/* Configure MLC Controller: Large Block, 5 Byte Address */
-+	tmp = MLCICR_LARGEBLOCK | MLCICR_LONGADDR;
-+	writel(tmp, MLC_ICR(host->io_base));
-+
-+	/* Unlock MLC_TIME_REG
-+	 * (among others, will be locked again automatically) */
-+	writew(MLCLOCKPR_MAGIC, MLC_LOCK_PR(host->io_base));
-+
-+	/* Compute clock setup values, see LPC and NAND manual */
-+	tmp = 0;
-+	tmp |= MLCTIMEREG_TCEA_DELAY(clkrate / host->ncfg->tcea_delay + 1);
-+	tmp |= MLCTIMEREG_BUSY_DELAY(clkrate / host->ncfg->busy_delay + 1);
-+	tmp |= MLCTIMEREG_NAND_TA(clkrate / host->ncfg->nand_ta + 1);
-+	tmp |= MLCTIMEREG_RD_HIGH(clkrate / host->ncfg->rd_high + 1);
-+	tmp |= MLCTIMEREG_RD_LOW(clkrate / host->ncfg->rd_low);
-+	tmp |= MLCTIMEREG_WR_HIGH(clkrate / host->ncfg->wr_high + 1);
-+	tmp |= MLCTIMEREG_WR_LOW(clkrate / host->ncfg->wr_low);
-+	writel(tmp, MLC_TIME_REG(host->io_base));
-+
-+	/* Enable IRQ for CONTROLLER_READY and NAND_READY */
-+	writeb(MLCIRQ_CONTROLLER_READY | MLCIRQ_NAND_READY,
-+			MLC_IRQ_MR(host->io_base));
-+
-+	/* Normal nCE operation: nCE controlled by controller */
-+	writel(MLCCEH_NORMAL, MLC_CEH(host->io_base));
-+}
-+
-+/*
-+ * Hardware specific access to control lines
-+ */
-+static void lpc32xx_nand_cmd_ctrl(struct mtd_info *mtd, int cmd,
-+				  unsigned int ctrl)
-+{
-+	struct nand_chip *nand_chip = mtd->priv;
-+	struct lpc32xx_nand_host *host = nand_chip->priv;
-+
-+	if (cmd != NAND_CMD_NONE) {
-+		if (ctrl & NAND_CLE)
-+			writel(cmd, MLC_CMD(host->io_base));
-+		else
-+			writel(cmd, MLC_ADDR(host->io_base));
-+	}
-+}
-+
-+/*
-+ * Read Device Ready (NAND device _and_ controller ready)
-+ */
-+static int lpc32xx_nand_device_ready(struct mtd_info *mtd)
-+{
-+	struct nand_chip *nand_chip = mtd->priv;
-+	struct lpc32xx_nand_host *host = nand_chip->priv;
-+
-+	if ((readb(MLC_ISR(host->io_base)) &
-+	     (MLCISR_CONTROLLER_READY | MLCISR_NAND_READY)) ==
-+	    (MLCISR_CONTROLLER_READY | MLCISR_NAND_READY))
-+		return  1;
-+
-+	return 0;
-+}
-+
-+static irqreturn_t lpc3xxx_nand_irq(int irq, struct lpc32xx_nand_host *host)
-+{
-+	uint8_t sr;
-+
-+	/* Clear interrupt flag by reading status */
-+	sr = readb(MLC_IRQ_SR(host->io_base));
-+	if (sr & MLCIRQ_NAND_READY)
-+		complete(&host->comp_nand);
-+	if (sr & MLCIRQ_CONTROLLER_READY)
-+		complete(&host->comp_controller);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int lpc32xx_waitfunc_nand(struct mtd_info *mtd, struct nand_chip *chip)
-+{
-+	struct lpc32xx_nand_host *host = chip->priv;
-+
-+	if (readb(MLC_ISR(host->io_base)) & MLCISR_NAND_READY)
-+		goto exit;
-+
-+	wait_for_completion(&host->comp_nand);
-+
-+	while (!(readb(MLC_ISR(host->io_base)) & MLCISR_NAND_READY)) {
-+		/* Seems to be delayed sometimes by controller */
-+		dev_dbg(&mtd->dev, "Warning: NAND not ready.\n");
-+		cpu_relax();
-+	}
-+
-+exit:
-+	return NAND_STATUS_READY;
-+}
-+
-+static int lpc32xx_waitfunc_controller(struct mtd_info *mtd,
-+				       struct nand_chip *chip)
-+{
-+	struct lpc32xx_nand_host *host = chip->priv;
-+
-+	if (readb(MLC_ISR(host->io_base)) & MLCISR_CONTROLLER_READY)
-+		goto exit;
-+
-+	wait_for_completion(&host->comp_controller);
-+
-+	while (!(readb(MLC_ISR(host->io_base)) &
-+		 MLCISR_CONTROLLER_READY)) {
-+		dev_dbg(&mtd->dev, "Warning: Controller not ready.\n");
-+		cpu_relax();
-+	}
-+
-+exit:
-+	return NAND_STATUS_READY;
-+}
-+
-+static int lpc32xx_waitfunc(struct mtd_info *mtd, struct nand_chip *chip)
-+{
-+	lpc32xx_waitfunc_nand(mtd, chip);
-+	lpc32xx_waitfunc_controller(mtd, chip);
-+
-+	return NAND_STATUS_READY;
-+}
-+
-+/*
-+ * Enable NAND write protect
-+ */
-+static void lpc32xx_wp_enable(struct lpc32xx_nand_host *host)
-+{
-+	if (gpio_is_valid(host->ncfg->wp_gpio))
-+		gpio_set_value(host->ncfg->wp_gpio, 0);
-+}
-+
-+/*
-+ * Disable NAND write protect
-+ */
-+static void lpc32xx_wp_disable(struct lpc32xx_nand_host *host)
-+{
-+	if (gpio_is_valid(host->ncfg->wp_gpio))
-+		gpio_set_value(host->ncfg->wp_gpio, 1);
-+}
-+
-+static void lpc32xx_dma_complete_func(void *completion)
-+{
-+	complete(completion);
-+}
-+
-+static int lpc32xx_xmit_dma(struct mtd_info *mtd, void *mem, int len,
-+			    enum dma_transfer_direction dir)
-+{
-+	struct nand_chip *chip = mtd->priv;
-+	struct lpc32xx_nand_host *host = chip->priv;
-+	struct dma_async_tx_descriptor *desc;
-+	int flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT;
-+	int res;
-+
-+	sg_init_one(&host->sgl, mem, len);
-+
-+	res = dma_map_sg(host->dma_chan->device->dev, &host->sgl, 1,
-+			 DMA_BIDIRECTIONAL);
-+	if (res != 1) {
-+		dev_err(mtd->dev.parent, "Failed to map sg list\n");
-+		return -ENXIO;
-+	}
-+	desc = dmaengine_prep_slave_sg(host->dma_chan, &host->sgl, 1, dir,
-+				       flags);
-+	if (!desc) {
-+		dev_err(mtd->dev.parent, "Failed to prepare slave sg\n");
-+		goto out1;
-+	}
-+
-+	init_completion(&host->comp_dma);
-+	desc->callback = lpc32xx_dma_complete_func;
-+	desc->callback_param = &host->comp_dma;
-+
-+	dmaengine_submit(desc);
-+	dma_async_issue_pending(host->dma_chan);
-+
-+	wait_for_completion_timeout(&host->comp_dma, msecs_to_jiffies(1000));
-+
-+	dma_unmap_sg(host->dma_chan->device->dev, &host->sgl, 1,
-+		     DMA_BIDIRECTIONAL);
-+	return 0;
-+out1:
-+	dma_unmap_sg(host->dma_chan->device->dev, &host->sgl, 1,
-+		     DMA_BIDIRECTIONAL);
-+	return -ENXIO;
-+}
-+
-+static int lpc32xx_read_page(struct mtd_info *mtd, struct nand_chip *chip,
-+			     uint8_t *buf, int oob_required, int page)
-+{
-+	struct lpc32xx_nand_host *host = chip->priv;
-+	int i, j;
-+	uint8_t *oobbuf = chip->oob_poi;
-+	u32 mlc_isr;
-+	int res;
-+	u8 *dma_buf;
-+	bool dma_mapped;
-+
-+	if ((void *)buf <= high_memory) {
-+		dma_buf = buf;
-+		dma_mapped = true;
-+	} else {
-+		dma_buf = host->dma_buf;
-+		dma_mapped = false;
-+	}
-+
-+	/* Writing Command and Address */
-+	chip->cmdfunc(mtd, NAND_CMD_READ0, 0, page);
-+
-+	/* For all sub-pages */
-+	for (i = 0; i < host->mlcsubpages; i++) {
-+		/* Start Auto Decode Command */
-+		writeb(0x00, MLC_ECC_AUTO_DEC_REG(host->io_base));
-+
-+		/* Wait for Controller Ready */
-+		lpc32xx_waitfunc_controller(mtd, chip);
-+
-+		/* Check ECC Error status */
-+		mlc_isr = readl(MLC_ISR(host->io_base));
-+		if (mlc_isr & MLCISR_DECODER_FAILURE) {
-+			mtd->ecc_stats.failed++;
-+			dev_warn(&mtd->dev, "%s: DECODER_FAILURE\n", __func__);
-+		} else if (mlc_isr & MLCISR_ERRORS_DETECTED) {
-+			mtd->ecc_stats.corrected += ((mlc_isr >> 4) & 0x3) + 1;
-+		}
-+
-+		/* Read 512 + 16 Bytes */
-+		if (use_dma) {
-+			res = lpc32xx_xmit_dma(mtd, dma_buf + i * 512, 512,
-+					       DMA_DEV_TO_MEM);
-+			if (res)
-+				return res;
-+		} else {
-+			for (j = 0; j < (512 >> 2); j++) {
-+				*((uint32_t *)(buf)) =
-+					readl(MLC_BUFF(host->io_base));
-+				buf += 4;
-+			}
-+		}
-+		for (j = 0; j < (16 >> 2); j++) {
-+			*((uint32_t *)(oobbuf)) =
-+				readl(MLC_BUFF(host->io_base));
-+			oobbuf += 4;
-+		}
-+	}
-+
-+	if (use_dma && !dma_mapped)
-+		memcpy(buf, dma_buf, mtd->writesize);
-+
-+	return 0;
-+}
-+
-+static int lpc32xx_write_page_lowlevel(struct mtd_info *mtd,
-+				       struct nand_chip *chip,
-+				       const uint8_t *buf, int oob_required)
-+{
-+	struct lpc32xx_nand_host *host = chip->priv;
-+	const uint8_t *oobbuf = chip->oob_poi;
-+	u8 *dma_buf = (u8 *)buf;
-+	int res;
-+	int i, j;
-+
-+	if (use_dma && (void *)buf >= high_memory) {
-+		dma_buf = host->dma_buf;
-+		memcpy(dma_buf, buf, mtd->writesize);
-+	}
-+
-+	for (i = 0; i < host->mlcsubpages; i++) {
-+		/* Start Encode */
-+		writeb(0x00, MLC_ECC_ENC_REG(host->io_base));
-+
-+		/* Write 512 + 6 Bytes to Buffer */
-+		if (use_dma) {
-+			res = lpc32xx_xmit_dma(mtd, dma_buf + i * 512, 512,
-+					       DMA_MEM_TO_DEV);
-+			if (res)
-+				return res;
-+		} else {
-+			for (j = 0; j < (512 >> 2); j++) {
-+				writel(*((uint32_t *)(buf)),
-+				       MLC_BUFF(host->io_base));
-+				buf += 4;
-+			}
-+		}
-+		writel(*((uint32_t *)(oobbuf)), MLC_BUFF(host->io_base));
-+		oobbuf += 4;
-+		writew(*((uint16_t *)(oobbuf)), MLC_BUFF(host->io_base));
-+		oobbuf += 12;
-+
-+		/* Auto Encode w/ Bit 8 = 0 (see LPC MLC Controller manual) */
-+		writeb(0x00, MLC_ECC_AUTO_ENC_REG(host->io_base));
-+
-+		/* Wait for Controller Ready */
-+		lpc32xx_waitfunc_controller(mtd, chip);
-+	}
-+	return 0;
-+}
-+
-+static int lpc32xx_write_page(struct mtd_info *mtd, struct nand_chip *chip,
-+			      const uint8_t *buf, int oob_required, int page,
-+			      int cached, int raw)
-+{
-+	int res;
-+
-+	chip->cmdfunc(mtd, NAND_CMD_SEQIN, 0x00, page);
-+	res = lpc32xx_write_page_lowlevel(mtd, chip, buf, oob_required);
-+	chip->cmdfunc(mtd, NAND_CMD_PAGEPROG, -1, -1);
-+	lpc32xx_waitfunc(mtd, chip);
-+
-+	return res;
-+}
-+
-+static int lpc32xx_read_oob(struct mtd_info *mtd, struct nand_chip *chip,
-+			    int page)
-+{
-+	struct lpc32xx_nand_host *host = chip->priv;
-+
-+	/* Read whole page - necessary with MLC controller! */
-+	lpc32xx_read_page(mtd, chip, host->dummy_buf, 1, page);
-+
-+	return 0;
-+}
-+
-+static int lpc32xx_write_oob(struct mtd_info *mtd, struct nand_chip *chip,
-+			      int page)
-+{
-+	/* None, write_oob conflicts with the automatic LPC MLC ECC decoder! */
-+	return 0;
-+}
-+
-+/* Prepares MLC for transfers with H/W ECC enabled: always enabled anyway */
-+static void lpc32xx_ecc_enable(struct mtd_info *mtd, int mode)
-+{
-+	/* Always enabled! */
-+}
-+
-+static bool lpc32xx_dma_filter(struct dma_chan *chan, void *param)
-+{
-+	struct pl08x_dma_chan *ch =
-+		container_of(chan, struct pl08x_dma_chan, chan);
-+
-+	/* In LPC32xx's PL080 DMA wiring, the MLC NAND DMA signal is #12 */
-+	if (ch->cd->min_signal == 12)
++	if (di->chip == BQ27425 || di->chip == BQ27500)
 +		return true;
 +	return false;
 +}
 +
-+static int lpc32xx_dma_setup(struct lpc32xx_nand_host *host)
-+{
-+	struct mtd_info *mtd = &host->mtd;
-+	dma_cap_mask_t mask;
-+
-+	dma_cap_zero(mask);
-+	dma_cap_set(DMA_SLAVE, mask);
-+	host->dma_chan = dma_request_channel(mask, lpc32xx_dma_filter, NULL);
-+	if (!host->dma_chan) {
-+		dev_err(mtd->dev.parent, "Failed to request DMA channel\n");
-+		return -EBUSY;
-+	}
-+
-+	/*
-+	 * Set direction to a sensible value even if the dmaengine driver
-+	 * should ignore it. With the default (DMA_MEM_TO_MEM), the amba-pl08x
-+	 * driver criticizes it as "alien transfer direction".
-+	 */
-+	host->dma_slave_config.direction = DMA_DEV_TO_MEM;
-+	host->dma_slave_config.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
-+	host->dma_slave_config.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
-+	host->dma_slave_config.src_maxburst = 128;
-+	host->dma_slave_config.dst_maxburst = 128;
-+	/* DMA controller does flow control: */
-+	host->dma_slave_config.device_fc = false;
-+	host->dma_slave_config.src_addr = MLC_BUFF(host->io_base_phy);
-+	host->dma_slave_config.dst_addr = MLC_BUFF(host->io_base_phy);
-+	if (dmaengine_slave_config(host->dma_chan, &host->dma_slave_config)) {
-+		dev_err(mtd->dev.parent, "Failed to setup DMA slave\n");
-+		goto out1;
-+	}
-+
-+	return 0;
-+out1:
-+	dma_release_channel(host->dma_chan);
-+	return -ENXIO;
-+}
-+
-+#ifdef CONFIG_OF
-+static struct lpc32xx_nand_cfg_mlc *lpc32xx_parse_dt(struct device *dev)
-+{
-+	struct lpc32xx_nand_cfg_mlc *pdata;
-+	struct device_node *np = dev->of_node;
-+
-+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata) {
-+		dev_err(dev, "could not allocate memory for platform data\n");
-+		return NULL;
-+	}
-+
-+	of_property_read_u32(np, "nxp,tcea-delay", &pdata->tcea_delay);
-+	of_property_read_u32(np, "nxp,busy-delay", &pdata->busy_delay);
-+	of_property_read_u32(np, "nxp,nand-ta", &pdata->nand_ta);
-+	of_property_read_u32(np, "nxp,rd-high", &pdata->rd_high);
-+	of_property_read_u32(np, "nxp,rd-low", &pdata->rd_low);
-+	of_property_read_u32(np, "nxp,wr-high", &pdata->wr_high);
-+	of_property_read_u32(np, "nxp,wr-low", &pdata->wr_low);
-+
-+	if (!pdata->tcea_delay || !pdata->busy_delay || !pdata->nand_ta ||
-+	    !pdata->rd_high || !pdata->rd_low || !pdata->wr_high ||
-+	    !pdata->wr_low) {
-+		dev_err(dev, "chip parameters not specified correctly\n");
-+		return NULL;
-+	}
-+
-+	pdata->wp_gpio = of_get_named_gpio(np, "gpios", 0);
-+
-+	return pdata;
-+}
-+#else
-+static struct lpc32xx_nand_cfg_mlc *lpc32xx_parse_dt(struct device *dev)
-+{
-+	return NULL;
-+}
-+#endif
-+
 +/*
-+ * Probe for NAND controller
-+ */
-+static int __devinit lpc32xx_nand_probe(struct platform_device *pdev)
-+{
-+	struct lpc32xx_nand_host *host;
-+	struct mtd_info *mtd;
-+	struct nand_chip *nand_chip;
-+	struct resource *rc;
-+	int res;
-+	struct mtd_part_parser_data ppdata = {};
-+
-+	/* Allocate memory for the device structure (and zero it) */
-+	host = devm_kzalloc(&pdev->dev, sizeof(*host), GFP_KERNEL);
-+	if (!host) {
-+		dev_err(&pdev->dev, "failed to allocate device structure.\n");
-+		return -ENOMEM;
+  * Return the battery Relative State-of-Charge
+  * Or < 0 if something fails.
+  */
+@@ -150,6 +183,9 @@ static int bq27x00_battery_read_rsoc(struct bq27x00_device_info *di)
+ 
+ 	if (di->chip == BQ27500)
+ 		rsoc = bq27x00_read(di, BQ27500_REG_SOC, false);
++	else if (di->chip == BQ27425)
++		rsoc = bq27x00_read(di, BQ27425_REG_SOC + BQ27425_REG_OFFSET,
++								false);
+ 	else
+ 		rsoc = bq27x00_read(di, BQ27000_REG_RSOC, true);
+ 
+@@ -174,7 +210,7 @@ static int bq27x00_battery_read_charge(struct bq27x00_device_info *di, u8 reg)
+ 		return charge;
+ 	}
+ 
+-	if (di->chip == BQ27500)
++	if (is_chip_version_higher(di))
+ 		charge *= 1000;
+ 	else
+ 		charge = charge * 3570 / BQ27000_RS;
+@@ -208,7 +244,7 @@ static int bq27x00_battery_read_ilmd(struct bq27x00_device_info *di)
+ {
+ 	int ilmd;
+ 
+-	if (di->chip == BQ27500)
++	if (is_chip_version_higher(di))
+ 		ilmd = bq27x00_read(di, BQ27500_REG_DCAP, false);
+ 	else
+ 		ilmd = bq27x00_read(di, BQ27000_REG_ILMD, true);
+@@ -218,7 +254,7 @@ static int bq27x00_battery_read_ilmd(struct bq27x00_device_info *di)
+ 		return ilmd;
+ 	}
+ 
+-	if (di->chip == BQ27500)
++	if (is_chip_version_higher(di))
+ 		ilmd *= 1000;
+ 	else
+ 		ilmd = ilmd * 256 * 3570 / BQ27000_RS;
+@@ -262,7 +298,7 @@ static int bq27x00_battery_read_temperature(struct bq27x00_device_info *di)
+ 		return temp;
+ 	}
+ 
+-	if (di->chip == BQ27500)
++	if (is_chip_version_higher(di))
+ 		temp -= 2731;
+ 	else
+ 		temp = ((temp * 5) - 5463) / 2;
+@@ -310,10 +346,12 @@ static void bq27x00_update(struct bq27x00_device_info *di)
+ {
+ 	struct bq27x00_reg_cache cache = {0, };
+ 	bool is_bq27500 = di->chip == BQ27500;
++	bool is_bq27425 = di->chip == BQ27425;
+ 
+ 	cache.flags = bq27x00_read(di, BQ27x00_REG_FLAGS, !is_bq27500);
+ 	if (cache.flags >= 0) {
+-		if (!is_bq27500 && (cache.flags & BQ27000_FLAG_CI)) {
++		if (!is_bq27500 && !is_bq27425
++				&& (cache.flags & BQ27000_FLAG_CI)) {
+ 			dev_info(di->dev, "battery is not calibrated! ignoring capacity values\n");
+ 			cache.capacity = -ENODATA;
+ 			cache.energy = -ENODATA;
+@@ -323,14 +361,23 @@ static void bq27x00_update(struct bq27x00_device_info *di)
+ 			cache.charge_full = -ENODATA;
+ 		} else {
+ 			cache.capacity = bq27x00_battery_read_rsoc(di);
+-			cache.energy = bq27x00_battery_read_energy(di);
+-			cache.time_to_empty = bq27x00_battery_read_time(di, BQ27x00_REG_TTE);
+-			cache.time_to_empty_avg = bq27x00_battery_read_time(di, BQ27x00_REG_TTECP);
+-			cache.time_to_full = bq27x00_battery_read_time(di, BQ27x00_REG_TTF);
++			if (!is_bq27425) {
++				cache.energy = bq27x00_battery_read_energy(di);
++				cache.time_to_empty =
++					bq27x00_battery_read_time(di,
++							BQ27x00_REG_TTE);
++				cache.time_to_empty_avg =
++					bq27x00_battery_read_time(di,
++							BQ27x00_REG_TTECP);
++				cache.time_to_full =
++					bq27x00_battery_read_time(di,
++							BQ27x00_REG_TTF);
++			}
+ 			cache.charge_full = bq27x00_battery_read_lmd(di);
+ 		}
+ 		cache.temperature = bq27x00_battery_read_temperature(di);
+-		cache.cycle_count = bq27x00_battery_read_cyct(di);
++		if (!is_bq27425)
++			cache.cycle_count = bq27x00_battery_read_cyct(di);
+ 
+ 		/* We only have to read charge design full once */
+ 		if (di->charge_design_full <= 0)
+@@ -376,7 +423,7 @@ static int bq27x00_battery_current(struct bq27x00_device_info *di,
+ 		return curr;
+ 	}
+ 
+-	if (di->chip == BQ27500) {
++	if (is_chip_version_higher(di)) {
+ 		/* bq27500 returns signed value */
+ 		val->intval = (int)((s16)curr) * 1000;
+ 	} else {
+@@ -397,7 +444,7 @@ static int bq27x00_battery_status(struct bq27x00_device_info *di,
+ {
+ 	int status;
+ 
+-	if (di->chip == BQ27500) {
++	if (is_chip_version_higher(di)) {
+ 		if (di->cache.flags & BQ27500_FLAG_FC)
+ 			status = POWER_SUPPLY_STATUS_FULL;
+ 		else if (di->cache.flags & BQ27500_FLAG_DSC)
+@@ -425,7 +472,7 @@ static int bq27x00_battery_capacity_level(struct bq27x00_device_info *di,
+ {
+ 	int level;
+ 
+-	if (di->chip == BQ27500) {
++	if (is_chip_version_higher(di)) {
+ 		if (di->cache.flags & BQ27500_FLAG_FC)
+ 			level = POWER_SUPPLY_CAPACITY_LEVEL_FULL;
+ 		else if (di->cache.flags & BQ27500_FLAG_SOC1)
+@@ -570,8 +617,14 @@ static int bq27x00_powersupply_init(struct bq27x00_device_info *di)
+ 	int ret;
+ 
+ 	di->bat.type = POWER_SUPPLY_TYPE_BATTERY;
+-	di->bat.properties = bq27x00_battery_props;
+-	di->bat.num_properties = ARRAY_SIZE(bq27x00_battery_props);
++	di->chip = BQ27425;
++	if (di->chip == BQ27425) {
++		di->bat.properties = bq27425_battery_props;
++		di->bat.num_properties = ARRAY_SIZE(bq27425_battery_props);
++	} else {
++		di->bat.properties = bq27x00_battery_props;
++		di->bat.num_properties = ARRAY_SIZE(bq27x00_battery_props);
 +	}
-+
-+	rc = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (rc == NULL) {
-+		dev_err(&pdev->dev, "No memory resource found for device!\r\n");
-+		return -ENXIO;
-+	}
-+
-+	host->io_base = devm_request_and_ioremap(&pdev->dev, rc);
-+	if (host->io_base == NULL) {
-+		dev_err(&pdev->dev, "ioremap failed\n");
-+		return -EIO;
-+	}
-+	host->io_base_phy = rc->start;
-+
-+	mtd = &host->mtd;
-+	nand_chip = &host->nand_chip;
-+	if (pdev->dev.of_node)
-+		host->ncfg = lpc32xx_parse_dt(&pdev->dev);
-+	else
-+		host->ncfg = pdev->dev.platform_data;
-+	if (!host->ncfg) {
-+		dev_err(&pdev->dev, "Missing platform data\n");
-+		return -ENOENT;
-+	}
-+	if (host->ncfg->wp_gpio == -EPROBE_DEFER)
-+		return -EPROBE_DEFER;
-+	if (gpio_is_valid(host->ncfg->wp_gpio) &&
-+			gpio_request(host->ncfg->wp_gpio, "NAND WP")) {
-+		dev_err(&pdev->dev, "GPIO not available\n");
-+		return -EBUSY;
-+	}
-+	lpc32xx_wp_disable(host);
-+
-+	nand_chip->priv = host;		/* link the private data structures */
-+	mtd->priv = nand_chip;
-+	mtd->owner = THIS_MODULE;
-+	mtd->dev.parent = &pdev->dev;
-+
-+	/* Get NAND clock */
-+	host->clk = clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(host->clk)) {
-+		dev_err(&pdev->dev, "Clock initialization failure\n");
-+		res = -ENOENT;
-+		goto err_exit1;
-+	}
-+	clk_enable(host->clk);
-+
-+	nand_chip->cmd_ctrl = lpc32xx_nand_cmd_ctrl;
-+	nand_chip->dev_ready = lpc32xx_nand_device_ready;
-+	nand_chip->chip_delay = 25; /* us */
-+	nand_chip->IO_ADDR_R = MLC_DATA(host->io_base);
-+	nand_chip->IO_ADDR_W = MLC_DATA(host->io_base);
-+
-+	/* Init NAND controller */
-+	lpc32xx_nand_setup(host);
-+
-+	platform_set_drvdata(pdev, host);
-+
-+	/* Initialize function pointers */
-+	nand_chip->ecc.hwctl = lpc32xx_ecc_enable;
-+	nand_chip->ecc.read_page_raw = lpc32xx_read_page;
-+	nand_chip->ecc.read_page = lpc32xx_read_page;
-+	nand_chip->ecc.write_page_raw = lpc32xx_write_page_lowlevel;
-+	nand_chip->ecc.write_page = lpc32xx_write_page_lowlevel;
-+	nand_chip->ecc.write_oob = lpc32xx_write_oob;
-+	nand_chip->ecc.read_oob = lpc32xx_read_oob;
-+	nand_chip->ecc.strength = 4;
-+	nand_chip->write_page = lpc32xx_write_page;
-+	nand_chip->waitfunc = lpc32xx_waitfunc;
-+
-+	nand_chip->bbt_options = NAND_BBT_USE_FLASH | NAND_BBT_NO_OOB;
-+	nand_chip->bbt_td = &lpc32xx_nand_bbt;
-+	nand_chip->bbt_md = &lpc32xx_nand_bbt_mirror;
-+
-+	/* bitflip_threshold's default is defined as ecc_strength anyway.
-+	 * Unfortunately, it is set only later at add_mtd_device(). Meanwhile
-+	 * being 0, it causes bad block table scanning errors in
-+	 * nand_scan_tail(), so preparing it here. */
-+	mtd->bitflip_threshold = nand_chip->ecc.strength;
-+
-+	if (use_dma) {
-+		res = lpc32xx_dma_setup(host);
-+		if (res) {
-+			res = -EIO;
-+			goto err_exit2;
-+		}
-+	}
-+
-+	/*
-+	 * Scan to find existance of the device and
-+	 * Get the type of NAND device SMALL block or LARGE block
-+	 */
-+	if (nand_scan_ident(mtd, 1, NULL)) {
-+		res = -ENXIO;
-+		goto err_exit3;
-+	}
-+
-+	host->dma_buf = devm_kzalloc(&pdev->dev, mtd->writesize, GFP_KERNEL);
-+	if (!host->dma_buf) {
-+		dev_err(&pdev->dev, "Error allocating dma_buf memory\n");
-+		res = -ENOMEM;
-+		goto err_exit3;
-+	}
-+
-+	host->dummy_buf = devm_kzalloc(&pdev->dev, mtd->writesize, GFP_KERNEL);
-+	if (!host->dummy_buf) {
-+		dev_err(&pdev->dev, "Error allocating dummy_buf memory\n");
-+		res = -ENOMEM;
-+		goto err_exit3;
-+	}
-+
-+	nand_chip->ecc.mode = NAND_ECC_HW;
-+	nand_chip->ecc.size = mtd->writesize;
-+	nand_chip->ecc.layout = &lpc32xx_nand_oob;
-+	host->mlcsubpages = mtd->writesize / 512;
-+
-+	/* initially clear interrupt status */
-+	readb(MLC_IRQ_SR(host->io_base));
-+
-+	init_completion(&host->comp_nand);
-+	init_completion(&host->comp_controller);
-+
-+	host->irq = platform_get_irq(pdev, 0);
-+	if ((host->irq < 0) || (host->irq >= NR_IRQS)) {
-+		dev_err(&pdev->dev, "failed to get platform irq\n");
-+		res = -EINVAL;
-+		goto err_exit3;
-+	}
-+
-+	if (request_irq(host->irq, (irq_handler_t)&lpc3xxx_nand_irq,
-+			IRQF_TRIGGER_HIGH, DRV_NAME, host)) {
-+		dev_err(&pdev->dev, "Error requesting NAND IRQ\n");
-+		res = -ENXIO;
-+		goto err_exit3;
-+	}
-+
-+	/*
-+	 * Fills out all the uninitialized function pointers with the defaults
-+	 * And scans for a bad block table if appropriate.
-+	 */
-+	if (nand_scan_tail(mtd)) {
-+		res = -ENXIO;
-+		goto err_exit4;
-+	}
-+
-+	mtd->name = DRV_NAME;
-+
-+	ppdata.of_node = pdev->dev.of_node;
-+	res = mtd_device_parse_register(mtd, NULL, &ppdata, host->ncfg->parts,
-+					host->ncfg->num_parts);
-+	if (!res)
-+		return res;
-+
-+	nand_release(mtd);
-+
-+err_exit4:
-+	free_irq(host->irq, host);
-+err_exit3:
-+	if (use_dma)
-+		dma_release_channel(host->dma_chan);
-+err_exit2:
-+	clk_disable(host->clk);
-+	clk_put(host->clk);
-+	platform_set_drvdata(pdev, NULL);
-+err_exit1:
-+	lpc32xx_wp_enable(host);
-+	gpio_free(host->ncfg->wp_gpio);
-+
-+	return res;
-+}
-+
-+/*
-+ * Remove NAND device
-+ */
-+static int __devexit lpc32xx_nand_remove(struct platform_device *pdev)
-+{
-+	struct lpc32xx_nand_host *host = platform_get_drvdata(pdev);
-+	struct mtd_info *mtd = &host->mtd;
-+
-+	nand_release(mtd);
-+	free_irq(host->irq, host);
-+	if (use_dma)
-+		dma_release_channel(host->dma_chan);
-+
-+	clk_disable(host->clk);
-+	clk_put(host->clk);
-+	platform_set_drvdata(pdev, NULL);
-+
-+	lpc32xx_wp_enable(host);
-+	gpio_free(host->ncfg->wp_gpio);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM
-+static int lpc32xx_nand_resume(struct platform_device *pdev)
-+{
-+	struct lpc32xx_nand_host *host = platform_get_drvdata(pdev);
-+
-+	/* Re-enable NAND clock */
-+	clk_enable(host->clk);
-+
-+	/* Fresh init of NAND controller */
-+	lpc32xx_nand_setup(host);
-+
-+	/* Disable write protect */
-+	lpc32xx_wp_disable(host);
-+
-+	return 0;
-+}
-+
-+static int lpc32xx_nand_suspend(struct platform_device *pdev, pm_message_t pm)
-+{
-+	struct lpc32xx_nand_host *host = platform_get_drvdata(pdev);
-+
-+	/* Enable write protect for safety */
-+	lpc32xx_wp_enable(host);
-+
-+	/* Disable clock */
-+	clk_disable(host->clk);
-+	return 0;
-+}
-+
-+#else
-+#define lpc32xx_nand_resume NULL
-+#define lpc32xx_nand_suspend NULL
-+#endif
-+
-+#if defined(CONFIG_OF)
-+static const struct of_device_id lpc32xx_nand_match[] = {
-+	{ .compatible = "nxp,lpc3220-mlc" },
-+	{ /* sentinel */ },
-+};
-+MODULE_DEVICE_TABLE(of, lpc32xx_nand_match);
-+#endif
-+
-+static struct platform_driver lpc32xx_nand_driver = {
-+	.probe		= lpc32xx_nand_probe,
-+	.remove		= __devexit_p(lpc32xx_nand_remove),
-+	.resume		= lpc32xx_nand_resume,
-+	.suspend	= lpc32xx_nand_suspend,
-+	.driver		= {
-+		.name	= DRV_NAME,
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(lpc32xx_nand_match),
-+	},
-+};
-+
-+module_platform_driver(lpc32xx_nand_driver);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Roland Stigge <stigge@antcom.de>");
-+MODULE_DESCRIPTION("NAND driver for the NXP LPC32XX MLC controller");
+ 	di->bat.get_property = bq27x00_battery_get_property;
+ 	di->bat.external_power_changed = bq27x00_external_power_changed;
+ 
+@@ -729,6 +782,7 @@ static int bq27x00_battery_remove(struct i2c_client *client)
+ static const struct i2c_device_id bq27x00_id[] = {
+ 	{ "bq27200", BQ27000 },	/* bq27200 is same as bq27000, but with i2c */
+ 	{ "bq27500", BQ27500 },
++	{ "bq27425", BQ27425 },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(i2c, bq27x00_id);
 -- 
-1.7.10.4
+1.7.1
 
