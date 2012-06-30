@@ -1,107 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab2F3ORr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 10:17:47 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:40008 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab2F3ORp convert rfc822-to-8bit (ORCPT
+	id S1754743Ab2F3OW5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 10:22:57 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59344 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754080Ab2F3OW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 10:17:45 -0400
-MIME-Version: 1.0
-X-Originating-IP: [93.172.43.174]
-In-Reply-To: <1340375470-13097-2-git-send-email-sjur.brandeland@stericsson.com>
-References: <1340375470-13097-1-git-send-email-sjur.brandeland@stericsson.com> <1340375470-13097-2-git-send-email-sjur.brandeland@stericsson.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sat, 30 Jun 2012 17:17:24 +0300
-Message-ID: <CAK=WgbYcySfWMLBRCJ9B38Bew0ELBgORtnJbGgfqfMda_+3q9w@mail.gmail.com>
-Subject: Re: [RFC 1/4] remoteproc: Bugfix assign device address to carveout (noiommu)
-To: sjur.brandeland@stericsson.com
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 30 Jun 2012 10:22:56 -0400
+Message-ID: <1341066171.2115.10.camel@koala>
+Subject: Re: [PATCH v10] MTD: LPC32xx MLC NAND driver
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
+        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
+        linux@arm.linux.org.uk,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Date: Sat, 30 Jun 2012 17:22:51 +0300
+In-Reply-To: <4FEEF1D0.5060404@antcom.de>
+References: <1340834129-15545-1-git-send-email-stigge@antcom.de>
+	 <1340973434.3070.168.camel@sauron.fi.intel.com>
+	 <4FEEF1D0.5060404@antcom.de>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-xFB3RXy3K1uLTNY1P3zN"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sjur,
 
-On Fri, Jun 22, 2012 at 5:31 PM,  <sjur.brandeland@stericsson.com> wrote:
-> From: Sjur Brændeland <sjur.brandeland@stericsson.com>
->
-> Carveout did not set device address when IOMMU is not supported.
-> Fix this by assigning dma address to device address to carveout
-> if IOMMU is not supported.
->
-> Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
-> ---
->  drivers/remoteproc/remoteproc_core.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-> index bee4644..8185c11 100644
-> --- a/drivers/remoteproc/remoteproc_core.c
-> +++ b/drivers/remoteproc/remoteproc_core.c
-> @@ -628,6 +628,10 @@ static int rproc_handle_carveout(struct rproc *rproc,
->                  * dual M3 subsystem).
->                  */
->                 rsc->pa = dma;
-> +       } else {
-> +               rsc->da = dma;
-> +               dev_dbg(dev, "carveout: %s va %p dma %x\n",
-> +                                       rsc->name, va, rsc->da);
+--=-xFB3RXy3K1uLTNY1P3zN
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-To simplify things, will the below work for you?
+On Sat, 2012-06-30 at 14:32 +0200, Roland Stigge wrote:
+> Hi Artem!
+>=20
+> Thanks for the notes!
+>=20
+> On 29/06/12 14:37, Artem Bityutskiy wrote:
+> > Successfully built configuration
+> > "arm-lpc32xx_defconfig,arm,arm-unknown-linux-gnueabi-", results:
+> >=20
+> > --- before_patching.log +++ after_patching.log @@ @@=20
+> > +drivers/mtd/nand/lpc32xx_mlc.c: In function 'lpc32xx_nand_probe':=20
+> > +drivers/mtd/nand/lpc32xx_mlc.c:679:10: warning: variable 'sr' set
+> > but not used [-Wunused-but-set-variable]=20
+> > +drivers/mtd/nand/lpc32xx_mlc.c:561:24: error: bad constant
+> > expression [sparse]
+>=20
+> This is because sparse doesn't understand this local variable:
+>=20
+> uint8_t buf[mtd->writesize];
 
-diff --git a/drivers/remoteproc/remoteproc_core.c
-b/drivers/remoteproc/remoteproc_core.c
-index c4d4a21..f03d074 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -713,23 +713,27 @@ static int rproc_handle_carveout(struct rproc *rproc,
- 		list_add_tail(&mapping->node, &rproc->mappings);
+mtd->writesize is typically 2048KiB (or even larger, there are MLCs with
+4 and 8 KiB NAND page size). You cannot allocate that much on the stack,
+linux kernel stack size is very small - only 8KiB, and there are people
+who use even 4KiB stacks. So this have to be fixed.
 
- 		dev_dbg(dev, "carveout mapped 0x%x to 0x%x\n", rsc->da, dma);
--
--		/*
--		 * Some remote processors might need to know the pa
--		 * even though they are behind an IOMMU. E.g., OMAP4's
--		 * remote M3 processor needs this so it can control
--		 * on-chip hardware accelerators that are not behind
--		 * the IOMMU, and therefor must know the pa.
--		 *
--		 * Generally we don't want to expose physical addresses
--		 * if we don't have to (remote processors are generally
--		 * _not_ trusted), so we might want to do this only for
--		 * remote processor that _must_ have this (e.g. OMAP4's
--		 * dual M3 subsystem).
--		 */
--		rsc->pa = dma;
- 	}
+> The above construction is quite convenient for this case and I'd
+> prefer this to allocating another buffer dynamically.
 
-+	/*
-+	 * Some remote processors might need to know the pa
-+	 * even though they are behind an IOMMU. E.g., OMAP4's
-+	 * remote M3 processor needs this so it can control
-+	 * on-chip hardware accelerators that are not behind
-+	 * the IOMMU, and therefor must know the pa.
-+	 *
-+	 * Generally we don't want to expose physical addresses
-+	 * if we don't have to (remote processors are generally
-+	 * _not_ trusted), so we might want to do this only for
-+	 * remote processor that _must_ have this (e.g. OMAP4's
-+	 * dual M3 subsystem).
-+	 *
-+	 * Non-IOMMU processors might also want to have this info.
-+	 * In this case, the device address and the physical address
-+	 * are the same.
-+	 */
-+	rsc->pa = dma;
-+
- 	carveout->va = va;
- 	carveout->len = rsc->len;
- 	carveout->dma = dma;
+Yes, in userspaces it is, but unfortunately in the kernel we cannot
+afford allocating that much on the stack.
 
-Thanks,
-Ohad.
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-xFB3RXy3K1uLTNY1P3zN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJP7wu7AAoJECmIfjd9wqK08yAQANJrEzyK2uBqqRwRtRdmtJ9H
+pSgfhNPQzJz3h+er6hn2vhLJrBZ3bpkjR06xu7Kwv9XiJrq4vH+DGcwlCLC8ZYcj
+qcReLu7h/oj9siySTRKmoMrP+NuabqZBqXX27/1FUBFUXKVvo28ktagIxq+YBHHS
+LZWEhDNppqIA/JdFbzZduVlWz/RqmdvRc6sNFVTA5QzUbTyvY+tfgf3BJFmhqMgO
+j38BGTAgtT+ZPf/z/y75qSBvT1SVRfsO98dtkbPcF7KW803imktRH9Il+wGDU8SY
+YdBsrdP9mxh9YBP5mvXBDJzqAnfmWMMh1Cn7F4BxRK1Qa7Zz+O5D5T0IwuHugexC
+5ap6cjTthYSOyJxBF3t8uQG57MpgfEbk1bxppFNKg5X1ZaSTzTaE8SCikvVAR0Fz
+WaRfvOq2pDoQhNRHVEgIsLtw7MF143EwRUlqAzqHVb/twRjjLbl54mHWedy9mxiU
+2Wk+EY6mlKEGRs13+mQpb3WvEj5aqoteAkl4sG2Xa2NNG7IgbQBSO6huJxPKdpsg
++s134GqL17VhBxA8INS7kDwl5SWCZoVMoFZm/eaYH2QGj0altuMB3XaEf3TDjDij
+GzVQjKQcxfQxp+DgklV0oKEkKqhdTLJdJ1szD9IJcl8xFX5YwfMZwC3oia/dmSQ6
+W0WxQx7aaeAhTT9j5Spa
+=Mn+m
+-----END PGP SIGNATURE-----
+
+--=-xFB3RXy3K1uLTNY1P3zN--
+
