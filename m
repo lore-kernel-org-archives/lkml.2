@@ -1,63 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab2F3DxL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 23:53:11 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39682 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab2F3DxJ (ORCPT
+	id S1754306Ab2F3D5k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 23:57:40 -0400
+Received: from scorpius.telkomsa.net ([196.25.211.121]:54323 "EHLO
+	scorpius.telkomsa.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab2F3D5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 23:53:09 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FEE77A4.2000302@jp.fujitsu.com>
-Date: Sat, 30 Jun 2012 12:51:00 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 29 Jun 2012 23:57:36 -0400
+Date: Sat, 30 Jun 2012 05:51:39 +0200 (SAST)
+From: "MRS. ASEHUI YUPING" <online2322317@telkomsa.net>
+Reply-To: "MRS. ASEHUI YUPING" <asehui1233@hotmail.com>
+Message-ID: <1352028848.653495.1341028299142.JavaMail.root@zimbra7-vm1.telkomsa.net>
+Subject: Late Mr. Eric Morgan $21.5M.
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        jaschut@sandia.gov, minchan@kernel.org
-Subject: Re: [PATCH -mm v2] mm: have order > 0 compaction start off where
- it left
-References: <20120628135520.0c48b066@annuminas.surriel.com>
-In-Reply-To: <20120628135520.0c48b066@annuminas.surriel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [204.93.60.176]
+X-Mailer: Zimbra 6.0.16_GA_2998 (zclient/6.0.16_GA_2998)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/29 2:55), Rik van Riel wrote:
-> Order > 0 compaction stops when enough free pages of the correct
-> page order have been coalesced. When doing subsequent higher order
-> allocations, it is possible for compaction to be invoked many times.
->
-> However, the compaction code always starts out looking for things to
-> compact at the start of the zone, and for free pages to compact things
-> to at the end of the zone.
->
-> This can cause quadratic behaviour, with isolate_freepages starting
-> at the end of the zone each time, even though previous invocations
-> of the compaction code already filled up all free memory on that end
-> of the zone.
->
-> This can cause isolate_freepages to take enormous amounts of CPU
-> with certain workloads on larger memory systems.
->
-> The obvious solution is to have isolate_freepages remember where
-> it left off last time, and continue at that point the next time
-> it gets invoked for an order > 0 compaction. This could cause
-> compaction to fail if cc->free_pfn and cc->migrate_pfn are close
-> together initially, in that case we restart from the end of the
-> zone and try once more.
->
-> Forced full (order == -1) compactions are left alone.
->
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Reported-by: Jim Schutt <jaschut@sandia.gov>
-> Signed-off-by: Rik van Riel <riel@redhat.com>
+Dearest Friend,
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+It s about a customer that came to our Standard Chartered Bank here in Hong Kong to engage in Private Banking services. 
 
+So, the customer had a financial portfolio of $21.5m USD been deposited without next of kin to his file and then I help turned over in the purchase of securities in the capital markets.
+
+I was the bank adviser assisting the customer in the management of the fund. I have proposal for you as a matter of urgency to late Mr. Eric Morgan from United Kingdom in respect to his unclaimed wealth and unfortunately he died along with his wife and only daughter in the event of terrorist attack on 11th September, 2001 in the World Trade center. 
+
+My proposition is this,I am will prepared and place you in a position to claim the funds as the chief auditor in this Bank and I will instruct my Bank to release the deposit to you as the closest surviving relative and prepare documents in your name. 
+
+If you find yourself able to work with me in this transaction and do contact via my private E-mail: asehui1233@hotmail.com.
+
+If you give me positive signals, I will initiate this process towards conclusion.
+
+Mrs.Asehui Yuping.
 
