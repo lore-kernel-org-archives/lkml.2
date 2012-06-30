@@ -1,34 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab2F3Mdl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 08:33:41 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:54035 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754535Ab2F3Mdk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 08:33:40 -0400
-Message-ID: <1341059617.3136.20.camel@dabdike.int.hansenpartnership.com>
-Subject: Web page about current virtual environment uefi secure booting up
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: linux-efi@vger.kernel.org
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Date: Sat, 30 Jun 2012 13:33:37 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1755681Ab2F3Mtn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 08:49:43 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:47269 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755555Ab2F3MtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jun 2012 08:49:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "John 'Warthog9' Hawley" <warthog9@kernel.org>
+Subject: Re: [KORG] Patchwork online
+Date: Sat, 30 Jun 2012 14:54:52 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: users@kernel.org, "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <4FEE2D99.7000906@kernel.org>
+In-Reply-To: <4FEE2D99.7000906@kernel.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Message-Id: <201206301454.52715.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've put together a web page here:
+Hi,
 
-http://blog.hansenpartnership.com/uefi-secure-boot/
+Thanks for bringing it back to life!
 
-To keep track of all the stuff I had to know to get UEFI secure boot
-working under qemu with TianoCore.  I'll update it as things change (or
-as I find out more).
+On Saturday, June 30, 2012, John 'Warthog9' Hawley wrote:
+> Just a quick update for everyone, https://patchwork.kernel.org is back
+> online, and all but the linux-pm mailing lists are receiving and
+> processing data.
 
-James
+Er, why is there a problem with linux-pm in particular?
 
-
+Rafael
