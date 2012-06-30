@@ -1,115 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111Ab2F3JKM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 05:10:12 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:57732 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516Ab2F3JKK (ORCPT
+	id S1753346Ab2F3JOc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 05:14:32 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54027 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab2F3JO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 05:10:10 -0400
-From: Jiang Liu <jiang.liu@huawei.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Tony Luck <tony.luck@intel.com>, Yinghai Lu <yinghai@kernel.org>
-CC: Xishi Qiu <qiuxishi@huawei.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>, <linux-mm@kvack.org>,
-        <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH] mm: setup pageblock_order before it's used by sparse
-Date: Sat, 30 Jun 2012 17:07:54 +0800
-Message-ID: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.8.msysgit.0
+	Sat, 30 Jun 2012 05:14:29 -0400
+Date: Sat, 30 Jun 2012 10:14:23 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        Matthew Wilcox <matthew@wil.cx>, Doug Ledford <dledford@redhat.com>,
+        Joe Korty <joe.korty@ccur.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Ingo Molnar <mingo@elte.hu>, David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>, linux-doc@vger.kernel.org,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH 1/2] fs: add link restrictions
+Message-ID: <20120630091422.GE14083@ZenIV.linux.org.uk>
+References: <1340658327-2932-1-git-send-email-keescook@chromium.org>
+ <1340658327-2932-2-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340658327-2932-2-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xishi Qiu <qiuxishi@huawei.com>
+On Mon, Jun 25, 2012 at 02:05:26PM -0700, Kees Cook wrote:
 
-On architectures with CONFIG_HUGETLB_PAGE_SIZE_VARIABLE set, such as Itanium,
-pageblock_order is a variable with default value of 0. It's set to the right
-value by set_pageblock_order() in function free_area_init_core().
+> +config PROTECTED_LINKS
+> +	bool "Evaluate vulnerable link conditions"
+> +	default y
 
-But pageblock_order may be used by sparse_init() before free_area_init_core()
-is called along path:
-sparse_init()
-    ->sparse_early_usemaps_alloc_node()
-	->usemap_size()
-	    ->SECTION_BLOCKFLAGS_BITS
-		->((1UL << (PFN_SECTION_SHIFT - pageblock_order)) *
-NR_PAGEBLOCK_BITS)
+Remember Linus' rants about 'default y' in general?
 
-The uninitialized pageblock_size will cause memory wasting because usemap_size()
-returns a much bigger value then it's really needed.
+> +#ifdef CONFIG_PROTECTED_LINKS
+> +int sysctl_protected_symlinks __read_mostly =
+> +	CONFIG_PROTECTED_SYMLINKS_SYSCTL;
+> +int sysctl_protected_hardlinks __read_mostly =
+> +	CONFIG_PROTECTED_HARDLINKS_SYSCTL;
+> +
+> +/**
+> + * may_follow_link - Check symlink following for unsafe situations
+> + * @link: The path of the symlink
+> + *
+> + * In the case of the sysctl_protected_symlinks sysctl being enabled,
+> + * CAP_DAC_OVERRIDE needs to be specifically ignored if the symlink is
+> + * in a sticky world-writable directory. This is to protect privileged
+> + * processes from failing races against path names that may change out
+> + * from under them by way of other users creating malicious symlinks.
+> + * It will permit symlinks to be followed only when outside a sticky
+> + * world-writable directory, or when the uid of the symlink and follower
+> + * match, or when the directory owner matches the symlink's owner.
+> + *
+> + * Returns 0 if following the symlink is allowed, -ve on error.
+> + */
+> +static inline int may_follow_link(struct path *link)
+> +{
+> +	int error = 0;
+> +	const struct inode *parent;
+> +	const struct inode *inode;
+> +	const struct cred *cred;
+> +	struct dentry *dentry;
+> +
+> +	if (!sysctl_protected_symlinks)
+> +		return 0;
 
-For example, on an Itanium platform,
-sparse_init() pageblock_order=0 usemap_size=24576
-free_area_init_core() before pageblock_order=0, usemap_size=24576
-free_area_init_core() after pageblock_order=12, usemap_size=8
+Um.  What this says to me is "this function should be outside of ifdef, with
+#else of that ifdef defining sysctl_protected_symlinks to 0".
 
-That means 24K memory has been wasted for each section, so fix it by calling
-set_pageblock_order() from sparse_init().
+> +	/* Check parent directory mode and owner. */
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
----
- mm/internal.h   |    2 ++
- mm/page_alloc.c |    4 ++--
- mm/sparse.c     |    3 +++
- 3 files changed, 7 insertions(+), 2 deletions(-)
+I suspect that we ought to simply pass that parent directory as argument - caller
+*does* have a reference to it, so we don't need to mess with ->d_lock, etc.
 
-diff --git a/mm/internal.h b/mm/internal.h
-index 2ba87fb..8052379 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -347,3 +347,5 @@ extern u32 hwpoison_filter_enable;
- extern unsigned long vm_mmap_pgoff(struct file *, unsigned long,
-         unsigned long, unsigned long,
-         unsigned long, unsigned long);
-+
-+extern void set_pageblock_order(void);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4403009..f38509b 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4301,7 +4301,7 @@ static inline void setup_usemap(struct pglist_data *pgdat,
- #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
- 
- /* Initialise the number of pages represented by NR_PAGEBLOCK_BITS */
--static inline void __init set_pageblock_order(void)
-+void __init set_pageblock_order(void)
- {
- 	unsigned int order;
- 
-@@ -4329,7 +4329,7 @@ static inline void __init set_pageblock_order(void)
-  * include/linux/pageblock-flags.h for the values of pageblock_order based on
-  * the kernel config
-  */
--static inline void set_pageblock_order(void)
-+void __init set_pageblock_order(void)
- {
- }
- 
-diff --git a/mm/sparse.c b/mm/sparse.c
-index fca2ab5..3a3af73 100644
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -485,6 +485,9 @@ void __init sparse_init(void)
- 	struct page **map_map;
- #endif
- 
-+	/* Setup pageblock_order for HUGETLB_PAGE_SIZE_VARIABLE */
-+	set_pageblock_order();
-+
- 	/*
- 	 * map is using big page (aka 2M in x86 64 bit)
- 	 * usemap is less one page (aka 24 bytes)
--- 
-1.7.1
+> +	mode_t mode = inode->i_mode;
 
+umode_t, please.
 
+> +static int may_linkat(struct path *link)
+> +{
+> +	const struct cred *cred;
+> +	struct inode *inode;
+> +
+> +	if (!sysctl_protected_hardlinks)
+> +		return 0;
+
+Ditto about taking it outside of ifdef.
+
+> +			err = may_follow_link(&link);
+> +			if (unlikely(err))
+> +				break;
+
+No.  This is definitely wrong - you are leaking dentries and vfsmount here.
+> +		error = may_follow_link(&link);
+> +		if (unlikely(error))
+> +			break;
+
+Ditto.
