@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab2F3Kmk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 06:42:40 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:1252 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753091Ab2F3Kmh (ORCPT
+	id S1754035Ab2F3Knd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 06:43:33 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:63365 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091Ab2F3Knb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 06:42:37 -0400
-Message-ID: <1341052953.1911.67.camel@x61.thuisdomein>
-Subject: [PATCH] alpha: remove mysterious if zero-ed out includes
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>
-Cc: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 30 Jun 2012 12:42:33 +0200
-Content-Type: text/plain; charset="UTF-8"
+	Sat, 30 Jun 2012 06:43:31 -0400
+Message-ID: <1341052998.2115.3.camel@koala>
+Subject: Re: UBI fastmap updates
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, nyoushchenko@mvista.com,
+        artem.bityutskiy@linux.intel.com, linux-kernel@vger.kernel.org,
+        adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
+        thomas.wucher@linutronix.de, shmulik.ladkani@gmail.com,
+        tglx@linutronix.de, Marius.Mazarel@ugal.ro, tim.bird@am.sony.com
+Date: Sat, 30 Jun 2012 13:43:18 +0300
+In-Reply-To: <1340982869-77042-1-git-send-email-richard@nod.at>
+References: <1340982869-77042-1-git-send-email-richard@nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-tMePQ8Cd3G8uV1DnPKdF"
 X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-OriginalArrivalTime: 30 Jun 2012 10:42:33.0834 (UTC) FILETIME=[0EA074A0:01CD56AD]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's a small group of odd looking includes in smc37c669.c. These
-includes appear to be if zero-ed out ever since they were added to the
-tree (in v2.1.89). Their purpose is unclear to me. Perhaps they were
-used in someones build system. Whatever their purpose was, nothing else
-uses something comparable. This entire if zero-ed out block might as
-well be removed.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Untested. I do not have the toolchain needed at hand.
+--=-tMePQ8Cd3G8uV1DnPKdF
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-1) I only care about these few lines because they show up (as false
-positives) when grepping the tree for includes.
+On Fri, 2012-06-29 at 17:14 +0200, Richard Weinberger wrote:
+> This is the next round of UBI fastmap updates.
+>=20
+> Fastmap is now disabled by default.
+> If you attach an image it will not automatically convert it
+> to the fastmap format.
+> UBI has a new module parameter "fm_auto".
+> If set to 1 UBI will create a fastmap automatically on your
+> flash device.
+> Please see commit "Add a module parameter to enable fastmap"
+> for more details.
 
- arch/alpha/kernel/smc37c669.c |   12 ------------
- 1 files changed, 0 insertions(+), 12 deletions(-)
+One thing I've noticed is that you use vmalloc for some of the buffers
+you do I/O on (fm_raw). This is a problem for many ARM platforms because
+they cannot do DMA on such buffers. The drivers have to implement
+various workarouns for this: either fall back to memcopies or do an
+extra copy to a DMA-able buffers.
 
-diff --git a/arch/alpha/kernel/smc37c669.c b/arch/alpha/kernel/smc37c669.c
-index 0435921d..c803fc7 100644
---- a/arch/alpha/kernel/smc37c669.c
-+++ b/arch/alpha/kernel/smc37c669.c
-@@ -933,18 +933,6 @@ void SMC37c669_display_device_info(
-  *
-  *--
-  */
--#if 0
--/* $INCLUDE_OPTIONS$ */
--#include    "cp$inc:platform_io.h"
--/* $INCLUDE_OPTIONS_END$ */
--#include    "cp$src:common.h"
--#include    "cp$inc:prototypes.h"
--#include    "cp$src:kernel_def.h"
--#include    "cp$src:msg_def.h"
--#include    "cp$src:smcc669_def.h"
--/* Platform-specific includes */
--#include    "cp$src:platform.h"
--#endif
- 
- #ifndef TRUE
- #define TRUE 1
--- 
-1.7.7.6
+UBI and UBIFS already to I/O on vmalloc'ed buffers, an I am planning to
+fix this, which is not easy. Would be great to not add more of these.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-tMePQ8Cd3G8uV1DnPKdF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJP7thGAAoJECmIfjd9wqK0fIkP/2PjNbJFA0hCh3dc1+UIUm9A
+L8xHw4QEtinTbe1ISnv3djnF6QjXGRBmi13+vMnB3br0rxltmMlaRlaGaY640lyK
+PUSXrD/mNiMpRyuOv0vrlyXiq4tjcYkPEqKFqo7Z5C2pgqMeXAKD7dkTKQYwRzbf
+np9ulcpkCDQA4/AmXkI1KnxD3urXwZ7GrxSJlFNOdIMGOCa0tU5VrMtp0jay9Gzh
+SeE3rHUacypOEnEmELt+/PIsnyxGpu5quP1WeIJni2ltVoSjMjKUDCXIy4DtXHf+
+UrgUjB/RkxDfvTwKjutO2i6lMCSt0ZGB7g+FhE9mOidsGwsdvPvKbl3owE57F085
+iRRGbWK+NSaxbzV6aDQneAlJJvARHCg4kCpPm7dfttc2h/IscSmq/xD3ZF4UHViu
+KZFzJXcCV7I8BOf0wwtjjzEHvlFf9YL5oDHhxvJo54XUhzrMy/W2GzRjf83aNVSF
+ADn+8VJygrQhGoWW92SsG6XDKqdR6Ar+sEjjKkTK3ai/2+jDgrA++9XUKSYn20Uo
+KC14L2ahK37VLroyUC7dLyoAmYAvsleoQXiT6IrY8LrT/njQpMbJzzvqJ317H7Jz
+bdeoknqnLXJnHPrxeufMgEADSWar7n+x1VgLqqXXCuao+cvu0MVtkmCFMaZwAnNL
+FUXGhZp0MTq0UcF7ZILx
+=X9m9
+-----END PGP SIGNATURE-----
+
+--=-tMePQ8Cd3G8uV1DnPKdF--
 
