@@ -1,126 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751116Ab2F3EuU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 00:50:20 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:40388 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782Ab2F3EuT (ORCPT
+	id S1751219Ab2F3Ewt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 00:52:49 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:51435 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab2F3Ews (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 00:50:19 -0400
-Date: Sat, 30 Jun 2012 00:50:14 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 09/40] autonuma: introduce kthread_bind_node()
-Message-ID: <20120630045013.GB3975@localhost.localdomain>
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
- <1340888180-15355-10-git-send-email-aarcange@redhat.com>
+	Sat, 30 Jun 2012 00:52:48 -0400
+Date: Sat, 30 Jun 2012 00:52:44 -0400
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>
+Subject: [GIT PATCH] driver core fixes for 3.5-rc5
+Message-ID: <20120630045244.GA2333@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340888180-15355-10-git-send-email-aarcange@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 02:55:49PM +0200, Andrea Arcangeli wrote:
-> This function makes it easy to bind the per-node knuma_migrated
-> threads to their respective NUMA nodes. Those threads take memory from
-> the other nodes (in round robin with a incoming queue for each remote
-> node) and they move that memory to their local node.
-> 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> ---
->  include/linux/kthread.h |    1 +
->  include/linux/sched.h   |    2 +-
->  kernel/kthread.c        |   23 +++++++++++++++++++++++
->  3 files changed, 25 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/kthread.h b/include/linux/kthread.h
-> index 0714b24..e733f97 100644
-> --- a/include/linux/kthread.h
-> +++ b/include/linux/kthread.h
-> @@ -33,6 +33,7 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
->  })
->  
->  void kthread_bind(struct task_struct *k, unsigned int cpu);
-> +void kthread_bind_node(struct task_struct *p, int nid);
->  int kthread_stop(struct task_struct *k);
->  int kthread_should_stop(void);
->  bool kthread_freezable_should_stop(bool *was_frozen);
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 4059c0f..699324c 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1792,7 +1792,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
->  #define PF_SWAPWRITE	0x00800000	/* Allowed to write to swap */
->  #define PF_SPREAD_PAGE	0x01000000	/* Spread page cache over cpuset */
->  #define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
-> -#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpu */
-> +#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpus */
->  #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
->  #define PF_MEMPOLICY	0x10000000	/* Non-default NUMA mempolicy */
->  #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
-> diff --git a/kernel/kthread.c b/kernel/kthread.c
-> index 3d3de63..48b36f9 100644
-> --- a/kernel/kthread.c
-> +++ b/kernel/kthread.c
-> @@ -234,6 +234,29 @@ void kthread_bind(struct task_struct *p, unsigned int cpu)
->  EXPORT_SYMBOL(kthread_bind);
->  
->  /**
-> + * kthread_bind_node - bind a just-created kthread to the CPUs of a node.
-> + * @p: thread created by kthread_create().
-> + * @nid: node (might not be online, must be possible) for @k to run on.
-> + *
-> + * Description: This function is equivalent to set_cpus_allowed(),
-> + * except that @nid doesn't need to be online, and the thread must be
-> + * stopped (i.e., just returned from kthread_create()).
-> + */
-> +void kthread_bind_node(struct task_struct *p, int nid)
-> +{
-> +	/* Must have done schedule() in kthread() before we set_task_cpu */
-> +	if (!wait_task_inactive(p, TASK_UNINTERRUPTIBLE)) {
-> +		WARN_ON(1);
-> +		return;
-> +	}
-> +
-> +	/* It's safe because the task is inactive. */
-> +	do_set_cpus_allowed(p, cpumask_of_node(nid));
-> +	p->flags |= PF_THREAD_BOUND;
-> +}
-> +EXPORT_SYMBOL(kthread_bind_node);
+The following changes since commit 6b16351acbd415e66ba16bf7d473ece1574cf0bc:
 
-_GPL ?
-> +
-> +/**
->   * kthread_stop - stop a thread created by kthread_create().
->   * @k: thread created by kthread_create().
->   *
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+  Linux 3.5-rc4 (2012-06-24 12:53:04 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.5-rc5
+
+for you to fetch changes up to d36208227d03c44c0a74cd702cc94528162e1703:
+
+  printk: Optimize if statement logic where newline exists (2012-06-29 16:55:35 -0400)
+
+----------------------------------------------------------------
+Driver Core fixes for 3.5-rc5
+
+Here is a number of printk() fixes, specifically a few reported by the
+crazy blog program that ships in SUSE releases (that's "boot log" and
+not "web log", it predates the general "blog" terminology by many
+years), and the restoration of the continuation line functionality
+reported by Stephen and others.  Yes, the changes seem a bit big this
+late in the cycle, but I've been beating on them for a while now, and
+Stephen has even optimized it a bit, so all looks good to me.
+
+The other change in here is a Documentation update for the stable kernel
+rules describing how some distro patches should be backported, to
+hopefully drive a bit more response from the distros to the stable
+kernel releases.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Alan Stern (1):
+      printk: fix regression in SYSLOG_ACTION_CLEAR
+
+Greg Kroah-Hartman (1):
+      Revert "printk: return -EINVAL if the message len is bigger than the buf size"
+
+Jan Beulich (1):
+      syslog: fill buffer with more than a single message for SYSLOG_ACTION_READ
+
+Kay Sievers (1):
+      printk: flush continuation lines immediately to console
+
+Mel Gorman (1):
+      stable: Allow merging of backports for serious user-visible performance issues
+
+Steven Rostedt (1):
+      printk: Optimize if statement logic where newline exists
+
+ Documentation/stable_kernel_rules.txt |   6 +
+ kernel/printk.c                       | 297 ++++++++++++++++++++++++----------
+ 2 files changed, 219 insertions(+), 84 deletions(-)
