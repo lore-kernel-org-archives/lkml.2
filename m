@@ -1,44 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab2F3AGF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jun 2012 20:06:05 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:4700 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801Ab2F3AGD (ORCPT
+	id S1755843Ab2F3AJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jun 2012 20:09:58 -0400
+Received: from flounder.pepperfish.net ([89.238.129.35]:52343 "EHLO
+	flounder.pepperfish.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801Ab2F3AJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jun 2012 20:06:03 -0400
-Message-ID: <4FEE4276.3030108@spin.net.au>
-Date: Sat, 30 Jun 2012 10:04:06 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120604 Firefox/13.0 SeaMonkey/2.10
+	Fri, 29 Jun 2012 20:09:57 -0400
+Date: Sat, 30 Jun 2012 01:09:54 +0100
+From: Vincent Sanders <vincent.sanders@collabora.co.uk>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: AF_BUS socket address family
+Message-ID: <20120630000954.GB11480@kyllikki.org>
+References: <20120629231236.GA28593@mail.collabora.co.uk>
+ <20120629.161821.948325645333976311.davem@davemloft.net>
+ <20120629234230.GA11480@kyllikki.org>
+ <20120629.165023.1605284574408858612.davem@davemloft.net>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: rc5 worth it?
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-2.221, required 4, AWL 0.28, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120629.165023.1605284574408858612.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is it worth me making changes with current rc5 or am I better off 
-waiting for the next version Linus pushes through? Whenever that is due, 
-I don't know.
+On Fri, Jun 29, 2012 at 04:50:23PM -0700, David Miller wrote:
+> From: Vincent Sanders <vincent.sanders@collabora.co.uk>
+> Date: Sat, 30 Jun 2012 00:42:30 +0100
+> 
+> > Basically you are indicating you would be completely opposed to any
+> > mechanism involving D-Bus IPC and the kernel? 
+> 
+> I would not oppose existing mechanisms, which I do not believe is
+> impossible to use in your scenerio.
+> 
 
+You keep saying that yet have offered no concrete way to achive the
+semantics we require. To pass fd and credentials currently *requires*
+the use of AF_UNIX does it not? And D-Bus already emulates its IPC
+over AF_UNIX because of that.
 
-Regards
+> What you really don't get is that packet drops and event losses are
+> absolutely fundamental.
+
+not within an IPC surely? there cannot be packet drops within AF_BUS
+we simply do not do it. The rrecive queues are checked for capability
+of reciving the message before it is delivered to them all or none.
+
+> 
+> As long as receivers lack infinite receive queue this will always be
+> the case.
+
+Indeed, I would not question that.
+
+> 
+> Multicast operates in non-reliable transports only so that one stuck
+> or malfunctioning receiver doesn't screw things over for everyone nor
+> unduly brudon the sender.
+> 
+
+We have addressed this within AF_BUS by the reciver and bus master
+being told if all recepients cannot receive the message (and therefor
+it cannot be sent). 
+
+The policy decision of how to handle this situation is therefore
+handled by the userspace clients on a protocol level. D-Bus *already*
+has to handle this situation, its just currently done over AF_UNIX
+sockets so once it occours the problem is harder to rectify as the
+ordering constraint is broken (which causes even more issues).
+
+I am afraid it is rather late here and I may not be able to continue
+this conversation untill the morning, I apologise if this is
+inconveniant, but I must sleep.
 
 -- 
-		Chris Jones @ kernel.devproject@gmail.com
-also on oracle.kerneldev@gmail.com and netbsd.kerneldev@gmail.com
-
-OpenSUSE Linux x86_64 (PC)|Android (Smartphone)|Windows 7 (Laptop)|Windows XP (Gaming)
-Linux kernel developer|Solaris kernel developer|BSD kernel developer
-Lead Developer of SDL|Lead Developer of Nest Linux|Gamer and Emulator nut|Web Services|Digital Imaging Services
-Controllers: Rapier V2 Gaming mouse|Logitech Precision|PS3 controller|XB360 controller|Logitech Attack 3 j/stick
-Emulators: Fusion|Gens|ZSNES|Project64|PCSX-R|Stella|WinVICE|WinUAE|DOSBox
+Regards Vincent
 
