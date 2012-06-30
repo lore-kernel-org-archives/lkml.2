@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab2F3OW5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 10:22:57 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59344 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754080Ab2F3OW4 (ORCPT
+	id S1754766Ab2F3OYU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 10:24:20 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41081 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754028Ab2F3OYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 10:22:56 -0400
-Message-ID: <1341066171.2115.10.camel@koala>
-Subject: Re: [PATCH v10] MTD: LPC32xx MLC NAND driver
+	Sat, 30 Jun 2012 10:24:19 -0400
+Message-ID: <1341066255.2115.11.camel@koala>
+Subject: Re: UBI fastmap updates
 From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
-        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
-        linux@arm.linux.org.uk,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Date: Sat, 30 Jun 2012 17:22:51 +0300
-In-Reply-To: <4FEEF1D0.5060404@antcom.de>
-References: <1340834129-15545-1-git-send-email-stigge@antcom.de>
-	 <1340973434.3070.168.camel@sauron.fi.intel.com>
-	 <4FEEF1D0.5060404@antcom.de>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, nyoushchenko@mvista.com,
+        artem.bityutskiy@linux.intel.com, linux-kernel@vger.kernel.org,
+        adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
+        thomas.wucher@linutronix.de, shmulik.ladkani@gmail.com,
+        tglx@linutronix.de, Marius.Mazarel@ugal.ro, tim.bird@am.sony.com
+Date: Sat, 30 Jun 2012 17:24:15 +0300
+In-Reply-To: <4FEEDAA4.30105@nod.at>
+References: <1340982869-77042-1-git-send-email-richard@nod.at>
+	 <1341052998.2115.3.camel@koala> <4FEEDAA4.30105@nod.at>
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-xFB3RXy3K1uLTNY1P3zN"
+	boundary="=-hanPIbi4WpDE1CixyZsI"
 X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,46 +29,22 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-xFB3RXy3K1uLTNY1P3zN
+--=-hanPIbi4WpDE1CixyZsI
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Sat, 2012-06-30 at 14:32 +0200, Roland Stigge wrote:
-> Hi Artem!
->=20
-> Thanks for the notes!
->=20
-> On 29/06/12 14:37, Artem Bityutskiy wrote:
-> > Successfully built configuration
-> > "arm-lpc32xx_defconfig,arm,arm-unknown-linux-gnueabi-", results:
-> >=20
-> > --- before_patching.log +++ after_patching.log @@ @@=20
-> > +drivers/mtd/nand/lpc32xx_mlc.c: In function 'lpc32xx_nand_probe':=20
-> > +drivers/mtd/nand/lpc32xx_mlc.c:679:10: warning: variable 'sr' set
-> > but not used [-Wunused-but-set-variable]=20
-> > +drivers/mtd/nand/lpc32xx_mlc.c:561:24: error: bad constant
-> > expression [sparse]
->=20
-> This is because sparse doesn't understand this local variable:
->=20
-> uint8_t buf[mtd->writesize];
+On Sat, 2012-06-30 at 12:53 +0200, Richard Weinberger wrote:
+> So basically you want me to get rid of any vmalloc()'ed buffer?
+> That's not easy.
 
-mtd->writesize is typically 2048KiB (or even larger, there are MLCs with
-4 and 8 KiB NAND page size). You cannot allocate that much on the stack,
-linux kernel stack size is very small - only 8KiB, and there are people
-who use even 4KiB stacks. So this have to be fixed.
-
-> The above construction is quite convenient for this case and I'd
-> prefer this to allocating another buffer dynamically.
-
-Yes, in userspaces it is, but unfortunately in the kernel we cannot
-afford allocating that much on the stack.
+Yeah, I guess it is difficult, we probably can let it be vmalloc() since
+we already have plenty...
 
 --=20
 Best Regards,
 Artem Bityutskiy
 
---=-xFB3RXy3K1uLTNY1P3zN
+--=-hanPIbi4WpDE1CixyZsI
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 Content-Transfer-Encoding: 7bit
@@ -79,20 +52,20 @@ Content-Transfer-Encoding: 7bit
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJP7wu7AAoJECmIfjd9wqK08yAQANJrEzyK2uBqqRwRtRdmtJ9H
-pSgfhNPQzJz3h+er6hn2vhLJrBZ3bpkjR06xu7Kwv9XiJrq4vH+DGcwlCLC8ZYcj
-qcReLu7h/oj9siySTRKmoMrP+NuabqZBqXX27/1FUBFUXKVvo28ktagIxq+YBHHS
-LZWEhDNppqIA/JdFbzZduVlWz/RqmdvRc6sNFVTA5QzUbTyvY+tfgf3BJFmhqMgO
-j38BGTAgtT+ZPf/z/y75qSBvT1SVRfsO98dtkbPcF7KW803imktRH9Il+wGDU8SY
-YdBsrdP9mxh9YBP5mvXBDJzqAnfmWMMh1Cn7F4BxRK1Qa7Zz+O5D5T0IwuHugexC
-5ap6cjTthYSOyJxBF3t8uQG57MpgfEbk1bxppFNKg5X1ZaSTzTaE8SCikvVAR0Fz
-WaRfvOq2pDoQhNRHVEgIsLtw7MF143EwRUlqAzqHVb/twRjjLbl54mHWedy9mxiU
-2Wk+EY6mlKEGRs13+mQpb3WvEj5aqoteAkl4sG2Xa2NNG7IgbQBSO6huJxPKdpsg
-+s134GqL17VhBxA8INS7kDwl5SWCZoVMoFZm/eaYH2QGj0altuMB3XaEf3TDjDij
-GzVQjKQcxfQxp+DgklV0oKEkKqhdTLJdJ1szD9IJcl8xFX5YwfMZwC3oia/dmSQ6
-W0WxQx7aaeAhTT9j5Spa
-=Mn+m
+iQIcBAABAgAGBQJP7wwPAAoJECmIfjd9wqK0+PAP/1LClWFUYFoHdjEamkDV+d6E
+F+KFtmC3s0ayD8bMa4nlcbnmGTpu0gqrdakS+WIARsVVRdwJM+Ni4izWeMfRG4P6
+jwTmFuG6gDI2alFvy3ThZ2yhH/6ZpjMFtt/Ut6LruogMKymupgGQhai272LWXN8T
+3vTxMlXKdhunK21YrY5ZuP1l2xYRuuhsSeWcvOzTiImOsIz71dCHqI9fGYERImhH
+hczssMxXSm0T44nH/kusLo3rzRO7rHE+H3MD99xHLyfVWIyKi96ru7O0gBjtY7TL
+tcylSbX9HHjJSTHo+ziK7v0EzceOPG8TEaiJxML1BR6reAVd2iQt+4Ug8qKyViyq
+K7S9043OzSUUqIIsSH/vXXOWNu8lcSvSL4DcXGjWKss55NWu0s91HPb13KIiJIsQ
+41DRr17D/j4z4qY+2JuEimoctXrfdTAGgltHABnTfAB8UtMUp+EnI4v2IAM9Xbme
+bilYKDy212+ZKVGlmzLTQdSC0wlc0JemmCCdfTjsS8wEhwaqFHKhDJOR9Wo0xBAq
+3Fiab877K0bPCbFK0GTjJWlXmHN7jGMEaxCiGK3LU6+V7mWsIcO3Li476o6y+tpC
+ajyRcpDvG2eYcR1arKiQXMz9nmsuLpPl7DeuiqHoG7GKZoMyQG0KMVW4nt3wURC+
+pN31D1YV3x5EEBO0JNRR
+=EDFu
 -----END PGP SIGNATURE-----
 
---=-xFB3RXy3K1uLTNY1P3zN--
+--=-hanPIbi4WpDE1CixyZsI--
 
