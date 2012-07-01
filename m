@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751306Ab2GAFFW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 01:05:22 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46082 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab2GAFFV (ORCPT
+	id S1751384Ab2GAFWP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 01:22:15 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:34513 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab2GAFWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 01:05:21 -0400
-Message-ID: <4FEFDA8E.4040109@kernel.org>
-Date: Sat, 30 Jun 2012 23:05:18 -0600
-From: "John 'Warthog9' Hawley" <warthog9@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Sun, 1 Jul 2012 01:22:14 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: hacklu <embedway.linux@gmail.com>, linux-kernel@vger.kernel.org
+References: <4FB492F7.8050401@gmail.com> <87ipf9gtsb.fsf@xmission.com>
+	<4FCAD590.8000506@zytor.com> <87obp0bxdv.fsf@xmission.com>
+	<4FCB602B.70907@zytor.com> <87fwacb0jq.fsf_-_@xmission.com>
+	<87hatste1o.fsf@xmission.com> <4FEFB6D1.3050104@zytor.com>
+Date: Sat, 30 Jun 2012 22:22:07 -0700
+In-Reply-To: <4FEFB6D1.3050104@zytor.com> (H. Peter Anvin's message of "Sat,
+	30 Jun 2012 19:32:49 -0700")
+Message-ID: <878vf4t5s0.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>, users@kernel.org
-Subject: Re: [kernel.org users] [KORG] Patchwork online
-References: <4FEE2D99.7000906@kernel.org> <201206301454.52715.rjw@sisk.pl> <4FEFADE3.7000109@kernel.org> <4FEFB6A9.9050100@xenotime.net>
-In-Reply-To: <4FEFB6A9.9050100@xenotime.net>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19g1f9VQt1090BmPjhtNeQX7EnJZPggQqg=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"H. Peter Anvin" <hpa@zytor.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 1/2] x86, boot: Don't overlap the compressed and non-compressed image
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2012 08:32 PM, Randy Dunlap wrote:
-> On 06/30/2012 06:54 PM, John 'Warthog9' Hawley wrote:
->> On 06/30/2012 06:54 AM, Rafael J. Wysocki wrote:
->>> Hi,
->>>
->>> Thanks for bringing it back to life!
->>>
->>> On Saturday, June 30, 2012, John 'Warthog9' Hawley wrote:
->>>> Just a quick update for everyone, https://patchwork.kernel.org is back
->>>> online, and all but the linux-pm mailing lists are receiving and
->>>> processing data.
->>>
->>> Er, why is there a problem with linux-pm in particular?
+"H. Peter Anvin" <hpa@zytor.com> writes:
+
+> On 06/30/2012 07:23 PM, Eric W. Biederman wrote:
 >>
->> That particular mailing list isn't responding to subscription requests,
->> and as rdd was pointing out in IRC there seems to be other issues going
->> on there already.  When it settles we'll get it added back in.
-> 
-> but as Rafael pointed out, I was referring to a defunct mailing list
-> (linux-pm at linux-fuondation.org).  patchwork should only be using
-> linux-pm@vger.kernel.org .
+>> Ping.
+>>
+>> These patches should still apply, without problems.
+>>
+>
+> Already doing the test build :)
 
-I hadn't realizes the change, I'll get that flipped over and that should
-be online in the next couple of days.
+Thanks.
 
-- John
+Eric
