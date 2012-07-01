@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211Ab2GARJg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 13:09:36 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:41238 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753555Ab2GARJf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 13:09:35 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: hacklu <embedway.linux@gmail.com>, linux-kernel@vger.kernel.org
-References: <4FB492F7.8050401@gmail.com> <87ipf9gtsb.fsf@xmission.com>
-	<4FCAD590.8000506@zytor.com> <87obp0bxdv.fsf@xmission.com>
-	<4FCB602B.70907@zytor.com> <87fwacb0jq.fsf_-_@xmission.com>
-	<877gvob0g4.fsf_-_@xmission.com> <4FF06701.6010004@zytor.com>
-	<4FF06DF4.4000006@zytor.com> <87wr2nsbvi.fsf@xmission.com>
-	<4FF0769F.8090105@zytor.com> <87sjdbsb0v.fsf@xmission.com>
-	<4FF07E66.2020706@zytor.com>
-Date: Sun, 01 Jul 2012 10:09:27 -0700
-In-Reply-To: <4FF07E66.2020706@zytor.com> (H. Peter Anvin's message of "Sun,
-	01 Jul 2012 09:44:22 -0700")
-Message-ID: <87d34fs914.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754482Ab2GARLM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 13:11:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43785 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753555Ab2GARLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 13:11:10 -0400
+Message-ID: <4FF0849D.5080406@zytor.com>
+Date: Sun, 01 Jul 2012 10:10:53 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19U+8QFBEUxGJu7i3OgR5dvOelsH2kL5tc=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1356]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"H. Peter Anvin" <hpa@zytor.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 2/2] x86, boot: Optimize the elf header handling.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, mtosatti@redhat.com,
+        x86@kernel.org, kvm@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] apic: fix kvm build on UP without IOAPIC
+References: <20120701150506.GA31304@redhat.com>
+In-Reply-To: <20120701150506.GA31304@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"H. Peter Anvin" <hpa@zytor.com> writes:
-
-> On 07/01/2012 09:26 AM, Eric W. Biederman wrote:
->>
->> Fair enough.  It looks like somehow SMP got unset in my test
->> configuration and enabling SMP certainly kills the boot for
->> me.  So it looks like I can reproduce this.
->>
->> So I am guess I just missed something.  Ugh.
->>
->> Digging deeper...
->>
+On 07/01/2012 08:05 AM, Michael S. Tsirkin wrote:
+> On UP i386, when APIC is disabled
+> # CONFIG_X86_UP_APIC is not set
+> # CONFIG_PCI_IOAPIC is not set
 >
-> Could there be a VMA/LMA confusion?  The VMA for the .data..percpu
-> section is zero.
+> code looking at apicdrivers never has any effect but it
+> still gets compiled in. In particular, this causes
+> build failures with kvm, but it generally bloats the kernel
+> unnecessarily.
+>
+> Fix by defining both __apicdrivers and __apicdrivers_end
+> to be NULL when CONFIG_X86_LOCAL_APIC is unset: I verified
+> that as the result any loop scanning __apicdrivers gets optimized out by
+> the compiler.
+>
+> Warning: a .config with apic disabled doesn't seem to boot
+> for me (even without this patch). Still verifying why,
+> meanwhile this patch is compile-tested only.
+>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>
+> Note: if this patch makes sense, can x86 maintainers
+> please ACK applying it through the kvm tree, since that is
+> where we see the issue that it addresses?
+> Avi, Marcelo, maybe you can carry this in kvm/linux-next as a temporary
+> measure so that linux-next builds?
+>
 
-I am suspecting something similar.  At the moment I am trying
-to remember how to get early printk working in misc.c so I can
-poke around a bit more.
+I'm not happy about that as a workflow, but since you guys have an 
+immediate problem I guess we can do that.
 
-The theory that I was working on, that used to be true, and
-seems to be true of everything except the percpu section is
-that objcopy just does the right thing when creating vmlinux.bin.
-vmlinux.bin being what we compress.
 
-I don't see anything obviously wrong with the headers of vmlinux.bin
-although we still unnecessarily have section headers in that file.
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
 
-Eric
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
+
+
