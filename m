@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203Ab2GASWR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:22:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47013 "EHLO
+	id S932539Ab2GASWP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:22:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47008 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755973Ab2GASQk (ORCPT
+	by vger.kernel.org with ESMTP id S1755983Ab2GASQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 14:16:40 -0400
-Message-Id: <20120701172013.057646773@decadent.org.uk>
+	Sun, 1 Jul 2012 14:16:41 -0400
+Message-Id: <20120701172011.654681357@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 01 Jul 2012 18:20:51 +0100
+Date: Sun, 01 Jul 2012 18:20:41 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ian Campbell <Ian.Campbell@citrix.com>,
-        George Shuklin <george.shuklin@gmail.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        William Dauchy <wdauchy@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 45/48] xen/netfront: teardown the device before unregistering it.
+        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 35/48] drm/i915: Refactor the deferred PM_IIR handling into a single
+ function
 In-Reply-To: <20120701172006.535271340@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,56 +29,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Campbell <Ian.Campbell@citrix.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 6bc96d047fe32d76ef79f3195c52a542edf7c705 upstream.
+commit fc6826d1dcd65f3d1e9a5377678882e4e08f02be upstream.
 
-Fixes:
-[   15.470311] WARNING: at /local/scratch/ianc/devel/kernels/linux/fs/sysfs/file.c:498 sysfs_attr_ns+0x95/0xa0()
-[   15.470326] sysfs: kobject eth0 without dirent
-[   15.470333] Modules linked in:
-[   15.470342] Pid: 12, comm: xenwatch Not tainted 3.4.0-x86_32p-xenU #93
-and
-[    9.150554] BUG: unable to handle kernel paging request at 2b359000
-[    9.150577] IP: [<c1279561>] linkwatch_do_dev+0x81/0xc0
-[    9.150592] *pdpt = 000000002c3c9027 *pde = 0000000000000000
-[    9.150604] Oops: 0002 [#1] SMP
-[    9.150613] Modules linked in:
+This function, along with the registers and deferred work hander, are
+all shared with SandyBridge, IvyBridge and their variants. So remove the
+duplicate code into a single function.
 
-This is http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=675190
-
-Reported-by: George Shuklin <george.shuklin@gmail.com>
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Tested-by: William Dauchy <wdauchy@gmail.com>
-Cc: 675190@bugs.debian.org
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reviewed-by: Ben Widawsky <ben@bwidawsk.net>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2: adjust context; drop changes for Valley View]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/xen-netfront.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/i915_irq.c |   70 +++++++++++++++++----------------------
+ 1 file changed, 31 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-index 2027afe..3089990 100644
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -1935,14 +1935,14 @@ static int __devexit xennet_remove(struct xenbus_device *dev)
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -424,6 +424,31 @@
+ 	mutex_unlock(&dev_priv->dev->struct_mutex);
+ }
  
- 	dev_dbg(&dev->dev, "%s\n", dev->nodename);
- 
--	unregister_netdev(info->netdev);
--
- 	xennet_disconnect_backend(info);
- 
--	del_timer_sync(&info->rx_refill_timer);
--
- 	xennet_sysfs_delif(info->netdev);
- 
-+	unregister_netdev(info->netdev);
++static void gen6_queue_rps_work(struct drm_i915_private *dev_priv,
++				u32 pm_iir)
++{
++	unsigned long flags;
 +
-+	del_timer_sync(&info->rx_refill_timer);
++	/*
++	 * IIR bits should never already be set because IMR should
++	 * prevent an interrupt from being shown in IIR. The warning
++	 * displays a case where we've unsafely cleared
++	 * dev_priv->pm_iir. Although missing an interrupt of the same
++	 * type is not a problem, it displays a problem in the logic.
++	 *
++	 * The mask bit in IMR is cleared by rps_work.
++	 */
 +
- 	free_percpu(info->stats);
++	spin_lock_irqsave(&dev_priv->rps_lock, flags);
++	WARN(dev_priv->pm_iir & pm_iir, "Missed a PM interrupt\n");
++	dev_priv->pm_iir |= pm_iir;
++	I915_WRITE(GEN6_PMIMR, dev_priv->pm_iir);
++	POSTING_READ(GEN6_PMIMR);
++	spin_unlock_irqrestore(&dev_priv->rps_lock, flags);
++
++	queue_work(dev_priv->wq, &dev_priv->rps_work);
++}
++
+ static void pch_irq_handler(struct drm_device *dev, u32 pch_iir)
+ {
+ 	drm_i915_private_t *dev_priv = (drm_i915_private_t *) dev->dev_private;
+@@ -529,16 +554,8 @@
+ 		pch_irq_handler(dev, pch_iir);
+ 	}
  
- 	free_netdev(info->netdev);
+-	if (pm_iir & GEN6_PM_DEFERRED_EVENTS) {
+-		unsigned long flags;
+-		spin_lock_irqsave(&dev_priv->rps_lock, flags);
+-		WARN(dev_priv->pm_iir & pm_iir, "Missed a PM interrupt\n");
+-		dev_priv->pm_iir |= pm_iir;
+-		I915_WRITE(GEN6_PMIMR, dev_priv->pm_iir);
+-		POSTING_READ(GEN6_PMIMR);
+-		spin_unlock_irqrestore(&dev_priv->rps_lock, flags);
+-		queue_work(dev_priv->wq, &dev_priv->rps_work);
+-	}
++	if (pm_iir & GEN6_PM_DEFERRED_EVENTS)
++		gen6_queue_rps_work(dev_priv, pm_iir);
+ 
+ 	/* should clear PCH hotplug event before clear CPU irq */
+ 	I915_WRITE(SDEIIR, pch_iir);
+@@ -634,25 +651,8 @@
+ 		i915_handle_rps_change(dev);
+ 	}
+ 
+-	if (IS_GEN6(dev) && pm_iir & GEN6_PM_DEFERRED_EVENTS) {
+-		/*
+-		 * IIR bits should never already be set because IMR should
+-		 * prevent an interrupt from being shown in IIR. The warning
+-		 * displays a case where we've unsafely cleared
+-		 * dev_priv->pm_iir. Although missing an interrupt of the same
+-		 * type is not a problem, it displays a problem in the logic.
+-		 *
+-		 * The mask bit in IMR is cleared by rps_work.
+-		 */
+-		unsigned long flags;
+-		spin_lock_irqsave(&dev_priv->rps_lock, flags);
+-		WARN(dev_priv->pm_iir & pm_iir, "Missed a PM interrupt\n");
+-		dev_priv->pm_iir |= pm_iir;
+-		I915_WRITE(GEN6_PMIMR, dev_priv->pm_iir);
+-		POSTING_READ(GEN6_PMIMR);
+-		spin_unlock_irqrestore(&dev_priv->rps_lock, flags);
+-		queue_work(dev_priv->wq, &dev_priv->rps_work);
+-	}
++	if (IS_GEN6(dev) && pm_iir & GEN6_PM_DEFERRED_EVENTS)
++		gen6_queue_rps_work(dev_priv, pm_iir);
+ 
+ 	/* should clear PCH hotplug event before clear CPU irq */
+ 	I915_WRITE(SDEIIR, pch_iir);
 
 
