@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab2GASQF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:16:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46889 "EHLO
+	id S1755857Ab2GASQY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:16:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46893 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751173Ab2GASQD (ORCPT
+	by vger.kernel.org with ESMTP id S1751735Ab2GASQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 14:16:03 -0400
-Message-Id: <20120701172006.535271340@decadent.org.uk>
+	Sun, 1 Jul 2012 14:16:21 -0400
+Message-Id: <20120701172007.137742223@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 01 Jul 2012 18:20:06 +0100
+Date: Sun, 01 Jul 2012 18:20:09 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 00/48] 3.2.22-stable review
+        alan@lxorguk.ukuu.org.uk, Chen Gong <gong.chen@linux.intel.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 03/48] edac: avoid mce decoding crash after edac driver unloaded
+In-Reply-To: <20120701172006.535271340@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
 X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
@@ -22,76 +24,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.2.22 release.
-There are 48 patches in this series, which will be posted as responses
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Tue Jul  3 19:00:00 UTC 2012.
-Anything received after that time might be too late.
+------------------
 
-A combined patch relative to 3.2.21 will be posted as an additional
-response to this, and the diffstat can be found below.
+From: Chen Gong <gong.chen@linux.intel.com>
 
-Ben.
+commit e35fca4791fcdd43dc1fd769797df40c562ab491 upstream.
 
--------------
- Documentation/stable_kernel_rules.txt              |    6 ++
- Makefile                                           |    4 +-
- arch/arm/plat-samsung/include/plat/map-s3c.h       |    2 +-
- .../arm/plat-samsung/include/plat/watchdog-reset.h |    2 +-
- arch/x86/include/asm/cpufeature.h                  |    2 +-
- arch/x86/include/asm/pgtable-3level.h              |   54 ++++++++++++++++
- arch/x86/kernel/cpu/scattered.c                    |    2 +-
- drivers/acpi/acpi_pad.c                            |    7 ++-
- drivers/base/power/main.c                          |    6 +-
- drivers/char/hw_random/atmel-rng.c                 |    2 +-
- drivers/edac/i7core_edac.c                         |   15 ++---
- drivers/edac/sb_edac.c                             |   10 ++-
- drivers/gpu/drm/drm_edid.c                         |    2 +-
- drivers/gpu/drm/i915/i915_gem.c                    |    4 ++
- drivers/gpu/drm/i915/i915_irq.c                    |   57 +++++++++--------
- drivers/gpu/drm/i915/i915_suspend.c                |    5 +-
- drivers/gpu/drm/i915/intel_display.c               |   65 ++++++++++++++------
- drivers/gpu/drm/i915/intel_ringbuffer.c            |   14 +----
- drivers/gpu/drm/nouveau/nouveau_fbcon.c            |    2 +-
- drivers/hwmon/applesmc.c                           |    4 +-
- drivers/hwmon/coretemp.c                           |    2 +-
- drivers/md/dm-thin.c                               |    9 ++-
- drivers/media/dvb/siano/smsusb.c                   |    2 +
- drivers/media/video/gspca/gspca.c                  |    4 +-
- drivers/net/can/c_can/c_can.c                      |    4 +-
- drivers/net/can/flexcan.c                          |    4 +-
- drivers/net/ethernet/intel/e1000e/82571.c          |    3 +-
- drivers/net/ethernet/intel/e1000e/netdev.c         |    8 ---
- drivers/net/wireless/ath/ath9k/hw.c                |   14 ++++-
- drivers/net/wireless/ath/ath9k/main.c              |   18 +++---
- drivers/net/wireless/ath/ath9k/xmit.c              |    2 +-
- drivers/net/wireless/iwlwifi/iwl-trans-pcie.c      |    6 ++
- drivers/net/xen-netfront.c                         |    8 +--
- drivers/oprofile/oprofile_perf.c                   |    2 +-
- drivers/scsi/sd.c                                  |    2 +
- drivers/staging/iio/adc/ad7606_core.c              |    1 +
- drivers/staging/rtl8712/usb_intf.c                 |    2 +
- drivers/staging/rts_pstor/rtsx_transport.c         |   11 ++--
- drivers/usb/serial/cp210x.c                        |   11 ++++
- drivers/usb/serial/option.c                        |    8 +++
- drivers/usb/storage/scsiglue.c                     |    6 ++
- fs/exec.c                                          |    2 +-
- fs/nilfs2/gcinode.c                                |    2 +
- fs/nilfs2/segment.c                                |    2 +
- include/asm-generic/pgtable.h                      |   32 +++++++++-
- include/linux/mm_types.h                           |   10 +++
- include/scsi/scsi_device.h                         |    1 +
- kernel/exit.c                                      |    1 +
- net/batman-adv/routing.c                           |    2 +
- net/batman-adv/translation-table.c                 |    8 +--
- net/wireless/reg.c                                 |    2 +-
- sound/pci/hda/patch_realtek.c                      |    1 +
- tools/hv/hv_kvp_daemon.c                           |   10 ++-
- 53 files changed, 320 insertions(+), 145 deletions(-)
+Some edac drivers register themselves as mce decoders via
+notifier_chain. But in current notifier_chain implementation logic,
+it doesn't accept same notifier registered twice. If so, it will be
+wrong when adding/removing the element from the list. For example,
+on one SandyBridge platform, remove module sb_edac and then trigger
+one error, it will hit oops because it has no mce decoder registered
+but related notifier_chain still points to an invalid callback
+function. Here is an example:
 
--- 
-Ben Hutchings
-If you seem to know what you are doing, you'll be given more to do.
+Call Trace:
+ [<ffffffff8150ef6a>] atomic_notifier_call_chain+0x1a/0x20
+ [<ffffffff8102b936>] mce_log+0x46/0x180
+ [<ffffffff8102eaea>] apei_mce_report_mem_error+0x4a/0x60
+ [<ffffffff812e19d2>] ghes_do_proc+0x192/0x210
+ [<ffffffff812e2066>] ghes_proc+0x46/0x70
+ [<ffffffff812e20d8>] ghes_notify_sci+0x48/0x80
+ [<ffffffff8150ef05>] notifier_call_chain+0x55/0x80
+ [<ffffffff81076f1a>] __blocking_notifier_call_chain+0x5a/0x80
+ [<ffffffff812aea11>] ? acpi_os_wait_events_complete+0x23/0x23
+ [<ffffffff81076f56>] blocking_notifier_call_chain+0x16/0x20
+ [<ffffffff812ddc4d>] acpi_hed_notify+0x19/0x1b
+ [<ffffffff812b16bd>] acpi_device_notify+0x19/0x1b
+ [<ffffffff812beb38>] acpi_ev_notify_dispatch+0x67/0x7f
+ [<ffffffff812aea3a>] acpi_os_execute_deferred+0x29/0x36
+ [<ffffffff81069dc2>] process_one_work+0x132/0x450
+ [<ffffffff8106bbcb>] worker_thread+0x17b/0x3c0
+ [<ffffffff8106ba50>] ? manage_workers+0x120/0x120
+ [<ffffffff81070aee>] kthread+0x9e/0xb0
+ [<ffffffff81514724>] kernel_thread_helper+0x4/0x10
+ [<ffffffff81070a50>] ? kthread_freezable_should_stop+0x70/0x70
+ [<ffffffff81514720>] ? gs_change+0x13/0x13
+Code: f3 49 89 d4 45 85 ed 4d 89 c6 48 8b 0f 74 48 48 85 c9 75 17 eb 41
+0f 1f 80 00 00 00 00 41 83 ed 01 4c 89 f9 74 22 4d 85 ff 74 1d <4c> 8b
+79 08 4c 89 e2 48 89 de 48 89 cf ff 11 4d 85 f6 74 04 41
+RIP  [<ffffffff8150eef6>] notifier_call_chain+0x46/0x80
+ RSP <ffff88042868fb20>
+CR2: ffffffffa01af838
+---[ end trace 0100930068e73e6f ]---
+BUG: unable to handle kernel paging request at fffffffffffffff8
+IP: [<ffffffff810705b0>] kthread_data+0x10/0x20
+PGD 1a0d067 PUD 1a0e067 PMD 0
+Oops: 0000 [#2] SMP
+
+Only i7core_edac and sb_edac have such issues because they have more
+than one memory controller which means they have to register mce
+decoder many times.
+
+Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+[bwh: Backported to 3.2: drivers call atomic_notifier_chain_{,un}register()
+ directly]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+--- a/drivers/edac/i7core_edac.c
++++ b/drivers/edac/i7core_edac.c
+@@ -1932,12 +1932,6 @@
+ 	if (mce->bank != 8)
+ 		return NOTIFY_DONE;
+ 
+-#ifdef CONFIG_SMP
+-	/* Only handle if it is the right mc controller */
+-	if (mce->socketid != pvt->i7core_dev->socket)
+-		return NOTIFY_DONE;
+-#endif
+-
+ 	smp_rmb();
+ 	if ((pvt->mce_out + 1) % MCE_LOG_LEN == pvt->mce_in) {
+ 		smp_wmb();
+@@ -2234,8 +2228,6 @@
+ 	if (pvt->enable_scrub)
+ 		disable_sdram_scrub_setting(mci);
+ 
+-	atomic_notifier_chain_unregister(&x86_mce_decoder_chain, &i7_mce_dec);
+-
+ 	/* Disable EDAC polling */
+ 	i7core_pci_ctl_release(pvt);
+ 
+@@ -2336,8 +2328,6 @@
+ 	/* DCLK for scrub rate setting */
+ 	pvt->dclk_freq = get_dclk_freq();
+ 
+-	atomic_notifier_chain_register(&x86_mce_decoder_chain, &i7_mce_dec);
+-
+ 	return 0;
+ 
+ fail0:
+@@ -2481,8 +2471,10 @@
+ 
+ 	pci_rc = pci_register_driver(&i7core_driver);
+ 
+-	if (pci_rc >= 0)
++	if (pci_rc >= 0) {
++		atomic_notifier_chain_register(&x86_mce_decoder_chain, &i7_mce_dec);
+ 		return 0;
++	}
+ 
+ 	i7core_printk(KERN_ERR, "Failed to register device with error %d.\n",
+ 		      pci_rc);
+@@ -2498,6 +2490,7 @@
+ {
+ 	debugf2("MC: " __FILE__ ": %s()\n", __func__);
+ 	pci_unregister_driver(&i7core_driver);
++	atomic_notifier_chain_unregister(&x86_mce_decoder_chain, &i7_mce_dec);
+ }
+ 
+ module_init(i7core_init);
+--- a/drivers/edac/sb_edac.c
++++ b/drivers/edac/sb_edac.c
+@@ -1661,9 +1661,6 @@
+ 	debugf0("MC: " __FILE__ ": %s(): mci = %p, dev = %p\n",
+ 		__func__, mci, &sbridge_dev->pdev[0]->dev);
+ 
+-	atomic_notifier_chain_unregister(&x86_mce_decoder_chain,
+-					 &sbridge_mce_dec);
+-
+ 	/* Remove MC sysfs nodes */
+ 	edac_mc_del_mc(mci->dev);
+ 
+@@ -1731,8 +1728,6 @@
+ 		goto fail0;
+ 	}
+ 
+-	atomic_notifier_chain_register(&x86_mce_decoder_chain,
+-				       &sbridge_mce_dec);
+ 	return 0;
+ 
+ fail0:
+@@ -1861,8 +1856,10 @@
+ 
+ 	pci_rc = pci_register_driver(&sbridge_driver);
+ 
+-	if (pci_rc >= 0)
++	if (pci_rc >= 0) {
++		atomic_notifier_chain_register(&x86_mce_decoder_chain, &sbridge_mce_dec);
+ 		return 0;
++	}
+ 
+ 	sbridge_printk(KERN_ERR, "Failed to register device with error %d.\n",
+ 		      pci_rc);
+@@ -1878,6 +1875,7 @@
+ {
+ 	debugf2("MC: " __FILE__ ": %s()\n", __func__);
+ 	pci_unregister_driver(&sbridge_driver);
++	atomic_notifier_chain_unregister(&x86_mce_decoder_chain, &sbridge_mce_dec);
+ }
+ 
+ module_init(sbridge_init);
+
 
