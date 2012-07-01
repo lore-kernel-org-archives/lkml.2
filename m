@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583Ab2GASXH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:23:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37570 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755476Ab2GASXD (ORCPT
+	id S1756226Ab2GASWT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:22:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46999 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755998Ab2GASQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 14:23:03 -0400
-Date: Sun, 1 Jul 2012 19:23:00 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH v2] regulator: fixed: support deferred probe for DT GPIOs
-Message-ID: <20120701182300.GE28922@opensource.wolfsonmicro.com>
-References: <1340987595-11288-1-git-send-email-swarren@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4YaMMRm3dfitt/ta"
-Content-Disposition: inline
-In-Reply-To: <1340987595-11288-1-git-send-email-swarren@wwwdotorg.org>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 1 Jul 2012 14:16:40 -0400
+Message-Id: <20120701172011.952129862@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Sun, 01 Jul 2012 18:20:43 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 37/48] drm/i915: Fix eDP blank screen after S3 resume on HP desktops
+In-Reply-To: <20120701172006.535271340@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
---4YaMMRm3dfitt/ta
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+------------------
 
-On Fri, Jun 29, 2012 at 10:33:15AM -0600, Stephen Warren wrote:
+From: Takashi Iwai <tiwai@suse.de>
 
-> of_get_named_gpio() needs the driver hosting the GPIO that the DT
-> property references to have been probed. Detect this specific failure,
-> and defer the probe of the whole regulator until this API can complete.
+commit 6db65cbb941f9d433659bdad02b307f6d94465df upstream.
 
-I've applied this but...
+This patch fixes the problem on some HP desktop machines with eDP
+which give blank screens after S3 resume.
 
-> +	/*
-> +	 * of_get_named_gpio() currently returns ENODEV rather than
-> +	 * EPROBE_DEFER. This code attempts to be compatible with both
-> +	 * for now; the ENODEV check can be removed once the API is fixed.
+It turned out that BLC_PWM_CPU_CTL must be written after
+BLC_PWM_CPU_CTL2.  Otherwise it doesn't take effect on these
+SNB machines.
 
-...this just seems rubbish, why aren't we just fixing the device tree
-code and why are we doing this at the device tree level rather than as a
-general gpiolib thing?
+Tested with 3.5-rc3 kernel.
 
---4YaMMRm3dfitt/ta
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=49233
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/gpu/drm/i915/i915_suspend.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-iQIcBAEBAgAGBQJP8JV+AAoJEBus8iNuMP3dEnsQAJTdXRngXoFqFY6kXb77HDhJ
-fTPZps3mCRprop38VyltH1W4roVRGkp1g/djKIS5UpjOFWNTYDQGZbua8P+bZvcR
-mNfIweLH0l30UtKEj9FJ5GwXENcLTqcPYO5EcWtjXWux5/EmIY/QWRBjIX/DyYsK
-dtm3ecaD5HU2Vp12b+Nl932QjYnQVRCOwdw10D4XgDMIdMSxUReDBsLw+sL2wHVM
-oRcEf+xwOgV7XqXWv+1V+v1aCLlWOEOK9agdTPKi1Xof6VVLvAUeH0JwOFm8Qet9
-PuxzjQ/8yadvI83zASqjQq5XrrP1AAKABpIitdCMDqxqrbqggdZrMJt7bvsALFjk
-FWwjK9sfTg1j+YJ6UQcOlDe3J6Cm7wD/teJ9x17noWjq4t2fta70jSAKQh9y3uu4
-yof9kR49AtDU1CoWpDuhT0kwLIlYUY/QweLhR9bHcNT74cbQj7QXKpX+Fg5RqqyA
-5q1Df2fuPTdq7cTnTu0JLJy86HBn9lsBV2nfSXTjZjmpnMNC7qLNzNrWT+FUceSL
-7U7XJD546huuHq37Apj2MECgjiNGoj7ENGXLf3YW6JNms0PWqhMzobcs4EvQT7/J
-dxw7Jx6184qO2FA5pOETz1bWjuzzx0GUqzhJHv88LwwXEmS7YGG0QBB1o0FQAcQa
-tNbSTM1r/ajXDr1HnQia
-=yrw1
------END PGP SIGNATURE-----
+diff --git a/drivers/gpu/drm/i915/i915_suspend.c b/drivers/gpu/drm/i915/i915_suspend.c
+index 0ede02a..a748e5c 100644
+--- a/drivers/gpu/drm/i915/i915_suspend.c
++++ b/drivers/gpu/drm/i915/i915_suspend.c
+@@ -740,8 +740,11 @@ static void i915_restore_display(struct drm_device *dev)
+ 	if (HAS_PCH_SPLIT(dev)) {
+ 		I915_WRITE(BLC_PWM_PCH_CTL1, dev_priv->saveBLC_PWM_CTL);
+ 		I915_WRITE(BLC_PWM_PCH_CTL2, dev_priv->saveBLC_PWM_CTL2);
+-		I915_WRITE(BLC_PWM_CPU_CTL, dev_priv->saveBLC_CPU_PWM_CTL);
++		/* NOTE: BLC_PWM_CPU_CTL must be written after BLC_PWM_CPU_CTL2;
++		 * otherwise we get blank eDP screen after S3 on some machines
++		 */
+ 		I915_WRITE(BLC_PWM_CPU_CTL2, dev_priv->saveBLC_CPU_PWM_CTL2);
++		I915_WRITE(BLC_PWM_CPU_CTL, dev_priv->saveBLC_CPU_PWM_CTL);
+ 		I915_WRITE(PCH_PP_ON_DELAYS, dev_priv->savePP_ON_DELAYS);
+ 		I915_WRITE(PCH_PP_OFF_DELAYS, dev_priv->savePP_OFF_DELAYS);
+ 		I915_WRITE(PCH_PP_DIVISOR, dev_priv->savePP_DIVISOR);
 
---4YaMMRm3dfitt/ta--
+
