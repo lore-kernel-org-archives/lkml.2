@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294Ab2GAHCv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 03:02:51 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:40332 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784Ab2GAHCb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 03:02:31 -0400
-Date: Sun, 1 Jul 2012 09:02:28 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Jan Engelhardt <jengelh@inai.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        simon@fire.lp0.eu
-Subject: Re: Leap second insertion causes futex to repeatedly timeout
-Message-ID: <20120701070228.GA246@x4>
-References: <alpine.LNX.2.01.1207010247430.7313@frira.zrqbmnf.qr>
+	id S1752697Ab2GAHTC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 03:19:02 -0400
+Received: from trent.utfs.org ([94.185.90.103]:51063 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752423Ab2GAHSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 03:18:34 -0400
+Date: Sun, 1 Jul 2012 00:18:31 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: linuxppc-dev@lists.ozlabs.org
+cc: LKML <linux-kernel@vger.kernel.org>
+Subject: 3.5.0-rc5: BUG: soft lockup - CPU#0 stuck for 22s
+Message-ID: <alpine.DEB.2.01.1207010009270.5568@trent.utfs.org>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.01.1207010247430.7313@frira.zrqbmnf.qr>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.07.01 at 02:57 +0200, Jan Engelhardt wrote:
-> 
-> This year's leap second insertion has had the strange effect on at least 
-> Linux versions 3.4.4 (my end) and 3.5-rc4 (Simon's box, Cc) that certain 
-> processes use up all CPU power, because of futexes repeatedly timing 
-> out. This seems to only affect certain processes.
-> 
-> Simon observes - http://s85.org/owXfmLvt - that 
-> Firefox/Thunderbird/Chrome/Java are affected.
+Hi,
 
-On my ntp synchronized Linux 3.5 testbox I saw a similar issue.
+while trying to upgrade from 3.4.0 to 3.5.0-rc5 on this Powerbook G4 
+(powerpc 32 bit), this happens during booting:
 
-The leap second was successfully inserted last night:
-Jul  1 01:59:59 x4 kernel: Clock: inserting leap second 23:59:60 UTC
+--------------
+usb 2-1: new full-speed USB device number 4 using ohci_hcd
+SCSI subsystem initialized
+scsi0 : SBP-2 IEEE-1394
+scsi1 : SBP-2 IEEE-1394
+firewire_sbp2 fw1.0: logged in to LUN 0000 (0 retries)
+scsi 0:0:0:0: Direct-Access     Ext Hard  Disk            PQ: 0 ANSI: 4
 
-Because glibc-2.16 was released yesterday I've build it this morning.
-During "make check" I saw several mutex related tests failures. For
-example /nptl/tst-mutex5a.c failed with a "premature timeout difference"
-of one second.
+[25 seconds later]
 
-tst-mutex5a.c:
-#define TYPE PTHREAD_MUTEX_ADAPTIVE_NP
-#include "tst-mutex5.c"
+BUG: soft lockup - CPU#0 stuck for 22s! [modprobe:695]
+Modules linked in: sd_mod arc4 firewire_sbp2 scsi_mod b43 mac80211 cfg80211
+irq event stamp: 56975532
+hardirqs last  enabled at (56975531): <c053aea8>] _raw_spin_unlock_irqrestore+0x40/0x9c
+hardirqs last disabled at (56975532): <c0011688>] reenable_mmu+0x40/0x98
+softirqs last  enabled at (56966080): <c000f3f0>] call_do_softirq+0x14/0x24
+softirqs last disabled at (56966073): <c000f3f0>] call_do_softirq+0x14/0x24
+NIP: c053aeac LR: c053aea8 CTR: c009d510
+REGS: eed1fd40 TRAP: 0901   Not tainted  (3.5.0-rc5)
+MSR: 00009032 ME IR DR RI > CR: 24042484  XER: 00000000
+TASK = eece5c00[695] 'modprobe' THREAD: eed1e000 #012GPR00: 012GPR08: 
+NIP [c053aeac] _raw_spin_unlock_irqrestore+0x44/0x9c
+LR [c053aea8] _raw_spin_unlock_irqrestore+0x40/0x9c
+Call Trace:
+[eed1fdf0] [c053aea8] _raw_spin_unlock_irqrestore+0x40/0x9c (unreliable)
+[eed1fe00] [c005fbd8] lowest_in_progress+0xa8/0xcc
+[eed1fe20] [c005fc5c] async_synchronize_cookie_domain+0x60/0x1f4
+[eed1fe70] [c005fe3c] async_synchronize_full+0x3c/0x74
+[eed1fe90] [c0083908] sys_init_module+0x174/0x1168
+[eed1ff40] [c00117e8] ret_from_syscall+0x0/0x38
+--- Exception: c01 at 0xff5d694#012[   36.339234]     LR = 0x100041c0
+Instruction dump:
+38630010 
+73e08000 
+--------------
 
-from tst-mutex5.c:
-// ...
-  gettimeofday (&tv, NULL);
-  TIMEVAL_TO_TIMESPEC (&tv, &ts);
+This is what netconsole was able to receive. I've made a screenshot from 
+another boot with the same vanilla 3.5.0-rc5 (today's mainline) and put it 
+(along with some more details) up here: 
 
-  ts.tv_sec += 2;	/* Wait 2 seconds.  */
+  http://nerdbynature.de/bits/3.5.0-rc5/soft_lockup/
 
-  err = pthread_mutex_timedlock (&m, &ts);
-// ...
-    {
-      int clk_tck = sysconf (_SC_CLK_TCK);
+Any ideas?
 
-      gettimeofday (&tv2, NULL);
-
-      tv2.tv_sec -= tv.tv_sec;
-      tv2.tv_usec -= tv.tv_usec;
-      if (tv2.tv_usec < 0)
-	{
-	  tv2.tv_usec += 1000000;
-	  tv2.tv_sec -= 1;
-	}
-
-      /* Be a bit tolerant, add one CLK_TCK.  */
-      tv2.tv_usec += 1000000 / clk_tck;
-      if (tv2.tv_usec >= 1000000)
-	{
-	  tv2.tv_usec -= 1000000;
-	  ++tv2.tv_sec;
-	}
-
-      if (tv2.tv_sec < 2)
-	{
-	  printf ("premature timeout: %ld.%06ld difference\n",
-		  tv2.tv_sec, tv2.tv_usec);
-	  return 1;
-	}
-    }
-// ...
-
+Thanks,
+Christian.
 -- 
-Markus
+BOFH excuse #436:
+
+Daemon escaped from pentagram
