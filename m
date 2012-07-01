@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab2GAS2O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:28:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46912 "EHLO
+	id S1755913Ab2GAS2f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:28:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46906 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751735Ab2GASQZ (ORCPT
+	by vger.kernel.org with ESMTP id S1755825Ab2GASQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 14:16:25 -0400
-Message-Id: <20120701172008.111848920@decadent.org.uk>
+	Sun, 1 Jul 2012 14:16:24 -0400
+Message-Id: <20120701172009.229156155@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 01 Jul 2012 18:20:16 +0100
+Date: Sun, 01 Jul 2012 18:20:24 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Subject: [ 10/48] nilfs2: ensure proper cache clearing for gc-inodes
+        alan@lxorguk.ukuu.org.uk, Hans de Goede <hdegoede@redhat.com>,
+        Antonio Ospite <ospite@studenti.unina.it>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 18/48] [media] gspca-core: Fix buffers staying in queued state after a
+ stream_off
 In-Reply-To: <20120701172006.535271340@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,70 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit fbb24a3a915f105016f1c828476be11aceac8504 upstream.
+commit af05ef01e9cde84620c6855a8d8ab9c8a1db9009 upstream.
 
-A gc-inode is a pseudo inode used to buffer the blocks to be moved by
-garbage collection.
+This fixes a regression introduced by commit f7059ea and should be
+backported to all supported stable kernels which have this commit.
 
-Block caches of gc-inodes must be cleared every time a garbage collection
-function (nilfs_clean_segments) completes.  Otherwise, stale blocks
-buffered in the caches may be wrongly reused in successive calls of the GC
-function.
-
-For user files, this is not a problem because their gc-inodes are
-distinguished by a checkpoint number as well as an inode number.  They
-never buffer different blocks if either an inode number, a checkpoint
-number, or a block offset differs.
-
-However, gc-inodes of sufile, cpfile and DAT file can store different data
-for the same block offset.  Thus, the nilfs_clean_segments function can
-move incorrect block for these meta-data files if an old block is cached.
-I found this is really causing meta-data corruption in nilfs.
-
-This fixes the issue by ensuring cache clear of gc-inodes and resolves
-reported GC problems including checkpoint file corruption, b-tree
-corruption, and the following warning during GC.
-
-  nilfs_palloc_freev: entry number 307234 already freed.
-  ...
-
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Tested-by: Antonio Ospite <ospite@studenti.unina.it>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nilfs2/gcinode.c |    2 ++
- fs/nilfs2/segment.c |    2 ++
- 2 files changed, 4 insertions(+)
+ drivers/media/video/gspca/gspca.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nilfs2/gcinode.c b/fs/nilfs2/gcinode.c
-index 08a07a2..57ceaf3 100644
---- a/fs/nilfs2/gcinode.c
-+++ b/fs/nilfs2/gcinode.c
-@@ -191,6 +191,8 @@ void nilfs_remove_all_gcinodes(struct the_nilfs *nilfs)
- 	while (!list_empty(head)) {
- 		ii = list_first_entry(head, struct nilfs_inode_info, i_dirty);
- 		list_del_init(&ii->i_dirty);
-+		truncate_inode_pages(&ii->vfs_inode.i_data, 0);
-+		nilfs_btnode_cache_clear(&ii->i_btnode_cache);
- 		iput(&ii->vfs_inode);
- 	}
- }
-diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
-index 0e72ad6..88e11fb 100644
---- a/fs/nilfs2/segment.c
-+++ b/fs/nilfs2/segment.c
-@@ -2309,6 +2309,8 @@ nilfs_remove_written_gcinodes(struct the_nilfs *nilfs, struct list_head *head)
- 		if (!test_bit(NILFS_I_UPDATED, &ii->i_state))
- 			continue;
- 		list_del_init(&ii->i_dirty);
-+		truncate_inode_pages(&ii->vfs_inode.i_data, 0);
-+		nilfs_btnode_cache_clear(&ii->i_btnode_cache);
- 		iput(&ii->vfs_inode);
- 	}
- }
+--- a/drivers/media/video/gspca/gspca.c
++++ b/drivers/media/video/gspca/gspca.c
+@@ -1697,7 +1697,7 @@
+ 				enum v4l2_buf_type buf_type)
+ {
+ 	struct gspca_dev *gspca_dev = priv;
+-	int ret;
++	int i, ret;
+ 
+ 	if (buf_type != V4L2_BUF_TYPE_VIDEO_CAPTURE)
+ 		return -EINVAL;
+@@ -1728,6 +1728,8 @@
+ 	wake_up_interruptible(&gspca_dev->wq);
+ 
+ 	/* empty the transfer queues */
++	for (i = 0; i < gspca_dev->nframes; i++)
++		gspca_dev->frame[i].v4l2_buf.flags &= ~BUF_ALL_FLAGS;
+ 	atomic_set(&gspca_dev->fr_q, 0);
+ 	atomic_set(&gspca_dev->fr_i, 0);
+ 	gspca_dev->fr_o = 0;
 
 
