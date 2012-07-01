@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab2GARPd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 13:15:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43813 "EHLO mail.zytor.com"
+	id S1754983Ab2GARUg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 13:20:36 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:33362 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753555Ab2GARPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 13:15:32 -0400
-Message-ID: <4FF085B1.6070604@zytor.com>
-Date: Sun, 01 Jul 2012 10:15:29 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1753555Ab2GARUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 13:20:35 -0400
+From: =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>
+To: linux-kernel@vger.kernel.org
+Cc: nicolas.ferre@atmel.com, linux-arm-kernel@lists.infradead.org,
+        linux-crypto@vger.kernel.org, herbert@gondor.hengli.com.au,
+        davem@davemloft.net, plagnioj@jcrosoft.com, nicolas@eukrea.com,
+        eric@eukrea.com
+Subject: [PATCH 0/5] AT91SAM9G46/M11: add crypto drivers
+Date: Sun,  1 Jul 2012 19:19:42 +0200
+Message-Id: <1341163187-14946-1-git-send-email-eric@eukrea.com>
+X-Mailer: git-send-email 1.7.7.6
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: hacklu <embedway.linux@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86, boot: Optimize the elf header handling.
-References: <4FB492F7.8050401@gmail.com> <87ipf9gtsb.fsf@xmission.com> <4FCAD590.8000506@zytor.com> <87obp0bxdv.fsf@xmission.com> <4FCB602B.70907@zytor.com> <87fwacb0jq.fsf_-_@xmission.com> <877gvob0g4.fsf_-_@xmission.com> <4FF06701.6010004@zytor.com> <4FF06DF4.4000006@zytor.com> <87wr2nsbvi.fsf@xmission.com> <4FF0769F.8090105@zytor.com> <87sjdbsb0v.fsf@xmission.com> <4FF07E66.2020706@zytor.com> <87d34fs914.fsf@xmission.com>
-In-Reply-To: <87d34fs914.fsf@xmission.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2012 10:09 AM, Eric W. Biederman wrote:
->
-> I am suspecting something similar.  At the moment I am trying
-> to remember how to get early printk working in misc.c so I can
-> poke around a bit more.
->
-> The theory that I was working on, that used to be true, and
-> seems to be true of everything except the percpu section is
-> that objcopy just does the right thing when creating vmlinux.bin.
-> vmlinux.bin being what we compress.
->
-> I don't see anything obviously wrong with the headers of vmlinux.bin
-> although we still unnecessarily have section headers in that file.
->
+This patch serie adds the support for the crypto engine available in
+the Atmel SAM9G46 http://www.atmel.com/devices/SAM9G46.aspx and SAM9M11
+http://www.atmel.com/devices/SAM9M11.aspx
 
-We leave the section headers in for the benefit of Xen IIRC.
+For each driver the choice between PDC/DMA or PIO was optimized to
+maximize the performances (benchmarks will soon be available on
+the linux4sam wiki http://www.at91.com/).
 
-	-hpa
+These drivers were tested on both devices : the last patch adds a few
+missing tests to tcrypt.
 
+This work was sponsored by Atmel.
+
+Nicolas Royer (5):
+  ARM: AT91SAM9G45: add crypto peripherals
+  crypto: add Atmel AES driver
+  crypto: add Atmel DES/TDES driver
+  crypto: add Atmel SHA1/SHA256 driver
+  crypto: add new tests to tcrypt
+
+ arch/arm/mach-at91/at91sam9g45.c              |   13 +-
+ arch/arm/mach-at91/at91sam9g45_devices.c      |  128 +++
+ arch/arm/mach-at91/include/mach/at91sam9g45.h |    2 +
+ crypto/tcrypt.c                               |   50 +-
+ drivers/crypto/Kconfig                        |   47 +
+ drivers/crypto/Makefile                       |    5 +-
+ drivers/crypto/atmel-aes-regs.h               |   62 ++
+ drivers/crypto/atmel-aes.c                    | 1206 ++++++++++++++++++++++++
+ drivers/crypto/atmel-sha-regs.h               |   46 +
+ drivers/crypto/atmel-sha.c                    | 1112 ++++++++++++++++++++++
+ drivers/crypto/atmel-tdes-regs.h              |   89 ++
+ drivers/crypto/atmel-tdes.c                   | 1215 +++++++++++++++++++++++++
+ include/linux/platform_data/atmel-aes.h       |   22 +
+ 13 files changed, 3990 insertions(+), 7 deletions(-)
+ create mode 100644 drivers/crypto/atmel-aes-regs.h
+ create mode 100644 drivers/crypto/atmel-aes.c
+ create mode 100644 drivers/crypto/atmel-sha-regs.h
+ create mode 100644 drivers/crypto/atmel-sha.c
+ create mode 100644 drivers/crypto/atmel-tdes-regs.h
+ create mode 100644 drivers/crypto/atmel-tdes.c
+ create mode 100644 include/linux/platform_data/atmel-aes.h
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
-
+1.7.7.6
 
