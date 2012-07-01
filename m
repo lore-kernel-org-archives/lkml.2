@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab2GAL6U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 07:58:20 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54367 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932239Ab2GAL6S (ORCPT
+	id S932293Ab2GAMBR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 08:01:17 -0400
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:36811 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932239Ab2GAMBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 07:58:18 -0400
+	Sun, 1 Jul 2012 08:01:15 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av8EAJU78E9XQAxf/2dsb2JhbABFtliBCIIYAQEFJy8iARALFAQJFg8JAwIBAgEnHgYNAQUCAQGICwe6d4s7CYYRA5ZGhESKLYJhgVQCIw
+Message-ID: <4FF03BDC.9070208@computer.org>
+Date: Sun, 01 Jul 2012 14:00:28 +0200
+From: Jan Ceuleers <jan.ceuleers@computer.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120701105934.GD16319@n2100.arm.linux.org.uk>
-References: <4FECB95D.7010200@zytor.com>
-	<cover.1338222460.git.rubini@gnudd.com>
-	<f85fefb10b7a7407b77180be65b18bf0426145b9.1338222461.git.rubini@gnudd.com>
-	<20120701104401.GA4352@mail.gnudd.com>
-	<20120701105934.GD16319@n2100.arm.linux.org.uk>
-Date: Sun, 1 Jul 2012 17:28:16 +0530
-Message-ID: <CAJe_ZheynaBcMiQiwnxPrEoGxhhAJyHDD6VM-uDEN_5Yg1vVpA@mail.gmail.com>
-Subject: Re: [PATCH V2 5/6] x86: add CONFIG_ARM_AMBA, selected by STA2X11
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Alessandro Rubini <rubini@gnudd.com>, linux-arch@vger.kernel.org,
-        giancarlo.asnaghi@st.com, arnd@arndb.de, gregkh@linuxfoundation.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, hpa@zytor.com,
-        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com
+To: John Stultz <johnstul@us.ibm.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] [RFC] Potential fix for leapsecond caused futex related
+ load spikes
+References: <1341135371-45034-1-git-send-email-johnstul@us.ibm.com>
+In-Reply-To: <1341135371-45034-1-git-send-email-johnstul@us.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 July 2012 16:29, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> On Sun, Jul 01, 2012 at 12:44:01PM +0200, Alessandro Rubini wrote:
->> How should I address the problem? (original code, published on
->> sourceforge was simply replicating a number of amba drivers into pci
->> drivers, but I don't think massive code duplication is ever sensible,
->> thus I preferred to reuse the existing drivers).
->
-> I think the answer is... those primecell drivers need fixing in some way.
-> Re-defining CS, DS and ES in drivers is rather silly given that they're
-> x86 segment register names - so if PL330 can be fixed to make its names
-> more specific, that sorts it out.
->
-I am OK prefixing the regs with PL330_ or somesuch.
+On 07/01/2012 11:36 AM, John Stultz wrote:
+> I believe this issue is due to the leapsecond being added without
+> calling clock_was_set() to notify the hrtimer subsystem of the
+> change. (Although I've not yet chased all the way down to the
+> hrtimer code to validate exactly what's going on there).
 
-The CS, DS and ES regs were named so as to match exactly the
-terminology of the PL330 manual. So apparently even the ARM Ltd didn't
-imagine ARM and X86 galaxies colliding so soon :)
+For the benefit of -stable:
 
-Regards.
+Am I right in thinking that, if the analysis is confirmed, this was
+caused by the following commit:
+
+commit 746976a301ac9c9aa10d7d42454f8d6cdad8ff2b
+Author: Thomas Gleixner <tglx@linutronix.de>
+Date:   Tue Jul 3 20:05:20 2007 +0200
+
+NTP: remove clock_was_set() call to prevent deadlock
+
+The clock_was_set() call in seconds_overflow() which happens only when
+leap seconds are inserted / deleted is wrong in two aspects:
+
+1. it results in a call to on_each_cpu() with interrupts disabled
+2. it is potential deadlock source vs. call_lock in smp_call_function()
+
+The only possible side effect of the removal might be, that an absolute
+CLOCK_REALTIME timer fires 1 second too late, in the rare case of leap
+second deletion and an absolute CLOCK_REALTIME timer which expires in
+the affected time frame. It will never fire too early.
+
+This was probably observed by the reporter of a June 30th -> July 1st
+hang: http://lkml.org/lkml/2007/7/3/103
+
+A similar problem was observed by Dave Jones, who provided a screen shot
+with a lockdep back trace, which allowed to analyse the problem.
+
+Sob: Thomas Gleixner <tglx@linutronix.de>
+Ab: Ingo Molnar <mingo@elte.hu>
+Sob: Linus Torvalds <torvalds@linux-foundation.org>
