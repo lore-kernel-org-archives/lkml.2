@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100Ab2GAGxY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 02:53:24 -0400
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:54462 "HELO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751500Ab2GAGxW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 02:53:22 -0400
-Message-ID: <4FEFF3DF.9000909@liveu.tv>
-Date: Sun, 01 Jul 2012 09:53:19 +0300
-From: Shachar Shemesh <shachar@liveu.tv>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1752588Ab2GAGyP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 02:54:15 -0400
+Received: from ozlabs.org ([203.10.76.45]:55799 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752262Ab2GAGyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 02:54:13 -0400
+From: Rusty Russell <rusty@ozlabs.org>
+To: Richard Weinberger <richard@nod.at>, linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
+        Heinz.Egger@linutronix.de, thomas.wucher@linutronix.de,
+        shmulik.ladkani@gmail.com, tglx@linutronix.de, tim.bird@am.sony.com,
+        Marius.Mazarel@ugal.ro, artem.bityutskiy@linux.intel.com,
+        nyoushchenko@mvista.com, Richard Weinberger <richard@nod.at>
+Subject: Re: [PATCH 11/11] UBI: Fastmap: Add a module parameter to enable fastmap
+In-Reply-To: <1340982869-77042-12-git-send-email-richard@nod.at>
+References: <1340982869-77042-1-git-send-email-richard@nod.at> <1340982869-77042-12-git-send-email-richard@nod.at>
+User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Sun, 01 Jul 2012 15:58:12 +0930
+Message-ID: <87vci8xaf7.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Subject: [PATCH] tty ldisc: Close/Reopen race prevention should check
- the proper flag
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shachar Shemesh <shachar@liveu.tv>
+On Fri, 29 Jun 2012 17:14:29 +0200, Richard Weinberger <richard@nod.at> wrote:
+> The new parameter, ubi.fm_auto is per default 0.
 
-Commit acfa747b introduced the TTY_HUPPING flag to distinguish closed 
-TTY from currently closing ones. The test in tty_set_ldisc still 
-remained pointing at the old flag. This causes pppd to sometimes lapse 
-into uninterruptible sleep when killed and restarted.
+...
+> +module_param(fm_auto, bool, 000);
 
-Signed-off-by: Shachar Shemesh <shachar@liveu.tv>
----
-Tested with 3.2.20 kernel.
+Hmm, do you really not want to see this in sysfs?  Or set it?
 
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index 24b95db..a662a24 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -658,7 +658,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
-          goto enable;
-      }
-
--    if (test_bit(TTY_HUPPED, &tty->flags)) {
-+    if (test_bit(TTY_HUPPING, &tty->flags)) {
-          /* We were raced by the hangup method. It will have stomped
-             the ldisc data and closed the ldisc down */
-          clear_bit(TTY_LDISC_CHANGING, &tty->flags);
-
-
+Cheers,
+Rusty.
