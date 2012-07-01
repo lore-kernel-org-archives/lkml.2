@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136Ab2GASSV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:18:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47072 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756036Ab2GASQv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932590Ab2GASQv (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 1 Jul 2012 14:16:51 -0400
-Message-Id: <20120701172010.360032155@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47035 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756013Ab2GASQp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 14:16:45 -0400
+Message-Id: <20120701172011.511054573@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 01 Jul 2012 18:20:32 +0100
+Date: Sun, 01 Jul 2012 18:20:40 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 26/48] can: c_can: precedence error in c_can_chip_config()
+        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [ 34/48] oprofile: perf: use NR_CPUS instead or nr_cpumask_bits for static
+ array
 In-Reply-To: <20120701172006.535271340@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,37 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit d9cb9bd63eb27ac19f26a8547128c053f43a5da8 upstream.
+commit e734568b675c985db2026848fefaac01c22977a5 upstream.
 
-(CAN_CTRLMODE_LISTENONLY & CAN_CTRLMODE_LOOPBACK) is (0x02 & 0x01) which
-is zero so the condition is never true.  The intent here was to test
-that both flags were set.
+The OProfile perf backend uses a static array to keep track of the
+perf events on the system. When compiling with CONFIG_CPUMASK_OFFSTACK=y
+&& SMP, nr_cpumask_bits is not a compile-time constant and the build
+will fail with:
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+oprofile_perf.c:28: error: variably modified 'perf_events' at file scope
+
+This patch uses NR_CPUs instead of nr_cpumask_bits for the array
+initialisation. If this causes space problems in the future, we can
+always move to dynamic allocation for the events array.
+
+Cc: Matt Fleming <matt@console-pimps.org>
+Reported-by: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/can/c_can/c_can.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/oprofile/oprofile_perf.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
-index 8dc84d6..86cd532 100644
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -590,8 +590,8 @@ static void c_can_chip_config(struct net_device *dev)
- 	priv->write_reg(priv, &priv->regs->control,
- 			CONTROL_ENABLE_AR);
+diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
+index da14432..efc4b7f 100644
+--- a/drivers/oprofile/oprofile_perf.c
++++ b/drivers/oprofile/oprofile_perf.c
+@@ -25,7 +25,7 @@ static int oprofile_perf_enabled;
+ static DEFINE_MUTEX(oprofile_perf_mutex);
  
--	if (priv->can.ctrlmode & (CAN_CTRLMODE_LISTENONLY &
--					CAN_CTRLMODE_LOOPBACK)) {
-+	if ((priv->can.ctrlmode & CAN_CTRLMODE_LISTENONLY) &&
-+	    (priv->can.ctrlmode & CAN_CTRLMODE_LOOPBACK)) {
- 		/* loopback + silent mode : useful for hot self-test */
- 		priv->write_reg(priv, &priv->regs->control, CONTROL_EIE |
- 				CONTROL_SIE | CONTROL_IE | CONTROL_TEST);
+ static struct op_counter_config *counter_config;
+-static struct perf_event **perf_events[nr_cpumask_bits];
++static struct perf_event **perf_events[NR_CPUS];
+ static int num_counters;
+ 
+ /*
 
 
