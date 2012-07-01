@@ -1,37 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588Ab2GAGyP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 02:54:15 -0400
-Received: from ozlabs.org ([203.10.76.45]:55799 "EHLO ozlabs.org"
+	id S1752959Ab2GAGyR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 02:54:17 -0400
+Received: from ozlabs.org ([203.10.76.45]:38967 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752262Ab2GAGyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752192Ab2GAGyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 1 Jul 2012 02:54:13 -0400
 From: Rusty Russell <rusty@ozlabs.org>
-To: Richard Weinberger <richard@nod.at>, linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
-        Heinz.Egger@linutronix.de, thomas.wucher@linutronix.de,
-        shmulik.ladkani@gmail.com, tglx@linutronix.de, tim.bird@am.sony.com,
-        Marius.Mazarel@ugal.ro, artem.bityutskiy@linux.intel.com,
-        nyoushchenko@mvista.com, Richard Weinberger <richard@nod.at>
-Subject: Re: [PATCH 11/11] UBI: Fastmap: Add a module parameter to enable fastmap
-In-Reply-To: <1340982869-77042-12-git-send-email-richard@nod.at>
-References: <1340982869-77042-1-git-send-email-richard@nod.at> <1340982869-77042-12-git-send-email-richard@nod.at>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH tip/core/rcu 01/22] rcu: Control RCU_FANOUT_LEAF from boot-time parameter
+In-Reply-To: <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20120622151655.GA6249@linux.vnet.ibm.com> <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Sun, 01 Jul 2012 15:58:12 +0930
-Message-ID: <87vci8xaf7.fsf@rustcorp.com.au>
+Date: Sun, 01 Jul 2012 15:49:42 +0930
+Message-ID: <87y5n4xatd.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Jun 2012 17:14:29 +0200, Richard Weinberger <richard@nod.at> wrote:
-> The new parameter, ubi.fm_auto is per default 0.
-
+On Fri, 22 Jun 2012 08:17:00 -0700, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> Although making RCU_FANOUT_LEAF a kernel configuration parameter rather
+> than a fixed constant makes it easier for people to decrease cache-miss
+> overhead for large systems, it is of little help for people who must
+> run a single pre-built kernel binary.
+> 
+> This commit therefore allows the value of RCU_FANOUT_LEAF to be
+> increased (but not decreased!) via a boot-time parameter named
+> rcutree.rcu_fanout_leaf.
 ...
-> +module_param(fm_auto, bool, 000);
+> +static int rcu_fanout_leaf = CONFIG_RCU_FANOUT_LEAF;
+> +module_param(rcu_fanout_leaf, int, 0);
 
-Hmm, do you really not want to see this in sysfs?  Or set it?
+Maybe it's overkill, but 0400 or 0444 might be a nice touch.
 
 Cheers,
 Rusty.
