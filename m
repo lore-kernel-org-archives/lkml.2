@@ -1,130 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab2GAKC0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 06:02:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34025 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab2GAKCY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 06:02:24 -0400
-Message-ID: <1341136934.3061.0.camel@phoenix>
-Subject: [PATCH v3] pwm: Convert pwm-pxa to use devm_* APIs
-From: Axel Lin <axel.lin@gmail.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>
-Date: Sun, 01 Jul 2012 18:02:14 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932161Ab2GAKpJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 06:45:09 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:33287 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755674Ab2GAKpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 06:45:05 -0400
+Date: Sun, 1 Jul 2012 12:44:01 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: hpa@zytor.com
+Cc: linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
+        alan@linux.intel.com, linux@arm.linux.org.uk, x86@kernel.org,
+        gregkh@linuxfoundation.org, arnd@arndb.de,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH V2 5/6] x86: add CONFIG_ARM_AMBA, selected by STA2X11
+Message-ID: <20120701104401.GA4352@mail.gnudd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <4FECB95D.7010200@zytor.com>
+References: <4FECB95D.7010200@zytor.com>
+  <cover.1338222460.git.rubini@gnudd.com>
+ <f85fefb10b7a7407b77180be65b18bf0426145b9.1338222461.git.rubini@gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/pwm/pwm-pxa.c |   49 ++++++++++---------------------------------------
- 1 file changed, 10 insertions(+), 39 deletions(-)
+>> The sta2x11 I/O Hub is a bridge from PCIe to AMBA. It reuses a number
+>> of amba drivers and needs to activate core bus support.
 
-diff --git a/drivers/pwm/pwm-pxa.c b/drivers/pwm/pwm-pxa.c
-index d5c6ce5..a2be966 100644
---- a/drivers/pwm/pwm-pxa.c
-+++ b/drivers/pwm/pwm-pxa.c
-@@ -1,5 +1,5 @@
- /*
-- * linux/arch/arm/mach-pxa/pwm.c
-+ * drivers/pwm/pwm-pxa.c
-  *
-  * simple driver for PWM (Pulse Width Modulator) controller
-  *
-@@ -145,17 +145,16 @@ static int __devinit pwm_probe(struct platform_device *pdev)
- 	struct resource *r;
- 	int ret = 0;
- 
--	pwm = kzalloc(sizeof(*pwm), GFP_KERNEL);
-+	pwm = devm_kzalloc(&pdev->dev, sizeof(*pwm), GFP_KERNEL);
- 	if (pwm == NULL) {
- 		dev_err(&pdev->dev, "failed to allocate memory\n");
- 		return -ENOMEM;
- 	}
- 
--	pwm->clk = clk_get(&pdev->dev, NULL);
--	if (IS_ERR(pwm->clk)) {
--		ret = PTR_ERR(pwm->clk);
--		goto err_free;
--	}
-+	pwm->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(pwm->clk))
-+		return PTR_ERR(pwm->clk);
-+
- 	pwm->clk_enabled = 0;
- 
- 	pwm->chip.dev = &pdev->dev;
-@@ -166,23 +165,12 @@ static int __devinit pwm_probe(struct platform_device *pdev)
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (r == NULL) {
- 		dev_err(&pdev->dev, "no memory resource defined\n");
--		ret = -ENODEV;
--		goto err_free_clk;
--	}
--
--	r = request_mem_region(r->start, resource_size(r), pdev->name);
--	if (r == NULL) {
--		dev_err(&pdev->dev, "failed to request memory resource\n");
--		ret = -EBUSY;
--		goto err_free_clk;
-+		return -ENODEV;
- 	}
- 
--	pwm->mmio_base = ioremap(r->start, resource_size(r));
--	if (pwm->mmio_base == NULL) {
--		dev_err(&pdev->dev, "failed to ioremap() registers\n");
--		ret = -ENODEV;
--		goto err_free_mem;
--	}
-+	pwm->mmio_base = devm_request_and_ioremap(&pdev->dev, r);
-+	if (pwm->mmio_base == NULL)
-+		return -EADDRNOTAVAIL;
- 
- 	ret = pwmchip_add(&pwm->chip);
- 	if (ret < 0) {
-@@ -192,34 +180,17 @@ static int __devinit pwm_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, pwm);
- 	return 0;
--
--err_free_mem:
--	release_mem_region(r->start, resource_size(r));
--err_free_clk:
--	clk_put(pwm->clk);
--err_free:
--	kfree(pwm);
--	return ret;
- }
- 
- static int __devexit pwm_remove(struct platform_device *pdev)
- {
- 	struct pxa_pwm_chip *chip;
--	struct resource *r;
- 
- 	chip = platform_get_drvdata(pdev);
- 	if (chip == NULL)
- 		return -ENODEV;
- 
- 	pwmchip_remove(&chip->chip);
--
--	iounmap(chip->mmio_base);
--
--	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	release_mem_region(r->start, resource_size(r));
--
--	clk_put(chip->clk);
--	kfree(chip);
- 	return 0;
- }
- 
--- 
-1.7.9.5
+> Nacked-by: H. Peter Anvin <hpa@zytor.com>
+> 
+> This brings in tons of code into the x86 all{yes,mod}config builds, and 
+> as perhaps one could expect some of it doesn't compile.  For example:
 
+Ok. I apologize for not checking this. Actually, I only fixed the ones
+that I needed to compile.
 
+How should I address the problem? (original code, published on
+sourceforge was simply replicating a number of amba drivers into pci
+drivers, but I don't think massive code duplication is ever sensible,
+thus I preferred to reuse the existing drivers).
 
+I doubt all amba drivers can easily be made x86-compatible.
+I see these possible approaces, all of them with their cons
+
+  1- add STA2X11 dependencies to ARM_AMBA _and_ the drivers that do work
+
+  2- leave CONFIG_ARM_AMBA undefined and play select file in Makefiles
+   using obj-$(CONFIG_STA2X11)
+
+  3- add ARM dependencies to the drivers that do not compile on x86
+
+  any other option?
+
+(1) and (2) bring chipset-specific stuff into the amba world, which is
+bad, especially since I suspect other similar bridges will appear soon.
+
+(3) looks like a temporary hack and stuff can be fixed over time, but
+it has the disadvantage of adding a big number of needless drivers in
+the dsitributions' packages -- like my nacked patch did.
+
+thanks
+/alessandro
