@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144Ab2GASS4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:18:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47027 "EHLO
+	id S1756070Ab2GASSz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:18:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47049 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756001Ab2GASQs (ORCPT
+	by vger.kernel.org with ESMTP id S1756030Ab2GASQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 1 Jul 2012 14:16:48 -0400
-Message-Id: <20120701172012.213943044@decadent.org.uk>
+Message-Id: <20120701172010.074442627@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 01 Jul 2012 18:20:45 +0100
+Date: Sun, 01 Jul 2012 18:20:30 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mandeep Singh Baines <msb@chromium.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 39/48] PM / Sleep: Prevent waiting forever on asynchronous suspend after
- abort
+        alan@lxorguk.ukuu.org.uk, Eliad Peller <eliad@wizery.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 24/48] cfg80211: fix potential deadlock in regulatory
 In-Reply-To: <20120701172006.535271340@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,60 +28,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mandeep Singh Baines <msb@chromium.org>
+From: Eliad Peller <eliad@wizery.com>
 
-commit 1f758b23177d588a71b96ad02990e715949bb82f upstream.
+commit fe20b39ec32e975f1054c0b7866c873a954adf05 upstream.
 
-__device_suspend() must always send a completion. Otherwise, parent
-devices will wait forever.
+reg_timeout_work() calls restore_regulatory_settings() which
+takes cfg80211_mutex.
 
-Commit 1e2ef05b, "PM: Limit race conditions between runtime PM and
-system sleep (v2)", introduced a regression by short-circuiting the
-complete_all() for certain error cases.
+reg_set_request_processed() already holds cfg80211_mutex
+before calling cancel_delayed_work_sync(reg_timeout),
+so it might deadlock.
 
-This patch fixes the bug by always signalling a completion.
+Call the async cancel_delayed_work instead, in order
+to avoid the potential deadlock.
 
-Addresses http://crosbug.com/31972
+This is the relevant lockdep warning:
 
-Tested by injecting an abort.
+cfg80211: Calling CRDA for country: XX
 
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+======================================================
+[ INFO: possible circular locking dependency detected ]
+3.4.0-rc5-wl+ #26 Not tainted
+-------------------------------------------------------
+kworker/0:2/1391 is trying to acquire lock:
+ (cfg80211_mutex){+.+.+.}, at: [<bf28ae00>] restore_regulatory_settings+0x34/0x418 [cfg80211]
+
+but task is already holding lock:
+ ((reg_timeout).work){+.+...}, at: [<c0059e94>] process_one_work+0x1f0/0x480
+
+which lock already depends on the new lock.
+
+the existing dependency chain (in reverse order) is:
+
+-> #2 ((reg_timeout).work){+.+...}:
+       [<c008fd44>] validate_chain+0xb94/0x10f0
+       [<c0090b68>] __lock_acquire+0x8c8/0x9b0
+       [<c0090d40>] lock_acquire+0xf0/0x114
+       [<c005b600>] wait_on_work+0x4c/0x154
+       [<c005c000>] __cancel_work_timer+0xd4/0x11c
+       [<c005c064>] cancel_delayed_work_sync+0x1c/0x20
+       [<bf28b274>] reg_set_request_processed+0x50/0x78 [cfg80211]
+       [<bf28bd84>] set_regdom+0x550/0x600 [cfg80211]
+       [<bf294cd8>] nl80211_set_reg+0x218/0x258 [cfg80211]
+       [<c03c7738>] genl_rcv_msg+0x1a8/0x1e8
+       [<c03c6a00>] netlink_rcv_skb+0x5c/0xc0
+       [<c03c7584>] genl_rcv+0x28/0x34
+       [<c03c6720>] netlink_unicast+0x15c/0x228
+       [<c03c6c7c>] netlink_sendmsg+0x218/0x298
+       [<c03933c8>] sock_sendmsg+0xa4/0xc0
+       [<c039406c>] __sys_sendmsg+0x1e4/0x268
+       [<c0394228>] sys_sendmsg+0x4c/0x70
+       [<c0013840>] ret_fast_syscall+0x0/0x3c
+
+-> #1 (reg_mutex){+.+.+.}:
+       [<c008fd44>] validate_chain+0xb94/0x10f0
+       [<c0090b68>] __lock_acquire+0x8c8/0x9b0
+       [<c0090d40>] lock_acquire+0xf0/0x114
+       [<c04734dc>] mutex_lock_nested+0x48/0x320
+       [<bf28b2cc>] reg_todo+0x30/0x538 [cfg80211]
+       [<c0059f44>] process_one_work+0x2a0/0x480
+       [<c005a4b4>] worker_thread+0x1bc/0x2bc
+       [<c0061148>] kthread+0x98/0xa4
+       [<c0014af4>] kernel_thread_exit+0x0/0x8
+
+-> #0 (cfg80211_mutex){+.+.+.}:
+       [<c008ed58>] print_circular_bug+0x68/0x2cc
+       [<c008fb28>] validate_chain+0x978/0x10f0
+       [<c0090b68>] __lock_acquire+0x8c8/0x9b0
+       [<c0090d40>] lock_acquire+0xf0/0x114
+       [<c04734dc>] mutex_lock_nested+0x48/0x320
+       [<bf28ae00>] restore_regulatory_settings+0x34/0x418 [cfg80211]
+       [<bf28b200>] reg_timeout_work+0x1c/0x20 [cfg80211]
+       [<c0059f44>] process_one_work+0x2a0/0x480
+       [<c005a4b4>] worker_thread+0x1bc/0x2bc
+       [<c0061148>] kthread+0x98/0xa4
+       [<c0014af4>] kernel_thread_exit+0x0/0x8
+
+other info that might help us debug this:
+
+Chain exists of:
+  cfg80211_mutex --> reg_mutex --> (reg_timeout).work
+
+ Possible unsafe locking scenario:
+
+       CPU0                    CPU1
+       ----                    ----
+  lock((reg_timeout).work);
+                               lock(reg_mutex);
+                               lock((reg_timeout).work);
+  lock(cfg80211_mutex);
+
+ *** DEADLOCK ***
+
+2 locks held by kworker/0:2/1391:
+ #0:  (events){.+.+.+}, at: [<c0059e94>] process_one_work+0x1f0/0x480
+ #1:  ((reg_timeout).work){+.+...}, at: [<c0059e94>] process_one_work+0x1f0/0x480
+
+stack backtrace:
+[<c001b928>] (unwind_backtrace+0x0/0x12c) from [<c0471d3c>] (dump_stack+0x20/0x24)
+[<c0471d3c>] (dump_stack+0x20/0x24) from [<c008ef70>] (print_circular_bug+0x280/0x2cc)
+[<c008ef70>] (print_circular_bug+0x280/0x2cc) from [<c008fb28>] (validate_chain+0x978/0x10f0)
+[<c008fb28>] (validate_chain+0x978/0x10f0) from [<c0090b68>] (__lock_acquire+0x8c8/0x9b0)
+[<c0090b68>] (__lock_acquire+0x8c8/0x9b0) from [<c0090d40>] (lock_acquire+0xf0/0x114)
+[<c0090d40>] (lock_acquire+0xf0/0x114) from [<c04734dc>] (mutex_lock_nested+0x48/0x320)
+[<c04734dc>] (mutex_lock_nested+0x48/0x320) from [<bf28ae00>] (restore_regulatory_settings+0x34/0x418 [cfg80211])
+[<bf28ae00>] (restore_regulatory_settings+0x34/0x418 [cfg80211]) from [<bf28b200>] (reg_timeout_work+0x1c/0x20 [cfg80211])
+[<bf28b200>] (reg_timeout_work+0x1c/0x20 [cfg80211]) from [<c0059f44>] (process_one_work+0x2a0/0x480)
+[<c0059f44>] (process_one_work+0x2a0/0x480) from [<c005a4b4>] (worker_thread+0x1bc/0x2bc)
+[<c005a4b4>] (worker_thread+0x1bc/0x2bc) from [<c0061148>] (kthread+0x98/0xa4)
+[<c0061148>] (kthread+0x98/0xa4) from [<c0014af4>] (kernel_thread_exit+0x0/0x8)
+cfg80211: Calling CRDA to update world regulatory domain
+cfg80211: World regulatory domain updated:
+cfg80211:   (start_freq - end_freq @ bandwidth), (max_antenna_gain, max_eirp)
+cfg80211:   (2402000 KHz - 2472000 KHz @ 40000 KHz), (300 mBi, 2000 mBm)
+cfg80211:   (2457000 KHz - 2482000 KHz @ 20000 KHz), (300 mBi, 2000 mBm)
+cfg80211:   (2474000 KHz - 2494000 KHz @ 20000 KHz), (300 mBi, 2000 mBm)
+cfg80211:   (5170000 KHz - 5250000 KHz @ 40000 KHz), (300 mBi, 2000 mBm)
+cfg80211:   (5735000 KHz - 5835000 KHz @ 40000 KHz), (300 mBi, 2000 mBm)
+
+Signed-off-by: Eliad Peller <eliad@wizery.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/base/power/main.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/wireless/reg.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-index e0fb5b0..9cb845e 100644
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -1031,7 +1031,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
- 	dpm_wait_for_children(dev, async);
+diff --git a/net/wireless/reg.c b/net/wireless/reg.c
+index 15f3474..baf5704 100644
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -1389,7 +1389,7 @@ static void reg_set_request_processed(void)
+ 	spin_unlock(&reg_requests_lock);
  
- 	if (async_error)
--		return 0;
-+		goto Complete;
+ 	if (last_request->initiator == NL80211_REGDOM_SET_BY_USER)
+-		cancel_delayed_work_sync(&reg_timeout);
++		cancel_delayed_work(&reg_timeout);
  
- 	pm_runtime_get_noresume(dev);
- 	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
-@@ -1040,7 +1040,7 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
- 	if (pm_wakeup_pending()) {
- 		pm_runtime_put_sync(dev);
- 		async_error = -EBUSY;
--		return 0;
-+		goto Complete;
- 	}
- 
- 	device_lock(dev);
-@@ -1097,6 +1097,8 @@ static int __device_suspend(struct device *dev, pm_message_t state, bool async)
- 	}
- 
- 	device_unlock(dev);
-+
-+ Complete:
- 	complete_all(&dev->power.completion);
- 
- 	if (error) {
+ 	if (need_more_processing)
+ 		schedule_work(&reg_work);
 
 
