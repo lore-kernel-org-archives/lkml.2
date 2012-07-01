@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236Ab2GAQNh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 12:13:37 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:60676 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab2GAQNg (ORCPT
+	id S1753154Ab2GAQUj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 12:20:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58907 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab2GAQUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 12:13:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120701145853.GA22259@fancy-poultry.org>
-References: <CAJd=RBBSEVOUL-J=gGWO4FpbtC30_A8eb6HyKK48ZdjmNn_y-Q@mail.gmail.com>
-	<20120701145853.GA22259@fancy-poultry.org>
-Date: Sun, 1 Jul 2012 23:13:35 +0700
-Message-ID: <CA+i8gKKnz1i-ojwUP5AetBLsGVLyRXP3FNUXA1UkMm430ZYXFA@mail.gmail.com>
-Subject: Re: [RFC patch] BFS: 421-1
-From: Emmanuel Benisty <benisty.e@gmail.com>
-To: Heinz Diehl <htd@fancy-poultry.org>
-Cc: linux-kernel@vger.kernel.org, Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 1 Jul 2012 12:20:38 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Ian Abbott <abbotti@mev.co.uk>, Mori Hess <fmhess@users.sourceforge.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH V3 2/2] staging/comedi/drivers: free allocated priv and release resources if comedi_alloc_subdevices
+Date: Sun,  1 Jul 2012 21:50:24 +0530
+Message-Id: <1341159624-23968-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 1, 2012 at 9:58 PM, Heinz Diehl <htd@fancy-poultry.org> wrote:
-> On 01.07.2012, Hillf Danton wrote:
->
->> With 15 patches collected, the 421-1 is ready with iso untouched.
->> Note diff is based not on 420 but on 421.
-> [....]
->
-> There is no v.421 on ck.kolivas.org, and it seems it never has
-> been, at least there is a patch which updates v.420 directly to v.422
-> which indicates that there isn't any v.421. So what version is your
-> patchset actually based on?
+as comedi_alloc_subdevices may fail, we leak out the memory allocated by alloc_private,
+and also the I/O regions we requested.
 
-Con skipped 421 because Hillf did release a 421 BFS, he wanted to
-avoid confusion. There are two patches in this thread, the first one
-is based on Hillf's 421 (you can find the patch on lkml) and a second
-one based on Con's 420 BFS. Hope it's a bit more clear now.
+free out the private data pointer of the driver, and release the I/O regions
 
-@Hillf, 421-1 builds and boots fine. Too early for me to give any
-feedback on improvements and/or regressions this patch brings.
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
+ drivers/staging/comedi/drivers/fl512.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/staging/comedi/drivers/fl512.c b/drivers/staging/comedi/drivers/fl512.c
+index 52e6d14..1c372d1 100644
+--- a/drivers/staging/comedi/drivers/fl512.c
++++ b/drivers/staging/comedi/drivers/fl512.c
+@@ -135,8 +135,11 @@ static int fl512_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ #endif
+ 
+ 	ret = comedi_alloc_subdevices(dev, 2);
+-	if (ret)
++	if (ret) {
++		kfree(dev->private);
++		release_region(iobase, FL512_SIZE);
+ 		return ret;
++	}
+ 
+ 	/*
+ 	 * this if the definitions of the supdevices, 2 have been defined
+-- 
+1.7.9.5
+
