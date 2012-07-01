@@ -1,136 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab2GAImx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 04:42:53 -0400
-Received: from science.horizon.com ([71.41.210.146]:12021 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750969Ab2GAImv (ORCPT
+	id S1754085Ab2GAJCh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 05:02:37 -0400
+Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.96]:37264 "EHLO
+	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab2GAJCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 04:42:51 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 Jul 2012 04:42:51 EDT
-Date: 1 Jul 2012 04:36:08 -0400
-Message-ID: <20120701083608.9889.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: dmitry.torokhov@gmail.com, dtor@mail.ru, linux-input@vger.kernel.org
-Subject: Subject: [PATCH v2] Input: atkbd - make repeat period more accurate.
-Cc: linux-kernel@vger.kernel.org, linux@horizon.com
+	Sun, 1 Jul 2012 05:02:35 -0400
+X-Greylist: delayed 1556 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 Jul 2012 05:02:35 EDT
+Date: Sun, 1 Jul 2012 04:36:05 -0400
+From: Ben Blum <bblum@andrew.cmu.edu>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Jan Engelhardt <jengelh@inai.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        simon@fire.lp0.eu, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Leap second insertion causes futex to repeatedly timeout
+Message-ID: <20120701083605.GA2692@ghc17.ghc.andrew.cmu.edu>
+References: <alpine.LNX.2.01.1207010247430.7313@frira.zrqbmnf.qr>
+ <CANcMJZBcpWzJWCdV8XN6cOUsbykZ-0dre=FBP-zRDhHfi1MwrQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANcMJZBcpWzJWCdV8XN6cOUsbykZ-0dre=FBP-zRDhHfi1MwrQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.4.9.4220
+X-SMTP-Spam-Clean: 8% (
+ BODY_SIZE_1800_1899 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CD 0, __CP_URI_IN_BODY 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NS , __USER_AGENT 0)
+X-SMTP-Spam-Score: 8%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This replaces some inaccurate lookup tables with an exact
-computation.  Although the diff adds source comments,
-it shrinks binary size.  (By only 50 bytes, but hey.)
+On Sun, Jul 01, 2012 at 01:16:13AM -0700, john stultz wrote:
+> On Sat, Jun 30, 2012 at 5:57 PM, Jan Engelhardt <jengelh@inai.de> wrote:
+> >
+> > This year's leap second insertion has had the strange effect on at least
+> > Linux versions 3.4.4 (my end) and 3.5-rc4 (Simon's box, Cc) that certain
+> > processes use up all CPU power, because of futexes repeatedly timing
+> > out. This seems to only affect certain processes.
+> >
+> > Simon observes - http://s85.org/owXfmLvt - that
+> > Firefox/Thunderbird/Chrome/Java are affected.
+> >
+> > As for me, it affects VirtualBox, mysqld and ksoftirqd. The processes
+> > continue to run and respond. Most weird: I can stop-start mysqld and the
+> > issue persists. (I would have expected it to go away because the leap
+> > second event would then be in the past that mysqld does not know about
+> > anymore.)
+> >
+> >
+> > Is this a kernel issue? glibc?
+> 
+> Some of the reports that the issue is resolved by calling:
+>        $ date -s "`date`"
+> suggests that it might be due to clock_was_set() not being called
+> after the leap second was added, causing some hrtimer confusion.
+> 
+> Thomas: does that sound about right?
+> 
+> I've got an initial patch to add the clock_was_set() calls where
+> needed, but so far have not been able to reproduce the issue (tried
+> firefox and some simpler futex tests).  I'll keep trying and hopefully
+> have something to send out tomorrow.
+> 
+> Again, my apologies for the trouble.
 
-AT keyboard repeat rates are multiples of 1/240 second
-expressed in a 0.2.3 bit floating point format.  That
-is, possible values are ({8..15} << {0..3}) / 240 s.
+I can't vouch for whether this is the problem or not, but be very
+careful with clock_was_set()! See this commit:
 
-In addition to a slightly inaccurate lookup table, the
-old code would round up to the next repeat period.
-E.g. to get a period of 9/60 = 0.15 seconds, you had to
-ask for no more than 149 ms; if you asked for 150, it
-would round up to 167.  The new code rounds to nearest.
+http://www.mail-archive.com/git-commits-head@vger.kernel.org/msg15039.html
 
-User-visible changes to the repeat periods reported by EVIOCGREP:
+In short, clock_was_set() calls on_each_cpu() which is not allowed to be
+called in atomic context. Watch out for xtime_lock.
 
-Old	 37	109	116	149	182	232
-Exact	 37.50	108.33	116.66	150.00	183.33	233.33
-New	 38	108	117	150	183	233
-
-Old	270	303	370	435	470
-Exact	266.66	300.00	366.66	433.33	466.66
-New	267	300	367	433	467
-
-This does not bother utilities like kbdrate(8).
-
-Signed-off-by: George Spelvin <linux@horizon.com>
----
- drivers/input/keyboard/atkbd.c |   47 +++++++++++++++++++++++++++++++----------------
- 1 file changed, 31 insertions(+), 16 deletions(-)
-
-(Resend since no response after several weeks.)
-
-Now that I've tweaked it (v1 had an error in rounding near exponent
-range boundaries), I think it's ready for merging upstream.
-
-Dmitry, you seem to be the one constant name in all recent changes to
-this file, so I'm sending it to you directly as well as linux-input.
-
-
-One possible bug I observed in the code that calls this:
-
-Users of the KDKBDREP ioctl seem to assume that it returns the actual
-values set, but I'm not sure it really works that way; I don't think
-the command to change the parameters makes its way through the event
-queue and atkbd's schedule_delayed_work() to actually set dev->rep[]
-to the rounded values before kbd_rate_helper returns them to userspace.
-
-If desired, the fix that's most obvious to me would be to split this
-function in two: perform the conversion to a command byte synchronously,
-and only defer the actual ps2_command().
-
-diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
-index e05a2e7..3181b86 100644
---- a/drivers/input/keyboard/atkbd.c
-+++ b/drivers/input/keyboard/atkbd.c
-@@ -524,27 +524,42 @@ out:
- 	return IRQ_HANDLED;
- }
- 
-+/*
-+ * AT keyboard repeat rates are set using a 2-bit initial repeat delay
-+ * (250, 500, 750 or 1000 ms), and a 5-bit repeat period.  The latter
-+ * is a 0.2.3-bit floating-point number (no sign, 2-bit exponent, and
-+ * 3-bit mantissa), encoding a value from 8/240 to 120/240 of second.
-+ *
-+ * Given the requested delay and period in milliseconds, round to the
-+ * nearest representable value, and convert the rounded values back to
-+ * milliseconds to report the chosen values.
-+ */
- static int atkbd_set_repeat_rate(struct atkbd *atkbd)
- {
--	const short period[32] =
--		{ 33,  37,  42,  46,  50,  54,  58,  63,  67,  75,  83,  92, 100, 109, 116, 125,
--		 133, 149, 167, 182, 200, 217, 232, 250, 270, 303, 333, 370, 400, 435, 470, 500 };
--	const short delay[4] =
--		{ 250, 500, 750, 1000 };
--
- 	struct input_dev *dev = atkbd->dev;
- 	unsigned char param;
--	int i = 0, j = 0;
--
--	while (i < ARRAY_SIZE(period) - 1 && period[i] < dev->rep[REP_PERIOD])
--		i++;
--	dev->rep[REP_PERIOD] = period[i];
--
--	while (j < ARRAY_SIZE(delay) - 1 && delay[j] < dev->rep[REP_DELAY])
--		j++;
--	dev->rep[REP_DELAY] = delay[j];
-+	unsigned exp = 3;	/* Period exponent */
-+	int period;		/* Period mantissa */
-+	int delay = clamp(dev->rep[REP_DELAY], 125, 1000);
-+
-+	/* AT kbd delay is {1..4} * 250 ms.  Round to 2 bits. */
-+	delay = (delay + 125) / 250u;
-+	/* Store actual value back */
-+	dev->rep[REP_DELAY] = delay * 250;
-+
-+	/* AT kbd period is ({8..15} << {0..3}) / 240 s. */
-+	period = clamp(dev->rep[REP_PERIOD], 33, 500);
-+	/* Get correct exponent.  Split is at 258.333 ms */
-+	while (period < 259) {
-+		period <<= 1;
-+		exp--;
-+	}
-+	/* Convert from 259..516 ms to 8..15 30ths of a second */
-+	period = (period * 3 + 50) / 100u;
-+	/* Store actual value back.  x * 1000 / 240 = x * 25 / 6 */
-+	dev->rep[REP_PERIOD] = ((period << exp) * 25 + 3) / 6u;
- 
--	param = i | (j << 5);
-+	param = (delay - 1) << 5 | exp << 3 | (period - 8);
- 	return ps2_command(&atkbd->ps2dev, &param, ATKBD_CMD_SETREP);
- }
- 
-
+Ben
