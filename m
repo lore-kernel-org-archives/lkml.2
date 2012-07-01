@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab2GASQp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:16:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46985 "EHLO
+	id S1756113Ab2GASU1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:20:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47041 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932319Ab2GASQj (ORCPT
+	by vger.kernel.org with ESMTP id S1756025Ab2GASQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 14:16:39 -0400
-Message-Id: <20120701172008.252571630@decadent.org.uk>
+	Sun, 1 Jul 2012 14:16:44 -0400
+Message-Id: <20120701172010.504553814@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 01 Jul 2012 18:20:17 +0100
+Date: Sun, 01 Jul 2012 18:20:33 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: [ 11/48] mm: correctly synchronize rss-counters at exit/exec
+        alan@lxorguk.ukuu.org.uk, Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 27/48] ath9k: fix a tx rate duration calculation bug
 In-Reply-To: <20120701172006.535271340@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,49 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 4fe7efdbdfb1c7e7a7f31decfd831c0f31d37091 upstream.
+commit 76591bea9714a58d8924154068c78d702eb2cb17 upstream.
 
-do_exit() and exec_mmap() call sync_mm_rss() before mm_release() does
-put_user(clear_child_tid) which can update task->rss_stat and thus make
-mm->rss_stat inconsistent.  This triggers the "BUG:" printk in check_mm().
+The rate pointer variable for a rate series is used in a loop before it is
+initialized. This went unnoticed because it was used earlier for the RTS/CTS
+rate. This bug can lead to the wrong PHY type being passed to the
+duration calculation function.
 
-Let's fix this bug in the safest way, and optimize/cleanup this later.
-
-Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: sync_mm_rss() still takes a struct task_struct *]
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -820,10 +820,10 @@
- 	/* Notify parent that we're no longer interested in the old VM */
- 	tsk = current;
- 	old_mm = current->mm;
--	sync_mm_rss(tsk, old_mm);
- 	mm_release(tsk, old_mm);
+ drivers/net/wireless/ath/ath9k/xmit.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
+index d59dd01..efb7f00 100644
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -1001,13 +1001,13 @@ static void ath_buf_set_rate(struct ath_softc *sc, struct ath_buf *bf,
+ 		}
  
- 	if (old_mm) {
-+		sync_mm_rss(tsk, old_mm);
- 		/*
- 		 * Make sure that if there is a core dump in progress
- 		 * for the old mm, we get out and die instead of going
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -641,6 +641,7 @@
- 	mm_release(tsk, mm);
- 	if (!mm)
- 		return;
-+	sync_mm_rss(tsk, mm);
- 	/*
- 	 * Serialize with any possible pending coredump.
- 	 * We must hold mmap_sem around checking core_state
+ 		/* legacy rates */
++		rate = &sc->sbands[tx_info->band].bitrates[rates[i].idx];
+ 		if ((tx_info->band == IEEE80211_BAND_2GHZ) &&
+ 		    !(rate->flags & IEEE80211_RATE_ERP_G))
+ 			phy = WLAN_RC_PHY_CCK;
+ 		else
+ 			phy = WLAN_RC_PHY_OFDM;
+ 
+-		rate = &sc->sbands[tx_info->band].bitrates[rates[i].idx];
+ 		info->rates[i].Rate = rate->hw_value;
+ 		if (rate->hw_value_short) {
+ 			if (rates[i].flags & IEEE80211_TX_RC_USE_SHORT_PREAMBLE)
 
 
