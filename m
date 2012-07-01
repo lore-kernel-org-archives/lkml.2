@@ -1,96 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab2GAG4v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 02:56:51 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:62011 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751588Ab2GAG4u (ORCPT
+	id S1752294Ab2GAHCv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 03:02:51 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:40332 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751784Ab2GAHCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 02:56:50 -0400
-Date: Sun, 1 Jul 2012 08:56:39 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Arnd Bergmann <arnd.bergmann@linaro.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: linux-next: build failure after merge of the final tree (pwm
- tree related)
-Message-ID: <20120701065639.GA25470@avionic-0098.adnet.avionic-design.de>
-References: <20120629174826.546cc991459b12833f2aaebd@canb.auug.org.au>
- <201206301920.21158.arnd.bergmann@linaro.org>
- <20120630194139.GA24300@avionic-0098.mockup.avionic-design.de>
- <201206302012.32476.arnd.bergmann@linaro.org>
+	Sun, 1 Jul 2012 03:02:31 -0400
+Date: Sun, 1 Jul 2012 09:02:28 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Jan Engelhardt <jengelh@inai.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        simon@fire.lp0.eu
+Subject: Re: Leap second insertion causes futex to repeatedly timeout
+Message-ID: <20120701070228.GA246@x4>
+References: <alpine.LNX.2.01.1207010247430.7313@frira.zrqbmnf.qr>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9jxsPFA5p3P2qPhR"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201206302012.32476.arnd.bergmann@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:ln0/IENChsBZHB2LADkhRH6t0cX6WqxkxwzfCqOtKpN
- cwNctBsSgCLJaWpOL299eudkMBxE+RdOsITLlbF3HjoQlRgRW1
- cADAViZWlPd/SQb+TzaDCY5m6vZ1WvkzCCGdM5EIfpRlRRAvYP
- G98iZAo4wh5J/4GjfyLKGvKFQAnQG74Kw64QxFdNhee4k3Nwmc
- m8EWYtvF1UoXfp/Hb0AnFgwSR+tlt5QM+7VJ+rWaHN3/jQVMQP
- OjxfAZl3T/wl8IV6qEHDv6FDIEmcyTVnbQ4HeOjYQyxqedMTLO
- z8zuReSX2G+oDh5ABimIGlZyUCTVebTFt7pbK87s+9vwH+pVPr
- 5c2EOjzoK6hifCJDVyDKHc/wEP7oLRz+rDAA0Qth2BoA9+FM6X
- qQauzC1cns0y8uWKz1K0QzZWO+k3PfpwrjVBGSsbZlTBuC/z/c
- 5RFOG
+In-Reply-To: <alpine.LNX.2.01.1207010247430.7313@frira.zrqbmnf.qr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2012.07.01 at 02:57 +0200, Jan Engelhardt wrote:
+> 
+> This year's leap second insertion has had the strange effect on at least 
+> Linux versions 3.4.4 (my end) and 3.5-rc4 (Simon's box, Cc) that certain 
+> processes use up all CPU power, because of futexes repeatedly timing 
+> out. This seems to only affect certain processes.
+> 
+> Simon observes - http://s85.org/owXfmLvt - that 
+> Firefox/Thunderbird/Chrome/Java are affected.
 
---9jxsPFA5p3P2qPhR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On my ntp synchronized Linux 3.5 testbox I saw a similar issue.
 
-On Sat, Jun 30, 2012 at 08:12:32PM +0000, Arnd Bergmann wrote:
-> On Saturday 30 June 2012, Thierry Reding wrote:
-> > > I think that all the drivers that are not converted to the common PWM
-> > > layer yet should depend on not enabling the common code. Once they
-> > > are all moved over, that dependency will go away.
-> >=20
-> > Right. That's exactly what I meant. If we add depends on !HAVE_PWM to
-> > the PWM symbol that should result in both options conflicting, and
-> > therefore not being built at the same time.
->=20
-> But I would add it to all other ones then, not the generic one!
+The leap second was successfully inserted last night:
+Jul  1 01:59:59 x4 kernel: Clock: inserting leap second 23:59:60 UTC
 
-But if we make the new PWM symbol conflict with HAVE_PWM, then it'll do
-the right thing for any of the legacy PWM implementations, without
-having to track them down. Furthermore it'll also keep the legacy
-version by default and not allow the generic one to be enabled in that
-case. This is more likely to cause less side-effects than the other way
-around.
+Because glibc-2.16 was released yesterday I've build it this morning.
+During "make check" I saw several mutex related tests failures. For
+example /nptl/tst-mutex5a.c failed with a "premature timeout difference"
+of one second.
 
-> One question though: if the generic pwm implementation does not set
-> HAVE_PWM, how can a driver check its presence?
+tst-mutex5a.c:
+#define TYPE PTHREAD_MUTEX_ADAPTIVE_NP
+#include "tst-mutex5.c"
 
-The driver depends on PWM. HAVE_PWM is the symbol for the legacy
-implementations, while PWM is the new PWM API symbol.
+from tst-mutex5.c:
+// ...
+  gettimeofday (&tv, NULL);
+  TIMEVAL_TO_TIMESPEC (&tv, &ts);
 
-Thierry
+  ts.tv_sec += 2;	/* Wait 2 seconds.  */
 
---9jxsPFA5p3P2qPhR
-Content-Type: application/pgp-signature
+  err = pthread_mutex_timedlock (&m, &ts);
+// ...
+    {
+      int clk_tck = sysconf (_SC_CLK_TCK);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+      gettimeofday (&tv2, NULL);
 
-iQIcBAEBAgAGBQJP7/SnAAoJEN0jrNd/PrOhUT0P/2izcyoeswldajPfSpUbGbvR
-2yPKgbqmwxjwpUUk46GuPQZjAmLKA6bSXLrevNVroZSAI1d1SmZzH/55wIzDj7Ia
-iFnlHKYQis4iYQVYe3JluoxIeZjWeIe8RH2plXrSoBmzM06VgrGQsDjyKhQhwfqb
-tVV4pzKDKQ4GkwAcasPzg4kmLQDCsdYFiK4At3fG8EqzfIkDaJGPG3L5SmgKTyaR
-U5ue4qyGzVJHHA0dwwhnZsQz4mIGdirEp1X8X0rxCv6gwaUuR1cbfoCDOGJXNnmE
-bcoj2LvQgU7KHE84b5G/3oGYAoToz4Pb44RpnnOPGs1ttIWRof4ifa2sz6c8AT8s
-1uFS9sN+B/+ejJ8YEln25bjEyZdY9N6PVTgtUTPutInt3y6zl/a8lYoGoijF62MH
-bYgs/a8Zos1Jc5+eaUx5VNqLrYgL/v15PL/R2hTOlNJDHxMEpxHSgKtK8t1XYvgr
-hL9/TUMRdPKvZzpzsaSCE6Kq1XS6H8jMrTr9Mjbslg0zoEC+U8/zP8eFnH+HI2ns
-b5zSn8qRPwL92UUxy64WnWnl0PMCJAxOEsgMTlbPq7OC1ObFeCvEt1opDZfdZHqf
-VFdpVc7L2zW7/CStKOzQbKLbfuWUqCOK8UEU8TUGjf6aPtW2VJ5zCM1MfkeSFz4x
-XdQR8XYWWjJyFADkfkvA
-=FNTr
------END PGP SIGNATURE-----
+      tv2.tv_sec -= tv.tv_sec;
+      tv2.tv_usec -= tv.tv_usec;
+      if (tv2.tv_usec < 0)
+	{
+	  tv2.tv_usec += 1000000;
+	  tv2.tv_sec -= 1;
+	}
 
---9jxsPFA5p3P2qPhR--
+      /* Be a bit tolerant, add one CLK_TCK.  */
+      tv2.tv_usec += 1000000 / clk_tck;
+      if (tv2.tv_usec >= 1000000)
+	{
+	  tv2.tv_usec -= 1000000;
+	  ++tv2.tv_sec;
+	}
+
+      if (tv2.tv_sec < 2)
+	{
+	  printf ("premature timeout: %ld.%06ld difference\n",
+		  tv2.tv_sec, tv2.tv_usec);
+	  return 1;
+	}
+    }
+// ...
+
+-- 
+Markus
