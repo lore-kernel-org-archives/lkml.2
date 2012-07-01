@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab2GASQd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:16:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46952 "EHLO
+	id S932263Ab2GASQh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:16:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46956 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751964Ab2GASQb (ORCPT
+	by vger.kernel.org with ESMTP id S1751964Ab2GASQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 14:16:31 -0400
-Message-Id: <20120701172008.676559904@decadent.org.uk>
+	Sun, 1 Jul 2012 14:16:34 -0400
+Message-Id: <20120701172013.468545884@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 01 Jul 2012 18:20:20 +0100
+Date: Sun, 01 Jul 2012 18:20:54 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Boot <bootc@bootc.net>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        Nix <nix@esperi.org.uk>, Jeff Pieper <jeffrey.e.pieper@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [ 14/48] e1000e: Disable ASPM L1 on 82574
+        alan@lxorguk.ukuu.org.uk, Marek Lindner <lindner_marek@yahoo.de>,
+        Antonio Quartulli <ordex@autistici.org>
+Subject: [ 48/48] batman-adv: only drop packets of known wifi clients
 In-Reply-To: <20120701172006.535271340@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,40 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Boot <bootc@bootc.net>
+From: Marek Lindner <lindner_marek@yahoo.de>
 
-commit id d4a4206ebbaf48b55803a7eb34e330530d83a889
+commit 5870adc68fc39d81089f1e80efdf64b97e5c37a1 upstream.
 
-ASPM on the 82574 causes trouble. Currently the driver disables L0s for
-this NIC but only disables L1 if the MTU is >1500. This patch simply
-causes L1 to be disabled regardless of the MTU setting.
+bug introduced with 59b699cdee039d75915c354da06937102d1f9a84
 
-Signed-off-by: Chris Boot <bootc@bootc.net>
-Cc: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>
-Cc: Nix <nix@esperi.org.uk>
-Link: https://lkml.org/lkml/2012/3/19/362
-Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
-[Jeff Kirsher: Backport to 3.2-3.4 kernels]
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+If the source or destination mac address of an ethernet packet
+could not be found in the translation table the packet was
+dropped if AP isolation was turned on. This behavior would
+make it impossible to send broadcast packets over the mesh as
+the broadcast address will never enter the translation table.
+
+Signed-off-by: Marek Lindner <lindner_marek@yahoo.de>
+Acked-by: Antonio Quartulli <ordex@autistici.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/intel/e1000e/82571.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/batman-adv/translation-table.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/e1000e/82571.c b/drivers/net/ethernet/intel/e1000e/82571.c
-index a3e65fd..e556fc3 100644
---- a/drivers/net/ethernet/intel/e1000e/82571.c
-+++ b/drivers/net/ethernet/intel/e1000e/82571.c
-@@ -2080,8 +2080,9 @@ const struct e1000_info e1000_82574_info = {
- 				  | FLAG_HAS_SMART_POWER_DOWN
- 				  | FLAG_HAS_AMT
- 				  | FLAG_HAS_CTRLEXT_ON_LOAD,
--	.flags2			  = FLAG2_CHECK_PHY_HANG
-+	.flags2			= FLAG2_CHECK_PHY_HANG
- 				  | FLAG2_DISABLE_ASPM_L0S
-+				  | FLAG2_DISABLE_ASPM_L1
- 				  | FLAG2_NO_DISABLE_RX,
- 	.pba			= 32,
- 	.max_hw_frame_size	= DEFAULT_JUMBO,
+diff --git a/net/batman-adv/translation-table.c b/net/batman-adv/translation-table.c
+index a66c2dc..660c40f 100644
+--- a/net/batman-adv/translation-table.c
++++ b/net/batman-adv/translation-table.c
+@@ -2031,10 +2031,10 @@ bool is_ap_isolated(struct bat_priv *bat_priv, uint8_t *src, uint8_t *dst)
+ {
+ 	struct tt_local_entry *tt_local_entry = NULL;
+ 	struct tt_global_entry *tt_global_entry = NULL;
+-	bool ret = true;
++	bool ret = false;
+ 
+ 	if (!atomic_read(&bat_priv->ap_isolation))
+-		return false;
++		goto out;
+ 
+ 	tt_local_entry = tt_local_hash_find(bat_priv, dst);
+ 	if (!tt_local_entry)
+@@ -2044,10 +2044,10 @@ bool is_ap_isolated(struct bat_priv *bat_priv, uint8_t *src, uint8_t *dst)
+ 	if (!tt_global_entry)
+ 		goto out;
+ 
+-	if (_is_ap_isolated(tt_local_entry, tt_global_entry))
++	if (!_is_ap_isolated(tt_local_entry, tt_global_entry))
+ 		goto out;
+ 
+-	ret = false;
++	ret = true;
+ 
+ out:
+ 	if (tt_global_entry)
 
 
