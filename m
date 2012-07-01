@@ -1,184 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab2GAIjn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 04:39:43 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61218 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668Ab2GAIjl (ORCPT
+	id S1753951Ab2GAImx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 04:42:53 -0400
+Received: from science.horizon.com ([71.41.210.146]:12021 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750969Ab2GAImv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 04:39:41 -0400
-Date: Sun, 1 Jul 2012 10:39:24 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Cc: Roland Stigge <stigge@antcom.de>, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        spi-devel-general@lists.sourceforge.net
-Subject: Re: [PATCH v3] spi/pl022: add devicetree support
-Message-ID: <20120701083923.GA29380@avionic-0098.mockup.avionic-design.de>
-References: <1340719537-627-1-git-send-email-aletes.xgr@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="azLHFNyN32YCQGCU"
-Content-Disposition: inline
-In-Reply-To: <1340719537-627-1-git-send-email-aletes.xgr@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:JRtDMxhgc30gwdQ5h0Bzpm09YN2wLYsoITELTUDVff5
- 9A538aTFs2EXqpMBDlk2DoZfljJWtKJeHye2drJbAdvoKRLoWl
- e317wx08psf6J3Zrj9BlfGBQ3xnx7gKmYbMkhgGDUhX9RrKAHz
- SE+0hYx4iCj1FErPnPu3+nzZUxlPfSjhD2DXllheI0GHZ6guHo
- Xm5LvRxXzV60SadxRZptxSbK0aApc8MOGMJCYS+8XxdTyzdFJF
- t2aKaJjREIblilVPrAi77IUJmQiqTAfRn0SZHOMoesnV9LlCdP
- uVWiwUlST21sFAcBze8+6ZcPkutwEU0fk2+pzIgYl6VgqOegye
- 1OeS/JVfPqqm0nh3BvwCM0PJA39Z8r7vy36v1idMc6wnkKzNQM
- Cp/Ab4/HnqJcyh0ClE0fl6Sv5/ZmsZ13Co=
+	Sun, 1 Jul 2012 04:42:51 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 Jul 2012 04:42:51 EDT
+Date: 1 Jul 2012 04:36:08 -0400
+Message-ID: <20120701083608.9889.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: dmitry.torokhov@gmail.com, dtor@mail.ru, linux-input@vger.kernel.org
+Subject: Subject: [PATCH v2] Input: atkbd - make repeat period more accurate.
+Cc: linux-kernel@vger.kernel.org, linux@horizon.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This replaces some inaccurate lookup tables with an exact
+computation.  Although the diff adds source comments,
+it shrinks binary size.  (By only 50 bytes, but hey.)
 
---azLHFNyN32YCQGCU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+AT keyboard repeat rates are multiples of 1/240 second
+expressed in a 0.2.3 bit floating point format.  That
+is, possible values are ({8..15} << {0..3}) / 240 s.
 
-On Tue, Jun 26, 2012 at 11:05:36AM -0300, Alexandre Pereira da Silva wrote:
-> Add the chipselect array and cur_cs properties to pl022 main structure
->=20
-> Add a wrapper function to decide if the cs should be controlled by the
-> cs_control callback or the chipselect gpio
->=20
-> Populate chipselect property from cs-gpios
->=20
-> Populate master->dev.of_node, so the spi bus can find child spi
-> devices and register them
->=20
-> At pl022 setup, fill chip_data structure from dt nodes, if not provided
-> by platform.
->=20
-> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-> Tested-by: Roland Stigge <stigge@antcom.de>
-> ---
-> Applies to v3.5-rc4
->=20
-> Changes since v2:
-> * Use IS_ENABLED instead of #ifdef
-> * Remove bogus const change
->=20
-> Changes since v1:
-> * return EPROBE_DEFFER if gpios are not initialized yet
->=20
-> Thanks Thierry Reding for reviewing and improvements suggestions
->=20
->  .../devicetree/bindings/spi/spi_pl022.txt          |   15 +++
->  drivers/spi/spi-pl022.c                            |  115 ++++++++++++++=
-++----
->  2 files changed, 111 insertions(+), 19 deletions(-)
->=20
-[...]
-> diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
-[...]
-> @@ -1998,8 +2039,14 @@ pl022_probe(struct amba_device *adev, const struct=
- amba_id *id)
->  		goto err_no_pdata;
->  	}
-> =20
-> +	num_cs =3D platform_info->num_chipselect;
-> +#if IS_ENABLED(CONFIG_OF)
-> +	of_property_read_u32(np, "pl022,num-chipselects", &num_cs);
-> +#endif
-> +
+In addition to a slightly inaccurate lookup table, the
+old code would round up to the next repeat period.
+E.g. to get a period of 9/60 = 0.15 seconds, you had to
+ask for no more than 149 ms; if you asked for 150, it
+would round up to 167.  The new code rounds to nearest.
 
-Actually this has even more advantages if you use it as a condition in
-an if expression:
+User-visible changes to the repeat periods reported by EVIOCGREP:
 
-	if (IS_ENABLED(CONFIG_OF))
-		of_property_read_u32(...);
+Old	 37	109	116	149	182	232
+Exact	 37.50	108.33	116.66	150.00	183.33	233.33
+New	 38	108	117	150	183	233
 
-The above will be compiled wether CONFIG_OF is enabled or not, but it
-will not be included in the final output because of the compiler's DCE
-(dead code elimination) seeing this as "if (0)". The result is that the
-source code gets much better compile coverage and errors in the
-conditional code can be caught earlier.
+Old	270	303	370	435	470
+Exact	266.66	300.00	366.66	433.33	466.66
+New	267	300	367	433	467
 
-> @@ -2017,13 +2064,40 @@ pl022_probe(struct amba_device *adev, const struc=
-t amba_id *id)
->  	 * on this board
->  	 */
->  	master->bus_num =3D platform_info->bus_id;
-> -	master->num_chipselect =3D platform_info->num_chipselect;
-> +	master->num_chipselect =3D num_cs;
->  	master->cleanup =3D pl022_cleanup;
->  	master->setup =3D pl022_setup;
->  	master->prepare_transfer_hardware =3D pl022_prepare_transfer_hardware;
->  	master->transfer_one_message =3D pl022_transfer_one_message;
->  	master->unprepare_transfer_hardware =3D pl022_unprepare_transfer_hardwa=
-re;
->  	master->rt =3D platform_info->rt;
-> +	master->dev.of_node =3D dev->of_node;
-> +
-> +#if IS_ENABLED(CONFIG_OF)
-> +	for (i =3D 0; i < num_cs; i++) {
-> +		int cs_gpio =3D of_get_named_gpio(np, "cs-gpios", i);
-> +
-> +		if (cs_gpio =3D=3D -EPROBE_DEFER) {
-> +			status =3D -EPROBE_DEFER;
-> +			goto err_no_gpio;
-> +		}
-> +
-> +		pl022->chipselect[i] =3D cs_gpio;
-> +
-> +		if (gpio_is_valid(cs_gpio)) {
-> +			if (gpio_request(cs_gpio, "ssp-pl022"))
-> +				dev_err(&adev->dev,
-> +					"could not request %d gpio\n", cs_gpio);
-> +			else if (gpio_direction_output(cs_gpio, 1))
-> +				dev_err(&adev->dev,
-> +					"could set gpio %d as output\n",
-> +					cs_gpio);
-> +		}
-> +	}
-> +#else
-> +	for (i =3D 0; i < num_cs; i++)
-> +		pl022->chipselect[i] =3D -EINVAL;
-> +#endif
+This does not bother utilities like kbdrate(8).
 
-Same here.
+Signed-off-by: George Spelvin <linux@horizon.com>
+---
+ drivers/input/keyboard/atkbd.c |   47 +++++++++++++++++++++++++++++++----------------
+ 1 file changed, 31 insertions(+), 16 deletions(-)
 
->  	/*
->  	 * Supports mode 0-3, loopback, and active low CS. Transfers are
-> @@ -2130,6 +2204,9 @@ pl022_probe(struct amba_device *adev, const struct =
-amba_id *id)
->   err_no_ioremap:
->  	amba_release_regions(adev);
->   err_no_ioregion:
-> + #if IS_ENABLED(CONFIG_OF)
-> + err_no_gpio:
-> + #endif
+(Resend since no response after several weeks.)
 
-And here.
+Now that I've tweaked it (v1 had an error in rounding near exponent
+range boundaries), I think it's ready for merging upstream.
 
-Thierry
+Dmitry, you seem to be the one constant name in all recent changes to
+this file, so I'm sending it to you directly as well as linux-input.
 
---azLHFNyN32YCQGCU
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+One possible bug I observed in the code that calls this:
 
-iQIcBAEBAgAGBQJP8Ay7AAoJEN0jrNd/PrOh0b4P/2x7oJksZ24gDtvynKsgb0rg
-LwohzrRHXfxaHddy/XJFQZwJNl407gwtwNwwbvRA2oRIp8AZRg5PkMVW3LL3XeWj
-SZ02DyXb80Snn6L+M0nDn2gLpMIJTDvSqVMtCStr8iRm1F9R3EDhNxx+Icn5dNdW
-YPWy/AMcIBUuoaiEHzbwwCI6NPh1G1sMSFSmRARXPx5W+Pha+oGpEHHWB1tk5W/T
-DtvTLjVKp1YdqYluhb8AnOPl89fLZ9/iPxbCiyat62/FzeU8ighfC6wADnDwQ2/6
-MXoN+dpvGfVoj6RRNxfSEzFf9PEtpKe72HwGp5Rb6h+SV76xh8fffmJGRjJmXrNg
-dpI45UEEfoof+Ku96wFSyeLoywvzUj2esd9ltjuCLrR7pwta6yx5SqyUM2E6rnoW
-QW9gfcA9q0lI0X8GXu6oJ5L5eR5SSdLUfyEtnq98vnut914MffLmF19BlXMZAUcX
-TITvXX1cfVhOW9qwH8nt73hOZdKqqPKXfAWMICdEBkFukFnmZmorRIVb6L/Gw45+
-+5A31WULLNXZ4cYFo7UmR0avfgLLepc5tGSqy2w+MPbxsnevz8FLZ2mzEQwbu6A3
-Q7GvkxG0V8KL0llebPLef4PAruyx8QrkhgArMMQIUeDr3Iy/YQZmY+aGWZSlSJRc
-yHGxNeJFsfBCwdZ15bbl
-=uVeC
------END PGP SIGNATURE-----
+Users of the KDKBDREP ioctl seem to assume that it returns the actual
+values set, but I'm not sure it really works that way; I don't think
+the command to change the parameters makes its way through the event
+queue and atkbd's schedule_delayed_work() to actually set dev->rep[]
+to the rounded values before kbd_rate_helper returns them to userspace.
 
---azLHFNyN32YCQGCU--
+If desired, the fix that's most obvious to me would be to split this
+function in two: perform the conversion to a command byte synchronously,
+and only defer the actual ps2_command().
+
+diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
+index e05a2e7..3181b86 100644
+--- a/drivers/input/keyboard/atkbd.c
++++ b/drivers/input/keyboard/atkbd.c
+@@ -524,27 +524,42 @@ out:
+ 	return IRQ_HANDLED;
+ }
+ 
++/*
++ * AT keyboard repeat rates are set using a 2-bit initial repeat delay
++ * (250, 500, 750 or 1000 ms), and a 5-bit repeat period.  The latter
++ * is a 0.2.3-bit floating-point number (no sign, 2-bit exponent, and
++ * 3-bit mantissa), encoding a value from 8/240 to 120/240 of second.
++ *
++ * Given the requested delay and period in milliseconds, round to the
++ * nearest representable value, and convert the rounded values back to
++ * milliseconds to report the chosen values.
++ */
+ static int atkbd_set_repeat_rate(struct atkbd *atkbd)
+ {
+-	const short period[32] =
+-		{ 33,  37,  42,  46,  50,  54,  58,  63,  67,  75,  83,  92, 100, 109, 116, 125,
+-		 133, 149, 167, 182, 200, 217, 232, 250, 270, 303, 333, 370, 400, 435, 470, 500 };
+-	const short delay[4] =
+-		{ 250, 500, 750, 1000 };
+-
+ 	struct input_dev *dev = atkbd->dev;
+ 	unsigned char param;
+-	int i = 0, j = 0;
+-
+-	while (i < ARRAY_SIZE(period) - 1 && period[i] < dev->rep[REP_PERIOD])
+-		i++;
+-	dev->rep[REP_PERIOD] = period[i];
+-
+-	while (j < ARRAY_SIZE(delay) - 1 && delay[j] < dev->rep[REP_DELAY])
+-		j++;
+-	dev->rep[REP_DELAY] = delay[j];
++	unsigned exp = 3;	/* Period exponent */
++	int period;		/* Period mantissa */
++	int delay = clamp(dev->rep[REP_DELAY], 125, 1000);
++
++	/* AT kbd delay is {1..4} * 250 ms.  Round to 2 bits. */
++	delay = (delay + 125) / 250u;
++	/* Store actual value back */
++	dev->rep[REP_DELAY] = delay * 250;
++
++	/* AT kbd period is ({8..15} << {0..3}) / 240 s. */
++	period = clamp(dev->rep[REP_PERIOD], 33, 500);
++	/* Get correct exponent.  Split is at 258.333 ms */
++	while (period < 259) {
++		period <<= 1;
++		exp--;
++	}
++	/* Convert from 259..516 ms to 8..15 30ths of a second */
++	period = (period * 3 + 50) / 100u;
++	/* Store actual value back.  x * 1000 / 240 = x * 25 / 6 */
++	dev->rep[REP_PERIOD] = ((period << exp) * 25 + 3) / 6u;
+ 
+-	param = i | (j << 5);
++	param = (delay - 1) << 5 | exp << 3 | (period - 8);
+ 	return ps2_command(&atkbd->ps2dev, &param, ATKBD_CMD_SETREP);
+ }
+ 
+
