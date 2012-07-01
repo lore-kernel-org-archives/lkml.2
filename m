@@ -1,49 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab2GASOJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:14:09 -0400
-Received: from mail.uibero.cl ([200.111.126.196]:54402 "EHLO mail.unicit.cl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691Ab2GASOH convert rfc822-to-8bit (ORCPT
+	id S1754175Ab2GASQF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:16:05 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46889 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751173Ab2GASQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 14:14:07 -0400
-X-Greylist: delayed 328 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 Jul 2012 14:14:07 EDT
-Date: Sun, 01 Jul 2012 14:15:56 -0400 (CLT)
-From: "MR. FRED BENHAM" <apenailillo@unicit.cl>
-Reply-To: "MR. FRED BENHAM" <fredbenhambanking55@gmail.com>
-Subject: Sevgili =?utf-8?B?YXJrYWRhxZ/EsW0s?=
-Message-ID: <b0536ca9-db66-41c8-9062-28440494a122@mail>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Originating-IP: [41.58.30.39]
-X-Mailer: Zimbra 7.1.2_GA_3268 (zclient/7.1.2_GA_3268)
-To: undisclosed-recipients:;
+	Sun, 1 Jul 2012 14:16:03 -0400
+Message-Id: <20120701172006.535271340@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Sun, 01 Jul 2012 18:20:06 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 00/48] 3.2.22-stable review
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-İyi günler,
+This is the start of the stable review cycle for the 3.2.22 release.
+There are 48 patches in this series, which will be posted as responses
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-Ben burada İngiltere'de Harlsden, North West London, Bay Fred Benham duyuyorum. Ben Natwest Bank Londra ile çalışmak. Saygısızlık ve saygılarımızla, ben ikimiz için büyük yararı olacak bir iş için ofisime size yazıyorum. Benim bölümde, Özel Bankacılık Yöneticisi (Greater London Bölge Ofisi) olmak, ben yabancı müşterilerimiz biri Dr Erin ait bir hesap 18.500.000 £ GBP terk edilmiş bir toplamı (on sekiz milyon beşyüz bin pound) keşfetti
-Bir grup gökyüzü tatil yolunda, 23 Mart 2009 tarihinde Montana uçak kazasında ailesiyle birlikte öldü Jacobson.
+Responses should be made by Tue Jul  3 19:00:00 UTC 2012.
+Anything received after that time might be too late.
 
-Eğer temas seçimi bu işlem ve gizlilik buradaki hassasiyeti özellikle dolayı yaşadığınız yerin coğrafi yapısı, gelen uyandırdı.
+A combined patch relative to 3.2.21 will be posted as an additional
+response to this, and the diffstat can be found below.
 
- Şimdi bizim banka iddianın gelip-up yakınlarının herhangi bekliyordu ama kimse that.I yaptı şahsen artık iki yıldır akrabaları bulma konusunda başarısız olmuştur, ben bir sonraki olarak sunmak için izninizi almak £ 18.500.000 YTL değerindeki bu hesabın gelirleri size ödenecek böylece ölen kin / Faydalanıcı.
+Ben.
 
-Bu tahsis veya bu yüzdeler, bana% 60 ve% 40 size de paylaşılacaktır. Sanırım yapmak üzeresiniz bu iddiayı yedeklemek için kullanılabilir gerekli tüm yasal belgeleri garantiledi. Tüm ihtiyacım belgeler içine isimleri doldurun ve meşru yararlanıcı olarak kanıtlamak için burada mahkeme bunu yasallaştırmak için olduğunu.
+-------------
+ Documentation/stable_kernel_rules.txt              |    6 ++
+ Makefile                                           |    4 +-
+ arch/arm/plat-samsung/include/plat/map-s3c.h       |    2 +-
+ .../arm/plat-samsung/include/plat/watchdog-reset.h |    2 +-
+ arch/x86/include/asm/cpufeature.h                  |    2 +-
+ arch/x86/include/asm/pgtable-3level.h              |   54 ++++++++++++++++
+ arch/x86/kernel/cpu/scattered.c                    |    2 +-
+ drivers/acpi/acpi_pad.c                            |    7 ++-
+ drivers/base/power/main.c                          |    6 +-
+ drivers/char/hw_random/atmel-rng.c                 |    2 +-
+ drivers/edac/i7core_edac.c                         |   15 ++---
+ drivers/edac/sb_edac.c                             |   10 ++-
+ drivers/gpu/drm/drm_edid.c                         |    2 +-
+ drivers/gpu/drm/i915/i915_gem.c                    |    4 ++
+ drivers/gpu/drm/i915/i915_irq.c                    |   57 +++++++++--------
+ drivers/gpu/drm/i915/i915_suspend.c                |    5 +-
+ drivers/gpu/drm/i915/intel_display.c               |   65 ++++++++++++++------
+ drivers/gpu/drm/i915/intel_ringbuffer.c            |   14 +----
+ drivers/gpu/drm/nouveau/nouveau_fbcon.c            |    2 +-
+ drivers/hwmon/applesmc.c                           |    4 +-
+ drivers/hwmon/coretemp.c                           |    2 +-
+ drivers/md/dm-thin.c                               |    9 ++-
+ drivers/media/dvb/siano/smsusb.c                   |    2 +
+ drivers/media/video/gspca/gspca.c                  |    4 +-
+ drivers/net/can/c_can/c_can.c                      |    4 +-
+ drivers/net/can/flexcan.c                          |    4 +-
+ drivers/net/ethernet/intel/e1000e/82571.c          |    3 +-
+ drivers/net/ethernet/intel/e1000e/netdev.c         |    8 ---
+ drivers/net/wireless/ath/ath9k/hw.c                |   14 ++++-
+ drivers/net/wireless/ath/ath9k/main.c              |   18 +++---
+ drivers/net/wireless/ath/ath9k/xmit.c              |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie.c      |    6 ++
+ drivers/net/xen-netfront.c                         |    8 +--
+ drivers/oprofile/oprofile_perf.c                   |    2 +-
+ drivers/scsi/sd.c                                  |    2 +
+ drivers/staging/iio/adc/ad7606_core.c              |    1 +
+ drivers/staging/rtl8712/usb_intf.c                 |    2 +
+ drivers/staging/rts_pstor/rtsx_transport.c         |   11 ++--
+ drivers/usb/serial/cp210x.c                        |   11 ++++
+ drivers/usb/serial/option.c                        |    8 +++
+ drivers/usb/storage/scsiglue.c                     |    6 ++
+ fs/exec.c                                          |    2 +-
+ fs/nilfs2/gcinode.c                                |    2 +
+ fs/nilfs2/segment.c                                |    2 +
+ include/asm-generic/pgtable.h                      |   32 +++++++++-
+ include/linux/mm_types.h                           |   10 +++
+ include/scsi/scsi_device.h                         |    1 +
+ kernel/exit.c                                      |    1 +
+ net/batman-adv/routing.c                           |    2 +
+ net/batman-adv/translation-table.c                 |    8 +--
+ net/wireless/reg.c                                 |    2 +-
+ sound/pci/hda/patch_realtek.c                      |    1 +
+ tools/hv/hv_kvp_daemon.c                           |   10 ++-
+ 53 files changed, 320 insertions(+), 145 deletions(-)
 
-Şimdi gerektiren tüm aracılığıyla bize bu işlem görmek etkinleştirmek için dürüst işbirliği, Gizlilik ve Güven olduğunu. Bu, law.Please ihlali sizi korumak bana aşağıdaki sağlayacak yasal bir düzenleme altında yürütülür size garanti: bunu üzerinden çalıştırmak için beş gün var gibi. Bu çok acil lütfen olduğunu.
- 1. Tam Adı
- 2. Telefon Numaranız
- 3. Temas Adresiniz.
+-- 
+Ben Hutchings
+If you seem to know what you are doing, you'll be given more to do.
 
-Bir yöntemsel arama ile gitmiş olması, sana bu öneriyi ilginç bulacağınızı umarak sizinle irtibata karar verdi.
- 
-Bu mesaj ve ilgi gösteren bir onay üzerine Lütfen, daha fazla bilgiyi size sunacaktır.
-
-Bana karar biliyor yerine beni bekletmek izin çabalarıdır. Call me veya posta Tel aldıktan sonra bana yazın: +447024011974, +447924445158
-
-Saygılarımızla,
-Bay Fred Benham.
