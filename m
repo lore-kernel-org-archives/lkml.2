@@ -1,181 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679Ab2GASG1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:06:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14828 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751458Ab2GASGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 14:06:25 -0400
-Message-ID: <4FF07CD4.1070101@redhat.com>
-Date: Sun, 01 Jul 2012 12:37:40 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755159Ab2GASLG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:11:06 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54401 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751691Ab2GASLE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 14:11:04 -0400
+Date: Sun, 1 Jul 2012 19:10:56 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: philipspatches@gmail.com
+Cc: linux-kernel@vger.kernel.org, cjb@laptop.org, linux-mmc@vger.kernel.org,
+        Philip Rakity <prakity@marvell.com>
+Subject: Re: [PATCH] regulator: add missing defintion
+ regulator_is_supported_voltage
+Message-ID: <20120701181055.GC28922@opensource.wolfsonmicro.com>
+References: <1341097536-14190-1-git-send-email-prakity@marvell.com>
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 22/40] autonuma: teach CFS about autonuma affinity
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-23-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1340888180-15355-23-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fo/b2PYVqg2cQvBK"
+Content-Disposition: inline
+In-Reply-To: <1341097536-14190-1-git-send-email-prakity@marvell.com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 08:56 AM, Andrea Arcangeli wrote:
 
-> @@ -2621,6 +2622,8 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
->   		load = weighted_cpuload(i);
->
->   		if (load<  min_load || (load == min_load&&  i == this_cpu)) {
-> +			if (!task_autonuma_cpu(p, i))
-> +				continue;
->   			min_load = load;
->   			idlest = i;
->   		}
+--fo/b2PYVqg2cQvBK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Is it right to only consider CPUs on the "right" NUMA
-node, or do we want to harvest idle time elsewhere as
-a last resort?
+On Sat, Jun 30, 2012 at 04:05:36PM -0700, philipspatches@gmail.com wrote:
+> From: Philip Rakity <prakity@marvell.com>
+>=20
+> This definition is missing when CONFIG_REGULATOR is not defined.
+> This causes compiler errors when compiling sdhci.c.  This can
+> be worked around by adding #ifdef CONFIG_REGULATOR .. #endif
+> but since other definitions are there we have defined the missing
+> definition
 
-After your change the comment above find_idlest_cpu
-no longer matches what the function does!
+Applied, thanks.
 
-                 if (load < min_load || (load == min_load && i == 
-this_cpu)) {
-                         min_load = load;
-                         idlest = i;
-                 }
+--fo/b2PYVqg2cQvBK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Would it make sense for task_autonuma_cpu(p, i) to be
-inside the if ( ) braces, since that is what you are
-trying to do?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-		if ((load < min_load || (load == min_load &&
-			i == this_cpu)) && task_autonuma_cpu(p, i)) {
+iQIcBAEBAgAGBQJP8JKlAAoJEBus8iNuMP3dv54P/0vA1X5J7sOBYcVY4ggywmtw
+Is8TDYy6jJ1d0787H8U71bcAB6TlV1nqAnaf6T7tAmIjbo82uw0aQF21Qe+IPyhi
+1D4oxbiUGlV163keyguQTxat5jV65tOXHFJUESbKVCy3YbUQQIAcSconoKaR9ML9
+jsHAGIl0E0s3mjmmPeuQWRmqCp1KV/m15BeXU5PIF+jNvkpsF+hENZwsvTY+RXUQ
+O8xh4hh/OTz1K2hlsj/5HNAxGHMm8ReghwiWSZMg62TfbJ240y/n301UgIGYGd4q
+OAthBQ0JFwhnK8ve0WipHKRC27sNmttBQooLqDQqujFOHDdkfnzbBJ+uTMuKKzwK
+TupyoicT5E0nEntpTrhAnwgESMWraYE0BFdsHCVQUN8lY4HYINuBaPz+lLErgiRI
+dgveqOeN4B5jfoHtaw5a9PkOSXJoDI44ku+wBa7LVcsh+mvTAY9ufhSQYWqjTzl2
+2SpR+hfEpP2bVSf2PtULeTCCWdEoc98EEAsyB1rB5Ssaf/u0zwTZKYijxGFZvKMc
+h1086m387gsrgXuothoF5qxySbTNfRIaF5p9F2+kDbFXtp7NH0RRy7Ey+JhvK1cZ
+vIl27MykJSxP2n9HnZON6Ly/z4OcdF78OF+x6+8sA8MHfQxeRnFY+pxw1uUCRJkf
+PYWi/z3lbOKFCQHXCWrH
+=x1h4
+-----END PGP SIGNATURE-----
 
-> @@ -2639,24 +2642,27 @@ static int select_idle_sibling(struct task_struct *p, int target)
-
-These bits make sense.
-
->   	/*
->   	 * Otherwise, iterate the domains and find an elegible idle cpu.
->   	 */
-> +	idle_target = false;
->   	sd = rcu_dereference(per_cpu(sd_llc, target));
->   	for_each_lower_domain(sd) {
->   		sg = sd->groups;
-> @@ -2670,9 +2676,18 @@ static int select_idle_sibling(struct task_struct *p, int target)
->   					goto next;
->   			}
->
-> -			target = cpumask_first_and(sched_group_cpus(sg),
-> -					tsk_cpus_allowed(p));
-> -			goto done;
-> +			for_each_cpu_and(i, sched_group_cpus(sg),
-> +						tsk_cpus_allowed(p)) {
-> +				/* Find autonuma cpu only in idle group */
-> +				if (task_autonuma_cpu(p, i)) {
-> +					target = i;
-> +					goto done;
-> +				}
-> +				if (!idle_target) {
-> +					idle_target = true;
-> +					target = i;
-> +				}
-> +			}
-
-There already is a for loop right above this:
-
-                         for_each_cpu(i, sched_group_cpus(sg)) {
-                                 if (!idle_cpu(i))
-                                         goto next;
-                         }
-
-It appears to loop over all the CPUs in a sched group, but
-not really.  If the first CPU in the sched group is idle,
-it will fall through.
-
-If the first CPU in the sched group is not idle, we move
-on to the next sched group, instead of looking at the
-other CPUs in the sched group.
-
-Peter, Ingo, what is the original code in select_idle_sibling
-supposed to do?
-
-That original for_each_cpu loop would make more sense if
-it actually looped over each cpu in the group.
-
-Then we could remember two targets. One idle target, and
-one autonuma-compliant idle target.
-
-If, after looping over the CPUs, we find no autonuma-compliant
-target, we use the other idle target.
-
-Does that make sense?
-
-Am I overlooking something about how the way select_idle_sibling
-is supposed to work?
-
-> @@ -3195,6 +3217,8 @@ static int move_one_task(struct lb_env *env)
->   {
->   	struct task_struct *p, *n;
->
-> +	env->flags |= LBF_NUMA;
-> +numa_repeat:
->   	list_for_each_entry_safe(p, n,&env->src_rq->cfs_tasks, se.group_node) {
->   		if (throttled_lb_pair(task_group(p), env->src_rq->cpu, env->dst_cpu))
->   			continue;
-> @@ -3209,8 +3233,14 @@ static int move_one_task(struct lb_env *env)
->   		 * stats here rather than inside move_task().
->   		 */
->   		schedstat_inc(env->sd, lb_gained[env->idle]);
-> +		env->flags&= ~LBF_NUMA;
->   		return 1;
->   	}
-> +	if (env->flags&  LBF_NUMA) {
-> +		env->flags&= ~LBF_NUMA;
-> +		goto numa_repeat;
-> +	}
-> +
->   	return 0;
->   }
-
-Would it make sense to remember the first non-autonuma-compliant
-task that can be moved, and keep searching for one that fits
-autonuma's criteria further down the line?
-
-Then, if you fail to find a good autonuma task in the first
-iteration, you do not have to loop over the list a second time.
-
-> @@ -3235,6 +3265,8 @@ static int move_tasks(struct lb_env *env)
->   	if (env->imbalance<= 0)
->   		return 0;
->
-> +	env->flags |= LBF_NUMA;
-> +numa_repeat:
-
-Same here.  Loops are bad enough, and it looks like it would
-only cost one pointer on the stack to avoid numa_repeat :)
-
--- 
-All rights reversed
+--fo/b2PYVqg2cQvBK--
