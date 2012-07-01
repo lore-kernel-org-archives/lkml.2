@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438Ab2GAOIl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 10:08:41 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:9492 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932402Ab2GAOIk (ORCPT
+	id S932453Ab2GAONE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 10:13:04 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45894 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932418Ab2GAONC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 10:08:40 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1202hzz8275bh8275dhz2dh87h2a8h668h839h944hd25he96hf0ah)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Sun, 1 Jul 2012 22:09:16 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Axel Lin <axel.lin@gmail.com>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] pwm: pwm-mxs: Return proper error if
- pwmchip_remove() fails
-Message-ID: <20120701140914.GB21595@S2101-09.ap.freescale.net>
-References: <1341118620.8998.1.camel@phoenix>
- <1341118680.8998.2.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1341118680.8998.2.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+	Sun, 1 Jul 2012 10:13:02 -0400
+Date: Sun, 1 Jul 2012 15:16:59 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: vincent.sanders@collabora.co.uk, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: AF_BUS socket address family
+Message-ID: <20120701151659.2be61475@pyramind.ukuu.org.uk>
+In-Reply-To: <20120630.173346.670086962166528527.davem@davemloft.net>
+References: <20120629234230.GA11480@kyllikki.org>
+	<20120629.165023.1605284574408858612.davem@davemloft.net>
+	<20120630141222.60df95a5@pyramind.ukuu.org.uk>
+	<20120630.173346.670086962166528527.davem@davemloft.net>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 01, 2012 at 12:58:00PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> The issue is that what to do when a receiver goes deaf is a policy
+> issue.
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Something all these protocols alredy recognize and have done for years.
+The real issue for AF_BUS versus the current slow AF_UNIX approach is
+that you really need to know *who* is blocked up.
 
-> ---
->  drivers/pwm/pwm-mxs.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
-> 
-> diff --git a/drivers/pwm/pwm-mxs.c b/drivers/pwm/pwm-mxs.c
-> index 269d7c2..e585264 100644
-> --- a/drivers/pwm/pwm-mxs.c
-> +++ b/drivers/pwm/pwm-mxs.c
-> @@ -178,9 +178,7 @@ static int __devexit mxs_pwm_remove(struct platform_device *pdev)
->  {
->  	struct mxs_pwm_chip *mxs = platform_get_drvdata(pdev);
->  
-> -	pwmchip_remove(&mxs->chip);
-> -
-> -	return 0;
-> +	return pwmchip_remove(&mxs->chip);
->  }
->  
->  static struct of_device_id mxs_pwm_dt_ids[] = {
-> -- 
-> 1.7.9.5
-> 
-> 
-> 
+That's no different to UDP multicast and needing to know how errored the
+frame.
 
+Alan
