@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab2GAHlS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 03:41:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37136 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752233Ab2GAHlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 03:41:15 -0400
-Message-ID: <4FEFFF11.4000309@redhat.com>
-Date: Sun, 01 Jul 2012 10:41:05 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1753907Ab2GAIQR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 04:16:17 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:58348 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687Ab2GAIQO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 04:16:14 -0400
 MIME-Version: 1.0
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-CC: mtosatti@redhat.com, agraf@suse.de, paulus@samba.org, aarcange@redhat.com,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, takuya.yoshikawa@gmail.com
-Subject: Re: [PATCH 6/6] KVM: MMU: Avoid handling same rmap_pde in kvm_handle_hva_range()
-References: <20120628105733.ccd9abb3.yoshikawa.takuya@oss.ntt.co.jp> <20120628110235.7410445e.yoshikawa.takuya@oss.ntt.co.jp> <4FEC9A2B.6000104@redhat.com> <20120629104629.b369cd40.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <20120629104629.b369cd40.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <alpine.LNX.2.01.1207010247430.7313@frira.zrqbmnf.qr>
+References: <alpine.LNX.2.01.1207010247430.7313@frira.zrqbmnf.qr>
+Date: Sun, 1 Jul 2012 01:16:13 -0700
+X-Google-Sender-Auth: z4KJbW6ORaY1BHsnYGwbsQ6oDvY
+Message-ID: <CANcMJZBcpWzJWCdV8XN6cOUsbykZ-0dre=FBP-zRDhHfi1MwrQ@mail.gmail.com>
+Subject: Re: Leap second insertion causes futex to repeatedly timeout
+From: john stultz <johnstul@us.ibm.com>
+To: Jan Engelhardt <jengelh@inai.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        simon@fire.lp0.eu, Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2012 04:46 AM, Takuya Yoshikawa wrote:
-> On Thu, 28 Jun 2012 20:53:47 +0300
-> Avi Kivity <avi@redhat.com> wrote:
-> 
->> > Note: in the new code we could not use trace_kvm_age_page(), so we just
->> > dropped the point from kvm_handle_hva_range().
->> > 
->> 
->> Can't it be pushed to handler()?
-> 
-> Yes, but it will be changed to print rmap, not hva and gfn.
-> I will do in the next version.
+On Sat, Jun 30, 2012 at 5:57 PM, Jan Engelhardt <jengelh@inai.de> wrote:
+>
+> This year's leap second insertion has had the strange effect on at least
+> Linux versions 3.4.4 (my end) and 3.5-rc4 (Simon's box, Cc) that certain
+> processes use up all CPU power, because of futexes repeatedly timing
+> out. This seems to only affect certain processes.
+>
+> Simon observes - http://s85.org/owXfmLvt - that
+> Firefox/Thunderbird/Chrome/Java are affected.
+>
+> As for me, it affects VirtualBox, mysqld and ksoftirqd. The processes
+> continue to run and respond. Most weird: I can stop-start mysqld and the
+> issue persists. (I would have expected it to go away because the leap
+> second event would then be in the past that mysqld does not know about
+> anymore.)
+>
+>
+> Is this a kernel issue? glibc?
 
-We should try to avoid changing the tracepoint ABI.  If we pass the
-memslot to handler(), we should be able to reconstruct the gfn and hva.
+Some of the reports that the issue is resolved by calling:
+       $ date -s "`date`"
+suggests that it might be due to clock_was_set() not being called
+after the leap second was added, causing some hrtimer confusion.
 
--- 
-error compiling committee.c: too many arguments to function
+Thomas: does that sound about right?
 
+I've got an initial patch to add the clock_was_set() calls where
+needed, but so far have not been able to reproduce the issue (tried
+firefox and some simpler futex tests).  I'll keep trying and hopefully
+have something to send out tomorrow.
 
+Again, my apologies for the trouble.
+-john
