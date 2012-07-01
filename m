@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab2GAMe5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 08:34:57 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:48409 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641Ab2GAMez (ORCPT
+	id S1754582Ab2GAMwz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 08:52:55 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:60609 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753367Ab2GAMwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 08:34:55 -0400
-Message-ID: <1341146090.4121.3.camel@piranha.localdomain>
-Subject: Re: Logitech HD Webcam C525 does not work when connected to USB 2
- port, works on USB 3
-From: Frederik Himpe <fhimpe@telenet.be>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Date: Sun, 01 Jul 2012 14:34:50 +0200
-In-Reply-To: <Pine.LNX.4.44L0.1206302209270.6344-100000@netrider.rowland.org>
-References: <Pine.LNX.4.44L0.1206302209270.6344-100000@netrider.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 1 Jul 2012 08:52:54 -0400
+Date: Sun, 1 Jul 2012 05:52:22 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Rusty Russell <rusty@ozlabs.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 01/22] rcu: Control RCU_FANOUT_LEAF from
+ boot-time parameter
+Message-ID: <20120701125222.GG2907@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120622151655.GA6249@linux.vnet.ibm.com>
+ <1340378241-6458-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <87y5n4xatd.fsf@rustcorp.com.au>
+ <20120701071757.GA8749@leaf>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120701071757.GA8749@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12070112-2398-0000-0000-0000080F753B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-06-30 at 22:12 -0400, Alan Stern wrote:
-> On Sat, 30 Jun 2012, Frederik Himpe wrote:
-> 
-> > Hello,
+On Sun, Jul 01, 2012 at 12:17:58AM -0700, Josh Triplett wrote:
+> On Sun, Jul 01, 2012 at 03:49:42PM +0930, Rusty Russell wrote:
+> > On Fri, 22 Jun 2012 08:17:00 -0700, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > 
+> > > Although making RCU_FANOUT_LEAF a kernel configuration parameter rather
+> > > than a fixed constant makes it easier for people to decrease cache-miss
+> > > overhead for large systems, it is of little help for people who must
+> > > run a single pre-built kernel binary.
+> > > 
+> > > This commit therefore allows the value of RCU_FANOUT_LEAF to be
+> > > increased (but not decreased!) via a boot-time parameter named
+> > > rcutree.rcu_fanout_leaf.
+> > ...
+> > > +static int rcu_fanout_leaf = CONFIG_RCU_FANOUT_LEAF;
+> > > +module_param(rcu_fanout_leaf, int, 0);
 > > 
-> > I've got a Logitech HD Webcam C525 using the uvcvideo module and I use
-> > Linux 3.5 RC4. When this camera is connected to a USB2 port, it does not
-> > work most of the time. However it does work fine when connected to a USB
-> > 3 port. In Windows it works on both ports.
+> > Maybe it's overkill, but 0400 or 0444 might be a nice touch.
 > 
-> ...
-> 
-> > Complete dmesg and lsusb -v output about a failed attempt (on USB 2
-> > port) and a succeeded attempt (on USB 3) can be found on
-> > http://artipc10.vub.ac.be/~frederik/webcam/
-> 
-> A usbmon trace would be more helpful.  Or perhaps a pair of traces, one 
-> for the USB-2 port and one for the USB-3 port.  See the instructions in 
-> Documentation/usb/usbmon.txt.
+> I agree.  0 almost never makes sense; root should almost always have the
+> ability to read module parameters.  And in this case, I see no reason
+> not to make it 0444.
 
-OK, I created a usbmon trace both from the USB-2 port as the USB-3 port.
-During the trace, I connected the USB webcam to the USB port and started
-mplayer, which failed on USB-2 but worked fine on USB-3.
+Should I do the same for these parameters as well?
 
-The two traces can be found here:
-http://artipc10.vub.ac.be/~frederik/webcam/
+kernel/rcutree.c:module_param(blimit, int, 0);
+kernel/rcutree.c:module_param(qhimark, int, 0);
+kernel/rcutree.c:module_param(qlowmark, int, 0);
 
-Thanks!
--- 
-Frederik Himpe <fhimpe@telenet.be>
+Cut-and-paste, it is a wonderful thing.  ;-)
+
+							Thanx, Paul
 
