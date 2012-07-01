@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab2GAP4j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 11:56:39 -0400
-Received: from nm34-vm3.bullet.mail.bf1.yahoo.com ([72.30.239.75]:44604 "HELO
-	nm34-vm3.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751422Ab2GAP4i (ORCPT
+	id S1754886Ab2GAQEX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 12:04:23 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:50194 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752233Ab2GAQEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 11:56:38 -0400
-X-Greylist: delayed 370 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 Jul 2012 11:56:37 EDT
-X-Yahoo-Newman-Id: 276814.50478.bm@smtp210.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 6j_G81UVM1m6.514mjY2cC_X33Lvjh4gmgmvqHXJs48qUYv
- hgpMpIFNcaynPn3AInp.99AXp9oKS2UxCv1pNnkq.trZ2J_OZw8HhoYklV0Q
- WR3v4FRfhEllHqQJNseMBBmfTro6JkSXnx5Lu9MlYFTOZzN4IgR3VUszi1PL
- 4KNIM0ZrDTSmY9evhFvVqMRUx9PHG1CbEA9UMh_kErtq8CmG2cDdOBSI1ym2
- .Y3skbdI.3o2STv1gHgw9uus_BPY6WuyK36Okewu4Zys58BNfGtiOYZn5E6c
- .BcxigYA0pUS1NVIyGN5gxLvtnN7zBGMo6W7qRYugqj1TRWou8G6FC5Fe.se
- VlElVRnhh2IHL8ntQGzxYPuf9IYdiHeEGWYXizYD3hhM.5bDkq0cKqGboWAx
- 1R5XOKtko2lCAc4zzl9CW1NWl.BUqNJXICRbnBfTKdnDc9Qtp3KCoRG3EzvH
- mxw--
-X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
-From: Jeffrin Jose <ahiliation@yahoo.co.in>
-To: oliver@neukum.name, gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ahiliation@yahoo.co.in
-Subject: [PATCH]usb:class:Fixed coding style issue.
-Date: Sun,  1 Jul 2012 21:25:16 +0530
-Message-Id: <1341158116-3013-1-git-send-email-ahiliation@yahoo.co.in>
-X-Mailer: git-send-email 1.7.10
+	Sun, 1 Jul 2012 12:04:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120701152943.GA4462@mwanda>
+References: <1341149920-12754-1-git-send-email-devendra.aaru@gmail.com>
+	<20120701152943.GA4462@mwanda>
+Date: Sun, 1 Jul 2012 21:34:21 +0530
+Message-ID: <CAHdPZaMJ5i6Gpo5=cFvLQpMR_3f0JCCZQCHFfnrXJCiRjpZuRw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] staging/comedi/drivers: free allocated priv and
+ release resources if comedi_alloc_subdevices
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>, Mori Hess <fmhess@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style issue related to
-prohibited space in drivers/usb/class/cdc-acm.c
+Hi Dan,
 
-Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
----
- drivers/usb/class/cdc-acm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Sun, Jul 1, 2012 at 8:59 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Sun, Jul 01, 2012 at 07:08:40PM +0530, Devendra Naga wrote:
+>> as comedi_alloc_subdevices may fail, we leak out the memory allocated by alloc_private,
+>> and also the I/O regions we requested.
+>>
+>> free out the private data pointer of the driver, and release the I/O regions.
+>>
+>> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+>> ---
+>
+> Please drop this.  Devendra sent a v2 of this.
+>
+> Devendra, please reply to the thread when you want a patch to be
+> dropped.  Don't make other people (me) clean up for you.
+>
+sorry about that, i will say from now.
+> regards,
+> dan carpenter
+>
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index b32ccb4..5ba556d 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -988,7 +988,7 @@ static int acm_probe(struct usb_interface *intf,
- 		case USB_CDC_CALL_MANAGEMENT_TYPE:
- 			call_management_function = buffer[3];
- 			call_interface_num = buffer[4];
--			if ( (quirks & NOT_A_MODEM) == 0 && (call_management_function & 3) != 3)
-+			if ((quirks & NOT_A_MODEM) == 0 && (call_management_function & 3) != 3)
- 				dev_err(&intf->dev, "This device cannot do calls on its own. It is not a modem.\n");
- 			break;
- 		default:
--- 
-1.7.10
-
+Thanks,
