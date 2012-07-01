@@ -1,71 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab2GRQeh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Jul 2012 12:34:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40632 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754981Ab2GRQef (ORCPT
+	id S1755088Ab2GRQlA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Jul 2012 12:41:00 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:32144 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751867Ab2GRQk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Jul 2012 12:34:35 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org
-Cc: namhyung@kernel.org, Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH v2] [trivial] tools: perf: Fix typo in tools/perf
-Date: Thu, 19 Jul 2012 01:35:16 +0900
-Message-Id: <1342629316-19844-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.11.2.249.g31c7954
-In-Reply-To: <1342542059-9756-1-git-send-email-standby24x7@gmail.com>
-References: <1342542059-9756-1-git-send-email-standby24x7@gmail.com>
+	Wed, 18 Jul 2012 12:40:57 -0400
+Message-ID: <201207181640.q6IGet7P007227@lab-41.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Sun, 1 Jul 2012 14:43:47 -0400
+Subject: [PATCH 0/3] net: various tilegx networking fixes
+To: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in tools/perf.
+This series of fixes corrects a few bugs or style issues observed
+in the tilegx network driver.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- tools/perf/util/callchain.h         | 2 +-
- tools/perf/util/parse-events-test.c | 2 +-
- tools/perf/util/python-ext-sources  | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+David, once any potential issues with these patches are resolved,
+would you prefer to take them from email, pull them from my net tree,
+or have me push them as part of the tile tree?
 
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 3bdb407..bf2d22c 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -58,7 +58,7 @@ struct callchain_list {
- /*
-  * A callchain cursor is a single linked list that
-  * let one feed a callchain progressively.
-- * It keeps persitent allocated entries to minimize
-+ * It keeps persistently allocated entries to minimize
-  * allocations.
-  */
- struct callchain_cursor_node {
-diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
-index 76b98e2..8cdf147 100644
---- a/tools/perf/util/parse-events-test.c
-+++ b/tools/perf/util/parse-events-test.c
-@@ -609,7 +609,7 @@ static int test_pmu(void)
- 
- 	ret = stat(path, &st);
- 	if (ret)
--		pr_debug("ommiting PMU cpu tests\n");
-+		pr_debug("omitting PMU cpu tests\n");
- 	return !ret;
- }
- 
-diff --git a/tools/perf/util/python-ext-sources b/tools/perf/util/python-ext-sources
-index 2884e67..f4e37ce 100644
---- a/tools/perf/util/python-ext-sources
-+++ b/tools/perf/util/python-ext-sources
-@@ -1,5 +1,5 @@
- #
--# List of files needed by perf python extention
-+# List of files needed by perf python extension
- #
- # Each source file must be placed on its own line so that it can be
- # processed by Makefile and util/setup.py accordingly.
--- 
-1.7.11.2.249.g31c7954
+The tree is at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git net
+
+Chris Metcalf (3):
+      net: tilegx driver bugfix (be explicit about percpu queue number)
+      tilegx net driver: handle payload data not in frags
+      tilegx net: use eth_hw_addr_random(), not random_ether_addr()
+
+ drivers/net/ethernet/tile/tilegx.c |   61 ++++++++++++++++++++----------------
+ 1 file changed, 34 insertions(+), 27 deletions(-)
+
+Thanks!
 
