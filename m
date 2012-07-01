@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932499Ab2GAS0D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:26:03 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:48006 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932123Ab2GASZ6 (ORCPT
+	id S1755922Ab2GASQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:16:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46898 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755476Ab2GASQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 14:25:58 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: hacklu <embedway.linux@gmail.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <4FF085B1.6070604@zytor.com> (H. Peter Anvin's message of "Sun,
-	01 Jul 2012 10:15:29 -0700")
-References: <4FB492F7.8050401@gmail.com> <87ipf9gtsb.fsf@xmission.com>
-	<4FCAD590.8000506@zytor.com> <87obp0bxdv.fsf@xmission.com>
-	<4FCB602B.70907@zytor.com> <87fwacb0jq.fsf_-_@xmission.com>
-	<877gvob0g4.fsf_-_@xmission.com> <4FF06701.6010004@zytor.com>
-	<4FF06DF4.4000006@zytor.com> <87wr2nsbvi.fsf@xmission.com>
-	<4FF0769F.8090105@zytor.com> <87sjdbsb0v.fsf@xmission.com>
-	<4FF07E66.2020706@zytor.com> <87d34fs914.fsf@xmission.com>
-	<4FF085B1.6070604@zytor.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-Date: Sun, 01 Jul 2012 11:25:48 -0700
-Message-ID: <87a9zj9w43.fsf@xmission.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/e2TzWK7/oH3/eDTIBTt2K81a36ZtoBiQ=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0267]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"H. Peter Anvin" <hpa@zytor.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 2/2] x86, boot: Optimize the elf header handling.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Sun, 1 Jul 2012 14:16:22 -0400
+Message-Id: <20120701172007.558260503@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Sun, 01 Jul 2012 18:20:12 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Henrik Rydberg <rydberg@euromail.se>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 06/48] hwmon: (applesmc) Limit key length in warning messages
+In-Reply-To: <20120701172006.535271340@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"H. Peter Anvin" <hpa@zytor.com> writes:
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-> On 07/01/2012 10:09 AM, Eric W. Biederman wrote:
->>
->> I am suspecting something similar.  At the moment I am trying
->> to remember how to get early printk working in misc.c so I can
->> poke around a bit more.
->>
->> The theory that I was working on, that used to be true, and
->> seems to be true of everything except the percpu section is
->> that objcopy just does the right thing when creating vmlinux.bin.
->> vmlinux.bin being what we compress.
->>
->> I don't see anything obviously wrong with the headers of vmlinux.bin
->> although we still unnecessarily have section headers in that file.
->>
->
-> We leave the section headers in for the benefit of Xen IIRC.
+------------------
 
-Well I see what is going on now.
+From: Henrik Rydberg <rydberg@euromail.se>
 
-In the vmlinux the paddrs and the poffsests stop tracking when they
-come to the percpu PT_LOAD segment.
+commit ac852edb47b15900886ba2564eeeb13b3b526e3e upstream.
 
-It looks like we give the percpu segment a 4K alignment in memory
-and a 2M alignment in the file.
+Key lookups may call read_smc() with a fixed-length key string,
+and if the lookup fails, trailing stack content may appear in the
+kernel log. Fixed with this patch.
 
-It looks like something is causing ld to compute an unfortunate physical
-load address for the percpu section.
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/hwmon/applesmc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-At first glace I would say that is a bug.  Either we need the alignment
-or we don't.  But if we need the alignment we certainly need it to
-be respected for the real memory locations of the init symbols..
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index f082e48..70d62f5 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -215,7 +215,7 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
+ 	int i;
+ 
+ 	if (send_command(cmd) || send_argument(key)) {
+-		pr_warn("%s: read arg fail\n", key);
++		pr_warn("%.4s: read arg fail\n", key);
+ 		return -EIO;
+ 	}
+ 
+@@ -223,7 +223,7 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
+ 
+ 	for (i = 0; i < len; i++) {
+ 		if (__wait_status(0x05)) {
+-			pr_warn("%s: read data fail\n", key);
++			pr_warn("%.4s: read data fail\n", key);
+ 			return -EIO;
+ 		}
+ 		buffer[i] = inb(APPLESMC_DATA_PORT);
 
-Ugh.
-
-Eric
 
