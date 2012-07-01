@@ -1,546 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab2GAWOD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 18:14:03 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56910 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035Ab2GAWOA (ORCPT
+	id S1755850Ab2GAWQf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 18:16:35 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51529 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753803Ab2GAWQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 18:14:00 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org
-Cc: Grant Likely <grant.likely@secretlab.ca>, mturquette@linaro.org,
-        sboyd@codeaurora.org, skannan@codeaurora.org, shawn.guo@linaro.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Mike Turquette <mturquette@ti.com>
-Subject: [PATCH v6] clk: add DT clock binding support
-Date: Sun,  1 Jul 2012 17:13:42 -0500
-Message-Id: <1341180822-31177-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1339512111-11172-2-git-send-email-robherring2@gmail.com>
-References: <1339512111-11172-2-git-send-email-robherring2@gmail.com>
+	Sun, 1 Jul 2012 18:16:34 -0400
+Message-ID: <4FF0CC3E.8010303@gmail.com>
+Date: Sun, 01 Jul 2012 16:16:30 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: psuriset@linux.vnet.ibm.com, Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] perf kvm: fix segfault with default guest arguments
+References: <1340599286-89757-1-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1340599286-89757-1-git-send-email-dsahern@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grant Likely <grant.likely@secretlab.ca>
+Arnaldo:
 
-Based on work 1st by Ben Herrenschmidt and Jeremy Kerr, then by Grant
-Likely, this patch adds support to clk_get to allow drivers to retrieve
-clock data from the device tree.
+Please ignore this one in favor of the patch I just sent -- 'perf kvm: 
+fix regression with guest machine creation'.
 
-Platforms scan for clocks in DT with of_clk_init and a match table, and
-the register a provider through of_clk_add_provider. The provider's
-clk_src_get function will be called when a device references the
-provider's OF node for a clock reference.
 
-v6 (Rob Herring):
-    - Return error values instead of NULL to match clock framework
-      expectations
+On 6/24/12 10:41 PM, David Ahern wrote:
+> (This time with actual backtrace; forgot to remove the leading '#' on the frames.)
+>
+> File generated with:
+> $ perf kvm --host --guest --guestkallsyms=/tmp/guest-kallsyms
+>      --guestmodules=/tmp/guest-modules record -a
+>
+> The report command:
+> $ perf kvm --host --guest --guestkallsyms=/tmp/guest-kallsyms
+>      --guestmodules=/tmp/guest-modules report
+>
+> dies with a SEGFAULT:
+> Program received signal SIGSEGV, Segmentation fault.
+> 0x000000000046dd7b in machine__mmap_name (self=0x0, bf=0x7fffffffbd20 "q\021", size=4096) at util/map.c:715
+> 715			snprintf(bf, size, "[%s.%d]", "guest.kernel.kallsyms", self->pid);
+>
+> (gdb) bt
+> 0  0x000000000046dd7b in machine__mmap_name (self=0x0, bf=0x7fffffffbd20 "q\021", size=4096) at util/map.c:715
+> 1  0x0000000000444161 in perf_event__process_kernel_mmap (tool=0x7fffffffdd80, event=0x7ffff7fb4120, machine=0x0) at util/event.c:562
+> 2  0x0000000000444642 in perf_event__process_mmap (tool=0x7fffffffdd80, event=0x7ffff7fb4120, sample=0x7fffffffd210, machine=0x0)
+>      at util/event.c:668
+> 3  0x0000000000470e0b in perf_session_deliver_event (session=0x915ca0, event=0x7ffff7fb4120, sample=0x7fffffffd210, tool=0x7fffffffdd80,
+>      file_offset=8480) at util/session.c:979
+> 4  0x000000000047032e in flush_sample_queue (s=0x915ca0, tool=0x7fffffffdd80) at util/session.c:679
+> 5  0x0000000000471c8d in __perf_session__process_events (session=0x915ca0, data_offset=400, data_size=150448, file_size=150848, tool=
+>      0x7fffffffdd80) at util/session.c:1363
+> 6  0x0000000000471d42 in perf_session__process_events (self=0x915ca0, tool=0x7fffffffdd80) at util/session.c:1379
+> 7  0x000000000042484a in __cmd_report (rep=0x7fffffffdd80) at builtin-report.c:368
+> 8  0x0000000000425bf1 in cmd_report (argc=0, argv=0x915b00, prefix=0x0) at builtin-report.c:756
+> 9  0x0000000000438505 in __cmd_report (argc=4, argv=0x7fffffffe260) at builtin-kvm.c:84
+> 10 0x000000000043882a in cmd_kvm (argc=4, argv=0x7fffffffe260, prefix=0x0) at builtin-kvm.c:131
+> 11 0x00000000004152cd in run_builtin (p=0x7a54e8, argc=9, argv=0x7fffffffe260) at perf.c:273
+> 12 0x00000000004154c7 in handle_internal_command (argc=9, argv=0x7fffffffe260) at perf.c:345
+> 13 0x0000000000415613 in run_argv (argcp=0x7fffffffe14c, argv=0x7fffffffe140) at perf.c:389
+> 14 0x0000000000415899 in main (argc=9, argv=0x7fffffffe260) at perf.c:487
+>
+> If no samples hit within a guest module then no build id events are written
+> to the header during the record. On the report side this cases no 'machine'
+> to be generated for the default guest (pid == 0) leading to a
+> machine == NULL in perf_session_deliver_event.
+>
+> perf's handling of default kallsyms and guest-modules needs to be reworked.
+> Until then perf should at least not segfault.
+>
+> Reported-by: Pradeep Kumar Surisetty <psuriset@linux.vnet.ibm.com>
+> CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Namhyung Kim <namhyung@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+>
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> ---
+>   tools/perf/util/session.c |    2 ++
+>   1 file changed, 2 insertions(+)
+>
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index c3e399b..3999d5e 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -976,6 +976,8 @@ static int perf_session_deliver_event(struct perf_session *session,
+>   		}
+>   		return tool->sample(tool, event, sample, evsel, machine);
+>   	case PERF_RECORD_MMAP:
+> +		if (machine == NULL)
+> +			return 0;
+>   		return tool->mmap(tool, event, sample, machine);
+>   	case PERF_RECORD_COMM:
+>   		return tool->comm(tool, event, sample, machine);
+>
 
-v5 (Rob Herring):
-    - Move from drivers/of into common clock subsystem
-    - Squashed "dt/clock: add a simple provider get function" and
-      "dt/clock: add function to get parent clock name"
-    - Rebase to 3.4-rc1
-    - Drop CONFIG_OF_CLOCK and just use CONFIG_OF
-    - Add missing EXPORT_SYMBOL to various functions
-    - s/clock-output-name/clock-output-names/
-    - Define that fixed-clock binding is a single output
-
-v4 (Rob Herring):
-    - Rework for common clk subsystem
-    - Add of_clk_get_parent_name function
-
-v3: - Clarified documentation
-
-v2: - fixed errant ';' causing compile error
-    - Editorial fixes from Shawn Guo
-    - merged in adding lookup to clkdev
-    - changed property names to match established convention. After
-      working with the binding a bit it really made more sense to follow the
-      lead of 'reg', 'gpios' and 'interrupts' by making the input simply
-      'clocks' & 'clock-names' instead of 'clock-input-*', and to only use
-      clock-output* for the producer nodes. (Sorry Shawn, this will mean
-      you need to change some code, but it should be trivial)
-    - Add ability to inherit clocks from parent nodes by using an empty
-      'clock-ranges' property.  Useful for busses.  I could use some feedback
-      on the new property name, 'clock-ranges' doesn't feel right to me.
-
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Reviewed-by: Shawn Guo <shawn.guo@freescale.com>
-Cc: Sascha Hauer <kernel@pengutronix.de>
-Cc: Mike Turquette <mturquette@ti.com>
----
- .../devicetree/bindings/clock/clock-bindings.txt   |  117 ++++++++++++++++
- .../devicetree/bindings/clock/fixed-clock.txt      |   21 +++
- drivers/clk/clk.c                                  |  140 ++++++++++++++++++++
- drivers/clk/clkdev.c                               |   77 +++++++++++
- include/linux/clk-provider.h                       |   14 ++
- include/linux/clk.h                                |   19 +++
- 6 files changed, 388 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/clock-bindings.txt
- create mode 100644 Documentation/devicetree/bindings/clock/fixed-clock.txt
-
-diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt b/Documentation/devicetree/bindings/clock/clock-bindings.txt
-new file mode 100644
-index 0000000..eb65d41
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
-@@ -0,0 +1,117 @@
-+This binding is a work-in-progress, and are based on some experimental
-+work by benh[1].
-+
-+Sources of clock signal can be represented by any node in the device
-+tree.  Those nodes are designated as clock providers.  Clock consumer
-+nodes use a phandle and clock specifier pair to connect clock provider
-+outputs to clock inputs.  Similar to the gpio specifiers, a clock
-+specifier is an array of one more more cells identifying the clock
-+output on a device.  The length of a clock specifier is defined by the
-+value of a #clock-cells property in the clock provider node.
-+
-+[1] http://patchwork.ozlabs.org/patch/31551/
-+
-+==Clock providers==
-+
-+Required properties:
-+#clock-cells:	   Number of cells in a clock specifier; Typically 0 for nodes
-+		   with a single clock output and 1 for nodes with multiple
-+		   clock outputs.
-+
-+Optional properties:
-+clock-output-names: Recommended to be a list of strings of clock output signal
-+		    names indexed by the first cell in the clock specifier.
-+		    However, the meaning of clock-output-names is domain
-+		    specific to the clock provider, and is only provided to
-+		    encourage using the same meaning for the majority of clock
-+		    providers.  This format may not work for clock providers
-+		    using a complex clock specifier format.  In those cases it
-+		    is recommended to omit this property and create a binding
-+		    specific names property.
-+
-+		    Clock consumer nodes must never directly reference
-+		    the provider's clock-output-names property.
-+
-+For example:
-+
-+    oscillator {
-+        #clock-cells = <1>;
-+        clock-output-names = "ckil", "ckih";
-+    };
-+
-+- this node defines a device with two clock outputs, the first named
-+  "ckil" and the second named "ckih".  Consumer nodes always reference
-+  clocks by index. The names should reflect the clock output signal
-+  names for the device.
-+
-+==Clock consumers==
-+
-+Required properties:
-+clocks:		List of phandle and clock specifier pairs, one pair
-+		for each clock input to the device.  Note: if the
-+		clock provider specifies '0' for #clock-cells, then
-+		only the phandle portion of the pair will appear.
-+
-+Optional properties:
-+clock-names:	List of clock input name strings sorted in the same
-+		order as the clocks property.  Consumers drivers
-+		will use clock-names to match clock input names
-+		with clocks specifiers.
-+clock-ranges:	Empty property indicating that child nodes can inherit named
-+		clocks from this node. Useful for bus nodes to provide a
-+		clock to their children.
-+
-+For example:
-+
-+    device {
-+        clocks = <&osc 1>, <&ref 0>;
-+        clock-names = "baud", "register";
-+    };
-+
-+
-+This represents a device with two clock inputs, named "baud" and "register".
-+The baud clock is connected to output 1 of the &osc device, and the register
-+clock is connected to output 0 of the &ref.
-+
-+==Example==
-+
-+    /* external oscillator */
-+    osc: oscillator {
-+        compatible = "fixed-clock";
-+        #clock-cells = <1>;
-+        clock-frequency  = <32678>;
-+        clock-output-names = "osc";
-+    };
-+
-+    /* phase-locked-loop device, generates a higher frequency clock
-+     * from the external oscillator reference */
-+    pll: pll@4c000 {
-+        compatible = "vendor,some-pll-interface"
-+        #clock-cells = <1>;
-+        clocks = <&osc 0>;
-+        clock-names = "ref";
-+        reg = <0x4c000 0x1000>;
-+        clock-output-names = "pll", "pll-switched";
-+    };
-+
-+    /* UART, using the low frequency oscillator for the baud clock,
-+     * and the high frequency switched PLL output for register
-+     * clocking */
-+    uart@a000 {
-+        compatible = "fsl,imx-uart";
-+        reg = <0xa000 0x1000>;
-+        interrupts = <33>;
-+        clocks = <&osc 0>, <&pll 1>;
-+        clock-names = "baud", "register";
-+    };
-+
-+This DT fragment defines three devices: an external oscillator to provide a
-+low-frequency reference clock, a PLL device to generate a higher frequency
-+clock signal, and a UART.
-+
-+* The oscillator is fixed-frequency, and provides one clock output, named "osc".
-+* The PLL is both a clock provider and a clock consumer. It uses the clock
-+  signal generated by the external oscillator, and provides two output signals
-+  ("pll" and "pll-switched").
-+* The UART has its baud clock connected the external oscillator and its
-+  register clock connected to the PLL clock (the "pll-switched" signal)
-diff --git a/Documentation/devicetree/bindings/clock/fixed-clock.txt b/Documentation/devicetree/bindings/clock/fixed-clock.txt
-new file mode 100644
-index 0000000..0b1fe78
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/fixed-clock.txt
-@@ -0,0 +1,21 @@
-+Binding for simple fixed-rate clock sources.
-+
-+This binding uses the common clock binding[1].
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+Required properties:
-+- compatible : shall be "fixed-clock".
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- clock-frequency : frequency of clock in Hz. Should be a single cell.
-+
-+Optional properties:
-+- gpios : From common gpio binding; gpio connection to clock enable pin.
-+- clock-output-names : From common clock binding.
-+
-+Example:
-+	clock {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <1000000000>;
-+	};
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index dcbe056..92df8ac 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -16,6 +16,7 @@
- #include <linux/err.h>
- #include <linux/list.h>
- #include <linux/slab.h>
-+#include <linux/of.h>
- 
- static DEFINE_SPINLOCK(enable_lock);
- static DEFINE_MUTEX(prepare_lock);
-@@ -1552,3 +1553,142 @@ int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb)
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(clk_notifier_unregister);
-+
-+#ifdef CONFIG_OF
-+/**
-+ * struct of_clk_provider - Clock provider registration structure
-+ * @link: Entry in global list of clock providers
-+ * @node: Pointer to device tree node of clock provider
-+ * @get: Get clock callback.  Returns NULL or a struct clk for the
-+ *       given clock specifier
-+ * @data: context pointer to be passed into @get callback
-+ */
-+struct of_clk_provider {
-+	struct list_head link;
-+
-+	struct device_node *node;
-+	struct clk *(*get)(struct of_phandle_args *clkspec, void *data);
-+	void *data;
-+};
-+
-+static LIST_HEAD(of_clk_providers);
-+static DEFINE_MUTEX(of_clk_lock);
-+
-+struct clk *of_clk_src_simple_get(struct of_phandle_args *clkspec,
-+				     void *data)
-+{
-+	return data;
-+}
-+EXPORT_SYMBOL_GPL(of_clk_src_simple_get);
-+
-+/**
-+ * of_clk_add_provider() - Register a clock provider for a node
-+ * @np: Device node pointer associated with clock provider
-+ * @clk_src_get: callback for decoding clock
-+ * @data: context pointer for @clk_src_get callback.
-+ */
-+int of_clk_add_provider(struct device_node *np,
-+			struct clk *(*clk_src_get)(struct of_phandle_args *clkspec,
-+						   void *data),
-+			void *data)
-+{
-+	struct of_clk_provider *cp;
-+
-+	cp = kzalloc(sizeof(struct of_clk_provider), GFP_KERNEL);
-+	if (!cp)
-+		return -ENOMEM;
-+
-+	cp->node = of_node_get(np);
-+	cp->data = data;
-+	cp->get = clk_src_get;
-+
-+	mutex_lock(&of_clk_lock);
-+	list_add(&cp->link, &of_clk_providers);
-+	mutex_unlock(&of_clk_lock);
-+	pr_debug("Added clock from %s\n", np->full_name);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(of_clk_add_provider);
-+
-+/**
-+ * of_clk_del_provider() - Remove a previously registered clock provider
-+ * @np: Device node pointer associated with clock provider
-+ */
-+void of_clk_del_provider(struct device_node *np)
-+{
-+	struct of_clk_provider *cp;
-+
-+	mutex_lock(&of_clk_lock);
-+	list_for_each_entry(cp, &of_clk_providers, link) {
-+		if (cp->node == np) {
-+			list_del(&cp->link);
-+			of_node_put(cp->node);
-+			kfree(cp);
-+			break;
-+		}
-+	}
-+	mutex_unlock(&of_clk_lock);
-+}
-+EXPORT_SYMBOL_GPL(of_clk_del_provider);
-+
-+struct clk *of_clk_get_from_provider(struct of_phandle_args *clkspec)
-+{
-+	struct of_clk_provider *provider;
-+	struct clk *clk = ERR_PTR(-ENOENT);
-+
-+	/* Check if we have such a provider in our array */
-+	mutex_lock(&of_clk_lock);
-+	list_for_each_entry(provider, &of_clk_providers, link) {
-+		if (provider->node == clkspec->np)
-+			clk = provider->get(clkspec, provider->data);
-+		if (!IS_ERR(clk))
-+			break;
-+	}
-+	mutex_unlock(&of_clk_lock);
-+
-+	return clk;
-+}
-+
-+const char *of_clk_get_parent_name(struct device_node *np, int index)
-+{
-+	struct of_phandle_args clkspec;
-+	const char *clk_name;
-+	int rc;
-+
-+	if (index < 0)
-+		return NULL;
-+
-+	rc = of_parse_phandle_with_args(np, "clocks", "#clock-cells", index,
-+					&clkspec);
-+	if (rc)
-+		return NULL;
-+
-+	if (of_property_read_string_index(clkspec.np, "clock-output-names",
-+					  clkspec.args_count ? clkspec.args[0] : 0,
-+					  &clk_name) < 0)
-+		clk_name = clkspec.np->name;
-+
-+	of_node_put(clkspec.np);
-+	return clk_name;
-+}
-+EXPORT_SYMBOL_GPL(of_clk_get_parent_name);
-+
-+/**
-+ * of_clk_init() - Scan and init clock providers from the DT
-+ * @matches: array of compatible values and init functions for providers.
-+ *
-+ * This function scans the device tree for matching clock providers and
-+ * calls their initialization functions
-+ */
-+void __init of_clk_init(const struct of_device_id *matches)
-+{
-+	struct device_node *np;
-+
-+	for_each_matching_node(np, matches) {
-+		const struct of_device_id *match = of_match_node(matches, np);
-+		of_clk_init_cb_t clk_init_cb = match->data;
-+		clk_init_cb(np);
-+	}
-+}
-+#endif
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index c535cf8..20649b3 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -19,10 +19,80 @@
- #include <linux/mutex.h>
- #include <linux/clk.h>
- #include <linux/clkdev.h>
-+#include <linux/of.h>
- 
- static LIST_HEAD(clocks);
- static DEFINE_MUTEX(clocks_mutex);
- 
-+#ifdef CONFIG_OF
-+struct clk *of_clk_get(struct device_node *np, int index)
-+{
-+	struct of_phandle_args clkspec;
-+	struct clk *clk;
-+	int rc;
-+
-+	if (index < 0)
-+		return ERR_PTR(-EINVAL);
-+
-+	rc = of_parse_phandle_with_args(np, "clocks", "#clock-cells", index,
-+					&clkspec);
-+	if (rc)
-+		return ERR_PTR(rc);
-+
-+	clk = of_clk_get_from_provider(&clkspec);
-+	of_node_put(clkspec.np);
-+	return clk;
-+}
-+EXPORT_SYMBOL(of_clk_get);
-+
-+/**
-+ * of_clk_get_by_name() - Parse and lookup a clock referenced by a device node
-+ * @np: pointer to clock consumer node
-+ * @name: name of consumer's clock input, or NULL for the first clock reference
-+ *
-+ * This function parses the clocks and clock-names properties,
-+ * and uses them to look up the struct clk from the registered list of clock
-+ * providers.
-+ */
-+struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
-+{
-+	struct clk *clk = ERR_PTR(-ENOENT);
-+
-+	/* Walk up the tree of devices looking for a clock that matches */
-+	while (np) {
-+		int index = 0;
-+
-+		/*
-+		 * For named clocks, first look up the name in the
-+		 * "clock-names" property.  If it cannot be found, then
-+		 * index will be an error code, and of_clk_get() will fail.
-+		 */
-+		if (name)
-+			index = of_property_match_string(np, "clock-names", name);
-+		clk = of_clk_get(np, index);
-+		if (!IS_ERR(clk))
-+			break;
-+		else if (name && index >= 0) {
-+			pr_err("ERROR: could not get clock %s:%s(%i)\n",
-+				np->full_name, name ? name : "", index);
-+			return clk;
-+		}
-+
-+		/*
-+		 * No matching clock found on this node.  If the parent node
-+		 * has a "clock-ranges" property, then we can try one of its
-+		 * clocks.
-+		 */
-+		np = np->parent;
-+		if (np && !of_get_property(np, "clock-ranges", NULL))
-+			break;
-+	}
-+
-+	return clk;
-+}
-+EXPORT_SYMBOL(of_clk_get_by_name);
-+#endif
-+
- /*
-  * Find the correct struct clk for the device and connection ID.
-  * We do slightly fuzzy matching here:
-@@ -83,6 +153,13 @@ EXPORT_SYMBOL(clk_get_sys);
- struct clk *clk_get(struct device *dev, const char *con_id)
- {
- 	const char *dev_id = dev ? dev_name(dev) : NULL;
-+	struct clk *clk;
-+
-+	if (dev) {
-+		clk = of_clk_get_by_name(dev->of_node, con_id);
-+		if (clk && __clk_get(clk))
-+			return clk;
-+	}
- 
- 	return clk_get_sys(dev_id, con_id);
- }
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 4a0b483..acfef45 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -334,5 +334,19 @@ void __clk_unprepare(struct clk *clk);
- void __clk_reparent(struct clk *clk, struct clk *new_parent);
- unsigned long __clk_round_rate(struct clk *clk, unsigned long rate);
- 
-+struct of_device_id;
-+
-+typedef void (*of_clk_init_cb_t)(struct device_node *);
-+
-+int of_clk_add_provider(struct device_node *np,
-+			struct clk *(*clk_src_get)(struct of_phandle_args *args,
-+						   void *data),
-+			void *data);
-+void of_clk_del_provider(struct device_node *np);
-+struct clk *of_clk_src_simple_get(struct of_phandle_args *clkspec,
-+				  void *data);
-+const char *of_clk_get_parent_name(struct device_node *np, int index);
-+void of_clk_init(const struct of_device_id *matches);
-+
- #endif /* CONFIG_COMMON_CLK */
- #endif /* CLK_PROVIDER_H */
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index ad5c43e..8b70342 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -310,4 +310,23 @@ struct clk *clk_get_sys(const char *dev_id, const char *con_id);
- int clk_add_alias(const char *alias, const char *alias_dev_name, char *id,
- 			struct device *dev);
- 
-+struct device_node;
-+struct of_phandle_args;
-+
-+#ifdef CONFIG_OF
-+struct clk *of_clk_get(struct device_node *np, int index);
-+struct clk *of_clk_get_by_name(struct device_node *np, const char *name);
-+struct clk *of_clk_get_from_provider(struct of_phandle_args *clkspec);
-+#else
-+static inline struct clk *of_clk_get(struct device_node *np, int index)
-+{
-+	return NULL;
-+}
-+static inline struct clk *of_clk_get_by_name(struct device_node *np,
-+					     const char *name)
-+{
-+	return NULL;
-+}
-+#endif
-+
- #endif
--- 
-1.7.9.5
 
