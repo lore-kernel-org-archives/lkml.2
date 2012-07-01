@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932534Ab2GAPFJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 11:05:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14072 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932123Ab2GAPFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 11:05:07 -0400
-Date: Sun, 1 Jul 2012 18:05:06 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, mtosatti@redhat.com
-Cc: x86@kernel.org, kvm@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH] apic: fix kvm build on UP without IOAPIC
-Message-ID: <20120701150506.GA31304@redhat.com>
+	id S932526Ab2GAPGC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 11:06:02 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:42051 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932123Ab2GAPGA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 11:06:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+In-Reply-To: <87395gyzbf.fsf@sejong.aot.lge.com>
+References: <1339944948-3193-1-git-send-email-namhyung@kernel.org>
+	<20120618090501.GB28824@gmail.com>
+	<87mx3zhekz.fsf@sejong.aot.lge.com>
+	<CAMO-S2jPvVZndo3_cM67ZvXXV5y5CKvxe-x6YGfguq3w9mVbAg@mail.gmail.com>
+	<CAMO-S2j74+=9QJ40-=3Zj9a2M2wnCC474vsm216GP-BB9OWbsg@mail.gmail.com>
+	<87395gyzbf.fsf@sejong.aot.lge.com>
+Date: Mon, 2 Jul 2012 00:05:59 +0900
+Message-ID: <CAMO-S2g+cuv85XBfTQJTjwp4GcwT2WivLHD9X_gca67TFCBGgQ@mail.gmail.com>
+Subject: Re: [PATCH] perf tools: Fix an error on perf-bench document
+From: Hitoshi Mitake <h.mitake@gmail.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On UP i386, when APIC is disabled
-# CONFIG_X86_UP_APIC is not set
-# CONFIG_PCI_IOAPIC is not set
+On Thu, Jun 28, 2012 at 10:56 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+> On Wed, 27 Jun 2012 23:28:22 +0900, Hitoshi Mitake wrote:
+>> I wrote the simple fix for eliminatng wrong usage of "clock":
+>> https://github.com/mitake/linux/commit/b7836d41deff430c16058ca729120dccfa41e74e
+>>
+>> This patch assumes the change made by the Namhyung's patch. So I'm
+>> planning to send this after the Namhyung's patch is applied to tip
+>> tree. Or should the patches be unified before applied?
+>
+> The patch is now in Arnaldo's tree. So you can see it in tip tree soon
+> unless something bad happens.
+>
+> Anyway, looking at your commit (I think it's better just to send it via
+> email with mentioning the dependency), it seems only addresses memset
+> part but I think memcpy has the same problem, right?
 
-code looking at apicdrivers never has any effect but it
-still gets compiled in. In particular, this causes
-build failures with kvm, but it generally bloats the kernel
-unnecessarily.
+Thanks for your pointing. I had to fix the problem of memcpy too.
+I'll send the new patch later.
 
-Fix by defining both __apicdrivers and __apicdrivers_end
-to be NULL when CONFIG_X86_LOCAL_APIC is unset: I verified
-that as the result any loop scanning __apicdrivers gets optimized out by
-the compiler.
 
-Warning: a .config with apic disabled doesn't seem to boot
-for me (even without this patch). Still verifying why,
-meanwhile this patch is compile-tested only.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
-
-Note: if this patch makes sense, can x86 maintainers
-please ACK applying it through the kvm tree, since that is
-where we see the issue that it addresses?
-Avi, Marcelo, maybe you can carry this in kvm/linux-next as a temporary
-measure so that linux-next builds?
-
- arch/x86/include/asm/apic.h | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index eaff479..aa5b2ee 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -417,7 +417,12 @@ extern struct apic *apic;
- 	__aligned(sizeof(struct apic *))				\
- 	__section(.apicdrivers) = { &sym1, &sym2 }
- 
-+#ifdef CONFIG_X86_LOCAL_APIC
- extern struct apic *__apicdrivers[], *__apicdrivers_end[];
-+#else
-+#define __apicdrivers ((struct apic **)NULL)
-+#define __apicdrivers_end ((struct apic **)NULL)
-+#endif
- 
- /*
-  * APIC functionality to boot other CPUs - only used on SMP:
 -- 
-MST
+Hitoshi Mitake
+h.mitake@gmail.com
