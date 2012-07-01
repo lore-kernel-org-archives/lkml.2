@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413Ab2GASZZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:25:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46966 "EHLO
+	id S1756131Ab2GASZX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:25:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46967 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932071Ab2GASQg (ORCPT
+	by vger.kernel.org with ESMTP id S932083Ab2GASQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 1 Jul 2012 14:16:36 -0400
-Message-Id: <20120701172013.334132912@decadent.org.uk>
+Message-Id: <20120701172008.531189599@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 01 Jul 2012 18:20:53 +0100
+Date: Sun, 01 Jul 2012 18:20:19 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stuart Hayes <Stuart_Hayes@Dell.com>,
-        Len Brown <len.brown@intel.com>
-Subject: [ 47/48] acpi_pad: fix power_saving thread deadlock
+        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Eric Anholt <eric@anholt.net>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Timo Aaltonen <timo.aaltonen@canonical.com>
+Subject: [ 13/48] drm/i915: Remove use of the autoreported ringbuffer HEAD  position
 In-Reply-To: <20120701172006.535271340@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,65 +30,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stuart Hayes <Stuart_Hayes@Dell.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 5f1601261050251a5ca293378b492a69d590dacb upstream.
+This is a revert of 6aa56062eaba67adfb247cded244fd877329588d.
 
-The acpi_pad driver can get stuck in destroy_power_saving_task()
-waiting for kthread_stop() to stop a power_saving thread.  The problem
-is that the isolated_cpus_lock mutex is owned when
-destroy_power_saving_task() calls kthread_stop(), which waits for a
-power_saving thread to end, and the power_saving thread tries to
-acquire the isolated_cpus_lock when it calls round_robin_cpu().  This
-patch fixes the issue by making round_robin_cpu() use its own mutex.
+This was originally introduced to workaround reads of the ringbuffer
+registers returning 0 on SandyBridge causing hangs due to ringbuffer
+overflow. The root cause here was reads through the GT powerwell require
+the forcewake dance, something we only learnt of later. Now it appears
+that reading the reported head position from the HWS is returning
+garbage, leading once again to hangs.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=42981
+For example, on q35 the autoreported head reports:
+  [  217.975608] head now 00010000, actual 00010000
+  [  436.725613] head now 00200000, actual 00200000
+  [  462.956033] head now 00210000, actual 00210010
+  [  485.501409] head now 00400000, actual 00400020
+  [  508.064280] head now 00410000, actual 00410000
+  [  530.576078] head now 00600000, actual 00600020
+  [  553.273489] head now 00610000, actual 00610018
+which appears reasonably sane. In contrast, if we look at snb:
+  [  141.970680] head now 00e10000, actual 00008238
+  [  141.974062] head now 02734000, actual 000083c8
+  [  141.974425] head now 00e10000, actual 00008488
+  [  141.980374] head now 032b5000, actual 000088b8
+  [  141.980885] head now 03271000, actual 00008950
+  [  142.040628] head now 02101000, actual 00008b40
+  [  142.180173] head now 02734000, actual 00009050
+  [  142.181090] head now 00000000, actual 00000ae0
+  [  142.183737] head now 02734000, actual 00009050
 
-Signed-off-by: Stuart Hayes <Stuart_Hayes@Dell.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+In addition, the automatic reporting of the head position is scheduled
+to be defeatured in the future. It has no more utility, remove it.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=45492
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Tested-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+(cherry picked from commit 5d031e5b633d910f35e6e0abce94d9d842390006)
+Signed-off-by: Timo Aaltonen <timo.aaltonen@canonical.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/acpi_pad.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/intel_ringbuffer.c |   14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
-diff --git a/drivers/acpi/acpi_pad.c b/drivers/acpi/acpi_pad.c
-index a43fa1a..1502c502 100644
---- a/drivers/acpi/acpi_pad.c
-+++ b/drivers/acpi/acpi_pad.c
-@@ -36,6 +36,7 @@
- #define ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME "Processor Aggregator"
- #define ACPI_PROCESSOR_AGGREGATOR_NOTIFY 0x80
- static DEFINE_MUTEX(isolated_cpus_lock);
-+static DEFINE_MUTEX(round_robin_lock);
+diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
+index 62f9ac5..5d369b1 100644
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -301,7 +301,7 @@ static int init_ring_common(struct intel_ring_buffer *ring)
  
- static unsigned long power_saving_mwait_eax;
+ 	I915_WRITE_CTL(ring,
+ 			((ring->size - PAGE_SIZE) & RING_NR_PAGES)
+-			| RING_REPORT_64K | RING_VALID);
++			| RING_VALID);
  
-@@ -107,7 +108,7 @@ static void round_robin_cpu(unsigned int tsk_index)
- 	if (!alloc_cpumask_var(&tmp, GFP_KERNEL))
- 		return;
+ 	/* If the head is still not zero, the ring is dead */
+ 	if ((I915_READ_CTL(ring) & RING_VALID) == 0 ||
+@@ -1143,18 +1143,6 @@ int intel_wait_ring_buffer(struct intel_ring_buffer *ring, int n)
+ 	struct drm_device *dev = ring->dev;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	unsigned long end;
+-	u32 head;
+-
+-	/* If the reported head position has wrapped or hasn't advanced,
+-	 * fallback to the slow and accurate path.
+-	 */
+-	head = intel_read_status_page(ring, 4);
+-	if (head > ring->head) {
+-		ring->head = head;
+-		ring->space = ring_space(ring);
+-		if (ring->space >= n)
+-			return 0;
+-	}
  
--	mutex_lock(&isolated_cpus_lock);
-+	mutex_lock(&round_robin_lock);
- 	cpumask_clear(tmp);
- 	for_each_cpu(cpu, pad_busy_cpus)
- 		cpumask_or(tmp, tmp, topology_thread_cpumask(cpu));
-@@ -116,7 +117,7 @@ static void round_robin_cpu(unsigned int tsk_index)
- 	if (cpumask_empty(tmp))
- 		cpumask_andnot(tmp, cpu_online_mask, pad_busy_cpus);
- 	if (cpumask_empty(tmp)) {
--		mutex_unlock(&isolated_cpus_lock);
-+		mutex_unlock(&round_robin_lock);
- 		return;
- 	}
- 	for_each_cpu(cpu, tmp) {
-@@ -131,7 +132,7 @@ static void round_robin_cpu(unsigned int tsk_index)
- 	tsk_in_cpu[tsk_index] = preferred_cpu;
- 	cpumask_set_cpu(preferred_cpu, pad_busy_cpus);
- 	cpu_weight[preferred_cpu]++;
--	mutex_unlock(&isolated_cpus_lock);
-+	mutex_unlock(&round_robin_lock);
- 
- 	set_cpus_allowed_ptr(current, cpumask_of(preferred_cpu));
- }
+ 	trace_i915_ring_wait_begin(ring);
+ 	end = jiffies + 3 * HZ;
 
 
