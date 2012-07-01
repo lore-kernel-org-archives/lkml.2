@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857Ab2GASQY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:16:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46893 "EHLO
+	id S1755942Ab2GASQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:16:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46900 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751735Ab2GASQV (ORCPT
+	by vger.kernel.org with ESMTP id S1755756Ab2GASQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 14:16:21 -0400
-Message-Id: <20120701172007.137742223@decadent.org.uk>
+	Sun, 1 Jul 2012 14:16:23 -0400
+Message-Id: <20120701172009.368652104@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 01 Jul 2012 18:20:09 +0100
+Date: Sun, 01 Jul 2012 18:20:25 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chen Gong <gong.chen@linux.intel.com>,
+        alan@lxorguk.ukuu.org.uk, Michael Krufky <mkrufky@linuxtv.org>,
         Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 03/48] edac: avoid mce decoding crash after edac driver unloaded
+Subject: [ 19/48] [media] smsusb: add autodetection support for USB ID 2040:f5a0
 In-Reply-To: <20120701172006.535271340@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,156 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen Gong <gong.chen@linux.intel.com>
+From: Michael Krufky <mkrufky@linuxtv.org>
 
-commit e35fca4791fcdd43dc1fd769797df40c562ab491 upstream.
+commit 3e1141e2ce5667301a74ca2ef396d9bd5e995f7f upstream.
 
-Some edac drivers register themselves as mce decoders via
-notifier_chain. But in current notifier_chain implementation logic,
-it doesn't accept same notifier registered twice. If so, it will be
-wrong when adding/removing the element from the list. For example,
-on one SandyBridge platform, remove module sb_edac and then trigger
-one error, it will hit oops because it has no mce decoder registered
-but related notifier_chain still points to an invalid callback
-function. Here is an example:
-
-Call Trace:
- [<ffffffff8150ef6a>] atomic_notifier_call_chain+0x1a/0x20
- [<ffffffff8102b936>] mce_log+0x46/0x180
- [<ffffffff8102eaea>] apei_mce_report_mem_error+0x4a/0x60
- [<ffffffff812e19d2>] ghes_do_proc+0x192/0x210
- [<ffffffff812e2066>] ghes_proc+0x46/0x70
- [<ffffffff812e20d8>] ghes_notify_sci+0x48/0x80
- [<ffffffff8150ef05>] notifier_call_chain+0x55/0x80
- [<ffffffff81076f1a>] __blocking_notifier_call_chain+0x5a/0x80
- [<ffffffff812aea11>] ? acpi_os_wait_events_complete+0x23/0x23
- [<ffffffff81076f56>] blocking_notifier_call_chain+0x16/0x20
- [<ffffffff812ddc4d>] acpi_hed_notify+0x19/0x1b
- [<ffffffff812b16bd>] acpi_device_notify+0x19/0x1b
- [<ffffffff812beb38>] acpi_ev_notify_dispatch+0x67/0x7f
- [<ffffffff812aea3a>] acpi_os_execute_deferred+0x29/0x36
- [<ffffffff81069dc2>] process_one_work+0x132/0x450
- [<ffffffff8106bbcb>] worker_thread+0x17b/0x3c0
- [<ffffffff8106ba50>] ? manage_workers+0x120/0x120
- [<ffffffff81070aee>] kthread+0x9e/0xb0
- [<ffffffff81514724>] kernel_thread_helper+0x4/0x10
- [<ffffffff81070a50>] ? kthread_freezable_should_stop+0x70/0x70
- [<ffffffff81514720>] ? gs_change+0x13/0x13
-Code: f3 49 89 d4 45 85 ed 4d 89 c6 48 8b 0f 74 48 48 85 c9 75 17 eb 41
-0f 1f 80 00 00 00 00 41 83 ed 01 4c 89 f9 74 22 4d 85 ff 74 1d <4c> 8b
-79 08 4c 89 e2 48 89 de 48 89 cf ff 11 4d 85 f6 74 04 41
-RIP  [<ffffffff8150eef6>] notifier_call_chain+0x46/0x80
- RSP <ffff88042868fb20>
-CR2: ffffffffa01af838
----[ end trace 0100930068e73e6f ]---
-BUG: unable to handle kernel paging request at fffffffffffffff8
-IP: [<ffffffff810705b0>] kthread_data+0x10/0x20
-PGD 1a0d067 PUD 1a0e067 PMD 0
-Oops: 0000 [#2] SMP
-
-Only i7core_edac and sb_edac have such issues because they have more
-than one memory controller which means they have to register mce
-decoder many times.
-
-Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-[bwh: Backported to 3.2: drivers call atomic_notifier_chain_{,un}register()
- directly]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -1932,12 +1932,6 @@
- 	if (mce->bank != 8)
- 		return NOTIFY_DONE;
+ drivers/media/dvb/siano/smsusb.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/media/dvb/siano/smsusb.c b/drivers/media/dvb/siano/smsusb.c
+index 63c004a..664e460 100644
+--- a/drivers/media/dvb/siano/smsusb.c
++++ b/drivers/media/dvb/siano/smsusb.c
+@@ -544,6 +544,8 @@ static const struct usb_device_id smsusb_id_table[] __devinitconst = {
+ 		.driver_info = SMS1XXX_BOARD_HAUPPAUGE_WINDHAM },
+ 	{ USB_DEVICE(0x2040, 0xc0a0),
+ 		.driver_info = SMS1XXX_BOARD_HAUPPAUGE_WINDHAM },
++	{ USB_DEVICE(0x2040, 0xf5a0),
++		.driver_info = SMS1XXX_BOARD_HAUPPAUGE_WINDHAM },
+ 	{ } /* Terminating entry */
+ 	};
  
--#ifdef CONFIG_SMP
--	/* Only handle if it is the right mc controller */
--	if (mce->socketid != pvt->i7core_dev->socket)
--		return NOTIFY_DONE;
--#endif
--
- 	smp_rmb();
- 	if ((pvt->mce_out + 1) % MCE_LOG_LEN == pvt->mce_in) {
- 		smp_wmb();
-@@ -2234,8 +2228,6 @@
- 	if (pvt->enable_scrub)
- 		disable_sdram_scrub_setting(mci);
- 
--	atomic_notifier_chain_unregister(&x86_mce_decoder_chain, &i7_mce_dec);
--
- 	/* Disable EDAC polling */
- 	i7core_pci_ctl_release(pvt);
- 
-@@ -2336,8 +2328,6 @@
- 	/* DCLK for scrub rate setting */
- 	pvt->dclk_freq = get_dclk_freq();
- 
--	atomic_notifier_chain_register(&x86_mce_decoder_chain, &i7_mce_dec);
--
- 	return 0;
- 
- fail0:
-@@ -2481,8 +2471,10 @@
- 
- 	pci_rc = pci_register_driver(&i7core_driver);
- 
--	if (pci_rc >= 0)
-+	if (pci_rc >= 0) {
-+		atomic_notifier_chain_register(&x86_mce_decoder_chain, &i7_mce_dec);
- 		return 0;
-+	}
- 
- 	i7core_printk(KERN_ERR, "Failed to register device with error %d.\n",
- 		      pci_rc);
-@@ -2498,6 +2490,7 @@
- {
- 	debugf2("MC: " __FILE__ ": %s()\n", __func__);
- 	pci_unregister_driver(&i7core_driver);
-+	atomic_notifier_chain_unregister(&x86_mce_decoder_chain, &i7_mce_dec);
- }
- 
- module_init(i7core_init);
---- a/drivers/edac/sb_edac.c
-+++ b/drivers/edac/sb_edac.c
-@@ -1661,9 +1661,6 @@
- 	debugf0("MC: " __FILE__ ": %s(): mci = %p, dev = %p\n",
- 		__func__, mci, &sbridge_dev->pdev[0]->dev);
- 
--	atomic_notifier_chain_unregister(&x86_mce_decoder_chain,
--					 &sbridge_mce_dec);
--
- 	/* Remove MC sysfs nodes */
- 	edac_mc_del_mc(mci->dev);
- 
-@@ -1731,8 +1728,6 @@
- 		goto fail0;
- 	}
- 
--	atomic_notifier_chain_register(&x86_mce_decoder_chain,
--				       &sbridge_mce_dec);
- 	return 0;
- 
- fail0:
-@@ -1861,8 +1856,10 @@
- 
- 	pci_rc = pci_register_driver(&sbridge_driver);
- 
--	if (pci_rc >= 0)
-+	if (pci_rc >= 0) {
-+		atomic_notifier_chain_register(&x86_mce_decoder_chain, &sbridge_mce_dec);
- 		return 0;
-+	}
- 
- 	sbridge_printk(KERN_ERR, "Failed to register device with error %d.\n",
- 		      pci_rc);
-@@ -1878,6 +1875,7 @@
- {
- 	debugf2("MC: " __FILE__ ": %s()\n", __func__);
- 	pci_unregister_driver(&sbridge_driver);
-+	atomic_notifier_chain_unregister(&x86_mce_decoder_chain, &sbridge_mce_dec);
- }
- 
- module_init(sbridge_init);
 
 
