@@ -1,153 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932351Ab2GATgq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 15:36:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47002 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756162Ab2GATgc (ORCPT
+	id S932600Ab2GATgr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 15:36:47 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48470 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756167Ab2GATgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 15:36:32 -0400
-Date: Sun, 1 Jul 2012 12:35:58 -0700
-From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
-Message-ID: <tip-3d8986bc7f309483ee09c7a02888bab09072c19b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hmh@hmh.eng.br, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        borislav.petkov@amd.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, hmh@hmh.eng.br,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        borislav.petkov@amd.com
-In-Reply-To: <1340280437-7718-3-git-send-email-bp@amd64.org>
-References: <1340280437-7718-3-git-send-email-bp@amd64.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/microcode] x86, microcode:
-  Make reload interface per system
-Git-Commit-ID: 3d8986bc7f309483ee09c7a02888bab09072c19b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 1 Jul 2012 15:36:40 -0400
+Message-ID: <4FF0A6C5.5080509@linaro.org>
+Date: Sun, 01 Jul 2012 21:36:37 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: lenb@kernel.org, trenn@suse.de, srivatsa.bhat@linux.vnet.ibm.com,
+        deepthi@linux.vnet.ibm.com, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, linux-pm@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, Colin Cross <ccross@android.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] acpi: intel_idle : break dependency between modules
+References: <201206271506.29034.trenn@suse.de> <201206282124.09857.rjw@sisk.pl> <4FED69BE.20707@linaro.org> <201206300027.05175.rjw@sisk.pl>
+In-Reply-To: <201206300027.05175.rjw@sisk.pl>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 01 Jul 2012 12:36:08 -0700 (PDT)
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3d8986bc7f309483ee09c7a02888bab09072c19b
-Gitweb:     http://git.kernel.org/tip/3d8986bc7f309483ee09c7a02888bab09072c19b
-Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Thu, 21 Jun 2012 14:07:17 +0200
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Sun, 1 Jul 2012 10:24:09 -0700
+On 06/30/2012 12:27 AM, Rafael J. Wysocki wrote:
+> On Friday, June 29, 2012, Daniel Lezcano wrote:
+>> On 06/28/2012 09:24 PM, Rafael J. Wysocki wrote:
+>>> On Thursday, June 28, 2012, Daniel Lezcano wrote:
+>>>> When the system is booted with some cpus offline, the idle
+>>>> driver is not initialized. When a cpu is set online, the
+>>>> acpi code call the intel idle init function. Unfortunately
+>>>> this code introduce a dependency between intel_idle and acpi.
+>>>>
+>>>> This patch is intended to remove this dependency by using the
+>>>> notifier of intel_idle. This patch has the benefit of
+>>>> encapsulating the intel_idle driver and remove some exported
+>>>> functions.
+>>>>
+>>>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>>>
+>>> This one looks good to me too.
+>>>
+>>> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+>>
+>> Thanks for the review Rafael.
+>>
+>>> Len, are you going to take it?
+>>
+>> Rafael, Len,
+>>
+>> After the discussion [1], I put in place a tree at:
+>>
+>> ssh://git.linaro.org/srv/git.linaro.org/git/people/dlezcano/cpuidle-next.git
+>> #cpuidle-next
+>>
+>> I proposed this tree to group the cpuidle modifications and prevent the
+>> last minutes conflict when Len will apply them.
+>>
+>> I also included the tree into linux-next for wider testing.
+> 
+> I can't speak for Len, but I'm not sure he'll like this.
 
-x86, microcode: Make reload interface per system
+I sent the proposition a week ago and Len was Cc'ed. I guess he is very
+busy but the problem we are facing is there are a lot of pending
+modifications for cpuidle because of some new architecture (like the
+big.LITTLE and tegra3). Colin's patchset is one of them.
 
-The reload interface should be per-system so that a full system ucode
-reload happens (on each core) when doing
+> Anyway, you seem to have the same material as Len in that tree, won't there
+> be any conflicts in linux-next?
 
-echo 1 > /sys/devices/system/cpu/microcode/reload
+At the first glance no, until he merge the patches we sent. As I already
+said the purpose is to help to consolidate the patches sent for cpuidle
+by acting as a proxy.
 
-Move it to the cpu subsys directory instead of it being per-cpu.
+I hope that helps.
 
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Link: http://lkml.kernel.org/r/1340280437-7718-3-git-send-email-bp@amd64.org
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/microcode_core.c |   36 ++++++++++++++++++++++++++++--------
- 1 files changed, 28 insertions(+), 8 deletions(-)
+Thanks
+  -- Daniel
 
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-index 24b852b..947e4c6 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -301,10 +301,6 @@ static ssize_t reload_store(struct device *dev,
- 	int cpu;
- 	ssize_t ret = 0, tmp_ret;
- 
--	/* allow reload only from the BSP */
--	if (boot_cpu_data.cpu_index != dev->id)
--		return -EINVAL;
--
- 	ret = kstrtoul(buf, 0, &val);
- 	if (ret)
- 		return ret;
-@@ -351,7 +347,6 @@ static DEVICE_ATTR(version, 0400, version_show, NULL);
- static DEVICE_ATTR(processor_flags, 0400, pf_show, NULL);
- 
- static struct attribute *mc_default_attrs[] = {
--	&dev_attr_reload.attr,
- 	&dev_attr_version.attr,
- 	&dev_attr_processor_flags.attr,
- 	NULL
-@@ -528,6 +523,16 @@ static const struct x86_cpu_id microcode_id[] = {
- MODULE_DEVICE_TABLE(x86cpu, microcode_id);
- #endif
- 
-+static struct attribute *cpu_root_microcode_attrs[] = {
-+	&dev_attr_reload.attr,
-+	NULL
-+};
-+
-+static struct attribute_group cpu_root_microcode_group = {
-+	.name  = "microcode",
-+	.attrs = cpu_root_microcode_attrs,
-+};
-+
- static int __init microcode_init(void)
- {
- 	struct cpuinfo_x86 *c = &cpu_data(0);
-@@ -559,9 +564,17 @@ static int __init microcode_init(void)
- 	if (error)
- 		goto out_pdev;
- 
-+	error = sysfs_create_group(&cpu_subsys.dev_root->kobj,
-+				   &cpu_root_microcode_group);
-+
-+	if (error) {
-+		pr_err("Error creating microcode group!\n");
-+		goto out_driver;
-+	}
-+
- 	error = microcode_dev_init();
- 	if (error)
--		goto out_driver;
-+		goto out_ucode_group;
- 
- 	register_syscore_ops(&mc_syscore_ops);
- 	register_hotcpu_notifier(&mc_cpu_notifier);
-@@ -571,7 +584,11 @@ static int __init microcode_init(void)
- 
- 	return 0;
- 
--out_driver:
-+ out_ucode_group:
-+	sysfs_remove_group(&cpu_subsys.dev_root->kobj,
-+			   &cpu_root_microcode_group);
-+
-+ out_driver:
- 	get_online_cpus();
- 	mutex_lock(&microcode_mutex);
- 
-@@ -580,7 +597,7 @@ out_driver:
- 	mutex_unlock(&microcode_mutex);
- 	put_online_cpus();
- 
--out_pdev:
-+ out_pdev:
- 	platform_device_unregister(microcode_pdev);
- 	return error;
- 
-@@ -596,6 +613,9 @@ static void __exit microcode_exit(void)
- 	unregister_hotcpu_notifier(&mc_cpu_notifier);
- 	unregister_syscore_ops(&mc_syscore_ops);
- 
-+	sysfs_remove_group(&cpu_subsys.dev_root->kobj,
-+			   &cpu_root_microcode_group);
-+
- 	get_online_cpus();
- 	mutex_lock(&microcode_mutex);
- 
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
