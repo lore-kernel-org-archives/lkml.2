@@ -1,111 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab2GASZX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:25:23 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46967 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932083Ab2GASQg (ORCPT
+	id S932499Ab2GAS0D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:26:03 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:48006 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932123Ab2GASZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 14:16:36 -0400
-Message-Id: <20120701172008.531189599@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Sun, 01 Jul 2012 18:20:19 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Eric Anholt <eric@anholt.net>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Timo Aaltonen <timo.aaltonen@canonical.com>
-Subject: [ 13/48] drm/i915: Remove use of the autoreported ringbuffer HEAD  position
-In-Reply-To: <20120701172006.535271340@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 1 Jul 2012 14:25:58 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: hacklu <embedway.linux@gmail.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <4FF085B1.6070604@zytor.com> (H. Peter Anvin's message of "Sun,
+	01 Jul 2012 10:15:29 -0700")
+References: <4FB492F7.8050401@gmail.com> <87ipf9gtsb.fsf@xmission.com>
+	<4FCAD590.8000506@zytor.com> <87obp0bxdv.fsf@xmission.com>
+	<4FCB602B.70907@zytor.com> <87fwacb0jq.fsf_-_@xmission.com>
+	<877gvob0g4.fsf_-_@xmission.com> <4FF06701.6010004@zytor.com>
+	<4FF06DF4.4000006@zytor.com> <87wr2nsbvi.fsf@xmission.com>
+	<4FF0769F.8090105@zytor.com> <87sjdbsb0v.fsf@xmission.com>
+	<4FF07E66.2020706@zytor.com> <87d34fs914.fsf@xmission.com>
+	<4FF085B1.6070604@zytor.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+Date: Sun, 01 Jul 2012 11:25:48 -0700
+Message-ID: <87a9zj9w43.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/e2TzWK7/oH3/eDTIBTt2K81a36ZtoBiQ=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0267]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"H. Peter Anvin" <hpa@zytor.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 2/2] x86, boot: Optimize the elf header handling.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+"H. Peter Anvin" <hpa@zytor.com> writes:
 
-------------------
+> On 07/01/2012 10:09 AM, Eric W. Biederman wrote:
+>>
+>> I am suspecting something similar.  At the moment I am trying
+>> to remember how to get early printk working in misc.c so I can
+>> poke around a bit more.
+>>
+>> The theory that I was working on, that used to be true, and
+>> seems to be true of everything except the percpu section is
+>> that objcopy just does the right thing when creating vmlinux.bin.
+>> vmlinux.bin being what we compress.
+>>
+>> I don't see anything obviously wrong with the headers of vmlinux.bin
+>> although we still unnecessarily have section headers in that file.
+>>
+>
+> We leave the section headers in for the benefit of Xen IIRC.
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+Well I see what is going on now.
 
-This is a revert of 6aa56062eaba67adfb247cded244fd877329588d.
+In the vmlinux the paddrs and the poffsests stop tracking when they
+come to the percpu PT_LOAD segment.
 
-This was originally introduced to workaround reads of the ringbuffer
-registers returning 0 on SandyBridge causing hangs due to ringbuffer
-overflow. The root cause here was reads through the GT powerwell require
-the forcewake dance, something we only learnt of later. Now it appears
-that reading the reported head position from the HWS is returning
-garbage, leading once again to hangs.
+It looks like we give the percpu segment a 4K alignment in memory
+and a 2M alignment in the file.
 
-For example, on q35 the autoreported head reports:
-  [  217.975608] head now 00010000, actual 00010000
-  [  436.725613] head now 00200000, actual 00200000
-  [  462.956033] head now 00210000, actual 00210010
-  [  485.501409] head now 00400000, actual 00400020
-  [  508.064280] head now 00410000, actual 00410000
-  [  530.576078] head now 00600000, actual 00600020
-  [  553.273489] head now 00610000, actual 00610018
-which appears reasonably sane. In contrast, if we look at snb:
-  [  141.970680] head now 00e10000, actual 00008238
-  [  141.974062] head now 02734000, actual 000083c8
-  [  141.974425] head now 00e10000, actual 00008488
-  [  141.980374] head now 032b5000, actual 000088b8
-  [  141.980885] head now 03271000, actual 00008950
-  [  142.040628] head now 02101000, actual 00008b40
-  [  142.180173] head now 02734000, actual 00009050
-  [  142.181090] head now 00000000, actual 00000ae0
-  [  142.183737] head now 02734000, actual 00009050
+It looks like something is causing ld to compute an unfortunate physical
+load address for the percpu section.
 
-In addition, the automatic reporting of the head position is scheduled
-to be defeatured in the future. It has no more utility, remove it.
+At first glace I would say that is a bug.  Either we need the alignment
+or we don't.  But if we need the alignment we certainly need it to
+be respected for the real memory locations of the init symbols..
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=45492
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Tested-by: Eric Anholt <eric@anholt.net>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-(cherry picked from commit 5d031e5b633d910f35e6e0abce94d9d842390006)
-Signed-off-by: Timo Aaltonen <timo.aaltonen@canonical.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/gpu/drm/i915/intel_ringbuffer.c |   14 +-------------
- 1 file changed, 1 insertion(+), 13 deletions(-)
+Ugh.
 
-diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-index 62f9ac5..5d369b1 100644
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -301,7 +301,7 @@ static int init_ring_common(struct intel_ring_buffer *ring)
- 
- 	I915_WRITE_CTL(ring,
- 			((ring->size - PAGE_SIZE) & RING_NR_PAGES)
--			| RING_REPORT_64K | RING_VALID);
-+			| RING_VALID);
- 
- 	/* If the head is still not zero, the ring is dead */
- 	if ((I915_READ_CTL(ring) & RING_VALID) == 0 ||
-@@ -1143,18 +1143,6 @@ int intel_wait_ring_buffer(struct intel_ring_buffer *ring, int n)
- 	struct drm_device *dev = ring->dev;
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	unsigned long end;
--	u32 head;
--
--	/* If the reported head position has wrapped or hasn't advanced,
--	 * fallback to the slow and accurate path.
--	 */
--	head = intel_read_status_page(ring, 4);
--	if (head > ring->head) {
--		ring->head = head;
--		ring->space = ring_space(ring);
--		if (ring->space >= n)
--			return 0;
--	}
- 
- 	trace_i915_ring_wait_begin(ring);
- 	end = jiffies + 3 * HZ;
-
+Eric
 
