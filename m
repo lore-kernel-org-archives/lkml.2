@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932618Ab2GASY3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:24:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46972 "EHLO
+	id S932601Ab2GASY4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:24:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46976 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932247Ab2GASQi (ORCPT
+	by vger.kernel.org with ESMTP id S932280Ab2GASQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 14:16:38 -0400
-Message-Id: <20120701172007.963719537@decadent.org.uk>
+	Sun, 1 Jul 2012 14:16:37 -0400
+Message-Id: <20120701172012.920144442@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 01 Jul 2012 18:20:15 +0100
+Date: Sun, 01 Jul 2012 18:20:50 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andrea Arcangeli <aarcange@redhat.com>,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        Ulrich Obergfell <uobergfe@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Larry Woodman <lwoodman@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Jan Beulich <jbeulich@suse.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andrew Jones <drjones@redhat.com>
-Subject: [ 09/48] thp: avoid atomic64_read in pmd_read_atomic for 32bit PAE
+        alan@lxorguk.ukuu.org.uk, Craig Shelley <craig@microtron.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 44/48] USB: CP210x Add 10 Device IDs
 In-Reply-To: <20120701172006.535271340@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,123 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Craig Shelley <craig@microtron.org.uk>
 
-commit e4eed03fd06578571c01d4f1478c874bb432c815 upstream.
+commit 3fcc8f96829776cf181918461923d1e3bbb831a2 upstream.
 
-In the x86 32bit PAE CONFIG_TRANSPARENT_HUGEPAGE=y case while holding the
-mmap_sem for reading, cmpxchg8b cannot be used to read pmd contents under
-Xen.
+This patch adds 10 device IDs for CP210x based devices from the following manufacturers:
+Timewave
+Clipsal
+Festo
+Link Instruments
 
-So instead of dealing only with "consistent" pmdvals in
-pmd_none_or_trans_huge_or_clear_bad() (which would be conceptually
-simpler) we let pmd_none_or_trans_huge_or_clear_bad() deal with pmdvals
-where the low 32bit and high 32bit could be inconsistent (to avoid having
-to use cmpxchg8b).
-
-The only guarantee we get from pmd_read_atomic is that if the low part of
-the pmd was found null, the high part will be null too (so the pmd will be
-considered unstable).  And if the low part of the pmd is found "stable"
-later, then it means the whole pmd was read atomically (because after a
-pmd is stable, neither MADV_DONTNEED nor page faults can alter it anymore,
-and we read the high part after the low part).
-
-In the 32bit PAE x86 case, it is enough to read the low part of the pmdval
-atomically to declare the pmd as "stable" and that's true for THP and no
-THP, furthermore in the THP case we also have a barrier() that will
-prevent any inconsistent pmdvals to be cached by a later re-read of the
-*pmd.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Ulrich Obergfell <uobergfe@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Larry Woodman <lwoodman@redhat.com>
-Cc: Petr Matousek <pmatouse@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Jan Beulich <jbeulich@suse.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Tested-by: Andrew Jones <drjones@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Craig Shelley <craig@microtron.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/include/asm/pgtable-3level.h |   30 +++++++++++++++++-------------
- include/asm-generic/pgtable.h         |   10 ++++++++++
- 2 files changed, 27 insertions(+), 13 deletions(-)
+ drivers/usb/serial/cp210x.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/arch/x86/include/asm/pgtable-3level.h b/arch/x86/include/asm/pgtable-3level.h
-index 43876f1..cb00ccc 100644
---- a/arch/x86/include/asm/pgtable-3level.h
-+++ b/arch/x86/include/asm/pgtable-3level.h
-@@ -47,16 +47,26 @@ static inline void native_set_pte(pte_t *ptep, pte_t pte)
-  * they can run pmd_offset_map_lock or pmd_trans_huge or other pmd
-  * operations.
-  *
-- * Without THP if the mmap_sem is hold for reading, the
-- * pmd can only transition from null to not null while pmd_read_atomic runs.
-- * So there's no need of literally reading it atomically.
-+ * Without THP if the mmap_sem is hold for reading, the pmd can only
-+ * transition from null to not null while pmd_read_atomic runs. So
-+ * we can always return atomic pmd values with this function.
-  *
-  * With THP if the mmap_sem is hold for reading, the pmd can become
-- * THP or null or point to a pte (and in turn become "stable") at any
-- * time under pmd_read_atomic, so it's mandatory to read it atomically
-- * with cmpxchg8b.
-+ * trans_huge or none or point to a pte (and in turn become "stable")
-+ * at any time under pmd_read_atomic. We could read it really
-+ * atomically here with a atomic64_read for the THP enabled case (and
-+ * it would be a whole lot simpler), but to avoid using cmpxchg8b we
-+ * only return an atomic pmdval if the low part of the pmdval is later
-+ * found stable (i.e. pointing to a pte). And we're returning a none
-+ * pmdval if the low part of the pmd is none. In some cases the high
-+ * and low part of the pmdval returned may not be consistent if THP is
-+ * enabled (the low part may point to previously mapped hugepage,
-+ * while the high part may point to a more recently mapped hugepage),
-+ * but pmd_none_or_trans_huge_or_clear_bad() only needs the low part
-+ * of the pmd to be read atomically to decide if the pmd is unstable
-+ * or not, with the only exception of when the low part of the pmd is
-+ * zero in which case we return a none pmd.
-  */
--#ifndef CONFIG_TRANSPARENT_HUGEPAGE
- static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
- {
- 	pmdval_t ret;
-@@ -74,12 +84,6 @@ static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
- 
- 	return (pmd_t) { ret };
- }
--#else /* CONFIG_TRANSPARENT_HUGEPAGE */
--static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
--{
--	return (pmd_t) { atomic64_read((atomic64_t *)pmdp) };
--}
--#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- 
- static inline void native_set_pte_atomic(pte_t *ptep, pte_t pte)
- {
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index 6f2b45a..ff4947b 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -484,6 +484,16 @@ static inline int pmd_none_or_trans_huge_or_clear_bad(pmd_t *pmd)
- 	/*
- 	 * The barrier will stabilize the pmdval in a register or on
- 	 * the stack so that it will stop changing under the code.
-+	 *
-+	 * When CONFIG_TRANSPARENT_HUGEPAGE=y on x86 32bit PAE,
-+	 * pmd_read_atomic is allowed to return a not atomic pmdval
-+	 * (for example pointing to an hugepage that has never been
-+	 * mapped in the pmd). The below checks will only care about
-+	 * the low part of the pmd with 32bit PAE x86 anyway, with the
-+	 * exception of pmd_none(). So the important thing is that if
-+	 * the low part of the pmd is found null, the high part will
-+	 * be also null or the pmd_none() check below would be
-+	 * confused.
- 	 */
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- 	barrier();
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index 73d25cd..1e71079 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -93,6 +93,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x10C4, 0x814B) }, /* West Mountain Radio RIGtalk */
+ 	{ USB_DEVICE(0x10C4, 0x8156) }, /* B&G H3000 link cable */
+ 	{ USB_DEVICE(0x10C4, 0x815E) }, /* Helicomm IP-Link 1220-DVM */
++	{ USB_DEVICE(0x10C4, 0x815F) }, /* Timewave HamLinkUSB */
+ 	{ USB_DEVICE(0x10C4, 0x818B) }, /* AVIT Research USB to TTL */
+ 	{ USB_DEVICE(0x10C4, 0x819F) }, /* MJS USB Toslink Switcher */
+ 	{ USB_DEVICE(0x10C4, 0x81A6) }, /* ThinkOptics WavIt */
+@@ -134,7 +135,13 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x10CE, 0xEA6A) }, /* Silicon Labs MobiData GPRS USB Modem 100EU */
+ 	{ USB_DEVICE(0x13AD, 0x9999) }, /* Baltech card reader */
+ 	{ USB_DEVICE(0x1555, 0x0004) }, /* Owen AC4 USB-RS485 Converter */
++	{ USB_DEVICE(0x166A, 0x0201) }, /* Clipsal 5500PACA C-Bus Pascal Automation Controller */
++	{ USB_DEVICE(0x166A, 0x0301) }, /* Clipsal 5800PC C-Bus Wireless PC Interface */
+ 	{ USB_DEVICE(0x166A, 0x0303) }, /* Clipsal 5500PCU C-Bus USB interface */
++	{ USB_DEVICE(0x166A, 0x0304) }, /* Clipsal 5000CT2 C-Bus Black and White Touchscreen */
++	{ USB_DEVICE(0x166A, 0x0305) }, /* Clipsal C-5000CT2 C-Bus Spectrum Colour Touchscreen */
++	{ USB_DEVICE(0x166A, 0x0401) }, /* Clipsal L51xx C-Bus Architectural Dimmer */
++	{ USB_DEVICE(0x166A, 0x0101) }, /* Clipsal 5560884 C-Bus Multi-room Audio Matrix Switcher */
+ 	{ USB_DEVICE(0x16D6, 0x0001) }, /* Jablotron serial interface */
+ 	{ USB_DEVICE(0x16DC, 0x0010) }, /* W-IE-NE-R Plein & Baus GmbH PL512 Power Supply */
+ 	{ USB_DEVICE(0x16DC, 0x0011) }, /* W-IE-NE-R Plein & Baus GmbH RCM Remote Control for MARATON Power Supply */
+@@ -146,7 +153,11 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
++	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
++	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
+ 	{ USB_DEVICE(0x3195, 0xF190) }, /* Link Instruments MSO-19 */
++	{ USB_DEVICE(0x3195, 0xF280) }, /* Link Instruments MSO-28 */
++	{ USB_DEVICE(0x3195, 0xF281) }, /* Link Instruments MSO-28 */
+ 	{ USB_DEVICE(0x413C, 0x9500) }, /* DW700 GPS USB interface */
+ 	{ } /* Terminating Entry */
+ };
 
 
