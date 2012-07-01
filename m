@@ -1,62 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482Ab2GANrD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 09:47:03 -0400
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:2418 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932331Ab2GANrC (ORCPT
+	id S932432Ab2GAN6o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 09:58:44 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:40230 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932364Ab2GAN6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 09:47:02 -0400
-Message-ID: <1341150416.1911.121.camel@x61.thuisdomein>
-Subject: [PATCH 6/6] [TRIVIAL] oss: remove maui_boot.h from .gitignore and
- dontdiff
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
+	Sun, 1 Jul 2012 09:58:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <34097879.post@talk.nabble.com>
+References: <34097879.post@talk.nabble.com>
+Date: Sun, 1 Jul 2012 21:58:42 +0800
+Message-ID: <CAJd=RBBTekdN0Aoa6c1xOuuO32hqpYuYq5ED9Um5kZpZeALXdA@mail.gmail.com>
+Subject: Re: Is there any knowledgeable person in here? Who understand C vs Go?
+From: Hillf Danton <dhillf@gmail.com>
+To: IamTrying <iamtrying.test@gmail.com>
 Cc: linux-kernel@vger.kernel.org
-Date: Sun, 01 Jul 2012 15:46:56 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 01 Jul 2012 13:46:56.0672 (UTC) FILETIME=[FB015200:01CD578F]
-X-RcptDomain: vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d56b9b9c464a10ab1ee51a4c6190a2b57b8ef7a6 ("The scheduled removal
-of some OSS drivers") removed all traces of maui_boot.h from the tree.
-Remove its entries in dontdiff and oss's .gitignore file.
+On Sun, Jul 1, 2012 at 7:23 PM, IamTrying <iamtrying.test@gmail.com> wrote:
+> Problem A:
+>
+> But my confusion started since Google have on-boad worlds top class
+> programmers, to prove C not necessary anymore, and Plan9 is the worlds
+> first-class operating system (Who are you kidding with? we got on-boad):
+>
+> 1) Guido van Rossum (Python creator)
+> 2) James Gosling (Java creator)
+> 3) Ken Thompson (Unix, Plan9, C master mind)
+> 4) Rob pike (Unix, etc etc master mind)
+> 5) Theodore Ts'o (Linux core guy)
+> 6) many more... if you search you will be surprise (All jumped to Google)
+>
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Tested with git grep only.
-
- Documentation/dontdiff |    1 -
- sound/oss/.gitignore   |    1 -
- 2 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/dontdiff b/Documentation/dontdiff
-index 381f3f9..b89a739 100644
---- a/Documentation/dontdiff
-+++ b/Documentation/dontdiff
-@@ -162,7 +162,6 @@ mach-types.h
- machtypes.h
- map
- map_hugetlb
--maui_boot.h
- media
- mconf
- miboot*
-diff --git a/sound/oss/.gitignore b/sound/oss/.gitignore
-index 7efb12b..12a3920 100644
---- a/sound/oss/.gitignore
-+++ b/sound/oss/.gitignore
-@@ -1,4 +1,3 @@
- #Ignore generated files
--maui_boot.h
- pss_boot.h
- trix_boot.h
--- 
-1.7.7.6
-
+Why is he calling for KS 2012, core guys?
