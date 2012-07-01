@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab2GAPci (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 11:32:38 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:26362 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab2GAPch (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 11:32:37 -0400
-Date: Sun, 1 Jul 2012 18:32:18 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Devendra Naga <devendra.aaru@gmail.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>, Mori Hess <fmhess@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 2/2] staging/comedi/drivers: free allocated priv and
- release resources if comedi_alloc_subdevices
-Message-ID: <20120701153218.GB4462@mwanda>
-References: <1341150127-13162-1-git-send-email-devendra.aaru@gmail.com>
+	id S1754536Ab2GAPeK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 11:34:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9561 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751544Ab2GAPeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 11:34:08 -0400
+Message-ID: <4FF06DBD.6020901@redhat.com>
+Date: Sun, 01 Jul 2012 11:33:17 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341150127-13162-1-git-send-email-devendra.aaru@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 20/40] autonuma: alloc/free/init mm_autonuma
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-21-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1340888180-15355-21-git-send-email-aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 01, 2012 at 07:12:07PM +0530, Devendra Naga wrote:
-> as comedi_alloc_subdevices may fail, we leak out the memory allocated by alloc_private,
-> and also the I/O regions we requested.
-> 
-> free out the private data pointer of the driver, and release the I/O regions.
-> 
-> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+On 06/28/2012 08:56 AM, Andrea Arcangeli wrote:
 
-This breaks the build.
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index 0adbe09..3e5a0d9 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -527,6 +527,8 @@ static void mm_init_aio(struct mm_struct *mm)
+>
+>   static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+>   {
+> +	if (unlikely(alloc_mm_autonuma(mm)))
+> +		goto out_free_mm;
+>   	atomic_set(&mm->mm_users, 1);
+>   	atomic_set(&mm->mm_count, 1);
+>   	init_rwsem(&mm->mmap_sem);
 
-Also Hartley and Ian, what's the point of alloc_private()?  It's
-just hiding stuff which we need to know about and use later on
-anyway.
+I wonder if it would be possible to defer the allocation
+of the mm_autonuma struct to knuma_scand, so short lived
+processes never have to allocate and free the mm_autonuma
+structure.
 
-regards,
-dan carpenter
+That way we only have a function call at exit time, and
+the branch inside kfree that checks for a null pointer.
 
-
+-- 
+All rights reversed
