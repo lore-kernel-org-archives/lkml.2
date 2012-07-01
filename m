@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab2GAPyw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 11:54:52 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:37266 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751354Ab2GAPyv (ORCPT
+	id S1753044Ab2GAP4j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 11:56:39 -0400
+Received: from nm34-vm3.bullet.mail.bf1.yahoo.com ([72.30.239.75]:44604 "HELO
+	nm34-vm3.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751422Ab2GAP4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 11:54:51 -0400
-Date: Sun, 1 Jul 2012 11:54:50 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Frederik Himpe <fhimpe@telenet.be>
-cc: linux-kernel@vger.kernel.org, <linux-usb@vger.kernel.org>
-Subject: Re: Logitech HD Webcam C525 does not work when connected to USB 2
- port, works on USB 3
-In-Reply-To: <1341146090.4121.3.camel@piranha.localdomain>
-Message-ID: <Pine.LNX.4.44L0.1207011138460.18102-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 1 Jul 2012 11:56:38 -0400
+X-Greylist: delayed 370 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 Jul 2012 11:56:37 EDT
+X-Yahoo-Newman-Id: 276814.50478.bm@smtp210.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 6j_G81UVM1m6.514mjY2cC_X33Lvjh4gmgmvqHXJs48qUYv
+ hgpMpIFNcaynPn3AInp.99AXp9oKS2UxCv1pNnkq.trZ2J_OZw8HhoYklV0Q
+ WR3v4FRfhEllHqQJNseMBBmfTro6JkSXnx5Lu9MlYFTOZzN4IgR3VUszi1PL
+ 4KNIM0ZrDTSmY9evhFvVqMRUx9PHG1CbEA9UMh_kErtq8CmG2cDdOBSI1ym2
+ .Y3skbdI.3o2STv1gHgw9uus_BPY6WuyK36Okewu4Zys58BNfGtiOYZn5E6c
+ .BcxigYA0pUS1NVIyGN5gxLvtnN7zBGMo6W7qRYugqj1TRWou8G6FC5Fe.se
+ VlElVRnhh2IHL8ntQGzxYPuf9IYdiHeEGWYXizYD3hhM.5bDkq0cKqGboWAx
+ 1R5XOKtko2lCAc4zzl9CW1NWl.BUqNJXICRbnBfTKdnDc9Qtp3KCoRG3EzvH
+ mxw--
+X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
+From: Jeffrin Jose <ahiliation@yahoo.co.in>
+To: oliver@neukum.name, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ahiliation@yahoo.co.in
+Subject: [PATCH]usb:class:Fixed coding style issue.
+Date: Sun,  1 Jul 2012 21:25:16 +0530
+Message-Id: <1341158116-3013-1-git-send-email-ahiliation@yahoo.co.in>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 1 Jul 2012, Frederik Himpe wrote:
+Fixed coding style issue related to
+prohibited space in drivers/usb/class/cdc-acm.c
 
-> > A usbmon trace would be more helpful.  Or perhaps a pair of traces, one 
-> > for the USB-2 port and one for the USB-3 port.  See the instructions in 
-> > Documentation/usb/usbmon.txt.
-> 
-> OK, I created a usbmon trace both from the USB-2 port as the USB-3 port.
-> During the trace, I connected the USB webcam to the USB port and started
-> mplayer, which failed on USB-2 but worked fine on USB-3.
-> 
-> The two traces can be found here:
-> http://artipc10.vub.ac.be/~frederik/webcam/
+Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
+---
+ drivers/usb/class/cdc-acm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-There are two significant differences between the USB-2 and USB-3 
-traces, although I don't know what to make of them.
-
-Initially it looks like the driver writes a bunch of values to the 
-webcam and asks it to repeat them back.  That's what happens in the 
-USB-3 trace, anyway.  The USB-2 trace shows the values being written, 
-but when asked to repeat them back the webcam sends nothing.
-
-For example, with USB-3:
-
-ffff8804085042c0 470397794 S Co:3:003:0 s 22 01 0100 0086 0003 3 = 803e00
-ffff8804085042c0 470399896 C Co:3:003:0 0 3 >
-ffff8804085042c0 470400004 S Ci:3:003:0 s a2 81 0100 0086 0003 3 <
-ffff8804085042c0 470401270 C Ci:3:003:0 0 3 = 803e00
-
-The 803e00 values get sent and then received.  The analogous part of
-the USB-2 trace shows:
-
-ffff88040cc1f5c0 208122798 S Co:1:006:0 s 22 01 0100 0086 0003 3 = 803e00
-ffff88040cc1f5c0 208124781 C Co:1:006:0 0 3 >
-ffff88040cc1f5c0 208124818 S Ci:1:006:0 s a2 81 0100 0086 0003 3 <
-ffff88040cc1f5c0 208126156 C Ci:1:006:0 0 0
-
-Exactly the same values are sent and the request is the same, but no 
-data gets returned.  I have no idea what that means.
-
-Secondly, both traces show that the webcam stopped being used for a
-short time and was suspended.  A few seconds later, when it was resumed
-again, it worked okay in the USB-3 trace.  But in the USB-2 trace, it
-didn't.  After the resume it failed to reply to the first packet sent
-(a Get-Device-Status request), and thus it had to be re-enumerated.
-
-Have you tried using the webcam on a different computer?
-
-Alan Stern
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index b32ccb4..5ba556d 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -988,7 +988,7 @@ static int acm_probe(struct usb_interface *intf,
+ 		case USB_CDC_CALL_MANAGEMENT_TYPE:
+ 			call_management_function = buffer[3];
+ 			call_interface_num = buffer[4];
+-			if ( (quirks & NOT_A_MODEM) == 0 && (call_management_function & 3) != 3)
++			if ((quirks & NOT_A_MODEM) == 0 && (call_management_function & 3) != 3)
+ 				dev_err(&intf->dev, "This device cannot do calls on its own. It is not a modem.\n");
+ 			break;
+ 		default:
+-- 
+1.7.10
 
