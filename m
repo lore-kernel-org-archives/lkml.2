@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408Ab2GAQYp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 12:24:45 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:54681 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751941Ab2GAQYn (ORCPT
+	id S1752201Ab2GAQ0b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 12:26:31 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:56312 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab2GAQ0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 12:24:43 -0400
-Message-ID: <4FF079A9.6090405@xenotime.net>
-Date: Sun, 01 Jul 2012 09:24:09 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Sun, 1 Jul 2012 12:26:30 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: hacklu <embedway.linux@gmail.com>, linux-kernel@vger.kernel.org
+References: <4FB492F7.8050401@gmail.com> <87ipf9gtsb.fsf@xmission.com>
+	<4FCAD590.8000506@zytor.com> <87obp0bxdv.fsf@xmission.com>
+	<4FCB602B.70907@zytor.com> <87fwacb0jq.fsf_-_@xmission.com>
+	<877gvob0g4.fsf_-_@xmission.com> <4FF06701.6010004@zytor.com>
+	<4FF06DF4.4000006@zytor.com> <87wr2nsbvi.fsf@xmission.com>
+	<4FF0769F.8090105@zytor.com>
+Date: Sun, 01 Jul 2012 09:26:24 -0700
+In-Reply-To: <4FF0769F.8090105@zytor.com> (H. Peter Anvin's message of "Sun,
+	01 Jul 2012 09:11:11 -0700")
+Message-ID: <87sjdbsb0v.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>, x86@kernel.org
-Subject: Re: linux-next: Tree for June 29 (kvm)
-References: <20120629175341.22a9eccd30d9c085bfd92c1d@canb.auug.org.au> <4FEDEE6A.7020608@xenotime.net> <4FF01B59.1010600@redhat.com> <20120701094430.GB4642@redhat.com> <4FF01D41.5070600@redhat.com> <20120701105643.GA4782@redhat.com>
-In-Reply-To: <20120701105643.GA4782@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/WGfQyhWHG5Kn2/6Lghu6Wnr6cTl32NC8=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"H. Peter Anvin" <hpa@zytor.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 2/2] x86, boot: Optimize the elf header handling.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2012 03:56 AM, Michael S. Tsirkin wrote:
+"H. Peter Anvin" <hpa@zytor.com> writes:
 
-> On Sun, Jul 01, 2012 at 12:49:53PM +0300, Avi Kivity wrote:
->> On 07/01/2012 12:44 PM, Michael S. Tsirkin wrote:
->>> On Sun, Jul 01, 2012 at 12:41:45PM +0300, Avi Kivity wrote:
->>>> On 06/29/2012 09:05 PM, Randy Dunlap wrote:
->>>>> On 06/29/2012 12:53 AM, Stephen Rothwell wrote:
->>>>>
->>>>>> Hi all,
->>>>>>
->>>>>> Changes since 20120628:
->>>>>
->>>>>
->>>>>
->>>>> on i386:
->>>>>
->>>>> arch/x86/built-in.o: In function `kvm_guest_apic_eoi_write':
->>>>> kvm.c:(.text+0x3561f): undefined reference to `apic'
->>>>>
->>>>>
->>>>> Full randconfig file is attached.
->>>>
->>>> Michael, please disable pveoi if built with no apic.
->>>
->>> Will do.
->>> How do I tweak config to test this? Any hints?
+> On 07/01/2012 09:08 AM, Eric W. Biederman wrote:
 >>
->> See the original mail, there's a .config there.
-> 
-> This https://lkml.org/lkml/2012/6/29/40 ?
-> I don't see a .config there.
+>> Fair enough.  But ugh.
+>>
+>> Can you point me at your config?
+>> Can you tell me your linker version?
+>>
+>
+> I sent the config already; here it is again.
 
-It's in   https://lkml.org/lkml/2012/6/29/350
+Apologies I was blind.
 
+> GNU ld version 2.22.52.0.1-10.fc17 20120131
+>
+> (This is a stock Fedora 17 system.)
+>
+> I can upload the vmlinux and a bootable .iso as well.
 
->> Basically, i386 UP with
->> IOAPIC disabled.
+Fair enough.  It looks like somehow SMP got unset in my test
+configuration and enabling SMP certainly kills the boot for
+me.  So it looks like I can reproduce this.
 
+So I am guess I just missed something.  Ugh.
 
--- 
-~Randy
+Digging deeper...
+
+Eric
+
