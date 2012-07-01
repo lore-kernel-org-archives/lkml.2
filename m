@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab2GASLG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:11:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54401 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751691Ab2GASLE (ORCPT
+	id S1755553Ab2GASOJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:14:09 -0400
+Received: from mail.uibero.cl ([200.111.126.196]:54402 "EHLO mail.unicit.cl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751691Ab2GASOH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 14:11:04 -0400
-Date: Sun, 1 Jul 2012 19:10:56 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: philipspatches@gmail.com
-Cc: linux-kernel@vger.kernel.org, cjb@laptop.org, linux-mmc@vger.kernel.org,
-        Philip Rakity <prakity@marvell.com>
-Subject: Re: [PATCH] regulator: add missing defintion
- regulator_is_supported_voltage
-Message-ID: <20120701181055.GC28922@opensource.wolfsonmicro.com>
-References: <1341097536-14190-1-git-send-email-prakity@marvell.com>
+	Sun, 1 Jul 2012 14:14:07 -0400
+X-Greylist: delayed 328 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 Jul 2012 14:14:07 EDT
+Date: Sun, 01 Jul 2012 14:15:56 -0400 (CLT)
+From: "MR. FRED BENHAM" <apenailillo@unicit.cl>
+Reply-To: "MR. FRED BENHAM" <fredbenhambanking55@gmail.com>
+Subject: Sevgili =?utf-8?B?YXJrYWRhxZ/EsW0s?=
+Message-ID: <b0536ca9-db66-41c8-9062-28440494a122@mail>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fo/b2PYVqg2cQvBK"
-Content-Disposition: inline
-In-Reply-To: <1341097536-14190-1-git-send-email-prakity@marvell.com>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [41.58.30.39]
+X-Mailer: Zimbra 7.1.2_GA_3268 (zclient/7.1.2_GA_3268)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+İyi günler,
 
---fo/b2PYVqg2cQvBK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ben burada İngiltere'de Harlsden, North West London, Bay Fred Benham duyuyorum. Ben Natwest Bank Londra ile çalışmak. Saygısızlık ve saygılarımızla, ben ikimiz için büyük yararı olacak bir iş için ofisime size yazıyorum. Benim bölümde, Özel Bankacılık Yöneticisi (Greater London Bölge Ofisi) olmak, ben yabancı müşterilerimiz biri Dr Erin ait bir hesap 18.500.000 £ GBP terk edilmiş bir toplamı (on sekiz milyon beşyüz bin pound) keşfetti
+Bir grup gökyüzü tatil yolunda, 23 Mart 2009 tarihinde Montana uçak kazasında ailesiyle birlikte öldü Jacobson.
 
-On Sat, Jun 30, 2012 at 04:05:36PM -0700, philipspatches@gmail.com wrote:
-> From: Philip Rakity <prakity@marvell.com>
->=20
-> This definition is missing when CONFIG_REGULATOR is not defined.
-> This causes compiler errors when compiling sdhci.c.  This can
-> be worked around by adding #ifdef CONFIG_REGULATOR .. #endif
-> but since other definitions are there we have defined the missing
-> definition
+Eğer temas seçimi bu işlem ve gizlilik buradaki hassasiyeti özellikle dolayı yaşadığınız yerin coğrafi yapısı, gelen uyandırdı.
 
-Applied, thanks.
+ Şimdi bizim banka iddianın gelip-up yakınlarının herhangi bekliyordu ama kimse that.I yaptı şahsen artık iki yıldır akrabaları bulma konusunda başarısız olmuştur, ben bir sonraki olarak sunmak için izninizi almak £ 18.500.000 YTL değerindeki bu hesabın gelirleri size ödenecek böylece ölen kin / Faydalanıcı.
 
---fo/b2PYVqg2cQvBK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Bu tahsis veya bu yüzdeler, bana% 60 ve% 40 size de paylaşılacaktır. Sanırım yapmak üzeresiniz bu iddiayı yedeklemek için kullanılabilir gerekli tüm yasal belgeleri garantiledi. Tüm ihtiyacım belgeler içine isimleri doldurun ve meşru yararlanıcı olarak kanıtlamak için burada mahkeme bunu yasallaştırmak için olduğunu.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Şimdi gerektiren tüm aracılığıyla bize bu işlem görmek etkinleştirmek için dürüst işbirliği, Gizlilik ve Güven olduğunu. Bu, law.Please ihlali sizi korumak bana aşağıdaki sağlayacak yasal bir düzenleme altında yürütülür size garanti: bunu üzerinden çalıştırmak için beş gün var gibi. Bu çok acil lütfen olduğunu.
+ 1. Tam Adı
+ 2. Telefon Numaranız
+ 3. Temas Adresiniz.
 
-iQIcBAEBAgAGBQJP8JKlAAoJEBus8iNuMP3dv54P/0vA1X5J7sOBYcVY4ggywmtw
-Is8TDYy6jJ1d0787H8U71bcAB6TlV1nqAnaf6T7tAmIjbo82uw0aQF21Qe+IPyhi
-1D4oxbiUGlV163keyguQTxat5jV65tOXHFJUESbKVCy3YbUQQIAcSconoKaR9ML9
-jsHAGIl0E0s3mjmmPeuQWRmqCp1KV/m15BeXU5PIF+jNvkpsF+hENZwsvTY+RXUQ
-O8xh4hh/OTz1K2hlsj/5HNAxGHMm8ReghwiWSZMg62TfbJ240y/n301UgIGYGd4q
-OAthBQ0JFwhnK8ve0WipHKRC27sNmttBQooLqDQqujFOHDdkfnzbBJ+uTMuKKzwK
-TupyoicT5E0nEntpTrhAnwgESMWraYE0BFdsHCVQUN8lY4HYINuBaPz+lLErgiRI
-dgveqOeN4B5jfoHtaw5a9PkOSXJoDI44ku+wBa7LVcsh+mvTAY9ufhSQYWqjTzl2
-2SpR+hfEpP2bVSf2PtULeTCCWdEoc98EEAsyB1rB5Ssaf/u0zwTZKYijxGFZvKMc
-h1086m387gsrgXuothoF5qxySbTNfRIaF5p9F2+kDbFXtp7NH0RRy7Ey+JhvK1cZ
-vIl27MykJSxP2n9HnZON6Ly/z4OcdF78OF+x6+8sA8MHfQxeRnFY+pxw1uUCRJkf
-PYWi/z3lbOKFCQHXCWrH
-=x1h4
------END PGP SIGNATURE-----
+Bir yöntemsel arama ile gitmiş olması, sana bu öneriyi ilginç bulacağınızı umarak sizinle irtibata karar verdi.
+ 
+Bu mesaj ve ilgi gösteren bir onay üzerine Lütfen, daha fazla bilgiyi size sunacaktır.
 
---fo/b2PYVqg2cQvBK--
+Bana karar biliyor yerine beni bekletmek izin çabalarıdır. Call me veya posta Tel aldıktan sonra bana yazın: +447024011974, +447924445158
+
+Saygılarımızla,
+Bay Fred Benham.
