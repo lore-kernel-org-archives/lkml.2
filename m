@@ -1,59 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932336Ab2GANTF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 09:19:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46523 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755013Ab2GANTC (ORCPT
+	id S932356Ab2GANYP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 09:24:15 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49299 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755714Ab2GANYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 09:19:02 -0400
-Date: Sun, 1 Jul 2012 22:18:57 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>, mtosatti@redhat.com,
-        agraf@suse.de, paulus@samba.org, aarcange@redhat.com,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] KVM: MMU: Avoid handling same rmap_pde in
- kvm_handle_hva_range()
-Message-Id: <20120701221857.f3b9ee04e590ff7f1a0a335a@gmail.com>
-In-Reply-To: <4FEFFF11.4000309@redhat.com>
-References: <20120628105733.ccd9abb3.yoshikawa.takuya@oss.ntt.co.jp>
-	<20120628110235.7410445e.yoshikawa.takuya@oss.ntt.co.jp>
-	<4FEC9A2B.6000104@redhat.com>
-	<20120629104629.b369cd40.yoshikawa.takuya@oss.ntt.co.jp>
-	<4FEFFF11.4000309@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 1 Jul 2012 09:24:13 -0400
+Message-ID: <4FF04F79.4090304@redhat.com>
+Date: Sun, 01 Jul 2012 15:24:09 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Cong Meng <mc@linux.vnet.ibm.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        stefanha@linux.vnet.ibm.com, linuxram@us.ibm.com,
+        Anthony Liguori <anthony@codemonkey.ws>, senwang@linux.vnet.ibm.com,
+        zwanp@cn.ibm.com,
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] virtio-scsi: hotplug suppot for virtio-scsi
+References: <1340175333-16803-1-git-send-email-mc@linux.vnet.ibm.com>
+In-Reply-To: <1340175333-16803-1-git-send-email-mc@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 01 Jul 2012 10:41:05 +0300
-Avi Kivity <avi@redhat.com> wrote:
-
-> >> > Note: in the new code we could not use trace_kvm_age_page(), so we just
-> >> > dropped the point from kvm_handle_hva_range().
-> >> > 
-> >> 
-> >> Can't it be pushed to handler()?
-> > 
-> > Yes, but it will be changed to print rmap, not hva and gfn.
-> > I will do in the next version.
+Il 20/06/2012 08:55, Cong Meng ha scritto:
+> This patch implements the hotplug support for virtio-scsi.
+> When there is a device attached/detached, the virtio-scsi driver will be
+> signaled via event virtual queue and it will add/remove the scsi device 
+> in question automatically.
 > 
-> We should try to avoid changing the tracepoint ABI.  If we pass the
-> memslot to handler(), we should be able to reconstruct the gfn and hva.
+> Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
+> Signed-off-by: Sen Wang <senwang@linux.vnet.ibm.com>
 
-That's not enough because we only know rmapp in the handler: we also need
-level or something.  I agree that passing memslot for keeping the ABI is
-good, but how about two more arguments?
+Looks good (with one nit below), but please rebase over the four patches
+at http://permalink.gmane.org/gmane.linux.kernel/1312496
 
-BTW, trace_kvm_age_page() is tracing every handler, not just kvm_age_rmapp().
-Is this intentional?
+> ---
+>  drivers/scsi/virtio_scsi.c  |  109 ++++++++++++++++++++++++++++++++++++++++++-
+>  include/linux/virtio_scsi.h |    9 ++++
+>  2 files changed, 116 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+> index 1b38431..6dad625 100644
+> --- a/drivers/scsi/virtio_scsi.c
+> +++ b/drivers/scsi/virtio_scsi.c
+> @@ -25,6 +25,7 @@
+>  #include <scsi/scsi_cmnd.h>
+>  
+>  #define VIRTIO_SCSI_MEMPOOL_SZ 64
+> +#define VIRTIO_SCSI_EVENT_LEN 8
+>  
+>  /* Command queue element */
+>  struct virtio_scsi_cmd {
+> @@ -43,9 +44,15 @@ struct virtio_scsi_cmd {
+>  	} resp;
+>  } ____cacheline_aligned_in_smp;
+>  
+> +struct virtio_scsi_event_node {
+> +	struct virtio_scsi *vscsi;
+> +	struct virtio_scsi_event event;
+> +	struct work_struct work;
+> +};
+> +
+>  /* Driver instance state */
+>  struct virtio_scsi {
+> -	/* Protects ctrl_vq, req_vq and sg[] */
+> +	/* Protects ctrl_vq, event_vq, req_vq and sg[] */
+>  	spinlock_t vq_lock;
+>  
+>  	struct virtio_device *vdev;
+> @@ -53,6 +60,9 @@ struct virtio_scsi {
+>  	struct virtqueue *event_vq;
+>  	struct virtqueue *req_vq;
+>  
+> +	/* Get some buffers reday for event vq */
+> +	struct virtio_scsi_event_node event_list[VIRTIO_SCSI_EVENT_LEN];
+> +
+>  	/* For sglist construction when adding commands to the virtqueue.  */
+>  	struct scatterlist sg[];
+>  };
+> @@ -184,9 +194,93 @@ static void virtscsi_ctrl_done(struct virtqueue *vq)
+>  	virtscsi_vq_done(vq, virtscsi_complete_free);
+>  };
+>  
+> +static int virtscsi_kick_event(struct virtio_scsi *vscsi,
+> +			       struct virtio_scsi_event_node *event_node)
+> +{
+> +	int ret;
+> +	struct scatterlist sg;
+> +	unsigned long flags;
+> +
+> +	sg_set_buf(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
+> +
+> +	spin_lock_irqsave(&vscsi->vq_lock, flags);
+> +
+> +	ret = virtqueue_add_buf(vscsi->event_vq, &sg, 0, 1, event_node, GFP_ATOMIC);
+> +	if (ret >= 0)
+> +		virtqueue_kick(vscsi->event_vq);
+> +
+> +	spin_unlock_irqrestore(&vscsi->vq_lock, flags);
+> +
+> +	return ret;
+> +}
+> +
+> +static int virtscsi_kick_event_all(struct virtio_scsi *vscsi)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < VIRTIO_SCSI_EVENT_LEN; i++) {
+> +		vscsi->event_list[i].vscsi = vscsi;
+> +		virtscsi_kick_event(vscsi, &vscsi->event_list[i]);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void virtscsi_handle_transport_reset(struct virtio_scsi *vscsi,
+> +                                            struct virtio_scsi_event *event)
+> +{
+> +	struct scsi_device *sdev;
+> +	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
+> +	unsigned int target = event->lun[1];
+> +	unsigned int lun = (event->lun[2] << 8) | event->lun[3];
+> +
+> +	switch (event->reason) {
+> +	case VIRTIO_SCSI_EVT_RESET_RESCAN:
+> +		scsi_add_device(shost, 0, target, lun);
+> +		break;
+> +	case VIRTIO_SCSI_EVT_RESET_REMOVED:
+> +		sdev = scsi_device_lookup(shost, 0, target, lun);
+> +		if (sdev) {
+> +			scsi_remove_device(sdev);
+> +			scsi_device_put(sdev);
+> +		} else {
+> +			pr_err("SCSI device %d 0 %d %d not found\n",
+> +				shost->host_no, target, lun);
+> +		}
+> +		break;
+> +	default:
+> +		pr_info("Unsupport virtio scsi event reason %x\n", event->reason);
+> +	}
+> +}
+> +
+> +static void virtscsi_handle_event(struct work_struct *work)
+> +{
+> +	struct virtio_scsi_event_node *event_node = 
+> +		container_of(work, struct virtio_scsi_event_node, work);
+> +	struct virtio_scsi *vscsi = event_node->vscsi;
+> +	struct virtio_scsi_event *event = &event_node->event;
+> +
+> +	switch (event->event) {
+> +	case VIRTIO_SCSI_T_TRANSPORT_RESET:
+> +		virtscsi_handle_transport_reset(vscsi, event);
+> +		break;
 
-If we trace in the caller, in kvm_age_hva(), we know hva, but not gfn.
+Please handle VIRTIO_SCSI_T_NO_EVENT too here, and mask out
+VIRTIO_SCSI_T_EVENTS_MISSED even if you do not handle it by triggering a
+full rescan.
+
+Paolo
+
+> +	default:
+> +		pr_err("Unsupport virtio scsi event %x\n", event->event);
+
+
+> +	}
+> +	virtscsi_kick_event(vscsi, event_node);
+> +}
+> +
+> +static void virtscsi_complete_event(void *buf)
+> +{
+> +	struct virtio_scsi_event_node *event_node = buf;
+> +
+> +	INIT_WORK(&event_node->work, virtscsi_handle_event);
+> +	schedule_work(&event_node->work);
+> +}
+> +
+>  static void virtscsi_event_done(struct virtqueue *vq)
+>  {
+> -	virtscsi_vq_done(vq, virtscsi_complete_free);
+> +	virtscsi_vq_done(vq, virtscsi_complete_event);
+>  };
+>  
+>  static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
+> @@ -435,6 +529,11 @@ static int virtscsi_init(struct virtio_device *vdev,
+>  
+>  	virtscsi_config_set(vdev, cdb_size, VIRTIO_SCSI_CDB_SIZE);
+>  	virtscsi_config_set(vdev, sense_size, VIRTIO_SCSI_SENSE_SIZE);
+> +
+> +	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG)) {
+> +		virtscsi_kick_event_all(vscsi);
+> +	}
+> +
+>  	return 0;
+>  }
+>  
+> @@ -532,7 +631,13 @@ static struct virtio_device_id id_table[] = {
+>  	{ 0 },
+>  };
+>  
+> +static unsigned int features[] = {
+> +	VIRTIO_SCSI_F_HOTPLUG
+> +};
+> +
+>  static struct virtio_driver virtio_scsi_driver = {
+> +	.feature_table = features,
+> +	.feature_table_size = ARRAY_SIZE(features),
+>  	.driver.name = KBUILD_MODNAME,
+>  	.driver.owner = THIS_MODULE,
+>  	.id_table = id_table,
+> diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
+> index 8ddeafd..dc8d305 100644
+> --- a/include/linux/virtio_scsi.h
+> +++ b/include/linux/virtio_scsi.h
+> @@ -69,6 +69,10 @@ struct virtio_scsi_config {
+>  	u32 max_lun;
+>  } __packed;
+>  
+> +/* Feature Bits */
+> +#define VIRTIO_SCSI_F_INOUT                    0
+> +#define VIRTIO_SCSI_F_HOTPLUG                  1
+> +
+>  /* Response codes */
+>  #define VIRTIO_SCSI_S_OK                       0
+>  #define VIRTIO_SCSI_S_OVERRUN                  1
+> @@ -105,6 +109,11 @@ struct virtio_scsi_config {
+>  #define VIRTIO_SCSI_T_TRANSPORT_RESET          1
+>  #define VIRTIO_SCSI_T_ASYNC_NOTIFY             2
+>  
+> +/* Reasons of transport reset event */
+> +#define VIRTIO_SCSI_EVT_RESET_HARD             0
+> +#define VIRTIO_SCSI_EVT_RESET_RESCAN           1
+> +#define VIRTIO_SCSI_EVT_RESET_REMOVED          2
+> +
+>  #define VIRTIO_SCSI_S_SIMPLE                   0
+>  #define VIRTIO_SCSI_S_ORDERED                  1
+>  #define VIRTIO_SCSI_S_HEAD                     2
+> 
 
 Thanks,
-	Takuya
+
+Paolo
