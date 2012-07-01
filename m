@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075Ab2GASVF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:21:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47031 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756007Ab2GASQn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932519Ab2GASQn (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 1 Jul 2012 14:16:43 -0400
-Message-Id: <20120701172010.660658441@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46990 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932359Ab2GASQj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 14:16:39 -0400
+Message-Id: <20120701172012.784208580@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 01 Jul 2012 18:20:34 +0100
+Date: Sun, 01 Jul 2012 18:20:49 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Antonio Quartulli <ordex@autistici.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 28/48] batman-adv: fix skb->data assignment
+        alan@lxorguk.ukuu.org.uk, Forest Bond <forest.bond@rapidrollout.com>,
+        Dan Williams <dcbw@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 43/48] USB: option: Add USB ID for Novatel Ovation MC551
 In-Reply-To: <20120701172006.535271340@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,39 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antonio Quartulli <ordex@autistici.org>
+From: Forest Bond <forest.bond@rapidrollout.com>
 
-commit 2c995ff892313009e336ecc8ec3411022f5b1c39 upstream.
+commit 065b07e7a14676f4138ce4619d229c0be5a74230 upstream.
 
-skb_linearize(skb) possibly rearranges the skb internal data and then changes
-the skb->data pointer value. For this reason any other pointer in the code that
-was assigned skb->data before invoking skb_linearise(skb) must be re-assigned.
+This device is also known as the Verizon USB551L.
 
-In the current tt_query message handling code this is not done and therefore, in
-case of skb linearization, the pointer used to handle the packet header ends up
-in pointing to free'd memory.
-
-This bug was introduced by a73105b8d4c765d9ebfb664d0a66802127d8e4c7
-(batman-adv: improved client announcement mechanism)
-
-Signed-off-by: Antonio Quartulli <ordex@autistici.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[This patch is a backport for kernel versions 3.1 and 3.2 - Antonio]
+Signed-off-by: Forest Bond <forest.bond@rapidrollout.com>
+Acked-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/batman-adv/routing.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/option.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/batman-adv/routing.c
-+++ b/net/batman-adv/routing.c
-@@ -619,6 +619,8 @@
- 		/* packet needs to be linearized to access the TT changes */
- 		if (skb_linearize(skb) < 0)
- 			goto out;
-+		/* skb_linearize() possibly changed skb->data */
-+		tt_query = (struct tt_query_packet *)skb->data;
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 396d968..adf8ce7 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -236,6 +236,7 @@ static void option_instat_callback(struct urb *urb);
+ #define NOVATELWIRELESS_PRODUCT_G1		0xA001
+ #define NOVATELWIRELESS_PRODUCT_G1_M		0xA002
+ #define NOVATELWIRELESS_PRODUCT_G2		0xA010
++#define NOVATELWIRELESS_PRODUCT_MC551		0xB001
  
- 		if (is_my_mac(tt_query->dst))
- 			handle_tt_response(bat_priv, tt_query);
+ /* AMOI PRODUCTS */
+ #define AMOI_VENDOR_ID				0x1614
+@@ -738,6 +739,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G1) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G1_M) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_G2) },
++	/* Novatel Ovation MC551 a.k.a. Verizon USB551L */
++	{ USB_DEVICE_AND_INTERFACE_INFO(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_MC551, 0xff, 0xff, 0xff) },
+ 
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01) },
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_H01A) },
 
 
