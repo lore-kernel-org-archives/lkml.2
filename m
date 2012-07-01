@@ -1,79 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088Ab2GAH25 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 03:28:57 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41478 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692Ab2GAH2z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 03:28:55 -0400
-Date: Sun, 1 Jul 2012 00:28:38 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, axboe@kernel.dk,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        tj@kernel.org, jmoyer@redhat.com, vgoyal@redhat.com,
-        dm-devel@redhat.com
-Subject: Re: [RFC PATCH] block: all callers should check
- blkdev_issue_flush's return
-Message-ID: <20120701072836.GA13247@dhcp-172-17-9-228.mtv.corp.google.com>
-Mail-Followup-To: Mike Snitzer <snitzer@redhat.com>,
-	Christoph Hellwig <hch@infradead.org>, axboe@kernel.dk,
-	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-	tj@kernel.org, jmoyer@redhat.com, vgoyal@redhat.com,
-	dm-devel@redhat.com
-References: <1340724445-3314-1-git-send-email-snitzer@redhat.com>
- <20120626155115.GA17242@infradead.org>
- <20120626155750.GA3494@redhat.com>
+	id S1753167Ab2GAHev (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 03:34:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43386 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752252Ab2GAHet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 03:34:49 -0400
+Date: Sun, 1 Jul 2012 10:34:46 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, avi@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v2 4/6] kvm: Extend irqfd to support level interrupts
+Message-ID: <20120701073446.GX6533@redhat.com>
+References: <20120627050937.23698.68442.stgit@bling.home>
+ <20120627152624.GC21393@redhat.com>
+ <1340834658.1207.261.camel@bling.home>
+ <20120627223128.GB27885@redhat.com>
+ <20120628063431.GI6533@redhat.com>
+ <20120628083435.GC12447@redhat.com>
+ <20120628083541.GN6533@redhat.com>
+ <20120628084105.GE12447@redhat.com>
+ <20120628084611.GP6533@redhat.com>
+ <1341008877.1207.372.camel@bling.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120626155750.GA3494@redhat.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1341008877.1207.372.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 26, 2012 at 11:57:50AM -0400, Mike Snitzer wrote:
-> On Tue, Jun 26 2012 at 11:51am -0400,
-> Christoph Hellwig <hch@infradead.org> wrote:
-> 
-> > On Tue, Jun 26, 2012 at 11:27:25AM -0400, Mike Snitzer wrote:
-> > > It is concerning that a FLUSH may fail but the blkdev_issue_flush
-> > > callers assume it will always succeed.
+On Fri, Jun 29, 2012 at 04:27:57PM -0600, Alex Williamson wrote:
+> On Thu, 2012-06-28 at 11:46 +0300, Gleb Natapov wrote:
+> > On Thu, Jun 28, 2012 at 11:41:05AM +0300, Michael S. Tsirkin wrote:
+> > > On Thu, Jun 28, 2012 at 11:35:41AM +0300, Gleb Natapov wrote:
+> > > > On Thu, Jun 28, 2012 at 11:34:35AM +0300, Michael S. Tsirkin wrote:
+> > > > > On Thu, Jun 28, 2012 at 09:34:31AM +0300, Gleb Natapov wrote:
+> > > > > > On Thu, Jun 28, 2012 at 01:31:29AM +0300, Michael S. Tsirkin wrote:
+> > > > > > > On Wed, Jun 27, 2012 at 04:04:18PM -0600, Alex Williamson wrote:
+> > > > > > > > On Wed, 2012-06-27 at 18:26 +0300, Michael S. Tsirkin wrote:
+> > > > > > > > > On Tue, Jun 26, 2012 at 11:09:46PM -0600, Alex Williamson wrote:
+> > > > > > > > > > @@ -71,6 +130,14 @@ irqfd_inject(struct work_struct *work)
+> > > > > > > > > >  	kvm_set_irq(kvm, KVM_USERSPACE_IRQ_SOURCE_ID, irqfd->gsi, 0);
+> > > > > > > > > >  }
+> > > > > > > > > >  
+> > > > > > > > > > +static void
+> > > > > > > > > > +irqfd_inject_level(struct work_struct *work)
+> > > > > > > > > > +{
+> > > > > > > > > > +	struct _irqfd *irqfd = container_of(work, struct _irqfd, inject);
+> > > > > > > > > > +
+> > > > > > > > > > +	kvm_set_irq(irqfd->kvm, irqfd->source->id, irqfd->gsi, 1);
+> > > > > > > > > > +}
+> > > > > > > > > > +
+> > > > > > > > > >  /*
+> > > > > > > > > >   * Race-free decouple logic (ordering is critical)
+> > > > > > > > > >   */
+> > > > > > > > > 
+> > > > > > > > > 
+> > > > > > > > > Why is it safe to ignore return value here?
+> > > > > > > > > needs a comment.
+> > > > > > > > 
+> > > > > > > > Well, it seems like you and Gleb came to the conclusion that it's safe,
+> > > > > > > > but I can really follow from the list thread.  Can you explain and I'll
+> > > > > > > > add a comment?  Thanks,
+> > > > > > > > 
+> > > > > > > > Alex
+> > > > > > > 
+> > > > > > > We merely talked about edge interrupts.
+> > > > > > > 
+> > > > > > In fact it would have been nice to return -EBUSY when write() to level
+> > > > > > irqfd is coalesced.
+> > > > > 
+> > > > > Possibly nice but not really practical.
+> > > > > 
+> > > > What do you mean by that? Impossible to implement or not useful?
 > > > 
-> > > Each blkdev_issue_flush caller should come to terms with the reality
-> > > that a FLUSH may fail -- the file_operations' .fsync methods in
-> > > particular.  nilfs2 is the only filesystem that checks
-> > > blkdev_issue_flush's return.
-> > 
-> > Good spot, but it would be way better if you actually provided patches
-> > to fix this instead of just adding more compiler warnings.
+> > > Impossible to implement and also does not match normal eventfd
+> > > semantics.
+> > > 
+> > Hmm, I remember we discussed using irqfd for level triggered interrupt ~2
+> > years ago and came to a conclusion that eventfd is a bad fit for it,
+> > was true than is true now. Not be able to detect coalescing will make
+> > irqfd level interrupts inferior to IRQ_LINE ioctl.
 > 
-> Alasdair pointed this issue out in response to me asserting that
-> blkdev_issue_flush does return non-void.  But anyway, others knowing
-> about this issue is half the battle. ;)
+> Why do we care about coalescing?  I've been worried we need to re-inject
+> based on the return value of kvm_set_irq(), but re-reading specs and
+> code, we always post the interrupt to the irr.  For device assignment we
+> don't really care if kvm_set_irq() managed to actually inject the
+> interrupt, we're happy as long as it eventually hits the vcpu.  Current
+> device assignment uses kvm_set_irq() without looking for coalescing.
+> KVM_LINE_STATUS is the only caller that does something with the return
+> value and neither apic nor ioapic code in qemu do anything with the
+> value other than update accounting stats.  What am I missing that makes
+> the return value worth knowing?  Thanks,
 > 
-> Most .fsync methods are straight-forward to convert but I'd prefer each
-> filesystem maintainer actively audit all blkdev_issue_flush calls.
+Currently the only device in QEMU that cares about coalescing is RTC.
+There reason is that Windows keeps wall clock time by counting how many
+RTC interrupts were received, so it is not enough to inject the RTC
+interrupt, but it needs to be inject correct number of times. Another
+potential users for that are PIC/HPET. For device assignment it is
+likely not needed unless we pass through one of HPET timers directly
+to a guest. I am not necessary against this patch series (I think this
+is the best that can be done given eventfd limitations), but we need to
+be aware of the fact that this API cannot satisfy some of existing use
+cases. As Michaels pointed out, this is not new for this patch series
+though. RTC/HPET/PIC interrupts are edge (not sure about non-MSI HPET)
+and current edge irqfd drops kvm_set_irq() return value too. The
+alternative way to count injected interrupt is to consider interrupt
+injected only after EOI is called, but then we need to get EOI
+notifications on edge interrupt too.
 
-So send it out with maintainers on cc: and get Acks.  That way we have a
-coherent patch series cleaning up the in-tree filesystems, rather than a
-bunch of warnings for every compile until the maintainers notice.
-
-Joel
-
-
--- 
-
-"To announce that there must be no criticism of them president, or
- that we are to stand by the president, right or wrong, is not only
- unpatriotic and servile, but is morally treasonable to the American
- public."
-	- Theodore Roosevelt
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
+--
+			Gleb.
