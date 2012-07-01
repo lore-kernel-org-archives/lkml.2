@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623Ab2GASQz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:16:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47026 "EHLO
+	id S932604Ab2GASQy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:16:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47079 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756029Ab2GASQw (ORCPT
+	by vger.kernel.org with ESMTP id S932576Ab2GASQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 1 Jul 2012 14:16:52 -0400
-Message-Id: <20120701172012.356550284@decadent.org.uk>
+Message-Id: <20120701172009.653307435@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 01 Jul 2012 18:20:46 +0100
+Date: Sun, 01 Jul 2012 18:20:27 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>, Jan Beulich <JBeulich@suse.com>
-Subject: [ 40/48] x86, cpufeature: Rename X86_FEATURE_DTS to X86_FEATURE_DTHERM
+        alan@lxorguk.ukuu.org.uk, Ben Skeggs <bskeggs@redhat.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 21/48] drm/nouveau/fbcon: using nv_two_heads is not a good idea
 In-Reply-To: <20120701172006.535271340@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,64 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit 4ad33411308596f2f918603509729922a1ec4411 upstream.
+commit 9bd0c15fcfb42f6245447c53347d65ad9e72080b upstream.
 
-It makes sense to label "Digital Thermal Sensor" as "DTS", but
-unfortunately the string "dts" was already used for "Debug Store", and
-/proc/cpuinfo is a user space ABI.
+nv_two_heads() was never meant to be used outside of pre-nv50 code.  The
+code checks for >= NV_10 for 2 CRTCs, then downgrades a few specific
+chipsets to 1 CRTC based on (pci_device & 0x0ff0).
 
-Therefore, rename this to "dtherm".
+The breakage example seen is on GTX 560Ti, with a pciid of 0x1200, which
+gets detected as an NV20 (0x020x) with 1 CRTC by nv_two_heads(), causing
+memory corruption because there's actually 2 CRTCs..
 
-This conflict went into mainline via the hwmon tree without any x86
-maintainer ack, and without any kind of hint in the subject.
+This switches fbcon to use the CRTC count directly from the mode_config
+structure, which will also fix the same issue on Kepler boards which have
+4 CRTCs.
 
-    a4659053 x86/hwmon: fix initialization of coretemp
-
-Reported-by: Jean Delvare <khali@linux-fr.org>
-Link: http://lkml.kernel.org/r/4FE34BCB.5050305@linux.intel.com
-Cc: Jan Beulich <JBeulich@suse.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-[bwh: Backported to 3.2: drop the coretemp device table change]
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/include/asm/cpufeature.h |    2 +-
- arch/x86/kernel/cpu/scattered.c   |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_fbcon.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -175,7 +175,7 @@
- #define X86_FEATURE_XSAVEOPT	(7*32+ 4) /* Optimized Xsave */
- #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
- #define X86_FEATURE_PTS		(7*32+ 6) /* Intel Package Thermal Status */
--#define X86_FEATURE_DTS		(7*32+ 7) /* Digital Thermal Sensor */
-+#define X86_FEATURE_DTHERM	(7*32+ 7) /* Digital Thermal Sensor */
+diff --git a/drivers/gpu/drm/nouveau/nouveau_fbcon.c b/drivers/gpu/drm/nouveau/nouveau_fbcon.c
+index 153b9a1..1074bc5 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_fbcon.c
++++ b/drivers/gpu/drm/nouveau/nouveau_fbcon.c
+@@ -467,7 +467,7 @@ int nouveau_fbcon_init(struct drm_device *dev)
+ 	nfbdev->helper.funcs = &nouveau_fbcon_helper_funcs;
  
- /* Virtualization flags: Linux defined, word 8 */
- #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
---- a/arch/x86/kernel/cpu/scattered.c
-+++ b/arch/x86/kernel/cpu/scattered.c
-@@ -31,7 +31,7 @@
- 	const struct cpuid_bit *cb;
- 
- 	static const struct cpuid_bit __cpuinitconst cpuid_bits[] = {
--		{ X86_FEATURE_DTS,		CR_EAX, 0, 0x00000006, 0 },
-+		{ X86_FEATURE_DTHERM,		CR_EAX, 0, 0x00000006, 0 },
- 		{ X86_FEATURE_IDA,		CR_EAX, 1, 0x00000006, 0 },
- 		{ X86_FEATURE_ARAT,		CR_EAX, 2, 0x00000006, 0 },
- 		{ X86_FEATURE_PLN,		CR_EAX, 4, 0x00000006, 0 },
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -660,7 +660,7 @@
- 	 * sensors. We check this bit only, all the early CPUs
- 	 * without thermal sensors will be filtered out.
- 	 */
--	if (!cpu_has(c, X86_FEATURE_DTS))
-+	if (!cpu_has(c, X86_FEATURE_DTHERM))
- 		return;
- 
- 	if (!pdev) {
+ 	ret = drm_fb_helper_init(dev, &nfbdev->helper,
+-				 nv_two_heads(dev) ? 2 : 1, 4);
++				 dev->mode_config.num_crtc, 4);
+ 	if (ret) {
+ 		kfree(nfbdev);
+ 		return ret;
 
 
