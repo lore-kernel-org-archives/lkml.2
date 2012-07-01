@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246Ab2GASWU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:22:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47016 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755986Ab2GASQk (ORCPT
+	id S932583Ab2GASXH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:23:07 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37570 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755476Ab2GASXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 14:16:40 -0400
-Message-Id: <20120701172010.804545036@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Sun, 01 Jul 2012 18:20:35 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jonghwan Choi <jhbird.choi@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [ 29/48] ARM: SAMSUNG: Should check for IS_ERR(clk) instead of NULL
-In-Reply-To: <20120701172006.535271340@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 1 Jul 2012 14:23:03 -0400
+Date: Sun, 1 Jul 2012 19:23:00 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH v2] regulator: fixed: support deferred probe for DT GPIOs
+Message-ID: <20120701182300.GE28922@opensource.wolfsonmicro.com>
+References: <1340987595-11288-1-git-send-email-swarren@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4YaMMRm3dfitt/ta"
+Content-Disposition: inline
+In-Reply-To: <1340987595-11288-1-git-send-email-swarren@wwwdotorg.org>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--4YaMMRm3dfitt/ta
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Jonghwan Choi <jhbird.choi@samsung.com>
+On Fri, Jun 29, 2012 at 10:33:15AM -0600, Stephen Warren wrote:
 
-commit a5d8f4765f0e92ef027492a8cb979c5b8d45f2c3 upstream.
+> of_get_named_gpio() needs the driver hosting the GPIO that the DT
+> property references to have been probed. Detect this specific failure,
+> and defer the probe of the whole regulator until this API can complete.
 
-On the error condition clk_get() returns ERR_PTR().
+I've applied this but...
 
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- arch/arm/plat-samsung/include/plat/watchdog-reset.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> +	/*
+> +	 * of_get_named_gpio() currently returns ENODEV rather than
+> +	 * EPROBE_DEFER. This code attempts to be compatible with both
+> +	 * for now; the ENODEV check can be removed once the API is fixed.
 
-diff --git a/arch/arm/plat-samsung/include/plat/watchdog-reset.h b/arch/arm/plat-samsung/include/plat/watchdog-reset.h
-index f19aff1..bc4db9b 100644
---- a/arch/arm/plat-samsung/include/plat/watchdog-reset.h
-+++ b/arch/arm/plat-samsung/include/plat/watchdog-reset.h
-@@ -25,7 +25,7 @@ static inline void arch_wdt_reset(void)
- 
- 	__raw_writel(0, S3C2410_WTCON);	  /* disable watchdog, to be safe  */
- 
--	if (s3c2410_wdtclk)
-+	if (!IS_ERR(s3c2410_wdtclk))
- 		clk_enable(s3c2410_wdtclk);
- 
- 	/* put initial values into count and data */
+...this just seems rubbish, why aren't we just fixing the device tree
+code and why are we doing this at the device tree level rather than as a
+general gpiolib thing?
 
+--4YaMMRm3dfitt/ta
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP8JV+AAoJEBus8iNuMP3dEnsQAJTdXRngXoFqFY6kXb77HDhJ
+fTPZps3mCRprop38VyltH1W4roVRGkp1g/djKIS5UpjOFWNTYDQGZbua8P+bZvcR
+mNfIweLH0l30UtKEj9FJ5GwXENcLTqcPYO5EcWtjXWux5/EmIY/QWRBjIX/DyYsK
+dtm3ecaD5HU2Vp12b+Nl932QjYnQVRCOwdw10D4XgDMIdMSxUReDBsLw+sL2wHVM
+oRcEf+xwOgV7XqXWv+1V+v1aCLlWOEOK9agdTPKi1Xof6VVLvAUeH0JwOFm8Qet9
+PuxzjQ/8yadvI83zASqjQq5XrrP1AAKABpIitdCMDqxqrbqggdZrMJt7bvsALFjk
+FWwjK9sfTg1j+YJ6UQcOlDe3J6Cm7wD/teJ9x17noWjq4t2fta70jSAKQh9y3uu4
+yof9kR49AtDU1CoWpDuhT0kwLIlYUY/QweLhR9bHcNT74cbQj7QXKpX+Fg5RqqyA
+5q1Df2fuPTdq7cTnTu0JLJy86HBn9lsBV2nfSXTjZjmpnMNC7qLNzNrWT+FUceSL
+7U7XJD546huuHq37Apj2MECgjiNGoj7ENGXLf3YW6JNms0PWqhMzobcs4EvQT7/J
+dxw7Jx6184qO2FA5pOETz1bWjuzzx0GUqzhJHv88LwwXEmS7YGG0QBB1o0FQAcQa
+tNbSTM1r/ajXDr1HnQia
+=yrw1
+-----END PGP SIGNATURE-----
+
+--4YaMMRm3dfitt/ta--
