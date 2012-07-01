@@ -1,94 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932600Ab2GATgr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 15:36:47 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:48470 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756167Ab2GATgk (ORCPT
+	id S1756167Ab2GATwE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 15:52:04 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:59002 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754671Ab2GATwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 15:36:40 -0400
-Message-ID: <4FF0A6C5.5080509@linaro.org>
-Date: Sun, 01 Jul 2012 21:36:37 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: lenb@kernel.org, trenn@suse.de, srivatsa.bhat@linux.vnet.ibm.com,
-        deepthi@linux.vnet.ibm.com, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, linux-pm@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, Colin Cross <ccross@android.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] acpi: intel_idle : break dependency between modules
-References: <201206271506.29034.trenn@suse.de> <201206282124.09857.rjw@sisk.pl> <4FED69BE.20707@linaro.org> <201206300027.05175.rjw@sisk.pl>
-In-Reply-To: <201206300027.05175.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sun, 1 Jul 2012 15:52:02 -0400
+Message-ID: <1341172202.2556.13.camel@falcor>
+Subject: Re: [PATCH 0/4] Was: deferring __fput()
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        ". James Morris" <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Date: Sun, 01 Jul 2012 15:50:02 -0400
+In-Reply-To: <20120630050238.GZ14083@ZenIV.linux.org.uk>
+References: <20120625060357.GT14083@ZenIV.linux.org.uk>
+	 <20120625151812.GA16062@redhat.com> <20120627183721.GA23086@redhat.com>
+	 <20120628043836.GW14083@ZenIV.linux.org.uk>
+	 <1340947838.2293.2.camel@falcor>
+	 <20120629083311.GX14083@ZenIV.linux.org.uk>
+	 <1340974925.2309.13.camel@falcor>
+	 <20120629174130.GY14083@ZenIV.linux.org.uk>
+	 <1341005929.2194.9.camel@falcor.watson.ibm.com>
+	 <1341014197.2342.7.camel@falcor.watson.ibm.com>
+	 <20120630050238.GZ14083@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12070119-7606-0000-0000-000001A486AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2012 12:27 AM, Rafael J. Wysocki wrote:
-> On Friday, June 29, 2012, Daniel Lezcano wrote:
->> On 06/28/2012 09:24 PM, Rafael J. Wysocki wrote:
->>> On Thursday, June 28, 2012, Daniel Lezcano wrote:
->>>> When the system is booted with some cpus offline, the idle
->>>> driver is not initialized. When a cpu is set online, the
->>>> acpi code call the intel idle init function. Unfortunately
->>>> this code introduce a dependency between intel_idle and acpi.
->>>>
->>>> This patch is intended to remove this dependency by using the
->>>> notifier of intel_idle. This patch has the benefit of
->>>> encapsulating the intel_idle driver and remove some exported
->>>> functions.
->>>>
->>>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
->>>
->>> This one looks good to me too.
->>>
->>> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
->>
->> Thanks for the review Rafael.
->>
->>> Len, are you going to take it?
->>
->> Rafael, Len,
->>
->> After the discussion [1], I put in place a tree at:
->>
->> ssh://git.linaro.org/srv/git.linaro.org/git/people/dlezcano/cpuidle-next.git
->> #cpuidle-next
->>
->> I proposed this tree to group the cpuidle modifications and prevent the
->> last minutes conflict when Len will apply them.
->>
->> I also included the tree into linux-next for wider testing.
+On Sat, 2012-06-30 at 06:02 +0100, Al Viro wrote:
+> On Fri, Jun 29, 2012 at 07:56:37PM -0400, Mimi Zohar wrote:
+> > Looking at /var/log/messages, seems like the ata4 and ata5 "SATA link
+> > down (SStatus 0 SControl 300)" messages are normal.
+> > 
+> > ata5: SATA link down (SStatus 0 SControl 300)
+> > Freeing unused kernel memory: 1016k freed
+> > Write protecting the kernel read-only data: 12288k
+> > Freeing unused kernel memory: 1964k freed
+> > Freeing unused kernel memory: 1468k freed
+> > Failed to execute /init
+> > Kernel panic - not syncing. No init Found.  Try passing init= option ...
+> > Pid: 1, comm: swapper/0 not tainted 3.5.0-rc1+
+> > Call Trace:
+> > 	panic
+> > 	init_post
+> > 	kernel_init
+> > 	?do_early_param
+> > 	kernel_thread_helper
+> > 	start_kernel
 > 
-> I can't speak for Len, but I'm not sure he'll like this.
+> Just to make sure - you are not getting IMA violations among all that?  
 
-I sent the proposition a week ago and Len was Cc'ed. I guess he is very
-busy but the problem we are facing is there are a lot of pending
-modifications for cpuidle because of some new architecture (like the
-big.LITTLE and tegra3). Colin's patchset is one of them.
+I'm not running with the IMA-appraisal patches, nor does the
+Fedora .config enable IMA.  So I'm not getting violations.
 
-> Anyway, you seem to have the same material as Len in that tree, won't there
-> be any conflicts in linux-next?
+> AFAICS,
+> the damn thing should behave no worse in that respect than your own patch
+> a while ago, and you haven't mentioned them in this thread, but...
 
-At the first glance no, until he merge the patches we sent. As I already
-said the purpose is to help to consolidate the patches sent for cpuidle
-by acting as a proxy.
+I haven't mentioned the "ima: defer calling __fput()" patch, since I've
+compiled git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git
+#untested with a .config based on config-3.4.2-1.fc16.x86_64 and am
+having this problem.  No need to add more confusion.  The "ima: defer
+calling __fput()" will be dropped from the patchset, as soon as the
+general method works.
 
-I hope that helps.
+I've isolated the problem to the PF_KTHREAD section of fput().
 
-Thanks
-  -- Daniel
+void fput(struct file *file)
+{
+        if (atomic_long_dec_and_test(&file->f_count)) {
+                struct task_struct *task = current;
+                file_sb_list_del(file);
+                if (unlikely(in_interrupt() || task->flags & PF_KTHREAD)) {
+                        unsigned long flags;
+                        spin_lock_irqsave(&delayed_fput_lock, flags);
+                        list_add(&file->f_u.fu_list, &delayed_fput_list);
+                        schedule_work(&delayed_fput_work);
+                        spin_unlock_irqrestore(&delayed_fput_lock, flags);
+                        return;
+                }
+                init_task_work(&file->f_u.fu_rcuhead, ____fput);
+                task_work_add(task, &file->f_u.fu_rcuhead, true);
+        }
+}
 
+Replacing it with a call to __fput(), the system boots.
 
+thanks,
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Mimi
 
