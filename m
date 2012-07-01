@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab2GAQGV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 12:06:21 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:54595 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752233Ab2GAQGU (ORCPT
+	id S1755294Ab2GAQIL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 12:08:11 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:39472 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754250Ab2GAQIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 12:06:20 -0400
+	Sun, 1 Jul 2012 12:08:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120701153218.GB4462@mwanda>
+In-Reply-To: <CAHdPZaO-BPVCaiWbaE7k3o+7vRx040fvR4AyGyBMsfnchv_jVA@mail.gmail.com>
 References: <1341150127-13162-1-git-send-email-devendra.aaru@gmail.com>
 	<20120701153218.GB4462@mwanda>
-Date: Sun, 1 Jul 2012 21:36:19 +0530
-Message-ID: <CAHdPZaO-BPVCaiWbaE7k3o+7vRx040fvR4AyGyBMsfnchv_jVA@mail.gmail.com>
+	<CAHdPZaO-BPVCaiWbaE7k3o+7vRx040fvR4AyGyBMsfnchv_jVA@mail.gmail.com>
+Date: Sun, 1 Jul 2012 21:38:09 +0530
+Message-ID: <CAHdPZaNxMbFGCxOU7PnGbUy4bu9z=bB35ysbbNk06MF3_PHCnw@mail.gmail.com>
 Subject: Re: [PATCH V2 2/2] staging/comedi/drivers: free allocated priv and
  release resources if comedi_alloc_subdevices
 From: "devendra.aaru" <devendra.aaru@gmail.com>
@@ -26,31 +27,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+Hi,
 
-On Sun, Jul 1, 2012 at 9:02 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Sun, Jul 01, 2012 at 07:12:07PM +0530, Devendra Naga wrote:
->> as comedi_alloc_subdevices may fail, we leak out the memory allocated by alloc_private,
->> and also the I/O regions we requested.
->>
->> free out the private data pointer of the driver, and release the I/O regions.
->>
->> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
->
-> This breaks the build.
+Dropping the patch 2/2 and its V2 also because of build breakage,
+sending V3 in a few minutes.
 
-dev->priv should be dev->private. I was in a hurry to send the fix and
-didn't build tested,
->
-> Also Hartley and Ian, what's the point of alloc_private()?  It's
-> just hiding stuff which we need to know about and use later on
-> anyway.
->
-> regards,
-> dan carpenter
->
->
+Patch 1/2 is fine though.
 
-sorry again,
-
-Devendra.
+Thanks,
+Devendra
