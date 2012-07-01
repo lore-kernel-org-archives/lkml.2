@@ -1,125 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab2GATUj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 15:20:39 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:46410 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755959Ab2GATUc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 15:20:32 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Tejun Heo <tj@kernel.org>, hacklu <embedway.linux@gmail.com>,
-        linux-kernel@vger.kernel.org
-References: <4FB492F7.8050401@gmail.com> <87ipf9gtsb.fsf@xmission.com>
-	<4FCAD590.8000506@zytor.com> <87obp0bxdv.fsf@xmission.com>
-	<4FCB602B.70907@zytor.com> <87fwacb0jq.fsf_-_@xmission.com>
-	<877gvob0g4.fsf_-_@xmission.com> <4FF06701.6010004@zytor.com>
-	<4FF06DF4.4000006@zytor.com> <87wr2nsbvi.fsf@xmission.com>
-	<4FF0769F.8090105@zytor.com> <87sjdbsb0v.fsf@xmission.com>
-	<4FF07E66.2020706@zytor.com> <87d34fs914.fsf@xmission.com>
-	<4FF085B1.6070604@zytor.com> <87a9zj9w43.fsf@xmission.com>
-	<4FF098E2.3040307@zytor.com>
-Date: Sun, 01 Jul 2012 12:20:25 -0700
-In-Reply-To: <4FF098E2.3040307@zytor.com> (H. Peter Anvin's message of "Sun,
-	01 Jul 2012 11:37:22 -0700")
-Message-ID: <87sjdb8f0m.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1756016Ab2GATXP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 15:23:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46861 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751176Ab2GATXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 15:23:15 -0400
+Message-ID: <4FF0A399.8070207@zytor.com>
+Date: Sun, 01 Jul 2012 12:23:05 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18djmZMNnLDtjSljIpW7CNMGFoZuLDDFjg=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0006]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"H. Peter Anvin" <hpa@zytor.com>
-X-Spam-Relay-Country: 
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Tejun Heo <tj@kernel.org>, hacklu <embedway.linux@gmail.com>,
+        linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 2/2] x86, boot: Optimize the elf header handling.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+References: <4FB492F7.8050401@gmail.com> <87ipf9gtsb.fsf@xmission.com> <4FCAD590.8000506@zytor.com> <87obp0bxdv.fsf@xmission.com> <4FCB602B.70907@zytor.com> <87fwacb0jq.fsf_-_@xmission.com> <877gvob0g4.fsf_-_@xmission.com> <4FF06701.6010004@zytor.com> <4FF06DF4.4000006@zytor.com> <87wr2nsbvi.fsf@xmission.com> <4FF0769F.8090105@zytor.com> <87sjdbsb0v.fsf@xmission.com> <4FF07E66.2020706@zytor.com> <87d34fs914.fsf@xmission.com> <4FF085B1.6070604@zytor.com> <87a9zj9w43.fsf@xmission.com> <4FF098E2.3040307@zytor.com> <87sjdb8f0m.fsf@xmission.com>
+In-Reply-To: <87sjdb8f0m.fsf@xmission.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"H. Peter Anvin" <hpa@zytor.com> writes:
+On 07/01/2012 12:20 PM, Eric W. Biederman wrote:
+> 
+> Grumble Grumble.
+> 
+> If I force a 2M alignment, poffsets and paddrs align and my previous
+> patches work.  Although I don't expect that to be more than a testing
+> hack.
+> 
+> Meanwhile if I force a 4K max page size for most purposes things look
+> better from a file offset perspective.  But the data segment is now less
+> aligned in the file than it is in memory and my patches don't work.
+> 
+> Sigh.
+> 
+> I feel like I have stumbled into pandoras box.
+> 
 
-> On 07/01/2012 11:25 AM, Eric W. Biederman wrote:
->> 
->> Well I see what is going on now.
->> 
->> In the vmlinux the paddrs and the poffsests stop tracking when they
->> come to the percpu PT_LOAD segment.
->> 
->> It looks like we give the percpu segment a 4K alignment in memory
->> and a 2M alignment in the file.
->> 
->> It looks like something is causing ld to compute an unfortunate physical
->> load address for the percpu section.
->> 
->> At first glace I would say that is a bug.  Either we need the alignment
->> or we don't.  But if we need the alignment we certainly need it to
->> be respected for the real memory locations of the init symbols..
->> 
->
-> If we don't need it, I think we can use -z max-page-size=4096, but we
-> use the PMD alignment for percpu on x86-64; Tejun, does that apply to
-> the .data..percpu section in the executable as well?
+Last I looked at this we didn't actually have a general PHDR parser...
+are you running into its limitations?
 
-Grumble Grumble.
-
-If I force a 2M alignment, poffsets and paddrs align and my previous
-patches work.  Although I don't expect that to be more than a testing
-hack.
-
-Meanwhile if I force a 4K max page size for most purposes things look
-better from a file offset perspective.  But the data segment is now less
-aligned in the file than it is in memory and my patches don't work.
-
-Sigh.
-
-I feel like I have stumbled into pandoras box.
-
-Eric
-
-
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index af6fb8a..7276d44 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -187,6 +187,7 @@ SECTIONS
-         * output PHDR, so the next output section - .init.text - should
-         * start another segment - init.
-         */
-+       . = ALIGN(0x200000);
-        PERCPU_VADDR(INTERNODE_CACHE_BYTES, 0, :percpu)
- #endif
-
-
-> 	-hpa
-
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 1f25214..b5b31c3 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -120,7 +120,7 @@ avx_instr := $(call as-instr,vxorps %ymm0$(comma)%ymm1$(comma)%ymm2,-DCONFIG_AS_
- KBUILD_AFLAGS += $(cfi) $(cfi-sigframe) $(cfi-sections) $(asinstr) $(avx_instr)
- KBUILD_CFLAGS += $(cfi) $(cfi-sigframe) $(cfi-sections) $(asinstr) $(avx_instr)
- 
--LDFLAGS := -m elf_$(UTS_MACHINE)
-+LDFLAGS := -m elf_$(UTS_MACHINE) -z max-page-size=4096
- 
- # Speed up the build
- KBUILD_CFLAGS += -pipe
-
+	-hpa
 
