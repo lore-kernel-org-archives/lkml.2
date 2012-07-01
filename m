@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab2GAByp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 21:54:45 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45410 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753737Ab2GAByo (ORCPT
+	id S1754554Ab2GACMK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 22:12:10 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:57732 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754168Ab2GACMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 21:54:44 -0400
-Message-ID: <4FEFADE3.7000109@kernel.org>
-Date: Sat, 30 Jun 2012 19:54:43 -0600
-From: "John 'Warthog9' Hawley" <warthog9@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Sat, 30 Jun 2012 22:12:08 -0400
+Date: Sat, 30 Jun 2012 22:12:07 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Frederik Himpe <fhimpe@telenet.be>
+cc: linux-kernel@vger.kernel.org, <linux-uvc-devel@lists.sourceforge.net>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: Logitech HD Webcam C525 does not work when connected to USB 2
+ port, works on USB 3
+In-Reply-To: <1341084110.4862.15.camel@piranha.localdomain>
+Message-ID: <Pine.LNX.4.44L0.1206302209270.6344-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: users@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [KORG] Patchwork online
-References: <4FEE2D99.7000906@kernel.org> <201206301454.52715.rjw@sisk.pl>
-In-Reply-To: <201206301454.52715.rjw@sisk.pl>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2012 06:54 AM, Rafael J. Wysocki wrote:
-> Hi,
-> 
-> Thanks for bringing it back to life!
-> 
-> On Saturday, June 30, 2012, John 'Warthog9' Hawley wrote:
->> Just a quick update for everyone, https://patchwork.kernel.org is back
->> online, and all but the linux-pm mailing lists are receiving and
->> processing data.
-> 
-> Er, why is there a problem with linux-pm in particular?
+On Sat, 30 Jun 2012, Frederik Himpe wrote:
 
-That particular mailing list isn't responding to subscription requests,
-and as rdd was pointing out in IRC there seems to be other issues going
-on there already.  When it settles we'll get it added back in.
+> Hello,
+> 
+> I've got a Logitech HD Webcam C525 using the uvcvideo module and I use
+> Linux 3.5 RC4. When this camera is connected to a USB2 port, it does not
+> work most of the time. However it does work fine when connected to a USB
+> 3 port. In Windows it works on both ports.
 
-- John
+...
+
+> Complete dmesg and lsusb -v output about a failed attempt (on USB 2
+> port) and a succeeded attempt (on USB 3) can be found on
+> http://artipc10.vub.ac.be/~frederik/webcam/
+
+A usbmon trace would be more helpful.  Or perhaps a pair of traces, one 
+for the USB-2 port and one for the USB-3 port.  See the instructions in 
+Documentation/usb/usbmon.txt.
+
+Those disconnections in your dmesg logs are not normal.  They could be 
+caused by a hardware incompatibility or by a software problem -- 
+although if it were software then I would expect the same thing to 
+happen with the USB-3 port.
+
+Alan Stern
+
