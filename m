@@ -1,138 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab2GBC51 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 22:57:27 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48857 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932148Ab2GBC5X (ORCPT
+	id S932276Ab2GBC6b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 22:58:31 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:43405 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932148Ab2GBC6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 22:57:23 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FF10DF0.7000508@jp.fujitsu.com>
-Date: Mon, 2 Jul 2012 11:56:48 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Sun, 1 Jul 2012 22:58:30 -0400
+Date: Sun, 1 Jul 2012 19:18:28 +0200
+From: Harald Welte <laforge@gnumonks.org>
+To: linux-kernel@vger.kernel.org
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] List LGPL (v2 / v2.1) as GPL compatible in
+ license_is_gpl_compatible()
+Message-ID: <20120701171828.GL6079@prithivi.gnumonks.org>
+References: <20120531222407.GB5256@prithivi.gnumonks.org>
+ <20120601090003.2f7090c1@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
-        <len.brown@intel.com>, <benh@kernel.crashing.org>, <paulus@samba.org>,
-        <cl@linux.com>, <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
-Subject: Re: [RFC PATCH 2/12] memory-hogplug : check memory offline in offline_pages
-References: <4FEA9C88.1070800@jp.fujitsu.com> <4FEA9DB1.7010303@jp.fujitsu.com> <4FEF2075.2050603@gmail.com>
-In-Reply-To: <4FEF2075.2050603@gmail.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120601090003.2f7090c1@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiang,
+Hi all,
 
-2012/07/01 0:51, Jiang Liu wrote:
-> On 06/27/2012 01:44 PM, Yasuaki Ishimatsu wrote:
->> When offline_pages() is called to offlined memory, the function fails since
->> all memory has been offlined. In this case, the function should succeed.
->> The patch adds the check function into offline_pages().
->>
->> CC: Len Brown <len.brown@intel.com>
->> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> CC: Paul Mackerras <paulus@samba.org>
->> CC: Christoph Lameter <cl@linux.com>
->> Cc: Minchan Kim <minchan.kim@gmail.com>
->> CC: Andrew Morton <akpm@linux-foundation.org>
->> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> CC: Wen Congyang <wency@cn.fujitsu.com>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>
->> ---
->>   drivers/base/memory.c  |   20 ++++++++++++++++++++
->>   include/linux/memory.h |    1 +
->>   mm/memory_hotplug.c    |    5 +++++
->>   3 files changed, 26 insertions(+)
->>
->> Index: linux-3.5-rc4/drivers/base/memory.c
->> ===================================================================
->> --- linux-3.5-rc4.orig/drivers/base/memory.c	2012-06-26 13:28:16.726211752 +0900
->> +++ linux-3.5-rc4/drivers/base/memory.c	2012-06-26 13:34:22.423639904 +0900
->> @@ -70,6 +70,26 @@ void unregister_memory_isolate_notifier(
->>   }
->>   EXPORT_SYMBOL(unregister_memory_isolate_notifier);
->>
->> +bool memory_is_offline(unsigned long start_pfn, unsigned long end_pfn)
->> +{
->> +	struct memory_block *mem;
->> +	struct mem_section *section;
->> +	unsigned long pfn, section_nr;
->> +
->> +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
->> +		section_nr = pfn_to_section_nr(pfn);
->> +		section = __nr_to_section(section_nr);
->> +		mem = find_memory_block(section);
-> Seems find_memory_block_hinted() is more efficient than find_memory_block() here.
+I'd like to follow-up to this message, as the patch didn't get merged
+during the last month.
 
-Thanks. I'll update it.
+It still feels odd to see messages about "LGPL" tainting the kernel.  Is
+this really the intended behaviour?
 
-Thanks,
-Yasuaki Ishimatsu
+Regards,
+	Harald
 
-> 
->> +		if (!mem)
->> +			continue;
->> +		if (mem->state == MEM_OFFLINE)
->> +			continue;
->> +		return false;
->> +	}
->> +
->> +	return true;
->> +}
->> +
->>   /*
->>    * register_memory - Setup a sysfs device for a memory block
->>    */
->> Index: linux-3.5-rc4/include/linux/memory.h
->> ===================================================================
->> --- linux-3.5-rc4.orig/include/linux/memory.h	2012-06-25 04:53:04.000000000 +0900
->> +++ linux-3.5-rc4/include/linux/memory.h	2012-06-26 13:34:22.424639891 +0900
->> @@ -120,6 +120,7 @@ extern int memory_isolate_notify(unsigne
->>   extern struct memory_block *find_memory_block_hinted(struct mem_section *,
->>   							struct memory_block *);
->>   extern struct memory_block *find_memory_block(struct mem_section *);
->> +extern bool memory_is_offline(unsigned long start_pfn, unsigned long end_pfn);
->>   #define CONFIG_MEM_BLOCK_SIZE	(PAGES_PER_SECTION<<PAGE_SHIFT)
->>   enum mem_add_context { BOOT, HOTPLUG };
->>   #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
->> Index: linux-3.5-rc4/mm/memory_hotplug.c
->> ===================================================================
->> --- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-06-26 13:28:16.743211538 +0900
->> +++ linux-3.5-rc4/mm/memory_hotplug.c	2012-06-26 13:48:38.264940468 +0900
->> @@ -887,6 +887,11 @@ static int __ref offline_pages(unsigned
->>
->>   	lock_memory_hotplug();
->>
->> +	if (memory_is_offline(start_pfn, end_pfn)) {
->> +		ret = 0;
->> +		goto out;
->> +	}
->> +
->>   	zone = page_zone(pfn_to_page(start_pfn));
->>   	node = zone_to_nid(zone);
->>   	nr_pages = end_pfn - start_pfn;
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
-
-
+-- 
+- Harald Welte <laforge@gnumonks.org>           http://laforge.gnumonks.org/
+============================================================================
+"Privacy in residential applications is a desirable marketing option."
+                                                  (ETSI EN 300 175-7 Ch. A6)
