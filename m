@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab2GACMK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jun 2012 22:12:10 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:57732 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754168Ab2GACMI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jun 2012 22:12:08 -0400
-Date: Sat, 30 Jun 2012 22:12:07 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Frederik Himpe <fhimpe@telenet.be>
-cc: linux-kernel@vger.kernel.org, <linux-uvc-devel@lists.sourceforge.net>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: Logitech HD Webcam C525 does not work when connected to USB 2
- port, works on USB 3
-In-Reply-To: <1341084110.4862.15.camel@piranha.localdomain>
-Message-ID: <Pine.LNX.4.44L0.1206302209270.6344-100000@netrider.rowland.org>
+	id S1754645Ab2GACP4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jun 2012 22:15:56 -0400
+Received: from seven.medozas.de ([5.9.24.206]:51527 "EHLO seven.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754168Ab2GACPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jun 2012 22:15:55 -0400
+Date: Sun, 1 Jul 2012 04:15:52 +0200 (CEST)
+From: Jan Engelhardt <jengelh@inai.de>
+To: Vincent Sanders <vincent.sanders@collabora.co.uk>
+cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: Re: [PATCH net-next 06/15] netfilter: Add NFPROTO_BUS hook constant
+ for AF_BUS socket family
+In-Reply-To: <1340988354-26981-7-git-send-email-vincent.sanders@collabora.co.uk>
+Message-ID: <alpine.LNX.2.01.1207010411200.12387@frira.zrqbmnf.qr>
+References: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk> <1340988354-26981-7-git-send-email-vincent.sanders@collabora.co.uk>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 30 Jun 2012, Frederik Himpe wrote:
+On Friday 2012-06-29 18:45, Vincent Sanders wrote:
 
-> Hello,
-> 
-> I've got a Logitech HD Webcam C525 using the uvcvideo module and I use
-> Linux 3.5 RC4. When this camera is connected to a USB2 port, it does not
-> work most of the time. However it does work fine when connected to a USB
-> 3 port. In Windows it works on both ports.
+>AF_BUS sockets add a netfilter NF_HOOK() on the packet sending path.
+>This allows packet to be mangled by registered netfilter hooks.
 
-...
+If you do touch netfiler, consider adding that mailing list as well.
 
-> Complete dmesg and lsusb -v output about a failed attempt (on USB 2
-> port) and a succeeded attempt (on USB 3) can be found on
-> http://artipc10.vub.ac.be/~frederik/webcam/
+>diff --git a/include/linux/netfilter.h b/include/linux/netfilter.h
+>index c613cf0..0698924 100644
+>--- a/include/linux/netfilter.h
+>+++ b/include/linux/netfilter.h
+>@@ -67,6 +67,7 @@ enum {
+> 	NFPROTO_BRIDGE =  7,
+> 	NFPROTO_IPV6   = 10,
+> 	NFPROTO_DECNET = 12,
+>+	NFPROTO_BUS,
+> 	NFPROTO_NUMPROTO,
+> };
 
-A usbmon trace would be more helpful.  Or perhaps a pair of traces, one 
-for the USB-2 port and one for the USB-3 port.  See the instructions in 
-Documentation/usb/usbmon.txt.
-
-Those disconnections in your dmesg logs are not normal.  They could be 
-caused by a hardware incompatibility or by a software problem -- 
-although if it were software then I would expect the same thing to 
-happen with the USB-3 port.
-
-Alan Stern
-
+Make use of the holes that were left.
