@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab2GASQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:16:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47017 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755996Ab2GASQz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932623Ab2GASQz (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 1 Jul 2012 14:16:55 -0400
-Message-Id: <20120701172007.827669763@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47026 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756029Ab2GASQw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 14:16:52 -0400
+Message-Id: <20120701172012.356550284@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 01 Jul 2012 18:20:14 +0100
+Date: Sun, 01 Jul 2012 18:20:46 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andrea Arcangeli <aarcange@redhat.com>,
-        Ulrich Obergfell <uobergfe@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Larry Woodman <lwoodman@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>, Rik van Riel <riel@redhat.com>
-Subject: [ 08/48] mm: pmd_read_atomic: fix 32bit PAE pmd walk vs pmd_populate SMP race
- condition
+        alan@lxorguk.ukuu.org.uk, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>, Jan Beulich <JBeulich@suse.com>
+Subject: [ 40/48] x86, cpufeature: Rename X86_FEATURE_DTS to X86_FEATURE_DTHERM
 In-Reply-To: <20120701172006.535271340@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,216 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 26c191788f18129af0eb32a358cdaea0c7479626 upstream.
+commit 4ad33411308596f2f918603509729922a1ec4411 upstream.
 
-When holding the mmap_sem for reading, pmd_offset_map_lock should only
-run on a pmd_t that has been read atomically from the pmdp pointer,
-otherwise we may read only half of it leading to this crash.
+It makes sense to label "Digital Thermal Sensor" as "DTS", but
+unfortunately the string "dts" was already used for "Debug Store", and
+/proc/cpuinfo is a user space ABI.
 
-PID: 11679  TASK: f06e8000  CPU: 3   COMMAND: "do_race_2_panic"
- #0 [f06a9dd8] crash_kexec at c049b5ec
- #1 [f06a9e2c] oops_end at c083d1c2
- #2 [f06a9e40] no_context at c0433ded
- #3 [f06a9e64] bad_area_nosemaphore at c043401a
- #4 [f06a9e6c] __do_page_fault at c0434493
- #5 [f06a9eec] do_page_fault at c083eb45
- #6 [f06a9f04] error_code (via page_fault) at c083c5d5
-    EAX: 01fb470c EBX: fff35000 ECX: 00000003 EDX: 00000100 EBP:
-    00000000
-    DS:  007b     ESI: 9e201000 ES:  007b     EDI: 01fb4700 GS:  00e0
-    CS:  0060     EIP: c083bc14 ERR: ffffffff EFLAGS: 00010246
- #7 [f06a9f38] _spin_lock at c083bc14
- #8 [f06a9f44] sys_mincore at c0507b7d
- #9 [f06a9fb0] system_call at c083becd
-                         start           len
-    EAX: ffffffda  EBX: 9e200000  ECX: 00001000  EDX: 6228537f
-    DS:  007b      ESI: 00000000  ES:  007b      EDI: 003d0f00
-    SS:  007b      ESP: 62285354  EBP: 62285388  GS:  0033
-    CS:  0073      EIP: 00291416  ERR: 000000da  EFLAGS: 00000286
+Therefore, rename this to "dtherm".
 
-This should be a longstanding bug affecting x86 32bit PAE without THP.
-Only archs with 64bit large pmd_t and 32bit unsigned long should be
-affected.
+This conflict went into mainline via the hwmon tree without any x86
+maintainer ack, and without any kind of hint in the subject.
 
-With THP enabled the barrier() in pmd_none_or_trans_huge_or_clear_bad()
-would partly hide the bug when the pmd transition from none to stable,
-by forcing a re-read of the *pmd in pmd_offset_map_lock, but when THP is
-enabled a new set of problem arises by the fact could then transition
-freely in any of the none, pmd_trans_huge or pmd_trans_stable states.
-So making the barrier in pmd_none_or_trans_huge_or_clear_bad()
-unconditional isn't good idea and it would be a flakey solution.
+    a4659053 x86/hwmon: fix initialization of coretemp
 
-This should be fully fixed by introducing a pmd_read_atomic that reads
-the pmd in order with THP disabled, or by reading the pmd atomically
-with cmpxchg8b with THP enabled.
-
-Luckily this new race condition only triggers in the places that must
-already be covered by pmd_none_or_trans_huge_or_clear_bad() so the fix
-is localized there but this bug is not related to THP.
-
-NOTE: this can trigger on x86 32bit systems with PAE enabled with more
-than 4G of ram, otherwise the high part of the pmd will never risk to be
-truncated because it would be zero at all times, in turn so hiding the
-SMP race.
-
-This bug was discovered and fully debugged by Ulrich, quote:
-
-----
-[..]
-pmd_none_or_trans_huge_or_clear_bad() loads the content of edx and
-eax.
-
-    496 static inline int pmd_none_or_trans_huge_or_clear_bad(pmd_t
-    *pmd)
-    497 {
-    498         /* depend on compiler for an atomic pmd read */
-    499         pmd_t pmdval = *pmd;
-
-                                // edi = pmd pointer
-0xc0507a74 <sys_mincore+548>:   mov    0x8(%esp),%edi
-...
-                                // edx = PTE page table high address
-0xc0507a84 <sys_mincore+564>:   mov    0x4(%edi),%edx
-...
-                                // eax = PTE page table low address
-0xc0507a8e <sys_mincore+574>:   mov    (%edi),%eax
-
-[..]
-
-Please note that the PMD is not read atomically. These are two "mov"
-instructions where the high order bits of the PMD entry are fetched
-first. Hence, the above machine code is prone to the following race.
-
--  The PMD entry {high|low} is 0x0000000000000000.
-   The "mov" at 0xc0507a84 loads 0x00000000 into edx.
-
--  A page fault (on another CPU) sneaks in between the two "mov"
-   instructions and instantiates the PMD.
-
--  The PMD entry {high|low} is now 0x00000003fda38067.
-   The "mov" at 0xc0507a8e loads 0xfda38067 into eax.
-----
-
-Reported-by: Ulrich Obergfell <uobergfe@redhat.com>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Larry Woodman <lwoodman@redhat.com>
-Cc: Petr Matousek <pmatouse@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Jean Delvare <khali@linux-fr.org>
+Link: http://lkml.kernel.org/r/4FE34BCB.5050305@linux.intel.com
+Cc: Jan Beulich <JBeulich@suse.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+[bwh: Backported to 3.2: drop the coretemp device table change]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/include/asm/pgtable-3level.h |   50 +++++++++++++++++++++++++++++++++
- include/asm-generic/pgtable.h         |   22 +++++++++++++--
- 2 files changed, 70 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/cpufeature.h |    2 +-
+ arch/x86/kernel/cpu/scattered.c   |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable-3level.h b/arch/x86/include/asm/pgtable-3level.h
-index effff47..43876f1 100644
---- a/arch/x86/include/asm/pgtable-3level.h
-+++ b/arch/x86/include/asm/pgtable-3level.h
-@@ -31,6 +31,56 @@ static inline void native_set_pte(pte_t *ptep, pte_t pte)
- 	ptep->pte_low = pte.pte_low;
- }
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -175,7 +175,7 @@
+ #define X86_FEATURE_XSAVEOPT	(7*32+ 4) /* Optimized Xsave */
+ #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
+ #define X86_FEATURE_PTS		(7*32+ 6) /* Intel Package Thermal Status */
+-#define X86_FEATURE_DTS		(7*32+ 7) /* Digital Thermal Sensor */
++#define X86_FEATURE_DTHERM	(7*32+ 7) /* Digital Thermal Sensor */
  
-+#define pmd_read_atomic pmd_read_atomic
-+/*
-+ * pte_offset_map_lock on 32bit PAE kernels was reading the pmd_t with
-+ * a "*pmdp" dereference done by gcc. Problem is, in certain places
-+ * where pte_offset_map_lock is called, concurrent page faults are
-+ * allowed, if the mmap_sem is hold for reading. An example is mincore
-+ * vs page faults vs MADV_DONTNEED. On the page fault side
-+ * pmd_populate rightfully does a set_64bit, but if we're reading the
-+ * pmd_t with a "*pmdp" on the mincore side, a SMP race can happen
-+ * because gcc will not read the 64bit of the pmd atomically. To fix
-+ * this all places running pmd_offset_map_lock() while holding the
-+ * mmap_sem in read mode, shall read the pmdp pointer using this
-+ * function to know if the pmd is null nor not, and in turn to know if
-+ * they can run pmd_offset_map_lock or pmd_trans_huge or other pmd
-+ * operations.
-+ *
-+ * Without THP if the mmap_sem is hold for reading, the
-+ * pmd can only transition from null to not null while pmd_read_atomic runs.
-+ * So there's no need of literally reading it atomically.
-+ *
-+ * With THP if the mmap_sem is hold for reading, the pmd can become
-+ * THP or null or point to a pte (and in turn become "stable") at any
-+ * time under pmd_read_atomic, so it's mandatory to read it atomically
-+ * with cmpxchg8b.
-+ */
-+#ifndef CONFIG_TRANSPARENT_HUGEPAGE
-+static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
-+{
-+	pmdval_t ret;
-+	u32 *tmp = (u32 *)pmdp;
-+
-+	ret = (pmdval_t) (*tmp);
-+	if (ret) {
-+		/*
-+		 * If the low part is null, we must not read the high part
-+		 * or we can end up with a partial pmd.
-+		 */
-+		smp_rmb();
-+		ret |= ((pmdval_t)*(tmp + 1)) << 32;
-+	}
-+
-+	return (pmd_t) { ret };
-+}
-+#else /* CONFIG_TRANSPARENT_HUGEPAGE */
-+static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
-+{
-+	return (pmd_t) { atomic64_read((atomic64_t *)pmdp) };
-+}
-+#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
-+
- static inline void native_set_pte_atomic(pte_t *ptep, pte_t pte)
- {
- 	set_64bit((unsigned long long *)(ptep), native_pte_val(pte));
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index e2768f1..6f2b45a 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -445,6 +445,18 @@ static inline int pmd_write(pmd_t pmd)
- #endif /* __HAVE_ARCH_PMD_WRITE */
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ /* Virtualization flags: Linux defined, word 8 */
+ #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
+--- a/arch/x86/kernel/cpu/scattered.c
++++ b/arch/x86/kernel/cpu/scattered.c
+@@ -31,7 +31,7 @@
+ 	const struct cpuid_bit *cb;
  
-+#ifndef pmd_read_atomic
-+static inline pmd_t pmd_read_atomic(pmd_t *pmdp)
-+{
-+	/*
-+	 * Depend on compiler for an atomic pmd read. NOTE: this is
-+	 * only going to work, if the pmdval_t isn't larger than
-+	 * an unsigned long.
-+	 */
-+	return *pmdp;
-+}
-+#endif
-+
- /*
-  * This function is meant to be used by sites walking pagetables with
-  * the mmap_sem hold in read mode to protect against MADV_DONTNEED and
-@@ -458,11 +470,17 @@ static inline int pmd_write(pmd_t pmd)
-  * undefined so behaving like if the pmd was none is safe (because it
-  * can return none anyway). The compiler level barrier() is critically
-  * important to compute the two checks atomically on the same pmdval.
-+ *
-+ * For 32bit kernels with a 64bit large pmd_t this automatically takes
-+ * care of reading the pmd atomically to avoid SMP race conditions
-+ * against pmd_populate() when the mmap_sem is hold for reading by the
-+ * caller (a special atomic read not done by "gcc" as in the generic
-+ * version above, is also needed when THP is disabled because the page
-+ * fault can populate the pmd from under us).
-  */
- static inline int pmd_none_or_trans_huge_or_clear_bad(pmd_t *pmd)
- {
--	/* depend on compiler for an atomic pmd read */
--	pmd_t pmdval = *pmd;
-+	pmd_t pmdval = pmd_read_atomic(pmd);
- 	/*
- 	 * The barrier will stabilize the pmdval in a register or on
- 	 * the stack so that it will stop changing under the code.
+ 	static const struct cpuid_bit __cpuinitconst cpuid_bits[] = {
+-		{ X86_FEATURE_DTS,		CR_EAX, 0, 0x00000006, 0 },
++		{ X86_FEATURE_DTHERM,		CR_EAX, 0, 0x00000006, 0 },
+ 		{ X86_FEATURE_IDA,		CR_EAX, 1, 0x00000006, 0 },
+ 		{ X86_FEATURE_ARAT,		CR_EAX, 2, 0x00000006, 0 },
+ 		{ X86_FEATURE_PLN,		CR_EAX, 4, 0x00000006, 0 },
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -660,7 +660,7 @@
+ 	 * sensors. We check this bit only, all the early CPUs
+ 	 * without thermal sensors will be filtered out.
+ 	 */
+-	if (!cpu_has(c, X86_FEATURE_DTS))
++	if (!cpu_has(c, X86_FEATURE_DTHERM))
+ 		return;
+ 
+ 	if (!pdev) {
 
 
