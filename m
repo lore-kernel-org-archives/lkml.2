@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab2GAIQR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 04:16:17 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:58348 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687Ab2GAIQO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 04:16:14 -0400
+	id S1753968Ab2GAI0a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 04:26:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29462 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753207Ab2GAI0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 04:26:25 -0400
+Date: Sun, 1 Jul 2012 11:26:34 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com, cornelia.huck@de.ibm.com
+Subject: Re: [PATCH v3 3/3] kvm: Sanitize KVM_IRQFD flags
+Message-ID: <20120701082634.GB3906@redhat.com>
+References: <20120629154940.30535.17132.stgit@bling.home>
+ <20120629155622.30535.24831.stgit@bling.home>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.01.1207010247430.7313@frira.zrqbmnf.qr>
-References: <alpine.LNX.2.01.1207010247430.7313@frira.zrqbmnf.qr>
-Date: Sun, 1 Jul 2012 01:16:13 -0700
-X-Google-Sender-Auth: z4KJbW6ORaY1BHsnYGwbsQ6oDvY
-Message-ID: <CANcMJZBcpWzJWCdV8XN6cOUsbykZ-0dre=FBP-zRDhHfi1MwrQ@mail.gmail.com>
-Subject: Re: Leap second insertion causes futex to repeatedly timeout
-From: john stultz <johnstul@us.ibm.com>
-To: Jan Engelhardt <jengelh@inai.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        simon@fire.lp0.eu, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120629155622.30535.24831.stgit@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 30, 2012 at 5:57 PM, Jan Engelhardt <jengelh@inai.de> wrote:
->
-> This year's leap second insertion has had the strange effect on at least
-> Linux versions 3.4.4 (my end) and 3.5-rc4 (Simon's box, Cc) that certain
-> processes use up all CPU power, because of futexes repeatedly timing
-> out. This seems to only affect certain processes.
->
-> Simon observes - http://s85.org/owXfmLvt - that
-> Firefox/Thunderbird/Chrome/Java are affected.
->
-> As for me, it affects VirtualBox, mysqld and ksoftirqd. The processes
-> continue to run and respond. Most weird: I can stop-start mysqld and the
-> issue persists. (I would have expected it to go away because the leap
-> second event would then be in the past that mysqld does not know about
-> anymore.)
->
->
-> Is this a kernel issue? glibc?
+On Fri, Jun 29, 2012 at 09:56:24AM -0600, Alex Williamson wrote:
+> We only know of one so far.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 
-Some of the reports that the issue is resolved by calling:
-       $ date -s "`date`"
-suggests that it might be due to clock_was_set() not being called
-after the leap second was added, causing some hrtimer confusion.
+BTW should we sanitize padding as well?
 
-Thomas: does that sound about right?
-
-I've got an initial patch to add the clock_was_set() calls where
-needed, but so far have not been able to reproduce the issue (tried
-firefox and some simpler futex tests).  I'll keep trying and hopefully
-have something to send out tomorrow.
-
-Again, my apologies for the trouble.
--john
+> ---
+> 
+>  virt/kvm/eventfd.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> index c307c24..7d7e2aa 100644
+> --- a/virt/kvm/eventfd.c
+> +++ b/virt/kvm/eventfd.c
+> @@ -340,6 +340,9 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
+>  int
+>  kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args)
+>  {
+> +	if (args->flags & ~KVM_IRQFD_FLAG_DEASSIGN)
+> +		return -EINVAL;
+> +
+>  	if (args->flags & KVM_IRQFD_FLAG_DEASSIGN)
+>  		return kvm_irqfd_deassign(kvm, args);
+>  
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
