@@ -1,154 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab2GATYN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 15:24:13 -0400
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:43646 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755830Ab2GATYM (ORCPT
+	id S1756150Ab2GATfw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 15:35:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46989 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753835Ab2GATfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 15:24:12 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH] s3fb: Add Virge/MX (86C260)
-Date: Sun, 1 Jul 2012 21:23:33 +0200
-User-Agent: KMail/1.9.10
-Cc: Ondrej Zajicek <santiago@crfreenet.org>, linux-fbdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
+	Sun, 1 Jul 2012 15:35:50 -0400
+Date: Sun, 1 Jul 2012 12:35:03 -0700
+From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+Message-ID: <tip-c9fc3f778a6a215ace14ee556067c73982b6d40f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, stable@vger.kernel.org, hmh@hmh.eng.br,
+        tglx@linutronix.de, borislav.petkov@amd.com
+Reply-To: hmh@hmh.eng.br, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        stable@vger.kernel.org, borislav.petkov@amd.com
+In-Reply-To: <1340280437-7718-2-git-send-email-bp@amd64.org>
+References: <1340280437-7718-2-git-send-email-bp@amd64.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/microcode] x86, microcode:
+  Sanitize per-cpu microcode reloading interface
+Git-Commit-ID: c9fc3f778a6a215ace14ee556067c73982b6d40f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-Message-Id: <201207012123.38236.linux@rainbow-software.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 01 Jul 2012 12:35:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for Virge/MX (86C260) chip. Although this is a laptop chip,
-there's an AGP card with this chip too.
+Commit-ID:  c9fc3f778a6a215ace14ee556067c73982b6d40f
+Gitweb:     http://git.kernel.org/tip/c9fc3f778a6a215ace14ee556067c73982b6d40f
+Author:     Borislav Petkov <borislav.petkov@amd.com>
+AuthorDate: Thu, 21 Jun 2012 14:07:16 +0200
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Sun, 1 Jul 2012 10:24:05 -0700
 
-Tested with AGP card, will probably not work correctly with laptops.
-DDC does not work on this card (even in DOS or Windows).
+x86, microcode: Sanitize per-cpu microcode reloading interface
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Microcode reloading in a per-core manner is a very bad idea for both
+major x86 vendors. And the thing is, we have such interface with which
+we can end up with different microcode versions applied on different
+cores of an otherwise homogeneous wrt (family,model,stepping) system.
 
---- a/drivers/video/s3fb.c
-+++ b/drivers/video/s3fb.c
-@@ -84,7 +84,7 @@ static const char * const s3_names[] = {"S3 Unknown", "S3 Trio32", "S3 Trio64",
- 			"S3 Virge/VX", "S3 Virge/DX", "S3 Virge/GX",
- 			"S3 Virge/GX2", "S3 Virge/GX2+", "",
- 			"S3 Trio3D/1X", "S3 Trio3D/2X", "S3 Trio3D/2X",
--			"S3 Trio3D"};
-+			"S3 Trio3D", "S3 Virge/MX"};
+So turn off the possibility of doing that per core and allow it only
+system-wide.
+
+This is a minimal fix which we'd like to see in stable too thus the
+more-or-less arbitrary decision to allow system-wide reloading only on
+the BSP:
+
+$ echo 1 > /sys/devices/system/cpu/cpu0/microcode/reload
+...
+
+and disable the interface on the other cores:
+
+$ echo 1 > /sys/devices/system/cpu/cpu23/microcode/reload
+-bash: echo: write error: Invalid argument
+
+Also, allowing the reload only from one CPU (the BSP in
+that case) doesn't allow the reload procedure to degenerate
+into an O(n^2) deal when triggering reloads from all
+/sys/devices/system/cpu/cpuX/microcode/reload sysfs nodes
+simultaneously.
+
+A more generic fix will follow.
+
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Link: http://lkml.kernel.org/r/1340280437-7718-2-git-send-email-bp@amd64.org
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: <stable@vger.kernel.org>
+---
+ arch/x86/kernel/microcode_core.c |   26 +++++++++++++++++++-------
+ 1 files changed, 19 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+index fbdfc69..24b852b 100644
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -298,19 +298,31 @@ static ssize_t reload_store(struct device *dev,
+ 			    const char *buf, size_t size)
+ {
+ 	unsigned long val;
+-	int cpu = dev->id;
+-	ssize_t ret = 0;
++	int cpu;
++	ssize_t ret = 0, tmp_ret;
++
++	/* allow reload only from the BSP */
++	if (boot_cpu_data.cpu_index != dev->id)
++		return -EINVAL;
  
- #define CHIP_UNKNOWN		0x00
- #define CHIP_732_TRIO32		0x01
-@@ -105,6 +105,7 @@ static const char * const s3_names[] = {"S3 Unknown", "S3 Trio32", "S3 Trio64",
- #define CHIP_362_TRIO3D_2X	0x11
- #define CHIP_368_TRIO3D_2X	0x12
- #define CHIP_365_TRIO3D		0x13
-+#define CHIP_260_VIRGE_MX	0x14
+ 	ret = kstrtoul(buf, 0, &val);
+ 	if (ret)
+ 		return ret;
  
- #define CHIP_XXX_TRIO		0x80
- #define CHIP_XXX_TRIO64V2_DXGX	0x81
-@@ -280,7 +281,8 @@ static int __devinit s3fb_setup_ddc_bus(struct fb_info *info)
- 	 */
- /*	vga_wseq(par->state.vgabase, 0x08, 0x06); - not needed, already unlocked */
- 	if (par->chip == CHIP_357_VIRGE_GX2 ||
--	    par->chip == CHIP_359_VIRGE_GX2P)
-+	    par->chip == CHIP_359_VIRGE_GX2P ||
-+	    par->chip == CHIP_260_VIRGE_MX)
- 		svga_wseq_mask(par->state.vgabase, 0x0d, 0x01, 0x03);
- 	else
- 		svga_wseq_mask(par->state.vgabase, 0x0d, 0x00, 0x03);
-@@ -487,7 +489,8 @@ static void s3_set_pixclock(struct fb_info *info, u32 pixclock)
- 	    par->chip == CHIP_359_VIRGE_GX2P ||
- 	    par->chip == CHIP_360_TRIO3D_1X ||
- 	    par->chip == CHIP_362_TRIO3D_2X ||
--	    par->chip == CHIP_368_TRIO3D_2X) {
-+	    par->chip == CHIP_368_TRIO3D_2X ||
-+	    par->chip == CHIP_260_VIRGE_MX) {
- 		vga_wseq(par->state.vgabase, 0x12, (n - 2) | ((r & 3) << 6));	/* n and two bits of r */
- 		vga_wseq(par->state.vgabase, 0x29, r >> 2); /* remaining highest bit of r */
- 	} else
-@@ -690,7 +693,8 @@ static int s3fb_set_par(struct fb_info *info)
- 	    par->chip != CHIP_359_VIRGE_GX2P &&
- 	    par->chip != CHIP_360_TRIO3D_1X &&
- 	    par->chip != CHIP_362_TRIO3D_2X &&
--	    par->chip != CHIP_368_TRIO3D_2X) {
-+	    par->chip != CHIP_368_TRIO3D_2X &&
-+	    par->chip != CHIP_260_VIRGE_MX) {
- 		vga_wcrt(par->state.vgabase, 0x54, 0x18); /* M parameter */
- 		vga_wcrt(par->state.vgabase, 0x60, 0xff); /* N parameter */
- 		vga_wcrt(par->state.vgabase, 0x61, 0xff); /* L parameter */
-@@ -739,7 +743,8 @@ static int s3fb_set_par(struct fb_info *info)
- 	    par->chip == CHIP_368_TRIO3D_2X ||
- 	    par->chip == CHIP_365_TRIO3D    ||
- 	    par->chip == CHIP_375_VIRGE_DX  ||
--	    par->chip == CHIP_385_VIRGE_GX) {
-+	    par->chip == CHIP_385_VIRGE_GX  ||
-+	    par->chip == CHIP_260_VIRGE_MX) {
- 		dbytes = info->var.xres * ((bpp+7)/8);
- 		vga_wcrt(par->state.vgabase, 0x91, (dbytes + 7) / 8);
- 		vga_wcrt(par->state.vgabase, 0x90, (((dbytes + 7) / 8) >> 8) | 0x80);
-@@ -751,7 +756,8 @@ static int s3fb_set_par(struct fb_info *info)
- 	    par->chip == CHIP_359_VIRGE_GX2P ||
- 	    par->chip == CHIP_360_TRIO3D_1X ||
- 	    par->chip == CHIP_362_TRIO3D_2X ||
--	    par->chip == CHIP_368_TRIO3D_2X)
-+	    par->chip == CHIP_368_TRIO3D_2X ||
-+	    par->chip == CHIP_260_VIRGE_MX)
- 		vga_wcrt(par->state.vgabase, 0x34, 0x00);
- 	else	/* enable Data Transfer Position Control (DTPC) */
- 		vga_wcrt(par->state.vgabase, 0x34, 0x10);
-@@ -807,7 +813,8 @@ static int s3fb_set_par(struct fb_info *info)
- 		    par->chip == CHIP_359_VIRGE_GX2P ||
- 		    par->chip == CHIP_360_TRIO3D_1X ||
- 		    par->chip == CHIP_362_TRIO3D_2X ||
--		    par->chip == CHIP_368_TRIO3D_2X)
-+		    par->chip == CHIP_368_TRIO3D_2X ||
-+		    par->chip == CHIP_260_VIRGE_MX)
- 			svga_wcrt_mask(par->state.vgabase, 0x67, 0x00, 0xF0);
- 		else {
- 			svga_wcrt_mask(par->state.vgabase, 0x67, 0x10, 0xF0);
-@@ -837,7 +844,8 @@ static int s3fb_set_par(struct fb_info *info)
- 			    par->chip != CHIP_359_VIRGE_GX2P &&
- 			    par->chip != CHIP_360_TRIO3D_1X &&
- 			    par->chip != CHIP_362_TRIO3D_2X &&
--			    par->chip != CHIP_368_TRIO3D_2X)
-+			    par->chip != CHIP_368_TRIO3D_2X &&
-+			    par->chip != CHIP_260_VIRGE_MX)
- 				hmul = 2;
- 		}
- 		break;
-@@ -864,7 +872,8 @@ static int s3fb_set_par(struct fb_info *info)
- 			    par->chip != CHIP_359_VIRGE_GX2P &&
- 			    par->chip != CHIP_360_TRIO3D_1X &&
- 			    par->chip != CHIP_362_TRIO3D_2X &&
--			    par->chip != CHIP_368_TRIO3D_2X)
-+			    par->chip != CHIP_368_TRIO3D_2X &&
-+			    par->chip != CHIP_260_VIRGE_MX)
- 				hmul = 2;
- 		}
- 		break;
-@@ -1208,7 +1217,8 @@ static int __devinit s3_pci_probe(struct pci_dev *dev, const struct pci_device_i
- 			break;
- 		}
- 	} else if (par->chip == CHIP_357_VIRGE_GX2 ||
--		   par->chip == CHIP_359_VIRGE_GX2P) {
-+		   par->chip == CHIP_359_VIRGE_GX2P ||
-+		   par->chip == CHIP_260_VIRGE_MX) {
- 		switch ((regval & 0xC0) >> 6) {
- 		case 1: /* 4MB */
- 			info->screen_size = 4 << 20;
-@@ -1515,6 +1525,7 @@ static struct pci_device_id s3_devices[] __devinitdata = {
- 	{PCI_DEVICE(PCI_VENDOR_ID_S3, 0x8A12), .driver_data = CHIP_359_VIRGE_GX2P},
- 	{PCI_DEVICE(PCI_VENDOR_ID_S3, 0x8A13), .driver_data = CHIP_36X_TRIO3D_1X_2X},
- 	{PCI_DEVICE(PCI_VENDOR_ID_S3, 0x8904), .driver_data = CHIP_365_TRIO3D},
-+	{PCI_DEVICE(PCI_VENDOR_ID_S3, 0x8C01), .driver_data = CHIP_260_VIRGE_MX},
+-	if (val == 1) {
+-		get_online_cpus();
+-		if (cpu_online(cpu))
+-			ret = reload_for_cpu(cpu);
+-		put_online_cpus();
++	if (val != 1)
++		return size;
++
++	get_online_cpus();
++	for_each_online_cpu(cpu) {
++		tmp_ret = reload_for_cpu(cpu);
++		if (tmp_ret != 0)
++			pr_warn("Error reloading microcode on CPU %d\n", cpu);
++
++		/* save retval of the first encountered reload error */
++		if (!ret)
++			ret = tmp_ret;
+ 	}
++	put_online_cpus();
  
- 	{0, 0, 0, 0, 0, 0, 0}
- };
-
--- 
-Ondrej Zary
+ 	if (!ret)
+ 		ret = size;
