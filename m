@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756029Ab2GASRh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 14:17:37 -0400
-Received: from mail.uibero.cl ([200.111.126.196]:46259 "EHLO mail.unicit.cl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751428Ab2GASRf convert rfc822-to-8bit (ORCPT
+	id S1756136Ab2GASSV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 14:18:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47072 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756036Ab2GASQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 14:17:35 -0400
-Date: Sun, 01 Jul 2012 14:11:29 -0400 (CLT)
-From: "MR. FRED BENHAM" <apenailillo@unicit.cl>
-Reply-To: "MR. FRED BENHAM" <fredbenhambanking55@gmail.com>
-Subject: Sevgili =?utf-8?B?YXJrYWRhxZ/EsW0s?=
-Message-ID: <74dd3a92-5c9a-4c70-967b-645f613ba97e@mail>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Originating-IP: [41.58.30.39]
-X-Mailer: Zimbra 7.1.2_GA_3268 (zclient/7.1.2_GA_3268)
-To: undisclosed-recipients:;
+	Sun, 1 Jul 2012 14:16:51 -0400
+Message-Id: <20120701172010.360032155@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Sun, 01 Jul 2012 18:20:32 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 26/48] can: c_can: precedence error in c_can_chip_config()
+In-Reply-To: <20120701172006.535271340@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-İyi günler,
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Ben burada İngiltere'de Harlsden, North West London, Bay Fred Benham duyuyorum. Ben Natwest Bank Londra ile çalışmak. Saygısızlık ve saygılarımızla, ben ikimiz için büyük yararı olacak bir iş için ofisime size yazıyorum. Benim bölümde, Özel Bankacılık Yöneticisi (Greater London Bölge Ofisi) olmak, ben yabancı müşterilerimiz biri Dr Erin ait bir hesap 18.500.000 £ GBP terk edilmiş bir toplamı (on sekiz milyon beşyüz bin pound) keşfetti
-Bir grup gökyüzü tatil yolunda, 23 Mart 2009 tarihinde Montana uçak kazasında ailesiyle birlikte öldü Jacobson.
+------------------
 
-Eğer temas seçimi bu işlem ve gizlilik buradaki hassasiyeti özellikle dolayı yaşadığınız yerin coğrafi yapısı, gelen uyandırdı.
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
- Şimdi bizim banka iddianın gelip-up yakınlarının herhangi bekliyordu ama kimse that.I yaptı şahsen artık iki yıldır akrabaları bulma konusunda başarısız olmuştur, ben bir sonraki olarak sunmak için izninizi almak £ 18.500.000 YTL değerindeki bu hesabın gelirleri size ödenecek böylece ölen kin / Faydalanıcı.
+commit d9cb9bd63eb27ac19f26a8547128c053f43a5da8 upstream.
 
-Bu tahsis veya bu yüzdeler, bana% 60 ve% 40 size de paylaşılacaktır. Sanırım yapmak üzeresiniz bu iddiayı yedeklemek için kullanılabilir gerekli tüm yasal belgeleri garantiledi. Tüm ihtiyacım belgeler içine isimleri doldurun ve meşru yararlanıcı olarak kanıtlamak için burada mahkeme bunu yasallaştırmak için olduğunu.
+(CAN_CTRLMODE_LISTENONLY & CAN_CTRLMODE_LOOPBACK) is (0x02 & 0x01) which
+is zero so the condition is never true.  The intent here was to test
+that both flags were set.
 
-Şimdi gerektiren tüm aracılığıyla bize bu işlem görmek etkinleştirmek için dürüst işbirliği, Gizlilik ve Güven olduğunu. Bu, law.Please ihlali sizi korumak bana aşağıdaki sağlayacak yasal bir düzenleme altında yürütülür size garanti: bunu üzerinden çalıştırmak için beş gün var gibi. Bu çok acil lütfen olduğunu.
- 1. Tam Adı
- 2. Telefon Numaranız
- 3. Temas Adresiniz.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/net/can/c_can/c_can.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Bir yöntemsel arama ile gitmiş olması, sana bu öneriyi ilginç bulacağınızı umarak sizinle irtibata karar verdi.
+diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
+index 8dc84d6..86cd532 100644
+--- a/drivers/net/can/c_can/c_can.c
++++ b/drivers/net/can/c_can/c_can.c
+@@ -590,8 +590,8 @@ static void c_can_chip_config(struct net_device *dev)
+ 	priv->write_reg(priv, &priv->regs->control,
+ 			CONTROL_ENABLE_AR);
  
-Bu mesaj ve ilgi gösteren bir onay üzerine Lütfen, daha fazla bilgiyi size sunacaktır.
+-	if (priv->can.ctrlmode & (CAN_CTRLMODE_LISTENONLY &
+-					CAN_CTRLMODE_LOOPBACK)) {
++	if ((priv->can.ctrlmode & CAN_CTRLMODE_LISTENONLY) &&
++	    (priv->can.ctrlmode & CAN_CTRLMODE_LOOPBACK)) {
+ 		/* loopback + silent mode : useful for hot self-test */
+ 		priv->write_reg(priv, &priv->regs->control, CONTROL_EIE |
+ 				CONTROL_SIE | CONTROL_IE | CONTROL_TEST);
 
-Bana karar biliyor yerine beni bekletmek izin çabalarıdır. Call me veya posta Tel aldıktan sonra bana yazın: +447024011974, +447924445158
 
-Saygılarımızla,
-Bay Fred Benham.
