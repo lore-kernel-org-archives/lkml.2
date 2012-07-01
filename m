@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932420Ab2GANis (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 09:38:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35637 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932358Ab2GANir (ORCPT
+	id S932475Ab2GANlz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 09:41:55 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:2290 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932455Ab2GANlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 09:38:47 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Ian Abbott <abbotti@mev.co.uk>, Mori Hess <fmhess@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH 2/2] staging/comedi/drivers: free allocated priv and release resources if comedi_alloc_subdevices
-Date: Sun,  1 Jul 2012 19:08:40 +0530
-Message-Id: <1341149920-12754-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 1 Jul 2012 09:41:53 -0400
+Message-ID: <1341150112.1911.114.camel@x61.thuisdomein>
+Subject: [PATCH 1/6] [TRIVIAL] powerpc: remove four unused files from
+ .gitignore
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Sun, 01 Jul 2012 15:41:52 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 01 Jul 2012 13:41:52.0587 (UTC) FILETIME=[45C1A1B0:01CD578F]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-as comedi_alloc_subdevices may fail, we leak out the memory allocated by alloc_private,
-and also the I/O regions we requested.
+Commit 4f3865fb57a04db7cca068fed1c15badc064a302 ("zlib_inflate: Upgrade
+library code to a recent version") removed infblock.c, infblock.h,
+infcodes.c, and infcodes.h from the tree. Remove their entries in
+powerpc's .gitignore file too.
 
-free out the private data pointer of the driver, and release the I/O regions.
-
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- drivers/staging/comedi/drivers/fl512.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+Tested with git grep only.
 
-diff --git a/drivers/staging/comedi/drivers/fl512.c b/drivers/staging/comedi/drivers/fl512.c
-index 52e6d14..6538497 100644
---- a/drivers/staging/comedi/drivers/fl512.c
-+++ b/drivers/staging/comedi/drivers/fl512.c
-@@ -135,8 +135,11 @@ static int fl512_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- #endif
- 
- 	ret = comedi_alloc_subdevices(dev, 2);
--	if (ret)
-+	if (ret) {
-+		kfree(dev);
-+		release_region(iobase, FL512_SIZE);
- 		return ret;
-+	}
- 
- 	/*
- 	 * this if the definitions of the supdevices, 2 have been defined
+ arch/powerpc/boot/.gitignore |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/arch/powerpc/boot/.gitignore b/arch/powerpc/boot/.gitignore
+index 1c1aadc..c32ae5c 100644
+--- a/arch/powerpc/boot/.gitignore
++++ b/arch/powerpc/boot/.gitignore
+@@ -1,10 +1,6 @@
+ addnote
+ empty.c
+ hack-coff
+-infblock.c
+-infblock.h
+-infcodes.c
+-infcodes.h
+ inffast.c
+ inffast.h
+ inffixed.h
 -- 
-1.7.9.5
+1.7.7.6
 
