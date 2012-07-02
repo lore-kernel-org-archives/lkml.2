@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab2GBQyK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 12:54:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31558 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751962Ab2GBQyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 12:54:08 -0400
-Message-ID: <4FF1D22D.2070804@redhat.com>
-Date: Mon, 02 Jul 2012 11:54:05 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S932181Ab2GBQ4k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 12:56:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57427 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754050Ab2GBQ4j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 12:56:39 -0400
+Date: Mon, 2 Jul 2012 09:56:33 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        hacklu <embedway.linux@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86, boot: Optimize the elf header handling.
+Message-ID: <20120702165633.GA555@google.com>
+References: <4FF06701.6010004@zytor.com>
+ <4FF06DF4.4000006@zytor.com>
+ <87wr2nsbvi.fsf@xmission.com>
+ <4FF0769F.8090105@zytor.com>
+ <87sjdbsb0v.fsf@xmission.com>
+ <4FF07E66.2020706@zytor.com>
+ <87d34fs914.fsf@xmission.com>
+ <4FF085B1.6070604@zytor.com>
+ <87a9zj9w43.fsf@xmission.com>
+ <4FF098E2.3040307@zytor.com>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Artem Bityutskiy <dedekind1@gmail.com>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: Re: ext4 blocks up
-References: <1341231316.2979.11.camel@sauron.fi.intel.com> <20120702144444.GA18074@thunk.org> <1341240862.2979.23.camel@sauron.fi.intel.com> <20120702151442.GB18074@thunk.org> <20120702164548.GD18074@thunk.org>
-In-Reply-To: <20120702164548.GD18074@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF098E2.3040307@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2012 11:45 AM, Theodore Ts'o wrote:
-> On Mon, Jul 02, 2012 at 11:14:42AM -0400, Theodore Ts'o wrote:
->> On Mon, Jul 02, 2012 at 05:54:22PM +0300, Artem Bityutskiy wrote:
->>> On Mon, 2012-07-02 at 10:44 -0400, Theodore Ts'o wrote:
->>>> Can you tell me *which* xfstest this was blocking on?
->>>
->>> Test 068 which runs fsstress.
->>
->> Hmmm, I had just started an xfstests -g auto run using standard ext4
->> defaults with 3.5-rc2, and I'm not noting any problems.  And I've
->> gotten past test 68 w/o any problems.
-> 
-> I just tried again with 3.5-rc5, and I was able to reproduce your
-> failure by using "check 68 68 68 68 68" (it failed after the 2nd time
-> it ran the fsstress test.  What's interesting is that there have been
-> no changes in fs/ext4 or fs/jbd2 since 3.5-rc2.  So this may have been
-> caused by a writeback related change; I'm starting a bisect now.
+Hello, guys.
 
-Isn't this just part of the whole class of filesystem freeze races Jan
-has been trying to work out?
+On Sun, Jul 01, 2012 at 11:37:22AM -0700, H. Peter Anvin wrote:
+> If we don't need it, I think we can use -z max-page-size=4096, but we
+> use the PMD alignment for percpu on x86-64; Tejun, does that apply to
+> the .data..percpu section in the executable as well?
 
--Eric
+I don't think the .data..percpu section needs 2M alignment.  The
+percpu data section is only used as init template and actual percpu
+addresses always go through offsetting against __per_cpu_offset[] - no
+matter what the vaddrs in the vmlinux are, they get offsetted into 2M
+aligned linear address if necessary.  I think the only alignment
+.data..percpu needs is cacheline alignment for separating its
+subsections.
+
+Thanks.
+
+-- 
+tejun
