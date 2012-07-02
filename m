@@ -1,64 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab2GBPL0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 11:11:26 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:40535 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897Ab2GBPLY (ORCPT
+	id S1754370Ab2GBPNI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 11:13:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62580 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753911Ab2GBPNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 11:11:24 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "Steven J. Magnani" <steve@digidescorp.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fat: Refactor shortname parsing
-References: <1340993528-12111-1-git-send-email-steve@digidescorp.com>
-	<87r4syrl4y.fsf@devron.myhome.or.jp>
-	<1340997235.9826.7.camel@iscandar.digidescorp.com>
-	<87bok1sx6j.fsf@devron.myhome.or.jp>
-	<87zk7lribe.fsf@devron.myhome.or.jp>
-	<1341234099.1695.13.camel@iscandar.digidescorp.com>
-	<87fw9anuwk.fsf@devron.myhome.or.jp>
-	<1341237638.1695.16.camel@iscandar.digidescorp.com>
-	<8762a6nsao.fsf@devron.myhome.or.jp>
-	<1341240342.1695.20.camel@iscandar.digidescorp.com>
-Date: Tue, 03 Jul 2012 00:11:20 +0900
-In-Reply-To: <1341240342.1695.20.camel@iscandar.digidescorp.com> (Steven
-	J. Magnani's message of "Mon, 02 Jul 2012 09:45:42 -0500")
-Message-ID: <871ukunqp3.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 2 Jul 2012 11:13:05 -0400
+From: David Ahern <dsahern@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH] perf kvm: fix segfault with report and mixed guestmount use
+Date: Mon,  2 Jul 2012 09:12:57 -0600
+Message-Id: <1341241977-71535-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Steven J. Magnani" <steve@digidescorp.com> writes:
+Using the guestmount option on record:
+    $ perf kvm --guest --host --guestmount=/tmp/guest-mount record -ag
 
-> On Mon, 2012-07-02 at 23:36 +0900, OGAWA Hirofumi wrote: 
->> "Steven J. Magnani" <steve@digidescorp.com> writes:
->> 
->> > True, but with the change you suggest we lose the incrementing of 'i',
->> > which likely would cause an infinite loop for 1:1 Unicode conversions.
->> 
->> You meant, we just have to do
->> 
->> 	if (!is_vfat)
->>         	ptname[i] = ...;
->> 	i++;
->> 
->> or something? I still feel this looks better to indicate, we don't use
->> ptname in the case of vfat.
->
-> I can change it, but there are other places in that function where
-> ptname is used that are not qualified with !is_vfat, so I don't know
-> whether this improves clarity or reduces it.
->
-> I do think fat_tolower() should not be making decisions. IMHO the
-> trigraph and a comment, perhaps before the vfat-only reassignment of
-> 'name', would be clearer. 
+But not the subsequent report:
+    $ perf kvm report
 
-Hm, the primary case is vfat. fat_tolower()/hidden is required only for
-msdos, and ptname too. So, my suggestion is trying to keep vfat case
-clean.
+causes a SEGFAULT in the usual place:
+(gdb) bt
+0  0x0000000000470356 in machine__mmap_name (self=0x0, bf=0x7fffffffbdb0 " z\370\367\377\177", size=
+    4096) at util/map.c:712
+1  0x00000000004453e8 in perf_event__process_kernel_mmap (tool=0x7fffffffde10, event=0x7ffff7f87e38,
+    machine=0x0) at util/event.c:550
+2  0x00000000004458c9 in perf_event__process_mmap (tool=0x7fffffffde10, event=0x7ffff7f87e38, sample=
+    0x7fffffffd2a0, machine=0x0) at util/event.c:656
+3  0x00000000004733e0 in perf_session_deliver_event (session=0x91aca0, event=0x7ffff7f87e38, sample=
+    0x7fffffffd2a0, tool=0x7fffffffde10, file_offset=7736) at util/session.c:979
+...
+
+The MMAP events in this case already contain the full path to the module. No
+need to require it for the report path to.
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+---
+ tools/perf/util/map.c |   29 +++++++++++++++--------------
+ 1 file changed, 15 insertions(+), 14 deletions(-)
+
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 35ae568..a1f4e36 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -669,25 +669,26 @@ struct machine *machines__find(struct rb_root *self, pid_t pid)
+ struct machine *machines__findnew(struct rb_root *self, pid_t pid)
+ {
+ 	char path[PATH_MAX];
+-	const char *root_dir;
++	const char *root_dir = "";
+ 	struct machine *machine = machines__find(self, pid);
+ 
+-	if (!machine || machine->pid != pid) {
+-		if (pid == HOST_KERNEL_ID || pid == DEFAULT_GUEST_KERNEL_ID)
+-			root_dir = "";
+-		else {
+-			if (!symbol_conf.guestmount)
+-				goto out;
+-			sprintf(path, "%s/%d", symbol_conf.guestmount, pid);
+-			if (access(path, R_OK)) {
+-				pr_err("Can't access file %s\n", path);
+-				goto out;
+-			}
+-			root_dir = path;
++	if (machine && (machine->pid == pid))
++		goto out;
++
++	if ((pid != HOST_KERNEL_ID) &&
++	    (pid != DEFAULT_GUEST_KERNEL_ID) &&
++	    (symbol_conf.guestmount)) {
++		sprintf(path, "%s/%d", symbol_conf.guestmount, pid);
++		if (access(path, R_OK)) {
++			pr_err("Can't access file %s\n", path);
++			machine = NULL;
++			goto out;
+ 		}
+-		machine = machines__add(self, pid, root_dir);
++		root_dir = path;
+ 	}
+ 
++	machine = machines__add(self, pid, root_dir);
++
+ out:
+ 	return machine;
+ }
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+1.7.10.1
+
