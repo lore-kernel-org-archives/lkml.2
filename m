@@ -1,114 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab2GBBTr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 21:19:47 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:57917 "EHLO
+	id S1754212Ab2GBB0m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 21:26:42 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:58555 "EHLO
 	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752308Ab2GBBTp (ORCPT
+	with ESMTP id S1752434Ab2GBB0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 21:19:45 -0400
+	Sun, 1 Jul 2012 21:26:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120701232051.308c03d1@endymion.delvare>
-References: <1340805255-8041-1-git-send-email-djkurtz@chromium.org>
- <1340805255-8041-4-git-send-email-djkurtz@chromium.org> <20120627180724.762f854a@endymion.delvare>
- <20120701232051.308c03d1@endymion.delvare>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Mon, 2 Jul 2012 09:19:24 +0800
-X-Google-Sender-Auth: IhwKTpOzDtusZzzVJY40QU4mNXg
-Message-ID: <CAGS+omDV_ynBL-PN0qmLmDRiHGbQFf+TwqC2-+KJY8zy9FDhrA@mail.gmail.com>
-Subject: Re: [PATCH 3/8 v3] i2c: i801: check INTR after every transaction
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        Seth Heasley <seth.heasley@intel.com>, Olof Johansson <olof@lixom.net>,
-        Benson Leung <bleung@chromium.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <CAGXu5j+8KMdX92T6Ma8HBXko4BHGmZKcV1kuR+b38r00r6YZbw@mail.gmail.com>
+References: <1340658327-2932-1-git-send-email-keescook@chromium.org>
+	<1340658327-2932-2-git-send-email-keescook@chromium.org>
+	<20120630091422.GE14083@ZenIV.linux.org.uk>
+	<CAGXu5j+8KMdX92T6Ma8HBXko4BHGmZKcV1kuR+b38r00r6YZbw@mail.gmail.com>
+Date: Sun, 1 Jul 2012 18:26:38 -0700
+X-Google-Sender-Auth: G6ANy6l1HNa0pIJhnhWMxEpsLLM
+Message-ID: <CAGXu5jL45EWVr9PfhF6vpb-PmHPZLOC9Dao_MKpjx2LBhbzKOg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] fs: add link restrictions
+From: Kees Cook <keescook@chromium.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        Matthew Wilcox <matthew@wil.cx>, Doug Ledford <dledford@redhat.com>,
+        Joe Korty <joe.korty@ccur.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Ingo Molnar <mingo@elte.hu>, David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>, linux-doc@vger.kernel.org,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        kernel-hardening@lists.openwall.com
 Content-Type: text/plain; charset=ISO-8859-1
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 2, 2012 at 5:20 AM, Jean Delvare <khali@linux-fr.org> wrote:
-> Hi again Daniel,
->
-> On Wed, 27 Jun 2012 18:07:24 +0200, Jean Delvare wrote:
->> On Wed, 27 Jun 2012 21:54:10 +0800, Daniel Kurtz wrote:
->> > Per ICH10 datasheet [1] pg. 711, after completing a block transaction,
->> > INTR should be checked & cleared separately, only after BYTE_DONE is
->> > first cleared:
->> >
->> >   When the last byte of a block message is received, the host controller
->> > sets DS. However, it does not set the INTR bit (and generate another
->> > interrupt) until DS is cleared. Thus, for a block message of n bytes,
->> > the ICH10 will generate n+1 interrupts.
->> >
->> > [1] http://www.intel.com/content/dam/doc/datasheet/io-controller-hub-10-family-datasheet.pdf
->> >
->> > Currently, the INTR bit was only checked & cleared separately if the PEC
->> > was used.
->> > This patch checks and clears INTR at the very end of every successful
->> > transaction, regardless of whether the PEC is used.
->> >
->> > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
->> > ---
->> >  drivers/i2c/busses/i2c-i801.c |   46 ++++++++++++++++++++--------------------
->> >  1 files changed, 23 insertions(+), 23 deletions(-)
->> >
->> > diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
->> > index 8b74e1e..6a53338 100644
->> > --- a/drivers/i2c/busses/i2c-i801.c
->> > +++ b/drivers/i2c/busses/i2c-i801.c
->> > @@ -257,6 +257,24 @@ static int i801_check_post(struct i801_priv *priv, int status, int timeout)
->> >     return result;
->> >  }
->> >
->> > +/* wait for INTR bit as advised by Intel */
->> > +static void i801_wait_intr(struct i801_priv *priv)
->> > +{
->> > +   int timeout = 0;
->> > +   int status;
->> > +
->> > +   status = inb_p(SMBHSTSTS(priv));
->> > +   while ((!(status & SMBHSTSTS_INTR)) && (timeout++ < MAX_RETRIES)) {
->> > +           usleep_range(250, 500);
->> > +           status = inb_p(SMBHSTSTS(priv));
->> > +   }
+On Sun, Jul 1, 2012 at 5:43 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Sat, Jun 30, 2012 at 2:14 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> On Mon, Jun 25, 2012 at 02:05:26PM -0700, Kees Cook wrote:
+>>> +                     err = may_follow_link(&link);
+>>> +                     if (unlikely(err))
+>>> +                             break;
 >>
->> Per my comment on previous patch, I've swapped the logic here to be in
->> line with what we had before. I have no objection to trying this change
->> again, but later, and only if you have actual numbers to back it up.
+>> No.  This is definitely wrong - you are leaking dentries and vfsmount here.
 >
-> I've done some performance measurements, and it turns out that, with the
-> version of this patch modified by me, all short transactions are twice
-> as slow as before. This is because i801_transaction waits twice now:
-> once for BUSY to be clear, and then again once for INTR to be set.
+> What should I do to avoid the leak? I thought it was avoiding the need
+> to call put_link because it aborts before calling follow_link.
 
-Does a fast sequence of such transactions actually take any longer? Or
-just a single short transaction?
+Does this need "path_put(&nd->path);" added to the abort case?
 
-My understanding is that the INTR wait is really waiting for the
-entire transaction to complete (ie., including i2c STOP condition),
-not just the byte transfer phase.
+If so, is this also missing from follow_link()'s final "return error",
+or is it the responsibility of dentry->d_inode->i_op->follow_link() to
+have already called path_put()?
 
-By waiting here at the end of a transaction, we make sure the status
-bits are actually clear before starting the next transaction.
+-Kees
 
--Dan
-
-> I don't think this makes much sense, as both events normally happen at
-> the same time. As a matter of fact, the original code did clear INTR at
-> the end of i801_transaction without checking that it was set. Also, we
-> call i801_check_post() _before_ i801_wait_intr(), which makes no sense
-> IMHO. If INTR was really not set yet, then checking for errors was
-> wrong, it was too early.
->
-> I'm not even sure why we rely on the BUSY bit in the first place. It
-> would seem easier to just wait for INTR.
->
-> Thinking about it some more, the idea of function i801_wait_intr() is a
-> little strange. Normally, you'd wait for INTR, then do what you have
-> to, and lastly clear the INTR bit. Having a function which waits for
-> INTR and clears it immediately seems wrong.
->
-> --
-> Jean Delvare
+-- 
+Kees Cook
+Chrome OS Security
