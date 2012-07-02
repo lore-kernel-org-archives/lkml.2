@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab2GBRxp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 13:53:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53901 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753975Ab2GBRxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 13:53:43 -0400
-Date: Mon, 2 Jul 2012 19:53:41 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Jan Kara <jack@suse.cz>, Eric Sandeen <sandeen@redhat.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: Re: ext4 blocks up
-Message-ID: <20120702175341.GN6679@quack.suse.cz>
-References: <1341231316.2979.11.camel@sauron.fi.intel.com>
- <20120702144444.GA18074@thunk.org>
- <1341240862.2979.23.camel@sauron.fi.intel.com>
- <20120702151442.GB18074@thunk.org>
- <20120702164548.GD18074@thunk.org>
- <4FF1D22D.2070804@redhat.com>
- <20120702173104.GK6679@quack.suse.cz>
- <20120702174342.GA5795@thunk.org>
+	id S932250Ab2GBR7O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 13:59:14 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:61282 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755736Ab2GBR7K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 13:59:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH V2 5/6] x86: add CONFIG_ARM_AMBA, selected by STA2X11
+Date: Mon, 2 Jul 2012 16:58:27 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Alessandro Rubini <rubini@gnudd.com>, linux-kernel@vger.kernel.org,
+        giancarlo.asnaghi@st.com, alan@linux.intel.com, linux@arm.linux.org.uk,
+        x86@kernel.org, gregkh@linuxfoundation.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        linux-arch@vger.kernel.org
+References: <4FECB95D.7010200@zytor.com> <20120701104401.GA4352@mail.gnudd.com> <2b797c83-6a3c-4051-841a-a4cfa9d1cae1@email.android.com>
+In-Reply-To: <2b797c83-6a3c-4051-841a-a4cfa9d1cae1@email.android.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120702174342.GA5795@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207021658.27755.arnd@arndb.de>
+X-Provags-ID: V02:K0:fUdLBtTleIjEKqagdK9Mcs70nQ4CPYQteXVmQoykgtR
+ GnIGnG+6vMgeLyGL3sykc+l5SglWjxTiK6KTq5+jpin1Rb43kG
+ Aie3Nrtjit4EpD+kgZfFy/XXhzxTDA0a9ijg/+QIYr1rsfvRaA
+ Hr0IUgfj87Axyhl7wiPXNmlIYhdBKvqqOF0qoaLKu9i0FP9jhz
+ lR9wRtztzKerPTcZs3ZZ9Rudb1eTUQatvyRBBXe/cJ3w4OJUsk
+ jSe0YbovEe6PfvU71RQW+bvE8f7bMZLY4USmOM4Dlfy//FlMYm
+ 1YOWKIouvqeSsHng76CwWthkgxzONFLMntYS97tGubPnxni4AJ
+ WYx+zPH/cMk7bcJIezos=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 02-07-12 13:43:42, Ted Tso wrote:
-> On Mon, Jul 02, 2012 at 07:31:04PM +0200, Jan Kara wrote:
-> >   Yes, I can hang the kernel on this test with basically any filesystem
-> > when running long enough. My freezing patches should fix that - currently
-> > waiting for Al to merge them...
+On Sunday 01 July 2012, H. Peter Anvin wrote:
 > 
-> So this is different from your suspend/resume patches, then?
-  I'm not sure what suspend/resume patches do you mean so I suspect it
-might be it :)
+> There is no problem with adding ARM or !X86 dependencies to drivers
+> now and fixing them later or as required.
 
-> Can you send me a pointer to your patches?  Is this something that Al
-  http://www.spinics.net/lists/kernel/msg1355763.html
+Right, but if the fix is trivial (e.g. missing #include statement), it's
+usually better to just fix the code.
 
-> will hopefully merge before 3.5 is released?
-  Hopefully. He is certainly aware of the series and wants to merge it.
+Also, in many cases it's possible to say specifically what some code depends
+on. E.g. if a driver uses clk_get/clk_put, it should depend on CLKDEV_LOOKUP,
+not on !X86.
 
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+	Arnd
