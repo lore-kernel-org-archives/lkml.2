@@ -1,102 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016Ab2GBRcs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 13:32:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:9336 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751445Ab2GBRcr convert rfc822-to-8bit (ORCPT
+	id S1756051Ab2GBRc7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 13:32:59 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:63526 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321Ab2GBRcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 13:32:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="172603498"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Christoph Egger <Christoph.Egger@amd.com>
-CC: Jan Beulich <JBeulich@suse.com>, "Auld, Will" <will.auld@intel.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "Luck, Tony" <tony.luck@intel.com>, Keir Fraser <keir@xen.org>,
-        "Raj, Ashok" <ashok.raj@intel.com>,
-        "Jiang, Yunhong" <yunhong.jiang@intel.com>,
-        "Li, Susie" <susie.li@intel.com>,
-        "Shan, Haitao" <haitao.shan@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Dugger, Donald D" <donald.d.dugger@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Nakajima, Jun" <jun.nakajima@intel.com>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>
-Subject: RE: [Xen-devel] [xen vMCE RFC V0.2] xen vMCE design
-Thread-Topic: [Xen-devel] [xen vMCE RFC V0.2] xen vMCE design
-Thread-Index: AQHNVd3dI20XBicwkkKYkfVKMdIj/ZcWPEZA
-Date: Mon, 2 Jul 2012 17:32:42 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC8292335282ED5@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC829233525D395@SHSMSX101.ccr.corp.intel.com>
- <4FEB236C020000780008C392@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC8292335263B9D@SHSMSX101.ccr.corp.intel.com>
- <4FEC3B4A020000780008C673@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC8292335263D6C@SHSMSX101.ccr.corp.intel.com>
- <4FEC463E020000780008C6A7@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC8292335264914@SHSMSX101.ccr.corp.intel.com>
- <4FEC7FB8020000780008C885@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC8292335265284@SHSMSX101.ccr.corp.intel.com>
- <4FED7C5F.1040908@amd.com>
-In-Reply-To: <4FED7C5F.1040908@amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 2 Jul 2012 13:32:48 -0400
 MIME-Version: 1.0
+In-Reply-To: <1341067733.10253.2.camel@joe2Laptop>
+References: <20110930115306.3bc105cb@mj>
+	<1340985513-15655-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1340986086.6562.36.camel@joe2Laptop>
+	<20120629162649.f277177f.akpm@linux-foundation.org>
+	<1341067733.10253.2.camel@joe2Laptop>
+Date: Mon, 2 Jul 2012 20:32:46 +0300
+Message-ID: <CAHp75Vde4+A5NCH-YvrsrjE-KA3A+xLdMOozeFU4VV7vvUfcmQ@mail.gmail.com>
+Subject: Re: [RFC][PATCH 1/2] lib: printf: append support of '%*p[Mm][FR]'
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>, proski@gnu.org,
+        Andrei Emeltchenko <andrei.emeltchenko@intel.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks AMD's feedback :)
+On Sat, Jun 30, 2012 at 5:48 PM, Joe Perches <joe@perches.com> wrote:
+> On Fri, 2012-06-29 at 16:26 -0700, Andrew Morton wrote:
+>> On Fri, 29 Jun 2012 09:08:06 -0700
+>> Joe Perches <joe@perches.com> wrote:
+>>
+>> > > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+>> > []
+>> > > @@ -655,11 +655,12 @@ char *resource_string(char *buf, char *end, struct resource *res,
+>> > >  }
+>> > >
+>> > >  static noinline_for_stack
+>> > > -char *mac_address_string(char *buf, char *end, u8 *addr,
+>> > > -                  struct printf_spec spec, const char *fmt)
+>> > > +char *hex_string(char *buf, char *end, u8 *addr, struct printf_spec spec,
+>> > > +          const char *fmt)
+>> > >  {
+>> > > - char mac_addr[sizeof("xx:xx:xx:xx:xx:xx")];
+>> > > - char *p = mac_addr;
+>> > > + char hex_str[64*3];     /* support up to 64 bytes to print */
+>> >
+>> > Might be too much stack though.
+>>
+>> Yes, it's a bit marginal, as this new capability might be used in debug
+>> or crash situations where we're deep into the stack.  The average case
+>> could be improved by using alloca()-style allocation.
+>
+> Or maybe support larger sizes with a smaller
+> stack buffer and a while loop.
 
-This vMCE design foils is basically for Intel MCA, involving many details specific to Intel.
-I agree that for x86 Intel and AMD can share logic in many fields. However, for MCA logic Intel and AMD are quite different, like
-1. MSRs interface, e.g. MCG_CAP, MCi_MICS, MCi_CTL2, etc;
-2. error injection, AMD provide NMI/single MCE/broadcast MCE, while in our design only concern broadcast MCE# (and pretend to expose CMCI);
-3. MCE handler: currently in xen Intel and AMD mce use different triggle method and mce handler;
+What do you think about mixed approach? Let's say we would use buffer
+on stack for 8 bytes or less, and allocated buffer in case of larger
+input. It allows to keep implementation simple.
 
-Considering the big difference, I suggest we separately provide Intel vMCE and AMD vMCE (i.e. vmce_intel.c and vmce_amd.c).
-
-Thanks,
-Jinsong
-
-Christoph Egger wrote:
-> Feedback from the AMD side:
-> 
-> slide 2:
-> - PV guests are supposed to install a MCE trap handler
->   which reads the MSR values from struct mcinfo_bank.
->   Hence it is unclear where the #GP should come from.
->   Same for HVM guests which have a PV MCE "driver"
->   (those are very rare in reality).
-> 
-> slide 3:
-> - unclear what "Weird per-domain MSRs" means
-> - unclear what "Unnatural MCE injection semantics" means
-> 
-> slide 4:
-> - typo: interace -> interface :-)
-> - enable UCR-related capabilities, but only on Intel machines
-> - Filter non-SRAO/SRAR banks:
->   Rename it to "Let guest see northbridge bank only to the guest"
-> 
-> slide 7:
-> - ignore/disable CMCI and CTL2 on AMD
-> 
-> slide 8:
-> - Filter non-SRAO/SRAR banks:
->   Rename it to "Let guest see northbridge bank only to the guest"
-> - Question: Should we allow the guest to inject errors? Does it make
->   sense?
-> - always disable MCi_CTL2 on AMD
-> 
-> slide 9:
-> - Model specific issue: Also affects AMD as some models have
->   l3 cache and some do not.
->   E.g. it does not make sense to report l3 cache errors to guests
-
+-- 
+With Best Regards,
+Andy Shevchenko
