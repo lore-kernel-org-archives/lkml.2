@@ -1,42 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932720Ab2GBJCn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 05:02:43 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44201 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932449Ab2GBJCm (ORCPT
+	id S1755534Ab2GBJF6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 05:05:58 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:33570 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753277Ab2GBJF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 05:02:42 -0400
-Date: Mon, 2 Jul 2012 11:02:39 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Iyer, Sundar" <sundar.iyer@intel.com>
-cc: Paul Mundt <lethal@linux-sh.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "Monroy, German" <german.monroy@intel.com>
-Subject: RE: [PATCH v3 1/1] x86/irq: handle chained interrupts during IRQ
- migration
-In-Reply-To: <2FABAEF0D3DCAF4F9C9628D6E2F9684521253F@BGSMSX102.gar.corp.intel.com>
-Message-ID: <alpine.LFD.2.02.1207021101460.2793@ionos>
-References: <1340596507-12702-1-git-send-email-sundar.iyer@intel.com> <20120625053156.GB24033@linux-sh.org> <2FABAEF0D3DCAF4F9C9628D6E2F9684521253F@BGSMSX102.gar.corp.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 2 Jul 2012 05:05:56 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <1341217332-21153-1-git-send-email-devendra.aaru@gmail.com>
+References: <1341217332-21153-1-git-send-email-devendra.aaru@gmail.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Mon, 2 Jul 2012 17:05:35 +0800
+X-Google-Sender-Auth: yh1fF223rUoACtDoWHh5aL13fmE
+Message-ID: <CAK5ve-+DUsadniHNe3H+j8xFgpV5gBuivD+u=A-D1k4ginqDYw@mail.gmail.com>
+Subject: Re: [PATCH] leds-88pm860x: use the goto label at data->port
+To: Devendra Naga <devendra.aaru@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Jul 2012, Iyer, Sundar wrote:
+On Mon, Jul 2, 2012 at 4:22 PM, Devendra Naga <devendra.aaru@gmail.com> wrote:
+> at the goto lable out: we are doing free of the led data, and returning ret.
+> the same we are doing at the data->port < 0 case, so use the goto end and
+> assign ret to -EINVAL. this will make the common err path for the
+> data->port and led_classdev_register functions.
+>
 
-> Hi Thomas/Paul,
-> 
-> Any comments on the latest patch set?
-
-Yes, it does neither apply on Linus tree nor on tip/irq/core branch.
+This patch is not wrong, but it'd better we replace kzalloc/kfree to
+devm_kzalloc. So we don't care about kfree anymore.
+Are interested in doing that?
 
 Thanks,
+-Bryan
 
-	tglx
+> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+> ---
+>  drivers/leds/leds-88pm860x.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/leds/leds-88pm860x.c b/drivers/leds/leds-88pm860x.c
+> index 5b61aaf..538aaa3 100644
+> --- a/drivers/leds/leds-88pm860x.c
+> +++ b/drivers/leds/leds-88pm860x.c
+> @@ -220,8 +220,8 @@ static int pm860x_led_probe(struct platform_device *pdev)
+>         data->port = pdata->flags;
+>         if (data->port < 0) {
+>                 dev_err(&pdev->dev, "check device failed\n");
+> -               kfree(data);
+> -               return -EINVAL;
+> +               ret = -EINVAL;
+> +               goto out;
+>         }
+>
+>         data->current_brightness = 0;
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-leds" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
