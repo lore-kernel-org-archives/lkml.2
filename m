@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932700Ab2GBI4u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 04:56:50 -0400
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:41423 "EHLO
+	id S932667Ab2GBI5g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 04:57:36 -0400
+Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:41438 "EHLO
 	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932170Ab2GBI4s (ORCPT
+	with ESMTP id S932170Ab2GBI5e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 04:56:48 -0400
-Date: Mon, 2 Jul 2012 17:56:33 +0900
+	Mon, 2 Jul 2012 04:57:34 -0400
+Date: Mon, 2 Jul 2012 17:57:17 +0900
 From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
 To: avi@redhat.com, mtosatti@redhat.com
 Cc: agraf@suse.de, paulus@samba.org, aarcange@redhat.com, kvm@vger.kernel.org,
         kvm-ppc@vger.kernel.org, linux-kernel@vger.kernel.org,
         takuya.yoshikawa@gmail.com
-Subject: [PATCH 4/8] KVM: Introduce kvm_unmap_hva_range() for
- kvm_mmu_notifier_invalidate_range_start()
-Message-Id: <20120702175633.a2872954.yoshikawa.takuya@oss.ntt.co.jp>
+Subject: [PATCH 5/8] KVM: Separate rmap_pde from kvm_lpage_info->write_count
+Message-Id: <20120702175717.f34d39a9.yoshikawa.takuya@oss.ntt.co.jp>
 In-Reply-To: <20120702175239.5fec56b3.yoshikawa.takuya@oss.ntt.co.jp>
 References: <20120702175239.5fec56b3.yoshikawa.takuya@oss.ntt.co.jp>
 X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
@@ -26,98 +25,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we tested KVM under memory pressure, with THP enabled on the host,
-we noticed that MMU notifier took a long time to invalidate huge pages.
-
-Since the invalidation was done with mmu_lock held, it not only wasted
-the CPU but also made the host harder to respond.
-
-This patch mitigates this by using kvm_handle_hva_range().
+This makes it possible to loop over rmap_pde arrays in the same way as
+we do over rmap so that we can optimize kvm_handle_hva_range() easily in
+the following patch.
 
 Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Cc: Alexander Graf <agraf@suse.de>
-Cc: Paul Mackerras <paulus@samba.org>
 ---
- arch/powerpc/include/asm/kvm_host.h |    2 ++
- arch/powerpc/kvm/book3s_64_mmu_hv.c |    7 +++++++
- arch/x86/include/asm/kvm_host.h     |    1 +
- arch/x86/kvm/mmu.c                  |    5 +++++
- virt/kvm/kvm_main.c                 |    3 +--
- 5 files changed, 16 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    2 +-
+ arch/x86/kvm/mmu.c              |    6 +++---
+ arch/x86/kvm/x86.c              |   11 +++++++++++
+ 3 files changed, 15 insertions(+), 4 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
-index 50ea12f..572ad01 100644
---- a/arch/powerpc/include/asm/kvm_host.h
-+++ b/arch/powerpc/include/asm/kvm_host.h
-@@ -52,6 +52,8 @@
- 
- struct kvm;
- extern int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
-+extern int kvm_unmap_hva_range(struct kvm *kvm,
-+			       unsigned long start, unsigned long end);
- extern int kvm_age_hva(struct kvm *kvm, unsigned long hva);
- extern int kvm_test_age_hva(struct kvm *kvm, unsigned long hva);
- extern void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
-diff --git a/arch/powerpc/kvm/book3s_64_mmu_hv.c b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-index 1a470bc..3c635c0 100644
---- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
-+++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-@@ -870,6 +870,13 @@ int kvm_unmap_hva(struct kvm *kvm, unsigned long hva)
- 	return 0;
- }
- 
-+int kvm_unmap_hva_range(struct kvm *kvm, unsigned long start, unsigned long end)
-+{
-+	if (kvm->arch.using_mmu_notifiers)
-+		kvm_handle_hva_range(kvm, start, end, kvm_unmap_rmapp);
-+	return 0;
-+}
-+
- static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 			 unsigned long gfn)
- {
 diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 24b7647..5aab8d4 100644
+index 5aab8d4..aea1673 100644
 --- a/arch/x86/include/asm/kvm_host.h
 +++ b/arch/x86/include/asm/kvm_host.h
-@@ -942,6 +942,7 @@ extern bool kvm_rebooting;
+@@ -499,11 +499,11 @@ struct kvm_vcpu_arch {
+ };
  
- #define KVM_ARCH_WANT_MMU_NOTIFIER
- int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
-+int kvm_unmap_hva_range(struct kvm *kvm, unsigned long start, unsigned long end);
- int kvm_age_hva(struct kvm *kvm, unsigned long hva);
- int kvm_test_age_hva(struct kvm *kvm, unsigned long hva);
- void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
+ struct kvm_lpage_info {
+-	unsigned long rmap_pde;
+ 	int write_count;
+ };
+ 
+ struct kvm_arch_memory_slot {
++	unsigned long *rmap_pde[KVM_NR_PAGE_SIZES - 1];
+ 	struct kvm_lpage_info *lpage_info[KVM_NR_PAGE_SIZES - 1];
+ };
+ 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 6903568..a5f0200 100644
+index a5f0200..f2c408a 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1248,6 +1248,11 @@ int kvm_unmap_hva(struct kvm *kvm, unsigned long hva)
- 	return kvm_handle_hva(kvm, hva, 0, kvm_unmap_rmapp);
+@@ -931,13 +931,13 @@ static void pte_list_walk(unsigned long *pte_list, pte_list_walk_fn fn)
+ static unsigned long *__gfn_to_rmap(gfn_t gfn, int level,
+ 				    struct kvm_memory_slot *slot)
+ {
+-	struct kvm_lpage_info *linfo;
++	unsigned long idx;
+ 
+ 	if (likely(level == PT_PAGE_TABLE_LEVEL))
+ 		return &slot->rmap[gfn - slot->base_gfn];
+ 
+-	linfo = lpage_info_slot(gfn, slot, level);
+-	return &linfo->rmap_pde;
++	idx = gfn_to_index(gfn, slot->base_gfn, level);
++	return &slot->arch.rmap_pde[level - PT_DIRECTORY_LEVEL][idx];
  }
  
-+int kvm_unmap_hva_range(struct kvm *kvm, unsigned long start, unsigned long end)
-+{
-+	return kvm_handle_hva_range(kvm, start, end, 0, kvm_unmap_rmapp);
-+}
+ /*
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 8eacb2e..9136f2c 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -6313,6 +6313,10 @@ void kvm_arch_free_memslot(struct kvm_memory_slot *free,
+ 	int i;
+ 
+ 	for (i = 0; i < KVM_NR_PAGE_SIZES - 1; ++i) {
++		if (!dont || free->arch.rmap_pde[i] != dont->arch.rmap_pde[i]) {
++			kvm_kvfree(free->arch.rmap_pde[i]);
++			free->arch.rmap_pde[i] = NULL;
++		}
+ 		if (!dont || free->arch.lpage_info[i] != dont->arch.lpage_info[i]) {
+ 			kvm_kvfree(free->arch.lpage_info[i]);
+ 			free->arch.lpage_info[i] = NULL;
+@@ -6332,6 +6336,11 @@ int kvm_arch_create_memslot(struct kvm_memory_slot *slot, unsigned long npages)
+ 		lpages = gfn_to_index(slot->base_gfn + npages - 1,
+ 				      slot->base_gfn, level) + 1;
+ 
++		slot->arch.rmap_pde[i] =
++			kvm_kvzalloc(lpages * sizeof(*slot->arch.rmap_pde[i]));
++		if (!slot->arch.rmap_pde[i])
++			goto out_free;
 +
- void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte)
- {
- 	kvm_handle_hva(kvm, hva, (unsigned long)&pte, kvm_set_pte_rmapp);
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 636bd08..c597d00 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -332,8 +332,7 @@ static void kvm_mmu_notifier_invalidate_range_start(struct mmu_notifier *mn,
- 	 * count is also read inside the mmu_lock critical section.
- 	 */
- 	kvm->mmu_notifier_count++;
--	for (; start < end; start += PAGE_SIZE)
--		need_tlb_flush |= kvm_unmap_hva(kvm, start);
-+	need_tlb_flush = kvm_unmap_hva_range(kvm, start, end);
- 	need_tlb_flush |= kvm->tlbs_dirty;
- 	/* we've to flush the tlb before the pages can be freed */
- 	if (need_tlb_flush)
+ 		slot->arch.lpage_info[i] =
+ 			kvm_kvzalloc(lpages * sizeof(*slot->arch.lpage_info[i]));
+ 		if (!slot->arch.lpage_info[i])
+@@ -6360,7 +6369,9 @@ int kvm_arch_create_memslot(struct kvm_memory_slot *slot, unsigned long npages)
+ 
+ out_free:
+ 	for (i = 0; i < KVM_NR_PAGE_SIZES - 1; ++i) {
++		kvm_kvfree(slot->arch.rmap_pde[i]);
+ 		kvm_kvfree(slot->arch.lpage_info[i]);
++		slot->arch.rmap_pde[i] = NULL;
+ 		slot->arch.lpage_info[i] = NULL;
+ 	}
+ 	return -ENOMEM;
 -- 
 1.7.5.4
 
