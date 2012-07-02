@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247Ab2GBTml (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 15:42:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36940 "EHLO mail.zytor.com"
+	id S1756146Ab2GBToH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 15:44:07 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:49632 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751219Ab2GBTmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 15:42:38 -0400
-Message-ID: <4FF1F987.3030501@zytor.com>
-Date: Mon, 02 Jul 2012 12:41:59 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1752754Ab2GBToF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 15:44:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: linux-next : cpuidle - could you add my tree please
+Date: Mon, 2 Jul 2012 21:49:36 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org,
+        "Lists Linaro-dev" <linaro-dev@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>, linux-next@vger.kernel.org,
+        Colin Cross <ccross@android.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rob Lee <rob.lee@linaro.org>, "lenb@kernel.org" <lenb@kernel.org>
+References: <4FDEE98D.7010802@linaro.org> <CACRpkdYaLweX-4YkWotuFFWoqEjOLKoNCsurCxxWNfq7QznPnw@mail.gmail.com> <4FF19947.3040608@linaro.org>
+In-Reply-To: <4FF19947.3040608@linaro.org>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Alessandro Rubini <rubini@gnudd.com>,
-        linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
-        alan@linux.intel.com, linux@arm.linux.org.uk, x86@kernel.org,
-        gregkh@linuxfoundation.org, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH V2 5/6] x86: add CONFIG_ARM_AMBA, selected by STA2X11
-References: <4FECB95D.7010200@zytor.com> <20120701104401.GA4352@mail.gnudd.com> <2b797c83-6a3c-4051-841a-a4cfa9d1cae1@email.android.com> <201207021658.27755.arnd@arndb.de> <20120702180518.GA25995@sirena.org.uk> <4FF1E37D.7050103@zytor.com> <20120702183324.GA29030@opensource.wolfsonmicro.com>
-In-Reply-To: <20120702183324.GA29030@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201207022149.36629.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2012 11:33 AM, Mark Brown wrote:
+On Monday, July 02, 2012, Daniel Lezcano wrote:
 > 
->> Last I saw I saw a patch to that effect, asked what the benefit
->> was, and got no answer.
+> On 07/02/2012 11:09 AM, Linus Walleij wrote:
+> > On Mon, Jun 25, 2012 at 3:27 PM, Daniel Lezcano
+> > <daniel.lezcano@linaro.org> wrote:
+> > 
+> >> we discussed last week to put in place a tree grouping the cpuidle
+> >> modifications [1]. Is it possible to add the tree ?
+> >>
+> >> git://git.linaro.org/people/dlezcano/cpuidle-next.git #cpuidle-next
+> > 
+> > Thanks for doing this.
+> > 
+> > Since MAINTAINERS is lacking a listed maintainer for cpuidle,
+> > are you also going to add yourself as maintainer and list this
+> > tree in that file, or is this a one-time exercise?
 > 
-> Are you positive about that?  I don't recall you replying any of
-> the times I sent out the patch and my mail archive isn't
-> contradicting me either.
-> 
+> I will be glad to do that if Len and Rafael agree on that.
 
-I said last time I saw a patch to that effect; it might not have been
-from you.  I might not have seen yours for whatever reason (including
-losing it on my end.)
+Len Brown has been a cpuidle maintainer for some time now.  Moreover,
+he's been taking patches, but Linus refused to pull his entire tree during the
+last merge window (as you probably know).  I honestly don't think this is
+a good enough reason for replacing him as a cpuidle maintainer by force.
 
-	-hpa
+So, you should ask Len whether or not he's willing to pass the cpuidle
+maintenance to someone else.
+
+I know that Len hasn't been responsive recently, but I also know that he
+_does_ respond to inquiries sent directly to him.
+
+Thanks,
+Rafael
