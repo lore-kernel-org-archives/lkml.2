@@ -1,72 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933110Ab2GBUtZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 16:49:25 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:60641 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932078Ab2GBUtX (ORCPT
+	id S933092Ab2GBUtz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 16:49:55 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:1867 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932078Ab2GBUty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 16:49:23 -0400
-Date: Mon, 2 Jul 2012 22:49:15 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [PATCH v2 1/3] pwm: Convert pwm-imx to use devm_* APIs
-Message-ID: <20120702204915.GB16327@avionic-0098.mockup.avionic-design.de>
-References: <1341102443.3712.0.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Pd0ReVV5GZGQvF3a"
-Content-Disposition: inline
-In-Reply-To: <1341102443.3712.0.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:L3DEx/Z//JlJk9QGJsxKcwYqvWdzgJWIZCY1KN2hSX7
- puAP7ckSdJsxQYNzruc+3G2xSIOjFHenELjwTdFBGRsYGeQgMi
- 58LeiDoeSjJugH5x9GRNN3o70gmcvU3zmS/ueT0sx97OVtSPjM
- ZUZQqg8fbUgwrPparzsBq593cBAJcuSGPRpMiI0L3X+hm78Bh7
- wx1rKjSy5x348IDGpp2zW8A9Yls0WKXJ+TUKCgGyzJWMe/eTT7
- +WUllRKxdjlm6pSGx8KTCybealbXWn/hIE/p4P1Q8vZHaByH6k
- H6EsIzzC6IjjUDdMK/DIPmsESfFuyZWmlNh3kk3TGmFlxGSaz2
- 5H1B20UjP0omYvQ6XldZiocyPuSh7f9vMzjj85HuE9yod1felF
- 025Sxh2XIHBZgg1J2RkPBNOuUMwKMAcDoI=
+	Mon, 2 Jul 2012 16:49:54 -0400
+Message-ID: <1341262188.1911.147.camel@x61.thuisdomein>
+Subject: [PATCH] ARM: remove asm/locks.h
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Mon, 02 Jul 2012 22:49:48 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 02 Jul 2012 20:49:49.0424 (UTC) FILETIME=[38C1C700:01CD5894]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit 64ac24e738823161693bf791f87adc802cf529ff ("Generic semaphore
+implementation") removed the last include of this header. Apparently it
+was just an oversight to keep this header. It can safely be removed now.
 
---Pd0ReVV5GZGQvF3a
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Tested only with various git commands on the (history of the) tree.
 
-On Sun, Jul 01, 2012 at 08:27:23AM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/pwm/pwm-imx.c |   57 +++++++++----------------------------------------
->  1 file changed, 10 insertions(+), 47 deletions(-)
+ arch/arm/include/asm/locks.h |  274 ------------------------------------------
+ 1 files changed, 0 insertions(+), 274 deletions(-)
+ delete mode 100644 arch/arm/include/asm/locks.h
 
-Applied, thanks.
+diff --git a/arch/arm/include/asm/locks.h b/arch/arm/include/asm/locks.h
+deleted file mode 100644
+index ef4c897..0000000
+--- a/arch/arm/include/asm/locks.h
++++ /dev/null
+@@ -1,274 +0,0 @@
+-/*
+- *  arch/arm/include/asm/locks.h
+- *
+- *  Copyright (C) 2000 Russell King
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+- *  Interrupt safe locking assembler. 
+- */
+-#ifndef __ASM_PROC_LOCKS_H
+-#define __ASM_PROC_LOCKS_H
+-
+-#if __LINUX_ARM_ARCH__ >= 6
+-
+-#define __down_op(ptr,fail)			\
+-	({					\
+-	__asm__ __volatile__(			\
+-	"@ down_op\n"				\
+-"1:	ldrex	lr, [%0]\n"			\
+-"	sub	lr, lr, %1\n"			\
+-"	strex	ip, lr, [%0]\n"			\
+-"	teq	ip, #0\n"			\
+-"	bne	1b\n"				\
+-"	teq	lr, #0\n"			\
+-"	movmi	ip, %0\n"			\
+-"	blmi	" #fail				\
+-	:					\
+-	: "r" (ptr), "I" (1)			\
+-	: "ip", "lr", "cc");			\
+-	smp_mb();				\
+-	})
+-
+-#define __down_op_ret(ptr,fail)			\
+-	({					\
+-		unsigned int ret;		\
+-	__asm__ __volatile__(			\
+-	"@ down_op_ret\n"			\
+-"1:	ldrex	lr, [%1]\n"			\
+-"	sub	lr, lr, %2\n"			\
+-"	strex	ip, lr, [%1]\n"			\
+-"	teq	ip, #0\n"			\
+-"	bne	1b\n"				\
+-"	teq	lr, #0\n"			\
+-"	movmi	ip, %1\n"			\
+-"	movpl	ip, #0\n"			\
+-"	blmi	" #fail "\n"			\
+-"	mov	%0, ip"				\
+-	: "=&r" (ret)				\
+-	: "r" (ptr), "I" (1)			\
+-	: "ip", "lr", "cc");			\
+-	smp_mb();				\
+-	ret;					\
+-	})
+-
+-#define __up_op(ptr,wake)			\
+-	({					\
+-	smp_mb();				\
+-	__asm__ __volatile__(			\
+-	"@ up_op\n"				\
+-"1:	ldrex	lr, [%0]\n"			\
+-"	add	lr, lr, %1\n"			\
+-"	strex	ip, lr, [%0]\n"			\
+-"	teq	ip, #0\n"			\
+-"	bne	1b\n"				\
+-"	cmp	lr, #0\n"			\
+-"	movle	ip, %0\n"			\
+-"	blle	" #wake				\
+-	:					\
+-	: "r" (ptr), "I" (1)			\
+-	: "ip", "lr", "cc");			\
+-	})
+-
+-/*
+- * The value 0x01000000 supports up to 128 processors and
+- * lots of processes.  BIAS must be chosen such that sub'ing
+- * BIAS once per CPU will result in the long remaining
+- * negative.
+- */
+-#define RW_LOCK_BIAS      0x01000000
+-#define RW_LOCK_BIAS_STR "0x01000000"
+-
+-#define __down_op_write(ptr,fail)		\
+-	({					\
+-	__asm__ __volatile__(			\
+-	"@ down_op_write\n"			\
+-"1:	ldrex	lr, [%0]\n"			\
+-"	sub	lr, lr, %1\n"			\
+-"	strex	ip, lr, [%0]\n"			\
+-"	teq	ip, #0\n"			\
+-"	bne	1b\n"				\
+-"	teq	lr, #0\n"			\
+-"	movne	ip, %0\n"			\
+-"	blne	" #fail				\
+-	:					\
+-	: "r" (ptr), "I" (RW_LOCK_BIAS)		\
+-	: "ip", "lr", "cc");			\
+-	smp_mb();				\
+-	})
+-
+-#define __up_op_write(ptr,wake)			\
+-	({					\
+-	smp_mb();				\
+-	__asm__ __volatile__(			\
+-	"@ up_op_write\n"			\
+-"1:	ldrex	lr, [%0]\n"			\
+-"	adds	lr, lr, %1\n"			\
+-"	strex	ip, lr, [%0]\n"			\
+-"	teq	ip, #0\n"			\
+-"	bne	1b\n"				\
+-"	movcs	ip, %0\n"			\
+-"	blcs	" #wake				\
+-	:					\
+-	: "r" (ptr), "I" (RW_LOCK_BIAS)		\
+-	: "ip", "lr", "cc");			\
+-	})
+-
+-#define __down_op_read(ptr,fail)		\
+-	__down_op(ptr, fail)
+-
+-#define __up_op_read(ptr,wake)			\
+-	({					\
+-	smp_mb();				\
+-	__asm__ __volatile__(			\
+-	"@ up_op_read\n"			\
+-"1:	ldrex	lr, [%0]\n"			\
+-"	add	lr, lr, %1\n"			\
+-"	strex	ip, lr, [%0]\n"			\
+-"	teq	ip, #0\n"			\
+-"	bne	1b\n"				\
+-"	teq	lr, #0\n"			\
+-"	moveq	ip, %0\n"			\
+-"	bleq	" #wake				\
+-	:					\
+-	: "r" (ptr), "I" (1)			\
+-	: "ip", "lr", "cc");			\
+-	})
+-
+-#else
+-
+-#define __down_op(ptr,fail)			\
+-	({					\
+-	__asm__ __volatile__(			\
+-	"@ down_op\n"				\
+-"	mrs	ip, cpsr\n"			\
+-"	orr	lr, ip, #128\n"			\
+-"	msr	cpsr_c, lr\n"			\
+-"	ldr	lr, [%0]\n"			\
+-"	subs	lr, lr, %1\n"			\
+-"	str	lr, [%0]\n"			\
+-"	msr	cpsr_c, ip\n"			\
+-"	movmi	ip, %0\n"			\
+-"	blmi	" #fail				\
+-	:					\
+-	: "r" (ptr), "I" (1)			\
+-	: "ip", "lr", "cc");			\
+-	smp_mb();				\
+-	})
+-
+-#define __down_op_ret(ptr,fail)			\
+-	({					\
+-		unsigned int ret;		\
+-	__asm__ __volatile__(			\
+-	"@ down_op_ret\n"			\
+-"	mrs	ip, cpsr\n"			\
+-"	orr	lr, ip, #128\n"			\
+-"	msr	cpsr_c, lr\n"			\
+-"	ldr	lr, [%1]\n"			\
+-"	subs	lr, lr, %2\n"			\
+-"	str	lr, [%1]\n"			\
+-"	msr	cpsr_c, ip\n"			\
+-"	movmi	ip, %1\n"			\
+-"	movpl	ip, #0\n"			\
+-"	blmi	" #fail "\n"			\
+-"	mov	%0, ip"				\
+-	: "=&r" (ret)				\
+-	: "r" (ptr), "I" (1)			\
+-	: "ip", "lr", "cc");			\
+-	smp_mb();				\
+-	ret;					\
+-	})
+-
+-#define __up_op(ptr,wake)			\
+-	({					\
+-	smp_mb();				\
+-	__asm__ __volatile__(			\
+-	"@ up_op\n"				\
+-"	mrs	ip, cpsr\n"			\
+-"	orr	lr, ip, #128\n"			\
+-"	msr	cpsr_c, lr\n"			\
+-"	ldr	lr, [%0]\n"			\
+-"	adds	lr, lr, %1\n"			\
+-"	str	lr, [%0]\n"			\
+-"	msr	cpsr_c, ip\n"			\
+-"	movle	ip, %0\n"			\
+-"	blle	" #wake				\
+-	:					\
+-	: "r" (ptr), "I" (1)			\
+-	: "ip", "lr", "cc");			\
+-	})
+-
+-/*
+- * The value 0x01000000 supports up to 128 processors and
+- * lots of processes.  BIAS must be chosen such that sub'ing
+- * BIAS once per CPU will result in the long remaining
+- * negative.
+- */
+-#define RW_LOCK_BIAS      0x01000000
+-#define RW_LOCK_BIAS_STR "0x01000000"
+-
+-#define __down_op_write(ptr,fail)		\
+-	({					\
+-	__asm__ __volatile__(			\
+-	"@ down_op_write\n"			\
+-"	mrs	ip, cpsr\n"			\
+-"	orr	lr, ip, #128\n"			\
+-"	msr	cpsr_c, lr\n"			\
+-"	ldr	lr, [%0]\n"			\
+-"	subs	lr, lr, %1\n"			\
+-"	str	lr, [%0]\n"			\
+-"	msr	cpsr_c, ip\n"			\
+-"	movne	ip, %0\n"			\
+-"	blne	" #fail				\
+-	:					\
+-	: "r" (ptr), "I" (RW_LOCK_BIAS)		\
+-	: "ip", "lr", "cc");			\
+-	smp_mb();				\
+-	})
+-
+-#define __up_op_write(ptr,wake)			\
+-	({					\
+-	__asm__ __volatile__(			\
+-	"@ up_op_write\n"			\
+-"	mrs	ip, cpsr\n"			\
+-"	orr	lr, ip, #128\n"			\
+-"	msr	cpsr_c, lr\n"			\
+-"	ldr	lr, [%0]\n"			\
+-"	adds	lr, lr, %1\n"			\
+-"	str	lr, [%0]\n"			\
+-"	msr	cpsr_c, ip\n"			\
+-"	movcs	ip, %0\n"			\
+-"	blcs	" #wake				\
+-	:					\
+-	: "r" (ptr), "I" (RW_LOCK_BIAS)		\
+-	: "ip", "lr", "cc");			\
+-	smp_mb();				\
+-	})
+-
+-#define __down_op_read(ptr,fail)		\
+-	__down_op(ptr, fail)
+-
+-#define __up_op_read(ptr,wake)			\
+-	({					\
+-	smp_mb();				\
+-	__asm__ __volatile__(			\
+-	"@ up_op_read\n"			\
+-"	mrs	ip, cpsr\n"			\
+-"	orr	lr, ip, #128\n"			\
+-"	msr	cpsr_c, lr\n"			\
+-"	ldr	lr, [%0]\n"			\
+-"	adds	lr, lr, %1\n"			\
+-"	str	lr, [%0]\n"			\
+-"	msr	cpsr_c, ip\n"			\
+-"	moveq	ip, %0\n"			\
+-"	bleq	" #wake				\
+-	:					\
+-	: "r" (ptr), "I" (1)			\
+-	: "ip", "lr", "cc");			\
+-	})
+-
+-#endif
+-
+-#endif
+-- 
+1.7.7.6
 
-Thierry
-
---Pd0ReVV5GZGQvF3a
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP8glKAAoJEN0jrNd/PrOhMdgP/2x9nny0C0u3ADX1jjh4BXQ1
-Tl5dz2e9pKtQ1YanX1Fh4/vli9nLWChiGD+BrFjPujanTfmW7jyrmhOeOaZVANgJ
-a7b+iFw70X7g9KwWwnfCTnVmwLWpdLMd1cCFcMPLNnQciRPmxWklJLpX/++Twk/i
-Fzv7mewHF9r/WvaLsmM3KpJyVr5IsKLCVRB/xy6XXaKnrh04PwBmRc33KjH6riTz
-Il/Z/i3pl/g+ZTkx9hTXKpfQL4sDctQ4PrPlg4xanIKVEboeYUobJTiT2EXCzqFN
-VR8Dn7XLkQzaSqFPODxgnVxRnTyz2VIS7LC9fJigsiH7Jfrxw5Y58z0flDQcgRhx
-lUNpdIg8H/g08j/uixo3KaCdcdmscSzSgN2eN0SKCE2EpgwWYvASz5DFvV8Yx36m
-Xot+rJiu5lbr8KxGXNT3WOi6w7w9jwsd/Bp/j93M5KJvOUk9pYHceAFpn9BskwXZ
-lRiS6XUBWdE8XgBsMoV76D44g3bBPnZiTC8dRkdkzLpXeNZy77eDlSGrmr2E7Hvt
-F/jO68DKVGOmumIlgOqN9C7kNsuSly2g3KYgJ818mob855cdENptlcNhEaLj9C6v
-tteXWnIUbZlTGRcyhZKBdhyMrcGTrLJi/alKpiE17WUY9FTkBaDWwfWJ9Y0YKNRu
-PJPnVM65g7MFjAbOy7eP
-=Cn3X
------END PGP SIGNATURE-----
-
---Pd0ReVV5GZGQvF3a--
