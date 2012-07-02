@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751106Ab2GBEOL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 00:14:11 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:40669 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740Ab2GBEOJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 00:14:09 -0400
-Message-ID: <4FF11FCB.4030207@us.ibm.com>
-Date: Sun, 01 Jul 2012 21:12:59 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: Prarit Bhargava <prarit@redhat.com>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/2][RFC] Potential fix for leapsecond caused futex issue
- (v2)
-References: <1341167401-31342-1-git-send-email-johnstul@us.ibm.com>
-In-Reply-To: <1341167401-31342-1-git-send-email-johnstul@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751477Ab2GBEOm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 00:14:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3190 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750732Ab2GBEOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 00:14:40 -0400
+Message-ID: <1341202460.1207.384.camel@bling.home>
+Subject: Re: Request VFIO inclusion in linux-next
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        iommu <iommu@lists.linux-foundation.org>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        chrisw <chrisw@sous-sol.org>, "Roedel, Joerg" <Joerg.Roedel@amd.com>,
+        linux-next@vger.kernel.org
+Date: Sun, 01 Jul 2012 22:14:20 -0600
+In-Reply-To: <4FF11855.2060605@ozlabs.ru>
+References: <1340686552.1207.128.camel@bling.home>
+	 <20120627123733.GA5449@mwanda> <4FF11855.2060605@ozlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-x-cbid: 12070204-7282-0000-0000-00000A7C6F44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2012 11:29 AM, John Stultz wrote:
-> TODOs:
-> * Chase down the futex/hrtimer interaction to see if this could
-> be triggered in any other way.
-> * Get Tglx's input/ack
-> * Generate a backport for pre-v3.4 kernels
-So while still waiting for feedback on the clock_was_set() change, I 
-went ahead and generated backports for most of the stable kernels on 
-kernel.org.
+On Mon, 2012-07-02 at 13:41 +1000, Alexey Kardashevskiy wrote:
+> On 27/06/12 22:37, Dan Carpenter wrote:
+> > On Mon, Jun 25, 2012 at 10:55:52PM -0600, Alex Williamson wrote:
+> >> Hi,
+> >>
+> >> VFIO has been kicking around for well over a year now and has been
+> >> posted numerous times for review.  The pre-requirements are finally
+> >> available in linux-next (or will be in the 20120626 build) so I'd like
+> >> to request a new branch be included in linux-next with a goal of being
+> >> accepted into v3.6.
+> >>
+> > 
+> > Could you run Sparse over the driver?
+> > http://lwn.net/Articles/205624/
+> > 
+> > It reports a bunch of endian problems.  Some are definitely bugs
+> > like:
+> > 	*prev |= cpu_to_le32((u32)epos << 20);
+> 
+> 
+> What is wrong here?
 
-Clearly these shouldn't go anywhere until the fix is upstream, but since 
-I assume there's a number of distro developers who are likely under 
-pressure to have a fix soon, I wanted to make them available so no one 
-is duplicating work.
+I believe the only thing wrong here was that prev was a u32* instead of
+a __le32*.  The new version in my tree has much better endian annotation
+after going through all the sparse errors.  The only bug I found in the
+cleanup was the handling of rbar.  It was missing the le32_to_cpu as we
+copied it out of vconfig.  This is later used with
+pci_user_write_config_dword, so it needs to be in native endian.
+Thanks,
 
-You can find them here:
-http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=summary
-
-I did boot and test each of those kernels with my leaptest-timer.c test 
-successfully.
-
-thanks
--john
-
+Alex
 
