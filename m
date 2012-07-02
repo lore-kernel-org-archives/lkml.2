@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933071Ab2GBKqP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 06:46:15 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56844 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932931Ab2GBKqO (ORCPT
+	id S933082Ab2GBKqs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 06:46:48 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40779 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932931Ab2GBKqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 06:46:14 -0400
-Date: Mon, 2 Jul 2012 13:46:09 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Glauber Costa <glommer@parallels.com>
-cc: Feng Tang <feng.tang@intel.com>, linux-kernel@vger.kernel.org,
-        fengguang.wu@intel.com, sfr@canb.auug.org.au, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH] slab: Fix a tpyo in commit 8c138b "slab: Get rid of
- obj_size macro"
-In-Reply-To: <4FF17733.6020703@parallels.com>
-Message-ID: <alpine.LFD.2.02.1207021346030.1916@tux.localdomain>
-References: <1341210550-11038-1-git-send-email-feng.tang@intel.com> <4FF1714A.7050400@parallels.com> <4FF17733.6020703@parallels.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 2 Jul 2012 06:46:47 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FF17B86.6090202@jp.fujitsu.com>
+Date: Mon, 02 Jul 2012 19:44:22 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Sha Zhengju <handai.szj@gmail.com>
+CC: linux-mm@kvack.org, cgroups@vger.kernel.org, gthelen@google.com,
+        yinghan@google.com, akpm@linux-foundation.org, mhocko@suse.cz,
+        linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH 2/7] memcg: remove MEMCG_NR_FILE_MAPPED
+References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com> <1340881111-5576-1-git-send-email-handai.szj@taobao.com>
+In-Reply-To: <1340881111-5576-1-git-send-email-handai.szj@taobao.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Jul 2012, Glauber Costa wrote:
-> > I saw another bug in a patch that ended up not getting in, and was
-> > reported to Christoph, that was exactly due to a typo between size and
-> > object-size.
-> > 
-> > So first:
-> > 
-> > Acked-by: Glauber Costa <glommer@parallels.com>
-> > 
-> > But this also means that that confusion can have been made in other
-> > points. I suggest we take an extensive look into that to make sure there
-> > aren't more.
-> > 
+(2012/06/28 19:58), Sha Zhengju wrote:
+> From: Sha Zhengju <handai.szj@taobao.com>
 > 
-> Which I just did. I also tried to pay attention to another simple
-> conversion spots like that. We seem to be fine.
+> While accounting memcg page stat, it's not worth to use MEMCG_NR_FILE_MAPPED
+> as an extra layer of indirection because of the complexity and presumed
+> performance overhead. We can use MEM_CGROUP_STAT_FILE_MAPPED directly.
+> 
+> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
 
-Applied, thanks guys!
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+
