@@ -1,152 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab2GBQqH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 12:46:07 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:46680 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519Ab2GBQqE (ORCPT
+	id S1755945Ab2GBQq2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 12:46:28 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:34596 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab2GBQqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 12:46:04 -0400
-Date: Mon, 2 Jul 2012 17:46:24 +0100
-From: Alban Crequy <alban.crequy@collabora.co.uk>
-To: "Hans-Peter Jansen" <hpj@urpla.net>
-Cc: Vincent Sanders <vincent.sanders@collabora.co.uk>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: AF_BUS socket address family
-Message-ID: <20120702174624.5c8d2e74@rainbow.cbg.collabora.co.uk>
-In-Reply-To: <201206302241.08662.hpj@urpla.net>
-References: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk>
-	<201206302241.08662.hpj@urpla.net>
-Organization: Collabora
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Jul 2012 12:46:22 -0400
+Date: Mon, 2 Jul 2012 09:45:44 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.5.0-rc5: BUG: soft lockup - CPU#0 stuck for 22s
+Message-ID: <20120702164544.GJ2508@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.DEB.2.01.1207010009270.5568@trent.utfs.org>
+ <1341204649.2588.29.camel@pasglop>
+ <alpine.DEB.2.01.1207012326110.5568@trent.utfs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.01.1207012326110.5568@trent.utfs.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12070216-7606-0000-0000-000001AA8336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sat, 30 Jun 2012 22:41:08 +0200,
-"Hans-Peter Jansen" <hpj@urpla.net> wrote :
-
-> Dear Vincent,
+On Sun, Jul 01, 2012 at 11:30:40PM -0700, Christian Kujau wrote:
+> On Mon, 2 Jul 2012 at 14:50, Benjamin Herrenschmidt wrote:
+> > Interesting... I observed something roughly similar on a dual G4
+> > the other day associated with a 30s to 1mn pause during boot. RCU
+> > was complaining loudly.
+> > 
+> > In my case, it did continue booting normally, is that the case for you ?
 > 
-> On Friday 29 June 2012, 18:45:39 Vincent Sanders wrote:
-> > This series adds the bus address family (AF_BUS) it is against
-> > net-next as of yesterday.
-> >
-> > AF_BUS is a message oriented inter process communication system.
-> >
-> > The principle features are:
-> >
-> >  - Reliable datagram based communication (all sockets are of type
-> >    SOCK_SEQPACKET)
-> >
-> >  - Multicast message delivery (one to many, unicast as a subset)
-> >
-> >  - Strict ordering (messages are delivered to every client in the
-> > same order)
-> >
-> >  - Ability to pass file descriptors
-> >
-> >  - Ability to pass credentials
-> >
-> > The basic concept is to provide a virtual bus on which multiple
-> > processes can communicate and policy is imposed by a "bus master".
-> >
-> > Introduction
-> > ------------
-> >
-> > AF_BUS is based upon AF_UNIX but extended for multicast operation and
-> > removes stream operation, responding to extensive feedback on
-> > previous approaches we have made the implementation as isolated as
-> > possible. There are opportunities in the future to integrate the
-> > socket garbage collector with that of the unix socket implementation.
-> >
-> > The impetus for creating this IPC mechanism is to replace the
-> > underlying transport for D-Bus. The D-Bus system currently emulates
-> > this IPC mechanism using AF_UNIX sockets in userspace and has
-> > numerous undesirable behaviours. D-Bus is now widely deployed in many
-> > areas and has become a de-facto IPC standard. Using this IPC
-> > mechanism as a transport gives a significant (100% or more)
-> > improvement to throughput with comparable improvement to latency.
+> No, in my case it stopped booting, though there was no "panic" message.
 > 
-> Your introduction is missing a comprehensive "Discussion" section, where 
-> you compare the AF_UNIX based implementation with AF_BUS ones. 
+> > Also if I compile the kernel without CONFIG_SMP, it did go away as well,
+> > do you observe that too ?
 > 
-> You should elaborate on each of the above noted undesirable behaviours, 
-> why and how AF_BUS is advantageous. Show the workarounds, that are 
-> needed by AF_UNIX to operate (properly?!?) and how the new 
-> implementation is going to improve this situation.
-
-Hi Hans-Peter,
-
-Thanks for your feedback. I would like to elaborate on the priority
-inversion and on the latency.
-
-Priority inversion:
-===================
-
-A bus can have users with different priorities. The classical example was
-Nokia's N900 phone. A incoming phone call should query the contact 
-database, start the correct ringtone, display the correct avatar very
-quickly. Other background tasks don't have the same priority. Since all
-messages go through dbus-daemon, it is a single bottleneck and the
-kernel has no way to schedule the processes with the correct
-priorities. Low priority messages are waking up dbus-daemon as much as
-high priority messages.
-
-A workaround was to set the nice level of dbus-daemon to -5. It didn't
-really address the priority inversion, but it reduces the number of
-context switches on multicast messages, and that helped a bit. The
-diagram "Experiment #3" on this blog post shows dbus-daemon is no
-longer context switched for every recipient of a multicast message:
-http://alban-apinc.blogspot.co.uk/2011/12/importance-of-scheduling-priority-in-d.html
-
-With AF_BUS, there is no single process who has to receive all messages
-from low priority processes and high priority processes. The kernel can
-schedule the high priority processes and they can progress in their
-communication without having dbus-daemon involved.
-
-Latency:
-========
-
-On AF_UNIX, a message round-trip would go like this:
-- the sender sends a message to dbus-daemon
-- dbus-daemon receives it and forward it to the correct recipient
-- the recipient receives it and reply with a new message sent to
-  dbus-daemon
-- dbus-daemon receives the reply and forward it to the initial sender
-- the sender receives the reply.
-There is a total of 4 context switches.
-
-On AF_BUS, the messages are most of the time not routed by dbus-daemon,
-this halves the number of context switches. It reduced the latency and
-brought the performance improvement mentioned by Vincent.
-
-> This will help to get some progress into the indurated discussion here.
+> This PoweBook G4 is UP anyway and I'm always building w/o CONFIG_SMP.
 > 
-> Please also note, that, while your aims are nice and sound, it's even 
-> more important for IPC mechanisms to operate properly - even during 
-> persisting error conditions (crashed bus master and clients, 
-> misbehaving or even abusing members). It would be cool to create a 
-> D-BUS test rig, that not only measures performance numbers, but also 
-> checks for dead locks, corner cases and abuse attempts in both IPC 
-> implementations.
+> > I don't have a spare cycle to investigate this problem this week I'm
+> > afraid, it might help if you could try a bisection though.
 > 
-> It's a juggling act: while AF_UNIX might suffer from downsides, the code 
-> is heavily exercised in every aspect. Your implementation will only be 
-> exercised by a handful of users (basically one lib), but in order to 
-> rectify its existence in kernel space, such extensions need different 
-> kinds of users, and the basic concepts need to fit in the whole kernel 
-> picture as well, or you need to call it AF_DBUS with even less chance 
-> to get it into mainstream.
+> Yes, I've started a bisection already and will report back.
+> 
+> FYI, I've put a netconsole-log below from another boot (in the 
+> middle of a bisection), the instruction dump is slightly more complete.
 
-I am hoping there will be more users with different use-cases and it
-should help to improve AF_BUS and fix the unavoidable bugs in a young
-code. I would be happy if AF_BUS reduces the cost of maintaining the
-out-of-tree multicast messaging protocol family based on AF_UNIX
-mentioned by Chris Friesen.
+Li Zhong posted a patch to fix this (async_synchronize_full() below):
 
-Thank you!
-Alban
+	https://lkml.org/lkml/2012/7/2/32
+
+This gets rid of this problem on my UP testing.  If it works for you,
+please give Li Zhong a Tested-by.
+
+							Thanx, Paul
+
+> Thanks!
+> Christian.
+> 
+> [   40.345973] BUG: soft lockup - CPU#0 stuck for 22s! [modprobe:691]
+> [   40.347737] Modules linked in: sd_mod arc4 firewire_sbp2 scsi_mod b43 mac80211 cfg80211
+> [   40.349443] irq event stamp: 65779272
+> [   40.351156] hardirqs last  enabled at (65779271): [<c052fae8>] _raw_spin_unlock_irqrestore+0x40/0x9c
+> [   40.352911] hardirqs last disabled at (65779272): [<c0011648>] reenable_mmu+0x40/0x98
+> [   40.354649] softirqs last  enabled at (65769864): [<c000f3c0>] call_do_softirq+0x14/0x24
+> [   40.356386] softirqs last disabled at (65769857): [<c000f3c0>] call_do_softirq+0x14/0x24
+> [   40.358098] NIP: c005ee64 LR: c005ee54 CTR: c009c578
+> [   40.359788] REGS: eece3d70 TRAP: 0901   Not tainted  (3.4.0-05609-gc80ddb5)
+> [   40.361517] MSR: 00009032 <EE,ME,IR,DR,RI>  CR: 24042482  XER: 00000000
+> [   40.363261] TASK = eec30b80[691] 'modprobe' THREAD: eece2000#012
+> [   40.363261] GPR00: c005ee54 eece3e20 eec30b80 00000000 00000002 c005edd0 00000000 00000000 #012
+> [   40.363261] GPR08: 00000000 eece2000 00000000 00000001 24042488 
+> [   40.368310] NIP [c005ee64] async_synchronize_cookie_domain+0x70/0x1f4
+> [   40.369978] LR [c005ee54] async_synchronize_cookie_domain+0x60/0x1f4
+> [   40.371614] Call Trace:
+> [   40.373226] [eece3e20] [c005ee54] async_synchronize_cookie_domain+0x60/0x1f4 (unreliable)
+> [   40.374884] [eece3e70] [c005f034] async_synchronize_full+0x3c/0x74
+> [   40.376524] [eece3e90] [c0082790] sys_init_module+0x178/0x1164
+> [   40.378151] [eece3f40] [c00117a8] ret_from_syscall+0x0/0x38
+> [   40.379783] --- Exception: c01 at 0xff5d694#012[   40.379783]     LR = 0x100041c0
+> [   40.382928] Instruction dump:
+> [   40.384489] 93a10044 419e0014 3d20c06f 8009d020 2f800000 419e017c 7fc3f378 4bfffed9 
+> [   40.386081] 7f9f1840 419d0060 7f9f1800 419e0050 <881bf008> 2f800000 419e0014 3d20c06f
+> 
+> 
+> -- 
+> BOFH excuse #241:
+> 
+> _Rosin_ core solder? But...
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
