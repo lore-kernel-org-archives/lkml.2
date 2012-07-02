@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab2GBFMz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 01:12:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56817 "EHLO mx1.redhat.com"
+	id S932158Ab2GBFPj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 01:15:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64088 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752157Ab2GBFMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 01:12:54 -0400
-Message-ID: <4FF12DA8.1090009@redhat.com>
-Date: Mon, 02 Jul 2012 01:12:08 -0400
+	id S1752225Ab2GBFPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 01:15:38 -0400
+Message-ID: <4FF12E56.4060303@redhat.com>
+Date: Mon, 02 Jul 2012 01:15:02 -0400
 From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
@@ -32,9 +32,9 @@ CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 35/40] autonuma: boost khugepaged scanning rate
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-36-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1340888180-15355-36-git-send-email-aarcange@redhat.com>
+Subject: Re: [PATCH 38/40] autonuma: autonuma_migrate_head[0] dynamic size
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-39-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1340888180-15355-39-git-send-email-aarcange@redhat.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -42,12 +42,15 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 06/28/2012 08:56 AM, Andrea Arcangeli wrote:
-> Until THP native migration is implemented it's safer to boost
-> khugepaged scanning rate because all memory migration are splitting
-> the hugepages. So the regular rate of scanning becomes too low when
-> lots of memory is migrated.
+> Reduce the autonuma_migrate_head array entries from MAX_NUMNODES to
+> num_possible_nodes() or zero if autonuma_impossible() is true.
+>
+> Signed-off-by: Andrea Arcangeli<aarcange@redhat.com>
 
-Not too fond of such a hack, but I guess it is ok for development...
+This could be merged into, or fitted into the series right after
+patch 15. Having a dozen other patches in-between makes reviewing
+much harder than it should have to be.
+
 
 -- 
 All rights reversed
