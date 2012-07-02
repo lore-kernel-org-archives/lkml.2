@@ -1,61 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab2GBNkr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 09:40:47 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:40502 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321Ab2GBNke (ORCPT
+	id S1751640Ab2GBNjv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 09:39:51 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61795 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab2GBNjt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 09:40:34 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "Steven J. Magnani" <steve@digidescorp.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fat: Refactor shortname parsing
-References: <1340993528-12111-1-git-send-email-steve@digidescorp.com>
-	<87r4syrl4y.fsf@devron.myhome.or.jp>
-	<1340997235.9826.7.camel@iscandar.digidescorp.com>
-	<87bok1sx6j.fsf@devron.myhome.or.jp>
-	<87zk7lribe.fsf@devron.myhome.or.jp>
-	<1341234099.1695.13.camel@iscandar.digidescorp.com>
-Date: Mon, 02 Jul 2012 22:40:27 +0900
-In-Reply-To: <1341234099.1695.13.camel@iscandar.digidescorp.com> (Steven
-	J. Magnani's message of "Mon, 02 Jul 2012 08:01:39 -0500")
-Message-ID: <87fw9anuwk.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+	Mon, 2 Jul 2012 09:39:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1341229532.29646.39.camel@gurkel.linbit>
+References: <1340981632.25226.2.camel@gurkel.linbit> <1340982523.21162.1.camel@edumazet-glaptop>
+ <1341229532.29646.39.camel@gurkel.linbit>
+From: saeed bishara <saeed.bishara@gmail.com>
+Date: Mon, 2 Jul 2012 16:39:28 +0300
+Message-ID: <CAMAG_eeDXghHXYxBXK08cweimvdFVr_vCk2f47_OHGZgux7zuw@mail.gmail.com>
+Subject: Re: [RFC] [TCP 0/3] Receive from socket into bio without copying
+To: Andreas Gruenbacher <agruen@linbit.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Steven J. Magnani" <steve@digidescorp.com> writes:
+On Mon, Jul 2, 2012 at 2:45 PM, Andreas Gruenbacher <agruen@linbit.com> wrote:
 
-> On Sat, 2012-06-30 at 05:09 +0900, OGAWA Hirofumi wrote: 
->> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
->> 
->> >
->> > 			if (is_vfat)
->> > 				ptname[i++] = fat_tolower(!nocase, c);
->> 
->> Of course, if (!is_vfat). Sorry.
 >
-> I agree that the nocase logic is confusing, but I'm pretty sure this
-> change would break the code. 
+> We want to go directly to the block layer instead.  This requires that
+> the network hardware receives the data into sector aligned buffers.
+> Hence the proposed MSG_NEW_PACKET flag.
+Andreas,
+ I didn't read your patches, but what are you looking for can't be
+achieved using "normal" NICs, for that you need to use RDMA protocol
+with a hardware that supports RDMA.
 
-I might be wrong here though, which place is broken with it?
-
-> 'nocase' is always zero for vfat, which does not recognize that option.
-> For msdos, it is zero by default, and 1 if the 'nocase' option was
-> specified.
-> In all cases it is necessary to copy *something* to ptname.
-
-Looks like, we overwrite bufname by converted bufuname in is_vfat case?
-
-	if (isvfat) {
-		bufuname[j] = 0x0000;
-		i = fat_uni_to_x8(sb, bufuname, bufname, sizeof(bufname));
-	}
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+saeed
