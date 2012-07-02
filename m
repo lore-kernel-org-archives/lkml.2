@@ -1,85 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755790Ab2GBQDo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 12:03:44 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56535 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753515Ab2GBQDn (ORCPT
+	id S1755825Ab2GBQGk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 12:06:40 -0400
+Received: from zimbra.linbit.com ([212.69.161.123]:38565 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278Ab2GBQGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 12:03:43 -0400
-Date: Mon, 2 Jul 2012 17:03:40 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH v2] regulator: fixed: support deferred probe for DT GPIOs
-Message-ID: <20120702160340.GG25093@opensource.wolfsonmicro.com>
-References: <1340987595-11288-1-git-send-email-swarren@wwwdotorg.org>
- <20120701182300.GE28922@opensource.wolfsonmicro.com>
- <4FF1C0D6.3010108@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tvOENZuN7d6HfOWU"
-Content-Disposition: inline
-In-Reply-To: <4FF1C0D6.3010108@wwwdotorg.org>
-X-Cookie: Your supervisor is thinking about you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Jul 2012 12:06:39 -0400
+Message-ID: <1341245191.2177.40.camel@schurl.lan>
+Subject: Re: [RFC] [TCP 0/3] Receive from socket into bio without copying
+From: Andreas Gruenbacher <agruen@linbit.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Mon, 02 Jul 2012 18:06:31 +0200
+In-Reply-To: <1341237299.22621.88.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2012-07-02 at 15:54 +0200, Eric Dumazet wrote:
+> On Mon, 2012-07-02 at 15:02 +0200, Andreas Gruenbacher wrote:
+> > bio_vec's have some alignment requirements that must be met, and
+> > anything that doesn't meet those requirements can't be passed to the
+> > block layer (without copying it first). Additional layers between
+> > the
+> > network and block layers, like a pipe, won't make that problem go
+> > away.
+> >
+> 
+> What are the "some alignment requirements" exactly, and how do you use
+> TCP exactly to meet them ? (MSS= multiple of 512 ?)
 
---tvOENZuN7d6HfOWU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sectors of 512 bytes must be contiguous; some devices have additional
+requirements (like 4k sectors).  I'm not sure if sectors always need to be
+aligned, but if buffers are allocated page wise and handed out as half /
+full pages, you get that automatically.
 
-On Mon, Jul 02, 2012 at 09:40:06AM -0600, Stephen Warren wrote:
-> On 07/01/2012 12:23 PM, Mark Brown wrote:
+> I believe you try to escape from the real problem.
+> 
+> If the NIC driver provides non aligned data, neither splice() or your
+> new stuff will magically align it. You _need_ a copy in either cases.
 
-> > ...this just seems rubbish, why aren't we just fixing the device
-> > tree code and why are we doing this at the device tree level rather
-> > than as a general gpiolib thing?
+Yes, the NIC must provide aligned data.  A prerequisite for that is that the
+NIC knows how to align things.  With no knowledge of the application protocol,
+the NIC can only use the packet boundaries as hints.  I'm trying to get tcp
+to start new packets at specific points in the protocol so that the packet
+boundaries will coincide with alignment boundaries.  With that, NICs that do
+header splitting can receive packets into appropriately aligned buffers, and
+the problem is solved.
 
-> It is being fixed in the DT code:
+> If NIC driver provides aligned data, splice(socket -> pipe) will keep
+> this alignment for you at 0 cost.
 
-> https://lkml.org/lkml/2012/6/18/468
+Yes of course.  That is not the real issue here though.
 
-Is that patch actually being applied (especially with Grant's free time
-issues)?  I've still got the patch sitting in my inbox since it wasn't
-clear what was going on.
+> > It's not already there, it requires the alignment issue to be
+> > addresses first.
+> 
+> There is no guarantee TCP payload is aligned to a bio, ever, in linux
+> ethernet/ip/tcp stack.
+> 
+> Really, your patches work for you, by pure luck, because you use one
+> particular NIC driver that happens to prepare things for you
+> (presumably doing header split). Nothing guarantee this wont change even
+> for the same hardware in linux-3.8
 
-> However, it seemed best to make the regulator code work both before
-> and after that patch.
+NICs with header splitting are common enough that you don't have to resort
+to pure luck to get one.
 
-I'd be kind of inclined to just leave it broken to be honest rather than
-having a huge comment and dodgy code.
+> So I will just say no to your patches, unless you demonstrate the
+> splice() problems, and how you can fix the alignment problem in a new
+> layer instead of in the existing zero copy standard one.
 
-> This issue can't be fixed only in gpio_request(); of_get_named_gpio()
-> needs the GPIO driver to be probed/registered to even be able to parse
-> the GPIO ID out of the DT; it makes a call into the GPIO driver as
+Again, splice or not is not the issue here. It does not, by itself, allow zero
+copy from the network directly to disk but it could likely be made to support
+that if we can get the alignment right first.  The proposed MSG_NEW_PACKET flag
+helps with that, but maybe someone has a better idea.
 
-Oh, ick.  :/
+This doesn't have to work with arbitrary NICs and it most likely will hurt with
+small MTUs, but then you can still choose not to use it.  It just has to almost
+always work with some particular NICs and with large MTUs.
 
---tvOENZuN7d6HfOWU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Andreas
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP8cZRAAoJEBus8iNuMP3ddt0QAIEIRmJoIvjMRFVkLLxy4LAm
-dug5bC26Y3woFv65AZjQ1gMaqFotfeuEyP81jav/ot9p/odbVXhuDyKyAk5H2+1n
-EY5pGsTNOgP48xJvbhx9PpniyLvpFNf1hnzrStaX9T7DaIXHPTlkB8+7wceKmBtZ
-gMEqA69KRwh87TV+rkyEYWLyO78Uis6hfIRm2pVED6o/hxFiceEuHxzJsP9QAWgc
-L28Z60Js5gkfaHQYI4pyeNI/GBcwoxPLPtgKAVMMg+A1OliaN+zr6VHpreo7H9V7
-uo0DIe9jyRPceaUZJbccbKkafW8P0qGEK8vVzJxTscr77cGfVdK05tYaKKoLG1/X
-oDfxf76p83eUFUp83hLuxKjAscYYi/FKYtmRxUZiWFWAhXarT+XWiCDZyBQJNCFK
-1uFk5PDH40TWzePWECzyGEdKE2HXuy+66mCeag4tT60+th29eSewF5beNhdMXwSS
-vrOSlX8A1SWf59ls4uWgyWOj/D7kuWwEctOa9rMFFsSMUcSBXlAYsBZDAnNR2Bpp
-17rl+19JLG59FdzUmf5JW4dY95d9aPVkiU33HGIEuZO2Prk0LplhFJ1kbF81Xp1f
-oiaP4PoBbmXkQE8j5LCCE1OmaFeNjdHblUCvk4MGFZD5k70XaFDGQ2F+nKumMHS4
-PcwQ0Rm53/p2b5vvapxf
-=ayjY
------END PGP SIGNATURE-----
-
---tvOENZuN7d6HfOWU--
