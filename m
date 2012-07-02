@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab2GBRnt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 13:43:49 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:54007 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755899Ab2GBRnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 13:43:47 -0400
-Date: Mon, 2 Jul 2012 13:43:42 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Jan Kara <jack@suse.cz>
-Cc: Eric Sandeen <sandeen@redhat.com>, Artem Bityutskiy <dedekind1@gmail.com>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: Re: ext4 blocks up
-Message-ID: <20120702174342.GA5795@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-	Eric Sandeen <sandeen@redhat.com>,
-	Artem Bityutskiy <dedekind1@gmail.com>,
-	Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-	Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-	Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-References: <1341231316.2979.11.camel@sauron.fi.intel.com>
- <20120702144444.GA18074@thunk.org>
- <1341240862.2979.23.camel@sauron.fi.intel.com>
- <20120702151442.GB18074@thunk.org>
- <20120702164548.GD18074@thunk.org>
- <4FF1D22D.2070804@redhat.com>
- <20120702173104.GK6679@quack.suse.cz>
+	id S932240Ab2GBRo3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 13:44:29 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:32377 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755058Ab2GBRo1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 13:44:27 -0400
+Message-ID: <1341251063.2590.5.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH net-next 09/15] net: bus: Add garbage collector for
+ AF_BUS sockets.
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Vincent Sanders <vincent.sanders@collabora.co.uk>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Date: Mon, 2 Jul 2012 18:44:23 +0100
+In-Reply-To: <1340988354-26981-10-git-send-email-vincent.sanders@collabora.co.uk>
+References: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk>
+	 <1340988354-26981-10-git-send-email-vincent.sanders@collabora.co.uk>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120702173104.GK6679@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 02, 2012 at 07:31:04PM +0200, Jan Kara wrote:
->   Yes, I can hang the kernel on this test with basically any filesystem
-> when running long enough. My freezing patches should fix that - currently
-> waiting for Al to merge them...
+On Fri, 2012-06-29 at 17:45 +0100, Vincent Sanders wrote:
+> From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> 
+> This patch adds a garbage collector for AF_BUS sockets.
+[...]
+> +struct sock *bus_get_socket(struct file *filp)
+> +{
+> +	struct sock *u_sock = NULL;
+> +	struct inode *inode = filp->f_path.dentry->d_inode;
+> +
+> +	/*
+> +	 *	Socket ?
+> +	 */
+> +	if (S_ISSOCK(inode->i_mode) && !(filp->f_mode & FMODE_PATH)) {
+> +		struct socket *sock = SOCKET_I(inode);
+> +		struct sock *s = sock->sk;
+> +
+> +		/*
+> +		 *	PF_BUS ?
+> +		 */
+> +		if (s && sock->ops && sock->ops->family == PF_BUS)
+> +			u_sock = s;
+> +	}
+> +	return u_sock;
+> +}
+[...]
 
-So this is different from your suspend/resume patches, then?
+What about references cycles involving both AF_BUS and AF_UNIX sockets?
+I think you must either specifically prevent passing AF_UNIX sockets
+through AF_BUS sockets, or make a single garbage collector handle them
+both.
 
-Can you send me a pointer to your patches?  Is this something that Al
-will hopefully merge before 3.5 is released?
+Ben.
 
-    	     	  	     	  - Ted
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
