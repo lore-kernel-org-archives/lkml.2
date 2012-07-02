@@ -1,130 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932792Ab2GBJGk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 05:06:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39916 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932689Ab2GBJGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 05:06:38 -0400
-Date: Mon, 2 Jul 2012 11:06:17 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iwlegacy: print how long queue was actually stuck
-Message-ID: <20120702090602.GA8286@redhat.com>
-References: <1340786187.1911.24.camel@x61.thuisdomein>
- <1341062406.1911.76.camel@x61.thuisdomein>
+	id S932811Ab2GBJJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 05:09:17 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41891 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932716Ab2GBJJO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 05:09:14 -0400
+Date: Mon, 2 Jul 2012 02:09:08 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [RFC 0/2] USB gadget - configfs
+Message-ID: <20120702090907.GC13247@dhcp-172-17-9-228.mtv.corp.google.com>
+Mail-Followup-To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Kyungmin Park <kyungmin.park@samsung.com>,
+	Felipe Balbi <balbi@ti.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+	Marek Szyprowski <m.szyprowski@samsung.com>
+References: <1340276129-20023-1-git-send-email-andrzej.p@samsung.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="r5Pyd7+fXNt84Ff3"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1341062406.1911.76.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1340276129-20023-1-git-send-email-andrzej.p@samsung.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---r5Pyd7+fXNt84Ff3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Sat, Jun 30, 2012 at 03:20:06PM +0200, Paul Bolle wrote:
-> On Wed, 2012-06-27 at 10:36 +0200, Paul Bolle wrote:
-> > Every now and then, after resuming from suspend, the iwlegacy driver
-> > prints
-> >     iwl4965 0000:03:00.0: Queue 2 stuck for 2000 ms.
-> >     iwl4965 0000:03:00.0: On demand firmware reload
-> > 
-> > I have no idea what causes these errors. But the code currently uses
-> > wd_timeout in the first error. wd_timeout will generally be set at
-> > IL_DEF_WD_TIMEOUT (ie, 2000). Perhaps printing for how long the queue
-> > was actually stuck can clarify the cause of these errors.
+On Thu, Jun 21, 2012 at 12:55:27PM +0200, Andrzej Pietrasiewicz wrote:
+> Dear All,
 > 
-> 0) It's not just after resume! I just found the following lines through
-> dmesg (note that it's a period that all messages in dmesg were wlan
-> related, for some reason):
+> This patch series is a follow-up to this thread:
 > 
-> [115840.219977] wlan0: authenticate with [...]
-> [115840.228865] wlan0: send auth to [...] (try 1/3)
-> [115840.429054] wlan0: send auth to [...] (try 2/3)
-> [115840.630026] wlan0: send auth to [...] (try 3/3)
-> [115840.831051] wlan0: authentication with [...] timed out
-> [115848.022336] wlan0: authenticate with [...]
-> [115848.022495] wlan0: direct probe to [...] (try 1/3)
-> [115848.223052] wlan0: direct probe to [...] (try 2/3)
-> [115848.424052] wlan0: direct probe to [...] (try 3/3)
-> [115848.625048] wlan0: authentication with [...] timed out
-> [115855.702461] wlan0: authenticate with [...]
-> [115855.702623] wlan0: direct probe to [...] (try 1/3)
-> [115855.903053] wlan0: direct probe to [...] (try 2/3)
-> [115856.104061] wlan0: direct probe to [...] (try 3/3)
-> [115856.305050] wlan0: authentication with [...] timed out
-> [115863.464067] wlan0: authenticate with [...]
-> [115863.464221] wlan0: direct probe to [...] (try 1/3)
-> [115863.665054] wlan0: direct probe to [...] (try 2/3)
-> [115863.866058] wlan0: direct probe to [...] (try 3/3)
-> [115864.067051] wlan0: authentication with [...] timed out
-> [115871.267216] wlan0: authenticate with [...]
-> [115871.267376] wlan0: send auth to [...] (try 1/3)
-> [115871.269191] wlan0: authenticated
-> [115871.279459] wlan0: associate with [...] (try 1/3)
-> [115871.281715] wlan0: RX AssocResp from [...] (capab=0x411 status=0 aid=2)
-> [115871.281723] wlan0: associated
-> [115871.457043] iwl4965 0000:03:00.0: Queue 2 stuck for 33487 ms.
-> [115871.457048] iwl4965 0000:03:00.0: On demand firmware reload
-For some reason we are not able to authenticate, what itself is a
-problem. Maybe this is wrong key offset problem and that will
-be fixed by Emmanuel patch.
+> http://marc.info/?l=linux-usb&m=132430533824884&w=2
 
-Regarding "Queue 2 stuck", there is another fix in iwlwifi that
-did not make to iwlegacy, which perhaps could help. If not here
-then maybe on suspend.  
+Dear Andrzej,
+	I read this thread just now, and I wanted to comment.  I think
+configfs fits your needs nicely here.  I'd like to affirm your
+supposition that hiding the details in a library is the right way to go.
+ configfs aims to provide nice, predictable, transparent user<->kernel
+API for creating and configuring objects, but it doesn't have to be what
+the end user or administrator sees in everyday use.  Most of the other
+configfs clients (ocfs2, dlm, target) wrap configfs usage in their
+tools.
 
-commit 342bbf3fee2fa9a18147e74b2e3c4229a4564912
-Author: Johannes Berg <johannes.berg@intel.com>
-Date:   Sun Mar 4 08:50:46 2012 -0800
+> As a prerequisite it adds an operation to configfs. The operation allows
+> checking if it is ok to remove a pseudo directory corresponding to a
+> configfs item/group.
 
-    iwlwifi: always monitor for stuck queues
+	I NAK'd that patch because you should be using
+configfs_depend_item().  If you have trouble with that, let's talk.
 
-I'm attaching iwlegacy version of it.
-
-> 2) It's always "Queue 2" that's stuck. What does that queue do?
-
-It's TX queue, probably one used for default traffic i.e. for Best
-Effort category (others are Video, Voice and Background).
-
-Stanislaw
-
---r5Pyd7+fXNt84Ff3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="iwlegacy-allways-monitor-for-stuck-queues.patch"
-
-diff --git a/drivers/net/wireless/iwlegacy/common.c b/drivers/net/wireless/iwlegacy/common.c
-index cbf2dc1..5d4807c 100644
---- a/drivers/net/wireless/iwlegacy/common.c
-+++ b/drivers/net/wireless/iwlegacy/common.c
-@@ -4767,14 +4767,12 @@ il_bg_watchdog(unsigned long data)
- 		return;
+<snip>
  
- 	/* monitor and check for other stuck queues */
--	if (il_is_any_associated(il)) {
--		for (cnt = 0; cnt < il->hw_params.max_txq_num; cnt++) {
--			/* skip as we already checked the command queue */
--			if (cnt == il->cmd_queue)
--				continue;
--			if (il_check_stuck_queue(il, cnt))
--				return;
--		}
-+	for (cnt = 0; cnt < il->hw_params.max_txq_num; cnt++) {
-+		/* skip as we already checked the command queue */
-+		if (cnt == il->cmd_queue)
-+			continue;
-+		if (il_check_stuck_queue(il, cnt))
-+			return;
- 	}
- 
- 	mod_timer(&il->watchdog,
+> I would like to ask some questions. All answers in general, and answers
+> from linux-usb and Felipe and Greg KH in particular, are welcome.
+> 
+> 1. Generally, is this the right way to go?
 
---r5Pyd7+fXNt84Ff3--
+LGTM.
+
+> 2. Using configfs like this calls for an interface between the generic
+>    configfs-related code and function-specific code. I suggested the
+>    struct ufg_fn. What do you think?
+> 3. Should some parameters still be available through sysfs?
+
+	If they fit, yes.  As a rule of thumb, if userspace directed the
+object creation, it should be in configfs.  But if kernelspace created
+the object, sysfs is the better location.  There is wiggle room here.
+Do not be afraid to use both.  configfs was created because sysfs didn't
+fit userspace-directed creation.  configfs is not intended to replace
+all of the things sysfs does better.
+
+> 4. Do we need module parameters for USB descriptors like iManufacturer
+>    and similar?
+> 5. I assumed that the configfs entities are contained in the structures
+>    used for configuring the USB functions, e.g. a struct config_group in
+>    struct fsg_common, or a struct config_item in a struct fsg_lun. This
+>    has implications that the lifetime of the structures is controlled by
+>    userspace through configfs, which, in turn, has influence on how
+>    the USB functions are implemented. Even though it seems natural,
+>    there are some issues. For example an extension to configfs was required
+>    in order to disable deleting the luns while the gadget is connected.
+>    Is this the right approach? If not, then are there any alternatives?
+
+	Yes, embedding in the structures is correct.  These are
+userspace-created objects, and thus userspace has control over their
+lifetimes.  That's intentional.  See above about configfs_depend_item()
+for blocking unsafe removal.
+
+Joel
+
+-- 
+
+"Hey mister if you're gonna walk on water,
+ Could you drop a line my way?"
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
