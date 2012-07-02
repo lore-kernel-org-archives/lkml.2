@@ -1,99 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab2GBBRS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 21:17:18 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:36739 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752434Ab2GBBRQ convert rfc822-to-8bit (ORCPT
+	id S1754146Ab2GBBTr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 21:19:47 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:57917 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752308Ab2GBBTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 21:17:16 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "arnd@arndb.de" <arnd@arndb.de>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mathieu.poirier@linaro.org" <mathieu.poirier@linaro.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: [PATCH] ethernet: add export.h in davinci_cpdma.c
-Thread-Topic: [PATCH] ethernet: add export.h in davinci_cpdma.c
-Thread-Index: Ac1X8Funclewraz+TkKfQvom2CLpBg==
-Date: Mon, 2 Jul 2012 01:17:03 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998FCAAB@DQHE02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: F5aa Im3h KC89 S8JF U83r VjTc bbQu jMib rrjX sAWG t4/u
- 3ZDI 7dLN /xdU AAO4nA==
- AAVc4g==;6;YQByAG4AZABAAGEAcgBuAGQAYgAuAGQAZQA7AGQAYQB2AGUAbQBAAGQAYQB2AGUAbQBsAG8AZgB0AC4AbgBlAHQAOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AbwBtAGEAcABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbQBhAHQAaABpAGUAdQAuAHAAbwBpAHIAaQBlAHIAQABsAGkAbgBhAHIAbwAuAG8AcgBnADsAdABvAG4AeQBAAGEAdABvAG0AaQBkAGUALgBjAG8AbQA=;Sosha1_v1;7;{B209E57F-2807-422B-932B-7804649460AC};bQBpAGwAbwAuAGsAaQBtAEAAdABpAC4AYwBvAG0A;Mon,
- 02 Jul 2012 01:16:50
- GMT;WwBQAEEAVABDAEgAXQAgAGUAdABoAGUAcgBuAGUAdAA6ACAAYQBkAGQAIABlAHgAcABvAHIAdAAuAGgAIABpAG4AIABkAGEAdgBpAG4AYwBpAF8AYwBwAGQAbQBhAC4AYwA=
-x-cr-puzzleid: {B209E57F-2807-422B-932B-7804649460AC}
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 1 Jul 2012 21:19:45 -0400
 MIME-Version: 1.0
+In-Reply-To: <20120701232051.308c03d1@endymion.delvare>
+References: <1340805255-8041-1-git-send-email-djkurtz@chromium.org>
+ <1340805255-8041-4-git-send-email-djkurtz@chromium.org> <20120627180724.762f854a@endymion.delvare>
+ <20120701232051.308c03d1@endymion.delvare>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Mon, 2 Jul 2012 09:19:24 +0800
+X-Google-Sender-Auth: IhwKTpOzDtusZzzVJY40QU4mNXg
+Message-ID: <CAGS+omDV_ynBL-PN0qmLmDRiHGbQFf+TwqC2-+KJY8zy9FDhrA@mail.gmail.com>
+Subject: Re: [PATCH 3/8 v3] i2c: i801: check INTR after every transaction
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        Seth Heasley <seth.heasley@intel.com>, Olof Johansson <olof@lixom.net>,
+        Benson Leung <bleung@chromium.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To remove warning messages about 'EXPORT_SYMBOL_GPL', include export header.
+On Mon, Jul 2, 2012 at 5:20 AM, Jean Delvare <khali@linux-fr.org> wrote:
+> Hi again Daniel,
+>
+> On Wed, 27 Jun 2012 18:07:24 +0200, Jean Delvare wrote:
+>> On Wed, 27 Jun 2012 21:54:10 +0800, Daniel Kurtz wrote:
+>> > Per ICH10 datasheet [1] pg. 711, after completing a block transaction,
+>> > INTR should be checked & cleared separately, only after BYTE_DONE is
+>> > first cleared:
+>> >
+>> >   When the last byte of a block message is received, the host controller
+>> > sets DS. However, it does not set the INTR bit (and generate another
+>> > interrupt) until DS is cleared. Thus, for a block message of n bytes,
+>> > the ICH10 will generate n+1 interrupts.
+>> >
+>> > [1] http://www.intel.com/content/dam/doc/datasheet/io-controller-hub-10-family-datasheet.pdf
+>> >
+>> > Currently, the INTR bit was only checked & cleared separately if the PEC
+>> > was used.
+>> > This patch checks and clears INTR at the very end of every successful
+>> > transaction, regardless of whether the PEC is used.
+>> >
+>> > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+>> > ---
+>> >  drivers/i2c/busses/i2c-i801.c |   46 ++++++++++++++++++++--------------------
+>> >  1 files changed, 23 insertions(+), 23 deletions(-)
+>> >
+>> > diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
+>> > index 8b74e1e..6a53338 100644
+>> > --- a/drivers/i2c/busses/i2c-i801.c
+>> > +++ b/drivers/i2c/busses/i2c-i801.c
+>> > @@ -257,6 +257,24 @@ static int i801_check_post(struct i801_priv *priv, int status, int timeout)
+>> >     return result;
+>> >  }
+>> >
+>> > +/* wait for INTR bit as advised by Intel */
+>> > +static void i801_wait_intr(struct i801_priv *priv)
+>> > +{
+>> > +   int timeout = 0;
+>> > +   int status;
+>> > +
+>> > +   status = inb_p(SMBHSTSTS(priv));
+>> > +   while ((!(status & SMBHSTSTS_INTR)) && (timeout++ < MAX_RETRIES)) {
+>> > +           usleep_range(250, 500);
+>> > +           status = inb_p(SMBHSTSTS(priv));
+>> > +   }
+>>
+>> Per my comment on previous patch, I've swapped the logic here to be in
+>> line with what we had before. I have no objection to trying this change
+>> again, but later, and only if you have actual numbers to back it up.
+>
+> I've done some performance measurements, and it turns out that, with the
+> version of this patch modified by me, all short transactions are twice
+> as slow as before. This is because i801_transaction waits twice now:
+> once for BUSY to be clear, and then again once for INTR to be set.
 
-drivers/net/ethernet/ti/davinci_cpdma.c:280: warning: data definition has no type or storage class
-drivers/net/ethernet/ti/davinci_cpdma.c:280: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-drivers/net/ethernet/ti/davinci_cpdma.c:280: warning: parameter names (without types) in function declaration
-drivers/net/ethernet/ti/davinci_cpdma.c:326: warning: data definition has no type or storage class
-drivers/net/ethernet/ti/davinci_cpdma.c:326: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-drivers/net/ethernet/ti/davinci_cpdma.c:326: warning: parameter names (without types) in function declaration
-drivers/net/ethernet/ti/davinci_cpdma.c:357: warning: data definition has no type or storage class
-drivers/net/ethernet/ti/davinci_cpdma.c:357: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-drivers/net/ethernet/ti/davinci_cpdma.c:357: warning: parameter names (without types) in function declaration
-drivers/net/ethernet/ti/davinci_cpdma.c:428: warning: data definition has no type or storage class
-drivers/net/ethernet/ti/davinci_cpdma.c:428: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-drivers/net/ethernet/ti/davinci_cpdma.c:428: warning: parameter names (without types) in function declaration
-drivers/net/ethernet/ti/davinci_cpdma.c:452: warning: data definition has no type or storage class
-drivers/net/ethernet/ti/davinci_cpdma.c:452: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-drivers/net/ethernet/ti/davinci_cpdma.c:452: warning: parameter names (without types) in function declaration
-drivers/net/ethernet/ti/davinci_cpdma.c:537: warning: data definition has no type or storage class
-drivers/net/ethernet/ti/davinci_cpdma.c:537: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-drivers/net/ethernet/ti/davinci_cpdma.c:537: warning: parameter names (without types) in function declaration
-drivers/net/ethernet/ti/davinci_cpdma.c:555: warning: data definition has no type or storage class
-drivers/net/ethernet/ti/davinci_cpdma.c:555: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-drivers/net/ethernet/ti/davinci_cpdma.c:555: warning: parameter names (without types) in function declaration
-drivers/net/ethernet/ti/davinci_cpdma.c:704: warning: data definition has no type or storage class
-drivers/net/ethernet/ti/davinci_cpdma.c:704: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-drivers/net/ethernet/ti/davinci_cpdma.c:704: warning: parameter names (without types) in function declaration
-drivers/net/ethernet/ti/davinci_cpdma.c:788: warning: data definition has no type or storage class
-drivers/net/ethernet/ti/davinci_cpdma.c:788: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-drivers/net/ethernet/ti/davinci_cpdma.c:788: warning: parameter names (without types) in function declaration
-drivers/net/ethernet/ti/davinci_cpdma.c:816: warning: data definition has no type or storage class
-drivers/net/ethernet/ti/davinci_cpdma.c:816: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-drivers/net/ethernet/ti/davinci_cpdma.c:816: warning: parameter names (without types) in function declaration
-drivers/net/ethernet/ti/davinci_cpdma.c:877: warning: data definition has no type or storage class
-drivers/net/ethernet/ti/davinci_cpdma.c:877: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-drivers/net/ethernet/ti/davinci_cpdma.c:877: warning: parameter names (without types) in function declaration
+Does a fast sequence of such transactions actually take any longer? Or
+just a single short transaction?
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- drivers/net/ethernet/ti/davinci_cpdma.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+My understanding is that the INTR wait is really waiting for the
+entire transaction to complete (ie., including i2c STOP condition),
+not just the byte transfer phase.
 
-diff --git a/drivers/net/ethernet/ti/davinci_cpdma.c b/drivers/net/ethernet/ti/davinci_cpdma.c
-index d614c37..3c1e423 100644
---- a/drivers/net/ethernet/ti/davinci_cpdma.c
-+++ b/drivers/net/ethernet/ti/davinci_cpdma.c
-@@ -19,6 +19,7 @@
- #include <linux/err.h>
- #include <linux/dma-mapping.h>
- #include <linux/io.h>
-+#include <linux/export.h>
- 
- #include "davinci_cpdma.h"
- 
--- 
-1.7.2.5
+By waiting here at the end of a transaction, we make sure the status
+bits are actually clear before starting the next transaction.
 
-Best Regards,
-Milo
+-Dan
 
-
+> I don't think this makes much sense, as both events normally happen at
+> the same time. As a matter of fact, the original code did clear INTR at
+> the end of i801_transaction without checking that it was set. Also, we
+> call i801_check_post() _before_ i801_wait_intr(), which makes no sense
+> IMHO. If INTR was really not set yet, then checking for errors was
+> wrong, it was too early.
+>
+> I'm not even sure why we rely on the BUSY bit in the first place. It
+> would seem easier to just wait for INTR.
+>
+> Thinking about it some more, the idea of function i801_wait_intr() is a
+> little strange. Normally, you'd wait for INTR, then do what you have
+> to, and lastly clear the INTR bit. Having a function which waits for
+> INTR and clears it immediately seems wrong.
+>
+> --
+> Jean Delvare
