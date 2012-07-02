@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932944Ab2GBKHd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 06:07:33 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:39536 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932877Ab2GBKHb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 06:07:31 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Au1PAApy8U9V5qg+PGdsb2JhbABFihWsRxkBAQEBHhkNJ4IYAQEFOhwjEAgDDgouFCUKGogiu0gUiyeFOmADlTOFZox/
-X-IronPort-AV: E=Sophos;i="4.77,510,1336341600"; 
-   d="scan'208";a="369602825"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 2 Jul 2012 12:07:41 +0200
-To: Yufeng Shen <miletus@chromium.org>
-Cc: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel@vger.kernel.org, Daniel Kurtz <djkurtz@chromium.org>,
-        Andrew de los Reyes <adlr@chromium.org>
-Subject: Re: [PATCH] HID: magicmouse: Implement Multi-touch Protocol B (MT-B)
-Message-ID: <20120702100741.GA1496@polaris.bitmath.org>
-References: <1340913271-588-1-git-send-email-miletus@chromium.org>
+	id S932954Ab2GBKIE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 06:08:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46063 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932850Ab2GBKIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 06:08:02 -0400
+Date: Mon, 2 Jul 2012 12:07:36 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org,
+        drepper@gmail.com
+Subject: Re: [PATCHv3 0/3] perf tool: Add new event group management
+Message-ID: <20120702100736.GA967@krava.redhat.com>
+References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
+ <4FF10693.5000907@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340913271-588-1-git-send-email-miletus@chromium.org>
+In-Reply-To: <4FF10693.5000907@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 03:54:31PM -0400, Yufeng Shen wrote:
-> The driver for Apple Magic Trackpad/Mouse currently uses
-> Multi-touch Protocol A (MT-A) to report touch events and uses
-> ABS_MT_TRACKING_ID to do finger tracking. The fact of the device
-> being able to track individual finger makes it possible to
-> report touch events using MT-B. This patch adds the support
-> for the driver to report MT-B and makes it configurable through
-> module parameter so that existing codes that are relying on its
-> MT-A implemtation don't get affected.
+On Sun, Jul 01, 2012 at 08:25:23PM -0600, David Ahern wrote:
+> Hi Jiri:
+> 
+> On 6/29/12 3:08 AM, Jiri Olsa wrote:
+> >hi,
+> >adding support for creating event groups based on the way they
+> >are specified on the command line.
+> >
+> >This patchset adds the '{}' style grammar to express event group,
+> >allowing so far only the 'event modifier' as group modifier.
+> >
+> >The sample/leader modifier changes are ready, but I'm getting
+> >some weird numbers in tests, so I'll send it later. Meanwhile,
+> >it'd be nice to have at least this patchset in.. ;)
+> >
+> >
+> >Attached patches:
+> >   1/3 perf, tool: Add support to parse event group syntax
+> >   2/3 perf, tool: Enable grouping logic for parsed events
+> >   3/3 perf, test: Add automated tests for event group parsing
+> 
+> Would you mind updating perf-stat and perf-record Documentation to
+> include the group option?
 
-Are there any such codes? Most systems, if not all, seem to use mtdev,
-which can handle both protocols. I do not think a parameter switch is
-a good idea. Switching to MT-B or leaving things as is look like the
-viable options.
+yes, Arnaldo already stressed that.. ;) I'll send it
+with my next patchset
 
-Thanks,
-Henrik
+jirka
+
+> 
+> David
