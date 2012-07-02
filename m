@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932667Ab2GBI5g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 04:57:36 -0400
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:41438 "EHLO
-	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932170Ab2GBI5e (ORCPT
+	id S932704Ab2GBI6P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 04:58:15 -0400
+Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:46847 "EHLO
+	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932583Ab2GBI6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 04:57:34 -0400
-Date: Mon, 2 Jul 2012 17:57:17 +0900
+	Mon, 2 Jul 2012 04:58:13 -0400
+Date: Mon, 2 Jul 2012 17:57:59 +0900
 From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
 To: avi@redhat.com, mtosatti@redhat.com
 Cc: agraf@suse.de, paulus@samba.org, aarcange@redhat.com, kvm@vger.kernel.org,
         kvm-ppc@vger.kernel.org, linux-kernel@vger.kernel.org,
         takuya.yoshikawa@gmail.com
-Subject: [PATCH 5/8] KVM: Separate rmap_pde from kvm_lpage_info->write_count
-Message-Id: <20120702175717.f34d39a9.yoshikawa.takuya@oss.ntt.co.jp>
+Subject: [PATCH 6/8] KVM: MMU: Add memslot parameter to hva handlers
+Message-Id: <20120702175759.dfc178a2.yoshikawa.takuya@oss.ntt.co.jp>
 In-Reply-To: <20120702175239.5fec56b3.yoshikawa.takuya@oss.ntt.co.jp>
 References: <20120702175239.5fec56b3.yoshikawa.takuya@oss.ntt.co.jp>
 X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
@@ -25,92 +25,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes it possible to loop over rmap_pde arrays in the same way as
-we do over rmap so that we can optimize kvm_handle_hva_range() easily in
-the following patch.
+This is needed to push trace_kvm_age_page() into kvm_age_rmapp() in the
+following patch.
 
 Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
 ---
- arch/x86/include/asm/kvm_host.h |    2 +-
- arch/x86/kvm/mmu.c              |    6 +++---
- arch/x86/kvm/x86.c              |   11 +++++++++++
- 3 files changed, 15 insertions(+), 4 deletions(-)
+ arch/x86/kvm/mmu.c |   16 +++++++++-------
+ 1 files changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 5aab8d4..aea1673 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -499,11 +499,11 @@ struct kvm_vcpu_arch {
- };
- 
- struct kvm_lpage_info {
--	unsigned long rmap_pde;
- 	int write_count;
- };
- 
- struct kvm_arch_memory_slot {
-+	unsigned long *rmap_pde[KVM_NR_PAGE_SIZES - 1];
- 	struct kvm_lpage_info *lpage_info[KVM_NR_PAGE_SIZES - 1];
- };
- 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index a5f0200..f2c408a 100644
+index f2c408a..bf8d50e 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -931,13 +931,13 @@ static void pte_list_walk(unsigned long *pte_list, pte_list_walk_fn fn)
- static unsigned long *__gfn_to_rmap(gfn_t gfn, int level,
- 				    struct kvm_memory_slot *slot)
- {
--	struct kvm_lpage_info *linfo;
-+	unsigned long idx;
- 
- 	if (likely(level == PT_PAGE_TABLE_LEVEL))
- 		return &slot->rmap[gfn - slot->base_gfn];
- 
--	linfo = lpage_info_slot(gfn, slot, level);
--	return &linfo->rmap_pde;
-+	idx = gfn_to_index(gfn, slot->base_gfn, level);
-+	return &slot->arch.rmap_pde[level - PT_DIRECTORY_LEVEL][idx];
+@@ -1124,7 +1124,7 @@ static int rmap_write_protect(struct kvm *kvm, u64 gfn)
  }
  
- /*
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 8eacb2e..9136f2c 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -6313,6 +6313,10 @@ void kvm_arch_free_memslot(struct kvm_memory_slot *free,
- 	int i;
+ static int kvm_unmap_rmapp(struct kvm *kvm, unsigned long *rmapp,
+-			   unsigned long data)
++			   struct kvm_memory_slot *slot, unsigned long data)
+ {
+ 	u64 *sptep;
+ 	struct rmap_iterator iter;
+@@ -1142,7 +1142,7 @@ static int kvm_unmap_rmapp(struct kvm *kvm, unsigned long *rmapp,
+ }
  
- 	for (i = 0; i < KVM_NR_PAGE_SIZES - 1; ++i) {
-+		if (!dont || free->arch.rmap_pde[i] != dont->arch.rmap_pde[i]) {
-+			kvm_kvfree(free->arch.rmap_pde[i]);
-+			free->arch.rmap_pde[i] = NULL;
-+		}
- 		if (!dont || free->arch.lpage_info[i] != dont->arch.lpage_info[i]) {
- 			kvm_kvfree(free->arch.lpage_info[i]);
- 			free->arch.lpage_info[i] = NULL;
-@@ -6332,6 +6336,11 @@ int kvm_arch_create_memslot(struct kvm_memory_slot *slot, unsigned long npages)
- 		lpages = gfn_to_index(slot->base_gfn + npages - 1,
- 				      slot->base_gfn, level) + 1;
+ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
+-			     unsigned long data)
++			     struct kvm_memory_slot *slot, unsigned long data)
+ {
+ 	u64 *sptep;
+ 	struct rmap_iterator iter;
+@@ -1189,6 +1189,7 @@ static int kvm_handle_hva_range(struct kvm *kvm,
+ 				unsigned long data,
+ 				int (*handler)(struct kvm *kvm,
+ 					       unsigned long *rmapp,
++					       struct kvm_memory_slot *slot,
+ 					       unsigned long data))
+ {
+ 	int j;
+@@ -1223,7 +1224,7 @@ static int kvm_handle_hva_range(struct kvm *kvm,
+ 				unsigned long *rmapp;
  
-+		slot->arch.rmap_pde[i] =
-+			kvm_kvzalloc(lpages * sizeof(*slot->arch.rmap_pde[i]));
-+		if (!slot->arch.rmap_pde[i])
-+			goto out_free;
-+
- 		slot->arch.lpage_info[i] =
- 			kvm_kvzalloc(lpages * sizeof(*slot->arch.lpage_info[i]));
- 		if (!slot->arch.lpage_info[i])
-@@ -6360,7 +6369,9 @@ int kvm_arch_create_memslot(struct kvm_memory_slot *slot, unsigned long npages)
+ 				rmapp = __gfn_to_rmap(gfn, j, memslot);
+-				ret |= handler(kvm, rmapp, data);
++				ret |= handler(kvm, rmapp, memslot, data);
+ 			}
+ 			trace_kvm_age_page(memslot->userspace_addr +
+ 					(gfn - memslot->base_gfn) * PAGE_SIZE,
+@@ -1238,6 +1239,7 @@ static int kvm_handle_hva_range(struct kvm *kvm,
+ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
+ 			  unsigned long data,
+ 			  int (*handler)(struct kvm *kvm, unsigned long *rmapp,
++					 struct kvm_memory_slot *slot,
+ 					 unsigned long data))
+ {
+ 	return kvm_handle_hva_range(kvm, hva, hva + 1, data, handler);
+@@ -1259,7 +1261,7 @@ void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte)
+ }
  
- out_free:
- 	for (i = 0; i < KVM_NR_PAGE_SIZES - 1; ++i) {
-+		kvm_kvfree(slot->arch.rmap_pde[i]);
- 		kvm_kvfree(slot->arch.lpage_info[i]);
-+		slot->arch.rmap_pde[i] = NULL;
- 		slot->arch.lpage_info[i] = NULL;
- 	}
- 	return -ENOMEM;
+ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
+-			 unsigned long data)
++			 struct kvm_memory_slot *slot, unsigned long data)
+ {
+ 	u64 *sptep;
+ 	struct rmap_iterator uninitialized_var(iter);
+@@ -1274,7 +1276,7 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
+ 	 * out actively used pages or breaking up actively used hugepages.
+ 	 */
+ 	if (!shadow_accessed_mask)
+-		return kvm_unmap_rmapp(kvm, rmapp, data);
++		return kvm_unmap_rmapp(kvm, rmapp, slot, data);
+ 
+ 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
+ 	     sptep = rmap_get_next(&iter)) {
+@@ -1291,7 +1293,7 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
+ }
+ 
+ static int kvm_test_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
+-			      unsigned long data)
++			      struct kvm_memory_slot *slot, unsigned long data)
+ {
+ 	u64 *sptep;
+ 	struct rmap_iterator iter;
+@@ -1329,7 +1331,7 @@ static void rmap_recycle(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
+ 
+ 	rmapp = gfn_to_rmap(vcpu->kvm, gfn, sp->role.level);
+ 
+-	kvm_unmap_rmapp(vcpu->kvm, rmapp, 0);
++	kvm_unmap_rmapp(vcpu->kvm, rmapp, NULL, 0);
+ 	kvm_flush_remote_tlbs(vcpu->kvm);
+ }
+ 
 -- 
 1.7.5.4
 
