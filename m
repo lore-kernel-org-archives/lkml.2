@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932725Ab2GBUS1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 16:18:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29983 "EHLO
+	id S1756287Ab2GBUSf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 16:18:35 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5649 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756240Ab2GBUSW (ORCPT
+	with ESMTP id S932693Ab2GBUS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 16:18:22 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=g4HCmq8Mtf8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=3nbZYyFuAAAA:8 a=dwWg9rdAu8B17VaaaNQA:9 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Mon, 2 Jul 2012 16:18:26 -0400
+X-Authority-Analysis: v=2.0 cv=IOWA+3TG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=KR1J_HyDvCoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=3nbZYyFuAAAA:8 a=l4rZkT0uxlpPlpUS7bMA:9 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=pM9c7EvoiGBdanE0:21 a=uKoEwvfOWz_ZQH4P:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120702201820.807573136@goodmis.org>
+Message-Id: <20120702201822.052770797@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 02 Jul 2012 16:03:24 -0400
+Date: Mon, 02 Jul 2012 16:03:28 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -20,168 +20,148 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 2/6] ftrace: Consolidate arch dependent functions with list function
+Subject: [PATCH 6/6] ftrace/x86: Add save_regs for i386 function calls
 References: <20120702200322.573660631@goodmis.org>
-Content-Disposition: inline; filename=0002-ftrace-Consolidate-arch-dependent-functions-with-lis.patch
+Content-Disposition: inline; filename=0006-ftrace-x86-Add-save_regs-for-i386-function-calls.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-As the function tracer starts to get more features, the support for
-theses features will spread out throughout the different architectures
-over time. These features boil down to what each arch does in the
-mcount trampoline (the ftrace_caller).
+Add saving full regs for function tracing on i386.
+The saving of regs was influenced by patches sent out by
+Masami Hiramatsu.
 
-Currently there's two features that are not the same throughout the
-archs.
-
- 1) Support to stop function tracing before the callback
- 2) passing of the ftrace ops
-
-Both of these require placing an indirect function to support the
-features if the mcount trampoline does not.
-
-On a side note, for all architectures, when more than one callback
-is registered to the function tracer, an intermediate 'list' function
-is called by the mcount trampoline to iterate through the callbacks
-that are registered.
-
-Instead of making a separate function for each of these features,
-and requiring several indirect calls, just use the single 'list' function
-as the intermediate, to handle all cases. If an arch does not support
-the 'stop function tracing' or the passing of ftrace ops, just force
-it to use the list function that will handle the features required.
-
-This makes the code cleaner and simpler and removes a lot of
- #ifdefs in the code.
-
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace.h |   13 +++++++++++++
- kernel/trace/ftrace.c  |   45 ++++-----------------------------------------
- 2 files changed, 17 insertions(+), 41 deletions(-)
+ arch/x86/include/asm/ftrace.h |    2 --
+ arch/x86/kernel/entry_32.S    |   53 +++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/ftrace.c      |    4 ----
+ 3 files changed, 53 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 2d59641..3651fdc 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -27,6 +27,19 @@
- #define ARCH_SUPPORTS_FTRACE_OPS 0
+diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
+index fd10faf..2b396cf 100644
+--- a/arch/x86/include/asm/ftrace.h
++++ b/arch/x86/include/asm/ftrace.h
+@@ -40,10 +40,8 @@
+ 
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ #define ARCH_SUPPORTS_FTRACE_OPS 1
+-#ifdef CONFIG_X86_64
+ #define ARCH_SUPPORTS_FTRACE_SAVE_REGS
  #endif
- 
-+/*
-+ * If the arch's mcount caller does not support all of ftrace's
-+ * features, then it must call an indirect function that
-+ * does. Or at least does enough to prevent any unwelcomed side effects.
-+ */
-+#if !defined(CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST) || \
-+	!ARCH_SUPPORTS_FTRACE_OPS
-+# define FTRACE_FORCE_LIST_FUNC 1
-+#else
-+# define FTRACE_FORCE_LIST_FUNC 0
-+#endif
-+
-+
- struct module;
- struct ftrace_hash;
- 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 4f2ab93..4cbca2e 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -97,8 +97,6 @@ static struct ftrace_ops *ftrace_global_list __read_mostly = &ftrace_list_end;
- static struct ftrace_ops *ftrace_control_list __read_mostly = &ftrace_list_end;
- static struct ftrace_ops *ftrace_ops_list __read_mostly = &ftrace_list_end;
- ftrace_func_t ftrace_trace_function __read_mostly = ftrace_stub;
--static ftrace_func_t __ftrace_trace_function_delay __read_mostly = ftrace_stub;
--ftrace_func_t __ftrace_trace_function __read_mostly = ftrace_stub;
- ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
- static struct ftrace_ops global_ops;
- static struct ftrace_ops control_ops;
-@@ -162,26 +160,9 @@ static void set_ftrace_pid_function(ftrace_func_t func)
- void clear_ftrace_function(void)
- {
- 	ftrace_trace_function = ftrace_stub;
--	__ftrace_trace_function = ftrace_stub;
--	__ftrace_trace_function_delay = ftrace_stub;
- 	ftrace_pid_function = ftrace_stub;
- }
- 
--#ifndef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
--/*
-- * For those archs that do not test ftrace_trace_stop in their
-- * mcount call site, we need to do it from C.
-- */
--static void ftrace_test_stop_func(unsigned long ip, unsigned long parent_ip,
--				  struct ftrace_ops *op)
--{
--	if (function_trace_stop)
--		return;
--
--	__ftrace_trace_function(ip, parent_ip, op);
--}
 -#endif
--
- static void control_ops_disable_all(struct ftrace_ops *ops)
+ 
+ #ifndef __ASSEMBLY__
+ extern void mcount(void);
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index acd4963..e18ea33 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1123,6 +1123,7 @@ ftrace_call:
+ 	popl %edx
+ 	popl %ecx
+ 	popl %eax
++ftrace_ret:
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ .globl ftrace_graph_call
+ ftrace_graph_call:
+@@ -1134,6 +1135,58 @@ ftrace_stub:
+ 	ret
+ END(ftrace_caller)
+ 
++ENTRY(ftrace_regs_caller)
++	pushf	/* push flags before compare */
++	cmpl $0, function_trace_stop
++	jne ftrace_exit
++
++	subl $8, %esp	/* skip ip and orig_ax */
++	pushl %gs
++	pushl %fs
++	pushl %es
++	pushl %ds
++	pushl %eax
++	pushl %ebp
++	pushl %edi
++	pushl %esi
++	pushl %edx
++	pushl %ecx
++	pushl %ebx
++	movl 14*4(%esp), %eax	/* Load return address */
++	pushl %eax		/* Save return address (+4) */
++	subl $MCOUNT_INSN_SIZE, %eax
++	movl %eax, 12*4+4(%esp)	/* Store IP */
++	movl 13*4+4(%esp), %edx	/* Load flags */
++	movl %edx, 14*4+4(%esp)	/* Store flags */
++	movl $__KERNEL_CS, %edx
++	movl %edx, 13*4+4(%esp)	/* Store CS */
++
++	movl 0x4(%ebp), %edx
++	lea  4(%esp), %ecx
++	pushl %ecx		/* Save pt_regs as 4th parameter */
++	leal function_trace_op, %ecx
++
++GLOBAL(ftrace_regs_call)
++	call ftrace_stub
++
++	addl $4,%esp		/* Skip pt_regs */
++	popl %eax
++	movl %eax, 14*4(%esp)	/* Restore return address */
++	popl %ebx
++	popl %ecx
++	popl %edx
++	popl %esi
++	popl %edi
++	popl %ebp
++	popl %eax
++	popl %ds
++	popl %es
++	popl %fs
++	popl %gs
++	addl $8, %esp
++ftrace_exit:
++	popf
++	jmp ftrace_ret
+ #else /* ! CONFIG_DYNAMIC_FTRACE */
+ 
+ ENTRY(mcount)
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index b90eb1a..1d41402 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -206,7 +206,6 @@ static int
+ ftrace_modify_code(unsigned long ip, unsigned const char *old_code,
+ 		   unsigned const char *new_code);
+ 
+-#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
+ /*
+  * Should never be called:
+  *  As it is only called by __ftrace_replace_code() which is called by
+@@ -221,7 +220,6 @@ int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_addr,
+ 	WARN_ON(1);
+ 	return -EINVAL;
+ }
+-#endif
+ 
+ int ftrace_update_ftrace_func(ftrace_func_t func)
  {
- 	int cpu;
-@@ -246,7 +227,7 @@ static void update_ftrace_function(void)
- 	if (ftrace_ops_list == &ftrace_list_end ||
- 	    (ftrace_ops_list->next == &ftrace_list_end &&
- 	     !(ftrace_ops_list->flags & FTRACE_OPS_FL_DYNAMIC) &&
--	     ARCH_SUPPORTS_FTRACE_OPS)) {
-+	     !FTRACE_FORCE_LIST_FUNC)) {
- 		/* Set the ftrace_ops that the arch callback uses */
- 		if (ftrace_ops_list == &global_ops)
- 			function_trace_op = ftrace_global_list;
-@@ -259,18 +240,7 @@ static void update_ftrace_function(void)
- 		func = ftrace_ops_list_func;
+@@ -237,7 +235,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
+ 
+ 	ret = ftrace_modify_code(ip, old, new);
+ 
+-#ifdef ARCH_SUPPORTS_FTRACE_SAVE_REGS
+ 	/* Also update the regs callback function */
+ 	if (!ret) {
+ 		ip = (unsigned long)(&ftrace_regs_call);
+@@ -245,7 +242,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
+ 		new = ftrace_call_replace(ip, (unsigned long)func);
+ 		ret = ftrace_modify_code(ip, old, new);
  	}
- 
--#ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
- 	ftrace_trace_function = func;
--#else
--#ifdef CONFIG_DYNAMIC_FTRACE
--	/* do not update till all functions have been modified */
--	__ftrace_trace_function_delay = func;
--#else
--	__ftrace_trace_function = func;
 -#endif
--	ftrace_trace_function =
--		(func == ftrace_stub) ? func : ftrace_test_stop_func;
--#endif
- }
  
- static void add_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
-@@ -1902,16 +1872,6 @@ static void ftrace_run_update_code(int command)
- 	 */
- 	arch_ftrace_update_code(command);
- 
--#ifndef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
--	/*
--	 * For archs that call ftrace_test_stop_func(), we must
--	 * wait till after we update all the function callers
--	 * before we update the callback. This keeps different
--	 * ops that record different functions from corrupting
--	 * each other.
--	 */
--	__ftrace_trace_function = __ftrace_trace_function_delay;
--#endif
- 	function_trace_stop--;
- 
- 	ret = ftrace_arch_code_modify_post_process();
-@@ -3996,6 +3956,9 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
- {
- 	struct ftrace_ops *op;
- 
-+	if (function_trace_stop)
-+		return;
-+
- 	if (unlikely(trace_recursion_test(TRACE_INTERNAL_BIT)))
- 		return;
+ 	atomic_dec(&modifying_ftrace_code);
  
 -- 
 1.7.10
