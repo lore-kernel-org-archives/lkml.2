@@ -1,73 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab2GBMZq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 08:25:46 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:33434 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925Ab2GBMZn (ORCPT
+	id S1752276Ab2GBMbe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 08:31:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35842 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab2GBMbd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 08:25:43 -0400
-MIME-Version: 1.0
-X-Originating-IP: [93.172.43.174]
-In-Reply-To: <CAK=WgbZo-8GXY9bVYGk0XZvqKrdaJZWeNkK1FhRWnH5doGYLjA@mail.gmail.com>
-References: <1337687472-23009-1-git-send-email-ohad@wizery.com>
- <4FBDFC4A.1060602@codeaurora.org> <CAK=WgbaP5qSso_Eu=Oup4eqLDcorZ-qf=mysMKiEvOS=m7yLmg@mail.gmail.com>
- <4FCD276A.80505@codeaurora.org> <CAK=WgbZo-8GXY9bVYGk0XZvqKrdaJZWeNkK1FhRWnH5doGYLjA@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 2 Jul 2012 15:25:22 +0300
-Message-ID: <CAK=WgbZb367zq0QCUuwFU+KtBY0gw_+rsN9fm2YnM-heT+54jA@mail.gmail.com>
-Subject: Re: [PATCH] remoteproc: block premature rproc booting
-To: Stephen Boyd <sboyd@codeaurora.org>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        Loic Pallardy <loic.pallardy@stericsson.com>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 2 Jul 2012 08:31:33 -0400
+Message-ID: <1341232257.23484.10.camel@twins>
+Subject: Re: [PATCH v3 3/5] ARM: topology: Update cpu_power according to DT
+ information
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
+        linux@arm.linux.org.uk, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, yong.zhang0@gmail.com, namhyung@kernel.org,
+        jean.pihet@newoldbits.com
+Date: Mon, 02 Jul 2012 14:30:57 +0200
+In-Reply-To: <CAKfTPtAHvKcdgiL4xx-zBJU5DZ5YwGUbjgtoh9a1tf_C2Amg5w@mail.gmail.com>
+References: <1340205562-7653-1-git-send-email-vincent.guittot@linaro.org>
+	 <1340205562-7653-4-git-send-email-vincent.guittot@linaro.org>
+	 <1341220283.28750.138.camel@twins>
+	 <CAKfTPtAHvKcdgiL4xx-zBJU5DZ5YwGUbjgtoh9a1tf_C2Amg5w@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Sjur, Ludovic, Loic
+On Mon, 2012-07-02 at 14:11 +0200, Vincent Guittot wrote:
+> max / (min + max) * 2^11 so the cpu_scale is smaller than 2^11  as min
+> is never equal to 0 
 
-On Tue, Jun 5, 2012 at 1:57 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> On Tue, Jun 5, 2012 at 12:23 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->> I thought we wanted to allow both calls to proceed in parallel? If we
->> don't care about that
->
-> Yeah, I don't think we do.
->
->> then "announcing" it once the firmware is found the first time sounds correct.
->
-> I agree. Though this patch may be moot very soon due to:
->
->>> The main reason we kept the get/put interface was to make it easier
->>> for you guys to adopt it, but I've been re-thinking lately whether we
->>> really want that interface. It's a problematic interface with
->>> non-negligible maintenance burden, and the code will be greatly
->>> simplified without it.
->>
->> If nobody in the kernel is using it why keep it?
->
-> I was concerned that the non get/put interface might not suit
-> everyone, and I planned to wait for another user or two to show up
-> before I remove that interface.
->
-> Since MSM's PIL is based on a get/put interface, I actually hoped to
-> see if you guys can adopt the new interface before we ditch the
-> get/put one.
->
->> If MSM needs we can add it back when we move to rproc.
->
-> Thanks - that's the kind of feedback I wanted to get.
-
-Sjur, Ludovic, Loic - what remoteproc API are you using today?
-
-We'd like to get rid of the existing get/put interface and instead
-have everyone use the boot/shutdown one, just like rpmsg is doing
-today.
-
-Are you ok with this change?
-
-Thanks,
-Ohad.
+D'0h right.. I think I confused the middle thing with avg again. 
