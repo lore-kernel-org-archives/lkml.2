@@ -1,130 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932497Ab2GBHZu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 03:25:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32914 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754272Ab2GBHZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 03:25:49 -0400
-Date: Mon, 2 Jul 2012 10:25:58 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Rafael Aquini <aquini@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org,
-        virtualization <virtualization@lists.linux-foundation.org>
-Subject: Re: RFD: virtio balloon API use (was Re: [PATCH 5 of 5] virtio:
- expose added descriptors immediately)
-Message-ID: <20120702072558.GA8268@redhat.com>
-References: <patchbomb.1320306168@localhost6.localdomain6>
- <f3831c1617c86a51d875.1320306173@localhost6.localdomain6>
- <20120701092051.GA4515@redhat.com>
- <87d34fx990.fsf@rustcorp.com.au>
+	id S1755246Ab2GBH1V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 03:27:21 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:44459 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754147Ab2GBH1T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 03:27:19 -0400
+Date: Mon, 2 Jul 2012 10:24:46 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Cc: Roland Stigge <stigge@antcom.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: phy: Fix Kconfig dependency for Phy drivers
+Message-ID: <20120702072445.GD16670@arwen.pp.htv.fi>
+Reply-To: balbi@ti.com
+References: <1340722608-997-1-git-send-email-aletes.xgr@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZARJHfwaSJQLOEUz"
 Content-Disposition: inline
-In-Reply-To: <87d34fx990.fsf@rustcorp.com.au>
+In-Reply-To: <1340722608-997-1-git-send-email-aletes.xgr@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 02, 2012 at 10:35:47AM +0930, Rusty Russell wrote:
-> On Sun, 1 Jul 2012 12:20:51 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > On Thu, Nov 03, 2011 at 06:12:53PM +1030, Rusty Russell wrote:
-> > > A virtio driver does virtqueue_add_buf() multiple times before finally
-> > > calling virtqueue_kick(); previously we only exposed the added buffers
-> > > in the virtqueue_kick() call.  This means we don't need a memory
-> > > barrier in virtqueue_add_buf(), but it reduces concurrency as the
-> > > device (ie. host) can't see the buffers until the kick.
-> > > 
-> > > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> > 
-> > Looking at recent mm compaction patches made me look at locking
-> > in balloon closely. And I noticed the referenced patch (commit
-> > ee7cd8981e15bcb365fc762afe3fc47b8242f630 upstream) interacts strangely
-> > with virtio balloon; balloon currently does:
-> > 
-> > static void tell_host(struct virtio_balloon *vb, struct virtqueue *vq)
-> > {
-> >         struct scatterlist sg;
-> > 
-> >         sg_init_one(&sg, vb->pfns, sizeof(vb->pfns[0]) * vb->num_pfns);
-> > 
-> >         init_completion(&vb->acked);
-> > 
-> >         /* We should always be able to add one buffer to an empty queue. */
-> >         if (virtqueue_add_buf(vq, &sg, 1, 0, vb, GFP_KERNEL) < 0)
-> >                 BUG();
-> >         virtqueue_kick(vq);
-> > 
-> >         /* When host has read buffer, this completes via balloon_ack */
-> >         wait_for_completion(&vb->acked);
-> > }
-> > 
-> > 
-> > While vq callback does:
-> > 
-> > static void balloon_ack(struct virtqueue *vq)
-> > {
-> >         struct virtio_balloon *vb;
-> >         unsigned int len;
-> > 
-> >         vb = virtqueue_get_buf(vq, &len);
-> >         if (vb)
-> >                 complete(&vb->acked);
-> > }
-> > 
-> > 
-> > So virtqueue_get_buf might now run concurrently with virtqueue_kick.
-> > I audited both and this seems safe in practice but I think
-> 
-> Good spotting!
-> 
-> Agreed.  Because there's only add_buf, we get away with it: the add_buf
-> must be almost finished by the time get_buf runs because the device has
-> seen the buffer.
-> 
-> > we need to either declare this legal at the API level
-> > or add locking in driver.
-> 
-> I wonder if we should just lock in the balloon driver, rather than
-> document this corner case and set a bad example.
 
-We'll need to replace &vb->acked with a waitqueue
-and do get_buf from the same thread.
-But I note that stats_request hash the same issue.
-Let's see if we can fix it.
+--ZARJHfwaSJQLOEUz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Are there other
-> drivers which take the same shortcut?
+Hi,
 
-Not that I know.
+On Tue, Jun 26, 2012 at 11:56:48AM -0300, Alexandre Pereira da Silva wrote:
+> USB phy layer driver are only built if usb host is selected, but they
+> are used too by USB_GADGET drivers
+>=20
+> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+> ---
+>  drivers/usb/Makefile    |    2 +-
+>  drivers/usb/phy/Kconfig |    4 ++--
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/drivers/usb/Makefile b/drivers/usb/Makefile
+> index c691eea..f5ed3d7 100644
+> --- a/drivers/usb/Makefile
+> +++ b/drivers/usb/Makefile
+> @@ -46,7 +46,7 @@ obj-$(CONFIG_USB_MICROTEK)	+=3D image/
+>  obj-$(CONFIG_USB_SERIAL)	+=3D serial/
+> =20
+>  obj-$(CONFIG_USB)		+=3D misc/
+> -obj-$(CONFIG_USB)		+=3D phy/
+> +obj-$(CONFIG_USB_COMMON)	+=3D phy/
 
-> > Further, is there a guarantee that we never get
-> > spurious callbacks?  We currently check ring not empty
-> > but esp for non shared MSI this might not be needed.
-> 
-> Yes, I think this saves us.  A spurious interrupt won't trigger
-> a spurious callback.
-> 
-> > If a spurious callback triggers, virtqueue_get_buf can run
-> > concurrently with virtqueue_add_buf which is known to be racy.
-> > Again I think this is currently safe as no spurious callbacks in
-> > practice but should we guarantee no spurious callbacks at the API level
-> > or add locking in driver?
-> 
-> I think we should guarantee it, but is there a hole in the current
-> implementation?
-> 
-> Thanks,
-> Rusty.
+I'm not sure this is the best solution. Should we introduce
+CONFIG_USB_PHY for this ?
 
-Could be. The check for ring empty looks somewhat suspicious.
-It might be expensive to make it 100% robust - that check was
-intended as an optimization for shared interrupts.
-Whith per vq interrupts we IMO do not need the check.
-If we add locking in balloon I think there's no need
-to guarantee no spurious interrupts.
+--=20
+balbi
 
+--ZARJHfwaSJQLOEUz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-MST
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP8Uy9AAoJEIaOsuA1yqREKNQP/1yyg3rjckBj5qkbfYM3MGOI
+AHppaqsXaJ/s5oDVrZlPsn+0B1If5OC6ofr2H3pOP/DgY6wEHlnIkH+LSZVkYY27
+/cWtADBttvLKkFu+Roj9OwdoWCVSqZtBLiFE/NQ+Afel612pmvruzqNj2UyvjKMx
+J/hx3U2/iC9QqhFdFeheAke6LZg59sM8+zEX6cOAB0B7HgzfV0RiddOwxjz3Hlrx
+VYRRLzg6K9qaS/GysZgTd0t8hDVcEW0tpMCWPWXDI1hKlrU1BwbP7a2DUZcL5+6H
+uE0yf8FxAFcbMPPlWRlG6+WjboQ/EEvduIAZHADOowLTWTtxnrxbr6evT8jqaZBh
+J5JjuU4d96FXlg/pBbwW+BPz1YH3y/Z5M7SD/PEdzEX9H3JdTbQ2h7v2zs5FSonK
+R9aoJ359HdiQpTMjvo7yZwvMx9T7v13cdKYRcw2DZOJcnT8emZRjAnfskN/ZxTtt
+dSYAGCsg8Sm58f3joLpJ0RkcOGJ3mcXviO/yyHXBDgfOezJRCiY6M0Z/opd2gDaG
+7KGe1z4l0YxqKumqJAufmHLdOIWDbbJA2VVGTv7R/D3EyxHhDigyP6KmfNEypdhW
+7S2BgAsCZaS3pfCmqYNYqF+4e2h8PPDPGEKLFlIyGdIgLPuEzGOtKQDeKBw2iEqj
+FS990O7Tik3q123EqErC
+=bHgZ
+-----END PGP SIGNATURE-----
+
+--ZARJHfwaSJQLOEUz--
