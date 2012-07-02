@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629Ab2GBCWg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 22:22:36 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:35746 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571Ab2GBCWe (ORCPT
+	id S932172Ab2GBCZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 22:25:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37813 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272Ab2GBCZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 22:22:34 -0400
-Message-ID: <4FF105D0.8010400@linux.vnet.ibm.com>
-Date: Mon, 02 Jul 2012 10:22:08 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Sun, 1 Jul 2012 22:25:26 -0400
+Message-ID: <4FF10693.5000907@gmail.com>
+Date: Sun, 01 Jul 2012 20:25:23 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>, mtosatti@redhat.com,
-        agraf@suse.de, paulus@samba.org, aarcange@redhat.com,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, takuya.yoshikawa@gmail.com
-Subject: Re: [PATCH 5/6] KVM: Separate rmap_pde from kvm_lpage_info->write_count
-References: <20120628105733.ccd9abb3.yoshikawa.takuya@oss.ntt.co.jp> <20120628110141.7b908c91.yoshikawa.takuya@oss.ntt.co.jp> <4FEBCBB3.3060707@linux.vnet.ibm.com> <20120628124546.83a829f3.yoshikawa.takuya@oss.ntt.co.jp> <4FEC96EB.1050307@redhat.com>
-In-Reply-To: <4FEC96EB.1050307@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Jiri Olsa <jolsa@redhat.com>
+CC: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org,
+        drepper@gmail.com
+Subject: Re: [PATCHv3 0/3] perf tool: Add new event group management
+References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12070202-4790-0000-0000-0000037DDBA8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2012 01:39 AM, Avi Kivity wrote:
+Hi Jiri:
 
-> But I still think it's the right thing since it simplifies the code.
-> Maybe we should add a prefetch() on write_count do mitigate the
-> overhead, if it starts showing up in profiles.
-> 
+On 6/29/12 3:08 AM, Jiri Olsa wrote:
+> hi,
+> adding support for creating event groups based on the way they
+> are specified on the command line.
+>
+> This patchset adds the '{}' style grammar to express event group,
+> allowing so far only the 'event modifier' as group modifier.
+>
+> The sample/leader modifier changes are ready, but I'm getting
+> some weird numbers in tests, so I'll send it later. Meanwhile,
+> it'd be nice to have at least this patchset in.. ;)
+>
+>
+> Attached patches:
+>    1/3 perf, tool: Add support to parse event group syntax
+>    2/3 perf, tool: Enable grouping logic for parsed events
+>    3/3 perf, test: Add automated tests for event group parsing
 
-Long time ago, there was a discussion about dropping prefetch in the
-operation of list walking:
-	http://lwn.net/Articles/444336/
-IIRC, the conclusion is that it is better to let CPU prefetch memory
-by itself.
+Would you mind updating perf-stat and perf-record Documentation to 
+include the group option?
 
-Actually, when i developed lockless spte walking, i measure the performance if
-prefetch was used, but i did not see the improvement.
-
-
+David
