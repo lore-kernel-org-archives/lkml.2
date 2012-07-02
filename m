@@ -1,67 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693Ab2GBPns (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 11:43:48 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:46554 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753931Ab2GBPnq (ORCPT
+	id S1755521Ab2GBPpR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 11:45:17 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:62809 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab2GBPpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 11:43:46 -0400
-Message-ID: <4FF1C1AF.9080104@collabora.co.uk>
-Date: Mon, 02 Jul 2012 17:43:43 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Mon, 2 Jul 2012 11:45:15 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>, <plagnioj@jcrosoft.com>,
+        <ludovic.desroches@atmel.com>
+CC: <linux-kernel@vger.kernel.org>, <arnd@arndb.de>, <olof@lixom.net>,
+        "Nicolas Ferre" <nicolas.ferre@atmel.com>
+Subject: [PATCH 1/2] ARM: at91/defconfig: change the MCI driver to use in defconfigs
+Date: Mon, 2 Jul 2012 17:45:06 +0200
+Message-ID: <24f5c4b6e6f2933eb22979283db6174f378d9b36.1341243806.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.10
 MIME-Version: 1.0
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-CC: Vincent Sanders <vincent.sanders@collabora.co.uk>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alban Crequy <alban.crequy@collabora.co.uk>
-Subject: Re: [PATCH net-next 13/15] netfilter: nfdbus: Add D-bus message parsing
-References: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk> <1340988354-26981-14-git-send-email-vincent.sanders@collabora.co.uk> <20120629171108.GA6287@1984>
-In-Reply-To: <20120629171108.GA6287@1984>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.159.245.203]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2012 07:11 PM, Pablo Neira Ayuso wrote:
-> On Fri, Jun 29, 2012 at 05:45:52PM +0100, Vincent Sanders wrote:
->> From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->> 
->> The netfilter D-Bus module needs to parse D-bus messages sent by
->> applications to decide whether a peer can receive or not a D-Bus
->> message. Add D-bus message parsing logic to be able to analyze.
-> 
-> Not talking about the entire patchset, only about the part I'm
-> responsible for.
-> 
-> I don't see why you think this belong to netfilter at all.
-> 
-> This doesn't integrate into the existing filtering infrastructure,
-> neither it extends it in any way.
-> 
+Since atmel-mci driver supports all atmel mci versions,
+use it instead of the deprecated at91_mci driver.
 
-Hello Pablo,
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/configs/at91rm9200_defconfig  |    2 +-
+ arch/arm/configs/at91sam9261_defconfig |    2 +-
+ arch/arm/configs/at91sam9263_defconfig |    2 +-
+ arch/arm/configs/at91sam9g20_defconfig |    2 +-
+ arch/arm/configs/at91sam9rl_defconfig  |    2 +-
+ arch/arm/configs/cpu9260_defconfig     |    2 +-
+ arch/arm/configs/cpu9g20_defconfig     |    2 +-
+ arch/arm/configs/qil-a9260_defconfig   |    2 +-
+ arch/arm/configs/stamp9g20_defconfig   |    1 -
+ 9 files changed, 8 insertions(+), 9 deletions(-)
 
-Thanks a lot for your feedback.
+diff --git a/arch/arm/configs/at91rm9200_defconfig b/arch/arm/configs/at91rm9200_defconfig
+index d54e2ac..4ae57a3 100644
+--- a/arch/arm/configs/at91rm9200_defconfig
++++ b/arch/arm/configs/at91rm9200_defconfig
+@@ -232,7 +232,7 @@ CONFIG_USB_GADGET=y
+ CONFIG_USB_ETH=m
+ CONFIG_USB_MASS_STORAGE=m
+ CONFIG_MMC=y
+-CONFIG_MMC_AT91=y
++CONFIG_MMC_ATMELMCI=y
+ CONFIG_NEW_LEDS=y
+ CONFIG_LEDS_CLASS=y
+ CONFIG_LEDS_GPIO=y
+diff --git a/arch/arm/configs/at91sam9261_defconfig b/arch/arm/configs/at91sam9261_defconfig
+index ade6b2f..1e8712e 100644
+--- a/arch/arm/configs/at91sam9261_defconfig
++++ b/arch/arm/configs/at91sam9261_defconfig
+@@ -128,7 +128,7 @@ CONFIG_USB_GADGETFS=m
+ CONFIG_USB_FILE_STORAGE=m
+ CONFIG_USB_G_SERIAL=m
+ CONFIG_MMC=y
+-CONFIG_MMC_AT91=m
++CONFIG_MMC_ATMELMCI=m
+ CONFIG_NEW_LEDS=y
+ CONFIG_LEDS_CLASS=y
+ CONFIG_LEDS_GPIO=y
+diff --git a/arch/arm/configs/at91sam9263_defconfig b/arch/arm/configs/at91sam9263_defconfig
+index 585e7e0..d2050ca 100644
+--- a/arch/arm/configs/at91sam9263_defconfig
++++ b/arch/arm/configs/at91sam9263_defconfig
+@@ -137,7 +137,7 @@ CONFIG_USB_FILE_STORAGE=m
+ CONFIG_USB_G_SERIAL=m
+ CONFIG_MMC=y
+ CONFIG_SDIO_UART=m
+-CONFIG_MMC_AT91=m
++CONFIG_MMC_ATMELMCI=m
+ CONFIG_NEW_LEDS=y
+ CONFIG_LEDS_CLASS=y
+ CONFIG_LEDS_ATMEL_PWM=y
+diff --git a/arch/arm/configs/at91sam9g20_defconfig b/arch/arm/configs/at91sam9g20_defconfig
+index 994d331..e1b0e80 100644
+--- a/arch/arm/configs/at91sam9g20_defconfig
++++ b/arch/arm/configs/at91sam9g20_defconfig
+@@ -99,7 +99,7 @@ CONFIG_USB_GADGETFS=m
+ CONFIG_USB_FILE_STORAGE=m
+ CONFIG_USB_G_SERIAL=m
+ CONFIG_MMC=y
+-CONFIG_MMC_AT91=m
++CONFIG_MMC_ATMELMCI=m
+ CONFIG_NEW_LEDS=y
+ CONFIG_LEDS_CLASS=y
+ CONFIG_LEDS_GPIO=y
+diff --git a/arch/arm/configs/at91sam9rl_defconfig b/arch/arm/configs/at91sam9rl_defconfig
+index ad562ee..7cf8785 100644
+--- a/arch/arm/configs/at91sam9rl_defconfig
++++ b/arch/arm/configs/at91sam9rl_defconfig
+@@ -60,7 +60,7 @@ CONFIG_AT91SAM9X_WATCHDOG=y
+ CONFIG_FB=y
+ CONFIG_FB_ATMEL=y
+ CONFIG_MMC=y
+-CONFIG_MMC_AT91=m
++CONFIG_MMC_ATMELMCI=m
+ CONFIG_RTC_CLASS=y
+ CONFIG_RTC_DRV_AT91SAM9=y
+ CONFIG_EXT2_FS=y
+diff --git a/arch/arm/configs/cpu9260_defconfig b/arch/arm/configs/cpu9260_defconfig
+index bbf729e..921480c 100644
+--- a/arch/arm/configs/cpu9260_defconfig
++++ b/arch/arm/configs/cpu9260_defconfig
+@@ -82,7 +82,7 @@ CONFIG_USB_STORAGE=y
+ CONFIG_USB_GADGET=y
+ CONFIG_USB_ETH=m
+ CONFIG_MMC=y
+-CONFIG_MMC_AT91=m
++CONFIG_MMC_ATMELMCI=m
+ CONFIG_NEW_LEDS=y
+ CONFIG_LEDS_CLASS=y
+ CONFIG_LEDS_GPIO=y
+diff --git a/arch/arm/configs/cpu9g20_defconfig b/arch/arm/configs/cpu9g20_defconfig
+index e7d7942..ea116cb 100644
+--- a/arch/arm/configs/cpu9g20_defconfig
++++ b/arch/arm/configs/cpu9g20_defconfig
+@@ -82,7 +82,7 @@ CONFIG_USB_STORAGE=y
+ CONFIG_USB_GADGET=y
+ CONFIG_USB_ETH=m
+ CONFIG_MMC=y
+-CONFIG_MMC_AT91=m
++CONFIG_MMC_ATMELMCI=m
+ CONFIG_NEW_LEDS=y
+ CONFIG_LEDS_CLASS=y
+ CONFIG_LEDS_GPIO=y
+diff --git a/arch/arm/configs/qil-a9260_defconfig b/arch/arm/configs/qil-a9260_defconfig
+index 2bb100b..42d5db1 100644
+--- a/arch/arm/configs/qil-a9260_defconfig
++++ b/arch/arm/configs/qil-a9260_defconfig
+@@ -86,7 +86,7 @@ CONFIG_USB_STORAGE=y
+ CONFIG_USB_GADGET=y
+ CONFIG_USB_ETH=m
+ CONFIG_MMC=y
+-CONFIG_MMC_AT91=m
++CONFIG_MMC_ATMELMCI=m
+ CONFIG_NEW_LEDS=y
+ CONFIG_LEDS_CLASS=y
+ CONFIG_LEDS_GPIO=y
+diff --git a/arch/arm/configs/stamp9g20_defconfig b/arch/arm/configs/stamp9g20_defconfig
+index d5e260b..52f1488 100644
+--- a/arch/arm/configs/stamp9g20_defconfig
++++ b/arch/arm/configs/stamp9g20_defconfig
+@@ -100,7 +100,6 @@ CONFIG_USB_ETH=m
+ CONFIG_USB_FILE_STORAGE=m
+ CONFIG_USB_G_SERIAL=m
+ CONFIG_MMC=y
+-# CONFIG_MMC_AT91 is not set
+ CONFIG_MMC_ATMELMCI=y
+ CONFIG_NEW_LEDS=y
+ CONFIG_LEDS_CLASS=y
+-- 
+1.7.10
 
-This is the first of a set of patches that adds a netfilter module to parse
-D-Bus messages, the complete patch-set is:
-
-[PATCH 13/15] netfilter: nfdbus: Add D-bus message parsing
-[PATCH 14/15] netfilter: nfdbus: Add D-bus match rule implementation
-[PATCH 15/15] netfilter: add netfilter D-Bus module
-
-patches 13 and 14 just include D-Bus helper code to be used by the netfilter
-module (added on patch 15) and specially the dbus_filter netfilter hook function.
-
-For the next post version we will reorganize the patches so first the D-Bus
-netfilter module is added with an empty dbus_filter function and then added the
-D-Bus helper code.
-
-Also, we will move the nfdbus netfilter module to net/bus so is not inside the
-netfilter core code.
-
-Thanks a lot and best regards,
-Javier
