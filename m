@@ -1,55 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932808Ab2GBJWI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 05:22:08 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:33757 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932421Ab2GBJWG (ORCPT
+	id S932890Ab2GBJWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 05:22:50 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:50079 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932689Ab2GBJWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 05:22:06 -0400
+	Mon, 2 Jul 2012 05:22:47 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q629MfDo005215, This message is released by code: ctlocs8528
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH v2 net-next 1/2] r8169: support RTL8106E
+Date: Mon, 2 Jul 2012 17:23:21 +0800
+Message-ID: <1341221002-1522-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.10.2
+In-Reply-To: <1340966060-2749-1-git-send-email-hayeswang@realtek.com>
+References: <1340966060-2749-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
-In-Reply-To: <4FF16773.3030202@mev.co.uk>
-References: <1341159624-23968-1-git-send-email-devendra.aaru@gmail.com>
-	<4FF15FAB.9050905@mev.co.uk>
-	<CAHdPZaP5MgPqzK2RLfUTHkxOHKnGkEJLX6pA-pOVWp=Ri4A8-w@mail.gmail.com>
-	<4FF16773.3030202@mev.co.uk>
-Date: Mon, 2 Jul 2012 14:52:05 +0530
-Message-ID: <CAHdPZaMrYbpZNGziZJf3oPH0WemFKvrT+Me1goEKeEOWhDkmNQ@mail.gmail.com>
-Subject: Re: [PATCH V3 2/2] staging/comedi/drivers: free allocated priv and
- release resources if comedi_alloc_subdevices
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: Ian Abbott <ian.abbott@mev.co.uk>,
-        Mori Hess <fmhess@users.sourceforge.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 2, 2012 at 2:48 PM, Ian Abbott <abbotti@mev.co.uk> wrote:
-> On 2012-07-02 09:51, devendra.aaru wrote:
->>
->> anyway i have a question
->>
->> are you going to remove the alloc_private wapper and use kzalloc?
->
->
-> I'm not averse to the idea, but it's not a high priority.
->
+Support the new chip RTL8106E.
 
-Then will i do? and change all drivers?
-I dunno about any other guys doing it ...
->
-> --
-> -=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
-> -=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
->
->
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/ethernet/realtek/r8169.c |   56 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 56 insertions(+)
 
-Thanks,
-Devendra.
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index d7a04e0..7afc593 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -46,6 +46,7 @@
+ #define FIRMWARE_8105E_1	"rtl_nic/rtl8105e-1.fw"
+ #define FIRMWARE_8402_1		"rtl_nic/rtl8402-1.fw"
+ #define FIRMWARE_8411_1		"rtl_nic/rtl8411-1.fw"
++#define FIRMWARE_8106E_1	"rtl_nic/rtl8106e-1.fw"
+ 
+ #ifdef RTL8169_DEBUG
+ #define assert(expr) \
+@@ -141,6 +142,7 @@ enum mac_version {
+ 	RTL_GIGA_MAC_VER_36,
+ 	RTL_GIGA_MAC_VER_37,
+ 	RTL_GIGA_MAC_VER_38,
++	RTL_GIGA_MAC_VER_39,
+ 	RTL_GIGA_MAC_NONE   = 0xff,
+ };
+ 
+@@ -259,6 +261,9 @@ static const struct {
+ 	[RTL_GIGA_MAC_VER_38] =
+ 		_R("RTL8411",		RTL_TD_1, FIRMWARE_8411_1,
+ 							JUMBO_9K, false),
++	[RTL_GIGA_MAC_VER_39] =
++		_R("RTL8106e",		RTL_TD_1, FIRMWARE_8106E_1,
++							JUMBO_1K, true),
+ };
+ #undef _R
+ 
+@@ -431,7 +436,9 @@ enum rtl8168_registers {
+ 	RDSAR1			= 0xd0,	/* 8168c only. Undocumented on 8168dp */
+ 	MISC			= 0xf0,	/* 8168e only. */
+ #define TXPLA_RST			(1 << 29)
++#define DISABLE_LAN_EN			(1 << 23) /* Enable GPIO pin */
+ #define PWM_EN				(1 << 22)
++#define EARLY_TALLY_EN			(1 << 16)
+ };
+ 
+ enum rtl_register_content {
+@@ -794,6 +801,7 @@ MODULE_FIRMWARE(FIRMWARE_8168F_1);
+ MODULE_FIRMWARE(FIRMWARE_8168F_2);
+ MODULE_FIRMWARE(FIRMWARE_8402_1);
+ MODULE_FIRMWARE(FIRMWARE_8411_1);
++MODULE_FIRMWARE(FIRMWARE_8106E_1);
+ 
+ static void rtl_lock_work(struct rtl8169_private *tp)
+ {
+@@ -1933,6 +1941,8 @@ static void rtl8169_get_mac_version(struct rtl8169_private *tp,
+ 		{ 0x7c800000, 0x30000000,	RTL_GIGA_MAC_VER_11 },
+ 
+ 		/* 8101 family. */
++		{ 0x7cf00000, 0x44900000,	RTL_GIGA_MAC_VER_39 },
++		{ 0x7c800000, 0x44800000,	RTL_GIGA_MAC_VER_39 },
+ 		{ 0x7c800000, 0x44000000,	RTL_GIGA_MAC_VER_37 },
+ 		{ 0x7cf00000, 0x40b00000,	RTL_GIGA_MAC_VER_30 },
+ 		{ 0x7cf00000, 0x40a00000,	RTL_GIGA_MAC_VER_30 },
+@@ -3273,6 +3283,30 @@ static void rtl8402_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy(tp, 0x1f, 0x0000);
+ }
+ 
++static void rtl8106e_hw_phy_config(struct rtl8169_private *tp)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++
++	static const struct phy_reg phy_reg_init[] = {
++		{ 0x1f, 0x0004 },
++		{ 0x10, 0xc07f },
++		{ 0x19, 0x7030 },
++		{ 0x1f, 0x0000 }
++	};
++
++	/* Disable ALDPS before ram code */
++	rtl_writephy(tp, 0x1f, 0x0000);
++	rtl_writephy(tp, 0x18, 0x0310);
++	msleep(100);
++
++	rtl_apply_firmware(tp);
++
++	rtl_eri_write(ioaddr, 0x1b0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
++	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
++
++	rtl_eri_write(ioaddr, 0x1d0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
++}
++
+ static void rtl_hw_phy_config(struct net_device *dev)
+ {
+ 	struct rtl8169_private *tp = netdev_priv(dev);
+@@ -3369,6 +3403,10 @@ static void rtl_hw_phy_config(struct net_device *dev)
+ 		rtl8411_hw_phy_config(tp);
+ 		break;
+ 
++	case RTL_GIGA_MAC_VER_39:
++		rtl8106e_hw_phy_config(tp);
++		break;
++
+ 	default:
+ 		break;
+ 	}
+@@ -3608,6 +3646,7 @@ static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_34:
+ 	case RTL_GIGA_MAC_VER_37:
+ 	case RTL_GIGA_MAC_VER_38:
++	case RTL_GIGA_MAC_VER_39:
+ 		RTL_W32(RxConfig, RTL_R32(RxConfig) |
+ 			AcceptBroadcast | AcceptMulticast | AcceptMyPhys);
+ 		break;
+@@ -3830,6 +3869,7 @@ static void __devinit rtl_init_pll_power_ops(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_29:
+ 	case RTL_GIGA_MAC_VER_30:
+ 	case RTL_GIGA_MAC_VER_37:
++	case RTL_GIGA_MAC_VER_39:
+ 		ops->down	= r810x_pll_power_down;
+ 		ops->up		= r810x_pll_power_up;
+ 		break;
+@@ -5123,6 +5163,18 @@ static void rtl_hw_start_8402(struct rtl8169_private *tp)
+ 		     ERIAR_EXGMAC);
+ }
+ 
++static void rtl_hw_start_8106(struct rtl8169_private *tp)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++
++	/* Force LAN exit from ASPM if Rx/Tx are not idle */
++	RTL_W32(FuncEvent, RTL_R32(FuncEvent) | 0x002800);
++
++	RTL_W32(MISC, (RTL_R32(MISC) | DISABLE_LAN_EN) & ~EARLY_TALLY_EN);
++	RTL_W8(MCU, RTL_R8(MCU) | EN_NDP | EN_OOB_RESET);
++	RTL_W8(DLLPR, RTL_R8(DLLPR) & ~PFM_EN);
++}
++
+ static void rtl_hw_start_8101(struct net_device *dev)
+ {
+ 	struct rtl8169_private *tp = netdev_priv(dev);
+@@ -5167,6 +5219,10 @@ static void rtl_hw_start_8101(struct net_device *dev)
+ 	case RTL_GIGA_MAC_VER_37:
+ 		rtl_hw_start_8402(tp);
+ 		break;
++
++	case RTL_GIGA_MAC_VER_39:
++		rtl_hw_start_8106(tp);
++		break;
+ 	}
+ 
+ 	RTL_W8(Cfg9346, Cfg9346_Lock);
+-- 
+1.7.10.2
+
