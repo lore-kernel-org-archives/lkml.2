@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932648Ab2GBUPq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 16:15:46 -0400
-Received: from swielinga.nl ([83.160.77.141]:58576 "EHLO swielinga.nl"
+	id S1756249Ab2GBUR5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 16:17:57 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:56772 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754940Ab2GBUPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 16:15:44 -0400
-X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Jul 2012 16:15:44 EDT
-Date: Mon, 2 Jul 2012 22:08:21 +0200
-From: Sytse Wielinga <sytse@swielinga.nl>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: John Stultz <johnstul@us.ibm.com>, Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [RFC] Potential fix for leapsecond caused futex related
- load spikes
-Message-ID: <20120702200821.GA31197@swielinga.nl>
-Mail-Followup-To: Richard Cochran <richardcochran@gmail.com>,
-	John Stultz <johnstul@us.ibm.com>,
-	Prarit Bhargava <prarit@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <4FF06CAB.9020800@redhat.com>
- <4FF08154.3050407@redhat.com>
- <4FF088B9.1000308@us.ibm.com>
- <20120702101606.GA16008@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120702101606.GA16008@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754404Ab2GBURy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 16:17:54 -0400
+From: Kees Cook <keescook@chromium.org>
+To: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
+        Doug Ledford <dledford@redhat.com>, Joe Korty <joe.korty@ccur.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Ingo Molnar <mingo@elte.hu>, David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>, linux-doc@vger.kernel.org,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        kernel-hardening@lists.openwall.com, Kees Cook <keescook@chromium.org>
+Subject: [PATCH v2012.5 0/2] fs: add link restrictions
+Date: Mon,  2 Jul 2012 13:17:12 -0700
+Message-Id: <1341260234-32002-1-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+This cleans up the various issues that Al Viro pointed out[1], and is 
+meant to be applied on top of the recent vfs tree, which changed how 
+path_openat handles its error conditions[2].
 
-On Mon, Jul 02, 2012 at 12:16:08PM +0200, Richard Cochran wrote:
-> I know you didn't like my (originally Michael Hack's) idea of keeping
-> time in TAI, but wouldn't changing to an internal, continuous time
-> scale (not necessary TAI) solve these sorts of timer issues?
+Thanks,
 
-Doesn't that actually make the problem of leap seconds worse, as you'd have to
-start tabulating past leap seconds in the kernel?
+-Kees
 
-Even worse, *future* leap seconds would need to be tracked and after they've
-happened stored on disk, and loaded back into the kernel after booting, which
-seems like a mess.  The trouble here is that leap seconds are only announced a
-short while before they happen, so there's no way to bake leap seconds into
-the software; they need to be dynamically added by ntpd.
+[1] https://lkml.org/lkml/2012/6/30/42
+[2] http://git.kernel.org/?p=linux/kernel/git/viro/vfs.git;a=commitdiff;h=09dd2a0348dead8f8eaefe301f1f8cfd0473a4b2
 
-Or is there somehow some way to avoid that?
-
-> There have been a number of clock/timer/leap bugs over the last
-> years. Some of these might have been avoided by using a continuous
-> scale, since no special timer actions would be needed during a leap
-> second.
-> 
-> The run time cost is low, just one additional test and addition when
-> reading the time. It might be worth it for the peace of mind when
-> the next leap second rolls around.
-
-I don't know if reworking the system that's been in place for ages is a good
-way to give us 'peace of mind'.  Then again, I love to be enlightened :-)
-
-Sytse Wielinga
