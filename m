@@ -1,53 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab2GBAuH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 20:50:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55346 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752468Ab2GBAuF (ORCPT
+	id S1753726Ab2GBAwp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 20:52:45 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59569 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab2GBAwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 20:50:05 -0400
+	Sun, 1 Jul 2012 20:52:43 -0400
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sun, 1 Jul 2012 18:49:45 -0600
-X-Google-Sender-Auth: sjNPanLmzPzw8t1TS6NjYSYgZ5A
-Message-ID: <CACxGe6tyO5u7eiq1OiPX-u439YAcQDFz3eOOGZ4bNPtwmYwNkg@mail.gmail.com>
-Subject: SPI, GPIO, and DT maintainer ship (cry for help)
-To: Robert Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        spi-devel-general-request@lists.sourceforge.net,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <34097879.post@talk.nabble.com>
+References: <34097879.post@talk.nabble.com>
+Date: Mon, 2 Jul 2012 08:52:43 +0800
+Message-ID: <CAM_iQpVcAwxGvFiqfeVScEUE-Cv8vDsrS4MiywFdi-j7M7cWfA@mail.gmail.com>
+Subject: Re: Is there any knowledgeable person in here? Who understand C vs Go?
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: IamTrying <iamtrying.test@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram, Rob & Linus W.
+On Sun, Jul 1, 2012 at 8:20 PM, IamTrying <iamtrying.test@gmail.com> wrote:
+>
+> Does that mean Linux kernel is lacking somewhere, which makes Google and
+> `Problem A` members to think Linux is not for Google?
+> Why big Google not recommending Linux but recommending 9p, p9 shit's
+> (although they are using MODIFIED LINUX KERNEL, not linux kernel)?
 
-I believe all three of you know that I'm in the process of moving to
-Scotland. The house is on the market and we have flights booked for
-the end of July.
-
-The problem is that the move is becoming so much work that I barely
-have time to sit down with the computer, let alone handle patches. It
-probably isn't going to get any better either until the kids are
-settled in their new school (mid August).  I need help to prepare for
-the next merge window, and quite possibly the next window.  Since you
-three have agreed to co-maintain those subsystems with me, can you
-please take a look at the patches that have been posted, pick up the
-ones that look ready to go to you, and get them into linux-next?  I
-may even need you to send pull requests to Linus when the window opens
-if I'm still under water.
-
-Also, if you have any bug fixes that need to go into v3.5, go ahead
-and send them on to Linus directly (Rob, I think I saw a pull request
-from you).
-
-Things will definitely be better after the move is finished and
-ksummit/plumbers is over.  Until then, thanks in advance for anything
-you can do to help with the load.
-
-g.
+The fact is that Google engineers also contribute to the Linux
+kernel community when they MODIFY it.
