@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab2GBPTl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 11:19:41 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:37224 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753726Ab2GBPTj (ORCPT
+	id S1755557Ab2GBPUN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 11:20:13 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:58889 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278Ab2GBPUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 11:19:39 -0400
+	Mon, 2 Jul 2012 11:20:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vinayak Holikatti <vinholikatti@gmail.com>
+Subject: Re: [PATCH 3/4] [SCSI] ufs: Add AMBA glue driver to ufshcd
+Date: Mon, 2 Jul 2012 15:20:03 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, santoshsy@gmail.com,
+        arnd@linaro.org, girish.shivananjappa@linaro.org,
+        saugata.das@linaro.org, vishak.g@samsung.com, venkat@linaro.org,
+        k.rajesh@samsung.com, yejin.moon@samsung.com, dsaxena@linaro.org,
+        ilho215.lee@samsung.com, nala.la@samsung.com, stephen.doel@linaro.org,
+        sreekumar.c@samsung.com
+References: <1341239572-7408-1-git-send-email-vinholikatti@gmail.com> <1341239572-7408-4-git-send-email-vinholikatti@gmail.com>
+In-Reply-To: <1341239572-7408-4-git-send-email-vinholikatti@gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [93.172.43.174]
-In-Reply-To: <81C3A93C17462B4BBD7E272753C10579232F86BE4C@EXDCVYMBSTM005.EQ1STM.local>
-References: <1337687472-23009-1-git-send-email-ohad@wizery.com>
- <4FBDFC4A.1060602@codeaurora.org> <CAK=WgbaP5qSso_Eu=Oup4eqLDcorZ-qf=mysMKiEvOS=m7yLmg@mail.gmail.com>
- <4FCD276A.80505@codeaurora.org> <CAK=WgbZo-8GXY9bVYGk0XZvqKrdaJZWeNkK1FhRWnH5doGYLjA@mail.gmail.com>
- <CAK=WgbZb367zq0QCUuwFU+KtBY0gw_+rsN9fm2YnM-heT+54jA@mail.gmail.com> <81C3A93C17462B4BBD7E272753C10579232F86BE4C@EXDCVYMBSTM005.EQ1STM.local>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 2 Jul 2012 18:19:18 +0300
-Message-ID: <CAK=WgbYG8kuzYUi54Kh4udsrOiX_f1E=1XW+TpeYhoyPtXwq-w@mail.gmail.com>
-Subject: Re: [PATCH] remoteproc: block premature rproc booting
-To: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        Loic PALLARDY <loic.pallardy@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207021520.03774.arnd@arndb.de>
+X-Provags-ID: V02:K0:8xVBas2YJ7CLOrJurqcLU7xd+HDxxnSGMIcnFdqaJ1u
+ VhKq21Yv3GU7dNM94drN1qHFb13qWRZekNxTRysjeabfQJOmzL
+ 0tDVmX/p3Rwm5ZPJtOL+vpfG/3BK8MqVcl4J0u6R817fCRQRvI
+ n1sP0eVInOhlaeIvbVxhD67U9ZrjQzYXtiuPgq6CmI2ynQfUis
+ 5MbchFihKuarR3jgrH/rA2u9kMDbcmeKz7CCYE3iRXc4R1wjgm
+ Pl+5XqsF32DXwbgIJr6nHG3LNDMuYKKJPQLFtT98oMWhN7QcVN
+ GgHv8Uy6Bav1KzNMfWmJT3bJJvD/8ey/zAVjdQ29dkv3QiqnEB
+ xxJDp4mGZnYEU7v8pnB8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 2, 2012 at 6:15 PM, Sjur BRENDELAND
-<sjur.brandeland@stericsson.com> wrote:
->> Sjur, Ludovic, Loic - what remoteproc API are you using today?
->>
->> We'd like to get rid of the existing get/put interface and instead
->> have everyone use the boot/shutdown one, just like rpmsg is doing
->> today.
->>
->> Are you ok with this change?
->
-> Yes, I'm ok with this,
-> but I cannot answer for Loic and Ludovic.
+On Monday 02 July 2012, Vinayak Holikatti wrote:
+> +static struct amba_id ufshcd_amba_ids[] = {
+> +       {
+> +               /* Fake id for Primecell.*/
+> +               .id     = 0x00041FF0,
+> +               .mask   = 0x000fffff,
+> +       },
+> +       { 0, 0 },
+> +};
 
-Thanks, Sjur.
+Hi Vinayak,
 
-I think Ludovic and Loic should be ok with this because their use
-cases are very much like OMAP's (mostly rpmsg drivers).
+Can you explain where this fake ID comes from? Is this ID actually
+used by any hardware that is around somewhere? If not, I think it
+would be better not to provide an AMBA driver at all, but instead
+use the platform driver from patch 2 for all non-PCI uses.
 
-Ohad.
+	Arnd
