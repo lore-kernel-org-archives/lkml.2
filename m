@@ -1,195 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab2GBGiY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 02:38:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10626 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750878Ab2GBGiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 02:38:22 -0400
-Message-ID: <4FF14196.6040106@redhat.com>
-Date: Mon, 02 Jul 2012 02:37:10 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 36/40] autonuma: page_autonuma
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-37-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1340888180-15355-37-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753836Ab2GBGkL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 02:40:11 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41130 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278Ab2GBGkJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 02:40:09 -0400
+Date: Mon, 2 Jul 2012 16:39:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>
+Subject: linux-next: manual merge of the akpm tree with Linus' tree
+Message-Id: <20120702163959.71926d13da03536f266a90d2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__2_Jul_2012_16_39_59_+1000_RFG6r0R9TXmKCDpO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 08:56 AM, Andrea Arcangeli wrote:
+--Signature=_Mon__2_Jul_2012_16_39_59_+1000_RFG6r0R9TXmKCDpO
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +++ b/include/linux/autonuma_flags.h
-> @@ -15,6 +15,12 @@ enum autonuma_flag {
->
->   extern unsigned long autonuma_flags;
->
-> +static inline bool autonuma_impossible(void)
-> +{
-> +	return num_possible_nodes()<= 1 ||
-> +		test_bit(AUTONUMA_IMPOSSIBLE_FLAG,&autonuma_flags);
-> +}
+Hi Andrew,
 
-When you fix the name of this function, could you also put it
-in the right spot, in the patch where it is originally introduced?
+Today's linux-next merge of the akpm tree got a conflict in
+kernel/printk.c between commit 084681d14e42 ("printk: flush continuation
+lines immediately to console") from Linus' tree and commit "printk: add
+generic functions to find KERN_<LEVEL> headers" from the akpm tree.
 
-Moving stuff around for no reason in a patch series is not very
-reviewer friendly.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
 
-> diff --git a/include/linux/autonuma_types.h b/include/linux/autonuma_types.h
-> index 9e697e3..1e860f6 100644
-> --- a/include/linux/autonuma_types.h
-> +++ b/include/linux/autonuma_types.h
-> @@ -39,6 +39,61 @@ struct task_autonuma {
->   	unsigned long task_numa_fault[0];
->   };
->
-> +/*
-> + * Per page (or per-pageblock) structure dynamically allocated only if
-> + * autonuma is not impossible.
-> + */
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Double negatives are not easy to read.
+diff --cc kernel/printk.c
+index a6f19ef,f591849..0000000
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@@ -1399,6 -1301,11 +1399,7 @@@ asmlinkage int vprintk_emit(int facilit
+  			    const char *fmt, va_list args)
+  {
+  	static int recursion_bug;
+ -	static char cont_buf[LOG_LINE_MAX];
+ -	static size_t cont_len;
+ -	static int cont_level;
++ 	int kern_level;
+ -	static struct task_struct *cont_task;
+  	static char textbuf[LOG_LINE_MAX];
+  	char *text =3D textbuf;
+  	size_t text_len;
 
-s/not impossible/enabled/
+--Signature=_Mon__2_Jul_2012_16_39_59_+1000_RFG6r0R9TXmKCDpO
+Content-Type: application/pgp-signature
 
-> +struct page_autonuma {
-> +	/*
-> +	 * To modify autonuma_last_nid lockless the architecture,
-> +	 * needs SMP atomic granularity<  sizeof(long), not all archs
-> +	 * have that, notably some ancient alpha (but none of those
-> +	 * should run in NUMA systems). Archs without that requires
-> +	 * autonuma_last_nid to be a long.
-> +	 */
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-If only all your data structures were documented like this.
+iQIcBAEBCAAGBQJP8UI/AAoJEECxmPOUX5FEm6IP/31tnVN/R+LrerF1VnNfVRHx
+F4n+K9sIFun8VBbVeRt5OrezOarFspfiHhh9hOWucERsKnZ0UVlzjwfZX8jaWgNx
+W5SJuNL9feYug2FQSFrnCQ/LR0S9dNtk3mBnXotRixK9Lh6Sf/0jNME17K7Qd90V
+0U76SqQRL21RFmgK9kqhN+x8nPBUjEK/VdrvwdSBaGr7I36jPvHsR/SQx3hmUErQ
+kLDh7sr159YwK3ixZEq1C9FSIDIQc50vSp38+6T0o8r/qGUdikZXRJJZbzEWKPjS
+A2w6meo1SgkDqJ8kgTwoo0i4BKui2Tq4y115PbMTeMtxncL4MuauYftTHrHaZXJ2
+crHiQKeRciQilHnRu6UZ2no5wRihUGl/2dOOhef7f4nXgLE7zBwpJgms3bBBJSF5
+0pBuwf3/Qbz5ezxOzO2j+2dyxp8XuBOnNzUCMil6yTJrXZjzi/HqLxl6RbM3dlhS
+sLafJ1NaSAxJufUctSOeZ7P2FhxjzVVk86ALaVbtIMYR0INpfoeJ3d0RFsMKJsYi
+75X5w0RoIsq9f8k+TXF/qEA3CUWasxu49vmCh/vPIf8Rug0XbRIeZCHZlTNbzuoL
+iH6YejyXBu4wsPZ6Wufb3yIFcEEwsvt8QznNz3oRFs9aEmYmyIUYBgNZRZIDdkYH
+9+tfAb4i8l1UaUzpwZAw
+=pcbT
+-----END PGP SIGNATURE-----
 
-I guess that will give you something to do, when addressing
-the comments on the other patches :)
-
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index bcaa8ac..c5e47bc 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-
->   #ifdef CONFIG_AUTONUMA
-> -			/* pick the last one, better than nothing */
-> -			autonuma_last_nid =
-> -				ACCESS_ONCE(src_page->autonuma_last_nid);
-> -			if (autonuma_last_nid>= 0)
-> -				ACCESS_ONCE(page->autonuma_last_nid) =
-> -					autonuma_last_nid;
-> +			if (!autonuma_impossible()) {
-> +				int autonuma_last_nid;
-> +				src_page_an = lookup_page_autonuma(src_page);
-> +				/* pick the last one, better than nothing */
-> +				autonuma_last_nid =
-> +					ACCESS_ONCE(src_page_an->autonuma_last_nid);
-> +				if (autonuma_last_nid>= 0)
-> +					ACCESS_ONCE(page_an->autonuma_last_nid) =
-> +						autonuma_last_nid;
-> +			}
-
-Remembering the last page the loop went through, and then
-looking up the autonuma struct after you exit the loop could
-be better.
-
-> diff --git a/mm/page_autonuma.c b/mm/page_autonuma.c
-> new file mode 100644
-> index 0000000..bace9b8
-> --- /dev/null
-> +++ b/mm/page_autonuma.c
-> @@ -0,0 +1,234 @@
-> +#include<linux/mm.h>
-> +#include<linux/memory.h>
-> +#include<linux/autonuma_flags.h>
-
-This should be <linux/autonuma.h>
-
-There is absolutely no good reason why that one-liner change
-is a separate patch.
-
-> +struct page_autonuma *lookup_page_autonuma(struct page *page)
-> +{
-
-> +	offset = pfn - NODE_DATA(page_to_nid(page))->node_start_pfn;
-> +	return base + offset;
-> +}
-
-Doing this and the reverse allows you to drop the page pointer
-in struct autonuma.
-
-It would make sense to do that either in this patch, or in a
-new one, but either way pulling it forward out of patch 40
-would make the series easier to review for the next round.
-
- > +fail:
- > +	printk(KERN_CRIT "allocation of page_autonuma failed.\n");
- > +	printk(KERN_CRIT "please try the 'noautonuma' boot option\n");
- > +	panic("Out of memory");
- > +}
-
-The system can run just fine without autonuma.
-
-Would it make sense to simply disable autonuma at this point,
-but to try continue running?
-
-> @@ -700,8 +780,14 @@ static void free_section_usemap(struct page *memmap, unsigned long *usemap)
->   	 */
->   	if (PageSlab(usemap_page)) {
->   		kfree(usemap);
-> -		if (memmap)
-> +		if (memmap) {
->   			__kfree_section_memmap(memmap, PAGES_PER_SECTION);
-> +			if (!autonuma_impossible())
-> +				__kfree_section_page_autonuma(page_autonuma,
-> +							      PAGES_PER_SECTION);
-> +			else
-> +				BUG_ON(page_autonuma);
-
-VM_BUG_ON ?
-
-> +		if (!autonuma_impossible()) {
-> +			struct page *page_autonuma_page;
-> +			page_autonuma_page = virt_to_page(page_autonuma);
-> +			free_map_bootmem(page_autonuma_page, nr_pages);
-> +		} else
-> +			BUG_ON(page_autonuma);
-
-ditto
-
->   	pgdat_resize_unlock(pgdat,&flags);
->   	if (ret<= 0) {
-> +		if (!autonuma_impossible())
-> +			__kfree_section_page_autonuma(page_autonuma, nr_pages);
-> +		else
-> +			BUG_ON(page_autonuma);
-
-VM_BUG_ON ?
-
--- 
-All rights reversed
+--Signature=_Mon__2_Jul_2012_16_39_59_+1000_RFG6r0R9TXmKCDpO--
