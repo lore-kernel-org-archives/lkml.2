@@ -1,250 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932785Ab2GBUVS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 16:21:18 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48035 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932761Ab2GBUTC (ORCPT
+	id S1756298Ab2GBUVQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 16:21:16 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42285 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932756Ab2GBUTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 16:19:02 -0400
+	Mon, 2 Jul 2012 16:19:01 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Jovi Zhang <bookjovi@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 06/13] tools lib traceevent: Add support for __print_hex()
-Date: Mon,  2 Jul 2012 17:18:44 -0300
-Message-Id: <1341260331-10204-7-git-send-email-acme@infradead.org>
+Subject: [PATCH 09/13] perf evsel: Handle hw breakpoints event names in perf_evsel__name()
+Date: Mon,  2 Jul 2012 17:18:47 -0300
+Message-Id: <1341260331-10204-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1341260331-10204-1-git-send-email-acme@infradead.org>
 References: <1341260331-10204-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Since the __print_hex() function is used in print fmt now, add
-corresponding parser routines. This makes the output of perf script on
-the kvm_emulate_insn event not to fail any more.
+Adding hw breakpoint events hook in the perf_evsel__name function, to
+display event names properly all over the perf tools.
 
- before:
-      kvm_emulate_insn:     [FAILED TO PARSE] rip=3238197797 ...
+Updated hw breakpoints events tests.
 
- after:
-      kvm_emulate_insn:     0:c102fa25:89 10 (prot32)
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Jovi Zhang <bookjovi@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1340757701-10711-4-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1340918329-3012-3-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.c                 |   75 +++++++++++++++++++-
- tools/lib/traceevent/event-parse.h                 |    7 ++
- .../perf/util/scripting-engines/trace-event-perl.c |    4 ++
- .../util/scripting-engines/trace-event-python.c    |    4 ++
- 4 files changed, 89 insertions(+), 1 deletion(-)
+ tools/perf/util/evsel.c             |   30 ++++++++++++++++++++++++++++++
+ tools/perf/util/parse-events-test.c |   10 ++++++++++
+ tools/perf/util/parse-events.c      |    4 +---
+ 3 files changed, 41 insertions(+), 3 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 63d02be..b1abd39 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -697,6 +697,10 @@ static void free_arg(struct print_arg *arg)
- 		free_arg(arg->symbol.field);
- 		free_flag_sym(arg->symbol.symbols);
- 		break;
-+	case PRINT_HEX:
-+		free_arg(arg->hex.field);
-+		free_arg(arg->hex.size);
-+		break;
- 	case PRINT_TYPE:
- 		free(arg->typecast.type);
- 		free_arg(arg->typecast.item);
-@@ -2260,6 +2264,45 @@ process_symbols(struct event_format *event, struct print_arg *arg, char **tok)
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 3d1f696..e817713 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -15,6 +15,7 @@
+ #include "cpumap.h"
+ #include "thread_map.h"
+ #include "target.h"
++#include "../../../include/linux/hw_breakpoint.h"
+ 
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+ #define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
+@@ -152,6 +153,31 @@ static int perf_evsel__sw_name(struct perf_evsel *evsel, char *bf, size_t size)
+ 	return r + perf_evsel__add_modifiers(evsel, bf + r, size - r);
  }
  
- static enum event_type
-+process_hex(struct event_format *event, struct print_arg *arg, char **tok)
++static int __perf_evsel__bp_name(char *bf, size_t size, u64 addr, u64 type)
 +{
-+	struct print_arg *field;
-+	enum event_type type;
-+	char *token;
++	int r;
 +
-+	memset(arg, 0, sizeof(*arg));
-+	arg->type = PRINT_HEX;
++	r = scnprintf(bf, size, "mem:0x%" PRIx64 ":", addr);
 +
-+	field = alloc_arg();
-+	type = process_arg(event, field, &token);
++	if (type & HW_BREAKPOINT_R)
++		r += scnprintf(bf + r, size - r, "r");
 +
-+	if (test_type_token(type, token, EVENT_DELIM, ","))
-+		goto out_free;
++	if (type & HW_BREAKPOINT_W)
++		r += scnprintf(bf + r, size - r, "w");
 +
-+	arg->hex.field = field;
++	if (type & HW_BREAKPOINT_X)
++		r += scnprintf(bf + r, size - r, "x");
 +
-+	free_token(token);
-+
-+	field = alloc_arg();
-+	type = process_arg(event, field, &token);
-+
-+	if (test_type_token(type, token, EVENT_DELIM, ")"))
-+		goto out_free;
-+
-+	arg->hex.size = field;
-+
-+	free_token(token);
-+	type = read_token_item(tok);
-+	return type;
-+
-+ out_free:
-+	free_arg(field);
-+	free_token(token);
-+	*tok = NULL;
-+	return EVENT_ERROR;
++	return r;
 +}
 +
-+static enum event_type
- process_dynamic_array(struct event_format *event, struct print_arg *arg, char **tok)
- {
- 	struct format_field *field;
-@@ -2488,6 +2531,10 @@ process_function(struct event_format *event, struct print_arg *arg,
- 		is_symbolic_field = 1;
- 		return process_symbols(event, arg, tok);
- 	}
-+	if (strcmp(token, "__print_hex") == 0) {
-+		free_token(token);
-+		return process_hex(event, arg, tok);
-+	}
- 	if (strcmp(token, "__get_str") == 0) {
- 		free_token(token);
- 		return process_str(event, arg, tok);
-@@ -2995,6 +3042,7 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
- 		break;
- 	case PRINT_FLAGS:
- 	case PRINT_SYMBOL:
-+	case PRINT_HEX:
- 		break;
- 	case PRINT_TYPE:
- 		val = eval_num_arg(data, size, event, arg->typecast.item);
-@@ -3218,8 +3266,9 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 	unsigned long long val, fval;
- 	unsigned long addr;
- 	char *str;
-+	unsigned char *hex;
- 	int print;
--	int len;
-+	int i, len;
- 
- 	switch (arg->type) {
- 	case PRINT_NULL:
-@@ -3284,6 +3333,23 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 			}
- 		}
- 		break;
-+	case PRINT_HEX:
-+		field = arg->hex.field->field.field;
-+		if (!field) {
-+			str = arg->hex.field->field.name;
-+			field = pevent_find_any_field(event, str);
-+			if (!field)
-+				die("field %s not found", str);
-+			arg->hex.field->field.field = field;
-+		}
-+		hex = data + field->offset;
-+		len = eval_num_arg(data, size, event, arg->hex.size);
-+		for (i = 0; i < len; i++) {
-+			if (i)
-+				trace_seq_putc(s, ' ');
-+			trace_seq_printf(s, "%02x", hex[i]);
-+		}
-+		break;
- 
- 	case PRINT_TYPE:
- 		break;
-@@ -4294,6 +4360,13 @@ static void print_args(struct print_arg *args)
- 		trace_seq_destroy(&s);
- 		printf(")");
- 		break;
-+	case PRINT_HEX:
-+		printf("__print_hex(");
-+		print_args(args->hex.field);
-+		printf(", ");
-+		print_args(args->hex.size);
-+		printf(")");
-+		break;
- 	case PRINT_STRING:
- 	case PRINT_BSTRING:
- 		printf("__get_str(%s)", args->string.string);
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index ac997bc..5772ad8 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -226,6 +226,11 @@ struct print_arg_symbol {
- 	struct print_flag_sym	*symbols;
- };
- 
-+struct print_arg_hex {
-+	struct print_arg	*field;
-+	struct print_arg	*size;
-+};
++static int perf_evsel__bp_name(struct perf_evsel *evsel, char *bf, size_t size)
++{
++	struct perf_event_attr *attr = &evsel->attr;
++	int r = __perf_evsel__bp_name(bf, size, attr->bp_addr, attr->bp_type);
++	return r + perf_evsel__add_modifiers(evsel, bf + r, size - r);
++}
 +
- struct print_arg_dynarray {
- 	struct format_field	*field;
- 	struct print_arg	*index;
-@@ -253,6 +258,7 @@ enum print_arg_type {
- 	PRINT_FIELD,
- 	PRINT_FLAGS,
- 	PRINT_SYMBOL,
-+	PRINT_HEX,
- 	PRINT_TYPE,
- 	PRINT_STRING,
- 	PRINT_BSTRING,
-@@ -270,6 +276,7 @@ struct print_arg {
- 		struct print_arg_typecast	typecast;
- 		struct print_arg_flags		flags;
- 		struct print_arg_symbol		symbol;
-+		struct print_arg_hex		hex;
- 		struct print_arg_func		func;
- 		struct print_arg_string		string;
- 		struct print_arg_op		op;
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index b3620fe..02dfa19 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -209,6 +209,10 @@ static void define_event_symbols(struct event_format *event,
- 		define_symbolic_values(args->symbol.symbols, ev_name,
- 				       cur_field_name);
+ const char *perf_evsel__hw_cache[PERF_COUNT_HW_CACHE_MAX]
+ 				[PERF_EVSEL__MAX_ALIASES] = {
+  { "L1-dcache",	"l1-d",		"l1d",		"L1-data",		},
+@@ -285,6 +311,10 @@ const char *perf_evsel__name(struct perf_evsel *evsel)
+ 		scnprintf(bf, sizeof(bf), "%s", "unknown tracepoint");
  		break;
-+	case PRINT_HEX:
-+		define_event_symbols(event, ev_name, args->hex.field);
-+		define_event_symbols(event, ev_name, args->hex.size);
+ 
++	case PERF_TYPE_BREAKPOINT:
++		perf_evsel__bp_name(evsel, bf, sizeof(bf));
 +		break;
- 	case PRINT_BSTRING:
- 	case PRINT_DYNAMIC_ARRAY:
- 	case PRINT_STRING:
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index a8ca2f8..ce4d1b0 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -166,6 +166,10 @@ static void define_event_symbols(struct event_format *event,
- 		define_values(PRINT_SYMBOL, args->symbol.symbols, ev_name,
- 			      cur_field_name);
++
+ 	default:
+ 		scnprintf(bf, sizeof(bf), "%s", "unknown attr type");
  		break;
-+	case PRINT_HEX:
-+		define_event_symbols(event, ev_name, args->hex.field);
-+		define_event_symbols(event, ev_name, args->hex.size);
-+		break;
- 	case PRINT_STRING:
- 		break;
- 	case PRINT_TYPE:
+diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
+index de81fe1..dd0c306 100644
+--- a/tools/perf/util/parse-events-test.c
++++ b/tools/perf/util/parse-events-test.c
+@@ -325,6 +325,8 @@ static int test__checkevent_breakpoint_modifier(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
+ 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong name",
++			!strcmp(perf_evsel__name(evsel), "mem:0x0:rw:u"));
+ 
+ 	return test__checkevent_breakpoint(evlist);
+ }
+@@ -338,6 +340,8 @@ static int test__checkevent_breakpoint_x_modifier(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
+ 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong name",
++			!strcmp(perf_evsel__name(evsel), "mem:0x0:x:k"));
+ 
+ 	return test__checkevent_breakpoint_x(evlist);
+ }
+@@ -351,6 +355,8 @@ static int test__checkevent_breakpoint_r_modifier(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
+ 	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
+ 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong name",
++			!strcmp(perf_evsel__name(evsel), "mem:0x0:r:hp"));
+ 
+ 	return test__checkevent_breakpoint_r(evlist);
+ }
+@@ -364,6 +370,8 @@ static int test__checkevent_breakpoint_w_modifier(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
+ 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
+ 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong name",
++			!strcmp(perf_evsel__name(evsel), "mem:0x0:w:up"));
+ 
+ 	return test__checkevent_breakpoint_w(evlist);
+ }
+@@ -377,6 +385,8 @@ static int test__checkevent_breakpoint_rw_modifier(struct perf_evlist *evlist)
+ 	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
+ 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
+ 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong name",
++			!strcmp(perf_evsel__name(evsel), "mem:0x0:rw:kp"));
+ 
+ 	return test__checkevent_breakpoint_rw(evlist);
+ }
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 7ae76af..1dc44dc 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -418,7 +418,6 @@ int parse_events_add_breakpoint(struct list_head **list, int *idx,
+ 				void *ptr, char *type)
+ {
+ 	struct perf_event_attr attr;
+-	char name[MAX_NAME_LEN];
+ 
+ 	memset(&attr, 0, sizeof(attr));
+ 	attr.bp_addr = (unsigned long) ptr;
+@@ -437,8 +436,7 @@ int parse_events_add_breakpoint(struct list_head **list, int *idx,
+ 
+ 	attr.type = PERF_TYPE_BREAKPOINT;
+ 
+-	snprintf(name, MAX_NAME_LEN, "mem:%p:%s", ptr, type ? type : "rw");
+-	return add_event(list, idx, &attr, name);
++	return add_event(list, idx, &attr, NULL);
+ }
+ 
+ static int config_term(struct perf_event_attr *attr,
 -- 
 1.7.9.2.358.g22243
 
