@@ -1,102 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933154Ab2GBWOj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 18:14:39 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49653 "EHLO
+	id S1756319Ab2GBWXl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 18:23:41 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:51859 "EHLO
 	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932997Ab2GBWOg (ORCPT
+	with ESMTP id S1751850Ab2GBWXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 18:14:36 -0400
-Message-ID: <4FF21D48.50301@linaro.org>
-Date: Tue, 03 Jul 2012 00:14:32 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 2 Jul 2012 18:23:40 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org,
-        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>, linux-next@vger.kernel.org,
-        Colin Cross <ccross@android.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rob Lee <rob.lee@linaro.org>, "lenb@kernel.org" <lenb@kernel.org>
-Subject: Re: linux-next : cpuidle - could you add my tree please
-References: <4FDEE98D.7010802@linaro.org> <CACRpkdYaLweX-4YkWotuFFWoqEjOLKoNCsurCxxWNfq7QznPnw@mail.gmail.com> <4FF19947.3040608@linaro.org> <201207022149.36629.rjw@sisk.pl>
-In-Reply-To: <201207022149.36629.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1341261568.3319.7.camel@dabdike>
+References: <20120701172012.078559139@decadent.org.uk> <4FF14957.3040007@redhat.com>
+ <CA+55aFyRTXqSvf9m08gbHCB0WhVF14Y6J2-AiFGiuTStq0Jr6Q@mail.gmail.com> <1341261568.3319.7.camel@dabdike>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 2 Jul 2012 15:23:18 -0700
+X-Google-Sender-Auth: 0nzkom3QpA694XxmRfP1eB5qNa0
+Message-ID: <CA+55aFymdk8Sn8CVXRZgRvR96jCZG3LQRNU3U0dMkS3Ut2CemQ@mail.gmail.com>
+Subject: Re: [ 38/48] SCSI & usb-storage: add try_rc_10_first flag
+To: James Bottomley <jbottomley@parallels.com>
+Cc: Hans de Goede <hdegoede@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2012 09:49 PM, Rafael J. Wysocki wrote:
-> On Monday, July 02, 2012, Daniel Lezcano wrote:
->>
->> On 07/02/2012 11:09 AM, Linus Walleij wrote:
->>> On Mon, Jun 25, 2012 at 3:27 PM, Daniel Lezcano
->>> <daniel.lezcano@linaro.org> wrote:
->>>
->>>> we discussed last week to put in place a tree grouping the cpuidle
->>>> modifications [1]. Is it possible to add the tree ?
->>>>
->>>> git://git.linaro.org/people/dlezcano/cpuidle-next.git #cpuidle-next
->>>
->>> Thanks for doing this.
->>>
->>> Since MAINTAINERS is lacking a listed maintainer for cpuidle,
->>> are you also going to add yourself as maintainer and list this
->>> tree in that file, or is this a one-time exercise?
->>
->> I will be glad to do that if Len and Rafael agree on that.
-> 
-> Len Brown has been a cpuidle maintainer for some time now.  Moreover,
-> he's been taking patches, but Linus refused to pull his entire tree during the
-> last merge window (as you probably know).  I honestly don't think this is
-> a good enough reason for replacing him as a cpuidle maintainer by force.
-> 
-> So, you should ask Len whether or not he's willing to pass the cpuidle
-> maintenance to someone else.
+On Mon, Jul 2, 2012 at 1:39 PM, James Bottomley
+<jbottomley@parallels.com> wrote:
+>
+> It's not idiotic.  It's, unfortunately, required by the standard to
+> check for protection capable devices.
+ [.. dleted ]
+>  Martin Petersen did extensive testing of devices when we
+> changed it and doing RC16 first is hedged around by claiming support not
+> only for SCSI_3 but also for SBC_2 in your INQUIRY data.
 
-No, no. You are misunderstanding what I am proposing. I don't want to
-replace Len I just want to act as a "proxy". I understand a maintainer
-can be busy and could not have enough time to take care of the subsystem
-is maintaining during a period because he's too busy for that.
-Trust me, I fully understand that :)
+Umm. That just smells like BS to me.
 
-As there are a lot of modifications of cpuidle, I am proposing to take
-the patches when they are acked-by, to create a consolidated tree,
-providing a better integration for cpuidle, a wider testing, preventing
-conflicts and facilitating Len's work if he agrees to pull from this tree.
+The "extensive testing" part was clearly not true, and it seems that
+SCSI people sometimes forget that the biggest user (by *far*) is the
+USB storage layer.
 
-If that makes sense to add myself to the MAINTAINER file as a
-co-maintainer (understand: send to me also the patches, so I can take
-care of them if Len does not respond), I am ok with that.
+Also, your protection claim seems to be invalidated by the actual
+code. Yes, it checks if the device claims to support protection. But
+it *also* says "let's do that 16b command if "scsi_level >
+SCSI_SPC_2". So your claim that it hedges around it by looking at the
+inquiry data is pure crap. It's simply not true. Just look at the
+code:
 
-It is just about helping :)
+        if (sdp->host->max_cmd_len < 16)
+                return 0;
+        if (sdp->try_rc_10_first)
+                return 0;
+        if (sdp->scsi_level > SCSI_SPC_2)
+                return 1;
+        if (scsi_device_protection(sdp))
+                return 1;
+        return 0;
 
-> I know that Len hasn't been responsive recently, but I also know that he
-> _does_ respond to inquiries sent directly to him.
+Notice how for high enough scsi_levels, it never even gets to that
+scsi_device_protection() check, which does indeed look into protection
+data.
 
-Do you mean to its intel address ?
+So no, I simply don't see the careful testing or the checking that you
+claim exists.
 
-Thanks
-  -- Daniel
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-next" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+                 Linus
