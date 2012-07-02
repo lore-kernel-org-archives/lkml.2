@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926Ab2GBJ7L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 05:59:11 -0400
-Received: from mail-yw0-f42.google.com ([209.85.213.42]:55607 "EHLO
-	mail-yw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582Ab2GBJ7J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 05:59:09 -0400
+	id S932936Ab2GBKD2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 06:03:28 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:60373 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932871Ab2GBKD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 06:03:27 -0400
+Message-ID: <4FF1714A.7050400@parallels.com>
+Date: Mon, 2 Jul 2012 14:00:42 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAHdPZaMiDZo7+i7+LAoYbDSy3hi3UAhXzx54+gc2Br2iMuW+pg@mail.gmail.com>
-References: <1341217332-21153-1-git-send-email-devendra.aaru@gmail.com>
- <CAK5ve-+DUsadniHNe3H+j8xFgpV5gBuivD+u=A-D1k4ginqDYw@mail.gmail.com> <CAHdPZaMiDZo7+i7+LAoYbDSy3hi3UAhXzx54+gc2Br2iMuW+pg@mail.gmail.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Mon, 2 Jul 2012 17:58:48 +0800
-X-Google-Sender-Auth: Wsxjqlu8s4u36NcULbU--gS3zis
-Message-ID: <CAK5ve-JLhbGF0NmeEfUGW1UoRZnyJ7N=iRX6Ed+NDYTqYQq19g@mail.gmail.com>
-Subject: Re: [PATCH] leds-88pm860x: use the goto label at data->port
-To: "devendra.aaru" <devendra.aaru@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Feng Tang <feng.tang@intel.com>
+CC: <penberg@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <fengguang.wu@intel.com>, <sfr@canb.auug.org.au>, <linux-mm@kvack.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH] slab: Fix a tpyo in commit 8c138b "slab: Get rid of obj_size
+ macro"
+References: <1341210550-11038-1-git-send-email-feng.tang@intel.com>
+In-Reply-To: <1341210550-11038-1-git-send-email-feng.tang@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 2, 2012 at 5:16 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
-> On Mon, Jul 2, 2012 at 2:35 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
->> On Mon, Jul 2, 2012 at 4:22 PM, Devendra Naga <devendra.aaru@gmail.com> wrote:
->>> at the goto lable out: we are doing free of the led data, and returning ret.
->>> the same we are doing at the data->port < 0 case, so use the goto end and
->>> assign ret to -EINVAL. this will make the common err path for the
->>> data->port and led_classdev_register functions.
->>>
->>
->> This patch is not wrong, but it'd better we replace kzalloc/kfree to
->> devm_kzalloc. So we don't care about kfree anymore.
->> Are interested in doing that?
->>
-> I have a doubt,
->
-> I think the dev pointer is chip->dev for using devm_* ?
->
-        data = devm_kzalloc(&pdev->dev, sizeof(struct pm860x_led), GFP_KERNEL);
+On 07/02/2012 10:29 AM, Feng Tang wrote:
+> Commit  8c138b only sits in Pekka's and linux-next tree now, which tries
+> to replace obj_size(cachep) with cachep->object_size, but has a typo in
+> kmem_cache_free() by using "size" instead of "object_size", which casues
+> some regressions.
+> 
+> Reported-and-tested-by: Fengguang Wu <wfg@linux.intel.com>
+> Signed-off-by: Feng Tang <feng.tang@intel.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> ---
+>  mm/slab.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/mm/slab.c b/mm/slab.c
+> index 64c3d03..605b3b7 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -3890,7 +3890,7 @@ void kmem_cache_free(struct kmem_cache *cachep, void *objp)
+>  	unsigned long flags;
+>  
+>  	local_irq_save(flags);
+> -	debug_check_no_locks_freed(objp, cachep->size);
+> +	debug_check_no_locks_freed(objp, cachep->object_size);
+>  	if (!(cachep->flags & SLAB_DEBUG_OBJECTS))
+>  		debug_check_no_obj_freed(objp, cachep->object_size);
+>  	__cache_free(cachep, objp, __builtin_return_address(0));
+> 
 
-You can simply just use pdev->dev, right?
+I saw another bug in a patch that ended up not getting in, and was
+reported to Christoph, that was exactly due to a typo between size and
+object-size.
 
--Bryan
+So first:
 
-> please suggest me if i am wrong.
->> Thanks,
->> -Bryan
->>
->>> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
->>> ---
->>>  drivers/leds/leds-88pm860x.c |    4 ++--
->>>  1 file changed, 2 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/drivers/leds/leds-88pm860x.c b/drivers/leds/leds-88pm860x.c
->>> index 5b61aaf..538aaa3 100644
->>> --- a/drivers/leds/leds-88pm860x.c
->>> +++ b/drivers/leds/leds-88pm860x.c
->>> @@ -220,8 +220,8 @@ static int pm860x_led_probe(struct platform_device *pdev)
->>>         data->port = pdata->flags;
->>>         if (data->port < 0) {
->>>                 dev_err(&pdev->dev, "check device failed\n");
->>> -               kfree(data);
->>> -               return -EINVAL;
->>> +               ret = -EINVAL;
->>> +               goto out;
->>>         }
->>>
->>>         data->current_brightness = 0;
->>> --
->>> 1.7.9.5
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-leds" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->>
->>
->> --
->> Bryan Wu <bryan.wu@canonical.com>
->> Kernel Developer    +86.186-168-78255 Mobile
->> Canonical Ltd.      www.canonical.com
->> Ubuntu - Linux for human beings | www.ubuntu.com
->
-> Thanks,
-> Devendra.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-leds" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Acked-by: Glauber Costa <glommer@parallels.com>
 
+But this also means that that confusion can have been made in other
+points. I suggest we take an extensive look into that to make sure there
+aren't more.
 
-
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
