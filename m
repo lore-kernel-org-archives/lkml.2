@@ -1,125 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932669Ab2GBUnZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 16:43:25 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:40086 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755906Ab2GBUnY (ORCPT
+	id S933019Ab2GBUps (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 16:45:48 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:65039 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932267Ab2GBUpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 16:43:24 -0400
+	Mon, 2 Jul 2012 16:45:46 -0400
+Date: Mon, 2 Jul 2012 22:45:37 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>
+Subject: Re: [PATCH v3] pwm: Convert pwm-pxa to use devm_* APIs
+Message-ID: <20120702204537.GA16287@avionic-0098.mockup.avionic-design.de>
+References: <1341136934.3061.0.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <4FF100F0.9050501@huawei.com>
-References: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com>
-	<CAE9FiQWzfLkeQs8O22MUEmuGUx=jPi5s=wZt2fcpFMcwrzt3uA@mail.gmail.com>
-	<4FF100F0.9050501@huawei.com>
-Date: Mon, 2 Jul 2012 13:43:22 -0700
-X-Google-Sender-Auth: 6E6hI-uMaqbstpbrU9vJEPKotrc
-Message-ID: <CAE9FiQXpeGFfWvUHHW_GjgTg+4Op7agsht5coZbcmn2W=f9bqw@mail.gmail.com>
-Subject: Re: [PATCH] mm: setup pageblock_order before it's used by sparse
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Tony Luck <tony.luck@intel.com>, Xishi Qiu <qiuxishi@huawei.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>
-Content-Type: multipart/mixed; boundary=20cf3071c79850171204c3ded926
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
+Content-Disposition: inline
+In-Reply-To: <1341136934.3061.0.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:mAqWDLL9YBAFx6WSJPeKyJBW8xE82ZQTCoYzmZSk4yW
+ OxVbr0OG4TvvslhiFlllSYJ8L1w4v/n6z//RGoaTXpquC4L7SO
+ kema7ohEZCdF4UcSsPAIEeT8KD3jKv/ysDul7nPhMZxtq2HuUY
+ T79mF6LSc1QL+OZWvmwG8wXvdaw9jHdcJvwRbnu7uLshsIUiYk
+ XPA1J7AuX2mAmEyic2EwkTrSk8qR6nKsedifrK0wVqTwpirF2K
+ AI/TchIvBwa32zCUTIF1tcu2H4IEzV/p95B081krstBulZU0hd
+ fGUTPtxT6beqXEKp5TaS9vsU28gjh8up9/ytuou1UuOMMhzh5w
+ tT+iRMnBJSsuuBErtcH94AypDZYh9bvPYHEb9we7suRqaJxbco
+ zQngbkQtsD31GqJH69xIHSNmIQUsHA9+IQzTQu0DnRmBTENLhy
+ Y7ecr
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf3071c79850171204c3ded926
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
 
-On Sun, Jul 1, 2012 at 7:01 PM, Jiang Liu <jiang.liu@huawei.com> wrote:
-> Hi Yinghai,
->         The patch fails compilation as below:
-> mm/page_alloc.c:151: error: initializer element is not constant
-> mm/page_alloc.c:151: error: expected =91,=92 or =91;=92 before =91__attri=
-bute__=92
->
-> On IA64, HUGETLB_PAGE_ORDER has dependency on variable hpage_shift.
-> # define HUGETLB_PAGE_ORDER        (HPAGE_SHIFT - PAGE_SHIFT)
-> # define HPAGE_SHIFT               hpage_shift
->
-> And hpage_shift could be changed by early parameter "hugepagesz".
-> So seems will still need to keep function set_pageblock_order().
+--C7zPtVaVf+AK4Oqc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-ah,  then use use _DEFAULT instead and later could update that in earlypara=
-m.
+On Sun, Jul 01, 2012 at 06:02:14PM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/pwm/pwm-pxa.c |   49 ++++++++++---------------------------------------
+>  1 file changed, 10 insertions(+), 39 deletions(-)
 
-So attached -v2 should  work.
+Applied, thanks.
 
-Thanks
+Thierry
 
-Yinghai
+--C7zPtVaVf+AK4Oqc
+Content-Type: application/pgp-signature
 
---20cf3071c79850171204c3ded926
-Content-Type: application/octet-stream; 
-	name="kill_set_pageblock_order_v2.patch"
-Content-Disposition: attachment; 
-	filename="kill_set_pageblock_order_v2.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h460l7tl0
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-U3ViamVjdDogW1BBVENIXSBtbTogc2V0IHBhZ2VibG9ja19vcmRlciBpbiBjb21waWxpbmcgdGlt
-ZQoKVGhhdCBpcyBpbml0aWFsIHNldHRpbmcsIGFuZCBjb3VsZCBiZSBvdmVycmlkZSBieSBjb21t
-YW5kIGxpbmUuCgotdjI6IHVzZSBIUEFHRV9TSElGVF9ERUZBVUxUIGJ5IGRlZmF1bHQgYW5kIHNl
-dCB0aGF0IGFnYWluIHdoZW4gaHBhZ2Vfc2hpZnQKICAgICBnZXQgdXBkYXRlZCBhZ2Fpbi4KClNp
-Z25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogYXJjaC9p
-YTY0L21tL2h1Z2V0bGJwYWdlLmMgfCAgICA0ICsrKysKIG1tL3BhZ2VfYWxsb2MuYyAgICAgICAg
-ICAgIHwgICA0NSArKysrKystLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0K
-IDIgZmlsZXMgY2hhbmdlZCwgMTAgaW5zZXJ0aW9ucygrKSwgMzkgZGVsZXRpb25zKC0pCgpJbmRl
-eDogbGludXgtMi42L21tL3BhZ2VfYWxsb2MuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3Jp
-Zy9tbS9wYWdlX2FsbG9jLmMKKysrIGxpbnV4LTIuNi9tbS9wYWdlX2FsbG9jLmMKQEAgLTE0Nyw3
-ICsxNDcsMTIgQEAgYm9vbCBwbV9zdXNwZW5kZWRfc3RvcmFnZSh2b2lkKQogI2VuZGlmIC8qIENP
-TkZJR19QTV9TTEVFUCAqLwogCiAjaWZkZWYgQ09ORklHX0hVR0VUTEJfUEFHRV9TSVpFX1ZBUklB
-QkxFCi1pbnQgcGFnZWJsb2NrX29yZGVyIF9fcmVhZF9tb3N0bHk7CisvKgorICogQXNzdW1lIHRo
-ZSBsYXJnZXN0IGNvbnRpZ3VvdXMgb3JkZXIgb2YgaW50ZXJlc3QgaXMgYSBodWdlIHBhZ2UuCisg
-KiBUaGlzIHZhbHVlIG1heSBiZSB2YXJpYWJsZSBkZXBlbmRpbmcgb24gYm9vdCBwYXJhbWV0ZXJz
-IG9uIElBNjQgYW5kCisgKiBwb3dlcnBjLgorICovCitpbnQgcGFnZWJsb2NrX29yZGVyID0gKChI
-UEFHRV9TSElGVF9ERUZBVUxUID4gUEFHRV9TSElGVCkgPyAoSFBBR0VfU0hJRlRfREVGQVVMVCAt
-IFBBR0VfU0hJRlQpIDogKE1BWF9PUkRFUiAtIDEpKSBfX3JlYWRfbW9zdGx5OwogI2VuZGlmCiAK
-IHN0YXRpYyB2b2lkIF9fZnJlZV9wYWdlc19vayhzdHJ1Y3QgcGFnZSAqcGFnZSwgdW5zaWduZWQg
-aW50IG9yZGVyKTsKQEAgLTQyOTgsNDMgKzQzMDMsNiBAQCBzdGF0aWMgaW5saW5lIHZvaWQgc2V0
-dXBfdXNlbWFwKHN0cnVjdCBwCiAJCQkJc3RydWN0IHpvbmUgKnpvbmUsIHVuc2lnbmVkIGxvbmcg
-em9uZXNpemUpIHt9CiAjZW5kaWYgLyogQ09ORklHX1NQQVJTRU1FTSAqLwogCi0jaWZkZWYgQ09O
-RklHX0hVR0VUTEJfUEFHRV9TSVpFX1ZBUklBQkxFCi0KLS8qIEluaXRpYWxpc2UgdGhlIG51bWJl
-ciBvZiBwYWdlcyByZXByZXNlbnRlZCBieSBOUl9QQUdFQkxPQ0tfQklUUyAqLwotc3RhdGljIGlu
-bGluZSB2b2lkIF9faW5pdCBzZXRfcGFnZWJsb2NrX29yZGVyKHZvaWQpCi17Ci0JdW5zaWduZWQg
-aW50IG9yZGVyOwotCi0JLyogQ2hlY2sgdGhhdCBwYWdlYmxvY2tfbnJfcGFnZXMgaGFzIG5vdCBh
-bHJlYWR5IGJlZW4gc2V0dXAgKi8KLQlpZiAocGFnZWJsb2NrX29yZGVyKQotCQlyZXR1cm47Ci0K
-LQlpZiAoSFBBR0VfU0hJRlQgPiBQQUdFX1NISUZUKQotCQlvcmRlciA9IEhVR0VUTEJfUEFHRV9P
-UkRFUjsKLQllbHNlCi0JCW9yZGVyID0gTUFYX09SREVSIC0gMTsKLQotCS8qCi0JICogQXNzdW1l
-IHRoZSBsYXJnZXN0IGNvbnRpZ3VvdXMgb3JkZXIgb2YgaW50ZXJlc3QgaXMgYSBodWdlIHBhZ2Uu
-Ci0JICogVGhpcyB2YWx1ZSBtYXkgYmUgdmFyaWFibGUgZGVwZW5kaW5nIG9uIGJvb3QgcGFyYW1l
-dGVycyBvbiBJQTY0IGFuZAotCSAqIHBvd2VycGMuCi0JICovCi0JcGFnZWJsb2NrX29yZGVyID0g
-b3JkZXI7Ci19Ci0jZWxzZSAvKiBDT05GSUdfSFVHRVRMQl9QQUdFX1NJWkVfVkFSSUFCTEUgKi8K
-LQotLyoKLSAqIFdoZW4gQ09ORklHX0hVR0VUTEJfUEFHRV9TSVpFX1ZBUklBQkxFIGlzIG5vdCBz
-ZXQsIHNldF9wYWdlYmxvY2tfb3JkZXIoKQotICogaXMgdW51c2VkIGFzIHBhZ2VibG9ja19vcmRl
-ciBpcyBzZXQgYXQgY29tcGlsZS10aW1lLiBTZWUKLSAqIGluY2x1ZGUvbGludXgvcGFnZWJsb2Nr
-LWZsYWdzLmggZm9yIHRoZSB2YWx1ZXMgb2YgcGFnZWJsb2NrX29yZGVyIGJhc2VkIG9uCi0gKiB0
-aGUga2VybmVsIGNvbmZpZwotICovCi1zdGF0aWMgaW5saW5lIHZvaWQgc2V0X3BhZ2VibG9ja19v
-cmRlcih2b2lkKQotewotfQotCi0jZW5kaWYgLyogQ09ORklHX0hVR0VUTEJfUEFHRV9TSVpFX1ZB
-UklBQkxFICovCi0KIC8qCiAgKiBTZXQgdXAgdGhlIHpvbmUgZGF0YSBzdHJ1Y3R1cmVzOgogICog
-ICAtIG1hcmsgYWxsIHBhZ2VzIHJlc2VydmVkCkBAIC00NDEzLDcgKzQzODEsNiBAQCBzdGF0aWMg
-dm9pZCBfX3BhZ2luZ2luaXQgZnJlZV9hcmVhX2luaXRfCiAJCWlmICghc2l6ZSkKIAkJCWNvbnRp
-bnVlOwogCi0JCXNldF9wYWdlYmxvY2tfb3JkZXIoKTsKIAkJc2V0dXBfdXNlbWFwKHBnZGF0LCB6
-b25lLCBzaXplKTsKIAkJcmV0ID0gaW5pdF9jdXJyZW50bHlfZW1wdHlfem9uZSh6b25lLCB6b25l
-X3N0YXJ0X3BmbiwKIAkJCQkJCXNpemUsIE1FTU1BUF9FQVJMWSk7CkluZGV4OiBsaW51eC0yLjYv
-YXJjaC9pYTY0L21tL2h1Z2V0bGJwYWdlLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcv
-YXJjaC9pYTY0L21tL2h1Z2V0bGJwYWdlLmMKKysrIGxpbnV4LTIuNi9hcmNoL2lhNjQvbW0vaHVn
-ZXRsYnBhZ2UuYwpAQCAtMjAyLDYgKzIwMiwxMCBAQCBzdGF0aWMgaW50IF9faW5pdCBodWdldGxi
-X3NldHVwX3N6KGNoYXIKIAkgKiBvdmVycmlkZSBoZXJlIHdpdGggbmV3IHBhZ2Ugc2hpZnQuCiAJ
-ICovCiAJaWE2NF9zZXRfcnIoSFBBR0VfUkVHSU9OX0JBU0UsIGhwYWdlX3NoaWZ0IDw8IDIpOwor
-CisJLyogdXBkYXRlIHBhZ2VibG9ja19vcmRlciBhY2NvcmRpbmdseSAqLworCXBhZ2VibG9ja19v
-cmRlciA9ICgoSFBBR0VfU0hJRlQgPiBQQUdFX1NISUZUKSA/IEhVR0VUTEJfUEFHRV9PUkRFUiA6
-IChNQVhfT1JERVIgLSAxKSkKKwogCXJldHVybiAwOwogfQogZWFybHlfcGFyYW0oImh1Z2VwYWdl
-c3oiLCBodWdldGxiX3NldHVwX3N6KTsK
---20cf3071c79850171204c3ded926--
+iQIcBAEBAgAGBQJP8ghxAAoJEN0jrNd/PrOh3A0QAKd71JiyVcWnIlbDSsEwvGdy
+s/fUKJKvJihjq52P/UnI1KLyfmUPsi0bP6NLoigYQyh/C5fMtOlkIaq7+NZnzC/C
+2IhEHlVroeNK9oszVGqVO4mVvL7vH6wW7F7WocnRqJhdbRyJyDL+E4j2IPixwhrm
+agB0Na4SpNxlSJiqwM+frETEcHnrbtZZdjxIybyXxwo5SsKxWJgA9K8N5NSUnPcx
+6SENy+Z3sLvjIc/nm88X76dcBvWNeXp5bywEi7SvS5VQJIgB4x98teXu87qvxlRS
+FchPaw1ctloduotZFW4WTJ3AGQxM8l5rrduR3D3cZ68RkgQyxKNF2CknhvKFI8a1
+Jql2aoewq/n0QKBKqq7B+CcjAenHJACmaHfoU/wuOday1AXpzJzBGzU4p6twXMEa
+N1D7uj3CsAV2oiD7LmzVH9wrLXwVHhgAVWnOo0riaIC7vRG5KcVQQn+d9gI+tPhz
+Gz6wOpvQ+LvOW3+SDN/w9g+I5sHyjc5oH0gScmwUcPmzYUbhtyNMi5wYTK/jCFdh
+e3WzNWJdcl22B6L1xPW/yq2SE8W5yRNfvZQ/RkpY3DXBzY2tJB1Lzcyw3OrrFwJC
+zgl2au7HsZrWaRHFdsc14TFC1+5TYECzDosH0+p8HYAQRyFgTnvx0bHUGkwlmQPX
+VRF7fh/AMFF9gjlyQdvL
+=3bnP
+-----END PGP SIGNATURE-----
+
+--C7zPtVaVf+AK4Oqc--
