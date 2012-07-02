@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab2GBNbD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 09:31:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40347 "EHLO mx2.suse.de"
+	id S1753107Ab2GBNcn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 09:32:43 -0400
+Received: from mga14.intel.com ([143.182.124.37]:29948 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750793Ab2GBNbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 09:31:01 -0400
-Date: Mon, 2 Jul 2012 14:30:57 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [MMTests] IO metadata on XFS
-Message-ID: <20120702133057.GR14154@suse.de>
-References: <20120620113252.GE4011@suse.de>
- <20120629111932.GA14154@suse.de>
- <20120629112505.GF14154@suse.de>
- <20120701235458.GM19223@dastard>
+	id S1751412Ab2GBNcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 09:32:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="118101431"
+Date: Mon, 2 Jul 2012 15:43:58 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        SangYoung Son <hello.son@samsung.com>
+Subject: Re: linux-next: Tree for Jun 19 (mfd/max77693-irq.c)
+Message-ID: <20120702134358.GE22065@sortiz-mobl>
+References: <20120619150513.364d8c9f19a21b4c6feebbbf@canb.auug.org.au>
+ <4FE0B464.6020207@xenotime.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120701235458.GM19223@dastard>
+In-Reply-To: <4FE0B464.6020207@xenotime.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 02, 2012 at 09:54:58AM +1000, Dave Chinner wrote:
-> On Fri, Jun 29, 2012 at 12:25:06PM +0100, Mel Gorman wrote:
-> > Configuration:	global-dhp__io-metadata-xfs
-> > Benchmarks:	dbench3, fsmark-single, fsmark-threaded
+Hi Randy,
+
+On Tue, Jun 19, 2012 at 10:18:28AM -0700, Randy Dunlap wrote:
+> On 06/18/2012 10:05 PM, Stephen Rothwell wrote:
+> 
+> > Hi all,
 > > 
-> > Summary
-> > =======
-> > Most of the figures look good and in general there has been consistent good
-> > performance from XFS. However, fsmark-single is showing a severe performance
-> > dip in a few cases somewhere between 3.1 and 3.4. fs-mark running a single
-> > thread took a particularly bad dive in 3.4 for two machines that is worth
-> > examining closer.
+> > Changes since 20120618:
 > 
-> That will be caused by the fact we changed all the metadata updates
-> to be logged, which means a transaction every time .dirty_inode is
-> called.
 > 
-
-Ok.
-
-> This should mostly go away when XFS is converted to use .update_time
-> rather than .dirty_inode to only issue transactions when the VFS
-> updates the atime rather than every .dirty_inode call...
+> on x86_64:
 > 
-
-Sound. I'll keep an eye out for it in the future.  If you want to
-use the same test configuration then be sure you set the partition
-configuration correctly. For example, these are the values I used for
-config-global-dhp__io-metadata configuration file.
-
-export TESTDISK_PARTITION=/dev/sda6
-export TESTDISK_FILESYSTEM=xfs
-export TESTDISK_MKFS_PARAM="-f -d agcount=8"
-export TESTDISK_MOUNT_ARGS=inode64,delaylog,logbsize=262144,nobarrier
-
-> > Unfortunately it is harder to easy conclusions as the
-> > gains/losses are not consistent between machines which may be related to
-> > the available number of CPU threads.
+>   CC      drivers/mfd/max77693-irq.o
+> drivers/mfd/max77693-irq.c: In function 'max77693_irq_thread':
+> drivers/mfd/max77693-irq.c:217:4: error: implicit declaration of function 'irq_find_mapping'
+> drivers/mfd/max77693-irq.c: In function 'max77693_irq_init':
+> drivers/mfd/max77693-irq.c:286:2: error: implicit declaration of function 'irq_domain_add_linear'
+> drivers/mfd/max77693-irq.c:286:9: warning: assignment makes pointer from integer without a cast
+> make[3]: *** [drivers/mfd/max77693-irq.o] Error 1
 > 
-> It increases the CPU overhead (dirty_inode can be called up to 4
-> times per write(2) call, IIRC), so with limited numbers of
-> threads/limited CPU power it will result in lower performance. Where
-> you have lots of CPU power, there will be little difference in
-> performance...
 > 
+> Full randconfig file is attached.
+This should be fixed in my for-next branch now.
 
-Thanks for that clarification.
+Cheers,
+Samuel.
 
 -- 
-Mel Gorman
-SUSE Labs
+Intel Open Source Technology Centre
+http://oss.intel.com/
