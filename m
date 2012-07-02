@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534Ab2GBJF6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 05:05:58 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:33570 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277Ab2GBJF4 (ORCPT
+	id S932675Ab2GBJGR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 05:06:17 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:54681 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755553Ab2GBJGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 05:05:56 -0400
+	Mon, 2 Jul 2012 05:06:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <1341217332-21153-1-git-send-email-devendra.aaru@gmail.com>
-References: <1341217332-21153-1-git-send-email-devendra.aaru@gmail.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Mon, 2 Jul 2012 17:05:35 +0800
-X-Google-Sender-Auth: yh1fF223rUoACtDoWHh5aL13fmE
-Message-ID: <CAK5ve-+DUsadniHNe3H+j8xFgpV5gBuivD+u=A-D1k4ginqDYw@mail.gmail.com>
-Subject: Re: [PATCH] leds-88pm860x: use the goto label at data->port
-To: Devendra Naga <devendra.aaru@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+X-Originating-IP: [93.172.43.174]
+In-Reply-To: <20120702085911.GA16639@n2100.arm.linux.org.uk>
+References: <1338017791-9442-1-git-send-email-ohad@wizery.com>
+ <1338017791-9442-2-git-send-email-ohad@wizery.com> <4FC5DD74.4030202@codeaurora.org>
+ <CAK=WgbbwaMAnTGcivC9ZR8K-MtTqHAV3+BgUmk8WjCaayifJxw@mail.gmail.com>
+ <4FCD272E.1020300@codeaurora.org> <CAK=WgbZu1hYOd27r259b2v48VFYeOZ4UE5sD2awZDxgBgjAsXw@mail.gmail.com>
+ <20120702085911.GA16639@n2100.arm.linux.org.uk>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 2 Jul 2012 12:05:53 +0300
+Message-ID: <CAK=WgbaV2ehq=Y2AFojG6r4HuiGQ+_hEC+azxBJDfrWEi=DTTA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] remoteproc: remove the now-redundant kref
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 2, 2012 at 4:22 PM, Devendra Naga <devendra.aaru@gmail.com> wrote:
-> at the goto lable out: we are doing free of the led data, and returning ret.
-> the same we are doing at the data->port < 0 case, so use the goto end and
-> assign ret to -EINVAL. this will make the common err path for the
-> data->port and led_classdev_register functions.
+On Mon, Jul 2, 2012 at 11:59 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Mon, Jul 02, 2012 at 11:52:27AM +0300, Ohad Ben-Cohen wrote:
+>> Simplify the unregister/free interfaces, and make them easier
+>> to understand and use, by moving to a symmetric and consistent
+>> alloc() -> register() -> unregister() -> free() flow.
 >
-
-This patch is not wrong, but it'd better we replace kzalloc/kfree to
-devm_kzalloc. So we don't care about kfree anymore.
-Are interested in doing that?
-
-Thanks,
--Bryan
-
-> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
-> ---
->  drivers/leds/leds-88pm860x.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> The naming in the driver model is:
 >
-> diff --git a/drivers/leds/leds-88pm860x.c b/drivers/leds/leds-88pm860x.c
-> index 5b61aaf..538aaa3 100644
-> --- a/drivers/leds/leds-88pm860x.c
-> +++ b/drivers/leds/leds-88pm860x.c
-> @@ -220,8 +220,8 @@ static int pm860x_led_probe(struct platform_device *pdev)
->         data->port = pdata->flags;
->         if (data->port < 0) {
->                 dev_err(&pdev->dev, "check device failed\n");
-> -               kfree(data);
-> -               return -EINVAL;
-> +               ret = -EINVAL;
-> +               goto out;
->         }
+> alloc() -> add() -> del() -> put()
 >
->         data->current_brightness = 0;
-> --
-> 1.7.9.5
+> where alloc() is an allocation + initialization, and
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-leds" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> register() -> unregister()
+>
+> where register() is initialization + add() and
+> unregister() is del() + put().
 
+I wasn't sure if it'd help to adopt the driver model's naming, but I
+guess it just might do, so I'll do that.
 
-
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+Thanks!
