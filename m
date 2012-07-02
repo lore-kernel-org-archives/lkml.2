@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab2GBNeZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 09:34:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61994 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753116Ab2GBNeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 09:34:24 -0400
-Date: Mon, 2 Jul 2012 15:33:41 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org,
-        drepper@gmail.com, eranian@google.com
-Subject: Re: [PATCHv3 0/3] perf tool: Add new event group management
-Message-ID: <20120702133341.GD967@krava.redhat.com>
-References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
- <87fw9blyhj.fsf@sejong.aot.lge.com>
- <20120702101518.GC967@krava.redhat.com>
- <1341234662.1476.13.camel@leonhard>
+	id S1752941Ab2GBNkr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 09:40:47 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:40502 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321Ab2GBNke (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 09:40:34 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: "Steven J. Magnani" <steve@digidescorp.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fat: Refactor shortname parsing
+References: <1340993528-12111-1-git-send-email-steve@digidescorp.com>
+	<87r4syrl4y.fsf@devron.myhome.or.jp>
+	<1340997235.9826.7.camel@iscandar.digidescorp.com>
+	<87bok1sx6j.fsf@devron.myhome.or.jp>
+	<87zk7lribe.fsf@devron.myhome.or.jp>
+	<1341234099.1695.13.camel@iscandar.digidescorp.com>
+Date: Mon, 02 Jul 2012 22:40:27 +0900
+In-Reply-To: <1341234099.1695.13.camel@iscandar.digidescorp.com> (Steven
+	J. Magnani's message of "Mon, 02 Jul 2012 08:01:39 -0500")
+Message-ID: <87fw9anuwk.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1341234662.1476.13.camel@leonhard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 02, 2012 at 10:11:02PM +0900, Namhyung Kim wrote:
-> 2012-07-02 (월), 12:15 +0200, Jiri Olsa:
-> > On Mon, Jul 02, 2012 at 10:53:44AM +0900, Namhyung Kim wrote:
-> > > Just a question, is there a way to know about the grouping at perf
-> > > report time?
-> > 
-> > nope, AFAIK only ID and perf_event_attr is stored for event
-> > grouping is known only for record time
-> > 
-> 
-> I heard that Arnaldo (or Stephane) wanted to make perf report
-> group-aware or such so that it can show related events together. But to
-> do that, it seems we need to change the data file format first, right?
-> 
-> Any idea?
+"Steven J. Magnani" <steve@digidescorp.com> writes:
 
-The next change I'm working on is to record and report
-PERF_FORMAT_GROUP related data. Here's commit comment
-from my next patchset:
+> On Sat, 2012-06-30 at 05:09 +0900, OGAWA Hirofumi wrote: 
+>> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
+>> 
+>> >
+>> > 			if (is_vfat)
+>> > 				ptname[i++] = fat_tolower(!nocase, c);
+>> 
+>> Of course, if (!is_vfat). Sorry.
+>
+> I agree that the nocase logic is confusing, but I'm pretty sure this
+> change would break the code. 
 
----
-perf, tool: Enable sampling on specified event group leader
+I might be wrong here though, which place is broken with it?
 
-Adding the functionality to the group modifier event syntax.
-Allowing user to select leader event inside the group using
-event index (command line event position in the group).
+> 'nocase' is always zero for vfat, which does not recognize that option.
+> For msdos, it is zero by default, and 1 if the 'nocase' option was
+> specified.
+> In all cases it is necessary to copy *something* to ptname.
 
-Following example selects e2 as leader:
-  -e '{e1,e2,e3,e4}:2'
+Looks like, we overwrite bufname by converted bufuname in is_vfat case?
 
-The selected event becomes group leader and is the only one
-doing samples.
+	if (isvfat) {
+		bufuname[j] = 0x0000;
+		i = fat_uni_to_x8(sb, bufuname, bufname, sizeof(bufname));
+	}
 
-The rest of the events in the group are being read on each leader
-event sample by PERF_SAMPLE_READ sample type processing.
-
-Following example:
-  perf record -e {cycles,faults}:1 ls
-
-  - creates a group with 'cycles' and 'faults' events
-  - 'cycles' event is group leader and has sampling enabled
-  - 'faults' event is read each time 'cycles' sample,
-    the 'faults' count is attached to the 'cycles sample
-    via PERF_SAMPLE_READ sample type.
----
-
-The report does not need any new metadata about grouping, because
-the samples are generated/stored only from the group leader. The
-other events data are read from the PERF_FORMAT_GROUP leader sample
-data.
-
-So no data file format change for my next changes, but I'm not sure
-this is the report change you mean.
-
-jirka
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
