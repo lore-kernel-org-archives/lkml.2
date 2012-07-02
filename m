@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756335Ab2GBWrW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 18:47:22 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:42181 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab2GBWrT (ORCPT
+	id S964772Ab2GBWr5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 18:47:57 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:42553 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932523Ab2GBWr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 18:47:19 -0400
+	Mon, 2 Jul 2012 18:47:56 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-127.messagelabs.com!1341269238!2953772!2
-X-Originating-IP: [216.166.12.178]
+X-Msg-Ref: server-5.tower-160.messagelabs.com!1341269275!8517074!1
+X-Originating-IP: [216.166.12.31]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/12] staging: comedi: das08_cs: remove unneeded pcmcia private data
-Date: Mon, 2 Jul 2012 15:47:14 -0700
+Subject: [PATCH 10/12] staging: comedi: das08_cs: refactor the pcmcia probe/remove
+Date: Mon, 2 Jul 2012 15:47:47 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
@@ -23,59 +23,105 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201207021547.15334.hartleys@visionengravers.com>
+Message-ID: <201207021547.48115.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pcmcia device-specific data is no longer needed by this driver.
-Remove it.
+Move the pcmcia_disable_device() call where needed in the pcmcia
+probe/remove and delete the das08_pcmcia_release() function.
+
+Move the logic of the das08_pcmcia_config() directly into the
+probe function and properly return an error code when the config
+fails.
+
+Only set cur_dev, used by the comedi_driver, if the pcmcia probe
+is successful. Also, make sure to NULL it in the remove.
+
+Remove all the kernel messages in the pcmcia support code. They
+are just added noise.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/das08_cs.c | 18 ------------------
- 1 file changed, 18 deletions(-)
+ drivers/staging/comedi/drivers/das08_cs.c | 38 +++++++------------------------
+ 1 file changed, 8 insertions(+), 30 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/das08_cs.c b/drivers/staging/comedi/drivers/das08_cs.c
-index b7efcb4..d02250e 100644
+index d02250e..f2f33e1 100644
 --- a/drivers/staging/comedi/drivers/das08_cs.c
 +++ b/drivers/staging/comedi/drivers/das08_cs.c
-@@ -147,24 +147,10 @@ failed:
- 
+@@ -104,12 +104,6 @@ static int das08_cs_attach(struct comedi_device *dev,
+ 	return das08_common_attach(dev, iobase);
  }
  
--struct local_info_t {
--	struct pcmcia_device *link;
--	struct bus_operations *bus;
--};
+-static void das08_pcmcia_release(struct pcmcia_device *link)
+-{
+-	dev_dbg(&link->dev, "das08_pcmcia_release\n");
+-	pcmcia_disable_device(link);
+-}
 -
- static int das08_pcmcia_attach(struct pcmcia_device *link)
+ static int das08_pcmcia_config_loop(struct pcmcia_device *p_dev,
+ 				void *priv_data)
  {
--	struct local_info_t *local;
--
- 	dev_dbg(&link->dev, "das08_pcmcia_attach()\n");
+@@ -119,19 +113,15 @@ static int das08_pcmcia_config_loop(struct pcmcia_device *p_dev,
+ 	return pcmcia_request_io(p_dev);
+ }
  
--	/* Allocate space for private device-specific data */
--	local = kzalloc(sizeof(struct local_info_t), GFP_KERNEL);
--	if (!local)
--		return -ENOMEM;
--	local->link = link;
--	link->priv = local;
+-static void das08_pcmcia_config(struct pcmcia_device *link)
++static int das08_pcmcia_attach(struct pcmcia_device *link)
+ {
+ 	int ret;
+ 
+-	dev_dbg(&link->dev, "das08_pcmcia_config\n");
+-
+ 	link->config_flags |= CONF_ENABLE_IRQ | CONF_AUTO_SET_IO;
+ 
+ 	ret = pcmcia_loop_config(link, das08_pcmcia_config_loop, NULL);
+-	if (ret) {
+-		dev_warn(&link->dev, "no configuration found\n");
++	if (ret)
+ 		goto failed;
+-	}
+ 
+ 	if (!link->irq)
+ 		goto failed;
+@@ -140,30 +130,18 @@ static void das08_pcmcia_config(struct pcmcia_device *link)
+ 	if (ret)
+ 		goto failed;
+ 
+-	return;
+-
+-failed:
+-	das08_pcmcia_release(link);
+-
+-}
+-
+-static int das08_pcmcia_attach(struct pcmcia_device *link)
+-{
+-	dev_dbg(&link->dev, "das08_pcmcia_attach()\n");
 -
  	cur_dev = link;
- 
- 	das08_pcmcia_config(link);
-@@ -178,10 +164,6 @@ static void das08_pcmcia_detach(struct pcmcia_device *link)
- 	dev_dbg(&link->dev, "das08_pcmcia_detach\n");
- 
- 	das08_pcmcia_release(link);
 -
--	/* This points to the parent struct local_info_t struct */
--	kfree(link->priv);
+-	das08_pcmcia_config(link);
 -
+ 	return 0;
++
++failed:
++	pcmcia_disable_device(link);
++	return ret;
+ }
+ 
+ static void das08_pcmcia_detach(struct pcmcia_device *link)
+ {
+-
+-	dev_dbg(&link->dev, "das08_pcmcia_detach\n");
+-
+-	das08_pcmcia_release(link);
++	pcmcia_disable_device(link);
++	cur_dev = NULL;
  }
  
  static const struct pcmcia_device_id das08_cs_id_table[] = {
