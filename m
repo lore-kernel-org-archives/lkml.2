@@ -1,40 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121Ab2GBTgS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 15:36:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17565 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751219Ab2GBTgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 15:36:17 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC patch] block: add round robin dispatch in noop IO scheduler
-References: <CAJd=RBC=cZO8boOQMqJi=q9H2tZNOfsu_=VrkFt4_ExJCrLePQ@mail.gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 02 Jul 2012 15:36:15 -0400
-In-Reply-To: <CAJd=RBC=cZO8boOQMqJi=q9H2tZNOfsu_=VrkFt4_ExJCrLePQ@mail.gmail.com>
-	(Hillf Danton's message of "Wed, 27 Jun 2012 21:55:51 +0800")
-Message-ID: <x498vf2lzv4.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S932441Ab2GBTlW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 15:41:22 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:39773 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153Ab2GBTlV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 15:41:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1341245191.2177.40.camel@schurl.lan>
+References: <1341237299.22621.88.camel@edumazet-glaptop>
+	<1341245191.2177.40.camel@schurl.lan>
+Date: Mon, 2 Jul 2012 15:41:19 -0400
+Message-ID: <CAAsGZS6ahzUo+QRcLOyPcj5=mp53O+M9kqByOwPb0zZcr-cgwQ@mail.gmail.com>
+Subject: Re: [RFC] [TCP 0/3] Receive from socket into bio without copying
+From: chetan loke <loke.chetan@gmail.com>
+To: Andreas Gruenbacher <agruen@linbit.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hillf Danton <dhillf@gmail.com> writes:
+On Mon, Jul 2, 2012 at 12:06 PM, Andreas Gruenbacher <agruen@linbit.com> wrote:
+> On Mon, 2012-07-02 at 15:54 +0200, Eric Dumazet wrote:
+>> So I will just say no to your patches, unless you demonstrate the
+>> splice() problems, and how you can fix the alignment problem in a new
+>> layer instead of in the existing zero copy standard one.
+>
+> Again, splice or not is not the issue here. It does not, by itself, allow zero
+> copy from the network directly to disk but it could likely be made to support
+> that if we can get the alignment right first.  The proposed MSG_NEW_PACKET flag
+> helps with that, but maybe someone has a better idea.
+>
 
-> Requests are grouped according to IO context, and dispatched in round
-> robin, one request per context a time, then noop serves flash based
-> disk "fair"?
+Eric - by using splice do you mean something like:
 
-NACK.  Noop means noop.  You can have a look, and maybe contribute to
-the work that Shaohua Li is doing.  He proposed an IOPS-based scheduler
-here:
-  http://lwn.net/Articles/474164/
+int filedes[2];
+PIPE_SIZE (64*1024)
+pipe(filedes);
+ret = splice (sock_fd_from, &from_offset, filedes [1], NULL, PIPE_SIZE,
+                     SPLICE_F_MORE | SPLICE_F_MOVE);
 
-Cheers,
-Jeff
+
+ret = splice (filedes [0], NULL, file_fd_to,
+                         &to_offset, ret,
+                         SPLICE_F_MORE | SPLICE_F_MOVE);
+
+
+i.e. splice-in from socket to pipe, and splice-out from pipe to destination?
+
+Andreas - if the above assumption is true then can you apply the
+'MSG_NEW_PACKET' on the sender and see if the above pseudo-splice code
+achieves something similar to what you expect on the receive side(you
+can also play w/ F_SETPIPE_SZ -  although I found very little
+reduction in CPU usage)? Note: My personal experience - using splice
+from an input-file-A to output-file-B bought very minimal cpu
+reduction(yes, both the files used O_DIRECT). Instead, a simple
+read/write w/ O_DIRECT from file-A to file-B was much much faster.
+
+
+Chetan
