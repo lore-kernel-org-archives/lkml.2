@@ -1,110 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab2GBHQn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 03:16:43 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:8028 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab2GBHQl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 03:16:41 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 02 Jul 2012 00:16:40 -0700
-Message-ID: <4FF14B4A.3050101@nvidia.com>
-Date: Mon, 2 Jul 2012 16:18:34 +0900
-From: Alexandre Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0.1
+	id S932428Ab2GBHTb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 03:19:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15949 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751871Ab2GBHTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 03:19:30 -0400
+Message-ID: <4FF14B56.9090906@redhat.com>
+Date: Mon, 02 Jul 2012 03:18:46 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Stephen Warren <swarren@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Mitch Bradley <wmb@firmworks.com>
-Subject: Re: [PATCH] pwm-backlight: add regulator and GPIO support
-References: <1340976167-27298-1-git-send-email-acourbot@nvidia.com> <20120630183742.GE23990@avionic-0098.adnet.avionic-design.de> <4FF116F0.5070602@nvidia.com> <20120702064624.GA8683@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20120702064624.GA8683@avionic-0098.mockup.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 40/40] autonuma: shrink the per-page page_autonuma struct
+ size
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-41-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1340888180-15355-41-git-send-email-aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2012 03:46 PM, Thierry Reding wrote:
->> So instead of having fixed "power-supply" and "enable-gpio"
->> properties, how about having properties describing the power-on and
->> power-off sequences which odd cells alternate between phandles to
->> regulators/gpios/pwm and delays in microseconds before continuing
->> the sequence. For example:
->>
->> power-on = <&pwm 2 5000000
->> 	    10000
->> 	    &backlight_reg
->> 	    0
->> 	    &gpio 28 0>;
->> power-off = <&gpio 28 0
->> 	     0
->> 	     &backlight_reg
->> 	     10000
->> 	     &pwm 2 0>;
->>
->> Here the power-on sequence would translate to, power on the second
->> PWM with a duty-cycle of 5ms, wait 10ms, then enable the backlight
->> regulator and GPIO 28 without delay. Power-off is the exact
->> opposite. The nice thing with this scheme is that you can reorder
->> the sequence at will and support the weirdest setups.
->
-> I generally like the idea. I'm Cc'ing the devicetree-discuss mailing
-> list, let's see what people there think about it. I've also added Mitch
-> Bradley who already helped a lot with the initial binding.
+On 06/28/2012 08:56 AM, Andrea Arcangeli wrote:
+>  From 32 to 12 bytes, so the AutoNUMA memory footprint is reduced to
+> 0.29% of RAM.
 
-Cool, thanks. I am aware that this idea probably needs to be refined, 
-but ideally we would end up with something as simple as this example.
+Still not ideal, however once we get native THP migration working
+it could be practical to switch to a "have a bucket with N
+page_autonuma structures for every N*M pages" approach.
 
->> What I don't know (device tree newbie here!) is:
->> 1) Is it legal to refer the same phandle several times in the same node?
->> 2) Is it ok to mix phandles of different types with integer values?
->> The DT above compiled, but can you e.g. resolve a regulator phandle
->> in the middle of a property?
->
-> I believe these shouldn't be a problem.
+For example, we could have 4 struct page_autonuma pages, for 32
+memory pages. That would necessitate reintroducing the page pointer
+into struct page_autonuma, but it would reduce memory use by roughly
+a factor 8.
 
-Nice, I'll try to see how I can parse it then.
+To get from a struct page to a struct page_autonuma, we would have
+to look at the bucket and check whether one of the page_autonuma
+structs points at us. If none do, we have to claim an available one.
+On migration, we would have to free our page_autonuma struct, which
+would make it available for other pages to use.
 
->> 3) Can you "guess" the type of a phandle before parsing it? Here the
->> first phandle is a GPIO, but it could as well be the regulator. Do
->> we have means to know that in the driver code?
->
-> That isn't possible. But you could for instance use a cell to specify
-> the type of the following phandle.
+This would complicate the code somewhat, and potentially slow down
+the migration of 4kB pages, but with 2MB pages things could continue
+exactly the way they work today.
 
-That sounds reasonnable, although we would also need to bind values to 
-phandle types. That would make the DT a little bit more cryptic, 
-although nothing too bad I think.
+Does this seem reasonably in any way?
 
->> Sorry for the long explanation, but I really wonder if doing this is
->> possible at all. If it is, then I think that's the way to do for
->> backlight initialization.
->
-> OTOH we basically end up describing a code sequence in the DT. But as
-> you mention above sometimes the hardware requires specific timing
-> parameters so this might actually be a kind of valid sequence to
-> describe in the DT.
+> +++ b/include/linux/autonuma_list.h
+> @@ -0,0 +1,94 @@
+> +#ifndef __AUTONUMA_LIST_H
+> +#define __AUTONUMA_LIST_H
+> +
+> +#include<linux/types.h>
+> +#include<linux/kernel.h>
 
-Yes, the power on/power off sequences are part of the board/panel 
-specification - they are a hardware description and thus fits within the 
-purpose of the device tree IMHO. One could argue that initialization 
-sequences are usually coded inside drivers, but that only works when the 
-driver has a single initialization sequence to handle. With 
-pwm-backlight we try to handle something much more general, and so far 
-these sequences were performed by board-specific functions.
+> +typedef uint32_t autonuma_list_entry;
+> +#define AUTONUMA_LIST_MAX_PFN_OFFSET	(AUTONUMA_LIST_HEAD-3)
+> +#define AUTONUMA_LIST_POISON1		(AUTONUMA_LIST_HEAD-2)
+> +#define AUTONUMA_LIST_POISON2		(AUTONUMA_LIST_HEAD-1)
+> +#define AUTONUMA_LIST_HEAD		((uint32_t)UINT_MAX)
+> +
+> +struct autonuma_list_head {
+> +	autonuma_list_entry anl_next_pfn;
+> +	autonuma_list_entry anl_prev_pfn;
+> +};
 
-All in all, adding timings & ordering is not so different from the 
-original patch which accepted one optional regulator and GPIO.
+This stuff needs to be documented with a large comment, explaining
+what is done, what the limitations are, etc...
 
-Also, if someone knows of anything else besides PWM/GPIO/regulators that 
-may need to be controlled by a backlight power sequence, please let me know.
+Having that documentation in the commit message is not going to help
+somebody who is browsing the source code.
 
-Alex.
+I also wonder if it would make sense to have this available as a
+generic list type, not autonuma specific but an "item number list"
+include file with corresponding macros.
+
+It might be useful to have lists with item numbers, instead of
+prev & next pointers, in other places in the kernel.
+
+Besides, introducing this list type separately could make things
+easier to review.
+
+
+-- 
+All rights reversed
