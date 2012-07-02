@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab2GBWXl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 18:23:41 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:51859 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850Ab2GBWXk (ORCPT
+	id S1756292Ab2GBWl4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 18:41:56 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:48470 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328Ab2GBWly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 18:23:40 -0400
+	Mon, 2 Jul 2012 18:41:54 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-7.tower-209.messagelabs.com!1341268887!7583426!10
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 00/12] staging: comedi: das08_cs: cleanup driver
+Date: Mon, 2 Jul 2012 15:41:21 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1341261568.3319.7.camel@dabdike>
-References: <20120701172012.078559139@decadent.org.uk> <4FF14957.3040007@redhat.com>
- <CA+55aFyRTXqSvf9m08gbHCB0WhVF14Y6J2-AiFGiuTStq0Jr6Q@mail.gmail.com> <1341261568.3319.7.camel@dabdike>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 2 Jul 2012 15:23:18 -0700
-X-Google-Sender-Auth: 0nzkom3QpA694XxmRfP1eB5qNa0
-Message-ID: <CA+55aFymdk8Sn8CVXRZgRvR96jCZG3LQRNU3U0dMkS3Ut2CemQ@mail.gmail.com>
-Subject: Re: [ 38/48] SCSI & usb-storage: add try_rc_10_first flag
-To: James Bottomley <jbottomley@parallels.com>
-Cc: Hans de Goede <hdegoede@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201207021541.21705.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 2, 2012 at 1:39 PM, James Bottomley
-<jbottomley@parallels.com> wrote:
->
-> It's not idiotic.  It's, unfortunately, required by the standard to
-> check for protection capable devices.
- [.. dleted ]
->  Martin Petersen did extensive testing of devices when we
-> changed it and doing RC16 first is hedged around by claiming support not
-> only for SCSI_3 but also for SBC_2 in your INQUIRY data.
+Cleanup the das08_cs comedi pcmcia driver.
 
-Umm. That just smells like BS to me.
+H Hartley Sweeten (12):
+  staging: comedi: das08_cs: move the MODULE_* stuff to the EOF
+  staging: comedi: das08_cs: consolidate the init and exit functions
+  staging: comedi: das08_cs: change driver registration order
+  staging: comedi: das08_cs: cleanup the pcmcia_driver declaration
+  staging: comedi: das08_cs: cleanup and remove useless comments
+  staging: comedi: das08_cs: refactor the pcmcia support code
+  staging: comedi: das08_cs: remove unused pcmcia 'stop' logic
+  staging: comedi: das08_cs: remove the pcmcia suspend/resume
+  staging: comedi: das08_cs: remove unneeded pcmcia private data
+  staging: comedi: das08_cs: refactor the pcmcia probe/remove
+  staging: comedi: das08_cs: move the comedi_driver variable
+  staging: comedi: das08_cs: remove thisboard macro
 
-The "extensive testing" part was clearly not true, and it seems that
-SCSI people sometimes forget that the biggest user (by *far*) is the
-USB storage layer.
+ drivers/staging/comedi/drivers/das08_cs.c | 182 ++++++++----------------------
+ 1 file changed, 48 insertions(+), 134 deletions(-)
 
-Also, your protection claim seems to be invalidated by the actual
-code. Yes, it checks if the device claims to support protection. But
-it *also* says "let's do that 16b command if "scsi_level >
-SCSI_SPC_2". So your claim that it hedges around it by looking at the
-inquiry data is pure crap. It's simply not true. Just look at the
-code:
+-- 
+1.7.11
 
-        if (sdp->host->max_cmd_len < 16)
-                return 0;
-        if (sdp->try_rc_10_first)
-                return 0;
-        if (sdp->scsi_level > SCSI_SPC_2)
-                return 1;
-        if (scsi_device_protection(sdp))
-                return 1;
-        return 0;
-
-Notice how for high enough scsi_levels, it never even gets to that
-scsi_device_protection() check, which does indeed look into protection
-data.
-
-So no, I simply don't see the careful testing or the checking that you
-claim exists.
-
-                 Linus
