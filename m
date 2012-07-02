@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933023Ab2GBKPz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 06:15:55 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59712 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932929Ab2GBKPw (ORCPT
+	id S933002Ab2GBKQW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 06:16:22 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:54283 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932929Ab2GBKQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 06:15:52 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
-        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH] leds-88pm860x: use devm_kzalloc function
-Date: Mon,  2 Jul 2012 15:45:43 +0530
-Message-Id: <1341224143-27894-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 2 Jul 2012 06:16:20 -0400
+Date: Mon, 2 Jul 2012 12:16:08 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <johnstul@us.ibm.com>
+Cc: Prarit Bhargava <prarit@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [RFC] Potential fix for leapsecond caused futex
+ related load spikes
+Message-ID: <20120702101606.GA16008@localhost.localdomain>
+References: <4FF06CAB.9020800@redhat.com>
+ <4FF08154.3050407@redhat.com>
+ <4FF088B9.1000308@us.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF088B9.1000308@us.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using devm_kzalloc will remove all the error checks and the frees are automatically done at the driver unload side.
+On Sun, Jul 01, 2012 at 10:28:25AM -0700, John Stultz wrote:
+> 
+> Reworking the patch now.
 
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
+John,
 
-Thanks Bryan for advising me.. ;-)
+I know you didn't like my (originally Michael Hack's) idea of keeping
+time in TAI, but wouldn't changing to an internal, continuous time
+scale (not necessary TAI) solve these sorts of timer issues?
 
- drivers/leds/leds-88pm860x.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+There have been a number of clock/timer/leap bugs over the last
+years. Some of these might have been avoided by using a continuous
+scale, since no special timer actions would be needed during a leap
+second.
 
-diff --git a/drivers/leds/leds-88pm860x.c b/drivers/leds/leds-88pm860x.c
-index 5b61aaf..61897cf 100644
---- a/drivers/leds/leds-88pm860x.c
-+++ b/drivers/leds/leds-88pm860x.c
-@@ -209,7 +209,7 @@ static int pm860x_led_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	data = kzalloc(sizeof(struct pm860x_led), GFP_KERNEL);
-+	data = devm_kzalloc(&pdev->dev, sizeof(struct pm860x_led), GFP_KERNEL);
- 	if (data == NULL)
- 		return -ENOMEM;
- 	strncpy(data->name, res->name, MFD_NAME_SIZE - 1);
-@@ -220,7 +220,6 @@ static int pm860x_led_probe(struct platform_device *pdev)
- 	data->port = pdata->flags;
- 	if (data->port < 0) {
- 		dev_err(&pdev->dev, "check device failed\n");
--		kfree(data);
- 		return -EINVAL;
- 	}
- 
-@@ -233,13 +232,10 @@ static int pm860x_led_probe(struct platform_device *pdev)
- 	ret = led_classdev_register(chip->dev, &data->cdev);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "Failed to register LED: %d\n", ret);
--		goto out;
-+		return ret;
- 	}
- 	pm860x_led_set(&data->cdev, 0);
- 	return 0;
--out:
--	kfree(data);
--	return ret;
- }
- 
- static int pm860x_led_remove(struct platform_device *pdev)
-@@ -247,7 +243,6 @@ static int pm860x_led_remove(struct platform_device *pdev)
- 	struct pm860x_led *data = platform_get_drvdata(pdev);
- 
- 	led_classdev_unregister(&data->cdev);
--	kfree(data);
- 
- 	return 0;
- }
--- 
-1.7.9.5
+The run time cost is low, just one additional test and addition when
+reading the time. It might be worth it for the peace of mind when
+the next leap second rolls around.
 
+Thanks,
+Richard
