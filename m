@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab2GBTlW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 15:41:22 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:39773 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153Ab2GBTlV (ORCPT
+	id S932557Ab2GBTlf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 15:41:35 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:8268 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932465Ab2GBTlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 15:41:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <1341245191.2177.40.camel@schurl.lan>
-References: <1341237299.22621.88.camel@edumazet-glaptop>
-	<1341245191.2177.40.camel@schurl.lan>
-Date: Mon, 2 Jul 2012 15:41:19 -0400
-Message-ID: <CAAsGZS6ahzUo+QRcLOyPcj5=mp53O+M9kqByOwPb0zZcr-cgwQ@mail.gmail.com>
-Subject: Re: [RFC] [TCP 0/3] Receive from socket into bio without copying
-From: chetan loke <loke.chetan@gmail.com>
-To: Andreas Gruenbacher <agruen@linbit.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 2 Jul 2012 15:41:32 -0400
+Message-ID: <1341258090.2750.29.camel@lorien2>
+Subject: Re: [PATCH v2 0/2] Part 1: handle addr_assign_type for random
+ addresses
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: jeffrey.t.kirsher@intel.com
+Cc: Danny Kukawka <danny.kukawka@bisect.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        Danny Kukawka <dkukawka@suse.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 02 Jul 2012 13:41:30 -0600
+In-Reply-To: <1341257012.1987.2.camel@jtkirshe-mobl>
+References: <1328816934-11508-1-git-send-email-danny.kukawka@bisect.de>
+	 <1328818164.3639.15.camel@jtkirshe-mobl> <1341255355.2750.23.camel@lorien2>
+	 <1341257012.1987.2.camel@jtkirshe-mobl>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 2, 2012 at 12:06 PM, Andreas Gruenbacher <agruen@linbit.com> wrote:
-> On Mon, 2012-07-02 at 15:54 +0200, Eric Dumazet wrote:
->> So I will just say no to your patches, unless you demonstrate the
->> splice() problems, and how you can fix the alignment problem in a new
->> layer instead of in the existing zero copy standard one.
->
-> Again, splice or not is not the issue here. It does not, by itself, allow zero
-> copy from the network directly to disk but it could likely be made to support
-> that if we can get the alignment right first.  The proposed MSG_NEW_PACKET flag
-> helps with that, but maybe someone has a better idea.
->
+On Mon, 2012-07-02 at 12:23 -0700, Jeff Kirsher wrote:
 
-Eric - by using splice do you mean something like:
+> 
+> It looks like it was accepted into kernel 3.3.  I am not aware of any
+> stable kernels earlier than 3.3 that picked up the patch.
 
-int filedes[2];
-PIPE_SIZE (64*1024)
-pipe(filedes);
-ret = splice (sock_fd_from, &from_offset, filedes [1], NULL, PIPE_SIZE,
-                     SPLICE_F_MORE | SPLICE_F_MOVE);
+Checked the 3.3 source didn't find it, it is in 3.4.
+
+-- Shuah
 
 
-ret = splice (filedes [0], NULL, file_fd_to,
-                         &to_offset, ret,
-                         SPLICE_F_MORE | SPLICE_F_MOVE);
-
-
-i.e. splice-in from socket to pipe, and splice-out from pipe to destination?
-
-Andreas - if the above assumption is true then can you apply the
-'MSG_NEW_PACKET' on the sender and see if the above pseudo-splice code
-achieves something similar to what you expect on the receive side(you
-can also play w/ F_SETPIPE_SZ -  although I found very little
-reduction in CPU usage)? Note: My personal experience - using splice
-from an input-file-A to output-file-B bought very minimal cpu
-reduction(yes, both the files used O_DIRECT). Instead, a simple
-read/write w/ O_DIRECT from file-A to file-B was much much faster.
-
-
-Chetan
