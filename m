@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751229Ab2GBMqD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 08:46:03 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:23342 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab2GBMqB (ORCPT
+	id S1751434Ab2GBMvO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 08:51:14 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:32368 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab2GBMvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 08:46:01 -0400
-Date: Mon, 2 Jul 2012 15:45:51 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Fengguang Wu <wfg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: automated warning notifications
-Message-ID: <20120702124551.GD4519@mwanda>
-References: <20120614172523.GB4400@mwanda>
- <20120615014835.GA5695@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120615014835.GA5695@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 2 Jul 2012 08:51:13 -0400
+X-AuditID: cbfee61b-b7f776d000002f3f-14-4ff1993f3104
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: "'Lars-Peter Clausen'" <lars@metafoo.de>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+Cc: "'Takashi Iwai'" <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        swarren@nvidia.com, linux-kernel@vger.kernel.org,
+        "'Laxman Dewangan'" <ldewangan@nvidia.com>, lrg@ti.com
+References: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com>
+ <4FEC3B70.5030902@metafoo.de> <s5hobo3zl79.wl%tiwai@suse.de>
+ <20120628121816.GB21029@sirena.org.uk> <4FEC4E62.3020101@metafoo.de>
+In-reply-to: <4FEC4E62.3020101@metafoo.de>
+Subject: RE: [alsa-devel] [PATCH] ASoC: snd_dmaengine: add common api for
+ pcm_mmap
+Date: Mon, 02 Jul 2012 14:50:58 +0200
+Organization: SPRC
+Message-id: <02c301cd5851$572fd440$058f7cc0$%szyprowski@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1VKUX/1uLMvWdCRx6O9dE/eWzzgADJwXJw
+Content-language: pl
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t9jQV37mR/9Dd4cNLG4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZk15tZyw4xFPxa+pT5gbG/5xdjJwcEgImEkvXtrJA2GISF+6t
+	Z+ti5OIQEpjOKNGzfyELhDOLSWLbrytgVWwChhJdb7vYQGwRgQSJ7u5HTCBFzAKrGSWent7O
+	CtFxilGiuXUnWBWngJbE8c4nQAkODmGBEIn9X6VAwiwCqhKP2rewg4T5BYQkJs5SAAnzCrhI
+	zP29hRHCFpT4Mfke2F5moCnrdx5ngrDlJTavecsM0iohoC7x6K8uxDlGEl3L7jJDlIhI3G14
+	zjqBUXgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEB/gz6R2M
+	qxosDjEKcDAq8fD+mPHRX4g1say4MvcQowQHs5II76lpQCHelMTKqtSi/Pii0pzU4kOM0hws
+	SuK8TdYX/IUE0hNLUrNTUwtSi2CyTBycUg2MoTOMBc5KcL2tYORKi5tU5D+xvUpK4dr+6Q83
+	9MzqNTtiPFFtnVnguter8j2EnZ4f6xSNKZ8toBcRky1rfUXmotLJMmsTPrGKDr6AY78a6z+V
+	ak4wK7U6Un8uIVpNbP2f8BJnvfUJe0PV+b179U5GuDycNuHInZ8CznxsN2vSLi9S5Tg0d7ES
+	S3FGoqEWc1FxIgBwZhbKbAIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 15, 2012 at 09:48:35AM +0800, Fengguang Wu wrote:
-> Hi Dan,
-> 
-> On Thu, Jun 14, 2012 at 08:25:23PM +0300, Dan Carpenter wrote:
-> > Hi Fengguang,
-> > 
-> > I also check new static checker warnings and sometimes email people.
-> 
-> That would be nice!
-> 
-> > I wonder if we are duplicating each others work.  For example, did
-> > you send an email asking about the following Sparse warning:
-> > 
-> > sound/soc/codecs/ab8500-codec.c:1959:53: warning: cast truncates bits from constant value (1013 becomes 13)
-> 
-> I did try sending out sparse warnings to people, some time ago...
+Hello,
 
-Apparently you have started up again?  We're starting to trod on
-each other's toes and people are getting annoyed with me because I
-am reporting them after you...  :/
+On Thursday, June 28, 2012 2:30 PM Lars-Peter Clausen wrote:
 
-Randy has suggested that we send these automated messages to
-kernel-janitors.  I don't know how the other people on kernel
-janitors feel about this but I would be fine with it.
+> On 06/28/2012 02:18 PM, Mark Brown wrote:
+> > On Thu, Jun 28, 2012 at 02:15:38PM +0200, Takashi Iwai wrote:
+> >> Lars-Peter Clausen wrote:
+> >
+> >>> to the ALSA core. Now that there is a generic dma_mmap_writecombine it may
+> >>> make sense to integrate this with snd_pcm_lib_default_mmap.
+> >
+> >> Agreed.
+> >
+> >> Also, it must be portable.  So far, only ARM has
+> >> dma_mmap_writecombine(), thus the build on other arch would fail as
+> >> is.
+> >
+> > Oh, dear - this means we don't actually have a generic API at all.  Is
+> > there any effort being made to make this generally available?
+> 
+> Yes there is, and in fact in next/master there is generic
+> dma_mmap_writecombine. I'm not quite sure how it behaves on non ARM archs
+> though. But in theory it should fallback to a normal coherent mapping. Marek
+> did a lot of work on this, I've put him on Cc.
 
-regards,
-dan carpenter
+On architectures which don't support DMA_ATTR_WRITECOMBINE attribute it falls
+back to standard 'coherent' implementation, so it is equivalent to 
+dma_mmap_coherent(). If architecture doesn't provide mmap callback, my patch
+provides a so called 'generic' implementation based on virt_to_phys() macro.
+Once this patch gets merged, I hope that each architecture will be reviewed 
+if such implementation is correct. If not, some architectures might need to
+provide their own implementations, but at least we can get the buffer-mmap
+related hacks from the device drivers.
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
+
 
