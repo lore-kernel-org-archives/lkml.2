@@ -1,166 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932826Ab2GBJL7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 05:11:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42088 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932623Ab2GBJL5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 05:11:57 -0400
-Message-ID: <1341220283.28750.138.camel@twins>
-Subject: Re: [PATCH v3 3/5] ARM: topology: Update cpu_power according to DT
- information
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
-        linux@arm.linux.org.uk, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, yong.zhang0@gmail.com, namhyung@kernel.org,
-        jean.pihet@newoldbits.com
-Date: Mon, 02 Jul 2012 11:11:23 +0200
-In-Reply-To: <1340205562-7653-4-git-send-email-vincent.guittot@linaro.org>
-References: <1340205562-7653-1-git-send-email-vincent.guittot@linaro.org>
-	 <1340205562-7653-4-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S932845Ab2GBJMy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 05:12:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12713 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932717Ab2GBJMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 05:12:53 -0400
+Date: Mon, 2 Jul 2012 11:12:47 +0200 (CEST)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-1-248.brq.redhat.com
+To: Ashish Sangwan <ashishsangwan2@gmail.com>
+cc: sandeen@redhat.com,
+        =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>,
+        Ted Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>
+Subject: Re: [PATCH v2] ext4: fix hole punch failure when depth is greater
+ than 0
+In-Reply-To: <CAOiN93=BKyGKtpLng-ddX0RFUOdHCaxHi2O26GFokdT19xad2g@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1207021110530.24050@dhcp-1-248.brq.redhat.com>
+References: <1339638836-19990-1-git-send-email-ashish.sangwan2@gmail.com> <CAKYAXd_g_vgAmyD4jyUqz0u=vaSTAKFqZz0sqhM+2+hy1Z85ug@mail.gmail.com> <CAOiN93=BKyGKtpLng-ddX0RFUOdHCaxHi2O26GFokdT19xad2g@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="571144193-1117142254-1341220370=:24050"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-20 at 17:19 +0200, Vincent Guittot wrote:
-> +#ifdef CONFIG_OF
-> +struct cpu_efficiency {
-> +       const char *compatible;
-> +       unsigned long efficiency;
-> +};
-> +
-> +/*
-> + * Table of relative efficiency of each processors
-> + * The efficiency value must fit in 20bit. The final
-> + * cpu_scale value must be in the range
-> + * 0 < cpu_scale < 2*SCHED_POWER_SCALE.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-This wants a why.. I suspects its to do with keeping capacity on 1.
+--571144193-1117142254-1341220370=:24050
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-> + * Processors that are not defined in the table,
-> + * use the default SCHED_POWER_SCALE value for cpu_scale.
-> + */
-> +struct cpu_efficiency table_efficiency[] = {
-> +       {"arm,cortex-a15", 3891},
-> +       {"arm,cortex-a7",  2048},
-> +       {NULL, },
-> +};
-> +
-> +struct cpu_capacity {
-> +       unsigned long hwid;
-> +       unsigned long capacity;
-> +};
-> +
-> +struct cpu_capacity *cpu_capacity;
-> +
-> +unsigned long middle_capacity = 1;
+On Mon, 2 Jul 2012, Ashish Sangwan wrote:
 
-It would be very nice to not have to learn to read device-tree nonsense
-to work on the scheduler, how about something like this:?
+> Date: Mon, 2 Jul 2012 11:03:26 +0530
+> From: Ashish Sangwan <ashishsangwan2@gmail.com>
+> To: sandeen@redhat.com, Luká¨ Czerner <lczerner@redhat.com>,
+>     Ted Tso <tytso@mit.edu>
+> Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+>     Namjae Jeon <linkinjeon@gmail.com>
+> Subject: Re: [PATCH v2] ext4: fix hole punch failure when depth is greater
+>     than 0
+> 
+> Hi Ted, Lukas, Eric,
+> 
+> Did any of you get a chance to look at it?
 
-/*
- * Iterate all cpus and set the efficiency (as per table_efficiency)
- * also calculate the middle efficiency:
- *   (max{eff_i} - min{eff_i}) / 2
- * This is later used to scale the cpu_power field such that an
- * 'average' cpu is of middle power. Also see the comments near
- * table_efficiency[] and update_cpu_power().
- */
+I am sorry for the delay. I have been trying to reproduce this
+problem without any success so far. But is was on ppc64 machine, so
+I'll try that on x86_64 and then review the patch.
 
-> +static void __init parse_dt_topology(void)
-> +{
-> +       struct cpu_efficiency *cpu_eff;
-> +       struct device_node *cn = NULL;
-> +       unsigned long min_capacity = (unsigned long)(-1);
-> +       unsigned long max_capacity = 0;
-> +       unsigned long capacity = 0;
-> +       int alloc_size, cpu = 0;
-> +
-> +       alloc_size = nr_cpu_ids * sizeof(struct cpu_capacity);
-> +       cpu_capacity = (struct cpu_capacity *)kzalloc(alloc_size, GFP_NOWAIT);
-> +
-> +       while ((cn = of_find_node_by_type(cn, "cpu"))) {
-> +               const u32 *rate, *reg;
-> +               int len;
-> +
-> +               if (cpu >= num_possible_cpus())
-> +                       break;
-> +
-> +               for (cpu_eff = table_efficiency; cpu_eff->compatible; cpu_eff++)
-> +                       if (of_device_is_compatible(cn, cpu_eff->compatible))
-> +                               break;
-> +
-> +               if (cpu_eff->compatible == NULL)
-> +                       continue;
-> +
-> +               rate = of_get_property(cn, "clock-frequency", &len);
-> +               if (!rate || len != 4) {
-> +                       pr_err("%s missing clock-frequency property\n",
-> +                               cn->full_name);
-> +                       continue;
-> +               }
-> +
-> +               reg = of_get_property(cn, "reg", &len);
-> +               if (!reg || len != 4) {
-> +                       pr_err("%s missing reg property\n", cn->full_name);
-> +                       continue;
-> +               }
-> +
-> +               capacity = ((be32_to_cpup(rate)) >> 20) * cpu_eff->efficiency;
-> +
-> +               /* Save min capacity of the system */
-> +               if (capacity < min_capacity)
-> +                       min_capacity = capacity;
-> +
-> +               /* Save max capacity of the system */
-> +               if (capacity > max_capacity)
-> +                       max_capacity = capacity;
-> +
-> +               cpu_capacity[cpu].capacity = capacity;
-> +               cpu_capacity[cpu++].hwid = be32_to_cpup(reg);
-> +       }
-> +
-> +       if (cpu < num_possible_cpus())
-> +               cpu_capacity[cpu].hwid = (unsigned long)(-1);
-> +
-> +       middle_capacity = (min_capacity + max_capacity) >> 11;
-> +}
-> +
-> +void update_cpu_power(unsigned int cpu, unsigned long hwid)
-> +{
-> +       unsigned int idx = 0;
-> +
-> +       /* look for the cpu's hwid in the cpu capacity table */
+Thanks!
+-Lukas
 
-This smells like an O(n^2) loop.. ARM has only small cpu counts so this
-isn't an immediate issue, would still be nice to make a note of it
-though.
-
-> +       for (idx = 0; idx < num_possible_cpus(); idx++) {
-> +               if (cpu_capacity[idx].hwid == hwid)
-> +                       break;
-> +
-> +               if (cpu_capacity[idx].hwid == -1)
-> +                       return;
-> +       }
-> +
-> +       if (idx == num_possible_cpus())
-> +               return;
-> +
-> +       set_power_scale(cpu, cpu_capacity[idx].capacity / middle_capacity);
-
-OK, but there's no guarantee here you'll stay within that
-[1,2*SCHED_POWER_SCALE-1] range. This might want a comment and or
-runtime verification so that when people extend the table_efficiency[]
-wrongly we'll get notice, humm?
-
-> +       printk(KERN_INFO "CPU%u: update cpu_power %lu\n",
-> +               cpu, arch_scale_freq_power(NULL, cpu));
-> +} 
+> 
+> On Fri, Jun 22, 2012 at 6:19 AM, Namjae Jeon <linkinjeon@gmail.com> wrote:
+> > Hi. Eric.
+> >
+> > This is the patch for punch hole issue.
+> >
+> > Thanks.
+> >
+> 
+--571144193-1117142254-1341220370=:24050--
