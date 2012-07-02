@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab2GBNUd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 09:20:33 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:63756 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab2GBNUc (ORCPT
+	id S1752850Ab2GBNUg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 09:20:36 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:37954 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751440Ab2GBNUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 09:20:32 -0400
+	Mon, 2 Jul 2012 09:20:33 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: snitzer@redhat.com, david@fromorbit.com, dm-devel@redhat.com,
         xfs@oss.sgi.com, hch@lst.de, martin.petersen@oracle.com,
         axboe@kernel.dk
-Subject: [PATCH v2 0/3] block: improvements for discard alignment
-Date: Mon,  2 Jul 2012 15:20:22 +0200
-Message-Id: <1341235225-27551-1-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH v2 1/3] block: add sysfs entry for discard_alignment
+Date: Mon,  2 Jul 2012 15:20:23 +0200
+Message-Id: <1341235225-27551-2-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.7.10.2
+In-Reply-To: <1341235225-27551-1-git-send-email-pbonzini@redhat.com>
+References: <1341235225-27551-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a disk has a large discard_granularity, discards are not split with
-optimal alignment; the pessimization gets bigger as discard_granularity
-and max_discard_sectors become closer.
+The next patches will actually use the alignment, expose it in sysfs
+for ease of debugging.
 
-Take the limit case of discard_granularity == max_discard_sectors == 64.
-Then, if a request is submitted for 256 sectors 2..257 it will be split
-like this: 2..65, 66..129, 130..193, 194..257.  None of these requests
-is aligned, so in fact you might end up with no discarded logical blocks
-at all.  With this patch, the split will be 2..63, 64..127, 128..191,
-192..255, 256..257.  The patches also take the discard_alignment into
-consideration.
-
-For ease of debugging, patch 1 adds a sysfs entry for discard_alignment.
-Patch 2 adjusts the computation of the granularity-adjusted
-max_discard_sectors so that it prepares for the new code in patch 3,
-which 3 actually adjusts the split.
-
-v1->v2: added patch 1, fixed line length
-
-Paolo Bonzini (3):
-  block: add sysfs entry for discard_alignment
-  block: reorganize rounding of max_discard_sectors
-  block: split discard into aligned requests
-
- block/blk-lib.c   |   41 ++++++++++++++++++++++++++++-------------
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
  block/blk-sysfs.c |   11 +++++++++++
- 2 files changed, 39 insertions(+), 13 deletions(-)
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+index aa41b47..95e919c 100644
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -146,6 +146,11 @@ static ssize_t queue_io_opt_show(struct request_queue *q, char *page)
+ 	return queue_var_show(queue_io_opt(q), page);
+ }
+ 
++static ssize_t queue_discard_alignment_show(struct request_queue *q, char *page)
++{
++	return queue_var_show(q->limits.discard_alignment, page);
++}
++
+ static ssize_t queue_discard_granularity_show(struct request_queue *q, char *page)
+ {
+ 	return queue_var_show(q->limits.discard_granularity, page);
+@@ -343,6 +348,11 @@ static struct queue_sysfs_entry queue_io_opt_entry = {
+ 	.show = queue_io_opt_show,
+ };
+ 
++static struct queue_sysfs_entry queue_discard_alignment_entry = {
++	.attr = {.name = "discard_alignment", .mode = S_IRUGO },
++	.show = queue_discard_alignment_show,
++};
++
+ static struct queue_sysfs_entry queue_discard_granularity_entry = {
+ 	.attr = {.name = "discard_granularity", .mode = S_IRUGO },
+ 	.show = queue_discard_granularity_show,
+@@ -403,6 +413,7 @@ static struct attribute *default_attrs[] = {
+ 	&queue_io_min_entry.attr,
+ 	&queue_io_opt_entry.attr,
+ 	&queue_discard_granularity_entry.attr,
++	&queue_discard_alignment_entry.attr,
+ 	&queue_discard_max_entry.attr,
+ 	&queue_discard_zeroes_data_entry.attr,
+ 	&queue_nonrot_entry.attr,
+-- 
+1.7.1
+
 
