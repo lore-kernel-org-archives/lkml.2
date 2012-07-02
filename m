@@ -1,39 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933066Ab2GBK7i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 06:59:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58737 "EHLO mx2.suse.de"
+	id S1755529Ab2GBLAr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 07:00:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:19601 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932365Ab2GBK7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 06:59:36 -0400
-Date: Mon, 2 Jul 2012 12:59:34 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: Re: mmotm 2012-06-29-17-00 uploaded
-Message-ID: <20120702105934.GD8050@tiehlicka.suse.cz>
-References: <20120630000055.AF381A02DE@akpm.mtv.corp.google.com>
+	id S1751175Ab2GBLAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 07:00:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="163058582"
+Date: Mon, 2 Jul 2012 13:12:03 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] mfd: ab3100-core: use devm allocation
+Message-ID: <20120702111203.GB22065@sortiz-mobl>
+References: <1339525618-8318-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120630000055.AF381A02DE@akpm.mtv.corp.google.com>
+In-Reply-To: <1339525618-8318-1-git-send-email-linus.walleij@stericsson.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 29-06-12 17:00:54, Andrew Morton wrote:
-> The mm-of-the-moment snapshot 2012-06-29-17-00 has been uploaded to
-> 
->    http://www.ozlabs.org/~akpm/mmotm/
+Hi Linus,
 
-memcg-devel tree has been updated as well
+On Tue, Jun 12, 2012 at 08:26:58PM +0200, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Allocate memory and irq for device state using devm_*
+> helpers to simplify memory accounting.
+> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/mfd/ab3100-core.c |   23 +++++++----------------
+>  1 file changed, 7 insertions(+), 16 deletions(-)
+Applied, thanks.
+
+Cheers,
+Samuel.
+
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Intel Open Source Technology Centre
+http://oss.intel.com/
