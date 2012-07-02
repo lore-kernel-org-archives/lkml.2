@@ -1,149 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932548Ab2GBH2Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 03:28:25 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:60962 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932432Ab2GBH2X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 03:28:23 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q627Rfvr001784
-From: hayeswang <hayeswang@realtek.com>
-To: "'Francois Romieu'" <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <1340966060-2749-1-git-send-email-hayeswang@realtek.com> <1340966060-2749-2-git-send-email-hayeswang@realtek.com> <20120629135111.GB8560@electric-eye.fr.zoreil.com>
-Subject: RE: [PATCH net-next 2/2] r8169: support RTL8168G
-Date: Mon, 2 Jul 2012 15:27:57 +0800
-Message-ID: <8D19B009F8C6423C8E87D4D85B851AF9@realtek.com.tw>
+	id S1755425Ab2GBHc7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 03:32:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19017 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754147Ab2GBHc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 03:32:58 -0400
+Date: Mon, 2 Jul 2012 10:33:08 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Rafael Aquini <aquini@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org,
+        virtualization <virtualization@lists.linux-foundation.org>
+Subject: [PATCH RFC] virtio-balloon: fix add/get API use
+Message-ID: <20120702073308.GB8268@redhat.com>
+References: <patchbomb.1320306168@localhost6.localdomain6>
+ <f3831c1617c86a51d875.1320306173@localhost6.localdomain6>
+ <20120701092051.GA4515@redhat.com>
+ <87d34fx990.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Ac1V/8ZACUMQqME0R+C2xpzZIyhmawCHoNng
-In-Reply-To: <20120629135111.GB8560@electric-eye.fr.zoreil.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87d34fx990.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
-> > +static void r8168_phy_ocp_write(void __iomem *ioaddr, u32 
-> reg, u32 data)
-> > +{
-> > +	int i;
-> > +
-> > +	if (reg & 0xffff0001)
-> > +		BUG();
-> 
-> The patch adds a lot of BUG(). BUG is terrible from a system 
-> or end user
-> viewpoint.
-> 
-> Were they only a devel helper or are they still supposed to be of use
-> in the future ? If the latter applies, why ?
-> 
+In virtio balloon virtqueue_get_buf might now run concurrently with
+virtqueue_kick.  I audited both and this seems safe in practice but
+this is not guaranteed by the API.
+Additionally, a spurious interrupt might in theory make
+virtqueue_get_buf run in parallel with virtqueue_add_buf, which is racy.
 
-I think if the reg is invalid, there must be something wrong. The code should
-have bug, and I should notice develper or someone using the code. I would
-replace them with showing messages.
+While we might try to protect against spurious callbacks it's
+easier to fix the driver: balloon seems to be the only one
+(mis)using the API like this, so let's just fix balloon.
 
-[...]
-> > +static void rtl_ocp_write_fw(struct rtl8169_private *tp, 
-> struct rtl_fw *rtl_fw)
-> > +{
-> > +	struct rtl_fw_phy_action *pa = &rtl_fw->phy_action;
-> > +	void __iomem *ioaddr = tp->mmio_addr;
-> > +	u32 predata, count;
-> > +	u32 base_addr;
-> > +	size_t index;
-> > +
-> > +	predata = count = 0;
-> > +	base_addr = 0xa400;
-> > +
-> > +	for (index = 0; index < pa->size; ) {
-> > +		u32 action = le32_to_cpu(pa->code[index]);
-> > +		u32 data = action & 0x0000ffff;
-> > +		u32 regno = (action & 0x0fff0000) >> 16;
-> > +
-> > +		if (!action)
-> > +			break;
-> > +
-> > +		switch(action & 0xf0000000) {
-> > +		case PHY_READ:
-> > +			predata = r8168_phy_ocp_read(ioaddr,
-> > +					base_addr + (regno -16) * 2);
-> > +			count++;
-> > +			index++;
-> > +			break;
-> [duplicated code removed]
-> > +		case PHY_WRITE:
-> > +			if (regno == 0x1f)
-> > +				base_addr = data << 4;
-> > +			else
-> > +				r8168_phy_ocp_write(ioaddr,
-> > +						base_addr + 
-> (regno - 0x10) * 2,
-> > +						data);
-> > +			index++;
-> > +			break;
-> [duplicated code removed]
-> > +		case PHY_WRITE_PREVIOUS:
-> > +			r8168_phy_ocp_write(ioaddr, base_addr + 
-> (regno -16) * 2,
-> > +					    predata);
-> > +			index++;
-> > +			break;
-> 
-> I can't believe that the hardware people have designed something which
-> needs a different firmware write method, especially as it 
-> copies at lot
-> of code.
-> 
-> How did you come to the conclusion that it was not possible 
-> to hide this
-> stuff behind r8168g_mdio_{read / write} ?
-> 
-> I would not mind replacing the 
-> PHY_{READ/WRITE/WRITE_PREVIOUS} case with
-> chipset specific {READ/WRITE/WRITE_PREVIOUS} methods as long as the
-> semantic looks the same but going through a different 
-> (*write_fw) does not
-> trivially seem to be the best abstraction.
-> 
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-The difficulty is how to deal with the base_addr. Although it should not happen,
-the base_addr may be modify if two threads access phy at the same time.  I would
-replace the method by saving the base_addr with a global variable. Then, the
-r8168g_mdio functions could deal with both of the firmware and phy settings.
+---
 
-[...]
-> > +static void __devinit rtl_hw_initialize(struct rtl8169_private *tp)
-> > +{
-> > +	switch (tp->mac_version) {
-> > +	case RTL_GIGA_MAC_VER_40:
-> > +	case RTL_GIGA_MAC_VER_41:
-> > +		rtl_hw_init_8168g(tp);
-> > +		break;
-> > +	default:
-> > +		break;
-> > +	}
-> > +}
-> 
-> Why doesn't it belong to hw_start ?
-> 
+Warning: completely untested.
 
-According to the initialization process from our hardware, there are something
-needed to do before reset. Maybe this considers the rebooting from the other OS
-or hwardware behavior.  I don't sure if it is safe, to let them belong to
-hw_start.
-
-> Is it completely unneeded if the device requires a rtl8169_hw_reset,
-> resumes or such ?
->
-
-By the information from our hardware, these are the initial settings and only
-need be done once. 
-
-Best Regards,
-Hayes
-
+diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+index bfbc15c..a26eb4f 100644
+--- a/drivers/virtio/virtio_balloon.c
++++ b/drivers/virtio/virtio_balloon.c
+@@ -47,7 +47,7 @@ struct virtio_balloon
+ 	struct task_struct *thread;
+ 
+ 	/* Waiting for host to ack the pages we released. */
+-	struct completion acked;
++	wait_queue_head_t acked;
+ 
+ 	/* Number of balloon pages we've told the Host we're not using. */
+ 	unsigned int num_pages;
+@@ -89,29 +89,26 @@ static struct page *balloon_pfn_to_page(u32 pfn)
+ 
+ static void balloon_ack(struct virtqueue *vq)
+ {
+-	struct virtio_balloon *vb;
+-	unsigned int len;
++	struct virtio_balloon *vb = vq->vdev->priv;
+ 
+-	vb = virtqueue_get_buf(vq, &len);
+-	if (vb)
+-		complete(&vb->acked);
++	wake_up(&vb->acked);
+ }
+ 
+ static void tell_host(struct virtio_balloon *vb, struct virtqueue *vq)
+ {
+ 	struct scatterlist sg;
++	unsigned int len;
++	void *buf;
+ 
+ 	sg_init_one(&sg, vb->pfns, sizeof(vb->pfns[0]) * vb->num_pfns);
+ 
+-	init_completion(&vb->acked);
+-
+ 	/* We should always be able to add one buffer to an empty queue. */
+ 	if (virtqueue_add_buf(vq, &sg, 1, 0, vb, GFP_KERNEL) < 0)
+ 		BUG();
+ 	virtqueue_kick(vq);
+ 
+ 	/* When host has read buffer, this completes via balloon_ack */
+-	wait_for_completion(&vb->acked);
++	wait_event(vb->acked, virtqueue_get_buf(vq, &len));
+ }
+ 
+ static void set_page_pfns(u32 pfns[], struct page *page)
+@@ -231,12 +228,8 @@ static void update_balloon_stats(struct virtio_balloon *vb)
+  */
+ static void stats_request(struct virtqueue *vq)
+ {
+-	struct virtio_balloon *vb;
+-	unsigned int len;
++	struct virtio_balloon *vb = vq->vdev->priv;
+ 
+-	vb = virtqueue_get_buf(vq, &len);
+-	if (!vb)
+-		return;
+ 	vb->need_stats_update = 1;
+ 	wake_up(&vb->config_change);
+ }
+@@ -245,11 +238,14 @@ static void stats_handle_request(struct virtio_balloon *vb)
+ {
+ 	struct virtqueue *vq;
+ 	struct scatterlist sg;
++	unsigned int len;
+ 
+ 	vb->need_stats_update = 0;
+ 	update_balloon_stats(vb);
+ 
+ 	vq = vb->stats_vq;
++	if (!virtqueue_get_buf(vq, &len))
++		return;
+ 	sg_init_one(&sg, vb->stats, sizeof(vb->stats));
+ 	if (virtqueue_add_buf(vq, &sg, 1, 0, vb, GFP_KERNEL) < 0)
+ 		BUG();
+@@ -358,6 +354,7 @@ static int virtballoon_probe(struct virtio_device *vdev)
+ 	INIT_LIST_HEAD(&vb->pages);
+ 	vb->num_pages = 0;
+ 	init_waitqueue_head(&vb->config_change);
++	init_waitqueue_head(&vb->acked);
+ 	vb->vdev = vdev;
+ 	vb->need_stats_update = 0;
+ 
