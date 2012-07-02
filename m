@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932449Ab2GBGMO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 02:12:14 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:60178 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932148Ab2GBGMM (ORCPT
+	id S932421Ab2GBGPo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 02:15:44 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57906 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932148Ab2GBGPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 02:12:12 -0400
-Date: Mon, 2 Jul 2012 16:12:00 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tiejun Chen <tiejun.chen@windriver.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: linux-next: manual merge of the signal tree with Linus' tree
-Message-Id: <20120702161200.10c26ba2b57f9c7e493e85cc@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__2_Jul_2012_16_12_00_+1000_nkTJFC5yUq+xu0Tv"
+	Mon, 2 Jul 2012 02:15:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120630234303.148c612b@halley>
+References: <1340636918-7505-1-git-send-email-richard.genoud@gmail.com>
+ <20120628205303.676fa2ea@halley> <1340974064.3070.177.camel@sauron.fi.intel.com>
+ <20120630234303.148c612b@halley>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Mon, 2 Jul 2012 08:15:27 +0200
+Message-ID: <CACQ1gAgbYq8BAbEVb0FBWLMiy+z9fOEeaQLcpavXOKvTQbLN_g@mail.gmail.com>
+Subject: Re: [PATCH] UBI: add minimal amount of reserved erase blocks in Kconfig
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Cc: dedekind1@gmail.com, linux-mtd@lists.infradead.org,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__2_Jul_2012_16_12_00_+1000_nkTJFC5yUq+xu0Tv
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+2012/6/30 Shmulik Ladkani <shmulik.ladkani@gmail.com>:
+> Hi,
+Hi,
+> I thought to make it a gradual change.
+>
+> First, change the semantics of CONFIG_MTD_UBI_BEB_RESERVE to be the
+> percent of total number of eraseblocks (instead of total number of
+> _good_ eraseblocks). And 'reserve' counts for both existing bad PEBs
+> and those reserved for future bad PEB handling.
+> Note this would still be % of the blocks in the mtd partition (and as
+> such, it is very loosely related to the MBB of the device, if at all).
+>
+> Then, Richard may introduce the MBB parameter to ubiattach, and later
+> may kill CONFIG_MTD_UBI_BEB_RESERVE (if no longer needed). The
+> calculations will be according to the new parameter.
+>
+> What do you say?
+It's ok for me.
 
-Hi Al,
+> On a side note, the new ubiattach parameter should not be called MBB,
+> but rather a generic "reserved" (or "% reserved").
+>
+> This is since the MBB is a property of the mtd nand device.
+> But the ubi user may issue, for the partition attached, a value other
+> than the device's MBB, according to his storage needs and
+> risks/securities he is willing to take.
+>
+> Regards,
+> Shmulik
 
-Today's linux-next merge of the signal tree got a conflict in
-arch/powerpc/kernel/entry_64.S between commit c58ce2b1e3c7 ("ppc64: fix
-missing to check all bits of _TIF_USER_WORK_MASK in preempt") from Linus'
-tree and commit d07644a97726 ("powerpc: missing NOTIFY_RESUME check on
-64bit if CONFIG_PREEMPT is set") from the signal tree.
 
-I *think* that the former is a superset of the latter, so I just used the
-former.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Mon__2_Jul_2012_16_12_00_+1000_nkTJFC5yUq+xu0Tv
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP8TuwAAoJEECxmPOUX5FE4rkP/jfe3fZRzlUs14v2FKKBtsuA
-LTDEQ4D6K+2nCPfoa/icHmA1GoQZGCUqKVhLcxNI5eGQKQPOiVo1AgkC8oKFx8HD
-Sm8qAX6VEEuVQLl2iSU/I7aFy6GCesQHctKl2ENXIOABuWmpLlmJoihXXV55YV7q
-FgAfkZoiJks7OwgF0jq5M7U8eOJsYNsz3cHtR72NsvYZiK8vPDpoS7tFvQVN+cbS
-xsMlekkf5kuVdBVcyLGFmySClqp9wuavwpY+oJXY79Kt/24EKDy4WKiz58CD9F8e
-QtqfXAutKsFYC4CrGy/aQKu4/v1C7lV+I3sN89cEXrdekxn0niRH4ErwSc93q7rG
-UxmeD+PexFMmaty6UZONp16hZULK0XA1H4eZLVV7YN2K7k6eegQbvERZUOgvONb0
-d45o3+8RegkSpmhHRbtxTBhw4b/l3s/zVaZ/kAHzIampMJzVcBOBjCtNvOmIYAh1
-hfuEvPXYNfy4Ceb13QJm3hp7vKR2ADpl0rsrhFW30Q9kdMojlItylQ1mXSMG3Bqt
-G3z+sGDGR0VkA1FVMgmesMeLX2ZybRqUaSO52FKm0nuytwk1pYCFnlIpOD2mHssn
-bIEU36rsY/fIDrrK0+8nf/8ibxnGb7AJNMf+9VCDVK+/6EqAHpiCdDH06y6UH+se
-09bj+vrkc1Q7zbnqk5FN
-=WJ4C
------END PGP SIGNATURE-----
-
---Signature=_Mon__2_Jul_2012_16_12_00_+1000_nkTJFC5yUq+xu0Tv--
+-- 
+for me, ck means con kolivas and not calvin klein... does it mean I'm a geek ?
