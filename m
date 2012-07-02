@@ -1,132 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933041Ab2GBKaO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 06:30:14 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38943 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932950Ab2GBKaK (ORCPT
+	id S933044Ab2GBKcE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 06:32:04 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:39607 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932938Ab2GBKcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 06:30:10 -0400
+	Mon, 2 Jul 2012 06:32:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1206291125270.1690@ja.ssi.bg>
-References: <1340890587-8169-1-git-send-email-xtfeng@gmail.com>
-	<alpine.LFD.2.00.1206290225490.1722@ja.ssi.bg>
-	<CAJn8CcFy=K+Aizpi0pvnpXCOYXhgyq12oBgVaPvMthW_fwn4Pg@mail.gmail.com>
-	<alpine.LFD.2.00.1206291125270.1690@ja.ssi.bg>
-Date: Mon, 2 Jul 2012 18:30:08 +0800
-Message-ID: <CAJn8CcHBQCT3r1xc7VW4c5DxyFefzxSdQB3EvGhmaAkbRyaing@mail.gmail.com>
-Subject: Re: [RFC PATCH net-next] ipvs: add missing lock in ip_vs_ftp_init_conn()
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: Julian Anastasov <ja@ssi.bg>
-Cc: netdev@vger.kernel.org, lvs-devel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        Xiaotian Feng <dannyfeng@tencent.com>,
-        Wensong Zhang <wensong@linux-vs.org>,
-        Simon Horman <horms@verge.net.au>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20120701083923.GA29380@avionic-0098.mockup.avionic-design.de>
+References: <1340719537-627-1-git-send-email-aletes.xgr@gmail.com>
+	<20120701083923.GA29380@avionic-0098.mockup.avionic-design.de>
+Date: Mon, 2 Jul 2012 07:32:00 -0300
+Message-ID: <CAAAP30FzMhs+o+i3CF-+TNO-yBjg=aVSOWukseqD=HhLhS37cg@mail.gmail.com>
+Subject: Re: [PATCH v3] spi/pl022: add devicetree support
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Roland Stigge <stigge@antcom.de>, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        spi-devel-general@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 29, 2012 at 5:04 PM, Julian Anastasov <ja@ssi.bg> wrote:
->
->         Hello,
->
-> On Fri, 29 Jun 2012, Xiaotian Feng wrote:
->
->> > On Thu, 28 Jun 2012, Xiaotian Feng wrote:
->> >
->> >> We met a kernel panic in 2.6.32.43 kernel:
->> >>
->> >> [2680191.848044] IPVS: ip_vs_conn_hash(): request for already hashed, called from run_timer_softirq+0x175/0x1d0
->> >> <snip>
->> >> [2680311.849009] general protection fault: 0000 [#1] SMP
->
->         What we see here is 120 seconds between 2680191 and
-> 2680311. It can mean 2 things:
->
-> - some state timeout, it depends on your forwarding method.
-> What is it? NAT? DR?
->
-> - 60 seconds for ip_vs_conn_expire retries
->
->> >> After code review, the only chance that kernel change connection flag without protection is
->> >> in ip_vs_ftp_init_conn().
->> >
->> >        Hm, ip_vs_ftp_init_conn is called before 1st hashing,
->> > from ip_vs_bind_app() in ip_vs_conn_new() before
->> > ip_vs_conn_hash(). It should be another problem with
->> > the flags. How different is IPVS in 2.6.32.43 compared to
->> > recent kernels? If commit aea9d711 is present, I'm not
->> > aware of other similar problems.
+On Sun, Jul 1, 2012 at 5:39 AM, Thierry Reding
+<thierry.reding@avionic-design.de> wrote:
+> On Tue, Jun 26, 2012 at 11:05:36AM -0300, Alexandre Pereira da Silva wrote:
+>> Add the chipselect array and cur_cs properties to pl022 main structure
 >>
->> ip_vs_bind_app() is also called by ip_vs_try_bind_dest(), which can be
->> traced to ip_vs_proc_conn().
->> I've checked the changes in upstream, but nothing helps since aea9d711
->> has been taken into 2.6.32.28 kernel.
+>> Add a wrapper function to decide if the cs should be controlled by the
+>> cs_control callback or the chipselect gpio
+>>
+>> Populate chipselect property from cs-gpios
+>>
+>> Populate master->dev.of_node, so the spi bus can find child spi
+>> devices and register them
+>>
+>> At pl022 setup, fill chip_data structure from dt nodes, if not provided
+>> by platform.
+>>
+>> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+>> Tested-by: Roland Stigge <stigge@antcom.de>
+>> ---
+>> Applies to v3.5-rc4
+>>
+>> Changes since v2:
+>> * Use IS_ENABLED instead of #ifdef
+>> * Remove bogus const change
+>>
+>> Changes since v1:
+>> * return EPROBE_DEFFER if gpios are not initialized yet
+>>
+>> Thanks Thierry Reding for reviewing and improvements suggestions
+>>
+>>  .../devicetree/bindings/spi/spi_pl022.txt          |   15 +++
+>>  drivers/spi/spi-pl022.c                            |  115 ++++++++++++++++----
+>>  2 files changed, 111 insertions(+), 19 deletions(-)
+>>
+> [...]
+>> diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
+> [...]
+>> @@ -1998,8 +2039,14 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
+>>               goto err_no_pdata;
+>>       }
+>>
+>> +     num_cs = platform_info->num_chipselect;
+>> +#if IS_ENABLED(CONFIG_OF)
+>> +     of_property_read_u32(np, "pl022,num-chipselects", &num_cs);
+>> +#endif
+>> +
 >
->         OK, this fix should make it safe for master-backup
-> sync and it should be applied but I suspect you are not
-> using sync, right? And then this fix will not solve the oops.
+> Actually this has even more advantages if you use it as a condition in
+> an if expression:
 >
-
-We're using sync.
-
->         There are no many places that rehash conn:
+>         if (IS_ENABLED(CONFIG_OF))
+>                 of_property_read_u32(...);
 >
-> ip_vs_conn_fill_cport
->         - used for FTP
+> The above will be compiled wether CONFIG_OF is enabled or not, but it
+> will not be included in the final output because of the compiler's DCE
+> (dead code elimination) seeing this as "if (0)". The result is that the
+> source code gets much better compile coverage and errors in the
+> conditional code can be caught earlier.
 >
-> ip_vs_check_template:
->         - do you have persistence configured?
-
-No.
-
+>> @@ -2017,13 +2064,40 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
+>>        * on this board
+>>        */
+>>       master->bus_num = platform_info->bus_id;
+>> -     master->num_chipselect = platform_info->num_chipselect;
+>> +     master->num_chipselect = num_cs;
+>>       master->cleanup = pl022_cleanup;
+>>       master->setup = pl022_setup;
+>>       master->prepare_transfer_hardware = pl022_prepare_transfer_hardware;
+>>       master->transfer_one_message = pl022_transfer_one_message;
+>>       master->unprepare_transfer_hardware = pl022_unprepare_transfer_hardware;
+>>       master->rt = platform_info->rt;
+>> +     master->dev.of_node = dev->of_node;
+>> +
+>> +#if IS_ENABLED(CONFIG_OF)
+>> +     for (i = 0; i < num_cs; i++) {
+>> +             int cs_gpio = of_get_named_gpio(np, "cs-gpios", i);
+>> +
+>> +             if (cs_gpio == -EPROBE_DEFER) {
+>> +                     status = -EPROBE_DEFER;
+>> +                     goto err_no_gpio;
+>> +             }
+>> +
+>> +             pl022->chipselect[i] = cs_gpio;
+>> +
+>> +             if (gpio_is_valid(cs_gpio)) {
+>> +                     if (gpio_request(cs_gpio, "ssp-pl022"))
+>> +                             dev_err(&adev->dev,
+>> +                                     "could not request %d gpio\n", cs_gpio);
+>> +                     else if (gpio_direction_output(cs_gpio, 1))
+>> +                             dev_err(&adev->dev,
+>> +                                     "could set gpio %d as output\n",
+>> +                                     cs_gpio);
+>> +             }
+>> +     }
+>> +#else
+>> +     for (i = 0; i < num_cs; i++)
+>> +             pl022->chipselect[i] = -EINVAL;
+>> +#endif
 >
->         After you provide details for the used forwarding
-> method, persistence and sync we should think how such races
-> with rehashing can lead to double hlist_del. May be
-> you can modify the debug message in ip_vs_conn_hash, so
-> that we can see cp->flags and ntohs of cp->cport, cp->dport
-> and cp->vport when oops happens again.
-
-I just found 2.6.32.34 kernel differ from upstream kernel,  2.6.32
-kernel doesn't have ip_vs_try_bind_dest(), but ip_vs_process_message()
-kernel might change conn flags without lock protection. This is fixed in
-commit f73181c, following changes:
-
-@@ -834,6 +843,7 @@ static void ip_vs_proc_conn(struct net *net,
-struct ip_vs_conn_param *param,
-                kfree(param->pe_data);
-
-                dest = cp->dest;
-+               spin_lock(&cp->lock);
-                if ((cp->flags ^ flags) & IP_VS_CONN_F_INACTIVE &&
-                    !(flags & IP_VS_CONN_F_TEMPLATE) && dest) {
-                        if (flags & IP_VS_CONN_F_INACTIVE) {
-@@ -847,6 +857,7 @@ static void ip_vs_proc_conn(struct net *net,
-struct ip_vs_conn_param *param,
-                flags &= IP_VS_CONN_F_BACKUP_UPD_MASK;
-                flags |= cp->flags & ~IP_VS_CONN_F_BACKUP_UPD_MASK;
-                cp->flags = flags;
-+               spin_unlock(&cp->lock);
-                if (!dest) {
-                        dest = ip_vs_try_bind_dest(cp);
-                        if (dest)
-
-So I took this part into 2.6.32 kernel. But I still think the patch I
-posted is required for upstream kernel. Even though there are no many
-places that rehash conn, this is potential race as cp->flags is not
-protected.
-
-Thanks.
-
+> Same here.
 >
-> Regards
+>>       /*
+>>        * Supports mode 0-3, loopback, and active low CS. Transfers are
+>> @@ -2130,6 +2204,9 @@ pl022_probe(struct amba_device *adev, const struct amba_id *id)
+>>   err_no_ioremap:
+>>       amba_release_regions(adev);
+>>   err_no_ioregion:
+>> + #if IS_ENABLED(CONFIG_OF)
+>> + err_no_gpio:
+>> + #endif
 >
-> --
-> Julian Anastasov <ja@ssi.bg>
+> And here.
+
+Thanks for the hint. I will update the patch and repost later.
