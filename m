@@ -1,138 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642Ab2GBPWt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 11:22:49 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:34719
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754047Ab2GBPWr (ORCPT
+	id S1755588Ab2GBPXk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 11:23:40 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49406 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753972Ab2GBPXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 11:22:47 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VS-9(zz98dI9371I1102I542M1432Izz1202hzz8275dhz2fh2a8h683h839h93fhd25hf0ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [PATCH 00/13] drivers: hv: kvp
-Thread-Topic: [PATCH 00/13] drivers: hv: kvp
-Thread-Index: AQHNT/NB00SQsXjmDEmcq7JSjap8hpcFX8+AgADv8yCAAAVogIAFjrOAgAFErgCAAAhKEIAAA3+AgAAAZKCAAp6bAIAGMUUg
-Date: Mon, 2 Jul 2012 15:22:25 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9155EF399@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1340314200-27078-1-git-send-email-kys@microsoft.com>
- <20120621224737.GA5933@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF9155EC47A@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120622132547.GA2639@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF9155ED14D@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120626213954.GA4840@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF9155ED64A@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120626222205.GA5948@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF9155ED68D@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120628142340.GA21537@aepfle.de>
-In-Reply-To: <20120628142340.GA21537@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.179.128]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 2 Jul 2012 11:23:39 -0400
+Message-ID: <4FF1BCF6.1090608@linaro.org>
+Date: Mon, 02 Jul 2012 16:23:34 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+To: Lee Jones <lee.jones@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de, grant.likely@secretlab.ca,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
+Subject: Re: [PATCH 02/14] rtc: Ensure correct probing of the AB8500 RTC when
+ Device Tree is enabled
+References: <1339428307-3850-1-git-send-email-lee.jones@linaro.org> <1339428307-3850-3-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1339428307-3850-3-git-send-email-lee.jones@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q62FMtRr009623
+
+On 11/06/12 16:24, Lee Jones wrote:
+> Without this patch, if Device Tree is enabled the AB8500 RTC wouldn't
+> get probed at all, as there is no reference to it from platform code.
+> This patch ensures the driver is probed during normal DT start-up.
+>
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
+> Cc: rtc-linux@googlegroups.com
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>   drivers/rtc/rtc-ab8500.c |    8 +++++++-
+>   1 file changed, 7 insertions(+), 1 deletion(-)
+
+Please don't take this patch now, it was been superseded.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org ‚îÇ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
 
 
-
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Thursday, June 28, 2012 10:24 AM
-> To: KY Srinivasan
-> Cc: Greg KH; apw@canonical.com; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 00/13] drivers: hv: kvp
-> 
-> On Tue, Jun 26, KY Srinivasan wrote:
-> 
-> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > > The fact that it was Red Hat specific was the main part, this should be
-> > > done in a standard way, with standard tools, right?
-> >
-> > The reason I asked this question was to make sure I address these
-> > issues in addition to whatever I am debugging now. I use the standard
-> > tools and calls to retrieve all the IP configuration. As I look at
-> > each distribution the files they keep persistent IP configuration
-> > Information is different and that is the reason I chose to start with
-> > RedHat. If there is a standard way to store the configuration, I will
-> > do that.
-> 
-> 
-> KY,
-> 
-> instead of using system() in kvp_get_ipconfig_info and kvp_set_ip_info,
-> wouldnt it be easier to call an external helper script which does all
-> the distribution specific work? Just define some API to pass values to
-> the script, and something to read values collected by the script back
-> into the daemon.
-
-On the "Get" side I mostly use standard commands/APIs to get all the information:
-
-1) IP address information and subnet mask: getifaddrs()
-2) DNS information:  Parsing /etc/resolv.conf
-3) /sbin/ip command for all the routing information
-4)  Parse /etc/sysconfig/network-scripts/ifcfg-ethx for boot protocol
-
-As you can see, all but the boot protocol is gathered using the "standard distro
-independent mechanisms. I was looking at NetworkManager cli and it looks
-like I could gather all the information except the boot protocol information. I am 
-not sure how to gather the boot protocol information in a distro independent fashion.
-
-On the SET side, I need to persistently store the settings in an appropriate configuration
-file and flush these settings down so that the interface is appropriately configured. It is here
-that I am struggling to find a distro independent way of doing things. It would be great if I can
-use NetworkManager cli (nmcli) to accomplish this. Any help here would be greatly appreciated.
-
-While I toyed with your proposal, I feel it just pushes the problem out of the daemon code -
-we would still need to write distro specific scripts. If this approach is something that everybody
-is comfortable with, I can take a stab at implementing that. 
-
-> 
-> If the work is done in a script it will be much easier for an admin to
-> debug and adjust it.
-> 
-> I think there is no standard way to configure all relevant distros in
-> the same way. Maybe one day NetworkManager can finally handle all
-> possible ways to configure network related things. But until that
-> happens the config files need to be adjusted manually.
-> 
-> 
-> 
-> Some of the functions have deep indention levels due to 'while() {
-> switch() }' usage. Perhaps such code could be moved into its own
-> function so that lines dont need to be wrapped that much due to the odd
-> 80 column limit.
-
-I will take care of this. As suggested by Greg, I am adding netdev developers here to
-seek their input. 
-
-Regards,
-
-K. Y
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
