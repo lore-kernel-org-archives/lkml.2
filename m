@@ -1,102 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab2GBCKw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 22:10:52 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46261 "EHLO
+	id S1755595Ab2GBCOg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 22:14:36 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60287 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827Ab2GBCKu (ORCPT
+	with ESMTP id S1755112Ab2GBCOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 22:10:50 -0400
-Date: Mon, 2 Jul 2012 12:10:41 +1000
+	Sun, 1 Jul 2012 22:14:35 -0400
+Date: Mon, 2 Jul 2012 12:14:31 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeff Garzik <jeff@garzik.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lin Ming <ming.m.lin@intel.com>, Huang Ying <ying.huang@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: linux-next: build failure after merge of the libata tree
-Message-Id: <20120702121041.01a80802af13e2cf511fe0b6@canb.auug.org.au>
+To: Jiri Kosina <jikos@jikos.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warning after merge of the hid tree
+Message-Id: <20120702121431.bf4119857a91068f395bcd21@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Mon__2_Jul_2012_12_10_41_+1000_p91bdzOePg8.q6rT"
+ boundary="Signature=_Mon__2_Jul_2012_12_14_31_+1000_NJfnn/VUqioV7561"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__2_Jul_2012_12_10_41_+1000_p91bdzOePg8.q6rT
+--Signature=_Mon__2_Jul_2012_12_14_31_+1000_NJfnn/VUqioV7561
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Jeff,
+Hi Jiri,
 
-After merging the libata tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+After merging the hid tree, today's linux-next build (x86_64 allmodconfig)
+produced this warning:
 
-drivers/ata/libata-acpi.c: In function 'ata_acpi_set_state':
-drivers/ata/libata-acpi.c:872:5: error: too few arguments to function 'acpi=
-_pm_device_sleep_state'
-include/acpi/acpi_bus.h:418:5: note: declared here
-
-Caused by commit 3bd46600a7a7 ("libata-acpi: add ata port runtime D3Cold
-support") from the libata tree interacting with commit ee85f543710d
-("ACPI/PM: specify lowest allowed state for device sleep state") from the
-pci tree.
-
-I added the following merge fix patch (and can carry it as necessary):
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 2 Jul 2012 12:07:25 +1000
-Subject: [PATCH] libata-acpi: fix up for acpi_pm_device_sleep_state API
- change
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/ata/libata-acpi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/ata/libata-acpi.c b/drivers/ata/libata-acpi.c
-index 4112eaa..a2b16c9 100644
---- a/drivers/ata/libata-acpi.c
-+++ b/drivers/ata/libata-acpi.c
-@@ -869,7 +869,7 @@ void ata_acpi_set_state(struct ata_port *ap, pm_message=
-_t state)
-=20
- 		if (state.event !=3D PM_EVENT_ON) {
- 			acpi_state =3D acpi_pm_device_sleep_state(
--				&dev->sdev->sdev_gendev, NULL);
-+				&dev->sdev->sdev_gendev, NULL, ACPI_STATE_D3);
- 			if (acpi_state > 0)
- 				acpi_bus_set_power(handle, acpi_state);
- 			/* TBD: need to check if it's runtime pm request */
---=20
-1.7.10.280.gaa39
+drivers/hid/Kconfig:7:error: recursive dependency detected!
+drivers/hid/Kconfig:7:	symbol HID is selected by USB_HID
+drivers/hid/usbhid/Kconfig:4:	symbol USB_HID depends on HID
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Mon__2_Jul_2012_12_10_41_+1000_p91bdzOePg8.q6rT
+--Signature=_Mon__2_Jul_2012_12_14_31_+1000_NJfnn/VUqioV7561
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJP8QMhAAoJEECxmPOUX5FERLoQAJUQB77Ma2YJAW+hDDxsa9Tf
-t8zR02pqQJwO8+4yLGV3hcScsXl+cMJrgp/tHCZVyTy90LhWmZGGXmMC5+GthM5l
-Apu9ONa1XT8gSKjuqFIlqtydsttDAMoZqxG9mGXKrBwUpOA+NX1UcvepBagfeD1A
-Czy87kUhzqlml9ZkPGGuYFmU+8IcV/sk8488OxVWfzaYAqhDV//AVHRbAhpmp0Rf
-C83r2lqwGOc1i+R9Wz3Aj4+KxGV5uc+dKbUcK317pgiTaUM5A/QyfvHBRMxoe1Ku
-kAxqw1T2FqPp+/Ojj8gTCMY4ztZwO6vhP2ZkV/xKygMOZdJWXP0gf3F6fjUSRAZG
-yHYrB5JzMrU1VGn3fiy2a5X+Ja3+g4oCrzgp/DIZDIRoLI1YFVXBY4FVfk0FyvCO
-SdlbX5fWfwmI0u36yZJiXf6+Nsz6a2Vdve56dYIjZysIMB4EYVtioui2Yw6aAhRu
-xd6WutQxkji7iiBRENp8dm/sLOdel05nQB7/hnil8cdK0eqKzcVLAgjou3+u6LTz
-MCASFRbgCU9MqO5VK6N3HJvMxWRMZXXNpYuMIFwhyGwspsu6vPdI90oxU/4sLUo/
-or5ZcRYexZbds9d7X39ssRlOEZr+FJCFYWW4+uycVfIj+X7sCXYba6B9kl7L+snA
-ILmfASJ8sr3cqQk//XZZ
-=lB+5
+iQIcBAEBCAAGBQJP8QQHAAoJEECxmPOUX5FEOTgP/ivYiU2seWk9fNXZFnbzL7b4
+7BxJ9vO/BIJWOq+/0xNdwIoIQmlLNc7ZSkJkAptf7ub9k33udIuPnKgrc10IyI3R
+DDXfJItLJP/T7zV3tX+Fs7fH43Ceq0CLwAUiIA6XkrvRCk7uuOML1mKsMCbSm302
+6sernf++Nz9g4c7D5sZaDfx3ybxrMnxMschrTx77vRY56KjxKOnbdsScRkAhWb6u
+XKvfRkR+2FxGReNmLhqNM64yeNbvh0gnWlgnj8VRNzwyazjqslOaWbOzDFz6uzsp
+IlKzBjZeITa1o2qwvi8tFfmo5KyaDLJbdHjNSwUr3vjjTqxvCrpuYxNn+jey5FTS
+EnAKUBG7kwl3NaE1XarntF2xW8qtpHZGbj82pT4S67nLJL6oHL22g8ExkrIW9MnM
+WRSnHv74sKSSj4lc06GQVkpDMBhM6yvYwS+o5Nyeb8x0O4sgFXc8P/4xUFWe2S4K
+rkyq4ThNrcJCO+3BTK8Q51tifOAGB1rgpMp/Y+iouWPMY5HubWEUsipIqcQT29GA
+cIV0QSc7QTJQLQeebXHrfMS590IMXZZtOxER77G22vwmMpNFIkoWY2Gj/C6H7Gg7
+Z62UBstD9ylNy8O8Axg0HS0BdwsxZzg3klgghPaj5UoW8+Y3VfZ2G6cBy5qCBcgl
+8PHz0Bf8SCH80zgQeadx
+=T5nn
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__2_Jul_2012_12_10_41_+1000_p91bdzOePg8.q6rT--
+--Signature=_Mon__2_Jul_2012_12_14_31_+1000_NJfnn/VUqioV7561--
