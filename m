@@ -1,223 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab2GBPWZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 11:22:25 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:58406 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752807Ab2GBPWX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 11:22:23 -0400
-From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        =?iso-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>
-Date: Mon, 2 Jul 2012 17:22:12 +0200
-Subject: RE: [RFC 4/4] remoteproc: Add driver for STE Modem
-Thread-Topic: [RFC 4/4] remoteproc: Add driver for STE Modem
-Thread-Index: Ac1XfTRYLJAe0RUvRxqkFgQ4vy/e5QADQC4g
-Message-ID: <81C3A93C17462B4BBD7E272753C10579232F86BE52@EXDCVYMBSTM005.EQ1STM.local>
-References: <1340375470-13097-1-git-send-email-sjur.brandeland@stericsson.com>
- <1340375470-13097-5-git-send-email-sjur.brandeland@stericsson.com>
- <CAK=WgbbG2nHH7+rm6CoR=VhiXVQT3-2VqJYLswmg9EshWu_=EA@mail.gmail.com>
-In-Reply-To: <CAK=WgbbG2nHH7+rm6CoR=VhiXVQT3-2VqJYLswmg9EshWu_=EA@mail.gmail.com>
+	id S1755642Ab2GBPWt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 11:22:49 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:34719
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754047Ab2GBPWr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 11:22:47 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -9
+X-BigFish: VS-9(zz98dI9371I1102I542M1432Izz1202hzz8275dhz2fh2a8h683h839h93fhd25hf0ah)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: [PATCH 00/13] drivers: hv: kvp
+Thread-Topic: [PATCH 00/13] drivers: hv: kvp
+Thread-Index: AQHNT/NB00SQsXjmDEmcq7JSjap8hpcFX8+AgADv8yCAAAVogIAFjrOAgAFErgCAAAhKEIAAA3+AgAAAZKCAAp6bAIAGMUUg
+Date: Mon, 2 Jul 2012 15:22:25 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF9155EF399@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1340314200-27078-1-git-send-email-kys@microsoft.com>
+ <20120621224737.GA5933@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9155EC47A@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120622132547.GA2639@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9155ED14D@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120626213954.GA4840@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9155ED64A@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120626222205.GA5948@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9155ED68D@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120628142340.GA21537@aepfle.de>
+In-Reply-To: <20120628142340.GA21537@aepfle.de>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+x-originating-ip: [173.61.179.128]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q62FMtRr009623
 
-Hi Ohad,
 
-> Cool, thanks for posting this.
 
-Well thank you for your patience reviewing this.
-
-> > †obj-$(CONFIG_STE_MODEM_RPROC) † † † † †+= ste_modem_remoteproc.o
-> > +ste_modem_remoteproc-y † † † † † † † † † † † † += ste_modem_rproc.o
-> > †ste_modem_remoteproc-y † † † † † † † † † † † † +=
-> remoteproc_ste_modem_loader.o
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Thursday, June 28, 2012 10:24 AM
+> To: KY Srinivasan
+> Cc: Greg KH; apw@canonical.com; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 00/13] drivers: hv: kvp
 > 
-> Just wondering - do we need the loader ops to be a separate file ? is
-> it only going to be used by this module or do you foresee additional
-> users in the future ?
-
-No I don't, squashing this together is a good idea.
-
-
-> > +/* Maxium number of "channels" */
-> > +#define MAX_VQS 14
+> On Tue, Jun 26, KY Srinivasan wrote:
 > 
-> Can you explain a bit the background behind this number, and how vqs
-> and vqids are generally handled by the ste modem?
-
-The HW Kick mechanism is implemented using a 32-bit register.
-These 32 bits are then divided in three groups, status from modem,
-modem-to-host and host-to-modem notifications. 
-The notifications can be distributed among the remaining 28 bits
-at our own choice, but we're simply assuming 14 different notification IDs
-in each direction. Hence we can support max 14 Virtio Queues.
-
-> > +/* Setup the kick API for notification subscriptions */
-> > +static int ste_rproc_subscribe_to_kicks(struct rproc *rproc)
-> > +{
-> > + † † † int i, err;
-> > + † † † u32 txmask = 0, rxmask = 0;
-> > + † † † int (*kick_subscribe)(int notifyid,
-> > + † † † † † † † † † † †void (*notify_cb)(int notifyid, void *data),
-> void *data);
-> > + † † † int (*notifyid_alloc)(u32 setter_mask, u32 getter_mask);
-> > +
-> > + † † † /*
-> > + † † † †* We need to declare for the HW what notification IDs
-> > + † † † †* we're going to use.
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > The fact that it was Red Hat specific was the main part, this should be
+> > > done in a standard way, with standard tools, right?
+> >
+> > The reason I asked this question was to make sure I address these
+> > issues in addition to whatever I am debugging now. I use the standard
+> > tools and calls to retrieve all the IP configuration. As I look at
+> > each distribution the files they keep persistent IP configuration
+> > Information is different and that is the reason I chose to start with
+> > RedHat. If there is a standard way to store the configuration, I will
+> > do that.
 > 
-> Can you explain why is this needed ? what happens when we call
-> notifyid_alloc(rxmask, txmask) ?
-
-As mentioned above we have 28 bits for modem-to-host and
-host-to-modem notifications. How we allocate the bits are
-configurable, but we need to tell the HW what bit is used 
-in what direction. You may argue that we could just take
-14+14, but we would need some way of sanity checking the
-mapping to notification-IDs anyhow.
-
-> > + † † † †* notification IDs used for RX and TX by iterating over
-> > + † † † †* the notification IDs.
-> > + † † † †*/
-> > + † † † idr_for_each(&rproc->notifyids, ste_rproc_set_vqid, &rxmask);
 > 
-> If this really is needed, we might want some help from the remoteproc
-> framework to do this, because it already has all the required info.
+> KY,
 > 
-> It'd be better if we don't fiddle with its internal structures,
-> because doing say may make it harder for it to evolve.
+> instead of using system() in kvp_get_ipconfig_info and kvp_set_ip_info,
+> wouldnt it be easier to call an external helper script which does all
+> the distribution specific work? Just define some API to pass values to
+> the script, and something to read values collected by the script back
+> into the daemon.
 
-Agree, it would be better to have some generic access functions to get
-what notification IDs are used for each channel. One option could be
-to define a iterator, traversing over all the resource entries.
-In that way I could just pick up the notification IDs in the resource
-entries. Or we could generalize the Notification-ID iteration.
+On the "Get" side I mostly use standard commands/APIs to get all the information:
 
-> > + † † † notifyid_alloc = symbol_get(stemod_kick_notifyid_alloc);
+1) IP address information and subnet mask: getifaddrs()
+2) DNS information:  Parsing /etc/resolv.conf
+3) /sbin/ip command for all the routing information
+4)  Parse /etc/sysconfig/network-scripts/ifcfg-ethx for boot protocol
+
+As you can see, all but the boot protocol is gathered using the "standard distro
+independent mechanisms. I was looking at NetworkManager cli and it looks
+like I could gather all the information except the boot protocol information. I am 
+not sure how to gather the boot protocol information in a distro independent fashion.
+
+On the SET side, I need to persistently store the settings in an appropriate configuration
+file and flush these settings down so that the interface is appropriately configured. It is here
+that I am struggling to find a distro independent way of doing things. It would be great if I can
+use NetworkManager cli (nmcli) to accomplish this. Any help here would be greatly appreciated.
+
+While I toyed with your proposal, I feel it just pushes the problem out of the daemon code -
+we would still need to write distro specific scripts. If this approach is something that everybody
+is comfortable with, I can take a stab at implementing that. 
+
 > 
-> This module is using dynamic symbol lookup quite a lot. This really
-> stands out because it's quite uncommon.
+> If the work is done in a script it will be much easier for an admin to
+> debug and adjust it.
 > 
-> Why is it necessary ? Can we use static symbols instead ?
->
-> Can you share the code for those symbols as well ?
-
-Unfortunately this driver for the HW-kicks is not yet submitted upstream.
-It's not up to me, but I'll check with Linus Walleij about what the plans are...
-
-> > + † † † if (rproc == NULL)
-> > + † † † † † † † return NULL;
-> > + † † † return rproc->priv;
+> I think there is no standard way to configure all relevant distros in
+> the same way. Maybe one day NetworkManager can finally handle all
+> possible ways to configure network related things. But until that
+> happens the config files need to be adjusted manually.
 > 
-> Might be nicer to just
 > 
->     return rproc ? rproc->priv : NULL;
-
-Agree, thanks.
-
-
-> There's three issues that bother me here:
 > 
-> 1. It feels like this kind of functionality isn't limited to the STE
-> modem, so we better have it implemented in the remoteproc framework.
+> Some of the functions have deep indention levels due to 'while() {
+> switch() }' usage. Perhaps such code could be moved into its own
+> function so that lines dont need to be wrapped that much due to the odd
+> 80 column limit.
 
-I'm actually not sure this is a good idea. Usually it is not good to
-generalize from only one example. It might be that the STE modem 
-has quite different requirements than other remote-proc users.
-Not everybody has to unify the approach seen from user-space across
-different interface technologies (HSI, HSIC, Shared Memory, and UART).
-And not everybody has a 3-stage modem boot protocol to care about...
+I will take care of this. As suggested by Greg, I am adding netdev developers here to
+seek their input. 
 
- 
-> 2. I'm not convinced that sysfs is an appropriate interface for
-> controlling the remote processor:
-> - if the remote processor crashes, the user isn't informed about it,
-> so it won't refresh its state even if a successful recovery took place
+Regards,
 
-Hm, what do you mean by "user"? A Virtio-Driver or user-space?
-A recovery involves a 3-stage boot for STE-modems, there won't be any
-recovery without user-space involvement in running the 3-stage boot
-process ;-)
-
-> - if the user space crashes, we don't get informed about it, and the
-> remote processor can erroneously stay powered on indefinitely
-
-This is not a problem for the STE modem. The user space process controlling
-the modem is running as a daemon. If this daemon crashes it is automatically
-restarted and forces a modem reboot in order to bring user-space daemon and
-modem into sync.
-
-> It seems to me that a char device will solve these issues: we can use
-> ioctl to control the power, if the user crashes we'll know about it
-> via the release handler, and if the remote processor crashes we can
-> let the user know by sending it a notification for it to read via the
-> fd.
-
-Currently, I don't see the need for this for the STE modem. (anyway my
-impression was that IOCTLs was going out of fashion, but I guess
-you could argue the same about new sysfs entries ;-) 
-
-> 3. I'm not sure we want to let the user space directly control the
-> power of the remote processor: what if it decides to power off the
-> rproc while other kernel users utilize it?
->
-> We might want to change the semantics of the interface to just allow
-> the user to increase/decrease a power reference count instead of
-> directly booting/shutting it down.
-
-In this case we need a way to make the virtio-drivers release the
-virtio-queues in order to decrement the refcount, right? 
-
-The Virtio-Console seems a bit difficult here. If I read the code
-right in the Virtio-Console driver, the only way to make it release
-it's virtio queues is to trigger the Virtio-Consonle remove function
-(i.e. unregister the Virtio Device).
-
-So it seems that we need to force an unregistration of the virtio devices,
-in order to make it release it's queues.
-
-Currently it looks like this only can be done with rproc_unregister.
-This is probably not what we want, so from my point of view we need
-a some new functionality to trigger unregistration of the virtio
-devices from ste-remoteproc.
-
-But I might off here and or missed something in my code-reading...
-
-> This assumes a certain order of allocations which takes place inside
-> the remoteproc framework, and may break if things change (e.g.
-> https://lkml.org/lkml/2012/5/20/35)
-> 
-> Instead, we might want the remoteproc framework to help here. The best
-> suggestion I have is to "teach" remoteproc about different
-> purpose-specific memory regions, and ask it to allocate memory only
-> from the relevant region (if one exists). This will prevent different
-> order of allocations from using memory we must reserve for certain
-> purposes.
-> 
-> Ludovic is working on such patch, you might want to take its latest
-> version from him.
-
-Ok, looking forward seeing some patches on this then Ludovic :-).
-
-Perhaps another option is to use dma_mark_declared_memory_occupied(),
-it seems to be able to force allocation at a certain device address.
-
-Finally - thank you for spending time on code reading and helping
-me forward with the STE rproc driver.
-
-Thanks,
-Sjur
+K. Y
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
