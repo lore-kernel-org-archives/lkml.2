@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab2GBVAK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 17:00:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:28136 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752754Ab2GBVAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 17:00:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="187666196"
-Date: Mon, 2 Jul 2012 14:00:08 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] perf, x86: Enable PDIR precise instruction profiling
- on IvyBridge
-Message-ID: <20120702210008.GB14479@tassilo.jf.intel.com>
-References: <1341254598-1379-1-git-send-email-andi@firstfloor.org>
- <1341254598-1379-3-git-send-email-andi@firstfloor.org>
- <1341256733.23484.11.camel@twins>
- <20120702195744.GG11413@one.firstfloor.org>
- <1341260540.23484.25.camel@twins>
+	id S932986Ab2GBVBG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 17:01:06 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:57825 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755906Ab2GBVBE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 17:01:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341260540.23484.25.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A109B17@SHSMSX101.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A109B17@SHSMSX101.ccr.corp.intel.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Mon, 2 Jul 2012 23:00:41 +0200
+Message-ID: <CAPXgP10pQWHYmi1egdArnbnmq=ATDbVo3GBG-=vHskrgkCH1xA@mail.gmail.com>
+Subject: Re: [PATCH] printk: replacing the raw_spin_lock/unlock with raw_spin_lock_irqsave/irqrestore
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If anything its an PEBS alias, we have infrastructure for that, yet you
-> invent new things.
+On Mon, Jul 2, 2012 at 12:36 PM, Liu, Chuansheng
+<chuansheng.liu@intel.com> wrote:
+> From: liu chuansheng <chuansheng.liu@intel.com>
+> Subject: [PATCH] printk: replacing the raw_spin_lock/unlock with raw_spin_lock_irqsave/irqrestore
+>
+> In function devkmsg_read/writev/llseek/poll/open()..., the function
+> raw_spin_lock/unlock is used, there is potential deadlock case happening.
+> CPU1: thread1 doing the cat /dev/kmsg:
+>         raw_spin_lock(&logbuf_lock);
+>         while (user->seq == log_next_seq) {
+> when thread1 run here, at this time one interrupt is coming on CPU1 and running
+> based on this thread,if the interrupt handle called the printk which need the
+> logbuf_lock spin also, it will cause deadlock.
+>
+> So we should use raw_spin_lock_irq_save/irqrestore here.
 
-Ok.
-> 
-> You do random things like only :pp for no apparent reason.
+They are all handling a system call, isn't raw_spin_lock_irq() without
+the flag restoration good enough then?
 
-At which p level do you want it? Or on by default?
-
-> 
-> PDIR is only supported on a single counter, regular PEBS 'instructions'
-> events allow for 4+ counters. Therefore a direct substitution is not
-> valid.
-
-Ok so you want a new flag? Or a new event?
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+Thanks,
+Kay
