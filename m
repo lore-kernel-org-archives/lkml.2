@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884Ab2GBQ7J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 12:59:09 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:40558 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445Ab2GBQ7H (ORCPT
+	id S1756007Ab2GBQ7O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 12:59:14 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:55476 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755907Ab2GBQ7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 12:59:07 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "Steven J. Magnani" <steve@digidescorp.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fat: Refactor shortname parsing
-References: <1340993528-12111-1-git-send-email-steve@digidescorp.com>
-	<87r4syrl4y.fsf@devron.myhome.or.jp>
-	<1340997235.9826.7.camel@iscandar.digidescorp.com>
-	<87bok1sx6j.fsf@devron.myhome.or.jp>
-	<87zk7lribe.fsf@devron.myhome.or.jp>
-	<1341234099.1695.13.camel@iscandar.digidescorp.com>
-	<87fw9anuwk.fsf@devron.myhome.or.jp>
-	<1341237638.1695.16.camel@iscandar.digidescorp.com>
-	<8762a6nsao.fsf@devron.myhome.or.jp>
-	<1341240342.1695.20.camel@iscandar.digidescorp.com>
-	<871ukunqp3.fsf@devron.myhome.or.jp>
-	<1341244281.1695.28.camel@iscandar.digidescorp.com>
-Date: Tue, 03 Jul 2012 01:59:01 +0900
-In-Reply-To: <1341244281.1695.28.camel@iscandar.digidescorp.com> (Steven
-	J. Magnani's message of "Mon, 02 Jul 2012 10:51:21 -0500")
-Message-ID: <87txxqm756.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+	Mon, 2 Jul 2012 12:59:11 -0400
+Message-ID: <4FF1D33D.90703@us.ibm.com>
+Date: Mon, 02 Jul 2012 09:58:37 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Richard Cochran <richardcochran@gmail.com>
+CC: Prarit Bhargava <prarit@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [RFC] Potential fix for leapsecond caused futex related
+ load spikes
+References: <4FF06CAB.9020800@redhat.com> <4FF08154.3050407@redhat.com> <4FF088B9.1000308@us.ibm.com> <20120702101606.GA16008@localhost.localdomain>
+In-Reply-To: <20120702101606.GA16008@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12070216-1780-0000-0000-000007072706
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000284; HX=3.00000191; KW=3.00000007;
+ PH=3.00000001; SC=3.00000004; SDB=6.00153166; UDB=6.00034621; UTC=2012-07-02
+ 16:59:08
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Steven J. Magnani" <steve@digidescorp.com> writes:
-
->> Hm, the primary case is vfat. fat_tolower()/hidden is required only for
->> msdos, and ptname too. So, my suggestion is trying to keep vfat case
->> clean.
+On 07/02/2012 03:16 AM, Richard Cochran wrote:
+> On Sun, Jul 01, 2012 at 10:28:25AM -0700, John Stultz wrote:
+>> Reworking the patch now.
+> John,
 >
-> It's not clear to me where you want to go with this. 
->
-> 1. Split fat_parse_short() into msdos and vfat versions. This may
-> improve clarity, but there would be some replication of code.
+> I know you didn't like my (originally Michael Hack's) idea of keeping
+> time in TAI, but wouldn't changing to an internal, continuous time
+> scale (not necessary TAI) solve these sorts of timer issues?
+So first, I don't think keeping a different time base would have avoided 
+this particular issue.
+Its really an issue where the hrtimer code has in-effect a cache of 
+timekeeping state that, since clock_was_set() wasn't called, didn't get 
+updated when we applied the leapsecond.
 
-This is not a option. We are better to not change.
+Second, I'm not opposed to reworking how the internal system keeps track 
+of time.  I just wasn't fond of specifics in your implementation (mostly 
+around mixing cleanups with behavioural changes).
 
-> 2. Sprinkle "if (!isvfat)" throughout the already-proposed version of
-> fat_parse_short()
->   A. Everywhere
->   B. Only in the places you've proposed
+I wouldn't be opposed to something like:
+     CLOCK_TAI = CLOCK_MONOTONIC + monotonic_to_tai
+     CLOCK_REALTIME = CLOCK_TAI + tai_to_utc
 
-I'm not sure what (A) means though. Probably, I will not care.
+Also, some of your suggested changes to move some of the NTP state into 
+the timekeeper struct made sense as well, but just needed  some slight 
+tweaks.
 
-> 3. Retain the already-proposed version of fat_parse_short(), but add a
-> comment that the uni_name overrides the msdos "ptname", and separate out
-> the decision to lowercase from fat_tolower() [i.e., the trigraph].
+> There have been a number of clock/timer/leap bugs over the last
+> years. Some of these might have been avoided by using a continuous
+> scale, since no special timer actions would be needed during a leap
+> second.
+Unfortunately the other issues have been locking related, so I don't 
+think changing the internal time scale would have helped.
 
-The trigraph change doesn't cleanup anything. Because it is using
-needless ptname on vfat path.
+Regardless, I do hope you rework and resend your proposed changes. 
+Clearly we could use more eyes in this area.
 
-vfat always uses the uni_name and doesn't use ptname, right?  And msdos
-path doesn't use the uni_name and use ptname always.  So, I'm saying,
-let's make clear those difference and usage, by annotating with isvfat.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+thanks
+-john
+
+
