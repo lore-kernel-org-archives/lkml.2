@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab2GBP5h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 11:57:37 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:32675 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753967Ab2GBP5f convert rfc822-to-8bit (ORCPT
+	id S1755699Ab2GBQAE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 12:00:04 -0400
+Received: from smtp-out-137.synserver.de ([212.40.185.137]:1100 "EHLO
+	smtp-out-137.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab2GBQAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 11:57:35 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-209.messagelabs.com!1341244651!7540256!7
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>, Devendra Naga <devendra.aaru@gmail.com>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-        Mori Hess <fmhess@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 2 Jul 2012 10:57:22 -0500
-Subject: RE: [PATCH 1/2] staging/comedi/drivers: release allocated I/O
- region if alloc_private fails
-Thread-Topic: [PATCH 1/2] staging/comedi/drivers: release allocated I/O
- region if alloc_private fails
-Thread-Index: Ac1YLmYHAd7ecvEDQiCozJiqi2/bUQAO18pA
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698F2EECE@AUSP01VMBX24.collaborationhost.net>
-References: <1341149798-12695-1-git-send-email-devendra.aaru@gmail.com>
- <4FF15E92.3040503@mev.co.uk>
-In-Reply-To: <4FF15E92.3040503@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 2 Jul 2012 12:00:01 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 2598
+Message-ID: <4FF1C666.40106@metafoo.de>
+Date: Mon, 02 Jul 2012 18:03:50 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
+To: Saranya Gopal <saranya.gopal@intel.com>
+CC: cbou@mail.ru, dwmw2@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3] bq27x00_battery: Add support for BQ27425 chip
+References: <1341075374-31704-1-git-send-email-saranya.gopal@intel.com>
+In-Reply-To: <1341075374-31704-1-git-send-email-saranya.gopal@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 02, 2012 1:41 AM, Ian Abbott wrote:
-> No.  The I/O region will be deallocated in fl512_detach() because 
-> dev->iobase has been set non-zero.  fl512_detach() will be called by the 
-> comedi core if fl512_attach() returns an error.  This is an unusual 
-> aspect of the comedi drivers.
+On 06/30/2012 06:56 PM, Saranya Gopal wrote:
+> This patch adds support for BQ27425 (TI) chip. This chip is same as
+> BQ27500 with few registers removed and register address map changed.
+> The data sheet for this chip is publicly available at
+>  http://www.ti.com/product/bq27425-g1
+> 
+> Changes since v2:
+>         Remove register address definitions of bq27425 and
+>           use register address offset instead.
+>         Add a small helper function to decide if the chip version
+>           is higher than bq27200 to make it less noisy
+>           to add another chip with similar register layout.
+> 
+> Signed-off-by: Saranya Gopal <saranya.gopal@intel.com>
 
-I have been wondering if that aspect should be "fixed".
+Looks good to me.
 
-It's more typical for kernel drivers to clean up after themselves if
-the probe/attach/init/etc. fails. And the release/detach/exit/etc.
-is only called if the driver has successfully loaded.
+Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
 
-With the comedi drivers, the "detach" is always called if the "attach"
-failed. And, of course the "detach" is called when the device is removed.
+Two minor suggestions though:
 
-Because of this the "detach" routines need to do all the checks to
-see what needs to be cleaned up. Not a big deal but it does create
-some confusion as this patch shows.
+>[...]
+>  
+>  #include <linux/module.h>
+> @@ -67,6 +68,10 @@
+>  #define BQ27500_FLAG_SOC1		BIT(2) /* State-of-Charge threshold 1 */
+>  #define BQ27500_FLAG_FC			BIT(9)
+>  
+> +/* bq27425 register addresses are same as bq27x00 addresses minus 4 */
+> +#define BQ27425_REG_OFFSET		0x04
+> +#define BQ27425_REG_SOC			0x1C
+> +
 
-Ian, what's your opinion on this? Do you think we should refactor all
-the driver "attach" routines so they clean up on failure and fix the
-core so the "detach" is only called after a successful "attach"?
+I'd have added the offset to REG_SOC here, ...
 
-This would be a pretty big patch since it affects every driver as well
-as the core. 
+> @@ -150,6 +183,9 @@ static int bq27x00_battery_read_rsoc(struct
+bq27x00_device_info *di)
+>
+>  	if (di->chip == BQ27500)
+>  		rsoc = bq27x00_read(di, BQ27500_REG_SOC, false);
+> +	else if (di->chip == BQ27425)
+> +		rsoc = bq27x00_read(di, BQ27425_REG_SOC+BQ27425_REG_OFFSET,
+> +								false);
 
-We could break it up by introducing a temporary flag in the comedi_driver
-struct that indicates if the driver has been "fixed". The core could then
-work as-is for non-updated drivers. Once all the drivers have been updated
-we then fix the core and remove the flag from all the drivers.
+... instead of here.
 
-Regards,
-Hartley
+>  /*
+> + * Higher versions of the chip like BQ27425 and BQ27500
+> + * differ from BQ27000 and BQ27200 in calculation of certain
+> + * parameters. Hence we need to check for the chip type.
+> + */
+> +static bool is_chip_version_higher(struct bq27x00_device_info *di)
+
+Maybe a prefix for the function is not such a bad idea, e.g. bq27xxx_...
+
+> +{
+> +	if (di->chip == BQ27425 || di->chip == BQ27500)
+> +		return true;
+> +	return false;
+> +}
+> +
