@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab2GBA3y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 20:29:54 -0400
-Received: from gherkin.frus.com ([192.158.254.49]:51426 "EHLO gherkin.frus.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751252Ab2GBA3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 20:29:53 -0400
-Date: Sun, 1 Jul 2012 19:29:51 -0500
-From: Bob Tracy <rct@gherkin.frus.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Ming Lei <tom.leiming@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: 3.5-rcX: USB support without udev?
-Message-ID: <20120702002951.GA2184@gherkin.frus.com>
-References: <20120628131651.GA14492@gherkin.frus.com> <CACVXFVNLVwNLDbpxdOMT_RCzqU=gx8O-2oZ8XQ8K87HwUBVWDA@mail.gmail.com> <20120629033600.GA3591@gherkin.frus.com> <20120630033519.GA4792@kroah.com> <20120701201411.GB8603@gherkin.frus.com> <20120701204118.GA1018@polaris.bitmath.org> <20120701232542.GA11680@gherkin.frus.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120701232542.GA11680@gherkin.frus.com>
-User-Agent: Mutt/1.4.2.3i
+	id S1753429Ab2GBAoT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 20:44:19 -0400
+Received: from mo-p05-ob.rzone.de ([81.169.146.181]:10428 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807Ab2GBAno (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 20:43:44 -0400
+X-RZG-AUTH: :OmsBZ2C7d7IBoB6EHwegNiRqgfQXlaD5PlBebH2tU4xZA+UbnUj/JlE=
+X-RZG-CLASS-ID: mo05
+From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Subject: Re: 3.4.x regression: rtl8169: frequent resets
+Date: Mon, 2 Jul 2012 02:43:24 +0200
+User-Agent: KMail/1.13.7 (Linux/3.4-4.slh.2-aptosid-686; KDE/4.8.4; i686; ; )
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <87y5n7qup0.fsf@spindle.srvr.nix> <20120628193026.GA31627@electric-eye.fr.zoreil.com>
+In-Reply-To: <20120628193026.GA31627@electric-eye.fr.zoreil.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207020243.34213.s.L-H@gmx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 01, 2012 at 06:25:42PM -0500, Bob Tracy wrote:
-> On Sun, Jul 01, 2012 at 10:41:18PM +0200, Henrik Rydberg wrote:
-> > If you did a 'make oldconfig' on anything prior to -rc5, chances are
-> > you do not have CONFIG_HID_GENERIC=y in your .config.
+Hi
+
+On Thursday 28 June 2012, Francois Romieu wrote:
+> Nix <nix@esperi.org.uk> :
+> > I recently upgraded from 3.3.x to 3.4.4, and am now experiencing
+> > networking problems with my desktop box's r8169 card. The symptoms are
+> > that all traffic ceases for five to ten seconds, then the card appears
+> > to reset and everything is back to normal -- until it happens again. It
+> > can happen quite a lot:
 > 
-> That might well be the missing "glue."  I'm building -rc5 as I type
-> this.  Should have an answer in a few hours.  Thanks for the clue!
+> Can you try and revert 036dafa28da1e2565a8529de2ae663c37b7a0060 ?
+> 
+> I would welcome a complete dmesg including the XID line from the
+> r8169 driver.
 
-That was it!  Thank you!  Keyboard and mouse now working fine.
+r8169 0000:04:00.0: eth0: RTL8168d/8111d at 0xffffc90000c72000, 00:24:1d:72:7c:75, XID 081000c0 IRQ 44
+r8169 0000:05:00.0: eth1: RTL8168d/8111d at 0xffffc90000c70000, 00:24:1d:72:7c:77, XID 081000c0 IRQ 45
 
-Unless there was a way to get the CONFIG_HID_GENERIC functionality
-via some other mechanism prior to -rc5, I'd classify this as a
-regression introduced in 3.5-rc1 that was fixed in -rc5.
+Kernel 3.4.4 with 036dafa28da1e2565a8529de2ae663c37b7a0060 (r8169: add 
+byte queue limit support) reverted is now running just about 60 hours 
+on the afformentioned hardware. No traces of "NETDEV WATCHDOG: eth0 
+(r8169): transmit queue 0 timed out" so far, while it usually triggers 
+within an hour (5 hours at most) with plain 3.4.4 on that system.
 
---Bob
+Regards
+	Stefan Lippers-Hollmann
