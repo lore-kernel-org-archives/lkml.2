@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab2GBL6Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 07:58:25 -0400
-Received: from trent.utfs.org ([94.185.90.103]:36978 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751885Ab2GBL6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 07:58:23 -0400
-Date: Mon, 2 Jul 2012 04:58:08 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-cc: linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
-        dan.j.williams@intel.com, JBottomley@Parallels.com,
-        stern@rowland.harvard.edu
-Subject: Re: 3.5.0-rc5: BUG: soft lockup - CPU#0 stuck for 22s
-In-Reply-To: <1341204649.2588.29.camel@pasglop>
-Message-ID: <alpine.DEB.2.01.1207020442060.5568@trent.utfs.org>
-References: <alpine.DEB.2.01.1207010009270.5568@trent.utfs.org> <1341204649.2588.29.camel@pasglop>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+	id S1752076Ab2GBL7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 07:59:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35381 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab2GBL7U convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 07:59:20 -0400
+Message-ID: <1341230352.23484.7.camel@twins>
+Subject: Re: rcu: BUG: spinlock recursion on CPU#3, trinity-child19/5970
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 02 Jul 2012 13:59:12 +0200
+In-Reply-To: <20120702113541.GI2907@linux.vnet.ibm.com>
+References: <1340964584.2936.40.camel@lappy>
+	 <20120629172320.GA2416@linux.vnet.ibm.com> <1341006040.26928.4.camel@lappy>
+	 <1341225139.23484.4.camel@twins> <20120702113541.GI2907@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Jul 2012 at 14:50, Benjamin Herrenschmidt wrote:
-> > while trying to upgrade from 3.4.0 to 3.5.0-rc5 on this Powerbook G4 
-> > (powerpc 32 bit), this happens during booting:
+On Mon, 2012-07-02 at 04:35 -0700, Paul E. McKenney wrote:
+> On Mon, Jul 02, 2012 at 12:32:19PM +0200, Peter Zijlstra wrote:
+> > On Fri, 2012-06-29 at 23:40 +0200, Sasha Levin wrote:
+> > > 
+> > > The bad news are that what you saw was a lockdep enabled run
+> > > (CONFIG_PROVE_RCU is enabled, and lockdep was enabled). There were no
+> > > lockdep warnings at any point while reproducing it. 
 > > 
-> > --------------
-> > usb 2-1: new full-speed USB device number 4 using ohci_hcd
-> > SCSI subsystem initialized
-> > scsi0 : SBP-2 IEEE-1394
-> > scsi1 : SBP-2 IEEE-1394
-> > firewire_sbp2 fw1.0: logged in to LUN 0000 (0 retries)
-> > scsi 0:0:0:0: Direct-Access     Ext Hard  Disk            PQ: 0 ANSI: 4
+> > rcu_switch_from() -> rcu_preempt_note_context_switch() is called _after_
+> > the lockdep context switch annotation. Therefore lockdep things the prev
+> > task isn't holding any locks anymore.
 > 
-> Interesting... I observed something roughly similar on a dual G4
-> the other day associated with a 30s to 1mn pause during boot. RCU
-> was complaining loudly.
+> In other words, moving rcu_preempt_note_context_switch() deeper into
+> the scheduler is totally bogus, and I need to move it back out into the
+> original rcu_note_context_switch(), reverting 616c310e (Move PREEMPT_RCU
+> preemption to switch_to() invocation), correct?
 > 
-> In my case, it did continue booting normally, is that the case for you ?
-> 
-> Also if I compile the kernel without CONFIG_SMP, it did go away as well,
-> do you observe that too ?
-> 
-> I don't have a spare cycle to investigate this problem this week I'm
-> afraid, it might help if you could try a bisection though.
+> Sigh.  "It seemed like a good idea at the time."
 
-OK, after a git-bisect, the following commit has been identified as bad:
+It only needs moving back before that spin_release() thing. But unless
+there's a reason to do it later, something like the below might be the
+right thing. 
 
----------------------------
-a7a20d103994fd760766e6c9d494daa569cbfe06 is the first bad commit
-commit a7a20d103994fd760766e6c9d494daa569cbfe06
-Author: Dan Williams <dan.j.williams@intel.com>
-Date:   Thu Mar 22 17:05:11 2012 -0700
+---
+ kernel/sched/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-    [SCSI] sd: limit the scope of the async probe domain
----------------------------
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 9bb7d28..7e20e6c 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1914,6 +1914,7 @@ prepare_task_switch(struct rq *rq, struct task_struct *prev,
+ 	sched_info_switch(prev, next);
+ 	perf_event_task_sched_out(prev, next);
+ 	fire_sched_out_preempt_notifiers(prev, next);
++	rcu_switch_from(prev);
+ 	prepare_lock_switch(rq, next);
+ 	prepare_arch_switch(next);
+ 	trace_sched_switch(prev, next);
+@@ -2082,7 +2083,6 @@ context_switch(struct rq *rq, struct task_struct *prev,
+ #endif
+ 
+ 	/* Here we just switch the register state and the stack. */
+-	rcu_switch_from(prev);
+ 	switch_to(prev, next, prev);
+ 
+ 	barrier();
 
-Unfortunately it's not possible to "git revert" just this single commit:
-
-------------
-$ git revert a7a20d103994fd760766e6c9d494daa569cbfe06
-error: could not revert a7a20d1... [SCSI] sd: limit the scope of the async probe domain
-hint: after resolving the conflicts, mark the corrected paths  
-hint: with 'git add <paths>' or 'git rm <paths>'
-hint: and commit the result with 'git commit'
-------------
-
-I _guess_ this is probably due to:
-
-------------
-commit ea80dadec7a06889562b478cf0b87afbe62b7ac8
-Author: James Bottomley <JBottomley@Parallels.com>
-Date:   Wed Jun 6 14:54:13 2012 +0900
-
-    [SCSI] Fix sd_probe_domain config problem
-------------
-
-The whole git-bisect log, dmesg, .config and so on is here:
-
-  http://nerdbynature.de/bits/3.5.0-rc5/soft_lockup/
-
-Anyone got an idea how to go from here?
-
-Thanks,
-Christian.
--- 
-BOFH excuse #380:
-
-Operators killed when huge stack of backup tapes fell over.
