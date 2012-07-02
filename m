@@ -1,105 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060Ab2GBUbI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 16:31:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:63678 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932104Ab2GBUbF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 16:31:05 -0400
-Date: Mon, 2 Jul 2012 22:30:53 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Vinod Koul <vinod.koul@linux.intel.com>
-cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 0.5/9] dma: move shdma driver to an own directory
-In-Reply-To: <Pine.LNX.4.64.1207021936490.15365@axis700.grange>
-Message-ID: <Pine.LNX.4.64.1207022228470.15365@axis700.grange>
-References: <1336576161-27082-1-git-send-email-g.liakhovetski@gmx.de> 
- <1336576161-27082-2-git-send-email-g.liakhovetski@gmx.de> 
- <1337055734.16185.5360.camel@vkoul-udesk3>  <Pine.LNX.4.64.1205171912140.10086@axis700.grange>
- <1337933737.1580.8.camel@vkoul-udesk3> <Pine.LNX.4.64.1205251028530.13353@axis700.grange>
- <Pine.LNX.4.64.1206281046320.31813@axis700.grange>
- <Pine.LNX.4.64.1207021936490.15365@axis700.grange>
+	id S1756240Ab2GBUjg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 16:39:36 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:41308 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750985Ab2GBUje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 16:39:34 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Hans de Goede <hdegoede@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [ 38/48] SCSI & usb-storage: add try_rc_10_first flag
+Thread-Topic: [ 38/48] SCSI & usb-storage: add try_rc_10_first flag
+Thread-Index: AQHNV7W6AEZudwRw/0ypJsN183sp8JcWCWKAgADELICAAB3sAA==
+Date: Mon, 2 Jul 2012 20:39:28 +0000
+Message-ID: <1341261568.3319.7.camel@dabdike>
+References: <20120701172012.078559139@decadent.org.uk>
+	 <4FF14957.3040007@redhat.com>
+	 <CA+55aFyRTXqSvf9m08gbHCB0WhVF14Y6J2-AiFGiuTStq0Jr6Q@mail.gmail.com>
+In-Reply-To: <CA+55aFyRTXqSvf9m08gbHCB0WhVF14Y6J2-AiFGiuTStq0Jr6Q@mail.gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [194.186.187.194]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <4AC73CCCAC89764EBBD7F29EBA180AEA@sw.swsoft.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:4+iLoya7GlYcrrz1zGmU8PmL03qjoOGrjmuQ73p6zzI
- A+Ppl12c2aQEBf2g5MhHnzAjUrCrRTVgHEQaNZ4MQbPq2K1thq
- k0XWLaG0Si/Zi/6Nb/Wj0KlCPQHdRYY3+LIKF2zLufyB3jdt6H
- HZW8vyxVVdj9cKP0HqpePuJeSCps+ydX1VXK/OhuJaauoHQI4e
- cwBtVEdJktJ2wNpGOjy1ekQDuYjjz7bquEnqc5zGUnhuVFvEap
- JgcY6VEA81TQpDIpOZZ/WLMpmrJCQPIsypnUNPwmwi4z/xK6gm
- w8ERRBt5aJxPpjvXFleosBKxWzn9oJZTZU/lFxtAGElGIRjRX3
- BBIeIOzwCfqaYULQWvgycEzMpvGHGgS2SYWVEtnniscHYDXXsO
- M8M7pD1RzqcdQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q62Ke0Zo011266
 
-The shdma driver is going to be split into multiple files. To make this more
-convenient move it to an own directory.
+On Mon, 2012-07-02 at 11:52 -0700, Linus Torvalds wrote:
+> On Mon, Jul 2, 2012 at 12:10 AM, Hans de Goede <hdegoede@redhat.com> wrote:
+> >
+> > So since 3.2 already tries READ_CAPACITY(10) first, this patch is
+> > not needed. It does not harm either, and if the scsi level reporting
+> > change ever finds its way into 3.2 stable (which it should not
+> > IMHO), then this patch will be needed.
+> 
+> Yeah, it should definitely not make it into stable. In fact, I'd
+> rather remove it from mainline too. The whole idea to do
+> READ_CAPACITY_16 by default was moronic.
+> 
+> James? Why does the SCSI subsystem always do these idiotic defaults?
+> We *know* that devices are buggy. Sure, USB storage tends to be
+> buggier than most, but the whole idea of "let's use the new way of
+> reporting that gets almost no testing" is just wrong.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
----
+It's not idiotic.  It's, unfortunately, required by the standard to
+check for protection capable devices.  It's been this way for three
+years or so.  Martin Petersen did extensive testing of devices when we
+changed it and doing RC16 first is hedged around by claiming support not
+only for SCSI_3 but also for SBC_2 in your INQUIRY data.
 
-Sorry for the "0.5," please, just apply this patch before the whole shdma 
-splitting series.
+The problem seems to be that when all the testing was done, USB was
+still always returning SCSI_2 in the inquiry data, but this got changed
+to allow pass through of the actual vendor information.
 
-Thanks
-Guennadi
+> I don't think the USB layer should have needed to work around this. I
+> don't think there should be a "try_10b" flag at all. I think the SCSI
+> code should just *never* do the 16b version unless it has done the 10b
+> version first and determined that the size doesn't fit.
 
- drivers/dma/Makefile         |    2 +-
- drivers/dma/sh/Makefile      |    1 +
- drivers/dma/{ => sh}/shdma.c |    2 +-
- drivers/dma/{ => sh}/shdma.h |    0
- 4 files changed, 3 insertions(+), 2 deletions(-)
- create mode 100644 drivers/dma/sh/Makefile
- rename drivers/dma/{ => sh}/shdma.c (99%)
- rename drivers/dma/{ => sh}/shdma.h (100%)
+If we did that, we'd regress on all the enterprise class drives with DIF
+and DIX.
 
-diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
-index 86b795b..59c10e5 100644
---- a/drivers/dma/Makefile
-+++ b/drivers/dma/Makefile
-@@ -14,7 +14,7 @@ obj-$(CONFIG_DW_DMAC) += dw_dmac.o
- obj-$(CONFIG_AT_HDMAC) += at_hdmac.o
- obj-$(CONFIG_MX3_IPU) += ipu/
- obj-$(CONFIG_TXX9_DMAC) += txx9dmac.o
--obj-$(CONFIG_SH_DMAE) += shdma.o
-+obj-$(CONFIG_SH_DMAE) += sh/
- obj-$(CONFIG_COH901318) += coh901318.o coh901318_lli.o
- obj-$(CONFIG_AMCC_PPC440SPE_ADMA) += ppc4xx/
- obj-$(CONFIG_IMX_SDMA) += imx-sdma.o
-diff --git a/drivers/dma/sh/Makefile b/drivers/dma/sh/Makefile
-new file mode 100644
-index 0000000..ad4981a
---- /dev/null
-+++ b/drivers/dma/sh/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_SH_DMAE) += shdma.o
-diff --git a/drivers/dma/shdma.c b/drivers/dma/sh/shdma.c
-similarity index 99%
-rename from drivers/dma/shdma.c
-rename to drivers/dma/sh/shdma.c
-index 19d7a8d..8ab4a1f 100644
---- a/drivers/dma/shdma.c
-+++ b/drivers/dma/sh/shdma.c
-@@ -31,7 +31,7 @@
- #include <linux/spinlock.h>
- #include <linux/rculist.h>
- 
--#include "dmaengine.h"
-+#include "../dmaengine.h"
- #include "shdma.h"
- 
- /* DMA descriptor control */
-diff --git a/drivers/dma/shdma.h b/drivers/dma/sh/shdma.h
-similarity index 100%
-rename from drivers/dma/shdma.h
-rename to drivers/dma/sh/shdma.h
--- 
-1.7.2.5
+> And the code already had that logic got the read_10b case. The whole
+> logic to do 16b by default was crap. It *used* to at least only do it
+> for disks that were marked as having "protection", now it wants to do
+> it for anything that should be able to handle it. Which is bogus. The
+> whole "let's assume devices get it right" mindset is broken.
+> 
+> The mindset should be "let's assume devices are buggy, and be careful".
 
+It still is, that's why we did extensive testing three years ago before
+changing it.
+
+If you have a solution that doesn't break all the enterprise devices but
+works better for USB, I'm listening.  I think the best thing might be to
+whitelist the scsi revision pass through in USB, so only the UAS devices
+which really, really claim to know what they're doing advertise advanced
+features.
+
+James
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
