@@ -1,378 +1,417 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933078Ab2GBUXm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 16:23:42 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10643 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756246Ab2GBUSX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933055Ab2GBUXk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 16:23:40 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:34355 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755906Ab2GBUSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Jul 2012 16:18:23 -0400
-X-Authority-Analysis: v=2.0 cv=StQSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=oMtcY9QiL3QA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=V_pH_-U2oslOwhSbYEIA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20120702201821.019966811@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 02 Jul 2012 16:03:25 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3/6] ftrace: Return pt_regs to function trace callback
-References: <20120702200322.573660631@goodmis.org>
-Content-Disposition: inline; filename=0003-ftrace-Return-pt_regs-to-function-trace-callback.patch
+From: Kees Cook <keescook@chromium.org>
+To: Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
+        Doug Ledford <dledford@redhat.com>, Joe Korty <joe.korty@ccur.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Ingo Molnar <mingo@elte.hu>, David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>, linux-doc@vger.kernel.org,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        kernel-hardening@lists.openwall.com, Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/2] fs: add link restrictions
+Date: Mon,  2 Jul 2012 13:17:13 -0700
+Message-Id: <1341260234-32002-2-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1341260234-32002-1-git-send-email-keescook@chromium.org>
+References: <1341260234-32002-1-git-send-email-keescook@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+This adds symlink and hardlink restrictions to the Linux VFS.
 
-Return as the 4th paramater to the function tracer callback the pt_regs.
+Symlinks:
 
-Later patches that implement regs passing for the architectures will require
-having the ftrace_ops set the SAVE_REGS flag, which will tell the arch
-to take the time to pass a full set of pt_regs to the ftrace_ops callback
-function. If the arch does not support it then it should pass NULL.
+A long-standing class of security issues is the symlink-based
+time-of-check-time-of-use race, most commonly seen in world-writable
+directories like /tmp. The common method of exploitation of this flaw
+is to cross privilege boundaries when following a given symlink (i.e. a
+root process follows a symlink belonging to another user). For a likely
+incomplete list of hundreds of examples across the years, please see:
+http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
 
-If an arch can pass full regs, then it should define:
- ARCH_SUPPORTS_FTRACE_SAVE_REGS to 1
+The solution is to permit symlinks to only be followed when outside
+a sticky world-writable directory, or when the uid of the symlink and
+follower match, or when the directory owner matches the symlink's owner.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Some pointers to the history of earlier discussion that I could find:
+
+ 1996 Aug, Zygo Blaxell
+  http://marc.info/?l=bugtraq&m=87602167419830&w=2
+ 1996 Oct, Andrew Tridgell
+  http://lkml.indiana.edu/hypermail/linux/kernel/9610.2/0086.html
+ 1997 Dec, Albert D Cahalan
+  http://lkml.org/lkml/1997/12/16/4
+ 2005 Feb, Lorenzo Hernández García-Hierro
+  http://lkml.indiana.edu/hypermail/linux/kernel/0502.0/1896.html
+ 2010 May, Kees Cook
+  https://lkml.org/lkml/2010/5/30/144
+
+Past objections and rebuttals could be summarized as:
+
+ - Violates POSIX.
+   - POSIX didn't consider this situation and it's not useful to follow
+     a broken specification at the cost of security.
+ - Might break unknown applications that use this feature.
+   - Applications that break because of the change are easy to spot and
+     fix. Applications that are vulnerable to symlink ToCToU by not having
+     the change aren't. Additionally, no applications have yet been found
+     that rely on this behavior.
+ - Applications should just use mkstemp() or O_CREATE|O_EXCL.
+   - True, but applications are not perfect, and new software is written
+     all the time that makes these mistakes; blocking this flaw at the
+     kernel is a single solution to the entire class of vulnerability.
+ - This should live in the core VFS.
+   - This should live in an LSM. (https://lkml.org/lkml/2010/5/31/135)
+ - This should live in an LSM.
+   - This should live in the core VFS. (https://lkml.org/lkml/2010/8/2/188)
+
+Hardlinks:
+
+On systems that have user-writable directories on the same partition
+as system files, a long-standing class of security issues is the
+hardlink-based time-of-check-time-of-use race, most commonly seen in
+world-writable directories like /tmp. The common method of exploitation
+of this flaw is to cross privilege boundaries when following a given
+hardlink (i.e. a root process follows a hardlink created by another
+user). Additionally, an issue exists where users can "pin" a potentially
+vulnerable setuid/setgid file so that an administrator will not actually
+upgrade a system fully.
+
+The solution is to permit hardlinks to only be created when the user is
+already the existing file's owner, or if they already have read/write
+access to the existing file.
+
+Many Linux users are surprised when they learn they can link to files
+they have no access to, so this change appears to follow the doctrine
+of "least surprise". Additionally, this change does not violate POSIX,
+which states "the implementation may require that the calling process
+has permission to access the existing file"[1].
+
+This change is known to break some implementations of the "at" daemon,
+though the version used by Fedora and Ubuntu has been fixed[2] for
+a while. Otherwise, the change has been undisruptive while in use in
+Ubuntu for the last 1.5 years.
+
+[1] http://pubs.opengroup.org/onlinepubs/9699919799/functions/linkat.html
+[2] http://anonscm.debian.org/gitweb/?p=collab-maint/at.git;a=commitdiff;h=f4114656c3a6c6f6070e315ffdf940a49eda3279
+
+This patch is based on the patches in Openwall and grsecurity, along with
+suggestions from Al Viro. I have added a sysctl to enable the protected
+behavior, and documentation.
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Acked-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+
 ---
- include/linux/ftrace.h            |    6 ++++--
- kernel/trace/ftrace.c             |   37 ++++++++++++++++++++++---------------
- kernel/trace/trace_event_perf.c   |    2 +-
- kernel/trace/trace_events.c       |    2 +-
- kernel/trace/trace_functions.c    |    7 ++++---
- kernel/trace/trace_irqsoff.c      |    2 +-
- kernel/trace/trace_sched_wakeup.c |    3 ++-
- kernel/trace/trace_selftest.c     |   15 ++++++++++-----
- kernel/trace/trace_stack.c        |    3 ++-
- 9 files changed, 47 insertions(+), 30 deletions(-)
+v2012.5:
+ - updates requested by Al Viro:
+   - remove CONFIGs
+   - pass nd for parent checking
+   - release path on error
+v2012.4:
+ - split audit functions into a separate patch, suggested by Eric Paris.
+v2012.3:
+ While this code has been living in -mm and linux-next for 2 releases,
+ this is a small rework based on feedback from Al Viro:
+ - Moved audit functions into audit.c.
+ - Added tests directly to path_openat/path_lookupat.
+ - Merged with hardlink restriction patch to make things more sensible.
+v2012.2:
+ - Change sysctl mode to 0600, suggested by Ingo Molnar.
+ - Rework CONFIG logic to split code from default behavior.
+ - Renamed sysctl to have a "sysctl_" prefix, suggested by Andrew Morton.
+ - Use "true/false" instead of "1/0" for bool arg, thanks to Andrew Morton.
+ - Do not trust s_id to be safe to print, suggested by Andrew Morton.
+v2012.1:
+ - Use GFP_KERNEL for audit log allocation, thanks to Ingo Molnar.
+v2011.3:
+ - Add pid/comm back to logging.
+v2011.2:
+ - Updated documentation, thanks to Randy Dunlap.
+ - Switched Kconfig default to "y", added __read_mostly to sysctl,
+   thanks to Ingo Molnar.
+ - Switched to audit logging to gain safe path and name reporting when
+   hitting the restriction.
+v2011.1:
+ - back from hiatus
+---
+ Documentation/sysctl/fs.txt |   42 +++++++++++++++
+ fs/namei.c                  |  121 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fs.h          |    2 +
+ kernel/sysctl.c             |   18 ++++++
+ 4 files changed, 183 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 3651fdc..e420288 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -10,6 +10,7 @@
- #include <linux/kallsyms.h>
- #include <linux/linkage.h>
- #include <linux/bitops.h>
-+#include <linux/ptrace.h>
- #include <linux/ktime.h>
- #include <linux/sched.h>
- #include <linux/types.h>
-@@ -54,7 +55,7 @@ ftrace_enable_sysctl(struct ctl_table *table, int write,
- struct ftrace_ops;
+diff --git a/Documentation/sysctl/fs.txt b/Documentation/sysctl/fs.txt
+index 13d6166..d4a372e 100644
+--- a/Documentation/sysctl/fs.txt
++++ b/Documentation/sysctl/fs.txt
+@@ -32,6 +32,8 @@ Currently, these files are in /proc/sys/fs:
+ - nr_open
+ - overflowuid
+ - overflowgid
++- protected_hardlinks
++- protected_symlinks
+ - suid_dumpable
+ - super-max
+ - super-nr
+@@ -157,6 +159,46 @@ The default is 65534.
  
- typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip,
--			      struct ftrace_ops *op);
-+			      struct ftrace_ops *op, struct pt_regs *regs);
+ ==============================================================
  
- /*
-  * FTRACE_OPS_FL_* bits denote the state of ftrace_ops struct and are
-@@ -188,7 +189,8 @@ static inline int ftrace_function_local_disabled(struct ftrace_ops *ops)
- 	return *this_cpu_ptr(ops->disabled);
- }
- 
--extern void ftrace_stub(unsigned long a0, unsigned long a1, struct ftrace_ops *op);
-+extern void ftrace_stub(unsigned long a0, unsigned long a1,
-+			struct ftrace_ops *op, struct pt_regs *regs);
- 
- #else /* !CONFIG_FUNCTION_TRACER */
- /*
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 4cbca2e..6ff07ad 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -103,7 +103,7 @@ static struct ftrace_ops control_ops;
- 
- #if ARCH_SUPPORTS_FTRACE_OPS
- static void ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
--				 struct ftrace_ops *op);
-+				 struct ftrace_ops *op, struct pt_regs *regs);
- #else
- /* See comment below, where ftrace_ops_list_func is defined */
- static void ftrace_ops_no_ops(unsigned long ip, unsigned long parent_ip);
-@@ -121,7 +121,7 @@ static void ftrace_ops_no_ops(unsigned long ip, unsigned long parent_ip);
-  */
- static void
- ftrace_global_list_func(unsigned long ip, unsigned long parent_ip,
--			struct ftrace_ops *op)
-+			struct ftrace_ops *op, struct pt_regs *regs)
- {
- 	if (unlikely(trace_recursion_test(TRACE_GLOBAL_BIT)))
- 		return;
-@@ -129,19 +129,19 @@ ftrace_global_list_func(unsigned long ip, unsigned long parent_ip,
- 	trace_recursion_set(TRACE_GLOBAL_BIT);
- 	op = rcu_dereference_raw(ftrace_global_list); /*see above*/
- 	while (op != &ftrace_list_end) {
--		op->func(ip, parent_ip, op);
-+		op->func(ip, parent_ip, op, regs);
- 		op = rcu_dereference_raw(op->next); /*see above*/
- 	};
- 	trace_recursion_clear(TRACE_GLOBAL_BIT);
- }
- 
- static void ftrace_pid_func(unsigned long ip, unsigned long parent_ip,
--			    struct ftrace_ops *op)
-+			    struct ftrace_ops *op, struct pt_regs *regs)
- {
- 	if (!test_tsk_trace_trace(current))
- 		return;
- 
--	ftrace_pid_function(ip, parent_ip, op);
-+	ftrace_pid_function(ip, parent_ip, op, regs);
- }
- 
- static void set_ftrace_pid_function(ftrace_func_t func)
-@@ -763,7 +763,7 @@ ftrace_profile_alloc(struct ftrace_profile_stat *stat, unsigned long ip)
- 
- static void
- function_profile_call(unsigned long ip, unsigned long parent_ip,
--		      struct ftrace_ops *ops)
-+		      struct ftrace_ops *ops, struct pt_regs *regs)
- {
- 	struct ftrace_profile_stat *stat;
- 	struct ftrace_profile *rec;
-@@ -793,7 +793,7 @@ function_profile_call(unsigned long ip, unsigned long parent_ip,
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- static int profile_graph_entry(struct ftrace_graph_ent *trace)
- {
--	function_profile_call(trace->func, 0, NULL);
-+	function_profile_call(trace->func, 0, NULL, NULL);
- 	return 1;
- }
- 
-@@ -2771,7 +2771,7 @@ static int __init ftrace_mod_cmd_init(void)
- device_initcall(ftrace_mod_cmd_init);
- 
- static void function_trace_probe_call(unsigned long ip, unsigned long parent_ip,
--				      struct ftrace_ops *op)
-+				      struct ftrace_ops *op, struct pt_regs *pt_regs)
- {
- 	struct ftrace_func_probe *entry;
- 	struct hlist_head *hhd;
-@@ -3923,7 +3923,7 @@ ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip)
- 
- static void
- ftrace_ops_control_func(unsigned long ip, unsigned long parent_ip,
--			struct ftrace_ops *op)
-+			struct ftrace_ops *op, struct pt_regs *regs)
- {
- 	if (unlikely(trace_recursion_test(TRACE_CONTROL_BIT)))
- 		return;
-@@ -3938,7 +3938,7 @@ ftrace_ops_control_func(unsigned long ip, unsigned long parent_ip,
- 	while (op != &ftrace_list_end) {
- 		if (!ftrace_function_local_disabled(op) &&
- 		    ftrace_ops_test(op, ip))
--			op->func(ip, parent_ip, op);
-+			op->func(ip, parent_ip, op, regs);
- 
- 		op = rcu_dereference_raw(op->next);
- 	};
-@@ -3952,7 +3952,7 @@ static struct ftrace_ops control_ops = {
- 
- static inline void
- __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
--		       struct ftrace_ops *ignored)
-+		       struct ftrace_ops *ignored, struct pt_regs *regs)
- {
- 	struct ftrace_ops *op;
- 
-@@ -3971,7 +3971,7 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
- 	op = rcu_dereference_raw(ftrace_ops_list);
- 	while (op != &ftrace_list_end) {
- 		if (ftrace_ops_test(op, ip))
--			op->func(ip, parent_ip, op);
-+			op->func(ip, parent_ip, op, regs);
- 		op = rcu_dereference_raw(op->next);
- 	};
- 	preempt_enable_notrace();
-@@ -3983,17 +3983,24 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
-  * the list function ignores the op parameter, we do not want any
-  * C side effects, where a function is called without the caller
-  * sending a third parameter.
-+ * Archs are to support both the regs and ftrace_ops at the same time.
-+ * If they support ftrace_ops, it is assumed they support regs.
-+ * If call backs want to use regs, they must either check for regs
-+ * being NULL, or ARCH_SUPPORTS_FTRACE_SAVE_REGS.
-+ * Note, ARCH_SUPPORT_SAVE_REGS expects a full regs to be saved.
-+ * An architecture can pass partial regs with ftrace_ops and still
-+ * set the ARCH_SUPPORT_FTARCE_OPS.
-  */
- #if ARCH_SUPPORTS_FTRACE_OPS
- static void ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
--				 struct ftrace_ops *op)
-+				 struct ftrace_ops *op, struct pt_regs *regs)
- {
--	__ftrace_ops_list_func(ip, parent_ip, NULL);
-+	__ftrace_ops_list_func(ip, parent_ip, NULL, regs);
- }
- #else
- static void ftrace_ops_no_ops(unsigned long ip, unsigned long parent_ip)
- {
--	__ftrace_ops_list_func(ip, parent_ip, NULL);
-+	__ftrace_ops_list_func(ip, parent_ip, NULL, NULL);
- }
- #endif
- 
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index a872a9a..9824419 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -259,7 +259,7 @@ EXPORT_SYMBOL_GPL(perf_trace_buf_prepare);
- #ifdef CONFIG_FUNCTION_TRACER
- static void
- perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip,
--			  struct ftrace_ops *ops)
-+			  struct ftrace_ops *ops, struct pt_regs *pt_regs)
- {
- 	struct ftrace_entry *entry;
- 	struct hlist_head *head;
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 88daa51..8c66968 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1682,7 +1682,7 @@ static DEFINE_PER_CPU(atomic_t, ftrace_test_event_disable);
- 
- static void
- function_test_events_call(unsigned long ip, unsigned long parent_ip,
--			  struct ftrace_ops *op)
-+			  struct ftrace_ops *op, struct pt_regs *pt_regs)
- {
- 	struct ring_buffer_event *event;
- 	struct ring_buffer *buffer;
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index fceb7a9..5675ebd 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -49,7 +49,7 @@ static void function_trace_start(struct trace_array *tr)
- 
- static void
- function_trace_call_preempt_only(unsigned long ip, unsigned long parent_ip,
--				 struct ftrace_ops *op)
-+				 struct ftrace_ops *op, struct pt_regs *pt_regs)
- {
- 	struct trace_array *tr = func_trace;
- 	struct trace_array_cpu *data;
-@@ -77,7 +77,8 @@ function_trace_call_preempt_only(unsigned long ip, unsigned long parent_ip,
- 
- static void
- function_trace_call(unsigned long ip, unsigned long parent_ip,
--		    struct ftrace_ops *op)
-+		    struct ftrace_ops *op, struct pt_regs *pt_regs)
++protected_hardlinks:
 +
- {
- 	struct trace_array *tr = func_trace;
- 	struct trace_array_cpu *data;
-@@ -109,7 +110,7 @@ function_trace_call(unsigned long ip, unsigned long parent_ip,
++A long-standing class of security issues is the hardlink-based
++time-of-check-time-of-use race, most commonly seen in world-writable
++directories like /tmp. The common method of exploitation of this flaw
++is to cross privilege boundaries when following a given hardlink (i.e. a
++root process follows a hardlink created by another user). Additionally,
++on systems without separated partitions, this stops unauthorized users
++from "pinning" vulnerable setuid/setgid files against being upgraded by
++the administrator, or linking to special files.
++
++When set to "0", hardlink creation behavior is unrestricted.
++
++When set to "1" hardlinks cannot be created by users if they do not
++already own the source file, or do not have read/write access to it.
++
++This protection is based on the restrictions in Openwall and grsecurity.
++
++==============================================================
++
++protected_symlinks:
++
++A long-standing class of security issues is the symlink-based
++time-of-check-time-of-use race, most commonly seen in world-writable
++directories like /tmp. The common method of exploitation of this flaw
++is to cross privilege boundaries when following a given symlink (i.e. a
++root process follows a symlink belonging to another user). For a likely
++incomplete list of hundreds of examples across the years, please see:
++http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
++
++When set to "0", symlink following behavior is unrestricted.
++
++When set to "1" symlinks are permitted to be followed only when outside
++a sticky world-writable directory, or when the uid of the symlink and
++follower match, or when the directory owner matches the symlink's owner.
++
++This protection is based on the restrictions in Openwall and grsecurity.
++
++==============================================================
++
+ suid_dumpable:
  
- static void
- function_stack_trace_call(unsigned long ip, unsigned long parent_ip,
--			  struct ftrace_ops *op)
-+			  struct ftrace_ops *op, struct pt_regs *pt_regs)
- {
- 	struct trace_array *tr = func_trace;
- 	struct trace_array_cpu *data;
-diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index 2862c77..c7a9ba9 100644
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -137,7 +137,7 @@ static int func_prolog_dec(struct trace_array *tr,
-  */
- static void
- irqsoff_tracer_call(unsigned long ip, unsigned long parent_ip,
--		    struct ftrace_ops *op)
-+		    struct ftrace_ops *op, struct pt_regs *pt_regs)
- {
- 	struct trace_array *tr = irqsoff_trace;
- 	struct trace_array_cpu *data;
-diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
-index 0caf4f5..7547e36 100644
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -108,7 +108,8 @@ out_enable:
-  * wakeup uses its own tracer function to keep the overhead down:
-  */
- static void
--wakeup_tracer_call(unsigned long ip, unsigned long parent_ip, struct ftrace_ops *op)
-+wakeup_tracer_call(unsigned long ip, unsigned long parent_ip,
-+		   struct ftrace_ops *op, struct pt_regs *pt_regs)
- {
- 	struct trace_array *tr = wakeup_trace;
- 	struct trace_array_cpu *data;
-diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-index 9ae40c8..add37e0 100644
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -104,7 +104,8 @@ static inline void warn_failed_init_tracer(struct tracer *trace, int init_ret)
- static int trace_selftest_test_probe1_cnt;
- static void trace_selftest_test_probe1_func(unsigned long ip,
- 					    unsigned long pip,
--					    struct ftrace_ops *op)
-+					    struct ftrace_ops *op,
-+					    struct pt_regs *pt_regs)
- {
- 	trace_selftest_test_probe1_cnt++;
- }
-@@ -112,7 +113,8 @@ static void trace_selftest_test_probe1_func(unsigned long ip,
- static int trace_selftest_test_probe2_cnt;
- static void trace_selftest_test_probe2_func(unsigned long ip,
- 					    unsigned long pip,
--					    struct ftrace_ops *op)
-+					    struct ftrace_ops *op,
-+					    struct pt_regs *pt_regs)
- {
- 	trace_selftest_test_probe2_cnt++;
- }
-@@ -120,7 +122,8 @@ static void trace_selftest_test_probe2_func(unsigned long ip,
- static int trace_selftest_test_probe3_cnt;
- static void trace_selftest_test_probe3_func(unsigned long ip,
- 					    unsigned long pip,
--					    struct ftrace_ops *op)
-+					    struct ftrace_ops *op,
-+					    struct pt_regs *pt_regs)
- {
- 	trace_selftest_test_probe3_cnt++;
- }
-@@ -128,7 +131,8 @@ static void trace_selftest_test_probe3_func(unsigned long ip,
- static int trace_selftest_test_global_cnt;
- static void trace_selftest_test_global_func(unsigned long ip,
- 					    unsigned long pip,
--					    struct ftrace_ops *op)
-+					    struct ftrace_ops *op,
-+					    struct pt_regs *pt_regs)
- {
- 	trace_selftest_test_global_cnt++;
- }
-@@ -136,7 +140,8 @@ static void trace_selftest_test_global_func(unsigned long ip,
- static int trace_selftest_test_dyn_cnt;
- static void trace_selftest_test_dyn_func(unsigned long ip,
- 					 unsigned long pip,
--					 struct ftrace_ops *op)
-+					 struct ftrace_ops *op,
-+					 struct pt_regs *pt_regs)
- {
- 	trace_selftest_test_dyn_cnt++;
- }
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index e20006d..2fa5328 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -111,7 +111,8 @@ static inline void check_stack(void)
+ This value can be used to query and set the core dump mode for setuid
+diff --git a/fs/namei.c b/fs/namei.c
+index 1b64746..8712c14 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -641,6 +641,118 @@ static inline void put_link(struct nameidata *nd, struct path *link, void *cooki
+ 	path_put(link);
  }
  
- static void
--stack_trace_call(unsigned long ip, unsigned long parent_ip, struct ftrace_ops *op)
-+stack_trace_call(unsigned long ip, unsigned long parent_ip,
-+		 struct ftrace_ops *op, struct pt_regs *pt_regs)
++int sysctl_protected_symlinks __read_mostly = 1;
++int sysctl_protected_hardlinks __read_mostly = 1;
++
++/**
++ * may_follow_link - Check symlink following for unsafe situations
++ * @link: The path of the symlink
++ *
++ * In the case of the sysctl_protected_symlinks sysctl being enabled,
++ * CAP_DAC_OVERRIDE needs to be specifically ignored if the symlink is
++ * in a sticky world-writable directory. This is to protect privileged
++ * processes from failing races against path names that may change out
++ * from under them by way of other users creating malicious symlinks.
++ * It will permit symlinks to be followed only when outside a sticky
++ * world-writable directory, or when the uid of the symlink and follower
++ * match, or when the directory owner matches the symlink's owner.
++ *
++ * Returns 0 if following the symlink is allowed, -ve on error.
++ */
++static inline int may_follow_link(struct path *link, struct nameidata *nd)
++{
++	const struct inode *inode;
++	const struct inode *parent;
++
++	if (!sysctl_protected_symlinks)
++		return 0;
++
++	/* Allowed if owner and follower match. */
++	inode = link->dentry->d_inode;
++	if (current_cred()->fsuid == inode->i_uid)
++		return 0;
++
++	/* Allowed if parent directory not sticky and world-writable. */
++	parent = nd->path.dentry->d_inode;
++	if ((parent->i_mode & (S_ISVTX|S_IWOTH)) != (S_ISVTX|S_IWOTH))
++		return 0;
++
++	/* Allowed if parent directory and link owner match. */
++	if (parent->i_uid == inode->i_uid)
++		return 0;
++
++	path_put(&nd->path);
++	return -EACCES;
++}
++
++/**
++ * safe_hardlink_source - Check for safe hardlink conditions
++ * @inode: the source inode to hardlink from
++ *
++ * Return false if at least one of the following conditions:
++ *    - inode is not a regular file
++ *    - inode is setuid
++ *    - inode is setgid and group-exec
++ *    - access failure for read and write
++ *
++ * Otherwise returns true.
++ */
++static bool safe_hardlink_source(struct inode *inode)
++{
++	umode_t mode = inode->i_mode;
++
++	/* Special files should not get pinned to the filesystem. */
++	if (!S_ISREG(mode))
++		return false;
++
++	/* Setuid files should not get pinned to the filesystem. */
++	if (mode & S_ISUID)
++		return false;
++
++	/* Executable setgid files should not get pinned to the filesystem. */
++	if ((mode & (S_ISGID | S_IXGRP)) == (S_ISGID | S_IXGRP))
++		return false;
++
++	/* Hardlinking to unreadable or unwritable sources is dangerous. */
++	if (inode_permission(inode, MAY_READ | MAY_WRITE))
++		return false;
++
++	return true;
++}
++
++/**
++ * may_linkat - Check permissions for creating a hardlink
++ * @link: the source to hardlink from
++ *
++ * Block hardlink when all of:
++ *  - sysctl_protected_hardlinks enabled
++ *  - fsuid does not match inode
++ *  - hardlink source is unsafe (see safe_hardlink_source() above)
++ *  - not CAP_FOWNER
++ *
++ * Returns 0 if successful, -ve on error.
++ */
++static int may_linkat(struct path *link)
++{
++	const struct cred *cred;
++	struct inode *inode;
++
++	if (!sysctl_protected_hardlinks)
++		return 0;
++
++	cred = current_cred();
++	inode = link->dentry->d_inode;
++
++	/* Source inode owner (or CAP_FOWNER) can hardlink all they like,
++	 * otherwise, it must be a safe source.
++	 */
++	if (cred->fsuid == inode->i_uid || safe_hardlink_source(inode) ||
++	    capable(CAP_FOWNER))
++		return 0;
++
++	return -EPERM;
++}
++
+ static __always_inline int
+ follow_link(struct path *link, struct nameidata *nd, void **p)
  {
- 	int cpu;
+@@ -1815,6 +1927,9 @@ static int path_lookupat(int dfd, const char *name,
+ 		while (err > 0) {
+ 			void *cookie;
+ 			struct path link = path;
++			err = may_follow_link(&link, nd);
++			if (unlikely(err))
++				break;
+ 			nd->flags |= LOOKUP_PARENT;
+ 			err = follow_link(&link, nd, &cookie);
+ 			if (err)
+@@ -2774,6 +2889,9 @@ static struct file *path_openat(int dfd, const char *pathname,
+ 			error = -ELOOP;
+ 			break;
+ 		}
++		error = may_follow_link(&link, nd);
++		if (unlikely(error))
++			break;
+ 		nd->flags |= LOOKUP_PARENT;
+ 		nd->flags &= ~(LOOKUP_OPEN|LOOKUP_CREATE|LOOKUP_EXCL);
+ 		error = follow_link(&link, nd, &cookie);
+@@ -3433,6 +3551,9 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
+ 	error = -EXDEV;
+ 	if (old_path.mnt != new_path.mnt)
+ 		goto out_dput;
++	error = may_linkat(&old_path);
++	if (unlikely(error))
++		goto out_dput;
+ 	error = mnt_want_write(new_path.mnt);
+ 	if (error)
+ 		goto out_dput;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 48548bd..de74812 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -437,6 +437,8 @@ extern unsigned long get_max_files(void);
+ extern int sysctl_nr_open;
+ extern struct inodes_stat_t inodes_stat;
+ extern int leases_enable, lease_break_time;
++extern int sysctl_protected_symlinks;
++extern int sysctl_protected_hardlinks;
  
+ struct buffer_head;
+ typedef int (get_block_t)(struct inode *inode, sector_t iblock,
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 4ab1187..5d9a1d2 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1494,6 +1494,24 @@ static struct ctl_table fs_table[] = {
+ #endif
+ #endif
+ 	{
++		.procname	= "protected_symlinks",
++		.data		= &sysctl_protected_symlinks,
++		.maxlen		= sizeof(int),
++		.mode		= 0600,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &zero,
++		.extra2		= &one,
++	},
++	{
++		.procname	= "protected_hardlinks",
++		.data		= &sysctl_protected_hardlinks,
++		.maxlen		= sizeof(int),
++		.mode		= 0600,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &zero,
++		.extra2		= &one,
++	},
++	{
+ 		.procname	= "suid_dumpable",
+ 		.data		= &suid_dumpable,
+ 		.maxlen		= sizeof(int),
 -- 
-1.7.10
-
+1.7.0.4
 
