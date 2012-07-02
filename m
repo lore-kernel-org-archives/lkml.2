@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933064Ab2GBKnb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 06:43:31 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:14746
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932931Ab2GBKna (ORCPT
+	id S933071Ab2GBKqP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 06:46:15 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:56844 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932931Ab2GBKqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 06:43:30 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI936eI1432Izz1202hzzz2dh2a8h668h839h944hd25hf0ah)
-Date: Mon, 2 Jul 2012 18:44:41 +0800
-From: Zhao Chenhui <chenhui.zhao@freescale.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: <linuxppc-dev@lists.ozlabs.org>, <scottwood@freescale.com>,
-        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
-Subject: Re: [PATCH v6 1/5] powerpc/85xx: implement hardware timebase sync
-Message-ID: <20120702104441.GB22108@localhost.localdomain>
-References: <1340706359-9455-1-git-send-email-chenhui.zhao@freescale.com>
- <1340748634.3732.27.camel@pasglop>
- <20120627102138.GB10476@localhost.localdomain>
- <1340797732.3732.46.camel@pasglop>
- <20120628033815.GA11387@localhost.localdomain>
- <1340880651.20977.83.camel@pasglop>
+	Mon, 2 Jul 2012 06:46:14 -0400
+Date: Mon, 2 Jul 2012 13:46:09 +0300 (EEST)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Glauber Costa <glommer@parallels.com>
+cc: Feng Tang <feng.tang@intel.com>, linux-kernel@vger.kernel.org,
+        fengguang.wu@intel.com, sfr@canb.auug.org.au, linux-mm@kvack.org,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH] slab: Fix a tpyo in commit 8c138b "slab: Get rid of
+ obj_size macro"
+In-Reply-To: <4FF17733.6020703@parallels.com>
+Message-ID: <alpine.LFD.2.02.1207021346030.1916@tux.localdomain>
+References: <1341210550-11038-1-git-send-email-feng.tang@intel.com> <4FF1714A.7050400@parallels.com> <4FF17733.6020703@parallels.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1340880651.20977.83.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.net
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28, 2012 at 08:50:51PM +1000, Benjamin Herrenschmidt wrote:
-> On Thu, 2012-06-28 at 11:38 +0800, Zhao Chenhui wrote:
+On Mon, 2 Jul 2012, Glauber Costa wrote:
+> > I saw another bug in a patch that ended up not getting in, and was
+> > reported to Christoph, that was exactly due to a typo between size and
+> > object-size.
 > > 
+> > So first:
 > > 
-> > The bootloader have done a timebase sync. If we do not need KEXEC or
-> > HOTPLUG_CPU feature, it is unnecessary to do it again at boot time of
-> > kernel. I only compile the timebase sync routines
-> > when users enable KEXEC or HOTPLUG_CPU. 
+> > Acked-by: Glauber Costa <glommer@parallels.com>
+> > 
+> > But this also means that that confusion can have been made in other
+> > points. I suggest we take an extensive look into that to make sure there
+> > aren't more.
+> > 
 > 
-> Still, how much are you really saving ? Is it worth the added mess and
-> loss of test coverage ?
-> 
-> We have too many conditional stuff like that already.
-> 
-> Cheers,
-> Ben.
+> Which I just did. I also tried to pay attention to another simple
+> conversion spots like that. We seem to be fine.
 
-OK. I will remove this config option.
-
--Chenhui
-
+Applied, thanks guys!
