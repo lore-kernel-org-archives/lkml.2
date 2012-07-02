@@ -1,136 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109Ab2GBG2q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 02:28:46 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:35409 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750720Ab2GBG2o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 02:28:44 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX199FVZjwTd9ZVKwoEbhRC4dUQJDXe7aK5ANqDB1J8
-	S33bQn6nHWEU9L
-Message-ID: <4FF13F9C.5050104@gmx.de>
-Date: Mon, 02 Jul 2012 06:28:44 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
+	id S1752248Ab2GBGau (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 02:30:50 -0400
+Received: from trent.utfs.org ([94.185.90.103]:60675 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750720Ab2GBGas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 02:30:48 -0400
+Date: Sun, 1 Jul 2012 23:30:40 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+cc: linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.5.0-rc5: BUG: soft lockup - CPU#0 stuck for 22s
+In-Reply-To: <1341204649.2588.29.camel@pasglop>
+Message-ID: <alpine.DEB.2.01.1207012326110.5568@trent.utfs.org>
+References: <alpine.DEB.2.01.1207010009270.5568@trent.utfs.org> <1341204649.2588.29.camel@pasglop>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Liu Ying <Ying.Liu@freescale.com>
-CC: g.liakhovetski@gmx.de, liu.y.victor@gmail.com, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/3] mx3fb: support pan display with fb_set_var
-References: <1339376810-8247-1-git-send-email-Ying.Liu@freescale.com> <1339376810-8247-2-git-send-email-Ying.Liu@freescale.com>
-In-Reply-To: <1339376810-8247-2-git-send-email-Ying.Liu@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2012 01:06 AM, Liu Ying wrote:
-> Users may call FBIOPUT_VSCREENINFO ioctrl to do pan display.
-> This ioctrl relies on fb_set_var() to do the job. fb_set_var()
-> calls the custom fb_set_par() method and then calls the custom
-> fb_pan_display() method. Before calling the custom fb_pan_display()
-> method, info->var is already updated from the new *var in fb_set_var().
-> And, the custom fb_pan_display() method checks if xoffset and yoffset
-> in info->var and the new *var are different before doing actual panning,
-> which prevents the panning from happening within fb_set_var() context.
-> This patch caches the current var info locally in mx3fb driver so that
-> pan display with fb_set_var is supported.
+On Mon, 2 Jul 2012 at 14:50, Benjamin Herrenschmidt wrote:
+> Interesting... I observed something roughly similar on a dual G4
+> the other day associated with a 30s to 1mn pause during boot. RCU
+> was complaining loudly.
 > 
-> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+> In my case, it did continue booting normally, is that the case for you ?
 
-Applied patches 2 and 3 of this series.
+No, in my case it stopped booting, though there was no "panic" message.
+
+> Also if I compile the kernel without CONFIG_SMP, it did go away as well,
+> do you observe that too ?
+
+This PoweBook G4 is UP anyway and I'm always building w/o CONFIG_SMP.
+
+> I don't have a spare cycle to investigate this problem this week I'm
+> afraid, it might help if you could try a bisection though.
+
+Yes, I've started a bisection already and will report back.
+
+FYI, I've put a netconsole-log below from another boot (in the 
+middle of a bisection), the instruction dump is slightly more complete.
+
+Thanks!
+Christian.
+
+[   40.345973] BUG: soft lockup - CPU#0 stuck for 22s! [modprobe:691]
+[   40.347737] Modules linked in: sd_mod arc4 firewire_sbp2 scsi_mod b43 mac80211 cfg80211
+[   40.349443] irq event stamp: 65779272
+[   40.351156] hardirqs last  enabled at (65779271): [<c052fae8>] _raw_spin_unlock_irqrestore+0x40/0x9c
+[   40.352911] hardirqs last disabled at (65779272): [<c0011648>] reenable_mmu+0x40/0x98
+[   40.354649] softirqs last  enabled at (65769864): [<c000f3c0>] call_do_softirq+0x14/0x24
+[   40.356386] softirqs last disabled at (65769857): [<c000f3c0>] call_do_softirq+0x14/0x24
+[   40.358098] NIP: c005ee64 LR: c005ee54 CTR: c009c578
+[   40.359788] REGS: eece3d70 TRAP: 0901   Not tainted  (3.4.0-05609-gc80ddb5)
+[   40.361517] MSR: 00009032 <EE,ME,IR,DR,RI>  CR: 24042482  XER: 00000000
+[   40.363261] TASK = eec30b80[691] 'modprobe' THREAD: eece2000#012
+[   40.363261] GPR00: c005ee54 eece3e20 eec30b80 00000000 00000002 c005edd0 00000000 00000000 #012
+[   40.363261] GPR08: 00000000 eece2000 00000000 00000001 24042488 
+[   40.368310] NIP [c005ee64] async_synchronize_cookie_domain+0x70/0x1f4
+[   40.369978] LR [c005ee54] async_synchronize_cookie_domain+0x60/0x1f4
+[   40.371614] Call Trace:
+[   40.373226] [eece3e20] [c005ee54] async_synchronize_cookie_domain+0x60/0x1f4 (unreliable)
+[   40.374884] [eece3e70] [c005f034] async_synchronize_full+0x3c/0x74
+[   40.376524] [eece3e90] [c0082790] sys_init_module+0x178/0x1164
+[   40.378151] [eece3f40] [c00117a8] ret_from_syscall+0x0/0x38
+[   40.379783] --- Exception: c01 at 0xff5d694#012[   40.379783]     LR = 0x100041c0
+[   40.382928] Instruction dump:
+[   40.384489] 93a10044 419e0014 3d20c06f 8009d020 2f800000 419e017c 7fc3f378 4bfffed9 
+[   40.386081] 7f9f1840 419d0060 7f9f1800 419e0050 <881bf008> 2f800000 419e0014 3d20c06f
 
 
-Thanks,
+-- 
+BOFH excuse #241:
 
-Florian Tobias Schandinat
-
-> ---
->  drivers/video/mx3fb.c |   33 ++++++++++++++++++++++++++-------
->  1 files changed, 26 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/video/mx3fb.c b/drivers/video/mx3fb.c
-> index d53db60..2dd11c4 100644
-> --- a/drivers/video/mx3fb.c
-> +++ b/drivers/video/mx3fb.c
-> @@ -268,7 +268,7 @@ struct mx3fb_info {
->  	dma_cookie_t			cookie;
->  	struct scatterlist		sg[2];
->  
-> -	u32				sync;	/* preserve var->sync flags */
-> +	struct fb_var_screeninfo	cur_var; /* current var info */
->  };
->  
->  static void mx3fb_dma_done(void *);
-> @@ -723,7 +723,7 @@ static void mx3fb_dma_done(void *arg)
->  
->  static int __set_par(struct fb_info *fbi, bool lock)
->  {
-> -	u32 mem_len;
-> +	u32 mem_len, cur_xoffset, cur_yoffset;
->  	struct ipu_di_signal_cfg sig_cfg;
->  	enum ipu_panel mode = IPU_PANEL_TFT;
->  	struct mx3fb_info *mx3_fbi = fbi->par;
-> @@ -805,8 +805,25 @@ static int __set_par(struct fb_info *fbi, bool lock)
->  	video->out_height	= fbi->var.yres;
->  	video->out_stride	= fbi->var.xres_virtual;
->  
-> -	if (mx3_fbi->blank == FB_BLANK_UNBLANK)
-> +	if (mx3_fbi->blank == FB_BLANK_UNBLANK) {
->  		sdc_enable_channel(mx3_fbi);
-> +		/*
-> +		 * sg[0] points to fb smem_start address
-> +		 * and is actually active in controller.
-> +		 */
-> +		mx3_fbi->cur_var.xoffset = 0;
-> +		mx3_fbi->cur_var.yoffset = 0;
-> +	}
-> +
-> +	/*
-> +	 * Preserve xoffset and yoffest in case they are
-> +	 * inactive in controller as fb is blanked.
-> +	 */
-> +	cur_xoffset = mx3_fbi->cur_var.xoffset;
-> +	cur_yoffset = mx3_fbi->cur_var.yoffset;
-> +	mx3_fbi->cur_var = fbi->var;
-> +	mx3_fbi->cur_var.xoffset = cur_xoffset;
-> +	mx3_fbi->cur_var.yoffset = cur_yoffset;
->  
->  	return 0;
->  }
-> @@ -926,8 +943,8 @@ static int mx3fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
->  	var->grayscale = 0;
->  
->  	/* Preserve sync flags */
-> -	var->sync |= mx3_fbi->sync;
-> -	mx3_fbi->sync |= var->sync;
-> +	var->sync |= mx3_fbi->cur_var.sync;
-> +	mx3_fbi->cur_var.sync |= var->sync;
->  
->  	return 0;
->  }
-> @@ -1073,8 +1090,8 @@ static int mx3fb_pan_display(struct fb_var_screeninfo *var,
->  		return -EINVAL;
->  	}
->  
-> -	if (fbi->var.xoffset == var->xoffset &&
-> -	    fbi->var.yoffset == var->yoffset)
-> +	if (mx3_fbi->cur_var.xoffset == var->xoffset &&
-> +	    mx3_fbi->cur_var.yoffset == var->yoffset)
->  		return 0;	/* No change, do nothing */
->  
->  	y_bottom = var->yoffset;
-> @@ -1157,6 +1174,8 @@ static int mx3fb_pan_display(struct fb_var_screeninfo *var,
->  	else
->  		fbi->var.vmode &= ~FB_VMODE_YWRAP;
->  
-> +	mx3_fbi->cur_var = fbi->var;
-> +
->  	mutex_unlock(&mx3_fbi->mutex);
->  
->  	dev_dbg(fbi->device, "Update complete\n");
-
+_Rosin_ core solder? But...
