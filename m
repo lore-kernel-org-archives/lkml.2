@@ -1,169 +1,395 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab2GBGrj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 02:47:39 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:52436 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176Ab2GBGrh (ORCPT
+	id S1754990Ab2GBG63 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 02:58:29 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41850 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963Ab2GBG61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 02:47:37 -0400
-Date: Mon, 2 Jul 2012 08:46:24 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        devicetree-discuss@lists.ozlabs.org, Mitch Bradley <wmb@firmworks.com>
-Subject: Re: [PATCH] pwm-backlight: add regulator and GPIO support
-Message-ID: <20120702064624.GA8683@avionic-0098.mockup.avionic-design.de>
-References: <1340976167-27298-1-git-send-email-acourbot@nvidia.com>
- <20120630183742.GE23990@avionic-0098.adnet.avionic-design.de>
- <4FF116F0.5070602@nvidia.com>
+	Mon, 2 Jul 2012 02:58:27 -0400
+From: "Du, Changbin" <changbin.du@gmail.com>
+To: <mchehab@infradead.org>
+Cc: <anssi.hannula@iki.fi>, <gregkh@suse.de>, <linux-media@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] media: rc: ati_remote.c: code style and compile warning fixing
+Date: Mon, 2 Jul 2012 14:58:18 +0800
+Message-ID: <4ff14691.0ae1440a.54a9.3331@mx.google.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
-Content-Disposition: inline
-In-Reply-To: <4FF116F0.5070602@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:hHexCSLajcylD7I0DdBJRalzSTDtHPoenYqkz8fDjsr
- 3lsOPSPPdszI37zcLIHg028WiylHoy3jkOHORiDLsr+r3ReajC
- T/L0EnxqTOwB1jssPppiWFM0ddgc5l2fYF+mAC55jVWX0065Iz
- Ja6KpM5WPCUFF3RGs2ICtXrEkG8Y0vz8jdye5JF8PxXUnlhqlP
- +Up1fgln8ZHTaO/3Lj/M/hC0ck/E4fZG+K9cbOcSm8m7NonX7O
- vChyO0YuiG+2fOHyMEs/G+fP55+JWyru2HX+y78iFeyQJOSyYO
- OZedm3ND/1pJO1XldOTno+HcSIVhJ/GhYaRil5MPvqdLoOoddO
- nV6URRujCiklttvdV2Jh4Ayd3310u2vQtOOf85X4mRM4Wuajm7
- kpf1n8wY0AzLyODqwLNw5gVmplb7ojlRns=
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: AQHNWB3jxnUwkK7da0yfBKvOGpyYdpcVjbgQgAAA42A=
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+changes:
+	1. break some lines that are longer than 80 characters.
+	2. remove local function prototype declarations which do not
+	   need.
+	3. replace TAB character with a space character in function
+	   comments.
+	4. change the types of array init1[] and init2[] to
+	   "unsigned char" to avoid compile warning.
 
---PNTmBPCT7hxwcZjr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Du, Changbin <changbin.du@gmail.com>
+---
+ drivers/media/rc/ati_remote.c |  139
++++++++++++++++++++++++++----------------
+ 1 file changed, 84 insertions(+), 55 deletions(-)
 
-On Mon, Jul 02, 2012 at 12:35:12PM +0900, Alexandre Courbot wrote:
-> On 07/01/2012 03:37 AM, Thierry Reding wrote:>> +	ret =3D
-> of_get_named_gpio(node, "enable-gpios", 0);
-> >> +	if (ret >=3D 0) {
-> >> +		data->enable_gpio =3D of_get_named_gpio(node, "enable-gpios", 0);
-> >
-> > Can't you just reuse the value of ret here?
->=20
-> Yes, definitely.
->=20
-> >> +	pb->enable_gpio =3D -EINVAL;
-> >
-> > Perhaps initialize this to -1? Assigning standard error codes to a GPIO
-> > doesn't make much sense.
->=20
-> Documentation/gpio.txt states the following:
->=20
-> "If you want to initialize a structure with an invalid GPIO number, use
-> some negative number (perhaps "-EINVAL"); that will never be valid."
->=20
-> gpio_is_valid() seems to be happy with any negative value, but
-> -EINVAL seems to be a convention here.
+diff --git a/drivers/media/rc/ati_remote.c b/drivers/media/rc/ati_remote.c
+index 7be377f..0df66ac 100644
+--- a/drivers/media/rc/ati_remote.c
++++ b/drivers/media/rc/ati_remote.c
+@@ -23,6 +23,8 @@
+  *                Vincent Vanackere <vanackere@lif.univ-mrs.fr>
+  *            Added support for the "Lola" remote contributed by:
+  *                Seth Cohn <sethcohn@yahoo.com>
++ *  Jul 2012: Du, Changbin <changbin.du@gmail.com>
++ *            Code style and compile warning fixing
+  *
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*
+  *
+@@ -147,7 +149,8 @@ static bool mouse = true;
+ module_param(mouse, bool, 0444);
+ MODULE_PARM_DESC(mouse, "Enable mouse device, default = yes");
+ 
+-#define dbginfo(dev, format, arg...) do { if (debug) dev_info(dev , format
+, ## arg); } while (0)
++#define dbginfo(dev, format, arg...) \
++	do { if (debug) dev_info(dev , format , ## arg); } while (0)
+ #undef err
+ #define err(format, arg...) printk(KERN_ERR format , ## arg)
+ 
+@@ -191,17 +194,41 @@ static const char *get_medion_keymap(struct
+usb_interface *interface)
+ 	return RC_MAP_MEDION_X10;
+ }
+ 
+-static const struct ati_receiver_type type_ati		= { .default_keymap
+= RC_MAP_ATI_X10 };
+-static const struct ati_receiver_type type_medion	= {
+.get_default_keymap = get_medion_keymap };
+-static const struct ati_receiver_type type_firefly	= { .default_keymap
+= RC_MAP_SNAPSTREAM_FIREFLY };
++static const struct ati_receiver_type type_ati		= {
++	.default_keymap = RC_MAP_ATI_X10
++};
++static const struct ati_receiver_type type_medion	= {
++	.get_default_keymap = get_medion_keymap
++};
++static const struct ati_receiver_type type_firefly	= {
++	.default_keymap = RC_MAP_SNAPSTREAM_FIREFLY
++};
+ 
+ static struct usb_device_id ati_remote_table[] = {
+-	{ USB_DEVICE(ATI_REMOTE_VENDOR_ID, LOLA_REMOTE_PRODUCT_ID),
+.driver_info = (unsigned long)&type_ati },
+-	{ USB_DEVICE(ATI_REMOTE_VENDOR_ID, LOLA2_REMOTE_PRODUCT_ID),
+.driver_info = (unsigned long)&type_ati },
+-	{ USB_DEVICE(ATI_REMOTE_VENDOR_ID, ATI_REMOTE_PRODUCT_ID),
+.driver_info = (unsigned long)&type_ati },
+-	{ USB_DEVICE(ATI_REMOTE_VENDOR_ID, NVIDIA_REMOTE_PRODUCT_ID),
+.driver_info = (unsigned long)&type_ati },
+-	{ USB_DEVICE(ATI_REMOTE_VENDOR_ID, MEDION_REMOTE_PRODUCT_ID),
+.driver_info = (unsigned long)&type_medion },
+-	{ USB_DEVICE(ATI_REMOTE_VENDOR_ID, FIREFLY_REMOTE_PRODUCT_ID),
+.driver_info = (unsigned long)&type_firefly },
++	{
++		USB_DEVICE(ATI_REMOTE_VENDOR_ID, LOLA_REMOTE_PRODUCT_ID),
++		.driver_info = (unsigned long)&type_ati
++	},
++	{
++		USB_DEVICE(ATI_REMOTE_VENDOR_ID, LOLA2_REMOTE_PRODUCT_ID),
++		.driver_info = (unsigned long)&type_ati
++	},
++	{
++		USB_DEVICE(ATI_REMOTE_VENDOR_ID, ATI_REMOTE_PRODUCT_ID),
++		.driver_info = (unsigned long)&type_ati
++	},
++	{
++		USB_DEVICE(ATI_REMOTE_VENDOR_ID, NVIDIA_REMOTE_PRODUCT_ID),
++		.driver_info = (unsigned long)&type_ati
++	},
++	{
++		USB_DEVICE(ATI_REMOTE_VENDOR_ID, MEDION_REMOTE_PRODUCT_ID),
++		.driver_info = (unsigned long)&type_medion
++	},
++	{
++		USB_DEVICE(ATI_REMOTE_VENDOR_ID, FIREFLY_REMOTE_PRODUCT_ID),
++		.driver_info = (unsigned long)&type_firefly
++	},
+ 	{}	/* Terminating entry */
+ };
+ 
+@@ -215,8 +242,8 @@ MODULE_DEVICE_TABLE(usb, ati_remote_table);
+ #define SEND_FLAG_COMPLETE	2
+ 
+ /* Device initialization strings */
+-static char init1[] = { 0x01, 0x00, 0x20, 0x14 };
+-static char init2[] = { 0x01, 0x00, 0x20, 0x14, 0x20, 0x20, 0x20 };
++static unsigned char init1[] = { 0x01, 0x00, 0x20, 0x14 };
++static unsigned char init2[] = { 0x01, 0x00, 0x20, 0x14, 0x20, 0x20, 0x20
+};
+ 
+ struct ati_remote {
+ 	struct input_dev *idev;
+@@ -296,25 +323,8 @@ static const struct {
+ 	{KIND_END, 0x00, EV_MAX + 1, 0, 0}
+ };
+ 
+-/* Local function prototypes */
+-static int ati_remote_sendpacket	(struct ati_remote *ati_remote, u16
+cmd, unsigned char *data);
+-static void ati_remote_irq_out		(struct urb *urb);
+-static void ati_remote_irq_in		(struct urb *urb);
+-static void ati_remote_input_report	(struct urb *urb);
+-static int ati_remote_initialize	(struct ati_remote *ati_remote);
+-static int ati_remote_probe		(struct usb_interface *interface,
+const struct usb_device_id *id);
+-static void ati_remote_disconnect	(struct usb_interface *interface);
+-
+-/* usb specific object to register with the usb subsystem */
+-static struct usb_driver ati_remote_driver = {
+-	.name         = "ati_remote",
+-	.probe        = ati_remote_probe,
+-	.disconnect   = ati_remote_disconnect,
+-	.id_table     = ati_remote_table,
+-};
+-
+ /*
+- *	ati_remote_dump_input
++ * ati_remote_dump_input
+  */
+ static void ati_remote_dump(struct device *dev, unsigned char *data,
+ 			    unsigned int len)
+@@ -326,12 +336,14 @@ static void ati_remote_dump(struct device *dev,
+unsigned char *data,
+ 		dev_warn(dev, "Weird key %02x %02x %02x %02x\n",
+ 		     data[0], data[1], data[2], data[3]);
+ 	else
+-		dev_warn(dev, "Weird data, len=%d %02x %02x %02x %02x %02x
+%02x ...\n",
+-		     len, data[0], data[1], data[2], data[3], data[4],
+data[5]);
++		dev_warn(dev,
++			"Weird data, len=%d %02x %02x %02x %02x %02x %02x
+...\n",
++			len, data[0], data[1], data[2], data[3], data[4],
++			data[5]);
+ }
+ 
+ /*
+- *	ati_remote_open
++ * ati_remote_open
+  */
+ static int ati_remote_open(struct ati_remote *ati_remote)
+ {
+@@ -355,7 +367,7 @@ out:	mutex_unlock(&ati_remote->open_mutex);
+ }
+ 
+ /*
+- *	ati_remote_close
++ * ati_remote_close
+  */
+ static void ati_remote_close(struct ati_remote *ati_remote)
+ {
+@@ -390,7 +402,7 @@ static void ati_remote_rc_close(struct rc_dev *rdev)
+ }
+ 
+ /*
+- *		ati_remote_irq_out
++ * ati_remote_irq_out
+  */
+ static void ati_remote_irq_out(struct urb *urb)
+ {
+@@ -408,11 +420,12 @@ static void ati_remote_irq_out(struct urb *urb)
+ }
+ 
+ /*
+- *	ati_remote_sendpacket
++ * ati_remote_sendpacket
+  *
+- *	Used to send device initialization strings
++ * Used to send device initialization strings
+  */
+-static int ati_remote_sendpacket(struct ati_remote *ati_remote, u16 cmd,
+unsigned char *data)
++static int ati_remote_sendpacket(struct ati_remote *ati_remote, u16 cmd,
++	unsigned char *data)
+ {
+ 	int retval = 0;
+ 
+@@ -441,7 +454,7 @@ static int ati_remote_sendpacket(struct ati_remote
+*ati_remote, u16 cmd, unsigne
+ }
+ 
+ /*
+- *	ati_remote_compute_accel
++ * ati_remote_compute_accel
+  *
+  * Implements acceleration curve for directional control pad
+  * If elapsed time since last event is > 1/4 second, user "stopped",
+@@ -478,7 +491,7 @@ static int ati_remote_compute_accel(struct ati_remote
+*ati_remote)
+ }
+ 
+ /*
+- *	ati_remote_report_input
++ * ati_remote_report_input
+  */
+ static void ati_remote_input_report(struct urb *urb)
+ {
+@@ -518,7 +531,8 @@ static void ati_remote_input_report(struct urb *urb)
+ 	remote_num = (data[3] >> 4) & 0x0f;
+ 	if (channel_mask & (1 << (remote_num + 1))) {
+ 		dbginfo(&ati_remote->interface->dev,
+-			"Masked input from channel 0x%02x: data %02x,%02x,
+mask= 0x%02lx\n",
++			"Masked input from channel 0x%02x: data %02x,%02x, "
++			"mask= 0x%02lx\n",
+ 			remote_num, data[1], data[2], channel_mask);
+ 		return;
+ 	}
+@@ -546,7 +560,9 @@ static void ati_remote_input_report(struct urb *urb)
+ 		if (wheel_keycode == KEY_RESERVED) {
+ 			/* scrollwheel was not mapped, assume mouse */
+ 
+-			/* Look up event code index in the mouse translation
+table. */
++			/* Look up event code index in the mouse translation
++			 * table.
++			 */
+ 			for (i = 0; ati_remote_tbl[i].kind != KIND_END; i++)
+{
+ 				if (scancode == ati_remote_tbl[i].data) {
+ 					index = i;
+@@ -630,9 +646,9 @@ static void ati_remote_input_report(struct urb *urb)
+ 	} else {
+ 
+ 		/*
+-		 * Other event kinds are from the directional control pad,
+and have an
+-		 * acceleration factor applied to them.  Without this
+acceleration, the
+-		 * control pad is mostly unusable.
++		 * Other event kinds are from the directional control pad,
+and
++		 * have an acceleration factor applied to them.  Without
+this
++		 * acceleration, the control pad is mostly unusable.
+ 		 */
+ 		acc = ati_remote_compute_accel(ati_remote);
+ 
+@@ -659,7 +675,8 @@ static void ati_remote_input_report(struct urb *urb)
+ 			input_report_rel(dev, REL_Y, acc);
+ 			break;
+ 		default:
+-			dev_dbg(&ati_remote->interface->dev, "ati_remote
+kind=%d\n",
++			dev_dbg(&ati_remote->interface->dev,
++				"ati_remote kind=%d\n",
+ 				ati_remote_tbl[index].kind);
+ 		}
+ 		input_sync(dev);
+@@ -670,7 +687,7 @@ static void ati_remote_input_report(struct urb *urb)
+ }
+ 
+ /*
+- *	ati_remote_irq_in
++ * ati_remote_irq_in
+  */
+ static void ati_remote_irq_in(struct urb *urb)
+ {
+@@ -684,22 +701,25 @@ static void ati_remote_irq_in(struct urb *urb)
+ 	case -ECONNRESET:	/* unlink */
+ 	case -ENOENT:
+ 	case -ESHUTDOWN:
+-		dev_dbg(&ati_remote->interface->dev, "%s: urb error status,
+unlink? \n",
++		dev_dbg(&ati_remote->interface->dev,
++			"%s: urb error status, unlink?\n",
+ 			__func__);
+ 		return;
+ 	default:		/* error */
+-		dev_dbg(&ati_remote->interface->dev, "%s: Nonzero urb status
+%d\n",
++		dev_dbg(&ati_remote->interface->dev,
++			"%s: Nonzero urb status %d\n",
+ 			__func__, urb->status);
+ 	}
+ 
+ 	retval = usb_submit_urb(urb, GFP_ATOMIC);
+ 	if (retval)
+-		dev_err(&ati_remote->interface->dev, "%s:
+usb_submit_urb()=%d\n",
++		dev_err(&ati_remote->interface->dev,
++			"%s: usb_submit_urb()=%d\n",
+ 			__func__, retval);
+ }
+ 
+ /*
+- *	ati_remote_alloc_buffers
++ * ati_remote_alloc_buffers
+  */
+ static int ati_remote_alloc_buffers(struct usb_device *udev,
+ 				    struct ati_remote *ati_remote)
+@@ -726,7 +746,7 @@ static int ati_remote_alloc_buffers(struct usb_device
+*udev,
+ }
+ 
+ /*
+- *	ati_remote_free_buffers
++ * ati_remote_free_buffers
+  */
+ static void ati_remote_free_buffers(struct ati_remote *ati_remote)
+ {
+@@ -825,9 +845,10 @@ static int ati_remote_initialize(struct ati_remote
+*ati_remote)
+ }
+ 
+ /*
+- *	ati_remote_probe
++ * ati_remote_probe
+  */
+-static int ati_remote_probe(struct usb_interface *interface, const struct
+usb_device_id *id)
++static int ati_remote_probe(struct usb_interface *interface,
++	const struct usb_device_id *id)
+ {
+ 	struct usb_device *udev = interface_to_usbdev(interface);
+ 	struct usb_host_interface *iface_host = interface->cur_altsetting;
+@@ -949,7 +970,7 @@ static int ati_remote_probe(struct usb_interface
+*interface, const struct usb_de
+ }
+ 
+ /*
+- *	ati_remote_disconnect
++ * ati_remote_disconnect
+  */
+ static void ati_remote_disconnect(struct usb_interface *interface)
+ {
+@@ -971,6 +992,14 @@ static void ati_remote_disconnect(struct usb_interface
+*interface)
+ 	kfree(ati_remote);
+ }
+ 
++/* usb specific object to register with the usb subsystem */
++static struct usb_driver ati_remote_driver = {
++	.name         = "ati_remote",
++	.probe        = ati_remote_probe,
++	.disconnect   = ati_remote_disconnect,
++	.id_table     = ati_remote_table,
++};
++
+ module_usb_driver(ati_remote_driver);
+ 
+ MODULE_AUTHOR(DRIVER_AUTHOR);
+-- 
+1.7.9.5
 
-I would have thought something like -1 would be good enough to represent
-an invalid GPIO, but if there's already a convention then we should
-follow it.
 
-> >> +	/* optional GPIO that enables/disables the backlight */
-> >> +	int enable_gpio;
-> >> +	/* 0 (default initialization value) is a valid GPIO number.
-> Make use of
-> >> +	 * control gpio explicit to avoid bad surprises. */
-> >> +	bool use_enable_gpio;
-> >
-> > It's a shame we have to add workarounds like this...
->=20
-> Yeah, I hate that too. :/ I see nothing better to do unfortunately.
->=20
-> Other remarks from Stephen made me realize that this patch has two
-> major flaws:
->=20
-> 1) The GPIO and regulator are fixed, optional entites ; this should
-> cover most cases but is not very flexible.
-> 2) Some (most?) backlight specify timings between turning power
-> on/enabling PWM/enabling backlight. Even the order of things may be
-> different. This patch totally ignores that.
->=20
-> So instead of having fixed "power-supply" and "enable-gpio"
-> properties, how about having properties describing the power-on and
-> power-off sequences which odd cells alternate between phandles to
-> regulators/gpios/pwm and delays in microseconds before continuing
-> the sequence. For example:
->=20
-> power-on =3D <&pwm 2 5000000
-> 	    10000
-> 	    &backlight_reg
-> 	    0
-> 	    &gpio 28 0>;
-> power-off =3D <&gpio 28 0
-> 	     0
-> 	     &backlight_reg
-> 	     10000
-> 	     &pwm 2 0>;
->=20
-> Here the power-on sequence would translate to, power on the second
-> PWM with a duty-cycle of 5ms, wait 10ms, then enable the backlight
-> regulator and GPIO 28 without delay. Power-off is the exact
-> opposite. The nice thing with this scheme is that you can reorder
-> the sequence at will and support the weirdest setups.
-
-I generally like the idea. I'm Cc'ing the devicetree-discuss mailing
-list, let's see what people there think about it. I've also added Mitch
-Bradley who already helped a lot with the initial binding.
-
-> What I don't know (device tree newbie here!) is:
-> 1) Is it legal to refer the same phandle several times in the same node?
-> 2) Is it ok to mix phandles of different types with integer values?
-> The DT above compiled, but can you e.g. resolve a regulator phandle
-> in the middle of a property?
-
-I believe these shouldn't be a problem.
-
-> 3) Can you "guess" the type of a phandle before parsing it? Here the
-> first phandle is a GPIO, but it could as well be the regulator. Do
-> we have means to know that in the driver code?
-
-That isn't possible. But you could for instance use a cell to specify
-the type of the following phandle.
-
-> Sorry for the long explanation, but I really wonder if doing this is
-> possible at all. If it is, then I think that's the way to do for
-> backlight initialization.
-
-OTOH we basically end up describing a code sequence in the DT. But as
-you mention above sometimes the hardware requires specific timing
-parameters so this might actually be a kind of valid sequence to
-describe in the DT.
-
-Thierry
-
---PNTmBPCT7hxwcZjr
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP8UPAAAoJEN0jrNd/PrOh5vQP/iTyzdqQzt0jr0JkmF4GtUZ9
-bq8+ZK+QksmheZWiOs3qWhSM0ZXBwbCBQOj79fYwYEOgrK7cZf8jNGiWruGetTC7
-ahCT9VQSqUus3p/Ws7L9PD66napcN54rSdp/ZybyWMO2RP328m7Ocfjzhml0nlr2
-vfmh8ErXBqa+DfVCR0bvMegAEhNRTGSyQTOGNKJT9sDWfXiAVfpQQLbUTfhRs8xd
-/5VVTDFTLT+2a1CW6Y+4io0oGMOQuWeD7+pPkT7UCjz8J2V7yHtfRjsHxpZfKTcQ
-i47E/K2M+hXtA2Ct0kUnUIvtRzka9bxKGXxMsEJaWyKPgHZxCYVpUT9LPAxkDve1
-K9TByGaOJTdxjJf772fBthZO6uIKp0l59MFxhrdFVwUOhi2A84gHdXggKPht6Nm6
-2Is7GxIk0UixJJRt97cerCSFw40crnezBzQlvNdndfjlyodTRjR1z620KlHBPA+y
-gcYQ0Lav0QB6JrD+B1Cx8gRoVJCft5y6r5mKAhQ13Dou4uLHLTQW0xd8M07dfp8u
-M8MF0WyydD0b1vEq23NFCiR0GVCERYY6yfj5zQ1RwKQHa1ftLtvZ+pSIclprztDV
-/eex4Oj/XGnyDAhPpK8Pp6zZwLW6ji+G1PaNucISw6IlszQ1OqYhQNQbNrMHmEZN
-XoRd4bJ85aUZR+DVMSSi
-=1aKk
------END PGP SIGNATURE-----
-
---PNTmBPCT7hxwcZjr--
