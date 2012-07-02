@@ -1,83 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932310Ab2GBFzj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 01:55:39 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47948 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932066Ab2GBFzh convert rfc822-to-8bit (ORCPT
+	id S932362Ab2GBGEu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 02:04:50 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:32896 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932199Ab2GBGEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 01:55:37 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "tony@atomide.com" <tony@atomide.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "mgreer@animalcreek.com" <mgreer@animalcreek.com>,
-        "paul@pwsan.com" <paul@pwsan.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: OMAP AM35x: clockdomain data: fix resolving dependency
- problem
-Thread-Topic: [PATCH] ARM: OMAP AM35x: clockdomain data: fix resolving
- dependency problem
-Thread-Index: Ac1YFzSz7oPLHyT4Q46Oe8rXkWtZLw==
-Date: Mon, 2 Jul 2012 05:54:57 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998FCB33@DQHE02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 2 Jul 2012 02:04:49 -0400
+Message-ID: <1341209044.5102.20.camel@ThinkPad-T420>
+Subject: [PATCH] Fix a dead loop in async_synchronize_full()
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: arjan@linux.intel.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Mon, 02 Jul 2012 14:04:04 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12070206-2674-0000-0000-00000518456F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In am35x board , iva2 clock domain doesn't be used.
-So mpu_am35x_clkdm should be used rather than mpu_3xxx_clkdm.
-OMAP3430 : mpu_3xxx_clkdm (with iva2 clkdm)
-AM35x    : mpu_am35x_clkdm (without iva2 clkdm)
+This patch tries to fix a dead loop in  async_synchronize_full(), which
+could be seen when preemption is disabled on a single cpu machine. 
 
-For the compatibility with omap3430, this patch has no conflict because mpu_3xxx_clkdm was already defined in clock domains for omap3430.
-So this can be removed from common clock domain.
+void async_synchronize_full(void)
+{
+        do {
+                async_synchronize_cookie(next_cookie);
+        } while (!list_empty(&async_running) || !
+list_empty(&async_pending));
+}
 
-Below error can be fixed with this patch.
+async_synchronize_cookie() calls async_synchronize_cookie_domain() with
+&async_running as the default domain to synchronize. 
 
-[    0.000000] AM3517 ES1.1 (l2cache sgx neon )
-[    0.000000] ------------[ cut here ]------------
-[    0.000000] WARNING: at arch/arm/mach-omap2/clockdomain.c:237 _resolve_clkdm_deps+0x68/0x108()
-[    0.000000] clockdomain: mpu_clkdm: could not find clkdm iva2_clkdm while resolving dependencies - should never happen
-[    0.000000] Modules linked in:
-[    0.000000] [<c001bd3c>] (unwind_backtrace+0x0/0xf4) from [<c0040c2c>] (warn_slowpath_common+0x4c/0x64)
-[    0.000000] [<c0040c2c>] (warn_slowpath_common+0x4c/0x64) from [<c0040cd8>] (warn_slowpath_fmt+0x30/0x40)
-[    0.000000] [<c0040cd8>] (warn_slowpath_fmt+0x30/0x40) from [<c003256c>] (_resolve_clkdm_deps+0x68/0x108)
-[    0.000000] [<c003256c>] (_resolve_clkdm_deps+0x68/0x108) from [<c0032640>] (clkdm_complete_init+0x34/0x90)
-[    0.000000] [<c0032640>] (clkdm_complete_init+0x34/0x90) from [<c06d7600>] (omap3_init_early+0x20/0x30)
-[    0.000000] [<c06d7600>] (omap3_init_early+0x20/0x30) from [<c06d3230>] (setup_arch+0x834/0x94c)
-[    0.000000] [<c06d3230>] (setup_arch+0x834/0x94c) from [<c06cf6b0>] (start_kernel+0x88/0x2fc)
-[    0.000000] [<c06cf6b0>] (start_kernel+0x88/0x2fc) from [<80008044>] (0x80008044)
+However, there might be some works in the async_pending list from other
+domains. On a single cpu system, without preemption, there is no chance
+for the other works to finish, so async_synchronize_full() enters a dead
+loop. 
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+It seems async_synchronize_full() wants to synchronize all entries in
+all running lists(domains), so maybe we could just check the entry_count
+to know whether all works are finished. 
+
+Currently, async_synchronize_cookie_domain() expects a non-NULL running
+list ( if NULL, there would be NULL pointer dereference ), so maybe a
+NULL pointer could be used as an indication for the functions to
+synchronize all works in all domains. 
+
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- arch/arm/mach-omap2/clockdomains3xxx_data.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ kernel/async.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/clockdomains3xxx_data.c b/arch/arm/mach-omap2/clockdomains3xxx_data.c
-index d625844..56089c4 100644
---- a/arch/arm/mach-omap2/clockdomains3xxx_data.c
-+++ b/arch/arm/mach-omap2/clockdomains3xxx_data.c
-@@ -454,7 +454,6 @@ static struct clkdm_autodep clkdm_am35x_autodeps[] = {
+diff --git a/kernel/async.c b/kernel/async.c
+index bd0c168..32d8dc9 100644
+--- a/kernel/async.c
++++ b/kernel/async.c
+@@ -86,6 +86,13 @@ static async_cookie_t  __lowest_in_progress(struct
+list_head *running)
+ {
+ 	struct async_entry *entry;
  
- static struct clockdomain *clockdomains_common[] __initdata = {
- 	&wkup_common_clkdm,
--	&mpu_3xxx_clkdm,
- 	&neon_clkdm,
- 	&core_l3_3xxx_clkdm,
- 	&core_l4_3xxx_clkdm,
++	if (!running) { /* just check the entry count */
++		if (atomic_read(&entry_count))
++			return 0; /* smaller than any cookie */
++		else
++			return next_cookie;
++	}
++
+ 	if (!list_empty(running)) {
+ 		entry = list_first_entry(running,
+ 			struct async_entry, list);
+@@ -236,9 +243,7 @@ EXPORT_SYMBOL_GPL(async_schedule_domain);
+  */
+ void async_synchronize_full(void)
+ {
+-	do {
+-		async_synchronize_cookie(next_cookie);
+-	} while (!list_empty(&async_running) || !list_empty(&async_pending));
++	async_synchronize_cookie_domain(next_cookie, NULL);
+ }
+ EXPORT_SYMBOL_GPL(async_synchronize_full);
+ 
+@@ -258,7 +263,7 @@ EXPORT_SYMBOL_GPL(async_synchronize_full_domain);
+ /**
+  * async_synchronize_cookie_domain - synchronize asynchronous function
+calls within a certain domain with cookie checkpointing
+  * @cookie: async_cookie_t to use as checkpoint
+- * @running: running list to synchronize on
++ * @running: running list to synchronize on, NULL indicates all lists
+  *
+  * This function waits until all asynchronous function calls for the
+  * synchronization domain specified by the running list @list submitted
 -- 
-1.7.2.5
-
-
-Thanks & BR
-Milo -
-
+1.7.9.5
 
