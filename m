@@ -1,55 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab2GBQpy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 12:45:54 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:53987 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754813Ab2GBQpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 12:45:51 -0400
-Date: Mon, 2 Jul 2012 12:45:48 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Artem Bityutskiy <dedekind1@gmail.com>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: Re: ext4 blocks up
-Message-ID: <20120702164548.GD18074@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Artem Bityutskiy <dedekind1@gmail.com>,
-	Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-	Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-	Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-References: <1341231316.2979.11.camel@sauron.fi.intel.com>
- <20120702144444.GA18074@thunk.org>
- <1341240862.2979.23.camel@sauron.fi.intel.com>
- <20120702151442.GB18074@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120702151442.GB18074@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S932133Ab2GBQqH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 12:46:07 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:46680 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519Ab2GBQqE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 12:46:04 -0400
+Date: Mon, 2 Jul 2012 17:46:24 +0100
+From: Alban Crequy <alban.crequy@collabora.co.uk>
+To: "Hans-Peter Jansen" <hpj@urpla.net>
+Cc: Vincent Sanders <vincent.sanders@collabora.co.uk>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: AF_BUS socket address family
+Message-ID: <20120702174624.5c8d2e74@rainbow.cbg.collabora.co.uk>
+In-Reply-To: <201206302241.08662.hpj@urpla.net>
+References: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk>
+	<201206302241.08662.hpj@urpla.net>
+Organization: Collabora
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 02, 2012 at 11:14:42AM -0400, Theodore Ts'o wrote:
-> On Mon, Jul 02, 2012 at 05:54:22PM +0300, Artem Bityutskiy wrote:
-> > On Mon, 2012-07-02 at 10:44 -0400, Theodore Ts'o wrote:
-> > > Can you tell me *which* xfstest this was blocking on?
-> > 
-> > Test 068 which runs fsstress.
+Sat, 30 Jun 2012 22:41:08 +0200,
+"Hans-Peter Jansen" <hpj@urpla.net> wrote :
+
+> Dear Vincent,
 > 
-> Hmmm, I had just started an xfstests -g auto run using standard ext4
-> defaults with 3.5-rc2, and I'm not noting any problems.  And I've
-> gotten past test 68 w/o any problems.
+> On Friday 29 June 2012, 18:45:39 Vincent Sanders wrote:
+> > This series adds the bus address family (AF_BUS) it is against
+> > net-next as of yesterday.
+> >
+> > AF_BUS is a message oriented inter process communication system.
+> >
+> > The principle features are:
+> >
+> >  - Reliable datagram based communication (all sockets are of type
+> >    SOCK_SEQPACKET)
+> >
+> >  - Multicast message delivery (one to many, unicast as a subset)
+> >
+> >  - Strict ordering (messages are delivered to every client in the
+> > same order)
+> >
+> >  - Ability to pass file descriptors
+> >
+> >  - Ability to pass credentials
+> >
+> > The basic concept is to provide a virtual bus on which multiple
+> > processes can communicate and policy is imposed by a "bus master".
+> >
+> > Introduction
+> > ------------
+> >
+> > AF_BUS is based upon AF_UNIX but extended for multicast operation and
+> > removes stream operation, responding to extensive feedback on
+> > previous approaches we have made the implementation as isolated as
+> > possible. There are opportunities in the future to integrate the
+> > socket garbage collector with that of the unix socket implementation.
+> >
+> > The impetus for creating this IPC mechanism is to replace the
+> > underlying transport for D-Bus. The D-Bus system currently emulates
+> > this IPC mechanism using AF_UNIX sockets in userspace and has
+> > numerous undesirable behaviours. D-Bus is now widely deployed in many
+> > areas and has become a de-facto IPC standard. Using this IPC
+> > mechanism as a transport gives a significant (100% or more)
+> > improvement to throughput with comparable improvement to latency.
+> 
+> Your introduction is missing a comprehensive "Discussion" section, where 
+> you compare the AF_UNIX based implementation with AF_BUS ones. 
+> 
+> You should elaborate on each of the above noted undesirable behaviours, 
+> why and how AF_BUS is advantageous. Show the workarounds, that are 
+> needed by AF_UNIX to operate (properly?!?) and how the new 
+> implementation is going to improve this situation.
 
-I just tried again with 3.5-rc5, and I was able to reproduce your
-failure by using "check 68 68 68 68 68" (it failed after the 2nd time
-it ran the fsstress test.  What's interesting is that there have been
-no changes in fs/ext4 or fs/jbd2 since 3.5-rc2.  So this may have been
-caused by a writeback related change; I'm starting a bisect now.
+Hi Hans-Peter,
 
-       	      	      	      	   	     - Ted
+Thanks for your feedback. I would like to elaborate on the priority
+inversion and on the latency.
+
+Priority inversion:
+===================
+
+A bus can have users with different priorities. The classical example was
+Nokia's N900 phone. A incoming phone call should query the contact 
+database, start the correct ringtone, display the correct avatar very
+quickly. Other background tasks don't have the same priority. Since all
+messages go through dbus-daemon, it is a single bottleneck and the
+kernel has no way to schedule the processes with the correct
+priorities. Low priority messages are waking up dbus-daemon as much as
+high priority messages.
+
+A workaround was to set the nice level of dbus-daemon to -5. It didn't
+really address the priority inversion, but it reduces the number of
+context switches on multicast messages, and that helped a bit. The
+diagram "Experiment #3" on this blog post shows dbus-daemon is no
+longer context switched for every recipient of a multicast message:
+http://alban-apinc.blogspot.co.uk/2011/12/importance-of-scheduling-priority-in-d.html
+
+With AF_BUS, there is no single process who has to receive all messages
+from low priority processes and high priority processes. The kernel can
+schedule the high priority processes and they can progress in their
+communication without having dbus-daemon involved.
+
+Latency:
+========
+
+On AF_UNIX, a message round-trip would go like this:
+- the sender sends a message to dbus-daemon
+- dbus-daemon receives it and forward it to the correct recipient
+- the recipient receives it and reply with a new message sent to
+  dbus-daemon
+- dbus-daemon receives the reply and forward it to the initial sender
+- the sender receives the reply.
+There is a total of 4 context switches.
+
+On AF_BUS, the messages are most of the time not routed by dbus-daemon,
+this halves the number of context switches. It reduced the latency and
+brought the performance improvement mentioned by Vincent.
+
+> This will help to get some progress into the indurated discussion here.
+> 
+> Please also note, that, while your aims are nice and sound, it's even 
+> more important for IPC mechanisms to operate properly - even during 
+> persisting error conditions (crashed bus master and clients, 
+> misbehaving or even abusing members). It would be cool to create a 
+> D-BUS test rig, that not only measures performance numbers, but also 
+> checks for dead locks, corner cases and abuse attempts in both IPC 
+> implementations.
+> 
+> It's a juggling act: while AF_UNIX might suffer from downsides, the code 
+> is heavily exercised in every aspect. Your implementation will only be 
+> exercised by a handful of users (basically one lib), but in order to 
+> rectify its existence in kernel space, such extensions need different 
+> kinds of users, and the basic concepts need to fit in the whole kernel 
+> picture as well, or you need to call it AF_DBUS with even less chance 
+> to get it into mainstream.
+
+I am hoping there will be more users with different use-cases and it
+should help to improve AF_BUS and fix the unavoidable bugs in a young
+code. I would be happy if AF_BUS reduces the cost of maintaining the
+out-of-tree multicast messaging protocol family based on AF_UNIX
+mentioned by Chris Friesen.
+
+Thank you!
+Alban
