@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384Ab2GBSTX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 14:19:23 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:10985 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750861Ab2GBSTW (ORCPT
+	id S932396Ab2GBSYm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 14:24:42 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:34370 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab2GBSYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 14:19:22 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zz98dI1432Izz1202h1082kzzz2dh2a8h668h839hd25he5bhf0ah)
-Message-ID: <4FF1E625.9040403@freescale.com>
-Date: Mon, 2 Jul 2012 13:19:17 -0500
-From: Timur Tabi <b04825@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
+	Mon, 2 Jul 2012 14:24:41 -0400
 MIME-Version: 1.0
-To: Kumar Gala <galak@kernel.crashing.org>
-CC: "Kokoris, Ioannis" <ioannis.kokoris@siemens-enterprise.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH] P1021: set IReady in QE Microcode Upload
-References: <026483A88B848047A08C3F03E20822D0267B1F4A55@MCHP058A.global-ad.net> <4EBD4FB8.2020406@freescale.com> <026483A88B848047A08C3F03E20822D0267B1F4BDB@MCHP058A.global-ad.net> <CAOZdJXXOrSaUgynqu+CL64SnivtOWHBDMcJK9Fh000M_JBK58Q@mail.gmail.com> <DF5BDBFF-A726-4E1C-832E-EF2629F60DC9@kernel.crashing.org> <0154F680-D9F4-4CE1-BF5E-11884AD0ED4A@freescale.com> <AC087E7A-B7BC-43E5-948F-68AEB8251FD3@kernel.crashing.org> <4F63652C.3050108@freescale.com> <9508ABD9-607F-4D41-A169-743ADE625F4A@kernel.crashing.org>
-In-Reply-To: <9508ABD9-607F-4D41-A169-743ADE625F4A@kernel.crashing.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+In-Reply-To: <2779342.rcjlfQh1rr@vlad>
+References: <2325453.OX7ktP55U1@vlad> <6810708.ZQq4lbXqoi@vlad>
+ <CAK-9PRCb1jJdejvim48LP7GN6jHKDdkKVx-UY1Gpsbx1ROyQvQ@mail.gmail.com> <2779342.rcjlfQh1rr@vlad>
+From: Chinmay V S <cvs268@gmail.com>
+Date: Mon, 2 Jul 2012 23:54:09 +0530
+Message-ID: <CAK-9PRBi3XOVtW3gs3doO=ecD0XWfNffVefdRCC1sGnLdT_9LA@mail.gmail.com>
+Subject: Re: [PATCH RESEND] fs: Move bh_cachep to the __read_mostly section
+To: Vlad Zolotarov <vlad@scalemp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shai@scalemp.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kumar Gala wrote:
->> > No, I forgot all about it.  I'll try it today, assuming the lone 8323
->> > board in the board farm still works.
+Hi Vlad,
 
-> Do you remember if you ever tested this?
+I suppose we both are looking at opposite sides of the same coin.
+While i am wary of the potential pitfalls,
+you have focused on the benefits of using __read_mostly.
 
-Well, I tried to test it.  We have an 83xx board that has a QE UART that
-needs firmware uploaded, but I don't know how to connect that QE to an
-actual RS232 port.  It needs a riser which I don't think we have.
+At this point i would like to send out a shout to everyone concerned to please
+clarify the status of __read_mostly:
 
-I can verify that the QE UART driver does not hang which this patch, and
-that it appears to still be sending data, but I have no way of knowing for
-sure.
+1. Is it being actively pursued? (systems that *will* clearly benefit from it)
+2. Any actual results on real world use-cases? (w/ & w/o __read_mostly)
+3. Is __read_mostly being accepted in non-architecture specific kernel code?
+4. Is anyone working on a potential replacement for it?
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+regards
+ChinmayVS
 
+
+>I think your point is clear and has actually been nicely stated at
+>thecodeartist.blogspot.com/2011/12/why-readmostly-does-not-work-as-it.htm
+>(by u? :))
+
+PS: Yes, the link i referred to *is* indeed my own article that i posted a few
+months ago after my experiments with __read_mostly. I was initially excited when
+i found this bit while digging through the code. But upon seeing that an entire
+arch had disabled it, and then understanding why, i feel its usage needs to be
+restricted to arch specific code and even then thoroughly tested too.
+(then again, i may be wrong.)
