@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab2GBTGs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 15:06:48 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:47038 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab2GBTGq (ORCPT
+	id S1755715Ab2GBTIq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 15:08:46 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:60087 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab2GBTIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 15:06:46 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6760"; a="206813320"
-Message-ID: <4FF1F145.2050408@codeaurora.org>
-Date: Mon, 02 Jul 2012 12:06:45 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 2 Jul 2012 15:08:45 -0400
+Message-ID: <4FF1F193.3000707@us.ibm.com>
+Date: Mon, 02 Jul 2012 12:08:03 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>
-Subject: Re: [PATCH 1/2] remoteproc: maintain a generic child device for each
- rproc
-References: <1338017791-9442-1-git-send-email-ohad@wizery.com> <4FC5DBFA.2030300@codeaurora.org> <CAK=WgbZJJJPuNWVv8WgL=KKm6Hrx2krDD9gBOTP7sA8p7mh_rA@mail.gmail.com> <CAK=WgbbREXV8nkF4vh9iLUp1WQj2ZLYW6VG8Urmw9=roy63meQ@mail.gmail.com>
-In-Reply-To: <CAK=WgbbREXV8nkF4vh9iLUp1WQj2ZLYW6VG8Urmw9=roy63meQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Prarit Bhargava <prarit@redhat.com>, stable@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/2][RFC] Potential fix for leapsecond caused futex issue
+ (v2)
+References: <1341167401-31342-1-git-send-email-johnstul@us.ibm.com> <4FF11FCB.4030207@us.ibm.com> <20120702185103.GA32257@redhat.com>
+In-Reply-To: <20120702185103.GA32257@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12070219-7408-0000-0000-0000066A3A8A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/12 01:13, Ohad Ben-Cohen wrote:
-> On Wed, May 30, 2012 at 3:16 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
->> In this case, I was more wondering between using a class to a device type.
->>
->>> I recall seeing a thread where
->>> someone said classes were on the way out and shouldn't be used but I
->>> can't find it anymore.
->> I also remembered a similar discussion at a plumbers mini-conf about
->> 2-3 years ago too, so I looked at device_type as an alternative to
->> class. The former looks somewhat simpler, but I couldn't find any
->> major advantage for using one over the other, and both seem to be in
->> use by many subsystems.
-> Moving to device_type is so trivial that I gave it a spin (and moved
-> to IDA too while at it):
+On 07/02/2012 11:51 AM, Dave Jones wrote:
+> On Sun, Jul 01, 2012 at 09:12:59PM -0700, John Stultz wrote:
+>   > On 07/01/2012 11:29 AM, John Stultz wrote:
+>   > > TODOs:
+>   > > * Chase down the futex/hrtimer interaction to see if this could
+>   > > be triggered in any other way.
+>   > > * Get Tglx's input/ack
+>   > > * Generate a backport for pre-v3.4 kernels
+>   > So while still waiting for feedback on the clock_was_set() change, I
+>   > went ahead and generated backports for most of the stable kernels on
+>   > kernel.org.
+>   >
+>   > Clearly these shouldn't go anywhere until the fix is upstream, but since
+>   > I assume there's a number of distro developers who are likely under
+>   > pressure to have a fix soon, I wanted to make them available so no one
+>   > is duplicating work.
+>   >
+>   > You can find them here:
+>   > http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=summary
+>   >
+>   > I did boot and test each of those kernels with my leaptest-timer.c test
+>   > successfully.
+>
+> I'm curious how the test that I did with the kernel patch,
+> or Richard Cochran's userspace test program didn't trigger this bug
+> when we tested last week.
 
-Great! It looks like device_type doesn't have any list iteration support
-though. Is that requirement gone? If that requirement is still there I
-would think we need something like a class or bus still.
+It likely did trigger the issue.
 
-Will you resend this as part of a series? It will be easier to review then.
+> any ideas what we missed ?
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+In order to observe this issue, you need to notice that CLOCK_REALTIME 
+timers are firing one second early.  The issue does not affect 
+CLOCK_MONOTONIC timers.  Its only most visible with applications that 
+make sub-second CLOCK_REALTIME timeouts in a loop (most reported cases 
+connected with futexs). So if such an application wasn't running, it 
+would be easy to overlook.
+
+thanks
+-john
 
