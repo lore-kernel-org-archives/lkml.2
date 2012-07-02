@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268Ab2GBUSe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 16:18:34 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47941 "EHLO
+	id S932842Ab2GBUTG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 16:19:06 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48031 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932730Ab2GBUSb convert rfc822-to-8bit (ORCPT
+	with ESMTP id S932737Ab2GBUTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 16:18:31 -0400
-Message-ID: <1341260298.23484.21.camel@twins>
-Subject: Re: [PATCH 1/5] perf, x86: Improve basic Ivy Bridge support v3
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Stephane Eranian <eranian@google.com>
-Date: Mon, 02 Jul 2012 22:18:18 +0200
-In-Reply-To: <20120702195855.GH11413@one.firstfloor.org>
-References: <1341254598-1379-1-git-send-email-andi@firstfloor.org>
-	 <1341254598-1379-2-git-send-email-andi@firstfloor.org>
-	 <1341257194.23484.16.camel@twins>
-	 <20120702195855.GH11413@one.firstfloor.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 2 Jul 2012 16:19:01 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 02/13] tools lib traceevent: Teach [ce]tags about libtraceeevent error codes
+Date: Mon,  2 Jul 2012 17:18:40 -0300
+Message-Id: <1341260331-10204-3-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1341260331-10204-1-git-send-email-acme@infradead.org>
+References: <1341260331-10204-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-02 at 21:58 +0200, Andi Kleen wrote:
-> On Mon, Jul 02, 2012 at 09:26:34PM +0200, Peter Zijlstra wrote:
-> > On Mon, 2012-07-02 at 11:43 -0700, Andi Kleen wrote:
-> > > - As Stephane pointed out .code=0xb1, .umask=0x01 is gone from the
-> > > event list,
-> > > so don't do a generic backend stall event on IvyBridge. 
-> > 
-> > 325462-043US, May 2012:
-> > 
-> > Page 3135, Table 19-2. Non-Architectural Performance Events In the
-> > Processor Core of Third Generation Intel Core i7, i5, i3 Processors
-> 
-> The table is outdated.
->
-> But if you insist can readd it. It's just unlikely to work.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-But you didn't state anything of the like. If anybody deviates from the
-SDM they had better well bloody mention it. And you being from Intel, I
-would very much like to have an Official (TM) statement right along with
-it. Preferably in the form of a new SDM.
+As we use a macro trick to sync each error codes with its description
+string, teach [ce]tags to process them properly.
 
-Also, you didn't CC Stephane, nor was it mentioned where this
-observation was made from.
+This patch modifies the libtraceevent's Makefile not a kernel one.
 
-In short, the typical shoddy quality one expects from you.
+Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/n/tip-3101nsbg52glxdqih291qj74@git.kernel.org
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1340352615-20737-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/lib/traceevent/Makefile |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index 423f4b8..34a577e 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -270,11 +270,13 @@ endif
+ 
+ tags:	force
+ 	$(RM) tags
+-	find . -name '*.[ch]' | xargs ctags --extra=+f --c-kinds=+px
++	find . -name '*.[ch]' | xargs ctags --extra=+f --c-kinds=+px \
++	--regex-c++='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'
+ 
+ TAGS:	force
+ 	$(RM) TAGS
+-	find . -name '*.[ch]' | xargs etags
++	find . -name '*.[ch]' | xargs etags \
++	--regex='/_PE(\([^,)]*\).*/PEVENT_ERRNO__\1/'
+ 
+ define do_install
+ 	$(print_install)				\
+-- 
+1.7.9.2.358.g22243
+
