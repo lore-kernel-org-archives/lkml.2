@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932936Ab2GBKD2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 06:03:28 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:60373 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932871Ab2GBKD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 06:03:27 -0400
-Message-ID: <4FF1714A.7050400@parallels.com>
-Date: Mon, 2 Jul 2012 14:00:42 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S932944Ab2GBKHd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 06:07:33 -0400
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:39536 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932877Ab2GBKHb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 06:07:31 -0400
+X-SENDER-IP: [85.230.168.62]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Au1PAApy8U9V5qg+PGdsb2JhbABFihWsRxkBAQEBHhkNJ4IYAQEFOhwjEAgDDgouFCUKGogiu0gUiyeFOmADlTOFZox/
+X-IronPort-AV: E=Sophos;i="4.77,510,1336341600"; 
+   d="scan'208";a="369602825"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 2 Jul 2012 12:07:41 +0200
+To: Yufeng Shen <miletus@chromium.org>
+Cc: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel@vger.kernel.org, Daniel Kurtz <djkurtz@chromium.org>,
+        Andrew de los Reyes <adlr@chromium.org>
+Subject: Re: [PATCH] HID: magicmouse: Implement Multi-touch Protocol B (MT-B)
+Message-ID: <20120702100741.GA1496@polaris.bitmath.org>
+References: <1340913271-588-1-git-send-email-miletus@chromium.org>
 MIME-Version: 1.0
-To: Feng Tang <feng.tang@intel.com>
-CC: <penberg@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <fengguang.wu@intel.com>, <sfr@canb.auug.org.au>, <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH] slab: Fix a tpyo in commit 8c138b "slab: Get rid of obj_size
- macro"
-References: <1341210550-11038-1-git-send-email-feng.tang@intel.com>
-In-Reply-To: <1341210550-11038-1-git-send-email-feng.tang@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340913271-588-1-git-send-email-miletus@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2012 10:29 AM, Feng Tang wrote:
-> Commit  8c138b only sits in Pekka's and linux-next tree now, which tries
-> to replace obj_size(cachep) with cachep->object_size, but has a typo in
-> kmem_cache_free() by using "size" instead of "object_size", which casues
-> some regressions.
-> 
-> Reported-and-tested-by: Fengguang Wu <wfg@linux.intel.com>
-> Signed-off-by: Feng Tang <feng.tang@intel.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> ---
->  mm/slab.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/mm/slab.c b/mm/slab.c
-> index 64c3d03..605b3b7 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -3890,7 +3890,7 @@ void kmem_cache_free(struct kmem_cache *cachep, void *objp)
->  	unsigned long flags;
->  
->  	local_irq_save(flags);
-> -	debug_check_no_locks_freed(objp, cachep->size);
-> +	debug_check_no_locks_freed(objp, cachep->object_size);
->  	if (!(cachep->flags & SLAB_DEBUG_OBJECTS))
->  		debug_check_no_obj_freed(objp, cachep->object_size);
->  	__cache_free(cachep, objp, __builtin_return_address(0));
-> 
+On Thu, Jun 28, 2012 at 03:54:31PM -0400, Yufeng Shen wrote:
+> The driver for Apple Magic Trackpad/Mouse currently uses
+> Multi-touch Protocol A (MT-A) to report touch events and uses
+> ABS_MT_TRACKING_ID to do finger tracking. The fact of the device
+> being able to track individual finger makes it possible to
+> report touch events using MT-B. This patch adds the support
+> for the driver to report MT-B and makes it configurable through
+> module parameter so that existing codes that are relying on its
+> MT-A implemtation don't get affected.
 
-I saw another bug in a patch that ended up not getting in, and was
-reported to Christoph, that was exactly due to a typo between size and
-object-size.
+Are there any such codes? Most systems, if not all, seem to use mtdev,
+which can handle both protocols. I do not think a parameter switch is
+a good idea. Switching to MT-B or leaving things as is look like the
+viable options.
 
-So first:
-
-Acked-by: Glauber Costa <glommer@parallels.com>
-
-But this also means that that confusion can have been made in other
-points. I suggest we take an extensive look into that to make sure there
-aren't more.
-
+Thanks,
+Henrik
