@@ -1,75 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433Ab2GBSII (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 14:08:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40744 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932120Ab2GBSIF (ORCPT
+	id S932459Ab2GBSIL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 14:08:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39123 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932120Ab2GBSII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 14:08:05 -0400
+	Mon, 2 Jul 2012 14:08:08 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
-        Pradeep Kumar Surisetty <psuriset@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>, arnaldo.melo@gmail.com,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 0/3] perf/urgent fixes
-Date: Mon,  2 Jul 2012 15:07:48 -0300
-Message-Id: <1341252471-7834-1-git-send-email-acme@infradead.org>
+Subject: [PATCH 3/3] perf kvm: Fix segfault with report and mixed guestmount use
+Date: Mon,  2 Jul 2012 15:07:51 -0300
+Message-Id: <1341252471-7834-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1341252471-7834-1-git-send-email-acme@infradead.org>
+References: <1341252471-7834-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: David Ahern <dsahern@gmail.com>
 
-	Please consider pulling,
+Using the guestmount option on record:
+    $ perf kvm --guest --host --guestmount=/tmp/guest-mount record -ag
 
-- Arnaldo
+But not the subsequent report:
+    $ perf kvm report
 
-The following changes since commit 662f5cedb38c4b88e1cebfd54a88159f2f7ab7b9:
+causes a SEGFAULT in the usual place:
+(gdb) bt
+0  0x0000000000470356 in machine__mmap_name (self=0x0, bf=0x7fffffffbdb0 " z\370\367\377\177", size=
+    4096) at util/map.c:712
+1  0x00000000004453e8 in perf_event__process_kernel_mmap (tool=0x7fffffffde10, event=0x7ffff7f87e38,
+    machine=0x0) at util/event.c:550
+2  0x00000000004458c9 in perf_event__process_mmap (tool=0x7fffffffde10, event=0x7ffff7f87e38, sample=
+    0x7fffffffd2a0, machine=0x0) at util/event.c:656
+3  0x00000000004733e0 in perf_session_deliver_event (session=0x91aca0, event=0x7ffff7f87e38, sample=
+    0x7fffffffd2a0, tool=0x7fffffffde10, file_offset=7736) at util/session.c:979
+...
 
-  Merge branch 'urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile into perf/urgent (2012-06-24 19:08:49 +0200)
+The MMAP events in this case already contain the full path to the
+module. No need to require it for the report path to.
 
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
-
-for you to fetch changes up to 7ed97ad41ffa94040dfd593948962a7e9e7b0db9:
-
-  perf kvm: Fix segfault with report and mixed guestmount use (2012-07-02 14:03:50 -0300)
-
-----------------------------------------------------------------
-perf/urgent fixes:
-
-. Fix creation of guest machine objects when build ids are disabled,
-  from David Ahern
-
-. The kvm tool was trying to access an uninitialized guestmount variable, fix
-  from David Ahern.
-
-. Restore perf script output to pre-libparseevent merge format, removing
-  duplicated info, fix from David Ahern
-
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1341241977-71535-1-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/map.c |   29 +++++++++++++++--------------
+ 1 files changed, 15 insertions(+), 14 deletions(-)
 
-----------------------------------------------------------------
-David Ahern (3):
-      perf script: Fix format regression due to libtraceevent merge
-      perf kvm: Fix regression with guest machine creation
-      perf kvm: Fix segfault with report and mixed guestmount use
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 35ae568..a1f4e36 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -669,25 +669,26 @@ struct machine *machines__find(struct rb_root *self, pid_t pid)
+ struct machine *machines__findnew(struct rb_root *self, pid_t pid)
+ {
+ 	char path[PATH_MAX];
+-	const char *root_dir;
++	const char *root_dir = "";
+ 	struct machine *machine = machines__find(self, pid);
+ 
+-	if (!machine || machine->pid != pid) {
+-		if (pid == HOST_KERNEL_ID || pid == DEFAULT_GUEST_KERNEL_ID)
+-			root_dir = "";
+-		else {
+-			if (!symbol_conf.guestmount)
+-				goto out;
+-			sprintf(path, "%s/%d", symbol_conf.guestmount, pid);
+-			if (access(path, R_OK)) {
+-				pr_err("Can't access file %s\n", path);
+-				goto out;
+-			}
+-			root_dir = path;
++	if (machine && (machine->pid == pid))
++		goto out;
++
++	if ((pid != HOST_KERNEL_ID) &&
++	    (pid != DEFAULT_GUEST_KERNEL_ID) &&
++	    (symbol_conf.guestmount)) {
++		sprintf(path, "%s/%d", symbol_conf.guestmount, pid);
++		if (access(path, R_OK)) {
++			pr_err("Can't access file %s\n", path);
++			machine = NULL;
++			goto out;
+ 		}
+-		machine = machines__add(self, pid, root_dir);
++		root_dir = path;
+ 	}
+ 
++	machine = machines__add(self, pid, root_dir);
++
+ out:
+ 	return machine;
+ }
+-- 
+1.7.1
 
- tools/perf/util/map.c               |   29 +++++++++++++++--------------
- tools/perf/util/session.c           |    2 +-
- tools/perf/util/trace-event-parse.c |    3 +--
- 3 files changed, 17 insertions(+), 17 deletions(-)
