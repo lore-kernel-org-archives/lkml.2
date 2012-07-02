@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab2GBMlL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 08:41:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37126 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752408Ab2GBMlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 08:41:09 -0400
-Date: Mon, 2 Jul 2012 13:41:03 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tony Luck <tony.luck@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Xishi Qiu <qiuxishi@huawei.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH] mm: setup pageblock_order before it's used by sparse
-Message-ID: <20120702124103.GP14154@suse.de>
-References: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com>
+	id S1751229Ab2GBMqD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 08:46:03 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:23342 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab2GBMqB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 08:46:01 -0400
+Date: Mon, 2 Jul 2012 15:45:51 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Fengguang Wu <wfg@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: automated warning notifications
+Message-ID: <20120702124551.GD4519@mwanda>
+References: <20120614172523.GB4400@mwanda>
+ <20120615014835.GA5695@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com>
+In-Reply-To: <20120615014835.GA5695@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 30, 2012 at 05:07:54PM +0800, Jiang Liu wrote:
-> From: Xishi Qiu <qiuxishi@huawei.com>
+On Fri, Jun 15, 2012 at 09:48:35AM +0800, Fengguang Wu wrote:
+> Hi Dan,
 > 
-> On architectures with CONFIG_HUGETLB_PAGE_SIZE_VARIABLE set, such as Itanium,
-> pageblock_order is a variable with default value of 0. It's set to the right
-> value by set_pageblock_order() in function free_area_init_core().
+> On Thu, Jun 14, 2012 at 08:25:23PM +0300, Dan Carpenter wrote:
+> > Hi Fengguang,
+> > 
+> > I also check new static checker warnings and sometimes email people.
 > 
-> But pageblock_order may be used by sparse_init() before free_area_init_core()
-> is called along path:
-> sparse_init()
->     ->sparse_early_usemaps_alloc_node()
-> 	->usemap_size()
-> 	    ->SECTION_BLOCKFLAGS_BITS
-> 		->((1UL << (PFN_SECTION_SHIFT - pageblock_order)) *
-> NR_PAGEBLOCK_BITS)
+> That would be nice!
 > 
-> The uninitialized pageblock_size will cause memory wasting because usemap_size()
-> returns a much bigger value then it's really needed.
+> > I wonder if we are duplicating each others work.  For example, did
+> > you send an email asking about the following Sparse warning:
+> > 
+> > sound/soc/codecs/ab8500-codec.c:1959:53: warning: cast truncates bits from constant value (1013 becomes 13)
 > 
-> For example, on an Itanium platform,
-> sparse_init() pageblock_order=0 usemap_size=24576
-> free_area_init_core() before pageblock_order=0, usemap_size=24576
-> free_area_init_core() after pageblock_order=12, usemap_size=8
-> 
-> That means 24K memory has been wasted for each section, so fix it by calling
-> set_pageblock_order() from sparse_init().
-> 
-> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+> I did try sending out sparse warnings to people, some time ago...
 
-Looks all right.
+Apparently you have started up again?  We're starting to trod on
+each other's toes and people are getting annoyed with me because I
+am reporting them after you...  :/
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+Randy has suggested that we send these automated messages to
+kernel-janitors.  I don't know how the other people on kernel
+janitors feel about this but I would be fine with it.
 
-This should be considered a stable candidate. Add
+regards,
+dan carpenter
 
-Cc: stable <stable@vger.kernel.org>
-
-above your Signed-off-by and it'll get picked up if the patch is merged
-to mainline.
-
--- 
-Mel Gorman
-SUSE Labs
