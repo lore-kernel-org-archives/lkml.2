@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab2GBQpI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 12:45:08 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45220 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519Ab2GBQpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 12:45:06 -0400
-Message-ID: <4FF1D00D.6040402@wwwdotorg.org>
-Date: Mon, 02 Jul 2012 10:45:01 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755927Ab2GBQpy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 12:45:54 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:53987 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754813Ab2GBQpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 12:45:51 -0400
+Date: Mon, 2 Jul 2012 12:45:48 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Artem Bityutskiy <dedekind1@gmail.com>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: Re: ext4 blocks up
+Message-ID: <20120702164548.GD18074@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Artem Bityutskiy <dedekind1@gmail.com>,
+	Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+	Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+	Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+References: <1341231316.2979.11.camel@sauron.fi.intel.com>
+ <20120702144444.GA18074@thunk.org>
+ <1341240862.2979.23.camel@sauron.fi.intel.com>
+ <20120702151442.GB18074@thunk.org>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "tiwai@suse.de" <tiwai@suse.de>, "perex@perex.cz" <perex@perex.cz>,
-        Stephen Warren <swarren@nvidia.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] ASoC: tegra: use dmaengine based dma driver
-References: <1340969673-7776-1-git-send-email-ldewangan@nvidia.com> <1340969673-7776-2-git-send-email-ldewangan@nvidia.com> <4FEDDF89.1050907@wwwdotorg.org> <4FEF166D.2010705@nvidia.com> <4FF15B16.9020903@nvidia.com>
-In-Reply-To: <4FF15B16.9020903@nvidia.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120702151442.GB18074@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2012 02:25 AM, Laxman Dewangan wrote:
-> On Saturday 30 June 2012 08:38 PM, Laxman Dewangan wrote:
->> On Friday 29 June 2012 10:32 PM, Stephen Warren wrote:
->>> On 06/29/2012 05:34 AM, Laxman Dewangan wrote:
->>>> Use the dmaengine based Tegra APB DMA driver for
->>>> data transfer between SPI fifo and memory in
->>>> place of legacy Tegra APB DMA.
->>>>
->>>> Because generic soc-dmaengine-pcm uses the DMAs API
->>>> based on dmaengine, using the exported APIs provided
->>>> by this generic driver.
->>>>
->>>> The new driver is selected if legacy driver is not
->>>> selected and new dma driver is enabled through config
->>>> file.
->>>
->>> This works just fine with the existing non-dmaengine DMA driver enabled.
->>>
->>> However, I can't get it to work with dmaengine:
-...
->> I think I should send that patches so that you can test it by:
->> - Taking already applied dma driver change in linux-next.
->> - Apply my new patches which I am going to send.
->>
->> And do local change in the tegra_defconfig to disable SYSTEM_DMA and
->> enable dmaengine based dma driver.
->
-> The new dma patches are:
+On Mon, Jul 02, 2012 at 11:14:42AM -0400, Theodore Ts'o wrote:
+> On Mon, Jul 02, 2012 at 05:54:22PM +0300, Artem Bityutskiy wrote:
+> > On Mon, 2012-07-02 at 10:44 -0400, Theodore Ts'o wrote:
+> > > Can you tell me *which* xfstest this was blocking on?
+> > 
+> > Test 068 which runs fsstress.
 > 
->  dma: tegra: fix residual calculation for cyclic case
->  dma: tegra: rename driver and compatible to match with dts
-> ...
+> Hmmm, I had just started an xfstests -g auto run using standard ext4
+> defaults with 3.5-rc2, and I'm not noting any problems.  And I've
+> gotten past test 68 w/o any problems.
 
-OK, with those two patches plus this one, everything works on
-Cardhu/Tegra30 using dmaengine. However, on Tegra20 DMA doesn't appear
-to work. No audio is heard, and aplay eventually exits with the
-following error message:
+I just tried again with 3.5-rc5, and I was able to reproduce your
+failure by using "check 68 68 68 68 68" (it failed after the 2nd time
+it ran the fsstress test.  What's interesting is that there have been
+no changes in fs/ext4 or fs/jbd2 since 3.5-rc2.  So this may have been
+caused by a writeback related change; I'm starting a bisect now.
 
-aplay: pcm_write:1603: write error: Input/output error
-
-I believe this means that the DMA simply isn't operating.
-
-I'll assume this is a Tegra20-specific issue in the dmaengine driver
-itself, and hence not a problem with this patch, so I'll ack this patch.
+       	      	      	      	   	     - Ted
