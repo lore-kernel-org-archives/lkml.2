@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933009Ab2GBKPj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 06:15:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14259 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932909Ab2GBKPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 06:15:37 -0400
-Date: Mon, 2 Jul 2012 12:15:18 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org,
-        drepper@gmail.com
-Subject: Re: [PATCHv3 0/3] perf tool: Add new event group management
-Message-ID: <20120702101518.GC967@krava.redhat.com>
-References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
- <87fw9blyhj.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87fw9blyhj.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933023Ab2GBKPz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 06:15:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59712 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932929Ab2GBKPw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 06:15:52 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
+        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH] leds-88pm860x: use devm_kzalloc function
+Date: Mon,  2 Jul 2012 15:45:43 +0530
+Message-Id: <1341224143-27894-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 02, 2012 at 10:53:44AM +0900, Namhyung Kim wrote:
-> Hi, Jiri
-> 
-> On Fri, 29 Jun 2012 11:08:24 +0200, Jiri Olsa wrote:
-> > hi,
-> > adding support for creating event groups based on the way they
-> > are specified on the command line.
-> >
-> > This patchset adds the '{}' style grammar to express event group,
-> > allowing so far only the 'event modifier' as group modifier.
-> >
-> > The sample/leader modifier changes are ready, but I'm getting
-> > some weird numbers in tests, so I'll send it later. Meanwhile,
-> > it'd be nice to have at least this patchset in.. ;)
-> >
-> 
-> Just a question, is there a way to know about the grouping at perf
-> report time?
+Using devm_kzalloc will remove all the error checks and the frees are automatically done at the driver unload side.
 
-nope, AFAIK only ID and perf_event_attr is stored for event
-grouping is known only for record time
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
 
-jirka
+Thanks Bryan for advising me.. ;-)
+
+ drivers/leds/leds-88pm860x.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/leds/leds-88pm860x.c b/drivers/leds/leds-88pm860x.c
+index 5b61aaf..61897cf 100644
+--- a/drivers/leds/leds-88pm860x.c
++++ b/drivers/leds/leds-88pm860x.c
+@@ -209,7 +209,7 @@ static int pm860x_led_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	data = kzalloc(sizeof(struct pm860x_led), GFP_KERNEL);
++	data = devm_kzalloc(&pdev->dev, sizeof(struct pm860x_led), GFP_KERNEL);
+ 	if (data == NULL)
+ 		return -ENOMEM;
+ 	strncpy(data->name, res->name, MFD_NAME_SIZE - 1);
+@@ -220,7 +220,6 @@ static int pm860x_led_probe(struct platform_device *pdev)
+ 	data->port = pdata->flags;
+ 	if (data->port < 0) {
+ 		dev_err(&pdev->dev, "check device failed\n");
+-		kfree(data);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -233,13 +232,10 @@ static int pm860x_led_probe(struct platform_device *pdev)
+ 	ret = led_classdev_register(chip->dev, &data->cdev);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "Failed to register LED: %d\n", ret);
+-		goto out;
++		return ret;
+ 	}
+ 	pm860x_led_set(&data->cdev, 0);
+ 	return 0;
+-out:
+-	kfree(data);
+-	return ret;
+ }
+ 
+ static int pm860x_led_remove(struct platform_device *pdev)
+@@ -247,7 +243,6 @@ static int pm860x_led_remove(struct platform_device *pdev)
+ 	struct pm860x_led *data = platform_get_drvdata(pdev);
+ 
+ 	led_classdev_unregister(&data->cdev);
+-	kfree(data);
+ 
+ 	return 0;
+ }
+-- 
+1.7.9.5
+
