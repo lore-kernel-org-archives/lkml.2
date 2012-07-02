@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933200Ab2GBWtE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 18:49:04 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:37535 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881Ab2GBWtC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 18:49:02 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-9.tower-132.messagelabs.com!1341269341!13205343!2
-X-Originating-IP: [216.166.12.98]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 12/12] staging: comedi: das08_cs: remove thisboard macro
-Date: Mon, 2 Jul 2012 15:48:58 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	id S1756357Ab2GBWwn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 18:52:43 -0400
+Received: from ozlabs.org ([203.10.76.45]:46343 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751981Ab2GBWwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 18:52:42 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Asias He <asias@redhat.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, dlaor@redhat.com,
+        kvm@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH 3/3] virtio-blk: Add bio-based IO path for virtio-blk
+In-Reply-To: <4FF10B31.60609@redhat.com>
+References: <1340002390-3950-1-git-send-email-asias@redhat.com>  <1340002390-3950-4-git-send-email-asias@redhat.com>  <87hau9yse7.fsf@rustcorp.com.au> <4FDEE0CB.1030505@redhat.com>  <87zk81x7dp.fsf@rustcorp.com.au> <4FDF0DA7.40604@redhat.com> <1340019575.22848.2.camel@lappy> <4FDFE926.7030309@redhat.com> <87r4svxcjw.fsf@rustcorp.com.au> <4FF10B31.60609@redhat.com>
+User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Mon, 02 Jul 2012 16:11:32 +0930
+Message-ID: <8762a6y89v.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201207021548.58369.hartleys@visionengravers.com>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'thisboard' macro relies on a local variable having a specific
-name and yields a pointer derived from that local variable. Replace
-the macro with a local variable where used. Use the comedi_board()
-helper to get the pointer.
+On Mon, 02 Jul 2012 10:45:05 +0800, Asias He <asias@redhat.com> wrote:
+> On 07/02/2012 07:54 AM, Rusty Russell wrote:
+> > Confused.  So, without merging we get 6k exits (per second?)  How many
+> > do we get when we use the request-based IO path?
+> 
+> Sorry for the confusion. The numbers were collected from request-based 
+> IO path where we can have the guest block layer merge the requests.
+> 
+> With the same workload in guest, the guest fires 200K requests to host 
+> with merges enabled in guest (echo 0 > /sys/block/vdb/queue/nomerges), 
+> while the guest fires 40000K requests to host with merges disabled in 
+> guest (echo 2 > /sys/block/vdb/queue/nomerges). This show that the merge 
+> in block layer reduces the total number of requests fire to host a lot 
+> (40000K / 200K = 20).
+> 
+> The guest fires 200K requests to host with merges enabled in guest (echo 
+> 0 > /sys/block/vdb/queue/nomerges), the host fires 6K interrupts in 
+> total for the 200K requests. This show that the ratio of interrupts 
+> coalesced (200K / 6K = 33).
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/das08_cs.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+OK, got it!  Guest merging cuts requests by a factor of 20.  EVENT_IDX
+cuts interrupts by a factor of 33.
 
-diff --git a/drivers/staging/comedi/drivers/das08_cs.c b/drivers/staging/comedi/drivers/das08_cs.c
-index 9ec9b12..f5700de 100644
---- a/drivers/staging/comedi/drivers/das08_cs.c
-+++ b/drivers/staging/comedi/drivers/das08_cs.c
-@@ -60,11 +60,10 @@ Command support does not exist, but could be added for this board.
- 
- static struct pcmcia_device *cur_dev;
- 
--#define thisboard ((const struct das08_board_struct *)dev->board_ptr)
--
- static int das08_cs_attach(struct comedi_device *dev,
- 			   struct comedi_devconfig *it)
- {
-+	const struct das08_board_struct *thisboard = comedi_board(dev);
- 	int ret;
- 	unsigned long iobase;
- 	struct pcmcia_device *link = cur_dev;	/*  XXX hack */
--- 
-1.7.11
+> > If your device is slow, then you won't be able to make many requests per
+> > second: why worry about exit costs?
+> 
+> If a device is slow, the merge would merge more requests and reduce the 
+> total number of requests to host. This saves exit costs, no?
 
+Sure, our guest merging might save us 100x as many exits as no merging.
+But since we're not doing many requests, does it matter?
+
+Ideally we'd merge requests only if the device queue is full.  But that
+sounds hard.
+
+> > If your device is fast (eg. ram),
+> > you've already shown that your patch is a win, right?
+> 
+> Yes. Both on ramdisk and fast SSD device (e.g. FusionIO).
+
+Thanks,
+Rusty.
