@@ -1,88 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab2GBCSN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 22:18:13 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58033 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755022Ab2GBCSM (ORCPT
+	id S932166Ab2GBCSh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 22:18:37 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:59652 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932089Ab2GBCSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 22:18:12 -0400
-X-AuditID: 9c930197-b7b49ae0000027b8-ee-4ff104e14f0f
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org,
-        drepper@gmail.com
-Subject: Re: [PATCH 2/3] perf, tool: Enable grouping logic for parsed events
-References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
-	<1340960907-3725-3-git-send-email-jolsa@redhat.com>
-Date: Mon, 02 Jul 2012 11:13:56 +0900
-In-Reply-To: <1340960907-3725-3-git-send-email-jolsa@redhat.com> (Jiri Olsa's
-	message of "Fri, 29 Jun 2012 11:08:26 +0200")
-Message-ID: <87bojync4b.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+	Sun, 1 Jul 2012 22:18:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1339376810-8247-3-git-send-email-Ying.Liu@freescale.com>
+References: <1339376810-8247-1-git-send-email-Ying.Liu@freescale.com>
+	<1339376810-8247-3-git-send-email-Ying.Liu@freescale.com>
+Date: Mon, 2 Jul 2012 10:18:33 +0800
+Message-ID: <CA+8Hj82acvrhechhxfRSkhm9eefaPKc9VZhhRALVrtwQ6rx8=g@mail.gmail.com>
+Subject: Re: [PATCH 3/3] mx3fb: avoid screen flash when panning with fb_set_var
+From: Liu Ying <liu.y.victor@gmail.com>
+To: g.liakhovetski@gmx.de
+Cc: Liu Ying <Ying.Liu@freescale.com>, FlorianSchandinat@gmx.de,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Jun 2012 11:08:26 +0200, Jiri Olsa wrote:
-> This patch adds a functionality that allows to create event groups
-> based on the way they are specified on the command line. Adding
-> functionality to the '{}' group syntax introduced in earlier patch.
+Hi, Guennadi,
+
+Could you please review the second(2/3) patch and the third(3/3) patch
+of this series?
+I have addressed your comments you gave in the previous review cycle.
+
+Thanks.
+
+2012/6/11, Liu Ying <Ying.Liu@freescale.com>:
+> Users may call FBIOPUT_VSCREENINFO ioctrl to do pan display.
+> This ioctrl relies on fb_set_var() to do the job. fb_set_var()
+> calls custom fb_set_par() method and then calls custom
+> fb_pan_display() method. The current implementation of mx3fb
+> reinitializes IPU display controller every time the custom
+> fb_set_par() method is called, which makes the screen flash
+> if fb_set_var() is called to do panning frequently. This patch
+> compares the new var info with the cached old one to decide
+> whether we really need to reinitialize IPU display controller.
+> We ignore xoffset and yoffset update because it doesn't require
+> to reinitialize the controller. Users may specify activate field
+> of var info with FB_ACTIVATE_NOW and FB_ACTIVATE_FORCE to
+> reinialize the controller by force.
 >
-> The current '--group/-g' option behaviour remains intact.  If you
-> specify it for record/stat/top command, all the specified events
-> become members of a single group with the first event as a group
-> leader.
+> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+> ---
+>  drivers/video/mx3fb.c |   22 +++++++++++++++++++++-
+>  1 files changed, 21 insertions(+), 1 deletions(-)
 >
-> With the new '{}' group syntax you can create group like:
->   # perf record -e '{cycles,faults}' ls
+> diff --git a/drivers/video/mx3fb.c b/drivers/video/mx3fb.c
+> index 2dd11c4..7d0aa7b 100644
+> --- a/drivers/video/mx3fb.c
+> +++ b/drivers/video/mx3fb.c
+> @@ -721,6 +721,26 @@ static void mx3fb_dma_done(void *arg)
+>  	complete(&mx3_fbi->flip_cmpl);
+>  }
 >
-> resulting in single event group containing 'cycles' and 'faults'
-> events, with cycles event as group leader.
+> +static bool mx3fb_must_set_par(struct fb_info *fbi)
+> +{
+> +	struct mx3fb_info *mx3_fbi = fbi->par;
+> +	struct fb_var_screeninfo old_var = mx3_fbi->cur_var;
+> +	struct fb_var_screeninfo new_var = fbi->var;
+> +
+> +	if ((fbi->var.activate & FB_ACTIVATE_FORCE) &&
+> +	    (fbi->var.activate & FB_ACTIVATE_MASK) == FB_ACTIVATE_NOW)
+> +		return true;
+> +
+> +	/*
+> +	 * Ignore xoffset and yoffset update,
+> +	 * because pan display handles this case.
+> +	 */
+> +	old_var.xoffset = new_var.xoffset;
+> +	old_var.yoffset = new_var.yoffset;
+> +
+> +	return !!memcmp(&old_var, &new_var, sizeof(struct fb_var_screeninfo));
+> +}
+> +
+>  static int __set_par(struct fb_info *fbi, bool lock)
+>  {
+>  	u32 mem_len, cur_xoffset, cur_yoffset;
+> @@ -844,7 +864,7 @@ static int mx3fb_set_par(struct fb_info *fbi)
 >
-> All groups are created with regards to threads and cpus. Thus
-> recording an event group within a 2 threads on server with
-> 4 CPUs will create 8 separate groups.
+>  	mutex_lock(&mx3_fbi->mutex);
 >
-> Examples (first event in brackets is group leader):
+> -	ret = __set_par(fbi, true);
+> +	ret = mx3fb_must_set_par(fbi) ? __set_par(fbi, true) : 0;
 >
->   # 1 group (cpu-clock,task-clock)
->   perf record --group -e cpu-clock,task-clock ls
->   perf record -e '{cpu-clock,task-clock}' ls
+>  	mutex_unlock(&mx3_fbi->mutex);
 >
->   # 2 groups (cpu-clock,task-clock) (minor-faults,major-faults)
->   perf record -e '{cpu-clock,task-clock},{minor-faults,major-faults}' ls
+> --
+> 1.7.1
 >
->   # 1 group (cpu-clock,task-clock,minor-faults,major-faults)
->   perf record --group -e cpu-clock,task-clock -e minor-faults,major-faults ls
->   perf record -e '{cpu-clock,task-clock,minor-faults,major-faults}' ls
 >
->   # 2 groups (cpu-clock,task-clock) (minor-faults,major-faults)
->   perf record -e '{cpu-clock,task-clock} -e '{minor-faults,major-faults}' \
->    -e instructions ls
->
->   # 1 group (cpu-clock,task-clock,minor-faults,major-faults,instructions)
->   perf record --group -e cpu-clock,task-clock \
->    -e minor-faults,major-faults -e instructions ls
->   perf record -e '{cpu-clock,task-clock,minor-faults,major-faults,instructions}' ls
->
-> It's possible to use standard event modifier for a group, which spans
-> over all events in the group and overrides any event modifier settings,
-> for example:
->
->   # perf record -r '{faults:k,cache-references}:u'
->
-> resulting in ':u' modifier being used for both 'faults' and 'cache-references'
-> events, regardless of their modifier setup (':k' for faults event).
 >
 
-So the faults event would get only 'u' for the modifier not 'uk', right?
 
-Thanks,
-Namhyung
-
+-- 
+Best Regards,
+Liu Ying
