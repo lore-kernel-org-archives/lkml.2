@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab2GBAoT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 20:44:19 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.181]:10428 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752807Ab2GBAno (ORCPT
+	id S1752711Ab2GBAn1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 20:43:27 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:35377 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab2GBAnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 20:43:44 -0400
-X-RZG-AUTH: :OmsBZ2C7d7IBoB6EHwegNiRqgfQXlaD5PlBebH2tU4xZA+UbnUj/JlE=
-X-RZG-CLASS-ID: mo05
-From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Subject: Re: 3.4.x regression: rtl8169: frequent resets
-Date: Mon, 2 Jul 2012 02:43:24 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4-4.slh.2-aptosid-686; KDE/4.8.4; i686; ; )
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <87y5n7qup0.fsf@spindle.srvr.nix> <20120628193026.GA31627@electric-eye.fr.zoreil.com>
-In-Reply-To: <20120628193026.GA31627@electric-eye.fr.zoreil.com>
+	Sun, 1 Jul 2012 20:43:23 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207020243.34213.s.L-H@gmx.de>
+In-Reply-To: <20120630091422.GE14083@ZenIV.linux.org.uk>
+References: <1340658327-2932-1-git-send-email-keescook@chromium.org>
+	<1340658327-2932-2-git-send-email-keescook@chromium.org>
+	<20120630091422.GE14083@ZenIV.linux.org.uk>
+Date: Sun, 1 Jul 2012 17:43:22 -0700
+X-Google-Sender-Auth: YyP6j7Eweat6_o-HRzkEocDa6Xo
+Message-ID: <CAGXu5j+8KMdX92T6Ma8HBXko4BHGmZKcV1kuR+b38r00r6YZbw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] fs: add link restrictions
+From: Kees Cook <keescook@chromium.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        Matthew Wilcox <matthew@wil.cx>, Doug Ledford <dledford@redhat.com>,
+        Joe Korty <joe.korty@ccur.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Ingo Molnar <mingo@elte.hu>, David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>, linux-doc@vger.kernel.org,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        kernel-hardening@lists.openwall.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Sat, Jun 30, 2012 at 2:14 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Mon, Jun 25, 2012 at 02:05:26PM -0700, Kees Cook wrote:
+>
+>> +config PROTECTED_LINKS
+>> +     bool "Evaluate vulnerable link conditions"
+>> +     default y
+>
+> Remember Linus' rants about 'default y' in general?
 
-On Thursday 28 June 2012, Francois Romieu wrote:
-> Nix <nix@esperi.org.uk> :
-> > I recently upgraded from 3.3.x to 3.4.4, and am now experiencing
-> > networking problems with my desktop box's r8169 card. The symptoms are
-> > that all traffic ceases for five to ten seconds, then the card appears
-> > to reset and everything is back to normal -- until it happens again. It
-> > can happen quite a lot:
-> 
-> Can you try and revert 036dafa28da1e2565a8529de2ae663c37b7a0060 ?
-> 
-> I would welcome a complete dmesg including the XID line from the
-> r8169 driver.
+I added these configs due to other people's requests. I am happy to
+remove them all and have the sysctls start their life == 1. It would
+eliminate all the #ifdef logic too.
 
-r8169 0000:04:00.0: eth0: RTL8168d/8111d at 0xffffc90000c72000, 00:24:1d:72:7c:75, XID 081000c0 IRQ 44
-r8169 0000:05:00.0: eth1: RTL8168d/8111d at 0xffffc90000c70000, 00:24:1d:72:7c:77, XID 081000c0 IRQ 45
+>> +     /* Check parent directory mode and owner. */
+>
+> I suspect that we ought to simply pass that parent directory as argument - caller
+> *does* have a reference to it, so we don't need to mess with ->d_lock, etc.
 
-Kernel 3.4.4 with 036dafa28da1e2565a8529de2ae663c37b7a0060 (r8169: add 
-byte queue limit support) reverted is now running just about 60 hours 
-on the afformentioned hardware. No traces of "NETDEV WATCHDOG: eth0 
-(r8169): transmit queue 0 timed out" so far, while it usually triggers 
-within an hour (5 hours at most) with plain 3.4.4 on that system.
+I don't see where the parent is held in either path_openat nor
+path_lookupat. What should I be passing into may_follow_link() for the
+parent?
 
-Regards
-	Stefan Lippers-Hollmann
+>> +                     err = may_follow_link(&link);
+>> +                     if (unlikely(err))
+>> +                             break;
+>
+> No.  This is definitely wrong - you are leaking dentries and vfsmount here.
+
+What should I do to avoid the leak? I thought it was avoiding the need
+to call put_link because it aborts before calling follow_link.
+
+>> +             error = may_follow_link(&link);
+>> +             if (unlikely(error))
+>> +                     break;
+>
+> Ditto.
+
+Same thing here -- it aborts before the follow_link. I must be
+misunderstanding something. What am I missing?
+
+Thanks for the feedback! I'll clean up the other things you mentioned as well.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
