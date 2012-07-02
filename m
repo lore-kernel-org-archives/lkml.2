@@ -1,144 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932531Ab2GBH1d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 03:27:33 -0400
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:38002 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932294Ab2GBH1a (ORCPT
+	id S932548Ab2GBH2Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 03:28:25 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:60962 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932432Ab2GBH2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 03:27:30 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvFPAOpM8U9V5qg+PGdsb2JhbAA8CYoVrEUZAQEBAR4ZDSeCGAEBBAEnExwjBQsIAw44FCUKGhOIBgm7LxSLOIUpYAOVM4VmjH8
-X-IronPort-AV: E=Sophos;i="4.77,508,1336341600"; 
-   d="scan'208";a="73152124"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 2 Jul 2012 09:27:40 +0200
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Alessandro Rubini <rubini@cvml.unipv.it>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Olof Johansson <olof@lixom.net>, Benson Leung <bleung@chromium.org>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Input: synaptics - print firmware ID and board
- number at init
-Message-ID: <20120702072740.GA624@polaris.bitmath.org>
-References: <1340859117-19654-1-git-send-email-djkurtz@chromium.org>
+	Mon, 2 Jul 2012 03:28:23 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q627Rfvr001784
+From: hayeswang <hayeswang@realtek.com>
+To: "'Francois Romieu'" <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1340966060-2749-1-git-send-email-hayeswang@realtek.com> <1340966060-2749-2-git-send-email-hayeswang@realtek.com> <20120629135111.GB8560@electric-eye.fr.zoreil.com>
+Subject: RE: [PATCH net-next 2/2] r8169: support RTL8168G
+Date: Mon, 2 Jul 2012 15:27:57 +0800
+Message-ID: <8D19B009F8C6423C8E87D4D85B851AF9@realtek.com.tw>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340859117-19654-1-git-send-email-djkurtz@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: Ac1V/8ZACUMQqME0R+C2xpzZIyhmawCHoNng
+In-Reply-To: <20120629135111.GB8560@electric-eye.fr.zoreil.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-> Read the Firmware ID and Board Number from a synaptics device at init
-> and display them in the system log.
+[...]
+> > +static void r8168_phy_ocp_write(void __iomem *ioaddr, u32 
+> reg, u32 data)
+> > +{
+> > +	int i;
+> > +
+> > +	if (reg & 0xffff0001)
+> > +		BUG();
 > 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> ---
->  drivers/input/mouse/synaptics.c |   38 ++++++++++++++++++++++++++++++++++++--
->  drivers/input/mouse/synaptics.h |    3 +++
->  2 files changed, 39 insertions(+), 2 deletions(-)
-
-Is there a specific usecase for this, except the nice-to-have?
-
-> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-> index c778f27..81685c1 100644
-> --- a/drivers/input/mouse/synaptics.c
-> +++ b/drivers/input/mouse/synaptics.c
-> @@ -139,6 +139,35 @@ static int synaptics_model_id(struct psmouse *psmouse)
->  }
->  
->  /*
-> + * Read the board id from the touchpad
-> + * The board id is encoded in the "QUERY MODES" response
-> + */
-> +static int synaptics_board_id(struct psmouse *psmouse)
-> +{
-> +	struct synaptics_data *priv = psmouse->private;
-> +	unsigned char bid[3];
-> +
-> +	if (synaptics_send_cmd(psmouse, SYN_QUE_MODES, bid))
-> +		return -1;
-> +	priv->board_id = (((unsigned)bid[0] & 0xfc) << 6) | (unsigned)bid[1];
-
-The type cast is not necessary.
-
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Read the firmware id from the touchpad
-> + */
-> +static int synaptics_firmware_id(struct psmouse *psmouse)
-> +{
-> +	struct synaptics_data *priv = psmouse->private;
-> +	unsigned char fwid[3];
-> +
-> +	if (synaptics_send_cmd(psmouse, SYN_QUE_FIRMWARE_ID, fwid))
-> +		return -1;
-> +	priv->firmware_id = (fwid[0] << 16) | (fwid[1] << 8) | fwid[2];
-> +	return 0;
-> +}
-> +
-> +/*
->   * Read the capability-bits from the touchpad
->   * see also the SYN_CAP_* macros
->   */
-> @@ -261,6 +290,10 @@ static int synaptics_query_hardware(struct psmouse *psmouse)
->  		return -1;
->  	if (synaptics_model_id(psmouse))
->  		return -1;
-> +	if (synaptics_firmware_id(psmouse))
-> +		return -1;
-> +	if (synaptics_board_id(psmouse))
-> +		return -1;
->  	if (synaptics_capability(psmouse))
->  		return -1;
->  	if (synaptics_resolution(psmouse))
-> @@ -1434,11 +1467,12 @@ static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
->  	priv->pkt_type = SYN_MODEL_NEWABS(priv->model_id) ? SYN_NEWABS : SYN_OLDABS;
->  
->  	psmouse_info(psmouse,
-> -		     "Touchpad model: %ld, fw: %ld.%ld, id: %#lx, caps: %#lx/%#lx/%#lx\n",
-> +		     "Touchpad model: %ld, fw: %ld.%ld, id: %#lx, caps: %#lx/%#lx/%#lx, board id: %lu, fw id: %lu\n",
->  		     SYN_ID_MODEL(priv->identity),
->  		     SYN_ID_MAJOR(priv->identity), SYN_ID_MINOR(priv->identity),
->  		     priv->model_id,
-> -		     priv->capabilities, priv->ext_cap, priv->ext_cap_0c);
-> +		     priv->capabilities, priv->ext_cap, priv->ext_cap_0c,
-> +		     priv->board_id, priv->firmware_id);
->  
->  	set_input_params(psmouse->dev, priv);
->  
-> diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-> index fd26ccc..e594af0 100644
-> --- a/drivers/input/mouse/synaptics.h
-> +++ b/drivers/input/mouse/synaptics.h
-> @@ -18,6 +18,7 @@
->  #define SYN_QUE_SERIAL_NUMBER_SUFFIX	0x07
->  #define SYN_QUE_RESOLUTION		0x08
->  #define SYN_QUE_EXT_CAPAB		0x09
-> +#define SYN_QUE_FIRMWARE_ID		0x0a
->  #define SYN_QUE_EXT_CAPAB_0C		0x0c
->  #define SYN_QUE_EXT_MAX_COORDS		0x0d
->  #define SYN_QUE_EXT_MIN_COORDS		0x0f
-> @@ -148,6 +149,8 @@ struct synaptics_hw_state {
->  struct synaptics_data {
->  	/* Data read from the touchpad */
->  	unsigned long int model_id;		/* Model-ID */
-> +	unsigned long int firmware_id;		/* Firmware-ID */
-> +	unsigned long int board_id;		/* Board-ID */
->  	unsigned long int capabilities;		/* Capabilities */
->  	unsigned long int ext_cap;		/* Extended Capabilities */
->  	unsigned long int ext_cap_0c;		/* Ext Caps from 0x0c query */
-> -- 
-> 1.7.7.3
+> The patch adds a lot of BUG(). BUG is terrible from a system 
+> or end user
+> viewpoint.
+> 
+> Were they only a devel helper or are they still supposed to be of use
+> in the future ? If the latter applies, why ?
 > 
 
-Thanks,
-Henrik
+I think if the reg is invalid, there must be something wrong. The code should
+have bug, and I should notice develper or someone using the code. I would
+replace them with showing messages.
+
+[...]
+> > +static void rtl_ocp_write_fw(struct rtl8169_private *tp, 
+> struct rtl_fw *rtl_fw)
+> > +{
+> > +	struct rtl_fw_phy_action *pa = &rtl_fw->phy_action;
+> > +	void __iomem *ioaddr = tp->mmio_addr;
+> > +	u32 predata, count;
+> > +	u32 base_addr;
+> > +	size_t index;
+> > +
+> > +	predata = count = 0;
+> > +	base_addr = 0xa400;
+> > +
+> > +	for (index = 0; index < pa->size; ) {
+> > +		u32 action = le32_to_cpu(pa->code[index]);
+> > +		u32 data = action & 0x0000ffff;
+> > +		u32 regno = (action & 0x0fff0000) >> 16;
+> > +
+> > +		if (!action)
+> > +			break;
+> > +
+> > +		switch(action & 0xf0000000) {
+> > +		case PHY_READ:
+> > +			predata = r8168_phy_ocp_read(ioaddr,
+> > +					base_addr + (regno -16) * 2);
+> > +			count++;
+> > +			index++;
+> > +			break;
+> [duplicated code removed]
+> > +		case PHY_WRITE:
+> > +			if (regno == 0x1f)
+> > +				base_addr = data << 4;
+> > +			else
+> > +				r8168_phy_ocp_write(ioaddr,
+> > +						base_addr + 
+> (regno - 0x10) * 2,
+> > +						data);
+> > +			index++;
+> > +			break;
+> [duplicated code removed]
+> > +		case PHY_WRITE_PREVIOUS:
+> > +			r8168_phy_ocp_write(ioaddr, base_addr + 
+> (regno -16) * 2,
+> > +					    predata);
+> > +			index++;
+> > +			break;
+> 
+> I can't believe that the hardware people have designed something which
+> needs a different firmware write method, especially as it 
+> copies at lot
+> of code.
+> 
+> How did you come to the conclusion that it was not possible 
+> to hide this
+> stuff behind r8168g_mdio_{read / write} ?
+> 
+> I would not mind replacing the 
+> PHY_{READ/WRITE/WRITE_PREVIOUS} case with
+> chipset specific {READ/WRITE/WRITE_PREVIOUS} methods as long as the
+> semantic looks the same but going through a different 
+> (*write_fw) does not
+> trivially seem to be the best abstraction.
+> 
+
+The difficulty is how to deal with the base_addr. Although it should not happen,
+the base_addr may be modify if two threads access phy at the same time.  I would
+replace the method by saving the base_addr with a global variable. Then, the
+r8168g_mdio functions could deal with both of the firmware and phy settings.
+
+[...]
+> > +static void __devinit rtl_hw_initialize(struct rtl8169_private *tp)
+> > +{
+> > +	switch (tp->mac_version) {
+> > +	case RTL_GIGA_MAC_VER_40:
+> > +	case RTL_GIGA_MAC_VER_41:
+> > +		rtl_hw_init_8168g(tp);
+> > +		break;
+> > +	default:
+> > +		break;
+> > +	}
+> > +}
+> 
+> Why doesn't it belong to hw_start ?
+> 
+
+According to the initialization process from our hardware, there are something
+needed to do before reset. Maybe this considers the rebooting from the other OS
+or hwardware behavior.  I don't sure if it is safe, to let them belong to
+hw_start.
+
+> Is it completely unneeded if the device requires a rtl8169_hw_reset,
+> resumes or such ?
+>
+
+By the information from our hardware, these are the initial settings and only
+need be done once. 
+
+Best Regards,
+Hayes
+
