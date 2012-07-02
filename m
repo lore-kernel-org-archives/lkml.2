@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932954Ab2GBKIE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 06:08:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46063 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932850Ab2GBKIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 06:08:02 -0400
-Date: Mon, 2 Jul 2012 12:07:36 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org,
-        drepper@gmail.com
-Subject: Re: [PATCHv3 0/3] perf tool: Add new event group management
-Message-ID: <20120702100736.GA967@krava.redhat.com>
-References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
- <4FF10693.5000907@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF10693.5000907@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932960Ab2GBKIl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 06:08:41 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:46484 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932850Ab2GBKIj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 06:08:39 -0400
+Date: Mon, 2 Jul 2012 12:08:14 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        Seth Heasley <seth.heasley@intel.com>, Olof Johansson <olof@lixom.net>,
+        Benson Leung <bleung@chromium.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/8 v3] i2c: i801: check INTR after every transaction
+Message-ID: <20120702120814.47d71bc5@endymion.delvare>
+In-Reply-To: <CAGS+omDV_ynBL-PN0qmLmDRiHGbQFf+TwqC2-+KJY8zy9FDhrA@mail.gmail.com>
+References: <1340805255-8041-1-git-send-email-djkurtz@chromium.org>
+	<1340805255-8041-4-git-send-email-djkurtz@chromium.org>
+	<20120627180724.762f854a@endymion.delvare>
+	<20120701232051.308c03d1@endymion.delvare>
+	<CAGS+omDV_ynBL-PN0qmLmDRiHGbQFf+TwqC2-+KJY8zy9FDhrA@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 01, 2012 at 08:25:23PM -0600, David Ahern wrote:
-> Hi Jiri:
+On Mon, 2 Jul 2012 09:19:24 +0800, Daniel Kurtz wrote:
+> On Mon, Jul 2, 2012 at 5:20 AM, Jean Delvare <khali@linux-fr.org> wrote:
+> > I've done some performance measurements, and it turns out that, with the
+> > version of this patch modified by me, all short transactions are twice
+> > as slow as before. This is because i801_transaction waits twice now:
+> > once for BUSY to be clear, and then again once for INTR to be set.
 > 
-> On 6/29/12 3:08 AM, Jiri Olsa wrote:
-> >hi,
-> >adding support for creating event groups based on the way they
-> >are specified on the command line.
-> >
-> >This patchset adds the '{}' style grammar to express event group,
-> >allowing so far only the 'event modifier' as group modifier.
-> >
-> >The sample/leader modifier changes are ready, but I'm getting
-> >some weird numbers in tests, so I'll send it later. Meanwhile,
-> >it'd be nice to have at least this patchset in.. ;)
-> >
-> >
-> >Attached patches:
-> >   1/3 perf, tool: Add support to parse event group syntax
-> >   2/3 perf, tool: Enable grouping logic for parsed events
-> >   3/3 perf, test: Add automated tests for event group parsing
-> 
-> Would you mind updating perf-stat and perf-record Documentation to
-> include the group option?
+> Does a fast sequence of such transactions actually take any longer? Or
+> just a single short transaction?
 
-yes, Arnaldo already stressed that.. ;) I'll send it
-with my next patchset
+Both are affected, this is the problem. See:
 
-jirka
+Original driver:
 
-> 
-> David
+# time i2cdump -y 8 0x2f b >/dev/null
+
+real	0m0.157s
+user	0m0.000s
+sys	0m0.010s
+
+After this patch:
+
+# time i2cdump -y 8 0x2f b >/dev/null
+
+real	0m0.279s
+user	0m0.003s
+sys	0m0.011s
+
+This is on a fast machine with recent kernel. On my ICH3-M laptop with
+kernel 2.6.32, the slowdown for a full register dump is from 2 seconds
+to 4 seconds. Big performance regression.
+
+> My understanding is that the INTR wait is really waiting for the
+> entire transaction to complete (ie., including i2c STOP condition),
+> not just the byte transfer phase.
+
+This is my understanding as well, but I'm fairly certain that this is
+the case of the BUSY flag as well. I think BUSY gets cleared at the
+same time INTR (or any of the error status bits) gets set. Which is why
+I think checking BUSY is redundant. As a matter of fact, we ignore BUSY
+completely in i801_block_transaction_byte_by_byte(), so I see no reason
+why we couldn't do the same in i2c_transaction().
+
+> By waiting here at the end of a transaction, we make sure the status
+> bits are actually clear before starting the next transaction.
+
+I have no objection to clearing the status bits, simply I think the
+sequence is wrong. I'll write and post a RFC patch later today
+illustrating what I think should be done.
+
+-- 
+Jean Delvare
