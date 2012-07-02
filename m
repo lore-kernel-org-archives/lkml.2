@@ -1,67 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab2GBV5Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 17:57:24 -0400
-Received: from mga11.intel.com ([192.55.52.93]:65218 "EHLO mga11.intel.com"
+	id S964771Ab2GBWBZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 18:01:25 -0400
+Received: from mga03.intel.com ([143.182.124.21]:17209 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754147Ab2GBV5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 17:57:23 -0400
+	id S1756033Ab2GBWBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 18:01:23 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="187683573"
-Date: Mon, 2 Jul 2012 14:57:22 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/5] perf, x86: Enable PDIR precise instruction profiling
- on IvyBridge
-Message-ID: <20120702215722.GC14479@tassilo.jf.intel.com>
-References: <1341254598-1379-1-git-send-email-andi@firstfloor.org>
- <1341254598-1379-3-git-send-email-andi@firstfloor.org>
- <1341256733.23484.11.camel@twins>
- <20120702195744.GG11413@one.firstfloor.org>
- <1341260540.23484.25.camel@twins>
- <20120702210008.GB14479@tassilo.jf.intel.com>
- <1341265014.23484.47.camel@twins>
+   d="scan'208";a="163286653"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Kay Sievers <kay@vrfy.org>
+CC: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Subject: RE: [PATCH] printk: replacing the raw_spin_lock/unlock with
+ raw_spin_lock_irqsave/irqrestore
+Thread-Topic: [PATCH] printk: replacing the raw_spin_lock/unlock with
+ raw_spin_lock_irqsave/irqrestore
+Thread-Index: AQHNWJXLxQUlAZ9SPEq/eraLzjltBJcWiirA
+Date: Mon, 2 Jul 2012 22:01:19 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A10AFDE@SHSMSX101.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A109B17@SHSMSX101.ccr.corp.intel.com>
+ <CAPXgP10pQWHYmi1egdArnbnmq=ATDbVo3GBG-=vHskrgkCH1xA@mail.gmail.com>
+In-Reply-To: <CAPXgP10pQWHYmi1egdArnbnmq=ATDbVo3GBG-=vHskrgkCH1xA@mail.gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341265014.23484.47.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q62M1VkC011782
 
-On Mon, Jul 02, 2012 at 11:36:54PM +0200, Peter Zijlstra wrote:
-> On Mon, 2012-07-02 at 14:00 -0700, Andi Kleen wrote:
-> > Ok so you want a new flag? Or a new event?
-> 
-> Once we grow the sysfs event stuff for cpu PMUs, we could add a new
-> named event, but I don't think its all that important.
-> 
-> instructions isn't all that interesting a measure to sample. And the
-> people that do care can already use it by filling out the event
-> manually.
+Thanks your pointing out. New patch as below:
 
-The idea was to make it easier to use, similar to the recent
-automatic IBS setup on AMD.
+From: liu chuansheng <chuansheng.liu@intel.com>
+Subject: [PATCH] printk: replacing the raw_spin_lock/unlock with raw_spin_lock/unlock_irq
 
-It's the nearest you can get on Intel systems.
+In function devkmsg_read/writev/llseek/poll/open()..., the function
+raw_spin_lock/unlock is used, there is potential deadlock case happening.
+CPU1: thread1 doing the cat /dev/kmsg:
+        raw_spin_lock(&logbuf_lock);
+        while (user->seq == log_next_seq) {
+when thread1 run here, at this time one interrupt is coming on CPU1 and running
+based on this thread,if the interrupt handle called the printk which need the
+logbuf_lock spin also, it will cause deadlock.
 
-I agree it would be nicer on cycles, but instructions are in many
-cases a reasonable approximation.
+So we should use raw_spin_lock/unlock_irq here.
 
-BTW the problem with specifying it manually is that there
-is no way to enforce the SandyBridge quiescence restrictions. 
-It would probably need forking the tables too and removing it on 
-SandyBridge, or something special to enforce exclusive mode,
-all complicated and ugly.
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+---
+ kernel/printk.c |   24 ++++++++++++------------
+ 1 files changed, 12 insertions(+), 12 deletions(-)
 
-An explicit way to specify it side steps that all nicely.
-
--Andi
-
+diff --git a/kernel/printk.c b/kernel/printk.c
+index dba1821..12886cd 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -430,20 +430,20 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+        ret = mutex_lock_interruptible(&user->lock);
+        if (ret)
+                return ret;
+-       raw_spin_lock(&logbuf_lock);
++       raw_spin_lock_irq(&logbuf_lock);
+        while (user->seq == log_next_seq) {
+                if (file->f_flags & O_NONBLOCK) {
+                        ret = -EAGAIN;
+-                       raw_spin_unlock(&logbuf_lock);
++                       raw_spin_unlock_irq(&logbuf_lock);
+                        goto out;
+                }
+ 
+-               raw_spin_unlock(&logbuf_lock);
++               raw_spin_unlock_irq(&logbuf_lock);
+                ret = wait_event_interruptible(log_wait,
+                                               user->seq != log_next_seq);
+                if (ret)
+                        goto out;
+-               raw_spin_lock(&logbuf_lock);
++               raw_spin_lock_irq(&logbuf_lock);
+        }
+ 
+        if (user->seq < log_first_seq) {
+@@ -451,7 +451,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+                user->idx = log_first_idx;
+                user->seq = log_first_seq;
+                ret = -EPIPE;
+-               raw_spin_unlock(&logbuf_lock);
++               raw_spin_unlock_irq(&logbuf_lock);
+                goto out;
+        }
+ 
+@@ -501,7 +501,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+ 
+        user->idx = log_next(user->idx);
+        user->seq++;
+-       raw_spin_unlock(&logbuf_lock);
++       raw_spin_unlock_irq(&logbuf_lock);
+ 
+        if (len > count) {
+                ret = -EINVAL;
+@@ -528,7 +528,7 @@ static loff_t devkmsg_llseek(struct file *file, loff_t offset, int whence)
+        if (offset)
+                return -ESPIPE;
+ 
+-       raw_spin_lock(&logbuf_lock);
++       raw_spin_lock_irq(&logbuf_lock);
+        switch (whence) {
+        case SEEK_SET:
+                /* the first record */
+@@ -552,7 +552,7 @@ static loff_t devkmsg_llseek(struct file *file, loff_t offset, int whence)
+        default:
+                ret = -EINVAL;
+        }
+-       raw_spin_unlock(&logbuf_lock);
++       raw_spin_unlock_irq(&logbuf_lock);
+        return ret;
+ }
+ 
+@@ -566,14 +566,14 @@ static unsigned int devkmsg_poll(struct file *file, poll_table *wait)
+ 
+        poll_wait(file, &log_wait, wait);
+ 
+-       raw_spin_lock(&logbuf_lock);
++       raw_spin_lock_irq(&logbuf_lock);
+        if (user->seq < log_next_seq) {
+                /* return error when data has vanished underneath us */
+                if (user->seq < log_first_seq)
+                        ret = POLLIN|POLLRDNORM|POLLERR|POLLPRI;
+                ret = POLLIN|POLLRDNORM;
+        }
+-       raw_spin_unlock(&logbuf_lock);
++       raw_spin_unlock_irq(&logbuf_lock);
+ 
+        return ret;
+ }
+@@ -597,10 +597,10 @@ static int devkmsg_open(struct inode *inode, struct file *file)
+ 
+        mutex_init(&user->lock);
+ 
+-       raw_spin_lock(&logbuf_lock);
++       raw_spin_lock_irq(&logbuf_lock);
+        user->idx = log_first_idx;
+        user->seq = log_first_seq;
+-       raw_spin_unlock(&logbuf_lock);
++       raw_spin_unlock_irq(&logbuf_lock);
+ 
+        file->private_data = user;
+        return 0;
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.7.0.4
+
+
+> -----Original Message-----
+> From: Kay Sievers [mailto:kay@vrfy.org]
+> Sent: Tuesday, July 03, 2012 5:01 AM
+> To: Liu, Chuansheng
+> Cc: 'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org);
+> a.p.zijlstra@chello.nl; gregkh@linuxfoundation.org; mingo@elte.hu
+> Subject: Re: [PATCH] printk: replacing the raw_spin_lock/unlock with
+> raw_spin_lock_irqsave/irqrestore
+> 
+> On Mon, Jul 2, 2012 at 12:36 PM, Liu, Chuansheng <chuansheng.liu@intel.com>
+> wrote:
+> > From: liu chuansheng <chuansheng.liu@intel.com>
+> > Subject: [PATCH] printk: replacing the raw_spin_lock/unlock with
+> > raw_spin_lock_irqsave/irqrestore
+> >
+> > In function devkmsg_read/writev/llseek/poll/open()..., the function
+> > raw_spin_lock/unlock is used, there is potential deadlock case happening.
+> > CPU1: thread1 doing the cat /dev/kmsg:
+> >         raw_spin_lock(&logbuf_lock);
+> >         while (user->seq == log_next_seq) { when thread1 run here, at
+> > this time one interrupt is coming on CPU1 and running based on this
+> > thread,if the interrupt handle called the printk which need the
+> > logbuf_lock spin also, it will cause deadlock.
+> >
+> > So we should use raw_spin_lock_irq_save/irqrestore here.
+> 
+> They are all handling a system call, isn't raw_spin_lock_irq() without the flag
+> restoration good enough then?
+> 
+> Thanks,
+> Kay
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
