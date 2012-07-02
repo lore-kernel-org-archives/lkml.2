@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434Ab2GBMvO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 08:51:14 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:32368 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab2GBMvN (ORCPT
+	id S1751670Ab2GBMv2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 08:51:28 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52515 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab2GBMvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 08:51:13 -0400
-X-AuditID: cbfee61b-b7f776d000002f3f-14-4ff1993f3104
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: "'Lars-Peter Clausen'" <lars@metafoo.de>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-Cc: "'Takashi Iwai'" <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        swarren@nvidia.com, linux-kernel@vger.kernel.org,
-        "'Laxman Dewangan'" <ldewangan@nvidia.com>, lrg@ti.com
-References: <1340866886-24432-1-git-send-email-ldewangan@nvidia.com>
- <4FEC3B70.5030902@metafoo.de> <s5hobo3zl79.wl%tiwai@suse.de>
- <20120628121816.GB21029@sirena.org.uk> <4FEC4E62.3020101@metafoo.de>
-In-reply-to: <4FEC4E62.3020101@metafoo.de>
-Subject: RE: [alsa-devel] [PATCH] ASoC: snd_dmaengine: add common api for
- pcm_mmap
-Date: Mon, 02 Jul 2012 14:50:58 +0200
-Organization: SPRC
-Message-id: <02c301cd5851$572fd440$058f7cc0$%szyprowski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1VKUX/1uLMvWdCRx6O9dE/eWzzgADJwXJw
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t9jQV37mR/9Dd4cNLG4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZk15tZyw4xFPxa+pT5gbG/5xdjJwcEgImEkvXtrJA2GISF+6t
-	Z+ti5OIQEpjOKNGzfyELhDOLSWLbrytgVWwChhJdb7vYQGwRgQSJ7u5HTCBFzAKrGSWent7O
-	CtFxilGiuXUnWBWngJbE8c4nQAkODmGBEIn9X6VAwiwCqhKP2rewg4T5BYQkJs5SAAnzCrhI
-	zP29hRHCFpT4Mfke2F5moCnrdx5ngrDlJTavecsM0iohoC7x6K8uxDlGEl3L7jJDlIhI3G14
-	zjqBUXgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEB/gz6R2M
-	qxosDjEKcDAq8fD+mPHRX4g1say4MvcQowQHs5II76lpQCHelMTKqtSi/Pii0pzU4kOM0hws
-	SuK8TdYX/IUE0hNLUrNTUwtSi2CyTBycUg2MoTOMBc5KcL2tYORKi5tU5D+xvUpK4dr+6Q83
-	9MzqNTtiPFFtnVnguter8j2EnZ4f6xSNKZ8toBcRky1rfUXmotLJMmsTPrGKDr6AY78a6z+V
-	ak4wK7U6Un8uIVpNbP2f8BJnvfUJe0PV+b179U5GuDycNuHInZ8CznxsN2vSLi9S5Tg0d7ES
-	S3FGoqEWc1FxIgBwZhbKbAIAAA==
-X-TM-AS-MML: No
+	Mon, 2 Jul 2012 08:51:25 -0400
+Message-ID: <4FF19947.3040608@linaro.org>
+Date: Mon, 02 Jul 2012 14:51:19 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org,
+        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>, linux-next@vger.kernel.org,
+        Colin Cross <ccross@android.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rob Lee <rob.lee@linaro.org>, "lenb@kernel.org" <lenb@kernel.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>
+Subject: Re: linux-next : cpuidle - could you add my tree please
+References: <4FDEE98D.7010802@linaro.org> <4FDF2D58.9010006@ti.com> <4FE86727.5010400@linaro.org> <CACRpkdYaLweX-4YkWotuFFWoqEjOLKoNCsurCxxWNfq7QznPnw@mail.gmail.com>
+In-Reply-To: <CACRpkdYaLweX-4YkWotuFFWoqEjOLKoNCsurCxxWNfq7QznPnw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Thursday, June 28, 2012 2:30 PM Lars-Peter Clausen wrote:
-
-> On 06/28/2012 02:18 PM, Mark Brown wrote:
-> > On Thu, Jun 28, 2012 at 02:15:38PM +0200, Takashi Iwai wrote:
-> >> Lars-Peter Clausen wrote:
-> >
-> >>> to the ALSA core. Now that there is a generic dma_mmap_writecombine it may
-> >>> make sense to integrate this with snd_pcm_lib_default_mmap.
-> >
-> >> Agreed.
-> >
-> >> Also, it must be portable.  So far, only ARM has
-> >> dma_mmap_writecombine(), thus the build on other arch would fail as
-> >> is.
-> >
-> > Oh, dear - this means we don't actually have a generic API at all.  Is
-> > there any effort being made to make this generally available?
+On 07/02/2012 11:09 AM, Linus Walleij wrote:
+> On Mon, Jun 25, 2012 at 3:27 PM, Daniel Lezcano
+> <daniel.lezcano@linaro.org> wrote:
 > 
-> Yes there is, and in fact in next/master there is generic
-> dma_mmap_writecombine. I'm not quite sure how it behaves on non ARM archs
-> though. But in theory it should fallback to a normal coherent mapping. Marek
-> did a lot of work on this, I've put him on Cc.
+>> we discussed last week to put in place a tree grouping the cpuidle
+>> modifications [1]. Is it possible to add the tree ?
+>>
+>> git://git.linaro.org/people/dlezcano/cpuidle-next.git #cpuidle-next
+> 
+> Thanks for doing this.
+> 
+> Since MAINTAINERS is lacking a listed maintainer for cpuidle,
+> are you also going to add yourself as maintainer and list this
+> tree in that file, or is this a one-time exercise?
 
-On architectures which don't support DMA_ATTR_WRITECOMBINE attribute it falls
-back to standard 'coherent' implementation, so it is equivalent to 
-dma_mmap_coherent(). If architecture doesn't provide mmap callback, my patch
-provides a so called 'generic' implementation based on virt_to_phys() macro.
-Once this patch gets merged, I hope that each architecture will be reviewed 
-if such implementation is correct. If not, some architectures might need to
-provide their own implementations, but at least we can get the buffer-mmap
-related hacks from the device drivers.
+I will be glad to do that if Len and Rafael agree on that.
 
-Best regards
 -- 
-Marek Szyprowski
-Samsung Poland R&D Center
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
