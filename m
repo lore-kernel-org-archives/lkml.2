@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932676Ab2GBUSZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 16:18:25 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23841 "EHLO
+	id S932725Ab2GBUS1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 16:18:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29983 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756230Ab2GBUSW (ORCPT
+	with ESMTP id S1756240Ab2GBUSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Jul 2012 16:18:22 -0400
-X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=kJdmymVegPMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=gu6fZOg2AAAA:8 a=qwgQ2_KmP_3XicoRTHgA:9 a=GC8p-B92FUEA:10 a=NWVoK91CQyQA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=g4HCmq8Mtf8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=3nbZYyFuAAAA:8 a=dwWg9rdAu8B17VaaaNQA:9 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120702200322.573660631@goodmis.org>
+Message-Id: <20120702201820.807573136@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 02 Jul 2012 16:03:22 -0400
+Date: Mon, 02 Jul 2012 16:03:24 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -20,72 +20,170 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 0/6] [RFC v3] ftrace/kprobes: Setting up ftrace for kprobes
+Subject: [PATCH 2/6] ftrace: Consolidate arch dependent functions with list function
+References: <20120702200322.573660631@goodmis.org>
+Content-Disposition: inline; filename=0002-ftrace-Consolidate-arch-dependent-functions-with-lis.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the (hopefully) final round of RFCs, for having kprobes use ftrace
-as optimization. This round, I did not include Masami's patches that are
-on top of this, simply because I posted them twice before with no changes.
-I have them still on top of this series, but I'm only posting my set.
-The final pull request will also include Masami's.
+From: Steven Rostedt <srostedt@redhat.com>
 
-If you are interested in Masami's changes, you can find them here:
+As the function tracer starts to get more features, the support for
+theses features will spread out throughout the different architectures
+over time. These features boil down to what each arch does in the
+mcount trampoline (the ftrace_caller).
 
- http://marc.info/?l=linux-kernel&m=133954203218870&w=2
- Patches 7 - 13 are mostly Masami's and some are mine. But none were changed
- in this release. I may post them again after these are reviewed.
+Currently there's two features that are not the same throughout the
+archs.
 
-This round, I only did the updates that Masami recommended. I did not
-modify the ones that he gave his 'Reviewed-by' tag, except to change
-the change log to have that tag.
+ 1) Support to stop function tracing before the callback
+ 2) passing of the ftrace ops
 
-What was changed were:
+Both of these require placing an indirect function to support the
+features if the mcount trampoline does not.
 
-Patch 3:
-  Moved out the x86 changes into patch 5
-  Added a SAVED_REGS_IF_SUPPORTED flag, that can be set if the callback
-   can handle the regs parameter being NULL. If the ftrace_ops only has
-   SAVED_REGS set, it will fail the registering if the arch does not
-   support saving regs.
+On a side note, for all architectures, when more than one callback
+is registered to the function tracer, an intermediate 'list' function
+is called by the mcount trampoline to iterate through the callbacks
+that are registered.
 
-Patch 5:
-  Incorporated x86 changes from the previous patch 3.
+Instead of making a separate function for each of these features,
+and requiring several indirect calls, just use the single 'list' function
+as the intermediate, to handle all cases. If an arch does not support
+the 'stop function tracing' or the passing of ftrace ops, just force
+it to use the list function that will handle the features required.
 
-Patch 6:
-  Have i386 restore flags on return of a function trace that saves regs.
+This makes the code cleaner and simpler and removes a lot of
+ #ifdefs in the code.
 
-Masami,
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/ftrace.h |   13 +++++++++++++
+ kernel/trace/ftrace.c  |   45 ++++-----------------------------------------
+ 2 files changed, 17 insertions(+), 41 deletions(-)
 
-Can you review those patches (I believe the rest have your Reviewed-by
-already). Then I'll add that tag and push for a pull request.
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 2d59641..3651fdc 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -27,6 +27,19 @@
+ #define ARCH_SUPPORTS_FTRACE_OPS 0
+ #endif
+ 
++/*
++ * If the arch's mcount caller does not support all of ftrace's
++ * features, then it must call an indirect function that
++ * does. Or at least does enough to prevent any unwelcomed side effects.
++ */
++#if !defined(CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST) || \
++	!ARCH_SUPPORTS_FTRACE_OPS
++# define FTRACE_FORCE_LIST_FUNC 1
++#else
++# define FTRACE_FORCE_LIST_FUNC 0
++#endif
++
++
+ struct module;
+ struct ftrace_hash;
+ 
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 4f2ab93..4cbca2e 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -97,8 +97,6 @@ static struct ftrace_ops *ftrace_global_list __read_mostly = &ftrace_list_end;
+ static struct ftrace_ops *ftrace_control_list __read_mostly = &ftrace_list_end;
+ static struct ftrace_ops *ftrace_ops_list __read_mostly = &ftrace_list_end;
+ ftrace_func_t ftrace_trace_function __read_mostly = ftrace_stub;
+-static ftrace_func_t __ftrace_trace_function_delay __read_mostly = ftrace_stub;
+-ftrace_func_t __ftrace_trace_function __read_mostly = ftrace_stub;
+ ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
+ static struct ftrace_ops global_ops;
+ static struct ftrace_ops control_ops;
+@@ -162,26 +160,9 @@ static void set_ftrace_pid_function(ftrace_func_t func)
+ void clear_ftrace_function(void)
+ {
+ 	ftrace_trace_function = ftrace_stub;
+-	__ftrace_trace_function = ftrace_stub;
+-	__ftrace_trace_function_delay = ftrace_stub;
+ 	ftrace_pid_function = ftrace_stub;
+ }
+ 
+-#ifndef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
+-/*
+- * For those archs that do not test ftrace_trace_stop in their
+- * mcount call site, we need to do it from C.
+- */
+-static void ftrace_test_stop_func(unsigned long ip, unsigned long parent_ip,
+-				  struct ftrace_ops *op)
+-{
+-	if (function_trace_stop)
+-		return;
+-
+-	__ftrace_trace_function(ip, parent_ip, op);
+-}
+-#endif
+-
+ static void control_ops_disable_all(struct ftrace_ops *ops)
+ {
+ 	int cpu;
+@@ -246,7 +227,7 @@ static void update_ftrace_function(void)
+ 	if (ftrace_ops_list == &ftrace_list_end ||
+ 	    (ftrace_ops_list->next == &ftrace_list_end &&
+ 	     !(ftrace_ops_list->flags & FTRACE_OPS_FL_DYNAMIC) &&
+-	     ARCH_SUPPORTS_FTRACE_OPS)) {
++	     !FTRACE_FORCE_LIST_FUNC)) {
+ 		/* Set the ftrace_ops that the arch callback uses */
+ 		if (ftrace_ops_list == &global_ops)
+ 			function_trace_op = ftrace_global_list;
+@@ -259,18 +240,7 @@ static void update_ftrace_function(void)
+ 		func = ftrace_ops_list_func;
+ 	}
+ 
+-#ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
+ 	ftrace_trace_function = func;
+-#else
+-#ifdef CONFIG_DYNAMIC_FTRACE
+-	/* do not update till all functions have been modified */
+-	__ftrace_trace_function_delay = func;
+-#else
+-	__ftrace_trace_function = func;
+-#endif
+-	ftrace_trace_function =
+-		(func == ftrace_stub) ? func : ftrace_test_stop_func;
+-#endif
+ }
+ 
+ static void add_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
+@@ -1902,16 +1872,6 @@ static void ftrace_run_update_code(int command)
+ 	 */
+ 	arch_ftrace_update_code(command);
+ 
+-#ifndef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
+-	/*
+-	 * For archs that call ftrace_test_stop_func(), we must
+-	 * wait till after we update all the function callers
+-	 * before we update the callback. This keeps different
+-	 * ops that record different functions from corrupting
+-	 * each other.
+-	 */
+-	__ftrace_trace_function = __ftrace_trace_function_delay;
+-#endif
+ 	function_trace_stop--;
+ 
+ 	ret = ftrace_arch_code_modify_post_process();
+@@ -3996,6 +3956,9 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
+ {
+ 	struct ftrace_ops *op;
+ 
++	if (function_trace_stop)
++		return;
++
+ 	if (unlikely(trace_recursion_test(TRACE_INTERNAL_BIT)))
+ 		return;
+ 
+-- 
+1.7.10
 
-Thanks!
 
--- Steve
-
-
-Steven Rostedt (6):
-      ftrace: Pass ftrace_ops as third parameter to function trace callback
-      ftrace: Consolidate arch dependent functions with 'list' function
-      ftrace: Return pt_regs to function trace callback
-      ftrace/x86_32: Push ftrace_ops in as 3rd parameter to function tracer
-      ftrace/x86: Add separate function to save regs
-      ftrace/x86: Add save_regs for i386 function calls
-
-----
- arch/x86/include/asm/ftrace.h     |   47 +++++---
- arch/x86/kernel/entry_32.S        |   56 +++++++++
- arch/x86/kernel/entry_64.S        |   89 ++++++++++++--
- arch/x86/kernel/ftrace.c          |   73 +++++++++++-
- include/linux/ftrace.h            |  138 ++++++++++++++++++++--
- kernel/trace/ftrace.c             |  236 +++++++++++++++++++++++++------------
- kernel/trace/trace_event_perf.c   |    3 +-
- kernel/trace/trace_events.c       |    3 +-
- kernel/trace/trace_functions.c    |   10 +-
- kernel/trace/trace_irqsoff.c      |    3 +-
- kernel/trace/trace_sched_wakeup.c |    3 +-
- kernel/trace/trace_selftest.c     |   20 +++-
- kernel/trace/trace_stack.c        |    3 +-
- 13 files changed, 557 insertions(+), 127 deletions(-)
