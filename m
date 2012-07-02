@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab2GBV0W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 17:26:22 -0400
-Received: from mail-yw0-f51.google.com ([209.85.213.51]:37201 "EHLO
-	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753118Ab2GBV0U (ORCPT
+	id S933101Ab2GBV0j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 17:26:39 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:64102 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755317Ab2GBV0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 17:26:20 -0400
-Date: Mon, 2 Jul 2012 14:26:17 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Petr Holasek <pholasek@redhat.com>
-cc: Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH v2] KSM: numa awareness sysfs knob
-In-Reply-To: <20120630114053.GA3036@stainedmachine.redhat.com>
-Message-ID: <alpine.DEB.2.00.1207021425110.24806@chino.kir.corp.google.com>
-References: <1340970592-25001-1-git-send-email-pholasek@redhat.com> <20120629160510.GA10082@cmpxchg.org> <20120629163033.GA11327@stainedmachine.redhat.com> <20120629164706.GA7831@cmpxchg.org> <alpine.DEB.2.00.1206291526180.15200@chino.kir.corp.google.com>
- <20120630114053.GA3036@stainedmachine.redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 2 Jul 2012 17:26:37 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-14.tower-127.messagelabs.com!1341264392!7502829!13
+X-Originating-IP: [216.166.12.69]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: comedi: s626: fix the number of dio channels
+Date: Mon, 2 Jul 2012 14:26:24 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201207021426.25319.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 30 Jun 2012, Petr Holasek wrote:
+The first digital i/o subdevice has its n_chan set to S626_DIO_CHANNELS
+which is defined as 48. This is actually the total number of channels
+provided by all three digital i/o subdevices. Each subdevice only has
+16 channels.
 
-> The problem of the first patch/RFC was that merging algorithm was unstable
-> and could merge pages with distance higher than was set up (described by 
-> Nai Xia in RFC thread [1]). Sure, this instability could be solved, but for
-> ksm pages shared by many other pages on different nodes we would have to still
-> recalculate which page is "in the middle" and in case of change migrate it 
-> between nodes every time when ksmd reach new shareable page or when some 
-> sharing page is removed.
-> 
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/drivers/s626.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Or you could simply refuse to ever merge any page that is identical to a 
-page on a node with a distance greater than the threshold, i.e. never 
-merge pages even under the threshold if a page exists on a node higher 
-than the threshold.
+diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
+index bef9649..f90578e 100644
+--- a/drivers/staging/comedi/drivers/s626.c
++++ b/drivers/staging/comedi/drivers/s626.c
+@@ -2636,7 +2636,7 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	/* digital I/O subdevice */
+ 	s->type = COMEDI_SUBD_DIO;
+ 	s->subdev_flags = SDF_WRITABLE | SDF_READABLE;
+-	s->n_chan = S626_DIO_CHANNELS;
++	s->n_chan = 16;
+ 	s->maxdata = 1;
+ 	s->io_bits = 0xffff;
+ 	s->private = &dio_private_A;
+-- 
+1.7.11
+
