@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932908Ab2GBUTU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 16:19:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42316 "EHLO
+	id S932880Ab2GBUTS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 16:19:18 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42317 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932737Ab2GBUTO (ORCPT
+	with ESMTP id S932850Ab2GBUTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 16:19:14 -0400
+	Mon, 2 Jul 2012 16:19:15 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
@@ -23,9 +23,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>, Ulrich Drepper <drepper@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/13] perf tools: Adding round_up/round_down macros
-Date: Mon,  2 Jul 2012 17:18:50 -0300
-Message-Id: <1341260331-10204-13-git-send-email-acme@infradead.org>
+Subject: [PATCH 11/13] perf symbols: Add '.note' check into search for NOTE section
+Date: Mon,  2 Jul 2012 17:18:49 -0300
+Message-Id: <1341260331-10204-12-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1341260331-10204-1-git-send-email-acme@infradead.org>
 References: <1341260331-10204-1-git-send-email-acme@infradead.org>
@@ -38,8 +38,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Adding round_up and round_down macros. They will be used in upcoming
-patches.
+Adding '.note' section name to be check when looking for notes section.
+The '.note' name is used by kernel VDSO.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arun Sharma <asharma@fb.com>
@@ -55,31 +55,54 @@ Cc: Robert Richter <robert.richter@amd.com>
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Tom Zanussi <tzanussi@gmail.com>
 Cc: Ulrich Drepper <drepper@gmail.com>
-Link: http://lkml.kernel.org/r/1340120894-9465-21-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1340120894-9465-15-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/include/linux/kernel.h |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ tools/perf/util/symbol.c |   29 +++++++++++++++++++++++------
+ 1 file changed, 23 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/include/linux/kernel.h b/tools/perf/util/include/linux/kernel.h
-index 1eb804f..b6842c1 100644
---- a/tools/perf/util/include/linux/kernel.h
-+++ b/tools/perf/util/include/linux/kernel.h
-@@ -108,4 +108,14 @@ int eprintf(int level,
- #define pr_debug3(fmt, ...) pr_debugN(3, pr_fmt(fmt), ##__VA_ARGS__)
- #define pr_debug4(fmt, ...) pr_debugN(4, pr_fmt(fmt), ##__VA_ARGS__)
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 994f4ff..50958bb 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1478,14 +1478,31 @@ static int elf_read_build_id(Elf *elf, void *bf, size_t size)
+ 		goto out;
+ 	}
  
-+/*
-+ * This looks more complex than it should be. But we need to
-+ * get the type for the ~ right in round_down (it needs to be
-+ * as wide as the result!), and we want to evaluate the macro
-+ * arguments just once each.
-+ */
-+#define __round_mask(x, y) ((__typeof__(x))((y)-1))
-+#define round_up(x, y) ((((x)-1) | __round_mask(x, y))+1)
-+#define round_down(x, y) ((x) & ~__round_mask(x, y))
+-	sec = elf_section_by_name(elf, &ehdr, &shdr,
+-				  ".note.gnu.build-id", NULL);
+-	if (sec == NULL) {
++	/*
++	 * Check following sections for notes:
++	 *   '.note.gnu.build-id'
++	 *   '.notes'
++	 *   '.note' (VDSO specific)
++	 */
++	do {
++		sec = elf_section_by_name(elf, &ehdr, &shdr,
++					  ".note.gnu.build-id", NULL);
++		if (sec)
++			break;
 +
- #endif
+ 		sec = elf_section_by_name(elf, &ehdr, &shdr,
+ 					  ".notes", NULL);
+-		if (sec == NULL)
+-			goto out;
+-	}
++		if (sec)
++			break;
++
++		sec = elf_section_by_name(elf, &ehdr, &shdr,
++					  ".note", NULL);
++		if (sec)
++			break;
++
++		return err;
++
++	} while (0);
+ 
+ 	data = elf_getdata(sec, NULL);
+ 	if (data == NULL)
 -- 
 1.7.9.2.358.g22243
 
