@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933142Ab2GBVqT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 17:46:19 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:33117 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932681Ab2GBVqR (ORCPT
+	id S933150Ab2GBVwX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 17:52:23 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62326 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932871Ab2GBVwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 17:46:17 -0400
+	Mon, 2 Jul 2012 17:52:22 -0400
+Date: Mon, 2 Jul 2012 22:52:03 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: remove asm/locks.h
+Message-ID: <20120702215203.GA25234@mudshark.cambridge.arm.com>
+References: <1341262188.1911.147.camel@x61.thuisdomein>
 MIME-Version: 1.0
-From: Alex Henrie <alexhenrie24@gmail.com>
-Date: Mon, 2 Jul 2012 15:45:56 -0600
-Message-ID: <CAMMLpeQ+6WvJO97m+5eGMA7dEymU61CfqLxcGVHoY_9DpG0cAg@mail.gmail.com>
-Subject: iopl not preserved across execve on x64
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341262188.1911.147.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Linux kernel developers,
+Hi Paul,
 
-I have a question about how iopl works with execve. Essentially, I
-want to set iopl to 3 with one program, then call execve to change to
-another program that writes to the system speaker. This works fine on
-x86 kernels, but segfaults on x64 kernels. Why is this?
+On Mon, Jul 02, 2012 at 09:49:48PM +0100, Paul Bolle wrote:
+> Commit 64ac24e738823161693bf791f87adc802cf529ff ("Generic semaphore
+> implementation") removed the last include of this header. Apparently it
+> was just an oversight to keep this header. It can safely be removed now.
 
--Alex
+Hmm, looks like you're right!
 
----iopl3.c---
-#include <stdio.h>
-#include <unistd.h>
+Acked-by: Will Deacon <will.deacon@arm.com>
 
-int main(int argc, char* argv[])
-{
-    if (iopl(3) == -1)
-    {
-        perror("iopl");
-        return 1;
-    }
+> Tested only with various git commands on the (history of the) tree.
 
-    if (execvp(argv[1], &argv[1]) == -1)
-    {
-        perror("execvp");
-        return 1;
-    }
+Not sure I follow, but since this is all dead code I can't see any tests
+failing without it.
 
-    return 0;
-}
-
----beep.c---
-#include <stdio.h>
-
-int main()
-{
-    __asm__("movb $0xB6, %al\n"
-            "outb %al, $0x43\n"
-            "inb $0x61, %al\n"
-            "orb $0x03, %al\n"
-            "outb %al, $0x61\n"
-            "movb $0x64, %al\n"
-            "outb %al, $0x42\n"
-            "movb $0x01, %al\n"
-            "outb %al, $0x42\n");
-    sleep(1);
-    __asm__("inb $0x61, %al\n"
-            "andb $0xFC, %al\n"
-            "outb %al, $0x61\n");
-    return 0;
-}
-
----test.sh---
-gcc iopl3.c -o iopl3
-gcc beep.c -o beep
-sudo setcap cap_sys_rawio+eip ./iopl3
-./iopl3 ./beep
+Will
