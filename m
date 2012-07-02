@@ -1,87 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379Ab2GBCEU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 22:04:20 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:37417 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754536Ab2GBCET (ORCPT
+	id S1755443Ab2GBCHR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 22:07:17 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38882 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754014Ab2GBCHP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 22:04:19 -0400
-Message-ID: <4FF100F0.9050501@huawei.com>
-Date: Mon, 2 Jul 2012 10:01:20 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Sun, 1 Jul 2012 22:07:15 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: David Miller <davem@davemloft.net>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mathieu.poirier@linaro.org" <mathieu.poirier@linaro.org>
+Subject: RE: [PATCH] ethernet: add export.h in davinci_cpdma.c
+Thread-Topic: [PATCH] ethernet: add export.h in davinci_cpdma.c
+Thread-Index: Ac1X8Funclewraz+TkKfQvom2CLpBv//fo6A//9xUrA=
+Date: Mon, 2 Jul 2012 02:07:04 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998FCAEF@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998FCAAB@DQHE02.ent.ti.com>
+ <20120701.183333.353465166541062775.davem@davemloft.net>
+In-Reply-To: <20120701.183333.353465166541062775.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Tony Luck <tony.luck@intel.com>, Xishi Qiu <qiuxishi@huawei.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>, <linux-mm@kvack.org>,
-        <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH] mm: setup pageblock_order before it's used by sparse
-References: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com> <CAE9FiQWzfLkeQs8O22MUEmuGUx=jPi5s=wZt2fcpFMcwrzt3uA@mail.gmail.com>
-In-Reply-To: <CAE9FiQWzfLkeQs8O22MUEmuGUx=jPi5s=wZt2fcpFMcwrzt3uA@mail.gmail.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yinghai,
-	The patch fails compilation as below:
-mm/page_alloc.c:151: error: initializer element is not constant
-mm/page_alloc.c:151: error: expected ‘,’ or ‘;’ before ‘__attribute__’
-
-On IA64, HUGETLB_PAGE_ORDER has dependency on variable hpage_shift.
-# define HUGETLB_PAGE_ORDER        (HPAGE_SHIFT - PAGE_SHIFT)
-# define HPAGE_SHIFT               hpage_shift
-
-And hpage_shift could be changed by early parameter "hugepagesz".
-So seems will still need to keep function set_pageblock_order().
-
-Thanks!
-Gerry
-
-On 2012-7-1 4:15, Yinghai Lu wrote:
-> On Sat, Jun 30, 2012 at 2:07 AM, Jiang Liu <jiang.liu@huawei.com> wrote:
->> From: Xishi Qiu <qiuxishi@huawei.com>
->>
->> On architectures with CONFIG_HUGETLB_PAGE_SIZE_VARIABLE set, such as Itanium,
->> pageblock_order is a variable with default value of 0. It's set to the right
->> value by set_pageblock_order() in function free_area_init_core().
->>
->> But pageblock_order may be used by sparse_init() before free_area_init_core()
->> is called along path:
->> sparse_init()
->>    ->sparse_early_usemaps_alloc_node()
->>        ->usemap_size()
->>            ->SECTION_BLOCKFLAGS_BITS
->>                ->((1UL << (PFN_SECTION_SHIFT - pageblock_order)) *
->> NR_PAGEBLOCK_BITS)
->>
->> The uninitialized pageblock_size will cause memory wasting because usemap_size()
->> returns a much bigger value then it's really needed.
->>
->> For example, on an Itanium platform,
->> sparse_init() pageblock_order=0 usemap_size=24576
->> free_area_init_core() before pageblock_order=0, usemap_size=24576
->> free_area_init_core() after pageblock_order=12, usemap_size=8
->>
->> That means 24K memory has been wasted for each section, so fix it by calling
->> set_pageblock_order() from sparse_init().
->>
+> > @@ -19,6 +19,7 @@
+> >  #include <linux/err.h>
+> >  #include <linux/dma-mapping.h>
+> >  #include <linux/io.h>
+> > +#include <linux/export.h>
 > 
-> can you check attached patch?
-> 
-> That will kill more lines code instead.
-> 
-> Thanks
-> 
-> Yinghai
+> You aren't generating this patch against current sources, otherwise
+> you'd see that linux/module.h is included in this driver and therefore
+> the problem you ran into is not possible.
 
+Oops ! This patch was generated based on the latest linux-omap tree, but similar code was already patched in linux-next tree.
+Thanks for the notice.
 
+Best Regards,
+Milo -
