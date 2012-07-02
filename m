@@ -1,181 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932890Ab2GBJWu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 05:22:50 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:50079 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932689Ab2GBJWr (ORCPT
+	id S932906Ab2GBJW7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 05:22:59 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:53694 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932894Ab2GBJW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 05:22:47 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q629MfDo005215, This message is released by code: ctlocs8528
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH v2 net-next 1/2] r8169: support RTL8106E
-Date: Mon, 2 Jul 2012 17:23:21 +0800
-Message-ID: <1341221002-1522-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1340966060-2749-1-git-send-email-hayeswang@realtek.com>
-References: <1340966060-2749-1-git-send-email-hayeswang@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 2 Jul 2012 05:22:57 -0400
+From: Cong Meng <mc@linux.vnet.ibm.com>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: stefanha@linux.vnet.ibm.com, linuxram@us.ibm.com,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        senwang@linux.vnet.ibm.com, Cong Meng <mc@linux.vnet.ibm.com>
+Subject: [PATCH] SCSI: Add SG_GET_SG_MAX_SEGMENT_SIZE ioctl to sg device
+Date: Mon,  2 Jul 2012 17:20:57 +0800
+Message-Id: <1341220857-1205-1-git-send-email-mc@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.7.6
+x-cbid: 12070209-0542-0000-0000-00000253812D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support the new chip RTL8106E.
+Add a new ioctl cmd to get the max segment size. It's useful in
+virtualization environment for guest to know the queue limits, so
+that the guest kicks off legal scsi command to a sg device.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
 ---
- drivers/net/ethernet/realtek/r8169.c |   56 ++++++++++++++++++++++++++++++++++
- 1 file changed, 56 insertions(+)
+ drivers/scsi/sg.c |    2 ++
+ include/scsi/sg.h |    3 +++
+ 2 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index d7a04e0..7afc593 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -46,6 +46,7 @@
- #define FIRMWARE_8105E_1	"rtl_nic/rtl8105e-1.fw"
- #define FIRMWARE_8402_1		"rtl_nic/rtl8402-1.fw"
- #define FIRMWARE_8411_1		"rtl_nic/rtl8411-1.fw"
-+#define FIRMWARE_8106E_1	"rtl_nic/rtl8106e-1.fw"
+diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
+index eacd46b..bdcdc9d 100644
+--- a/drivers/scsi/sg.c
++++ b/drivers/scsi/sg.c
+@@ -913,6 +913,8 @@ sg_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
+ 		return put_user(val, ip);
+ 	case SG_GET_SG_TABLESIZE:
+ 		return put_user(sdp->sg_tablesize, ip);
++	case SG_GET_SG_MAX_SEGMENT_SIZE:
++		return put_user(queue_max_segment_size(sdp->device->request_queue), ip);
+ 	case SG_SET_RESERVED_SIZE:
+ 		result = get_user(val, ip);
+ 		if (result)
+diff --git a/include/scsi/sg.h b/include/scsi/sg.h
+index a9f3c6f..76d94c1 100644
+--- a/include/scsi/sg.h
++++ b/include/scsi/sg.h
+@@ -200,6 +200,9 @@ typedef struct sg_req_info { /* used by SG_GET_REQUEST_TABLE ioctl() */
+ /* Yields max scatter gather tablesize allowed by current host adapter */
+ #define SG_GET_SG_TABLESIZE 0x227F  /* 0 implies can't do scatter gather */
  
- #ifdef RTL8169_DEBUG
- #define assert(expr) \
-@@ -141,6 +142,7 @@ enum mac_version {
- 	RTL_GIGA_MAC_VER_36,
- 	RTL_GIGA_MAC_VER_37,
- 	RTL_GIGA_MAC_VER_38,
-+	RTL_GIGA_MAC_VER_39,
- 	RTL_GIGA_MAC_NONE   = 0xff,
- };
++/* Yidld max size of scatter gather element by current host adapter */
++#define SG_GET_SG_MAX_SEGMENT_SIZE 0x2280
++
+ #define SG_GET_VERSION_NUM 0x2282 /* Example: version 2.1.34 yields 20134 */
  
-@@ -259,6 +261,9 @@ static const struct {
- 	[RTL_GIGA_MAC_VER_38] =
- 		_R("RTL8411",		RTL_TD_1, FIRMWARE_8411_1,
- 							JUMBO_9K, false),
-+	[RTL_GIGA_MAC_VER_39] =
-+		_R("RTL8106e",		RTL_TD_1, FIRMWARE_8106E_1,
-+							JUMBO_1K, true),
- };
- #undef _R
- 
-@@ -431,7 +436,9 @@ enum rtl8168_registers {
- 	RDSAR1			= 0xd0,	/* 8168c only. Undocumented on 8168dp */
- 	MISC			= 0xf0,	/* 8168e only. */
- #define TXPLA_RST			(1 << 29)
-+#define DISABLE_LAN_EN			(1 << 23) /* Enable GPIO pin */
- #define PWM_EN				(1 << 22)
-+#define EARLY_TALLY_EN			(1 << 16)
- };
- 
- enum rtl_register_content {
-@@ -794,6 +801,7 @@ MODULE_FIRMWARE(FIRMWARE_8168F_1);
- MODULE_FIRMWARE(FIRMWARE_8168F_2);
- MODULE_FIRMWARE(FIRMWARE_8402_1);
- MODULE_FIRMWARE(FIRMWARE_8411_1);
-+MODULE_FIRMWARE(FIRMWARE_8106E_1);
- 
- static void rtl_lock_work(struct rtl8169_private *tp)
- {
-@@ -1933,6 +1941,8 @@ static void rtl8169_get_mac_version(struct rtl8169_private *tp,
- 		{ 0x7c800000, 0x30000000,	RTL_GIGA_MAC_VER_11 },
- 
- 		/* 8101 family. */
-+		{ 0x7cf00000, 0x44900000,	RTL_GIGA_MAC_VER_39 },
-+		{ 0x7c800000, 0x44800000,	RTL_GIGA_MAC_VER_39 },
- 		{ 0x7c800000, 0x44000000,	RTL_GIGA_MAC_VER_37 },
- 		{ 0x7cf00000, 0x40b00000,	RTL_GIGA_MAC_VER_30 },
- 		{ 0x7cf00000, 0x40a00000,	RTL_GIGA_MAC_VER_30 },
-@@ -3273,6 +3283,30 @@ static void rtl8402_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x1f, 0x0000);
- }
- 
-+static void rtl8106e_hw_phy_config(struct rtl8169_private *tp)
-+{
-+	void __iomem *ioaddr = tp->mmio_addr;
-+
-+	static const struct phy_reg phy_reg_init[] = {
-+		{ 0x1f, 0x0004 },
-+		{ 0x10, 0xc07f },
-+		{ 0x19, 0x7030 },
-+		{ 0x1f, 0x0000 }
-+	};
-+
-+	/* Disable ALDPS before ram code */
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+	rtl_writephy(tp, 0x18, 0x0310);
-+	msleep(100);
-+
-+	rtl_apply_firmware(tp);
-+
-+	rtl_eri_write(ioaddr, 0x1b0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
-+	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
-+
-+	rtl_eri_write(ioaddr, 0x1d0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
-+}
-+
- static void rtl_hw_phy_config(struct net_device *dev)
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
-@@ -3369,6 +3403,10 @@ static void rtl_hw_phy_config(struct net_device *dev)
- 		rtl8411_hw_phy_config(tp);
- 		break;
- 
-+	case RTL_GIGA_MAC_VER_39:
-+		rtl8106e_hw_phy_config(tp);
-+		break;
-+
- 	default:
- 		break;
- 	}
-@@ -3608,6 +3646,7 @@ static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_34:
- 	case RTL_GIGA_MAC_VER_37:
- 	case RTL_GIGA_MAC_VER_38:
-+	case RTL_GIGA_MAC_VER_39:
- 		RTL_W32(RxConfig, RTL_R32(RxConfig) |
- 			AcceptBroadcast | AcceptMulticast | AcceptMyPhys);
- 		break;
-@@ -3830,6 +3869,7 @@ static void __devinit rtl_init_pll_power_ops(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_29:
- 	case RTL_GIGA_MAC_VER_30:
- 	case RTL_GIGA_MAC_VER_37:
-+	case RTL_GIGA_MAC_VER_39:
- 		ops->down	= r810x_pll_power_down;
- 		ops->up		= r810x_pll_power_up;
- 		break;
-@@ -5123,6 +5163,18 @@ static void rtl_hw_start_8402(struct rtl8169_private *tp)
- 		     ERIAR_EXGMAC);
- }
- 
-+static void rtl_hw_start_8106(struct rtl8169_private *tp)
-+{
-+	void __iomem *ioaddr = tp->mmio_addr;
-+
-+	/* Force LAN exit from ASPM if Rx/Tx are not idle */
-+	RTL_W32(FuncEvent, RTL_R32(FuncEvent) | 0x002800);
-+
-+	RTL_W32(MISC, (RTL_R32(MISC) | DISABLE_LAN_EN) & ~EARLY_TALLY_EN);
-+	RTL_W8(MCU, RTL_R8(MCU) | EN_NDP | EN_OOB_RESET);
-+	RTL_W8(DLLPR, RTL_R8(DLLPR) & ~PFM_EN);
-+}
-+
- static void rtl_hw_start_8101(struct net_device *dev)
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
-@@ -5167,6 +5219,10 @@ static void rtl_hw_start_8101(struct net_device *dev)
- 	case RTL_GIGA_MAC_VER_37:
- 		rtl_hw_start_8402(tp);
- 		break;
-+
-+	case RTL_GIGA_MAC_VER_39:
-+		rtl_hw_start_8106(tp);
-+		break;
- 	}
- 
- 	RTL_W8(Cfg9346, Cfg9346_Lock);
+ /* Returns -EBUSY if occupied. 3rd argument pointer to int (see next) */
 -- 
-1.7.10.2
+1.7.7.6
 
