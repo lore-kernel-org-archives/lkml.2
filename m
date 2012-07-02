@@ -1,105 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab2GBPNI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 11:13:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62580 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753911Ab2GBPNF (ORCPT
+	id S1755132Ab2GBPNQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 11:13:16 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:60537 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754496Ab2GBPNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 11:13:05 -0400
-From: David Ahern <dsahern@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH] perf kvm: fix segfault with report and mixed guestmount use
-Date: Mon,  2 Jul 2012 09:12:57 -0600
-Message-Id: <1341241977-71535-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Mon, 2 Jul 2012 11:13:12 -0400
+Date: Mon, 2 Jul 2012 07:59:27 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: rcu: BUG: spinlock recursion on CPU#3, trinity-child19/5970
+Message-ID: <20120702145927.GD2508@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1340964584.2936.40.camel@lappy>
+ <20120629172320.GA2416@linux.vnet.ibm.com>
+ <1341006040.26928.4.camel@lappy>
+ <1341225139.23484.4.camel@twins>
+ <20120702113541.GI2907@linux.vnet.ibm.com>
+ <1341230352.23484.7.camel@twins>
+ <1341234773.2958.4.camel@lappy>
+ <20120702133334.GA2508@linux.vnet.ibm.com>
+ <20120702142252.GA22868@linux.vnet.ibm.com>
+ <1341239813.2958.7.camel@lappy>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341239813.2958.7.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12070215-1780-0000-0000-000007060155
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000284; HX=3.00000191; KW=3.00000007;
+ PH=3.00000001; SC=3.00000004; SDB=6.00153145; UDB=6.00034617; UTC=2012-07-02
+ 15:13:10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the guestmount option on record:
-    $ perf kvm --guest --host --guestmount=/tmp/guest-mount record -ag
+On Mon, Jul 02, 2012 at 04:36:53PM +0200, Sasha Levin wrote:
+> On Mon, 2012-07-02 at 07:22 -0700, Paul E. McKenney wrote:
+> > > OK, so it looks like the context-switch-time call into preemptible RCU
+> > > needs to be outside of the runqueue-lock critical section.  One way
+> > > to do this is be reverting 616c310e (Move PREEMPT_RCU preemption to
+> > > switch_to() invocation).  Sasha, could you please try this out?
+> > 
+> > Hmmmm...  Here is a patch for this reversion on top of -rcu with
+> > conflicts resolved. 
+> 
+> It looks like how I've resolved it.
 
-But not the subsequent report:
-    $ perf kvm report
+Good show!!!
 
-causes a SEGFAULT in the usual place:
-(gdb) bt
-0  0x0000000000470356 in machine__mmap_name (self=0x0, bf=0x7fffffffbdb0 " z\370\367\377\177", size=
-    4096) at util/map.c:712
-1  0x00000000004453e8 in perf_event__process_kernel_mmap (tool=0x7fffffffde10, event=0x7ffff7f87e38,
-    machine=0x0) at util/event.c:550
-2  0x00000000004458c9 in perf_event__process_mmap (tool=0x7fffffffde10, event=0x7ffff7f87e38, sample=
-    0x7fffffffd2a0, machine=0x0) at util/event.c:656
-3  0x00000000004733e0 in perf_session_deliver_event (session=0x91aca0, event=0x7ffff7f87e38, sample=
-    0x7fffffffd2a0, tool=0x7fffffffde10, file_offset=7736) at util/session.c:979
-...
+> Just for clarity, the only rcu related patch I have on top of -next is
+> this reversal one. I've dropped anything we tested before.
+> 
+> Looks like its running fine for a bit now (~10 min). I'll ping if
+> anything changes, but on the other tests it has usually failed at this
+> point.
 
-The MMAP events in this case already contain the full path to the module. No
-need to require it for the report path to.
+If testing goes well (both yours and mine), I will be submitting this
+as urgent, since it is a 3.5 regression.  If they don't take it, I will
+queue it for 3.6.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
----
- tools/perf/util/map.c |   29 +++++++++++++++--------------
- 1 file changed, 15 insertions(+), 14 deletions(-)
-
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 35ae568..a1f4e36 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -669,25 +669,26 @@ struct machine *machines__find(struct rb_root *self, pid_t pid)
- struct machine *machines__findnew(struct rb_root *self, pid_t pid)
- {
- 	char path[PATH_MAX];
--	const char *root_dir;
-+	const char *root_dir = "";
- 	struct machine *machine = machines__find(self, pid);
- 
--	if (!machine || machine->pid != pid) {
--		if (pid == HOST_KERNEL_ID || pid == DEFAULT_GUEST_KERNEL_ID)
--			root_dir = "";
--		else {
--			if (!symbol_conf.guestmount)
--				goto out;
--			sprintf(path, "%s/%d", symbol_conf.guestmount, pid);
--			if (access(path, R_OK)) {
--				pr_err("Can't access file %s\n", path);
--				goto out;
--			}
--			root_dir = path;
-+	if (machine && (machine->pid == pid))
-+		goto out;
-+
-+	if ((pid != HOST_KERNEL_ID) &&
-+	    (pid != DEFAULT_GUEST_KERNEL_ID) &&
-+	    (symbol_conf.guestmount)) {
-+		sprintf(path, "%s/%d", symbol_conf.guestmount, pid);
-+		if (access(path, R_OK)) {
-+			pr_err("Can't access file %s\n", path);
-+			machine = NULL;
-+			goto out;
- 		}
--		machine = machines__add(self, pid, root_dir);
-+		root_dir = path;
- 	}
- 
-+	machine = machines__add(self, pid, root_dir);
-+
- out:
- 	return machine;
- }
--- 
-1.7.10.1
+							Thanx, Paul
 
