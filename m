@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab2GBPQv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 11:16:51 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:35143 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881Ab2GBPQu (ORCPT
+	id S1755485Ab2GBPRo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 11:17:44 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:56506 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754082Ab2GBPRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 11:16:50 -0400
-Date: Mon, 2 Jul 2012 17:16:20 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        Seth Heasley <seth.heasley@intel.com>, Olof Johansson <olof@lixom.net>,
-        Benson Leung <bleung@chromium.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/8 v3] i2c: i801: check INTR after every transaction
-Message-ID: <20120702171620.5628d044@endymion.delvare>
-In-Reply-To: <20120702120814.47d71bc5@endymion.delvare>
-References: <1340805255-8041-1-git-send-email-djkurtz@chromium.org>
-	<1340805255-8041-4-git-send-email-djkurtz@chromium.org>
-	<20120627180724.762f854a@endymion.delvare>
-	<20120701232051.308c03d1@endymion.delvare>
-	<CAGS+omDV_ynBL-PN0qmLmDRiHGbQFf+TwqC2-+KJY8zy9FDhrA@mail.gmail.com>
-	<20120702120814.47d71bc5@endymion.delvare>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 2 Jul 2012 11:17:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vinayak Holikatti <vinholikatti@gmail.com>
+Subject: Re: [PATCH 1/4] [SCSI] ufs: Separate PCI glue driver for ufshcd
+Date: Mon, 2 Jul 2012 15:17:31 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, santoshsy@gmail.com,
+        arnd@linaro.org, girish.shivananjappa@linaro.org,
+        saugata.das@linaro.org, vishak.g@samsung.com, venkat@linaro.org,
+        k.rajesh@samsung.com, yejin.moon@samsung.com, dsaxena@linaro.org,
+        ilho215.lee@samsung.com, nala.la@samsung.com, stephen.doel@linaro.org,
+        sreekumar.c@samsung.com
+References: <1341239572-7408-1-git-send-email-vinholikatti@gmail.com> <1341239572-7408-2-git-send-email-vinholikatti@gmail.com>
+In-Reply-To: <1341239572-7408-2-git-send-email-vinholikatti@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201207021517.31537.arnd@arndb.de>
+X-Provags-ID: V02:K0:bgfb/DVUF8XrkMcPSiOqUucsbhVTDCt364a9n9oI4K8
+ sl4CA64fPSi3Hme+Y29RphDFzJKrC5nQ22nvE72TVqXppuPfVS
+ 08/ojmeLaFQEiNxqd35AMaHxoVMrTXPuLbnb4naJNF992LM2Yf
+ KWHePZp8RHyAZYoVO9yxMvpsBtMhoOgkpUq8sm2Bhfz4XL+OFF
+ 0RnMg6ODfho90lMkgs3jOcM3TnSjIWxH2h2ihAuOGNrI3UDImh
+ pVbZgcubQr4BuUfFFByvT3+eqFhelw5jFH0bsE3Hcpb67/FBX2
+ TqoZ/DI45ZIeBtgVH9DQhMM8lv6klxZT2MM/mdXnefucufNEFw
+ igo/ev808EjEnOMKe8OA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Jul 2012 12:08:14 +0200, Jean Delvare wrote:
-> On Mon, 2 Jul 2012 09:19:24 +0800, Daniel Kurtz wrote:
-> > My understanding is that the INTR wait is really waiting for the
-> > entire transaction to complete (ie., including i2c STOP condition),
-> > not just the byte transfer phase.
+On Monday 02 July 2012, Vinayak Holikatti wrote:
 > 
-> This is my understanding as well, but I'm fairly certain that this is
-> the case of the BUSY flag as well. I think BUSY gets cleared at the
-> same time INTR (or any of the error status bits) gets set. Which is why
-> I think checking BUSY is redundant. As a matter of fact, we ignore BUSY
-> completely in i801_block_transaction_byte_by_byte(), so I see no reason
-> why we couldn't do the same in i2c_transaction().
+> This patch separates PCI and core UFS host controller driver.
+> In the current implementation PCI specific code is with ufshcd.c.
+> To provide way for adding multiple bus glue driver, this patch
+> separates PCI layer from ufshcd core. Now ufshcd compiles as separate
+> module and ufshcd-pci as separate module.
+> 
+> Signed-off-by: Vinayak Holikatti <vinholikatti@gmail.com>
+> Signed-off-by: Santosh Yaraganavi <santoshsy@gmail.com>
 
-To be complete, I made some testing and error bits can be set before
-BUSY is cleared. I spotted several transitions 0x41 -> 0x45 -> 0x44
-when accessing non-existent devices. On success, I never witnessed INTR
-and BUSY being set at the same time, transition is always 0x41 -> 0x42.
+Hi Vinayak,
 
--- 
-Jean Delvare
+This patch looks good at first sight, but it's a little hard to
+review in the form that you are posting.
+
+I would recommend that you split this patch into two separate
+changesets, where you do all the changes to existing code in the
+first patch, and only move but don't change code in the second one
+that creates the new file.
+
+	Arnd
