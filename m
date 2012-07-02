@@ -1,308 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157Ab2GBML0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 08:11:26 -0400
-Received: from mga01.intel.com ([192.55.52.88]:24245 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649Ab2GBMLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 08:11:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="172487409"
-Message-ID: <1341231316.2979.11.camel@sauron.fi.intel.com>
-Subject: ext4 blocks up
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Date: Mon, 02 Jul 2012 15:15:16 +0300
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-9CgaDcNNbM57iruUOIds"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1751969Ab2GBMNY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 08:13:24 -0400
+Received: from orion.tchmachines.com ([208.76.84.200]:37449 "EHLO
+	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216Ab2GBMNW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 08:13:22 -0400
+From: Vlad Zolotarov <vlad@scalemp.com>
+To: Chinmay V S <cvs268@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shai@scalemp.com
+Subject: Re: [PATCH RESEND] fs: Move bh_cachep to the __read_mostly section
+Date: Mon, 02 Jul 2012 15:13:17 +0300
+Message-ID: <6810708.ZQq4lbXqoi@vlad>
+Organization: ScaleMP Ltd.
+User-Agent: KMail/4.8.3 (Linux/3.2.0-26-generic; KDE/4.8.3; i686; ; )
+In-Reply-To: <CAK-9PRBiqtyiQahunPex9FT2dtKA0k0gv9PR+=sNCXVvn5Bn9Q@mail.gmail.com>
+References: <2325453.OX7ktP55U1@vlad> <1793005.iSx5GbFPJq@vlad> <CAK-9PRBiqtyiQahunPex9FT2dtKA0k0gv9PR+=sNCXVvn5Bn9Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - orion.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sunday 01 July 2012 17:24:34 Chinmay V S wrote:
+> Played around with __read_mostly some time back in an attempt to optimise
+> cache usage.
+> thecodeartist.blogspot.com/2011/12/why-readmostly-does-not-work-as-it.html
 
---=-9CgaDcNNbM57iruUOIds
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Nice article!
 
-Hi Ted,
+> 
+> I concluded that in the current form, it is hard to limit the negative
+> effects (bunching of write-mostly sections). IMHO, the potential
+> costs/benefits of __read_mostly are closely related to the associativity of
+> the cpu-cache. This differs vastly across different platforms. Hence (again
+> IMHO), better to avoid usage of__read_mostly in cross-platform generic
+> kernel code.
 
-first of all I want to remind you about the sync_supers changes which
-you said you'd make sure get properly reviewed and tested for v3.5. But
-I am getting worried about missing also 3.5.
+U see, if we assume that __read_mostly the way it's currently implemented is a 
+bad thing (due to the fact that it implicitly causes the bunching of the 
+write-mostly variables) than this means that "const" the way it's currently 
+implemented is a bad thing too due to the same reasons. ;)
 
-I wanted to re-send the patch-set, but I cannot test it because ext4
-blocks when I test it with xfstests.
+I'm not saying that your reasoning is completely wrong but it takes us to a 
+completely different direction the current gcc tool chain is written today. If 
+I extrapolate your idea it will bring us to the following:
+ - no const data section. 
+ - no read_mostly data section.
+ - all const and non-const data resides at the same section and the linker 
+tries to pack const and non-const variables together in order to minimize 
+false cache line sharing. 
 
-The HEAD of xfstests I use is:
-7d14795 xfstests: introduce 286 for SEEK_DATA/SEEK_HOLE copy test
+This is an interesting idea however there is (at least) one weakness in it - 
+it assumes that linker's heuristics (those that will pack cons and non-const 
+variables together in a single cache line) will do a better job than a person 
+that writes a specific code section and knows the exact nature and the 
+relationship between variables in his/her C code. 
 
-I run xfstests with "check -g auto" command. My environment is:
+I think that the current gcc tool chain implementation and kernel's linker 
+scripts follows the second paradigm and leave a programmer a freedom to decide 
+what is a nature of the variables and a packing strategy he/she prefers and 
+then (linker) performs the most straight forward optimizations as possible on 
+top of those decisions. 
+By decisions I meant: 
+ - defining variables as const.
+ - defining variables as __read_mostly (which is quite similar to "const").
+ - declaring per_cpu variables.
+ - packing variables into structs and unions.
+ - defining a proper alignment for the variables.
+ - etc.
 
-export TEST_DIR=3D/mnt/xfstests-disk-1
-export TEST_DEV=3D/dev/vdb
-export SCRATCH_MNT=3D/mnt/xfstests-disk-2
-export SCRATCH_DEV=3D/dev/vdc
-export FSTYP=3Dext4
+By linker optimizations I meant:
+ - Packing all constants and __read_mostly variables into a separate data 
+section.
+ - Packing the per_cpu variables into a separate section.
+ - Packing the variables according to the programmer's alignment definition.
+ - etc.
 
-The disks are not very big, df says:
+Let's get back to the theoretical example of the code that was hammered by the 
+usage of the __read_mostly variables that u are referring. 
 
-/dev/vdb         4181968   192780   3779476   5% /mnt/xfstests-disk-1
-/dev/vdc        12539816   486160  11424512   5% /mnt/xfstests-disk-2
+First of all, let me note that saying that C code performance may benefit from 
+NOT using the __read_mostly variables is a bit misleading because here u rely 
+on something that is not deterministic: a linker decision to pack one (often 
+written) variable together with another (read mostly) variable in a single 
+cache line boundaries (thus improving the performance); and this decision may 
+change due to a minor code change and u will not know about it. 
 
-Is this a known issue? Please, let me know if you need more information.
-I can also try some patches for you.
+So, if there is a code which performance may be harmed by defining one of the 
+variables as __read_only (thus taking it out from the data section where it 
+was to the read_mostly data section) than the same code may be harmed by 
+simply adding/removing a regular variable that will lead to the same 
+phenomena.
 
-I've just tested 3.5-rc5 in my kvm machine. Below is what dmesg gives
-me:
+After saying all that what should we conclude? Not to add/remove new/old 
+variables because they can harm the performance of bad-formed code? How can we 
+write new code then?
 
-[    2.541716] EXT4-fs (vda1): re-mounted. Opts: (null)
-[    3.230435] systemd-fsck[508]: home: clean, 316114/2097152 files, 295960=
-3/8388608 blocks
-[    3.296292] hrtimer: interrupt took 2148140 ns
-[    3.369675] EXT4-fs (vda2): mounted filesystem with ordered data mode. O=
-pts: (null)
-[    3.604614] /usr/sbin/crond[559]: (CRON) INFO (Syslog will be used inste=
-ad of sendmail.): No such file or directory
-[    3.638686] /usr/sbin/crond[559]: (CRON) INFO (running with inotify supp=
-ort)
-[   50.659283] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: (null)
-[   50.687492] EXT4-fs (vdc): mounted filesystem with ordered data mode. Op=
-ts: (null)
-[   52.098169] EXT4-fs (vdc): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   52.272963] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   56.323779] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   56.771414] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   57.459560] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   58.176195] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   59.117647] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   60.686415] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   61.116057] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   62.321826] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   69.970617] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   70.315529] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   70.344068] EXT4-fs (vdb): re-mounted. Opts: data=3Dordered
-[   71.086640] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   71.632241] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   71.840146] EXT4-fs (vdc): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   72.229582] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   73.526206] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   78.180546] EXT4-fs (vdc): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   78.518143] EXT4-fs (vdc): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   78.693992] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   80.758908] EXT4-fs (vdc): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   81.629718] EXT4-fs (vdb): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[   83.278788] EXT4-fs (vdc): mounted filesystem with ordered data mode. Op=
-ts: acl,user_xattr
-[  240.379170] INFO: task flush-253:32:1336 blocked for more than 120 secon=
-ds.
-[  240.379402] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
-this message.
-[  240.379605] flush-253:32    D ffff8803118d8508     0  1336      2 0x0000=
-0000
-[  240.379608]  ffff88030f93dae0 0000000000000046 ffff88030f93da80 ffffffff=
-810bbb5d
-[  240.379612]  ffff880312b13f80 ffff88030f93dfd8 ffff88030f93dfd8 ffff8803=
-0f93dfd8
-[  240.379615]  ffff88031458df40 ffff880312b13f80 ffff88030f93db70 ffff8803=
-0c198800
-[  240.379618] Call Trace:
-[  240.379632]  [<ffffffff810bbb5d>] ? trace_hardirqs_on+0xd/0x10
-[  240.379641]  [<ffffffff81628029>] schedule+0x29/0x70
-[  240.379650]  [<ffffffff81236e85>] ext4_force_commit+0x85/0xc0
-[  240.379656]  [<ffffffff8107fcc0>] ? __init_waitqueue_head+0x60/0x60
-[  240.379660]  [<ffffffff81214805>] ext4_write_inode+0x75/0x110
-[  240.379667]  [<ffffffff811bcba1>] __writeback_single_inode+0x161/0x1a0
-[  240.379670]  [<ffffffff811becdf>] writeback_sb_inodes+0x24f/0x440
-[  240.379672]  [<ffffffff811bf094>] wb_writeback+0xf4/0x370
-[  240.379677]  [<ffffffff81062647>] ? local_bh_enable_ip+0x97/0x100
-[  240.379680]  [<ffffffff810bbb5d>] ? trace_hardirqs_on+0xd/0x10
-[  240.379683]  [<ffffffff811c0ae2>] wb_do_writeback+0xc2/0x200
-[  240.379685]  [<ffffffff8106b02e>] ? del_timer+0x8e/0x140
-[  240.379688]  [<ffffffff811c0ca4>] bdi_writeback_thread+0x84/0x2d0
-[  240.379692]  [<ffffffff811c0c20>] ? wb_do_writeback+0x200/0x200
-[  240.379695]  [<ffffffff8107f19e>] kthread+0xae/0xc0
-[  240.379699]  [<ffffffff81633374>] kernel_thread_helper+0x4/0x10
-[  240.379702]  [<ffffffff81629c70>] ? retint_restore_args+0x13/0x13
-[  240.379704]  [<ffffffff8107f0f0>] ? __init_kthread_worker+0x70/0x70
-[  240.379706]  [<ffffffff81633370>] ? gs_change+0x13/0x13
-[  240.379708] no locks held by flush-253:32/1336.
-[  240.379710] INFO: task ext4lazyinit:14878 blocked for more than 120 seco=
-nds.
-[  240.379899] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
-this message.
-[  240.380129] ext4lazyinit    D 0000000000000000     0 14878      2 0x0000=
-0000
-[  240.380132]  ffff8803140dfd10 0000000000000046 ffff8803140dfcb0 ffffffff=
-810bbb5d
-[  240.380135]  ffff880312523f80 ffff8803140dffd8 ffff8803140dffd8 ffff8803=
-140dffd8
-[  240.380138]  ffffffff81c13420 ffff880312523f80 ffff8803140dfd00 ffff8803=
-0c19a000
-[  240.380141] Call Trace:
-[  240.380144]  [<ffffffff810bbb5d>] ? trace_hardirqs_on+0xd/0x10
-[  240.380147]  [<ffffffff81628029>] schedule+0x29/0x70
-[  240.380149]  [<ffffffff812360c5>] ext4_journal_start_sb+0x1c5/0x200
-[  240.380152]  [<ffffffff81210ddb>] ? ext4_init_inode_table+0xab/0x350
-[  240.380154]  [<ffffffff8107fcc0>] ? __init_waitqueue_head+0x60/0x60
-[  240.380156]  [<ffffffff81210ddb>] ext4_init_inode_table+0xab/0x350
-[  240.380159]  [<ffffffff816260f0>] ? mutex_lock_nested+0x290/0x360
-[  240.380162]  [<ffffffff8122558b>] ? ext4_lazyinit_thread+0x5b/0x2f0
-[  240.380165]  [<ffffffff81225640>] ext4_lazyinit_thread+0x110/0x2f0
-[  240.380167]  [<ffffffff81225530>] ? ext4_unregister_li_request+0x70/0x70
-[  240.380169]  [<ffffffff8107f19e>] kthread+0xae/0xc0
-[  240.380172]  [<ffffffff81633374>] kernel_thread_helper+0x4/0x10
-[  240.380174]  [<ffffffff81629c70>] ? retint_restore_args+0x13/0x13
-[  240.380176]  [<ffffffff8107f0f0>] ? __init_kthread_worker+0x70/0x70
-[  240.380178]  [<ffffffff81633370>] ? gs_change+0x13/0x13
-[  240.380180] 1 lock held by ext4lazyinit/14878:
-[  240.380181]  #0:  (&eli->li_list_mtx){+.+...}, at: [<ffffffff8122558b>] =
-ext4_lazyinit_thread+0x5b/0x2f0
-[  240.380191] INFO: task fsstress:15250 blocked for more than 120 seconds.
-[  240.380429] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
-this message.
-[  240.380718] fsstress        D ffff880308e05880     0 15250  15249 0x0000=
-0000
-[  240.380721]  ffff8803107ddc18 0000000000000046 ffff8803107ddbb8 ffffffff=
-810bbb5d
-[  240.380724]  ffff8803125adf40 ffff8803107ddfd8 ffff8803107ddfd8 ffff8803=
-107ddfd8
-[  240.380727]  ffff88031458df40 ffff8803125adf40 ffff880300000000 ffff8803=
-12be6140
-[  240.380730] Call Trace:
-[  240.380734]  [<ffffffff810bbb5d>] ? trace_hardirqs_on+0xd/0x10
-[  240.380737]  [<ffffffff81628029>] schedule+0x29/0x70
-[  240.380744]  [<ffffffff81133b55>] __generic_file_aio_write+0xb5/0x440
-[  240.380747]  [<ffffffff8107fcc0>] ? __init_waitqueue_head+0x60/0x60
-[  240.380749]  [<ffffffff81133f54>] generic_file_aio_write+0x74/0xe0
-[  240.380753]  [<ffffffff811a0da5>] ? putname+0x35/0x50
-[  240.380755]  [<ffffffff8120df27>] ext4_file_write+0xc7/0x270
-[  240.380759]  [<ffffffff81195072>] do_sync_write+0xd2/0x110
-[  240.380762]  [<ffffffff81084bb3>] ? up_read+0x23/0x40
-[  240.380767]  [<ffffffff81284a5c>] ? security_file_permission+0x2c/0xb0
-[  240.380770]  [<ffffffff81195611>] ? rw_verify_area+0x61/0xf0
-[  240.380772]  [<ffffffff81195973>] vfs_write+0xb3/0x180
-[  240.380774]  [<ffffffff81195c9a>] sys_write+0x4a/0x90
-[  240.380777]  [<ffffffff81631f29>] system_call_fastpath+0x16/0x1b
-[  240.380778] 1 lock held by fsstress/15250:
-[  240.380779]  #0:  (&sb->s_type->i_mutex_key#12){+.+...}, at: [<ffffffff8=
-1133f38>] generic_file_aio_write+0x58/0xe0
-[  240.380785] INFO: task fsstress:15251 blocked for more than 120 seconds.
-[  240.380966] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
-this message.
-[  240.381194] fsstress        D ffff8803125a8000     0 15251  15249 0x0000=
-0000
-[  240.381197]  ffff880310651c38 0000000000000046 ffff8803125a86d8 00000000=
-00000046
-[  240.381202]  ffff8803125a8000 ffff880310651fd8 ffff880310651fd8 ffff8803=
-10651fd8
-[  240.381205]  ffffffff81c13420 ffff8803125a8000 ffff880310651c98 7fffffff=
-ffffffff
-[  240.381208] Call Trace:
-[  240.381212]  [<ffffffff81628029>] schedule+0x29/0x70
-[  240.381214]  [<ffffffff81625975>] schedule_timeout+0x305/0x380
-[  240.381217]  [<ffffffff810bb906>] ? mark_held_locks+0x86/0x140
-[  240.381219]  [<ffffffff81629430>] ? _raw_spin_unlock_irq+0x30/0x50
-[  240.381222]  [<ffffffff810bbac5>] ? trace_hardirqs_on_caller+0x105/0x190
-[  240.381224]  [<ffffffff81627ed2>] wait_for_common+0x122/0x170
-[  240.381228]  [<ffffffff81092d90>] ? try_to_wake_up+0x2f0/0x2f0
-[  240.381231]  [<ffffffff811c4630>] ? __sync_filesystem+0x90/0x90
-[  240.381234]  [<ffffffff811c4630>] ? __sync_filesystem+0x90/0x90
-[  240.381236]  [<ffffffff81627ffd>] wait_for_completion+0x1d/0x20
-[  240.381238]  [<ffffffff811bd1ae>] sync_inodes_sb+0x12e/0x280
-[  240.381241]  [<ffffffff811c4630>] ? __sync_filesystem+0x90/0x90
-[  240.381244]  [<ffffffff811c4628>] __sync_filesystem+0x88/0x90
-[  240.381246]  [<ffffffff811c464f>] sync_one_sb+0x1f/0x30
-[  240.381252]  [<ffffffff81198cf1>] iterate_supers+0xf1/0x100
-[  240.381256]  [<ffffffff811c4717>] sys_sync+0x47/0x70
-[  240.381260]  [<ffffffff81631f29>] system_call_fastpath+0x16/0x1b
-[  240.381263] 1 lock held by fsstress/15251:
-[  240.381264]  #0:  (&type->s_umount_key#19){+++++.}, at: [<ffffffff81198c=
-88>] iterate_supers+0x88/0x100
-[  240.381276] INFO: task xfs_io:15270 blocked for more than 120 seconds.
-[  240.381527] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
-this message.
-[  240.381724] xfs_io          D 0000000000000002     0 15270  15266 0x0000=
-0000
-[  240.381727]  ffff8803123b3d68 0000000000000046 0000000000000000 ffff8803=
-12ab9fc0
-[  240.381730]  ffff880312ab9fc0 ffff8803123b3fd8 ffff8803123b3fd8 ffff8803=
-123b3fd8
-[  240.381733]  ffff88031458df40 ffff880312ab9fc0 ffff88030c198870 ffff8803=
-12ab9fc0
-[  240.381736] Call Trace:
-[  240.381740]  [<ffffffff81628029>] schedule+0x29/0x70
-[  240.381742]  [<ffffffff81628d75>] rwsem_down_failed_common+0xb5/0x150
-[  240.381744]  [<ffffffff81628e23>] rwsem_down_write_failed+0x13/0x20
-[  240.381751]  [<ffffffff812ed303>] call_rwsem_down_write_failed+0x13/0x20
-[  240.381754]  [<ffffffff816271f5>] ? down_write+0x65/0x70
-[  240.381757]  [<ffffffff81197ab8>] ? thaw_super+0x28/0xd0
-[  240.381759]  [<ffffffff81197ab8>] thaw_super+0x28/0xd0
-[  240.381761]  [<ffffffff811a0da5>] ? putname+0x35/0x50
-[  240.381765]  [<ffffffff811a7f1c>] do_vfs_ioctl+0x36c/0x560
-[  240.381767]  [<ffffffff810bbb5d>] ? trace_hardirqs_on+0xd/0x10
-[  240.381769]  [<ffffffff81629c55>] ? retint_swapgs+0x13/0x1b
-[  240.381772]  [<ffffffff811a81a1>] sys_ioctl+0x91/0xa0
-[  240.381774]  [<ffffffff81631f29>] system_call_fastpath+0x16/0x1b
-[  240.381776] 1 lock held by xfs_io/15270:
-[  240.381776]  #0:  (&type->s_umount_key#19){+++++.}, at: [<ffffffff81197a=
-b8>] thaw_super+0x28/0xd0
+I think u would agree that the right solution for the problem above would be 
+to fix the mentioned above code the way it won't depend on linker's decisions 
+(probably by properly aligning the highly contended variables or by re-basing 
+the variables into the appropriate groups spreading the contention pressure 
+between these groups). And if we do so (surprise!!!) its performance won't be 
+harmed by defining any read mostly variable as __read_mostly any more... ;)
 
---=20
-Best Regards,
-Artem Bityutskiy
+I agree that there might be a few places in kernel that suffer from the 
+weakness described above. That's why it's important to add __read_mostly in 
+small portions (even one by one) in order to ease the bisect if and when the 
+performance regression occurs.
 
---=-9CgaDcNNbM57iruUOIds
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Pls., comment.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+thanks,
+vlad
 
-iQIcBAABAgAGBQJP8ZDUAAoJECmIfjd9wqK030AP/RtohO1QMaXSyqm6IN6A7sWB
-Nv63hIXPaKEXDRCoLVoz0l36fNh9+OEsbQKeOlo39viIl2438Gbb+quNdI/zHu/M
-irGUKVmcRBFowRp0fOYuBnxVO9d+9kXVoYzmRgundzOsMU2Wz7BVvDd8DVdmNMmg
-0D2S7hlE8MmOBZCbsk2N6kQfis1oBdKnM5T8B8wP3uCBLwYeliEdbAzHEkMBSMYL
-Apex2Vigx0AnsvAUyFIsjNMJk19Wh5wrYf0nRBvs69sQIed69B8Q75W+BN3Wh8BJ
-MqiCT2xR4mhCUD9UyoUmZEULf88AFcmh1KVJBNGFXAxIjuYJ9v6Ci+PWwl8XPGrE
-FQUL9i+oGO9xzJtksJ4AE/yf2uDKGnngBxyqekR5DCoJQ4jqpUKS6nmfa8zLmxaK
-vOAFqB/7PtVSpZjfbz6y406w05vJ5m7wOQm//oSg9H7Q8EHiAdmKEjuFKIJ00xmI
-QNkvbD3vmBKmuLx0K/YEDbYa2EhytV5mRYN2pErDotpCGrRtfjNQJkzxZoZGkvAI
-EpD5Id5bySOuIbKmO1oA7VI08vb3LIsDk5UU+CGjNjd6g2ffY1O9S7RqK9ofCBge
-gW2Ou5PaPflUfdYJ0tBYhwz2JVVtJ5bYaFrEvCWM4Qpyn7UnOsJPch9tbx4cP1lg
-jmdYeCykYgJSaP/ItNnM
-=x0zU
------END PGP SIGNATURE-----
 
---=-9CgaDcNNbM57iruUOIds--
 
+> 
+> regards
+> ChinmayVS
+> 
+> On Sun, Jul 1, 2012 at 5:04 PM, Vlad Zolotarov <vlad@scalemp.com> wrote:
+> > On Sunday 10 June 2012 12:36:52 Vlad Zolotarov wrote:
+> > > On Thursday 07 June 2012 17:07:21 Andrew Morton wrote:
+> > > > On Mon, 28 May 2012 14:58:42 +0300
+> > > > 
+> > > > Vlad Zolotarov <vlad@scalemp.com> wrote:
+> > > > > From: Shai Fultheim <shai@scalemp.com>
+> > > > > 
+> > > > > bh_cachep is only written to once on initialization, so move it to
+> > 
+> > the
+> > 
+> > > > > __read_mostly section.
+> > > > > 
+> > > > > Signed-off-by: Shai Fultheim <shai@scalemp.com>
+> > > > > Signed-off-by: Vlad Zolotarov <vlad@scalemp.com>
+> > > > > ---
+> > > > > 
+> > > > >  fs/buffer.c |    2 +-
+> > > > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > > > 
+> > > > > diff --git a/fs/buffer.c b/fs/buffer.c
+> > > > > index ad5938c..838a9cf 100644
+> > > > > --- a/fs/buffer.c
+> > > > > +++ b/fs/buffer.c
+> > > > > @@ -3152,7 +3152,7 @@ SYSCALL_DEFINE2(bdflush, int, func, long,
+> > > > > data)
+> > > > > 
+> > > > >  /*
+> > > > >  
+> > > > >   * Buffer-head allocation
+> > > > >   */
+> > > > > 
+> > > > > -static struct kmem_cache *bh_cachep;
+> > > > > +static struct kmem_cache *bh_cachep __read_mostly;
+> > > > 
+> > > > hm, I thought I replied to this earlier, but I can't find that email.
+> > > > 
+> > > > Yes, bh_cachep is read-mostly.  In fact it's write-once.  But the same
+> > > > is true of all kmem_cache*'s.  I don't see any particular reason for
+> > > > singling out bh_cachep.
+> > > > 
+> > > > 
+> > > > Alas, I don't see a smart way of addressing this.  It's either a
+> > > > patchset which adds __read_mostly to all kmem_cache*'s, or a patchset
+> > > > which converts all the definitions to use some nasty macro which
+> > > > inserts the __read_mostly.
+> > > 
+> > > Well, it may be done. However my ability to properly check it is limited
+> > 
+> > as
+> > 
+> > > I have only a certain number of systems to check it on. I can create the
+> > > patch, test it in our labs and post it on this mailing list with request
+> > 
+> > to
+> > 
+> > > test it on other platforms (like non-x86 platforms). However we may also
+> > > hit the problem u describe below if do so...
+> > > 
+> > > > And I still have theoretical concerns with __read_mostly.  As we
+> > > > further sort the storage into read-mostly and write-often sections,
+> > > > the
+> > > > density of writes in the write-mostly section increases.  IOW,
+> > > > removing
+> > > > the read-mostly padding *increase* cross-CPU traffic in the
+> > > > write-often
+> > > > scction.  IOW2, leaving the read-mostly stuff where it is provides
+> > > > beneficial padding to the write-often fields.  I don't think it has
+> > > > been shown that there will be net gains.
+> > > 
+> > > Great explanation! The above actually nicely concludes (maybe u haven't
+> > > actually meant that ;)) why defining write-mostly section(s) is
+> > 
+> > pointless.
+> > 
+> > > ;)
+> > > 
+> > > This is a main topic of this (
+> > 
+> > http://markmail.org/thread/wl4lnjluroqxgabf)
+> > 
+> > > thread between me and Ingo.
+> > > 
+> > > However there is a clear motivation to define a read-mostly section(s)
+> > 
+> > just
+> > 
+> > > the same way there is a motivation to put constants separately from non-
+> > > constant variables which I don't think anybody argues about. ;)
+> > > 
+> > > On the other hand, generally speaking, if we "complete the task" and put
+> > 
+> > ALL
+> > 
+> > > read-mostly variables into a separate section all the variables that
+> > 
+> > would
+> > 
+> > > be left will actually represent the write-mostly section, which we would
+> > > prefer not to have (according to u). Yet we are still far from it
+> > 
+> > today...
+> > 
+> > > ;)
+> > > 
+> > > Unfortunately, we can't consider all types of bad C-code then we define
+> > > something like "const" or "__read_mostly". We do our best. And if
+> > > someone
+> > > haven't defined a per-CPU write-mostly variable in order to prevent
+> > > heavy
+> > > cross-CPU traffic in his/her code (like in your example above) we can
+> > 
+> > only
+> > 
+> > > try to fix this code. But I don't think that the existence of such code
+> > > shell imply that the whole idea of __read_mostly section is actually bad
+> > 
+> > or
+> > 
+> > > useless. It's this bad C-code that should be fixed and IMHO padding the
+> > > variables with constants is not the proper way to fix it...
+> > > 
+> > > That's why I think it could be dangerous to go ahead and patch all
+> > 
+> > variables
+> > 
+> > > of a certain sort (like kmem_cache*'s) with __read_mostly as we may mess
+> > > the things up in some places (like in your example above) where there
+> > > should be done a deeper code analysis than just pattern matching.
+> > > 
+> > > So, getting back to the first section of my reply, do u still think we
+> > 
+> > want
+> > 
+> > > to patch all kmem_cache*'s with __read_mostly this time or we would
+> > 
+> > prefer
+> > 
+> > > this to be done incrementally in order to have better
+> > > regression-ability?
+> > > 
+> > > Pls., comment.
+> > 
+> > Andrew, could u., pls., update what should be our next steps concerning
+> > this
+> > patch?
+> > 
+> > thanks,
+> > vlad
+> > 
+> > > thanks in advance,
+> > > vlad
+> > > 
+> > > 
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> > 
+> > in
+> > 
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
