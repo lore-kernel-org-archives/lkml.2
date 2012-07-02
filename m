@@ -1,238 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab2GBDBq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 23:01:46 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36247 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754798Ab2GBDBn (ORCPT
+	id S932356Ab2GBDMh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 23:12:37 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:58618 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932267Ab2GBDMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 23:01:43 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FF10EFF.5050803@jp.fujitsu.com>
-Date: Mon, 2 Jul 2012 12:01:19 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
-        <len.brown@intel.com>, <benh@kernel.crashing.org>, <paulus@samba.org>,
-        <cl@linux.com>, <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
-Subject: Re: [RFC PATCH 10/12] memory-hotplug : free memmap of sparse-vmemmap
-References: <4FEA9C88.1070800@jp.fujitsu.com> <4FEAA09F.5000907@jp.fujitsu.com> <4FEF2214.4000205@gmail.com>
-In-Reply-To: <4FEF2214.4000205@gmail.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+	Sun, 1 Jul 2012 23:12:36 -0400
+Date: Mon, 2 Jul 2012 13:12:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>, Jeff Garzik <jeff@garzik.org>
+Subject: linux-next: manual merge of the isci tree with the libata tree
+Message-Id: <20120702131227.01e8a64559a53d773fa574fb@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__2_Jul_2012_13_12_27_+1000_xXP3kaqHqglYWm97"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiang,
+--Signature=_Mon__2_Jul_2012_13_12_27_+1000_xXP3kaqHqglYWm97
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-2012/07/01 0:58, Jiang Liu wrote:
-> On 06/27/2012 01:56 PM, Yasuaki Ishimatsu wrote:
->> I don't think that all pages of virtual mapping in removed memory can be
->> freed, since page which type is MIX_SECTION_INFO is difficult to free.
->> So, the patch only frees page which type is SECTION_INFO at first.
->>
->> CC: Len Brown <len.brown@intel.com>
->> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> CC: Paul Mackerras <paulus@samba.org>
->> CC: Christoph Lameter <cl@linux.com>
->> Cc: Minchan Kim <minchan.kim@gmail.com>
->> CC: Andrew Morton <akpm@linux-foundation.org>
->> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> CC: Wen Congyang <wency@cn.fujitsu.com>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>
->> ---
->>   arch/x86/mm/init_64.c |   89 ++++++++++++++++++++++++++++++++++++++++++++++++++
->>   include/linux/mm.h    |    2 +
->>   mm/memory_hotplug.c   |    5 ++
->>   mm/sparse.c           |    5 +-
->>   4 files changed, 99 insertions(+), 2 deletions(-)
->>
->> Index: linux-3.5-rc4/include/linux/mm.h
->> ===================================================================
->> --- linux-3.5-rc4.orig/include/linux/mm.h	2012-06-27 09:11:13.790150442 +0900
->> +++ linux-3.5-rc4/include/linux/mm.h	2012-06-27 09:11:16.433117400 +0900
->> @@ -1588,6 +1588,8 @@ int vmemmap_populate(struct page *start_
->>   void vmemmap_populate_print_last(void);
->>   void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
->>   				  unsigned long size);
->> +void vmemmap_kfree(struct page *memmpa, unsigned long nr_pages);
->> +void vmemmap_free_bootmem(struct page *memmpa, unsigned long nr_pages);
->>
->>   enum mf_flags {
->>   	MF_COUNT_INCREASED = 1 << 0,
->> Index: linux-3.5-rc4/mm/sparse.c
->> ===================================================================
->> --- linux-3.5-rc4.orig/mm/sparse.c	2012-06-27 09:06:35.317631878 +0900
->> +++ linux-3.5-rc4/mm/sparse.c	2012-06-27 09:11:16.434117388 +0900
->> @@ -614,12 +614,13 @@ static inline struct page *kmalloc_secti
->>   	/* This will make the necessary allocations eventually. */
->>   	return sparse_mem_map_populate(pnum, nid);
->>   }
->> -static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
->> +static void __kfree_section_memmap(struct page *page, unsigned long nr_pages)
->>   {
->> -	return; /* XXX: Not implemented yet */
->> +	vmemmap_kfree(page, nr_pages);
->>   }
->>   static void free_map_bootmem(struct page *page, unsigned long nr_pages)
->>   {
->> +	vmemmap_free_bootmem(page, nr_pages);
->>   }
->>   #else
->>   static struct page *__kmalloc_section_memmap(unsigned long nr_pages)
->> Index: linux-3.5-rc4/arch/x86/mm/init_64.c
->> ===================================================================
->> --- linux-3.5-rc4.orig/arch/x86/mm/init_64.c	2012-06-27 09:11:13.791150430 +0900
->> +++ linux-3.5-rc4/arch/x86/mm/init_64.c	2012-06-27 09:11:59.254581998 +0900
->> @@ -978,6 +978,95 @@ vmemmap_populate(struct page *start_page
->>   	return 0;
->>   }
->>
->> +unsigned long find_and_clear_pte_page(unsigned long addr, unsigned long end,
->> +				      struct page *page)
-> I think the third parameter should be "struct page **pp" instead of "struct page *page".
-> And "page = pte_page(*pte)" should be "*pp = pte_page(*pte)".
-> Otherwise the found page pointer can't be returned to the caller and vmemmap_kfree()
-> just sees random value in variable "page".
+Hi Dan,
 
-Oh, you are right. I'll update it.
+Today's linux-next merge of the isci tree got a conflict in
+drivers/ata/libata-core.c between commit 6b66d95895c1 ("libata: bind the
+Linux device tree to the ACPI device tree") from the libata tree and
+commit 95f0f9a02129 ("libata: export ata_port suspend/resume
+infrastructure for sas") from the isci tree.
 
-Thanks,
-Yasuaki Ishimatsu
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
->> +{
->> +	pgd_t *pgd;
->> +	pud_t *pud;
->> +	pmd_t *pmd;
->> +	pte_t *pte;
->> +	unsigned long next;
->> +
->> +	page = NULL;
->> +
->> +	pgd = pgd_offset_k(addr);
->> +	if (pgd_none(*pgd))
->> +		return PAGE_SIZE;
->> +
->> +	pud = pud_offset(pgd, addr);
->> +	if (pud_none(*pud))
->> +		return PAGE_SIZE;
->> +
->> +	if (!cpu_has_pse) {
->> +		next = (addr + PAGE_SIZE) & PAGE_MASK;
->> +		pmd = pmd_offset(pud, addr);
->> +		if (pmd_none(*pmd))
->> +			return next;
->> +
->> +		pte = pte_offset_kernel(pmd, addr);
->> +		if (pte_none(*pte))
->> +			return next;
->> +
->> +		page = pte_page(*pte);
->> +		pte_clear(&init_mm, addr, pte);
->> +	} else {
->> +		next = pmd_addr_end(addr, end);
->> +
->> +		pmd = pmd_offset(pud, addr);
->> +		if (pmd_none(*pmd))
->> +			return next;
->> +
->> +		page = pmd_page(*pmd);
->> +		pmd_clear(pmd);
->> +	}
->> +
->> +	return next;
->> +}
->> +
->> +void __meminit
->> +vmemmap_kfree(struct page *memmap, unsigned long nr_pages)
->> +{
->> +	unsigned long addr = (unsigned long)memmap;
->> +	unsigned long end = (unsigned long)(memmap + nr_pages);
->> +	unsigned long next;
->> +	unsigned int order;
->> +	struct page *page;
->> +
->> +	for (; addr < end; addr = next) {
->> +		next = find_and_clear_pte_page(addr, end, page);
->> +		if (!page)
->> +			continue;
->> +
->> +		if (is_vmalloc_addr(page))
->> +			vfree(page);
->> +		else {
->> +			order = next - addr;
->> +			free_pages((unsigned long)page,
->> +				   get_order(sizeof(struct page) *  order));
->> +		}
->> +	}
->> +}
->> +
->> +void __meminit
->> +vmemmap_free_bootmem(struct page *memmap, unsigned long nr_pages)
->> +{
->> +	unsigned long addr = (unsigned long)memmap;
->> +	unsigned long end = (unsigned long)(memmap + nr_pages);
->> +	unsigned long next;
->> +	struct page *page;
->> +	unsigned long magic;
->> +
->> +	for (; addr < end; addr = next) {
->> +		next = find_and_clear_pte_page(addr, end, page);
->> +		if (!page)
->> +			continue;
->> +
->> +		magic = (unsigned long) page->lru.next;
->> +		if (magic == SECTION_INFO)
->> +			put_page_bootmem(page);
->> +	}
->> +}
->> +
->>   void __meminit
->>   register_page_bootmem_memmap(unsigned long section_nr, struct page *start_page,
->>   			     unsigned long size)
->> Index: linux-3.5-rc4/mm/memory_hotplug.c
->> ===================================================================
->> --- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-06-27 09:11:13.789150454 +0900
->> +++ linux-3.5-rc4/mm/memory_hotplug.c	2012-06-27 09:11:16.436117363 +0900
->> @@ -303,6 +303,8 @@ static int __meminit __add_section(int n
->>   #ifdef CONFIG_SPARSEMEM_VMEMMAP
->>   static int __remove_section(struct zone *zone, struct mem_section *ms)
->>   {
->> +	unsigned long flags;
->> +	struct pglist_data *pgdat = zone->zone_pgdat;
->>   	int ret;
->>
->>   	if (!valid_section(ms))
->> @@ -310,6 +312,9 @@ static int __remove_section(struct zone
->>
->>   	ret = unregister_memory_section(ms);
->>
->> +	pgdat_resize_lock(pgdat, &flags);
->> +	sparse_remove_one_section(zone, ms);
->> +	pgdat_resize_unlock(pgdat, &flags);
->>   	return ret;
->>   }
->>   #else
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+diff --cc drivers/ata/libata-core.c
+index c14f88c,6f1e459..0000000
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@@ -5291,9 -5294,10 +5297,8 @@@ static int ata_port_request_pm(struct a
+  	return rc;
+  }
+ =20
+- static int ata_port_suspend_common(struct device *dev, pm_message_t mesg)
+ -#define to_ata_port(d) container_of(d, struct ata_port, tdev)
+ -
++ static int __ata_port_suspend_common(struct ata_port *ap, pm_message_t me=
+sg, int *async)
+  {
+- 	struct ata_port *ap =3D to_ata_port(dev);
+  	unsigned int ehi_flags =3D ATA_EHI_QUIET;
+  	int rc;
+ =20
 
+--Signature=_Mon__2_Jul_2012_13_12_27_+1000_xXP3kaqHqglYWm97
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJP8RGbAAoJEECxmPOUX5FExjoQAJ4ystPeU1hFbw+NIQoqnW5g
+QZ7fT69hX8ECgL4oozHyEv1AacrnNEswTHVfn2AyS/L/fNyS94srr4lF3Fs2XLNf
+Bbmz8fPSgYLLXD3YfE5//UEVuOiu9tILKgYypKtPh/mC6IQ3zJYHQJzmvCYuJRdG
+M/wmkpi/CwPtodJVsl/F8fyemxnuQPcioHdrZKQNkRvDKu6NvRhQCg0V51SjgC44
+Wjw4Cncs6pt8rXriRnJuvnfwyQqBzfQIRhyc7eMveA35wz23UJpLFiLz6iS2Gs/h
+Bkmlb3qnwRWPv/i0z1kZfsHxwasZb1g9fvGZQHD1zTGhCCy0+iZKp26gAGOPe3FG
+9u7DRQ3ROhKOVV6++XvUnxNS0YXzLfJkIp/vNcgw3EEcmHX9SYEmRwXqj0Hq0lxP
+bN2knLrPYuxRbcSWfz9SjKuCtavmvn0BGLLdSa3AdSk89fyLvD6svfnkuvRPlMXG
+Wp4salvc94y1Fi8D5Vo5+HTne55hfLULZ8nGaaAXvSyq8b5VlghuxqtxaM4ac6r5
++zPW4kPnkEumRlyGodtsn4WFQjsAL+JgIC9CazGQoYUwbuAGBWqFsW/Tx+zF9QZD
+eT3wHZnwGtF5w6UNGILhxU/gUhI6fKVUjzLk4agU99o90vucWhdsDJ27PHOTMWo9
+SvGjB4QBH+fWpIpwjaeY
+=c/8v
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__2_Jul_2012_13_12_27_+1000_xXP3kaqHqglYWm97--
