@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab2GBQ4k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 12:56:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57427 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754050Ab2GBQ4j (ORCPT
+	id S1755884Ab2GBQ7J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 12:59:09 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:40558 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab2GBQ7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 12:56:39 -0400
-Date: Mon, 2 Jul 2012 09:56:33 -0700
-From: Tejun Heo <tj@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        hacklu <embedway.linux@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86, boot: Optimize the elf header handling.
-Message-ID: <20120702165633.GA555@google.com>
-References: <4FF06701.6010004@zytor.com>
- <4FF06DF4.4000006@zytor.com>
- <87wr2nsbvi.fsf@xmission.com>
- <4FF0769F.8090105@zytor.com>
- <87sjdbsb0v.fsf@xmission.com>
- <4FF07E66.2020706@zytor.com>
- <87d34fs914.fsf@xmission.com>
- <4FF085B1.6070604@zytor.com>
- <87a9zj9w43.fsf@xmission.com>
- <4FF098E2.3040307@zytor.com>
+	Mon, 2 Jul 2012 12:59:07 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: "Steven J. Magnani" <steve@digidescorp.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fat: Refactor shortname parsing
+References: <1340993528-12111-1-git-send-email-steve@digidescorp.com>
+	<87r4syrl4y.fsf@devron.myhome.or.jp>
+	<1340997235.9826.7.camel@iscandar.digidescorp.com>
+	<87bok1sx6j.fsf@devron.myhome.or.jp>
+	<87zk7lribe.fsf@devron.myhome.or.jp>
+	<1341234099.1695.13.camel@iscandar.digidescorp.com>
+	<87fw9anuwk.fsf@devron.myhome.or.jp>
+	<1341237638.1695.16.camel@iscandar.digidescorp.com>
+	<8762a6nsao.fsf@devron.myhome.or.jp>
+	<1341240342.1695.20.camel@iscandar.digidescorp.com>
+	<871ukunqp3.fsf@devron.myhome.or.jp>
+	<1341244281.1695.28.camel@iscandar.digidescorp.com>
+Date: Tue, 03 Jul 2012 01:59:01 +0900
+In-Reply-To: <1341244281.1695.28.camel@iscandar.digidescorp.com> (Steven
+	J. Magnani's message of "Mon, 02 Jul 2012 10:51:21 -0500")
+Message-ID: <87txxqm756.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF098E2.3040307@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+"Steven J. Magnani" <steve@digidescorp.com> writes:
 
-On Sun, Jul 01, 2012 at 11:37:22AM -0700, H. Peter Anvin wrote:
-> If we don't need it, I think we can use -z max-page-size=4096, but we
-> use the PMD alignment for percpu on x86-64; Tejun, does that apply to
-> the .data..percpu section in the executable as well?
+>> Hm, the primary case is vfat. fat_tolower()/hidden is required only for
+>> msdos, and ptname too. So, my suggestion is trying to keep vfat case
+>> clean.
+>
+> It's not clear to me where you want to go with this. 
+>
+> 1. Split fat_parse_short() into msdos and vfat versions. This may
+> improve clarity, but there would be some replication of code.
 
-I don't think the .data..percpu section needs 2M alignment.  The
-percpu data section is only used as init template and actual percpu
-addresses always go through offsetting against __per_cpu_offset[] - no
-matter what the vaddrs in the vmlinux are, they get offsetted into 2M
-aligned linear address if necessary.  I think the only alignment
-.data..percpu needs is cacheline alignment for separating its
-subsections.
+This is not a option. We are better to not change.
 
-Thanks.
+> 2. Sprinkle "if (!isvfat)" throughout the already-proposed version of
+> fat_parse_short()
+>   A. Everywhere
+>   B. Only in the places you've proposed
 
+I'm not sure what (A) means though. Probably, I will not care.
+
+> 3. Retain the already-proposed version of fat_parse_short(), but add a
+> comment that the uni_name overrides the msdos "ptname", and separate out
+> the decision to lowercase from fat_tolower() [i.e., the trigraph].
+
+The trigraph change doesn't cleanup anything. Because it is using
+needless ptname on vfat path.
+
+vfat always uses the uni_name and doesn't use ptname, right?  And msdos
+path doesn't use the uni_name and use ptname always.  So, I'm saying,
+let's make clear those difference and usage, by annotating with isvfat.
 -- 
-tejun
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
