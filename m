@@ -1,97 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933107Ab2GBVgB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 17:36:01 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:48584 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755999Ab2GBVf7 (ORCPT
+	id S933122Ab2GBVhM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 17:37:12 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:48327 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932074Ab2GBVhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 17:35:59 -0400
-X-Greylist: delayed 623 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Jul 2012 17:35:59 EDT
-Message-ID: <4FF211BD.8060203@ahsoftware.de>
-Date: Mon, 02 Jul 2012 23:25:17 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-CC: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH] video/smscufx: fix line counting in fb_write
-References: <1334959867-3719-1-git-send-email-holler@ahsoftware.de> <4F92995B.6030805@ahsoftware.de> <4FAFAD7B.6090207@gmx.de>
-In-Reply-To: <4FAFAD7B.6090207@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	Mon, 2 Jul 2012 17:37:10 -0400
+Subject: Re: [RFC] [TCP 0/3] Receive from socket into bio without copying
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: chetan loke <loke.chetan@gmail.com>
+Cc: Andreas Gruenbacher <agruen@linbit.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, Willy Tarreau <w@1wt.eu>
+In-Reply-To: <CAAsGZS6ahzUo+QRcLOyPcj5=mp53O+M9kqByOwPb0zZcr-cgwQ@mail.gmail.com>
+References: <1341237299.22621.88.camel@edumazet-glaptop>
+	 <1341245191.2177.40.camel@schurl.lan>
+	 <CAAsGZS6ahzUo+QRcLOyPcj5=mp53O+M9kqByOwPb0zZcr-cgwQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 02 Jul 2012 23:37:04 +0200
+Message-ID: <1341265024.22621.464.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian,
+On Mon, 2012-07-02 at 15:41 -0400, chetan loke wrote:
+> On Mon, Jul 2, 2012 at 12:06 PM, Andreas Gruenbacher <agruen@linbit.com> wrote:
+> > On Mon, 2012-07-02 at 15:54 +0200, Eric Dumazet wrote:
+> >> So I will just say no to your patches, unless you demonstrate the
+> >> splice() problems, and how you can fix the alignment problem in a new
+> >> layer instead of in the existing zero copy standard one.
+> >
+> > Again, splice or not is not the issue here. It does not, by itself, allow zero
+> > copy from the network directly to disk but it could likely be made to support
+> > that if we can get the alignment right first.  The proposed MSG_NEW_PACKET flag
+> > helps with that, but maybe someone has a better idea.
+> >
+> 
+> Eric - by using splice do you mean something like:
+> 
+> int filedes[2];
+> PIPE_SIZE (64*1024)
+> pipe(filedes);
+> ret = splice (sock_fd_from, &from_offset, filedes [1], NULL, PIPE_SIZE,
+>                      SPLICE_F_MORE | SPLICE_F_MOVE);
+> 
+> 
+> ret = splice (filedes [0], NULL, file_fd_to,
+>                          &to_offset, ret,
+>                          SPLICE_F_MORE | SPLICE_F_MOVE);
+> 
 
-sorry for the late answer.
+Yes, thats more or less the plan. You also can play with bigger
+PIPE_SIZE if needed.
 
-Am 13.05.2012 14:47, schrieb Florian Tobias Schandinat:
-> Hi Alexander,
->
-> On 04/21/2012 11:26 AM, Alexander Holler wrote:
->> Hello,
->>
->> as for the patch for udlfb, I forgot to mention that this is a candidate
->> for all stable trees 3.2 and above.
->>
->> Btw., the address of the maintainer doesn't seem to be valid anymore.
->
-> it is better to cc me on patches to the framebuffer subsystem for such
-> cases. I don't have much free time so it's rare that I come around to
-> dig in the mailing list.
->
->>
->> Regards,
->>
->> Alexander
->>
->> Am 21.04.2012 00:11, schrieb Alexander Holler:
->>> Line 0 and 1 were both written to line 0 (on the display) and all
->>> subsequent
->>> lines had an offset of -1. The result was that the last line on the
->>> display
->>> was never overwritten by writes to /dev/fbN.
->>>
->>> The origin of this bug seems to have been udlfb.
->>>
->>> Signed-off-by: Alexander Holler<holler@ahsoftware.de>
->>
->> Cc: stable@vger.kernel.org
->
-> Patch looks good to me but can be made simpler.
->
->>
->>> ---
->>>    drivers/video/smscufx.c |    2 +-
->>>    1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/drivers/video/smscufx.c b/drivers/video/smscufx.c
->>> index ccbfef5..1e1e2d2 100644
->>> --- a/drivers/video/smscufx.c
->>> +++ b/drivers/video/smscufx.c
->>> @@ -904,7 +904,7 @@ static ssize_t ufx_ops_write(struct fb_info *info,
->>> const char __user *buf,
->>>        result = fb_sys_write(info, buf, count, ppos);
->>>
->>>        if (result>  0) {
->>> -        int start = max((int)(offset / info->fix.line_length) - 1, 0);
->>> +        int start = max((int)(offset / info->fix.line_length), 0);
->
-> the cast to int as well as the max is superfluous without the -1 as the
-> value can no longer be negative.
+> 
+> i.e. splice-in from socket to pipe, and splice-out from pipe to destination?
+> 
+> Andreas - if the above assumption is true then can you apply the
+> 'MSG_NEW_PACKET' on the sender and see if the above pseudo-splice code
+> achieves something similar to what you expect on the receive side(you
+> can also play w/ F_SETPIPE_SZ -  although I found very little
+> reduction in CPU usage)? Note: My personal experience - using splice
+> from an input-file-A to output-file-B bought very minimal cpu
+> reduction(yes, both the files used O_DIRECT). Instead, a simple
+> read/write w/ O_DIRECT from file-A to file-B was much much faster.
 
-I had that impression too, but I wanted to change as less as possible, 
-so I didn't had the need to check types and (their) sizes for possible 
-overflows or such. I was lazy and just wanted to fix that one bug. ;)
+splice() performance from socket to pipe have improved a lot in
+linux-3.5
 
->
->>>            int lines = min((u32)((result / info->fix.line_length) + 1),
->>>                    (u32)info->var.yres);
->>>
+It was not true zero copy, until very recent patches.
+(It was zero copy only on certain class of NIC, not on the ones found
+on appliances or cheap platforms)
 
-Regards,
+Willy Tarreau mentioned a nice boost of performance with haproxy.
 
-Alexander
+Willy wanted to work on a direct splice from socket to socket, but
+I am not sure it'll bring major speed improvement.
+
+
+
