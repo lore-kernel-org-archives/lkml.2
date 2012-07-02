@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab2GBCTK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 22:19:10 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:63036 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932089Ab2GBCTI (ORCPT
+	id S1755629Ab2GBCWg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 22:22:36 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:35746 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754571Ab2GBCWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 22:19:08 -0400
+	Sun, 1 Jul 2012 22:22:34 -0400
+Message-ID: <4FF105D0.8010400@linux.vnet.ibm.com>
+Date: Mon, 02 Jul 2012 10:22:08 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <20120702121041.01a80802af13e2cf511fe0b6@canb.auug.org.au>
-References: <20120702121041.01a80802af13e2cf511fe0b6@canb.auug.org.au>
-Date: Mon, 2 Jul 2012 10:19:07 +0800
-Message-ID: <CAC=cRTNf2tqvGqOKKekXnWbtFM8a0co1SjcTUjLd2ZOjm9+Atg@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the libata tree
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jeff Garzik <jeff@garzik.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lin Ming <ming.m.lin@intel.com>,
-        Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>, mtosatti@redhat.com,
+        agraf@suse.de, paulus@samba.org, aarcange@redhat.com,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, takuya.yoshikawa@gmail.com
+Subject: Re: [PATCH 5/6] KVM: Separate rmap_pde from kvm_lpage_info->write_count
+References: <20120628105733.ccd9abb3.yoshikawa.takuya@oss.ntt.co.jp> <20120628110141.7b908c91.yoshikawa.takuya@oss.ntt.co.jp> <4FEBCBB3.3060707@linux.vnet.ibm.com> <20120628124546.83a829f3.yoshikawa.takuya@oss.ntt.co.jp> <4FEC96EB.1050307@redhat.com>
+In-Reply-To: <4FEC96EB.1050307@redhat.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12070202-4790-0000-0000-0000037DDBA8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Stephen,
+On 06/29/2012 01:39 AM, Avi Kivity wrote:
 
-On Mon, Jul 2, 2012 at 10:10 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Jeff,
->
-> After merging the libata tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->
-> drivers/ata/libata-acpi.c: In function 'ata_acpi_set_state':
-> drivers/ata/libata-acpi.c:872:5: error: too few arguments to function 'acpi_pm_device_sleep_state'
-> include/acpi/acpi_bus.h:418:5: note: declared here
->
-> Caused by commit 3bd46600a7a7 ("libata-acpi: add ata port runtime D3Cold
-> support") from the libata tree interacting with commit ee85f543710d
-> ("ACPI/PM: specify lowest allowed state for device sleep state") from the
-> pci tree.
->
-> I added the following merge fix patch (and can carry it as necessary):
->
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 2 Jul 2012 12:07:25 +1000
-> Subject: [PATCH] libata-acpi: fix up for acpi_pm_device_sleep_state API
->  change
->
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/ata/libata-acpi.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/ata/libata-acpi.c b/drivers/ata/libata-acpi.c
-> index 4112eaa..a2b16c9 100644
-> --- a/drivers/ata/libata-acpi.c
-> +++ b/drivers/ata/libata-acpi.c
-> @@ -869,7 +869,7 @@ void ata_acpi_set_state(struct ata_port *ap, pm_message_t state)
->
->                 if (state.event != PM_EVENT_ON) {
->                         acpi_state = acpi_pm_device_sleep_state(
-> -                               &dev->sdev->sdev_gendev, NULL);
-> +                               &dev->sdev->sdev_gendev, NULL, ACPI_STATE_D3);
->                         if (acpi_state > 0)
->                                 acpi_bus_set_power(handle, acpi_state);
->                         /* TBD: need to check if it's runtime pm request */
+> But I still think it's the right thing since it simplifies the code.
+> Maybe we should add a prefetch() on write_count do mitigate the
+> overhead, if it starts showing up in profiles.
+> 
 
-The fix is good for me.  Thanks!
+Long time ago, there was a discussion about dropping prefetch in the
+operation of list walking:
+	http://lwn.net/Articles/444336/
+IIRC, the conclusion is that it is better to let CPU prefetch memory
+by itself.
 
-Best Regards,
-Huang Ying
+Actually, when i developed lockless spte walking, i measure the performance if
+prefetch was used, but i did not see the improvement.
+
+
