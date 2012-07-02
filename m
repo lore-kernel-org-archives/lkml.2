@@ -1,71 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784Ab2GBI65 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 04:58:57 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:30259
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932655Ab2GBI6y (ORCPT
+	id S932806Ab2GBI7H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 04:59:07 -0400
+Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:41464 "EHLO
+	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932655Ab2GBI7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 04:58:54 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1202hzz8275bhz2dh2a8h668h839h93fhd25he5bhf0ah)
-Message-ID: <4FF16382.1060505@analog.com>
-Date: Mon, 2 Jul 2012 11:01:54 +0200
-From: Michael Hennerich <michael.hennerich@analog.com>
-Reply-To: <michael.hennerich@analog.com>
-Organization: Analog Devices Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: SamuelOrtiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] mfd: adp5520: Guard PM methods with CONFIG_PM_SLEEP
-References: <1341219232.5864.1.camel@phoenix>
-In-Reply-To: <1341219232.5864.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Mon, 2 Jul 2012 04:59:03 -0400
+Date: Mon, 2 Jul 2012 17:58:48 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: avi@redhat.com, mtosatti@redhat.com
+Cc: agraf@suse.de, paulus@samba.org, aarcange@redhat.com, kvm@vger.kernel.org,
+        kvm-ppc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        takuya.yoshikawa@gmail.com
+Subject: [PATCH 7/8] KVM: MMU: Push trace_kvm_age_page() into
+ kvm_age_rmapp()
+Message-Id: <20120702175848.b8aa25f7.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120702175239.5fec56b3.yoshikawa.takuya@oss.ntt.co.jp>
+References: <20120702175239.5fec56b3.yoshikawa.takuya@oss.ntt.co.jp>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2012 10:53 AM, Axel Lin wrote:
-> This fixes below build warnings:
->    CC      drivers/mfd/adp5520.o
-> drivers/mfd/adp5520.c:324:12: warning: 'adp5520_suspend' defined but not used [-Wunused-function]
-> drivers/mfd/adp5520.c:333:12: warning: 'adp5520_resume' defined but not used [-Wunused-function]
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Acked-by: Michael Hennerich <michael.hennerich@analog.com>
-> ---
->   drivers/mfd/adp5520.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/mfd/adp5520.c b/drivers/mfd/adp5520.c
-> index 8d816cc..ea8b947 100644
-> --- a/drivers/mfd/adp5520.c
-> +++ b/drivers/mfd/adp5520.c
-> @@ -320,7 +320,7 @@ static int __devexit adp5520_remove(struct i2c_client *client)
->   	return 0;
->   }
->   
-> -#ifdef CONFIG_PM
-> +#ifdef CONFIG_PM_SLEEP
->   static int adp5520_suspend(struct device *dev)
->   {
->   	struct i2c_client *client = to_i2c_client(dev);
+This restricts the tracing to page aging and makes it possible to
+optimize kvm_handle_hva_range() further in the following patch.
 
+Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+---
+ arch/x86/kvm/mmu.c |   23 ++++++++++-------------
+ 1 files changed, 10 insertions(+), 13 deletions(-)
 
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index bf8d50e..3082199 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1193,8 +1193,7 @@ static int kvm_handle_hva_range(struct kvm *kvm,
+ 					       unsigned long data))
+ {
+ 	int j;
+-	int ret;
+-	int retval = 0;
++	int ret = 0;
+ 	struct kvm_memslots *slots;
+ 	struct kvm_memory_slot *memslot;
+ 
+@@ -1217,8 +1216,6 @@ static int kvm_handle_hva_range(struct kvm *kvm,
+ 		gfn_end = hva_to_gfn_memslot(hva_end + PAGE_SIZE - 1, memslot);
+ 
+ 		for (; gfn < gfn_end; ++gfn) {
+-			ret = 0;
+-
+ 			for (j = PT_PAGE_TABLE_LEVEL;
+ 			     j < PT_PAGE_TABLE_LEVEL + KVM_NR_PAGE_SIZES; ++j) {
+ 				unsigned long *rmapp;
+@@ -1226,14 +1223,10 @@ static int kvm_handle_hva_range(struct kvm *kvm,
+ 				rmapp = __gfn_to_rmap(gfn, j, memslot);
+ 				ret |= handler(kvm, rmapp, memslot, data);
+ 			}
+-			trace_kvm_age_page(memslot->userspace_addr +
+-					(gfn - memslot->base_gfn) * PAGE_SIZE,
+-					memslot, ret);
+-			retval |= ret;
+ 		}
+ 	}
+ 
+-	return retval;
++	return ret;
+ }
+ 
+ static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
+@@ -1275,8 +1268,10 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
+ 	 * This has some overhead, but not as much as the cost of swapping
+ 	 * out actively used pages or breaking up actively used hugepages.
+ 	 */
+-	if (!shadow_accessed_mask)
+-		return kvm_unmap_rmapp(kvm, rmapp, slot, data);
++	if (!shadow_accessed_mask) {
++		young = kvm_unmap_rmapp(kvm, rmapp, slot, data);
++		goto out;
++	}
+ 
+ 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
+ 	     sptep = rmap_get_next(&iter)) {
+@@ -1288,7 +1283,9 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
+ 				 (unsigned long *)sptep);
+ 		}
+ 	}
+-
++out:
++	/* @data has hva passed to kvm_age_hva(). */
++	trace_kvm_age_page(data, slot, young);
+ 	return young;
+ }
+ 
+@@ -1337,7 +1334,7 @@ static void rmap_recycle(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
+ 
+ int kvm_age_hva(struct kvm *kvm, unsigned long hva)
+ {
+-	return kvm_handle_hva(kvm, hva, 0, kvm_age_rmapp);
++	return kvm_handle_hva(kvm, hva, hva, kvm_age_rmapp);
+ }
+ 
+ int kvm_test_age_hva(struct kvm *kvm, unsigned long hva)
 -- 
-Greetings,
-Michael
-
---
-Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
-Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368;
-Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin,
-Margaret Seif
-
+1.7.5.4
 
