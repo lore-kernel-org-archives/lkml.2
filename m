@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932633Ab2GBUMg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 16:12:36 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:51056 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754Ab2GBUMf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 16:12:35 -0400
-Message-ID: <1341259950.4325.11.camel@piranha.localdomain>
-Subject: Re: Logitech HD Webcam C525 does not work when connected to USB 2
- port, works on USB 3
-From: Frederik Himpe <fhimpe@telenet.be>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-uvc-devel@lists.sourceforge.net
-Date: Mon, 02 Jul 2012 22:12:30 +0200
-In-Reply-To: <Pine.LNX.4.44L0.1207011138460.18102-100000@netrider.rowland.org>
-References: <Pine.LNX.4.44L0.1207011138460.18102-100000@netrider.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932648Ab2GBUPq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 16:15:46 -0400
+Received: from swielinga.nl ([83.160.77.141]:58576 "EHLO swielinga.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754940Ab2GBUPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 16:15:44 -0400
+X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Jul 2012 16:15:44 EDT
+Date: Mon, 2 Jul 2012 22:08:21 +0200
+From: Sytse Wielinga <sytse@swielinga.nl>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: John Stultz <johnstul@us.ibm.com>, Prarit Bhargava <prarit@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [RFC] Potential fix for leapsecond caused futex related
+ load spikes
+Message-ID: <20120702200821.GA31197@swielinga.nl>
+Mail-Followup-To: Richard Cochran <richardcochran@gmail.com>,
+	John Stultz <johnstul@us.ibm.com>,
+	Prarit Bhargava <prarit@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <4FF06CAB.9020800@redhat.com>
+ <4FF08154.3050407@redhat.com>
+ <4FF088B9.1000308@us.ibm.com>
+ <20120702101606.GA16008@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120702101606.GA16008@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-07-01 at 11:54 -0400, Alan Stern wrote:
-> On Sun, 1 Jul 2012, Frederik Himpe wrote:
-> 
-> > > A usbmon trace would be more helpful.  Or perhaps a pair of traces, one 
-> > > for the USB-2 port and one for the USB-3 port.  See the instructions in 
-> > > Documentation/usb/usbmon.txt.
-> > 
-> > OK, I created a usbmon trace both from the USB-2 port as the USB-3 port.
-> > During the trace, I connected the USB webcam to the USB port and started
-> > mplayer, which failed on USB-2 but worked fine on USB-3.
-> > 
-> > The two traces can be found here:
-> > http://artipc10.vub.ac.be/~frederik/webcam/
-> 
-> There are two significant differences between the USB-2 and USB-3 
-> traces, although I don't know what to make of them.
-> 
-> Initially it looks like the driver writes a bunch of values to the 
-> webcam and asks it to repeat them back.  That's what happens in the 
-> USB-3 trace, anyway.  The USB-2 trace shows the values being written, 
-> but when asked to repeat them back the webcam sends nothing.
-> 
-> For example, with USB-3:
-> 
-> ffff8804085042c0 470397794 S Co:3:003:0 s 22 01 0100 0086 0003 3 = 803e00
-> ffff8804085042c0 470399896 C Co:3:003:0 0 3 >
-> ffff8804085042c0 470400004 S Ci:3:003:0 s a2 81 0100 0086 0003 3 <
-> ffff8804085042c0 470401270 C Ci:3:003:0 0 3 = 803e00
-> 
-> The 803e00 values get sent and then received.  The analogous part of
-> the USB-2 trace shows:
-> 
-> ffff88040cc1f5c0 208122798 S Co:1:006:0 s 22 01 0100 0086 0003 3 = 803e00
-> ffff88040cc1f5c0 208124781 C Co:1:006:0 0 3 >
-> ffff88040cc1f5c0 208124818 S Ci:1:006:0 s a2 81 0100 0086 0003 3 <
-> ffff88040cc1f5c0 208126156 C Ci:1:006:0 0 0
-> 
-> Exactly the same values are sent and the request is the same, but no 
-> data gets returned.  I have no idea what that means.
-> 
-> Secondly, both traces show that the webcam stopped being used for a
-> short time and was suspended.  A few seconds later, when it was resumed
-> again, it worked okay in the USB-3 trace.  But in the USB-2 trace, it
-> didn't.  After the resume it failed to reply to the first packet sent
-> (a Get-Device-Status request), and thus it had to be re-enumerated.
-> 
-> Have you tried using the webcam on a different computer?
+Hi Richard,
 
-I just tried it on a different system (Dell Latitude E6400), and it
-worked fine on the USB2 ports (kernel version was 3.4.1 on that system,
-though). The webcam also works fine on the affected system and USB2
-ports in Windows.
+On Mon, Jul 02, 2012 at 12:16:08PM +0200, Richard Cochran wrote:
+> I know you didn't like my (originally Michael Hack's) idea of keeping
+> time in TAI, but wouldn't changing to an internal, continuous time
+> scale (not necessary TAI) solve these sorts of timer issues?
 
--- 
-Frederik Himpe <fhimpe@telenet.be>
+Doesn't that actually make the problem of leap seconds worse, as you'd have to
+start tabulating past leap seconds in the kernel?
 
+Even worse, *future* leap seconds would need to be tracked and after they've
+happened stored on disk, and loaded back into the kernel after booting, which
+seems like a mess.  The trouble here is that leap seconds are only announced a
+short while before they happen, so there's no way to bake leap seconds into
+the software; they need to be dynamically added by ntpd.
+
+Or is there somehow some way to avoid that?
+
+> There have been a number of clock/timer/leap bugs over the last
+> years. Some of these might have been avoided by using a continuous
+> scale, since no special timer actions would be needed during a leap
+> second.
+> 
+> The run time cost is low, just one additional test and addition when
+> reading the time. It might be worth it for the peace of mind when
+> the next leap second rolls around.
+
+I don't know if reworking the system that's been in place for ages is a good
+way to give us 'peace of mind'.  Then again, I love to be enlightened :-)
+
+Sytse Wielinga
