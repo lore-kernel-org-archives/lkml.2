@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931Ab2GBEvB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 00:51:01 -0400
-Received: from gate.crashing.org ([63.228.1.57]:45117 "EHLO gate.crashing.org"
+	id S1753334Ab2GBEv2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 00:51:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60057 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751280Ab2GBEvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 00:51:00 -0400
-Message-ID: <1341204649.2588.29.camel@pasglop>
-Subject: Re: 3.5.0-rc5: BUG: soft lockup - CPU#0 stuck for 22s
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 02 Jul 2012 14:50:49 +1000
-In-Reply-To: <alpine.DEB.2.01.1207010009270.5568@trent.utfs.org>
-References: <alpine.DEB.2.01.1207010009270.5568@trent.utfs.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1751632Ab2GBEv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 00:51:26 -0400
+Message-ID: <4FF128A8.3060309@redhat.com>
+Date: Mon, 02 Jul 2012 00:50:48 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 32/40] autonuma: initialize page structure fields
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-33-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1340888180-15355-33-git-send-email-aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-07-01 at 00:18 -0700, Christian Kujau wrote:
-> Hi,
-> 
-> while trying to upgrade from 3.4.0 to 3.5.0-rc5 on this Powerbook G4 
-> (powerpc 32 bit), this happens during booting:
-> 
-> --------------
-> usb 2-1: new full-speed USB device number 4 using ohci_hcd
-> SCSI subsystem initialized
-> scsi0 : SBP-2 IEEE-1394
-> scsi1 : SBP-2 IEEE-1394
-> firewire_sbp2 fw1.0: logged in to LUN 0000 (0 retries)
-> scsi 0:0:0:0: Direct-Access     Ext Hard  Disk            PQ: 0 ANSI: 4
+On 06/28/2012 08:56 AM, Andrea Arcangeli wrote:
+> Initialize the AutoNUMA page structure fields at boot.
+>
+> Signed-off-by: Andrea Arcangeli<aarcange@redhat.com>
 
-Interesting... I observed something roughly similar on a dual G4
-the other day associated with a 30s to 1mn pause during boot. RCU
-was complaining loudly.
+I really do not like having a changeset that is undone a
+few patches later.  At the very least you could merge this
+into patch 14/40
 
-In my case, it did continue booting normally, is that the case for you ?
-
-Also if I compile the kernel without CONFIG_SMP, it did go away as well,
-do you observe that too ?
-
-I don't have a spare cycle to investigate this problem this week I'm
-afraid, it might help if you could try a bisection though.
-
-Cheers,
-Ben.
-
-
+-- 
+All rights reversed
