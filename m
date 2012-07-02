@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755706Ab2GBDnV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 23:43:21 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54041 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab2GBDnS (ORCPT
+	id S1754114Ab2GBDym (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 23:54:42 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:33554 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab2GBDyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 23:43:18 -0400
-Date: Mon, 2 Jul 2012 04:43:10 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        ". James Morris" <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 0/4] Was: deferring __fput()
-Message-ID: <20120702034310.GE22927@ZenIV.linux.org.uk>
-References: <1340947838.2293.2.camel@falcor>
- <20120629083311.GX14083@ZenIV.linux.org.uk>
- <1340974925.2309.13.camel@falcor>
- <20120629174130.GY14083@ZenIV.linux.org.uk>
- <1341005929.2194.9.camel@falcor.watson.ibm.com>
- <1341014197.2342.7.camel@falcor.watson.ibm.com>
- <20120630050238.GZ14083@ZenIV.linux.org.uk>
- <1341172202.2556.13.camel@falcor>
- <20120701205722.GD22927@ZenIV.linux.org.uk>
- <1341193591.2249.3.camel@falcor>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341193591.2249.3.camel@falcor>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 1 Jul 2012 23:54:41 -0400
+Date: Mon, 2 Jul 2012 13:54:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Jeff Garzik <jeff@garzik.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        Holger Macht <holger@homac.de>
+Subject: Re: linux-next: build warnings after merge of the libata tree
+Message-Id: <20120702135429.0d17c1f4fe46828bd29b3458@canb.auug.org.au>
+In-Reply-To: <1341199318.31272.2.camel@minggr>
+References: <20120702131914.510857dc84182e95641e7e97@canb.auug.org.au>
+	<1341199318.31272.2.camel@minggr>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__2_Jul_2012_13_54_29_+1000_DjJ.I8UFd1kFOwEh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 01, 2012 at 09:46:31PM -0400, Mimi Zohar wrote:
-> On Sun, 2012-07-01 at 21:57 +0100, Al Viro wrote:
-> > On Sun, Jul 01, 2012 at 03:50:02PM -0400, Mimi Zohar wrote:
-> > > Replacing it with a call to __fput(), the system boots.
-> > 
-> > "it" being just the part under that if (unlikely(...)))?  Very interesting...  If so, we
-> > have some kernel thread ending up with delayed __fput() which somehow makes dracut (assuimg
-> > you are using fedora initramfs to go with fedora config) unhappy.  With your own patch,
-> > doing async __fput() in a lot of cases when this one doesn't delay past the return to
-> > userland managing to survive the boot...  I wonder which files end up triggering that fun
-> > and which kernel thread is responsible...  Could you slap a printk() in there, showing
-> > file->f_dentry->d_inode->i_mode (octal) and at least file->f_dentry->d_name.name?
-> > Along with the current->comm[], all under that inner if ().  And see which ones end up
-> > going that way by the time execve() of /sbin/init fails.
-> 
-> pid=1 uid=0 d_name=init comm=swapper/0 dev="rootfs" mode=100775
-> pid=1 uid=0 d_name=bash comm=swapper/0 dev="rootfs" mode=100755
+--Signature=_Mon__2_Jul_2012_13_54_29_+1000_DjJ.I8UFd1kFOwEh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK...  Here's what I suspect is going on:
-	* populating initramfs writes binaries there.  We open files (for write) from
-the kernel thread (there's nothing other than kernel threads at that point), write to
-them, then close().  Final fput() gets delayed.
-	* Then we proceed to execve().  Which means mapping the binary with MAP_DENYWRITE.
-Which fails, since there's a struct file still opened for write on that sucker.
+Hi Lin,
 
-Your patch did not delay those fput() - they were done without ->mmap_sem held.  So
-it survived.  Booting without initramfs always survives; booting with initramfs may
-or may not survive, depending on the timings - if that scheduled work manages to
-run by the time we do those execve(), we win.  Note that async_synchronize_full()
-done in init_post() might easily affect that, depending on config.
+On Mon, 02 Jul 2012 11:21:58 +0800 Lin Ming <ming.m.lin@intel.com> wrote:
+>
+> Could you please send me your ppc64 .config?
+> I'll do cross build on my x86 machine.
 
-As a quick test, could you try slapping a delay somewhere around the beginning
-of init_post() and see if it rescues the system?
+Please just look at the code added in drivers/ata/libata.h.  Hint: what
+happens if CONFIG_ATA_ACPI is *not* defined?
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__2_Jul_2012_13_54_29_+1000_DjJ.I8UFd1kFOwEh
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP8Rt1AAoJEECxmPOUX5FENjIP/Ro2u9ZYagu5p13BrWcgd9ec
+eBxtk0N1QLQ14bnsHvffzTGaIgnVG/vb3n2kFnZQ1GDrqgO8O2YhqA81ZMdVWsTm
+ks70XHIS0UrF6VmjrOWZ2Mp+q6nhhDyV85iGA5GtHOA9XyBKDsQ28JOT2K8etEtL
+TbVXw/+H7dcjw1/6NJ6rFkm2Uisf1Gi3Z4Iz/HoPwAlzDCnTemY3eM7AL9SFac8T
+Ig5PG8Li9v5iuJ40O72YlrlCS0Lt1ySMn/jKXNfS1hrXW46biG46c9YCfcQCy0Sc
+CF4+O0amtK/HNBI00UzD1guVvJHlBp4ffAL+XfP03AQ85ISgtplB6p7hAwqLP2Se
+fnxpFOcseQlnyfs8VvD8LdEW0KHwAQPW4fMX/y/ArJ4ThdFdErxQoK/xzJ6eHnQl
+qiVJUWi4/ezoDNGB2wZuZwU8qCByfvyUf9i1m7psAXy64jtnSO34sgheLXWBygGD
+1SrgaT+vNpVfsTUShv+0eVhq7gBfPbs2p9oESP3aQqKvc4z8WjCk5VxaDydaQsjF
+W/I6YmZUoFReHq1mO0VAcIfI483Oa4aghtRH55cLN1dCM3at4NAaiTiaA0tDAAKs
+vgEhliNPOpcShMS6tP11DxPnxNCNvWk0e3eidQmXWp3MFAN5AeLJoNHKsT4vhhLZ
+vvTAY2P6p8iWi+zERfnp
+=m5LD
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__2_Jul_2012_13_54_29_+1000_DjJ.I8UFd1kFOwEh--
