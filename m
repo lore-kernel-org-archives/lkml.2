@@ -1,99 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab2GBOvX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 10:51:23 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:46449 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183Ab2GBOvV (ORCPT
+	id S1754349Ab2GBOxq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 10:53:46 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:53161 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866Ab2GBOxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 10:51:21 -0400
-Date: Mon, 2 Jul 2012 15:51:15 +0100
-From: Vincent Sanders <vincent.sanders@collabora.co.uk>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Benjamin LaHaise <bcrl@kvack.org>, David Miller <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: AF_BUS socket address family
-Message-ID: <20120702145114.GD28593@mail.collabora.co.uk>
-References: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk>
- <20120629.153656.1141845894730637434.davem@davemloft.net>
- <20120629231236.GA28593@mail.collabora.co.uk>
- <20120629.161821.948325645333976311.davem@davemloft.net>
- <20120629234230.GA11480@kyllikki.org>
- <20120630001350.GS21968@kvack.org>
- <20120630135240.41dbaacf@pyramind.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120630135240.41dbaacf@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Jul 2012 10:53:44 -0400
+Message-ID: <1341240603.2086.1.camel@falcor>
+Subject: Re: [PATCH 0/4] Was: deferring __fput()
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        ". James Morris" <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Date: Mon, 02 Jul 2012 10:50:03 -0400
+In-Reply-To: <20120702133329.GH22927@ZenIV.linux.org.uk>
+References: <1341014197.2342.7.camel@falcor.watson.ibm.com>
+	 <20120630050238.GZ14083@ZenIV.linux.org.uk>
+	 <1341172202.2556.13.camel@falcor>
+	 <20120701205722.GD22927@ZenIV.linux.org.uk>
+	 <1341193591.2249.3.camel@falcor>
+	 <20120702034310.GE22927@ZenIV.linux.org.uk>
+	 <20120702051155.GF22927@ZenIV.linux.org.uk>
+	 <1341229790.2350.1.camel@falcor>
+	 <20120702120259.GG22927@ZenIV.linux.org.uk>
+	 <1341234091.2166.5.camel@falcor>
+	 <20120702133329.GH22927@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12070214-6148-0000-0000-00000742C764
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 30, 2012 at 01:52:40PM +0100, Alan Cox wrote:
-> On Fri, 29 Jun 2012 20:13:50 -0400
-> Benjamin LaHaise <bcrl@kvack.org> wrote:
-> 
-> > On Sat, Jun 30, 2012 at 12:42:30AM +0100, Vincent Sanders wrote:
-> > > The current users are suffering from the issues outlined in my
-> > > introductory mail all the time. These issues are caused by emulating an
-> > > IPC system over AF_UNIX in userspace.
-> > 
-> > Nothing in your introductory statements indicate how your requirements 
-> > can't be met through a hybrid socket + shared memory solution.  The IPC 
-> > facilities of the kernel are already quite rich, and sufficient for 
-> > building many kinds of complex systems.  What's so different about DBus' 
-> > requirements?
-> 
-> dbus wants to
-> - multicast
-> - pass file handles
-> - never lose an event
-> - be fast
-> - have a security model
-> 
-> The security model makes a shared memory hack impractical, the file
-> handle passing means at least some of it needs to be AF_UNIX. The event
-> loss handling/speed argue for putting it in kernel.
+On Mon, 2012-07-02 at 14:33 +0100, Al Viro wrote:
 
-Thankyou for making this point more eloquently than I had previously
-been able to.
+> Anyway, I've pushed the fix into vfs.git#master.  Should propagate
+> to git.kernel.org in a few (commit 2ae9632 is the branch head)
 
-> 
-> I'm not convinced AF_BUS entirely sorts this either. In particular the
-> failure case dbus currently has to handle for not losing events allows it
-> to identify who in a "group" has jammed the bus by not listening (eg by
-> locking up). This information appears to be lost in the AF_BUS case and
-> that's slightly catastrophic for error recovery.
-> 
+Thanks!  I'm now able to boot with the delayed __fput().
 
-The strategy the existing AF_UNIX D-Bus daemon implements is simply to
-have huge queues and thus rarely encounters the situation. When It
-does the bus daemon crafts an error message as a reply to the sender.
+Mimi
 
-The AF_BUS solution is more direct in that the sender gets either
-EAGAIN for a direct send or EPOLLOUT from poll. Whatever the response
-the sender can use this information to implement a userspace policy
-decision.
 
-Your feedback sparked a discussion and we have considered this in more
-depth and propose implementing a userspace policy of:
 
- - sending a message to the bus master and let it "deal" with the
-   blocking client.
-
- - The bus master might choose to isolate the offending client or
-    perhaps even cause a service restart etc. 
-
-   The bus master is a privileged client and has state information
-    about the bus allowing an optimal decision. Though we intend to
-    add a socket option to query the queue lengths so it can make a
-    better decisions.
-
-   Regardless this is all userspace policy for the D-Bus client
-    library / bus master daemon which I believe addresses David Miller's
-    concerns about such decisions being made in userspace.
-
---
-Best Regards 
-Vincent Sanders <vincent.sanders@collabora.co.uk>
