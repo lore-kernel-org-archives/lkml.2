@@ -1,54 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab2GBO47 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 10:56:59 -0400
-Received: from mga11.intel.com ([192.55.52.93]:39070 "EHLO mga11.intel.com"
+	id S1754906Ab2GBPBw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 11:01:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60526 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155Ab2GBO46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 10:56:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="187529316"
-Date: Mon, 2 Jul 2012 17:08:16 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Sundar Iyer <sundar.iyer@stericsson.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: tc3589x: Guard PM methods with CONFIG_PM_SLEEP
-Message-ID: <20120702150816.GN22065@sortiz-mobl>
-References: <1341220792.10295.1.camel@phoenix>
+	id S1752719Ab2GBPBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 11:01:49 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Nick Piggin <npiggin@kernel.dk>, LKML List <linux-kernel@vger.kernel.org>,
+        torsten.hilbrich@secunet.com, Richard Jones <rjones@redhat.com>,
+        stable@vger.kernel.org, Marcos Mello <marcosfrm@gmail.com>
+Subject: Re: [patch] block: fix infinite loop in __getblk_slow
+References: <x49r4t2rul5.fsf@segfault.boston.devel.redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 02 Jul 2012 11:01:18 -0400
+In-Reply-To: <x49r4t2rul5.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
+	message of "Tue, 26 Jun 2012 10:55:34 -0400")
+Message-ID: <x49lij2p5q9.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341220792.10295.1.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+Jens, ping?  It would be good to get this reviewed/merged quickly.
 
-On Mon, Jul 02, 2012 at 05:19:52PM +0800, Axel Lin wrote:
-> Guard PM methods with CONFIG_PM_SLEEP and get rid of some unneeded #ifdefs.
-> This fixes below build warnings:
-> 
->   CC      drivers/mfd/tc3589x.o
-> drivers/mfd/tc3589x.c:361:12: warning: 'tc3589x_suspend' defined but not used [-Wunused-function]
-> drivers/mfd/tc3589x.c:375:12: warning: 'tc3589x_resume' defined but not used [-Wunused-function]
-> 
-> SIMPLE_DEV_PM_OPS already defines constant dev_pm_ops, thus also fix
-> 'duplicate const' sparse warning.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/mfd/tc3589x.c |    9 +++------
->  1 file changed, 3 insertions(+), 6 deletions(-)
-Applied, thanks.
+Thanks!
+Jeff
 
-Cheers,
-Samuel.
+Jeff Moyer <jmoyer@redhat.com> writes:
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+> Hi,
+>
+> This commit:
+>
+> commit 080399aaaf3531f5b8761ec0ac30ff98891e8686
+> Author: Jeff Moyer <jmoyer@redhat.com>
+> Date:   Fri May 11 16:34:10 2012 +0200
+>
+>     block: don't mark buffers beyond end of disk as mapped
+>
+> exposed a bug in __getblk_slow that causes mount to hang as it loops
+> infinitely waiting for a buffer that lies beyond the end of the disk to
+> become uptodate.  The problem was initially reported by Torsten Hilbrich
+> here: https://lkml.org/lkml/2012/6/18/54, and also reported
+> independently here:
+> http://www.sysresccd.org/forums/viewtopic.php?f=13&t=4511, and then
+> Richard W.M. Jones and Marcos Mello noted a few separate bugzillas also
+> associated with the same issue.
+>
+> The main problem is here, in __getblk_slow:
+>
+>         for (;;) {
+>                 struct buffer_head * bh;
+>                 int ret;
+>
+>                 bh = __find_get_block(bdev, block, size);
+>                 if (bh)
+>                         return bh;
+>
+>                 ret = grow_buffers(bdev, block, size);
+>                 if (ret < 0)
+>                         return NULL;
+>                 if (ret == 0)
+>                         free_more_memory();
+>         }
+>
+> __find_get_block does not find the block, since it will not be marked as
+> mapped, and so grow_buffers is called to fill in the buffers for the
+> associated page.  I believe the for (;;) loop is there primarily to
+> retry in the case of memory pressure keeping grow_buffers from
+> succeeding.  However, we also continue to loop for other cases, like the
+> block lying beond the end of the disk.  So, the fix I came up with is to
+> only loop when grow_buffers fails due to memory allocation issues
+> (return value of 0).
+>
+> The attached patch was tested by myself, Torsten, and Rich, and was
+> found to resolve the problem in call cases.
+>
+> Comments, as always, are appreciated.
+>
+> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+> Reported-and-Tested-by: Torsten Hilbrich <torsten.hilbrich@secunet.com>
+> Tested-by: Richard W.M. Jones <rjones@redhat.com>
+> Cc: Stable <stable@vger.kernel.org>
+>
+> --
+> Stable Notes: this patch requires backport to 3.0, 3.2 and 3.3.
+>
+> diff --git a/fs/buffer.c b/fs/buffer.c
+> index 838a9cf..c7062c8 100644
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -1036,6 +1036,9 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
+>  static struct buffer_head *
+>  __getblk_slow(struct block_device *bdev, sector_t block, int size)
+>  {
+> +	int ret;
+> +	struct buffer_head *bh;
+> +
+>  	/* Size must be multiple of hard sectorsize */
+>  	if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
+>  			(size < 512 || size > PAGE_SIZE))) {
+> @@ -1048,20 +1051,21 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
+>  		return NULL;
+>  	}
+>  
+> -	for (;;) {
+> -		struct buffer_head * bh;
+> -		int ret;
+> +retry:
+> +	bh = __find_get_block(bdev, block, size);
+> +	if (bh)
+> +		return bh;
+>  
+> +	ret = grow_buffers(bdev, block, size);
+> +	if (ret == 0) {
+> +		free_more_memory();
+> +		goto retry;
+> +	} else if (ret > 0) {
+>  		bh = __find_get_block(bdev, block, size);
+>  		if (bh)
+>  			return bh;
+> -
+> -		ret = grow_buffers(bdev, block, size);
+> -		if (ret < 0)
+> -			return NULL;
+> -		if (ret == 0)
+> -			free_more_memory();
+>  	}
+> +	return NULL;
+>  }
+>  
+>  /*
