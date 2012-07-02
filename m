@@ -1,107 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428Ab2GBHTb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 03:19:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15949 "EHLO mx1.redhat.com"
+	id S932482Ab2GBHVJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 03:21:09 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:42798 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751871Ab2GBHTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 03:19:30 -0400
-Message-ID: <4FF14B56.9090906@redhat.com>
-Date: Mon, 02 Jul 2012 03:18:46 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S932139Ab2GBHVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 03:21:07 -0400
+Date: Mon, 02 Jul 2012 03:20:57 -0400
+Message-ID: <20120702032057.Horde.WOVSk5ir309P8UvZ8oq3rUA@imap.linux.ibm.com>
+From: mc@linux.vnet.ibm.com
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        stefanha@linux.vnet.ibm.com, linuxram@us.ibm.com,
+        Anthony Liguori <anthony@codemonkey.ws>, senwang@linux.vnet.ibm.com,
+        zwanp@cn.ibm.com,
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] virtio-scsi: hotplug suppot for virtio-scsi
+References: <1340175333-16803-1-git-send-email-mc@linux.vnet.ibm.com>
+ <4FF04F79.4090304@redhat.com>
+In-Reply-To: <4FF04F79.4090304@redhat.com>
+User-Agent: Internet Messaging Program (IMP) H4 (5.0.10)
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed; DelSp=Yes
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 40/40] autonuma: shrink the per-page page_autonuma struct
- size
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com> <1340888180-15355-41-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1340888180-15355-41-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+x-cbid: 12070207-3534-0000-0000-00000A05E143
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 08:56 AM, Andrea Arcangeli wrote:
->  From 32 to 12 bytes, so the AutoNUMA memory footprint is reduced to
-> 0.29% of RAM.
 
-Still not ideal, however once we get native THP migration working
-it could be practical to switch to a "have a bucket with N
-page_autonuma structures for every N*M pages" approach.
+Quoting Paolo Bonzini <pbonzini@redhat.com>:
 
-For example, we could have 4 struct page_autonuma pages, for 32
-memory pages. That would necessitate reintroducing the page pointer
-into struct page_autonuma, but it would reduce memory use by roughly
-a factor 8.
+> Il 20/06/2012 08:55, Cong Meng ha scritto:
+>> This patch implements the hotplug support for virtio-scsi.
+>> When there is a device attached/detached, the virtio-scsi driver will be
+>> signaled via event virtual queue and it will add/remove the scsi device
+>> in question automatically.
+>>
+>> Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
+>> Signed-off-by: Sen Wang <senwang@linux.vnet.ibm.com>
+>
+> Looks good (with one nit below), but please rebase over the four patches
+> at http://permalink.gmane.org/gmane.linux.kernel/1312496
+>
+>> ---
+>>  drivers/scsi/virtio_scsi.c  |  109  
+>> ++++++++++++++++++++++++++++++++++++++++++-
+>>  include/linux/virtio_scsi.h |    9 ++++
+>>  2 files changed, 116 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+>> index 1b38431..6dad625 100644
+>> --- a/drivers/scsi/virtio_scsi.c
+>> +++ b/drivers/scsi/virtio_scsi.c
+>> @@ -25,6 +25,7 @@
+>>  #include <scsi/scsi_cmnd.h>
+>>
+>>  #define VIRTIO_SCSI_MEMPOOL_SZ 64
+>> +#define VIRTIO_SCSI_EVENT_LEN 8
+>>
+>>  /* Command queue element */
+>>  struct virtio_scsi_cmd {
+>> @@ -43,9 +44,15 @@ struct virtio_scsi_cmd {
+>>  	} resp;
+>>  } ____cacheline_aligned_in_smp;
+>>
+>> +struct virtio_scsi_event_node {
+>> +	struct virtio_scsi *vscsi;
+>> +	struct virtio_scsi_event event;
+>> +	struct work_struct work;
+>> +};
+>> +
+>>  /* Driver instance state */
+>>  struct virtio_scsi {
+>> -	/* Protects ctrl_vq, req_vq and sg[] */
+>> +	/* Protects ctrl_vq, event_vq, req_vq and sg[] */
+>>  	spinlock_t vq_lock;
+>>
+>>  	struct virtio_device *vdev;
+>> @@ -53,6 +60,9 @@ struct virtio_scsi {
+>>  	struct virtqueue *event_vq;
+>>  	struct virtqueue *req_vq;
+>>
+>> +	/* Get some buffers reday for event vq */
+>> +	struct virtio_scsi_event_node event_list[VIRTIO_SCSI_EVENT_LEN];
+>> +
+>>  	/* For sglist construction when adding commands to the virtqueue.  */
+>>  	struct scatterlist sg[];
+>>  };
+>> @@ -184,9 +194,93 @@ static void virtscsi_ctrl_done(struct virtqueue *vq)
+>>  	virtscsi_vq_done(vq, virtscsi_complete_free);
+>>  };
+>>
+>> +static int virtscsi_kick_event(struct virtio_scsi *vscsi,
+>> +			       struct virtio_scsi_event_node *event_node)
+>> +{
+>> +	int ret;
+>> +	struct scatterlist sg;
+>> +	unsigned long flags;
+>> +
+>> +	sg_set_buf(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
+>> +
+>> +	spin_lock_irqsave(&vscsi->vq_lock, flags);
+>> +
+>> +	ret = virtqueue_add_buf(vscsi->event_vq, &sg, 0, 1, event_node,  
+>> GFP_ATOMIC);
+>> +	if (ret >= 0)
+>> +		virtqueue_kick(vscsi->event_vq);
+>> +
+>> +	spin_unlock_irqrestore(&vscsi->vq_lock, flags);
+>> +
+>> +	return ret;
+>> +}
+>> +
+>> +static int virtscsi_kick_event_all(struct virtio_scsi *vscsi)
+>> +{
+>> +	int i;
+>> +
+>> +	for (i = 0; i < VIRTIO_SCSI_EVENT_LEN; i++) {
+>> +		vscsi->event_list[i].vscsi = vscsi;
+>> +		virtscsi_kick_event(vscsi, &vscsi->event_list[i]);
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static void virtscsi_handle_transport_reset(struct virtio_scsi *vscsi,
+>> +                                            struct  
+>> virtio_scsi_event *event)
+>> +{
+>> +	struct scsi_device *sdev;
+>> +	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
+>> +	unsigned int target = event->lun[1];
+>> +	unsigned int lun = (event->lun[2] << 8) | event->lun[3];
+>> +
+>> +	switch (event->reason) {
+>> +	case VIRTIO_SCSI_EVT_RESET_RESCAN:
+>> +		scsi_add_device(shost, 0, target, lun);
+>> +		break;
+>> +	case VIRTIO_SCSI_EVT_RESET_REMOVED:
+>> +		sdev = scsi_device_lookup(shost, 0, target, lun);
+>> +		if (sdev) {
+>> +			scsi_remove_device(sdev);
+>> +			scsi_device_put(sdev);
+>> +		} else {
+>> +			pr_err("SCSI device %d 0 %d %d not found\n",
+>> +				shost->host_no, target, lun);
+>> +		}
+>> +		break;
+>> +	default:
+>> +		pr_info("Unsupport virtio scsi event reason %x\n", event->reason);
+>> +	}
+>> +}
+>> +
+>> +static void virtscsi_handle_event(struct work_struct *work)
+>> +{
+>> +	struct virtio_scsi_event_node *event_node =
+>> +		container_of(work, struct virtio_scsi_event_node, work);
+>> +	struct virtio_scsi *vscsi = event_node->vscsi;
+>> +	struct virtio_scsi_event *event = &event_node->event;
+>> +
+>> +	switch (event->event) {
+>> +	case VIRTIO_SCSI_T_TRANSPORT_RESET:
+>> +		virtscsi_handle_transport_reset(vscsi, event);
+>> +		break;
+>
+> Please handle VIRTIO_SCSI_T_NO_EVENT too here, and mask out
+> VIRTIO_SCSI_T_EVENTS_MISSED even if you do not handle it by triggering a
+> full rescan.
+>
+Paolo, what's the appropriate action to response VIRTIO_SCSI_T_NO_EVENT
+event? An error message?
 
-To get from a struct page to a struct page_autonuma, we would have
-to look at the bucket and check whether one of the page_autonuma
-structs points at us. If none do, we have to claim an available one.
-On migration, we would have to free our page_autonuma struct, which
-would make it available for other pages to use.
+I also have some confusion on VIRTIO_SCSI_T_EVENTS_MISSED:
+Should VIRTIO_SCSI_T_EVENTS_MISSED always be used with other event flag?
+For instanse:
+(VIRTIO_SCSI_T_EVENTS_MISSED|VIRTIO_SCSI_T_TRANSPORT_RESET) is used to report
+hotplug event dropped when a buffer available.
 
-This would complicate the code somewhat, and potentially slow down
-the migration of 4kB pages, but with 2MB pages things could continue
-exactly the way they work today.
+Thanks.
+Cong.
 
-Does this seem reasonably in any way?
+> Paolo
+>
+>> +	default:
+>> +		pr_err("Unsupport virtio scsi event %x\n", event->event);
+>
+>
+>> +	}
+>> +	virtscsi_kick_event(vscsi, event_node);
+>> +}
+>> +
+>> +static void virtscsi_complete_event(void *buf)
+>> +{
+>> +	struct virtio_scsi_event_node *event_node = buf;
+>> +
+>> +	INIT_WORK(&event_node->work, virtscsi_handle_event);
+>> +	schedule_work(&event_node->work);
+>> +}
+>> +
+>>  static void virtscsi_event_done(struct virtqueue *vq)
+>>  {
+>> -	virtscsi_vq_done(vq, virtscsi_complete_free);
+>> +	virtscsi_vq_done(vq, virtscsi_complete_event);
+>>  };
+>>
+>>  static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
+>> @@ -435,6 +529,11 @@ static int virtscsi_init(struct virtio_device *vdev,
+>>
+>>  	virtscsi_config_set(vdev, cdb_size, VIRTIO_SCSI_CDB_SIZE);
+>>  	virtscsi_config_set(vdev, sense_size, VIRTIO_SCSI_SENSE_SIZE);
+>> +
+>> +	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG)) {
+>> +		virtscsi_kick_event_all(vscsi);
+>> +	}
+>> +
+>>  	return 0;
+>>  }
+>>
+>> @@ -532,7 +631,13 @@ static struct virtio_device_id id_table[] = {
+>>  	{ 0 },
+>>  };
+>>
+>> +static unsigned int features[] = {
+>> +	VIRTIO_SCSI_F_HOTPLUG
+>> +};
+>> +
+>>  static struct virtio_driver virtio_scsi_driver = {
+>> +	.feature_table = features,
+>> +	.feature_table_size = ARRAY_SIZE(features),
+>>  	.driver.name = KBUILD_MODNAME,
+>>  	.driver.owner = THIS_MODULE,
+>>  	.id_table = id_table,
+>> diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
+>> index 8ddeafd..dc8d305 100644
+>> --- a/include/linux/virtio_scsi.h
+>> +++ b/include/linux/virtio_scsi.h
+>> @@ -69,6 +69,10 @@ struct virtio_scsi_config {
+>>  	u32 max_lun;
+>>  } __packed;
+>>
+>> +/* Feature Bits */
+>> +#define VIRTIO_SCSI_F_INOUT                    0
+>> +#define VIRTIO_SCSI_F_HOTPLUG                  1
+>> +
+>>  /* Response codes */
+>>  #define VIRTIO_SCSI_S_OK                       0
+>>  #define VIRTIO_SCSI_S_OVERRUN                  1
+>> @@ -105,6 +109,11 @@ struct virtio_scsi_config {
+>>  #define VIRTIO_SCSI_T_TRANSPORT_RESET          1
+>>  #define VIRTIO_SCSI_T_ASYNC_NOTIFY             2
+>>
+>> +/* Reasons of transport reset event */
+>> +#define VIRTIO_SCSI_EVT_RESET_HARD             0
+>> +#define VIRTIO_SCSI_EVT_RESET_RESCAN           1
+>> +#define VIRTIO_SCSI_EVT_RESET_REMOVED          2
+>> +
+>>  #define VIRTIO_SCSI_S_SIMPLE                   0
+>>  #define VIRTIO_SCSI_S_ORDERED                  1
+>>  #define VIRTIO_SCSI_S_HEAD                     2
+>>
+>
+> Thanks,
+>
+> Paolo
 
-> +++ b/include/linux/autonuma_list.h
-> @@ -0,0 +1,94 @@
-> +#ifndef __AUTONUMA_LIST_H
-> +#define __AUTONUMA_LIST_H
-> +
-> +#include<linux/types.h>
-> +#include<linux/kernel.h>
-
-> +typedef uint32_t autonuma_list_entry;
-> +#define AUTONUMA_LIST_MAX_PFN_OFFSET	(AUTONUMA_LIST_HEAD-3)
-> +#define AUTONUMA_LIST_POISON1		(AUTONUMA_LIST_HEAD-2)
-> +#define AUTONUMA_LIST_POISON2		(AUTONUMA_LIST_HEAD-1)
-> +#define AUTONUMA_LIST_HEAD		((uint32_t)UINT_MAX)
-> +
-> +struct autonuma_list_head {
-> +	autonuma_list_entry anl_next_pfn;
-> +	autonuma_list_entry anl_prev_pfn;
-> +};
-
-This stuff needs to be documented with a large comment, explaining
-what is done, what the limitations are, etc...
-
-Having that documentation in the commit message is not going to help
-somebody who is browsing the source code.
-
-I also wonder if it would make sense to have this available as a
-generic list type, not autonuma specific but an "item number list"
-include file with corresponding macros.
-
-It might be useful to have lists with item numbers, instead of
-prev & next pointers, in other places in the kernel.
-
-Besides, introducing this list type separately could make things
-easier to review.
 
 
--- 
-All rights reversed
