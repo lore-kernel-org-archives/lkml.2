@@ -1,111 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932806Ab2GBI7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 04:59:07 -0400
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:41464 "EHLO
-	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932655Ab2GBI7D (ORCPT
+	id S932814Ab2GBI7Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 04:59:24 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36271 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932675Ab2GBI7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 04:59:03 -0400
-Date: Mon, 2 Jul 2012 17:58:48 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: avi@redhat.com, mtosatti@redhat.com
-Cc: agraf@suse.de, paulus@samba.org, aarcange@redhat.com, kvm@vger.kernel.org,
-        kvm-ppc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        takuya.yoshikawa@gmail.com
-Subject: [PATCH 7/8] KVM: MMU: Push trace_kvm_age_page() into
- kvm_age_rmapp()
-Message-Id: <20120702175848.b8aa25f7.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <20120702175239.5fec56b3.yoshikawa.takuya@oss.ntt.co.jp>
-References: <20120702175239.5fec56b3.yoshikawa.takuya@oss.ntt.co.jp>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 2 Jul 2012 04:59:23 -0400
+Date: Mon, 2 Jul 2012 09:59:11 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>
+Subject: Re: [PATCH 2/2] remoteproc: remove the now-redundant kref
+Message-ID: <20120702085911.GA16639@n2100.arm.linux.org.uk>
+References: <1338017791-9442-1-git-send-email-ohad@wizery.com> <1338017791-9442-2-git-send-email-ohad@wizery.com> <4FC5DD74.4030202@codeaurora.org> <CAK=WgbbwaMAnTGcivC9ZR8K-MtTqHAV3+BgUmk8WjCaayifJxw@mail.gmail.com> <4FCD272E.1020300@codeaurora.org> <CAK=WgbZu1hYOd27r259b2v48VFYeOZ4UE5sD2awZDxgBgjAsXw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAK=WgbZu1hYOd27r259b2v48VFYeOZ4UE5sD2awZDxgBgjAsXw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This restricts the tracing to page aging and makes it possible to
-optimize kvm_handle_hva_range() further in the following patch.
+On Mon, Jul 02, 2012 at 11:52:27AM +0300, Ohad Ben-Cohen wrote:
+> Simplify the unregister/free interfaces, and make them easier
+> to understand and use, by moving to a symmetric and consistent
+> alloc() -> register() -> unregister() -> free() flow.
 
-Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
----
- arch/x86/kvm/mmu.c |   23 ++++++++++-------------
- 1 files changed, 10 insertions(+), 13 deletions(-)
+The naming in the driver model is:
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index bf8d50e..3082199 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1193,8 +1193,7 @@ static int kvm_handle_hva_range(struct kvm *kvm,
- 					       unsigned long data))
- {
- 	int j;
--	int ret;
--	int retval = 0;
-+	int ret = 0;
- 	struct kvm_memslots *slots;
- 	struct kvm_memory_slot *memslot;
- 
-@@ -1217,8 +1216,6 @@ static int kvm_handle_hva_range(struct kvm *kvm,
- 		gfn_end = hva_to_gfn_memslot(hva_end + PAGE_SIZE - 1, memslot);
- 
- 		for (; gfn < gfn_end; ++gfn) {
--			ret = 0;
--
- 			for (j = PT_PAGE_TABLE_LEVEL;
- 			     j < PT_PAGE_TABLE_LEVEL + KVM_NR_PAGE_SIZES; ++j) {
- 				unsigned long *rmapp;
-@@ -1226,14 +1223,10 @@ static int kvm_handle_hva_range(struct kvm *kvm,
- 				rmapp = __gfn_to_rmap(gfn, j, memslot);
- 				ret |= handler(kvm, rmapp, memslot, data);
- 			}
--			trace_kvm_age_page(memslot->userspace_addr +
--					(gfn - memslot->base_gfn) * PAGE_SIZE,
--					memslot, ret);
--			retval |= ret;
- 		}
- 	}
- 
--	return retval;
-+	return ret;
- }
- 
- static int kvm_handle_hva(struct kvm *kvm, unsigned long hva,
-@@ -1275,8 +1268,10 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 	 * This has some overhead, but not as much as the cost of swapping
- 	 * out actively used pages or breaking up actively used hugepages.
- 	 */
--	if (!shadow_accessed_mask)
--		return kvm_unmap_rmapp(kvm, rmapp, slot, data);
-+	if (!shadow_accessed_mask) {
-+		young = kvm_unmap_rmapp(kvm, rmapp, slot, data);
-+		goto out;
-+	}
- 
- 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;
- 	     sptep = rmap_get_next(&iter)) {
-@@ -1288,7 +1283,9 @@ static int kvm_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
- 				 (unsigned long *)sptep);
- 		}
- 	}
--
-+out:
-+	/* @data has hva passed to kvm_age_hva(). */
-+	trace_kvm_age_page(data, slot, young);
- 	return young;
- }
- 
-@@ -1337,7 +1334,7 @@ static void rmap_recycle(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
- 
- int kvm_age_hva(struct kvm *kvm, unsigned long hva)
- {
--	return kvm_handle_hva(kvm, hva, 0, kvm_age_rmapp);
-+	return kvm_handle_hva(kvm, hva, hva, kvm_age_rmapp);
- }
- 
- int kvm_test_age_hva(struct kvm *kvm, unsigned long hva)
--- 
-1.7.5.4
+alloc() -> add() -> del() -> put()
 
+where alloc() is an allocation + initialization, and
+
+register() -> unregister()
+
+where register() is initialization + add() and
+unregister() is del() + put().
