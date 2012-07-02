@@ -1,262 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab2GBADI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jul 2012 20:03:08 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:59808 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047Ab2GBADB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jul 2012 20:03:01 -0400
-X-AuditID: cbfee61b-b7f776d000002f3f-21-4ff0e533e279
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: gregkh@linuxfoundation.org
-Cc: thomas.abraham@linaro.org, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, sameo@linux.intel.com,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [RESEND PATCH 1/2] mfd: add irq domain support for max8997 interrupts
-Date: Mon, 02 Jul 2012 09:02:55 +0900
-Message-id: <1341187375-16333-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.7.0.4
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFJMWRmVeSWpSXmKPExsVy+t9jQV3jpx/8Dc5c5rC4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZ/z4eZi34aFnx4vsN1gbGD/pdjJwcEgImEqdf9jFB2GISF+6t
-	ZwOxhQSmM0rMf1LXxcgFZC9lkliw+BsLSIJNQEti/4sbYEUiAnIST27/YQYpYhb4zCgx+dw6
-	sEnCAn4S77p/MILYLAKqEutmHQOzeQVcJTZv2s8OsU1BonXZIfYJjNwLGBlWMYqmFiQXFCel
-	5xrpFSfmFpfmpesl5+duYgT78Jn0DsZVDRaHGAU4GJV4eDUeffAXYk0sK67MPcQowcGsJML7
-	9Ph7fyHelMTKqtSi/Pii0pzU4kOM0hwsSuK8TdYX/IUE0hNLUrNTUwtSi2CyTBycUg2MiY/n
-	ts8NWm57PyN7n93Zav9ppxau894pzKzPzl74617163c37hj88nlr9TLbRuvPzED+Tac2vY4J
-	WyzsY/VtkluHrrDT1kyPrkJDZtvHaadyFik1hW6fubx87qQAA1fxafvsQxLO3JC7KH/u8B2F
-	XblH2/kyUt4tMTF5bpqw/+n0qRcNZqbGKbEUZyQaajEXFScCACSvp2zdAQAA
-X-TM-AS-MML: No
+	id S1751981Ab2GBALK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jul 2012 20:11:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58342 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751095Ab2GBALH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jul 2012 20:11:07 -0400
+Date: Mon, 2 Jul 2012 10:10:57 +1000
+From: NeilBrown <neilb@suse.de>
+To: Colin Cross <ccross@android.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Andrew Boie <andrew.p.boie@intel.com>, arve@android.com,
+        rebecca@android.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] bcb: Android bootloader control block driver
+Message-ID: <20120702101057.2a8dd6a6@notabene.brown>
+In-Reply-To: <CAMbhsRRUs1tHQ+DfWzhKE6M47+Rqu0uB4hQgX7d7ZGzaZi9uyw@mail.gmail.com>
+References: <1340998590-23042-1-git-send-email-andrew.p.boie@intel.com>
+	<20120630032333.GB3972@kroah.com>
+	<CAMbhsRSYL3oE_mbdjyNbV453DddPNUyJBU2eLJhUNaASF1+MtA@mail.gmail.com>
+	<20120630041928.GA1816@kroah.com>
+	<CAMbhsRRUs1tHQ+DfWzhKE6M47+Rqu0uB4hQgX7d7ZGzaZi9uyw@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/zvViaEiHQ4TqlyRciy.uA2y"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Abraham <thomas.abraham@linaro.org>
+--Sig_/zvViaEiHQ4TqlyRciy.uA2y
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Add irq domain support for max8997 interrupts. The reverse mapping method
-used is linear mapping since the sub-drivers of max8997 such as regulator
-and charger drivers can use the max8997 irq_domain to get the linux irq
-number for max8997 interrupts. All uses of irq_base in platform data and
-max8997 driver private data are removed.
+On Fri, 29 Jun 2012 21:37:36 -0700 Colin Cross <ccross@android.com> wrote:
 
-Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
-Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
-	[Fix two bug which set max8997->irq_domain and correct wrong parameter]
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/arm/mach-exynos/mach-nuri.c    |    4 --
- arch/arm/mach-exynos/mach-origen.c  |    1 -
- drivers/mfd/Kconfig                 |    1 +
- drivers/mfd/max8997-irq.c           |   62 +++++++++++++++++++++--------------
- drivers/mfd/max8997.c               |    1 -
- include/linux/mfd/max8997-private.h |    4 ++-
- include/linux/mfd/max8997.h         |    1 -
- 7 files changed, 41 insertions(+), 33 deletions(-)
+> What's the point of the existing syscall option if it doesn't work on
+> all platforms, or at least all platforms that want to support it?  It
+> doesn't make sense to me to use REBOOT2 on some SoCs because they
+> happen to use something that userspace cannot access, but use direct
+> access from userspace and a different reboot syscall option on other
+> SoCs.
+>=20
+> >> <snip>
+> >>
+> >> >>
+> >> >> diff --git a/drivers/staging/android/Kconfig b/drivers/staging/andr=
+oid/Kconfig
+> >> >> index 9a99238..c30fd20 100644
+> >> >> --- a/drivers/staging/android/Kconfig
+> >> >> +++ b/drivers/staging/android/Kconfig
+> >> >> @@ -78,6 +78,17 @@ config ANDROID_INTF_ALARM_DEV
+> >> >> =A0 =A0 =A0 =A0 elapsed realtime, and a non-wakeup alarm on the mon=
+otonic clock.
+> >> >> =A0 =A0 =A0 =A0 Also exports the alarm interface to user-space.
+> >> >>
+> >> >> +config BOOTLOADER_CONTROL
+> >> >> + =A0 =A0 tristate "Bootloader Control Block module"
+> >> >> + =A0 =A0 default n
+> >> >> + =A0 =A0 help
+> >> >> + =A0 =A0 =A0 This driver installs a reboot hook, such that if rebo=
+ot() is invoked
+> >> >> + =A0 =A0 =A0 with a string argument NNN, "bootonce-NNN" is copied =
+to the command
+> >> >> + =A0 =A0 =A0 field in the Bootloader Control Block on the /misc pa=
+rtition, to be
+> >> >> + =A0 =A0 =A0 read by the bootloader. If the string matches one of =
+the boot labels
+> >> >> + =A0 =A0 =A0 defined in its configuration, it will boot once into =
+that label. The
+> >> >> + =A0 =A0 =A0 device and partition number are specified on the kern=
+el command line.
+> >> >> +
+> >> >> =A0endif # if ANDROID
+> >> >>
+> >> >> =A0endmenu
+> >>
+> >> Most of this driver is not unique to Android.
+> >
+> > Do any other systems use it?
+>=20
+> None that I'm aware of, but REBOOT2 existed long before Android, so I
+> assume something must have used it.
 
-diff --git a/arch/arm/mach-exynos/mach-nuri.c b/arch/arm/mach-exynos/mach-nuri.c
-index 656f8fc..acb58f5 100644
---- a/arch/arm/mach-exynos/mach-nuri.c
-+++ b/arch/arm/mach-exynos/mach-nuri.c
-@@ -1067,12 +1067,8 @@ static struct platform_device nuri_max8903_device = {
- static void __init nuri_power_init(void)
- {
- 	int gpio;
--	int irq_base = IRQ_GPIO_END + 1;
- 	int ta_en = 0;
- 
--	nuri_max8997_pdata.irq_base = irq_base;
--	irq_base += MAX8997_IRQ_NR;
--
- 	gpio = EXYNOS4_GPX0(7);
- 	gpio_request(gpio, "AP_PMIC_IRQ");
- 	s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(0xf));
-diff --git a/arch/arm/mach-exynos/mach-origen.c b/arch/arm/mach-exynos/mach-origen.c
-index f5572be..3ce403d 100644
---- a/arch/arm/mach-exynos/mach-origen.c
-+++ b/arch/arm/mach-exynos/mach-origen.c
-@@ -425,7 +425,6 @@ static struct max8997_platform_data __initdata origen_max8997_pdata = {
- 	.buck1_gpiodvs	= false,
- 	.buck2_gpiodvs	= false,
- 	.buck5_gpiodvs	= false,
--	.irq_base	= IRQ_GPIO_END + 1,
- 
- 	.ignore_gpiodvs_side_effect = true,
- 	.buck125_default_idx = 0x0,
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index e129c82..295941b 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -449,6 +449,7 @@ config MFD_MAX8997
- 	bool "Maxim Semiconductor MAX8997/8966 PMIC Support"
- 	depends on I2C=y && GENERIC_HARDIRQS
- 	select MFD_CORE
-+	select IRQ_DOMAIN
- 	help
- 	  Say yes here to support for Maxim Semiconductor MAX8997/8966.
- 	  This is a Power Management IC with RTC, Flash, Fuel Gauge, Haptic,
-diff --git a/drivers/mfd/max8997-irq.c b/drivers/mfd/max8997-irq.c
-index 09274cf..43fa614 100644
---- a/drivers/mfd/max8997-irq.c
-+++ b/drivers/mfd/max8997-irq.c
-@@ -142,7 +142,8 @@ static void max8997_irq_sync_unlock(struct irq_data *data)
- static const inline struct max8997_irq_data *
- irq_to_max8997_irq(struct max8997_dev *max8997, int irq)
- {
--	return &max8997_irqs[irq - max8997->irq_base];
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	return &max8997_irqs[data->hwirq];
- }
- 
- static void max8997_irq_mask(struct irq_data *data)
-@@ -182,7 +183,7 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
- 	u8 irq_reg[MAX8997_IRQ_GROUP_NR] = {};
- 	u8 irq_src;
- 	int ret;
--	int i;
-+	int i, cur_irq;
- 
- 	ret = max8997_read_reg(max8997->i2c, MAX8997_REG_INTSRC, &irq_src);
- 	if (ret < 0) {
-@@ -269,8 +270,11 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
- 
- 	/* Report */
- 	for (i = 0; i < MAX8997_IRQ_NR; i++) {
--		if (irq_reg[max8997_irqs[i].group] & max8997_irqs[i].mask)
--			handle_nested_irq(max8997->irq_base + i);
-+		if (irq_reg[max8997_irqs[i].group] & max8997_irqs[i].mask) {
-+			cur_irq = irq_find_mapping(max8997->irq_domain, i);
-+			if (cur_irq)
-+				handle_nested_irq(cur_irq);
-+		}
- 	}
- 
- 	return IRQ_HANDLED;
-@@ -278,26 +282,40 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
- 
- int max8997_irq_resume(struct max8997_dev *max8997)
- {
--	if (max8997->irq && max8997->irq_base)
--		max8997_irq_thread(max8997->irq_base, max8997);
-+	if (max8997->irq && max8997->irq_domain)
-+		max8997_irq_thread(0, max8997);
-+	return 0;
-+}
-+
-+static int max8997_irq_domain_map(struct irq_domain *d, unsigned int irq,
-+					irq_hw_number_t hw)
-+{
-+	struct max8997_dev *max8997 = d->host_data;
-+
-+	irq_set_chip_data(irq, max8997);
-+	irq_set_chip_and_handler(irq, &max8997_irq_chip, handle_edge_irq);
-+	irq_set_nested_thread(irq, 1);
-+#ifdef CONFIG_ARM
-+	set_irq_flags(irq, IRQF_VALID);
-+#else
-+	irq_set_noprobe(irq);
-+#endif
- 	return 0;
- }
- 
-+static struct irq_domain_ops max8997_irq_domain_ops = {
-+	.map = max8997_irq_domain_map,
-+};
-+
- int max8997_irq_init(struct max8997_dev *max8997)
- {
-+	struct irq_domain *domain;
- 	int i;
--	int cur_irq;
- 	int ret;
- 	u8 val;
- 
- 	if (!max8997->irq) {
- 		dev_warn(max8997->dev, "No interrupt specified.\n");
--		max8997->irq_base = 0;
--		return 0;
--	}
--
--	if (!max8997->irq_base) {
--		dev_err(max8997->dev, "No interrupt base specified.\n");
- 		return 0;
- 	}
- 
-@@ -327,19 +345,13 @@ int max8997_irq_init(struct max8997_dev *max8997)
- 					true : false;
- 	}
- 
--	/* Register with genirq */
--	for (i = 0; i < MAX8997_IRQ_NR; i++) {
--		cur_irq = i + max8997->irq_base;
--		irq_set_chip_data(cur_irq, max8997);
--		irq_set_chip_and_handler(cur_irq, &max8997_irq_chip,
--				handle_edge_irq);
--		irq_set_nested_thread(cur_irq, 1);
--#ifdef CONFIG_ARM
--		set_irq_flags(cur_irq, IRQF_VALID);
--#else
--		irq_set_noprobe(cur_irq);
--#endif
-+	domain = irq_domain_add_linear(NULL, MAX8997_IRQ_NR,
-+					&max8997_irq_domain_ops, max8997);
-+	if (!domain) {
-+		dev_err(max8997->dev, "could not create irq domain\n");
-+		return -ENODEV;
- 	}
-+	max8997->irq_domain = domain;
- 
- 	ret = request_threaded_irq(max8997->irq, NULL, max8997_irq_thread,
- 			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
-index cb83a7a..20ecad3 100644
---- a/drivers/mfd/max8997.c
-+++ b/drivers/mfd/max8997.c
-@@ -143,7 +143,6 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
- 	if (!pdata)
- 		goto err;
- 
--	max8997->irq_base = pdata->irq_base;
- 	max8997->ono = pdata->ono;
- 
- 	mutex_init(&max8997->iolock);
-diff --git a/include/linux/mfd/max8997-private.h b/include/linux/mfd/max8997-private.h
-index 3f4deb6..830152c 100644
---- a/include/linux/mfd/max8997-private.h
-+++ b/include/linux/mfd/max8997-private.h
-@@ -23,6 +23,8 @@
- #define __LINUX_MFD_MAX8997_PRIV_H
- 
- #include <linux/i2c.h>
-+#include <linux/export.h>
-+#include <linux/irqdomain.h>
- 
- #define MAX8997_REG_INVALID	(0xff)
- 
-@@ -325,7 +327,7 @@ struct max8997_dev {
- 
- 	int irq;
- 	int ono;
--	int irq_base;
-+	struct irq_domain *irq_domain;
- 	struct mutex irqlock;
- 	int irq_masks_cur[MAX8997_IRQ_GROUP_NR];
- 	int irq_masks_cache[MAX8997_IRQ_GROUP_NR];
-diff --git a/include/linux/mfd/max8997.h b/include/linux/mfd/max8997.h
-index b40c08c..328d8e2 100644
---- a/include/linux/mfd/max8997.h
-+++ b/include/linux/mfd/max8997.h
-@@ -181,7 +181,6 @@ struct max8997_led_platform_data {
- 
- struct max8997_platform_data {
- 	/* IRQ */
--	int irq_base;
- 	int ono;
- 	int wakeup;
- 
--- 
-1.7.0.4
+Dangerous that - making assumptions.
 
+I've just spent a while hunting though the code and the history.
+The LINUX_REBOOT_CMD_RESTART2 option to sys_reboot - which is the only one
+that uses the the 'arg' option - was added in 2.1.30.  This was the same ti=
+me
+that reboot notifiers were added and there seem to be steps towards a more
+generic "machine_restart" call.
+No code actually *used* the arg.
+
+Looking through current code is rather time consuming as you have to follow
+several levels of indirection to find code that might actually use the arg,
+but I spend a while looking, trying to cover samples for all archs and driv=
+er
+classes (there are lots of watchdogs -  I didn't check them all).
+I only found *1* instance of code which actually used the arg.
+This is arch/alpha/kernel/process.c which tests if the arg is NULL, and
+selects between a "cold bootstrap" and a "warm bootstrap".
+
+I think we would be well served by a patch that just removes it.  Or at
+least, that ignores the value of the arg and just passes NULL or (void*)1.
+And definitely don't pass it to the reboot notifiers - no code uses it ther=
+e.
+
+I can certainly see value in having a standard interface to say "the next
+reboot should boot 'foo' rather than the default".  I don't think there is
+any real need for the kernel to provide that interface.
+
+I would suggest that you create
+    /sbin/next-boot-image
+(or some better name), which gets a different program installed depending on
+what boot loader is in use.  Then your libcutils can just
+
+  system("/sbin/next-boot-image foo")
+  reboot(LINUX_REBOOT_CMD_RESTART);
+
+and work on all platforms.
+(Or use a loadable module, or a binder RPC to some service, or dbus or smoke
+signals or whatever).
+
+NeilBrown
+
+
+--Sig_/zvViaEiHQ4TqlyRciy.uA2y
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBT/DnETnsnt1WYoG5AQKokg//WGBqzT71UGjQTvKn0pMrBcY7IJ6XCvZh
+ujimBGRcs/Qyck4fx0eCTUW4zrDbDEZn0z835u1SVWbdLpRQmCbTcR4chvcqOcbX
+sggv52+JDYPBeJjlBx6NDBw+5hEyebRtyYSBlSt1cDvSwaCCvdZj5n6GqCPDWTTT
+6n/QR6GEdVv0Eat2sGiMhiLezDGPCEY1OLvWVVRb60In+R6tN87mxJuaDh8Z9lXd
+2n/03poQ+aI+TodCBZv+V89a1EVCIy+AdOzLk1GcmNdoXGQLYjFqbTDfGxOjjj64
+ea8KcsY5V+9/jIyflNzSsUmZxkcWDcPXlr5KRBKSvxo5yX3Asuu8tCNbnf4sM82y
++U67SiNee5MvK6iKfzCHQaPZsFsJNEfWwKiouvRLZzN597yZlGaVfnteZTIM4ME3
+r5EvCgnTMAQXizz83ku/cMJq3OsSJuN6b3xNay6xsRraN3Z8uB0v43sV7YzGbOO9
+r2htlaECDzsN8kDIszJon54rz4D9URKSCdkx0eYdfRnyRpXhiJ/yWEEJrO9sF3+o
+Q9vIBs9V2qSthRgBtge2XtfiDCU91K4Iea2vBbDii2qsyrLTUCik/ANUmWMNUZeW
+/RfdjncD4n4dV+Mr7+Vax8XCjBWs1NtgKofHiGRJ0Pv2pZE8PWYOP59wcfOg0AEL
+dPgRmn2AcxE=
+=2fET
+-----END PGP SIGNATURE-----
+
+--Sig_/zvViaEiHQ4TqlyRciy.uA2y--
