@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab2GBOoF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 10:44:05 -0400
-Received: from mga01.intel.com ([192.55.52.88]:44453 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155Ab2GBOoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 10:44:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="187524543"
-Date: Mon, 2 Jul 2012 16:55:00 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Michael Hennerich <michael.hennerich@analog.com>
-Subject: Re: [PATCH] mfd: adp5520: Guard PM methods with CONFIG_PM_SLEEP
-Message-ID: <20120702145500.GL22065@sortiz-mobl>
-References: <1341219232.5864.1.camel@phoenix>
+	id S1754318Ab2GBOos (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 10:44:48 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:53944 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753150Ab2GBOor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 10:44:47 -0400
+Date: Mon, 2 Jul 2012 10:44:44 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: Re: ext4 blocks up
+Message-ID: <20120702144444.GA18074@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Artem Bityutskiy <dedekind1@gmail.com>,
+	Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+	Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+	Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+References: <1341231316.2979.11.camel@sauron.fi.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1341219232.5864.1.camel@phoenix>
+In-Reply-To: <1341231316.2979.11.camel@sauron.fi.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
-
-On Mon, Jul 02, 2012 at 04:53:52PM +0800, Axel Lin wrote:
-> This fixes below build warnings:
->   CC      drivers/mfd/adp5520.o
-> drivers/mfd/adp5520.c:324:12: warning: 'adp5520_suspend' defined but not used [-Wunused-function]
-> drivers/mfd/adp5520.c:333:12: warning: 'adp5520_resume' defined but not used [-Wunused-function]
+On Mon, Jul 02, 2012 at 03:15:16PM +0300, Artem Bityutskiy wrote:
+> Hi Ted,
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/mfd/adp5520.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-Thanks, patch applied as well.
+> first of all I want to remind you about the sync_supers changes which
+> you said you'd make sure get properly reviewed and tested for v3.5. But
+> I am getting worried about missing also 3.5.
+> 
+> I wanted to re-send the patch-set, but I cannot test it because ext4
+> blocks when I test it with xfstests.
 
-Cheers,
-Samuel.
+Sorry, I've just been totally swamped this past couple of monthes;
+work deadlines, plus a lot of other things that have been just keeping
+me totally overloaded.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Can you tell me *which* xfstest this was blocking on?  I generally run
+xfstests under KVM, on the console, which is nice because the xfstests
+output gets interleaved with any kernel oops/softlock up messages.
+
+Also, for the sort of changes you are doing using the check -g quick
+is probably good enough, that will get you unblocked.
+
+I don't recall anything going wrong with a -g auto run with a standard
+4k block size, but I'll give it a try on my end and see what I get.
+
+   	          	       	   	     	      - Ted
