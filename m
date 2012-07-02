@@ -1,43 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab2GBQ2I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 12:28:08 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:57577 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753153Ab2GBQ2G (ORCPT
+	id S1755866Ab2GBQpI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 12:45:08 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45220 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519Ab2GBQpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 12:28:06 -0400
-Message-ID: <4FF1CBF2.8060303@xenotime.net>
-Date: Mon, 02 Jul 2012 09:27:30 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 2 Jul 2012 12:45:06 -0400
+Message-ID: <4FF1D00D.6040402@wwwdotorg.org>
+Date: Mon, 02 Jul 2012 10:45:01 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-Subject: Re: linux-next: Tree for July 2 (crypto/hifn_795x)
-References: <20120702172334.2618cae84cc57b4ec5a63ed7@canb.auug.org.au>
-In-Reply-To: <20120702172334.2618cae84cc57b4ec5a63ed7@canb.auug.org.au>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "tiwai@suse.de" <tiwai@suse.de>, "perex@perex.cz" <perex@perex.cz>,
+        Stephen Warren <swarren@nvidia.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH] ASoC: tegra: use dmaengine based dma driver
+References: <1340969673-7776-1-git-send-email-ldewangan@nvidia.com> <1340969673-7776-2-git-send-email-ldewangan@nvidia.com> <4FEDDF89.1050907@wwwdotorg.org> <4FEF166D.2010705@nvidia.com> <4FF15B16.9020903@nvidia.com>
+In-Reply-To: <4FF15B16.9020903@nvidia.com>
+X-Enigmail-Version: 1.5pre
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2012 12:23 AM, Stephen Rothwell wrote:
-
-> Hi all,
+On 07/02/2012 02:25 AM, Laxman Dewangan wrote:
+> On Saturday 30 June 2012 08:38 PM, Laxman Dewangan wrote:
+>> On Friday 29 June 2012 10:32 PM, Stephen Warren wrote:
+>>> On 06/29/2012 05:34 AM, Laxman Dewangan wrote:
+>>>> Use the dmaengine based Tegra APB DMA driver for
+>>>> data transfer between SPI fifo and memory in
+>>>> place of legacy Tegra APB DMA.
+>>>>
+>>>> Because generic soc-dmaengine-pcm uses the DMAs API
+>>>> based on dmaengine, using the exported APIs provided
+>>>> by this generic driver.
+>>>>
+>>>> The new driver is selected if legacy driver is not
+>>>> selected and new dma driver is enabled through config
+>>>> file.
+>>>
+>>> This works just fine with the existing non-dmaengine DMA driver enabled.
+>>>
+>>> However, I can't get it to work with dmaengine:
+...
+>> I think I should send that patches so that you can test it by:
+>> - Taking already applied dma driver change in linux-next.
+>> - Apply my new patches which I am going to send.
+>>
+>> And do local change in the tegra_defconfig to disable SYSTEM_DMA and
+>> enable dmaengine based dma driver.
+>
+> The new dma patches are:
 > 
-> Changes since 20120629:
-> 
+>  dma: tegra: fix residual calculation for cyclic case
+>  dma: tegra: rename driver and compatible to match with dts
+> ...
 
+OK, with those two patches plus this one, everything works on
+Cardhu/Tegra30 using dmaengine. However, on Tegra20 DMA doesn't appear
+to work. No audio is heard, and aplay eventually exits with the
+following error message:
 
-on i386:
+aplay: pcm_write:1603: write error: Input/output error
 
+I believe this means that the DMA simply isn't operating.
 
-ERROR: "__divdi3" [drivers/crypto/hifn_795x.ko] undefined!
-
-
--- 
-~Randy
+I'll assume this is a Tegra20-specific issue in the dmaengine driver
+itself, and hence not a problem with this patch, so I'll ack this patch.
