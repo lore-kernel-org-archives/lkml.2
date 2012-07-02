@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083Ab2GBPwx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 11:52:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18864 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751028Ab2GBPww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 11:52:52 -0400
-Message-ID: <4FF1C3CE.3020404@redhat.com>
-Date: Mon, 02 Jul 2012 18:52:46 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1755747Ab2GBP4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 11:56:12 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:36548 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab2GBP4K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 11:56:10 -0400
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-CC: mst@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jan.kiszka@siemens.com, cornelia.huck@de.ibm.com
-Subject: Re: [PATCH v3 0/3] kvm: KVM_IRQFD cleanup, docs, sanitize flags
-References: <20120629154940.30535.17132.stgit@bling.home> <1341244311.1207.449.camel@bling.home>
-In-Reply-To: <1341244311.1207.449.camel@bling.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAK5ve-JaNGoWuCTP5ddMEEfpA3ucWNL_ayj5ULU3+++5a02pWw@mail.gmail.com>
+References: <1341218420-22377-1-git-send-email-devendra.aaru@gmail.com>
+	<CAK5ve-JaNGoWuCTP5ddMEEfpA3ucWNL_ayj5ULU3+++5a02pWw@mail.gmail.com>
+Date: Mon, 2 Jul 2012 21:26:09 +0530
+Message-ID: <CAHdPZaNDW+XCrf9Mse-N3jtgtrrx9Z0+W1YZX8nPETa7ZZFB1w@mail.gmail.com>
+Subject: Re: [PATCH] leds-mc13783: set platform data to NULL at mc13783_led_remove
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2012 06:51 PM, Alex Williamson wrote:
-> On Fri, 2012-06-29 at 09:56 -0600, Alex Williamson wrote:
->> Before we start fiddling with what we can and can't add to KVM_IRQFD
->> we need to figure out if anyone has been sloppy in their use of the
->> ioctl flags.  This series has a minor cleanup to pass the struct
->> kvm_irqfd to seup functions rather than individual parameters, making
->> it more consistent with ioeventfd, adds API documentation for this
->> ioctl, and sanitizes the flags.  If anyone screams, we may have to
->> revert this last patch.  Thanks,
-> 
-> Avi, what do you think about trying to get this in for 3.5 to test
-> whether we break anyone?  Then we can aim for 3.6 for level irqfd &
-> eoifd support.
+On Mon, Jul 2, 2012 at 7:23 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
+> On Mon, Jul 2, 2012 at 4:40 PM, Devendra Naga <devendra.aaru@gmail.com> wrote:
+>> the platform_set_drvdata (pdev, NULL) to be set at the remove of the
+>> driver, as we have set the platform data to led at probe.
+>>
+>> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+>
+> Nice catch. I applied this patch in my for-next branch.
+>
+> But I also find the same issue in other LED drivers, are you
+> interested in fixing them?
+>
+Yes, i will do those.
+I will send out changes...
+> Thanks,
+> -Bryan
+>
 
-Makes sense.  Marcelo?
-
-
--- 
-error compiling committee.c: too many arguments to function
-
-
+Thanks
+>> ---
+>>  drivers/leds/leds-mc13783.c |    1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/leds/leds-mc13783.c b/drivers/leds/leds-mc13783.c
+>> index 4cc6a2e..6515c11 100644
+>> --- a/drivers/leds/leds-mc13783.c
+>> +++ b/drivers/leds/leds-mc13783.c
+>> @@ -372,6 +372,7 @@ static int __devexit mc13783_led_remove(struct platform_device *pdev)
+>>
+>>         mc13xxx_unlock(dev);
+>>
+>> +       platform_set_drvdata(pdev, NULL);
+>>         kfree(led);
+>>         return 0;
+>>  }
+>> --
+>> 1.7.9.5
+>>
+>
+>
+>
+> --
+> Bryan Wu <bryan.wu@canonical.com>
+> Kernel Developer    +86.186-168-78255 Mobile
+> Canonical Ltd.      www.canonical.com
+> Ubuntu - Linux for human beings | www.ubuntu.com
