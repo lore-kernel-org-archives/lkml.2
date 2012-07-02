@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231Ab2GBNDx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 09:03:53 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19515 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057Ab2GBNDv (ORCPT
+	id S1752606Ab2GBNE1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 09:04:27 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18042 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab2GBNE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 09:03:51 -0400
+	Mon, 2 Jul 2012 09:04:26 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 02 Jul 2012 06:03:41 -0700
+	by hqnvupgp08.nvidia.com on Mon, 02 Jul 2012 06:03:37 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <tiwai@suse.de>, <lrg@ti.com>, <broonie@opensource.wolfsonmicro.com>,
         <lars@metafoo.de>, <swarren@nvidia.com>, <perex@perex.cz>,
         <clemens@ladisch.de>
 CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
         Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V3 2/2] ASoC: tegra: use sound pcm library for substream dma buffer
-Date: Mon, 2 Jul 2012 18:29:41 +0530
-Message-ID: <1341233981-32412-3-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH V3 1/2] ALSA: Support writecombine DMA buffer memory page alloc/free
+Date: Mon, 2 Jul 2012 18:29:40 +0530
+Message-ID: <1341233981-32412-2-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1341233981-32412-1-git-send-email-ldewangan@nvidia.com>
 References: <1341233981-32412-1-git-send-email-ldewangan@nvidia.com>
@@ -27,174 +27,205 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sound pcm library support the writecombine DMA buffer
-allocation/deallocation/mapping and hence using the APIs
-form sound pcm library inplace of implementing the same
-locally.
+Some of architecture like ARM support the writecombine DMA
+buffer which is used for pcm substream DMA buffer.
+
+Supporting writecombine DMA buffer allocation/free/mmap
+through the sound library memory management.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
 Changes from V1:
-Changes done to use the existing APIs for sound pcm memory management
-which is now supporting writecombine.
+Integrate the changes from Takashi's sample code for supporting
+writecombine.
 
-Changes from V2:
-- remove mmap initialization from tegra_pcm.
-- Put back the dma mask initialisation in tegra_pcm.
+Changes from V2: 
+- Added some more comment for WAR for ARM specific.
 
- sound/soc/tegra/tegra_pcm.c |   98 +++++++++----------------------------------
- 1 files changed, 20 insertions(+), 78 deletions(-)
+ include/sound/memalloc.h |    1 +
+ sound/core/memalloc.c    |   86 +++++++++++++++++++++++++++++++++++++++++----
+ sound/core/pcm_native.c  |   17 +++++++++
+ 3 files changed, 96 insertions(+), 8 deletions(-)
 
-diff --git a/sound/soc/tegra/tegra_pcm.c b/sound/soc/tegra/tegra_pcm.c
-index 127348d..1ed9df0 100644
---- a/sound/soc/tegra/tegra_pcm.c
-+++ b/sound/soc/tegra/tegra_pcm.c
-@@ -202,8 +202,14 @@ static int tegra_pcm_hw_params(struct snd_pcm_substream *substream,
+diff --git a/include/sound/memalloc.h b/include/sound/memalloc.h
+index c425062..0328e37 100644
+--- a/include/sound/memalloc.h
++++ b/include/sound/memalloc.h
+@@ -52,6 +52,7 @@ struct snd_dma_device {
+ #else
+ #define SNDRV_DMA_TYPE_DEV_SG	SNDRV_DMA_TYPE_DEV /* no SG-buf support */
+ #endif
++#define SNDRV_DMA_TYPE_DEV_WC		4	/* writecombine page */
+ 
+ /*
+  * info for buffer allocation
+diff --git a/sound/core/memalloc.c b/sound/core/memalloc.c
+index 6915692..de99743 100644
+--- a/sound/core/memalloc.c
++++ b/sound/core/memalloc.c
+@@ -124,8 +124,9 @@ void snd_free_pages(void *ptr, size_t size)
+  */
+ 
+ #ifdef CONFIG_HAS_DMA
+-/* allocate the coherent DMA pages */
+-static void *snd_malloc_dev_pages(struct device *dev, size_t size, dma_addr_t *dma)
++static void *_snd_malloc_dev_pages(struct device *dev, size_t size, dma_addr_t *dma,
++		void *(*alloc_func)(struct device *dev, size_t size,
++			dma_addr_t *dma, gfp_t gfp_flags))
  {
- 	struct snd_pcm_runtime *runtime = substream->runtime;
- 	struct tegra_runtime_data *prtd = runtime->private_data;
-+	int ret;
+ 	int pg;
+ 	void *res;
+@@ -138,16 +139,18 @@ static void *snd_malloc_dev_pages(struct device *dev, size_t size, dma_addr_t *d
+ 		| __GFP_COMP	/* compound page lets parts be mapped */
+ 		| __GFP_NORETRY /* don't trigger OOM-killer */
+ 		| __GFP_NOWARN; /* no stack trace print - this call is non-critical */
+-	res = dma_alloc_coherent(dev, PAGE_SIZE << pg, dma, gfp_flags);
++	res = alloc_func(dev, PAGE_SIZE << pg, dma, gfp_flags);
+ 	if (res != NULL)
+ 		inc_snd_pages(pg);
  
--	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
-+	ret = snd_pcm_lib_malloc_pages(substream,
-+				params_buffer_bytes(params));
-+	if (ret < 0) {
-+		pr_err("page allocation failed, err %d\n", ret);
-+		return ret;
-+	}
- 
- 	prtd->dma_req[0].size = params_period_bytes(params);
- 	prtd->dma_req[1].size = prtd->dma_req[0].size;
-@@ -213,9 +219,7 @@ static int tegra_pcm_hw_params(struct snd_pcm_substream *substream,
- 
- static int tegra_pcm_hw_free(struct snd_pcm_substream *substream)
- {
--	snd_pcm_set_runtime_buffer(substream, NULL);
--
--	return 0;
-+	return snd_pcm_lib_free_pages(substream);
+ 	return res;
  }
  
- static int tegra_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
-@@ -263,18 +267,6 @@ static snd_pcm_uframes_t tegra_pcm_pointer(struct snd_pcm_substream *substream)
- 	return prtd->period_index * runtime->period_size;
- }
- 
--
--static int tegra_pcm_mmap(struct snd_pcm_substream *substream,
--				struct vm_area_struct *vma)
--{
--	struct snd_pcm_runtime *runtime = substream->runtime;
--
--	return dma_mmap_writecombine(substream->pcm->card->dev, vma,
--					runtime->dma_area,
--					runtime->dma_addr,
--					runtime->dma_bytes);
--}
--
- static struct snd_pcm_ops tegra_pcm_ops = {
- 	.open		= tegra_pcm_open,
- 	.close		= tegra_pcm_close,
-@@ -283,87 +275,37 @@ static struct snd_pcm_ops tegra_pcm_ops = {
- 	.hw_free	= tegra_pcm_hw_free,
- 	.trigger	= tegra_pcm_trigger,
- 	.pointer	= tegra_pcm_pointer,
--	.mmap		= tegra_pcm_mmap,
- };
- 
--static int tegra_pcm_preallocate_dma_buffer(struct snd_pcm *pcm, int stream)
--{
--	struct snd_pcm_substream *substream = pcm->streams[stream].substream;
--	struct snd_dma_buffer *buf = &substream->dma_buffer;
--	size_t size = tegra_pcm_hardware.buffer_bytes_max;
--
--	buf->area = dma_alloc_writecombine(pcm->card->dev, size,
--						&buf->addr, GFP_KERNEL);
--	if (!buf->area)
--		return -ENOMEM;
--
--	buf->dev.type = SNDRV_DMA_TYPE_DEV;
--	buf->dev.dev = pcm->card->dev;
--	buf->private_data = NULL;
--	buf->bytes = size;
--
--	return 0;
--}
--
--static void tegra_pcm_deallocate_dma_buffer(struct snd_pcm *pcm, int stream)
--{
--	struct snd_pcm_substream *substream;
--	struct snd_dma_buffer *buf;
--
--	substream = pcm->streams[stream].substream;
--	if (!substream)
--		return;
--
--	buf = &substream->dma_buffer;
--	if (!buf->area)
--		return;
--
--	dma_free_writecombine(pcm->card->dev, buf->bytes,
--				buf->area, buf->addr);
--	buf->area = NULL;
--}
--
- static u64 tegra_dma_mask = DMA_BIT_MASK(32);
--
-+#define TEGRA_PCM_PREALLOC_BUFFER	(32 * 1024)
-+#define TEGRA_PCM_PREALLOC_BUFFER_MAX	(32 * 1024)
- static int tegra_pcm_new(struct snd_soc_pcm_runtime *rtd)
+-/* free the coherent DMA pages */
+-static void snd_free_dev_pages(struct device *dev, size_t size, void *ptr,
+-			       dma_addr_t dma)
++static void _snd_free_dev_pages(struct device *dev, size_t size, void *ptr,
++				dma_addr_t dma,
++				void (*free_func)(struct device *dev,
++					size_t size, void *vaddr,
++					dma_addr_t dma_handle))
  {
--	struct snd_card *card = rtd->card->snd_card;
- 	struct snd_pcm *pcm = rtd->pcm;
--	int ret = 0;
-+	struct snd_card *card = rtd->card->snd_card;
-+	int ret;
+ 	int pg;
  
- 	if (!card->dev->dma_mask)
- 		card->dev->dma_mask = &tegra_dma_mask;
- 	if (!card->dev->coherent_dma_mask)
- 		card->dev->coherent_dma_mask = DMA_BIT_MASK(32);
- 
--	if (pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream) {
--		ret = tegra_pcm_preallocate_dma_buffer(pcm,
--						SNDRV_PCM_STREAM_PLAYBACK);
--		if (ret)
--			goto err;
--	}
--
--	if (pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream) {
--		ret = tegra_pcm_preallocate_dma_buffer(pcm,
--						SNDRV_PCM_STREAM_CAPTURE);
--		if (ret)
--			goto err_free_play;
--	}
--
--	return 0;
--
--err_free_play:
--	tegra_pcm_deallocate_dma_buffer(pcm, SNDRV_PCM_STREAM_PLAYBACK);
--err:
-+	ret =  snd_pcm_lib_preallocate_pages_for_all(pcm,
-+			SNDRV_DMA_TYPE_DEV_WC, card->dev,
-+			TEGRA_PCM_PREALLOC_BUFFER,
-+			TEGRA_PCM_PREALLOC_BUFFER_MAX);
-+	if (ret < 0)
-+		dev_err(card->dev, "dma buffer pre-alloc failed err %d\n", ret);
- 	return ret;
- }
- 
- static void tegra_pcm_free(struct snd_pcm *pcm)
- {
--	tegra_pcm_deallocate_dma_buffer(pcm, SNDRV_PCM_STREAM_CAPTURE);
--	tegra_pcm_deallocate_dma_buffer(pcm, SNDRV_PCM_STREAM_PLAYBACK);
-+	snd_pcm_lib_preallocate_free_for_all(pcm);
- }
- 
+@@ -155,8 +158,57 @@ static void snd_free_dev_pages(struct device *dev, size_t size, void *ptr,
+ 		return;
+ 	pg = get_order(size);
+ 	dec_snd_pages(pg);
+-	dma_free_coherent(dev, PAGE_SIZE << pg, ptr, dma);
++	free_func(dev, PAGE_SIZE << pg, ptr, dma);
++}
 +
- static struct snd_soc_platform_driver tegra_pcm_platform = {
- 	.ops		= &tegra_pcm_ops,
- 	.pcm_new	= tegra_pcm_new,
++static void *_dma_alloc_coherent(struct device *dev, size_t size,
++		dma_addr_t *dma_handle, gfp_t flag)
++{
++	return dma_alloc_coherent(dev, size, dma_handle, flag);
++}
++
++static void _dma_free_coherent(struct device *dev, size_t size,
++			void *vaddr, dma_addr_t dma_handle)
++{
++	dma_free_coherent(dev, size, vaddr, dma_handle);
++}
++
++
++/* allocate the coherent DMA pages */
++static void *snd_malloc_dev_pages(struct device *dev, size_t size, dma_addr_t *dma)
++{
++	return _snd_malloc_dev_pages(dev, size, dma, _dma_alloc_coherent);
++}
++
++/* free the coherent DMA pages */
++static void snd_free_dev_pages(struct device *dev, size_t size, void *ptr,
++			       dma_addr_t dma)
++{
++	_snd_free_dev_pages(dev, size, ptr, dma, _dma_free_coherent);
+ }
++
++
++/**
++ * Support writecombine DMA buffer allocation and deallocation.
++ * TODO: Currently all architectures do not support the writecombine
++ * dma buffer. It is supported by ARM and hence enabling for ARM.
++ * Once all architectures support, the restriction for ARM only can
++ * be removed.
++ */
++#ifdef CONFIG_ARM
++/* allocate the writecombine DMA pages */
++static void *snd_malloc_dev_wc_pages(struct device *dev, size_t size, dma_addr_t *dma)
++{
++	return _snd_malloc_dev_pages(dev, size, dma, dma_alloc_writecombine);
++}
++
++/* free the writecombine DMA pages */
++static void snd_free_dev_wc_pages(struct device *dev, size_t size, void *ptr,
++			       dma_addr_t dma)
++{
++	_snd_free_dev_pages(dev, size, ptr, dma, dma_free_writecombine);
++}
++#endif
+ #endif /* CONFIG_HAS_DMA */
+ 
+ /*
+@@ -200,6 +252,15 @@ int snd_dma_alloc_pages(int type, struct device *device, size_t size,
+ 	case SNDRV_DMA_TYPE_DEV:
+ 		dmab->area = snd_malloc_dev_pages(device, size, &dmab->addr);
+ 		break;
++/**
++ * TODO: Support writecombine DMA type for ARM only as all archs do not
++ * support this. This restriction can be remove once all archs support it.
++ */
++#ifdef CONFIG_ARM
++	case SNDRV_DMA_TYPE_DEV_WC:
++		dmab->area = snd_malloc_dev_wc_pages(device, size, &dmab->addr);
++		break;
++#endif
+ #endif
+ #ifdef CONFIG_SND_DMA_SGBUF
+ 	case SNDRV_DMA_TYPE_DEV_SG:
+@@ -272,6 +333,15 @@ void snd_dma_free_pages(struct snd_dma_buffer *dmab)
+ 	case SNDRV_DMA_TYPE_DEV:
+ 		snd_free_dev_pages(dmab->dev.dev, dmab->bytes, dmab->area, dmab->addr);
+ 		break;
++/**
++ * TODO: Support writecombine DMA type for ARM only as all archs do not
++ * support this. This restriction can be remove once all archs support it.
++ */
++#ifdef CONFIG_ARM
++	case SNDRV_DMA_TYPE_DEV_WC:
++		snd_free_dev_wc_pages(dmab->dev.dev, dmab->bytes, dmab->area, dmab->addr);
++		break;
++#endif
+ #endif
+ #ifdef CONFIG_SND_DMA_SGBUF
+ 	case SNDRV_DMA_TYPE_DEV_SG:
+@@ -378,7 +448,7 @@ static int snd_mem_proc_read(struct seq_file *seq, void *offset)
+ 	long pages = snd_allocated_pages >> (PAGE_SHIFT-12);
+ 	struct snd_mem_list *mem;
+ 	int devno;
+-	static char *types[] = { "UNKNOWN", "CONT", "DEV", "DEV-SG" };
++	static char *types[] = { "UNKNOWN", "CONT", "DEV", "DEV-SG" , "WC"};
+ 
+ 	mutex_lock(&list_mutex);
+ 	seq_printf(seq, "pages  : %li bytes (%li pages per %likB)\n",
+diff --git a/sound/core/pcm_native.c b/sound/core/pcm_native.c
+index 53b5ada..827835b 100644
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -3170,6 +3170,23 @@ int snd_pcm_lib_default_mmap(struct snd_pcm_substream *substream,
+ 			     struct vm_area_struct *area)
+ {
+ 	area->vm_flags |= VM_RESERVED;
++
++/**
++ * Support writecombine DMA device type for mmap.
++ * TODO: Currently all architectures do not support the writecombine
++ * DMA buffer. It is supported by ARM and hence enabling for ARM.
++ * Once all architectures support, the restriction for ARM only can
++ * be removed.
++ */
++#ifdef CONFIG_ARM
++	if (substream->dma_buffer.dev.type == SNDRV_DMA_TYPE_DEV_WC)
++		return dma_mmap_writecombine(substream->dma_buffer.dev.dev,
++				area,
++				substream->runtime->dma_area,
++				substream->runtime->dma_addr,
++				area->vm_end - area->vm_start);
++#endif
++
+ #ifdef ARCH_HAS_DMA_MMAP_COHERENT
+ 	if (!substream->ops->page &&
+ 	    substream->dma_buffer.dev.type == SNDRV_DMA_TYPE_DEV)
 -- 
 1.7.1.1
 
