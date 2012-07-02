@@ -1,42 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab2GBMhr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 08:37:47 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:45378 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320Ab2GBMhq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 08:37:46 -0400
-Date: Mon, 2 Jul 2012 13:37:40 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: ShuoX Liu <shuox.liu@intel.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Build failures in -next due to move of disable
-Message-ID: <20120702123740.GA11168@sirena.org.uk>
+	id S1752796Ab2GBMlL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 08:41:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37126 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752408Ab2GBMlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 08:41:09 -0400
+Date: Mon, 2 Jul 2012 13:41:03 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tony Luck <tony.luck@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Xishi Qiu <qiuxishi@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH] mm: setup pageblock_order before it's used by sparse
+Message-ID: <20120702124103.GP14154@suse.de>
+References: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-X-Cookie: Murphy was an optimist.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today's -next is failing to build for me because commit 9f419c (PM /
-Domains: Add preliminary support for cpuidle) and commit b32e30
-(cpuidle: move field disable from per-driver to per-cpu) disagree about
-where the disable field should be:
+On Sat, Jun 30, 2012 at 05:07:54PM +0800, Jiang Liu wrote:
+> From: Xishi Qiu <qiuxishi@huawei.com>
+> 
+> On architectures with CONFIG_HUGETLB_PAGE_SIZE_VARIABLE set, such as Itanium,
+> pageblock_order is a variable with default value of 0. It's set to the right
+> value by set_pageblock_order() in function free_area_init_core().
+> 
+> But pageblock_order may be used by sparse_init() before free_area_init_core()
+> is called along path:
+> sparse_init()
+>     ->sparse_early_usemaps_alloc_node()
+> 	->usemap_size()
+> 	    ->SECTION_BLOCKFLAGS_BITS
+> 		->((1UL << (PFN_SECTION_SHIFT - pageblock_order)) *
+> NR_PAGEBLOCK_BITS)
+> 
+> The uninitialized pageblock_size will cause memory wasting because usemap_size()
+> returns a much bigger value then it's really needed.
+> 
+> For example, on an Itanium platform,
+> sparse_init() pageblock_order=0 usemap_size=24576
+> free_area_init_core() before pageblock_order=0, usemap_size=24576
+> free_area_init_core() after pageblock_order=12, usemap_size=8
+> 
+> That means 24K memory has been wasted for each section, so fix it by calling
+> set_pageblock_order() from sparse_init().
+> 
+> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> Signed-off-by: Jiang Liu <liuj97@gmail.com>
 
-  CC      drivers/base/power/domain.o
-drivers/base/power/domain.c: In function '__pm_genpd_poweron':
-drivers/base/power/domain.c:194: error: 'struct cpuidle_state' has no member named 'disable'
-drivers/base/power/domain.c: In function 'pm_genpd_poweroff':
-drivers/base/power/domain.c:490: error: 'struct cpuidle_state' has no member named 'disable'
-drivers/base/power/domain.c: In function 'genpd_attach_cpuidle':
-drivers/base/power/domain.c:1671: error: 'struct cpuidle_state' has no member named 'disable'
-drivers/base/power/domain.c: In function 'genpd_detach_cpuidle':
-drivers/base/power/domain.c:1706: error: 'struct cpuidle_state' has no member named 'disable'
+Looks all right.
+
+Acked-by: Mel Gorman <mgorman@suse.de>
+
+This should be considered a stable candidate. Add
+
+Cc: stable <stable@vger.kernel.org>
+
+above your Signed-off-by and it'll get picked up if the patch is merged
+to mainline.
+
+-- 
+Mel Gorman
+SUSE Labs
