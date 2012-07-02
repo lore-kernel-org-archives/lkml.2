@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932819Ab2GBUWM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 16:22:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48029 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932730Ab2GBUTA (ORCPT
+	id S932976Ab2GBUWa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 16:22:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42397 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932730Ab2GBUW1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 16:19:00 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/13] tools lib traceevent: Make dependency files regeneratable
-Date: Mon,  2 Jul 2012 17:18:41 -0300
-Message-Id: <1341260331-10204-4-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1341260331-10204-1-git-send-email-acme@infradead.org>
-References: <1341260331-10204-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 2 Jul 2012 16:22:27 -0400
+Message-ID: <1341260540.23484.25.camel@twins>
+Subject: Re: [PATCH 2/5] perf, x86: Enable PDIR precise instruction
+ profiling on IvyBridge
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Date: Mon, 02 Jul 2012 22:22:20 +0200
+In-Reply-To: <20120702195744.GG11413@one.firstfloor.org>
+References: <1341254598-1379-1-git-send-email-andi@firstfloor.org>
+	 <1341254598-1379-3-git-send-email-andi@firstfloor.org>
+	 <1341256733.23484.11.camel@twins>
+	 <20120702195744.GG11413@one.firstfloor.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Mon, 2012-07-02 at 21:57 +0200, Andi Kleen wrote:
+> > Already told you no.
+> 
+> No on what? You don't want PDIR mode? Or you don't like something
+> with my implementation?
 
-Ingo reported that libtraceevent doesn't clean out dependency (.d) files
-and it can cause a build error when the libgcc package upgraded:
+Both are crap.
 
- comet:~/tip/tools/perf> make -j
-     SUBDIR ../lib/traceevent/
- make[1]: *** No rule to make target `/usr/lib/gcc/x86_64-redhat-linux/4.7.0/include/stddef.h',
-  needed by `event-parse.o'.  Stop.
- make: *** [../lib/traceevent//libtraceevent.a] Error 2
+If anything its an PEBS alias, we have infrastructure for that, yet you
+invent new things.
 
-So this patch makes the .d files depends on the source and header files
-also, so that it can be re-generated as needed.
+You do random things like only :pp for no apparent reason.
 
-NOTE: This code is copied from the GNU make manual page
-(4.14 Generating Prerequisites Automatically).
+PDIR is only supported on a single counter, regular PEBS 'instructions'
+events allow for 4+ counters. Therefore a direct substitution is not
+valid.
 
-Reported-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1340343462-15556-3-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/lib/traceevent/Makefile |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index 34a577e..46c2f6b 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -250,8 +250,12 @@ endef
- all_objs := $(sort $(ALL_OBJS))
- all_deps := $(all_objs:%.o=.%.d)
- 
-+# let .d file also depends on the source and header files
- define check_deps
--		$(CC) -M $(CFLAGS) $< > $@;
-+		@set -e; $(RM) $@; \
-+		$(CC) -M $(CFLAGS) $< > $@.$$$$; \
-+		sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-+		$(RM) $@.$$$$
- endef
- 
- $(gui_deps): ks_version.h
--- 
-1.7.9.2.358.g22243
 
