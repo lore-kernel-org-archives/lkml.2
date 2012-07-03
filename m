@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757147Ab2GCT1F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 15:27:05 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48738 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751696Ab2GCT1D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 15:27:03 -0400
-Date: Tue, 3 Jul 2012 20:26:52 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: Fix recursive mutex lockdep warning
-Message-ID: <20120703192652.GH29030@opensource.wolfsonmicro.com>
-References: <1341282066-15325-1-git-send-email-sboyd@codeaurora.org>
+	id S933346Ab2GCT2A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 15:28:00 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:51496 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751696Ab2GCT16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 15:27:58 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: linux-next : cpuidle - could you add my tree please
+Date: Tue, 3 Jul 2012 21:33:30 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, Len.Brown@intel.com,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org,
+        "Lists Linaro-dev" <linaro-dev@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>, linux-next@vger.kernel.org,
+        Colin Cross <ccross@android.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rob Lee <rob.lee@linaro.org>, "lenb@kernel.org" <lenb@kernel.org>
+References: <4FDEE98D.7010802@linaro.org> <4FF21D48.50301@linaro.org> <CACRpkdY-vmA57uXWCzG7b7JXkZi0n-HCdCK0C4wPFgv51Q_KFA@mail.gmail.com>
+In-Reply-To: <CACRpkdY-vmA57uXWCzG7b7JXkZi0n-HCdCK0C4wPFgv51Q_KFA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="r4jNezHNW2wfBox+"
-Content-Disposition: inline
-In-Reply-To: <1341282066-15325-1-git-send-email-sboyd@codeaurora.org>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207032133.30841.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday, July 03, 2012, Linus Walleij wrote:
+> On Tue, Jul 3, 2012 at 12:14 AM, Daniel Lezcano
+> <daniel.lezcano@linaro.org> wrote:
+> 
+> > If that makes sense to add myself to the MAINTAINER file as a
+> > co-maintainer (understand: send to me also the patches, so I can take
+> > care of them if Len does not respond), I am ok with that.
+> 
+> What about a patch adding both you and Len as MAINTAINERs,
+> right now there is noone just some informal consensus and noone
+> really knows who to send patches to. Let's formalize it.
 
---r4jNezHNW2wfBox+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Send them to me for now.  We'll settle the issue when Len is back.
 
-On Mon, Jul 02, 2012 at 07:21:06PM -0700, Stephen Boyd wrote:
-> A recursive lockdep warning occurs if you call
-> regulator_set_optimum_mode() on a regulator with a supply because
-> there is no nesting annotation for the rdev->mutex. To avoid this
-> warning, get the supply's load before locking the regulator's
-> mutex to avoid grabbing the same class of lock twice.
-
-Applied, thanks.  Though we should probably just remove the optimal mode
-stuff on account of the total absence of any users...
-
---r4jNezHNW2wfBox+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP80djAAoJEBus8iNuMP3dBuEP/RA7q4pIvOvV2zPAMoR8Hogw
-EfoXL73Hpj4Nv2dxwuKnPDQVGWKXu1divWBeLyV6R3iSqkrgHChaZtYILVof0In0
-qnrAEXsznWYUBNfiWribhso9Fk6Bs/jkm9NbK9+2BzImEvAvN5B9jD59ZKeZRVKE
-D4SQR+JmXoUAqXI10iC09ITMP+OKclP2aye3cC+5WGHWz7/mp3p9iOa6NglZAwbZ
-+F9rXo85vzluURkL4+/+I6sMdjgfrVcSPvNRko1D6tkp4hc/pvLi/cWAzDWo+yhf
-veOwwJ0z8+TxFlYF93ES9yBSTZnmAzsYiy+0ADO3bw9KeYEG8wA/Xdj8Ybye8H+P
-qC1/BMXIhyI5jh7H7zNHrMoOnzXlURK685zkSrxxG3ExG7tfILxtZdxkBT9GEutt
-sV97+jThSSqA3i2ixpwvDGAz9oQxrkRIo3nBMhIKdQvIv7Y1IKO+D+FeDhZIUH99
-2HTOHE+zC/o0ysIQq160gZ9g6E47ThpXIIfjiOtGefW+VkbZIxeiMlN4yu2t90Gr
-GRVUTiyMiTOZST4JjPivRz21fRAzDhWx5u0PeILPrLTplayAsCWeggxBhFMXQNuM
-L0z7QJ4HVoPB8uoj/RmVvdVSEoGgVRR6N/n9qbzvBaqTKcWHkAqsrISOiOumV1m+
-p+3XrBBrYrI4RgO2t6oh
-=qVHs
------END PGP SIGNATURE-----
-
---r4jNezHNW2wfBox+--
+Thanks,
+Rafael
