@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756454Ab2GCNrP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 09:47:15 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:50483 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab2GCNrO (ORCPT
+	id S1756517Ab2GCNsd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 09:48:33 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:34721 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620Ab2GCNsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 09:47:14 -0400
-Message-ID: <1341323230.3292.10.camel@nayuki.kepstin.ca>
-Subject: Re: long boot delays caused by 070ad7e7 floppy change
-From: Calvin Walton <calvin.walton@kepstin.ca>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel@vger.kernel.org, shemminger@vyatta.com
-Date: Tue, 03 Jul 2012 09:47:10 -0400
-In-Reply-To: <CA+55aFwre6s=orjUaNKJA=51Fc1mxu_XGX80Bex4Sn-=mWPx5Q@mail.gmail.com>
-References: <20120702224648.GA20361@tassilo.jf.intel.com>
-	 <CA+55aFwre6s=orjUaNKJA=51Fc1mxu_XGX80Bex4Sn-=mWPx5Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Jul 2012 09:48:32 -0400
+Message-ID: <4FF2F82D.9080507@linaro.org>
+Date: Tue, 03 Jul 2012 14:48:29 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de, sameo@linux.intel.com
+Subject: Re: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device
+ registration
+References: <1341316788-12730-1-git-send-email-lee.jones@linaro.org> <20120703123552.GC25995@sirena.org.uk> <4FF2EEA1.6080204@linaro.org> <20120703132447.GN29030@opensource.wolfsonmicro.com>
+In-Reply-To: <20120703132447.GN29030@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-02 at 16:01 -0700, Linus Torvalds wrote:
-> On Mon, Jul 2, 2012 at 3:46 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> >
-> > One of my test systems has a new 20s+ boot delay in 3.5rc*
-> > It takes the floppy driver that long to determine I don't
-> > have a floppy
-> 
-> Can you enable debug output ("floppy=debug" iirc) to give more details
-> of what happens leading up to the delay? Maybe the timing of the debug
-> messages would give some hints too..
+On 03/07/12 14:24, Mark Brown wrote:
+> On Tue, Jul 03, 2012 at 02:07:45PM +0100, Lee Jones wrote:
+>> On 03/07/12 13:35, Mark Brown wrote:
+>
+>>> Do we really want to create MFD cells like this (which are really Linux
+>>> internal things and might vary if another OS or another version of Linux
+>>> changes its internal abstractions) from the device tree?
+>
+>> We're not creating them. We're merely using current infrastructure.
+>
+> *Very* recently added infrastructure which caused you to notice this...
 
-I'm seeing the same issue, so I've given this a try. Here are the
-messages printed when floppy debugging is enabled:
+No, I mean the MFD method is current infrastructure.
 
-[    0.000000] floppy0: Setting flag 0x1
-...
-[    0.703201] 00:07: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
-[    0.703506] Non-volatile memory driver v1.3
-[    0.714318] floppy0: reschedule timeout lock fdc
-[    1.651396] Refined TSC clocksource calibration: 2698.759 MHz.
-[    1.651548] Switching to clocksource tsc
-[   20.729798] floppy0: reschedule timeout do wakeup
-[   20.732654] floppy0: no floppy controllers found
-[   20.733220] loop: module loaded
-[   20.733394] ahci 0000:00:1f.2: version 3.0
-[   20.733430] ahci 0000:00:1f.2: irq 42 for MSI/MSI-X
+Using it with DT is new, yes.
 
-The 'reschedule timeout' messages are only printed when debugging is
-enabled. Hopefully that can give someone a hint as to what's going on?
+>> Before, when we probed each device from Device Tree we came up
+>> against some fairly major limitations of the Device Tree. As a
+>> result, Arnd and I agreed that this was the way to go.
+>
+> I'm really unconvinced that instnatiating the MFD cells from device tree
+> is in general a good idea.
+
+Well it just doesn't work the other way.
+
+>> See c5395e7ed8f16cc7bb72a783de68659db5aed515 for a short description
+>> of the troubles we faced.
+>
+> $ git show c5395e7ed8f16cc7bb72a783de68659db5aed515
+> fatal: bad object c5395e7ed8f16cc7bb72a783de68659db5aed515
+
+Sorry, looks live I've rebased since.
+
+5f3fc8adeec9bb12742fbfa777fa1947deda21a2
+
 -- 
-Calvin Walton <calvin.walton@kepstin.ca>
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
+
 
