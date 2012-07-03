@@ -1,84 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757218Ab2GCUIK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 16:08:10 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33560 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755575Ab2GCUII (ORCPT
+	id S933472Ab2GCUIw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 16:08:52 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:23266 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757152Ab2GCUIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 16:08:08 -0400
-Message-ID: <1341346072.3076.6.camel@dabdike>
-Subject: Re: [ 38/48] SCSI & usb-storage: add try_rc_10_first flag
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Matthew Wilcox <matthew@wil.cx>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Wed, 04 Jul 2012 00:07:52 +0400
-In-Reply-To: <Pine.LNX.4.44L0.1207031540410.29825-100000@netrider.rowland.org>
-References: <Pine.LNX.4.44L0.1207031540410.29825-100000@netrider.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Tue, 3 Jul 2012 16:08:50 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6761"; a="204850430"
+Message-ID: <4FF3514E.6050401@codeaurora.org>
+Date: Tue, 03 Jul 2012 13:08:46 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: Fix recursive mutex lockdep warning
+References: <1341282066-15325-1-git-send-email-sboyd@codeaurora.org> <20120703192652.GH29030@opensource.wolfsonmicro.com>
+In-Reply-To: <20120703192652.GH29030@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-03 at 15:50 -0400, Alan Stern wrote:
-> On Tue, 3 Jul 2012, Matthew Wilcox wrote:
-> 
-> > On Tue, Jul 03, 2012 at 11:49:00AM -0400, Alan Stern wrote:
-> > > On Tue, 3 Jul 2012, James Bottomley wrote:
-> > > 
-> > > > >   What happened is that T10
-> > > > > in their infinite wisdom decided to put things like "supports TRIM" and
-> > > > > "is actually a 4k block size but fakes 512 byte blocks" in the Read
-> > > > > Capacity 16 results.  So if we want to support those kinds of things
-> > > > > (and I think we do), then we need to send Read Capacity 16 to devices.
-> > > > 
-> > > > But anyway, we're stuck ... we have to send RC16 first to support these
-> > > > features.  We did protest to T10 at the time, but to no avail.
-> > > 
-> > > Does it have to be sent _first_?
-> > > 
-> > > Or would it be okay to send _both_ commands and believe the RC10
-> > > capacity rather than the RC16 capacity if they differ?
-> > 
-> > I have no problem with doing that (and believing RC16 over RC10 if RC10
-> > claims 0xffffffff, naturally).  The problem, as I understand it, is that
-> > some devices crash upon receiving RC16 rather than just returning nonsense.
-> 
-> No, that's not the problem we're talking about here.  While it is true
-> that some devices crash upon receiving RC16, so far we haven't been
-> sending RC16 to those devices, so they don't matter for the purposes of
-> this discussion.
-> 
-> In fact, usb-storage already has a NO_READ_CAPACITY_16 flag.  It was
-> introduced because of a card reader that mistakenly attempts to return
-> an actual capacity value even when no card is present: It takes the
-> number of sectors -- which is 0 -- and subtracts 1 as usual.  You can
-> imagine what happens next.  :-)  That's the only device which
-> currently has this flag.
-> 
-> The reason for the try_rc_10_first flag is that some devices return
-> bogus data in response to RC16.  Like, an 800 GB device claiming to
-> have 3 exabytes.
+On 07/03/12 12:26, Mark Brown wrote:
+> On Mon, Jul 02, 2012 at 07:21:06PM -0700, Stephen Boyd wrote:
+>> A recursive lockdep warning occurs if you call
+>> regulator_set_optimum_mode() on a regulator with a supply because
+>> there is no nesting annotation for the rdev->mutex. To avoid this
+>> warning, get the supply's load before locking the regulator's
+>> mutex to avoid grabbing the same class of lock twice.
+> Applied, thanks.  Though we should probably just remove the optimal mode
+> stuff on account of the total absence of any users...
 
-So we could easily send both and only believe RC10 if the device is
-under 2TB.  However, what about all the extra flags we read out of RC16,
-like trim, large sector size and DIF capability?  If the device lies
-about its capacity, won't we get bogus values for those as well, which
-is going to cause other screw ups?
+Please don't remove it. We use the optimal stuff fairly often
+internally, plus our usb driver is upstream and using the API.
 
-James
+What do you think about removing the locking in get_voltage? Is that better?
 
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
