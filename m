@@ -1,65 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964774Ab2GCGs3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 02:48:29 -0400
-Received: from mga01.intel.com ([192.55.52.88]:45818 "EHLO mga01.intel.com"
+	id S933414Ab2GCGst (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 02:48:49 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41191 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752897Ab2GCGs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 02:48:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="172820806"
-Date: Tue, 3 Jul 2012 14:48:22 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: kvm segfaults and bad page state in 3.4.0
-Message-ID: <20120703064822.GA17367@localhost>
-References: <20120604114603.GA6988@localhost>
- <4FF293FE.2010100@linux.vnet.ibm.com>
+	id S933111Ab2GCGss convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 02:48:48 -0400
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: Axel Lin <axel.lin@gmail.com>
+CC: "Girdwood, Liam" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: RE: [PATCH 2/2] regulator: tps65217: Fix voltage boundary checking
+ in tps65217_pmic_map_voltage
+Thread-Topic: [PATCH 2/2] regulator: tps65217: Fix voltage boundary checking
+ in tps65217_pmic_map_voltage
+Thread-Index: AQHNWNxZmY5gFg9gAUCbVVRddR0fhJcXCrbQ
+Date: Tue, 3 Jul 2012 06:48:23 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13E9E8DAD@DBDE01.ent.ti.com>
+References: <1341284473.18757.2.camel@phoenix>
+	 <1341284755.18757.5.camel@phoenix>
+	 <331ABD5ECB02734CA317220B2BBEABC13E9E8CAB@DBDE01.ent.ti.com>
+ <1341293168.3241.7.camel@phoenix>
+In-Reply-To: <1341293168.3241.7.camel@phoenix>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.133.24]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF293FE.2010100@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guangrong,
-
-On Tue, Jul 03, 2012 at 02:41:02PM +0800, Xiao Guangrong wrote:
-> Hi Fengguang,
+On Tue, Jul 03, 2012 at 10:56:08, Axel Lin wrote:
 > 
-> I can reproduce this bug in my test case, and have posted
-> a patch to fix it which can found at:
-> http://marc.info/?l=linux-mm&m=134129723504527&w=2
+> > Case 1:-
+> > ------
+> > 
+> > tps->info[rid]->min_uV = 600000;
+> > tps->info[rid]->max_uV = 1100000;
+> > 
+> > If we do regulator_set_voltage(reg, 550000, 1100000);
+> > 
+> > This results into error condition and how can we handle with this?
 > 
-> Could you please try it?
+> In original code, it returns error. ( I think which is wrong.)
+> 
+> What we want is to set the smallest voltage within the specified voltage
+> range.
+> With this patch, calling regulator_set_voltage(reg, 550000, 1100000);
+> is the same as calling regulator_set_voltage(reg, 600000, 1100000);
+> It will set the voltage to 600000 uV.
 
-Thank you very much! I'm glad to try it out in my compile servers.
-Note that I've not encountered the bug since then (seems not very
-reproducible). So the feedback would be kind of "the patch works well"
-rather than confirming that it fixed the bug for me. Sorry for that.
+Suppose
+rdev->constraints->min_uV = 600000; /* wrong data entered by user as DT/plat
+						data */
+rdev->constraints->max_uV = 1500000;
 
-Thanks,
-Fengguang
+And tps limits (little modification from my previous mail "actual values")
 
-> On 06/04/2012 07:46 PM, Fengguang Wu wrote:
-> > Hi,
+tps->info[rid]->min_uV = 900000;
+tps->info[rid]->max_uV = 1800000;
+
+regulator_set_voltage(reg, 850000, 1100000);
+
+In side tps65217_pmic_map_voltage() we have
+
+tps->info[rid]->uv_to_vsel(850000, &sel) nothing but
+tps65217_uv_to_vsel1(850000, &sel);
+
+sel = (((850000 - 900000) + (25000) - 1) / (25000));
+sel = ((-25001)/(25000));
+sel = -1; /* Which is not expected */
+
+Ideally this would be the change
+
+	if (min_uV < tps->info[rid]->min_uV)
+		min_uV = tps->info[rid]->min_uV;
+
+	if (max_uV > tps->info[rid]->max_uV)
+		max_uV = tps->info[rid]->max_uV;
+
+	if (max_uV < tps->info[rid]->min_uV ||
+			min_uV > tps->info[rid]->max_uV)
+		return -EINVAL;
+
+If this is not the case then I am completely in a wrong direction.
+
+> 
 > > 
-> > I'm running lots of kvm instances for doing kernel boot tests.
-> > Unfortunately the test system itself is not stable enough, I got scary
-> > errors in both kvm and the host kernel. Like this. 
+> > Case 2:-
+> > ------
 > > 
-> > [294025.795382] kvm used greatest stack depth: 2896 bytes left
-> > [310388.622083] kvm[1864]: segfault at c ip 00007f498e9f6a81 sp 00007f4994b9fca0 error 4 in kvm[7f498e960000+33b000]
-> > [310692.050589] kvm[4332]: segfault at 10 ip 00007fca662620b9 sp 00007fca70472af0 error 6 in kvm[7fca661cc000+33b000]
-> > [312608.950120] kvm[18931]: segfault at 8 ip 00007f95962a10a5 sp 00007f959d777170 error 4 in kvm[7f959620b000+33b000]
-> > [312622.941640] kvm[19123]: segfault at 10 ip 00007f406f5580b9 sp 00007f4077d8b350 error 6 in kvm[7f406f4c2000+33b000]
-> > [313917.860951] kvm[28789]: segfault at c ip 00007f718f4dfa81 sp 00007f7198459520 error 4 in kvm[7f718f449000+33b000]
-> > [313919.177192] kvm used greatest stack depth: 2864 bytes left
-> > [314061.390945] kvm used greatest stack depth: 2208 bytes left
-> > [327479.676068] BUG: Bad page state in process kvm  pfn:59ac9
+> > I think the current code handles this case as well.
+> > 
+> > There might be a case where board/DT data is false like
+> > 
+> > tps->info[rid]->min_uV = 1100000;
+> > tps->info[rid]->max_uV = 600000;
+> > 
+> I don't get it.
+> You mean the case min_uV is greater than max_uV?
+> 
+> My understanding of current implementation is that the
+> tps->info[rid]->min_uV and tps->info[rid]->max_uV are not controlled by
+> board/DT data. They are defined in tps65217_pmic_regs[].
+
+My point here is rdev->constraints->min_uV and rdev->constraints->max_uV
+values set from DT/board file. Sorry about the confusion.
+This case is taken care by regulator core.
+
+Regards
+AnilKumar
