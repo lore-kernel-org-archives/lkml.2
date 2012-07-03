@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933294Ab2GCBeV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 21:34:21 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:38152 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932563Ab2GCBeU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 21:34:20 -0400
+	id S933301Ab2GCBlk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 21:41:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37072 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932563Ab2GCBli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 21:41:38 -0400
+Date: Mon, 2 Jul 2012 21:10:44 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, mst@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jan.kiszka@siemens.com, cornelia.huck@de.ibm.com
+Subject: Re: [PATCH v3 0/3] kvm: KVM_IRQFD cleanup, docs, sanitize flags
+Message-ID: <20120703001044.GA7518@amt.cnet>
+References: <20120629154940.30535.17132.stgit@bling.home>
+ <1341244311.1207.449.camel@bling.home>
+ <4FF1C3CE.3020404@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20120703093321.d261f6a118f03d6296af54e9@canb.auug.org.au>
-References: <20120626015551.GW4402@gmail.com> <CACRpkdayZUcA13p8iTRXLb4BestbAQhNP+a1nesYkcDEGFs=WA@mail.gmail.com>
- <20120703093321.d261f6a118f03d6296af54e9@canb.auug.org.au>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Mon, 2 Jul 2012 18:33:57 -0700
-Message-ID: <CAJOA=zPnOtrJLyryavV0ndqWFvvMcEbjHKKKEpNm80_1cD1_ww@mail.gmail.com>
-Subject: Re: linux-next: adding the common clk tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        broonie@opensource.wolfsonmicro.com, rnayak@ti.com,
-        viresh.kumar@linaro.org, amit.kucheria@linaro.org,
-        linus.walleij@stericsson.com, shawn.guo@freescale.com,
-        mkl@pengutronix.de, sr@denx.de, pawel.moll@arm.com,
-        maxime.ripard@free-electrons.com, linux@arm.linux.org.uk,
-        arnd.bergmann@linaro.org, olof@lixom.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF1C3CE.3020404@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 2, 2012 at 4:33 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Linus,
->
-> On Sat, 30 Jun 2012 21:47:35 +0200 Linus Walleij <linus.walleij@linaro.org> wrote:
->>
->> On Tue, Jun 26, 2012 at 3:55 AM, Mike Turquette <mturquette@ti.com> wrote:
->>
->> > Would you please add the clk-next branch of the common clock tree to
->> > linux-next?
->> >
->> > git://git.linaro.org/people/mturquette/linux.git clk-next
->>
->> So I don't see this being pulled into -next, is it just a slip,
->> I though the structure of the branch was agreed upon and all?
->
-> I am waiting for Mike to let me know its all ready to add ...
->
+On Mon, Jul 02, 2012 at 06:52:46PM +0300, Avi Kivity wrote:
+> On 07/02/2012 06:51 PM, Alex Williamson wrote:
+> > On Fri, 2012-06-29 at 09:56 -0600, Alex Williamson wrote:
+> >> Before we start fiddling with what we can and can't add to KVM_IRQFD
+> >> we need to figure out if anyone has been sloppy in their use of the
+> >> ioctl flags.  This series has a minor cleanup to pass the struct
+> >> kvm_irqfd to seup functions rather than individual parameters, making
+> >> it more consistent with ioeventfd, adds API documentation for this
+> >> ioctl, and sanitizes the flags.  If anyone screams, we may have to
+> >> revert this last patch.  Thanks,
+> > 
+> > Avi, what do you think about trying to get this in for 3.5 to test
+> > whether we break anyone?  Then we can aim for 3.6 for level irqfd &
+> > eoifd support.
+> 
+> Makes sense.  Marcelo?
 
-Oops.  I thought everything was sorted after our last email.  I've
-gone ahead and updated clk-next based on our discussions, so please do
-pull it in.
+Applied to master, thanks.
 
-Thanks much,
-Mike
-
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
