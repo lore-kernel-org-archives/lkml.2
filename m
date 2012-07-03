@@ -1,93 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933418Ab2GCGS4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 02:18:56 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59850 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753515Ab2GCGSx (ORCPT
+	id S933361Ab2GCGSz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 02:18:55 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34468 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753291Ab2GCGSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 3 Jul 2012 02:18:53 -0400
-Message-ID: <1341296326.3319.17.camel@dabdike>
-Subject: Re: [ 38/48] SCSI & usb-storage: add try_rc_10_first flag
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Tue, 03 Jul 2012 10:18:46 +0400
-In-Reply-To: <20120703004122.GA28804@parisc-linux.org>
-References: <20120701172012.078559139@decadent.org.uk>
-	 <4FF14957.3040007@redhat.com>
-	 <CA+55aFyRTXqSvf9m08gbHCB0WhVF14Y6J2-AiFGiuTStq0Jr6Q@mail.gmail.com>
-	 <1341261568.3319.7.camel@dabdike>
-	 <CA+55aFymdk8Sn8CVXRZgRvR96jCZG3LQRNU3U0dMkS3Ut2CemQ@mail.gmail.com>
-	 <20120703004122.GA28804@parisc-linux.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+Date: Tue, 3 Jul 2012 16:18:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Arnd Bergmann <arnd.bergmann@linaro.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: linux-next: build failure after merge of the final tree (pwm
+ tree related)
+Message-Id: <20120703161846.59fee8d3815993bcea122eeb@canb.auug.org.au>
+In-Reply-To: <20120703061115.GA27989@avionic-0098.mockup.avionic-design.de>
+References: <20120629174826.546cc991459b12833f2aaebd@canb.auug.org.au>
+	<201206301920.21158.arnd.bergmann@linaro.org>
+	<20120630194139.GA24300@avionic-0098.mockup.avionic-design.de>
+	<201206302012.32476.arnd.bergmann@linaro.org>
+	<20120701065639.GA25470@avionic-0098.adnet.avionic-design.de>
+	<20120703154318.9e32d4a490c0b32e7d955ca4@canb.auug.org.au>
+	<20120703061115.GA27989@avionic-0098.mockup.avionic-design.de>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__3_Jul_2012_16_18_46_+1000_x/IB3M4MkQKmz7+_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-02 at 18:41 -0600, Matthew Wilcox wrote:
-> On Mon, Jul 02, 2012 at 03:23:18PM -0700, Linus Torvalds wrote:
-> > >  Martin Petersen did extensive testing of devices when we
-> > > changed it and doing RC16 first is hedged around by claiming support not
-> > > only for SCSI_3 but also for SBC_2 in your INQUIRY data.
-> > 
-> > Umm. That just smells like BS to me.
-> > 
-> > The "extensive testing" part was clearly not true, and it seems that
-> > SCSI people sometimes forget that the biggest user (by *far*) is the
-> > USB storage layer.
-> 
-> As James said, *at the time*, USB overrode the SBC_2 claims from USB
-> devices and forced them to be SCSI_2.  So no amount of testing we did
-> would have uncovered this.
-> 
-> > Also, your protection claim seems to be invalidated by the actual
-> > code. Yes, it checks if the device claims to support protection. But
-> > it *also* says "let's do that 16b command if "scsi_level >
-> > SCSI_SPC_2". So your claim that it hedges around it by looking at the
-> > inquiry data is pure crap. It's simply not true. Just look at the
-> > code:
-> 
-> I wrote this code ... James' memory is off.
+--Signature=_Tue__3_Jul_2012_16_18_46_+1000_x/IB3M4MkQKmz7+_
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, sorry about that ... should have looked in the git log instead of
-going by memory at 01:00 after a long flight ...
+Hi Thierry,
 
->   What happened is that T10
-> in their infinite wisdom decided to put things like "supports TRIM" and
-> "is actually a 4k block size but fakes 512 byte blocks" in the Read
-> Capacity 16 results.  So if we want to support those kinds of things
-> (and I think we do), then we need to send Read Capacity 16 to devices.
-> 
-> It's not about "enterprise features" at all, but about supporting the
-> next generation of standard consumer drives.  I'm tempted to say the
-> USB Storage driver needs to go back to the way things were, because I
-> don't see any other way to fix this.
+On Tue, 3 Jul 2012 08:11:15 +0200 Thierry Reding <thierry.reding@avionic-de=
+sign.de> wrote:
+>
+> I don't see how that can happen. If you have CONFIG_TWL6030_PWM=3Dy, then
+> you should also have CONFIG_HAVE_PWM=3Dy, which would in turn conflict
+> with CONFIG_PWM=3Dy.
+>=20
+> I'll have to fetch a powerpc toolchain and try to reproduce this.
 
-But anyway, we're stuck ... we have to send RC16 first to support these
-features.  We did protest to T10 at the time, but to no avail.
+CONFIG_HAVE_PWM only exists on arm, mips and unicore32 ... so the "select
+HAVE_PWM" will not do anything on any other architecture.
 
-> I have no idea what Windows is doing to support these features.  That
-> might be a fruitful course of investigation.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Hopefully one of the USB people can do this.
+--Signature=_Tue__3_Jul_2012_16_18_46_+1000_x/IB3M4MkQKmz7+_
+Content-Type: application/pgp-signature
 
-I still think a whitelist of USB devices sending proper SCSI level
-information in the inquiry might be the best way forward.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-James
+iQIcBAEBCAAGBQJP8o7GAAoJEECxmPOUX5FE3zQQAIEQkJ5bc+wrd+/8d9qyrjd3
+ru1HI7QtdBjSRmqFR78HdeJB/voHh4lIU7e2jgWoHi7MZgE9mVcyIbLhKHRZy23W
+E8eSvXD+ubtnnHObiKrZ5eefYcx190CXXqJ24hbHdaq88ti+VdV/3R9wVWRRtInh
+fnjPMEjUSEBDzbda0lgK5MtEagelnFthzgUo+mdvYRIxdLpm7ykNWLhzq1jUezA7
+vky9gS8mWx564ynZih3a+qTRdEbP9rPQEGVwgGSf5bu07q/sNw8ze8Cy7PYxZ5iJ
+L94XyDU881UsXiyJHNnU8MTS2SMr6G4CncK4hCA+n7nwgu8aODCMmrD1acGW8w04
+YGHAQhX6LIqg08R5mmrWYFhfNW1/LZiavDAqyvqfj/5aKeIw30kQl0NXF1yVREOE
+majNVE8pyGmVLQNXHCoUHjzj713CdRUrgXzg5GpMNdbqen8NHxADZVt4B6CTSXRl
+spSMk6nORQ9Ss8Lc/Ajgp6YDpdRL9IRzyeYg3QYlWEdgh+mcF/jPTmESga3sGyjl
+NL/d8LrdbUchfLgbV9mGyPcPN2a1rvmu/Ie4zO7W+9/zry92aniBhi+l6C4fShIY
+TWc/gp8U9ezyAoD2z8JariO1VDKNyUQ2Ol/qjVbu/I2CHVAttRhqSA4kXwUYmUBG
+5SV0k/IYjBuzrQsT8/ee
+=EUMc
+-----END PGP SIGNATURE-----
 
-
+--Signature=_Tue__3_Jul_2012_16_18_46_+1000_x/IB3M4MkQKmz7+_--
