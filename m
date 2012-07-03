@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab2GCI7n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 04:59:43 -0400
-Received: from gold.linx.net ([195.66.232.40]:37833 "EHLO gold.linx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753349Ab2GCI7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 04:59:40 -0400
-X-Greylist: delayed 550 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Jul 2012 04:59:40 EDT
-Message-ID: <4FF2B263.4080000@linx.net>
-Date: Tue, 03 Jul 2012 09:50:43 +0100
-From: Tony Vroon <tony@linx.net>
-Organization: London Internet Exchange (LINX; AS5459)
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120607 Thunderbird/13.0
+	id S1754272Ab2GCJA7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 05:00:59 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:59355 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951Ab2GCJA5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 05:00:57 -0400
+From: Arnd Bergmann <arnd.bergmann@linaro.org>
+Organization: Linaro Limited 
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: linux-next: build failure after merge of the final tree (pwm tree related)
+Date: Tue, 3 Jul 2012 09:00:53 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>
+References: <20120629174826.546cc991459b12833f2aaebd@canb.auug.org.au> <201206301920.21158.arnd.bergmann@linaro.org> <CAMuHMdVBs=i5i02_AxZ7CHBukmrj-ik-EjDTG58hZaLkxkc+dQ@mail.gmail.com>
+In-Reply-To: <CAMuHMdVBs=i5i02_AxZ7CHBukmrj-ik-EjDTG58hZaLkxkc+dQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Michael Chan <mchan@broadcom.com>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        "Anthony G. Basile" <basile@virtual.dyc.edu>
-Subject: BNX2 MIPS06 firmware in tree is 6.2.1, driver wants 6.2.3
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201207030900.53470.arnd.bergmann@linaro.org>
+X-Provags-ID: V02:K0:58gYKVTpVwAnf+RhYEiumIqANMICxKIaoPchQmJiED7
+ vz5mJOnEIOeDjMMNTh2X9HU1inVQ+W73fkBa9B+SnySUzpoXNP
+ ok3Zqk5YYE0TdiCjhnLt9+LlFe8ivOClUmweckxjIEeyEk8Kjb
+ qTHDQMnUEmxscQG69xNixxyNfq2WffyBoaf+63F2x1Y6fRMr6k
+ ZcbPvwem3A3H9aRaOXOOpwsloLJhDhmNFslTOsppT3DhISNtNA
+ O6VuWqo0Ju15QM3pShDvTaw6cLGJx+Yn3eGSRLIG8a8iZcVKDV
+ FYGEpKt1sYzUvZ+SoPRMEupPqegSFNOZJzOjSspi8n+Vee16qs
+ gKcVEyNjXa9lIyUuqFkrSXCXqUTNu+o1Pv0yc2oKr
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Tuesday 03 July 2012, Geert Uytterhoeven wrote:
+> > I think that all the drivers that are not converted to the common PWM
+> > layer yet should depend on not enabling the common code. Once they
+> > are all moved over, that dependency will go away.
+> 
+> Hence you cannot have a single kernel image that contains both legacy and new
+> drivers. I don't know whether there's any such combination that makes sense,
+> though.
 
-Good morning,
+No, it's not a problem really: Before the new layer was added, any combination
+of PWM drivers would conflict, the entire point of the common PWM code is
+to make it possible that to put some drivers into the same kernel. Over time
+I'd hope that all drivers get moved over, so we can have any combination.
 
-As of mainline commit c2c20ef43d00b1439631e603f8dcee9a803cd8b3 in
-December 2011, the BNX2 driver requests bnx2/bnx2-mips-06-6.2.3.fw;
-however the firmware/bnx2 directory in the kernel sources only
-contains bnx2/bnx2-mips-06-6.2.1.fw so the call fails.
-
-The network interfaces will not come up at all, making it necessary to
-steal & rename 6.2.1 firmware to get the interfaces up, and then
-install a linux-firmware tarball. Before this commit, the bnx2 driver
-as compiled was self-sufficient.
-
-Would it be possible to get back to this situation by updating the
-relevant firmware/bnx2 files in the kernel sources please? I noticed
-this problem in an upgrade from 3.2.11 to 3.4.2, but I verified it is
-still an issue in mainline today.
-
-Regards,
-- -- 
-Tony Vroon
-Server systems manager
-London Internet Exchange Ltd, Trinity Court, Trinity Street,
-Peterborough, PE1 1DA
-Registered in England number 3137929
-E-Mail: tony@linx.net
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk/ysmMACgkQp5vW4rUFj5oIpQCcClnaGH3ZTEGfqOuDCQ05wxUD
-43cAoL6KJH8zmbY+UQoGedriKbcdnrbh
-=3wGg
------END PGP SIGNATURE-----
+	Arnd
