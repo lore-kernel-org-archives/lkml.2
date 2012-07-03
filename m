@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932942Ab2GCBC5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 21:02:57 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54269 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932128Ab2GCBC4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 21:02:56 -0400
-X-AuditID: 9c93016f-b7bccae00000345c-67-4ff244bda4b0
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+	id S933227Ab2GCBFB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 21:05:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44819 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932128Ab2GCBE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 21:04:59 -0400
+Date: Mon, 2 Jul 2012 22:04:21 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, a.p.zijlstra@chello.nl, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
         linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org,
-        drepper@gmail.com
-Subject: Re: [PATCH 2/3] perf, tool: Enable grouping logic for parsed events
+        drepper@gmail.com, eranian@google.com
+Subject: Re: [PATCHv3 0/3] perf tool: Add new event group management
+Message-ID: <20120703010420.GA7533@infradead.org>
 References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
-	<1340960907-3725-3-git-send-email-jolsa@redhat.com>
-	<87bojync4b.fsf@sejong.aot.lge.com>
-	<20120702101010.GB967@krava.redhat.com>
-Date: Tue, 03 Jul 2012 09:58:44 +0900
-In-Reply-To: <20120702101010.GB967@krava.redhat.com> (Jiri Olsa's message of
-	"Mon, 2 Jul 2012 12:10:10 +0200")
-Message-ID: <873959mzi3.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+ <87fw9blyhj.fsf@sejong.aot.lge.com>
+ <20120702101518.GC967@krava.redhat.com>
+ <1341234662.1476.13.camel@leonhard>
+ <20120702133341.GD967@krava.redhat.com>
+ <1341238834.1476.50.camel@leonhard>
+ <877gulmzw4.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <877gulmzw4.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Jul 2012 12:10:10 +0200, Jiri Olsa wrote:
-> On Mon, Jul 02, 2012 at 11:13:56AM +0900, Namhyung Kim wrote:
->> On Fri, 29 Jun 2012 11:08:26 +0200, Jiri Olsa wrote:
->> > It's possible to use standard event modifier for a group, which spans
->> > over all events in the group and overrides any event modifier settings,
->> > for example:
->> >
->> >   # perf record -r '{faults:k,cache-references}:u'
->> >
->> > resulting in ':u' modifier being used for both 'faults' and 'cache-references'
->> > events, regardless of their modifier setup (':k' for faults event).
->> >
->> 
->> So the faults event would get only 'u' for the modifier not 'uk', right?
->
-> right
->
+Em Tue, Jul 03, 2012 at 09:50:19AM +0900, Namhyung Kim escreveu:
+> On Mon, 02 Jul 2012 23:20:34 +0900, Namhyung Kim wrote:
+> > We could pass such information to perf report explicitly, But I guess it
+> > 'd better if perf report did it for me automagically by detecting group
+> > relations.
+> 
+> Oh I think we can do it by parsing the command line (again) at the perf
+> report time. In that way, no need to change the file format. I'm gonna
+> give it a shot later.
 
-I was thinking about the combining the modifiers - i.e. make it 'uk'
-above. Not sure it's useful in general, but something like "adding 'p'
-to the leader (only)" looks good to have IMHO.
+Its there already...
 
-Thanks,
-Namhyung
+[acme@felicio ~]$ perf record -e cycles,cache-misses sleep 1
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.016 MB perf.data (~713 samples) ]
+[acme@felicio ~]$ perf report --stdio | head -20
+# ========
+# captured on: Mon Jul  2 22:02:00 2012
+# hostname : felicio.ghostprotocols.net
+# os release : 3.4.0-rc5+
+# perf version : 3.5.rc1.104.gd3076383
+# arch : x86_64
+# nrcpus online : 4
+# nrcpus avail : 4
+# cpudesc : Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz
+# cpuid : GenuineIntel,6,42,7
+# total memory : 8089800 kB
+# cmdline : /home/acme/bin/perf record -e cycles,cache-misses sleep 1 
+# event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2
+# = 0x0, excl_usr = 0, excl_kern = 0, id = { 10, 11, 12, 13 }
+# event : name = cache-misses, type = 0, config = 0x3, config1 = 0x0,
+# config2 = 0x0, excl_usr = 0, excl_kern = 0, id = { 14, 15, 16, 17 }
+# HEADER_CPU_TOPOLOGY info available, use -I to display
+# HEADER_NUMA_TOPOLOGY info available, use -I to display
+# ========
+#
+# Samples: 19  of event 'cycles'
+# Event count (approx.): 2442170
+[acme@felicio ~]$ 
+
+I.e. for perf report it is ok already, the user can see what was asked
+for, exactly as specified on the command line.
+
+What I discussed with Jiri was that it would be good to have a
+programatic way of regenerating the perf_evlist instance from the
+perf_event_attr and other feature bits.
+
+I.e. the counterpart to perf_evsel being created from the
+perf_event_attr in the perf.data file.
+
+- Arnaldo
