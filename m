@@ -1,103 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340Ab2GCWBh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 18:01:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53651 "EHLO mx1.redhat.com"
+	id S933534Ab2GCWCB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 18:02:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62614 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757312Ab2GCWBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 18:01:14 -0400
+	id S1757349Ab2GCWBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 18:01:41 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 05/10] perf, tool: Split out PE_VALUE_SYM parsing token to SW and HW tokens
-Date: Wed,  4 Jul 2012 00:00:43 +0200
-Message-Id: <1341352848-11833-6-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 08/10] perf, tool: Add sysfs read file interface
+Date: Wed,  4 Jul 2012 00:00:46 +0200
+Message-Id: <1341352848-11833-9-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1341352848-11833-1-git-send-email-jolsa@redhat.com>
 References: <1341352848-11833-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Spliting PE_VALUE_SYM token to PE_VALUE_SYM_HW and PE_VALUE_SYM_SW
-tokens to separate hardware and software symbols.
+Adding read file interface to access sysfs files data.
 
-This will be usefull in upcomming patch where we want to be able
-to parse out only hardware events.
+  int sysfs_read_file(const char *file, char *buf, size_t size)
+
+The 'file' argument is file path relative to the sysfs mount.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/parse-events.l |    2 +-
- tools/perf/util/parse-events.y |   15 +++++++++++----
- 2 files changed, 12 insertions(+), 5 deletions(-)
+ tools/perf/util/sysfs.c |   19 +++++++++++++++++++
+ tools/perf/util/sysfs.h |    1 +
+ 2 files changed, 20 insertions(+)
 
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index c05dbef..86b27a5 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -56,7 +56,7 @@ static int sym(yyscan_t scanner, int type, int config)
- 	YYSTYPE *yylval = parse_events_get_lval(scanner);
+diff --git a/tools/perf/util/sysfs.c b/tools/perf/util/sysfs.c
+index 48c6902..4ee886a 100644
+--- a/tools/perf/util/sysfs.c
++++ b/tools/perf/util/sysfs.c
+@@ -58,3 +58,22 @@ const char *sysfs_find_mountpoint(void)
  
- 	yylval->num = (type << 16) + config;
--	return PE_VALUE_SYM;
-+	return type == PERF_TYPE_HARDWARE ? PE_VALUE_SYM_HW : PE_VALUE_SYM_SW;
+ 	return sysfs_found ? sysfs_mountpoint : NULL;
  }
- 
- static int term(yyscan_t scanner, int type)
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index 9525c45..2bc5fbf 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -26,14 +26,15 @@ do { \
- %}
- 
- %token PE_START_EVENTS PE_START_TERMS
--%token PE_VALUE PE_VALUE_SYM PE_RAW PE_TERM
-+%token PE_VALUE PE_VALUE_SYM_HW PE_VALUE_SYM_SW PE_RAW PE_TERM
- %token PE_NAME
- %token PE_MODIFIER_EVENT PE_MODIFIER_BP
- %token PE_NAME_CACHE_TYPE PE_NAME_CACHE_OP_RESULT
- %token PE_PREFIX_MEM PE_PREFIX_RAW
- %token PE_ERROR
- %type <num> PE_VALUE
--%type <num> PE_VALUE_SYM
-+%type <num> PE_VALUE_SYM_HW
-+%type <num> PE_VALUE_SYM_SW
- %type <num> PE_RAW
- %type <num> PE_TERM
- %type <str> PE_NAME
-@@ -41,6 +42,7 @@ do { \
- %type <str> PE_NAME_CACHE_OP_RESULT
- %type <str> PE_MODIFIER_EVENT
- %type <str> PE_MODIFIER_BP
-+%type <num> value_sym
- %type <head> event_config
- %type <term> event_term
- %type <head> event_pmu
-@@ -109,8 +111,13 @@ PE_NAME '/' event_config '/'
- 	$$ = list;
- }
- 
-+value_sym:
-+PE_VALUE_SYM_HW
-+|
-+PE_VALUE_SYM_SW
 +
- event_legacy_symbol:
--PE_VALUE_SYM '/' event_config '/'
-+value_sym '/' event_config '/'
- {
- 	struct parse_events_data__events *data = _data;
- 	struct list_head *list = NULL;
-@@ -123,7 +130,7 @@ PE_VALUE_SYM '/' event_config '/'
- 	$$ = list;
- }
- |
--PE_VALUE_SYM sep_slash_dc
-+value_sym sep_slash_dc
- {
- 	struct parse_events_data__events *data = _data;
- 	struct list_head *list = NULL;
++int sysfs_read_file(const char *file, char *buf, size_t size)
++{
++	char path[PATH_MAX];
++	FILE *fp;
++	int ret = 0;
++
++	snprintf(path, PATH_MAX, "%s/%s", sysfs_mountpoint, file);
++
++	fp = fopen(path, "r");
++	if (!fp)
++		return -errno;
++
++	if (fread(buf, 1, size, fp) == 0)
++		ret = -errno;
++
++	fclose(fp);
++	return ret;
++}
+diff --git a/tools/perf/util/sysfs.h b/tools/perf/util/sysfs.h
+index a813b72..5ce99e7 100644
+--- a/tools/perf/util/sysfs.h
++++ b/tools/perf/util/sysfs.h
+@@ -2,5 +2,6 @@
+ #define __SYSFS_H__
+ 
+ const char *sysfs_find_mountpoint(void);
++int sysfs_read_file(const char *file, char *buf, size_t size);
+ 
+ #endif /* __DEBUGFS_H__ */
 -- 
 1.7.10.4
 
