@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693Ab2GCOBB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 10:01:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17778 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753430Ab2GCOA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 10:00:59 -0400
-Date: Tue, 3 Jul 2012 10:00:48 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, snitzer@redhat.com,
-        martin.petersen@oracle.com, david@fromorbit.com, xfs@oss.sgi.com,
-        dm-devel@redhat.com, hch@lst.de
-Subject: Re: [dm-devel] [PATCH v2 1/3] block: add sysfs entry for
- discard_alignment
-Message-ID: <20120703140048.GC11272@redhat.com>
-References: <1341235225-27551-1-git-send-email-pbonzini@redhat.com>
- <1341235225-27551-2-git-send-email-pbonzini@redhat.com>
- <20120703023442.GB3586@redhat.com>
- <4FF2DCB1.2090704@redhat.com>
+	id S1756114Ab2GCOBp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 10:01:45 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63371 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab2GCOBo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 10:01:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device registration
+Date: Tue, 3 Jul 2012 14:01:35 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
+        sameo@linux.intel.com
+References: <1341316788-12730-1-git-send-email-lee.jones@linaro.org> <4FF2EEA1.6080204@linaro.org> <20120703132447.GN29030@opensource.wolfsonmicro.com>
+In-Reply-To: <20120703132447.GN29030@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF2DCB1.2090704@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207031401.36262.arnd@arndb.de>
+X-Provags-ID: V02:K0:dj+b+/t80UOZEuutrk3GxOnD1tHjrOKizP59xE1j4Wb
+ WDhj6YHLVXSedrpoaesBwSveQ2npPRaOuxFyeAKfM7UnIHDNKK
+ 3e/3x/csNNyRV33jUwQHIDe1izuOQ//SsR4SgoNtwlXE7PEVyx
+ 85G9cqsN2ocLZLRmFP5w0OT4+US4j4DmPUROpGkiR03LT0cydt
+ itNEFvhhLFHTWFS7yefIaCZ1QgxIRic0+kDtArjfjjRm9YwT+8
+ 25vdrXJIXIt5UgGG0MNMUl6cEEUvHpwT9MJziA5X/nm7Ta/4wY
+ 21QlSBx8zp7ToGaVj74C3kpYEC6jtJ5nEoP78KPg/doNJkHK3D
+ ivtvnnftUsjtYtcMXDP0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 03, 2012 at 01:51:13PM +0200, Paolo Bonzini wrote:
-> Il 03/07/2012 04:34, Vivek Goyal ha scritto:
-> >> > The next patches will actually use the alignment, expose it in sysfs
-> >> > for ease of debugging.
-> >> > 
-> > Don't we already have discard_alignment exported as device attribute.
-> > 
-> > /sys/block/<dev>/discard_alignment
+On Tuesday 03 July 2012, Mark Brown wrote:
+> > Before, when we probed each device from Device Tree we came up
+> > against some fairly major limitations of the Device Tree. As a
+> > result, Arnd and I agreed that this was the way to go.
 > 
-> Ah, interesting, I missed it completely.  I guess it's because queue/
-> directories only exist for full disks, and the correct alignment varies
-> for each partition.  So this patch is unnecessary.
+> I'm really unconvinced that instnatiating the MFD cells from device tree
+> is in general a good idea.
 
-Partition discard_alignments are available in
-/sys/block/<disk>/<partition>/discard_alignment.
+In general it's not, e.g. it makes no sense when the MFD is just
+a bunch of registers that are mapped to various distinct Linux
+devices. The two mfd devices on ux500 (prcmu and ab8500) are really
+buses by themselves that happen to be implemented using the MFD
+framework on Linux.
 
-That raises an interesting question for patch3. If the discard is happening to
-a partition, shouldn't you be looking at partition discard_alignment
-instead of always looking at queue discard_alignment?
+I don't see how we would get around representing the buses in
+the device tree because we have to refer to nodes under them
+from off-chip devices. Simplified we have something like
 
-Thanks
-Vivek
+
+  db9500 {
+	prcmu {
+		opp@1 {
+		};
+
+		regulator@2 {
+		};
+
+		watchdog@4 {
+		};
+
+		ab8500@5 {
+			regulator@3 {
+			};
+			regulator@4 {
+			};
+			adc@a {
+			};
+			rtc@f {
+			};
+			irq@e {
+			};
+			gpio@10 {
+			};
+		};
+	};
+  };
+
+Most of the stuff on the board is connected to the ab8500 regulators and
+gpio pins, which are also used as interrupts. In order to hook up
+the external devices in the device tree, we need to have something that
+we can point to as their interrupt-parent or the phandle in the gpio
+description.
+
+	Arnd
