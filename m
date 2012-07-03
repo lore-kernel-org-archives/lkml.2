@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933172Ab2GCPcz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 11:32:55 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:57476 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753616Ab2GCPcx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 11:32:53 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VS-8(zz98dI9371I542M1432Izz1202hzz8275dhz2fh2a8h683h839h93fhd25hf0ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [PATCH 00/13] drivers: hv: kvp
-Thread-Topic: [PATCH 00/13] drivers: hv: kvp
-Thread-Index: AQHNT/NB00SQsXjmDEmcq7JSjap8hpcFX8+AgADv8yCAAAVogIAFjrOAgAFErgCAAAhKEIAAA3+AgAAAZKCAAp6bAIAGMUUggAGY1ICAACO1sA==
-Date: Tue, 3 Jul 2012 15:32:46 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF9155EF7F0@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <20120621224737.GA5933@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF9155EC47A@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120622132547.GA2639@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF9155ED14D@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120626213954.GA4840@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF9155ED64A@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120626222205.GA5948@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF9155ED68D@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120628142340.GA21537@aepfle.de>
- <426367E2313C2449837CD2DE46E7EAF9155EF399@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120703132049.GA10663@aepfle.de>
-In-Reply-To: <20120703132049.GA10663@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.179.128]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT003.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+	id S1756731Ab2GCPdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 11:33:53 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:48708 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753616Ab2GCPdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 11:33:52 -0400
+Message-ID: <1341329631.2164.15.camel@joe2Laptop>
+Subject: Re: [RFC][PATCHv2 2/3] lib: printf: append support of '%*p[Mm][FR]'
+From: Joe Perches <joe@perches.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, proski@gnu.org,
+        Andrei Emeltchenko <andrei.emeltchenko@intel.com>,
+        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 03 Jul 2012 08:33:51 -0700
+In-Reply-To: <1341310000-4082-2-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1341264199.10162.2.camel@joe2Laptop>
+	 <1341310000-4082-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1341310000-4082-2-git-send-email-andriy.shevchenko@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q63FX1MV016667
 
-
-
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Tuesday, July 03, 2012 9:21 AM
-> To: KY Srinivasan
-> Cc: Greg KH; apw@canonical.com; devel@linuxdriverproject.org; linux-
-> kernel@vger.kernel.org; netdev@vger.kernel.org
-> Subject: Re: [PATCH 00/13] drivers: hv: kvp
+On Tue, 2012-07-03 at 13:06 +0300, Andy Shevchenko wrote:
+> There are many places in the kernel where the drivers print small buffers as a
+> hex string. This patch adds a support of the variable width buffer to print it
+> as a hex string with a delimiter. The idea came from Pavel Roskin here:
+> http://www.digipedia.pl/usenet/thread/18835/17449/
 > 
-> On Mon, Jul 02, KY Srinivasan wrote:
-> 
-> > While I toyed with your proposal, I feel it just pushes the problem
-> > out of the daemon code - we would still need to write distro specific
-> > scripts. If this approach is something that everybody is comfortable
-> > with, I can take a stab at implementing that.
-> 
-> Until NetworkManager is feature complete and until every distro is using
-> NetworkManager per default the kvp_daemon needs distro specific code to
-> get and set network related settings.
-> Doing it with an external script will simplify debugging and changes to
-> the code.
+> Sample output of
+> 	pr_info("buf[%d:%d] %*pM\n", from, len, len, &buf[from]);
+> could be look like this:
+> 	[ 0.726130] buf[51:8] e8:16:b6:ef:e3:74:45:6e
+> 	[ 0.750736] buf[59:15] 31:81:b8:3f:35:49:06:ae:df:32:06:05:4a:af:55
+> 	[ 0.757602] buf[17:5] ac:16:d5:2c:ef
 
-Fair enough. I will keep my current implementation of the GET operation as is since
-it is distro independent. On the SET side, I will implement a script as you have suggested.
+Hi Andy.
 
-Regards,
+> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+[]
+> @@ -655,12 +655,13 @@ char *resource_string(char *buf, char *end, struct resource *res,
+[]
+> +char *hex_string(char *buf, char *end, u8 *addr, struct printf_spec spec,
+> +		 const char *fmt)
+[]
+> @@ -678,18 +679,31 @@ char *mac_address_string(char *buf, char *end, u8 *addr,
+[]
+> +	while (i < len) {
 
-K. Y
+Oh good, a while loop, thanks.
 
-> 
-> Olaf
-> 
-> 
+[]
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> @@ -947,6 +961,9 @@ int kptr_restrict __read_mostly;
+>   * - 'MF' For a 6-byte MAC FDDI address, it prints the address
+>   *       with a dash-separated hex notation
+>   * - '[mM]R For a 6-byte MAC address, Reverse order (Bluetooth)
+> + *       Optional usage is %*p[Mn][FR] with variable length to print. It
+> + *       supports up to 64 bytes of the input. Consider to use print_hex_dump()
+> + *       for the larger input.
+
+It might be more sensible to use new, distinct
+"%*pH" and "%*ph" functions and not touch the
+mac address function at all.  Will anyone ever
+really want to emit the buffer in reverse?
+I don't think so.
+
+Perhaps when using a hex_string_buffer func the
+separator should be a space/no-space with %*pHh.
+
+You could extend the max to 128 or larger now.
+
+
