@@ -1,121 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab2GCHHP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 03:07:15 -0400
-Received: from ja.ssi.bg ([178.16.129.10]:46306 "EHLO ja.ssi.bg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910Ab2GCHHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 03:07:12 -0400
-Date: Tue, 3 Jul 2012 10:12:41 +0300 (EEST)
-From: Julian Anastasov <ja@ssi.bg>
-To: Xiaotian Feng <xtfeng@gmail.com>
-cc: netdev@vger.kernel.org, lvs-devel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        Xiaotian Feng <dannyfeng@tencent.com>,
-        Wensong Zhang <wensong@linux-vs.org>,
-        Simon Horman <horms@verge.net.au>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [RFC PATCH net-next] ipvs: add missing lock in
- ip_vs_ftp_init_conn()
-In-Reply-To: <1340890587-8169-1-git-send-email-xtfeng@gmail.com>
-Message-ID: <alpine.LFD.2.00.1207030952340.1749@ja.ssi.bg>
-References: <1340890587-8169-1-git-send-email-xtfeng@gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932900Ab2GCHKE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 03:10:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33589 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735Ab2GCHKD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 03:10:03 -0400
+Message-ID: <1341299385.4669.2.camel@phoenix>
+Subject: RE: [PATCH 2/2] regulator: tps65217: Fix voltage boundary checking
+ in tps65217_pmic_map_voltage
+From: Axel Lin <axel.lin@gmail.com>
+To: "AnilKumar, Chimata" <anilkumar@ti.com>
+Cc: "Girdwood, Liam" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Tue, 03 Jul 2012 15:09:45 +0800
+In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC13E9E8DAD@DBDE01.ent.ti.com>
+References: <1341284473.18757.2.camel@phoenix>
+	 <1341284755.18757.5.camel@phoenix>
+	 <331ABD5ECB02734CA317220B2BBEABC13E9E8CAB@DBDE01.ent.ti.com>
+	 <1341293168.3241.7.camel@phoenix>
+	 <331ABD5ECB02734CA317220B2BBEABC13E9E8DAD@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-	Hello,
-
-On Thu, 28 Jun 2012, Xiaotian Feng wrote:
-
-> We met a kernel panic in 2.6.32.43 kernel:
+> In side tps65217_pmic_map_voltage() we have
 > 
-> [2680191.848044] IPVS: ip_vs_conn_hash(): request for already hashed, called from run_timer_softirq+0x175/0x1d0
-> <snip>
-> [2680311.849009] general protection fault: 0000 [#1] SMP
-> [2680311.853001] RIP: 0010:[<ffffffff815f155c>]  [<ffffffff815f155c>] ip_vs_conn_expire+0xdc/0x2f0
-> [2680311.853001] RSP: 0018:ffff880028303e70  EFLAGS: 00010202
-> [2680311.853001] RAX: dead000000200200 RBX: ffff8801aad00b80 RCX: 0000000000001d90
-> [2680311.853001] RDX: dead000000100100 RSI: 000000004fd59800 RDI: ffff8801aad00c08
-> <snip>
-> [2680311.853001] Call Trace:
-> [2680311.853001]  <IRQ>
-> [2680311.853001]  [<ffffffff815f1480>] ? ip_vs_conn_expire+0x0/0x2f0
-> [2680311.853001]  [<ffffffff8104e2a5>] run_timer_softirq+0x175/0x1d0
-> [2680311.853001]  [<ffffffff81021a48>] ? lapic_next_event+0x18/0x20
-> [2680311.853001]  [<ffffffff81049a13>] __do_softirq+0xb3/0x150
-> [2680311.853001]  [<ffffffff8100cc5c>] call_softirq+0x1c/0x30
-> [2680311.853001]  [<ffffffff8100ea9a>] do_softirq+0x4a/0x80
-> [2680311.853001]  [<ffffffff81049957>] irq_exit+0x77/0x80
-> [2680311.853001]  [<ffffffff81021f2c>] smp_apic_timer_interrupt+0x6c/0xa0
-> [2680311.853001]  [<ffffffff8100c633>] apic_timer_interrupt+0x13/0x20
-> [2680311.853001]  <EOI>
-> [2680311.853001]  [<ffffffff81013b52>] ? mwait_idle+0x52/0x70
-> [2680311.853001]  [<ffffffff8100a7b0>] ? enter_idle+0x20/0x30
-> [2680311.853001]  [<ffffffff8100ac62>] ? cpu_idle+0x52/0x80
-> [2680311.853001]  [<ffffffff816d504d>] ? start_secondary+0x19d/0x280
+> tps->info[rid]->uv_to_vsel(850000, &sel) nothing but
+> tps65217_uv_to_vsel1(850000, &sel);
 > 
-> rax and rdx is LIST_POISON1 and LIST_POISON2, so kernel is list_del() on an already deleted
-> connection and result the general protect fault.
+> sel = (((850000 - 900000) + (25000) - 1) / (25000));
+> sel = ((-25001)/(25000));
+> sel = -1; /* Which is not expected */
 > 
-> The "request for already hashed" warning, told us someone might change the connection flags
-> incorrectly, like described in commit aea9d711, it changes the connection flags, but doesn't
-> put the connection back to the list. So ip_vs_conn_hash() throw a warning and return.
-> Later, when ip_vs_conn_expire fire again, ip_vs_conn_unhash() will find the HASHED connection
-> and list_del() it, then kernel panic happened.
+> Ideally this would be the change
 > 
-> After code review, the only chance that kernel change connection flag without protection is
-> in ip_vs_ftp_init_conn().
+> 	if (min_uV < tps->info[rid]->min_uV)
+> 		min_uV = tps->info[rid]->min_uV;
 > 
-> Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
-> Cc: Wensong Zhang <wensong@linux-vs.org>
-> Cc: Simon Horman <horms@verge.net.au>
-> Cc: Julian Anastasov <ja@ssi.bg>
-> Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-> Cc: Patrick McHardy <kaber@trash.net>
-> Cc: "David S. Miller" <davem@davemloft.net> 
+ok. I got your point now.
 
-	For the fix below:
+So if min_uV < tps->info[rid]->min_uV, we need to set
+min_uV = tps->info[rid]->min_uV.
+This is because the equation we used in uv_to_vsel() does not allow
+min_uV < tps->info[rid]->min_uV, otherwise it returns negative selector.
 
-Acked-by: Julian Anastasov <ja@ssi.bg>
 
-	Simon, the change looks ok. ip_vs_ftp_init_conn is called
-from context where cp->lock is not locked (no double lock), so it
-should be safe for the backup.
+> 	if (max_uV > tps->info[rid]->max_uV)
+> 		max_uV = tps->info[rid]->max_uV;
 
-	Only that the comment is not specifying that we
-fix a problem in the backup server.
+This looks not necessary. the equation in uv_to_vsel() does not use
+max_uV.
 
-> ---
->  net/netfilter/ipvs/ip_vs_ftp.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
 > 
-> diff --git a/net/netfilter/ipvs/ip_vs_ftp.c b/net/netfilter/ipvs/ip_vs_ftp.c
-> index b20b29c..c2bc264 100644
-> --- a/net/netfilter/ipvs/ip_vs_ftp.c
-> +++ b/net/netfilter/ipvs/ip_vs_ftp.c
-> @@ -65,8 +65,10 @@ static int ip_vs_ftp_pasv;
->  static int
->  ip_vs_ftp_init_conn(struct ip_vs_app *app, struct ip_vs_conn *cp)
->  {
-> +	spin_lock(&cp->lock);
->  	/* We use connection tracking for the command connection */
->  	cp->flags |= IP_VS_CONN_F_NFCT;
-> +	spin_unlock(&cp->lock);
->  	return 0;
->  }
->  
-> -- 
-> 1.7.1
+> 	if (max_uV < tps->info[rid]->min_uV ||
+> 			min_uV > tps->info[rid]->max_uV)
+> 		return -EINVAL;
+> 
+> If this is not the case then I am completely in a wrong direction.
+You are right in this case. I'll send a v2 for review.
 
-Regards
+Thanks for the review,
+Axel
 
---
-Julian Anastasov <ja@ssi.bg>
+
