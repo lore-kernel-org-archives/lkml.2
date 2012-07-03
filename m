@@ -1,83 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933112Ab2GCEJt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 00:09:49 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53327 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab2GCEJr (ORCPT
+	id S933157Ab2GCERX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 00:17:23 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:35816 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932088Ab2GCERU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 00:09:47 -0400
-Date: Tue, 3 Jul 2012 14:09:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Russ Dill <Russ.Dill@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: linux-next: manual merge of the usb tree with the mfd tree
-Message-Id: <20120703140938.b2ae0cf0ce2a3a470bb6cec6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__3_Jul_2012_14_09_38_+1000_TFRfmXuKPAQ.dnHj"
+	Tue, 3 Jul 2012 00:17:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <1338795894-6292-1-git-send-email-jiang.liu@huawei.com>
+References: <1338795894-6292-1-git-send-email-jiang.liu@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 2 Jul 2012 22:16:58 -0600
+Message-ID: <CAErSpo7NiCsuM+UxveZbYxNsCiStMH5SLZ8EdFzJ7EduB306OQ@mail.gmail.com>
+Subject: Re: [Resend with Ack][PATCH v1] PCI: allow acpiphp to handle PCIe
+ ports without native PCIe hotplug capability
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Don Dutile <ddutile@redhat.com>, Yijing Wang <wangyijing@huawei.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__3_Jul_2012_14_09_38_+1000_TFRfmXuKPAQ.dnHj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jun 4, 2012 at 1:44 AM, Jiang Liu <jiang.liu@huawei.com> wrote:
+> Commit 0d52f54e2ef64c189dedc332e680b2eb4a34590a (PCI / ACPI: Make acpiphp
+> ignore root bridges using PCIe native hotplug) added code that made the
+> acpiphp driver completely ignore PCIe root complexes for which the kernel
+> had been granted control of the native PCIe hotplug feature by the BIOS
+> through _OSC. Later commit 619a5182d1f38a3d629ee48e04fa182ef9170052
+> "PCI hotplug: Always allow acpiphp to handle non-PCIe bridges" relaxed
+> the constraints to allow acpiphp driver handle non-PCIe bridges under
+> such a complex. The constraint needs to be relaxed further to allow
+> acpiphp driver to hanlde PCIe ports without native PCIe hotplug capability.
+>
+> Some MR-IOV switch chipsets, such PLX8696, support multiple virtual PCIe
+> switches and may migrate downstream ports among virtual switches.
+> To migrate a downstream port from the source virtual switch to the target,
+> the port needs to be hot-removed from the source and hot-added into the
+> target. pciehp driver can't be used here because there's no slots within
+> the virtual PCIe switch. So acpiphp driver is used to support downstream
+> port migration. A typical configuration is as below:
+> [Root w/o native PCIe HP]
+>         [Upstream port of vswitch w/o native PCIe HP]
+>                 [Downstream port of vswitch w/ native PCIe HP]
+>                         [PCIe enpoint]
+>
+> Here acpiphp driver will be used to handle root ports and upstream port
+> in the virtual switch, and pciehp driver will be used to handle downstream
+> ports in the virtual switch.
+>
+> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+>
+> ---
+>  drivers/pci/hotplug/acpiphp_glue.c |   49 ++++++++++++++++++++++++++++-------
+>  1 files changed, 39 insertions(+), 10 deletions(-)
+>
+> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+> index 806c44f..4889448 100644
+> --- a/drivers/pci/hotplug/acpiphp_glue.c
+> +++ b/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -115,6 +115,43 @@ static const struct acpi_dock_ops acpiphp_dock_ops = {
+>         .handler = handle_hotplug_event_func,
+>  };
+>
+> +/* Check whether device is managed by native PCIe hotplug driver */
+> +static bool device_is_managed_by_native_pciehp(struct pci_dev *pdev)
+> +{
+> +       int pos;
+> +       u16 reg16;
+> +       u32 reg32;
+> +       acpi_handle tmp;
+> +       struct acpi_pci_root *root;
+> +
+> +       if (!pci_is_pcie(pdev))
+> +               return false;
+> +
+> +       /* Check whether PCIe port supports native PCIe hotplug */
+> +       pos = pci_pcie_cap(pdev);
 
-Hi Greg,
+Add "if (!pos) return false;" here and you can drop the "if
+(!pci_is_pcie())" test above.
 
-Today's linux-next merge of the usb tree got a conflict in
-drivers/usb/host/ehci-omap.c between commit 996439f8fa07 ("mfd: USB: Fix
-the omap-usb EHCI ULPI PHY reset fix issues") from the mfd tree and
-commit 984e97483a14 ("ARM: OMAP: USB: Fixup ehci_hcd_omap_probe error
-path") from the usb tree.
+> +       pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &reg16);
+> +       if (!(reg16 & PCI_EXP_FLAGS_SLOT))
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I think this is unsafe.  Per the PCIe v3.0 spec, sec 7.8.2 on p648,
+the "Slot Implemented" bit is undefined except for Downstream Ports,
+so we're using an undefined bit to decide whether to read
+PCI_EXP_SLTCAP.
 
-diff --cc drivers/usb/host/ehci-omap.c
-index c304354,6e15fc8..0000000
---- a/drivers/usb/host/ehci-omap.c
-+++ b/drivers/usb/host/ehci-omap.c
-@@@ -329,11 -330,6 +329,11 @@@ static int ehci_hcd_omap_probe(struct p
-  	omap_ehci->hcs_params =3D readl(&omap_ehci->caps->hcs_params);
- =20
-  	ehci_reset(omap_ehci);
- +	ret =3D usb_add_hcd(hcd, irq, IRQF_SHARED);
- +	if (ret) {
- +		dev_err(dev, "failed to add hcd with err %d\n", ret);
-- 		goto err_add_hcd;
-++		goto err_pm_runtime;
- +	}
- =20
-  	if (pdata->phy_reset) {
-  		/* Hold the PHY in RESET for enough time till
+If the device has a v1 PCIe Capability, it is not required to even
+implement PCI_EXP_SLTCAP, so we could be reading garbage out of an
+unrelated capability.  This is in sec 7.8, p363, of the v1.1 PCIe
+spec.  I think v3.0 of the spec is dangerously incomplete because it
+doesn't include enough information to handle the v1 PCIe Capability
+correctly.
 
---Signature=_Tue__3_Jul_2012_14_09_38_+1000_TFRfmXuKPAQ.dnHj
-Content-Type: application/pgp-signature
+There's a fair amount of work to fix this.  I started doing it, but
+decided I didn't have time to complete it.  Here's what I think we
+(and by "we," I'm afraid I mean "you" :)) should do:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+  - Add a "u16 pcie_flags" field in struct pci_dev and save the "PCI
+Express Capabilities Register" there in set_pcie_port_type().  All
+fields in that register are read-only, so it should be safe to cache
+it.
+  - Remove pcie_type from struct pci_dev and replace it with a
+pcie_type() inline that extracts it from pcie_flags.
+  - Rework the pcie_cap_has_*() macros in drivers/pci/pci.c to take a
+struct pci_dev * and use pcie_flags instead of type and flags.  This
+will remove the need for callers to read the flags themselves.
+  - Move the pcie_cap_has_*() macros to include/linux/pci_reg.h so
+they can be shared.
+  - Audit all uses of the Link registers (PCI_EXP_LNKCAP,
+PCI_EXP_LNKCTL, PCI_EXP_LNKSTA), Slot registers (PCI_EXP_SLTCAP,
+PCI_EXP_SLTCTL, PCI_EXP_SLTSTA), and Root registers (PCI_EXP_RTCAP,
+PCI_EXP_RTCTL, PCI_EXP_RTSTA) to make sure the register exists, either
+by using pcie_cap_has_*() or some other knowledge of the device.
 
-iQIcBAEBCAAGBQJP8nCCAAoJEECxmPOUX5FEIjkP/2W3sgy5Z56tLuOWTxFq+1ec
-k2JeDocO15XMrCt6kpIFeDTjgTGvaPBDFb8uXKBvncbG3FcwvGUlJ1i0ex0SX70t
-4wJxfFJyzsiNzqRmHJZkQUuHSWLtaXpLDb5fTk6Y9AEKRhvYYhg/ZaBzgHvaVRe7
-Q6r4tmEi9HvDHU0mlQy9PQZZ34kgFTP8cwr/xHEU0Ru7OYe3TQaFVqyjWQYyUfVQ
-KpTCFuKKMi92ojo67C4/7j/47yBnDCAEW4DKhiRvRR7Nl7NeWwzkoAGLN4LhH8GT
-r/z5TIFpbZC2fBKejsEH2dvECXEhMhYmYd/5KxS5d//mzBGzq4wUhXOq5jMDXKA6
-nqfNnHfpXhNbX2sF78Z60fmVVAvXlnlVHWhnjoKedm0nmmrQioTfnnfbEffVdVqL
-F6TWm1MGNe22/iTY70tjORbKjm9lo23S0jQZ9NM74LQOfJACLuDaXDISDgoQPCVd
-qiTHlqo1FoG5IwKohO5WB/HGohv5zmGlykUiHaPZOs8qKZT2thQ9LbWA5V2eqnQ6
-q9i20mGOj1NqseTa+Q12Dn0aTkddjzoY5CpouZEDvo93onOkvH25I+OkRUV/8uTj
-t0WXkJFIIfLbksJQSlKC3mFu6WnU/Ygj+1fBk+4zC0G7H7lZsE9JeUso8syOAApq
-4lKyLRgjwxLuspSLAOJp
-=Ayzz
------END PGP SIGNATURE-----
-
---Signature=_Tue__3_Jul_2012_14_09_38_+1000_TFRfmXuKPAQ.dnHj--
+> +               return false;
+> +       pci_read_config_dword(pdev, pos + PCI_EXP_SLTCAP, &reg32);
+> +       if (!(reg32 & PCI_EXP_SLTCAP_HPC))
+> +               return false;
+> +
+> +       /*
+> +        * Check whether native PCIe hotplug has been enabled for
+> +        * this PCIe hierarchy.
+> +        */
+> +       tmp = acpi_find_root_bridge_handle(pdev);
+> +       if (!tmp)
+> +               return false;
+> +       root = acpi_pci_find_root(tmp);
+> +       if (!root)
+> +               return false;
+> +       if (!(root->osc_control_set & OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
+> +               return false;
+> +
+> +       return true;
+> +}
+> +
+>  /* callback routine to register each ACPI PCI slot object */
+>  static acpi_status
+>  register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+> @@ -133,16 +170,8 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+>                 return AE_OK;
+>
+>         pdev = pbus->self;
+> -       if (pdev && pci_is_pcie(pdev)) {
+> -               tmp = acpi_find_root_bridge_handle(pdev);
+> -               if (tmp) {
+> -                       struct acpi_pci_root *root = acpi_pci_find_root(tmp);
+> -
+> -                       if (root && (root->osc_control_set &
+> -                                       OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
+> -                               return AE_OK;
+> -               }
+> -       }
+> +       if (pdev && device_is_managed_by_native_pciehp(pdev))
+> +               return AE_OK;
+>
+>         acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
+>         device = (adr >> 16) & 0xffff;
+> --
+> 1.7.1
+>
+>
