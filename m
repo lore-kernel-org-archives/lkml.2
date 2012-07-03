@@ -1,86 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876Ab2GCErO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 00:47:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55763 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751980Ab2GCErM convert rfc822-to-8bit (ORCPT
+	id S1753390Ab2GCExj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 00:53:39 -0400
+Received: from mail-yw0-f51.google.com ([209.85.213.51]:52695 "EHLO
+	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066Ab2GCExg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 00:47:12 -0400
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: Axel Lin <axel.lin@gmail.com>, "Girdwood, Liam" <lrg@ti.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: RE: [PATCH 2/2] regulator: tps65217: Fix voltage boundary checking
- in tps65217_pmic_map_voltage
-Thread-Topic: [PATCH 2/2] regulator: tps65217: Fix voltage boundary checking
- in tps65217_pmic_map_voltage
-Thread-Index: AQHNWMjPmY5gFg9gAUCbVVRddR0fhJcW+hKg
-Date: Tue, 3 Jul 2012 04:46:16 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC13E9E8CAB@DBDE01.ent.ti.com>
-References: <1341284473.18757.2.camel@phoenix>
- <1341284755.18757.5.camel@phoenix>
-In-Reply-To: <1341284755.18757.5.camel@phoenix>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.133.24]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 3 Jul 2012 00:53:36 -0400
 MIME-Version: 1.0
+In-Reply-To: <1341275894-9737-1-git-send-email-alex.page.kelly@gmail.com>
+References: <1341275894-9737-1-git-send-email-alex.page.kelly@gmail.com>
+Date: Tue, 3 Jul 2012 12:53:34 +0800
+Message-ID: <CAM_iQpWk7nekZoi5i6yg6Q3hA6Sa1HG2SPjPJ=HFD3cPdbVW9w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Moved core dump functionality into its own file
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Alex Kelly <alex.page.kelly@gmail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alex <eshink@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+On Tue, Jul 3, 2012 at 8:38 AM, Alex Kelly <alex.page.kelly@gmail.com> wrote:
+> From: Alex <eshink@gmail.com>
+>
+> This was done in preparation for making core dump functionality optional.
+>
+> The variable "suid_dumpable" and associated functions are left in fs/exec.c
+> because they're used elsewhere, such as in ptrace.
+>
+> Signed-off-by: Alex Kelly <alex.page.kelly@gmail.com>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-On Tue, Jul 03, 2012 at 08:35:55, Axel Lin wrote:
-> It is ok to request voltage with min_uV < tps->info[rid]->min_uV and
-> max_uV > tps->info[rid]->max_uV
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/regulator/tps65217-regulator.c |    5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> diff --git a/drivers/regulator/tps65217-regulator.c b/drivers/regulator/tps65217-regulator.c
-> index 0a3df5b..0947a09 100644
-> --- a/drivers/regulator/tps65217-regulator.c
-> +++ b/drivers/regulator/tps65217-regulator.c
-> @@ -206,10 +206,7 @@ static int tps65217_pmic_map_voltage(struct regulator_dev *dev,
->  	if (rid < TPS65217_DCDC_1 || rid > TPS65217_LDO_4)
->  		return -EINVAL;
->  
-> -	if (min_uV < tps->info[rid]->min_uV || min_uV > tps->info[rid]->max_uV)
-> -		return -EINVAL;
-> -
-> -	if (max_uV < tps->info[rid]->min_uV || max_uV > tps->info[rid]->max_uV)
-> +	if (max_uV < tps->info[rid]->min_uV || min_uV > tps->info[rid]->max_uV)
->  		return -EINVAL;
+Looks good to me:
 
-Case 1:-
-------
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-tps->info[rid]->min_uV = 600000;
-tps->info[rid]->max_uV = 1100000;
-
-If we do regulator_set_voltage(reg, 550000, 1100000);
-
-This results into error condition and how can we handle with this?
-
-Case 2:-
-------
-
-I think the current code handles this case as well.
-
-There might be a case where board/DT data is false like
-
-tps->info[rid]->min_uV = 1100000;
-tps->info[rid]->max_uV = 600000;
-
-regulator_set_voltage(reg, 650000, 1100000);
-
-Regards
-AnilKumar
+Thanks!
