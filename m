@@ -1,90 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab2GCOBp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 10:01:45 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63371 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab2GCOBo (ORCPT
+	id S1754966Ab2GCOEH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 10:04:07 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:59945 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752636Ab2GCOEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 10:01:44 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device registration
-Date: Tue, 3 Jul 2012 14:01:35 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
-        sameo@linux.intel.com
-References: <1341316788-12730-1-git-send-email-lee.jones@linaro.org> <4FF2EEA1.6080204@linaro.org> <20120703132447.GN29030@opensource.wolfsonmicro.com>
-In-Reply-To: <20120703132447.GN29030@opensource.wolfsonmicro.com>
+	Tue, 3 Jul 2012 10:04:05 -0400
+Date: Tue, 3 Jul 2012 16:04:01 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        dri-devel@lists.freedesktop.org, Keith Packard <keithp@keithp.com>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [MMTests] IO metadata on XFS
+Message-ID: <20120703140401.GB5103@phenom.ffwll.local>
+Mail-Followup-To: Mel Gorman <mgorman@suse.de>,
+	Christoph Hellwig <hch@infradead.org>,
+	Dave Chinner <david@fromorbit.com>, linux-mm@kvack.org,
+	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	xfs@oss.sgi.com, dri-devel@lists.freedesktop.org,
+	Keith Packard <keithp@keithp.com>,
+	Eugeni Dodonov <eugeni.dodonov@intel.com>,
+	Chris Wilson <chris@chris-wilson.co.uk>
+References: <20120620113252.GE4011@suse.de>
+ <20120629111932.GA14154@suse.de>
+ <20120629112505.GF14154@suse.de>
+ <20120701235458.GM19223@dastard>
+ <20120702063226.GA32151@infradead.org>
+ <20120702143215.GS14154@suse.de>
+ <20120702193516.GX14154@suse.de>
+ <20120703130414.GD14154@suse.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207031401.36262.arnd@arndb.de>
-X-Provags-ID: V02:K0:dj+b+/t80UOZEuutrk3GxOnD1tHjrOKizP59xE1j4Wb
- WDhj6YHLVXSedrpoaesBwSveQ2npPRaOuxFyeAKfM7UnIHDNKK
- 3e/3x/csNNyRV33jUwQHIDe1izuOQ//SsR4SgoNtwlXE7PEVyx
- 85G9cqsN2ocLZLRmFP5w0OT4+US4j4DmPUROpGkiR03LT0cydt
- itNEFvhhLFHTWFS7yefIaCZ1QgxIRic0+kDtArjfjjRm9YwT+8
- 25vdrXJIXIt5UgGG0MNMUl6cEEUvHpwT9MJziA5X/nm7Ta/4wY
- 21QlSBx8zp7ToGaVj74C3kpYEC6jtJ5nEoP78KPg/doNJkHK3D
- ivtvnnftUsjtYtcMXDP0=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120703130414.GD14154@suse.de>
+X-Operating-System: Linux phenom 3.4.0-rc3+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 03 July 2012, Mark Brown wrote:
-> > Before, when we probed each device from Device Tree we came up
-> > against some fairly major limitations of the Device Tree. As a
-> > result, Arnd and I agreed that this was the way to go.
+On Tue, Jul 03, 2012 at 02:04:14PM +0100, Mel Gorman wrote:
+> On Mon, Jul 02, 2012 at 08:35:16PM +0100, Mel Gorman wrote:
+> > > <SNIP>
+> > >
+> > It was obvious very quickly that there were two distinct regression so I
+> > ran two bisections. One led to a XFS and the other led to an i915 patch
+> > that enables RC6 to reduce power usage.
+> > 
+> > [c999a223: xfs: introduce an allocation workqueue]
+> > [aa464191: drm/i915: enable plain RC6 on Sandy Bridge by default]
+> > 
+> > gdm was running on the machine so i915 would have been in use. 
 > 
-> I'm really unconvinced that instnatiating the MFD cells from device tree
-> is in general a good idea.
+> Bah, more PEBKAC. gdm was *not* running on this machine. i915 is loaded
+> but X is not.
 
-In general it's not, e.g. it makes no sense when the MFD is just
-a bunch of registers that are mapped to various distinct Linux
-devices. The two mfd devices on ux500 (prcmu and ab8500) are really
-buses by themselves that happen to be implemented using the MFD
-framework on Linux.
-
-I don't see how we would get around representing the buses in
-the device tree because we have to refer to nodes under them
-from off-chip devices. Simplified we have something like
-
-
-  db9500 {
-	prcmu {
-		opp@1 {
-		};
-
-		regulator@2 {
-		};
-
-		watchdog@4 {
-		};
-
-		ab8500@5 {
-			regulator@3 {
-			};
-			regulator@4 {
-			};
-			adc@a {
-			};
-			rtc@f {
-			};
-			irq@e {
-			};
-			gpio@10 {
-			};
-		};
-	};
-  };
-
-Most of the stuff on the board is connected to the ab8500 regulators and
-gpio pins, which are also used as interrupts. In order to hook up
-the external devices in the device tree, we need to have something that
-we can point to as their interrupt-parent or the phandle in the gpio
-description.
-
-	Arnd
+See my little explanation of rc6, just loading the driver will have
+effects. But I'm happy to know that the issue also happens without using
+it, makes it really unlikely it's an issue with the gpu or i915.ko ;-)
+-Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
