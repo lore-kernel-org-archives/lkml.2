@@ -1,83 +1,394 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443Ab2GCKSy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 06:18:54 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:42309 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752604Ab2GCKSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 06:18:53 -0400
-Message-ID: <4FF2C705.9090005@mev.co.uk>
-Date: Tue, 3 Jul 2012 11:18:45 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0
+	id S1755955Ab2GCKUL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 06:20:11 -0400
+Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:11781
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752876Ab2GCKUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 06:20:08 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzc8kzz1202hzz8275bh8275dhz2dh2a8h668h839hd24he5bhf0ah)
+From: Zhao Chenhui <chenhui.zhao@freescale.com>
+To: <linuxppc-dev@lists.ozlabs.org>, <scottwood@freescale.com>,
+        <galak@kernel.crashing.org>
+CC: <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
+Subject: [PATCH v7 2/5] powerpc/85xx: add HOTPLUG_CPU support
+Date: Tue, 3 Jul 2012 18:21:19 +0800
+Message-ID: <1341310879-5468-2-git-send-email-chenhui.zhao@freescale.com>
+X-Mailer: git-send-email 1.6.4.1
+In-Reply-To: <1341310879-5468-1-git-send-email-chenhui.zhao@freescale.com>
+References: <1341310879-5468-1-git-send-email-chenhui.zhao@freescale.com>
 MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Ian Abbott <ian.abbott@mev.co.uk>, Devendra Naga <devendra.aaru@gmail.com>,
-        Mori Hess <fmhess@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] staging/comedi/drivers: release allocated I/O region
- if alloc_private fails
-References: <1341149798-12695-1-git-send-email-devendra.aaru@gmail.com> <4FF15E92.3040503@mev.co.uk> <ADE657CA350FB648AAC2C43247A983F0020698F2EECE@AUSP01VMBX24.collaborationhost.net>
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698F2EECE@AUSP01VMBX24.collaborationhost.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-07-02 16:57, H Hartley Sweeten wrote:
-> On Monday, July 02, 2012 1:41 AM, Ian Abbott wrote:
->> No.  The I/O region will be deallocated in fl512_detach() because
->> dev->iobase has been set non-zero.  fl512_detach() will be called by the
->> comedi core if fl512_attach() returns an error.  This is an unusual
->> aspect of the comedi drivers.
->
-> I have been wondering if that aspect should be "fixed".
->
-> It's more typical for kernel drivers to clean up after themselves if
-> the probe/attach/init/etc. fails. And the release/detach/exit/etc.
-> is only called if the driver has successfully loaded.
->
-> With the comedi drivers, the "detach" is always called if the "attach"
-> failed. And, of course the "detach" is called when the device is removed.
->
-> Because of this the "detach" routines need to do all the checks to
-> see what needs to be cleaned up. Not a big deal but it does create
-> some confusion as this patch shows.
+From: Li Yang <leoli@freescale.com>
 
-At the very least, this behaviour should be documented with a comment at 
-the appropriate place in comedidev.h.
+Add support to disable and re-enable individual cores at runtime
+on MPC85xx/QorIQ SMP machines. Currently support e500v1/e500v2 core.
 
-I think Comedi's current clean-up model is based on the open/close model 
-of TTY driver operations, where the 'close' tty_operation is called when 
-the 'open' tty_operation fails (although typically these operations 
-don't do much allocation or deallocation).
+MPC85xx machines use ePAPR spin-table in boot page for CPU kick-off.
+This patch uses the boot page from bootloader to boot core at runtime.
+It supports 32-bit and 36-bit physical address.
 
-> Ian, what's your opinion on this? Do you think we should refactor all
-> the driver "attach" routines so they clean up on failure and fix the
-> core so the "detach" is only called after a successful "attach"?
+Add generic_set_cpu_up() to set cpu_state as CPU_UP_PREPARE in kick_cpu().
 
-It would be nicer, although the existing mechanism does have the slight 
-advantage of using less code.
+Signed-off-by: Li Yang <leoli@freescale.com>
+Signed-off-by: Jin Qing <b24347@freescale.com>
+Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
+---
+v7:
+ * removed CONFIG_85xx_TB_SYNC
+no change to the rest of the patch set
 
-If this mechanism is adopted, drivers using the new mechanism should 
-also be responsible for freeing their subdevices (which will need a new 
-function comedi_free_subdevices()) and their comedi_device private data. 
-  (They're already responsible for freeing comedi_subdevice private data 
-in their 'detach' routines.)
+ arch/powerpc/Kconfig                  |    6 +-
+ arch/powerpc/include/asm/cacheflush.h |    2 +
+ arch/powerpc/include/asm/smp.h        |    2 +
+ arch/powerpc/kernel/head_fsl_booke.S  |   28 +++++++
+ arch/powerpc/kernel/smp.c             |   10 +++
+ arch/powerpc/platforms/85xx/smp.c     |  137 ++++++++++++++++++++++++---------
+ 6 files changed, 146 insertions(+), 39 deletions(-)
 
-> This would be a pretty big patch since it affects every driver as well
-> as the core.
->
-> We could break it up by introducing a temporary flag in the comedi_driver
-> struct that indicates if the driver has been "fixed". The core could then
-> work as-is for non-updated drivers. Once all the drivers have been updated
-> we then fix the core and remove the flag from all the drivers.
-
-That sounds like a reasonable plan.
-
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 38786c8..d6bacbe 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -220,7 +220,8 @@ config ARCH_HIBERNATION_POSSIBLE
+ config ARCH_SUSPEND_POSSIBLE
+ 	def_bool y
+ 	depends on ADB_PMU || PPC_EFIKA || PPC_LITE5200 || PPC_83xx || \
+-		   (PPC_85xx && !SMP) || PPC_86xx || PPC_PSERIES || 44x || 40x
++		   (PPC_85xx && !PPC_E500MC) || PPC_86xx || PPC_PSERIES \
++		   || 44x || 40x
+ 
+ config PPC_DCR_NATIVE
+ 	bool
+@@ -331,7 +332,8 @@ config SWIOTLB
+ 
+ config HOTPLUG_CPU
+ 	bool "Support for enabling/disabling CPUs"
+-	depends on SMP && HOTPLUG && EXPERIMENTAL && (PPC_PSERIES || PPC_PMAC || PPC_POWERNV)
++	depends on SMP && HOTPLUG && EXPERIMENTAL && (PPC_PSERIES || \
++	PPC_PMAC || PPC_POWERNV || (PPC_85xx && !PPC_E500MC))
+ 	---help---
+ 	  Say Y here to be able to disable and re-enable individual
+ 	  CPUs at runtime on SMP machines.
+diff --git a/arch/powerpc/include/asm/cacheflush.h b/arch/powerpc/include/asm/cacheflush.h
+index ab9e402..b843e35 100644
+--- a/arch/powerpc/include/asm/cacheflush.h
++++ b/arch/powerpc/include/asm/cacheflush.h
+@@ -30,6 +30,8 @@ extern void flush_dcache_page(struct page *page);
+ #define flush_dcache_mmap_lock(mapping)		do { } while (0)
+ #define flush_dcache_mmap_unlock(mapping)	do { } while (0)
+ 
++extern void __flush_disable_L1(void);
++
+ extern void __flush_icache_range(unsigned long, unsigned long);
+ static inline void flush_icache_range(unsigned long start, unsigned long stop)
+ {
+diff --git a/arch/powerpc/include/asm/smp.h b/arch/powerpc/include/asm/smp.h
+index ebc24dc..e807e9d 100644
+--- a/arch/powerpc/include/asm/smp.h
++++ b/arch/powerpc/include/asm/smp.h
+@@ -65,6 +65,7 @@ int generic_cpu_disable(void);
+ void generic_cpu_die(unsigned int cpu);
+ void generic_mach_cpu_die(void);
+ void generic_set_cpu_dead(unsigned int cpu);
++void generic_set_cpu_up(unsigned int cpu);
+ int generic_check_cpu_restart(unsigned int cpu);
+ #endif
+ 
+@@ -190,6 +191,7 @@ extern unsigned long __secondary_hold_spinloop;
+ extern unsigned long __secondary_hold_acknowledge;
+ extern char __secondary_hold;
+ 
++extern void __early_start(void);
+ #endif /* __ASSEMBLY__ */
+ 
+ #endif /* __KERNEL__ */
+diff --git a/arch/powerpc/kernel/head_fsl_booke.S b/arch/powerpc/kernel/head_fsl_booke.S
+index de80e0f..be0261b 100644
+--- a/arch/powerpc/kernel/head_fsl_booke.S
++++ b/arch/powerpc/kernel/head_fsl_booke.S
+@@ -996,6 +996,34 @@ _GLOBAL(flush_dcache_L1)
+ 
+ 	blr
+ 
++/* Flush L1 d-cache, invalidate and disable d-cache and i-cache */
++_GLOBAL(__flush_disable_L1)
++	mflr	r10
++	bl	flush_dcache_L1	/* Flush L1 d-cache */
++	mtlr	r10
++
++	mfspr	r4, SPRN_L1CSR0	/* Invalidate and disable d-cache */
++	li	r5, 2
++	rlwimi	r4, r5, 0, 3
++
++	msync
++	isync
++	mtspr	SPRN_L1CSR0, r4
++	isync
++
++1:	mfspr	r4, SPRN_L1CSR0	/* Wait for the invalidate to finish */
++	andi.	r4, r4, 2
++	bne	1b
++
++	mfspr	r4, SPRN_L1CSR1	/* Invalidate and disable i-cache */
++	li	r5, 2
++	rlwimi	r4, r5, 0, 3
++
++	mtspr	SPRN_L1CSR1, r4
++	isync
++
++	blr
++
+ #ifdef CONFIG_SMP
+ /* When we get here, r24 needs to hold the CPU # */
+ 	.globl __secondary_start
+diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
+index d9f9441..e0ffe03 100644
+--- a/arch/powerpc/kernel/smp.c
++++ b/arch/powerpc/kernel/smp.c
+@@ -423,6 +423,16 @@ void generic_set_cpu_dead(unsigned int cpu)
+ 	per_cpu(cpu_state, cpu) = CPU_DEAD;
+ }
+ 
++/*
++ * The cpu_state should be set to CPU_UP_PREPARE in kick_cpu(), otherwise
++ * the cpu_state is always CPU_DEAD after calling generic_set_cpu_dead(),
++ * which makes the delay in generic_cpu_die() not happen.
++ */
++void generic_set_cpu_up(unsigned int cpu)
++{
++	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
++}
++
+ int generic_check_cpu_restart(unsigned int cpu)
+ {
+ 	return per_cpu(cpu_state, cpu) == CPU_UP_PREPARE;
+diff --git a/arch/powerpc/platforms/85xx/smp.c b/arch/powerpc/platforms/85xx/smp.c
+index 2e65fe8..925e678 100644
+--- a/arch/powerpc/platforms/85xx/smp.c
++++ b/arch/powerpc/platforms/85xx/smp.c
+@@ -2,7 +2,7 @@
+  * Author: Andy Fleming <afleming@freescale.com>
+  * 	   Kumar Gala <galak@kernel.crashing.org>
+  *
+- * Copyright 2006-2008, 2011 Freescale Semiconductor Inc.
++ * Copyright 2006-2008, 2011-2012 Freescale Semiconductor Inc.
+  *
+  * This program is free software; you can redistribute  it and/or modify it
+  * under  the terms of  the GNU General  Public License as published by the
+@@ -17,6 +17,7 @@
+ #include <linux/of.h>
+ #include <linux/kexec.h>
+ #include <linux/highmem.h>
++#include <linux/cpu.h>
+ 
+ #include <asm/machdep.h>
+ #include <asm/pgtable.h>
+@@ -30,18 +31,14 @@
+ #include <sysdev/mpic.h>
+ #include "smp.h"
+ 
+-extern void __early_start(void);
+-
+-#define BOOT_ENTRY_ADDR_UPPER	0
+-#define BOOT_ENTRY_ADDR_LOWER	1
+-#define BOOT_ENTRY_R3_UPPER	2
+-#define BOOT_ENTRY_R3_LOWER	3
+-#define BOOT_ENTRY_RESV		4
+-#define BOOT_ENTRY_PIR		5
+-#define BOOT_ENTRY_R6_UPPER	6
+-#define BOOT_ENTRY_R6_LOWER	7
+-#define NUM_BOOT_ENTRY		8
+-#define SIZE_BOOT_ENTRY		(NUM_BOOT_ENTRY * sizeof(u32))
++struct epapr_spin_table {
++	u32	addr_h;
++	u32	addr_l;
++	u32	r3_h;
++	u32	r3_l;
++	u32	reserved;
++	u32	pir;
++};
+ 
+ static struct ccsr_guts __iomem *guts;
+ static u64 timebase;
+@@ -101,15 +98,45 @@ static void mpc85xx_take_timebase(void)
+ 	local_irq_restore(flags);
+ }
+ 
+-static int __init
+-smp_85xx_kick_cpu(int nr)
++#ifdef CONFIG_HOTPLUG_CPU
++static void __cpuinit smp_85xx_mach_cpu_die(void)
++{
++	unsigned int cpu = smp_processor_id();
++	u32 tmp;
++
++	local_irq_disable();
++	idle_task_exit();
++	generic_set_cpu_dead(cpu);
++	mb();
++
++	mtspr(SPRN_TCR, 0);
++
++	__flush_disable_L1();
++	tmp = (mfspr(SPRN_HID0) & ~(HID0_DOZE|HID0_SLEEP)) | HID0_NAP;
++	mtspr(SPRN_HID0, tmp);
++	isync();
++
++	/* Enter NAP mode. */
++	tmp = mfmsr();
++	tmp |= MSR_WE;
++	mb();
++	mtmsr(tmp);
++	isync();
++
++	while (1)
++		;
++}
++#endif
++
++static int __cpuinit smp_85xx_kick_cpu(int nr)
+ {
+ 	unsigned long flags;
+ 	const u64 *cpu_rel_addr;
+-	__iomem u32 *bptr_vaddr;
++	__iomem struct epapr_spin_table *spin_table;
+ 	struct device_node *np;
+-	int n = 0, hw_cpu = get_hard_smp_processor_id(nr);
++	int hw_cpu = get_hard_smp_processor_id(nr);
+ 	int ioremappable;
++	int ret = 0;
+ 
+ 	WARN_ON(nr < 0 || nr >= NR_CPUS);
+ 	WARN_ON(hw_cpu < 0 || hw_cpu >= NR_CPUS);
+@@ -134,46 +161,80 @@ smp_85xx_kick_cpu(int nr)
+ 
+ 	/* Map the spin table */
+ 	if (ioremappable)
+-		bptr_vaddr = ioremap(*cpu_rel_addr, SIZE_BOOT_ENTRY);
++		spin_table = ioremap(*cpu_rel_addr,
++				sizeof(struct epapr_spin_table));
+ 	else
+-		bptr_vaddr = phys_to_virt(*cpu_rel_addr);
++		spin_table = phys_to_virt(*cpu_rel_addr);
+ 
+ 	local_irq_save(flags);
+-
+-	out_be32(bptr_vaddr + BOOT_ENTRY_PIR, hw_cpu);
+ #ifdef CONFIG_PPC32
+-	out_be32(bptr_vaddr + BOOT_ENTRY_ADDR_LOWER, __pa(__early_start));
++#ifdef CONFIG_HOTPLUG_CPU
++	/* Corresponding to generic_set_cpu_dead() */
++	generic_set_cpu_up(nr);
++
++	if (system_state == SYSTEM_RUNNING) {
++		out_be32(&spin_table->addr_l, 0);
++
++		/*
++		 * We don't set the BPTR register here since it already points
++		 * to the boot page properly.
++		 */
++		mpic_reset_core(hw_cpu);
++
++		/* wait until core is ready... */
++		if (!spin_event_timeout(in_be32(&spin_table->addr_l) == 1,
++						10000, 100)) {
++			pr_err("%s: timeout waiting for core %d to reset\n",
++							__func__, hw_cpu);
++			ret = -ENOENT;
++			goto out;
++		}
++
++		/*  clear the acknowledge status */
++		__secondary_hold_acknowledge = -1;
++	}
++#endif
++	out_be32(&spin_table->pir, hw_cpu);
++	out_be32(&spin_table->addr_l, __pa(__early_start));
+ 
+ 	if (!ioremappable)
+-		flush_dcache_range((ulong)bptr_vaddr,
+-				(ulong)(bptr_vaddr + SIZE_BOOT_ENTRY));
++		flush_dcache_range((ulong)spin_table,
++			(ulong)spin_table + sizeof(struct epapr_spin_table));
+ 
+ 	/* Wait a bit for the CPU to ack. */
+-	while ((__secondary_hold_acknowledge != hw_cpu) && (++n < 1000))
+-		mdelay(1);
++	if (!spin_event_timeout(__secondary_hold_acknowledge == hw_cpu,
++					10000, 100)) {
++		pr_err("%s: timeout waiting for core %d to ack\n",
++						__func__, hw_cpu);
++		ret = -ENOENT;
++		goto out;
++	}
++out:
+ #else
+ 	smp_generic_kick_cpu(nr);
+ 
+-	out_be64((u64 *)(bptr_vaddr + BOOT_ENTRY_ADDR_UPPER),
+-		__pa((u64)*((unsigned long long *) generic_secondary_smp_init)));
++	out_be32(&spin_table->pir, hw_cpu);
++	out_be64((u64 *)(&spin_table->addr_h),
++	  __pa((u64)*((unsigned long long *)generic_secondary_smp_init)));
+ 
+ 	if (!ioremappable)
+-		flush_dcache_range((ulong)bptr_vaddr,
+-				(ulong)(bptr_vaddr + SIZE_BOOT_ENTRY));
++		flush_dcache_range((ulong)spin_table,
++			(ulong)spin_table + sizeof(struct epapr_spin_table));
+ #endif
+-
+ 	local_irq_restore(flags);
+ 
+ 	if (ioremappable)
+-		iounmap(bptr_vaddr);
++		iounmap(spin_table);
+ 
+-	pr_debug("waited %d msecs for CPU #%d.\n", n, nr);
+-
+-	return 0;
++	return ret;
+ }
+ 
+ struct smp_ops_t smp_85xx_ops = {
+ 	.kick_cpu = smp_85xx_kick_cpu,
++#ifdef CONFIG_HOTPLUG_CPU
++	.cpu_disable	= generic_cpu_disable,
++	.cpu_die	= generic_cpu_die,
++#endif
+ #ifdef CONFIG_KEXEC
+ 	.give_timebase	= smp_generic_give_timebase,
+ 	.take_timebase	= smp_generic_take_timebase,
+@@ -277,8 +338,7 @@ static void mpc85xx_smp_machine_kexec(struct kimage *image)
+ }
+ #endif /* CONFIG_KEXEC */
+ 
+-static void __init
+-smp_85xx_setup_cpu(int cpu_nr)
++static void __cpuinit smp_85xx_setup_cpu(int cpu_nr)
+ {
+ 	if (smp_85xx_ops.probe == smp_mpic_probe)
+ 		mpic_setup_this_cpu();
+@@ -329,6 +389,9 @@ void __init mpc85xx_smp_init(void)
+ 		}
+ 		smp_85xx_ops.give_timebase = mpc85xx_give_timebase;
+ 		smp_85xx_ops.take_timebase = mpc85xx_take_timebase;
++#ifdef CONFIG_HOTPLUG_CPU
++		ppc_md.cpu_die = smp_85xx_mach_cpu_die;
++#endif
+ 	}
+ 
+ 	smp_ops = &smp_85xx_ops;
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+1.6.4.1
+
+
