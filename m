@@ -1,194 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933161Ab2GCGiz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 02:38:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:27856 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932078Ab2GCGix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 02:38:53 -0400
-X-IronPort-AV: E=Sophos;i="4.77,515,1336320000"; 
-   d="scan'208";a="5315817"
-Message-ID: <4FF29482.6050206@cn.fujitsu.com>
-Date: Tue, 03 Jul 2012 14:43:14 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S933269Ab2GCGlM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 02:41:12 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:43841 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753972Ab2GCGlK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 02:41:10 -0400
+Message-ID: <4FF293FE.2010100@linux.vnet.ibm.com>
+Date: Tue, 03 Jul 2012 14:41:02 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 5/6 v5] deal with guest panicked event accoring to -onpanic
- parameter
-References: <4FEAAE6E.7070302@cn.fujitsu.com> <4FEAAFFF.40401@cn.fujitsu.com> <4FEB1B06.4050309@siemens.com> <4FEBB044.1000306@cn.fujitsu.com> <4FEC153B.6040300@siemens.com> <4FF28C17.703@cn.fujitsu.com> <4FF292D5.20403@siemens.com>
-In-Reply-To: <4FF292D5.20403@siemens.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/03 14:38:53,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/03 14:38:56,
-	Serialize complete at 2012/07/03 14:38:56
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: kvm segfaults and bad page state in 3.4.0
+References: <20120604114603.GA6988@localhost>
+In-Reply-To: <20120604114603.GA6988@localhost>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+x-cbid: 12070220-5140-0000-0000-000001AEABAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 07/03/2012 02:36 PM, Jan Kiszka Wrote:
-> On 2012-07-03 08:07, Wen Congyang wrote:
->> At 06/28/2012 04:26 PM, Jan Kiszka Wrote:
->>> On 2012-06-28 03:15, Wen Congyang wrote:
->>>> At 06/27/2012 10:39 PM, Jan Kiszka Wrote:
->>>>> On 2012-06-27 09:02, Wen Congyang wrote:
->>>>>> When the guest is panicked, it will write 0x1 to the port KVM_PV_PORT.
->>>>>> So if qemu reads 0x1 from this port, we can do the folloing three
->>>>>> things according to the parameter -onpanic:
->>>>>> 1. emit QEVENT_GUEST_PANICKED only
->>>>>> 2. emit QEVENT_GUEST_PANICKED and pause the guest
->>>>>> 3. emit QEVENT_GUEST_PANICKED and poweroff the guest
->>>>>> 4. emit QEVENT_GUEST_PANICKED and reset the guest
->>>>>>
->>>>>> Note: if we emit QEVENT_GUEST_PANICKED only, and the management
->>>>>> application does not receive this event(the management may not
->>>>>> run when the event is emitted), the management won't know the
->>>>>> guest is panicked.
->>>>>>
->>>>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->>>>>> ---
->>>>>>  kvm-all.c       |  101 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
->>>>>>  kvm-stub.c      |    9 +++++
->>>>>>  kvm.h           |    3 ++
->>>>>>  qemu-options.hx |   15 ++++++++
->>>>>>  vl.c            |   10 +++++
->>>>>>  5 files changed, 138 insertions(+), 0 deletions(-)
->>>>>>
->>>>>> diff --git a/kvm-all.c b/kvm-all.c
->>>>>> index f8e4328..9494dd2 100644
->>>>>> --- a/kvm-all.c
->>>>>> +++ b/kvm-all.c
->>>>>> @@ -19,6 +19,8 @@
->>>>>>  #include <stdarg.h>
->>>>>>  
->>>>>>  #include <linux/kvm.h>
->>>>>> +#include <linux/kvm_para.h>
->>>>>> +#include <asm/kvm_para.h>
->>>>>>  
->>>>>>  #include "qemu-common.h"
->>>>>>  #include "qemu-barrier.h"
->>>>>> @@ -32,6 +34,9 @@
->>>>>>  #include "bswap.h"
->>>>>>  #include "memory.h"
->>>>>>  #include "exec-memory.h"
->>>>>> +#include "iorange.h"
->>>>>> +#include "qemu-objects.h"
->>>>>> +#include "monitor.h"
->>>>>>  
->>>>>>  /* This check must be after config-host.h is included */
->>>>>>  #ifdef CONFIG_EVENTFD
->>>>>> @@ -1931,3 +1936,99 @@ int kvm_on_sigbus(int code, void *addr)
->>>>>>  {
->>>>>>      return kvm_arch_on_sigbus(code, addr);
->>>>>>  }
->>>>>> +
->>>>>> +/* Possible values for action parameter. */
->>>>>> +#define PANICKED_REPORT     1   /* emit QEVENT_GUEST_PANICKED only */
->>>>>> +#define PANICKED_PAUSE      2   /* emit QEVENT_GUEST_PANICKED and pause VM */
->>>>>> +#define PANICKED_POWEROFF   3   /* emit QEVENT_GUEST_PANICKED and quit VM */
->>>>>> +#define PANICKED_RESET      4   /* emit QEVENT_GUEST_PANICKED and reset VM */
->>>>>> +
->>>>>> +static int panicked_action = PANICKED_REPORT;
->>>>>> +
->>>>>> +static void kvm_pv_port_read(IORange *iorange, uint64_t offset, unsigned width,
->>>>>> +                             uint64_t *data)
->>>>>> +{
->>>>>> +    *data = (1 << KVM_PV_FEATURE_PANICKED);
->>>>>> +}
->>>>>> +
->>>>>> +static void panicked_mon_event(const char *action)
->>>>>> +{
->>>>>> +    QObject *data;
->>>>>> +
->>>>>> +    data = qobject_from_jsonf("{ 'action': %s }", action);
->>>>>> +    monitor_protocol_event(QEVENT_GUEST_PANICKED, data);
->>>>>> +    qobject_decref(data);
->>>>>> +}
->>>>>> +
->>>>>> +static void panicked_perform_action(void)
->>>>>> +{
->>>>>> +    switch (panicked_action) {
->>>>>> +    case PANICKED_REPORT:
->>>>>> +        panicked_mon_event("report");
->>>>>> +        break;
->>>>>> +
->>>>>> +    case PANICKED_PAUSE:
->>>>>> +        panicked_mon_event("pause");
->>>>>> +        vm_stop(RUN_STATE_GUEST_PANICKED);
->>>>>> +        break;
->>>>>> +
->>>>>> +    case PANICKED_POWEROFF:
->>>>>> +        panicked_mon_event("poweroff");
->>>>>> +        exit(0);
->>>>>> +        break;
->>>>>> +    case PANICKED_RESET:
->>>>>> +        panicked_mon_event("reset");
->>>>>> +        qemu_system_reset_request();
->>>>>> +        break;
->>>>>> +    }
->>>>>> +}
->>>>>> +
->>>>>> +static void kvm_pv_port_write(IORange *iorange, uint64_t offset, unsigned width,
->>>>>> +                              uint64_t data)
->>>>>> +{
->>>>>> +    if (data == KVM_PV_PANICKED) {
->>>>>> +        panicked_perform_action();
->>>>>> +    }
->>>>>> +}
->>>>>> +
->>>>>> +static void kvm_pv_port_destructor(IORange *iorange)
->>>>>> +{
->>>>>> +    g_free(iorange);
->>>>>> +}
->>>>>> +
->>>>>> +static IORangeOps pv_io_range_ops = {
->>>>>> +    .read = kvm_pv_port_read,
->>>>>> +    .write = kvm_pv_port_write,
->>>>>> +    .destructor = kvm_pv_port_destructor,
->>>>>> +};
->>>>>> +
->>>>>> +#if defined(KVM_PV_PORT)
->>>>>> +void kvm_pv_port_init(void)
->>>>>> +{
->>>>>> +    IORange *pv_io_range = g_malloc(sizeof(IORange));
->>>>>> +
->>>>>> +    iorange_init(pv_io_range, &pv_io_range_ops, KVM_PV_PORT, 1);
->>>>>> +    ioport_register(pv_io_range);
->>>>>
->>>>> This modeling is still not ok. We don't open-code ports anymore, we
->>>>> introduce devices. And this doesn't belong inro generic code as it is
->>>>
->>>> Do you mean introducing a new device instead of I/O port?
->>>
->>> I mean encapsulating the I/O registration (PIO or MMIO) in a QOM device
->>
->> A QOM device? Do you mean introduce a new device? If so, the guest should
->> have a driver to know such device. Another problem is: we cannot use
->> such device when the kernel is starting(the device's driver is not ready).
->> If we use a new device, I think virtio-serial is enough. The reason why
->> I do not use virtio-serial is: I want the feature can also work when the
->> kernel is starting.
+Hi Fengguang,
+
+I can reproduce this bug in my test case, and have posted
+a patch to fix it which can found at:
+http://marc.info/?l=linux-mm&m=134129723504527&w=2
+
+Could you please try it?
+
+On 06/04/2012 07:46 PM, Fengguang Wu wrote:
+> Hi,
 > 
-> I'm not talking about changing the interface to the guest, I'm talking
-> about how to model it in QEMU. And that difference would be transparent
-> to the guest. I pointed you to examples like hw/kvm/clock.c.
-
-OK, I will read the code in hw/kvm/clock.c
-
-Thanks for your help.
-
-Wen Congyang
-
+> I'm running lots of kvm instances for doing kernel boot tests.
+> Unfortunately the test system itself is not stable enough, I got scary
+> errors in both kvm and the host kernel. Like this. 
 > 
-> Jan
-> 
+> [294025.795382] kvm used greatest stack depth: 2896 bytes left
+> [310388.622083] kvm[1864]: segfault at c ip 00007f498e9f6a81 sp 00007f4994b9fca0 error 4 in kvm[7f498e960000+33b000]
+> [310692.050589] kvm[4332]: segfault at 10 ip 00007fca662620b9 sp 00007fca70472af0 error 6 in kvm[7fca661cc000+33b000]
+> [312608.950120] kvm[18931]: segfault at 8 ip 00007f95962a10a5 sp 00007f959d777170 error 4 in kvm[7f959620b000+33b000]
+> [312622.941640] kvm[19123]: segfault at 10 ip 00007f406f5580b9 sp 00007f4077d8b350 error 6 in kvm[7f406f4c2000+33b000]
+> [313917.860951] kvm[28789]: segfault at c ip 00007f718f4dfa81 sp 00007f7198459520 error 4 in kvm[7f718f449000+33b000]
+> [313919.177192] kvm used greatest stack depth: 2864 bytes left
+> [314061.390945] kvm used greatest stack depth: 2208 bytes left
+> [327479.676068] BUG: Bad page state in process kvm  pfn:59ac9
 
