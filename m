@@ -1,98 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933493Ab2GCUNo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 16:13:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14249 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933425Ab2GCUNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 16:13:43 -0400
-Date: Tue, 3 Jul 2012 16:13:04 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        jaschut@sandia.gov, kamezawa.hiroyu@jp.fujitsu.com
-Subject: [PATCH -mm] mm: minor fixes for compaction
-Message-ID: <20120703161304.7734fbef@annuminas.surriel.com>
-In-Reply-To: <4FECE844.2050803@kernel.org>
-References: <20120628135520.0c48b066@annuminas.surriel.com>
-	<4FECE844.2050803@kernel.org>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757043Ab2GCUTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 16:19:06 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:56432 "HELO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751298Ab2GCUTD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 16:19:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120703011750.GA19682@herton-Z68MA-D2H-B3>
+References: <20120701172006.535271340@decadent.org.uk>
+	<20120701172007.694144055@decadent.org.uk>
+	<20120702234610.GB3552@herton-Z68MA-D2H-B3>
+	<20120702235631.GC3552@herton-Z68MA-D2H-B3>
+	<20120703011750.GA19682@herton-Z68MA-D2H-B3>
+Date: Tue, 3 Jul 2012 13:19:01 -0700
+Message-ID: <CALnjE+q8T=Lr4fYQUoex5Amhdjv4Jw6UyJ2f0PaiXBZigf6fXQ@mail.gmail.com>
+Subject: Re: [ 07/48] mm: fix slab->page _count corruption when using slub
+From: Pravin Shelar <pshelar@nicira.com>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Amey Bhide <abhide@nicira.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes the comment for cc->wrapped longer, explaining
-what is really going on. It also incorporates the comment fix
-pointed out by Minchan.
+Applying just this patch does not solve whole problem. There is
+another patch which needs to be backported. Discussion on that is not
+concluded yet. so I think we can drop this patch for now.
+ref : http://www.vacationhomexchg.com/lists/linux-mm/msg36054.html
 
-Additionally, Minchan found that, when no pages get isolated,
-high_pte could be a value that is much lower than desired,
-which might potentially cause compaction to skip a range of
-pages.
+Thanks,
+Pravin.
 
-Only assign zone->compact_cache_free_pfn if we actually
-isolated free pages for compaction.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
-This does not address the one bit in Minchan's review that I am not sure about...
-
- include/linux/mmzone.h |    2 +-
- mm/compaction.c        |    7 ++++---
- mm/internal.h          |    6 +++++-
- 3 files changed, 10 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index e629594..e957fa1 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -370,7 +370,7 @@ struct zone {
- 	spinlock_t		lock;
- 	int                     all_unreclaimable; /* All pages pinned */
- #if defined CONFIG_COMPACTION || defined CONFIG_CMA
--	/* pfn where the last order > 0 compaction isolated free pages */
-+	/* pfn where the last incremental compaction isolated free pages */
- 	unsigned long		compact_cached_free_pfn;
- #endif
- #ifdef CONFIG_MEMORY_HOTPLUG
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 2668b77..2867166 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -472,10 +472,11 @@ static void isolate_freepages(struct zone *zone,
- 		 * looking for free pages, the search will restart here as
- 		 * page migration may have returned some pages to the allocator
- 		 */
--		if (isolated)
-+		if (isolated) {
- 			high_pfn = max(high_pfn, pfn);
--		if (cc->order > 0)
--			zone->compact_cached_free_pfn = high_pfn;
-+			if (cc->order > 0)
-+				zone->compact_cached_free_pfn = high_pfn;
-+		}
- 	}
- 
- 	/* split_free_page does not map the pages */
-diff --git a/mm/internal.h b/mm/internal.h
-index 0b72461..da6b9b2 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -121,7 +121,11 @@ struct compact_control {
- 	unsigned long start_free_pfn;	/* where we started the search */
- 	unsigned long migrate_pfn;	/* isolate_migratepages search base */
- 	bool sync;			/* Synchronous migration */
--	bool wrapped;			/* Last round for order>0 compaction */
-+	bool wrapped;			/* Order > 0 compactions are
-+					   incremental, once free_pfn
-+					   and migrate_pfn meet, we restart
-+					   from the top of the zone;
-+					   remember we wrapped around. */
- 
- 	int order;			/* order a direct compactor needs */
- 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
-
+On Mon, Jul 2, 2012 at 6:17 PM, Herton Ronaldo Krzesinski
+<herton.krzesinski@canonical.com> wrote:
+> On Mon, Jul 02, 2012 at 08:56:32PM -0300, Herton Ronaldo Krzesinski wrote:
+>> So, 3.2 didn't have the CONFIG_HAVE_CMPXCHG_DOUBLE and
+>> CONFIG_HAVE_ALIGNED_STRUCT_PAGE defines, it had instead CMPXCHG_DOUBLE
+>> and HAVE_ALIGNED_STRUCT_PAGE is a new logic. So the patch is broken for
+>> 3.2 indeed.
+>
+> So here is a proposed backport for 3.2, I tested it etc., but please
+> someone review/ack it as well...
+>
+> From: Pravin B Shelar <pshelar@nicira.com>
+> Subject: mm: fix slab->page _count corruption when using slub
+>
+> commit abca7c4965845924f65d40e0aa1092bdd895e314 upstream.
+>
+> On arches that do not support this_cpu_cmpxchg_double() slab_lock is used
+> to do atomic cmpxchg() on double word which contains page->_count.  The
+> page count can be changed from get_page() or put_page() without taking
+> slab_lock.  That corrupts page counter.
+>
+> Fix it by moving page->_count out of cmpxchg_double data.  So that slub
+> does no change it while updating slub meta-data in struct page.
+>
+> [akpm@linux-foundation.org: use standard comment layout, tweak comment text]
+> Reported-by: Amey Bhide <abhide@nicira.com>
+> Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
+> Acked-by: Christoph Lameter <cl@linux.com>
+> Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> [herton: backport to 3.2, use CONFIG_CMPXCHG_DOUBLE]
+> Signed-off-by: Herton R. Krzesinski <herton@canonical.com>
+> ---
+>  include/linux/mm_types.h |    9 +++++++++
+>  1 file changed, 9 insertions(+)
+>
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index 5b42f1b..2153639 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -56,8 +56,17 @@ struct page {
+>                 };
+>
+>                 union {
+> +#ifdef CONFIG_CMPXCHG_DOUBLE
+>                         /* Used for cmpxchg_double in slub */
+>                         unsigned long counters;
+> +#else
+> +                       /*
+> +                        * Keep _count separate from slub cmpxchg_double data.
+> +                        * As the rest of the double word is protected by
+> +                        * slab_lock but _count is not.
+> +                        */
+> +                       unsigned counters;
+> +#endif
+>
+>                         struct {
+>
+> --
+> 1.7.9.5
+>
+>
+> --
+> []'s
+> Herton
