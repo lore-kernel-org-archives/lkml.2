@@ -1,178 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab2GCIdQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 04:33:16 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:37933
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751119Ab2GCIdN (ORCPT
+	id S1751916Ab2GCIwy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 04:52:54 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19983 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054Ab2GCIwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 04:33:13 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VPS-9(zzbb2dI98dI9371I542M1432Izz1202hzz8275bhz2dh2a8h668h839h93fhd25hf0ah)
-From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Axel Lin <axel.lin@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@ti.com>
-Date: Tue, 3 Jul 2012 04:33:19 -0400
-Subject: RE: [PATCH v2] regulator: ad5398: Fix min/max current limit
- boundary checking
-Thread-Topic: [PATCH v2] regulator: ad5398: Fix min/max current limit
- boundary checking
-Thread-Index: Ac1Y9LASDb0sXshZTlieIp7EE4/8iQAAY/TQ
-Message-ID: <DB904C5425BA6F4E8424B3B51A1414D17140805DC8@NWD2CMBX1.ad.analog.com>
-References: <1341301353.12050.1.camel@phoenix>
- <DB904C5425BA6F4E8424B3B51A1414D17140805D85@NWD2CMBX1.ad.analog.com>
- <4FF2A7F9.3090307@metafoo.de>
- <DB904C5425BA6F4E8424B3B51A1414D17140805DAB@NWD2CMBX1.ad.analog.com>
- <4FF2AC24.7090906@metafoo.de>
-In-Reply-To: <4FF2AC24.7090906@metafoo.de>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 3 Jul 2012 04:52:53 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 03 Jul 2012 01:52:26 -0700
+Message-ID: <4FF2B1D7.30205@nvidia.com>
+Date: Tue, 3 Jul 2012 14:18:23 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "lrg@ti.com" <lrg@ti.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] regulator: fixed: use devm_* for gpio request
+References: <1341223645-7817-1-git-send-email-ldewangan@nvidia.com> <20120702172916.GL25093@opensource.wolfsonmicro.com>
+In-Reply-To: <20120702172916.GL25093@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q638XN8D014537
 
-
-
->-----Original Message-----
->From: Lars-Peter Clausen [mailto:lars@metafoo.de]
->Sent: Tuesday, July 03, 2012 4:24 PM
->To: Zhang, Sonic
->Cc: Axel Lin; Mark Brown; linux-kernel@vger.kernel.org; Liam Girdwood
->Subject: Re: [PATCH v2] regulator: ad5398: Fix min/max current limit boundary
->checking
+On Monday 02 July 2012 10:59 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
 >
->On 07/03/2012 10:13 AM, Zhang, Sonic wrote:
->>
->>
->>> -----Original Message-----
->>> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
->>> Sent: Tuesday, July 03, 2012 4:06 PM
->>> To: Zhang, Sonic
->>> Cc: Axel Lin; Mark Brown; linux-kernel@vger.kernel.org; Liam Girdwood
->>> Subject: Re: [PATCH v2] regulator: ad5398: Fix min/max current limit boundary
->>> checking
->>>
->>> On 07/03/2012 09:54 AM, Zhang, Sonic wrote:
->>>>
->>>>
->>>>> -----Original Message-----
->>>>> From: Axel Lin [mailto:axel.lin@gmail.com]
->>>>> Sent: Tuesday, July 03, 2012 3:43 PM
->>>>> To: Mark Brown
->>>>> Cc: linux-kernel@vger.kernel.org; Zhang, Sonic; Lars-Peter Clausen; Liam
->>>>> Girdwood
->>>>> Subject: [PATCH v2] regulator: ad5398: Fix min/max current limit boundary
->>>>> checking
->>>>>
->>>>> It is ok to request current limit with min_uA < chip->min_uA and
->>>>> max_uA > chip->max_uA.
->>>>>
->>>>> We need to set min_uA = chip->min_uA if (min_uA < chip->min_uA),
->>>>> this ensures the equation to calcuate selator does not return negative
->number.
->>>>>
->>>>
->>>> You should not do it in driver. Set a correct min_uA value in your application.
->>>
->>> I think the patch makes sense. If a application request a current range
->>> which overlaps with the range support by the chip, but either the requested
->>> min is smaller than the supported min or the requested max is larger than
->>> the supported max the driver will fail with an error. E.g.
->>>
->>> req-min     req-max
->>>   |-----------|
->>>        |------------|
->>>     chip-min  chip-max
->>>
->>> or even
->>>
->>> req-min                req-max
->>>   |----------------------|
->>>        |------------|
->>>     chip-min  chip-max
->>>
->>>
->>> While it is obviously possible for the chip to fulfill this request.
->>> Axel's patch takes care of this situation and ensures that the request is
->>> satisfied and the output current is set to a current within the requested
->>> range and the supported range.
->>
->> If the requested minimum current is smaller than the capability of the hardware,
->does a bigger min value fulfill this request?
+> On Mon, Jul 02, 2012 at 03:37:24PM +0530, Laxman Dewangan wrote:
+>> Use devm_* version of gpio APIs gpio_request_one() for
+>> requesting gpios.
+>> This avoid extra code for freeing gpios.
+> This can't be applied yet since the export for the devm version hasn't
+> been applied so it won't build and also conflicts with the factoring out
+> of the GPIO code to the core.
 >
->As long as it is smaller than the maximum requested current, yes. You
->request a current range with the regulator API and any value within this
->range is fine as the actual output current.
->
+Oops, then lets ignore the 1/2 for now. If require, we will revisit later.
 
-If so, please also set the max_uA as well.
+But what about 2/2? Does it look good? I can send that as separate patch 
+if it is fine.
 
-Sonic
 
->>
->> If this logic is correct, I am fine to ACK.
->>
->>
->> Regards,
->>
->> Sonic
->>
->>
->>>
->>> - Lars
->>>
->>>>
->>>> Regards,
->>>>
->>>> Sonic
->>>>
->>>>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->>>>> ~
->>>>> ---
->>>>> drivers/regulator/ad5398.c |    7 ++++---
->>>>> 1 file changed, 4 insertions(+), 3 deletions(-)
->>>>>
->>>>> diff --git a/drivers/regulator/ad5398.c b/drivers/regulator/ad5398.c
->>>>> index 46d05f3..84fdcda 100644
->>>>> --- a/drivers/regulator/ad5398.c
->>>>> +++ b/drivers/regulator/ad5398.c
->>>>> @@ -89,9 +89,10 @@ static int ad5398_set_current_limit(struct
->regulator_dev
->>>>> *rdev, int min_uA, int
->>>>>       unsigned short data;
->>>>>       int ret;
->>>>>
->>>>> -      if (min_uA > chip->max_uA || min_uA < chip->min_uA)
->>>>> -              return -EINVAL;
->>>>> -      if (max_uA > chip->max_uA || max_uA < chip->min_uA)
->>>>> +      if (min_uA < chip->min_uA)
->>>>> +              min_uA = chip->min_uA;
->>>>> +
->>>>> +      if (min_uA > chip->max_uA || max_uA < chip->min_uA)
->>>>>               return -EINVAL;
->>>>>
->>>>>       selector = DIV_ROUND_UP((min_uA - chip->min_uA) * chip-
->>current_level,
->>>>> --
->>>>> 1.7.9.5
->>>>>
->>>>>
->>>>>
->>>>
->>>
->>
->
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
