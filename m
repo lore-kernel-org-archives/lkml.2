@@ -1,139 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933263Ab2GCBPL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 21:15:11 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:45588 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756218Ab2GCBPJ (ORCPT
+	id S933273Ab2GCBR7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 21:17:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48992 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932639Ab2GCBR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 21:15:09 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-160.messagelabs.com!1341278108!8516722!1
-X-Originating-IP: [216.166.12.99]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 8/8] staging: comedi: dmm32at: remove skel driver cut-and-paste comments
-Date: Mon, 2 Jul 2012 18:15:02 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Mon, 2 Jul 2012 21:17:57 -0400
+Date: Mon, 2 Jul 2012 22:17:51 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Pravin B Shelar <pshelar@nicira.com>,
+        Amey Bhide <abhide@nicira.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [ 07/48] mm: fix slab->page _count corruption when using slub
+Message-ID: <20120703011750.GA19682@herton-Z68MA-D2H-B3>
+References: <20120701172006.535271340@decadent.org.uk>
+ <20120701172007.694144055@decadent.org.uk>
+ <20120702234610.GB3552@herton-Z68MA-D2H-B3>
+ <20120702235631.GC3552@herton-Z68MA-D2H-B3>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201207021815.02935.hartleys@visionengravers.com>
+In-Reply-To: <20120702235631.GC3552@herton-Z68MA-D2H-B3>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the cut-and-paste comments from the skel driver.
+On Mon, Jul 02, 2012 at 08:56:32PM -0300, Herton Ronaldo Krzesinski wrote:
+> So, 3.2 didn't have the CONFIG_HAVE_CMPXCHG_DOUBLE and
+> CONFIG_HAVE_ALIGNED_STRUCT_PAGE defines, it had instead CMPXCHG_DOUBLE
+> and HAVE_ALIGNED_STRUCT_PAGE is a new logic. So the patch is broken for
+> 3.2 indeed.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+So here is a proposed backport for 3.2, I tested it etc., but please
+someone review/ack it as well...
+
+From: Pravin B Shelar <pshelar@nicira.com>
+Subject: mm: fix slab->page _count corruption when using slub
+
+commit abca7c4965845924f65d40e0aa1092bdd895e314 upstream.
+
+On arches that do not support this_cpu_cmpxchg_double() slab_lock is used
+to do atomic cmpxchg() on double word which contains page->_count.  The
+page count can be changed from get_page() or put_page() without taking
+slab_lock.  That corrupts page counter.
+
+Fix it by moving page->_count out of cmpxchg_double data.  So that slub
+does no change it while updating slub meta-data in struct page.
+
+[akpm@linux-foundation.org: use standard comment layout, tweak comment text]
+Reported-by: Amey Bhide <abhide@nicira.com>
+Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+[herton: backport to 3.2, use CONFIG_CMPXCHG_DOUBLE]
+Signed-off-by: Herton R. Krzesinski <herton@canonical.com>
 ---
- drivers/staging/comedi/drivers/dmm32at.c | 40 --------------------------------
- 1 file changed, 40 deletions(-)
+ include/linux/mm_types.h |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/staging/comedi/drivers/dmm32at.c b/drivers/staging/comedi/drivers/dmm32at.c
-index f0221e9..7107f59 100644
---- a/drivers/staging/comedi/drivers/dmm32at.c
-+++ b/drivers/staging/comedi/drivers/dmm32at.c
-@@ -160,10 +160,6 @@ struct dmm32at_board {
- 	const char *name;
- };
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 5b42f1b..2153639 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -56,8 +56,17 @@ struct page {
+ 		};
  
--/* this structure is for data unique to this hardware driver.  If
-- * several hardware drivers keep similar information in this structure,
-- * feel free to suggest moving the variable to the struct comedi_device struct.
-- */
- struct dmm32at_private {
+ 		union {
++#ifdef CONFIG_CMPXCHG_DOUBLE
+ 			/* Used for cmpxchg_double in slub */
+ 			unsigned long counters;
++#else
++			/*
++			 * Keep _count separate from slub cmpxchg_double data.
++			 * As the rest of the double word is protected by
++			 * slab_lock but _count is not.
++			 */
++			unsigned counters;
++#endif
  
- 	int data;
-@@ -176,11 +172,6 @@ struct dmm32at_private {
+ 			struct {
  
- };
- 
--/*
-- * "instructions" read/write data in "one-shot" or "software-triggered"
-- * mode.
-- */
--
- static int dmm32at_ai_rinsn(struct comedi_device *dev,
- 			    struct comedi_subdevice *s,
- 			    struct comedi_insn *insn, unsigned int *data)
-@@ -253,20 +244,9 @@ static int dmm32at_ai_rinsn(struct comedi_device *dev,
- 	return n;
- }
- 
--/* This function doesn't require a particular form, this is just
-- * what happens to be used in some of the drivers.  It should
-- * convert ns nanoseconds to a counter value suitable for programming
-- * the device.  Also, it should adjust ns so that it cooresponds to
-- * the actual time that the device will use. */
- static int dmm32at_ns_to_timer(unsigned int *ns, int round)
- {
- 	/* trivial timer */
--	/* if your timing is done through two cascaded timers, the
--	 * i8253_cascade_ns_to_timer() function in 8253.h can be
--	 * very helpful.  There are also i8254_load() and i8254_mm_load()
--	 * which can be used to load values into the ubiquitous 8254 counters
--	 */
--
- 	return *ns;
- }
- 
-@@ -278,15 +258,6 @@ static int dmm32at_ai_cmdtest(struct comedi_device *dev,
- 	int tmp;
- 	int start_chan, gain, i;
- 
--	/* printk("dmmat32 in command test\n"); */
--
--	/* cmdtest tests a particular command to see if it is valid.
--	 * Using the cmdtest ioctl, a user can create a valid cmd
--	 * and then have it executes by the cmd ioctl.
--	 *
--	 * cmdtest returns 1,2,3,4 or 0, depending on which tests
--	 * the command passes. */
--
- 	/* step 1: make sure trigger sources are trivially valid */
- 
- 	tmp = cmd->start_src;
-@@ -659,8 +630,6 @@ static int dmm32at_ao_winsn(struct comedi_device *dev,
- 	return i;
- }
- 
--/* AO subdevices should have a read insn as well as a write insn.
-- * Usually this means copying a value stored in devpriv. */
- static int dmm32at_ao_rinsn(struct comedi_device *dev,
- 			    struct comedi_subdevice *s,
- 			    struct comedi_insn *insn, unsigned int *data)
-@@ -675,11 +644,6 @@ static int dmm32at_ao_rinsn(struct comedi_device *dev,
- 	return i;
- }
- 
--/* DIO devices are slightly special.  Although it is possible to
-- * implement the insn_read/insn_write interface, it is much more
-- * useful to applications if you implement the insn_bits interface.
-- * This allows packed reading/writing of the DIO channels.  The
-- * comedi core can convert between insn_bits and insn_read/write */
- static int dmm32at_dio_insn_bits(struct comedi_device *dev,
- 				 struct comedi_subdevice *s,
- 				 struct comedi_insn *insn, unsigned int *data)
-@@ -853,10 +817,6 @@ static int dmm32at_attach(struct comedi_device *dev,
- 
- 	dev->board_name = board->name;
- 
--/*
-- * Allocate the private structure area.  alloc_private() is a
-- * convenient macro defined in comedidev.h.
-- */
- 	if (alloc_private(dev, sizeof(*devpriv)) < 0)
- 		return -ENOMEM;
- 	devpriv = dev->private;
 -- 
-1.7.11
+1.7.9.5
 
+
+-- 
+[]'s
+Herton
