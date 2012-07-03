@@ -1,50 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867Ab2GCLPc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 07:15:32 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:52569 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932635Ab2GCLPa (ORCPT
+	id S1756491Ab2GCLVZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 07:21:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60956 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756330Ab2GCLVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 07:15:30 -0400
+	Tue, 3 Jul 2012 07:21:23 -0400
 MIME-Version: 1.0
-X-Originating-IP: [62.165.251.74]
-In-Reply-To: <1340646378-5169-1-git-send-email-miklos@szeredi.hu>
-References: <1340646378-5169-1-git-send-email-miklos@szeredi.hu>
-Date: Tue, 3 Jul 2012 13:15:29 +0200
-Message-ID: <CAJfpegttMWUSxEqhdC8Bf9jfe7cw-mknubfS-rnV=z_e6i_sLQ@mail.gmail.com>
-Subject: Re: [PATCH 0/3] audit-tree fixes
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: eparis@redhat.com
-Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org, mszeredi@suse.cz
+In-Reply-To: <20120703104511.GA29501@elgon.mountain>
+References: <20120703104511.GA29501@elgon.mountain>
+From: Kay Sievers <kay@vrfy.org>
+Date: Tue, 3 Jul 2012 13:21:01 +0200
+Message-ID: <CAPXgP10e5cuNnOqGgBtZQq-6sZ2bpjySbd7thZyLNdij77oaHg@mail.gmail.com>
+Subject: Re: [patch] printk: remove some dead code
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric,
-
-On Mon, Jun 25, 2012 at 7:46 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> Short series to fix refcounting in audit-tree.
+On Tue, Jul 3, 2012 at 12:45 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> Static checkers complain about the impossible condition here.
 >
-> Please apply.
+> In 084681d14e ('printk: flush continuation lines immediately to
+> console'), we changed msg->level from being a u16 to being an unsigned
+> 3 bit bitfield.  That means we can remove the code here to handle log
+> levels which are in the tens or hundreds column.
 
-What's the  status of this, please?
-
-Is there a public git tree for audit?
+We should do that for the facility value, now that level is split up
+in separate fields. I'll prepare a fix.
 
 Thanks,
-Miklos
-
-
-> ---
-> Miklos Szeredi (3):
->       audit: don't free_chunk() after fsnotify_add_mark()
->       audit: fix refcounting in audit-tree
->       audit: clean up refcounting in audit-tree
->
-> ---
->  kernel/audit_tree.c |   19 ++++++++++++-------
->  1 files changed, 12 insertions(+), 7 deletions(-)
->
->
+Kay
