@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030184Ab2GCC2k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 22:28:40 -0400
-Received: from mail-yw0-f51.google.com ([209.85.213.51]:46294 "EHLO
-	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932563Ab2GCC2j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 22:28:39 -0400
+	id S1756396Ab2GCCfB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 22:35:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41135 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750920Ab2GCCe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 22:34:59 -0400
+Date: Mon, 2 Jul 2012 22:34:43 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, snitzer@redhat.com,
+        martin.petersen@oracle.com, david@fromorbit.com, xfs@oss.sgi.com,
+        dm-devel@redhat.com, hch@lst.de
+Subject: Re: [dm-devel] [PATCH v2 1/3] block: add sysfs entry for
+ discard_alignment
+Message-ID: <20120703023442.GB3586@redhat.com>
+References: <1341235225-27551-1-git-send-email-pbonzini@redhat.com>
+ <1341235225-27551-2-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAHdPZaNSqiUg2Vq_CXYGX9wa1E_rJKFT3POL-_Yqu1SEYvLoyA@mail.gmail.com>
-References: <1341218420-22377-1-git-send-email-devendra.aaru@gmail.com>
- <CAK5ve-JaNGoWuCTP5ddMEEfpA3ucWNL_ayj5ULU3+++5a02pWw@mail.gmail.com>
- <CAHdPZaNDW+XCrf9Mse-N3jtgtrrx9Z0+W1YZX8nPETa7ZZFB1w@mail.gmail.com> <CAHdPZaNSqiUg2Vq_CXYGX9wa1E_rJKFT3POL-_Yqu1SEYvLoyA@mail.gmail.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Tue, 3 Jul 2012 10:28:17 +0800
-X-Google-Sender-Auth: N5OF8ieV-esYyNVjVwVhZCvA_2I
-Message-ID: <CAK5ve-KnVcXgw0W7-wRrnrCrpu0d9dSkRckGHx=y6p4vdi8i0w@mail.gmail.com>
-Subject: Re: [PATCH] leds-mc13783: set platform data to NULL at mc13783_led_remove
-To: "devendra.aaru" <devendra.aaru@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341235225-27551-2-git-send-email-pbonzini@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 3, 2012 at 2:10 AM, devendra.aaru <devendra.aaru@gmail.com> wrote:
-> Hi Bryan,
->
-> I Made all the necessary changes, and it touched 21 drivers overall,
-> and i compile tested all except leds-sunfire as i dont have a
-> cross-toolchain for that.
-> all patches are compile tested with
->
-> gcc (Ubuntu/Linaro 4.6.3-1ubuntu5) 4.6.3, ( my machine's)
-> arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-2012.05-20120523 -
-> Linaro GCC 2012.05) 4.7.1 20120514 (prerelease) (ARM toolchain's)
->
-> at each cross-compile of a driver i selected the defconfig of each
-> machine, fox ex. for leds-netxbig i chose kirkwood-defconfig, and for
-> leds-s3c24xx i chose s3c2410_defconfig.
->
+On Mon, Jul 02, 2012 at 03:20:23PM +0200, Paolo Bonzini wrote:
+> The next patches will actually use the alignment, expose it in sysfs
+> for ease of debugging.
+> 
 
-Very good, thanks a lot.
+Don't we already have discard_alignment exported as device attribute.
 
-> Now i have only 1 question in mind :).
->
-> do i need to submit all in a single patch? or patch per driver?
->
+/sys/block/<dev>/discard_alignment
 
-I prefer to one patch per driver and please add the driver maintainers
-in you Cc list of each patch.
+Thanks
+Vivek
 
--Bryan
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  block/blk-sysfs.c |   11 +++++++++++
+>  1 files changed, 11 insertions(+), 0 deletions(-)
+> 
+> diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+> index aa41b47..95e919c 100644
+> --- a/block/blk-sysfs.c
+> +++ b/block/blk-sysfs.c
+> @@ -146,6 +146,11 @@ static ssize_t queue_io_opt_show(struct request_queue *q, char *page)
+>  	return queue_var_show(queue_io_opt(q), page);
+>  }
+>  
+> +static ssize_t queue_discard_alignment_show(struct request_queue *q, char *page)
+> +{
+> +	return queue_var_show(q->limits.discard_alignment, page);
+> +}
+> +
+>  static ssize_t queue_discard_granularity_show(struct request_queue *q, char *page)
+>  {
+>  	return queue_var_show(q->limits.discard_granularity, page);
+> @@ -343,6 +348,11 @@ static struct queue_sysfs_entry queue_io_opt_entry = {
+>  	.show = queue_io_opt_show,
+>  };
+>  
+> +static struct queue_sysfs_entry queue_discard_alignment_entry = {
+> +	.attr = {.name = "discard_alignment", .mode = S_IRUGO },
+> +	.show = queue_discard_alignment_show,
+> +};
+> +
+>  static struct queue_sysfs_entry queue_discard_granularity_entry = {
+>  	.attr = {.name = "discard_granularity", .mode = S_IRUGO },
+>  	.show = queue_discard_granularity_show,
+> @@ -403,6 +413,7 @@ static struct attribute *default_attrs[] = {
+>  	&queue_io_min_entry.attr,
+>  	&queue_io_opt_entry.attr,
+>  	&queue_discard_granularity_entry.attr,
+> +	&queue_discard_alignment_entry.attr,
+>  	&queue_discard_max_entry.attr,
+>  	&queue_discard_zeroes_data_entry.attr,
+>  	&queue_nonrot_entry.attr,
+> -- 
+> 1.7.1
+> 
+> 
+> --
+> dm-devel mailing list
+> dm-devel@redhat.com
+> https://www.redhat.com/mailman/listinfo/dm-devel
