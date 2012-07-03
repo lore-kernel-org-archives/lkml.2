@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933306Ab2GCBbM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 21:31:12 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51482 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932718Ab2GCBbJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 21:31:09 -0400
-Message-ID: <4FF24B59.1060508@wwwdotorg.org>
-Date: Mon, 02 Jul 2012 19:31:05 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S933294Ab2GCBeV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 21:34:21 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:38152 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932563Ab2GCBeU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 21:34:20 -0400
 MIME-Version: 1.0
-To: "Turquette, Mike" <mturquette@ti.com>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Subject: Re: [PATCH 4/6] ARM: tegra: Add clk_tegra structure and helper functions
-References: <1340879846-12900-1-git-send-email-pgaikwad@nvidia.com> <1340879846-12900-5-git-send-email-pgaikwad@nvidia.com> <20120628182759.GA28424@gmail.com> <4FED688E.9090408@nvidia.com> <CAJOA=zMt-HWKrgQ-pD-wH0s_Nao5sJA13+ESJSBkHQ_3OBurtg@mail.gmail.com>
-In-Reply-To: <CAJOA=zMt-HWKrgQ-pD-wH0s_Nao5sJA13+ESJSBkHQ_3OBurtg@mail.gmail.com>
-X-Enigmail-Version: 1.4.2
+In-Reply-To: <20120703093321.d261f6a118f03d6296af54e9@canb.auug.org.au>
+References: <20120626015551.GW4402@gmail.com> <CACRpkdayZUcA13p8iTRXLb4BestbAQhNP+a1nesYkcDEGFs=WA@mail.gmail.com>
+ <20120703093321.d261f6a118f03d6296af54e9@canb.auug.org.au>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Mon, 2 Jul 2012 18:33:57 -0700
+Message-ID: <CAJOA=zPnOtrJLyryavV0ndqWFvvMcEbjHKKKEpNm80_1cD1_ww@mail.gmail.com>
+Subject: Re: linux-next: adding the common clk tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        broonie@opensource.wolfsonmicro.com, rnayak@ti.com,
+        viresh.kumar@linaro.org, amit.kucheria@linaro.org,
+        linus.walleij@stericsson.com, shawn.guo@freescale.com,
+        mkl@pengutronix.de, sr@denx.de, pawel.moll@arm.com,
+        maxime.ripard@free-electrons.com, linux@arm.linux.org.uk,
+        arnd.bergmann@linaro.org, olof@lixom.net
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2012 06:09 PM, Turquette, Mike wrote:
-> On Fri, Jun 29, 2012 at 1:34 AM, Prashant Gaikwad <pgaikwad@nvidia.com> wrote:
->> On Thursday 28 June 2012 11:58 PM, Mike Turquette wrote:
->>> We had some discussions in the past on your clock reset and external
->>> line request operations which you've had to put into struct clk_tegra.
->>>
->>> Do you need to expose those ops to code in drivers/*?  I consider that a
->>> reasonable litmus test to start considering if something should be moved
->>> into the generic clk.h api.
+On Mon, Jul 2, 2012 at 4:33 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Linus,
+>
+> On Sat, 30 Jun 2012 21:47:35 +0200 Linus Walleij <linus.walleij@linaro.org> wrote:
 >>
+>> On Tue, Jun 26, 2012 at 3:55 AM, Mike Turquette <mturquette@ti.com> wrote:
 >>
->> Yes, we need these ops in drivers. Peter has sent a patch proposing to move
->> these ops to generic clk.
+>> > Would you please add the clk-next branch of the common clock tree to
+>> > linux-next?
+>> >
+>> > git://git.linaro.org/people/mturquette/linux.git clk-next
 >>
->> In addition, we also need mechanism/ops to change rate and parent from
->> clk_ops implementation. There was some discussion but I do not know the
->> latest status.
->>
-> 
-> Hi Prashant,
-> 
-> OK, that is good to know.  I haven't forgotten about this topic.  I'm
-> still trying to think of the best way to expose less-common operations
-> to drivers...
-> 
-> Based on Stephen's feedback in patch 0 I'll be waiting for another
-> version of this series before taking into clk-next.
+>> So I don't see this being pulled into -next, is it just a slip,
+>> I though the structure of the branch was agreed upon and all?
+>
+> I am waiting for Mike to let me know its all ready to add ...
+>
 
-Oh, does this series depend on stuff in clk-next? I was intending to
-take it through the Tegra tree, since it definitely depends on (in
-complex ways through context if nothing else due to to large
-split/rename patches) a bunch of commits in Tegra's for-3.6/common-clk
-branch.
+Oops.  I thought everything was sorted after our last email.  I've
+gone ahead and updated clk-next based on our discussions, so please do
+pull it in.
+
+Thanks much,
+Mike
+
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
