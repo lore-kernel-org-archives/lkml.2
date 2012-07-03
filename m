@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933093Ab2GCDdq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 23:33:46 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:59421 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139Ab2GCDdp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 23:33:45 -0400
-Message-ID: <4FF26726.8010904@huawei.com>
-Date: Tue, 3 Jul 2012 11:29:42 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S932928Ab2GCDtT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 23:49:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18886 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755553Ab2GCDtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 23:49:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="172777695"
+Date: Tue, 3 Jul 2012 11:49:15 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Prasad Koya <prasad.koya@gmail.com>
+Cc: jack@suse.cz, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sync blocked for long time
+Message-ID: <20120703034915.GA7872@localhost>
+References: <CAGXD9OfLmSHzikhXxVi7f2wHBVO4det1KHReXc70YkEgYdQTLg@mail.gmail.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Tony Luck <tony.luck@intel.com>,
-        Xishi Qiu <qiuxishi@huawei.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>, <linux-mm@kvack.org>,
-        <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jiang Liu <liuj97@gmail.com>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH] mm: setup pageblock_order before it's used by sparse
-References: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com> <CAE9FiQWzfLkeQs8O22MUEmuGUx=jPi5s=wZt2fcpFMcwrzt3uA@mail.gmail.com> <4FF100F0.9050501@huawei.com> <CAE9FiQXpeGFfWvUHHW_GjgTg+4Op7agsht5coZbcmn2W=f9bqw@mail.gmail.com> <4FF25EFA.1080004@huawei.com> <CAE9FiQVxY9E3L_xmRj10+9D6NVbKaxaAd2oJ6EFe1D+Gy2971w@mail.gmail.com>
-In-Reply-To: <CAE9FiQVxY9E3L_xmRj10+9D6NVbKaxaAd2oJ6EFe1D+Gy2971w@mail.gmail.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXD9OfLmSHzikhXxVi7f2wHBVO4det1KHReXc70YkEgYdQTLg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Hi Yinghai,
->>
->> I'm afraid the v2 will break powerpc. Currently only IA64 and PowerPC
->> supports variable hugetlb size.
->>
->> HPAGE_SHIFT is a variable default to 0 on powerpc. But seems PowerPC
->> is doing something wrong here, according to it's mm initialization
->> sequence as below:
->> start_kernel()
->>         setup_arch()
->>                 paging_init()
->>                         free_area_init_node()
->>                                 set_pageblock_order()
->>                                         refer to HPAGE_SHIFT (still 0)
->>         init_rest()
->>                 do_initcalls()
->>                         hugetlbpage_init()
->>                                 setup HPAGE_SHIFT
->> That means pageblock_order is always set to "MAX_ORDER - 1", not sure
->> whether this is intended. And it has the same issue as IA64 of wasting
->> memory if CONFIG_SPARSE is enabled.
-> 
-> adding BenH, need to know if it is powerpc intended.
-> 
->>
->> So it would be better to keep function set_pageblock_order(), it will
->> fix the memory wasting on both IA64 and PowerPC.
-> 
-> Should setup pageblock_order as early as possible to avoid confusing.
-OK, waiting response from PPC. If we could find some ways to set HPAGE_SIZE
-early on PPC too, we can setup pageblock_order in arch instead of page_alloc.c
-as early as possible.
+Hi Prasad,
 
-Thanks!
-Gerry
+On Mon, Jul 02, 2012 at 08:37:19PM -0700, Prasad Koya wrote:
+> Hi
+> 
+> Sorry about writing to your personal address. I'm running into below panic
+> but I couldn't find any patch for this in 2.6.32. I do see below discussion
+> related to pretty much similar issue which doesn't appear to be resolved. I
+> looked around quite a bit but I couldn't find any patches for this. Is this
+> still unresolved? I have 2 USB sticks and I can get into this state by
+> copying 2 large files (say 200-300M each) simultaneously (followed by sync)
+> into both drives.
 
+That is doing sync lots of data on slow device, with the sync time
+being further enlarged by the active writers. I can imagine for the
+sync to take very long time.
+
+What's the filesystem btw?
+
+> Appreciate any pointers.
+> 
+> thank you.
+> 
+> http://marc.info/?t=126596633700002&r=1&w=2
+> 
+> 
+> <3>[  600.392088] INFO: task sync:2675 blocked for more than 120 seconds.
+> <3>[  600.466884] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+> disables this message.
+...
+> <4>[  600.560507]  [<ffffffff810a7dab>] sync_inodes_sb+0x1d/0xf1
+> <4>[  600.560519]  [<ffffffff810abb3e>] __sync_filesystem+0x29/0x52
+> <4>[  600.560536]  [<ffffffff810abc0f>] sync_filesystems+0xa8/0xfe
+> <4>[  600.560556]  [<ffffffff810abcb5>] sys_sync+0x1c/0x2e
+> <4>[  600.560570]  [<ffffffff810260c5>] cstar_dispatch+0x7/0x2b
+> <0>[  600.560580] Kernel panic - not syncing: hung_task: blocked tasks
+
+Please check /proc/sys/kernel/hung_task_panic . Normal users should
+never set it to 1..
+
+Thanks,
+Fengguang
