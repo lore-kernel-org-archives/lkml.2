@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757215Ab2GCTur (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 15:50:47 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:57804 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757119Ab2GCTup (ORCPT
+	id S933461Ab2GCUGP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 16:06:15 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:55133 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab2GCUGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 15:50:45 -0400
-Date: Tue, 3 Jul 2012 15:50:43 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Matthew Wilcox <matthew@wil.cx>
-cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [ 38/48] SCSI & usb-storage: add try_rc_10_first flag
-In-Reply-To: <20120703173231.GC28804@parisc-linux.org>
-Message-ID: <Pine.LNX.4.44L0.1207031540410.29825-100000@netrider.rowland.org>
+	Tue, 3 Jul 2012 16:06:13 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1341344200.2413.4.camel@nayuki.kepstin.ca>
+References: <20120702224648.GA20361@tassilo.jf.intel.com> <CA+55aFwre6s=orjUaNKJA=51Fc1mxu_XGX80Bex4Sn-=mWPx5Q@mail.gmail.com>
+ <1341323230.3292.10.camel@nayuki.kepstin.ca> <CA+55aFyvzz3Lp9zeA6X+QMan0iZFWq_0Xd+ff_trnP1tpn2iJQ@mail.gmail.com>
+ <1341337257.2406.1.camel@nayuki.kepstin.ca> <CA+55aFzOD33eWj0FQuZ7RWmF-yYwaeNB-9J-YY+mX4mwP7VXuA@mail.gmail.com>
+ <CA+55aFwQqTAHNafGBXaoPCzVYw83OZvbG_hOYEDUxmuoMODO3Q@mail.gmail.com>
+ <alpine.LNX.2.00.1207032008350.17304@pobox.suse.cz> <20120703185808.GM11413@one.firstfloor.org>
+ <CA+55aFzFQiYhJcBfGD7moL3gC-ocwXJ2-kTjuNrw5hBGGbz4ag@mail.gmail.com> <1341344200.2413.4.camel@nayuki.kepstin.ca>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 3 Jul 2012 13:05:51 -0700
+X-Google-Sender-Auth: q-dAeYAOH7_md7pBlsft1EQoHoo
+Message-ID: <CA+55aFzn+dW+Aj5T_vVP3XG3n3P+7mqJwGQLsWY14yEwduku5Q@mail.gmail.com>
+Subject: Re: long boot delays caused by 070ad7e7 floppy change
+To: Calvin Walton <calvin.walton@kepstin.ca>
+Cc: Andi Kleen <andi@firstfloor.org>, Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel@vger.kernel.org, shemminger@vyatta.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Jul 2012, Matthew Wilcox wrote:
+On Tue, Jul 3, 2012 at 12:36 PM, Calvin Walton <calvin.walton@kepstin.ca> wrote:
+> On Tue, 2012-07-03 at 12:12 -0700, Linus Torvalds wrote:
+>> What happens if you add a
+>>
+>>         cancel_delayed_work(&fd_timeout);
+>>
+>> to before the queue_delayed_work() in __reschedule_timeout()? Does
+>> that possibly make the delay really be 3 seconds?
+>
+> Yes, it does...
 
-> On Tue, Jul 03, 2012 at 11:49:00AM -0400, Alan Stern wrote:
-> > On Tue, 3 Jul 2012, James Bottomley wrote:
-> > 
-> > > >   What happened is that T10
-> > > > in their infinite wisdom decided to put things like "supports TRIM" and
-> > > > "is actually a 4k block size but fakes 512 byte blocks" in the Read
-> > > > Capacity 16 results.  So if we want to support those kinds of things
-> > > > (and I think we do), then we need to send Read Capacity 16 to devices.
-> > > 
-> > > But anyway, we're stuck ... we have to send RC16 first to support these
-> > > features.  We did protest to T10 at the time, but to no avail.
-> > 
-> > Does it have to be sent _first_?
-> > 
-> > Or would it be okay to send _both_ commands and believe the RC10
-> > capacity rather than the RC16 capacity if they differ?
-> 
-> I have no problem with doing that (and believing RC16 over RC10 if RC10
-> claims 0xffffffff, naturally).  The problem, as I understand it, is that
-> some devices crash upon receiving RC16 rather than just returning nonsense.
+Ok. And I see the previous timeout - it's this:
 
-No, that's not the problem we're talking about here.  While it is true
-that some devices crash upon receiving RC16, so far we haven't been
-sending RC16 to those devices, so they don't matter for the purposes of
-this discussion.
+        reschedule_timeout(MAXTIMEOUT, "floppy init");
 
-In fact, usb-storage already has a NO_READ_CAPACITY_16 flag.  It was
-introduced because of a card reader that mistakenly attempts to return
-an actual capacity value even when no card is present: It takes the
-number of sectors -- which is 0 -- and subtracts 1 as usual.  You can
-imagine what happens next.  :-)  That's the only device which
-currently has this flag.
+that sets the fd_timeout to 20 seconds initially.
 
-The reason for the try_rc_10_first flag is that some devices return
-bogus data in response to RC16.  Like, an 800 GB device claiming to
-have 3 exabytes.
+That whole fd_timeout code is broken, though. I'm not sure what the
+floppy init timeout is supposed to do, when the floppy reset code
+wants to re-use it.
 
-Alan Stern
+And yes, the 3-second timeout is still too long.
 
+Doing it asynchronously like Andi does helps a bit, but I suspect we
+could make the reset timeout shorter still just to make the initial
+"you don't have a floppy drive" code go faster.
+
+That said, why even compile in the floppy driver any more? Even if you
+have the hardware, it probably doesn't work after ten years of
+gathering dust. Those floppy drives weren't exactly reliable even back
+in the days..
+
+Anyway, I looked up the 82078 docs for reset. Holding the reset low
+*does* cause an interrupt, but I'm not finding how long the reset
+might take. But for the controller it really should be milliseconds,
+not seconds, I suspect. Can anybody find the appropriate reset
+timeout?
+
+                 Linus
