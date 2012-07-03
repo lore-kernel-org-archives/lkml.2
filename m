@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724Ab2GCLgX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 07:36:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40212 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab2GCLgW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 07:36:22 -0400
-Message-ID: <1341315373.3158.3.camel@phoenix>
-Subject: RE: [PATCH v2] regulator: ad5398: Fix min/max current limit
- boundary checking
-From: Axel Lin <axel.lin@gmail.com>
-To: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@ti.com>
-Date: Tue, 03 Jul 2012 19:36:13 +0800
-In-Reply-To: <DB904C5425BA6F4E8424B3B51A1414D17140805E4C@NWD2CMBX1.ad.analog.com>
-References: <1341301353.12050.1.camel@phoenix>
-	 <DB904C5425BA6F4E8424B3B51A1414D17140805D85@NWD2CMBX1.ad.analog.com>
-	 <4FF2A7F9.3090307@metafoo.de>
-	 <DB904C5425BA6F4E8424B3B51A1414D17140805DAB@NWD2CMBX1.ad.analog.com>
-	 <4FF2AC24.7090906@metafoo.de>
-	 <DB904C5425BA6F4E8424B3B51A1414D17140805DC8@NWD2CMBX1.ad.analog.com>
-	 <CAF+7xWk5qQa5nV3OdFM51U1Kh7g9w3dA5mLL+SGRQ7_AFNkp5A@mail.gmail.com>
-	 <DB904C5425BA6F4E8424B3B51A1414D17140805E4C@NWD2CMBX1.ad.analog.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1752248Ab2GCLlb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 07:41:31 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:36160 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750869Ab2GCLl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 07:41:29 -0400
+Message-ID: <4FF2D9BF.20800@parallels.com>
+Date: Tue, 3 Jul 2012 15:38:39 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: David Rientjes <rientjes@google.com>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Lameter <cl@linux.com>,
+        <devel@openvz.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Kir Kolyshkin <kir@parallels.com>
+Subject: Re: Fork bomb limitation in memcg WAS: Re: [PATCH 00/11] kmem controller
+ for memcg: stripped down version
+References: <1340633728-12785-1-git-send-email-glommer@parallels.com> <20120625162745.eabe4f03.akpm@linux-foundation.org> <4FE9621D.2050002@parallels.com> <20120626145539.eeeab909.akpm@linux-foundation.org> <4FEAD260.4000603@parallels.com> <alpine.DEB.2.00.1206271233080.22162@chino.kir.corp.google.com> <4FEC1D63.6000903@parallels.com> <20120628152540.cc13a735.akpm@linux-foundation.org>
+In-Reply-To: <20120628152540.cc13a735.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> >The equation to calculate the selector does not depend on max_uA.
-> >So I think we don't need to set the requested max_uA.
-> >
+On 06/29/2012 02:25 AM, Andrew Morton wrote:
+> On Thu, 28 Jun 2012 13:01:23 +0400
+> Glauber Costa <glommer@parallels.com> wrote:
 > 
-> But, ad5398_set_current_limit() behaves different for min_uA and max_uA with you patch. Is this expected?
+>>
+>> ...
+>>
 > 
+> OK, that all sounds convincing ;) Please summarise and capture this
+> discussion in the [patch 0/n] changelog so we (or others) don't have to
+> go through this all again.  And let's remember this in the next
+> patchset!
 
-What we want is to set the smallest current supported by this hardware
-within the range you requested.
+Thanks, will surely do.
 
-Current code uses below equation to choose selector:
-selector = DIV_ROUND_UP((min_uA - chip->min_uA) * chip->current_level,
-                        range_uA);
+>> Last, but not least, note that it is totally within my interests to
+>> merge the slab tracking as fast as we can. it'll be a matter of going
+>> back to it, and agreeing in the final form.
+> 
+> Yes, I'd very much like to have the whole slab implementation in a
+> reasonably mature state before proceeding too far with this base
+> patchset.
 
-With this equation, we need to ensure min_uA >= chip->min_uA,
-otherwise it returns a negative selector.
+Does that means that you want to merge them together? I am more than
+happy to post the slab part again ontop of that to have people reviewing it.
 
-That is why we need to add:
-if (min_uA < chip->min_uA)
-        min_uA = chip->min_uA;
+But if possible, I believe that merging this part first would help us to
+split up testing in a beneficial way, in the sense that if it breaks, we
+know at least in which part it is. Not to mention, of course, that
+reviewers will have an easier time reviewing it as two pieces.
 
 
-Axel
 
