@@ -1,157 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab2GCKIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 06:08:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:27690 "EHLO mga01.intel.com"
+	id S1753150Ab2GCKK3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 06:10:29 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:44701 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754231Ab2GCKHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 06:07:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="187892587"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, proski@gnu.org,
-        Andrei Emeltchenko <andrei.emeltchenko@intel.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe@smile, Perches@smile, joe@perches.com
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [RFC][PATCHv2 3/3] wireless: at76c50x: eliminate hex2str()
-Date: Tue,  3 Jul 2012 13:06:40 +0300
-Message-Id: <1341310000-4082-3-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1341310000-4082-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1341264199.10162.2.camel@joe2Laptop>
- <1341310000-4082-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1750869Ab2GCKK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 06:10:28 -0400
+Date: Tue, 3 Jul 2012 11:10:24 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rik van Riel <riel@redhat.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, jaschut@sandia.gov, minchan@kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH -mm v2] mm: have order > 0 compaction start off where it
+ left
+Message-ID: <20120703101024.GG13141@csn.ul.ie>
+References: <20120628135520.0c48b066@annuminas.surriel.com>
+ <20120628135940.2c26ada9.akpm@linux-foundation.org>
+ <4FECCB89.2050400@redhat.com>
+ <20120628143546.d02d13f9.akpm@linux-foundation.org>
+ <1341250950.16969.6.camel@lappy>
+ <4FF2435F.2070302@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4FF2435F.2070302@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hex2str() is substituted by '%*pMF' specificator.
+On Mon, Jul 02, 2012 at 08:57:03PM -0400, Rik van Riel wrote:
+> On 07/02/2012 01:42 PM, Sasha Levin wrote:
+> >On Thu, 2012-06-28 at 14:35 -0700, Andrew Morton wrote:
+> >>On Thu, 28 Jun 2012 17:24:25 -0400 Rik van Riel<riel@redhat.com>  wrote:
+> >>>
+> >>>>>@@ -463,6 +474,8 @@ static void isolate_freepages(struct zone *zone,
+> >>>>>             */
+> >>>>>            if (isolated)
+> >>>>>                    high_pfn = max(high_pfn, pfn);
+> >>>>>+          if (cc->order>   0)
+> >>>>>+                  zone->compact_cached_free_pfn = high_pfn;
+> >>>>
+> >>>>Is high_pfn guaranteed to be aligned to pageblock_nr_pages here?  I
+> >>>>assume so, if lots of code in other places is correct but it's
+> >>>>unobvious from reading this function.
+> >>>
+> >>>Reading the code a few more times, I believe that it is
+> >>>indeed aligned to pageblock size.
+> >>
+> >>I'll slip this into -next for a while.
+> >>
+> >>--- a/mm/compaction.c~isolate_freepages-check-that-high_pfn-is-aligned-as-expected
+> >>+++ a/mm/compaction.c
+> >>@@ -456,6 +456,7 @@ static void isolate_freepages(struct zon
+> >>                 }
+> >>                 spin_unlock_irqrestore(&zone->lock, flags);
+> >>
+> >>+               WARN_ON_ONCE(high_pfn&  (pageblock_nr_pages - 1));
+> >>                 /*
+> >>                  * Record the highest PFN we isolated pages from. When next
+> >>                  * looking for free pages, the search will restart here as
+> >
+> >I've triggered the following with today's -next:
+> 
+> I've been staring at the migrate code for most of the afternoon,
+> and am not sure how this is triggered.
+> 
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/net/wireless/at76c50x-usb.c |   54 ++++++++---------------------------
- 1 file changed, 12 insertions(+), 42 deletions(-)
+That warning is placed in isolate_freepages(). When the migration
+scanner and free scanner have almost met it is possible for high_pfn to
+be
 
-diff --git a/drivers/net/wireless/at76c50x-usb.c b/drivers/net/wireless/at76c50x-usb.c
-index efc162e..f82f76b 100644
---- a/drivers/net/wireless/at76c50x-usb.c
-+++ b/drivers/net/wireless/at76c50x-usb.c
-@@ -498,36 +498,6 @@ exit:
- 	return ret;
- }
- 
--#define HEX2STR_BUFFERS 4
--#define HEX2STR_MAX_LEN 64
--
--/* Convert binary data into hex string */
--static char *hex2str(void *buf, size_t len)
--{
--	static atomic_t a = ATOMIC_INIT(0);
--	static char bufs[HEX2STR_BUFFERS][3 * HEX2STR_MAX_LEN + 1];
--	char *ret = bufs[atomic_inc_return(&a) & (HEX2STR_BUFFERS - 1)];
--	char *obuf = ret;
--	u8 *ibuf = buf;
--
--	if (len > HEX2STR_MAX_LEN)
--		len = HEX2STR_MAX_LEN;
--
--	if (len == 0)
--		goto exit;
--
--	while (len--) {
--		obuf = hex_byte_pack(obuf, *ibuf++);
--		*obuf++ = '-';
--	}
--	obuf--;
--
--exit:
--	*obuf = '\0';
--
--	return ret;
--}
--
- /* LED trigger */
- static int tx_activity;
- static void at76_ledtrig_tx_timerfunc(unsigned long data);
-@@ -1004,9 +974,9 @@ static void at76_dump_mib_mac_wep(struct at76_priv *priv)
- 	    WEP_SMALL_KEY_LEN : WEP_LARGE_KEY_LEN;
- 
- 	for (i = 0; i < WEP_KEYS; i++)
--		at76_dbg(DBG_MIB, "%s: MIB MAC_WEP: key %d: %s",
-+		at76_dbg(DBG_MIB, "%s: MIB MAC_WEP: key %d: %*pMF",
- 			 wiphy_name(priv->hw->wiphy), i,
--			 hex2str(m->wep_default_keyvalue[i], key_len));
-+			 key_len, m->wep_default_keyvalue[i]);
- exit:
- 	kfree(m);
- }
-@@ -1031,7 +1001,7 @@ static void at76_dump_mib_mac_mgmt(struct at76_priv *priv)
- 	at76_dbg(DBG_MIB, "%s: MIB MAC_MGMT: beacon_period %d CFP_max_duration "
- 		 "%d medium_occupancy_limit %d station_id 0x%x ATIM_window %d "
- 		 "CFP_mode %d privacy_opt_impl %d DTIM_period %d CFP_period %d "
--		 "current_bssid %pM current_essid %s current_bss_type %d "
-+		 "current_bssid %pM current_essid %*pMF current_bss_type %d "
- 		 "pm_mode %d ibss_change %d res %d "
- 		 "multi_domain_capability_implemented %d "
- 		 "international_roaming %d country_string %.3s",
-@@ -1041,7 +1011,7 @@ static void at76_dump_mib_mac_mgmt(struct at76_priv *priv)
- 		 le16_to_cpu(m->station_id), le16_to_cpu(m->ATIM_window),
- 		 m->CFP_mode, m->privacy_option_implemented, m->DTIM_period,
- 		 m->CFP_period, m->current_bssid,
--		 hex2str(m->current_essid, IW_ESSID_MAX_SIZE),
-+		 IW_ESSID_MAX_SIZE, m->current_essid,
- 		 m->current_bss_type, m->power_mgmt_mode, m->ibss_change,
- 		 m->res, m->multi_domain_capability_implemented,
- 		 m->multi_domain_capability_enabled, m->country_string);
-@@ -1069,7 +1039,7 @@ static void at76_dump_mib_mac(struct at76_priv *priv)
- 		 "cwmin %d cwmax %d short_retry_time %d long_retry_time %d "
- 		 "scan_type %d scan_channel %d probe_delay %u "
- 		 "min_channel_time %d max_channel_time %d listen_int %d "
--		 "desired_ssid %s desired_bssid %pM desired_bsstype %d",
-+		 "desired_ssid %*pMF desired_bssid %pM desired_bsstype %d",
- 		 wiphy_name(priv->hw->wiphy),
- 		 le32_to_cpu(m->max_tx_msdu_lifetime),
- 		 le32_to_cpu(m->max_rx_lifetime),
-@@ -1080,7 +1050,7 @@ static void at76_dump_mib_mac(struct at76_priv *priv)
- 		 le16_to_cpu(m->min_channel_time),
- 		 le16_to_cpu(m->max_channel_time),
- 		 le16_to_cpu(m->listen_interval),
--		 hex2str(m->desired_ssid, IW_ESSID_MAX_SIZE),
-+		 IW_ESSID_MAX_SIZE, m->desired_ssid,
- 		 m->desired_bssid, m->desired_bsstype);
- exit:
- 	kfree(m);
-@@ -1160,13 +1130,13 @@ static void at76_dump_mib_mdomain(struct at76_priv *priv)
- 		goto exit;
- 	}
- 
--	at76_dbg(DBG_MIB, "%s: MIB MDOMAIN: channel_list %s",
-+	at76_dbg(DBG_MIB, "%s: MIB MDOMAIN: channel_list %*pMF",
- 		 wiphy_name(priv->hw->wiphy),
--		 hex2str(m->channel_list, sizeof(m->channel_list)));
-+		 sizeof(m->channel_list), m->channel_list);
- 
--	at76_dbg(DBG_MIB, "%s: MIB MDOMAIN: tx_powerlevel %s",
-+	at76_dbg(DBG_MIB, "%s: MIB MDOMAIN: tx_powerlevel %*pMF",
- 		 wiphy_name(priv->hw->wiphy),
--		 hex2str(m->tx_powerlevel, sizeof(m->tx_powerlevel)));
-+		 sizeof(m->tx_powerlevel), m->tx_powerlevel);
- exit:
- 	kfree(m);
- }
-@@ -1369,9 +1339,9 @@ static int at76_startup_device(struct at76_priv *priv)
- 	int ret;
- 
- 	at76_dbg(DBG_PARAMS,
--		 "%s param: ssid %.*s (%s) mode %s ch %d wep %s key %d "
-+		 "%s param: ssid %.*s (%*pMF) mode %s ch %d wep %s key %d "
- 		 "keylen %d", wiphy_name(priv->hw->wiphy), priv->essid_size,
--		 priv->essid, hex2str(priv->essid, IW_ESSID_MAX_SIZE),
-+		 priv->essid, IW_ESSID_MAX_SIZE, priv->essid,
- 		 priv->iw_mode == IW_MODE_ADHOC ? "adhoc" : "infra",
- 		 priv->channel, priv->wep_enabled ? "enabled" : "disabled",
- 		 priv->wep_key_id, priv->wep_keys_len[priv->wep_key_id]);
+cc->migrate_pfn + pageblock_nr_pages
+
+and that is not necessarily pageblock aligned. Forcing it to be aligned
+raises the possibility that the free scanner moves to another zone. This
+is very unlikely but could happen if a high zone was very small.
+
+I should have caught this when the warning was proposed :( IMO it's
+safe to just drop the warning.
+
 -- 
-1.7.10
-
+Mel Gorman
+SUSE Labs
