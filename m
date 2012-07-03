@@ -1,326 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933286Ab2GCBWf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 21:22:35 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47884 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752520Ab2GCBWd convert rfc822-to-8bit (ORCPT
+	id S933275Ab2GCBXx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 21:23:53 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:58667 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932563Ab2GCBXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 21:22:33 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Richard Purdie <rpurdie@rpsys.net>, Bryan Wu <bryan.wu@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] backlight: move lp855x header into platform_data
- directory
-Thread-Topic: [PATCH 2/2] backlight: move lp855x header into platform_data
- directory
-Thread-Index: Ac1Yukih/U0osmtyTZuBIAJzFoX09Q==
-Date: Tue, 3 Jul 2012 01:22:17 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998FCCF3@DQHE02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.177.86]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 2 Jul 2012 21:23:51 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: linux-kernel@vger.kernel.org
+Cc: Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>, Rob Landley <rob@landley.net>,
+        linux-doc@vger.kernel.org
+Subject: [PATCH] Documentation: Add rights of maintainers to carry Acked-by forward
+Date: Mon,  2 Jul 2012 21:23:18 -0400
+Message-Id: <1341278598-8554-1-git-send-email-nhorman@tuxdriver.com>
+X-Mailer: git-send-email 1.7.7.6
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The lp855x header is used only in the platform side,
-so it can be moved into platform_data directory
+In writing patches, we occasionally hit a snag when, after a subsystem
+maintainer provides an Acked-by: on a patch, the tree maintainer may asked for
+further changes to a patch.  When this occurs, the tree maintainer often feels
+like they need to wait for a new ack from the subsystem maintainer again, a
+process which can cause unneeded delays.  This patch add language that
+explicitly confers authority on the upstream maintainer the right to carry acks
+forward if subsequent revisions do not signigicantly impact the functionality of
+the patch.  This should reduce latency and burden on subtree maintainers when
+getting last minute post-review cleanups done on patches.
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Rob Landley <rob@landley.net>
+CC: linux-doc@vger.kernel.org
 ---
- drivers/video/backlight/lp855x_bl.c  |    2 +-
- include/linux/lp855x.h               |  125 ----------------------------------
- include/linux/platform_data/lp855x.h |  125 ++++++++++++++++++++++++++++++++++
- 3 files changed, 126 insertions(+), 126 deletions(-)
- delete mode 100644 include/linux/lp855x.h
- create mode 100644 include/linux/platform_data/lp855x.h
+ Documentation/SubmittingPatches |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
-index 3d24314..aa6d4f7 100644
---- a/drivers/video/backlight/lp855x_bl.c
-+++ b/drivers/video/backlight/lp855x_bl.c
-@@ -14,7 +14,7 @@
- #include <linux/i2c.h>
- #include <linux/backlight.h>
- #include <linux/err.h>
--#include <linux/lp855x.h>
-+#include <linux/platform_data/lp855x.h>
+diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
+index c379a2a..e2000ec 100644
+--- a/Documentation/SubmittingPatches
++++ b/Documentation/SubmittingPatches
+@@ -414,6 +414,16 @@ the part which affects that maintainer's code.  Judgement should be used here.
+ When in doubt people should refer to the original discussion in the mailing
+ list archives.
  
- /* Registers */
- #define BRIGHTNESS_CTRL		0x00
-diff --git a/include/linux/lp855x.h b/include/linux/lp855x.h
-deleted file mode 100644
-index cc76f1f..0000000
---- a/include/linux/lp855x.h
-+++ /dev/null
-@@ -1,125 +0,0 @@
--/*
-- * LP855x Backlight Driver
-- *
-- *			Copyright (C) 2011 Texas Instruments
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- */
--
--#ifndef _LP855X_H
--#define _LP855X_H
--
--#define BL_CTL_SHFT	(0)
--#define BRT_MODE_SHFT	(1)
--#define BRT_MODE_MASK	(0x06)
--
--/* Enable backlight. Only valid when BRT_MODE=10(I2C only) */
--#define ENABLE_BL	(1)
--#define DISABLE_BL	(0)
--
--#define I2C_CONFIG(id)	id ## _I2C_CONFIG
--#define PWM_CONFIG(id)	id ## _PWM_CONFIG
--
--/* DEVICE CONTROL register - LP8550 */
--#define LP8550_PWM_CONFIG	(LP8550_PWM_ONLY << BRT_MODE_SHFT)
--#define LP8550_I2C_CONFIG	((ENABLE_BL << BL_CTL_SHFT) | \
--				(LP8550_I2C_ONLY << BRT_MODE_SHFT))
--
--/* DEVICE CONTROL register - LP8551 */
--#define LP8551_PWM_CONFIG	LP8550_PWM_CONFIG
--#define LP8551_I2C_CONFIG	LP8550_I2C_CONFIG
--
--/* DEVICE CONTROL register - LP8552 */
--#define LP8552_PWM_CONFIG	LP8550_PWM_CONFIG
--#define LP8552_I2C_CONFIG	LP8550_I2C_CONFIG
--
--/* DEVICE CONTROL register - LP8553 */
--#define LP8553_PWM_CONFIG	LP8550_PWM_CONFIG
--#define LP8553_I2C_CONFIG	LP8550_I2C_CONFIG
--
--/* DEVICE CONTROL register - LP8556 */
--#define LP8556_PWM_CONFIG	(LP8556_PWM_ONLY << BRT_MODE_SHFT)
--#define LP8556_COMB1_CONFIG	(LP8556_COMBINED1 << BRT_MODE_SHFT)
--#define LP8556_I2C_CONFIG	((ENABLE_BL << BL_CTL_SHFT) | \
--				(LP8556_I2C_ONLY << BRT_MODE_SHFT))
--#define LP8556_COMB2_CONFIG	(LP8556_COMBINED2 << BRT_MODE_SHFT)
--
--enum lp855x_chip_id {
--	LP8550,
--	LP8551,
--	LP8552,
--	LP8553,
--	LP8556,
--};
--
--enum lp855x_brightness_ctrl_mode {
--	PWM_BASED = 1,
--	REGISTER_BASED,
--};
--
--enum lp8550_brighntess_source {
--	LP8550_PWM_ONLY,
--	LP8550_I2C_ONLY = 2,
--};
--
--enum lp8551_brighntess_source {
--	LP8551_PWM_ONLY = LP8550_PWM_ONLY,
--	LP8551_I2C_ONLY = LP8550_I2C_ONLY,
--};
--
--enum lp8552_brighntess_source {
--	LP8552_PWM_ONLY = LP8550_PWM_ONLY,
--	LP8552_I2C_ONLY = LP8550_I2C_ONLY,
--};
--
--enum lp8553_brighntess_source {
--	LP8553_PWM_ONLY = LP8550_PWM_ONLY,
--	LP8553_I2C_ONLY = LP8550_I2C_ONLY,
--};
--
--enum lp8556_brightness_source {
--	LP8556_PWM_ONLY,
--	LP8556_COMBINED1,	/* pwm + i2c before the shaper block */
--	LP8556_I2C_ONLY,
--	LP8556_COMBINED2,	/* pwm + i2c after the shaper block */
--};
--
--struct lp855x_pwm_data {
--	void (*pwm_set_intensity) (int brightness, int max_brightness);
--	int (*pwm_get_intensity) (int max_brightness);
--};
--
--struct lp855x_rom_data {
--	u8 addr;
--	u8 val;
--};
--
--/**
-- * struct lp855x_platform_data
-- * @name : Backlight driver name. If it is not defined, default name is set.
-- * @mode : brightness control by pwm or lp855x register
-- * @device_control : value of DEVICE CONTROL register
-- * @initial_brightness : initial value of backlight brightness
-- * @pwm_data : platform specific pwm generation functions.
--		Only valid when mode is PWM_BASED.
-- * @load_new_rom_data :
--	0 : use default configuration data
--	1 : update values of eeprom or eprom registers on loading driver
-- * @size_program : total size of lp855x_rom_data
-- * @rom_data : list of new eeprom/eprom registers
-- */
--struct lp855x_platform_data {
--	char *name;
--	enum lp855x_brightness_ctrl_mode mode;
--	u8 device_control;
--	int initial_brightness;
--	struct lp855x_pwm_data pwm_data;
--	u8 load_new_rom_data;
--	int size_program;
--	struct lp855x_rom_data *rom_data;
--};
--
--#endif
-diff --git a/include/linux/platform_data/lp855x.h b/include/linux/platform_data/lp855x.h
-new file mode 100644
-index 0000000..cc76f1f
---- /dev/null
-+++ b/include/linux/platform_data/lp855x.h
-@@ -0,0 +1,125 @@
-+/*
-+ * LP855x Backlight Driver
-+ *
-+ *			Copyright (C) 2011 Texas Instruments
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
++Note that an Acked-by: From a subsystem maintainer on a given patch confers
++upon the tree maintainer integrating the patch the authority to carry those Acks
++forward through subsequent versions of a patch, as long as those versions do not
++significantly impact the functionality of the patch.  For example, say the isdn
++subsystem maintainer sends an Acked-by: on version 1 of a patch bound for the
++networking tree.  The networking maintainer then requests that some comments in
++the code be modified to comply with the CodingStyle document.  The networking
++tree maintanier may reapply the subsystem maintainers Acked-by: to the new
++version as no significant changes were made to the patch functionality.
 +
-+#ifndef _LP855X_H
-+#define _LP855X_H
-+
-+#define BL_CTL_SHFT	(0)
-+#define BRT_MODE_SHFT	(1)
-+#define BRT_MODE_MASK	(0x06)
-+
-+/* Enable backlight. Only valid when BRT_MODE=10(I2C only) */
-+#define ENABLE_BL	(1)
-+#define DISABLE_BL	(0)
-+
-+#define I2C_CONFIG(id)	id ## _I2C_CONFIG
-+#define PWM_CONFIG(id)	id ## _PWM_CONFIG
-+
-+/* DEVICE CONTROL register - LP8550 */
-+#define LP8550_PWM_CONFIG	(LP8550_PWM_ONLY << BRT_MODE_SHFT)
-+#define LP8550_I2C_CONFIG	((ENABLE_BL << BL_CTL_SHFT) | \
-+				(LP8550_I2C_ONLY << BRT_MODE_SHFT))
-+
-+/* DEVICE CONTROL register - LP8551 */
-+#define LP8551_PWM_CONFIG	LP8550_PWM_CONFIG
-+#define LP8551_I2C_CONFIG	LP8550_I2C_CONFIG
-+
-+/* DEVICE CONTROL register - LP8552 */
-+#define LP8552_PWM_CONFIG	LP8550_PWM_CONFIG
-+#define LP8552_I2C_CONFIG	LP8550_I2C_CONFIG
-+
-+/* DEVICE CONTROL register - LP8553 */
-+#define LP8553_PWM_CONFIG	LP8550_PWM_CONFIG
-+#define LP8553_I2C_CONFIG	LP8550_I2C_CONFIG
-+
-+/* DEVICE CONTROL register - LP8556 */
-+#define LP8556_PWM_CONFIG	(LP8556_PWM_ONLY << BRT_MODE_SHFT)
-+#define LP8556_COMB1_CONFIG	(LP8556_COMBINED1 << BRT_MODE_SHFT)
-+#define LP8556_I2C_CONFIG	((ENABLE_BL << BL_CTL_SHFT) | \
-+				(LP8556_I2C_ONLY << BRT_MODE_SHFT))
-+#define LP8556_COMB2_CONFIG	(LP8556_COMBINED2 << BRT_MODE_SHFT)
-+
-+enum lp855x_chip_id {
-+	LP8550,
-+	LP8551,
-+	LP8552,
-+	LP8553,
-+	LP8556,
-+};
-+
-+enum lp855x_brightness_ctrl_mode {
-+	PWM_BASED = 1,
-+	REGISTER_BASED,
-+};
-+
-+enum lp8550_brighntess_source {
-+	LP8550_PWM_ONLY,
-+	LP8550_I2C_ONLY = 2,
-+};
-+
-+enum lp8551_brighntess_source {
-+	LP8551_PWM_ONLY = LP8550_PWM_ONLY,
-+	LP8551_I2C_ONLY = LP8550_I2C_ONLY,
-+};
-+
-+enum lp8552_brighntess_source {
-+	LP8552_PWM_ONLY = LP8550_PWM_ONLY,
-+	LP8552_I2C_ONLY = LP8550_I2C_ONLY,
-+};
-+
-+enum lp8553_brighntess_source {
-+	LP8553_PWM_ONLY = LP8550_PWM_ONLY,
-+	LP8553_I2C_ONLY = LP8550_I2C_ONLY,
-+};
-+
-+enum lp8556_brightness_source {
-+	LP8556_PWM_ONLY,
-+	LP8556_COMBINED1,	/* pwm + i2c before the shaper block */
-+	LP8556_I2C_ONLY,
-+	LP8556_COMBINED2,	/* pwm + i2c after the shaper block */
-+};
-+
-+struct lp855x_pwm_data {
-+	void (*pwm_set_intensity) (int brightness, int max_brightness);
-+	int (*pwm_get_intensity) (int max_brightness);
-+};
-+
-+struct lp855x_rom_data {
-+	u8 addr;
-+	u8 val;
-+};
-+
-+/**
-+ * struct lp855x_platform_data
-+ * @name : Backlight driver name. If it is not defined, default name is set.
-+ * @mode : brightness control by pwm or lp855x register
-+ * @device_control : value of DEVICE CONTROL register
-+ * @initial_brightness : initial value of backlight brightness
-+ * @pwm_data : platform specific pwm generation functions.
-+		Only valid when mode is PWM_BASED.
-+ * @load_new_rom_data :
-+	0 : use default configuration data
-+	1 : update values of eeprom or eprom registers on loading driver
-+ * @size_program : total size of lp855x_rom_data
-+ * @rom_data : list of new eeprom/eprom registers
-+ */
-+struct lp855x_platform_data {
-+	char *name;
-+	enum lp855x_brightness_ctrl_mode mode;
-+	u8 device_control;
-+	int initial_brightness;
-+	struct lp855x_pwm_data pwm_data;
-+	u8 load_new_rom_data;
-+	int size_program;
-+	struct lp855x_rom_data *rom_data;
-+};
-+
-+#endif
+ If a person has had the opportunity to comment on a patch, but has not
+ provided such comments, you may optionally add a "Cc:" tag to the patch.
+ This is the only tag which might be added without an explicit action by the
 -- 
-1.7.2.5
-
-
-Best Regards,
-Milo
+1.7.7.6
 
