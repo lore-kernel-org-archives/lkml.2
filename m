@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757041Ab2GCSp4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 14:45:56 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:44602 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656Ab2GCSpz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 14:45:55 -0400
-Date: Tue, 3 Jul 2012 20:45:51 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Calvin Walton <calvin.walton@kepstin.ca>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        shemminger@vyatta.com
-Subject: Re: long boot delays caused by 070ad7e7 floppy change
-Message-ID: <20120703184551.GL11413@one.firstfloor.org>
-References: <20120702224648.GA20361@tassilo.jf.intel.com> <CA+55aFwre6s=orjUaNKJA=51Fc1mxu_XGX80Bex4Sn-=mWPx5Q@mail.gmail.com> <1341323230.3292.10.camel@nayuki.kepstin.ca> <CA+55aFyvzz3Lp9zeA6X+QMan0iZFWq_0Xd+ff_trnP1tpn2iJQ@mail.gmail.com> <1341337257.2406.1.camel@nayuki.kepstin.ca> <CA+55aFzOD33eWj0FQuZ7RWmF-yYwaeNB-9J-YY+mX4mwP7VXuA@mail.gmail.com> <alpine.LNX.2.00.1207031953570.17304@pobox.suse.cz>
+	id S932848Ab2GCSsE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 14:48:04 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:58897 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932255Ab2GCSsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 14:48:01 -0400
+Message-ID: <1341341280.2012.3.camel@joe2Laptop>
+Subject: Re: [RFC][PATCHv2 2/3] lib: printf: append support of '%*p[Mm][FR]'
+From: Joe Perches <joe@perches.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, proski@gnu.org,
+        Andrei Emeltchenko <andrei.emeltchenko@intel.com>,
+        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 03 Jul 2012 11:48:00 -0700
+In-Reply-To: <CAHp75VfN4X9fH7NEUag3XYy7kLiEz-jcjhEOdoHMk3if_m_aOg@mail.gmail.com>
+References: <1341264199.10162.2.camel@joe2Laptop>
+	 <1341310000-4082-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1341310000-4082-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1341329631.2164.15.camel@joe2Laptop>
+	 <CAHp75VfN4X9fH7NEUag3XYy7kLiEz-jcjhEOdoHMk3if_m_aOg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1207031953570.17304@pobox.suse.cz>
-User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 03, 2012 at 07:57:15PM +0200, Jiri Kosina wrote:
-> On Tue, 3 Jul 2012, Linus Torvalds wrote:
+On Tue, 2012-07-03 at 21:32 +0300, Andy Shevchenko wrote:
+> On Tue, Jul 3, 2012 at 6:33 PM, Joe Perches <joe@perches.com> wrote:
+> > On Tue, 2012-07-03 at 13:06 +0300, Andy Shevchenko wrote:
+> >> There are many places in the kernel where the drivers print small buffers as a
+> >> hex string. This patch adds a support of the variable width buffer to print it
+> >> as a hex string with a delimiter. The idea came from Pavel Roskin here:
+> >> http://www.digipedia.pl/usenet/thread/18835/17449/
+> >>
+> >> Sample output of
+> >>       pr_info("buf[%d:%d] %*pM\n", from, len, len, &buf[from]);
+> >> could be look like this:
+> >>       [ 0.726130] buf[51:8] e8:16:b6:ef:e3:74:45:6e
+> >>       [ 0.750736] buf[59:15] 31:81:b8:3f:35:49:06:ae:df:32:06:05:4a:af:55
+> >>       [ 0.757602] buf[17:5] ac:16:d5:2c:ef
 > 
-> > > Ok, here's the dmesg output that I get:
-> > >
-> > > [    0.714316] floppy0: lock_fdc: -1 (out of 8)
-> > 
-> > Ok, thanks. That -1 definitely explains the long delay. It's using
-> > "drive=-1" because it has no actual drive number, just the
-> > *controller* number.
-> > 
-> > And the backtrace shows what's going on too: it's the
-> > 
-> >   user_reset_fdc(-1, FD_RESET_ALWAYS, false);
-> > 
-> > that passes in -1 as the floppy controller number.
-> > 
-> > Ugh.
-> > 
-> > It looks like the code meant for -1 to mean "regular delay"
-> > (current_reqD), and -2 to mean MAXTIMEOUT. For some reason the "-1"
-> > logic has gotten screwed.
+> > It might be more sensible to use new, distinct
+> > "%*pH" and "%*ph" functions and not touch the
+> > mac address function at all.  Will anyone ever
+> > really want to emit the buffer in reverse?
+> > I don't think so.
+> Yeah, probably it's only the case for the Bluetooth addresses.
 > 
-> I am still trying to understand the exact situation.
-> 
-> Andi, do I understand you correctly that even if you revert 070ad7e793dc 
-> on top of current Linus' tree, you are still seeing the 20 second delay 
-> inside the initcall?
+> > Perhaps when using a hex_string_buffer func the
+> > separator should be a space/no-space with %*pHh.
+> What I learned from today's linux-next is the most used separators are
+> ' ' (space), '' (nothing), ':' and '-'. We have dozens of the cases
+> for first three. The '-' support could not be implemented
+> nevertheless.
+> So, might be %*pHh[CDS] C for 'colon', S for 'space', D for 'dash' looks better.
 
-Correct. Here's the debug output with just reverted (without Linus
-patch):
+Maybe use a space default.
 
-[    2.489559] calling  floppy_init+0x0/0xe46 @ 1
-[    2.504363] floppy0: lock_fdc: -1 (out of 8)
-[    2.504410] floppy0: reschedule timeout lock fdc
-[   22.498784] floppy0: reschedule timeout do wakeup
-[   22.498811] floppy0: no floppy controllers found
-[   22.498944] initcall floppy_init+0x0/0xe46 returned -19 after
-19577158 usecs
+> 'Hh' for capital/small letters than?
+
+If you want, though I'd hope nobody uses upper case.
+
+> > You could extend the max to 128 or larger now.
+> I don't think it is really needed.
+
+I hope it's not, but I just don't see the need to limit it.
+
+> Most of the current cases usually
+> print not more than ~30bytes (in average) per time. And I couldn't
+> imagine good looking printing for long lines anyway.
+
+Yup, they'd be ugly.
+print_hex_dump() should be favored anyway.
+
+cheers, Joe
 
