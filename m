@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933472Ab2GCUIw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 16:08:52 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:23266 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757152Ab2GCUIu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 16:08:50 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6761"; a="204850430"
-Message-ID: <4FF3514E.6050401@codeaurora.org>
-Date: Tue, 03 Jul 2012 13:08:46 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S933485Ab2GCULl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 16:11:41 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:36106 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933424Ab2GCULk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 16:11:40 -0400
+Message-ID: <4FF351F8.1000003@msgid.tls.msk.ru>
+Date: Wed, 04 Jul 2012 00:11:36 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: Fix recursive mutex lockdep warning
-References: <1341282066-15325-1-git-send-email-sboyd@codeaurora.org> <20120703192652.GH29030@opensource.wolfsonmicro.com>
-In-Reply-To: <20120703192652.GH29030@opensource.wolfsonmicro.com>
+To: Jeff Garzik <jeff@garzik.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [RFC][PATCH] libata: enable SATA disk fua detection on default
+References: <1336447443-4685-1-git-send-email-wenqing.lz@taobao.com> <20120703090441.GA4804@gmail.com>
+In-Reply-To: <20120703090441.GA4804@gmail.com>
+X-Enigmail-Version: 1.4.1
+OpenPGP: id=804465C5
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/12 12:26, Mark Brown wrote:
-> On Mon, Jul 02, 2012 at 07:21:06PM -0700, Stephen Boyd wrote:
->> A recursive lockdep warning occurs if you call
->> regulator_set_optimum_mode() on a regulator with a supply because
->> there is no nesting annotation for the rdev->mutex. To avoid this
->> warning, get the supply's load before locking the regulator's
->> mutex to avoid grabbing the same class of lock twice.
-> Applied, thanks.  Though we should probably just remove the optimal mode
-> stuff on account of the total absence of any users...
+On 03.07.2012 13:04, Zheng Liu wrote:
+> Hi Jeff,
+> 
+> Sorry for bothering you.  Could you please review this patch, or give me
+> some feedbacks.  If this patch can be applied, I can rebase it to the
+> lastest version of mainline kernel.  Thank you.
+[]
+>> -int libata_fua = 0;
+>> +int libata_fua = 1;
 
-Please don't remove it. We use the optimal stuff fairly often
-internally, plus our usb driver is upstream and using the API.
+I guess it can be enabled after LOTS of testing of various drives out
+there, which shows that no current drives have issues with FUA anymore,
+and after building a black-list of devices which misbehave.  It is quite
+a big project, I think.  But what it gives us in return?
 
-What do you think about removing the locking in get_voltage? Is that better?
+(I've no idea if this is the right answer, speaking of myself only)
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Thanks,
 
+/mjt
