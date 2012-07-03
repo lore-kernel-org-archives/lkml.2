@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210Ab2GCNxT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 09:53:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57493 "EHLO mx1.redhat.com"
+	id S1754799Ab2GCOA2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 10:00:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64961 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751081Ab2GCNxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 09:53:17 -0400
-Date: Tue, 3 Jul 2012 14:53:10 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        stable@vger.kernel.org, Milan Broz <mbroz@redhat.com>
-Subject: [git pull] device-mapper fixes for 3.5
-Message-ID: <20120703135310.GT20415@agk-dp.fab.redhat.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-	Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-	stable@vger.kernel.org, Milan Broz <mbroz@redhat.com>
+	id S1751081Ab2GCOA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 10:00:27 -0400
+Message-ID: <4FF2FB5D.5030102@redhat.com>
+Date: Tue, 03 Jul 2012 22:02:05 +0800
+From: Asias He <asias@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, kvm@vger.kernel.org,
+        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Sasha Levin <levinsasha928@gmail.com>, Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH 3/3] virtio-blk: Add bio-based IO path for virtio-blk
+References: <1340002390-3950-1-git-send-email-asias@redhat.com> <1340002390-3950-4-git-send-email-asias@redhat.com> <87hau9yse7.fsf@rustcorp.com.au> <4FDEE0CB.1030505@redhat.com> <87zk81x7dp.fsf@rustcorp.com.au> <4FDF0DA7.40604@redhat.com> <1340019575.22848.2.camel@lappy> <4FDFE926.7030309@redhat.com> <87r4svxcjw.fsf@rustcorp.com.au> <4FF10B31.60609@redhat.com> <8762a6y89v.fsf@rustcorp.com.au> <4FF2F417.2010209@redhat.com>
+In-Reply-To: <4FF2F417.2010209@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull from:
- 
-  git://git.kernel.org/pub/scm/linux/kernel/git/agk/linux-dm tags/dm-3.5-fixes
+On 07/03/2012 09:31 PM, Paolo Bonzini wrote:
+> Il 02/07/2012 08:41, Rusty Russell ha scritto:
+>>> With the same workload in guest, the guest fires 200K requests to host
+>>> with merges enabled in guest (echo 0 > /sys/block/vdb/queue/nomerges),
+>>> while the guest fires 40000K requests to host with merges disabled in
+>>> guest (echo 2 > /sys/block/vdb/queue/nomerges). This show that the merge
+>>> in block layer reduces the total number of requests fire to host a lot
+>>> (40000K / 200K = 20).
+>>>
+>
+> 40000 / 200 is 200, not 20. :)
 
-to get the following device-mapper fixes for 3.5.
- 
-Thanks,
-Alasdair
- 
-----------------------------------------------------------------
-Four minor thin provisioning fixes and correct and update dm-verity
-documentation.
+Crap, I wrote one more zero here. Actually, it is 4000K. So the factor 
+is still 4000K/200k = 20 ;-)
 
-----------------------------------------------------------------
-Joe Thornber (1):
-      dm thin: commit metadata before creating metadata snapshot
+-- 
+Asias
 
-Mike Snitzer (3):
-      dm persistent data: fix shadow_info_leak on dm_tm_destroy
-      dm persistent data: handle space map checker creation failure
-      dm persistent data: fix allocation failure in space map checker init
 
-Milan Broz (1):
-      dm: verity fix documentation
-
- Documentation/device-mapper/verity.txt             |  131 +++++++-------------
- drivers/md/dm-thin.c                               |    7 ++
- drivers/md/persistent-data/dm-space-map-checker.c  |   54 ++++----
- drivers/md/persistent-data/dm-space-map-disk.c     |   11 +-
- .../md/persistent-data/dm-transaction-manager.c    |   11 +-
- 5 files changed, 103 insertions(+), 111 deletions(-)
