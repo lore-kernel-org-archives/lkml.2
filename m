@@ -1,236 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab2GCFoX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 01:44:23 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:47543 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932473Ab2GCFoC (ORCPT
+	id S1755250Ab2GCFtV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 01:49:21 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39227 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672Ab2GCFtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 01:44:02 -0400
-From: Cong Meng <mc@linux.vnet.ibm.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: stefanha@linux.vnet.ibm.com, linuxram@us.ibm.com,
-        senwang@linux.vnet.ibm.com, zwanp@cn.ibm.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Cong Meng <mc@linux.vnet.ibm.com>
-Subject: [PATCH v2] virtio-scsi: hotplug support for virtio-scsi
-Date: Tue,  3 Jul 2012 13:41:25 +0800
-Message-Id: <1341294085-17164-1-git-send-email-mc@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.7.6
-x-cbid: 12070305-0542-0000-0000-0000025605FC
+	Tue, 3 Jul 2012 01:49:20 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FF287C3.4030901@jp.fujitsu.com>
+Date: Tue, 3 Jul 2012 14:48:51 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
+CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
+        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>
+Subject: [RFC PATCH v2 0/13] memory-hotplug : hot-remove physical memory
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements the hotplug support for virtio-scsi.
-When there is a device attached/detached, the virtio-scsi driver will be
-signaled via event virtual queue and it will add/remove the scsi device 
-in question automatically.
+This patch series aims to support physical memory hot-remove.
 
-v2: handle no_event event
+  [RFC PATCH v2 1/13] memory-hotplug : rename remove_memory to offline_memory
+  [RFC PATCH v2 2/13] memory-hotplug : add physical memory hotplug code to acpi_memory_device_remove
+  [RFC PATCH v2 3/13] memory-hotplug : unify argument of firmware_map_add_early/hotplug
+  [RFC PATCH v2 4/13] memory-hotplug : remove /sys/firmware/memmap/X sysfs
+  [RFC PATCH v2 5/13] memory-hotplug : does not release memory region in PAGES_PER_SECTION chunks
+  [RFC PATCH v2 6/13] memory-hotplug : add memory_block_release
+  [RFC PATCH v2 7/13] memory-hotplug : remove_memory calls __remove_pages
+  [RFC PATCH v2 8/13] memory-hotplug : check page type in get_page_bootmem
+  [RFC PATCH v2 9/13] memory-hotplug : move register_page_bootmem_info_node and put_page_bootmem for
+sparse-vmemmap
+  [RFC PATCH v2 10/13] memory-hotplug : implement register_page_bootmem_info_section of sparse-vmemmap
+  [RFC PATCH v2 11/13] memory-hotplug : free memmap of sparse-vmemmap
+  [RFC PATCH v2 12/13] memory-hotplug : add node_device_release
+  [RFC PATCH v2 13/13] memory-hotplug : remove sysfs file of node
 
-Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
-Signed-off-by: Sen Wang <senwang@linux.vnet.ibm.com>
+Even if you apply these patches, you cannot remove the physical memory
+completely since these patches are still under development. I want you to
+cooperate to improve the physical memory hot-remove. So please review these
+patches and give your comment/idea.
+
+The patches can free/remove following things:
+
+  - acpi_memory_info                          : [RFC PATCH 2/13]
+  - /sys/firmware/memmap/X/{end, start, type} : [RFC PATCH 4/13]
+  - iomem_resource                            : [RFC PATCH 5/13]
+  - mem_section and related sysfs files       : [RFC PATCH 6-11/13]
+  - node and related sysfs files              : [RFC PATCH 12-13/13]
+
+The patches cannot do following things yet:
+
+  - page table of removed memory
+
+If you find lack of function for physical memory hot-remove, please let me
+know.
+
+change log of v2:
+ [RFC PATCH v2 2/13]
+   * check whether memory block is offline or not before calling offline_memory()
+   * check whether section is valid or not in is_memblk_offline()
+   * call kobject_put() for each memory_block in is_memblk_offline()
+
+ [RFC PATCH v2 3/13]
+   * unify the end argument of firmware_map_add_early/hotplug
+
+ [RFC PATCH v2 4/13]
+   * add release_firmware_map_entry() for freeing firmware_map_entry
+
+ [RFC PATCH v2 6/13]
+  * add release_memory_block() for freeing memory_block
+
+ [RFC PATCH v2 11/13]
+  * fix wrong arguments of free_pages()
+
 ---
- drivers/scsi/virtio_scsi.c  |  113 ++++++++++++++++++++++++++++++++++++++++++-
- include/linux/virtio_scsi.h |    9 ++++
- 2 files changed, 121 insertions(+), 1 deletions(-)
+ arch/powerpc/platforms/pseries/hotplug-memory.c |   16 +-
+ arch/x86/mm/init_64.c                           |  144 ++++++++++++++++++++++++
+ drivers/acpi/acpi_memhotplug.c                  |   28 ++++
+ drivers/base/memory.c                           |   53 ++++++++
+ drivers/base/node.c                             |    7 +
+ drivers/firmware/memmap.c                       |   70 +++++++++++
+ include/linux/firmware-map.h                    |    6 +
+ include/linux/memory.h                          |    5
+ include/linux/memory_hotplug.h                  |   17 --
+ include/linux/mm.h                              |    5
+ mm/memory_hotplug.c                             |   98 ++++++++++++----
+ mm/sparse.c                                     |    5
+ 12 files changed, 406 insertions(+), 48 deletions(-)
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 9fc5e67..e44b2d6 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -25,6 +25,7 @@
- #include <scsi/scsi_cmnd.h>
- 
- #define VIRTIO_SCSI_MEMPOOL_SZ 64
-+#define VIRTIO_SCSI_EVENT_LEN 8
- 
- /* Command queue element */
- struct virtio_scsi_cmd {
-@@ -43,6 +44,12 @@ struct virtio_scsi_cmd {
- 	} resp;
- } ____cacheline_aligned_in_smp;
- 
-+struct virtio_scsi_event_node {
-+	struct virtio_scsi *vscsi;
-+	struct virtio_scsi_event event;
-+	struct work_struct work;
-+};
-+
- struct virtio_scsi_vq {
- 	/* Protects vq */
- 	spinlock_t vq_lock;
-@@ -67,6 +74,9 @@ struct virtio_scsi {
- 	struct virtio_scsi_vq event_vq;
- 	struct virtio_scsi_vq req_vq;
- 
-+	/* Get some buffers reday for event vq */
-+	struct virtio_scsi_event_node event_list[VIRTIO_SCSI_EVENT_LEN];
-+
- 	struct virtio_scsi_target_state *tgt[];
- };
- 
-@@ -202,6 +212,97 @@ static void virtscsi_ctrl_done(struct virtqueue *vq)
- 	spin_unlock_irqrestore(&vscsi->ctrl_vq.vq_lock, flags);
- };
- 
-+static int virtscsi_kick_event(struct virtio_scsi *vscsi,
-+			       struct virtio_scsi_event_node *event_node)
-+{
-+	int ret;
-+	struct scatterlist sg;
-+	unsigned long flags;
-+
-+	sg_set_buf(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
-+
-+	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
-+
-+	ret = virtqueue_add_buf(vscsi->event_vq.vq, &sg, 0, 1, event_node, GFP_ATOMIC);
-+	if (ret >= 0)
-+		virtqueue_kick(vscsi->event_vq.vq);
-+
-+	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
-+
-+	return ret;
-+}
-+
-+static int virtscsi_kick_event_all(struct virtio_scsi *vscsi)
-+{
-+	int i;
-+
-+	for (i = 0; i < VIRTIO_SCSI_EVENT_LEN; i++) {
-+		vscsi->event_list[i].vscsi = vscsi;
-+		virtscsi_kick_event(vscsi, &vscsi->event_list[i]);
-+	}
-+
-+	return 0;
-+}
-+
-+static void virtscsi_handle_transport_reset(struct virtio_scsi *vscsi,
-+                                            struct virtio_scsi_event *event)
-+{
-+	struct scsi_device *sdev;
-+	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
-+	unsigned int target = event->lun[1];
-+	unsigned int lun = (event->lun[2] << 8) | event->lun[3];
-+
-+	switch (event->reason) {
-+	case VIRTIO_SCSI_EVT_RESET_RESCAN:
-+		scsi_add_device(shost, 0, target, lun);
-+		break;
-+	case VIRTIO_SCSI_EVT_RESET_REMOVED:
-+		sdev = scsi_device_lookup(shost, 0, target, lun);
-+		if (sdev) {
-+			scsi_remove_device(sdev);
-+			scsi_device_put(sdev);
-+		} else {
-+			pr_err("SCSI device %d 0 %d %d not found\n",
-+				shost->host_no, target, lun);
-+		}
-+		break;
-+	default:
-+		pr_info("Unsupport virtio scsi event reason %x\n", event->reason);
-+	}
-+}
-+
-+static void virtscsi_handle_event(struct work_struct *work)
-+{
-+	struct virtio_scsi_event_node *event_node =
-+		container_of(work, struct virtio_scsi_event_node, work);
-+	struct virtio_scsi *vscsi = event_node->vscsi;
-+	struct virtio_scsi_event *event = &event_node->event;
-+
-+	if (event->event & VIRTIO_SCSI_T_EVENTS_MISSED) {
-+		event->event &= (~VIRTIO_SCSI_T_EVENTS_MISSED);
-+		/* FIXME: handle event missed here */
-+	}
-+
-+	switch (event->event) {
-+	case VIRTIO_SCSI_T_NO_EVENT:
-+		break;
-+	case VIRTIO_SCSI_T_TRANSPORT_RESET:
-+		virtscsi_handle_transport_reset(vscsi, event);
-+		break;
-+	default:
-+		pr_err("Unsupport virtio scsi event %x\n", event->event);
-+	}
-+	virtscsi_kick_event(vscsi, event_node);
-+}
-+
-+static void virtscsi_complete_event(void *buf)
-+{
-+	struct virtio_scsi_event_node *event_node = buf;
-+
-+	INIT_WORK(&event_node->work, virtscsi_handle_event);
-+	schedule_work(&event_node->work);
-+}
-+
- static void virtscsi_event_done(struct virtqueue *vq)
- {
- 	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
-@@ -209,7 +310,7 @@ static void virtscsi_event_done(struct virtqueue *vq)
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
--	virtscsi_vq_done(vq, virtscsi_complete_free);
-+	virtscsi_vq_done(vq, virtscsi_complete_event);
- 	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
- };
- 
-@@ -510,6 +611,10 @@ static int virtscsi_init(struct virtio_device *vdev,
- 	virtscsi_config_set(vdev, cdb_size, VIRTIO_SCSI_CDB_SIZE);
- 	virtscsi_config_set(vdev, sense_size, VIRTIO_SCSI_SENSE_SIZE);
- 
-+	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG)) {
-+		virtscsi_kick_event_all(vscsi);
-+	}
-+
- 	/* We need to know how many segments before we allocate.  */
- 	sg_elems = virtscsi_config_get(vdev, seg_max) ?: 1;
- 
-@@ -608,7 +713,13 @@ static struct virtio_device_id id_table[] = {
- 	{ 0 },
- };
- 
-+static unsigned int features[] = {
-+	VIRTIO_SCSI_F_HOTPLUG
-+};
-+
- static struct virtio_driver virtio_scsi_driver = {
-+	.feature_table = features,
-+	.feature_table_size = ARRAY_SIZE(features),
- 	.driver.name = KBUILD_MODNAME,
- 	.driver.owner = THIS_MODULE,
- 	.id_table = id_table,
-diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
-index 8ddeafd..dc8d305 100644
---- a/include/linux/virtio_scsi.h
-+++ b/include/linux/virtio_scsi.h
-@@ -69,6 +69,10 @@ struct virtio_scsi_config {
- 	u32 max_lun;
- } __packed;
- 
-+/* Feature Bits */
-+#define VIRTIO_SCSI_F_INOUT                    0
-+#define VIRTIO_SCSI_F_HOTPLUG                  1
-+
- /* Response codes */
- #define VIRTIO_SCSI_S_OK                       0
- #define VIRTIO_SCSI_S_OVERRUN                  1
-@@ -105,6 +109,11 @@ struct virtio_scsi_config {
- #define VIRTIO_SCSI_T_TRANSPORT_RESET          1
- #define VIRTIO_SCSI_T_ASYNC_NOTIFY             2
- 
-+/* Reasons of transport reset event */
-+#define VIRTIO_SCSI_EVT_RESET_HARD             0
-+#define VIRTIO_SCSI_EVT_RESET_RESCAN           1
-+#define VIRTIO_SCSI_EVT_RESET_REMOVED          2
-+
- #define VIRTIO_SCSI_S_SIMPLE                   0
- #define VIRTIO_SCSI_S_ORDERED                  1
- #define VIRTIO_SCSI_S_HEAD                     2
--- 
-1.7.7.6
 
