@@ -1,82 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321Ab2GCJve (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 05:51:34 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:59231
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750869Ab2GCJvc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 05:51:32 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: -7
-X-BigFish: VPS-7(zz9371I542M1432Izz1202hzzz2dh2a8h668h839h944hd25hf0ah)
-From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-To: "axel.lin@gmail.com" <axel.lin@gmail.com>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@ti.com>
-Date: Tue, 3 Jul 2012 05:51:39 -0400
-Subject: RE: [PATCH v2] regulator: ad5398: Fix min/max current limit
- boundary checking
-Thread-Topic: [PATCH v2] regulator: ad5398: Fix min/max current limit
- boundary checking
-Thread-Index: Ac1ZAHbcKVN9iMTcRQCNmmnvsYjdGQAANqVg
-Message-ID: <DB904C5425BA6F4E8424B3B51A1414D17140805E4C@NWD2CMBX1.ad.analog.com>
-References: <1341301353.12050.1.camel@phoenix>
- <DB904C5425BA6F4E8424B3B51A1414D17140805D85@NWD2CMBX1.ad.analog.com>
- <4FF2A7F9.3090307@metafoo.de>
- <DB904C5425BA6F4E8424B3B51A1414D17140805DAB@NWD2CMBX1.ad.analog.com>
- <4FF2AC24.7090906@metafoo.de>
- <DB904C5425BA6F4E8424B3B51A1414D17140805DC8@NWD2CMBX1.ad.analog.com>
- <CAF+7xWk5qQa5nV3OdFM51U1Kh7g9w3dA5mLL+SGRQ7_AFNkp5A@mail.gmail.com>
-In-Reply-To: <CAF+7xWk5qQa5nV3OdFM51U1Kh7g9w3dA5mLL+SGRQ7_AFNkp5A@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+	id S1752562Ab2GCJxb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 05:53:31 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:42460 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab2GCJx3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 05:53:29 -0400
+X-AuditID: cbfee612-b7fbe6d000007898-d6-4ff2c117e639
+Date: Tue, 03 Jul 2012 09:53:27 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH] PM: Devfreq: fix userspace governor frequency bug
+To: Xiaoguang Chen <chenxg@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
+        "mturquette@ti.com" <mturquette@ti.com>,
+        "axel.lin@gmail.com" <axel.lin@gmail.com>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20120703094839361@myungjoo.ham
+Msgkey: 20120703094839361@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120703094839361@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <27961064.113941341309207263.JavaMail.weblogic@epml05>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t/tmbriBz/5Gzx8aGlxedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgytj9+zFawS6ji95E/zA2MPwS7GDk5hATUJRYtOckGYksImEj0
+	TTnBCGGLSVy4tx4ozgVUM59RYmH7KxaQBIuAisSj41eBijg42AT0JGZ+TgYJCwu4SXxofc8M
+	YosIZEn0L/rBDtLLLDCTUeLnwR9sEMuUJNbsg5jDKyAocXLmExaIZaoSh1d9ZIWIq0l8/jYX
+	6iAJiVnTL7BC2LwSM9qfQtXLSUz7uoYZwpaWOD9rA9zRi78/horzSxy7vYMJ5E6Q3if3g2HG
+	7N78BWq8gMTUMwehWrUkFrf9Zoew+STWLHzLAjNm16nlzDC997fMZQKxmQUUJaZ0P2SHsLUk
+	vvzYx4buLV4BJ4mvl38zTmCUm4UkNQtJ+ywk7chqFjCyrGIUTS1ILihOSk+10CtOzC0uzUvX
+	S87P3cQIjvNnQjsYlzVYHGIU4GBU4uH13fXJX4g1say4MvcQowQHs5II79UtQCHelMTKqtSi
+	/Pii0pzU4kOM0hwsSuK8fdYX/IUE0hNLUrNTUwtSi2CyTBycUg2MScx6zT9OHGMROx1ozBVY
+	dD1Eji8hP6JQLHtuBMOa8A/n7aq7e+qUF04UbS3cvviR1yHxGZG1XGcPyzW++jz1zP0PQRcW
+	BdU2Lany3fB/S+5DASV+pQfGnmVHKq10+KY+SNdkStjM4LKMI/7BhcmrO2+nrxdk2ryQq6PE
+	/ejfndk7W3as+zlNiaU4I9FQi7moOBEAJM650O8CAAA=
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q639rZ9f015017
+
+> The frequency set by userspace governor may not the
+> same as the final frequency. If this condition happens,
+> then "cat set_freq" will return a wrong value which is
+> inconsistant with the real frequency.
+> 
+> This patch updates data->user_frequency after calling
+> of update_devfreq. use devfreq->revious_freq as the
+> final user_frequency.
+> 
+> Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
+
+No, this is not a bug.
+
+---- quoting Documentation/ABI/testing/sysfs-class-devfreq ----
+What:           /sys/class/devfreq/.../userspace/set_freq
+Date:           September 2011
+Contact:        MyungJoo Ham <myungjoo.ham@samsung.com>
+Description:
+                The /sys/class/devfreq/.../userspace/set_freq shows and
+                sets the requested frequency for the devfreq object if         
+                userspace governor is in effect.
+---- quote ended ----
+
+set_freq shows the requested frequency, not the actual frequency value.
+
+If you want to see the actual current frequency intended by devfreq,
+use "cur_freq".
 
 
 
->-----Original Message-----
->From: Axel Lin [mailto:axel.lin@gmail.com]
->Sent: Tuesday, July 03, 2012 5:44 PM
->To: Zhang, Sonic
->Cc: Lars-Peter Clausen; Mark Brown; linux-kernel@vger.kernel.org; Liam
->Girdwood
->Subject: Re: [PATCH v2] regulator: ad5398: Fix min/max current limit boundary
->checking
->
->>>As long as it is smaller than the maximum requested current, yes. You
->>>request a current range with the regulator API and any value within this
->>>range is fine as the actual output current.
->>>
->>
->> If so, please also set the max_uA as well.
->
->The equation to calculate the selector does not depend on max_uA.
->So I think we don't need to set the requested max_uA.
->
-
-But, ad5398_set_current_limit() behaves different for min_uA and max_uA with you patch. Is this expected?
-
-Sonic
-
->Current does check the selected current by:
->if (ad5398_calc_current(chip, selector) > max_uA)
->        return -EINVAL;
->
->This ensures the selected current falls within specified range.
->
->Regards,
->Axel
+Cheers!
+MyungJoo
 
 
+> ---
+>  drivers/devfreq/governor_userspace.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/devfreq/governor_userspace.c b/drivers/devfreq/governor_userspace.c
+> index 0681246..85ad80a 100644
+> --- a/drivers/devfreq/governor_userspace.c
+> +++ b/drivers/devfreq/governor_userspace.c
+> @@ -59,6 +59,7 @@ static ssize_t store_freq(struct device *dev, struct device_attribute *attr,
+>  	err = update_devfreq(devfreq);
+>  	if (err == 0)
+>  		err = count;
+> +	data->user_frequency = devfreq->previous_freq;
+>  	mutex_unlock(&devfreq->lock);
+>  	return err;
+>  }
+> -- 
+> 1.7.0.4
+> 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
