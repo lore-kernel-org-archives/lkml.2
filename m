@@ -1,197 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757183Ab2GCTuV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 15:50:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11031 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753188Ab2GCTuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 15:50:19 -0400
-Message-ID: <4FF34CEF.3090400@redhat.com>
-Date: Tue, 03 Jul 2012 15:50:07 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
+	id S1757215Ab2GCTur (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 15:50:47 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:57804 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757119Ab2GCTup (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 15:50:45 -0400
+Date: Tue, 3 Jul 2012 15:50:43 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Matthew Wilcox <matthew@wil.cx>
+cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [ 38/48] SCSI & usb-storage: add try_rc_10_first flag
+In-Reply-To: <20120703173231.GC28804@parisc-linux.org>
+Message-ID: <Pine.LNX.4.44L0.1207031540410.29825-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Jiang Liu <jiang.liu@huawei.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
-Subject: Re: [Resend with Ack][PATCH v1] PCI: allow acpiphp to handle PCIe
- ports without native PCIe hotplug capability
-References: <1338795894-6292-1-git-send-email-jiang.liu@huawei.com> <CAErSpo7NiCsuM+UxveZbYxNsCiStMH5SLZ8EdFzJ7EduB306OQ@mail.gmail.com> <CAErSpo70NtEJFaQmDtdTLkSB3fQRNy78juAQO-KbXeceZkunkw@mail.gmail.com>
-In-Reply-To: <CAErSpo70NtEJFaQmDtdTLkSB3fQRNy78juAQO-KbXeceZkunkw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2012 11:59 AM, Bjorn Helgaas wrote:
-> On Mon, Jul 2, 2012 at 10:16 PM, Bjorn Helgaas<bhelgaas@google.com>  wrote:
->> On Mon, Jun 4, 2012 at 1:44 AM, Jiang Liu<jiang.liu@huawei.com>  wrote:
->>> Commit 0d52f54e2ef64c189dedc332e680b2eb4a34590a (PCI / ACPI: Make acpiphp
->>> ignore root bridges using PCIe native hotplug) added code that made the
->>> acpiphp driver completely ignore PCIe root complexes for which the kernel
->>> had been granted control of the native PCIe hotplug feature by the BIOS
->>> through _OSC. Later commit 619a5182d1f38a3d629ee48e04fa182ef9170052
->>> "PCI hotplug: Always allow acpiphp to handle non-PCIe bridges" relaxed
->>> the constraints to allow acpiphp driver handle non-PCIe bridges under
->>> such a complex. The constraint needs to be relaxed further to allow
->>> acpiphp driver to hanlde PCIe ports without native PCIe hotplug capability.
->>>
->>> Some MR-IOV switch chipsets, such PLX8696, support multiple virtual PCIe
->>> switches and may migrate downstream ports among virtual switches.
->>> To migrate a downstream port from the source virtual switch to the target,
->>> the port needs to be hot-removed from the source and hot-added into the
->>> target. pciehp driver can't be used here because there's no slots within
->>> the virtual PCIe switch. So acpiphp driver is used to support downstream
->>> port migration. A typical configuration is as below:
->>> [Root w/o native PCIe HP]
->>>          [Upstream port of vswitch w/o native PCIe HP]
->>>                  [Downstream port of vswitch w/ native PCIe HP]
->>>                          [PCIe enpoint]
->>>
->>> Here acpiphp driver will be used to handle root ports and upstream port
->>> in the virtual switch, and pciehp driver will be used to handle downstream
->>> ports in the virtual switch.
->>>
->>> Acked-by: Rafael J. Wysocki<rjw@sisk.pl>
->>> Signed-off-by: Jiang Liu<liuj97@gmail.com>
->>>
->>> ---
->>>   drivers/pci/hotplug/acpiphp_glue.c |   49 ++++++++++++++++++++++++++++-------
->>>   1 files changed, 39 insertions(+), 10 deletions(-)
->>>
->>> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
->>> index 806c44f..4889448 100644
->>> --- a/drivers/pci/hotplug/acpiphp_glue.c
->>> +++ b/drivers/pci/hotplug/acpiphp_glue.c
->>> @@ -115,6 +115,43 @@ static const struct acpi_dock_ops acpiphp_dock_ops = {
->>>          .handler = handle_hotplug_event_func,
->>>   };
->>>
->>> +/* Check whether device is managed by native PCIe hotplug driver */
->>> +static bool device_is_managed_by_native_pciehp(struct pci_dev *pdev)
->>> +{
->>> +       int pos;
->>> +       u16 reg16;
->>> +       u32 reg32;
->>> +       acpi_handle tmp;
->>> +       struct acpi_pci_root *root;
->>> +
->>> +       if (!pci_is_pcie(pdev))
->>> +               return false;
->>> +
->>> +       /* Check whether PCIe port supports native PCIe hotplug */
->>> +       pos = pci_pcie_cap(pdev);
->>
->> Add "if (!pos) return false;" here and you can drop the "if
->> (!pci_is_pcie())" test above.
->>
->>> +       pci_read_config_word(pdev, pos + PCI_EXP_FLAGS,&reg16);
->>> +       if (!(reg16&  PCI_EXP_FLAGS_SLOT))
->>
->> I think this is unsafe.  Per the PCIe v3.0 spec, sec 7.8.2 on p648,
->> the "Slot Implemented" bit is undefined except for Downstream Ports,
->> so we're using an undefined bit to decide whether to read
->> PCI_EXP_SLTCAP.
->>
->> If the device has a v1 PCIe Capability, it is not required to even
->> implement PCI_EXP_SLTCAP, so we could be reading garbage out of an
->> unrelated capability.  This is in sec 7.8, p363, of the v1.1 PCIe
->> spec.  I think v3.0 of the spec is dangerously incomplete because it
->> doesn't include enough information to handle the v1 PCIe Capability
->> correctly.
->>
->> There's a fair amount of work to fix this.  I started doing it, but
->> decided I didn't have time to complete it.  Here's what I think we
->> (and by "we," I'm afraid I mean "you" :)) should do:
->>
->>    - Add a "u16 pcie_flags" field in struct pci_dev and save the "PCI
->> Express Capabilities Register" there in set_pcie_port_type().  All
->> fields in that register are read-only, so it should be safe to cache
->> it.
->>    - Remove pcie_type from struct pci_dev and replace it with a
->> pcie_type() inline that extracts it from pcie_flags.
->>    - Rework the pcie_cap_has_*() macros in drivers/pci/pci.c to take a
->> struct pci_dev * and use pcie_flags instead of type and flags.  This
->> will remove the need for callers to read the flags themselves.
->>    - Move the pcie_cap_has_*() macros to include/linux/pci_reg.h so
->> they can be shared.
->>    - Audit all uses of the Link registers (PCI_EXP_LNKCAP,
->> PCI_EXP_LNKCTL, PCI_EXP_LNKSTA), Slot registers (PCI_EXP_SLTCAP,
->> PCI_EXP_SLTCTL, PCI_EXP_SLTSTA), and Root registers (PCI_EXP_RTCAP,
->> PCI_EXP_RTCTL, PCI_EXP_RTSTA) to make sure the register exists, either
->> by using pcie_cap_has_*() or some other knowledge of the device.
->
-> Thinking about this some more, this still leaves the callers
-> responsible for using pcie_cap_has_*(), which feels pretty
-> error-prone.
->
-> I wonder if it'd be worth adding interfaces like:
->
->    pcie_cap_read_word(const struct pci_dev *, int where, u16 *val);
->    pcie_cap_read_dword(const struct pci_dev *, int where, u32 *val);
->    pcie_cap_write_word(const struct pci_dev *, int where, u16 val);
->    pcie_cap_write_dword(const struct pci_dev *, int where, u32 val);
->
+On Tue, 3 Jul 2012, Matthew Wilcox wrote:
 
-I like your thinking!
+> On Tue, Jul 03, 2012 at 11:49:00AM -0400, Alan Stern wrote:
+> > On Tue, 3 Jul 2012, James Bottomley wrote:
+> > 
+> > > >   What happened is that T10
+> > > > in their infinite wisdom decided to put things like "supports TRIM" and
+> > > > "is actually a 4k block size but fakes 512 byte blocks" in the Read
+> > > > Capacity 16 results.  So if we want to support those kinds of things
+> > > > (and I think we do), then we need to send Read Capacity 16 to devices.
+> > > 
+> > > But anyway, we're stuck ... we have to send RC16 first to support these
+> > > features.  We did protest to T10 at the time, but to no avail.
+> > 
+> > Does it have to be sent _first_?
+> > 
+> > Or would it be okay to send _both_ commands and believe the RC10
+> > capacity rather than the RC16 capacity if they differ?
+> 
+> I have no problem with doing that (and believing RC16 over RC10 if RC10
+> claims 0xffffffff, naturally).  The problem, as I understand it, is that
+> some devices crash upon receiving RC16 rather than just returning nonsense.
 
-> We might be able to encapsulate the v1/v2 differences inside these, e.g.,
->
->    int pcie_cap_read_word(const struct pci_dev *dev, int where, u16 *val)
->    {
->        int pos;
->
->        pos = pci_pcie_cap(dev);
->        if (!pos)
->            return -EINVAL;
->
-may want to change read value to 0 just in case callers are doing rtn value
-check and just value-read mask & go.  I believe for all the optional/version'd
-registers below, non-existent regs are required to be rtn-zero if not implemented.
+No, that's not the problem we're talking about here.  While it is true
+that some devices crash upon receiving RC16, so far we haven't been
+sending RC16 to those devices, so they don't matter for the purposes of
+this discussion.
 
->        switch (where) {
->        case PCI_EXP_FLAGS:
->        case PCI_EXP_DEVCTL:
->        case PCI_EXP_DEVSTA:
->            return pci_read_config_word(dev, pos + where, val);
->        case PCI_EXP_LNKCTL:
->        case PCI_EXP_LNKSTA:
->            if (pcie_cap_has_lnkctl(dev))
->                return pci_read_config_word(dev, pos + where, val);
->            else {
->                *val = 0;
->                return 0;
->            }
->        case PCI_EXP_SLTCTL:
->        case PCI_EXP_SLTSTA:
->            if (pcie_cap_has_sltctl(dev))
->                return pci_read_config_word(dev, pos + where, val);
->            else {
->                *val = 0;
->                if (where == PCI_EXP_SLTSTA&&  dev->pcie_type ==
-> PCI_EXP_TYPE_DOWNSTREAM)
->                    *val = PCI_EXP_SLTSTA_PDS;
->                return 0;
->        ...
->        };
->        return -EINVAL;
->    }
->
-> Any thoughts?
+In fact, usb-storage already has a NO_READ_CAPACITY_16 flag.  It was
+introduced because of a card reader that mistakenly attempts to return
+an actual capacity value even when no card is present: It takes the
+number of sectors -- which is 0 -- and subtracts 1 as usual.  You can
+imagine what happens next.  :-)  That's the only device which
+currently has this flag.
 
-only one is that 'cap' is overused in PCI space, just like 'domain' in
-various kernel subsystems.  cap could be 'cap list structure'
-or a specific 'capability'.  I wish we had a better TLA for 'cap' and what
-it refers to. ... but that's my pet peeve...
+The reason for the try_rc_10_first flag is that some devices return
+bogus data in response to RC16.  Like, an 800 GB device claiming to
+have 3 exabytes.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Alan Stern
 
