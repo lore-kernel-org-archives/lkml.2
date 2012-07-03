@@ -1,111 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab2GCJxb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 05:53:31 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:42460 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab2GCJx3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 05:53:29 -0400
-X-AuditID: cbfee612-b7fbe6d000007898-d6-4ff2c117e639
-Date: Tue, 03 Jul 2012 09:53:27 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH] PM: Devfreq: fix userspace governor frequency bug
-To: Xiaoguang Chen <chenxg@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        "mturquette@ti.com" <mturquette@ti.com>,
-        "axel.lin@gmail.com" <axel.lin@gmail.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20120703094839361@myungjoo.ham
-Msgkey: 20120703094839361@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120703094839361@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <27961064.113941341309207263.JavaMail.weblogic@epml05>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t/tmbriBz/5Gzx8aGlxedccNgdGj8+b
-	5AIYo7hsUlJzMstSi/TtErgytj9+zFawS6ji95E/zA2MPwS7GDk5hATUJRYtOckGYksImEj0
-	TTnBCGGLSVy4tx4ozgVUM59RYmH7KxaQBIuAisSj41eBijg42AT0JGZ+TgYJCwu4SXxofc8M
-	YosIZEn0L/rBDtLLLDCTUeLnwR9sEMuUJNbsg5jDKyAocXLmExaIZaoSh1d9ZIWIq0l8/jYX
-	6iAJiVnTL7BC2LwSM9qfQtXLSUz7uoYZwpaWOD9rA9zRi78/horzSxy7vYMJ5E6Q3if3g2HG
-	7N78BWq8gMTUMwehWrUkFrf9Zoew+STWLHzLAjNm16nlzDC997fMZQKxmQUUJaZ0P2SHsLUk
-	vvzYx4buLV4BJ4mvl38zTmCUm4UkNQtJ+ywk7chqFjCyrGIUTS1ILihOSk+10CtOzC0uzUvX
-	S87P3cQIjvNnQjsYlzVYHGIU4GBU4uH13fXJX4g1say4MvcQowQHs5II79UtQCHelMTKqtSi
-	/Pii0pzU4kOM0hwsSuK8fdYX/IUE0hNLUrNTUwtSi2CyTBycUg2MScx6zT9OHGMROx1ozBVY
-	dD1Eji8hP6JQLHtuBMOa8A/n7aq7e+qUF04UbS3cvviR1yHxGZG1XGcPyzW++jz1zP0PQRcW
-	BdU2Lany3fB/S+5DASV+pQfGnmVHKq10+KY+SNdkStjM4LKMI/7BhcmrO2+nrxdk2ryQq6PE
-	/ejfndk7W3as+zlNiaU4I9FQi7moOBEAJM650O8CAAA=
-X-TM-AS-MML: No
+	id S1753370Ab2GCJ6a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 05:58:30 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:37566 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750923Ab2GCJ62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 05:58:28 -0400
+Message-ID: <4FF2C19D.4040608@parallels.com>
+Date: Tue, 3 Jul 2012 13:55:41 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Jan Beulich <JBeulich@suse.com>, <jeremy@goop.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: __force_order usage on x86's CRn accesses
+References: <4FF2D6AB020000780008D460@nat28.tlf.novell.com>
+In-Reply-To: <4FF2D6AB020000780008D460@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q639rZ9f015017
 
-> The frequency set by userspace governor may not the
-> same as the final frequency. If this condition happens,
-> then "cat set_freq" will return a wrong value which is
-> inconsistant with the real frequency.
 > 
-> This patch updates data->user_frequency after calling
-> of update_devfreq. use devfreq->revious_freq as the
-> final user_frequency.
+> Pretty soon after the introduction of this via "x86: unify paravirt
+> parts of system.h" Jeremy had posted a patch to correct the
+> (reversed in direction of access) constraints using that auxiliary
+> variable. What happened to that change? Was it dropped for a
+> reason?
+
+About the change itself, I don't know. Maybe Jeremy, who proposed it,
+can give you a better answer.
+
+> Furthermore, the addition of these constraints happened
+> without any real explanation - the code comment that was added
+> doesn't really help understand why "volatile" isn't sufficient here.
+
+If my memory dont't fail me, I believe this is because gcc will feel
+free to reorder a sequence of instructions that does not access memory.
+Specially since it has no knowledge of what's in the inline assembly,
+and what are its constraints. It only knows that it is an register
+operation, and treats it like one.
+
+Also, I believe what we are concerned with here is not arbitrary reorder
+between that and other instructions, which we welcome, but reordering
+between a read and a write to the same crX - specially of concern for
+things doing read-modify-writes of control registers.
+
+This is something I heavily looked at the time, but never again, so
+confirmation from people with more knowledge on the compilers world can
+be probably helpful here.
+
 > 
-> Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
+> Next, I also saw it being suggested somewhere to replace the
+> static definition of the variable (causing an instance to appear
+> everywhere any of the referencing inline function being used)
+> by an extern one. That also never got carried out, causing
+> about two dozen pointless instances of this variable to be
+> scattered around, likely consuming cache bandwidth here and
+> there.
 
-No, this is not a bug.
+I indeed see no reason not to do it.
 
----- quoting Documentation/ABI/testing/sysfs-class-devfreq ----
-What:           /sys/class/devfreq/.../userspace/set_freq
-Date:           September 2011
-Contact:        MyungJoo Ham <myungjoo.ham@samsung.com>
-Description:
-                The /sys/class/devfreq/.../userspace/set_freq shows and
-                sets the requested frequency for the devfreq object if         
-                userspace governor is in effect.
----- quote ended ----
+> Now, rather than exporting an auxiliary variable like this, how
+> about using an existing, rarely referenced (at least in affected
+> contexts) but already exported one instead?
+> empty_zero_page, __supported_pte_mask, x86_platform, or
+> high_memory might be candidates.
 
-set_freq shows the requested frequency, not the actual frequency value.
+A similar technique is used to determine a safe address for access
+somewhere in the scheduler IIRC,
 
-If you want to see the actual current frequency intended by devfreq,
-use "cur_freq".
-
-
-
-Cheers!
-MyungJoo
-
-
-> ---
->  drivers/devfreq/governor_userspace.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+> Finally (and this is because I lack the explanation why the
+> artificial constraint is needed in the first place), why is it that
+> clts() doesn't need one too?
 > 
-> diff --git a/drivers/devfreq/governor_userspace.c b/drivers/devfreq/governor_userspace.c
-> index 0681246..85ad80a 100644
-> --- a/drivers/devfreq/governor_userspace.c
-> +++ b/drivers/devfreq/governor_userspace.c
-> @@ -59,6 +59,7 @@ static ssize_t store_freq(struct device *dev, struct device_attribute *attr,
->  	err = update_devfreq(devfreq);
->  	if (err == 0)
->  		err = count;
-> +	data->user_frequency = devfreq->previous_freq;
->  	mutex_unlock(&devfreq->lock);
->  	return err;
->  }
-> -- 
-> 1.7.0.4
-> 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+
+Because we're not using it to do read-modify-write of the control register.
+
+But let me disclaim again that I might be wrong here...
+
+
