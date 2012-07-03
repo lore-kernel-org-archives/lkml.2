@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933281Ab2GCRWY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 13:22:24 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50221 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181Ab2GCRWW (ORCPT
+	id S1757016Ab2GCRcf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 13:32:35 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:46625 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752181Ab2GCRce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 13:22:22 -0400
-Message-ID: <4FF329F5.6000801@mvista.com>
-Date: Tue, 03 Jul 2012 21:20:53 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 3 Jul 2012 13:32:34 -0400
+Date: Tue, 3 Jul 2012 11:32:31 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [ 38/48] SCSI & usb-storage: add try_rc_10_first flag
+Message-ID: <20120703173231.GC28804@parisc-linux.org>
+References: <1341296326.3319.17.camel@dabdike> <Pine.LNX.4.44L0.1207031142210.17487-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: "Du, Changbin" <changbin.du@gmail.com>
-CC: balbi@ti.com, gregkh@linuxfoundation.org, ben@simtec.co.uk,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] usb: gadget: s3c-hsotg: fix core reset timeout failure
-References: <4ff252e7.08d4440a.38ee.ffffd7b9@mx.google.com>
-In-Reply-To: <4ff252e7.08d4440a.38ee.ffffd7b9@mx.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1207031142210.17487-100000@netrider.rowland.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, Jul 03, 2012 at 11:49:00AM -0400, Alan Stern wrote:
+> On Tue, 3 Jul 2012, James Bottomley wrote:
+> 
+> > >   What happened is that T10
+> > > in their infinite wisdom decided to put things like "supports TRIM" and
+> > > "is actually a 4k block size but fakes 512 byte blocks" in the Read
+> > > Capacity 16 results.  So if we want to support those kinds of things
+> > > (and I think we do), then we need to send Read Capacity 16 to devices.
+> > 
+> > But anyway, we're stuck ... we have to send RC16 first to support these
+> > features.  We did protest to T10 at the time, but to no avail.
+> 
+> Does it have to be sent _first_?
+> 
+> Or would it be okay to send _both_ commands and believe the RC10
+> capacity rather than the RC16 capacity if they differ?
 
-On 07/03/2012 06:03 AM, Du, Changbin wrote:
+I have no problem with doing that (and believing RC16 over RC10 if RC10
+claims 0xffffffff, naturally).  The problem, as I understand it, is that
+some devices crash upon receiving RC16 rather than just returning nonsense.
 
-> The timeout values were 1000 and timeout issue occured many times on my
-> s3c6410 Soc based board (mostly when booting whith USB cable not
-> connected). This patch increase the values to 10000 to guarantee the
-> success of reset.
+> > I still think a whitelist of USB devices sending proper SCSI level
+> > information in the inquiry might be the best way forward.
+> 
+> I'm doubtful.  It wouldn't be at all surprising for devices to claim 
+> they support a particular level when in fact they support some but not 
+> all of the required commands.  Then what do you do?  Put them on the 
+> whitelist because of the commands they support, or leave them off 
+> because of the other ones?  What happens later on when you decide to 
+> use more of the required commands?
 
-> Having set timeout to 10000, I printed the remained timeout values
-> which can cause timeout issue before this change (tested several times):
-> the first timeout value remained:
-> 	timeout = 8079
-> 	timeout = 8079
-> 	timeout = 8078
-> 	timeout = 8081
-> the second timeout value remained:
-> 	timeout = 7940
-> 	timeout = 7945
-> 	timeout = 7940
-> 	timeout = 7938
-> Seeing from above values, I think 10000 is big enough.
+SCSI has a fairly extensive collection of black/white list flags already
+... see scsi_devinfo.[ch].
 
-> Signed-off-by: Du, Changbin <changbin.du@gmail.com>
-> ---
->  drivers/usb/gadget/s3c-hsotg.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-
-> diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-> index f4abb0e..f3e2234 100644
-> --- a/drivers/usb/gadget/s3c-hsotg.c
-> +++ b/drivers/usb/gadget/s3c-hsotg.c
-> @@ -2215,7 +2215,7 @@ static int s3c_hsotg_corereset(struct s3c_hsotg
-> *hsotg)
-
-  Your patch is line wrapped; seems easy to fix manually while applying though...
-
-WBR, Sergei
+-- 
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
