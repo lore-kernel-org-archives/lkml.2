@@ -1,50 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932763Ab2GCR7I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 13:59:08 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64752 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932104Ab2GCR7H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 13:59:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFzOD33eWj0FQuZ7RWmF-yYwaeNB-9J-YY+mX4mwP7VXuA@mail.gmail.com>
-References: <20120702224648.GA20361@tassilo.jf.intel.com> <CA+55aFwre6s=orjUaNKJA=51Fc1mxu_XGX80Bex4Sn-=mWPx5Q@mail.gmail.com>
- <1341323230.3292.10.camel@nayuki.kepstin.ca> <CA+55aFyvzz3Lp9zeA6X+QMan0iZFWq_0Xd+ff_trnP1tpn2iJQ@mail.gmail.com>
- <1341337257.2406.1.camel@nayuki.kepstin.ca> <CA+55aFzOD33eWj0FQuZ7RWmF-yYwaeNB-9J-YY+mX4mwP7VXuA@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 3 Jul 2012 10:58:44 -0700
-X-Google-Sender-Auth: P7WtwCwdvNPCnoccLjWLPLJ1QKU
-Message-ID: <CA+55aFwQqTAHNafGBXaoPCzVYw83OZvbG_hOYEDUxmuoMODO3Q@mail.gmail.com>
-Subject: Re: long boot delays caused by 070ad7e7 floppy change
-To: Calvin Walton <calvin.walton@kepstin.ca>
-Cc: Andi Kleen <andi@firstfloor.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel@vger.kernel.org, shemminger@vyatta.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756089Ab2GCSAL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 14:00:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12188 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751150Ab2GCSAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 14:00:09 -0400
+Message-ID: <1341338371.880.1.camel@mop>
+Subject: Re: [patch] printk: remove some dead code
+From: Kay Sievers <kay@redhat.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Date: Tue, 03 Jul 2012 19:59:31 +0200
+In-Reply-To: <CAPXgP10e5cuNnOqGgBtZQq-6sZ2bpjySbd7thZyLNdij77oaHg@mail.gmail.com>
+References: <20120703104511.GA29501@elgon.mountain>
+	 <CAPXgP10e5cuNnOqGgBtZQq-6sZ2bpjySbd7thZyLNdij77oaHg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 3, 2012 at 10:50 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On Tue, 2012-07-03 at 13:21 +0200, Kay Sievers wrote:
+> On Tue, Jul 3, 2012 at 12:45 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> > Static checkers complain about the impossible condition here.
+> >
+> > In 084681d14e ('printk: flush continuation lines immediately to
+> > console'), we changed msg->level from being a u16 to being an unsigned
+> > 3 bit bitfield.  That means we can remove the code here to handle log
+> > levels which are in the tens or hundreds column.
+> 
+> We should do that for the facility value, now that level is split up
+> in separate fields. I'll prepare a fix.
+
+Here it is. Nice tool, very useful.
+
+Thanks again,
+Kay
+
+
+From: Kay Sievers <kay@vrfy.org>
+Subject: kmsg: add the facility number to the syslog prefix
+
+After the recent split of facility and level into separate variables,
+we miss the facility value (always 0 for kernel-originated messages)
+in the syslog prefix.
+
+On Tue, Jul 3, 2012 at 12:45 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> Static checkers complain about the impossible condition here.
 >
-> It looks like the code meant for -1 to mean "regular delay"
-> (current_reqD), and -2 to mean MAXTIMEOUT. For some reason the "-1"
-> logic has gotten screwed.
+> In 084681d14e ('printk: flush continuation lines immediately to
+> console'), we changed msg->level from being a u16 to being an unsigned
+> 3 bit bitfield.
 
-So it looks like current_reqD still exists, and sets the drive to
-"current_drive". Which *should* be 0, as far as I can tell.  In fact,
-since "current_drive" is printed out by DPRINTK(), we *know* it's 0
-(it's the "0" in the "floppy0:" message).
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Kay Sievers <kay@vrfy.org>
+---
+ kernel/printk.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-But how the heck does it pick that bogus 20 second delay then? The -1
-should have been caught by
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -818,15 +818,16 @@ static size_t print_time(u64 ts, char *b
+ static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
+ {
+ 	size_t len = 0;
++	unsigned int prefix = (msg->facility << 3) | msg->level;
+ 
+ 	if (syslog) {
+ 		if (buf) {
+-			len += sprintf(buf, "<%u>", msg->level);
++			len += sprintf(buf, "<%u>", prefix);
+ 		} else {
+ 			len += 3;
+-			if (msg->level > 9)
++			if (prefix > 9)
+ 				len++;
+-			if (msg->level > 99)
++			if (prefix > 99)
+ 				len++;
+ 		}
+ 	}
 
-        if (drive == current_reqD)
-                drive = current_drive;
 
-and then we should have used the regular delay for drive 0.
-
-Jiri, any ideas?
-
-                  Linus
