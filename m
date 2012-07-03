@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933299Ab2GCRIY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 13:08:24 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:43459 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab2GCRIW (ORCPT
+	id S1757015Ab2GCRKk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 13:10:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35609 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752181Ab2GCRKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 13:08:22 -0400
+	Tue, 3 Jul 2012 13:10:38 -0400
+Date: Tue, 3 Jul 2012 10:10:33 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Li Zefan <lizefan@huawei.com>, shyju pv <shyju.pv@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Sanil kumar <sanil.kumar@huawei.com>,
+        Masanari Iida <standby24x7@gmail.com>
+Subject: Re: 3.5-rc3: BUG: Dentry still in use (1) [unmount of cgroup
+ cgroup]
+Message-ID: <20120703171033.GC555@google.com>
+References: <E061084CB90FCE4F89232A6CF839683B32B52291@SZXEML507-MBS.china.huawei.com>
+ <20120627182903.GP15811@google.com>
+ <4FEBF4B7.2070105@huawei.com>
+ <20120628180712.GC22641@google.com>
+ <4FED10DB.7040500@huawei.com>
+ <20120629165809.GB21048@google.com>
+ <4FEE98EE.1050409@huawei.com>
+ <20120630064724.GC14083@ZenIV.linux.org.uk>
+ <CAOS58YNnU3J+c2ZQcRCesSoxn0dSJjDLBsZ2qzZ09X6N-ky0fQ@mail.gmail.com>
+ <20120630083421.GD14083@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1341323230.3292.10.camel@nayuki.kepstin.ca>
-References: <20120702224648.GA20361@tassilo.jf.intel.com> <CA+55aFwre6s=orjUaNKJA=51Fc1mxu_XGX80Bex4Sn-=mWPx5Q@mail.gmail.com>
- <1341323230.3292.10.camel@nayuki.kepstin.ca>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 3 Jul 2012 10:07:59 -0700
-X-Google-Sender-Auth: 6zbfVVdJPw7pXFyEC753z4ozX1Q
-Message-ID: <CA+55aFyvzz3Lp9zeA6X+QMan0iZFWq_0Xd+ff_trnP1tpn2iJQ@mail.gmail.com>
-Subject: Re: long boot delays caused by 070ad7e7 floppy change
-To: Calvin Walton <calvin.walton@kepstin.ca>
-Cc: Andi Kleen <andi@firstfloor.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel@vger.kernel.org, shemminger@vyatta.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120630083421.GD14083@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 3, 2012 at 6:47 AM, Calvin Walton <calvin.walton@kepstin.ca> wrote:
->
-> I'm seeing the same issue, so I've given this a try. Here are the
-> messages printed when floppy debugging is enabled:
->
-> [    0.714318] floppy0: reschedule timeout lock fdc
-> [   20.729798] floppy0: reschedule timeout do wakeup
+Hello, Al.
 
-Ok, that 20 s timeout is a hint.
+On Sat, Jun 30, 2012 at 09:34:21AM +0100, Al Viro wrote:
+> Now that I've looked at that code again...  What's the story with
+>                 simple_unlink(d->d_inode, d);
+> in cgroup_rm_file()?  Wrong parent inode, at the very least...
 
-20s is the floppy "max timeout" value, and it's used in various
-places. HOWEVER. The "lock fdc" case absolutely should not be using
-that timeout. It should use the floppy "UDP->timeout" value, which
-should be just 3s. Which is still a long time, but not nearly as long
-as that.
+Yeah, indeed.  My mistake while refactoring the code.  Will fix.
 
-Can you add a DPRINT() to the lock_fdc() function just before calling
-reschedule_timeout() to print out what the "drive" is? Something like
-yhhis (whitespace-damaged due to cut-and-paste):
+> While we are at it, what the hell is going on in
+> static void cgroup_clear_directory(struct dentry *dir)
+> {
+>         struct cgroup *cgrp = __d_cgrp(dir);
+> 
+>         while (!list_empty(&cgrp->files))
+>                 cgroup_rm_file(cgrp, NULL);
+> }
+> Are you fighting some kind of race against somebody adding stuff
+> there?  Unless I'm seriously misreading cgroup_rm_file(), it'll
+> do all the work on the first call...
 
-    diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-    index cce7df367b79..00b52cef9d22 100644
-    --- a/drivers/block/floppy.c
-    +++ b/drivers/block/floppy.c
-    @@ -876,6 +876,7 @@ static int lock_fdc(int drive, bool interruptible)
+cgroup_rm_file() finds the file matching @cft, deletes that one file
+and returns.  Passing in %NULL @cft makes it deletes the first file
+but it still returns after deleting one.  Maybe breaking up
+list_for_each_entry() so that deletion and returning is outside the
+loop would make that clearer.
 
-     	command_status = FD_COMMAND_NONE;
+Thanks.
 
-    +	DPRINT("lock_fdc: %d (out of %d)\n", drive, N_DRIVE);
-     	reschedule_timeout(drive, "lock fdc");
-     	set_fdc(drive);
-     	return 0;
-
-because maybe the 'drive' variable is crap there. In fact, add a
-
-        WARN_ON_ONCE(dive < 0 || drive >= N_DRIVE);
-
-in there too. Because if it is out of range, I'd want to see the call chain.
-
-(And you still need floppy=debug to see that debug message, of course).
-
-                Linus
+-- 
+tejun
