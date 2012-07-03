@@ -1,436 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933432Ab2GCTVe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 15:21:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55926 "EHLO mx1.redhat.com"
+	id S1757131Ab2GCTWJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 15:22:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19199 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932792Ab2GCTVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 15:21:31 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v3 2/2] kvm: KVM_EOIFD, an eventfd for EOIs
-To: avi@redhat.com, mst@redhat.com, gleb@redhat.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Tue, 03 Jul 2012 13:21:29 -0600
-Message-ID: <20120703192127.6735.76953.stgit@bling.home>
-In-Reply-To: <20120703191106.6735.78272.stgit@bling.home>
-References: <20120703191106.6735.78272.stgit@bling.home>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1751256Ab2GCTWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 15:22:07 -0400
+Date: Tue, 3 Jul 2012 15:22:03 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Steve French <smfrench@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org
+Subject: Re: 3.5.0-rc3 (approximately) oops on cifs mount
+Message-ID: <20120703152203.065838cb@tlielax.poochiereds.net>
+In-Reply-To: <CALCETrV=7DrqzNBLBdUVycM8471+vfA5H3Hf7-PTjanH0K8=gg@mail.gmail.com>
+References: <CALCETrVOwRyrBXDu0G=JE3dtwmXFNV6dAEHVPXYoJfUf6s2==w@mail.gmail.com>
+	<CAH2r5muEUANOjGCkP40LfFF3XtkKKtf9RAabzt-1H+xn1v5ccg@mail.gmail.com>
+	<CALCETrWnXh9cDMzF2=yo7XqvgmPGeSPQ+uXYkniVXP4PuRoQCw@mail.gmail.com>
+	<CALCETrV=7DrqzNBLBdUVycM8471+vfA5H3Hf7-PTjanH0K8=gg@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This new ioctl enables an eventfd to be triggered when an EOI is
-written for a specified irqchip pin.  By default this is a simple
-notification, but we can also tie the eoifd to a level irqfd, which
-enables the irqchip pin to be automatically de-asserted on EOI.
-This mode is particularly useful for device-assignment applications
-where the unmask and notify triggers a hardware unmask.  The default
-mode is most applicable to simple notify with no side-effects for
-userspace usage, such as Qemu.
+On Tue, 3 Jul 2012 11:59:02 -0700
+Andy Lutomirski <luto@amacapital.net> wrote:
 
-Here we make use of the reference counting of the _irq_source
-object allowing us to share it with an irqfd and cleanup regardless
-of the release order.
+> On Mon, Jul 2, 2012 at 5:28 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> > On Mon, Jul 2, 2012 at 5:21 PM, Steve French <smfrench@gmail.com> wrote:
+> >> Any recreation information?
+> >
+> > I think it was a result of trying to mount with an incorrect password,
+> > which surprises me a bit.  I'll try to reproduce in a little bit.
+> 
+> Correction: it was not a wrong password -- I mounted with the correct
+> password.  So far, I can't reproduce it.
+> 
+> --Andy
+> 
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+It crashed here:
 
- Documentation/virtual/kvm/api.txt |   21 ++++
- arch/x86/kvm/x86.c                |    1 
- include/linux/kvm.h               |   14 ++
- include/linux/kvm_host.h          |   13 ++
- virt/kvm/eventfd.c                |  208 +++++++++++++++++++++++++++++++++++++
- virt/kvm/kvm_main.c               |   11 ++
- 6 files changed, 266 insertions(+), 2 deletions(-)
+    BUG_ON(cpu >= nr_cpu_ids && cpu != WORK_CPU_UNBOUND);
 
-diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index c7267d5..a38af14 100644
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -1988,6 +1988,27 @@ to independently assert level interrupts.  The KVM_IRQFD_FLAG_LEVEL
- is only necessary on setup, teardown is identical to that above.
- KVM_IRQFD_FLAG_LEVEL support is indicated by KVM_CAP_IRQFD_LEVEL.
- 
-+4.77 KVM_EOIFD
-+
-+Capability: KVM_CAP_EOIFD
-+Architectures: x86
-+Type: vm ioctl
-+Parameters: struct kvm_eoifd (in)
-+Returns: 0 on success, -1 on error
-+
-+KVM_EOIFD allows userspace to receive interrupt EOI notification
-+through an eventfd.  kvm_eoifd.fd specifies the eventfd used for
-+notification and kvm_eoifd.gsi specifies the irchip pin, similar to
-+KVM_IRQFD.  The eoifd is removed using the KVM_EOIFD_FLAG_DEASSIGN
-+flag, specifying both kvm_eoifd.fd and kvm_eoifd.gsi.
-+
-+The KVM_EOIFD_FLAG_LEVEL_IRQFD flag indicates that the provided
-+kvm_eoifd stucture includes a valid kvm_eoifd.irqfd file descriptor
-+for a level irqfd configured using the KVM_IRQFD_FLAG_LEVEL flag.
-+In this mode the level interrupt is de-asserted prior to EOI eventfd
-+notification.  The KVM_EOIFD_FLAG_LEVEL_IRQFD is only necessary on
-+setup, teardown is identical to that above.
-+
- 5. The kvm_run structure
- ------------------------
- 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 80bed07..62d6eca 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2149,6 +2149,7 @@ int kvm_dev_ioctl_check_extension(long ext)
- 	case KVM_CAP_PCI_2_3:
- 	case KVM_CAP_KVMCLOCK_CTRL:
- 	case KVM_CAP_IRQFD_LEVEL:
-+	case KVM_CAP_EOIFD:
- 		r = 1;
- 		break;
- 	case KVM_CAP_COALESCED_MMIO:
-diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-index b2e6e4f..7567e7d 100644
---- a/include/linux/kvm.h
-+++ b/include/linux/kvm.h
-@@ -619,6 +619,7 @@ struct kvm_ppc_smmu_info {
- #define KVM_CAP_S390_COW 79
- #define KVM_CAP_PPC_ALLOC_HTAB 80
- #define KVM_CAP_IRQFD_LEVEL 81
-+#define KVM_CAP_EOIFD 82
- 
- #ifdef KVM_CAP_IRQ_ROUTING
- 
-@@ -694,6 +695,17 @@ struct kvm_irqfd {
- 	__u8  pad[20];
- };
- 
-+#define KVM_EOIFD_FLAG_DEASSIGN (1 << 0)
-+#define KVM_EOIFD_FLAG_LEVEL_IRQFD (1 << 1)
-+
-+struct kvm_eoifd {
-+	__u32 fd;
-+	__u32 gsi;
-+	__u32 flags;
-+	__u32 irqfd;
-+	__u8 pad[16];
-+};
-+
- struct kvm_clock_data {
- 	__u64 clock;
- 	__u32 flags;
-@@ -834,6 +846,8 @@ struct kvm_s390_ucas_mapping {
- #define KVM_PPC_GET_SMMU_INFO	  _IOR(KVMIO,  0xa6, struct kvm_ppc_smmu_info)
- /* Available with KVM_CAP_PPC_ALLOC_HTAB */
- #define KVM_PPC_ALLOCATE_HTAB	  _IOWR(KVMIO, 0xa7, __u32)
-+/* Available with KVM_CAP_EOIFD */
-+#define KVM_EOIFD                 _IOW(KVMIO,  0xa8, struct kvm_eoifd)
- 
- /*
-  * ioctls for vcpu fds
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index ae3b426..83472eb 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -285,6 +285,10 @@ struct kvm {
- 		struct list_head  items;
- 	} irqfds;
- 	struct list_head ioeventfds;
-+	struct {
-+		spinlock_t        lock;
-+		struct list_head  items;
-+	} eoifds;
- #endif
- 	struct kvm_vm_stat stat;
- 	struct kvm_arch arch;
-@@ -828,6 +832,8 @@ int kvm_irqfd(struct kvm *kvm, struct kvm_irqfd *args);
- void kvm_irqfd_release(struct kvm *kvm);
- void kvm_irq_routing_update(struct kvm *, struct kvm_irq_routing_table *);
- int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args);
-+int kvm_eoifd(struct kvm *kvm, struct kvm_eoifd *args);
-+void kvm_eoifd_release(struct kvm *kvm);
- 
- #else
- 
-@@ -853,6 +859,13 @@ static inline int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
- 	return -ENOSYS;
- }
- 
-+static inline int kvm_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
-+{
-+	return -ENOSYS;
-+}
-+
-+static inline void kvm_eoifd_release(struct kvm *kvm) {}
-+
- #endif /* CONFIG_HAVE_KVM_EVENTFD */
- 
- #ifdef CONFIG_KVM_APIC_ARCHITECTURE
-diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-index 92aa5ba..2bc9768 100644
---- a/virt/kvm/eventfd.c
-+++ b/virt/kvm/eventfd.c
-@@ -62,8 +62,7 @@ static void _irq_source_put(struct _irq_source *source)
- 		kref_put(&source->kref, _irq_source_release);
- }
- 
--static struct _irq_source *__attribute__ ((used)) /* white lie for now */
--_irq_source_get(struct _irq_source *source)
-+static struct _irq_source *_irq_source_get(struct _irq_source *source)
- {
- 	if (source)
- 		kref_get(&source->kref);
-@@ -119,6 +118,39 @@ struct _irqfd {
- 	struct work_struct shutdown;
- };
- 
-+static struct _irqfd *_irqfd_fdget(struct kvm *kvm, int fd)
-+{
-+	struct eventfd_ctx *eventfd;
-+	struct _irqfd *tmp, *irqfd = NULL;
-+
-+	eventfd = eventfd_ctx_fdget(fd);
-+	if (IS_ERR(eventfd))
-+		return (struct _irqfd *)eventfd;
-+
-+	spin_lock_irq(&kvm->irqfds.lock);
-+
-+	list_for_each_entry(tmp, &kvm->irqfds.items, list) {
-+		if (tmp->eventfd == eventfd) {
-+			irqfd = tmp;
-+			break;
-+		}
-+	}
-+
-+	spin_unlock_irq(&kvm->irqfds.lock);
-+
-+	if (!irqfd) {
-+		eventfd_ctx_put(eventfd);
-+		return ERR_PTR(-ENODEV);
-+	}
-+
-+	return irqfd;
-+}
-+
-+static void _irqfd_put(struct _irqfd *irqfd)
-+{
-+	eventfd_ctx_put(irqfd->eventfd);
-+}
-+
- static struct workqueue_struct *irqfd_cleanup_wq;
- 
- static void
-@@ -387,6 +419,8 @@ kvm_eventfd_init(struct kvm *kvm)
- 	spin_lock_init(&kvm->irqfds.lock);
- 	INIT_LIST_HEAD(&kvm->irqfds.items);
- 	INIT_LIST_HEAD(&kvm->ioeventfds);
-+	spin_lock_init(&kvm->eoifds.lock);
-+	INIT_LIST_HEAD(&kvm->eoifds.items);
- }
- 
- /*
-@@ -753,3 +787,173 @@ kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
- 
- 	return kvm_assign_ioeventfd(kvm, args);
- }
-+
-+/*
-+ * --------------------------------------------------------------------
-+ *  eoifd: Translate KVM APIC/IOAPIC EOI into eventfd signal.
-+ *
-+ *  userspace can register GSIs with an eventfd for receiving
-+ *  notification when an EOI occurs.
-+ * --------------------------------------------------------------------
-+ */
-+
-+struct _eoifd {
-+	struct eventfd_ctx *eventfd;
-+	struct _irq_source *source; /* for de-asserting level irqfd */
-+	struct kvm *kvm;
-+	struct kvm_irq_ack_notifier notifier;
-+	struct list_head list;
-+};
-+
-+static void eoifd_event(struct kvm_irq_ack_notifier *notifier)
-+{
-+	struct _eoifd *eoifd;
-+
-+	eoifd = container_of(notifier, struct _eoifd, notifier);
-+
-+	/*
-+	 * If the eoifd is tied to a level irqfd we de-assert it here.
-+	 * The user is responsible for re-asserting it if their device
-+	 * still needs attention.  For notification-only, skip this.
-+	 */
-+	if (eoifd->source)
-+		kvm_set_irq(eoifd->kvm, eoifd->source->id,
-+			    eoifd->notifier.gsi, 0);
-+
-+	eventfd_signal(eoifd->eventfd, 1);
-+}
-+
-+static int kvm_assign_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
-+{
-+	struct eventfd_ctx *eventfd;
-+	struct _eoifd *eoifd, *tmp;
-+	struct _irq_source *source = NULL;
-+
-+	if (args->flags & KVM_EOIFD_FLAG_LEVEL_IRQFD) {
-+		struct _irqfd *irqfd = _irqfd_fdget(kvm, args->irqfd);
-+		if (IS_ERR(irqfd))
-+			return PTR_ERR(irqfd);
-+
-+		if (irqfd->gsi != args->gsi) {
-+			_irqfd_put(irqfd);
-+			return -EINVAL;
-+		}
-+
-+		source = _irq_source_get(irqfd->source);
-+		_irqfd_put(irqfd);
-+		if (!source)
-+			return -EINVAL;
-+	}
-+
-+	eventfd = eventfd_ctx_fdget(args->fd);
-+	if (IS_ERR(eventfd)) {
-+		_irq_source_put(source);
-+		return PTR_ERR(eventfd);
-+	}
-+
-+	eoifd = kzalloc(sizeof(*eoifd), GFP_KERNEL);
-+	if (!eoifd) {
-+		_irq_source_put(source);
-+		eventfd_ctx_put(eventfd);
-+		return -ENOMEM;
-+	}
-+
-+	INIT_LIST_HEAD(&eoifd->list);
-+	eoifd->kvm = kvm;
-+	eoifd->eventfd = eventfd;
-+	eoifd->source = source;
-+	eoifd->notifier.gsi = args->gsi;
-+	eoifd->notifier.irq_acked = eoifd_event;
-+
-+	spin_lock_irq(&kvm->eoifds.lock);
-+
-+	list_for_each_entry(tmp, &kvm->eoifds.items, list) {
-+		if (eoifd->eventfd != tmp->eventfd)
-+			continue;
-+
-+		spin_unlock_irq(&kvm->eoifds.lock);
-+		_irq_source_put(source);
-+		eventfd_ctx_put(eventfd);
-+		kfree(eoifd);
-+		return -EBUSY;
-+	}
-+
-+	list_add_tail(&eoifd->list, &kvm->eoifds.items);
-+
-+	spin_unlock_irq(&kvm->eoifds.lock);
-+
-+	kvm_register_irq_ack_notifier(kvm, &eoifd->notifier);
-+
-+	return 0;
-+}
-+
-+static void eoifd_deactivate(struct kvm *kvm, struct _eoifd *eoifd)
-+{
-+	kvm_unregister_irq_ack_notifier(kvm, &eoifd->notifier);
-+	_irq_source_put(eoifd->source);
-+	eventfd_ctx_put(eoifd->eventfd);
-+	kfree(eoifd);
-+}
-+
-+void kvm_eoifd_release(struct kvm *kvm)
-+{
-+	spin_lock_irq(&kvm->eoifds.lock);
-+
-+	while (!list_empty(&kvm->eoifds.items)) {
-+		struct _eoifd *eoifd;
-+
-+		eoifd = list_first_entry(&kvm->eoifds.items,
-+					 struct _eoifd, list);
-+		list_del(&eoifd->list);
-+
-+		/* Drop spinlocks since eoifd_deactivate can sleep */
-+		spin_unlock_irq(&kvm->eoifds.lock);
-+		eoifd_deactivate(kvm, eoifd);
-+		spin_lock_irq(&kvm->eoifds.lock);
-+	}
-+
-+	spin_unlock_irq(&kvm->eoifds.lock);
-+}
-+
-+static int kvm_deassign_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
-+{
-+	struct eventfd_ctx *eventfd;
-+	struct _eoifd *tmp, *eoifd = NULL;
-+
-+	eventfd = eventfd_ctx_fdget(args->fd);
-+	if (IS_ERR(eventfd))
-+		return PTR_ERR(eventfd);
-+
-+	spin_lock_irq(&kvm->eoifds.lock);
-+
-+	list_for_each_entry(tmp, &kvm->eoifds.items, list) {
-+		if (tmp->eventfd == eventfd && tmp->notifier.gsi == args->gsi) {
-+			eoifd = tmp;
-+			list_del(&eoifd->list);
-+			break;
-+		}
-+	}
-+
-+	spin_unlock_irq(&kvm->eoifds.lock);
-+
-+	eventfd_ctx_put(eventfd);
-+
-+	if (!eoifd)
-+		return -ENOENT;
-+
-+	eoifd_deactivate(kvm, eoifd);
-+
-+	return 0;
-+}
-+
-+int kvm_eoifd(struct kvm *kvm, struct kvm_eoifd *args)
-+{
-+	if (args->flags & ~(KVM_EOIFD_FLAG_DEASSIGN |
-+			    KVM_EOIFD_FLAG_LEVEL_IRQFD))
-+		return -EINVAL;
-+
-+	if (args->flags & KVM_EOIFD_FLAG_DEASSIGN)
-+		return kvm_deassign_eoifd(kvm, args);
-+
-+	return kvm_assign_eoifd(kvm, args);
-+}
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index b4ad14cc..5b41df1 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -620,6 +620,8 @@ static int kvm_vm_release(struct inode *inode, struct file *filp)
- 
- 	kvm_irqfd_release(kvm);
- 
-+	kvm_eoifd_release(kvm);
-+
- 	kvm_put_kvm(kvm);
- 	return 0;
- }
-@@ -2093,6 +2095,15 @@ static long kvm_vm_ioctl(struct file *filp,
- 		break;
- 	}
- #endif
-+	case KVM_EOIFD: {
-+		struct kvm_eoifd data;
-+
-+		r = -EFAULT;
-+		if (copy_from_user(&data, argp, sizeof data))
-+			goto out;
-+		r = kvm_eoifd(kvm, &data);
-+		break;
-+	}
- 	default:
- 		r = kvm_arch_vm_ioctl(filp, ioctl, arg);
- 		if (r == -ENOTTY)
+Very odd. Seems almost like this must be some sort of memory
+corruption. The work is initialized just a little bit before it gets
+queued. The only thing I can figure is that something raced in and
+clobbered the work struct beforehand.
 
+One thing you could do -- maybe disassemble get_work_gcwq() and post
+the results here? Maybe from that we can see what the "cpu" value
+actually was by figuring out the register that holds it?
+
+-- 
+Jeff Layton <jlayton@redhat.com>
