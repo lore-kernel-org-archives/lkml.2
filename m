@@ -1,85 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab2GCJ6a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 05:58:30 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:37566 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750923Ab2GCJ62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 05:58:28 -0400
-Message-ID: <4FF2C19D.4040608@parallels.com>
-Date: Tue, 3 Jul 2012 13:55:41 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1753972Ab2GCKAW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 06:00:22 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:43134 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642Ab2GCKAV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 06:00:21 -0400
+From: "Du, Changbin" <changbin.du@gmail.com>
+To: "'ABRAHAM, KISHON VIJAY'" <kishon@ti.com>
+Cc: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <ben@simtec.co.uk>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <4ff252e7.08d4440a.38ee.ffffd7b9@mx.google.com> <CAAe_U6J84JHSGQ2upXfnS_JPUfZwv9HD_xAyjK+8ybsZtuRpiQ@mail.gmail.com>
+In-Reply-To: <CAAe_U6J84JHSGQ2upXfnS_JPUfZwv9HD_xAyjK+8ybsZtuRpiQ@mail.gmail.com>
+Subject: RE: [PATCH 1/1] usb: gadget: s3c-hsotg: fix core reset timeout failure
+Date: Tue, 3 Jul 2012 18:00:14 +0800
+Message-ID: <4ff2c2b3.28d5440a.2b79.5241@mx.google.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>, <jeremy@goop.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: __force_order usage on x86's CRn accesses
-References: <4FF2D6AB020000780008D460@nat28.tlf.novell.com>
-In-Reply-To: <4FF2D6AB020000780008D460@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac1Y50Hn+fDDbIl5S8qrA9DzYajtxAAF1+zQ
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Hi,
 > 
-> Pretty soon after the introduction of this via "x86: unify paravirt
-> parts of system.h" Jeremy had posted a patch to correct the
-> (reversed in direction of access) constraints using that auxiliary
-> variable. What happened to that change? Was it dropped for a
-> reason?
+> On Tue, Jul 3, 2012 at 7:33 AM, Du, Changbin <changbin.du@gmail.com>
+> wrote:
+> > The timeout values were 1000 and timeout issue occured many times on my
+> > s3c6410 Soc based board (mostly when booting whith USB cable not
+> > connected). This patch increase the values to 10000 to guarantee the
+> > success of reset.
+> >
+> > Having set timeout to 10000, I printed the remained timeout values
+> > which can cause timeout issue before this change (tested several times):
+> > the first timeout value remained:
+> >         timeout = 8079
+> >         timeout = 8079
+> >         timeout = 8078
+> >         timeout = 8081
+> > the second timeout value remained:
+> >         timeout = 7940
+> >         timeout = 7945
+> >         timeout = 7940
+> >         timeout = 7938
+> > Seeing from above values, I think 10000 is big enough.
+> >
+> > Signed-off-by: Du, Changbin <changbin.du@gmail.com>
+> > ---
+> >  drivers/usb/gadget/s3c-hsotg.c |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/usb/gadget/s3c-hsotg.c
+b/drivers/usb/gadget/s3c-hsotg.c
+> > index f4abb0e..f3e2234 100644
+> > --- a/drivers/usb/gadget/s3c-hsotg.c
+> > +++ b/drivers/usb/gadget/s3c-hsotg.c
+> > @@ -2215,7 +2215,7 @@ static int s3c_hsotg_corereset(struct s3c_hsotg
+> > *hsotg)
+> >         /* issue soft reset */
+> >         writel(GRSTCTL_CSftRst, hsotg->regs + GRSTCTL);
+> >
+> > -       timeout = 1000;
+> > +       timeout = 10000;
+> >         do {
+> >                 grstctl = readl(hsotg->regs + GRSTCTL);
+> >         } while ((grstctl & GRSTCTL_CSftRst) && timeout-- > 0);
+> 
+> how about msleep inside the loop?
 
-About the change itself, I don't know. Maybe Jeremy, who proposed it,
-can give you a better answer.
+I don't know if that's ok! The datasheet just says:
+Once this bit is cleared software must wait at least 3 PHY clocks before
+doing any access to the PHY domain.
+Software must also check that bit 31 of this register is 1 (AHB Master is
+IDLE) before starting any operation.
 
-> Furthermore, the addition of these constraints happened
-> without any real explanation - the code comment that was added
-> doesn't really help understand why "volatile" isn't sufficient here.
+But it doesn't say how long to wait. I don't know if it can sleep for a
+while and then check the register's value.
+In fact, sometimes the AHB Master will be IDLE quickly(even only need read
+once), but sometimes may need
+Much more time. To reduce the risk, keeping it in original way may be
+better.
 
-If my memory dont't fail me, I believe this is because gcc will feel
-free to reorder a sequence of instructions that does not access memory.
-Specially since it has no knowledge of what's in the inline assembly,
-and what are its constraints. It only knows that it is an register
-operation, and treats it like one.
-
-Also, I believe what we are concerned with here is not arbitrary reorder
-between that and other instructions, which we welcome, but reordering
-between a read and a write to the same crX - specially of concern for
-things doing read-modify-writes of control registers.
-
-This is something I heavily looked at the time, but never again, so
-confirmation from people with more knowledge on the compilers world can
-be probably helpful here.
+Thanks!
+Du, Changbin
 
 > 
-> Next, I also saw it being suggested somewhere to replace the
-> static definition of the variable (causing an instance to appear
-> everywhere any of the referencing inline function being used)
-> by an extern one. That also never got carried out, causing
-> about two dozen pointless instances of this variable to be
-> scattered around, likely consuming cache bandwidth here and
-> there.
-
-I indeed see no reason not to do it.
-
-> Now, rather than exporting an auxiliary variable like this, how
-> about using an existing, rarely referenced (at least in affected
-> contexts) but already exported one instead?
-> empty_zero_page, __supported_pte_mask, x86_platform, or
-> high_memory might be candidates.
-
-A similar technique is used to determine a safe address for access
-somewhere in the scheduler IIRC,
-
-> Finally (and this is because I lack the explanation why the
-> artificial constraint is needed in the first place), why is it that
-> clts() doesn't need one too?
-> 
-
-Because we're not using it to do read-modify-write of the control register.
-
-But let me disclaim again that I might be wrong here...
-
+> Thanks
+> Kishon
 
