@@ -1,103 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932678Ab2GCL7k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 07:59:40 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:24721 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932299Ab2GCL7j (ORCPT
+	id S932914Ab2GCL75 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 07:59:57 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:46601 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932767Ab2GCL7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 07:59:39 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6760"; a="204652999"
-X-IronPort-AV: E=Sophos;i="4.77,515,1336374000"; 
-   d="scan'208";a="339136383"
-From: Vladimir Kondratiev <vkondrat@qualcomm.com>
-To: wfg@linux.intel.com
-Cc: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [mac80211-next:for-john] WARNING: at /c/kernel-tests/net/net/wireless/core.c:471 wiphy_register+0x401/0x451()
-Date: Tue, 03 Jul 2012 14:59:31 +0300
-Message-ID: <3533322.B33xrWD3rS@lx-vladimir>
-Organization: Qualcomm
-User-Agent: KMail/4.8.3 (Linux/3.2.0-26-generic; KDE/4.8.3; x86_64; ; )
-In-Reply-To: <20120703112726.GA32627@localhost>
-References: <20120703112726.GA32627@localhost>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 3 Jul 2012 07:59:54 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linus.walleij@stericsson.com, arnd@arndb.de, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device registration
+Date: Tue,  3 Jul 2012 12:59:48 +0100
+Message-Id: <1341316788-12730-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+We register the ab8500 as an MFD device from db8500 code during Device Tree
+boot in order to solve some limitations of DT. However, when Device Tree is
+not enabled, we still want to allow platform code to register the ab8500 in
+the normal way. Here we force MFD device registration of the ab8500 only
+when booting with Device Tree enabled.
 
-This is addressed by the patch from Johannes Berg:
+Solves this issue:
+WARNING: at fs/sysfs/dir.c:526 sysfs_add_one+0x88/0xb0()
+sysfs: cannot create duplicate filename '/bus/platform/devices/ab8500-core.0'
 
-http://p.sipsolutions.net/a1c40eea7e33541b.txt
+Reported-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mfd/db8500-prcmu.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-See his other mail.
-
-On Tuesday, July 03, 2012 07:27:26 PM wfg@linux.intel.com wrote:
-> Hi Vladimir,
-> 
-> The below commit triggers a warning.
-> 
-> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/jberg/mac80211-next.gi
-> t for-john head:   ba0afa2f22e1e3f332e45460f99328025d44564e
-> commit: 3a0c52a6d82cc41da965284412608c74aece34e4 [648/651] cfg80211: add
-> 802.11ad (60gHz band) support
-> 
-> 647:    b d9b3b28  2012-07-02 14:47:44 +0200  mac80211: allow calling
-> ieee80211_ap_probereq_get() during auth/assoc 648:    B
-> 3a0c52a  [   72.865235] WARNING: at
-> /c/kernel-tests/net/net/wireless/core.c:471 wiphy_register+0x401/0x451()
-> 649:    B 90cdc6d  [   64.868502] WARNING: at
-> /c/kernel-tests/net/net/wireless/core.c:471 wiphy_register+0x401/0x451()
-> 650:    B b188148  [   30.024352] WARNING: at
-> /c/kernel-tests/net/net/wireless/core.c:471 wiphy_register+0x401/0x451()
-> 651:    B ba0afa2  [   77.237955] WARNING: at
-> /c/kernel-tests/net/net/wireless/core.c:471 wiphy_register+0x401/0x451()
-> [b] boot OK [B] kernel boots with some problem
-> 
-> [   72.862898] mac80211_hwsim: Initializing radio 0
-> [   72.864155] ------------[ cut here ]------------
-> [   72.865235] WARNING: at /c/kernel-tests/net/net/wireless/core.c:471
-> wiphy_register+0x401/0x451() [   72.867261] Hardware name: Bochs
-> [   72.868096] Modules linked in:
-> [   72.868885] Pid: 1, comm: swapper/0 Not tainted 3.5.0-rc1+ #4
-> [   72.870152] Call Trace:
-> [   72.870885]  [<ffffffff81090261>] warn_slowpath_common+0x83/0x9c
-> [   72.872241]  [<ffffffff81090294>] warn_slowpath_null+0x1a/0x1c
-> [   72.873542]  [<ffffffff82c293e3>] wiphy_register+0x401/0x451
-> [   72.874835]  [<ffffffff811758a0>] ? __kmalloc+0x128/0x13a
-> [   72.876069]  [<ffffffff82c46713>] ? ieee80211_register_hw+0x113/0x5dc
-> [   72.877473]  [<ffffffff82c469a4>] ieee80211_register_hw+0x3a4/0x5dc
-> [   72.878944]  [<ffffffff8464e113>] init_mac80211_hwsim+0x423/0x6a0
-> [   72.880294]  [<ffffffff8464dcf0>] ? carl9170_driver_init+0x1b/0x1b
-> [   72.881671]  [<ffffffff81002099>] do_one_initcall+0x7f/0x13a
-> [   72.882985]  [<ffffffff845f0d39>] kernel_init+0x170/0x1f8
-> [   72.884215]  [<ffffffff845f0590>] ? do_early_param+0x8c/0x8c
-> [   72.885483]  [<ffffffff82e516b4>] kernel_thread_helper+0x4/0x10
-> [   72.886787]  [<ffffffff82e498f0>] ? retint_restore_args+0x13/0x13
-> [   72.888244]  [<ffffffff845f0bc9>] ? start_kernel+0x3e7/0x3e7
-> [   72.889506]  [<ffffffff82e516b0>] ? gs_change+0x13/0x13
-> [   72.890695] ---[ end trace bd81035d49db0c0f ]---
-> [   72.891797] mac80211_hwsim: ieee80211_register_hw failed (-22)
-> 
-> commit 3a0c52a6d82cc41da965284412608c74aece34e4
-> Author: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
-> Date:   Mon Jul 2 09:32:32 2012 +0300
-> 
->     cfg80211: add 802.11ad (60gHz band) support
->     
->     Add enumerations for both cfg80211 and nl80211.
->     This expands wiphy.bands etc. arrays.
->     
->     Extend channel <-> frequency translation to cover 60g band
->     and modify the rate check logic since there are no legacy
->     mandatory rates (only MCS is used.)
->     
->     Signed-off-by: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
->     Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-
+diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+index 80def6c..4ec0ed1 100644
+--- a/drivers/mfd/db8500-prcmu.c
++++ b/drivers/mfd/db8500-prcmu.c
+@@ -2964,6 +2964,9 @@ static struct mfd_cell db8500_prcmu_devs[] = {
+ 		.name = "cpufreq-u8500",
+ 		.of_compatible = "stericsson,cpufreq-u8500",
+ 	},
++};
++
++static struct mfd_cell db8500_of_prcmu_devs[] = {
+ 	{
+ 		.name = "ab8500-core",
+ 		.of_compatible = "stericsson,ab8500",
+@@ -3014,6 +3017,15 @@ static int __devinit db8500_prcmu_probe(struct platform_device *pdev)
+ 		return err;
+ 	}
+ 
++	if (np) {
++		err = mfd_add_devices(&pdev->dev, 0, db8500_of_prcmu_devs,
++				ARRAY_SIZE(db8500_of_prcmu_devs), NULL, 0);
++		if (err) {
++			pr_err("prcmu: Failed to add DT subdevices\n");
++			return err;
++		}
++	}
++
+ 	pr_info("DB8500 PRCMU initialized\n");
+ 
+ no_irq_return:
+-- 
+1.7.9.5
 
