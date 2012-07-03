@@ -1,108 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757043Ab2GCUTG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 16:19:06 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:56432 "HELO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751298Ab2GCUTD (ORCPT
+	id S1757185Ab2GCUWB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 16:22:01 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:34364 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab2GCUV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 16:19:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120703011750.GA19682@herton-Z68MA-D2H-B3>
-References: <20120701172006.535271340@decadent.org.uk>
-	<20120701172007.694144055@decadent.org.uk>
-	<20120702234610.GB3552@herton-Z68MA-D2H-B3>
-	<20120702235631.GC3552@herton-Z68MA-D2H-B3>
-	<20120703011750.GA19682@herton-Z68MA-D2H-B3>
-Date: Tue, 3 Jul 2012 13:19:01 -0700
-Message-ID: <CALnjE+q8T=Lr4fYQUoex5Amhdjv4Jw6UyJ2f0PaiXBZigf6fXQ@mail.gmail.com>
-Subject: Re: [ 07/48] mm: fix slab->page _count corruption when using slub
-From: Pravin Shelar <pshelar@nicira.com>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Amey Bhide <abhide@nicira.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 3 Jul 2012 16:21:59 -0400
+From: Yufeng Shen <miletus@chromium.org>
+To: linux-input@vger.kernel.org
+Cc: Jiri Kosina <jkosina@suse.cz>, Henrik Rydberg <rydberg@euromail.se>,
+        linux-kernel@vger.kernel.org, Daniel Kurtz <djkurtz@chromium.org>,
+        Andrew de los Reyes <adlr@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Yufeng Shen <miletus@chromium.org>
+Subject: [PATCH 1/2 v3] HID: magicmouse: Removing report_touches switch
+Date: Tue,  3 Jul 2012 16:21:56 -0400
+Message-Id: <1341346916-10858-1-git-send-email-miletus@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applying just this patch does not solve whole problem. There is
-another patch which needs to be backported. Discussion on that is not
-concluded yet. so I think we can drop this patch for now.
-ref : http://www.vacationhomexchg.com/lists/linux-mm/msg36054.html
+Remove the report_touches switch as it is not so useful to turn
+off reporting touch events for a touch device. Let the userspace
+to do the filtering if the turning off is needed.
 
-Thanks,
-Pravin.
+V2: Remove report_touches as suggeted by Chase Douglas
 
-On Mon, Jul 2, 2012 at 6:17 PM, Herton Ronaldo Krzesinski
-<herton.krzesinski@canonical.com> wrote:
-> On Mon, Jul 02, 2012 at 08:56:32PM -0300, Herton Ronaldo Krzesinski wrote:
->> So, 3.2 didn't have the CONFIG_HAVE_CMPXCHG_DOUBLE and
->> CONFIG_HAVE_ALIGNED_STRUCT_PAGE defines, it had instead CMPXCHG_DOUBLE
->> and HAVE_ALIGNED_STRUCT_PAGE is a new logic. So the patch is broken for
->> 3.2 indeed.
->
-> So here is a proposed backport for 3.2, I tested it etc., but please
-> someone review/ack it as well...
->
-> From: Pravin B Shelar <pshelar@nicira.com>
-> Subject: mm: fix slab->page _count corruption when using slub
->
-> commit abca7c4965845924f65d40e0aa1092bdd895e314 upstream.
->
-> On arches that do not support this_cpu_cmpxchg_double() slab_lock is used
-> to do atomic cmpxchg() on double word which contains page->_count.  The
-> page count can be changed from get_page() or put_page() without taking
-> slab_lock.  That corrupts page counter.
->
-> Fix it by moving page->_count out of cmpxchg_double data.  So that slub
-> does no change it while updating slub meta-data in struct page.
->
-> [akpm@linux-foundation.org: use standard comment layout, tweak comment text]
-> Reported-by: Amey Bhide <abhide@nicira.com>
-> Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
-> Acked-by: Christoph Lameter <cl@linux.com>
-> Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> [herton: backport to 3.2, use CONFIG_CMPXCHG_DOUBLE]
-> Signed-off-by: Herton R. Krzesinski <herton@canonical.com>
-> ---
->  include/linux/mm_types.h |    9 +++++++++
->  1 file changed, 9 insertions(+)
->
-> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> index 5b42f1b..2153639 100644
-> --- a/include/linux/mm_types.h
-> +++ b/include/linux/mm_types.h
-> @@ -56,8 +56,17 @@ struct page {
->                 };
->
->                 union {
-> +#ifdef CONFIG_CMPXCHG_DOUBLE
->                         /* Used for cmpxchg_double in slub */
->                         unsigned long counters;
-> +#else
-> +                       /*
-> +                        * Keep _count separate from slub cmpxchg_double data.
-> +                        * As the rest of the double word is protected by
-> +                        * slab_lock but _count is not.
-> +                        */
-> +                       unsigned counters;
-> +#endif
->
->                         struct {
->
-> --
-> 1.7.9.5
->
->
-> --
-> []'s
-> Herton
+Signed-off-by: Yufeng Shen <miletus@chromium.org>
+---
+ drivers/hid/hid-magicmouse.c |   95 ++++++++++++++++++++----------------------
+ 1 files changed, 45 insertions(+), 50 deletions(-)
+
+diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+index 40ac665..fd88f21 100644
+--- a/drivers/hid/hid-magicmouse.c
++++ b/drivers/hid/hid-magicmouse.c
+@@ -48,10 +48,6 @@ static bool scroll_acceleration = false;
+ module_param(scroll_acceleration, bool, 0644);
+ MODULE_PARM_DESC(scroll_acceleration, "Accelerate sequential scroll events");
+ 
+-static bool report_touches = true;
+-module_param(report_touches, bool, 0644);
+-MODULE_PARM_DESC(report_touches, "Emit touch records (otherwise, only use them for emulation)");
+-
+ static bool report_undeciphered;
+ module_param(report_undeciphered, bool, 0644);
+ MODULE_PARM_DESC(report_undeciphered, "Report undeciphered multi-touch state field using a MSC_RAW event");
+@@ -276,7 +272,7 @@ static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tda
+ 		msc->single_touch_id = SINGLE_TOUCH_UP;
+ 
+ 	/* Generate the input events for this touch. */
+-	if (report_touches && down) {
++	if (down) {
+ 		input_report_abs(input, ABS_MT_TRACKING_ID, id);
+ 		input_report_abs(input, ABS_MT_TOUCH_MAJOR, touch_major << 2);
+ 		input_report_abs(input, ABS_MT_TOUCH_MINOR, touch_minor << 2);
+@@ -335,7 +331,7 @@ static int magicmouse_raw_event(struct hid_device *hdev,
+ 		for (ii = 0; ii < npoints; ii++)
+ 			magicmouse_emit_touch(msc, ii, data + ii * 8 + 6);
+ 
+-		if (report_touches && msc->ntouches == 0)
++		if (msc->ntouches == 0)
+ 			input_mt_sync(input);
+ 
+ 		/* When emulating three-button mode, it is important
+@@ -422,53 +418,52 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
+ 		__set_bit(INPUT_PROP_BUTTONPAD, input->propbit);
+ 	}
+ 
+-	if (report_touches) {
+-		__set_bit(EV_ABS, input->evbit);
+-
+-		input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 15, 0, 0);
+-		input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255 << 2,
+-				     4, 0);
+-		input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255 << 2,
+-				     4, 0);
+-		input_set_abs_params(input, ABS_MT_ORIENTATION, -31, 32, 1, 0);
+-
+-		/* Note: Touch Y position from the device is inverted relative
+-		 * to how pointer motion is reported (and relative to how USB
+-		 * HID recommends the coordinates work).  This driver keeps
+-		 * the origin at the same position, and just uses the additive
+-		 * inverse of the reported Y.
+-		 */
+-		if (input->id.product == USB_DEVICE_ID_APPLE_MAGICMOUSE) {
+-			input_set_abs_params(input, ABS_MT_POSITION_X,
+-				MOUSE_MIN_X, MOUSE_MAX_X, 4, 0);
+-			input_set_abs_params(input, ABS_MT_POSITION_Y,
+-				MOUSE_MIN_Y, MOUSE_MAX_Y, 4, 0);
+-
+-			input_abs_set_res(input, ABS_MT_POSITION_X,
+-				MOUSE_RES_X);
+-			input_abs_set_res(input, ABS_MT_POSITION_Y,
+-				MOUSE_RES_Y);
+-		} else { /* USB_DEVICE_ID_APPLE_MAGICTRACKPAD */
+-			input_set_abs_params(input, ABS_X, TRACKPAD_MIN_X,
+-				TRACKPAD_MAX_X, 4, 0);
+-			input_set_abs_params(input, ABS_Y, TRACKPAD_MIN_Y,
+-				TRACKPAD_MAX_Y, 4, 0);
+-			input_set_abs_params(input, ABS_MT_POSITION_X,
+-				TRACKPAD_MIN_X, TRACKPAD_MAX_X, 4, 0);
+-			input_set_abs_params(input, ABS_MT_POSITION_Y,
+-				TRACKPAD_MIN_Y, TRACKPAD_MAX_Y, 4, 0);
+-
+-			input_abs_set_res(input, ABS_X, TRACKPAD_RES_X);
+-			input_abs_set_res(input, ABS_Y, TRACKPAD_RES_Y);
+-			input_abs_set_res(input, ABS_MT_POSITION_X,
+-				TRACKPAD_RES_X);
+-			input_abs_set_res(input, ABS_MT_POSITION_Y,
+-				TRACKPAD_RES_Y);
+-		}
+ 
+-		input_set_events_per_packet(input, 60);
++	__set_bit(EV_ABS, input->evbit);
++
++	input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 15, 0, 0);
++	input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255 << 2,
++			     4, 0);
++	input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255 << 2,
++			     4, 0);
++	input_set_abs_params(input, ABS_MT_ORIENTATION, -31, 32, 1, 0);
++
++	/* Note: Touch Y position from the device is inverted relative
++	 * to how pointer motion is reported (and relative to how USB
++	 * HID recommends the coordinates work).  This driver keeps
++	 * the origin at the same position, and just uses the additive
++	 * inverse of the reported Y.
++	 */
++	if (input->id.product == USB_DEVICE_ID_APPLE_MAGICMOUSE) {
++		input_set_abs_params(input, ABS_MT_POSITION_X,
++				     MOUSE_MIN_X, MOUSE_MAX_X, 4, 0);
++		input_set_abs_params(input, ABS_MT_POSITION_Y,
++				     MOUSE_MIN_Y, MOUSE_MAX_Y, 4, 0);
++
++		input_abs_set_res(input, ABS_MT_POSITION_X,
++				  MOUSE_RES_X);
++		input_abs_set_res(input, ABS_MT_POSITION_Y,
++				  MOUSE_RES_Y);
++	} else { /* USB_DEVICE_ID_APPLE_MAGICTRACKPAD */
++		input_set_abs_params(input, ABS_X, TRACKPAD_MIN_X,
++				     TRACKPAD_MAX_X, 4, 0);
++		input_set_abs_params(input, ABS_Y, TRACKPAD_MIN_Y,
++				     TRACKPAD_MAX_Y, 4, 0);
++		input_set_abs_params(input, ABS_MT_POSITION_X,
++				     TRACKPAD_MIN_X, TRACKPAD_MAX_X, 4, 0);
++		input_set_abs_params(input, ABS_MT_POSITION_Y,
++				     TRACKPAD_MIN_Y, TRACKPAD_MAX_Y, 4, 0);
++
++		input_abs_set_res(input, ABS_X, TRACKPAD_RES_X);
++		input_abs_set_res(input, ABS_Y, TRACKPAD_RES_Y);
++		input_abs_set_res(input, ABS_MT_POSITION_X,
++				  TRACKPAD_RES_X);
++		input_abs_set_res(input, ABS_MT_POSITION_Y,
++				  TRACKPAD_RES_Y);
+ 	}
+ 
++	input_set_events_per_packet(input, 60);
++
+ 	if (report_undeciphered) {
+ 		__set_bit(EV_MSC, input->evbit);
+ 		__set_bit(MSC_RAW, input->mscbit);
+-- 
+1.7.7.3
+
