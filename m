@@ -1,48 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932875Ab2GCL6w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 07:58:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59166 "EHLO comal.ext.ti.com"
+	id S1756168Ab2GCL7V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 07:59:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20967 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932548Ab2GCL6u convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 07:58:50 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] regulator: enable module build for lp872x driver
-Thread-Topic: [PATCH] regulator: enable module build for lp872x driver
-Thread-Index: Ac1Yuc6q72LFCC6IR025YHgmWoxgJAAAijwAABV3TLA=
-Date: Tue, 3 Jul 2012 11:58:43 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998FCD6E@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998FCCCF@DQHE02.ent.ti.com>
- <20120703093419.GB29030@opensource.wolfsonmicro.com>
-In-Reply-To: <20120703093419.GB29030@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.108.34]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S932299Ab2GCL6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 07:58:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="166276700"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Theodore Tso <tytso@mit.edu>
+Cc: Jan Kara <jack@suse.cz>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>
+Subject: [PATCHv3 3/4] ext4: remove unnecessary superblock dirtying
+Date: Tue,  3 Jul 2012 15:00:09 +0300
+Message-Id: <1341316810-22598-4-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1341316810-22598-1-git-send-email-dedekind1@gmail.com>
+References: <1341316810-22598-1-git-send-email-dedekind1@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> On Tue, Jul 03, 2012 at 01:18:53AM +0000, Kim, Milo wrote:
-> >
-> > Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-> 
-> No, this won't build.  As we went through when we had to fix that only
-> the other week...
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-Oh, sorry for bothering you again.
-Please correct me if I miss something.
-My understanding is boolean bulid configuration is temporary because the devm_gpio_request_one() is not exported.
-But this gpio function had been patched in the linux-next tree and now we can use it in the module.
-So that's why I've sent this patch again.
+This patch changes the '__ext4_handle_dirty_super()' function which is used
+by ext4 to update the super-block via the journal in the following cases:
 
-Thanks & BR
-Milo -
+1. When creating the first large file on a file
+   system without EXT4_FEATURE_RO_COMPAT_LARGE_FILE feature.
+2. When re-sizing the file-system
+3. When creating an xattr on a file-system without the
+   EXT4_FEATURE_COMPAT_EXT_ATTR feature.
+
+This function, however, falls back to just marking the superblock as dirty
+if the file-system has no journal. But it is user really rarely and it does not
+give any benefit to use the delayed superblock write (via the VFS's
+'sync_supers()' kernel thread) in these cases. We can just write out the
+superblock asynchronously instead.
+
+This patch also removes 's_dirt' condition on the unmount path because we never
+set it anymore, so we should not test it.
+
+Tested using xfstests for both journalled and non-journalled ext4.
+
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+---
+ fs/ext4/ext4.h      |    1 +
+ fs/ext4/ext4_jbd2.c |    2 +-
+ fs/ext4/super.c     |    5 ++---
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 0c4042e..b2439d5 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -2041,6 +2041,7 @@ extern int ext4_superblock_csum_verify(struct super_block *sb,
+ 				       struct ext4_super_block *es);
+ extern void ext4_superblock_csum_set(struct super_block *sb,
+ 				     struct ext4_super_block *es);
++extern int ext4_commit_super(struct super_block *sb, int sync);
+ extern void *ext4_kvmalloc(size_t size, gfp_t flags);
+ extern void *ext4_kvzalloc(size_t size, gfp_t flags);
+ extern void ext4_kvfree(void *ptr);
+diff --git a/fs/ext4/ext4_jbd2.c b/fs/ext4/ext4_jbd2.c
+index 90f7c2e..27354df 100644
+--- a/fs/ext4/ext4_jbd2.c
++++ b/fs/ext4/ext4_jbd2.c
+@@ -156,6 +156,6 @@ int __ext4_handle_dirty_super(const char *where, unsigned int line,
+ 				(struct ext4_super_block *)bh->b_data);
+ 		mark_buffer_dirty(bh);
+ 	} else
+-		sb->s_dirt = 1;
++		err = ext4_commit_super(sb, 0);
+ 	return err;
+ }
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index eb7aa3e..9b26ba0 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -63,7 +63,6 @@ static struct ext4_features *ext4_feat;
+ static int ext4_load_journal(struct super_block *, struct ext4_super_block *,
+ 			     unsigned long journal_devnum);
+ static int ext4_show_options(struct seq_file *seq, struct dentry *root);
+-static int ext4_commit_super(struct super_block *sb, int sync);
+ static void ext4_mark_recovery_complete(struct super_block *sb,
+ 					struct ext4_super_block *es);
+ static void ext4_clear_journal_err(struct super_block *sb,
+@@ -896,7 +895,7 @@ static void ext4_put_super(struct super_block *sb)
+ 		EXT4_CLEAR_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_RECOVER);
+ 		es->s_state = cpu_to_le16(sbi->s_mount_state);
+ 	}
+-	if (sb->s_dirt || !(sb->s_flags & MS_RDONLY))
++	if (!(sb->s_flags & MS_RDONLY))
+ 		ext4_commit_super(sb, 1);
+ 
+ 	if (sbi->s_proc) {
+@@ -4155,7 +4154,7 @@ static int ext4_load_journal(struct super_block *sb,
+ 	return 0;
+ }
+ 
+-static int ext4_commit_super(struct super_block *sb, int sync)
++int ext4_commit_super(struct super_block *sb, int sync)
+ {
+ 	struct ext4_super_block *es = EXT4_SB(sb)->s_es;
+ 	struct buffer_head *sbh = EXT4_SB(sb)->s_sbh;
+-- 
+1.7.7.6
+
