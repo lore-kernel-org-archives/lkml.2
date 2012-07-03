@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030188Ab2GCQYw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 12:24:52 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:45939 "EHLO relay.sw.ru"
+	id S1756857Ab2GCQXv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 12:23:51 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:37620 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932123Ab2GCQYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 12:24:49 -0400
-Subject: [PATCH v3 10/11] NFS: add debug messages to callback down function
+	id S933240Ab2GCQXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 12:23:48 -0400
+Subject: [PATCH v3 01/11] NFS: pass net to nfs_callback_down()
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
         linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Tue, 03 Jul 2012 20:20:36 +0400
-Message-ID: <20120703162036.11911.60789.stgit@localhost.localdomain>
+Date: Tue, 03 Jul 2012 20:19:32 +0400
+Message-ID: <20120703161932.11911.40049.stgit@localhost.localdomain>
 In-Reply-To: <20120703161844.11911.92996.stgit@localhost.localdomain>
 References: <20120703161844.11911.92996.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -25,21 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfs/callback.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ fs/nfs/callback.c |    4 ++--
+ fs/nfs/callback.h |    2 +-
+ fs/nfs/client.c   |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-index 35ccd2a..b4e76e9 100644
+index 23ff18f..2d3019d 100644
 --- a/fs/nfs/callback.c
 +++ b/fs/nfs/callback.c
-@@ -422,7 +422,9 @@ void nfs_callback_down(int minorversion, struct net *net)
+@@ -321,7 +321,7 @@ out_err:
+ /*
+  * Kill the callback thread if it's no longer being used.
+  */
+-void nfs_callback_down(int minorversion)
++void nfs_callback_down(int minorversion, struct net *net)
+ {
+ 	struct nfs_callback_data *cb_info = &nfs_callback_info[minorversion];
+ 
+@@ -329,7 +329,7 @@ void nfs_callback_down(int minorversion)
  	cb_info->users--;
  	if (cb_info->users == 0 && cb_info->task != NULL) {
  		kthread_stop(cb_info->task);
-+		dprintk("nfs_callback_down: service stopped\n");
+-		svc_shutdown_net(cb_info->serv, &init_net);
++		svc_shutdown_net(cb_info->serv, net);
  		svc_exit_thread(cb_info->rqst);
-+		dprintk("nfs_callback_down: service destroyed\n");
  		cb_info->serv = NULL;
  		cb_info->rqst = NULL;
- 		cb_info->task = NULL;
+diff --git a/fs/nfs/callback.h b/fs/nfs/callback.h
+index a5527c9..6d900cf 100644
+--- a/fs/nfs/callback.h
++++ b/fs/nfs/callback.h
+@@ -194,7 +194,7 @@ extern __be32 nfs4_callback_recall(struct cb_recallargs *args, void *dummy,
+ 				   struct cb_process_state *cps);
+ #ifdef CONFIG_NFS_V4
+ extern int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt);
+-extern void nfs_callback_down(int minorversion);
++extern void nfs_callback_down(int minorversion, struct net *net);
+ extern int nfs4_validate_delegation_stateid(struct nfs_delegation *delegation,
+ 					    const nfs4_stateid *stateid);
+ extern int nfs4_set_callback_sessionid(struct nfs_client *clp);
+diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+index 17ba6b9..28bc770 100644
+--- a/fs/nfs/client.c
++++ b/fs/nfs/client.c
+@@ -225,7 +225,7 @@ static void nfs4_shutdown_session(struct nfs_client *clp)
+ static void nfs4_destroy_callback(struct nfs_client *clp)
+ {
+ 	if (__test_and_clear_bit(NFS_CS_CALLBACK, &clp->cl_res_state))
+-		nfs_callback_down(clp->cl_mvops->minor_version);
++		nfs_callback_down(clp->cl_mvops->minor_version, &init_net);
+ }
+ 
+ static void nfs4_shutdown_client(struct nfs_client *clp)
 
