@@ -1,97 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab2GCBo4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 21:44:56 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:32793 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752921Ab2GCBoy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 21:44:54 -0400
-Date: Tue, 3 Jul 2012 11:44:43 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eliad Peller <eliad@wizery.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: linux-next: manual merge of the net-next tree with the wireless
- tree
-Message-Id: <20120703114443.26e03246debd0652e8d1e92b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__3_Jul_2012_11_44_43_+1000_t3tlV20DXxg=t5iF"
+	id S933045Ab2GCBtv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 21:49:51 -0400
+Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:59559 "EHLO
+	na3sys009aog133.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755898Ab2GCBtu convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 21:49:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FF24B59.1060508@wwwdotorg.org>
+References: <1340879846-12900-1-git-send-email-pgaikwad@nvidia.com>
+ <1340879846-12900-5-git-send-email-pgaikwad@nvidia.com> <20120628182759.GA28424@gmail.com>
+ <4FED688E.9090408@nvidia.com> <CAJOA=zMt-HWKrgQ-pD-wH0s_Nao5sJA13+ESJSBkHQ_3OBurtg@mail.gmail.com>
+ <4FF24B59.1060508@wwwdotorg.org>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Mon, 2 Jul 2012 18:49:27 -0700
+Message-ID: <CAJOA=zMEb49YOrz2ZdSL31tHCSROF3J6Gz4ZHYeik82RnWVfLg@mail.gmail.com>
+Subject: Re: [PATCH 4/6] ARM: tegra: Add clk_tegra structure and helper functions
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__3_Jul_2012_11_44_43_+1000_t3tlV20DXxg=t5iF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jul 2, 2012 at 6:31 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 07/02/2012 06:09 PM, Turquette, Mike wrote:
+>> On Fri, Jun 29, 2012 at 1:34 AM, Prashant Gaikwad <pgaikwad@nvidia.com> wrote:
+>>> On Thursday 28 June 2012 11:58 PM, Mike Turquette wrote:
+>>>> We had some discussions in the past on your clock reset and external
+>>>> line request operations which you've had to put into struct clk_tegra.
+>>>>
+>>>> Do you need to expose those ops to code in drivers/*?  I consider that a
+>>>> reasonable litmus test to start considering if something should be moved
+>>>> into the generic clk.h api.
+>>>
+>>>
+>>> Yes, we need these ops in drivers. Peter has sent a patch proposing to move
+>>> these ops to generic clk.
+>>>
+>>> In addition, we also need mechanism/ops to change rate and parent from
+>>> clk_ops implementation. There was some discussion but I do not know the
+>>> latest status.
+>>>
+>>
+>> Hi Prashant,
+>>
+>> OK, that is good to know.  I haven't forgotten about this topic.  I'm
+>> still trying to think of the best way to expose less-common operations
+>> to drivers...
+>>
+>> Based on Stephen's feedback in patch 0 I'll be waiting for another
+>> version of this series before taking into clk-next.
+>
+> Oh, does this series depend on stuff in clk-next? I was intending to
+> take it through the Tegra tree, since it definitely depends on (in
+> complex ways through context if nothing else due to to large
+> split/rename patches) a bunch of commits in Tegra's for-3.6/common-clk
+> branch.
 
-Hi all,
+Oops.  I just completely zoned out and went into "clk-next maintenance
+mode".  Yeah you had already mentioned that this was for the Tegra
+tree.
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/mac80211/mlme.c between commit 0030bc586591 ("mac80211: destroy
-assoc_data correctly if assoc fails") from the wireless tree and commit
-bdcbd8e0e3ff ("mac80211: clean up debugging") from the net-next tree.
+Nothing to see here, move along!
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc net/mac80211/mlme.c
-index 0db5d34,e6fe84a..0000000
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@@ -2170,17 -2148,19 +2148,17 @@@ ieee80211_rx_mgmt_assoc_resp(struct iee
-  	*bss =3D assoc_data->bss;
- =20
-  	if (status_code !=3D WLAN_STATUS_SUCCESS) {
-- 		printk(KERN_DEBUG "%s: %pM denied association (code=3D%d)\n",
-- 		       sdata->name, mgmt->sa, status_code);
-+ 		sdata_info(sdata, "%pM denied association (code=3D%d)\n",
-+ 			   mgmt->sa, status_code);
-  		ieee80211_destroy_assoc_data(sdata, false);
-  	} else {
- -		sdata_info(sdata, "associated\n");
- -
-  		if (!ieee80211_assoc_success(sdata, *bss, mgmt, len)) {
-  			/* oops -- internal error -- send timeout for now */
- -			ieee80211_destroy_assoc_data(sdata, true);
- -			sta_info_destroy_addr(sdata, mgmt->bssid);
- +			ieee80211_destroy_assoc_data(sdata, false);
-  			cfg80211_put_bss(*bss);
-  			return RX_MGMT_CFG80211_ASSOC_TIMEOUT;
-  		}
-- 		printk(KERN_DEBUG "%s: associated\n", sdata->name);
-++		sdata_info(sdata, "associated\n");
- =20
-  		/*
-  		 * destroy assoc_data afterwards, as otherwise an idle
-
---Signature=_Tue__3_Jul_2012_11_44_43_+1000_t3tlV20DXxg=t5iF
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP8k6LAAoJEECxmPOUX5FEzd4QAJ62Dn3pILRBP5uC/07tPQTu
-p/NNiwmawJ7TD4yFVYHPe7iMOYQjIG33aRbKwq5hyNguARG9dCURQUClqqWBoHln
-9c9NdiLdsieyB906w3V4vZDtXaVwqDsLHCUlbfMXSn8KWFanjeGGrCsJB2PtgFKh
-D4UQQJaCXieQIkzAieL3sYV5midiX9+fpaU0eBQjjBrclehgTCw9QRFBlNvi9wov
-uSrMACyiChTWzmG25bGRCTBgLKv+5eW27BRDTYiD3bEeDufZA4xz1ED2MRymAcnP
-0zfl2MHTYLKdCqOcD1Nkml0PHLpLUMdsui5gykkuat2KqENlLUEn75Iyh7qjmyjl
-YbVg58vSN0Vl8+SKR3S8cuEb6ztxpsy1AvEHqRgejcVVkVi7vpoAYyUuYVZNB9Sr
-jiSbGVD7HunNQo+PKPAOGtschTpHjEo9BuuIvd8dfFtXDEkGTtEUMCzWXJcERyyd
-gGSUEoSCt5AXAEBPIGdCxh7atlsmEhXRgq53A3yejIZ6zGz6/y6ySnwYl/IySFex
-Zx8CoDeNeO2UUhmelGzyjApdUP5Kl96izQgFxUCcHFGYTosWz/hEYSi5NQHg7YEX
-h0qvU0g4B6KU8nMwP7jnN0Z4866i86q1Bzqcr/RK5RKKAv2mbIVIURRXvMFmO26L
-OuxBU3RhCZ+q7ZbK9IcB
-=nWND
------END PGP SIGNATURE-----
-
---Signature=_Tue__3_Jul_2012_11_44_43_+1000_t3tlV20DXxg=t5iF--
+Regards,
+Mike
