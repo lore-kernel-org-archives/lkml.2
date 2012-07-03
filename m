@@ -1,89 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932700Ab2GCSbw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 14:31:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23196 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756343Ab2GCSbv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 14:31:51 -0400
-Date: Tue, 3 Jul 2012 15:31:36 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 1/4] mm: introduce compaction and migration for virtio
- ballooned pages
-Message-ID: <20120703183135.GE1727@t510.redhat.com>
-References: <cover.1340916058.git.aquini@redhat.com>
- <d0f33a6492501a0d420abbf184f9b956cff3e3fc.1340916058.git.aquini@redhat.com>
- <4FED3DDB.1000903@kernel.org>
- <20120629173653.GA1774@t510.redhat.com>
- <20120629220333.GA2079@barrios>
- <20120630013447.GA1545@x61.redhat.com>
- <4FF0DEE2.5080200@kernel.org>
+	id S933007Ab2GCScp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 14:32:45 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:44529 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755159Ab2GCScn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 14:32:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF0DEE2.5080200@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1341329631.2164.15.camel@joe2Laptop>
+References: <1341264199.10162.2.camel@joe2Laptop>
+	<1341310000-4082-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1341310000-4082-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1341329631.2164.15.camel@joe2Laptop>
+Date: Tue, 3 Jul 2012 21:32:42 +0300
+Message-ID: <CAHp75VfN4X9fH7NEUag3XYy7kLiEz-jcjhEOdoHMk3if_m_aOg@mail.gmail.com>
+Subject: Re: [RFC][PATCHv2 2/3] lib: printf: append support of '%*p[Mm][FR]'
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, proski@gnu.org,
+        Andrei Emeltchenko <andrei.emeltchenko@intel.com>,
+        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 02, 2012 at 08:36:02AM +0900, Minchan Kim wrote:
-> On 06/30/2012 10:34 AM, Rafael Aquini wrote:
-> 
-> >> void isolate_page_from_balloonlist(struct page* page)
-> >> > {
-> >> > 	page->mapping->a_ops->invalidatepage(page, 0);
-> >> > }
-> >> > 
-> >> > 	if (is_balloon_page(page) && (page_count(page) == 2)) {
-> >> > 		isolate_page_from_balloonlist(page);
-> >> > 	}
-> >> > 
-> > Humm, my feelings on your approach here: just an unecessary indirection that
-> > doesn't bring the desired code readability improvement.
-> > If the header comment statement on balloon_mapping->a_ops is not clear enough 
-> > on those methods usage for ballooned pages:
-> > 
-> > ..... 
-> > /*
-> >  * Balloon pages special page->mapping.
-> >  * users must properly allocate and initialize an instance of balloon_mapping,
-> >  * and set it as the page->mapping for balloon enlisted page instances.
-> >  *
-> >  * address_space_operations necessary methods for ballooned pages:
-> >  *   .migratepage    - used to perform balloon's page migration (as is)
-> >  *   .invalidatepage - used to isolate a page from balloon's page list
-> >  *   .freepage       - used to reinsert an isolated page to balloon's page list
-> >  */
-> > struct address_space *balloon_mapping;
-> > EXPORT_SYMBOL_GPL(balloon_mapping);
-> > .....
-> > 
-> > I can add an extra commentary, to recollect folks about that usage, next to the
-> > points where those callbacks are used at isolate_balloon_page() &
-> > putback_balloon_page(). What do you think?
-> > 
-> > 
-> 
-> 
-> I am not strongly against you.
-> It trivial nitpick must not prevent your great work. :)
-> 
-> Thanks!
-> 
->
-Nah, I'm the one who should be thanking everyone else here. :)
+On Tue, Jul 3, 2012 at 6:33 PM, Joe Perches <joe@perches.com> wrote:
+> On Tue, 2012-07-03 at 13:06 +0300, Andy Shevchenko wrote:
+>> There are many places in the kernel where the drivers print small buffers as a
+>> hex string. This patch adds a support of the variable width buffer to print it
+>> as a hex string with a delimiter. The idea came from Pavel Roskin here:
+>> http://www.digipedia.pl/usenet/thread/18835/17449/
+>>
+>> Sample output of
+>>       pr_info("buf[%d:%d] %*pM\n", from, len, len, &buf[from]);
+>> could be look like this:
+>>       [ 0.726130] buf[51:8] e8:16:b6:ef:e3:74:45:6e
+>>       [ 0.750736] buf[59:15] 31:81:b8:3f:35:49:06:ae:df:32:06:05:4a:af:55
+>>       [ 0.757602] buf[17:5] ac:16:d5:2c:ef
 
-After a second thought I decided to follow your suggestion on this one as well.
-Soon, I'll be posting the re-spin
+> It might be more sensible to use new, distinct
+> "%*pH" and "%*ph" functions and not touch the
+> mac address function at all.  Will anyone ever
+> really want to emit the buffer in reverse?
+> I don't think so.
+Yeah, probably it's only the case for the Bluetooth addresses.
 
-Thanks Minchan!
+> Perhaps when using a hex_string_buffer func the
+> separator should be a space/no-space with %*pHh.
+What I learned from today's linux-next is the most used separators are
+' ' (space), '' (nothing), ':' and '-'. We have dozens of the cases
+for first three. The '-' support could not be implemented
+nevertheless.
+So, might be %*pHh[CDS] C for 'colon', S for 'space', D for 'dash' looks better.
+'Hh' for capital/small letters than?
 
-Rafael
+> You could extend the max to 128 or larger now.
+I don't think it is really needed. Most of the current cases usually
+print not more than ~30bytes (in average) per time. And I couldn't
+imagine good looking printing for long lines anyway.
+
+
+-- 
+With Best Regards,
+Andy Shevchenko
