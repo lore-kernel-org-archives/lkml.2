@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab2GCR5W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 13:57:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35033 "EHLO mx2.suse.de"
+	id S1756274Ab2GCR60 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 13:58:26 -0400
+Received: from csmtp3.one.com ([91.198.169.23]:47307 "EHLO csmtp3.one.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754906Ab2GCR5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 13:57:21 -0400
-Date: Tue, 3 Jul 2012 19:57:15 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Calvin Walton <calvin.walton@kepstin.ca>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, shemminger@vyatta.com
-Subject: Re: long boot delays caused by 070ad7e7 floppy change
-In-Reply-To: <CA+55aFzOD33eWj0FQuZ7RWmF-yYwaeNB-9J-YY+mX4mwP7VXuA@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1207031953570.17304@pobox.suse.cz>
-References: <20120702224648.GA20361@tassilo.jf.intel.com> <CA+55aFwre6s=orjUaNKJA=51Fc1mxu_XGX80Bex4Sn-=mWPx5Q@mail.gmail.com> <1341323230.3292.10.camel@nayuki.kepstin.ca> <CA+55aFyvzz3Lp9zeA6X+QMan0iZFWq_0Xd+ff_trnP1tpn2iJQ@mail.gmail.com>
- <1341337257.2406.1.camel@nayuki.kepstin.ca> <CA+55aFzOD33eWj0FQuZ7RWmF-yYwaeNB-9J-YY+mX4mwP7VXuA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754906Ab2GCR6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 13:58:25 -0400
+From: "Henrik Rydberg" <rydberg@bitmath.se>
+Date: Tue, 3 Jul 2012 19:58:42 +0200
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, chatty@enac.fr,
+        benjamin.tissoires@gmail.com, peter.hutterer@who-t.net,
+        chasedouglas@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: MT - Include win8 support
+Message-ID: <20120703175842.GA472@polaris.bitmath.org>
+References: <1340785690-13652-1-git-send-email-rydberg@euromail.se>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340785690-13652-1-git-send-email-rydberg@euromail.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Jul 2012, Linus Torvalds wrote:
+On Wed, Jun 27, 2012 at 10:28:10AM +0200, Henrik Rydberg wrote:
+> The newly released HID protocol for win8 multitouch devices is capable
+> of transmitting more information about each touch. In particular, it
+> includes details useful for touch alignment. This patch completes the
+> MT protocol with the ABS_MT_TOOL_X/Y events, and documents how to map
+> win8 devices.
+> 
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+> Hi all,
+> 
+> Here is the patch following the RFC on win8 MT support. An ascii-art
+> version of the figure has been included, Peter's orientation text is
+> there, and the usage section has been extended with more semantics and
+> mappings. Hopefully the similarities and differences between the
+> models are clearer now. Also, the usage of azimuth has been left out,
+> awaiting an actual device using it.
 
-> > Ok, here's the dmesg output that I get:
-> >
-> > [    0.714316] floppy0: lock_fdc: -1 (out of 8)
-> 
-> Ok, thanks. That -1 definitely explains the long delay. It's using
-> "drive=-1" because it has no actual drive number, just the
-> *controller* number.
-> 
-> And the backtrace shows what's going on too: it's the
-> 
->   user_reset_fdc(-1, FD_RESET_ALWAYS, false);
-> 
-> that passes in -1 as the floppy controller number.
-> 
-> Ugh.
-> 
-> It looks like the code meant for -1 to mean "regular delay"
-> (current_reqD), and -2 to mean MAXTIMEOUT. For some reason the "-1"
-> logic has gotten screwed.
+I would like to have a couple of ACK's on this patch, if
+possible. Please? :-)
 
-I am still trying to understand the exact situation.
-
-Andi, do I understand you correctly that even if you revert 070ad7e793dc 
-on top of current Linus' tree, you are still seeing the 20 second delay 
-inside the initcall?
-
--- 
-Jiri Kosina
-SUSE Labs
+Thanks,
+Henrik
