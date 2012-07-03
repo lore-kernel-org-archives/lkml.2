@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab2GCJXh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 05:23:37 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42032 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755866Ab2GCJXe (ORCPT
+	id S1755726Ab2GCJ0c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 05:26:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57216 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751793Ab2GCJ0b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 05:23:34 -0400
-Date: Tue, 3 Jul 2012 11:23:25 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <johnstul@us.ibm.com>, Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [RFC] Potential fix for leapsecond caused futex
- related load spikes
-Message-ID: <20120703092325.GA18121@localhost.localdomain>
-References: <4FF06CAB.9020800@redhat.com>
- <4FF08154.3050407@redhat.com>
- <4FF088B9.1000308@us.ibm.com>
- <20120702101606.GA16008@localhost.localdomain>
- <20120702200821.GA31197@swielinga.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120702200821.GA31197@swielinga.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 3 Jul 2012 05:26:31 -0400
+Message-ID: <1341307568.23484.54.camel@twins>
+Subject: Re: [PATCH -v2 1/2] x86, microcode: Sanitize per-cpu microcode
+ reloading interface
+From: Peter Zijlstra <peterz@infradead.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: X86-ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Stephane Eranian <eranian@google.com>
+Date: Tue, 03 Jul 2012 11:26:08 +0200
+In-Reply-To: <20120703043717.GB8860@aftab.osrc.amd.com>
+References: <1340280437-7718-1-git-send-email-bp@amd64.org>
+	 <1340280437-7718-2-git-send-email-bp@amd64.org>
+	 <1340380019.18025.82.camel@twins>
+	 <20120626194043.GB28495@aftab.osrc.amd.com>
+	 <1340747178.21991.105.camel@twins>
+	 <20120703043717.GB8860@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 02, 2012 at 10:08:21PM +0200, Sytse Wielinga wrote:
-> Hi Richard,
-> 
-> On Mon, Jul 02, 2012 at 12:16:08PM +0200, Richard Cochran wrote:
-> > I know you didn't like my (originally Michael Hack's) idea of keeping
-> > time in TAI, but wouldn't changing to an internal, continuous time
-> > scale (not necessary TAI) solve these sorts of timer issues?
-> 
-> Doesn't that actually make the problem of leap seconds worse, as you'd have to
-> start tabulating past leap seconds in the kernel?
+On Tue, 2012-07-03 at 06:37 +0200, Borislav Petkov wrote:
+> In thinking about this a bit more, perf callback is only run from the
+> reload_store interface but we don't run it on module init time. 
 
-No, I am not suggesting to do that.
- 
-> Even worse, *future* leap seconds would need to be tracked and after they've
-> happened stored on disk, and loaded back into the kernel after booting, which
-> seems like a mess.  The trouble here is that leap seconds are only announced a
-> short while before they happen, so there's no way to bake leap seconds into
-> the software; they need to be dynamically added by ntpd.
-> 
-> Or is there somehow some way to avoid that?
+@@ -557,7 +560,8 @@ static int __init microcode_init(void)
+        mutex_lock(&microcode_mutex);
 
-I think the established practice of announcing the event by network is
-the only sane way of handling this issue. The list of TAI-UTC offsets
-belongs to what David Mills has called our "institutional memory", and
-this is a user space issue. The kernel's job is to just live in the
-moment and provide the right time for *now*.
+        error = subsys_interface_register(&mc_cpu_interface);
+-
++       if (!error)
++               perf_check_microcode();
+        mutex_unlock(&microcode_mutex);
+        put_online_cpus();
 
-> > There have been a number of clock/timer/leap bugs over the last
-> > years. Some of these might have been avoided by using a continuous
-> > scale, since no special timer actions would be needed during a leap
-> > second.
-> > 
-> > The run time cost is low, just one additional test and addition when
-> > reading the time. It might be worth it for the peace of mind when
-> > the next leap second rolls around.
-> 
-> I don't know if reworking the system that's been in place for ages is a good
-> way to give us 'peace of mind'.  Then again, I love to be enlightened :-)
 
-There have been lockups and other kernel issues due to leap second
-bugs. That is a fact. Does that give you peace of mind?
-
-My own computers were off for the last leap second. But some people
-cannot afford to do this. I suggest that changing the code so that no
-special actions occur at a leap second would be more reliable than
-having rarely tested code paths just for leap second handling.
-
-Thanks,
-Richard
+I thought that was init time?
