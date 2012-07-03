@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756481Ab2GCSL4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 14:11:56 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:2005 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755867Ab2GCSLz (ORCPT
+	id S932720Ab2GCSMr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 14:12:47 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:61616 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932104Ab2GCSMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 14:11:55 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6761"; a="207164191"
-Message-ID: <4FF335E3.5040509@codeaurora.org>
-Date: Tue, 03 Jul 2012 11:11:47 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 3 Jul 2012 14:12:10 -0400
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        =?UTF-8?B?U2p1ciBCcsOmbmRlbGFuZA==?= 
-	<sjur.brandeland@stericsson.com>,
-        Loic Pallardy <loic.pallardy@stericsson.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        Michal Simek <monstr@monstr.eu>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Suman Anna <s-anna@ti.com>, Mark Grosen <mgrosen@ti.com>
-Subject: Re: [PATCH] remoteproc: remove the get_by_name/put API
-References: <1341259857-17382-1-git-send-email-ohad@wizery.com>
-In-Reply-To: <1341259857-17382-1-git-send-email-ohad@wizery.com>
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A10AFDE@SHSMSX101.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A109B17@SHSMSX101.ccr.corp.intel.com>
+ <CAPXgP10pQWHYmi1egdArnbnmq=ATDbVo3GBG-=vHskrgkCH1xA@mail.gmail.com> <27240C0AC20F114CBF8149A2696CBE4A10AFDE@SHSMSX101.ccr.corp.intel.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Tue, 3 Jul 2012 20:11:48 +0200
+Message-ID: <CAPXgP10JJ3c3T7V5AV-tQyroCe01HgQUZ0F5LsoOwFTgZz5M9w@mail.gmail.com>
+Subject: Re: [PATCH] printk: replacing the raw_spin_lock/unlock with raw_spin_lock_irqsave/irqrestore
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/12 13:10, Ohad Ben-Cohen wrote:
-> Remove rproc_get_by_name() and rproc_put(), and the associated
-> remoteproc infrastructure that supports it (i.e. klist and friends),
-> because:
+On Tue, Jul 3, 2012 at 12:01 AM, Liu, Chuansheng
+<chuansheng.liu@intel.com> wrote:
+> Thanks your pointing out. New patch as below:
 >
-> 1. No one uses them
-> 2. Using them is highly discouraged, and any potential user
->    will be deeply scrutinized and encouraged to move.
+> From: liu chuansheng <chuansheng.liu@intel.com>
+> Subject: [PATCH] printk: replacing the raw_spin_lock/unlock with raw_spin_lock/unlock_irq
 >
-> If a user, that absolutely can't live with the direct boot/shutdown
-> model, does show up one day, then bringing this functionality back
-> is going to be trivial.
+> In function devkmsg_read/writev/llseek/poll/open()..., the function
+> raw_spin_lock/unlock is used, there is potential deadlock case happening.
+> CPU1: thread1 doing the cat /dev/kmsg:
+>         raw_spin_lock(&logbuf_lock);
+>         while (user->seq == log_next_seq) {
+> when thread1 run here, at this time one interrupt is coming on CPU1 and running
+> based on this thread,if the interrupt handle called the printk which need the
+> logbuf_lock spin also, it will cause deadlock.
 >
-> At this point though, keeping this functionality around is way too
-> much of a maintenance burden.
+> So we should use raw_spin_lock/unlock_irq here.
 >
+> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
 
-Acked-by: Stephen Boyd <sboyd@codeaurora.org>
+Acked-By: Kay Sievers <kay@vrfy.org>
 
-> Cc: Sjur Brændeland <sjur.brandeland@stericsson.com>
-> Cc: Loic Pallardy <loic.pallardy@stericsson.com>
-> Cc: Ludovic BARRE <ludovic.barre@stericsson.com>
-> Cc: Michal Simek <monstr@monstr.eu>
-> Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>
-> Cc: Suman Anna <s-anna@ti.com>
-> Cc: Mark Grosen <mgrosen@ti.com>
-> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
->
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Kay
