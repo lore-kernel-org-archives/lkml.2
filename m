@@ -1,112 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933400Ab2GCTWh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 15:22:37 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:48999 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932792Ab2GCTWf (ORCPT
+	id S1757135Ab2GCTZM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 15:25:12 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53819 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751256Ab2GCTZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 15:22:35 -0400
+	Tue, 3 Jul 2012 15:25:10 -0400
+Date: Tue, 3 Jul 2012 20:25:08 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: lrg@ti.com, rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        arnd@arndb.de, linus.walleij@linaro.org, lee.jones@linaro.org,
+        swarren@wwwdotorg.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 3/3] regulator: dt: add policy to have property
+ "regulator-compatible"
+Message-ID: <20120703192508.GG29030@opensource.wolfsonmicro.com>
+References: <1340194987-23654-1-git-send-email-ldewangan@nvidia.com>
+ <1340194987-23654-4-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <1341342768-22221-1-git-send-email-geert@linux-m68k.org>
-References: <1341342768-22221-1-git-send-email-geert@linux-m68k.org>
-Date: Tue, 3 Jul 2012 21:22:31 +0200
-X-Google-Sender-Auth: fUVvWKlqmIYjciVHxbxRuV565ek
-Message-ID: <CAMuHMdUcOrCwtj9iUQCu543zJhZTV_TscGfKPxfWG6w-aAoBGA@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.5-rc5
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vK3aNhhOnFYnG5nq"
+Content-Disposition: inline
+In-Reply-To: <1340194987-23654-4-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 3, 2012 at 9:12 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.5-rc5 to v3.5-rc4[3], the summaries are:
->   - build errors: +20/-11
 
-20 regressions:
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error:
-'FSL_DIU_PORT_DVI' undeclared (first use in this function):  => 189:9
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error: 'enum
-fsl_diu_monitor_port' declared inside parameter list [-Werror]:  =>
-70:9, 84:9, 88:36
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error: 'return' with
-a value, in function returning void [-Werror]:  => 189:2
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error: function
-declaration isn't a prototype [-Werror=strict-prototypes]:  => 69:5,
-88:6, 83:6, 187:1
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error: its scope is
-only this definition or declaration, which is probably not what you
-want [-Werror]:  => 70:9
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error: parameter 1
-('port') has incomplete type:  => 187:54, 83:56, 88:57, 69:56
-  + arch/powerpc/platforms/512x/mpc512x_shared.c: error: return type
-is an incomplete type:  => 187:1
-  + drivers/net/ethernet/3com/3c515.c: error: implicit declaration of
-function 'isa_bus_to_virt' [-Werror=implicit-function-declaration]:
-=> 1374:12
-  + drivers/net/ethernet/3com/3c515.c: error: implicit declaration of
-function 'isa_virt_to_bus' [-Werror=implicit-function-declaration]:
-=> 824:9
-  + drivers/net/ethernet/amd/ni65.c: error: implicit declaration of
-function 'isa_bus_to_virt' [-Werror=implicit-function-declaration]:
-=> 756:4
-  + drivers/net/ethernet/amd/ni65.c: error: implicit declaration of
-function 'isa_virt_to_bus' [-Werror=implicit-function-declaration]:
-=> 586:2
+--vK3aNhhOnFYnG5nq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-powerpc-randconfig
+On Wed, Jun 20, 2012 at 05:53:07PM +0530, Laxman Dewangan wrote:
+> Add the policy for regulator DT such that if device have multiple
+> regulator and its binding contains a child node that describes each
+> regulator then each regulator child node must have the property
+> "regulator-compatible" which matches with regulator name of their
+> hardware counterparts.
 
-  + error: idt77252.c: relocation truncated to fit: R_PPC64_REL24
-against symbol `.__raw_spin_lock_init' defined in .text section in
-lib/built-in.o:  => (.text+0x1ff8c5c)
-  + error: idt77252.c: relocation truncated to fit: R_PPC64_REL24
-against symbol `.del_timer' defined in .text section in
-kernel/built-in.o:  => (.text+0x1ff806c)
-  + error: idt77252.c: relocation truncated to fit: R_PPC64_REL24
-against symbol `.mutex_unlock' defined in .sched.text section in
-kernel/built-in.o:  => (.text+0x1ff8eec), (.text+0x1ff8c14),
-(.text+0x1ff8e80), (.text+0x1ff8e08), (.text+0x1ff8f30)
-  + error: solos-pci.c: relocation truncated to fit: R_PPC64_REL24
-against symbol `._raw_spin_lock_irqsave' defined in .spinlock.text
-section in kernel/built-in.o:  => (.text+0x1ff954c)
-  + error: solos-pci.c: relocation truncated to fit: R_PPC64_REL24
-against symbol `._raw_spin_unlock' defined in .spinlock.text section
-in kernel/built-in.o:  => (.text+0x1ff970c)
-  + error: solos-pci.c: relocation truncated to fit: R_PPC64_REL24
-against symbol `.iowrite32' defined in .text section in
-lib/built-in.o:  => (.text+0x1ff98e4)
+I tried to apply this but both git and patch are upset with the patch at
+the line:
 
-powerpc-allyesconfig
+diff --git a/Documentation/devicetree/bindings/regulator/tps6586x.txt b/Documentation/devicetree/bindings/regulator/tps6586x.txt
 
-  + error: vsprintf.c: relocation truncated to fit: R_AVR32_9UW_PCREL
-against `.text'+b28:  => (.text+0x92a)
+for reasons I'm not immediately able to discern.  Can you please look
+into this?
 
-avr32-allnoconfig
+--vK3aNhhOnFYnG5nq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-  + include/linux/sh_pfc.h: error: field 'chip' has incomplete type:  => 121:19
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-se7721_defconfig
+iQIcBAEBAgAGBQJP80cDAAoJEBus8iNuMP3dujgQAILrpi7J3IzRbtEvzHCOtt+l
+Lcu13Wxy0etDIqaigDm3L/UQh6zKdV7IzuCL7CAg3bn2KtxYUBlfSiOIHLzoK+m6
+wEyxIDe66oQ2KK7CpZAf/CJA7YrBuY+oxcKy3VQoDOFUHWQ/hAIGNkEMZuvrV/m1
+F6NFNujeh1allh2uQDXlDYqa6W1D7ptPGWOLxU89E9PD7aaYhovNa1EULKhQLyQO
+rrUY/0GE5tJNhDFtQQdFrxL0eVapyYTiMu+bXDfK2/cr//O9Uq0geolCgQAA0ldF
+kBo2BhrsX6+9/qseQig4QSwYe78p8pWWFFdO35TH6gFYwQ4BXIoKsJ49KsDyt9Nq
+AtaugnC5bJEKhpYn7aGniu60j/S0scoECQf24bz+dK1EQQsgByc3kAqPnEYvAZ86
+S0LV9XxkuaNiPbmGQy67EPn4glumM4rsujDcBcjAdnSNTIbMO9QCm2p67/x3XT1W
+WF2btN1Uy2M41PLxRazkjAyzSoD08rMDHeTmUCMLe6YonopJTpaTK9Jmgy3tk4r4
+9Iq4EDgfGTeUNoV3px/kfxisg4zFq22NrOmcP/hwh0mpIz4Nwhv8oHqYe8mcR5Vz
+SUVqCIStaPzpILajPGvJVF+BmLdURVdmbnU6j3zy6+8gQbn1EykLxdjX+678m+5C
+R5LLfCpoD8y+XikUFr3y
+=LvKC
+-----END PGP SIGNATURE-----
 
-  + kernel/sys.c: error: 'mmap_min_addr' undeclared (first use in this
-function): 1864:34 => 1864:37, 1864:34
-
-sh-randconfig, sh-allyesconfig, sh-allmodconfig
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/5202/ (all 116 configs)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+--vK3aNhhOnFYnG5nq--
