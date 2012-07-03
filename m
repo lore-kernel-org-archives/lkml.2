@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932715Ab2GCL6s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 07:58:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20967 "EHLO mga09.intel.com"
+	id S932875Ab2GCL6w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 07:58:52 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:59166 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932548Ab2GCL6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 07:58:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="166276715"
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Theodore Tso <tytso@mit.edu>
-Cc: Jan Kara <jack@suse.cz>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>
-Subject: [PATCHv3 4/4] ext4: weed out ext4_write_super
-Date: Tue,  3 Jul 2012 15:00:10 +0300
-Message-Id: <1341316810-22598-5-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1341316810-22598-1-git-send-email-dedekind1@gmail.com>
-References: <1341316810-22598-1-git-send-email-dedekind1@gmail.com>
+	id S932548Ab2GCL6u convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 07:58:50 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] regulator: enable module build for lp872x driver
+Thread-Topic: [PATCH] regulator: enable module build for lp872x driver
+Thread-Index: Ac1Yuc6q72LFCC6IR025YHgmWoxgJAAAijwAABV3TLA=
+Date: Tue, 3 Jul 2012 11:58:43 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998FCD6E@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998FCCCF@DQHE02.ent.ti.com>
+ <20120703093419.GB29030@opensource.wolfsonmicro.com>
+In-Reply-To: <20120703093419.GB29030@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.108.34]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+> 
+> On Tue, Jul 03, 2012 at 01:18:53AM +0000, Kim, Milo wrote:
+> >
+> > Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> 
+> No, this won't build.  As we went through when we had to fix that only
+> the other week...
 
-We do not depend on VFS's '->write_super()' anymore and do not need the
-'s_dirt' flag anymore. This patch weeds out 'ext4_write_super()' and the
-'s_dirt' usage in VFS.
+Oh, sorry for bothering you again.
+Please correct me if I miss something.
+My understanding is boolean bulid configuration is temporary because the devm_gpio_request_one() is not exported.
+But this gpio function had been patched in the linux-next tree and now we can use it in the module.
+So that's why I've sent this patch again.
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
- fs/ext4/super.c |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
-
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 9b26ba0..546c6ed 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -73,7 +73,6 @@ static const char *ext4_decode_error(struct super_block *sb, int errno,
- static int ext4_remount(struct super_block *sb, int *flags, char *data);
- static int ext4_statfs(struct dentry *dentry, struct kstatfs *buf);
- static int ext4_unfreeze(struct super_block *sb);
--static void ext4_write_super(struct super_block *sb);
- static int ext4_freeze(struct super_block *sb);
- static struct dentry *ext4_mount(struct file_system_type *fs_type, int flags,
- 		       const char *dev_name, void *data);
-@@ -1193,7 +1192,6 @@ static const struct super_operations ext4_nojournal_sops = {
- 	.dirty_inode	= ext4_dirty_inode,
- 	.drop_inode	= ext4_drop_inode,
- 	.evict_inode	= ext4_evict_inode,
--	.write_super	= ext4_write_super,
- 	.put_super	= ext4_put_super,
- 	.statfs		= ext4_statfs,
- 	.remount_fs	= ext4_remount,
-@@ -4202,7 +4200,6 @@ int ext4_commit_super(struct super_block *sb, int sync)
- 	es->s_free_inodes_count =
- 		cpu_to_le32(percpu_counter_sum_positive(
- 				&EXT4_SB(sb)->s_freeinodes_counter));
--	sb->s_dirt = 0;
- 	BUFFER_TRACE(sbh, "marking dirty");
- 	ext4_superblock_csum_set(sb, es);
- 	mark_buffer_dirty(sbh);
-@@ -4309,13 +4306,6 @@ int ext4_force_commit(struct super_block *sb)
- 	return ret;
- }
- 
--static void ext4_write_super(struct super_block *sb)
--{
--	lock_super(sb);
--	ext4_commit_super(sb, 1);
--	unlock_super(sb);
--}
--
- static int ext4_sync_fs(struct super_block *sb, int wait)
- {
- 	int ret = 0;
--- 
-1.7.7.6
-
+Thanks & BR
+Milo -
