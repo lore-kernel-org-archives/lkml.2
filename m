@@ -1,173 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933157Ab2GCERX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 00:17:23 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:35816 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932088Ab2GCERU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 00:17:20 -0400
+	id S1752042Ab2GCEez (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 00:34:55 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40291 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751672Ab2GCEex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 00:34:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="172786939"
+Date: Tue, 3 Jul 2012 12:34:50 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Prasad Koya <prasad.koya@gmail.com>
+Cc: jack@suse.cz, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sync blocked for long time
+Message-ID: <20120703043450.GA8388@localhost>
+References: <CAGXD9OfLmSHzikhXxVi7f2wHBVO4det1KHReXc70YkEgYdQTLg@mail.gmail.com>
+ <20120703034915.GA7872@localhost>
+ <CAGXD9Oc_LD51O2ybkPi4DrO8dyMgG875xH2fUkeNAy2PHRSG0w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1338795894-6292-1-git-send-email-jiang.liu@huawei.com>
-References: <1338795894-6292-1-git-send-email-jiang.liu@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 2 Jul 2012 22:16:58 -0600
-Message-ID: <CAErSpo7NiCsuM+UxveZbYxNsCiStMH5SLZ8EdFzJ7EduB306OQ@mail.gmail.com>
-Subject: Re: [Resend with Ack][PATCH v1] PCI: allow acpiphp to handle PCIe
- ports without native PCIe hotplug capability
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Don Dutile <ddutile@redhat.com>, Yijing Wang <wangyijing@huawei.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXD9Oc_LD51O2ybkPi4DrO8dyMgG875xH2fUkeNAy2PHRSG0w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 4, 2012 at 1:44 AM, Jiang Liu <jiang.liu@huawei.com> wrote:
-> Commit 0d52f54e2ef64c189dedc332e680b2eb4a34590a (PCI / ACPI: Make acpiphp
-> ignore root bridges using PCIe native hotplug) added code that made the
-> acpiphp driver completely ignore PCIe root complexes for which the kernel
-> had been granted control of the native PCIe hotplug feature by the BIOS
-> through _OSC. Later commit 619a5182d1f38a3d629ee48e04fa182ef9170052
-> "PCI hotplug: Always allow acpiphp to handle non-PCIe bridges" relaxed
-> the constraints to allow acpiphp driver handle non-PCIe bridges under
-> such a complex. The constraint needs to be relaxed further to allow
-> acpiphp driver to hanlde PCIe ports without native PCIe hotplug capability.
->
-> Some MR-IOV switch chipsets, such PLX8696, support multiple virtual PCIe
-> switches and may migrate downstream ports among virtual switches.
-> To migrate a downstream port from the source virtual switch to the target,
-> the port needs to be hot-removed from the source and hot-added into the
-> target. pciehp driver can't be used here because there's no slots within
-> the virtual PCIe switch. So acpiphp driver is used to support downstream
-> port migration. A typical configuration is as below:
-> [Root w/o native PCIe HP]
->         [Upstream port of vswitch w/o native PCIe HP]
->                 [Downstream port of vswitch w/ native PCIe HP]
->                         [PCIe enpoint]
->
-> Here acpiphp driver will be used to handle root ports and upstream port
-> in the virtual switch, and pciehp driver will be used to handle downstream
-> ports in the virtual switch.
->
-> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: Jiang Liu <liuj97@gmail.com>
->
-> ---
->  drivers/pci/hotplug/acpiphp_glue.c |   49 ++++++++++++++++++++++++++++-------
->  1 files changed, 39 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-> index 806c44f..4889448 100644
-> --- a/drivers/pci/hotplug/acpiphp_glue.c
-> +++ b/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -115,6 +115,43 @@ static const struct acpi_dock_ops acpiphp_dock_ops = {
->         .handler = handle_hotplug_event_func,
->  };
->
-> +/* Check whether device is managed by native PCIe hotplug driver */
-> +static bool device_is_managed_by_native_pciehp(struct pci_dev *pdev)
-> +{
-> +       int pos;
-> +       u16 reg16;
-> +       u32 reg32;
-> +       acpi_handle tmp;
-> +       struct acpi_pci_root *root;
-> +
-> +       if (!pci_is_pcie(pdev))
-> +               return false;
-> +
-> +       /* Check whether PCIe port supports native PCIe hotplug */
-> +       pos = pci_pcie_cap(pdev);
+On Mon, Jul 02, 2012 at 09:10:45PM -0700, Prasad Koya wrote:
+> Sorry for missing that important info. Its vfat on both USBs. 2.6.32 is our
+> current production kernel and we have hung_task_panic as 1 to detect any
 
-Add "if (!pos) return false;" here and you can drop the "if
-(!pci_is_pcie())" test above.
+To detect the blocked tasks, /proc/sys/kernel/hung_task_warnings
+should be enough. Then you get the warning in dmesg, and can have a
+dmesg monitor script to grep for 'task .* blocked for more than .* seconds'.
 
-> +       pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &reg16);
-> +       if (!(reg16 & PCI_EXP_FLAGS_SLOT))
+> such tasks. While trying to reproduce below issue I ran into bottom one.
+> Both of them seem to be related to syncing dirty buffers to storage.
 
-I think this is unsafe.  Per the PCIe v3.0 spec, sec 7.8.2 on p648,
-the "Slot Implemented" bit is undefined except for Downstream Ports,
-so we're using an undefined bit to decide whether to read
-PCI_EXP_SLTCAP.
+It seems being blocked in __bread_slow() waiting for the READ to complete.
+I can imagine the READ be delayed by the lots of SYNC writes, however
+120 seconds still look way too long..
 
-If the device has a v1 PCIe Capability, it is not required to even
-implement PCI_EXP_SLTCAP, so we could be reading garbage out of an
-unrelated capability.  This is in sec 7.8, p363, of the v1.1 PCIe
-spec.  I think v3.0 of the spec is dangerously incomplete because it
-doesn't include enough information to handle the v1 PCIe Capability
-correctly.
+Thanks,
+Fengguang
 
-There's a fair amount of work to fix this.  I started doing it, but
-decided I didn't have time to complete it.  Here's what I think we
-(and by "we," I'm afraid I mean "you" :)) should do:
-
-  - Add a "u16 pcie_flags" field in struct pci_dev and save the "PCI
-Express Capabilities Register" there in set_pcie_port_type().  All
-fields in that register are read-only, so it should be safe to cache
-it.
-  - Remove pcie_type from struct pci_dev and replace it with a
-pcie_type() inline that extracts it from pcie_flags.
-  - Rework the pcie_cap_has_*() macros in drivers/pci/pci.c to take a
-struct pci_dev * and use pcie_flags instead of type and flags.  This
-will remove the need for callers to read the flags themselves.
-  - Move the pcie_cap_has_*() macros to include/linux/pci_reg.h so
-they can be shared.
-  - Audit all uses of the Link registers (PCI_EXP_LNKCAP,
-PCI_EXP_LNKCTL, PCI_EXP_LNKSTA), Slot registers (PCI_EXP_SLTCAP,
-PCI_EXP_SLTCTL, PCI_EXP_SLTSTA), and Root registers (PCI_EXP_RTCAP,
-PCI_EXP_RTCTL, PCI_EXP_RTSTA) to make sure the register exists, either
-by using pcie_cap_has_*() or some other knowledge of the device.
-
-> +               return false;
-> +       pci_read_config_dword(pdev, pos + PCI_EXP_SLTCAP, &reg32);
-> +       if (!(reg32 & PCI_EXP_SLTCAP_HPC))
-> +               return false;
-> +
-> +       /*
-> +        * Check whether native PCIe hotplug has been enabled for
-> +        * this PCIe hierarchy.
-> +        */
-> +       tmp = acpi_find_root_bridge_handle(pdev);
-> +       if (!tmp)
-> +               return false;
-> +       root = acpi_pci_find_root(tmp);
-> +       if (!root)
-> +               return false;
-> +       if (!(root->osc_control_set & OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
-> +               return false;
-> +
-> +       return true;
-> +}
-> +
->  /* callback routine to register each ACPI PCI slot object */
->  static acpi_status
->  register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
-> @@ -133,16 +170,8 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
->                 return AE_OK;
->
->         pdev = pbus->self;
-> -       if (pdev && pci_is_pcie(pdev)) {
-> -               tmp = acpi_find_root_bridge_handle(pdev);
-> -               if (tmp) {
-> -                       struct acpi_pci_root *root = acpi_pci_find_root(tmp);
-> -
-> -                       if (root && (root->osc_control_set &
-> -                                       OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
-> -                               return AE_OK;
-> -               }
-> -       }
-> +       if (pdev && device_is_managed_by_native_pciehp(pdev))
-> +               return AE_OK;
->
->         acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
->         device = (adr >> 16) & 0xffff;
-> --
-> 1.7.1
->
->
+> <3>[12099840.577044] INFO: task cli_copy:27939 blocked for more than
+> 120 seconds.
+> <3>[12099840.655175] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+> disables this message.
+> <6>[12099840.751981] Cli           D ffff8800036101c0     0 27939  27567
+> 0x00020004
+> <4>[12099840.751988]  ffff8800359a3678 0000000000200082 0000000000000000
+> 0000000000000000
+> <4>[12099840.751995]  ffff8800359a35d8 ffffffff8130e312 ffff8800359a35d8
+> ffff8800359a3fd8
+> <4>[12099840.752002]  ffff88003e93c2c8 000000000000ca08 00000000000101c0
+> 00000000000101c0
+> <4>[12099840.752008] Call Trace:
+> <4>[12099840.752019]  [<ffffffff8130e312>] ? _spin_lock_irq+0x1f/0x23
+> <4>[12099840.752028]  [<ffffffff810ae0cc>] ? sync_buffer+0x0/0x42
+> <4>[12099840.752033]  [<ffffffff810ae0cc>] ? sync_buffer+0x0/0x42
+> <4>[12099840.752038]  [<ffffffff8130c22e>] io_schedule+0x38/0x4d
+> <4>[12099840.752042]  [<ffffffff810ae10a>] sync_buffer+0x3e/0x42
+> <4>[12099840.752047]  [<ffffffff8130c6c1>] __wait_on_bit+0x43/0x76
+> <4>[12099840.752051]  [<ffffffff8130c75d>] out_of_line_wait_on_bit+0x69/0x74
+> <4>[12099840.752056]  [<ffffffff810ae0cc>] ? sync_buffer+0x0/0x42
+> <4>[12099840.752063]  [<ffffffff81047f11>] ? wake_bit_function+0x0/0x2e
+> <4>[12099840.752068]  [<ffffffff810ae05b>] __wait_on_buffer+0x1f/0x21
+> <4>[12099840.752073]  [<ffffffff810b0568>] __bread+0x95/0xad
+> <4>[12099840.752079]  [<ffffffff81113b1f>] fat_ent_bread+0x6a/0xab
+> <4>[12099840.752084]  [<ffffffff8111320b>] fat_alloc_clusters+0x1fb/0x46c
+> <4>[12099840.752092]  [<ffffffff81115e57>] fat_get_block+0x103/0x1da
+> <4>[12099840.752097]  [<ffffffff8130e1f8>] ? _spin_unlock+0x13/0x2e
+> <4>[12099840.752102]  [<ffffffff810aeded>] __block_prepare_write+0x1b3/0x3b6
+> <4>[12099840.752107]  [<ffffffff81115d54>] ? fat_get_block+0x0/0x1da
+> <4>[12099840.752113]  [<ffffffff81067b18>] ?
+> grab_cache_page_write_begin+0x7e/0xaa
+> <4>[12099840.752119]  [<ffffffff810af17e>] block_write_begin+0x7b/0xcd
+> <4>[12099840.752124]  [<ffffffff810af4e9>] cont_write_begin+0x319/0x33d
+> <4>[12099840.752129]  [<ffffffff81115d54>] ? fat_get_block+0x0/0x1da
+> <4>[12099840.752135]  [<ffffffff81116026>] fat_write_begin+0x31/0x33
+> <4>[12099840.752139]  [<ffffffff81115d54>] ? fat_get_block+0x0/0x1da
+> <4>[12099840.752144]  [<ffffffff810684d0>]
+> generic_file_buffered_write+0x107/0x2a1
+> <4>[12099840.752151]  [<ffffffff810394da>] ? current_fs_time+0x22/0x29
+> <4>[12099840.752156]  [<ffffffff81068b25>] __generic_file_aio_write+0x350/0x385
+> <4>[12099840.752161]  [<ffffffff8130cbec>] ? __mutex_lock_slowpath+0x26c/0x294
+> <4>[12099840.752167]  [<ffffffff81068bb8>] generic_file_aio_write+0x5e/0xa8
+> <4>[12099840.752173]  [<ffffffff8108d05a>] do_sync_write+0xe3/0x120
+> <4>[12099840.752178]  [<ffffffff81047edd>] ? autoremove_wake_function+0x0/0x34
+> <4>[12099840.752185]  [<ffffffff81080afd>] ? do_mmap_pgoff+0x28b/0x2ee
+> <4>[12099840.752190]  [<ffffffff8108d9cb>] vfs_write+0xad/0x14e
+> <4>[12099840.752195]  [<ffffffff8108e25b>] ? fget_light+0xae/0xd2
+> <4>[12099840.752200]  [<ffffffff8108db25>] sys_write+0x45/0x6c
+> <4>[12099840.752206]  [<ffffffff810260c5>] cstar_dispatch+0x7/0x2b
+> 
+> 
+> On Mon, Jul 2, 2012 at 8:49 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> 
+> > Hi Prasad,
+> >
+> > On Mon, Jul 02, 2012 at 08:37:19PM -0700, Prasad Koya wrote:
+> > > Hi
+> > >
+> > > Sorry about writing to your personal address. I'm running into below
+> > panic
+> > > but I couldn't find any patch for this in 2.6.32. I do see below
+> > discussion
+> > > related to pretty much similar issue which doesn't appear to be
+> > resolved. I
+> > > looked around quite a bit but I couldn't find any patches for this. Is
+> > this
+> > > still unresolved? I have 2 USB sticks and I can get into this state by
+> > > copying 2 large files (say 200-300M each) simultaneously (followed by
+> > sync)
+> > > into both drives.
+> >
+> > That is doing sync lots of data on slow device, with the sync time
+> > being further enlarged by the active writers. I can imagine for the
+> > sync to take very long time.
+> >
+> > What's the filesystem btw?
+> >
+> > > Appreciate any pointers.
+> > >
+> > > thank you.
+> > >
+> > > http://marc.info/?t=126596633700002&r=1&w=2
+> > >
+> > >
+> > > <3>[  600.392088] INFO: task sync:2675 blocked for more than 120 seconds.
+> > > <3>[  600.466884] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+> > > disables this message.
+> > ...
+> > > <4>[  600.560507]  [<ffffffff810a7dab>] sync_inodes_sb+0x1d/0xf1
+> > > <4>[  600.560519]  [<ffffffff810abb3e>] __sync_filesystem+0x29/0x52
+> > > <4>[  600.560536]  [<ffffffff810abc0f>] sync_filesystems+0xa8/0xfe
+> > > <4>[  600.560556]  [<ffffffff810abcb5>] sys_sync+0x1c/0x2e
+> > > <4>[  600.560570]  [<ffffffff810260c5>] cstar_dispatch+0x7/0x2b
+> > > <0>[  600.560580] Kernel panic - not syncing: hung_task: blocked tasks
+> >
+> > Please check /proc/sys/kernel/hung_task_panic . Normal users should
+> > never set it to 1..
+> >
+> > Thanks,
+> > Fengguang
+> >
