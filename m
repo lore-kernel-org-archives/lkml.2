@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757097Ab2GCTNR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 15:13:17 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:47764 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757030Ab2GCTNP (ORCPT
+	id S1757113Ab2GCTRJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 15:17:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41793 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757080Ab2GCTRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 15:13:15 -0400
+	Tue, 3 Jul 2012 15:17:07 -0400
+Date: Tue, 3 Jul 2012 20:17:05 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: lrg@ti.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        rob@landley.net, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] regulator: fixed: dt: support for input supply
+Message-ID: <20120703191704.GE29030@opensource.wolfsonmicro.com>
+References: <1341223645-7817-1-git-send-email-ldewangan@nvidia.com>
+ <1341223645-7817-2-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <20120703185808.GM11413@one.firstfloor.org>
-References: <20120702224648.GA20361@tassilo.jf.intel.com> <CA+55aFwre6s=orjUaNKJA=51Fc1mxu_XGX80Bex4Sn-=mWPx5Q@mail.gmail.com>
- <1341323230.3292.10.camel@nayuki.kepstin.ca> <CA+55aFyvzz3Lp9zeA6X+QMan0iZFWq_0Xd+ff_trnP1tpn2iJQ@mail.gmail.com>
- <1341337257.2406.1.camel@nayuki.kepstin.ca> <CA+55aFzOD33eWj0FQuZ7RWmF-yYwaeNB-9J-YY+mX4mwP7VXuA@mail.gmail.com>
- <CA+55aFwQqTAHNafGBXaoPCzVYw83OZvbG_hOYEDUxmuoMODO3Q@mail.gmail.com>
- <alpine.LNX.2.00.1207032008350.17304@pobox.suse.cz> <20120703185808.GM11413@one.firstfloor.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 3 Jul 2012 12:12:53 -0700
-X-Google-Sender-Auth: uLhUbmD4QYXtC9RfW9dYAvEspvk
-Message-ID: <CA+55aFzFQiYhJcBfGD7moL3gC-ocwXJ2-kTjuNrw5hBGGbz4ag@mail.gmail.com>
-Subject: Re: long boot delays caused by 070ad7e7 floppy change
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, Calvin Walton <calvin.walton@kepstin.ca>,
-        linux-kernel@vger.kernel.org, shemminger@vyatta.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fblc08uBQ7kpPybH"
+Content-Disposition: inline
+In-Reply-To: <1341223645-7817-2-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Advancement in position.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 3, 2012 at 11:58 AM, Andi Kleen <andi@firstfloor.org> wrote:
->
-> [    2.496493] calling  floppy_init+0x0/0xe46 @ 1
-> [    2.511303] floppy0: lock_fdc: -1 (out of 8)
-> [    2.511346] floppy0: __reschedule_timeout: setting timeout to 750
 
-Ahhah. And you have CONFIG_HZ250 set, don't you?
+--fblc08uBQ7kpPybH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-So it's actually asking for a 3-second timeout like it should.
+On Mon, Jul 02, 2012 at 03:37:25PM +0530, Laxman Dewangan wrote:
 
-> [    2.511372] floppy0: reschedule timeout lock fdc
-> [   22.501757] floppy0: reschedule timeout do wakeup
+> +	if (vin_supply)
+> +		drvdata->desc.supply_name = "vin";
+> +
 
-But that actual timeout is too damn reliably pretty much exactly 20s
-for it to be anything else.
+This isn't great both in terms of it being conditional and the fact that
+it's only usable on DT systems as there's no non-DT way to do this.  In
+general unless we're working around some device tree issue (which should
+be *very* rare) we shouldn't be adding any DT only stuff to generic
+code, we need to be able to run Linux on non-DT systems.
 
-I wonder if 'fd_timeout' had been previously queued already with the
-20s timeout, and not canceled. So then the new queuing of a 3-second
-timeout doesn't actually do anything, because the
-WORK_STRUCT_PENDING_BIT is still set.
+--fblc08uBQ7kpPybH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-So maybe we're missing a cancel somewhere.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-What happens if you add a
+iQIcBAEBAgAGBQJP80UYAAoJEBus8iNuMP3dylgQAI30dX4i6cWMFpyf3p6ZxYaD
+gtUrvxWE4XYgOB97F3yjKygHWPDH/6NTfEJusgj0V21b8bcOPZzNDPDBCNwrn4A3
+BkuWz3riefvkmzlT4nqaEBXCqpvRfYLRpTYdHOrSi+G4BozXx+SRPT/yPYwc5i3k
+bNfPmOywkG3IZtOGGSdHK4YnYtoOvk4ky5miVdaA30ybbmBs3lS8nNZ2wOJEMLbq
+AlV6ucEGWTlSxI1JUEW/K+DHI/bRpAqwPSG1/o4+XO4VukBGirCiAvXpu2Sp9Xol
+H7nTE3BfbcgcEMN13U2vx8LrG6STNm2WCmtSkebTbUfBdLpLSa8Q2enUTfMMEdHu
+rFIuSG22yI9jts6BYOXotynBLscLIkKFFCprXDGRb090BTxnXD+jpm3UWk3U2SO9
+jfBOx9uhWqOWW6TXVQZVB5FB8f9CwvrlCijpUs8HLd8fe+I2NtEwJuLAARBX1TaN
+uo5sPOB6Oy9D7QIS3WY77SQe0OIcU9VFRif1KywQRMW3uPzhAMnNphqV//cKi37M
+awIO+Kh3vVJkFwR86801vs3dc4QYPnZWv9TdMnXl8rhpIu3Ql6UnTB/f61n8o1x5
++y/oGugvQ97QPtf5t6L2judtXcgIKckCjCewvY9se3r2K3fRJYfr3i9OD3VzCyfF
+vmIBMluh+xfYYNEhW8nY
+=1dQQ
+-----END PGP SIGNATURE-----
 
-        cancel_delayed_work(&fd_timeout);
-
-to before the queue_delayed_work() in __reschedule_timeout()? Does
-that possibly make the delay really be 3 seconds?
-
-                   Linus
+--fblc08uBQ7kpPybH--
