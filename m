@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab2GCUe1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 16:34:27 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48509 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752748Ab2GCUe0 (ORCPT
+	id S1757250Ab2GCUfS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 16:35:18 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:46930 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753541Ab2GCUfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 16:34:26 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] pwm: fix used-uninitialized warning in pwm_get()
-Date: Tue,  3 Jul 2012 14:34:21 -0600
-Message-Id: <1341347661-26567-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Tue, 3 Jul 2012 16:35:15 -0400
+Date: Tue, 3 Jul 2012 14:35:12 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [ 38/48] SCSI & usb-storage: add try_rc_10_first flag
+Message-ID: <20120703203512.GE28804@parisc-linux.org>
+References: <Pine.LNX.4.44L0.1207031540410.29825-100000@netrider.rowland.org> <1341346072.3076.6.camel@dabdike>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341346072.3076.6.camel@dabdike>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Wed, Jul 04, 2012 at 12:07:52AM +0400, James Bottomley wrote:
+> > The reason for the try_rc_10_first flag is that some devices return
+> > bogus data in response to RC16.  Like, an 800 GB device claiming to
+> > have 3 exabytes.
+> 
+> So we could easily send both and only believe RC10 if the device is
+> under 2TB.  However, what about all the extra flags we read out of RC16,
+> like trim, large sector size and DIF capability?  If the device lies
+> about its capacity, won't we get bogus values for those as well, which
+> is going to cause other screw ups?
 
-This fixes:
-drivers/pwm/core.c: In function 'pwm_get':
-drivers/pwm/core.c:534:15: warning: 'index' may be used uninitialized in this function
+I think the necessary algorithm is simpler than that:
 
-The addition to the if condition at end of the function isn't strictly
-necessary to solve the warning, but does make it more obvious that the
-initialization of "index" to a dummy value isn't just hiding the
-problem.
+Send RC10 (unless the device supports PI, in which case it's probably
+	enterprisey and well-tested)
+Send RC16
+If RC10 capacity agrees with RC16 capacity, use extra RC16 data.
+(for values of "agrees with" that include the "-1 to use RC16" indicator)
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- drivers/pwm/core.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Sure, it's one extra command, but really, who cares?
 
-diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-index dbab530..2b401c0 100644
---- a/drivers/pwm/core.c
-+++ b/drivers/pwm/core.c
-@@ -531,7 +531,7 @@ struct pwm_device *pwm_get(struct device *dev, const char *con_id)
- 	struct pwm_chip *chip = NULL;
- 	unsigned int best = 0;
- 	struct pwm_lookup *p;
--	unsigned int index;
-+	unsigned int index = -1;
- 	unsigned int match;
- 
- 	/* look up via DT first */
-@@ -588,7 +588,7 @@ struct pwm_device *pwm_get(struct device *dev, const char *con_id)
- 		}
- 	}
- 
--	if (chip)
-+	if (chip && index != -1)
- 		pwm = pwm_request_from_chip(chip, index, con_id ?: dev_id);
- 
- 	mutex_unlock(&pwm_lookup_lock);
 -- 
-1.7.0.4
-
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
