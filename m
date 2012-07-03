@@ -1,87 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933051Ab2GCVsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 17:48:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36798 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756514Ab2GCVsK (ORCPT
+	id S1756681Ab2GCVzn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 17:55:43 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:48230 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752452Ab2GCVzm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 17:48:10 -0400
-Date: Tue, 3 Jul 2012 14:48:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Rik van Riel <riel@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, jaschut@sandia.gov,
-        minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH -mm v2] mm: have order > 0 compaction start off where it
- left
-Message-Id: <20120703144808.4daa4244.akpm@linux-foundation.org>
-In-Reply-To: <20120703101024.GG13141@csn.ul.ie>
-References: <20120628135520.0c48b066@annuminas.surriel.com>
-	<20120628135940.2c26ada9.akpm@linux-foundation.org>
-	<4FECCB89.2050400@redhat.com>
-	<20120628143546.d02d13f9.akpm@linux-foundation.org>
-	<1341250950.16969.6.camel@lappy>
-	<4FF2435F.2070302@redhat.com>
-	<20120703101024.GG13141@csn.ul.ie>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Jul 2012 17:55:42 -0400
+Message-ID: <20120704005536.x1k90tq3s84844kw@webmail.welho.com>
+Date: Wed, 04 Jul 2012 00:55:36 +0300
+From: Nokia Promotion <info@nokia.org>
+Reply-to: nokiadp77@yahoo.cn
+To: undisclosed-recipients:;
+Subject: Claim requirements
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Jul 2012 11:10:24 +0100
-Mel Gorman <mel@csn.ul.ie> wrote:
+You are receiving this message because you are a Winner of 300,000 Pounds from
+Nokia Online Lottery game 2012.
 
-> > >>>>>+          if (cc->order>   0)
-> > >>>>>+                  zone->compact_cached_free_pfn = high_pfn;
-> > >>>>
-> > >>>>Is high_pfn guaranteed to be aligned to pageblock_nr_pages here?  I
-> > >>>>assume so, if lots of code in other places is correct but it's
-> > >>>>unobvious from reading this function.
-> > >>>
-> > >>>Reading the code a few more times, I believe that it is
-> > >>>indeed aligned to pageblock size.
-> > >>
-> > >>I'll slip this into -next for a while.
-> > >>
-> > >>--- a/mm/compaction.c~isolate_freepages-check-that-high_pfn-is-aligned-as-expected
-> > >>+++ a/mm/compaction.c
-> > >>@@ -456,6 +456,7 @@ static void isolate_freepages(struct zon
-> > >>                 }
-> > >>                 spin_unlock_irqrestore(&zone->lock, flags);
-> > >>
-> > >>+               WARN_ON_ONCE(high_pfn&  (pageblock_nr_pages - 1));
-> > >>                 /*
-> > >>                  * Record the highest PFN we isolated pages from. When next
-> > >>                  * looking for free pages, the search will restart here as
-> > >
-> > >I've triggered the following with today's -next:
-> > 
-> > I've been staring at the migrate code for most of the afternoon,
-> > and am not sure how this is triggered.
-> > 
-> 
-> That warning is placed in isolate_freepages(). When the migration
-> scanner and free scanner have almost met it is possible for high_pfn to
-> be
-> 
-> cc->migrate_pfn + pageblock_nr_pages
-> 
-> and that is not necessarily pageblock aligned. Forcing it to be aligned
-> raises the possibility that the free scanner moves to another zone. This
-> is very unlikely but could happen if a high zone was very small.
-> 
-> I should have caught this when the warning was proposed :( IMO it's
-> safe to just drop the warning.
+Claim requirements are as follows:
+(1) Your full names
+(2) Contact Address
+(3) Age
+(4) Occupation
+(5) Telephone
+(6) Sex
+(7) Nationality
 
-The rest of this patch takes care to ensure that
-->compact_cached_free_pfn is aligned to pageblock_nr_pages.  But it now
-appears that this particular site will violate that.
+Contact Mr. Thomas Hillary on (nokiadp77@yahoo.cn) Tel: +447024081232
 
-What's up?  Do we need to fix this site, or do we remove all that
-make-compact_cached_free_pfn-aligned code?
+Copyright ©2012 Nokia. All rights reserved.
+
 
