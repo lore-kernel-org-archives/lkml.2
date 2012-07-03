@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932747Ab2GCNEV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 09:04:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41582 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932137Ab2GCNET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 09:04:19 -0400
-Date: Tue, 3 Jul 2012 14:04:14 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Chinner <david@fromorbit.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com, dri-devel@lists.freedesktop.org,
-        Keith Packard <keithp@keithp.com>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [MMTests] IO metadata on XFS
-Message-ID: <20120703130414.GD14154@suse.de>
-References: <20120620113252.GE4011@suse.de>
- <20120629111932.GA14154@suse.de>
- <20120629112505.GF14154@suse.de>
- <20120701235458.GM19223@dastard>
- <20120702063226.GA32151@infradead.org>
- <20120702143215.GS14154@suse.de>
- <20120702193516.GX14154@suse.de>
+	id S932960Ab2GCNEa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 09:04:30 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:18484 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932771Ab2GCNE2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 09:04:28 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6760"; a="204671111"
+X-IronPort-AV: E=Sophos;i="4.77,515,1336374000"; 
+   d="scan'208";a="252509481"
+From: "Huang, Xiong" <xiong@qca.qualcomm.com>
+To: "Ren, Cloud" <cjren@qca.qualcomm.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: qca-linux-team <qca-linux-team@qualcomm.com>,
+        nic-devel <nic-devel@qualcomm.com>
+Subject: RE: [PATCH 1/1] atl1c: fix issue of transmit queue 0 timed out
+Thread-Topic: [PATCH 1/1] atl1c: fix issue of transmit queue 0 timed out
+Thread-Index: AQHNWNx3rVTcv+CuHUatM2rT5nzBjJcXholA
+Date: Tue, 3 Jul 2012 13:04:26 +0000
+Message-ID: <157393863283F442885425D2C454285623DB7BEC@NASANEXD02A.na.qualcomm.com>
+References: <1341322056-26582-1-git-send-email-cjren@qca.qualcomm.com>
+In-Reply-To: <1341322056-26582-1-git-send-email-cjren@qca.qualcomm.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [199.106.115.254]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120702193516.GX14154@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 02, 2012 at 08:35:16PM +0100, Mel Gorman wrote:
-> > <SNIP>
-> >
-> It was obvious very quickly that there were two distinct regression so I
-> ran two bisections. One led to a XFS and the other led to an i915 patch
-> that enables RC6 to reduce power usage.
-> 
-> [c999a223: xfs: introduce an allocation workqueue]
-> [aa464191: drm/i915: enable plain RC6 on Sandy Bridge by default]
-> 
-> gdm was running on the machine so i915 would have been in use. 
+Cloud,  why your patch contains :  'From: Cloud Ren <cjren@qca.qualcomm.com>'
+I don't find it in other people's patch.
 
-Bah, more PEBKAC. gdm was *not* running on this machine. i915 is loaded
-but X is not.
+Doesn't David Miller think your time is wrong ?
 
--- 
-Mel Gorman
-SUSE Labs
+
+> -----Original Message-----
+> From: Ren, Cloud
+> Sent: Tuesday, July 03, 2012 21:28
+> To: davem@davemloft.net; netdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Cc: qca-linux-team; nic-devel; Ren, Cloud
+> Subject: [PATCH 1/1] atl1c: fix issue of transmit queue 0 timed out
+> 
+> From: Cloud Ren <cjren@qca.qualcomm.com>
+> 
+> some people report atl1c could cause system hang with following kernel trace
+> info:
+> ---------------------------------------
+> WARNING: at.../net/sched/sch_generic.c:258 dev_watchdog+0x1db/0x1d0() ...
+> NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out ...
+> ---------------------------------------
+> This is caused by netif_stop_queue calling when cable Link is down.
+> So remove netif_stop_queue, because link_watch will take it over.
+> 
+> Signed-off-by: xiong <xiong@qca.qualcomm.com>
+> Cc: stable <stable@vger.kernel.org>
+> Signed-off-by: Cloud Ren <cjren@qca.qualcomm.com>
+> ---
+>  drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+> b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+> index 85717cb..7901831 100644
+> --- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+> +++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+> @@ -261,7 +261,6 @@ static void atl1c_check_link_status(struct
+> atl1c_adapter *adapter)
+>  	if ((phy_data & BMSR_LSTATUS) == 0) {
+>  		/* link down */
+>  		netif_carrier_off(netdev);
+> -		netif_stop_queue(netdev);
+>  		hw->hibernate = true;
+>  		if (atl1c_reset_mac(hw) != 0)
+>  			if (netif_msg_hw(adapter))
+> --
+> 1.7.7
+
