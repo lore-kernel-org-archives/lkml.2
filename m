@@ -1,105 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933197Ab2GCACQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 20:02:16 -0400
-Received: from 1wt.eu ([62.212.114.60]:3609 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754813Ab2GCACP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 20:02:15 -0400
-Date: Tue, 3 Jul 2012 02:02:02 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: chetan loke <loke.chetan@gmail.com>,
-        Andreas Gruenbacher <agruen@linbit.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [RFC] [TCP 0/3] Receive from socket into bio without copying
-Message-ID: <20120703000202.GC11039@1wt.eu>
-References: <1341237299.22621.88.camel@edumazet-glaptop> <1341245191.2177.40.camel@schurl.lan> <CAAsGZS6ahzUo+QRcLOyPcj5=mp53O+M9kqByOwPb0zZcr-cgwQ@mail.gmail.com> <1341265024.22621.464.camel@edumazet-glaptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341265024.22621.464.camel@edumazet-glaptop>
-User-Agent: Mutt/1.4.2.3i
+	id S933201Ab2GCADo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 20:03:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34496 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab2GCADm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 20:03:42 -0400
+MIME-Version: 1.0
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 2 Jul 2012 17:03:21 -0700
+Message-ID: <CALCETrVOwRyrBXDu0G=JE3dtwmXFNV6dAEHVPXYoJfUf6s2==w@mail.gmail.com>
+Subject: 3.5.0-rc3 (approximately) oops on cifs mount
+To: linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+mount.cifs crashed my system, on something that's approximately
+3.5.0-rc3.  (I could find out more precisely if needed.)
 
-On Mon, Jul 02, 2012 at 11:37:04PM +0200, Eric Dumazet wrote:
-> On Mon, 2012-07-02 at 15:41 -0400, chetan loke wrote:
-> > On Mon, Jul 2, 2012 at 12:06 PM, Andreas Gruenbacher <agruen@linbit.com> wrote:
-> > > On Mon, 2012-07-02 at 15:54 +0200, Eric Dumazet wrote:
-> > >> So I will just say no to your patches, unless you demonstrate the
-> > >> splice() problems, and how you can fix the alignment problem in a new
-> > >> layer instead of in the existing zero copy standard one.
-> > >
-> > > Again, splice or not is not the issue here. It does not, by itself, allow zero
-> > > copy from the network directly to disk but it could likely be made to support
-> > > that if we can get the alignment right first.  The proposed MSG_NEW_PACKET flag
-> > > helps with that, but maybe someone has a better idea.
-> > >
-> > 
-> > Eric - by using splice do you mean something like:
-> > 
-> > int filedes[2];
-> > PIPE_SIZE (64*1024)
-> > pipe(filedes);
-> > ret = splice (sock_fd_from, &from_offset, filedes [1], NULL, PIPE_SIZE,
-> >                      SPLICE_F_MORE | SPLICE_F_MOVE);
-> > 
-> > 
-> > ret = splice (filedes [0], NULL, file_fd_to,
-> >                          &to_offset, ret,
-> >                          SPLICE_F_MORE | SPLICE_F_MOVE);
-> > 
-> 
-> Yes, thats more or less the plan. You also can play with bigger
-> PIPE_SIZE if needed.
+pstore rocks, by the way.
 
-I confirm, this is recommended at high bit rates if you're working with
-large windows.
+<5>[352905.852621] FS-Cache: Loaded
+<5>[352905.858346] FS-Cache: Netfs 'cifs' registered for caching
+<5>[352905.858401] Key type cifs.spnego registered
+<5>[352905.859016] CIFS: no cache= option specified, using
+"cache=loose". This default will change to "cache=strict" in 3.7.
+<4>[352905.862232] ------------[ cut here ]------------
+<2>[352905.862377] kernel BUG at kernel/workqueue.c:564!
+<4>[352905.862538] invalid opcode: 0000 [#1] SMP
+<4>[352905.862665] CPU 6
+<4>[352905.862759] Modules linked in: nls_utf8 cifs fscache tcp_lp
+fuse be2iscsi iscsi_boot_sysfs bnx2i cnic uio cxgb4i cxgb4 cxgb3i
+libcxgbi cxgb3 mdio iscsi_tcp libiscsi_tcp tpm_infineon libiscsi
+scsi_transport_iscsi f71882fg ip6t_REJECT nf_conntrack_ipv6
+nf_defrag_ipv6 ip6table_filter ip6_tables snd_hda_codec_hdmi
+snd_hda_codec_realtek vfat fat btrfs zlib_deflate lzo_compress
+libcrc32c snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device
+snd_pcm joydev snd_timer e1000e snd coretemp crc32c_intel soundcore
+lpc_ich i2c_i801 serio_raw xhci_hcd pcspkr microcode mfd_core
+snd_page_alloc mei wmi vhost_net macvtap macvlan tun kvm_intel kvm
+uinput ipv6 xts gf128mul dm_crypt firewire_ohci firewire_core
+crc_itu_t radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core [last
+unloaded: scsi_wait_scan]
+<4>[352905.864936]
+<4>[352905.864985] Pid: 18609, comm: mount.cifs Not tainted
+3.5.0-rc3-devel+ #435 MSI MS-7760/X79A-GD65 (8D) (MS-7760)
+Oops#1 Part3
+<4>[352905.865303] RIP: 0010:[<ffffffff8104d5b6>]
+[<ffffffff8104d5b6>] get_work_gcwq+0x31/0x3e
+<4>[352905.865552] RSP: 0018:ffff88010d26bb78  EFLAGS: 00010216
+<4>[352905.865717] RAX: ffff88021a9c5688 RBX: 00000000ffffffff RCX:
+000000000000ea60
+<4>[352905.865941] RDX: ffff88021a9c5680 RSI: ffff88021a9c5680 RDI:
+0000000000000011
+<4>[352905.866165] RBP: ffff88010d26bb78 R08: ffff880419d3e000 R09:
+0000000000000001
+<4>[352905.866388] R10: 00000000000155c6 R11: 0000000000015578 R12:
+ffff880447fa1cc0
+<4>[352905.866611] R13: ffff88021a9c5680 R14: ffff88021a9c56a0 R15:
+000000000000ea60
+<4>[352905.866836] FS:  00007ffc750a7740(0000)
+GS:ffff88045fd80000(0000) knlGS:0000000000000000
+<4>[352905.867087] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+<4>[352905.867267] CR2: 00000034362bdba0 CR3: 000000021a34e000 CR4:
+00000000000407e0
+<4>[352905.867491] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+<4>[352905.867714] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+<4>[352905.867938] Process mount.cifs (pid: 18609, threadinfo
+ffff88010d26a000, task ffff88043db943e0)
+<4>[352905.868209] Stack:
+<4>[352905.868274]  ffff88010d26bbb8 ffffffff8104db9f ffff88021a9c5400
+ffff88021a9c5400
+<4>[352905.868504]  ffff88004aad8000 ffff8803c9034242 ffff8803f83d1400
+000000000000000d
+<4>[352905.868735]  ffff88010d26bbc8 ffffffff8104e4f4 ffff88010d26bc98
+ffffffffa057a5da
+<4>[352905.868964] Call Trace:
+<4>[352905.869044]  [<ffffffff8104db9f>] queue_delayed_work_on+0x72/0xed
+<4>[352905.869234]  [<ffffffff8104e4f4>] queue_delayed_work+0x26/0x28
+<4>[352905.869420]  [<ffffffffa057a5da>] cifs_get_tcp_session+0x51f/0x597 [cifs]
+<4>[352905.869632]  [<ffffffffa057d1d2>] cifs_mount+0xf8/0x52d [cifs]
+<4>[352905.869812]  [<ffffffffa056fb3f>] ? cifs_do_mount+0x9c/0x427 [cifs]
+<4>[352905.870009]  [<ffffffffa056fb62>] cifs_do_mount+0xbf/0x427 [cifs]
+<4>[352905.870200]  [<ffffffff811e2bae>] ? selinux_sb_copy_data+0x192/0x1ab
+<4>[352905.870397]  [<ffffffff81104f25>] mount_fs+0x69/0x154
+<4>[352905.870555]  [<ffffffff810d809c>] ? __alloc_percpu+0x10/0x12
+<4>[352905.870732]  [<ffffffff81118ba4>] vfs_kern_mount+0x69/0xe3
+<4>[352905.870903]  [<ffffffff81119129>] do_kern_mount+0x4d/0xdf
+<4>[352905.871072]  [<ffffffff8111aa5c>] do_mount+0x69a/0x6fe
+<4>[352905.871233]  [<ffffffff810d3d66>] ? memdup_user+0x42/0x6a
+<4>[352905.871402]  [<ffffffff8111abd5>] sys_mount+0x8c/0xcd
+<4>[352905.871561]  [<ffffffff8146a9a2>] system_call_fastpath+0x16/0x1b
+<4>[352905.871765] Code: 66 66 90 48 8b 3f 40 f6 c7 04 74 09 40 80 e7
+00 48 8b 07 eb 21 48 c1 ef 08 83 ff 09 74 16 83 ff 08 74 0a 3b 3d 30
+8f a5 00 72 02 <0f> 0b e8 79 e8 ff ff eb 02 31 c0 5d c3 55 48 89 e5 66
+66 66 66
+<1>[352905.872354] RIP  [<ffffffff8104d5b6>] get_work_gcwq+0x31/0x3e
+<4>[352905.872532]  RSP <ffff88010d26bb78>
+<4>[352905.951644] ---[ end trace d127dd774b14850e ]---
 
-> > i.e. splice-in from socket to pipe, and splice-out from pipe to destination?
-> > 
-> > Andreas - if the above assumption is true then can you apply the
-> > 'MSG_NEW_PACKET' on the sender and see if the above pseudo-splice code
-> > achieves something similar to what you expect on the receive side(you
-> > can also play w/ F_SETPIPE_SZ -  although I found very little
-> > reduction in CPU usage)? Note: My personal experience - using splice
-> > from an input-file-A to output-file-B bought very minimal cpu
-> > reduction(yes, both the files used O_DIRECT). Instead, a simple
-> > read/write w/ O_DIRECT from file-A to file-B was much much faster.
-> 
-> splice() performance from socket to pipe have improved a lot in
-> linux-3.5
-> 
-> It was not true zero copy, until very recent patches.
-
-In fact it has been true zero copy in 2.6.25 until we faced a large
-amount of data corruption and the zero copy was disabled in 2.6.25.X.
-Since then it remained that way until you brought your patches to
-re-instantiate it.
-
-> (It was zero copy only on certain class of NIC, not on the ones found
-> on appliances or cheap platforms)
-> 
-> Willy Tarreau mentioned a nice boost of performance with haproxy.
-
-Yes definitely. The savings are more noticeable on small systems where
-memory bandwidth is limited. On a small ARM system bound by RAM bandwidth,
-the performance was basically doubled. But I also observed nice savings
-on a core2duo equipped with 2 myricom 10Gig NICs forwarding at line rate.
-
-> Willy wanted to work on a direct splice from socket to socket, but
-> I am not sure it'll bring major speed improvement.
-
-I'm not sure at all either, I'm betting a few percent saved from the
-reduction of syscalls, not much more. This is why I'll probably check
-this when I have enough time to kill.
-
-Regards,
-Willy
-
+--Andy
