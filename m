@@ -1,165 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932314Ab2GCEIf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 00:08:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63893 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101Ab2GCEId (ORCPT
+	id S933112Ab2GCEJt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 00:09:49 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53327 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735Ab2GCEJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 00:08:33 -0400
-From: David Ahern <dsahern@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH] perf tool: save cmdline from user in file header vs what is passed to record
-Date: Mon,  2 Jul 2012 22:08:26 -0600
-Message-Id: <1341288506-85207-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Tue, 3 Jul 2012 00:09:47 -0400
+Date: Tue, 3 Jul 2012 14:09:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russ Dill <Russ.Dill@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: linux-next: manual merge of the usb tree with the mfd tree
+Message-Id: <20120703140938.b2ae0cf0ce2a3a470bb6cec6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__3_Jul_2012_14_09_38_+1000_TFRfmXuKPAQ.dnHj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A number of builtin commands process some user args and then pass the rest
-to cmd_record. cmd_record then saves argc/argv that it receives into the
-header of the perf data file. But this loses the arguments handled by the
-first command -- ie., the real command line from the user. This patch saves
-the command line as typed by the user rather than what was passed to
-cmd_record.
+--Signature=_Tue__3_Jul_2012_14_09_38_+1000_TFRfmXuKPAQ.dnHj
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-As an example consider the command:
-$ perf kvm --guest --host --guestmount=/tmp/guest-mount record
-    -fo /tmp/perf.data -ag -- sleep 10
+Hi Greg,
 
-Currently the command saved to the header is:
- cmdline : /tmp/p3.5/perf record -o perf.data.kvm -fo /tmp/perf.data -ag -- sleep 1
+Today's linux-next merge of the usb tree got a conflict in
+drivers/usb/host/ehci-omap.c between commit 996439f8fa07 ("mfd: USB: Fix
+the omap-usb EHCI ULPI PHY reset fix issues") from the mfd tree and
+commit 984e97483a14 ("ARM: OMAP: USB: Fixup ehci_hcd_omap_probe error
+path") from the usb tree.
 
-(ignore the duplicated -o -- the first would be yet another bug with perf-kvm).
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-With this patch the command line saved to the header is:
- cmdline : /tmp/p3.5/perf kvm --guest --host --guestmount=/tmp/guest-mount
-           record -fo /tmp/perf.data -ag -- sleep 1
+diff --cc drivers/usb/host/ehci-omap.c
+index c304354,6e15fc8..0000000
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@@ -329,11 -330,6 +329,11 @@@ static int ehci_hcd_omap_probe(struct p
+  	omap_ehci->hcs_params =3D readl(&omap_ehci->caps->hcs_params);
+ =20
+  	ehci_reset(omap_ehci);
+ +	ret =3D usb_add_hcd(hcd, irq, IRQF_SHARED);
+ +	if (ret) {
+ +		dev_err(dev, "failed to add hcd with err %d\n", ret);
+- 		goto err_add_hcd;
+++		goto err_pm_runtime;
+ +	}
+ =20
+  	if (pdata->phy_reset) {
+  		/* Hold the PHY in RESET for enough time till
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
----
- tools/perf/builtin-kmem.c      |    2 ++
- tools/perf/builtin-kvm.c       |    2 ++
- tools/perf/builtin-lock.c      |    2 ++
- tools/perf/builtin-sched.c     |    2 ++
- tools/perf/builtin-script.c    |    2 ++
- tools/perf/builtin-timechart.c |    2 ++
- tools/perf/util/header.c       |    9 +++++++++
- 7 files changed, 21 insertions(+)
+--Signature=_Tue__3_Jul_2012_14_09_38_+1000_TFRfmXuKPAQ.dnHj
+Content-Type: application/pgp-signature
 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index ce35015..08c8f74 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -770,6 +770,8 @@ static int __cmd_record(int argc, const char **argv)
- 
- int cmd_kmem(int argc, const char **argv, const char *prefix __used)
- {
-+	perf_header__set_cmdline(argc, argv);
-+
- 	argc = parse_options(argc, argv, kmem_options, kmem_usage, 0);
- 
- 	if (!argc)
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 9fc6e0f..913d0a8 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -107,6 +107,8 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __used)
- 	perf_host  = 0;
- 	perf_guest = 1;
- 
-+	perf_header__set_cmdline(argc, argv);
-+
- 	argc = parse_options(argc, argv, kvm_options, kvm_usage,
- 			PARSE_OPT_STOP_AT_NON_OPTION);
- 	if (!argc)
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index b3c4285..89917e1 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -980,6 +980,8 @@ int cmd_lock(int argc, const char **argv, const char *prefix __used)
- 	for (i = 0; i < LOCKHASH_SIZE; i++)
- 		INIT_LIST_HEAD(lockhash_table + i);
- 
-+	perf_header__set_cmdline(argc, argv);
-+
- 	argc = parse_options(argc, argv, lock_options, lock_usage,
- 			     PARSE_OPT_STOP_AT_NON_OPTION);
- 	if (!argc)
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 7a9ad2b..25113b2 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1899,6 +1899,8 @@ static int __cmd_record(int argc, const char **argv)
- 
- int cmd_sched(int argc, const char **argv, const char *prefix __used)
- {
-+	perf_header__set_cmdline(argc, argv);
-+
- 	argc = parse_options(argc, argv, sched_options, sched_usage,
- 			     PARSE_OPT_STOP_AT_NON_OPTION);
- 	if (!argc)
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 1e60ab7..07bc60b 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -1206,6 +1206,8 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
- 
- 	setup_scripting();
- 
-+	perf_header__set_cmdline(argc, argv);
-+
- 	argc = parse_options(argc, argv, options, script_usage,
- 			     PARSE_OPT_STOP_AT_NON_OPTION);
- 
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 3b75b2e..1e776a6 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -1108,6 +1108,8 @@ static const struct option options[] = {
- 
- int cmd_timechart(int argc, const char **argv, const char *prefix __used)
- {
-+	perf_header__set_cmdline(argc, argv);
-+
- 	argc = parse_options(argc, argv, options, timechart_usage,
- 			PARSE_OPT_STOP_AT_NON_OPTION);
- 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 5a47aba..99e410c 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -174,6 +174,15 @@ perf_header__set_cmdline(int argc, const char **argv)
- {
- 	int i;
- 
-+	/* 
-+	 * If header_argv has already been set, do not override it.
-+	 * This allows a command to set the cmdline, parse args and
-+	 * then call another builtin function that implements a
-+	 * command -- e.g, cmd_kvm calling cmd_record.
-+	 */
-+	if (header_argv)
-+		return 0;
-+
- 	header_argc = (u32)argc;
- 
- 	/* do not include NULL termination */
--- 
-1.7.10.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJP8nCCAAoJEECxmPOUX5FEIjkP/2W3sgy5Z56tLuOWTxFq+1ec
+k2JeDocO15XMrCt6kpIFeDTjgTGvaPBDFb8uXKBvncbG3FcwvGUlJ1i0ex0SX70t
+4wJxfFJyzsiNzqRmHJZkQUuHSWLtaXpLDb5fTk6Y9AEKRhvYYhg/ZaBzgHvaVRe7
+Q6r4tmEi9HvDHU0mlQy9PQZZ34kgFTP8cwr/xHEU0Ru7OYe3TQaFVqyjWQYyUfVQ
+KpTCFuKKMi92ojo67C4/7j/47yBnDCAEW4DKhiRvRR7Nl7NeWwzkoAGLN4LhH8GT
+r/z5TIFpbZC2fBKejsEH2dvECXEhMhYmYd/5KxS5d//mzBGzq4wUhXOq5jMDXKA6
+nqfNnHfpXhNbX2sF78Z60fmVVAvXlnlVHWhnjoKedm0nmmrQioTfnnfbEffVdVqL
+F6TWm1MGNe22/iTY70tjORbKjm9lo23S0jQZ9NM74LQOfJACLuDaXDISDgoQPCVd
+qiTHlqo1FoG5IwKohO5WB/HGohv5zmGlykUiHaPZOs8qKZT2thQ9LbWA5V2eqnQ6
+q9i20mGOj1NqseTa+Q12Dn0aTkddjzoY5CpouZEDvo93onOkvH25I+OkRUV/8uTj
+t0WXkJFIIfLbksJQSlKC3mFu6WnU/Ygj+1fBk+4zC0G7H7lZsE9JeUso8syOAApq
+4lKyLRgjwxLuspSLAOJp
+=Ayzz
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__3_Jul_2012_14_09_38_+1000_TFRfmXuKPAQ.dnHj--
