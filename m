@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933076Ab2GCNYu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 09:24:50 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51048 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751183Ab2GCNYt (ORCPT
+	id S933104Ab2GCNZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 09:25:46 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63844 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932990Ab2GCNZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 09:24:49 -0400
-Date: Tue, 3 Jul 2012 14:24:47 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de, sameo@linux.intel.com
-Subject: Re: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device
- registration
-Message-ID: <20120703132447.GN29030@opensource.wolfsonmicro.com>
-References: <1341316788-12730-1-git-send-email-lee.jones@linaro.org>
- <20120703123552.GC25995@sirena.org.uk>
- <4FF2EEA1.6080204@linaro.org>
+	Tue, 3 Jul 2012 09:25:44 -0400
+Message-ID: <4FF2F2D3.4090200@linaro.org>
+Date: Tue, 03 Jul 2012 15:25:39 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0kRkyLZR5zsR9u2P"
-Content-Disposition: inline
-In-Reply-To: <4FF2EEA1.6080204@linaro.org>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org,
+        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>, linux-next@vger.kernel.org,
+        Colin Cross <ccross@android.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rob Lee <rob.lee@linaro.org>, "lenb@kernel.org" <lenb@kernel.org>
+Subject: Re: linux-next : cpuidle - could you add my tree please
+References: <4FDEE98D.7010802@linaro.org> <201207022149.36629.rjw@sisk.pl> <4FF21D48.50301@linaro.org> <201207031059.13758.rjw@sisk.pl> <4FF2EC1A.7020702@linaro.org> <20120703231948.33cca18e3cc3d6e497ab022d@canb.auug.org.au>
+In-Reply-To: <20120703231948.33cca18e3cc3d6e497ab022d@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/03/2012 03:19 PM, Stephen Rothwell wrote:
+> Hi Daniel,
+> 
+> On Tue, 03 Jul 2012 14:56:58 +0200 Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+>>
+>>> So do you have a branch in the cpuidle-next.git tree that isn't going to
+>>> be rebased?
+>>
+>> No. I am following Linus tree and adding the patches on top of it.
+> 
+> Please don't rebase your tree more than necessary - it just makes thing
+> hard for anyone using your tree as a base for further development and
+> throws away any testing you may have done.
 
---0kRkyLZR5zsR9u2P
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ok, let me sync with Len and Rafael about the best way to do that.
 
-On Tue, Jul 03, 2012 at 02:07:45PM +0100, Lee Jones wrote:
-> On 03/07/12 13:35, Mark Brown wrote:
+Thanks
+  -- Daniel
 
-> >Do we really want to create MFD cells like this (which are really Linux
-> >internal things and might vary if another OS or another version of Linux
-> >changes its internal abstractions) from the device tree?
 
-> We're not creating them. We're merely using current infrastructure.
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-*Very* recently added infrastructure which caused you to notice this...
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-> Before, when we probed each device from Device Tree we came up
-> against some fairly major limitations of the Device Tree. As a
-> result, Arnd and I agreed that this was the way to go.
-
-I'm really unconvinced that instnatiating the MFD cells from device tree
-is in general a good idea.
-
-> See c5395e7ed8f16cc7bb72a783de68659db5aed515 for a short description
-> of the troubles we faced.
-
-$ git show c5395e7ed8f16cc7bb72a783de68659db5aed515
-fatal: bad object c5395e7ed8f16cc7bb72a783de68659db5aed515
-
---0kRkyLZR5zsR9u2P
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP8vKXAAoJEBus8iNuMP3dN1YP/2eNLP9EFGR9jHlphRG0ys1P
-E51sl5Se3gq0aHk0f3VFzTjCRiyE5o/X9tEGSa40Y12qCwCi0tW9AbelMKC7ppaT
-82whclHIIrBLbOW/zl/EAiuEWYGIj3HSDqcwp/2K4l/LzLve3MKiCGVgfdL6GBi8
-MWndMfnGZbAC6mhRwoVfHmK3H3Xw6116nkVqVIWaM+s6hEiCjA6GeZP4w/KgbuM0
-xYej90EfPNtHAV6SCWasMIidtE99q8iyk9x1HgNFguoreF9f3IDwFdfEnJfVyib0
-JLuZQkA+gvprNMin8wTrzoF+HZulcuSrl2HWHFpKE14m60To6Ie22vDV9if70PRc
-aADTiSEMNiyOWxNfXvUDYuTQkZyKKQvH8E98BN3NBjce3qRIPQ2g8GEkTX0a20MS
-Q5KQCeZZRLK2ADjIw49VWRs7sbCW4FglfZEWDdNUNnJ0bxEBdTqlTgD1TxuK0hpI
-3EfZNSAp6wsWGOsUe3w+CagcPahHunoqnSW0132MWAuDeJFBoj+DcyGCeFJKtQ/p
-1o96ZYZclGsPiRDs9T25xlGqkHq3OeKRk7dTr0CXf0vFBxWNkJAOroW1r4MARMmP
-iSJ2KZUF0ulVJVPtkunq8C4Rpv0zpr7d3LFMwEt6oWBnSj2R5Wgm4w3I4UxHkWU8
-M/LHW+UUwV8sN+LR0gQ6
-=g9z5
------END PGP SIGNATURE-----
-
---0kRkyLZR5zsR9u2P--
