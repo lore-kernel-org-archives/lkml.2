@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932360Ab2GCKYW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 06:24:22 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:50758 "EHLO ogre.sisk.pl"
+	id S932279Ab2GCKYU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 06:24:20 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:50762 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753900Ab2GCKYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753515Ab2GCKYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 3 Jul 2012 06:24:05 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH 1/2] PM / Domains: Add device domain data reference counter
-Date: Tue, 3 Jul 2012 12:28:41 +0200
+Subject: [PATCH 2/2] PM / Domains: Allow device callbacks to be added at any time
+Date: Tue, 3 Jul 2012 12:29:25 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
         Arnd Bergmann <arnd@arndb.de>
@@ -19,204 +19,152 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207031228.41960.rjw@sisk.pl>
+Message-Id: <201207031229.25301.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Add a mechanism for counting references to the
-struct generic_pm_domain_data object pointed to by
-dev->power.subsys_data->domain_data if the device in question
-belongs to a generic PM domain.
+Make it possible to modify device callbacks used by the generic PM
+domains core code at any time, not only after the device has been
+added to a domain.  This will allow device drivers to provide their
+own device PM domain callbacks even if they are registered before
+adding the devices to PM domains.
 
-This change is necessary for a subsequent patch making it possible to
-allocate that object from within pm_genpd_add_callbacks(), so that
-drivers can attach their PM domain device callbacks to devices before
-those devices are added to PM domains.
+For this purpose, use the observation that the struct
+generic_pm_domain_data object containing the relevant callback
+pointers may be allocated by pm_genpd_add_callbacks() and the
+callbacks may be set before __pm_genpd_add_device() is run for
+the given device.  This object will then be used by
+__pm_genpd_add_device(), but it has to be protected from
+premature removal by reference counting.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/power/domain.c |   83 ++++++++++++++++++++++++++++++--------------
- include/linux/pm_domain.h   |    1 
- 2 files changed, 58 insertions(+), 26 deletions(-)
+ drivers/base/power/domain.c |   66 ++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 51 insertions(+), 15 deletions(-)
 
-Index: linux/include/linux/pm_domain.h
-===================================================================
---- linux.orig/include/linux/pm_domain.h
-+++ linux/include/linux/pm_domain.h
-@@ -112,6 +112,7 @@ struct generic_pm_domain_data {
- 	struct gpd_timing_data td;
- 	struct notifier_block nb;
- 	struct mutex lock;
-+	unsigned int refcount;
- 	bool need_restore;
- 	bool always_on;
- };
 Index: linux/drivers/base/power/domain.c
 ===================================================================
 --- linux.orig/drivers/base/power/domain.c
 +++ linux/drivers/base/power/domain.c
-@@ -299,7 +299,7 @@ static int genpd_dev_pm_qos_notifier(str
- 
- 		pdd = dev->power.subsys_data ?
- 				dev->power.subsys_data->domain_data : NULL;
--		if (pdd) {
-+		if (pdd && pdd->dev) {
- 			to_gpd_data(pdd)->td.constraint_changed = true;
- 			genpd = dev_to_genpd(dev);
- 		} else {
-@@ -1272,6 +1272,27 @@ static void pm_genpd_complete(struct dev
- 
- #endif /* CONFIG_PM_SLEEP */
- 
-+static struct generic_pm_domain_data *__pm_genpd_alloc_dev_data(struct device *dev)
-+{
-+	struct generic_pm_domain_data *gpd_data;
-+
-+	gpd_data = kzalloc(sizeof(*gpd_data), GFP_KERNEL);
-+	if (!gpd_data)
-+		return NULL;
-+
-+	mutex_init(&gpd_data->lock);
-+	gpd_data->nb.notifier_call = genpd_dev_pm_qos_notifier;
-+	dev_pm_qos_add_notifier(dev, &gpd_data->nb);
-+	return gpd_data;
-+}
-+
-+static void __pm_genpd_free_dev_data(struct device *dev,
-+				     struct generic_pm_domain_data *gpd_data)
-+{
-+	dev_pm_qos_remove_notifier(dev, &gpd_data->nb);
-+	kfree(gpd_data);
-+}
-+
- /**
-  * __pm_genpd_add_device - Add a device to an I/O PM domain.
-  * @genpd: PM domain to add the device to.
-@@ -1281,7 +1302,7 @@ static void pm_genpd_complete(struct dev
- int __pm_genpd_add_device(struct generic_pm_domain *genpd, struct device *dev,
- 			  struct gpd_timing_data *td)
+@@ -1609,33 +1609,52 @@ int pm_genpd_remove_subdomain(struct gen
+  * @dev: Device to add the callbacks to.
+  * @ops: Set of callbacks to add.
+  * @td: Timing data to add to the device along with the callbacks (optional).
++ *
++ * Every call to this routine should be balanced with a call to
++ * __pm_genpd_remove_callbacks() and they must not be nested.
+  */
+ int pm_genpd_add_callbacks(struct device *dev, struct gpd_dev_ops *ops,
+ 			   struct gpd_timing_data *td)
  {
--	struct generic_pm_domain_data *gpd_data;
+-	struct pm_domain_data *pdd;
 +	struct generic_pm_domain_data *gpd_data_new, *gpd_data = NULL;
- 	struct pm_domain_data *pdd;
  	int ret = 0;
  
-@@ -1290,14 +1311,10 @@ int __pm_genpd_add_device(struct generic
- 	if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(dev))
+-	if (!(dev && dev->power.subsys_data && ops))
++	if (!(dev && ops))
  		return -EINVAL;
  
--	gpd_data = kzalloc(sizeof(*gpd_data), GFP_KERNEL);
--	if (!gpd_data)
 +	gpd_data_new = __pm_genpd_alloc_dev_data(dev);
 +	if (!gpd_data_new)
- 		return -ENOMEM;
++		return -ENOMEM;
++
+ 	pm_runtime_disable(dev);
+ 	device_pm_lock();
  
--	mutex_init(&gpd_data->lock);
--	gpd_data->nb.notifier_call = genpd_dev_pm_qos_notifier;
--	dev_pm_qos_add_notifier(dev, &gpd_data->nb);
+-	pdd = dev->power.subsys_data->domain_data;
+-	if (pdd) {
+-		struct generic_pm_domain_data *gpd_data = to_gpd_data(pdd);
 -
- 	genpd_acquire_lock(genpd);
- 
- 	if (genpd->prepared_count > 0) {
-@@ -1311,35 +1328,42 @@ int __pm_genpd_add_device(struct generic
- 			goto out;
- 		}
- 
+-		gpd_data->ops = *ops;
+-		if (td)
+-			gpd_data->td = *td;
 +	ret = dev_pm_get_subsys_data(dev);
 +	if (ret)
 +		goto out;
 +
- 	genpd->device_count++;
- 	genpd->max_off_time_changed = true;
- 
--	dev_pm_get_subsys_data(dev);
--
--	mutex_lock(&gpd_data->lock);
- 	spin_lock_irq(&dev->power.lock);
++	spin_lock_irq(&dev->power.lock);
 +
- 	dev->pm_domain = &genpd->domain;
--	dev->power.subsys_data->domain_data = &gpd_data->base;
--	gpd_data->base.dev = dev;
--	list_add_tail(&gpd_data->base.list_node, &genpd->dev_list);
--	gpd_data->need_restore = genpd->status == GPD_STATE_POWER_OFF;
 +	if (dev->power.subsys_data->domain_data) {
 +		gpd_data = to_gpd_data(dev->power.subsys_data->domain_data);
-+	} else {
+ 	} else {
+-		ret = -EINVAL;
 +		gpd_data = gpd_data_new;
 +		dev->power.subsys_data->domain_data = &gpd_data->base;
-+	}
+ 	}
 +	gpd_data->refcount++;
- 	if (td)
- 		gpd_data->td = *td;
- 
-+	spin_unlock_irq(&dev->power.lock);
++	gpd_data->ops = *ops;
++	if (td)
++		gpd_data->td = *td;
 +
-+	mutex_lock(&gpd_data->lock);
-+	gpd_data->base.dev = dev;
-+	list_add_tail(&gpd_data->base.list_node, &genpd->dev_list);
-+	gpd_data->need_restore = genpd->status == GPD_STATE_POWER_OFF;
- 	gpd_data->td.constraint_changed = true;
- 	gpd_data->td.effective_constraint_ns = -1;
--	spin_unlock_irq(&dev->power.lock);
- 	mutex_unlock(&gpd_data->lock);
++	spin_unlock_irq(&dev->power.lock);
  
--	genpd_release_lock(genpd);
--
--	return 0;
--
-  out:
- 	genpd_release_lock(genpd);
++ out:
+ 	device_pm_unlock();
+ 	pm_runtime_enable(dev);
  
--	dev_pm_qos_remove_notifier(dev, &gpd_data->nb);
--	kfree(gpd_data);
 +	if (gpd_data != gpd_data_new)
 +		__pm_genpd_free_dev_data(dev, gpd_data_new);
 +
  	return ret;
  }
- 
-@@ -1385,6 +1409,7 @@ int pm_genpd_remove_device(struct generi
+ EXPORT_SYMBOL_GPL(pm_genpd_add_callbacks);
+@@ -1644,10 +1663,13 @@ EXPORT_SYMBOL_GPL(pm_genpd_add_callbacks
+  * __pm_genpd_remove_callbacks - Remove PM domain callbacks from a given device.
+  * @dev: Device to remove the callbacks from.
+  * @clear_td: If set, clear the device's timing data too.
++ *
++ * This routine can only be called after pm_genpd_add_callbacks().
+  */
+ int __pm_genpd_remove_callbacks(struct device *dev, bool clear_td)
  {
- 	struct generic_pm_domain_data *gpd_data;
- 	struct pm_domain_data *pdd;
+-	struct pm_domain_data *pdd;
++	struct generic_pm_domain_data *gpd_data = NULL;
 +	bool remove = false;
  	int ret = 0;
  
- 	dev_dbg(dev, "%s()\n", __func__);
-@@ -1405,22 +1430,28 @@ int pm_genpd_remove_device(struct generi
- 	genpd->max_off_time_changed = true;
+ 	if (!(dev && dev->power.subsys_data))
+@@ -1656,21 +1678,35 @@ int __pm_genpd_remove_callbacks(struct d
+ 	pm_runtime_disable(dev);
+ 	device_pm_lock();
  
- 	spin_lock_irq(&dev->power.lock);
+-	pdd = dev->power.subsys_data->domain_data;
+-	if (pdd) {
+-		struct generic_pm_domain_data *gpd_data = to_gpd_data(pdd);
++	spin_lock_irq(&dev->power.lock);
+ 
++	if (dev->power.subsys_data->domain_data) {
++		gpd_data = to_gpd_data(dev->power.subsys_data->domain_data);
+ 		gpd_data->ops = (struct gpd_dev_ops){ 0 };
+ 		if (clear_td)
+ 			gpd_data->td = (struct gpd_timing_data){ 0 };
 +
- 	dev->pm_domain = NULL;
- 	pdd = dev->power.subsys_data->domain_data;
- 	list_del_init(&pdd->list_node);
--	dev->power.subsys_data->domain_data = NULL;
-+	gpd_data = to_gpd_data(pdd);
-+	if (--gpd_data->refcount == 0) {
-+		dev->power.subsys_data->domain_data = NULL;
-+		remove = true;
-+	}
++		if (--gpd_data->refcount == 0) {
++			dev->power.subsys_data->domain_data = NULL;
++			remove = true;
++		}
+ 	} else {
+ 		ret = -EINVAL;
+ 	}
+ 
++	spin_unlock_irq(&dev->power.lock);
 +
- 	spin_unlock_irq(&dev->power.lock);
+ 	device_pm_unlock();
+ 	pm_runtime_enable(dev);
  
--	gpd_data = to_gpd_data(pdd);
- 	mutex_lock(&gpd_data->lock);
- 	pdd->dev = NULL;
- 	mutex_unlock(&gpd_data->lock);
- 
- 	genpd_release_lock(genpd);
- 
--	dev_pm_qos_remove_notifier(dev, &gpd_data->nb);
--	kfree(gpd_data);
- 	dev_pm_put_subsys_data(dev);
+-	return ret;
++	if (ret)
++		return ret;
++
++	dev_pm_put_subsys_data(dev);
 +	if (remove)
 +		__pm_genpd_free_dev_data(dev, gpd_data);
 +
- 	return 0;
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(__pm_genpd_remove_callbacks);
  
-  out:
 
