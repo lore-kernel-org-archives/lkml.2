@@ -1,81 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933428Ab2GCGae (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 02:30:34 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54987 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932754Ab2GCGad (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 02:30:33 -0400
+	id S933445Ab2GCGas (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 02:30:48 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:48091 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932754Ab2GCGaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 02:30:46 -0400
+X-IronPort-AV: E=Sophos;i="4.77,515,1336320000"; 
+   d="scan'208";a="5315495"
+Message-ID: <4FF2929B.7030004@cn.fujitsu.com>
+Date: Tue, 03 Jul 2012 14:35:07 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1341265214.1911.151.camel@x61.thuisdomein>
-References: <1341265214.1911.151.camel@x61.thuisdomein>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Tue, 3 Jul 2012 14:30:11 +0800
-Message-ID: <CAMPhdO-goJK9JATj_pxbBhDFyN+ZFEHUd6PbRiMeb6RkU1OBmQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: mmp: remove mach/gpio-pxa.h
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC PATCH v2 4/13] memory-hotplug : remove /sys/firmware/memmap/X
+ sysfs
+References: <4FF287C3.4030901@jp.fujitsu.com> <4FF28996.10702@jp.fujitsu.com>
+In-Reply-To: <4FF28996.10702@jp.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/03 14:30:46,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/03 14:30:49,
+	Serialize complete at 2012/07/03 14:30:49
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-2022-JP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 3, 2012 at 5:40 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Commit 157d2644cb0c1e71a18baaffca56d2b1d0ebf10f ("ARM: pxa: change gpio
-> to platform device") removed all includes of mach/gpio-pxa.h. It kept
-> this unused header in the tree. Using it can't work, as it itself
-> includes the non-existent header plat/gpio-pxa.h. This header can safely
-> be removed.
->
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-
-Acked-by: Eric Miao <eric.y.miao@gmail.com>
-
+At 07/03/2012 01:56 PM, Yasuaki Ishimatsu Wrote:
+> When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
+> sysfs files are created. But there is no code to remove these files. The patch
+> implements the function to remove them.
+> 
+> Note : The code does not free firmware_map_entry since there is no way to free
+>        memory which is allocated by bootmem.
+> 
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 
 > ---
-> Tested only with various git commands on the (history of the) tree.
->
->  arch/arm/mach-mmp/include/mach/gpio-pxa.h |   29 -----------------------------
->  1 files changed, 0 insertions(+), 29 deletions(-)
->  delete mode 100644 arch/arm/mach-mmp/include/mach/gpio-pxa.h
->
-> diff --git a/arch/arm/mach-mmp/include/mach/gpio-pxa.h b/arch/arm/mach-mmp/include/mach/gpio-pxa.h
-> deleted file mode 100644
-> index 0e135a5..0000000
-> --- a/arch/arm/mach-mmp/include/mach/gpio-pxa.h
-> +++ /dev/null
-> @@ -1,29 +0,0 @@
-> -#ifndef __ASM_MACH_GPIO_PXA_H
-> -#define __ASM_MACH_GPIO_PXA_H
-> -
-> -#include <mach/addr-map.h>
-> -#include <mach/cputype.h>
-> -#include <mach/irqs.h>
-> -
-> -#define GPIO_REGS_VIRT (APB_VIRT_BASE + 0x19000)
-> -
-> -#define BANK_OFF(n)    (((n) < 3) ? (n) << 2 : 0x100 + (((n) - 3) << 2))
-> -#define GPIO_REG(x)    (*(volatile u32 *)(GPIO_REGS_VIRT + (x)))
-> -
-> -#define gpio_to_bank(gpio)     ((gpio) >> 5)
-> -
-> -/* NOTE: these macros are defined here to make optimization of
-> - * gpio_{get,set}_value() to work when 'gpio' is a constant.
-> - * Usage of these macros otherwise is no longer recommended,
-> - * use generic GPIO API whenever possible.
-> - */
-> -#define GPIO_bit(gpio) (1 << ((gpio) & 0x1f))
-> -
-> -#define GPLR(x)                GPIO_REG(BANK_OFF(gpio_to_bank(x)) + 0x00)
-> -#define GPDR(x)                GPIO_REG(BANK_OFF(gpio_to_bank(x)) + 0x0c)
-> -#define GPSR(x)                GPIO_REG(BANK_OFF(gpio_to_bank(x)) + 0x18)
-> -#define GPCR(x)                GPIO_REG(BANK_OFF(gpio_to_bank(x)) + 0x24)
-> -
-> -#include <plat/gpio-pxa.h>
-> -
-> -#endif /* __ASM_MACH_GPIO_PXA_H */
+>  drivers/firmware/memmap.c    |   70 +++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/firmware-map.h |    6 +++
+>  mm/memory_hotplug.c          |    6 +++
+>  3 files changed, 81 insertions(+), 1 deletion(-)
+> 
+> Index: linux-3.5-rc4/mm/memory_hotplug.c
+> ===================================================================
+> --- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-07-03 14:22:00.190240794 +0900
+> +++ linux-3.5-rc4/mm/memory_hotplug.c	2012-07-03 14:22:03.549198802 +0900
+> @@ -661,7 +661,11 @@ EXPORT_SYMBOL_GPL(add_memory);
+> 
+>  int remove_memory(int nid, u64 start, u64 size)
+>  {
+> -	return -EBUSY;
+> +	lock_memory_hotplug();
+> +	/* remove memmap entry */
+> +	firmware_map_remove(start, start + size - 1, "System RAM");
+> +	unlock_memory_hotplug();
+> +	return 0;
+> 
+>  }
+>  EXPORT_SYMBOL_GPL(remove_memory);
+> Index: linux-3.5-rc4/include/linux/firmware-map.h
+> ===================================================================
+> --- linux-3.5-rc4.orig/include/linux/firmware-map.h	2012-07-03 14:21:45.766421116 +0900
+> +++ linux-3.5-rc4/include/linux/firmware-map.h	2012-07-03 14:22:03.550198789 +0900
+> @@ -25,6 +25,7 @@
+> 
+>  int firmware_map_add_early(u64 start, u64 end, const char *type);
+>  int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
+> +int firmware_map_remove(u64 start, u64 end, const char *type);
+> 
+>  #else /* CONFIG_FIRMWARE_MEMMAP */
+> 
+> @@ -38,6 +39,11 @@ static inline int firmware_map_add_hotpl
+>  	return 0;
+>  }
+> 
+> +static inline int firmware_map_remove(u64 start, u64 end, const char *type)
+> +{
+> +	return 0;
+> +}
+> +
+>  #endif /* CONFIG_FIRMWARE_MEMMAP */
+> 
+>  #endif /* _LINUX_FIRMWARE_MAP_H */
+> Index: linux-3.5-rc4/drivers/firmware/memmap.c
+> ===================================================================
+> --- linux-3.5-rc4.orig/drivers/firmware/memmap.c	2012-07-03 14:21:45.761421180 +0900
+> +++ linux-3.5-rc4/drivers/firmware/memmap.c	2012-07-03 14:22:03.569198549 +0900
+> @@ -79,7 +79,16 @@ static const struct sysfs_ops memmap_att
+>  	.show = memmap_attr_show,
+>  };
+> 
+> +static void release_firmware_map_entry(struct kobject *kobj)
+> +{
+> +	/*
+> +	 * FIXME : There is no idea.
+> +	 *         How to free the entry which allocated bootmem?
+> +	 */
+
+I find a function free_bootmem(), but I am not sure whether it can work here.
+Another problem: how to check whether the entry uses bootmem?
+
+Thanks
+Wen Congyang
+
+> +}
+> +
+>  static struct kobj_type memmap_ktype = {
+> +	.release	= release_firmware_map_entry,
+>  	.sysfs_ops	= &memmap_attr_ops,
+>  	.default_attrs	= def_attrs,
+>  };
+> @@ -123,6 +132,16 @@ static int firmware_map_add_entry(u64 st
+>  	return 0;
+>  }
+> 
+> +/**
+> + * firmware_map_remove_entry() - Does the real work to remove a firmware
+> + * memmap entry.
+> + * @entry: removed entry.
+> + **/
+> +static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
+> +{
+> +	list_del(&entry->list);
+> +}
+> +
+>  /*
+>   * Add memmap entry on sysfs
+>   */
+> @@ -144,6 +163,31 @@ static int add_sysfs_fw_map_entry(struct
+>  	return 0;
+>  }
+> 
+> +/*
+> + * Remove memmap entry on sysfs
+> + */
+> +static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
+> +{
+> +	kobject_put(&entry->kobj);
+> +}
+> +
+> +/*
+> + * Search memmap entry
+> + */
+> +
+> +struct firmware_map_entry * __meminit
+> +find_firmware_map_entry(u64 start, u64 end, const char *type)
+> +{
+> +	struct firmware_map_entry *entry;
+> +
+> +	list_for_each_entry(entry, &map_entries, list)
+> +		if ((entry->start == start) && (entry->end == end) &&
+> +		    (!strcmp(entry->type, type)))
+> +			return entry;
+> +
+> +	return NULL;
+> +}
+> +
+>  /**
+>   * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
+>   * memory hotplug.
+> @@ -196,6 +240,32 @@ int __init firmware_map_add_early(u64 st
+>  	return firmware_map_add_entry(start, end, type, entry);
+>  }
+> 
+> +/**
+> + * firmware_map_remove() - remove a firmware mapping entry
+> + * @start: Start of the memory range.
+> + * @end:   End of the memory range (inclusive).
+> + * @type:  Type of the memory range.
+> + *
+> + * removes a firmware mapping entry.
+> + *
+> + * Returns 0 on success, or -EINVAL if no entry.
+> + **/
+> +int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
+> +{
+> +	struct firmware_map_entry *entry;
+> +
+> +	entry = find_firmware_map_entry(start, end, type);
+> +	if (!entry)
+> +		return -EINVAL;
+> +
+> +	/* remove the memmap entry */
+> +	remove_sysfs_fw_map_entry(entry);
+> +
+> +	firmware_map_remove_entry(entry);
+> +
+> +	return 0;
+> +}
+> +
+>  /*
+>   * Sysfs functions -------------------------------------------------------------
+>   */
+> 
 > --
-> 1.7.7.6
->
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
