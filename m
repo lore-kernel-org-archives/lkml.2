@@ -1,55 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab2GCJHK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 05:07:10 -0400
-Received: from gold.linx.net ([195.66.232.40]:39339 "EHLO gold.linx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751252Ab2GCJHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 05:07:09 -0400
-Message-ID: <4FF2B64A.5020002@linx.net>
-Date: Tue, 03 Jul 2012 10:07:22 +0100
-From: Tony Vroon <tony@linx.net>
-Organization: London Internet Exchange (LINX; AS5459)
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120607 Thunderbird/13.0
+	id S1755150Ab2GCJIc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 05:08:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:40839 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751252Ab2GCJIa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 05:08:30 -0400
+X-IronPort-AV: E=Sophos;i="4.77,515,1336320000"; 
+   d="scan'208";a="5317753"
+Message-ID: <4FF2B5CF.2000707@cn.fujitsu.com>
+Date: Tue, 03 Jul 2012 17:05:19 +0800
+From: Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Michael Chan <mchan@broadcom.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        "Anthony G. Basile" <basile@virtual.dyc.edu>
-Subject: Re: BNX2 MIPS06 firmware in tree is 6.2.1, driver wants 6.2.3
-References: <4FF2B263.4080000@linx.net> <1341306334.2583.81.camel@edumazet-glaptop>
-In-Reply-To: <1341306334.2583.81.camel@edumazet-glaptop>
-X-Enigmail-Version: 1.5pre
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Avi Kivity <avi@redhat.com>, mtosatti@redhat.com, ebiederm@xmission.com,
+        luto@mit.edu, Joerg Roedel <joerg.roedel@amd.com>, dzickus@redhat.com,
+        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        kexec@lists.infradead.org
+Subject: Re: [PATCH v3 4/5] Sysfs: Export VMCSINFO via sysfs
+References: <4FEAC945.50700@cn.fujitsu.com> <4FEACA5E.4090009@cn.fujitsu.com> <20120627192236.GB1965@kroah.com> <4FEC29D6.5020109@cn.fujitsu.com> <20120628113738.GA5499@kroah.com> <20120629025848.GC8074@kroah.com>
+In-Reply-To: <20120629025848.GC8074@kroah.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/03 17:08:29,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/03 17:08:33
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+于 2012年06月29日 10:58, Greg KH 写道:
+> On Thu, Jun 28, 2012 at 04:37:38AM -0700, Greg KH wrote:
+>> On Thu, Jun 28, 2012 at 05:54:30PM +0800, Yanfei Zhang wrote:
+>>> 于 2012年06月28日 03:22, Greg KH 写道:
+>>>> On Wed, Jun 27, 2012 at 04:54:54PM +0800, Yanfei Zhang wrote:
+>>>>> This patch export offsets of fields via /sys/devices/cpu/vmcs/.
+>>>>> Individual offsets are contained in subfiles named by the filed's
+>>>>> encoding, e.g.: /sys/devices/cpu/vmcs/0800
+>>>>>
+>>>>> Signed-off-by: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+>>>>> ---
+>>>>>  drivers/base/core.c |   13 +++++++++++++
+>>>>>  1 files changed, 13 insertions(+), 0 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/base/core.c b/drivers/base/core.c
+>>>>> index 346be8b..dd05ee7 100644
+>>>>> --- a/drivers/base/core.c
+>>>>> +++ b/drivers/base/core.c
+>>>>> @@ -26,6 +26,7 @@
+>>>>>  #include <linux/async.h>
+>>>>>  #include <linux/pm_runtime.h>
+>>>>>  #include <linux/netdevice.h>
+>>>>> +#include <asm/vmcsinfo.h>
+>>>>
+>>>> Did you just break the build on all other arches?  Not nice.
+>>>>
+>>>>> @@ -1038,6 +1039,11 @@ int device_add(struct device *dev)
+>>>>>  	error = dpm_sysfs_add(dev);
+>>>>>  	if (error)
+>>>>>  		goto DPMError;
+>>>>> +#if defined(CONFIG_KVM_INTEL) || defined(CONFIG_KVM_INTEL_MODULE)
+>>>>> +	error = vmcs_sysfs_add(dev);
+>>>>> +	if (error)
+>>>>> +		goto VMCSError;
+>>>>> +#endif
+>>>>
+>>>> Oh my no, that's no way to ever do this, you know better than that,
+>>>> please fix.
+>>>>
+>>>> greg k-h
+>>>>
+>>>
+>>> Sorry for my thoughtless, Here is the new patch.
+>>>
+>>> ---
+>>>  drivers/base/core.c |   13 +++++++++++++
+>>>  1 files changed, 13 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/drivers/base/core.c b/drivers/base/core.c
+>>> index 346be8b..7b5266a 100644
+>>> --- a/drivers/base/core.c
+>>> +++ b/drivers/base/core.c
+>>> @@ -30,6 +30,13 @@
+>>>  #include "base.h"
+>>>  #include "power/power.h"
+>>>  
+>>> +#if defined(CONFIG_KVM_INTEL) || defined(CONFIG_KVM_INTEL_MODULE)
+>>> +#include <asm/vmcsinfo.h>
+>>> +#else
+>>> +static inline int vmcs_sysfs_add(struct device *dev) { return 0; }
+>>> +static inline void vmcs_sysfs_remove(struct device *dev) { }
+>>> +#endif
+>>
+>> {sigh}  No, again, you know better, don't do this.
+> 
+> Ok, as others have rightly pointed out, this wasn't the most helpful
+> review comment, sorry about that.
+> 
+> In Linux, we don't put ifdefs in .c files, we put them in .h files.  See
+> many examples of this all over the place.  That's my main complaints the
+> past two times of this patch.
+> 
+> But, for this, I would question why you even want / need to do this in
+> the drivers/base/core/ file in the first place.  Shouldn't it be in some
+> arch or cpu specific file instead that already handles the cpu files?
+> 
+> thanks,
+> 
+> greg k-h
+> 
 
-On 03/07/12 10:05, Eric Dumazet wrote:
-> You're supposed to upgrade firmware blobs on your own.
+Many thanks. I have moved the code to my vmcsinfo_intel module.
+Thanks again for your helpful comment.
 
-But the firmware is in the kernel tree still, should the outdated
-files be removed?
-
-Regards,
-- -- 
-Tony Vroon
-Server systems manager
-London Internet Exchange Ltd, Trinity Court, Trinity Street,
-Peterborough, PE1 1DA
-Registered in England number 3137929
-E-Mail: tony@linx.net
-
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk/ytkoACgkQp5vW4rUFj5rN6QCfRdG1iTExVUUp6W3LPQ0Cqt/P
-VJEAoIaPAAXSm5qRFeC/e6keQyqzPUYS
-=JmDu
------END PGP SIGNATURE-----
+Thanks
+Zhang Yanfei
