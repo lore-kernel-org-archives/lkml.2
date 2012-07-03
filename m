@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932720Ab2GCSMr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 14:12:47 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:61616 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932104Ab2GCSMK (ORCPT
+	id S1756866Ab2GCSOm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 14:14:42 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:58326 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755253Ab2GCSOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 14:12:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A10AFDE@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A109B17@SHSMSX101.ccr.corp.intel.com>
- <CAPXgP10pQWHYmi1egdArnbnmq=ATDbVo3GBG-=vHskrgkCH1xA@mail.gmail.com> <27240C0AC20F114CBF8149A2696CBE4A10AFDE@SHSMSX101.ccr.corp.intel.com>
+	Tue, 3 Jul 2012 14:14:41 -0400
+Message-ID: <1341339276.815.1.camel@mop>
+Subject: [PATCH] kmsg: escape the backslash character while exporting data
 From: Kay Sievers <kay@vrfy.org>
-Date: Tue, 3 Jul 2012 20:11:48 +0200
-Message-ID: <CAPXgP10JJ3c3T7V5AV-tQyroCe01HgQUZ0F5LsoOwFTgZz5M9w@mail.gmail.com>
-Subject: Re: [PATCH] printk: replacing the raw_spin_lock/unlock with raw_spin_lock_irqsave/irqrestore
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 03 Jul 2012 20:14:36 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.5.3.1 (3.5.3.1-4.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 3, 2012 at 12:01 AM, Liu, Chuansheng
-<chuansheng.liu@intel.com> wrote:
-> Thanks your pointing out. New patch as below:
->
-> From: liu chuansheng <chuansheng.liu@intel.com>
-> Subject: [PATCH] printk: replacing the raw_spin_lock/unlock with raw_spin_lock/unlock_irq
->
-> In function devkmsg_read/writev/llseek/poll/open()..., the function
-> raw_spin_lock/unlock is used, there is potential deadlock case happening.
-> CPU1: thread1 doing the cat /dev/kmsg:
->         raw_spin_lock(&logbuf_lock);
->         while (user->seq == log_next_seq) {
-> when thread1 run here, at this time one interrupt is coming on CPU1 and running
-> based on this thread,if the interrupt handle called the printk which need the
-> logbuf_lock spin also, it will cause deadlock.
->
-> So we should use raw_spin_lock/unlock_irq here.
->
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+From: Kay Sievers <kay@vrfy.org>
+Subject: kmsg: escape the backslash character while exporting data
 
-Acked-By: Kay Sievers <kay@vrfy.org>
+Non-printable characters in the log data are hex-escaped to ensure safe
+post processing. We need to escape a backslash we find in the data, to be
+able to distinguish it from a backslash we add for the escaping.
 
-Kay
+Also escape the non-printable character 127.
+
+Thanks to Miloslav Trmac for the heads up.
+
+Signed-off-by: Kay Sievers <kay@vrfy.org>
+---
+ kernel/printk.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -465,7 +465,7 @@ static ssize_t devkmsg_read(struct file
+ 	for (i = 0; i < msg->text_len; i++) {
+ 		unsigned char c = log_text(msg)[i];
+ 
+-		if (c < ' ' || c >= 128)
++		if (c < ' ' || c >= 127 || c == '\\')
+ 			len += sprintf(user->buf + len, "\\x%02x", c);
+ 		else
+ 			user->buf[len++] = c;
+@@ -489,7 +489,7 @@ static ssize_t devkmsg_read(struct file
+ 				continue;
+ 			}
+ 
+-			if (c < ' ' || c >= 128) {
++			if (c < ' ' || c >= 127 || c == '\\') {
+ 				len += sprintf(user->buf + len, "\\x%02x", c);
+ 				continue;
+ 			}
+
+
