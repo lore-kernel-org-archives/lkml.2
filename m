@@ -1,89 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756836Ab2GCQKY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 12:10:24 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:53761 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081Ab2GCQKX convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Tue, 3 Jul 2012 12:10:23 -0400
-Message-Id: <4FF335C6020000780008D613@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Tue, 03 Jul 2012 17:11:18 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 4/4] xen/hvc: Fix up checks when the
- info is allocated.
-References: <1341330038-21686-1-git-send-email-konrad.wilk@oracle.com>
- <1341330038-21686-5-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1341330038-21686-5-git-send-email-konrad.wilk@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S932433Ab2GCQOe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 12:14:34 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:30214 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755985Ab2GCQOd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 12:14:33 -0400
+X-IronPort-AV: E=Sophos;i="4.77,516,1336363200"; 
+   d="scan'208";a="200920643"
+Message-ID: <4FF31A66.30904@citrix.com>
+Date: Tue, 3 Jul 2012 17:14:30 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 2/4] xen/perf: Define .glob for the different
+ hypercalls.
+References: <1341330038-21686-1-git-send-email-konrad.wilk@oracle.com> <1341330038-21686-3-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1341330038-21686-3-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 03.07.12 at 17:40, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> Coverity would complain about this - even thought it looks OK.
+On 03/07/12 16:40, Konrad Rzeszutek Wilk wrote:
+> This allows us in perf to have this:
 > 
-> CID 401957
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/tty/hvc/hvc_xen.c |   15 ++++++---------
->  1 files changed, 6 insertions(+), 9 deletions(-)
+>  99.67%  [kernel]             [k] xen_hypercall_sched_op
+>   0.11%  [kernel]             [k] xen_hypercall_xen_version
 > 
-> diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-> index 944eaeb..fbf41be 100644
-> --- a/drivers/tty/hvc/hvc_xen.c
-> +++ b/drivers/tty/hvc/hvc_xen.c
-> @@ -209,10 +209,8 @@ static int xen_hvm_console_init(void)
->  		info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
->  		if (!info)
->  			return -ENOMEM;
-> -	}
-> -
-> -	/* already configured */
-> -	if (info->intf != NULL)
-> +	} else if (info->intf != NULL) {
-> +		/* already configured */
->  		return 0;
+> instead of the borring ever-encompassing:
+> 
+>  99.13%  [kernel]              [k] hypercall_page
+...
+> +ENTRY(xen_hypercall_other)
+> +	.skip 2272
 
-Is this patch perhaps stale? There appears to be a missing } here,
-without which I can't see how this would have built, ...
+I can't offhand think of way of doing this, but is there a less fragile
+way to do this?
 
->  	/*
->  	 * If the toolstack (or the hypervisor) hasn't set these values, the
-> @@ -220,6 +218,7 @@ static int xen_hvm_console_init(void)
->  	 * theoretically correct values, in practice they never are and they
->  	 * mean that a legacy toolstack hasn't initialized the pv console correctly.
->  	 */
-> +	 */
+.skip PAGE_SIZE - N * 32 or something ?
 
-... and this one likely wouldn't build either.
-
-Jan
-
->  	r = hvm_get_parameter(HVM_PARAM_CONSOLE_EVTCHN, &v);
->  	if (r < 0 || v == 0)
->  		goto err;
-> @@ -259,12 +258,10 @@ static int xen_pv_console_init(void)
->  		info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
->  		if (!info)
->  			return -ENOMEM;
-> -	}
-> -
-> -	/* already configured */
-> -	if (info->intf != NULL)
-> +	} else if (info->intf != NULL) {
-> +		/* already configured */
->  		return 0;
-> -
-> +	}
->  	info->evtchn = xen_start_info->console.domU.evtchn;
->  	info->intf = mfn_to_virt(xen_start_info->console.domU.mfn);
->  	info->vtermno = HVC_COOKIE;
-
-
+David
