@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933422Ab2GCThQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 15:37:16 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53157 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933032Ab2GCThO (ORCPT
+	id S933437Ab2GCTiI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 15:38:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51348 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933032Ab2GCTiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 15:37:14 -0400
-Date: Tue, 3 Jul 2012 20:37:13 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?utf-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
-        "patches@opensource.wolfsonmicro.com" 
-	<patches@opensource.wolfsonmicro.com>,
-        =?utf-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>
-Subject: Re: Re: [PATCH] Extcon: Arizona: Add driver for Wolfson Arizona
- class devices
-Message-ID: <20120703193712.GA27375@opensource.wolfsonmicro.com>
-References: <23829569.63411341203851815.JavaMail.weblogic@epml05>
+	Tue, 3 Jul 2012 15:38:06 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
-Content-Disposition: inline
-In-Reply-To: <23829569.63411341203851815.JavaMail.weblogic@epml05>
-X-Cookie: You will soon forget this.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120703152203.065838cb@tlielax.poochiereds.net>
+References: <CALCETrVOwRyrBXDu0G=JE3dtwmXFNV6dAEHVPXYoJfUf6s2==w@mail.gmail.com>
+ <CAH2r5muEUANOjGCkP40LfFF3XtkKKtf9RAabzt-1H+xn1v5ccg@mail.gmail.com>
+ <CALCETrWnXh9cDMzF2=yo7XqvgmPGeSPQ+uXYkniVXP4PuRoQCw@mail.gmail.com>
+ <CALCETrV=7DrqzNBLBdUVycM8471+vfA5H3Hf7-PTjanH0K8=gg@mail.gmail.com> <20120703152203.065838cb@tlielax.poochiereds.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 3 Jul 2012 12:37:44 -0700
+Message-ID: <CALCETrVLG5y6B-DWHX_5pOMifxq562VM9LYVgpNNa5qoEKUhHg@mail.gmail.com>
+Subject: Re: 3.5.0-rc3 (approximately) oops on cifs mount
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Steve French <smfrench@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 3, 2012 at 12:22 PM, Jeff Layton <jlayton@redhat.com> wrote:
+> On Tue, 3 Jul 2012 11:59:02 -0700
+> Andy Lutomirski <luto@amacapital.net> wrote:
+>
+>> On Mon, Jul 2, 2012 at 5:28 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> > On Mon, Jul 2, 2012 at 5:21 PM, Steve French <smfrench@gmail.com> wrote:
+>> >> Any recreation information?
+>> >
+>> > I think it was a result of trying to mount with an incorrect password,
+>> > which surprises me a bit.  I'll try to reproduce in a little bit.
+>>
+>> Correction: it was not a wrong password -- I mounted with the correct
+>> password.  So far, I can't reproduce it.
+>>
+>> --Andy
+>>
+>
+> It crashed here:
+>
+>     BUG_ON(cpu >= nr_cpu_ids && cpu != WORK_CPU_UNBOUND);
+>
+> Very odd. Seems almost like this must be some sort of memory
+> corruption. The work is initialized just a little bit before it gets
+> queued. The only thing I can figure is that something raced in and
+> clobbered the work struct beforehand.
+>
+> One thing you could do -- maybe disassemble get_work_gcwq() and post
+> the results here? Maybe from that we can see what the "cpu" value
+> actually was by figuring out the register that holds it?
 
---7AUc2qLy4jB3hD7Z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I'll see if I can find an identical kernel build.  Unfortunately, I
+hit this oops after building and installing a new kernel but before
+rebooting into it.
 
-On Mon, Jul 02, 2012 at 04:37:31AM +0000, MyungJoo Ham wrote:
+--Andy
 
-> I'll put this to git
-> http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next
-> after testing with the MFD part of Arizona drivers.
+>
+> --
+> Jeff Layton <jlayton@redhat.com>
 
-If you're maintaining this tree could you please include it in -next so
-things get integration tested?  I guess some coordination with Greg is
-required, there's a bunch of patches already queued in his tree for
-extcon.
 
---7AUc2qLy4jB3hD7Z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP80nhAAoJEBus8iNuMP3dip8P/jGF9YX8ax3QPWdr327B5+uv
-v1mzLz+LUhy3JH2QNm0CvOkt9sb6WzA+MJwyRedxL/KKj5QSPdd5MYmswy0E1RLo
-UblhzIPUwJGdogBj6bK+QVD+4jTKdO9rNaCx97dLrrl+SzgFSCkiBjnNPc92G2ly
-dbhKBSM5FA/EgxdWCK0I4QEoDwGD1BV7RoVGHaAWOXNoTeofDUhJw05vwLjaUc91
-lyG/kQPvoRTU4zchbuSpAEAYHBZfvl3XyC77Nu1vBAMb+79P/3dGhL8SnNnL5hwY
-BJjMACGq0pdzofBgYYoQygszFQOqnuwK4vqmuODHrDocCb1KVUeT84wLdyak8Osf
-XVzRag6EMVeB3Bl/3A8FCSSWYbs0URGk1pShFDwhZ/XXbNoQto5SaJINx6x3owMh
-H4pYlXrezng2pcH9QVcCpgP97XLruoiGOAFgtqXplL6TpXLv1rOtZhDqZoxFECqe
-J6UblfYUEc8mUozpNBM3HaTg6YxXLRAzY5W8kYRNyQi8MGe3dLAtUtQWmAsg+GX1
-hiZpMDBNRxZjoTivlzhO8QQKRgzxc/OiF3+2INmVhv9gIwkg4Eh9YWkjghgx+1VN
-e2S0mR/tiwyqXIomNWXYt3wlbIvdIZqnYMumMQjz8l9D1YC9JTx7OdxuPOyQmUVm
-m0GdfpeEOVLZ8vWNsSj6
-=5oS4
------END PGP SIGNATURE-----
-
---7AUc2qLy4jB3hD7Z--
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
