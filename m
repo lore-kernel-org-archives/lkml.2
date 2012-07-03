@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab2GCGpr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 02:45:47 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:22369 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab2GCGpq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 02:45:46 -0400
-Message-ID: <4FF29509.3030909@siemens.com>
-Date: Tue, 03 Jul 2012 08:45:29 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S964774Ab2GCGs3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 02:48:29 -0400
+Received: from mga01.intel.com ([192.55.52.88]:45818 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752897Ab2GCGs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 02:48:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="172820806"
+Date: Tue, 3 Jul 2012 14:48:22 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: kvm segfaults and bad page state in 3.4.0
+Message-ID: <20120703064822.GA17367@localhost>
+References: <20120604114603.GA6988@localhost>
+ <4FF293FE.2010100@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 5/6 v5] deal with guest panicked event accoring to -onpanic
- parameter
-References: <4FEAAE6E.7070302@cn.fujitsu.com> <4FEAAFFF.40401@cn.fujitsu.com> <4FEB1B06.4050309@siemens.com> <4FEBB044.1000306@cn.fujitsu.com> <4FEC153B.6040300@siemens.com> <4FF28C17.703@cn.fujitsu.com> <4FF292D5.20403@siemens.com> <4FF29482.6050206@cn.fujitsu.com>
-In-Reply-To: <4FF29482.6050206@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF293FE.2010100@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-07-03 08:43, Wen Congyang wrote:
->> I'm not talking about changing the interface to the guest, I'm talking
->> about how to model it in QEMU. And that difference would be transparent
->> to the guest. I pointed you to examples like hw/kvm/clock.c.
+Hi Guangrong,
+
+On Tue, Jul 03, 2012 at 02:41:02PM +0800, Xiao Guangrong wrote:
+> Hi Fengguang,
 > 
-> OK, I will read the code in hw/kvm/clock.c
+> I can reproduce this bug in my test case, and have posted
+> a patch to fix it which can found at:
+> http://marc.info/?l=linux-mm&m=134129723504527&w=2
+> 
+> Could you please try it?
 
-Just to avoid confusion: That example is just good for a trivial
-framework. It does vmstate saving, something you don't need as your
-"device" is stateless. If you want to find out how to register PIO
-ranges, also check e.g. hw/pcspk.c.
+Thank you very much! I'm glad to try it out in my compile servers.
+Note that I've not encountered the bug since then (seems not very
+reproducible). So the feedback would be kind of "the patch works well"
+rather than confirming that it fixed the bug for me. Sorry for that.
 
-Jan
+Thanks,
+Fengguang
 
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
-
-
+> On 06/04/2012 07:46 PM, Fengguang Wu wrote:
+> > Hi,
+> > 
+> > I'm running lots of kvm instances for doing kernel boot tests.
+> > Unfortunately the test system itself is not stable enough, I got scary
+> > errors in both kvm and the host kernel. Like this. 
+> > 
+> > [294025.795382] kvm used greatest stack depth: 2896 bytes left
+> > [310388.622083] kvm[1864]: segfault at c ip 00007f498e9f6a81 sp 00007f4994b9fca0 error 4 in kvm[7f498e960000+33b000]
+> > [310692.050589] kvm[4332]: segfault at 10 ip 00007fca662620b9 sp 00007fca70472af0 error 6 in kvm[7fca661cc000+33b000]
+> > [312608.950120] kvm[18931]: segfault at 8 ip 00007f95962a10a5 sp 00007f959d777170 error 4 in kvm[7f959620b000+33b000]
+> > [312622.941640] kvm[19123]: segfault at 10 ip 00007f406f5580b9 sp 00007f4077d8b350 error 6 in kvm[7f406f4c2000+33b000]
+> > [313917.860951] kvm[28789]: segfault at c ip 00007f718f4dfa81 sp 00007f7198459520 error 4 in kvm[7f718f449000+33b000]
+> > [313919.177192] kvm used greatest stack depth: 2864 bytes left
+> > [314061.390945] kvm used greatest stack depth: 2208 bytes left
+> > [327479.676068] BUG: Bad page state in process kvm  pfn:59ac9
