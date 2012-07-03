@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933127Ab2GCF0R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 01:26:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46788 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753958Ab2GCF0P (ORCPT
+	id S1754983Ab2GCF1A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 01:27:00 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:49299 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754125Ab2GCF06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 01:26:15 -0400
-Message-ID: <1341293168.3241.7.camel@phoenix>
-Subject: RE: [PATCH 2/2] regulator: tps65217: Fix voltage boundary checking
- in tps65217_pmic_map_voltage
-From: Axel Lin <axel.lin@gmail.com>
-To: "AnilKumar, Chimata" <anilkumar@ti.com>
-Cc: "Girdwood, Liam" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Tue, 03 Jul 2012 13:26:08 +0800
-In-Reply-To: <331ABD5ECB02734CA317220B2BBEABC13E9E8CAB@DBDE01.ent.ti.com>
-References: <1341284473.18757.2.camel@phoenix>
-	 <1341284755.18757.5.camel@phoenix>
-	 <331ABD5ECB02734CA317220B2BBEABC13E9E8CAB@DBDE01.ent.ti.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 3 Jul 2012 01:26:58 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6760"; a="204586557"
+X-IronPort-AV: E=Sophos;i="4.77,514,1336374000"; 
+   d="scan'208";a="121591027"
+From: "Ren, Cloud" <cjren@qca.qualcomm.com>
+To: <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <qca-linux-team@qualcomm.com>, <nic-devel@qualcomm.com>,
+        Cloud Ren <cjren@qca.qualcomm.com>
+Subject: [PATCH 1/1] atl1c: fix issue of transmit queue 0 timed out
+Date: Tue, 3 Jul 2012 10:27:36 -0300
+Message-ID: <1341322056-26582-1-git-send-email-cjren@qca.qualcomm.com>
+X-Mailer: git-send-email 1.7.7
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.30.39.5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Cloud Ren <cjren@qca.qualcomm.com>
 
-> Case 1:-
-> ------
-> 
-> tps->info[rid]->min_uV = 600000;
-> tps->info[rid]->max_uV = 1100000;
-> 
-> If we do regulator_set_voltage(reg, 550000, 1100000);
-> 
-> This results into error condition and how can we handle with this?
+some people report atl1c could cause system hang with following
+kernel trace info:
+---------------------------------------
+WARNING: at.../net/sched/sch_generic.c:258 dev_watchdog+0x1db/0x1d0()
+...
+NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
+...
+---------------------------------------
+This is caused by netif_stop_queue calling when cable Link is down.
+So remove netif_stop_queue, because link_watch will take it over.
 
-In original code, it returns error. ( I think which is wrong.)
+Signed-off-by: xiong <xiong@qca.qualcomm.com>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Cloud Ren <cjren@qca.qualcomm.com>
+---
+ drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-What we want is to set the smallest voltage within the specified voltage
-range.
-With this patch, calling regulator_set_voltage(reg, 550000, 1100000);
-is the same as calling regulator_set_voltage(reg, 600000, 1100000);
-It will set the voltage to 600000 uV.
-
-> 
-> Case 2:-
-> ------
-> 
-> I think the current code handles this case as well.
-> 
-> There might be a case where board/DT data is false like
-> 
-> tps->info[rid]->min_uV = 1100000;
-> tps->info[rid]->max_uV = 600000;
-> 
-I don't get it.
-You mean the case min_uV is greater than max_uV?
-
-My understanding of current implementation is that the
-tps->info[rid]->min_uV and tps->info[rid]->max_uV are not controlled by
-board/DT data. They are defined in tps65217_pmic_regs[].
-
-> regulator_set_voltage(reg, 650000, 1100000);
-> 
-> Regards
-> AnilKumar
-
+diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+index 85717cb..7901831 100644
+--- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
++++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
+@@ -261,7 +261,6 @@ static void atl1c_check_link_status(struct atl1c_adapter *adapter)
+ 	if ((phy_data & BMSR_LSTATUS) == 0) {
+ 		/* link down */
+ 		netif_carrier_off(netdev);
+-		netif_stop_queue(netdev);
+ 		hw->hibernate = true;
+ 		if (atl1c_reset_mac(hw) != 0)
+ 			if (netif_msg_hw(adapter))
+-- 
+1.7.7
 
