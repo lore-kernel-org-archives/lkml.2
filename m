@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757016Ab2GCRcf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 13:32:35 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:46625 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181Ab2GCRce (ORCPT
+	id S1754395Ab2GCRiO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 13:38:14 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:60928 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724Ab2GCRiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 13:32:34 -0400
-Date: Tue, 3 Jul 2012 11:32:31 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
+	Tue, 3 Jul 2012 13:38:11 -0400
+Date: Tue, 3 Jul 2012 10:38:06 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Li Zefan <lizefan@huawei.com>, shyju pv <shyju.pv@huawei.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [ 38/48] SCSI & usb-storage: add try_rc_10_first flag
-Message-ID: <20120703173231.GC28804@parisc-linux.org>
-References: <1341296326.3319.17.camel@dabdike> <Pine.LNX.4.44L0.1207031142210.17487-100000@netrider.rowland.org>
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Sanil kumar <sanil.kumar@huawei.com>,
+        Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] cgroup: cgroup_rm_files() was calling simple_unlink() with
+ the wrong inode
+Message-ID: <20120703173806.GD555@google.com>
+References: <20120627182903.GP15811@google.com>
+ <4FEBF4B7.2070105@huawei.com>
+ <20120628180712.GC22641@google.com>
+ <4FED10DB.7040500@huawei.com>
+ <20120629165809.GB21048@google.com>
+ <4FEE98EE.1050409@huawei.com>
+ <20120630064724.GC14083@ZenIV.linux.org.uk>
+ <CAOS58YNnU3J+c2ZQcRCesSoxn0dSJjDLBsZ2qzZ09X6N-ky0fQ@mail.gmail.com>
+ <20120630083421.GD14083@ZenIV.linux.org.uk>
+ <20120703171033.GC555@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1207031142210.17487-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120703171033.GC555@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 03, 2012 at 11:49:00AM -0400, Alan Stern wrote:
-> On Tue, 3 Jul 2012, James Bottomley wrote:
-> 
-> > >   What happened is that T10
-> > > in their infinite wisdom decided to put things like "supports TRIM" and
-> > > "is actually a 4k block size but fakes 512 byte blocks" in the Read
-> > > Capacity 16 results.  So if we want to support those kinds of things
-> > > (and I think we do), then we need to send Read Capacity 16 to devices.
-> > 
-> > But anyway, we're stuck ... we have to send RC16 first to support these
-> > features.  We did protest to T10 at the time, but to no avail.
-> 
-> Does it have to be sent _first_?
-> 
-> Or would it be okay to send _both_ commands and believe the RC10
-> capacity rather than the RC16 capacity if they differ?
+>From 6da2689412c78b97716ec524cc30baf7b46508cd Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Tue, 3 Jul 2012 10:32:26 -0700
 
-I have no problem with doing that (and believing RC16 over RC10 if RC10
-claims 0xffffffff, naturally).  The problem, as I understand it, is that
-some devices crash upon receiving RC16 rather than just returning nonsense.
+While refactoring cgroup file removal path, 05ef1d7c4a "cgroup:
+introduce struct cfent" incorrectly changed the @dir argument of
+simple_unlink() to the inode of the file being deleted instead of that
+of the containing directory.
 
-> > I still think a whitelist of USB devices sending proper SCSI level
-> > information in the inquiry might be the best way forward.
-> 
-> I'm doubtful.  It wouldn't be at all surprising for devices to claim 
-> they support a particular level when in fact they support some but not 
-> all of the required commands.  Then what do you do?  Put them on the 
-> whitelist because of the commands they support, or leave them off 
-> because of the other ones?  What happens later on when you decide to 
-> use more of the required commands?
+The effect of this bug is minor - ctime and mtime of the parent
+weren't properly updated on file deletion.
 
-SCSI has a fairly extensive collection of black/white list flags already
-... see scsi_devinfo.[ch].
+Fix it by using @cgrp->dentry->d_inode instead.
 
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+---
+Will commit to cgroup/for-3.5-fixes.  Li, can you please ack this?
+
+Thanks.
+
+ kernel/cgroup.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 2097684..b214fc2 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -964,7 +964,7 @@ static int cgroup_rm_file(struct cgroup *cgrp, const struct cftype *cft)
+ 
+ 		dget(d);
+ 		d_delete(d);
+-		simple_unlink(d->d_inode, d);
++		simple_unlink(cgrp->dentry->d_inode, d);
+ 		list_del_init(&cfe->node);
+ 		dput(d);
+ 
 -- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+1.7.7.3
+
