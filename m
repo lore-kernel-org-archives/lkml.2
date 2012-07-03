@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932928Ab2GCDtT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 23:49:19 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18886 "EHLO mga11.intel.com"
+	id S933056Ab2GCD7m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 23:59:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41881 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755553Ab2GCDtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 23:49:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="172777695"
-Date: Tue, 3 Jul 2012 11:49:15 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Prasad Koya <prasad.koya@gmail.com>
-Cc: jack@suse.cz, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: sync blocked for long time
-Message-ID: <20120703034915.GA7872@localhost>
-References: <CAGXD9OfLmSHzikhXxVi7f2wHBVO4det1KHReXc70YkEgYdQTLg@mail.gmail.com>
+	id S1756030Ab2GCD7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 23:59:41 -0400
+Date: Mon, 2 Jul 2012 23:59:24 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        axboe@kernel.dk, martin.petersen@oracle.com, david@fromorbit.com,
+        xfs@oss.sgi.com, dm-devel@redhat.com, hch@lst.de
+Subject: Re: [PATCH v2 1/3] block: add sysfs entry for discard_alignment
+Message-ID: <20120703035924.GA6182@redhat.com>
+References: <1341235225-27551-1-git-send-email-pbonzini@redhat.com>
+ <1341235225-27551-2-git-send-email-pbonzini@redhat.com>
+ <20120703023442.GB3586@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXD9OfLmSHzikhXxVi7f2wHBVO4det1KHReXc70YkEgYdQTLg@mail.gmail.com>
+In-Reply-To: <20120703023442.GB3586@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prasad,
+On Mon, Jul 02 2012 at 10:34pm -0400,
+Vivek Goyal <vgoyal@redhat.com> wrote:
 
-On Mon, Jul 02, 2012 at 08:37:19PM -0700, Prasad Koya wrote:
-> Hi
+> On Mon, Jul 02, 2012 at 03:20:23PM +0200, Paolo Bonzini wrote:
+> > The next patches will actually use the alignment, expose it in sysfs
+> > for ease of debugging.
+> > 
 > 
-> Sorry about writing to your personal address. I'm running into below panic
-> but I couldn't find any patch for this in 2.6.32. I do see below discussion
-> related to pretty much similar issue which doesn't appear to be resolved. I
-> looked around quite a bit but I couldn't find any patches for this. Is this
-> still unresolved? I have 2 USB sticks and I can get into this state by
-> copying 2 large files (say 200-300M each) simultaneously (followed by sync)
-> into both drives.
-
-That is doing sync lots of data on slow device, with the sync time
-being further enlarged by the active writers. I can imagine for the
-sync to take very long time.
-
-What's the filesystem btw?
-
-> Appreciate any pointers.
+> Don't we already have discard_alignment exported as device attribute.
 > 
-> thank you.
-> 
-> http://marc.info/?t=126596633700002&r=1&w=2
-> 
-> 
-> <3>[  600.392088] INFO: task sync:2675 blocked for more than 120 seconds.
-> <3>[  600.466884] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
-> disables this message.
-...
-> <4>[  600.560507]  [<ffffffff810a7dab>] sync_inodes_sb+0x1d/0xf1
-> <4>[  600.560519]  [<ffffffff810abb3e>] __sync_filesystem+0x29/0x52
-> <4>[  600.560536]  [<ffffffff810abc0f>] sync_filesystems+0xa8/0xfe
-> <4>[  600.560556]  [<ffffffff810abcb5>] sys_sync+0x1c/0x2e
-> <4>[  600.560570]  [<ffffffff810260c5>] cstar_dispatch+0x7/0x2b
-> <0>[  600.560580] Kernel panic - not syncing: hung_task: blocked tasks
+> /sys/block/<dev>/discard_alignment
 
-Please check /proc/sys/kernel/hung_task_panic . Normal users should
-never set it to 1..
+Yes we do.  It is documented in Documentation/ABI/testing/sysfs-block
 
-Thanks,
-Fengguang
+So this patch isn't needed.
