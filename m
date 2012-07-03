@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933146Ab2GCGoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 02:44:25 -0400
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:58557 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125Ab2GCGoO (ORCPT
+	id S1756168Ab2GCGpr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 02:45:47 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:22369 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab2GCGpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 02:44:14 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap9MAKCU8k9V5qg+PGdsb2JhbABFihWsVhkBAQEBHhkNJ4IYAQEEATocIwULCANGFCUKGogZCbstFJBeYAOVNIVmjH8
-X-IronPort-AV: E=Sophos;i="4.77,515,1336341600"; 
-   d="scan'208";a="367410643"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 3 Jul 2012 08:44:07 +0200
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Jan Beulich <jbeulich@suse.com>, Jiri Kosina <jkosina@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: hid/Kconfig:7:error: recursive dependency detected!
-Message-ID: <20120703064407.GA4854@polaris.bitmath.org>
-References: <20120703040640.GA8236@localhost>
+	Tue, 3 Jul 2012 02:45:46 -0400
+Message-ID: <4FF29509.3030909@siemens.com>
+Date: Tue, 03 Jul 2012 08:45:29 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120703040640.GA8236@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH 5/6 v5] deal with guest panicked event accoring to -onpanic
+ parameter
+References: <4FEAAE6E.7070302@cn.fujitsu.com> <4FEAAFFF.40401@cn.fujitsu.com> <4FEB1B06.4050309@siemens.com> <4FEBB044.1000306@cn.fujitsu.com> <4FEC153B.6040300@siemens.com> <4FF28C17.703@cn.fujitsu.com> <4FF292D5.20403@siemens.com> <4FF29482.6050206@cn.fujitsu.com>
+In-Reply-To: <4FF29482.6050206@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fengguang,
-
-> I got this error while doing randconfig test:
+On 2012-07-03 08:43, Wen Congyang wrote:
+>> I'm not talking about changing the interface to the guest, I'm talking
+>> about how to model it in QEMU. And that difference would be transparent
+>> to the guest. I pointed you to examples like hw/kvm/clock.c.
 > 
->         drivers/hid/Kconfig:7:error: recursive dependency detected!
->         drivers/hid/Kconfig:7:  symbol HID is selected by USB_HID
->         drivers/hid/usbhid/Kconfig:4:   symbol USB_HID depends on HID
+> OK, I will read the code in hw/kvm/clock.c
 
-What kernel tree does this apply to? Reading through the code again
-and testing your configuration, I cannot reproduce the
-problem. Indeed, in my tree, USB_HID does not depend on HID.
+Just to avoid confusion: That example is just good for a trivial
+framework. It does vmstate saving, something you don't need as your
+"device" is stateless. If you want to find out how to register PIO
+ranges, also check e.g. hw/pcspk.c.
 
-For completeness, here are all the HID-related options in your attached file:
+Jan
 
-# CONFIG_BT_HIDP is not set
-# HID support
-CONFIG_HID=m
-# CONFIG_HIDRAW is not set
-# CONFIG_UHID is not set
-# USB HID support
-# CONFIG_USB_HID is not set
-CONFIG_HID_PID=y
-# USB HID Boot Protocol drivers
-# Special HID drivers
-CONFIG_HID_GENERIC=m
-# USB HID support
-# USB HID Boot Protocol drivers
-CONFIG_USB_G_HID=m
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
 
-Thanks,
-Henrik
+
