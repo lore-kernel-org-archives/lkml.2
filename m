@@ -1,109 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349Ab2GCM5J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 08:57:09 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45275 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168Ab2GCM5D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 08:57:03 -0400
-Message-ID: <4FF2EC1A.7020702@linaro.org>
-Date: Tue, 03 Jul 2012 14:56:58 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756247Ab2GCNBx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 09:01:53 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:37313 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752636Ab2GCNBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 09:01:51 -0400
+Date: Tue, 3 Jul 2012 15:00:42 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: hpa@zytor.com
+Cc: linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
+        alan@linux.intel.com, linux@arm.linux.org.uk, x86@kernel.org,
+        gregkh@linuxfoundation.org, arnd@arndb.de,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH V2 5/6] x86: add CONFIG_ARM_AMBA, selected by STA2X11
+Message-ID: <20120703130042.GA10007@mail.gnudd.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org,
-        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>, linux-next@vger.kernel.org,
-        Colin Cross <ccross@android.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rob Lee <rob.lee@linaro.org>, "lenb@kernel.org" <lenb@kernel.org>
-Subject: Re: linux-next : cpuidle - could you add my tree please
-References: <4FDEE98D.7010802@linaro.org> <201207022149.36629.rjw@sisk.pl> <4FF21D48.50301@linaro.org> <201207031059.13758.rjw@sisk.pl>
-In-Reply-To: <201207031059.13758.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <2b797c83-6a3c-4051-841a-a4cfa9d1cae1@email.android.com>
+References: <2b797c83-6a3c-4051-841a-a4cfa9d1cae1@email.android.com>
+  <4FECB95D.7010200@zytor.com> <cover.1338222460.git.rubini@gnudd.com>
+ <f85fefb10b7a7407b77180be65b18bf0426145b9.1338222461.git.rubini@gnudd.com>
+ <20120701104401.GA4352@mail.gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2012 10:59 AM, Rafael J. Wysocki wrote:
-> On Tuesday, July 03, 2012, Daniel Lezcano wrote:
->> On 07/02/2012 09:49 PM, Rafael J. Wysocki wrote:
->>> On Monday, July 02, 2012, Daniel Lezcano wrote:
->>>>
->>>> On 07/02/2012 11:09 AM, Linus Walleij wrote:
->>>>> On Mon, Jun 25, 2012 at 3:27 PM, Daniel Lezcano
->>>>> <daniel.lezcano@linaro.org> wrote:
->>>>>
->>>>>> we discussed last week to put in place a tree grouping the cpuidle
->>>>>> modifications [1]. Is it possible to add the tree ?
->>>>>>
->>>>>> git://git.linaro.org/people/dlezcano/cpuidle-next.git #cpuidle-next
->>>>>
->>>>> Thanks for doing this.
->>>>>
->>>>> Since MAINTAINERS is lacking a listed maintainer for cpuidle,
->>>>> are you also going to add yourself as maintainer and list this
->>>>> tree in that file, or is this a one-time exercise?
->>>>
->>>> I will be glad to do that if Len and Rafael agree on that.
->>>
->>> Len Brown has been a cpuidle maintainer for some time now.  Moreover,
->>> he's been taking patches, but Linus refused to pull his entire tree during the
->>> last merge window (as you probably know).  I honestly don't think this is
->>> a good enough reason for replacing him as a cpuidle maintainer by force.
->>>
->>> So, you should ask Len whether or not he's willing to pass the cpuidle
->>> maintenance to someone else.
->>
->> No, no. You are misunderstanding what I am proposing. I don't want to
->> replace Len I just want to act as a "proxy". I understand a maintainer
->> can be busy and could not have enough time to take care of the subsystem
->> is maintaining during a period because he's too busy for that.
->> Trust me, I fully understand that :)
->>
->> As there are a lot of modifications of cpuidle, I am proposing to take
->> the patches when they are acked-by, to create a consolidated tree,
->> providing a better integration for cpuidle, a wider testing, preventing
->> conflicts and facilitating Len's work if he agrees to pull from this tree.
->>
->> If that makes sense to add myself to the MAINTAINER file as a
->> co-maintainer (understand: send to me also the patches, so I can take
->> care of them if Len does not respond), I am ok with that.
->>
->> It is just about helping :)
-> 
-> Cool. :-)
-> 
-> So do you have a branch in the cpuidle-next.git tree that isn't going to
-> be rebased?
+Peter Anvin:
+> There is no problem with adding ARM or !X86 dependencies to drivers
+> now and fixing them later or as required.
 
-No. I am following Linus tree and adding the patches on top of it.
+Ok. This is my summary of the compilation errors I have when
+enabling ARM_AMBA undex x86 and enabling everything that appears
+in "make oldconfig":
 
->>> I know that Len hasn't been responsive recently, but I also know that he
->>> _does_ respond to inquiries sent directly to him.
->>
->> Do you mean to its intel address ?
-> 
-> Yes, CCing the Len's Intel address won't hurt I think.
 
-Ok, I will ping him and give him the pointers to the discussion we had.
+This is a sum up of the errors in all driver that are
+enabled by telling "CONFIG_ARM_AMBA=y" in the x86 config.
 
-Thanks
-  -- Daniel
+   drivers/dma/pl330.c: register names conflict with arch symbols
+     proposed fix: use proper prefix names
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+   drivers/dma/amba-pl08x.c: needs <asm/hardware/pl080.h>
+     proposed fix: move pl080.h to include/linux
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+   drivers/gpio/gpio-pl061.c: uses chained_irq_enter/exit
+     proposed fix: depend on CONFIG_ARM (the function only exists in arm)
 
+   drivers/mmc/host/mmci.c: uses <asm/sizes.h>
+   drivers/mmc/host/mmci.c: uses readsl/writesl
+     proposed fix: use linux/sizes.h and provide readsl/writesl like others do
+
+   drivers/spi/spi-pl022.c: warning for an integer size mismatch
+     proposed fix: none by now
+
+   drivers/watchdog/sp805_wdt.c: uses writel_relaxed
+     proposed fix: depend on CONFIG_ARM (this is a spear-only cell by now)
+
+
+So, if you agree, I would:
+
+    - fix the two dma engines (checking pl080 against russell's pending
+    patches)
+
+    - make pl061 and sp805_wdt.c depends on CONFIG_ARM
+
+    - temporarily do the same for mmci, which I'll make work soon as
+    I have it under my pci bridge
+
+    - ignore the warning on spi-pl022 until I find a fix
+
+    - resubmit my enabling of arm_amba for x86 and my pci-to-amba bridge
+    driver.
+
+thanks
+/alessandro
