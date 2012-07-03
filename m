@@ -1,81 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933448Ab2GCTku (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 15:40:50 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:44660 "EHLO
+	id S933414Ab2GCTmg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 15:42:36 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:44666 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932693Ab2GCTkt (ORCPT
+	with ESMTP id S1757168Ab2GCTmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 15:40:49 -0400
-Date: Tue, 3 Jul 2012 21:40:47 +0200
+	Tue, 3 Jul 2012 15:42:35 -0400
+Date: Tue, 3 Jul 2012 21:42:34 +0200
 From: Andi Kleen <andi@firstfloor.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Jiri Kosina <jkosina@suse.cz>,
-        Calvin Walton <calvin.walton@kepstin.ca>, linux-kernel@vger.kernel.org,
-        shemminger@vyatta.com
+To: Calvin Walton <calvin.walton@kepstin.ca>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel@vger.kernel.org, shemminger@vyatta.com
 Subject: Re: long boot delays caused by 070ad7e7 floppy change
-Message-ID: <20120703194047.GN11413@one.firstfloor.org>
-References: <20120702224648.GA20361@tassilo.jf.intel.com> <CA+55aFwre6s=orjUaNKJA=51Fc1mxu_XGX80Bex4Sn-=mWPx5Q@mail.gmail.com> <1341323230.3292.10.camel@nayuki.kepstin.ca> <CA+55aFyvzz3Lp9zeA6X+QMan0iZFWq_0Xd+ff_trnP1tpn2iJQ@mail.gmail.com> <1341337257.2406.1.camel@nayuki.kepstin.ca> <CA+55aFzOD33eWj0FQuZ7RWmF-yYwaeNB-9J-YY+mX4mwP7VXuA@mail.gmail.com> <CA+55aFwQqTAHNafGBXaoPCzVYw83OZvbG_hOYEDUxmuoMODO3Q@mail.gmail.com> <alpine.LNX.2.00.1207032008350.17304@pobox.suse.cz> <20120703185808.GM11413@one.firstfloor.org> <CA+55aFzFQiYhJcBfGD7moL3gC-ocwXJ2-kTjuNrw5hBGGbz4ag@mail.gmail.com>
+Message-ID: <20120703194234.GO11413@one.firstfloor.org>
+References: <CA+55aFwre6s=orjUaNKJA=51Fc1mxu_XGX80Bex4Sn-=mWPx5Q@mail.gmail.com> <1341323230.3292.10.camel@nayuki.kepstin.ca> <CA+55aFyvzz3Lp9zeA6X+QMan0iZFWq_0Xd+ff_trnP1tpn2iJQ@mail.gmail.com> <1341337257.2406.1.camel@nayuki.kepstin.ca> <CA+55aFzOD33eWj0FQuZ7RWmF-yYwaeNB-9J-YY+mX4mwP7VXuA@mail.gmail.com> <CA+55aFwQqTAHNafGBXaoPCzVYw83OZvbG_hOYEDUxmuoMODO3Q@mail.gmail.com> <alpine.LNX.2.00.1207032008350.17304@pobox.suse.cz> <20120703185808.GM11413@one.firstfloor.org> <CA+55aFzFQiYhJcBfGD7moL3gC-ocwXJ2-kTjuNrw5hBGGbz4ag@mail.gmail.com> <1341344200.2413.4.camel@nayuki.kepstin.ca>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzFQiYhJcBfGD7moL3gC-ocwXJ2-kTjuNrw5hBGGbz4ag@mail.gmail.com>
+In-Reply-To: <1341344200.2413.4.camel@nayuki.kepstin.ca>
 User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 03, 2012 at 12:12:53PM -0700, Linus Torvalds wrote:
-> On Tue, Jul 3, 2012 at 11:58 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> >
-> > [    2.496493] calling  floppy_init+0x0/0xe46 @ 1
-> > [    2.511303] floppy0: lock_fdc: -1 (out of 8)
-> > [    2.511346] floppy0: __reschedule_timeout: setting timeout to 750
+On Tue, Jul 03, 2012 at 03:36:40PM -0400, Calvin Walton wrote:
+> On Tue, 2012-07-03 at 12:12 -0700, Linus Torvalds wrote:
+> > What happens if you add a
+> > 
+> >         cancel_delayed_work(&fd_timeout);
+> > 
+> > to before the queue_delayed_work() in __reschedule_timeout()? Does
+> > that possibly make the delay really be 3 seconds?
 > 
-> Ahhah. And you have CONFIG_HZ250 set, don't you?
+> Yes, it does...
+> [    0.718571] floppy0: reschedule timeout lock fdc
+> [    1.650956] Refined TSC clocksource calibration: 2698.760 MHz.
+> [    1.651109] Switching to clocksource tsc
+> [    3.724664] floppy0: reschedule timeout do wakeup
+> [    3.724815] floppy0: no floppy controllers found
+> 
+> diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+> index cce7df3..c8064e4 100644
+> --- a/drivers/block/floppy.c
+> +++ b/drivers/block/floppy.c
+> @@ -678,6 +678,8 @@ static void __reschedule_timeout(int drive, const char *message)
+>  	} else
+>  		delay = UDP->timeout;
+>  
+> +	cancel_delayed_work(&fd_timeout);
+> +
+>  	queue_delayed_work(floppy_wq, &fd_timeout, delay);
+>  	if (UDP->flags & FD_DEBUG)
+>  		DPRINT("reschedule timeout %s\n", message);
+> 
+> Of course, a 3 second delay at this point in boot is still a fairly big
+> bit of waiting, given how fast everything else is nowadays.
 
-Yes I do.
+Here's the patch I did for that yesterday
 
-> 
-> So it's actually asking for a 3-second timeout like it should.
-> 
-> > [    2.511372] floppy0: reschedule timeout lock fdc
-> > [   22.501757] floppy0: reschedule timeout do wakeup
-> 
-> But that actual timeout is too damn reliably pretty much exactly 20s
-> for it to be anything else.
-> 
-> I wonder if 'fd_timeout' had been previously queued already with the
-> 20s timeout, and not canceled. So then the new queuing of a 3-second
-> timeout doesn't actually do anything, because the
-> WORK_STRUCT_PENDING_BIT is still set.
-> 
-> So maybe we're missing a cancel somewhere.
-> 
-> What happens if you add a
-> 
->         cancel_delayed_work(&fd_timeout);
-> 
-> to before the queue_delayed_work() in __reschedule_timeout()? Does
-> that possibly make the delay really be 3 seconds?
 
-That works.  Patch cuts it down to 3s as before 
+>From 04a4d851d1c96b6685352d9cef41b77966cc7a1e Mon Sep 17 00:00:00 2001
+From: Andi Kleen <ak@linux.intel.com>
+Date: Mon, 2 Jul 2012 17:07:08 -0700
+Subject: [PATCH] floppy: Run floppy initialization asynchronous
 
-Tested-by: Andi Kleen <ak@linux.intel.com>
+floppy_init is quite slow, 3s on my test system to determine
+that there is no floppy. Run it asynchronous to the other
+init calls to improve boot time.
 
-(and with the async probe patch I posted earlier the kernel
-boot time goes down by ~1s from 14 to 13ish)
+Cuts down boot time by 1s on a system of mine.
 
--Andi
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-With Linus patch:
+diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+index cce7df3..8b5769b 100644
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -191,6 +191,7 @@ static int print_unex = 1;
+ #include <linux/mutex.h>
+ #include <linux/io.h>
+ #include <linux/uaccess.h>
++#include <linux/async.h>
+ 
+ /*
+  * PS/2 floppies have much slower step rates than regular floppies.
+@@ -4122,7 +4123,7 @@ static struct kobject *floppy_find(dev_t dev, int *part, void *data)
+ 	return get_disk(disks[drive]);
+ }
+ 
+-static int __init floppy_init(void)
++static int __init do_floppy_init(void)
+ {
+ 	int i, unit, drive;
+ 	int err, dr;
+@@ -4337,6 +4338,24 @@ out_put_disk:
+ 	return err;
+ }
+ 
++#ifndef MODULE
++static __init void floppy_async_init(void *data, async_cookie_t cookie)
++{
++	do_floppy_init();
++}
++#endif
++
++static int __init floppy_init(void)
++{
++#ifdef MODULE
++	return do_floppy_init(void);
++#else
++	/* Don't hold up the bootup by the floppy initialization */
++	async_schedule(floppy_async_init, NULL);
++	return 0;
++#endif
++}
++
+ static const struct io_region {
+ 	int offset;
+ 	int size;
+-- 
+1.7.7.6
 
-[    2.492449] calling  floppy_init+0x0/0xe46 @ 1
-[    2.507259] floppy0: lock_fdc: -1 (out of 8)
-[    2.507304] floppy0: __reschedule_timeout: setting timeout to 750
-[    2.507330] floppy0: reschedule timeout lock fdc
-[    5.509642] floppy0: reschedule timeout do wakeup
-[    5.509683] floppy0: no floppy controllers found
-[    5.509796] initcall floppy_init+0x0/0xe46 returned -19 after 2952148
-usecs
-[    5.509826] calling  brd_init+0x0/0x1ce @ 1
+
+
+
+
