@@ -1,108 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672Ab2GCFuk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 01:50:40 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46775 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751998Ab2GCFuj (ORCPT
+	id S1755847Ab2GCFwu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 01:52:50 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51707 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753980Ab2GCFws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 01:50:39 -0400
-Date: Tue, 3 Jul 2012 15:50:37 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for July 3
-Message-Id: <20120703155037.998191dc7de2a7a9bd993ea8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__3_Jul_2012_15_50_37_+1000_=L155V0pXkGqlkdf"
+	Tue, 3 Jul 2012 01:52:48 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FF2889C.8030800@jp.fujitsu.com>
+Date: Tue, 3 Jul 2012 14:52:28 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
+CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
+        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>
+Subject: [RFC PATCH v2 1/13] memory-hotplug : rename remove_memory to offline_memory
+References: <4FF287C3.4030901@jp.fujitsu.com>
+In-Reply-To: <4FF287C3.4030901@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__3_Jul_2012_15_50_37_+1000_=L155V0pXkGqlkdf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+remove_memory() does not remove memory but just offlines memory. The patch
+changes name of it to offline_memory().
 
-Hi all,
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Changes since 20120702:
+---
+ drivers/acpi/acpi_memhotplug.c |    2 +-
+ drivers/base/memory.c          |    4 ++--
+ include/linux/memory_hotplug.h |    2 +-
+ mm/memory_hotplug.c            |    6 +++---
+ 4 files changed, 7 insertions(+), 7 deletions(-)
 
-New tree: clk
+Index: linux-3.5-rc4/drivers/acpi/acpi_memhotplug.c
+===================================================================
+--- linux-3.5-rc4.orig/drivers/acpi/acpi_memhotplug.c	2012-07-03 14:21:46.102416917 +0900
++++ linux-3.5-rc4/drivers/acpi/acpi_memhotplug.c	2012-07-03 14:21:49.458374960 +0900
+@@ -318,7 +318,7 @@ static int acpi_memory_disable_device(st
+ 	 */
+ 	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+ 		if (info->enabled) {
+-			result = remove_memory(info->start_addr, info->length);
++			result = offline_memory(info->start_addr, info->length);
+ 			if (result)
+ 				return result;
+ 		}
+Index: linux-3.5-rc4/drivers/base/memory.c
+===================================================================
+--- linux-3.5-rc4.orig/drivers/base/memory.c	2012-07-03 14:21:46.095417003 +0900
++++ linux-3.5-rc4/drivers/base/memory.c	2012-07-03 14:21:49.459374948 +0900
+@@ -266,8 +266,8 @@ memory_block_action(unsigned long phys_i
+ 			break;
+ 		case MEM_OFFLINE:
+ 			start_paddr = page_to_pfn(first_page) << PAGE_SHIFT;
+-			ret = remove_memory(start_paddr,
+-					    nr_pages << PAGE_SHIFT);
++			ret = offline_memory(start_paddr,
++					     nr_pages << PAGE_SHIFT);
+ 			break;
+ 		default:
+ 			WARN(1, KERN_WARNING "%s(%ld, %ld) unknown action: "
+Index: linux-3.5-rc4/mm/memory_hotplug.c
+===================================================================
+--- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-07-03 14:21:46.102416917 +0900
++++ linux-3.5-rc4/mm/memory_hotplug.c	2012-07-03 14:21:49.466374860 +0900
+@@ -990,7 +990,7 @@ out:
+ 	return ret;
+ }
 
-The net-next tree gained a conflict against the wireless tree.
+-int remove_memory(u64 start, u64 size)
++int offline_memory(u64 start, u64 size)
+ {
+ 	unsigned long start_pfn, end_pfn;
 
-The usb tree gained a conflict against the mfd tree.
+@@ -999,9 +999,9 @@ int remove_memory(u64 start, u64 size)
+ 	return offline_pages(start_pfn, end_pfn, 120 * HZ);
+ }
+ #else
+-int remove_memory(u64 start, u64 size)
++int offline_memory(u64 start, u64 size)
+ {
+ 	return -EINVAL;
+ }
+ #endif /* CONFIG_MEMORY_HOTREMOVE */
+-EXPORT_SYMBOL_GPL(remove_memory);
++EXPORT_SYMBOL_GPL(offline_memory);
+Index: linux-3.5-rc4/include/linux/memory_hotplug.h
+===================================================================
+--- linux-3.5-rc4.orig/include/linux/memory_hotplug.h	2012-07-03 14:21:46.102416917 +0900
++++ linux-3.5-rc4/include/linux/memory_hotplug.h	2012-07-03 14:21:49.471374796 +0900
+@@ -233,7 +233,7 @@ static inline int is_mem_section_removab
+ extern int mem_online_node(int nid);
+ extern int add_memory(int nid, u64 start, u64 size);
+ extern int arch_add_memory(int nid, u64 start, u64 size);
+-extern int remove_memory(u64 start, u64 size);
++extern int offline_memory(u64 start, u64 size);
+ extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
+ 								int nr_pages);
+ extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
 
-The pwm tree still has its build failure which I have left broken for now.
-
-The akpm tree lost a patch that turned up elsewhere.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc,
-sparc64 and arm defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 192 trees (counting Linus' and 26 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
-Gortmaker for triage and bug fixes.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__3_Jul_2012_15_50_37_+1000_=L155V0pXkGqlkdf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP8ogtAAoJEECxmPOUX5FEu1gP/Au1z2O6cF1qAimy6SD2jocS
-heik7CoxHaYy5qfsun2bEC6UYaC7HrkLM7kP1rbd4e1IslVIK/o9x8HwmjksJCGI
-ym6d32uCV0c9P6mR+x+e8ASHIhrLNJwX0uUzN1WP0PxclB1RBMOzPhg3/gZHlHjN
-WacAsYHSKvkyIzhL3zikXHaj1qz2Lc7ALFpo7327Hy0CTHxh7enGRC4/Mgt/Pg/T
-XTRzj98cI+PKZw2QqPvZS+PyKf5B8zlnUY9ovrdpy8JAVcFOuY5AB3wXn7MkAFqD
-6OtMtPYG00mH3NS9/pmiisUeAZe3jozo4S93JoFkreiinleSoOb0qt3V/umx5o5n
-cHqFWUeGzwwTIUOeJdIc63ENM/7SJS6JomY6Yanyov3sGpsKOFVxbrsymwHmDe/i
-hn57dK+CC7CZUComz0pRzcVinJFPf7A5pkfSSfhM8NThQnfFxFEPBX9XPO68X47/
-6L+UhCN6dgjQR9Vkj+GscGra3hwmwe5gJKb8VvqxDeHxUs4cpA6chFkT07squmrK
-9lKSnhugwfGlBC9fHtNpUzejTjJt08963ogjf6zklROV3gIDhvTarmkkPfta3gVp
-cFAjyVccg4PznA92spzLLqOTUw4KQHva3JTKTHXmqZIP5kpKDpMFfZkSGAV6B0YG
-5bg7PumSxtXVmRUMriua
-=5ox9
------END PGP SIGNATURE-----
-
---Signature=_Tue__3_Jul_2012_15_50_37_+1000_=L155V0pXkGqlkdf--
