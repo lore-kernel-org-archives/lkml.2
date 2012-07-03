@@ -1,60 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784Ab2GCNHv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 09:07:51 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:39187 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab2GCNHu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 09:07:50 -0400
-Message-ID: <4FF2EEA1.6080204@linaro.org>
-Date: Tue, 03 Jul 2012 14:07:45 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S933007Ab2GCNIW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 09:08:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41789 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755588Ab2GCNIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 09:08:20 -0400
+Date: Tue, 3 Jul 2012 14:08:16 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        dri-devel@lists.freedesktop.org, Keith Packard <keithp@keithp.com>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [MMTests] IO metadata on XFS
+Message-ID: <20120703130816.GE14154@suse.de>
+References: <20120620113252.GE4011@suse.de>
+ <20120629111932.GA14154@suse.de>
+ <20120629112505.GF14154@suse.de>
+ <20120701235458.GM19223@dastard>
+ <20120702063226.GA32151@infradead.org>
+ <20120702143215.GS14154@suse.de>
+ <20120702193516.GX14154@suse.de>
+ <20120703001928.GV19223@dastard>
+ <20120703105951.GB14154@suse.de>
+ <20120703123119.GA5103@phenom.ffwll.local>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de, sameo@linux.intel.com
-Subject: Re: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device
- registration
-References: <1341316788-12730-1-git-send-email-lee.jones@linaro.org> <20120703123552.GC25995@sirena.org.uk>
-In-Reply-To: <20120703123552.GC25995@sirena.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120703123119.GA5103@phenom.ffwll.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/12 13:35, Mark Brown wrote:
-> On Tue, Jul 03, 2012 at 12:59:48PM +0100, Lee Jones wrote:
->> We register the ab8500 as an MFD device from db8500 code during Device Tree
->> boot in order to solve some limitations of DT. However, when Device Tree is
->> not enabled, we still want to allow platform code to register the ab8500 in
->> the normal way. Here we force MFD device registration of the ab8500 only
->> when booting with Device Tree enabled.
->>
->> Solves this issue:
->> WARNING: at fs/sysfs/dir.c:526 sysfs_add_one+0x88/0xb0()
->> sysfs: cannot create duplicate filename '/bus/platform/devices/ab8500-core.0'
->
-> Do we really want to create MFD cells like this (which are really Linux
-> internal things and might vary if another OS or another version of Linux
-> changes its internal abstractions) from the device tree?
+On Tue, Jul 03, 2012 at 02:31:19PM +0200, Daniel Vetter wrote:
+> On Tue, Jul 03, 2012 at 11:59:51AM +0100, Mel Gorman wrote:
+> > On Tue, Jul 03, 2012 at 10:19:28AM +1000, Dave Chinner wrote:
+> > > On Mon, Jul 02, 2012 at 08:35:16PM +0100, Mel Gorman wrote:
+> > > > Adding dri-devel and a few others because an i915 patch contributed to
+> > > > the regression.
+> > > > 
+> > > > On Mon, Jul 02, 2012 at 03:32:15PM +0100, Mel Gorman wrote:
+> > > > > On Mon, Jul 02, 2012 at 02:32:26AM -0400, Christoph Hellwig wrote:
+> > > > > > > It increases the CPU overhead (dirty_inode can be called up to 4
+> > > > > > > times per write(2) call, IIRC), so with limited numbers of
+> > > > > > > threads/limited CPU power it will result in lower performance. Where
+> > > > > > > you have lots of CPU power, there will be little difference in
+> > > > > > > performance...
+> > > > > > 
+> > > > > > When I checked it it could only be called twice, and we'd already
+> > > > > > optimize away the second call.  I'd defintively like to track down where
+> > > > > > the performance changes happend, at least to a major version but even
+> > > > > > better to a -rc or git commit.
+> > > > > > 
+> > > > > 
+> > > > > By all means feel free to run the test yourself and run the bisection :)
+> > > > > 
+> > > > > It's rare but on this occasion the test machine is idle so I started an
+> > > > > automated git bisection. As you know the milage with an automated bisect
+> > > > > varies so it may or may not find the right commit. Test machine is sandy so
+> > > > > http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__io-metadata-xfs/sandy/comparison.html
+> > > > > is the report of interest. The script is doing a full search between v3.3 and
+> > > > > v3.4 for a point where average files/sec for fsmark-single drops below 25000.
+> > > > > I did not limit the search to fs/xfs on the off-chance that it is an
+> > > > > apparently unrelated patch that caused the problem.
+> > > > > 
+> > > > 
+> > > > It was obvious very quickly that there were two distinct regression so I
+> > > > ran two bisections. One led to a XFS and the other led to an i915 patch
+> > > > that enables RC6 to reduce power usage.
+> > > > 
+> > > > [aa464191: drm/i915: enable plain RC6 on Sandy Bridge by default]
+> > > 
+> > > Doesn't seem to be the major cause of the regression. By itself, it
+> > > has impact, but the majority comes from the XFS change...
+> > > 
+> > 
+> > The fact it has an impact at all is weird but lets see what the DRI
+> > folks think about it.
+> 
+> Well, presuming I understand things correctly the cpu die only goes into
+> the lowest sleep state (which iirc switches off l3 caches and
+> interconnects) when both the cpu and gpu are in the lowest sleep state.
 
-We're not creating them. We're merely using current infrastructure.
+I made a mistake in my previous mail. gdm and X were were *not* running.
+Once the screen blanked I would guess the GPU is in a low sleep state
+the majority of the time.
 
-Before, when we probed each device from Device Tree we came up against 
-some fairly major limitations of the Device Tree. As a result, Arnd and 
-I agreed that this was the way to go.
+> rc6 is that deep-sleep state for the gpu, so without that enabled your
+> system won't go into these deep-sleep states.
+> 
+> I guess the slight changes in wakeup latency, power consumption (cuts
+> about 10W on an idle desktop snb with resulting big effect on what turbo
+> boost can sustain for short amounts of time) and all the follow-on effects
+> are good enough to massively change timing-critical things.
+> 
 
-See c5395e7ed8f16cc7bb72a783de68659db5aed515 for a short description of 
-the troubles we faced.
+Maybe. How aggressively is the lowest sleep state entered and how long
+does it take to exit?
+
+> So this having an effect isn't too weird.
+> 
+> Obviously, if you also have X running while doing these tests there's the
+> chance that the gpu dies because of an issue when waking up from rc6
+> (we've known a few of these), but if no drm client is up, that shouldn't
+> be possible. So please retest without X running if that hasn't been done
+> already.
+> 
+
+Again, sorry for the confusion but the posted results are without X running.
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
-
-
+Mel Gorman
+SUSE Labs
