@@ -1,63 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933488Ab2GCGec (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 02:34:32 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:7662 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933435Ab2GCGeb (ORCPT
+	id S932443Ab2GCGgd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 02:36:33 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:16489 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869Ab2GCGgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 02:34:31 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 02 Jul 2012 23:33:33 -0700
-Message-ID: <4FF2914B.1000601@nvidia.com>
-Date: Tue, 3 Jul 2012 11:59:31 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Tue, 3 Jul 2012 02:36:32 -0400
+Message-ID: <4FF292D5.20403@siemens.com>
+Date: Tue, 03 Jul 2012 08:36:05 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "tiwai@suse.de" <tiwai@suse.de>, "perex@perex.cz" <perex@perex.cz>,
-        Stephen Warren <swarren@nvidia.com>, "lrg@ti.com" <lrg@ti.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] ASoC: tegra: use dmaengine based dma driver
-References: <1340969673-7776-1-git-send-email-ldewangan@nvidia.com> <1340969673-7776-2-git-send-email-ldewangan@nvidia.com> <4FF1D083.7060207@wwwdotorg.org>
-In-Reply-To: <4FF1D083.7060207@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH 5/6 v5] deal with guest panicked event accoring to -onpanic
+ parameter
+References: <4FEAAE6E.7070302@cn.fujitsu.com> <4FEAAFFF.40401@cn.fujitsu.com> <4FEB1B06.4050309@siemens.com> <4FEBB044.1000306@cn.fujitsu.com> <4FEC153B.6040300@siemens.com> <4FF28C17.703@cn.fujitsu.com>
+In-Reply-To: <4FF28C17.703@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark,
-On Monday 02 July 2012 10:16 PM, Stephen Warren wrote:
-> On 06/29/2012 05:34 AM, Laxman Dewangan wrote:
->> Use the dmaengine based Tegra APB DMA driver for
->> data transfer between SPI fifo and memory in
->> place of legacy Tegra APB DMA.
+On 2012-07-03 08:07, Wen Congyang wrote:
+> At 06/28/2012 04:26 PM, Jan Kiszka Wrote:
+>> On 2012-06-28 03:15, Wen Congyang wrote:
+>>> At 06/27/2012 10:39 PM, Jan Kiszka Wrote:
+>>>> On 2012-06-27 09:02, Wen Congyang wrote:
+>>>>> When the guest is panicked, it will write 0x1 to the port KVM_PV_PORT.
+>>>>> So if qemu reads 0x1 from this port, we can do the folloing three
+>>>>> things according to the parameter -onpanic:
+>>>>> 1. emit QEVENT_GUEST_PANICKED only
+>>>>> 2. emit QEVENT_GUEST_PANICKED and pause the guest
+>>>>> 3. emit QEVENT_GUEST_PANICKED and poweroff the guest
+>>>>> 4. emit QEVENT_GUEST_PANICKED and reset the guest
+>>>>>
+>>>>> Note: if we emit QEVENT_GUEST_PANICKED only, and the management
+>>>>> application does not receive this event(the management may not
+>>>>> run when the event is emitted), the management won't know the
+>>>>> guest is panicked.
+>>>>>
+>>>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>>>>> ---
+>>>>>  kvm-all.c       |  101 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>>>>  kvm-stub.c      |    9 +++++
+>>>>>  kvm.h           |    3 ++
+>>>>>  qemu-options.hx |   15 ++++++++
+>>>>>  vl.c            |   10 +++++
+>>>>>  5 files changed, 138 insertions(+), 0 deletions(-)
+>>>>>
+>>>>> diff --git a/kvm-all.c b/kvm-all.c
+>>>>> index f8e4328..9494dd2 100644
+>>>>> --- a/kvm-all.c
+>>>>> +++ b/kvm-all.c
+>>>>> @@ -19,6 +19,8 @@
+>>>>>  #include <stdarg.h>
+>>>>>  
+>>>>>  #include <linux/kvm.h>
+>>>>> +#include <linux/kvm_para.h>
+>>>>> +#include <asm/kvm_para.h>
+>>>>>  
+>>>>>  #include "qemu-common.h"
+>>>>>  #include "qemu-barrier.h"
+>>>>> @@ -32,6 +34,9 @@
+>>>>>  #include "bswap.h"
+>>>>>  #include "memory.h"
+>>>>>  #include "exec-memory.h"
+>>>>> +#include "iorange.h"
+>>>>> +#include "qemu-objects.h"
+>>>>> +#include "monitor.h"
+>>>>>  
+>>>>>  /* This check must be after config-host.h is included */
+>>>>>  #ifdef CONFIG_EVENTFD
+>>>>> @@ -1931,3 +1936,99 @@ int kvm_on_sigbus(int code, void *addr)
+>>>>>  {
+>>>>>      return kvm_arch_on_sigbus(code, addr);
+>>>>>  }
+>>>>> +
+>>>>> +/* Possible values for action parameter. */
+>>>>> +#define PANICKED_REPORT     1   /* emit QEVENT_GUEST_PANICKED only */
+>>>>> +#define PANICKED_PAUSE      2   /* emit QEVENT_GUEST_PANICKED and pause VM */
+>>>>> +#define PANICKED_POWEROFF   3   /* emit QEVENT_GUEST_PANICKED and quit VM */
+>>>>> +#define PANICKED_RESET      4   /* emit QEVENT_GUEST_PANICKED and reset VM */
+>>>>> +
+>>>>> +static int panicked_action = PANICKED_REPORT;
+>>>>> +
+>>>>> +static void kvm_pv_port_read(IORange *iorange, uint64_t offset, unsigned width,
+>>>>> +                             uint64_t *data)
+>>>>> +{
+>>>>> +    *data = (1 << KVM_PV_FEATURE_PANICKED);
+>>>>> +}
+>>>>> +
+>>>>> +static void panicked_mon_event(const char *action)
+>>>>> +{
+>>>>> +    QObject *data;
+>>>>> +
+>>>>> +    data = qobject_from_jsonf("{ 'action': %s }", action);
+>>>>> +    monitor_protocol_event(QEVENT_GUEST_PANICKED, data);
+>>>>> +    qobject_decref(data);
+>>>>> +}
+>>>>> +
+>>>>> +static void panicked_perform_action(void)
+>>>>> +{
+>>>>> +    switch (panicked_action) {
+>>>>> +    case PANICKED_REPORT:
+>>>>> +        panicked_mon_event("report");
+>>>>> +        break;
+>>>>> +
+>>>>> +    case PANICKED_PAUSE:
+>>>>> +        panicked_mon_event("pause");
+>>>>> +        vm_stop(RUN_STATE_GUEST_PANICKED);
+>>>>> +        break;
+>>>>> +
+>>>>> +    case PANICKED_POWEROFF:
+>>>>> +        panicked_mon_event("poweroff");
+>>>>> +        exit(0);
+>>>>> +        break;
+>>>>> +    case PANICKED_RESET:
+>>>>> +        panicked_mon_event("reset");
+>>>>> +        qemu_system_reset_request();
+>>>>> +        break;
+>>>>> +    }
+>>>>> +}
+>>>>> +
+>>>>> +static void kvm_pv_port_write(IORange *iorange, uint64_t offset, unsigned width,
+>>>>> +                              uint64_t data)
+>>>>> +{
+>>>>> +    if (data == KVM_PV_PANICKED) {
+>>>>> +        panicked_perform_action();
+>>>>> +    }
+>>>>> +}
+>>>>> +
+>>>>> +static void kvm_pv_port_destructor(IORange *iorange)
+>>>>> +{
+>>>>> +    g_free(iorange);
+>>>>> +}
+>>>>> +
+>>>>> +static IORangeOps pv_io_range_ops = {
+>>>>> +    .read = kvm_pv_port_read,
+>>>>> +    .write = kvm_pv_port_write,
+>>>>> +    .destructor = kvm_pv_port_destructor,
+>>>>> +};
+>>>>> +
+>>>>> +#if defined(KVM_PV_PORT)
+>>>>> +void kvm_pv_port_init(void)
+>>>>> +{
+>>>>> +    IORange *pv_io_range = g_malloc(sizeof(IORange));
+>>>>> +
+>>>>> +    iorange_init(pv_io_range, &pv_io_range_ops, KVM_PV_PORT, 1);
+>>>>> +    ioport_register(pv_io_range);
+>>>>
+>>>> This modeling is still not ok. We don't open-code ports anymore, we
+>>>> introduce devices. And this doesn't belong inro generic code as it is
+>>>
+>>> Do you mean introducing a new device instead of I/O port?
 >>
->> Because generic soc-dmaengine-pcm uses the DMAs API
->> based on dmaengine, using the exported APIs provided
->> by this generic driver.
->>
->> The new driver is selected if legacy driver is not
->> selected and new dma driver is enabled through config
->> file.
->>
->> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
-> Acked-by: Stephen Warren<swarren@wwwdotorg.org>
-> Tested-by: Stephen Warren<swarren@wwwdotorg.org>
->
-> (Tested on Cardhu/Tegra30. It fails on Whistler/Tegra20, but I assume
-> that's due to a bug in the dmaengine driver not this patch. There won't
-> be a regression when applying this patch since we haven't switched to
-> dmaengine as the default yet).
+>> I mean encapsulating the I/O registration (PIO or MMIO) in a QOM device
+> 
+> A QOM device? Do you mean introduce a new device? If so, the guest should
+> have a driver to know such device. Another problem is: we cannot use
+> such device when the kernel is starting(the device's driver is not ready).
+> If we use a new device, I think virtio-serial is enough. The reason why
+> I do not use virtio-serial is: I want the feature can also work when the
+> kernel is starting.
 
-Are you taking this patch?
-I have other independent patch for the writecombine dma support in pcm 
-memory library and wanted to avoid any merge conflicts.
-So if it goes in your tree then the other patch also need to go in your 
-tree.
+I'm not talking about changing the interface to the guest, I'm talking
+about how to model it in QEMU. And that difference would be transparent
+to the guest. I pointed you to examples like hw/kvm/clock.c.
 
+Jan
+
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
