@@ -1,86 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757316Ab2GCXlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 19:41:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51202 "EHLO mx2.suse.de"
+	id S933542Ab2GCXuA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 19:50:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55280 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750731Ab2GCXli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 19:41:38 -0400
-Date: Wed, 4 Jul 2012 09:41:33 +1000
-From: NeilBrown <neilb@suse.de>
-To: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: md: fix up plugging (again). breaks build of the latest 3.5rc5+
-Message-ID: <20120704094133.3f58fcf1@notabene.brown>
-In-Reply-To: <4FF36732.3060306@mni.thm.de>
-References: <4FF36732.3060306@mni.thm.de>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/0piDZB9NJ=5QaNG9.Bjhz5f"; protocol="application/pgp-signature"
+	id S1753915Ab2GCXt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 19:49:57 -0400
+From: Rafael Aquini <aquini@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>, Rafael Aquini <aquini@redhat.com>
+Subject: [PATCH v3 1/4] mm: introduce compaction and migration for virtio ballooned pages
+Date: Tue,  3 Jul 2012 20:48:49 -0300
+Message-Id: <adcf9c5aa908a1972c90d7a741a1e75f3ec28404.1341353014.git.aquini@redhat.com>
+In-Reply-To: <cover.1341353014.git.aquini@redhat.com>
+References: <cover.1341353014.git.aquini@redhat.com>
+In-Reply-To: <cover.1341353014.git.aquini@redhat.com>
+References: <cover.1341353014.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/0piDZB9NJ=5QaNG9.Bjhz5f
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+This patch introduces the helper functions as well as the necessary changes
+to teach compaction and migration bits how to cope with pages which are
+part of a guest memory balloon, in order to make them movable by memory
+compaction procedures.
 
-On Tue, 03 Jul 2012 23:42:10 +0200 Tobias Klausmann
-<tobias.johannes.klausmann@mni.thm.de> wrote:
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+---
+ include/linux/mm.h |   15 +++++++
+ mm/compaction.c    |  126 ++++++++++++++++++++++++++++++++++++++++++++--------
+ mm/migrate.c       |   30 ++++++++++++-
+ 3 files changed, 151 insertions(+), 20 deletions(-)
 
-> Proposing this patch:
->=20
-> >From c6ac2740ed916ccf5b6fec0682101dd7a6a50f9f Mon Sep 17 00:00:00 2001
-> From: Tobias Klausmann <tobias.klausmann@mni.thm.de>
-> Date: Tue, 3 Jul 2012 23:03:43 +0200
-> Subject: [PATCH] Fix patch md: fix up plugging again. Commit
->  b357f04a67c2aeee828b240863cd3f21d6cb3179
->=20
-> ---
->  drivers/md/raid10.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->=20
-> diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-> index acf5a82..8da6282 100644
-> --- a/drivers/md/raid10.c
-> +++ b/drivers/md/raid10.c
-> @@ -1394,7 +1394,7 @@ retry_write:
->  		bio_list_add(&conf->pending_bio_list, mbio);
->  		conf->pending_count++;
->  		spin_unlock_irqrestore(&conf->device_lock, flags);
-> -		if (!mddev_check_plugged(mddev, 0, 0))
-> +		if (!mddev_check_plugged(mddev))
->  			md_wakeup_thread(mddev->thread);
->=20
->  		if (!r10_bio->devs[i].repl_bio)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index b36d08c..3112198 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1629,5 +1629,20 @@ static inline unsigned int debug_guardpage_minorder(void) { return 0; }
+ static inline bool page_is_guard(struct page *page) { return false; }
+ #endif /* CONFIG_DEBUG_PAGEALLOC */
+ 
++#if (defined(CONFIG_VIRTIO_BALLOON) || \
++	defined(CONFIG_VIRTIO_BALLOON_MODULE)) && defined(CONFIG_COMPACTION)
++extern bool putback_balloon_page(struct page *);
++extern struct address_space *balloon_mapping;
++
++static inline bool is_balloon_page(struct page *page)
++{
++	return (page->mapping == balloon_mapping) ? true : false;
++}
++#else
++static inline bool is_balloon_page(struct page *page)       { return false; }
++static inline bool isolate_balloon_page(struct page *page)  { return false; }
++static inline bool putback_balloon_page(struct page *page)  { return false; }
++#endif /* (VIRTIO_BALLOON || VIRTIO_BALLOON_MODULE) && COMPACTION */
++
+ #endif /* __KERNEL__ */
+ #endif /* _LINUX_MM_H */
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 7ea259d..887d0fc 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -14,6 +14,7 @@
+ #include <linux/backing-dev.h>
+ #include <linux/sysctl.h>
+ #include <linux/sysfs.h>
++#include <linux/export.h>
+ #include "internal.h"
+ 
+ #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+@@ -21,6 +22,85 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/compaction.h>
+ 
++#if defined(CONFIG_VIRTIO_BALLOON) || defined(CONFIG_VIRTIO_BALLOON_MODULE)
++/*
++ * Balloon pages special page->mapping.
++ * Users must properly allocate and initialize an instance of balloon_mapping,
++ * and set it as the page->mapping for balloon enlisted page instances.
++ * There is no need on utilizing struct address_space locking schemes for
++ * balloon_mapping as, once it gets initialized at balloon driver, it will
++ * remain just like a static reference that helps us on identifying a guest
++ * ballooned page by its mapping, as well as it will keep the 'a_ops' callback
++ * pointers to the functions that will execute the balloon page mobility tasks.
++ *
++ * address_space_operations necessary methods for ballooned pages:
++ *   .migratepage    - used to perform balloon's page migration (as is)
++ *   .invalidatepage - used to isolate a page from balloon's page list
++ *   .freepage       - used to reinsert an isolated page to balloon's page list
++ */
++struct address_space *balloon_mapping;
++EXPORT_SYMBOL_GPL(balloon_mapping);
++
++static inline void __isolate_balloon_page(struct page *page)
++{
++	page->mapping->a_ops->invalidatepage(page, 0);
++}
++
++static inline void __putback_balloon_page(struct page *page)
++{
++	page->mapping->a_ops->freepage(page);
++}
++
++/* __isolate_lru_page() counterpart for a ballooned page */
++static bool isolate_balloon_page(struct page *page)
++{
++	if (WARN_ON(!is_balloon_page(page)))
++		return false;
++
++	if (likely(get_page_unless_zero(page))) {
++		/*
++		 * We can race against move_to_new_page() & __unmap_and_move().
++		 * If we stumble across a locked balloon page and succeed on
++		 * isolating it, the result tends to be disastrous.
++		 */
++		if (likely(trylock_page(page))) {
++			/*
++			 * A ballooned page, by default, has just one refcount.
++			 * Prevent concurrent compaction threads from isolating
++			 * an already isolated balloon page.
++			 */
++			if (is_balloon_page(page) && (page_count(page) == 2)) {
++				__isolate_balloon_page(page);
++				unlock_page(page);
++				return true;
++			}
++			unlock_page(page);
++		}
++		/* Drop refcount taken for this already isolated page */
++		put_page(page);
++	}
++	return false;
++}
++
++/* putback_lru_page() counterpart for a ballooned page */
++bool putback_balloon_page(struct page *page)
++{
++	if (WARN_ON(!is_balloon_page(page)))
++		return false;
++
++	if (likely(trylock_page(page))) {
++		if (is_balloon_page(page)) {
++			__putback_balloon_page(page);
++			put_page(page);
++			unlock_page(page);
++			return true;
++		}
++		unlock_page(page);
++	}
++	return false;
++}
++#endif /* CONFIG_VIRTIO_BALLOON || CONFIG_VIRTIO_BALLOON_MODULE */
++
+ static unsigned long release_freepages(struct list_head *freelist)
+ {
+ 	struct page *page, *next;
+@@ -312,32 +392,40 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 			continue;
+ 		}
+ 
+-		if (!PageLRU(page))
+-			continue;
+-
+ 		/*
+-		 * PageLRU is set, and lru_lock excludes isolation,
+-		 * splitting and collapsing (collapsing has already
+-		 * happened if PageLRU is set).
++		 * It is possible to migrate LRU pages and balloon pages.
++		 * Skip any other type of page.
+ 		 */
+-		if (PageTransHuge(page)) {
+-			low_pfn += (1 << compound_order(page)) - 1;
+-			continue;
+-		}
++		if (PageLRU(page)) {
++			/*
++			 * PageLRU is set, and lru_lock excludes isolation,
++			 * splitting and collapsing (collapsing has already
++			 * happened if PageLRU is set).
++			 */
++			if (PageTransHuge(page)) {
++				low_pfn += (1 << compound_order(page)) - 1;
++				continue;
++			}
+ 
+-		if (!cc->sync)
+-			mode |= ISOLATE_ASYNC_MIGRATE;
++			if (!cc->sync)
++				mode |= ISOLATE_ASYNC_MIGRATE;
+ 
+-		lruvec = mem_cgroup_page_lruvec(page, zone);
++			lruvec = mem_cgroup_page_lruvec(page, zone);
+ 
+-		/* Try isolate the page */
+-		if (__isolate_lru_page(page, mode) != 0)
+-			continue;
++			/* Try isolate the page */
++			if (__isolate_lru_page(page, mode) != 0)
++				continue;
++
++			VM_BUG_ON(PageTransCompound(page));
+ 
+-		VM_BUG_ON(PageTransCompound(page));
++			/* Successfully isolated */
++			del_page_from_lru_list(page, lruvec, page_lru(page));
++		} else if (is_balloon_page(page)) {
++			if (!isolate_balloon_page(page))
++				continue;
++		} else
++			continue;
+ 
+-		/* Successfully isolated */
+-		del_page_from_lru_list(page, lruvec, page_lru(page));
+ 		list_add(&page->lru, migratelist);
+ 		cc->nr_migratepages++;
+ 		nr_isolated++;
+diff --git a/mm/migrate.c b/mm/migrate.c
+index be26d5c..59c7bc5 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -78,7 +78,10 @@ void putback_lru_pages(struct list_head *l)
+ 		list_del(&page->lru);
+ 		dec_zone_page_state(page, NR_ISOLATED_ANON +
+ 				page_is_file_cache(page));
+-		putback_lru_page(page);
++		if (unlikely(is_balloon_page(page)))
++			WARN_ON(!putback_balloon_page(page));
++		else
++			putback_lru_page(page);
+ 	}
+ }
+ 
+@@ -783,6 +786,17 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
+ 		}
+ 	}
+ 
++	if (is_balloon_page(page)) {
++		/*
++		 * A ballooned page does not need any special attention from
++		 * physical to virtual reverse mapping procedures.
++		 * Skip any attempt to unmap PTEs or to remap swap cache,
++		 * in order to avoid burning cycles at rmap level.
++		 */
++		remap_swapcache = 0;
++		goto skip_unmap;
++	}
++
+ 	/*
+ 	 * Corner case handling:
+ 	 * 1. When a new swap-cache page is read into, it is added to the LRU
+@@ -852,6 +866,20 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 			goto out;
+ 
+ 	rc = __unmap_and_move(page, newpage, force, offlining, mode);
++
++	if (is_balloon_page(newpage)) {
++		/*
++		 * A ballooned page has been migrated already. Now, it is the
++		 * time to wrap-up counters, handle the old page back to Buddy
++		 * and return.
++		 */
++		list_del(&page->lru);
++		dec_zone_page_state(page, NR_ISOLATED_ANON +
++				    page_is_file_cache(page));
++		put_page(page);
++		__free_page(page);
++		return rc;
++	}
+ out:
+ 	if (rc != -EAGAIN) {
+ 		/*
+-- 
+1.7.10.4
 
-Thanks.  That was careless.
-I've posted a pull request so Linus can take either that or this.
-
-Thanks,
-NeilBrown
-
---Sig_/0piDZB9NJ=5QaNG9.Bjhz5f
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT/ODLTnsnt1WYoG5AQKAJg//bqij+WNCblX6Y55MxrbCMM+bgJ0y1ATe
-R1BUSqsLdwrZ5mqy6k2FXbtCE5h3sWrEDvCVQ3knV8ENjC0o0McafT+19jH65Ldc
-Hj5Relka79CBfMVR5CxUU5Rx+1InMzjDRR9fX9z5zbsqBGjqmksZ9Bbv+L0T2Dzq
-doc4SYGvXjRovyu+pq1zYnULGD+GlM92uZtdYan7JHjcf+qzDHYoqDKcdCMLbBUy
-r+WmP/Xqo6o6sYdVGVzvmd7gCbHogPAm+9tJoS6wUSTRfveUQxT3u+58UqW3Q/Cm
-jeruBx/mjfmZ20jmGSv41/IvPQDmtgW2+wQE7bg8NTMsCS8O3kiQ0m/dBJ2grO9O
-Y2ia6VSelAgeZ50WHKHqtOwa2YlylOjDtXdibTEL88xJn7YO0c48ieDtEEFYkfEL
-dwxBvmvtr4mzog5epIJ/uaMyTUd8vD9FklV8NRwXwxgR5XS5YwsK86xwLI0oto7P
-B2IhhSp7ida45pQmlMD6amuxZ4yf1XRtLMgUEgpmbYE9Yt6ehhCUR/k2aWe6xovB
-2MnW7Wuh/NSgyXNemn5GpYOeTbfpYaOfXER2jHDXHCfXDHMLYp/vQfb1cj/7CQ95
-Q62P+ny8R+VnvSssyb9eGs5OBGjES0YH88pvwwqEOh5Cas1v9i6TFz0D1ccLa5Ns
-pTq53JaRRmo=
-=oG/z
------END PGP SIGNATURE-----
-
---Sig_/0piDZB9NJ=5QaNG9.Bjhz5f--
