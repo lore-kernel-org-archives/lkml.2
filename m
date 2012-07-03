@@ -1,99 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab2GCFtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 01:49:21 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39227 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672Ab2GCFtU (ORCPT
+	id S1751672Ab2GCFuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 01:50:40 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46775 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998Ab2GCFuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 01:49:20 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FF287C3.4030901@jp.fujitsu.com>
-Date: Tue, 3 Jul 2012 14:48:51 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
-CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>
-Subject: [RFC PATCH v2 0/13] memory-hotplug : hot-remove physical memory
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Jul 2012 01:50:39 -0400
+Date: Tue, 3 Jul 2012 15:50:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for July 3
+Message-Id: <20120703155037.998191dc7de2a7a9bd993ea8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__3_Jul_2012_15_50_37_+1000_=L155V0pXkGqlkdf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series aims to support physical memory hot-remove.
+--Signature=_Tue__3_Jul_2012_15_50_37_+1000_=L155V0pXkGqlkdf
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  [RFC PATCH v2 1/13] memory-hotplug : rename remove_memory to offline_memory
-  [RFC PATCH v2 2/13] memory-hotplug : add physical memory hotplug code to acpi_memory_device_remove
-  [RFC PATCH v2 3/13] memory-hotplug : unify argument of firmware_map_add_early/hotplug
-  [RFC PATCH v2 4/13] memory-hotplug : remove /sys/firmware/memmap/X sysfs
-  [RFC PATCH v2 5/13] memory-hotplug : does not release memory region in PAGES_PER_SECTION chunks
-  [RFC PATCH v2 6/13] memory-hotplug : add memory_block_release
-  [RFC PATCH v2 7/13] memory-hotplug : remove_memory calls __remove_pages
-  [RFC PATCH v2 8/13] memory-hotplug : check page type in get_page_bootmem
-  [RFC PATCH v2 9/13] memory-hotplug : move register_page_bootmem_info_node and put_page_bootmem for
-sparse-vmemmap
-  [RFC PATCH v2 10/13] memory-hotplug : implement register_page_bootmem_info_section of sparse-vmemmap
-  [RFC PATCH v2 11/13] memory-hotplug : free memmap of sparse-vmemmap
-  [RFC PATCH v2 12/13] memory-hotplug : add node_device_release
-  [RFC PATCH v2 13/13] memory-hotplug : remove sysfs file of node
+Hi all,
 
-Even if you apply these patches, you cannot remove the physical memory
-completely since these patches are still under development. I want you to
-cooperate to improve the physical memory hot-remove. So please review these
-patches and give your comment/idea.
+Changes since 20120702:
 
-The patches can free/remove following things:
+New tree: clk
 
-  - acpi_memory_info                          : [RFC PATCH 2/13]
-  - /sys/firmware/memmap/X/{end, start, type} : [RFC PATCH 4/13]
-  - iomem_resource                            : [RFC PATCH 5/13]
-  - mem_section and related sysfs files       : [RFC PATCH 6-11/13]
-  - node and related sysfs files              : [RFC PATCH 12-13/13]
+The net-next tree gained a conflict against the wireless tree.
 
-The patches cannot do following things yet:
+The usb tree gained a conflict against the mfd tree.
 
-  - page table of removed memory
+The pwm tree still has its build failure which I have left broken for now.
 
-If you find lack of function for physical memory hot-remove, please let me
-know.
+The akpm tree lost a patch that turned up elsewhere.
 
-change log of v2:
- [RFC PATCH v2 2/13]
-   * check whether memory block is offline or not before calling offline_memory()
-   * check whether section is valid or not in is_memblk_offline()
-   * call kobject_put() for each memory_block in is_memblk_offline()
+----------------------------------------------------------------------------
 
- [RFC PATCH v2 3/13]
-   * unify the end argument of firmware_map_add_early/hotplug
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
 
- [RFC PATCH v2 4/13]
-   * add release_firmware_map_entry() for freeing firmware_map_entry
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc,
+sparc64 and arm defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
 
- [RFC PATCH v2 6/13]
-  * add release_memory_block() for freeing memory_block
+Below is a summary of the state of the merge.
 
- [RFC PATCH v2 11/13]
-  * fix wrong arguments of free_pages()
+We are up to 192 trees (counting Linus' and 26 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
 
----
- arch/powerpc/platforms/pseries/hotplug-memory.c |   16 +-
- arch/x86/mm/init_64.c                           |  144 ++++++++++++++++++++++++
- drivers/acpi/acpi_memhotplug.c                  |   28 ++++
- drivers/base/memory.c                           |   53 ++++++++
- drivers/base/node.c                             |    7 +
- drivers/firmware/memmap.c                       |   70 +++++++++++
- include/linux/firmware-map.h                    |    6 +
- include/linux/memory.h                          |    5
- include/linux/memory_hotplug.h                  |   17 --
- include/linux/mm.h                              |    5
- mm/memory_hotplug.c                             |   98 ++++++++++++----
- mm/sparse.c                                     |    5
- 12 files changed, 406 insertions(+), 48 deletions(-)
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
 
+Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
+Gortmaker for triage and bug fixes.
 
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__3_Jul_2012_15_50_37_+1000_=L155V0pXkGqlkdf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP8ogtAAoJEECxmPOUX5FEu1gP/Au1z2O6cF1qAimy6SD2jocS
+heik7CoxHaYy5qfsun2bEC6UYaC7HrkLM7kP1rbd4e1IslVIK/o9x8HwmjksJCGI
+ym6d32uCV0c9P6mR+x+e8ASHIhrLNJwX0uUzN1WP0PxclB1RBMOzPhg3/gZHlHjN
+WacAsYHSKvkyIzhL3zikXHaj1qz2Lc7ALFpo7327Hy0CTHxh7enGRC4/Mgt/Pg/T
+XTRzj98cI+PKZw2QqPvZS+PyKf5B8zlnUY9ovrdpy8JAVcFOuY5AB3wXn7MkAFqD
+6OtMtPYG00mH3NS9/pmiisUeAZe3jozo4S93JoFkreiinleSoOb0qt3V/umx5o5n
+cHqFWUeGzwwTIUOeJdIc63ENM/7SJS6JomY6Yanyov3sGpsKOFVxbrsymwHmDe/i
+hn57dK+CC7CZUComz0pRzcVinJFPf7A5pkfSSfhM8NThQnfFxFEPBX9XPO68X47/
+6L+UhCN6dgjQR9Vkj+GscGra3hwmwe5gJKb8VvqxDeHxUs4cpA6chFkT07squmrK
+9lKSnhugwfGlBC9fHtNpUzejTjJt08963ogjf6zklROV3gIDhvTarmkkPfta3gVp
+cFAjyVccg4PznA92spzLLqOTUw4KQHva3JTKTHXmqZIP5kpKDpMFfZkSGAV6B0YG
+5bg7PumSxtXVmRUMriua
+=5ox9
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__3_Jul_2012_15_50_37_+1000_=L155V0pXkGqlkdf--
