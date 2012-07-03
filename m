@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165Ab2GCJpx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 05:45:53 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:40882
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754050Ab2GCJpp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 05:45:45 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VPS-8(zzbb2dI98dI1503M1432Izz1202hzz8275bhz2dh668h839hd25he5bhf0ah)
-X-WSS-ID: 0M6KWG3-01-79D-02
-X-M-MSG: 
-Message-ID: <4FF2BF3E.90803@amd.com>
-Date: Tue, 3 Jul 2012 11:45:34 +0200
-From: Christoph Egger <Christoph.Egger@amd.com>
-User-Agent: Mozilla/5.0 (X11; NetBSD amd64; rv:11.0) Gecko/20120404 Thunderbird/11.0
-MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: Jinsong Liu <jinsong.liu@intel.com>, IanCampbell <Ian.Campbell@citrix.com>,
-        Ashok Raj <ashok.raj@intel.com>,
-        Donald D Dugger <donald.d.dugger@intel.com>,
-        Haitao Shan <haitao.shan@intel.com>,
-        Jun Nakajima <jun.nakajima@intel.com>, Susie Li <susie.li@intel.com>,
-        Tony Luck <tony.luck@intel.com>, Will Auld <will.auld@intel.com>,
-        Xiantao Zhang <xiantao.zhang@intel.com>,
-        Yunhong Jiang <yunhong.jiang@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+	id S1752321Ab2GCJve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 05:51:34 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:59231
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750869Ab2GCJvc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 05:51:32 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-SpamScore: -7
+X-BigFish: VPS-7(zz9371I542M1432Izz1202hzzz2dh2a8h668h839h944hd25hf0ah)
+From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+To: "axel.lin@gmail.com" <axel.lin@gmail.com>
+CC: Lars-Peter Clausen <lars@metafoo.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KeirFraser <keir@xen.org>
-Subject: Re: [Xen-devel] [xen vMCE RFC V0.2] xen vMCE design
-References: <DE8DF0795D48FD4CA783C40EC829233525D395@SHSMSX101.ccr.corp.intel.com> <4FEB236C020000780008C392@nat28.tlf.novell.com> <DE8DF0795D48FD4CA783C40EC8292335263B9D@SHSMSX101.ccr.corp.intel.com> <4FEC3B4A020000780008C673@nat28.tlf.novell.com> <DE8DF0795D48FD4CA783C40EC8292335263D6C@SHSMSX101.ccr.corp.intel.com> <4FEC463E020000780008C6A7@nat28.tlf.novell.com> <DE8DF0795D48FD4CA783C40EC8292335264914@SHSMSX101.ccr.corp.intel.com> <4FEC7FB8020000780008C885@nat28.tlf.novell.com> <DE8DF0795D48FD4CA783C40EC8292335265284@SHSMSX101.ccr.corp.intel.com> <4FED7C5F.1040908@amd.com> <DE8DF0795D48FD4CA783C40EC8292335282ED5@SHSMSX101.ccr.corp.intel.com> <4FF2B87C020000780008D3E0@nat28.tlf.novell.com>
-In-Reply-To: <4FF2B87C020000780008D3E0@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
+        Liam Girdwood <lrg@ti.com>
+Date: Tue, 3 Jul 2012 05:51:39 -0400
+Subject: RE: [PATCH v2] regulator: ad5398: Fix min/max current limit
+ boundary checking
+Thread-Topic: [PATCH v2] regulator: ad5398: Fix min/max current limit
+ boundary checking
+Thread-Index: Ac1ZAHbcKVN9iMTcRQCNmmnvsYjdGQAANqVg
+Message-ID: <DB904C5425BA6F4E8424B3B51A1414D17140805E4C@NWD2CMBX1.ad.analog.com>
+References: <1341301353.12050.1.camel@phoenix>
+ <DB904C5425BA6F4E8424B3B51A1414D17140805D85@NWD2CMBX1.ad.analog.com>
+ <4FF2A7F9.3090307@metafoo.de>
+ <DB904C5425BA6F4E8424B3B51A1414D17140805DAB@NWD2CMBX1.ad.analog.com>
+ <4FF2AC24.7090906@metafoo.de>
+ <DB904C5425BA6F4E8424B3B51A1414D17140805DC8@NWD2CMBX1.ad.analog.com>
+ <CAF+7xWk5qQa5nV3OdFM51U1Kh7g9w3dA5mLL+SGRQ7_AFNkp5A@mail.gmail.com>
+In-Reply-To: <CAF+7xWk5qQa5nV3OdFM51U1Kh7g9w3dA5mLL+SGRQ7_AFNkp5A@mail.gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/12 09:16, Jan Beulich wrote:
 
->>>> On 02.07.12 at 19:32, "Liu, Jinsong" <jinsong.liu@intel.com> wrote:
->> Thanks AMD's feedback :)
+
+>-----Original Message-----
+>From: Axel Lin [mailto:axel.lin@gmail.com]
+>Sent: Tuesday, July 03, 2012 5:44 PM
+>To: Zhang, Sonic
+>Cc: Lars-Peter Clausen; Mark Brown; linux-kernel@vger.kernel.org; Liam
+>Girdwood
+>Subject: Re: [PATCH v2] regulator: ad5398: Fix min/max current limit boundary
+>checking
+>
+>>>As long as it is smaller than the maximum requested current, yes. You
+>>>request a current range with the regulator API and any value within this
+>>>range is fine as the actual output current.
+>>>
 >>
->> This vMCE design foils is basically for Intel MCA, involving many details 
->> specific to Intel.
->> I agree that for x86 Intel and AMD can share logic in many fields. However, 
->> for MCA logic Intel and AMD are quite different, like
->> 1. MSRs interface, e.g. MCG_CAP, MCi_MICS, MCi_CTL2, etc;
->> 2. error injection, AMD provide NMI/single MCE/broadcast MCE, while in our 
->> design only concern broadcast MCE# (and pretend to expose CMCI);
->> 3. MCE handler: currently in xen Intel and AMD mce use different triggle 
->> method and mce handler;
->>
->> Considering the big difference, I suggest we separately provide Intel vMCE 
->> and AMD vMCE (i.e. vmce_intel.c and vmce_amd.c).
-> 
-> I'm not convinced of the need, and would prefer aiming at a
-> shared implementation unless issues arise that make this
-> impossible.
+>> If so, please also set the max_uA as well.
+>
+>The equation to calculate the selector does not depend on max_uA.
+>So I think we don't need to set the requested max_uA.
+>
 
+But, ad5398_set_current_limit() behaves different for min_uA and max_uA with you patch. Is this expected?
 
-I have patches ready that do that. About 80% of mce_intel.c is not
-Intel specific. I am just waiting for the feature freeze to end...
+Sonic
 
-Christoph
+>Current does check the selected current by:
+>if (ad5398_calc_current(chip, selector) > max_uA)
+>        return -EINVAL;
+>
+>This ensures the selected current falls within specified range.
+>
+>Regards,
+>Axel
 
-
--- 
----to satisfy European Law for business letters:
-Advanced Micro Devices GmbH
-Einsteinring 24, 85689 Dornach b. Muenchen
-Geschaeftsfuehrer: Alberto Bozzo, Andrew Bowd
-Sitz: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
 
