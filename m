@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab2GCL4G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 07:56:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11769 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668Ab2GCL4E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 07:56:04 -0400
-X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=odYAoRyd9-MA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=KvpZUgZ_DSA11vBBjbgA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1341316560.21574.5.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 6/6] ftrace/x86: Add save_regs for i386 function calls
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 03 Jul 2012 07:56:00 -0400
-In-Reply-To: <4FF282AA.1050109@hitachi.com>
-References: <20120702200322.573660631@goodmis.org>
-	 <20120702201822.052770797@goodmis.org> <4FF282AA.1050109@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932532Ab2GCL6o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 07:58:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20967 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755765Ab2GCL6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 07:58:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="166276682"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Theodore Tso <tytso@mit.edu>
+Cc: Jan Kara <jack@suse.cz>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>
+Subject: [PATCHv3 2/4] ext4: Convert last user of ext4_mark_super_dirty() to ext4_handle_dirty_super()
+Date: Tue,  3 Jul 2012 15:00:08 +0300
+Message-Id: <1341316810-22598-3-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1341316810-22598-1-git-send-email-dedekind1@gmail.com>
+References: <1341316810-22598-1-git-send-email-dedekind1@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-03 at 14:27 +0900, Masami Hiramatsu wrote:
-> (2012/07/03 5:03), Steven Rostedt wrote:
+From: Jan Kara <jack@suse.cz>
 
-> > +GLOBAL(ftrace_regs_call)
-> > +	call ftrace_stub
-> > +
-> > +	addl $4,%esp		/* Skip pt_regs */
-> 
-> Hmm, you need to restoring flags here, because
-> original flags is clobbered by KERNEL_CS.
-> 
-> 	movl 14*4+4(%esp), %edx
-> 	movl %edx, 13*4+4(%esp)
+The last user of ext4_mark_super_dirty() in ext4_file_open() is so rare it
+can well be modifying the superblock properly by journalling the change.
+Change it and get rid of ext4_mark_super_dirty() as it's not needed anymore.
 
-Ah, you're right. I'll update it. I need to make changes anyway, because
-I found that if I have a kprobe using ftrace and enable function graph
-tracer, the machine triple faults. I'm working on fixing that now.
+Artem: small amendments.
+Artem: tested using xfstests for both journalled and non-journalled ext4.
 
-Thanks!
+Signed-off-by: Jan Kara <jack@suse.cz>
+Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+---
+ fs/ext4/ext4.h |    9 ---------
+ fs/ext4/file.c |   14 +++++++++++++-
+ 2 files changed, 13 insertions(+), 10 deletions(-)
 
--- Steve
-
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index cfc4e01..0c4042e 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -2321,15 +2321,6 @@ static inline void ext4_unlock_group(struct super_block *sb,
+ 	spin_unlock(ext4_group_lock_ptr(sb, group));
+ }
+ 
+-static inline void ext4_mark_super_dirty(struct super_block *sb)
+-{
+-	struct ext4_super_block *es = EXT4_SB(sb)->s_es;
+-
+-	ext4_superblock_csum_set(sb, es);
+-	if (EXT4_SB(sb)->s_journal == NULL)
+-		sb->s_dirt =1;
+-}
+-
+ /*
+  * Block validity checking
+  */
+diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+index 8c7642a..3a77494 100644
+--- a/fs/ext4/file.c
++++ b/fs/ext4/file.c
+@@ -181,9 +181,21 @@ static int ext4_file_open(struct inode * inode, struct file * filp)
+ 		path.dentry = mnt->mnt_root;
+ 		cp = d_path(&path, buf, sizeof(buf));
+ 		if (!IS_ERR(cp)) {
++			handle_t *handle;
++			int err;
++
++			handle = ext4_journal_start_sb(sb, 1);
++			if (IS_ERR(handle))
++				return PTR_ERR(handle);
++			err = ext4_journal_get_write_access(handle, sbi->s_sbh);
++			if (err) {
++				ext4_journal_stop(handle);
++				return err;
++			}
+ 			strlcpy(sbi->s_es->s_last_mounted, cp,
+ 				sizeof(sbi->s_es->s_last_mounted));
+-			ext4_mark_super_dirty(sb);
++			ext4_handle_dirty_super(handle, sb);
++			ext4_journal_stop(handle);
+ 		}
+ 	}
+ 	/*
+-- 
+1.7.7.6
 
