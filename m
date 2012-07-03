@@ -1,96 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933495Ab2GCHyv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 03:54:51 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:22705
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755768Ab2GCHyt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 03:54:49 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-X-SpamScore: -7
-X-BigFish: VPS-7(zz9371I542M1432Izz1202hzz8275bhz2dh2a8h668h839h93fhd25hf0ah)
-From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lrg@ti.com>
-Date: Tue, 3 Jul 2012 03:54:55 -0400
-Subject: RE: [PATCH v2] regulator: ad5398: Fix min/max current limit
- boundary checking
-Thread-Topic: [PATCH v2] regulator: ad5398: Fix min/max current limit
- boundary checking
-Thread-Index: Ac1Y73DQsW5bS61KSluvRmkAVPP4FwAAYCTA
-Message-ID: <DB904C5425BA6F4E8424B3B51A1414D17140805D85@NWD2CMBX1.ad.analog.com>
-References: <1341301353.12050.1.camel@phoenix>
-In-Reply-To: <1341301353.12050.1.camel@phoenix>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="utf-8"
+	id S933501Ab2GCH4i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 03:56:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29078 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755955Ab2GCH4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 03:56:36 -0400
+Date: Tue, 3 Jul 2012 04:55:35 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
+Cc: peterz@infradead.org, mingo@elte.hu, avi@redhat.com,
+        raghukt@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org, jeremy@goop.org,
+        vatsa@linux.vnet.ibm.com, hpa@zytor.com
+Subject: Re: [PATCH v2 3/7] KVM: Add paravirt kvm_flush_tlb_others
+Message-ID: <20120703075535.GA13291@amt.cnet>
+References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com>
+ <20120604050629.4560.85284.stgit@abhimanyu.in.ibm.com>
 MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120604050629.4560.85284.stgit@abhimanyu.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q637stOc014396
+
+On Mon, Jun 04, 2012 at 10:37:24AM +0530, Nikunj A. Dadhania wrote:
+> flush_tlb_others_ipi depends on lot of statics in tlb.c.  Replicated
+> the flush_tlb_others_ipi as kvm_flush_tlb_others to further adapt to
+> paravirtualization.
+> 
+> Use the vcpu state information inside the kvm_flush_tlb_others to
+> avoid sending ipi to pre-empted vcpus.
+> 
+> * Do not send ipi's to offline vcpus and set flush_on_enter flag
+> * For online vcpus: Wait for them to clear the flag
+> 
+> The approach was discussed here: https://lkml.org/lkml/2012/2/20/157
+> 
+> Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
+> 
+> --
+> Pseudo Algo:
+> 
+>    Write()
+>    ======
+> 
+> 	   guest_exit()
+> 		   flush_on_enter[i]=0;
+> 		   running[i] = 0;
+> 
+> 	   guest_enter()
+> 		   running[i] = 1;
+> 		   smp_mb();
+> 		   if(flush_on_enter[i]) {
+> 			   tlb_flush()
+> 			   flush_on_enter[i]=0;
+> 		   }
+> 
+> 
+>    Read()
+>    ======
+> 
+> 	   GUEST                                                KVM-HV
+> 
+>    f->flushcpumask = cpumask - me;
+> 
+> again:
+>    for_each_cpu(i, f->flushmask) {
+> 
+> 	   if (!running[i]) {
+> 						   case 1:
+> 
+> 						   running[n]=1
+> 
+> 						   (cpuN does not see
+> 						   flush_on_enter set,
+> 						   guest later finds it
+> 						   running and sends ipi,
+> 						   we are fine here, need
+> 						   to clear the flag on
+> 						   guest_exit)
+> 
+> 		  flush_on_enter[i] = 1;
+> 						   case2:
+> 
+> 						   running[n]=1
+> 						   (cpuN - will see flush
+> 						   on enter and an IPI as
+> 						   well - addressed in patch-4)
+> 
+> 		  if (!running[i])
+> 		     cpu_clear(f->flushmask);      All is well, vm_enter
+> 						   will do the fixup
+> 	   }
+> 						   case 3:
+> 						   running[n] = 0;
+> 
+> 						   (cpuN went to sleep,
+> 						   we saw it as awake,
+> 						   ipi sent, but wait
+> 						   will break without
+> 						   zero_mask and goto
+> 						   again will take care)
+> 
+>    }
+>    send_ipi(f->flushmask)
+> 
+>    wait_a_while_for_zero_mask();
+> 
+>    if (!zero_mask)
+> 	   goto again;
+
+Can you please measure increased vmentry/vmexit overhead? x86/vmexit.c 
+of git://git.kernel.org/pub/scm/virt/kvm/kvm-unit-tests.git should 
+help.
+
+>  arch/x86/include/asm/kvm_para.h |    3 +-
+>  arch/x86/include/asm/tlbflush.h |    9 ++++++
+>  arch/x86/kernel/kvm.c           |    1 +
+>  arch/x86/kvm/x86.c              |   14 ++++++++-
+>  arch/x86/mm/tlb.c               |   61 +++++++++++++++++++++++++++++++++++++++
+>  5 files changed, 86 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+> index f57b5cc..684a285 100644
+> --- a/arch/x86/include/asm/kvm_para.h
+> +++ b/arch/x86/include/asm/kvm_para.h
+> @@ -55,7 +55,8 @@ struct kvm_steal_time {
+>  
+>  struct kvm_vcpu_state {
+>  	__u32 state;
+> -	__u32 pad[15];
+> +	__u32 flush_on_enter;
+> +	__u32 pad[14];
+>  };
+>  
+>  #define KVM_VCPU_STATE_ALIGN_BITS 5
+> diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+> index c0e108e..29470bd 100644
+> --- a/arch/x86/include/asm/tlbflush.h
+> +++ b/arch/x86/include/asm/tlbflush.h
+> @@ -119,6 +119,12 @@ static inline void native_flush_tlb_others(const struct cpumask *cpumask,
+>  {
+>  }
+>  
+> +static inline void kvm_flush_tlb_others(const struct cpumask *cpumask,
+> +					struct mm_struct *mm,
+> +					unsigned long va)
+> +{
+> +}
+> +
+>  static inline void reset_lazy_tlbstate(void)
+>  {
+>  }
+> @@ -145,6 +151,9 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
+>  void native_flush_tlb_others(const struct cpumask *cpumask,
+>  			     struct mm_struct *mm, unsigned long va);
+>  
+> +void kvm_flush_tlb_others(const struct cpumask *cpumask,
+> +			  struct mm_struct *mm, unsigned long va);
+> +
+>  #define TLBSTATE_OK	1
+>  #define TLBSTATE_LAZY	2
+>  
+> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> index bb686a6..66db54e 100644
+> --- a/arch/x86/kernel/kvm.c
+> +++ b/arch/x86/kernel/kvm.c
+> @@ -465,6 +465,7 @@ void __init kvm_guest_init(void)
+>  	}
+>  
+>  	has_vcpu_state = 1;
+> +	pv_mmu_ops.flush_tlb_others = kvm_flush_tlb_others;
+>  
+>  #ifdef CONFIG_SMP
+>  	smp_ops.smp_prepare_boot_cpu = kvm_smp_prepare_boot_cpu;
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 264f172..4714a7b 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -1548,9 +1548,20 @@ static void kvm_set_vcpu_state(struct kvm_vcpu *vcpu)
+>  	if (!(vcpu->arch.v_state.msr_val & KVM_MSR_ENABLED))
+>  		return;
+>  
+> +	/* 
+> +	 * Let the guest know that we are online, make sure we do not
+> +	 * overwrite flush_on_enter, just write the vs->state.
+> +	 */
+>  	vs->state = 1;
+> -	kvm_write_guest_cached(vcpu->kvm, ghc, vs, 2*sizeof(__u32));
+> +	kvm_write_guest_cached(vcpu->kvm, ghc, vs, 1*sizeof(__u32));
+>  	smp_wmb();
+> +	/* 
+> +	 * Guest might have seen us offline and would have set
+> +	 * flush_on_enter. 
+> +	 */
+> +	kvm_read_guest_cached(vcpu->kvm, ghc, vs, 2*sizeof(__u32));
+> +	if (vs->flush_on_enter) 
+> +		kvm_x86_ops->tlb_flush(vcpu);
 
 
+So flush_tlb_page which was an invlpg now flushes the entire TLB. Did
+you take that into account?
 
->-----Original Message-----
->From: Axel Lin [mailto:axel.lin@gmail.com]
->Sent: Tuesday, July 03, 2012 3:43 PM
->To: Mark Brown
->Cc: linux-kernel@vger.kernel.org; Zhang, Sonic; Lars-Peter Clausen; Liam
->Girdwood
->Subject: [PATCH v2] regulator: ad5398: Fix min/max current limit boundary
->checking
->
->It is ok to request current limit with min_uA < chip->min_uA and
->max_uA > chip->max_uA.
->
->We need to set min_uA = chip->min_uA if (min_uA < chip->min_uA),
->this ensures the equation to calcuate selator does not return negative number.
->
+>  static void kvm_clear_vcpu_state(struct kvm_vcpu *vcpu)
+> @@ -1561,6 +1572,7 @@ static void kvm_clear_vcpu_state(struct kvm_vcpu *vcpu)
+>  	if (!(vcpu->arch.v_state.msr_val & KVM_MSR_ENABLED))
+>  		return;
+>  
+> +	vs->flush_on_enter = 0;
+>  	vs->state = 0;
+>  	kvm_write_guest_cached(vcpu->kvm, ghc, vs, 2*sizeof(__u32));
+>  	smp_wmb();
+> diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+> index d6c0418..f5dacdd 100644
+> --- a/arch/x86/mm/tlb.c
+> +++ b/arch/x86/mm/tlb.c
+> @@ -6,6 +6,7 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/module.h>
+>  #include <linux/cpu.h>
+> +#include <linux/kvm_para.h>
+>  
+>  #include <asm/tlbflush.h>
+>  #include <asm/mmu_context.h>
+> @@ -202,6 +203,66 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+>  		raw_spin_unlock(&f->tlbstate_lock);
+>  }
+>  
+> +#ifdef CONFIG_KVM_GUEST
+> +
+> +DECLARE_PER_CPU(struct kvm_vcpu_state, vcpu_state) __aligned(64);
+> +
+> +void kvm_flush_tlb_others(const struct cpumask *cpumask,
+> +			struct mm_struct *mm, unsigned long va)
+> +{
+> +	unsigned int sender;
+> +	union smp_flush_state *f;
+> +	int cpu, loop;
+> +	struct kvm_vcpu_state *v_state;
+> +
+> +	/* Caller has disabled preemption */
+> +	sender = this_cpu_read(tlb_vector_offset);
+> +	f = &flush_state[sender];
+> +
+> +	if (nr_cpu_ids > NUM_INVALIDATE_TLB_VECTORS)
+> +		raw_spin_lock(&f->tlbstate_lock);
+> +
+> +	f->flush_mm = mm;
+> +	f->flush_va = va;
+> +	if (cpumask_andnot(to_cpumask(f->flush_cpumask), cpumask, cpumask_of(smp_processor_id()))) {
+> +		/*
+> +		 * We have to send the IPI only to online vCPUs
+> +		 * affected. And queue flush_on_enter for pre-empted
+> +		 * vCPUs
+> +		 */
+> +again:
+> +		for_each_cpu(cpu, to_cpumask(f->flush_cpumask)) {
+> +			v_state = &per_cpu(vcpu_state, cpu);
+> +
+> +			if (!v_state->state) {
 
-You should not do it in driver. Set a correct min_uA value in your application.
+Should use ACCESS_ONCE to make sure the value is not register cached.
 
-Regards,
+> +				v_state->flush_on_enter = 1;
+> +				smp_mb();
+> +				if (!v_state->state)
 
-Sonic
+And here.
 
->Signed-off-by: Axel Lin <axel.lin@gmail.com>
->~
->---
-> drivers/regulator/ad5398.c |    7 ++++---
-> 1 file changed, 4 insertions(+), 3 deletions(-)
->
->diff --git a/drivers/regulator/ad5398.c b/drivers/regulator/ad5398.c
->index 46d05f3..84fdcda 100644
->--- a/drivers/regulator/ad5398.c
->+++ b/drivers/regulator/ad5398.c
->@@ -89,9 +89,10 @@ static int ad5398_set_current_limit(struct regulator_dev
->*rdev, int min_uA, int
->       unsigned short data;
->       int ret;
->
->-      if (min_uA > chip->max_uA || min_uA < chip->min_uA)
->-              return -EINVAL;
->-      if (max_uA > chip->max_uA || max_uA < chip->min_uA)
->+      if (min_uA < chip->min_uA)
->+              min_uA = chip->min_uA;
->+
->+      if (min_uA > chip->max_uA || max_uA < chip->min_uA)
->               return -EINVAL;
->
->       selector = DIV_ROUND_UP((min_uA - chip->min_uA) * chip->current_level,
->--
->1.7.9.5
->
->
->
+> +					cpumask_clear_cpu(cpu, to_cpumask(f->flush_cpumask));
+> +			}
+> +		}
+> +
+> +		if (cpumask_empty(to_cpumask(f->flush_cpumask)))
+> +			goto out;
+> +
+> +		apic->send_IPI_mask(to_cpumask(f->flush_cpumask),
+> +				    INVALIDATE_TLB_VECTOR_START + sender);
+> +
+> +		loop = 1000;
+> +		while (!cpumask_empty(to_cpumask(f->flush_cpumask)) && --loop)
+> +			cpu_relax();
+> +
+> +		if (!cpumask_empty(to_cpumask(f->flush_cpumask)))
+> +			goto again;
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Is this necessary in addition to the in-guest-mode/out-guest-mode
+detection? If so, why?
+
+> +	}
+> +out:
+> +	f->flush_mm = NULL;
+> +	f->flush_va = 0;
+> +	if (nr_cpu_ids > NUM_INVALIDATE_TLB_VECTORS)
+> +		raw_spin_unlock(&f->tlbstate_lock);
+> +}
+> +#endif /* CONFIG_KVM_GUEST */
+> +
+>  void native_flush_tlb_others(const struct cpumask *cpumask,
+>  			     struct mm_struct *mm, unsigned long va)
+>  {
