@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756382Ab2GCA5s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 20:57:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43030 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756084Ab2GCA5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 20:57:46 -0400
-Message-ID: <4FF2435F.2070302@redhat.com>
-Date: Mon, 02 Jul 2012 20:57:03 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S932942Ab2GCBC5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 21:02:57 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54269 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932128Ab2GCBC4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 21:02:56 -0400
+X-AuditID: 9c93016f-b7bccae00000345c-67-4ff244bda4b0
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org,
+        drepper@gmail.com
+Subject: Re: [PATCH 2/3] perf, tool: Enable grouping logic for parsed events
+References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
+	<1340960907-3725-3-git-send-email-jolsa@redhat.com>
+	<87bojync4b.fsf@sejong.aot.lge.com>
+	<20120702101010.GB967@krava.redhat.com>
+Date: Tue, 03 Jul 2012 09:58:44 +0900
+In-Reply-To: <20120702101010.GB967@krava.redhat.com> (Jiri Olsa's message of
+	"Mon, 2 Jul 2012 12:10:10 +0200")
+Message-ID: <873959mzi3.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
-        jaschut@sandia.gov, minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH -mm v2] mm: have order > 0 compaction start off where
- it left
-References: <20120628135520.0c48b066@annuminas.surriel.com>  <20120628135940.2c26ada9.akpm@linux-foundation.org>  <4FECCB89.2050400@redhat.com>  <20120628143546.d02d13f9.akpm@linux-foundation.org> <1341250950.16969.6.camel@lappy>
-In-Reply-To: <1341250950.16969.6.camel@lappy>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2012 01:42 PM, Sasha Levin wrote:
-> On Thu, 2012-06-28 at 14:35 -0700, Andrew Morton wrote:
->> On Thu, 28 Jun 2012 17:24:25 -0400 Rik van Riel<riel@redhat.com>  wrote:
->>>
->>>>> @@ -463,6 +474,8 @@ static void isolate_freepages(struct zone *zone,
->>>>>              */
->>>>>             if (isolated)
->>>>>                     high_pfn = max(high_pfn, pfn);
->>>>> +          if (cc->order>   0)
->>>>> +                  zone->compact_cached_free_pfn = high_pfn;
->>>>
->>>> Is high_pfn guaranteed to be aligned to pageblock_nr_pages here?  I
->>>> assume so, if lots of code in other places is correct but it's
->>>> unobvious from reading this function.
->>>
->>> Reading the code a few more times, I believe that it is
->>> indeed aligned to pageblock size.
->>
->> I'll slip this into -next for a while.
->>
->> --- a/mm/compaction.c~isolate_freepages-check-that-high_pfn-is-aligned-as-expected
->> +++ a/mm/compaction.c
->> @@ -456,6 +456,7 @@ static void isolate_freepages(struct zon
->>                  }
->>                  spin_unlock_irqrestore(&zone->lock, flags);
->>
->> +               WARN_ON_ONCE(high_pfn&  (pageblock_nr_pages - 1));
->>                  /*
->>                   * Record the highest PFN we isolated pages from. When next
->>                   * looking for free pages, the search will restart here as
+On Mon, 2 Jul 2012 12:10:10 +0200, Jiri Olsa wrote:
+> On Mon, Jul 02, 2012 at 11:13:56AM +0900, Namhyung Kim wrote:
+>> On Fri, 29 Jun 2012 11:08:26 +0200, Jiri Olsa wrote:
+>> > It's possible to use standard event modifier for a group, which spans
+>> > over all events in the group and overrides any event modifier settings,
+>> > for example:
+>> >
+>> >   # perf record -r '{faults:k,cache-references}:u'
+>> >
+>> > resulting in ':u' modifier being used for both 'faults' and 'cache-references'
+>> > events, regardless of their modifier setup (':k' for faults event).
+>> >
+>> 
+>> So the faults event would get only 'u' for the modifier not 'uk', right?
 >
-> I've triggered the following with today's -next:
+> right
+>
 
-I've been staring at the migrate code for most of the afternoon,
-and am not sure how this is triggered.
+I was thinking about the combining the modifiers - i.e. make it 'uk'
+above. Not sure it's useful in general, but something like "adding 'p'
+to the leader (only)" looks good to have IMHO.
 
-At this point, I'm going to focus my attention on addressing
-Minchan's comments on my code, and hoping someone who is more
-familiar with the migrate code knows how high_pfn ends up
-being not pageblock_nr_pages aligned...
-
--- 
-All rights reversed
+Thanks,
+Namhyung
