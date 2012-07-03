@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab2GCWHe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 18:07:34 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34250 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756313Ab2GCWHd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 18:07:33 -0400
-Date: Wed, 4 Jul 2012 08:07:21 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Russell King <linux@arm.linux.org.uk>, mturquette@ti.com,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clkdev: Add default clkdev.h
-Message-Id: <20120704080721.5664d57eaf234e6289a0d2bf@canb.auug.org.au>
-In-Reply-To: <1341335077-672-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1341335077-672-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__4_Jul_2012_08_07_21_+1000_.2mc__n2EhBCVZ0O"
+	id S1757367Ab2GCWTu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 18:19:50 -0400
+Received: from nm13-vm0.bullet.mail.ird.yahoo.com ([77.238.189.195]:31444 "HELO
+	nm13-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757300Ab2GCWTt convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 18:19:49 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 8025.10395.bm@omp1017.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=AxDe6ouMbS9YSl7btKu+wjYrseWKi1TQHSaP6un1lr3+skqa5/0mAdnbN0iWLbabeG/WgTOdcU7SYC47bD/h7Z7NYtzeBUuU3ilBYjW9f2U1zH3Aqn3WXlhoZ2lVmnC2GvmOMfrSQ0Mxqq6hgVxH/HRyOnBhQWvTzvPwtb/VTjY=;
+X-YMail-OSG: aRgYChoVM1mbmR82kRZTisrwPzRG26zjAB8_eXCbzj0JlAr
+ dzHdFQFFeL2CO9k74md7Wgx5VwN1Q8pDsQpGXvGODLQy0mOcqA.nvP.3SM38
+ Xs0AdbpXDHULUwk.YNq0BOPj0RVywcJ8L82Jp.AiLe3BNEZd96zROwHZebXQ
+ 2qexhjbqVXWH2wPf5ygaeEh.PMcsFb_wx2HO4FcU1a8TOE76YnSUPiHLKCbp
+ 08k4_zSmIAZBrwqcBDCrfmXl6LF.P3wm61UB7jxvvVtGRq9eyrcmsnVnaAfF
+ 911h2cA7CzKz50cPBySXYNFvgIi9hCdhRsj1B8tIA2y2y..x5i9WzdmhwR4u
+ 2VbIAiMXKRdkyPhG18KV3W6nhYO8nEe9D6c6FvNxpDSjwClU0JK82ltCrq3R
+ 3_PDIcpbQHPRpMsE2b_giDFaXt6tNmEABkHuQEKI15Wrt
+X-Mailer: YahooMailWebService/0.8.118.349524
+Message-ID: <1341353987.10668.YahooMailNeo@web132502.mail.ird.yahoo.com>
+Date: Tue, 3 Jul 2012 23:19:47 +0100 (BST)
+From: Allyson_kleiner <dolorisrswb@yahoo.com>
+Reply-To: Allyson_kleiner <allyson_kleiner@fastemailer.com>
+Subject: There's something I wanna share with you..
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__4_Jul_2012_08_07_21_+1000_.2mc__n2EhBCVZ0O
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Mark,
-
-On Tue,  3 Jul 2012 18:04:37 +0100 Mark Brown <broonie@opensource.wolfsonmi=
-cro.com> wrote:
->
-> Ease the deployment of clkdev by providing a default asm/clkdev.h which
-> will be used if the arch does not have an include/asm/clkdev.h.
->=20
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
-Looks good to me.
-
-Reviewed-by: Stephen Rothwell <sfr@canb.auug.org.au>
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__4_Jul_2012_08_07_21_+1000_.2mc__n2EhBCVZ0O
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP820ZAAoJEECxmPOUX5FE0zMP/2wTJMIDnti7DRJ4JCAuDIR1
-FPPx/bX3zwL4DC+fqIkKoA8WiPhE4MkD7X7R/YIEVnhS72seRNd+Lx3H4LSLnmSo
-+SNOvZnVFAVm0F6khWfLtq2NdMfP6GEUNtTREwjpPRlabztoSi9dAPln/wV5qepL
-mUoCZyCapG19Y/Sz0vPDASPc9Dt+/00Vw39P1CNrWhbp5uAVutQSL9nacrqhJhID
-e96Mx1mqN1ZfY+YZmvNg4ma3vl60TS9yRYcIISpzTHDa41tGfUUdDCstfllSa3jJ
-7L4hK4Za6zBjUoVfOBQs+qiyqZAga6OdXvLtFTVH5PA57v+rEbJjW6efMILLQfPp
-iejSRI/1/4YncIiCTfBkRROyyAbWp6fPOegJSB/4jG7eYsuFj1mKG2Ss/ah69wdp
-8Xco1RS91LdnDNcXnZbCrrWd4WqzDGAeWSoH7du+wUGPu8Kv610qA2lTanNYDEMq
-/Ohuo9ArYkTNG7JGqEu+X04Z1sSwpiIh7FIxRvVZ2+EZ9GzhG1XZT3kwxxneomyq
-Qt3jKoaqKzuh3mxP3vq2efonfnj1+wxyw6nBMZS80F6OsY46U42MugV3mCvqFu1G
-EA2Z0pDk2MyN+NHkIyjyjyNIjcehF1zXdScTjaMjOmbq9B6nEyA+BuIv0NlWLsk/
-H1ZWFhDAFsW/gT0pUlyW
-=kSjr
------END PGP SIGNATURE-----
-
---Signature=_Wed__4_Jul_2012_08_07_21_+1000_.2mc__n2EhBCVZ0O--
+Hello :)
+My name is Allyson. Probably you think that this is pretty strange or something like that but I search on the internet looking for interesting people so this is how I found you. I don't lose anything but I can acquire something doing this, right?)
+I hope you aren't afraid of things like that. So I found you, and I I don't know why but I think that u are an interesting person and also I can predict that it will be an exciting experience for both of us.
+As you could already notice I am open to people, very communicative and kind person. I really enjoy travelling and meeting new people. It is just a really short introduction and I will tell you more about myself after you write to me. Now, please tell me a little bit about yourself! What r u interesting in? What singles you out? Can you tell me something special about you?
+I really hope you aren't going ignore it and you will answer the letter. Now the world is your oyster.)
+Unfortunately I need to go now, please, reply when'll you have time!
+Can't wait to talk to you!
+Allyson
