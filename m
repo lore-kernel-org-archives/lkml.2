@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932557Ab2GCLGx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 07:06:53 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:63095 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756324Ab2GCLGv (ORCPT
+	id S1756440Ab2GCLJo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 07:09:44 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14053 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485Ab2GCLJm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 07:06:51 -0400
-From: Arnd Bergmann <arnd.bergmann@linaro.org>
-Organization: Linaro Limited 
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: linux-next: build failure after merge of the final tree (pwm tree related)
-Date: Tue, 3 Jul 2012 11:06:42 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>
-References: <20120629174826.546cc991459b12833f2aaebd@canb.auug.org.au> <201207030859.11975.arnd.bergmann@linaro.org> <20120703100049.GA8455@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20120703100049.GA8455@avionic-0098.mockup.avionic-design.de>
+	Tue, 3 Jul 2012 07:09:42 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 03 Jul 2012 04:09:32 -0700
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+To: <swarren@wwwdotorg.org>, <mturquette@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux@arm.linux.org.uk>,
+        <ccross@android.com>, <olof@lixom.net>, <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>
+Subject: [PATCH v2 0/6] Port Tegra to generic clk framework
+Date: Tue, 3 Jul 2012 16:39:15 +0530
+Message-ID: <1341313761-22118-1-git-send-email-pgaikwad@nvidia.com>
+X-Mailer: git-send-email 1.7.4.1
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207031106.42915.arnd.bergmann@linaro.org>
-X-Provags-ID: V02:K0:ldzHHzWQceCDNfhuUpJwgEKbKb//y0HkD58AGq3wHYu
- OT9EWRMARSSm2BeDCemW/s/HQ0UBdNY3rJ7NdSqDrs2Nr7OXTW
- 2RzDfwlyNdA0O0BXS9w973qdgDB3x4931klsf3umy7Fv4LEtf4
- eyYStOQUDX2Dexsf91nLLVgaeo8zwfmkBbQMl5F+JGG8AENJ2p
- aQZj7658GzpWsbWCAweB4Hsmzchgq5UYmOCfR9ShainXl6jg/g
- f+BqrOb852cgDrZJBDl670PYMLpsESZdNRvSjvkQ0WHtqMjB7Y
- 9TvtE5unYWXD6KCR3D+qj+OiNpEtRO5QLRvId8onrAiS+Xp1t2
- hsVPzB/kBHLMEcBqYz2d19/C7rneD4ypHMz8j1YUH
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 03 July 2012, Thierry Reding wrote:
->   Show Details
->   On Tue, Jul 03, 2012 at 08:59:11AM +0000, Arnd Bergmann wrote:
-> > On Tuesday 03 July 2012, Thierry Reding wrote:
-> > > I came up with the attached patch. What do you think? It fixes the
-> > > PowerPC allyesconfig issue for me.
-> > 
-> > This one looks correct, but I would still do it the other way around,
-> > putting the depends statements into the locations of the other drivers.
-> > The main difference is that we can then independently convert the
-> > remaining drivers, without having merge conflicts in the same line
-> > every time we remove one of the dependencies.
-> 
-> The downside of that approach, however, is to make PWM override other
-> settings. For instance if you have TWL6030_PWM selected and then decide
-> to also select PWM, then the former will be automatically deselected to
-> satisfy the dependency. I'm not sure if that's desired.
+This patch set ports Tegra clock code to generic clock framework.
 
-It's true that this may be confusing, but I think it's the right
-approach for future multiplatform kernels. If we have e.g. a combined
-omap+ux500+imx kernel, we can only have one implementation of the
-PWM interfaces, and that should be the new one.
+Depends on
+[PATCH v3 0/9] Add clk_prepare/clk_unprepare series
+[PATCH] ARM: tegra: Remove second instance of uart clk
+[PATCH] dma: tegra: add clk_prepare/clk_unprepare
+[PATCH] ARM: tegra: dma: rename driver name for clock to "tegra-apbdma"
 
-It's less clear for the other architectures. Maybe a mixed approach
-is better there, making CONFIG_PWM depend on !MACH_JZ4740 &&
-!PUV3_NB0916 && !BLACKFIN, but letting the remaining ARM versions
-of the PWM code depend on !PWM.
+Tested on Ventana and Cardhu
 
-	Arnd
+v2:
+ - Rebased on Tegra's for-3.6/common-clk
+
+Prashant Gaikwad (6):
+  ARM: tegra30: Separate out clk ops and clk data
+  ARM: tegra20: Separate out clk ops and clk data
+  ARM: tegra: Rename tegra20 clock file
+  ARM: tegra: Add clk_tegra structure and helper functions
+  ARM: tegra: Port tegra to generic clock framework
+  ARM: tegra: Remove duplicate code
+
+ arch/arm/Kconfig                          |    1 +
+ arch/arm/mach-tegra/Makefile              |    4 +-
+ arch/arm/mach-tegra/clock.c               |  570 +-------
+ arch/arm/mach-tegra/clock.h               |   40 +-
+ arch/arm/mach-tegra/common.c              |    1 -
+ arch/arm/mach-tegra/include/mach/clk.h    |    3 +
+ arch/arm/mach-tegra/tegra20_clocks.c      | 1519 ++++++++++++++++++
+ arch/arm/mach-tegra/tegra20_clocks.h      |   41 +
+ arch/arm/mach-tegra/tegra20_clocks_data.c | 1123 +++++++++++++
+ arch/arm/mach-tegra/tegra2_clocks.c       | 2484 -----------------------------
+ arch/arm/mach-tegra/tegra30_clocks.c      | 2470 +++++++++-------------------
+ arch/arm/mach-tegra/tegra30_clocks.h      |   53 +
+ arch/arm/mach-tegra/tegra30_clocks_data.c | 1370 ++++++++++++++++
+ 13 files changed, 4948 insertions(+), 4731 deletions(-)
+ create mode 100644 arch/arm/mach-tegra/tegra20_clocks.c
+ create mode 100644 arch/arm/mach-tegra/tegra20_clocks.h
+ create mode 100644 arch/arm/mach-tegra/tegra20_clocks_data.c
+ delete mode 100644 arch/arm/mach-tegra/tegra2_clocks.c
+ create mode 100644 arch/arm/mach-tegra/tegra30_clocks.h
+ create mode 100644 arch/arm/mach-tegra/tegra30_clocks_data.c
+
+-- 
+1.7.4.1
+
