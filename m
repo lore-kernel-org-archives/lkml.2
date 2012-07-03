@@ -1,113 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933214Ab2GCATe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 20:19:34 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:36357 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752897Ab2GCATd (ORCPT
+	id S933203Ab2GCAVK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 20:21:10 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:42963 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752897Ab2GCAVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 20:19:33 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak8JAK458k95LNXy/2dsb2JhbABFFrUeBIEsgQiCGAEBBTocIxAIAw4KLhQlAyETiAoMux4UiyUUAQYFI4VXA5UzkASCcYFEAQ
-Date: Tue, 3 Jul 2012 10:19:28 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com, dri-devel@lists.freedesktop.org,
-        Keith Packard <keithp@keithp.com>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [MMTests] IO metadata on XFS
-Message-ID: <20120703001928.GV19223@dastard>
-References: <20120620113252.GE4011@suse.de>
- <20120629111932.GA14154@suse.de>
- <20120629112505.GF14154@suse.de>
- <20120701235458.GM19223@dastard>
- <20120702063226.GA32151@infradead.org>
- <20120702143215.GS14154@suse.de>
- <20120702193516.GX14154@suse.de>
+	Mon, 2 Jul 2012 20:21:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120702193516.GX14154@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CALCETrVOwRyrBXDu0G=JE3dtwmXFNV6dAEHVPXYoJfUf6s2==w@mail.gmail.com>
+References: <CALCETrVOwRyrBXDu0G=JE3dtwmXFNV6dAEHVPXYoJfUf6s2==w@mail.gmail.com>
+Date: Mon, 2 Jul 2012 19:21:07 -0500
+Message-ID: <CAH2r5muEUANOjGCkP40LfFF3XtkKKtf9RAabzt-1H+xn1v5ccg@mail.gmail.com>
+Subject: Re: 3.5.0-rc3 (approximately) oops on cifs mount
+From: Steve French <smfrench@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 02, 2012 at 08:35:16PM +0100, Mel Gorman wrote:
-> Adding dri-devel and a few others because an i915 patch contributed to
-> the regression.
-> 
-> On Mon, Jul 02, 2012 at 03:32:15PM +0100, Mel Gorman wrote:
-> > On Mon, Jul 02, 2012 at 02:32:26AM -0400, Christoph Hellwig wrote:
-> > > > It increases the CPU overhead (dirty_inode can be called up to 4
-> > > > times per write(2) call, IIRC), so with limited numbers of
-> > > > threads/limited CPU power it will result in lower performance. Where
-> > > > you have lots of CPU power, there will be little difference in
-> > > > performance...
-> > > 
-> > > When I checked it it could only be called twice, and we'd already
-> > > optimize away the second call.  I'd defintively like to track down where
-> > > the performance changes happend, at least to a major version but even
-> > > better to a -rc or git commit.
-> > > 
-> > 
-> > By all means feel free to run the test yourself and run the bisection :)
-> > 
-> > It's rare but on this occasion the test machine is idle so I started an
-> > automated git bisection. As you know the milage with an automated bisect
-> > varies so it may or may not find the right commit. Test machine is sandy so
-> > http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__io-metadata-xfs/sandy/comparison.html
-> > is the report of interest. The script is doing a full search between v3.3 and
-> > v3.4 for a point where average files/sec for fsmark-single drops below 25000.
-> > I did not limit the search to fs/xfs on the off-chance that it is an
-> > apparently unrelated patch that caused the problem.
-> > 
-> 
-> It was obvious very quickly that there were two distinct regression so I
-> ran two bisections. One led to a XFS and the other led to an i915 patch
-> that enables RC6 to reduce power usage.
-> 
-> [aa464191: drm/i915: enable plain RC6 on Sandy Bridge by default]
+Any recreation information?
 
-Doesn't seem to be the major cause of the regression. By itself, it
-has impact, but the majority comes from the XFS change...
+On Mon, Jul 2, 2012 at 7:03 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> mount.cifs crashed my system, on something that's approximately
+> 3.5.0-rc3.  (I could find out more precisely if needed.)
+>
+> pstore rocks, by the way.
+>
+> <5>[352905.852621] FS-Cache: Loaded
+> <5>[352905.858346] FS-Cache: Netfs 'cifs' registered for caching
+> <5>[352905.858401] Key type cifs.spnego registered
+> <5>[352905.859016] CIFS: no cache= option specified, using
+> "cache=loose". This default will change to "cache=strict" in 3.7.
+> <4>[352905.862232] ------------[ cut here ]------------
+> <2>[352905.862377] kernel BUG at kernel/workqueue.c:564!
+> <4>[352905.862538] invalid opcode: 0000 [#1] SMP
+> <4>[352905.862665] CPU 6
+> <4>[352905.862759] Modules linked in: nls_utf8 cifs fscache tcp_lp
+> fuse be2iscsi iscsi_boot_sysfs bnx2i cnic uio cxgb4i cxgb4 cxgb3i
+> libcxgbi cxgb3 mdio iscsi_tcp libiscsi_tcp tpm_infineon libiscsi
+> scsi_transport_iscsi f71882fg ip6t_REJECT nf_conntrack_ipv6
+> nf_defrag_ipv6 ip6table_filter ip6_tables snd_hda_codec_hdmi
+> snd_hda_codec_realtek vfat fat btrfs zlib_deflate lzo_compress
+> libcrc32c snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device
+> snd_pcm joydev snd_timer e1000e snd coretemp crc32c_intel soundcore
+> lpc_ich i2c_i801 serio_raw xhci_hcd pcspkr microcode mfd_core
+> snd_page_alloc mei wmi vhost_net macvtap macvlan tun kvm_intel kvm
+> uinput ipv6 xts gf128mul dm_crypt firewire_ohci firewire_core
+> crc_itu_t radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core [last
+> unloaded: scsi_wait_scan]
+> <4>[352905.864936]
+> <4>[352905.864985] Pid: 18609, comm: mount.cifs Not tainted
+> 3.5.0-rc3-devel+ #435 MSI MS-7760/X79A-GD65 (8D) (MS-7760)
+> Oops#1 Part3
+> <4>[352905.865303] RIP: 0010:[<ffffffff8104d5b6>]
+> [<ffffffff8104d5b6>] get_work_gcwq+0x31/0x3e
+> <4>[352905.865552] RSP: 0018:ffff88010d26bb78  EFLAGS: 00010216
+> <4>[352905.865717] RAX: ffff88021a9c5688 RBX: 00000000ffffffff RCX:
+> 000000000000ea60
+> <4>[352905.865941] RDX: ffff88021a9c5680 RSI: ffff88021a9c5680 RDI:
+> 0000000000000011
+> <4>[352905.866165] RBP: ffff88010d26bb78 R08: ffff880419d3e000 R09:
+> 0000000000000001
+> <4>[352905.866388] R10: 00000000000155c6 R11: 0000000000015578 R12:
+> ffff880447fa1cc0
+> <4>[352905.866611] R13: ffff88021a9c5680 R14: ffff88021a9c56a0 R15:
+> 000000000000ea60
+> <4>[352905.866836] FS:  00007ffc750a7740(0000)
+> GS:ffff88045fd80000(0000) knlGS:0000000000000000
+> <4>[352905.867087] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> <4>[352905.867267] CR2: 00000034362bdba0 CR3: 000000021a34e000 CR4:
+> 00000000000407e0
+> <4>[352905.867491] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+> 0000000000000000
+> <4>[352905.867714] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+> 0000000000000400
+> <4>[352905.867938] Process mount.cifs (pid: 18609, threadinfo
+> ffff88010d26a000, task ffff88043db943e0)
+> <4>[352905.868209] Stack:
+> <4>[352905.868274]  ffff88010d26bbb8 ffffffff8104db9f ffff88021a9c5400
+> ffff88021a9c5400
+> <4>[352905.868504]  ffff88004aad8000 ffff8803c9034242 ffff8803f83d1400
+> 000000000000000d
+> <4>[352905.868735]  ffff88010d26bbc8 ffffffff8104e4f4 ffff88010d26bc98
+> ffffffffa057a5da
+> <4>[352905.868964] Call Trace:
+> <4>[352905.869044]  [<ffffffff8104db9f>] queue_delayed_work_on+0x72/0xed
+> <4>[352905.869234]  [<ffffffff8104e4f4>] queue_delayed_work+0x26/0x28
+> <4>[352905.869420]  [<ffffffffa057a5da>] cifs_get_tcp_session+0x51f/0x597 [cifs]
+> <4>[352905.869632]  [<ffffffffa057d1d2>] cifs_mount+0xf8/0x52d [cifs]
+> <4>[352905.869812]  [<ffffffffa056fb3f>] ? cifs_do_mount+0x9c/0x427 [cifs]
+> <4>[352905.870009]  [<ffffffffa056fb62>] cifs_do_mount+0xbf/0x427 [cifs]
+> <4>[352905.870200]  [<ffffffff811e2bae>] ? selinux_sb_copy_data+0x192/0x1ab
+> <4>[352905.870397]  [<ffffffff81104f25>] mount_fs+0x69/0x154
+> <4>[352905.870555]  [<ffffffff810d809c>] ? __alloc_percpu+0x10/0x12
+> <4>[352905.870732]  [<ffffffff81118ba4>] vfs_kern_mount+0x69/0xe3
+> <4>[352905.870903]  [<ffffffff81119129>] do_kern_mount+0x4d/0xdf
+> <4>[352905.871072]  [<ffffffff8111aa5c>] do_mount+0x69a/0x6fe
+> <4>[352905.871233]  [<ffffffff810d3d66>] ? memdup_user+0x42/0x6a
+> <4>[352905.871402]  [<ffffffff8111abd5>] sys_mount+0x8c/0xcd
+> <4>[352905.871561]  [<ffffffff8146a9a2>] system_call_fastpath+0x16/0x1b
+> <4>[352905.871765] Code: 66 66 90 48 8b 3f 40 f6 c7 04 74 09 40 80 e7
+> 00 48 8b 07 eb 21 48 c1 ef 08 83 ff 09 74 16 83 ff 08 74 0a 3b 3d 30
+> 8f a5 00 72 02 <0f> 0b e8 79 e8 ff ff eb 02 31 c0 5d c3 55 48 89 e5 66
+> 66 66 66
+> <1>[352905.872354] RIP  [<ffffffff8104d5b6>] get_work_gcwq+0x31/0x3e
+> <4>[352905.872532]  RSP <ffff88010d26bb78>
+> <4>[352905.951644] ---[ end trace d127dd774b14850e ]---
+>
+> --Andy
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-> [c999a223: xfs: introduce an allocation workqueue]
 
-Which indicates that there is workqueue scheduling issues, I think.
-The same amount of work is being done, but half of it is being
-pushed off into a workqueue to avoid stack overflow issues (*).  I
-tested the above patch in anger on an 8p machine, similar to the
-machine you saw no regressions on, but the workload didn't drive it
-to being completely CPU bound (only about 90%) so the allocation
-work was probably always scheduled quickly.
-
-How many worker threads have been spawned on these machines
-that are showing the regression? What is the context switch rate on
-the machines whenteh test is running? Can you run latencytop to see
-if there is excessive starvation/wait times for allocation
-completion? A pert top profile comparison might be informative,
-too...
-
-(*) The stack usage below submit_bio() can be more than 5k (DM, MD,
-SCSI, driver, memory allocation), so it's really not safe to do
-allocation anywhere below about 3k of kernel stack being used. e.g.
-on a relatively trivial storage setup without the above commit:
-
-[142296.384921] flush-253:4 used greatest stack depth: 360 bytes left
-
-Fundamentally, 8k stacks on x86-64 are too small for our
-increasingly complex storage layers and the 100+ function deep call
-chains that occur.
-
-Cheers,
-
-Dave.
 
 -- 
-Dave Chinner
-david@fromorbit.com
+Thanks,
+
+Steve
