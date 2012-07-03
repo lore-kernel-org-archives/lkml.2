@@ -1,66 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932848Ab2GCLM0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 07:12:26 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:45951 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932637Ab2GCLMX (ORCPT
+	id S1756466Ab2GCLNO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 07:13:14 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43675 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754298Ab2GCLNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 07:12:23 -0400
-Date: Tue, 3 Jul 2012 13:01:01 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 net-next 1/2] r8169: support RTL8106E
-Message-ID: <20120703110101.GA4779@electric-eye.fr.zoreil.com>
-References: <1340966060-2749-1-git-send-email-hayeswang@realtek.com> <1341221002-1522-1-git-send-email-hayeswang@realtek.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341221002-1522-1-git-send-email-hayeswang@realtek.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Tue, 3 Jul 2012 07:13:13 -0400
+From: Rajendra Nayak <rnayak@ti.com>
+To: <mturquette@ti.com>, <mturquette@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <mkl@pengutronix.de>, Rajendra Nayak <rnayak@ti.com>
+Subject: [PATCH] clk: fix parent validation in __clk_set_parent()
+Date: Tue, 3 Jul 2012 16:42:18 +0530
+Message-ID: <1341313938-17861-1-git-send-email-rnayak@ti.com>
+X-Mailer: git-send-email 1.7.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hayes Wang <hayeswang@realtek.com> :
-> Support the new chip RTL8106E.
-> 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+The below commit introduced a bug in __clk_set_parent()
+which could cause it to *skip* the parent validation
+which makes sure the parent passed to the api is a valid
+one.
 
-Almost-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+    commit 7975059db572eb47f0fb272a62afeae272a4b209
+    Author: Rajendra Nayak <rnayak@ti.com>
+    Date:   Wed Jun 6 14:41:31 2012 +0530
 
-Simple bidirectional traffic worked fine (rsync + wget + ping) both
-with and without tx checksumming offload.
+        clk: Allow late cache allocation for clk->parents
 
-Wol g or u worked as well. Link was ok and traffic flowing after a
-suspend to ram.
+This was identified by the following compiler warning..
 
-No problem with module removal / insertion / device up / traffic loop.
+    drivers/clk/clk.c: In function '__clk_set_parent':
+    drivers/clk/clk.c:1083:5: warning: 'i' may be used uninitialized in this function [-Wuninitialized]
 
-> +#define FIRMWARE_8106E_1	"rtl_nic/rtl8106e-1.fw"
+.. as reported by Marc Kleine-Budde.
 
-I did not notice it. Was it submitted ?
+There were various options discussed on how to fix this, one
+being initing 'i' to clk->num_parents, but the below approach
+was found to be more appropriate as it also makes the 'parent
+validation' code simpler to read.
 
-It was obviously not required for testing :o)
+Reported-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+---
+ drivers/clk/clk.c |   28 +++++++++++++---------------
+ 1 files changed, 13 insertions(+), 15 deletions(-)
 
-> @@ -1933,6 +1941,8 @@ static void rtl8169_get_mac_version(struct rtl8169_private *tp,
->  		{ 0x7c800000, 0x30000000,	RTL_GIGA_MAC_VER_11 },
->  
->  		/* 8101 family. */
-> +		{ 0x7cf00000, 0x44900000,	RTL_GIGA_MAC_VER_39 },
-> +		{ 0x7c800000, 0x44800000,	RTL_GIGA_MAC_VER_39 },
->  		{ 0x7c800000, 0x44000000,	RTL_GIGA_MAC_VER_37 },
->  		{ 0x7cf00000, 0x40b00000,	RTL_GIGA_MAC_VER_30 },
->  		{ 0x7cf00000, 0x40a00000,	RTL_GIGA_MAC_VER_30 },
-
-Realtek's 1.022.00 8101 driver only maps { 0x7c800000; 0x44800000 } to
-a generic device - if at all - and it maps { 0x7cf00000; 0x44800000 }
-to a different chipset (namely CFG_METHOD_15 where RTL_GIGA_MAC_VER_39
-is CFG_METHOD_16).
-
-Why should both drivers diverge ?
-
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 8996f46..46317cb 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1067,26 +1067,24 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
+ 
+ 	old_parent = clk->parent;
+ 
+-	/* find index of new parent clock using cached parent ptrs */
+-	if (clk->parents)
+-		for (i = 0; i < clk->num_parents; i++)
+-			if (clk->parents[i] == parent)
+-				break;
+-	else
++	if (!clk->parents)
+ 		clk->parents = kzalloc((sizeof(struct clk*) * clk->num_parents),
+ 								GFP_KERNEL);
+ 
+ 	/*
+-	 * find index of new parent clock using string name comparison
+-	 * also try to cache the parent to avoid future calls to __clk_lookup
++	 * find index of new parent clock using cached parent ptrs,
++	 * or if not yet cached, use string name comparison and cache
++	 * them now to avoid future calls to __clk_lookup.
+ 	 */
+-	if (i == clk->num_parents)
+-		for (i = 0; i < clk->num_parents; i++)
+-			if (!strcmp(clk->parent_names[i], parent->name)) {
+-				if (clk->parents)
+-					clk->parents[i] = __clk_lookup(parent->name);
+-				break;
+-			}
++	for (i = 0; i < clk->num_parents; i++) {
++		if (clk->parents && clk->parents[i] == parent)
++			break;
++		else if (!strcmp(clk->parent_names[i], parent->name)) {
++			if (clk->parents)
++				clk->parents[i] = __clk_lookup(parent->name);
++			break;
++		}
++	}
+ 
+ 	if (i == clk->num_parents) {
+ 		pr_debug("%s: clock %s is not a possible parent of clock %s\n",
 -- 
-Ueimor
+1.7.1
+
