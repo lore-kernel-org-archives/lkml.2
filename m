@@ -1,72 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab2GCQDB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 12:03:01 -0400
-Received: from outbound04.telus.net ([199.185.220.223]:46048 "EHLO
-	defout.telus.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755246Ab2GCQDA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 12:03:00 -0400
-X-Authority-Analysis: v=1.1 cv=y4SEATtu4Z/GL8+sjzCNMczfEX7PYCOhlmsyhTH4Koc=
- c=1 sm=2 a=d5aLr75umSEA:10 a=LGgl8L9ij00A:10 a=ZPSk82zQDygA:10
- a=FGbulvE0AAAA:8 a=2QBuMR3QyN3kyrAmzQcA:9 a=UAVRJdkkkM0A:10 a=q8WS6ZIQ5gMA:10
- a=bfXEvA2ThEX4vjLN:21 a=snL0Wr3dd8KPZiz4:21
-X-Telus-Outbound-IP: 173.180.45.4
-From: "Doug Smythies" <dsmythies@telus.net>
-To: "'Peter Zijlstra'" <peterz@infradead.org>
-Cc: "'Yong Zhang'" <yong.zhang0@gmail.com>,
-        "'Charles Wang'" <muming.wq@gmail.com>, <linux-kernel@vger.kernel.org>,
-        "'Ingo Molnar'" <mingo@redhat.com>, "'Tao Ma'" <tm@tao.ma>,
-        =?iso-2022-jp?B?JxskQjReQmMbKEIn?= <handai.szj@taobao.com>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>,
-        "'Doug Smythies'" <dsmythies@telus.net>
-References: <1339239295-18591-1-git-send-email-muming.wq@taobao.com>			 <1339429374.30462.54.camel@twins> <4FD70D12.5030404@gmail.com>			 <1339494970.31548.66.camel@twins> <4FDB4642.5070509@gmail.com>			 <1340035417.15222.95.camel@twins> <20120619060824.GA31684@zhy>		 <1340097532.21745.19.camel@twins> <000001cd4e33$496f6c30$dc4e4490$@net>	 <1340185528.21745.86.camel@twins> <002301cd4f64$17a055c0$46e10140$@net> <1340373782.18025.74.camel@twins> <000001cd5252$b47d2a30$1d777e90$@net>
-In-Reply-To: <000001cd5252$b47d2a30$1d777e90$@net>
-Subject: RE: [PATCH] sched: Folding nohz load accounting more accurate
-Date: Tue, 3 Jul 2012 09:01:36 -0700
-Message-ID: <000701cd5935$43eebab0$cbcc3010$@net>
+	id S1756822Ab2GCQEK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 12:04:10 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:51805 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753616Ab2GCQEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 12:04:09 -0400
+Message-ID: <4FF317B0.9010006@us.ibm.com>
+Date: Tue, 03 Jul 2012 09:02:56 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-2022-jp"
+To: Prarit Bhargava <prarit@redhat.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/3][RFC] Potential fix for leapsecond caused futex issue
+ (v3)
+References: <1341281766-22722-1-git-send-email-johnstul@us.ibm.com> <4FF28CB1.7020304@us.ibm.com> <4FF30F48.3030702@redhat.com>
+In-Reply-To: <4FF30F48.3030702@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac1Qf8Y0dgtIxj9RSkGmYoFffmvwKgB0AwSAAbj9NOA=
-Content-Language: en-ca
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12070316-7182-0000-0000-000001E8B755
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/03/2012 08:27 AM, Prarit Bhargava wrote:
+>
+> On 07/03/2012 02:09 AM, John Stultz wrote:
+>> On 07/02/2012 07:16 PM, John Stultz wrote:
+>>> NOTE: Some reports have been of a hard hang right at or before
+>>> the leapsecond. I've not been able to reproduce or diagnose
+>>> this, so this fix does not likely address the reported hard
+>>> hangs (unless they end up being connected to the futex/hrtimer
+>>> issue). Please email lkml and me if you experienced this.
+>> Since as noted above, I've seen some sporadic reports of hard hangs. Some seem
+>> connected to the hrtimer problem, where ksoftirq seems to go crazy and cause nmi
+>> watchdog lockups, but others are less clear.
+>>
+>> I wanted to try to provide a way to stress both the kernel's leapsecond code as
+>> well as provide a way for folks to be able to test their application's
+>> robustness in the face of leapsecond inconsistencies.
+>>
+>> Attached is my first attempt at such a test.
+>>
+>> It is designed to be run on a server, where it will schedule a leapsecond every
+>> day at midnight GMT.  So every day, while it runs, the server will see a
+>> leapsecond.  This allows the the leap second, as well as any suspected timer
+>> related lockups that might happen when the leapsecond is scheduled to be stressed.
+>>
+>> The test also outputs time samples right before, during and after the leapsecond
+>> is applied, so you can watch it happen.
+>>
+>> Also since once a day is a fairly low frequency, if you pass a "-s" to the test,
+>> it will jump the system time forward to 10 seconds right before the scheduled
+>> leapsecond for that day. Allowing a leapsecond to occur every ~13 seconds. This
+>> mode may cause application disruption, as it also causes the system to advance a
+>> day every ~13 seconds.
+>>
+>> The test additionally will note if it observes the hrtimer early expiration
+>> problem that was widely seen over the weekend.
+>>
+>> Hopefully this will provide a mechanism to test and maintain the kernel's
+>> correct behaviour for these rare events, as well as allowing folks to get more
+>> comfortable with leapsecond behaviour and test how it might impact their
+>> applications.
+>>
+>> If anyone who observed a hard hang is able to use this to reproduce the problem,
+>> I'd greatly like to hear about it.
+>> Build instructions are in the test file.
+> Thanks John -- I moved to using this for testing and hit the following
+> softlockup when running latest + your patchset:
+>
+> [ 1084.433362] BUG: soft lockup - CPU#17 stuck for 22s! [leap-a-day:1275]^M
+> [ 1084.440700] Modules linked in: nfs nfs_acl auth_rpcgss fscache lockd sunrpc
+> kvm_intel ixgbe coretemp kvm igb ptp pps_core mdio ioatdma lpc_ich crc32c_intel
+> joydev mfd_core i2c_i801 ghash_clmulni_intel tpm_tis wmi dca sb_edac microcode
+> edac_core pcspkr tpm tpm_bios hid_generic isci libsas scsi_transport_sas mgag200
+> i2c_algo_bit drm_kms_helper ttm drm i2c_core [last unloaded: scsi_wait_scan]^M
+> [ 1084.479183] CPU 17 ^M
+> [ 1084.481568] Modules linked in: nfs nfs_acl auth_rpcgss fscache lockd sunrpc
+> kvm_intel ixgbe coretemp kvm igb ptp pps_core mdio ioatdma lpc_ich crc32c_intel
+> joydev mfd_core i2c_i801 ghash_clmulni_intel tpm_tis wmi dca sb_edac microcode
+> edac_core pcspkr tpm tpm_bios hid_generic isci libsas scsi_transport_sas mgag200
+> i2c_algo_bit drm_kms_helper ttm drm i2c_core [last unloaded: scsi_wait_scan]^M
+> [ 1084.520061] ^M
+> [ 1084.521740] Pid: 1275, comm: leap-a-day Not tainted 3.5.0-rc4+ #1 Intel
+> Corporation S2600CP/S2600CP^M
+> [ 1084.531860] RIP: 0010:[<ffffffff810b3d57>]  [<ffffffff810b3d57>]
+> smp_call_function_many+0x1f7/0x260^M
 
->> On 2012.06.22 07:03 -0700, Peter Zijlstra wrote:
->  On 2012.06.24 14:46 -0700, Doug Smythies wrote:
+Hrmm. Can you run:
+         $ gdb  --eval-command "list *0xffffffff810b3d57" ./vmlinux
 
->> Doug, Charles,
+In the root kernel source directory where you saw this?
 
->> Can you both confirm that the below patch is what you tested and we
->> should finally be able to close this issue?
+> [ 1084.541962] RSP: 0018:ffff88042769fdf8  EFLAGS: 00000202^M
+> [ 1084.547891] RAX: 0000000000000080 RBX: 0000000000000292 RCX: 0000000000000020^M
+> [ 1084.555858] RDX: 0000000000000080 RSI: 0000000000000080 RDI: 0000000000000292^M
+> [ 1084.563826] RBP: ffff88042769fe48 R08: ffffffff81cd7200 R09: 0000000000000080^M
+> [ 1084.571790] R10: ffff88042f7342f0 R11: 0000000000000216 R12: ffffffff8137cd43^M
+> [ 1084.579758] R13: ffff88042769fd88 R14: 0000000000000292 R15: ffff88042769fda8^M
+> [ 1084.587727] FS:  00007fba8d48b740(0000) GS:ffff88042f720000(0000)
+> knlGS:0000000000000000^M
+> [ 1084.596758] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033^M
+> [ 1084.603174] CR2: 0000003d72e18c48 CR3: 0000000415d66000 CR4: 00000000000407e0^M
+> [ 1084.611141] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000^M
+> [ 1084.619120] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400^M
+> [ 1084.627092] Process leap-a-day (pid: 1275, threadinfo ffff88042769e000, task
+> ffff880425fd1720)^M
+> [ 1084.636694] Stack:^M
+> [ 1084.638950]  0000000000000003 0100000000000019 0000000000000000
+> ffffffff8107e960^M
+> [ 1084.647211]  ffff88042769fe58 ffff88042769ff58 ffffffff8107e960
+> 0000000000000000^M
+> [ 1084.655479]  0000000000000000 0000000000000000 ffff88042769fe58
+> ffffffff810b3f12^M
+> [ 1084.663723] Call Trace:^M
+> [ 1084.666466]  [<ffffffff8107e960>] ? hrtimer_wakeup+0x30/0x30^M
+> [ 1084.672784]  [<ffffffff8107e960>] ? hrtimer_wakeup+0x30/0x30^M
+> [ 1084.679107]  [<ffffffff810b3f12>] smp_call_function+0x22/0x30^M
+> [ 1084.685530]  [<ffffffff810b3f78>] on_each_cpu+0x28/0x70^M
+> [ 1084.691371]  [<ffffffff8107ec1c>] do_clock_was_set+0x1c/0x30^M
+> [ 1084.697691]  [<ffffffff8107f005>] clock_was_set+0x55/0x60^M
+> [ 1084.703732]  [<ffffffff810a6a23>] do_settimeofday+0xd3/0xe0^M
+> [ 1084.709971]  [<ffffffff8105f4e5>] do_sys_settimeofday+0xb5/0x110^M
+> [ 1084.716677]  [<ffffffff8105f5c3>] sys_settimeofday+0x83/0xb0^M
+> [ 1084.723012]  [<ffffffff8160f129>] system_call_fastpath+0x16/0x1b^M
+> [ 1084.729782] Code: f7 ff 15 95 89 b6 00 80 7d bf 00 0f 84 9c fe ff ff 41 f6 47
+> 20 01 0f 84 91 fe ff ff 0f 1f 84 00 00 00 00 00 f3 90 41 f6 47 20 01 <75> f7 e9
+> 7b fe ff ff 66 90 4c 89 e2 4c 89 ee 89 df e8 53 8b 21 ^M
+>
+> I'm taking a look now ... I'm not sure I believe the hrtimer_wakeup() calls on
+> the stack.
 
-> [... patch code deleted ...]
+Hrm.  Can you sysrq-t the box to see what the other cores are doing?
 
-> Yes, I confirm that is the patch code I am testing, back edited to my
-> working environment (So far, I call this "peter35").
-
-> Some more test results are attached as PNG files and tests will
-> continue for at least another couple of days. I can comment
-> further on the "finally close this issue" question then, but it
-> looks very good so far.
-
-> Unless I find some issue, I won't push further results to this list,
-> But results can be pulled from [1].
-
-> [1] http://www.smythies.com/~doug/network/load_average/peter35.html
-
-I have finished my testing of Peter's proposed patch (my reference:
-"peter35")
-I don't claim that the testing was exhaustive, but I do claim that it was
-pretty thorough.
-
-Yes, In my opinion, we can finally close this issue.
-Thanks.
-
-
+thanks
+-john
 
