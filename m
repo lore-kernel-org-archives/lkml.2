@@ -1,61 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250Ab2GCUfS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 16:35:18 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:46930 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753541Ab2GCUfP (ORCPT
+	id S1757253Ab2GCUg7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 16:36:59 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:22716 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752748Ab2GCUg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 16:35:15 -0400
-Date: Tue, 3 Jul 2012 14:35:12 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [ 38/48] SCSI & usb-storage: add try_rc_10_first flag
-Message-ID: <20120703203512.GE28804@parisc-linux.org>
-References: <Pine.LNX.4.44L0.1207031540410.29825-100000@netrider.rowland.org> <1341346072.3076.6.camel@dabdike>
+	Tue, 3 Jul 2012 16:36:57 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: RlAzFjEVM1mqnVNIvInqMisbJfVNI3huz4RDaULZgvgunpV
+ 8TUzCvTxbUKFGcN1sCo3UbJRjolIc2Jk3DOAyxYDMXWXpIjd6GIC.P.0NsKH
+ 9eCnTik5a1x6Xx.lTwnl77cgyXU2tgt5jrd8tEU1kADRoSA2Lpox8AUgPT0u
+ sLV.T985otMr9zFmcQpX7L0L0PrFB1BjT6DZxiGF4HQ7ueTcSrmc1mMdAKGC
+ CFKNsV.sp2uf3taXDG1iom5WgCi7FwD5XA9ykf0Tigvu0YA.UzW1tjw4wahG
+ YrvM4SYewhEcOu47tZ4pkGjB9owBppVLdTQumEJEmwQPVSvxcey.gPnAyn14
+ 6AkvlY166QuGe5ey22iQy36RxjieC5uhjUzZWNmul.QLJncR0Rdhe_nRQKZl
+ A4whVp8vMbNlqYwRzKO0.1EQiFxDxV58PmqdE
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 3 Jul 2012 15:36:54 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-mm <linux-mm@kvack.org>,
+        PowerPC email list <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH powerpc 2/2] kfree the cache name  of pgtable cache if
+ SLUB is used
+In-Reply-To: <alpine.DEB.2.00.1207031344240.14703@router.home>
+Message-ID: <alpine.DEB.2.00.1207031535330.14703@router.home>
+References: <1340617984.13778.37.camel@ThinkPad-T420> <1340618099.13778.39.camel@ThinkPad-T420> <alpine.DEB.2.00.1207031344240.14703@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341346072.3076.6.camel@dabdike>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 04, 2012 at 12:07:52AM +0400, James Bottomley wrote:
-> > The reason for the try_rc_10_first flag is that some devices return
-> > bogus data in response to RC16.  Like, an 800 GB device claiming to
-> > have 3 exabytes.
-> 
-> So we could easily send both and only believe RC10 if the device is
-> under 2TB.  However, what about all the extra flags we read out of RC16,
-> like trim, large sector size and DIF capability?  If the device lies
-> about its capacity, won't we get bogus values for those as well, which
-> is going to cause other screw ups?
+Looking through the emails it seems that there is an issue with alias
+strings. That can be solved by duping the name of the slab earlier in kmem_cache_create().
+Does this patch fix the issue?
 
-I think the necessary algorithm is simpler than that:
+Subject: slub: Dup name earlier in kmem_cache_create
 
-Send RC10 (unless the device supports PI, in which case it's probably
-	enterprisey and well-tested)
-Send RC16
-If RC10 capacity agrees with RC16 capacity, use extra RC16 data.
-(for values of "agrees with" that include the "-1 to use RC16" indicator)
+Dup the name earlier in kmem_cache_create so that alias
+processing is done using the copy of the string and not
+the string itself.
 
-Sure, it's one extra command, but really, who cares?
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+---
+ mm/slub.c |   29 ++++++++++++++---------------
+ 1 file changed, 14 insertions(+), 15 deletions(-)
+
+Index: linux-2.6/mm/slub.c
+===================================================================
+--- linux-2.6.orig/mm/slub.c	2012-06-11 08:49:56.000000000 -0500
++++ linux-2.6/mm/slub.c	2012-07-03 15:17:37.000000000 -0500
+@@ -3933,8 +3933,12 @@ struct kmem_cache *kmem_cache_create(con
+ 	if (WARN_ON(!name))
+ 		return NULL;
+
++	n = kstrdup(name, GFP_KERNEL);
++	if (!n)
++		goto out;
++
+ 	down_write(&slub_lock);
+-	s = find_mergeable(size, align, flags, name, ctor);
++	s = find_mergeable(size, align, flags, n, ctor);
+ 	if (s) {
+ 		s->refcount++;
+ 		/*
+@@ -3944,7 +3948,7 @@ struct kmem_cache *kmem_cache_create(con
+ 		s->objsize = max(s->objsize, (int)size);
+ 		s->inuse = max_t(int, s->inuse, ALIGN(size, sizeof(void *)));
+
+-		if (sysfs_slab_alias(s, name)) {
++		if (sysfs_slab_alias(s, n)) {
+ 			s->refcount--;
+ 			goto err;
+ 		}
+@@ -3952,31 +3956,26 @@ struct kmem_cache *kmem_cache_create(con
+ 		return s;
+ 	}
+
+-	n = kstrdup(name, GFP_KERNEL);
+-	if (!n)
+-		goto err;
+-
+ 	s = kmalloc(kmem_size, GFP_KERNEL);
+ 	if (s) {
+ 		if (kmem_cache_open(s, n,
+ 				size, align, flags, ctor)) {
+ 			list_add(&s->list, &slab_caches);
+ 			up_write(&slub_lock);
+-			if (sysfs_slab_add(s)) {
+-				down_write(&slub_lock);
+-				list_del(&s->list);
+-				kfree(n);
+-				kfree(s);
+-				goto err;
+-			}
+-			return s;
++			if (!sysfs_slab_add(s))
++				return s;
++
++			down_write(&slub_lock);
++			list_del(&s->list);
+ 		}
+ 		kfree(s);
+ 	}
+-	kfree(n);
++
+ err:
++	kfree(n);
+ 	up_write(&slub_lock);
+
++out:
+ 	if (flags & SLAB_PANIC)
+ 		panic("Cannot create slabcache %s\n", name);
+ 	else
