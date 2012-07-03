@@ -1,140 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932549Ab2GCSdo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 14:33:44 -0400
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:46006 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751089Ab2GCSdn (ORCPT
+	id S1757041Ab2GCSp4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 14:45:56 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:44602 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656Ab2GCSpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 14:33:43 -0400
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH] [resend 4] Add support for Rise mP6 CPUs
-Cc: Kernel development list <linux-kernel@vger.kernel.org>
+	Tue, 3 Jul 2012 14:45:55 -0400
+Date: Tue, 3 Jul 2012 20:45:51 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Calvin Walton <calvin.walton@kepstin.ca>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        shemminger@vyatta.com
+Subject: Re: long boot delays caused by 070ad7e7 floppy change
+Message-ID: <20120703184551.GL11413@one.firstfloor.org>
+References: <20120702224648.GA20361@tassilo.jf.intel.com> <CA+55aFwre6s=orjUaNKJA=51Fc1mxu_XGX80Bex4Sn-=mWPx5Q@mail.gmail.com> <1341323230.3292.10.camel@nayuki.kepstin.ca> <CA+55aFyvzz3Lp9zeA6X+QMan0iZFWq_0Xd+ff_trnP1tpn2iJQ@mail.gmail.com> <1341337257.2406.1.camel@nayuki.kepstin.ca> <CA+55aFzOD33eWj0FQuZ7RWmF-yYwaeNB-9J-YY+mX4mwP7VXuA@mail.gmail.com> <alpine.LNX.2.00.1207031953570.17304@pobox.suse.cz>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-From: Ondrej Zary <linux@rainbow-software.org>
-Date: Tue, 3 Jul 2012 20:33:15 +0200
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207032033.19855.linux@rainbow-software.org>
+In-Reply-To: <alpine.LNX.2.00.1207031953570.17304@pobox.suse.cz>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add detection for Rise mP6 x86 CPUs and a quirk to mark CMPXCHG8B as present.
+On Tue, Jul 03, 2012 at 07:57:15PM +0200, Jiri Kosina wrote:
+> On Tue, 3 Jul 2012, Linus Torvalds wrote:
+> 
+> > > Ok, here's the dmesg output that I get:
+> > >
+> > > [    0.714316] floppy0: lock_fdc: -1 (out of 8)
+> > 
+> > Ok, thanks. That -1 definitely explains the long delay. It's using
+> > "drive=-1" because it has no actual drive number, just the
+> > *controller* number.
+> > 
+> > And the backtrace shows what's going on too: it's the
+> > 
+> >   user_reset_fdc(-1, FD_RESET_ALWAYS, false);
+> > 
+> > that passes in -1 as the floppy controller number.
+> > 
+> > Ugh.
+> > 
+> > It looks like the code meant for -1 to mean "regular delay"
+> > (current_reqD), and -2 to mean MAXTIMEOUT. For some reason the "-1"
+> > logic has gotten screwed.
+> 
+> I am still trying to understand the exact situation.
+> 
+> Andi, do I understand you correctly that even if you revert 070ad7e793dc 
+> on top of current Linus' tree, you are still seeing the 20 second delay 
+> inside the initcall?
 
-Result:
-$ cat /proc/cpuinfo
-processor       : 0
-vendor_id       : RiseRiseRise
-cpu family      : 5
-model           : 0
-model name      : mP6 (Kirin)
-stepping        : 4
-cpu MHz         : 200.443
-cache size      : 16 KB
-fdiv_bug        : no
-hlt_bug         : no
-f00f_bug        : no
-coma_bug        : no
-fpu             : yes
-fpu_exception   : yes
-cpuid level     : 1
-wp              : yes
-flags           : fpu tsc cx8 mmx up
-bogomips        : 400.88
-clflush size    : 32
-cache_alignment : 32
-address sizes   : 32 bits physical, 32 bits virtual
-power management:
+Correct. Here's the debug output with just reverted (without Linus
+patch):
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+[    2.489559] calling  floppy_init+0x0/0xe46 @ 1
+[    2.504363] floppy0: lock_fdc: -1 (out of 8)
+[    2.504410] floppy0: reschedule timeout lock fdc
+[   22.498784] floppy0: reschedule timeout do wakeup
+[   22.498811] floppy0: no floppy controllers found
+[   22.498944] initcall floppy_init+0x0/0xe46 returned -19 after
+19577158 usecs
 
-diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-index 3c57033..5a356f3 100644
---- a/arch/x86/Kconfig.cpu
-+++ b/arch/x86/Kconfig.cpu
-@@ -505,3 +505,12 @@ config CPU_SUP_UMC_32
- 	  CPU might render the kernel unbootable.
- 
- 	  If unsure, say N.
-+
-+config CPU_SUP_RISE_32
-+	default y
-+	bool "Support Rise processors" if PROCESSOR_SELECT
-+	depends on !64BIT
-+	---help---
-+	  This enables detection, tunings and quirks for Rise processors
-+
-+	  If unsure, say N.
-diff --git a/arch/x86/include/asm/processor.h 
-b/arch/x86/include/asm/processor.h
-index aa9088c..e3a4e7f 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -119,7 +119,8 @@ struct cpuinfo_x86 {
- #define X86_VENDOR_CENTAUR	5
- #define X86_VENDOR_TRANSMETA	7
- #define X86_VENDOR_NSC		8
--#define X86_VENDOR_NUM		9
-+#define X86_VENDOR_RISE		9
-+#define X86_VENDOR_NUM		10
- 
- #define X86_VENDOR_UNKNOWN	0xff
- 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 25f24dc..1013eb6 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -26,6 +26,7 @@ obj-$(CONFIG_CPU_SUP_CYRIX_32)		+= cyrix.o
- obj-$(CONFIG_CPU_SUP_CENTAUR)		+= centaur.o
- obj-$(CONFIG_CPU_SUP_TRANSMETA_32)	+= transmeta.o
- obj-$(CONFIG_CPU_SUP_UMC_32)		+= umc.o
-+obj-$(CONFIG_CPU_SUP_RISE_32)		+= rise.o
- 
- obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
- 
-diff --git a/arch/x86/kernel/cpu/rise.c b/arch/x86/kernel/cpu/rise.c
-new file mode 100644
-index 0000000..2072a0f
---- /dev/null
-+++ b/arch/x86/kernel/cpu/rise.c
-@@ -0,0 +1,34 @@
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <asm/processor.h>
-+#include "cpu.h"
-+
-+static void __cpuinit init_rise(struct cpuinfo_x86 *c)
-+{
-+	/*
-+	 * Datasheet says:
-+	 * The CMPXCHG8B instruction is supported and always enabled on the
-+	 * Rise mP6 processor; however, the default CPUID function bit is set
-+	 * to 0 to circumvent a reported bug in Windows NT.
-+	 */
-+	set_cpu_cap(c, X86_FEATURE_CX8);
-+	/* cache is always 16KB (8KB code + 8KB data) */
-+	c->x86_cache_size = 16;
-+}
-+
-+static const struct cpu_dev __cpuinitconst rise_cpu_dev = {
-+	.c_vendor	= "Rise",
-+	.c_ident	= { "RiseRiseRise" },
-+	.c_models = {
-+		{ .vendor = X86_VENDOR_RISE, .family = 5, .model_names =
-+		  {
-+			  [0] = "mP6 (Kirin)",
-+			  [2] = "mP6 (Lynx)",
-+		  }
-+		},
-+	},
-+	.c_init		= init_rise,
-+	.c_x86_vendor	= X86_VENDOR_RISE,
-+};
-+
-+cpu_dev_register(rise_cpu_dev);
-
--- 
-Ondrej Zary
