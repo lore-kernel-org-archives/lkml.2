@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab2GCVmQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 17:42:16 -0400
-Received: from mout2.fh-giessen.de ([212.201.18.46]:40435 "EHLO
-	mout2.fh-giessen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756361Ab2GCVmP (ORCPT
+	id S933051Ab2GCVsM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 17:48:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36798 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756514Ab2GCVsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 17:42:15 -0400
-Message-ID: <4FF36732.3060306@mni.thm.de>
-Date: Tue, 03 Jul 2012 23:42:10 +0200
-From: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/16.0 Thunderbird/16.0a1
-MIME-Version: 1.0
-To: neilb@suse.de
-CC: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: md: fix up plugging (again). breaks build of the latest 3.5rc5+
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 3 Jul 2012 17:48:10 -0400
+Date: Tue, 3 Jul 2012 14:48:08 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Rik van Riel <riel@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, jaschut@sandia.gov,
+        minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH -mm v2] mm: have order > 0 compaction start off where it
+ left
+Message-Id: <20120703144808.4daa4244.akpm@linux-foundation.org>
+In-Reply-To: <20120703101024.GG13141@csn.ul.ie>
+References: <20120628135520.0c48b066@annuminas.surriel.com>
+	<20120628135940.2c26ada9.akpm@linux-foundation.org>
+	<4FECCB89.2050400@redhat.com>
+	<20120628143546.d02d13f9.akpm@linux-foundation.org>
+	<1341250950.16969.6.camel@lappy>
+	<4FF2435F.2070302@redhat.com>
+	<20120703101024.GG13141@csn.ul.ie>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Proposing this patch:
+On Tue, 3 Jul 2012 11:10:24 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
 
->From c6ac2740ed916ccf5b6fec0682101dd7a6a50f9f Mon Sep 17 00:00:00 2001
-From: Tobias Klausmann <tobias.klausmann@mni.thm.de>
-Date: Tue, 3 Jul 2012 23:03:43 +0200
-Subject: [PATCH] Fix patch md: fix up plugging again. Commit
- b357f04a67c2aeee828b240863cd3f21d6cb3179
+> > >>>>>+          if (cc->order>   0)
+> > >>>>>+                  zone->compact_cached_free_pfn = high_pfn;
+> > >>>>
+> > >>>>Is high_pfn guaranteed to be aligned to pageblock_nr_pages here?  I
+> > >>>>assume so, if lots of code in other places is correct but it's
+> > >>>>unobvious from reading this function.
+> > >>>
+> > >>>Reading the code a few more times, I believe that it is
+> > >>>indeed aligned to pageblock size.
+> > >>
+> > >>I'll slip this into -next for a while.
+> > >>
+> > >>--- a/mm/compaction.c~isolate_freepages-check-that-high_pfn-is-aligned-as-expected
+> > >>+++ a/mm/compaction.c
+> > >>@@ -456,6 +456,7 @@ static void isolate_freepages(struct zon
+> > >>                 }
+> > >>                 spin_unlock_irqrestore(&zone->lock, flags);
+> > >>
+> > >>+               WARN_ON_ONCE(high_pfn&  (pageblock_nr_pages - 1));
+> > >>                 /*
+> > >>                  * Record the highest PFN we isolated pages from. When next
+> > >>                  * looking for free pages, the search will restart here as
+> > >
+> > >I've triggered the following with today's -next:
+> > 
+> > I've been staring at the migrate code for most of the afternoon,
+> > and am not sure how this is triggered.
+> > 
+> 
+> That warning is placed in isolate_freepages(). When the migration
+> scanner and free scanner have almost met it is possible for high_pfn to
+> be
+> 
+> cc->migrate_pfn + pageblock_nr_pages
+> 
+> and that is not necessarily pageblock aligned. Forcing it to be aligned
+> raises the possibility that the free scanner moves to another zone. This
+> is very unlikely but could happen if a high zone was very small.
+> 
+> I should have caught this when the warning was proposed :( IMO it's
+> safe to just drop the warning.
 
----
- drivers/md/raid10.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The rest of this patch takes care to ensure that
+->compact_cached_free_pfn is aligned to pageblock_nr_pages.  But it now
+appears that this particular site will violate that.
 
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index acf5a82..8da6282 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1394,7 +1394,7 @@ retry_write:
- 		bio_list_add(&conf->pending_bio_list, mbio);
- 		conf->pending_count++;
- 		spin_unlock_irqrestore(&conf->device_lock, flags);
--		if (!mddev_check_plugged(mddev, 0, 0))
-+		if (!mddev_check_plugged(mddev))
- 			md_wakeup_thread(mddev->thread);
-
- 		if (!r10_bio->devs[i].repl_bio)
--- 
-1.7.7
-
-at least it compiles with this applied!
-
-Thank you,
-Tobias Klausmann
+What's up?  Do we need to fix this site, or do we remove all that
+make-compact_cached_free_pfn-aligned code?
 
