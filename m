@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756371Ab2GCLFZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 07:05:25 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44925 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751445Ab2GCLFX (ORCPT
+	id S932557Ab2GCLGx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 07:06:53 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:63095 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756324Ab2GCLGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 07:05:23 -0400
-Date: Tue, 3 Jul 2012 12:05:21 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Alessandro Rubini <rubini@gnudd.com>,
-        linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
-        alan@linux.intel.com, linux@arm.linux.org.uk, x86@kernel.org,
-        gregkh@linuxfoundation.org, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH V2 5/6] x86: add CONFIG_ARM_AMBA, selected by STA2X11
-Message-ID: <20120703110520.GI29030@opensource.wolfsonmicro.com>
-References: <4FECB95D.7010200@zytor.com>
- <20120701104401.GA4352@mail.gnudd.com>
- <2b797c83-6a3c-4051-841a-a4cfa9d1cae1@email.android.com>
- <201207021658.27755.arnd@arndb.de>
- <20120702180518.GA25995@sirena.org.uk>
- <4FF1E37D.7050103@zytor.com>
- <20120702183324.GA29030@opensource.wolfsonmicro.com>
- <4FF1F987.3030501@zytor.com>
+	Tue, 3 Jul 2012 07:06:51 -0400
+From: Arnd Bergmann <arnd.bergmann@linaro.org>
+Organization: Linaro Limited 
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: linux-next: build failure after merge of the final tree (pwm tree related)
+Date: Tue, 3 Jul 2012 11:06:42 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>
+References: <20120629174826.546cc991459b12833f2aaebd@canb.auug.org.au> <201207030859.11975.arnd.bergmann@linaro.org> <20120703100049.GA8455@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20120703100049.GA8455@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WHz+neNWvhIGAO8A"
-Content-Disposition: inline
-In-Reply-To: <4FF1F987.3030501@zytor.com>
-X-Cookie: Advancement in position.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207031106.42915.arnd.bergmann@linaro.org>
+X-Provags-ID: V02:K0:ldzHHzWQceCDNfhuUpJwgEKbKb//y0HkD58AGq3wHYu
+ OT9EWRMARSSm2BeDCemW/s/HQ0UBdNY3rJ7NdSqDrs2Nr7OXTW
+ 2RzDfwlyNdA0O0BXS9w973qdgDB3x4931klsf3umy7Fv4LEtf4
+ eyYStOQUDX2Dexsf91nLLVgaeo8zwfmkBbQMl5F+JGG8AENJ2p
+ aQZj7658GzpWsbWCAweB4Hsmzchgq5UYmOCfR9ShainXl6jg/g
+ f+BqrOb852cgDrZJBDl670PYMLpsESZdNRvSjvkQ0WHtqMjB7Y
+ 9TvtE5unYWXD6KCR3D+qj+OiNpEtRO5QLRvId8onrAiS+Xp1t2
+ hsVPzB/kBHLMEcBqYz2d19/C7rneD4ypHMz8j1YUH
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 03 July 2012, Thierry Reding wrote:
+>   Show Details
+>   On Tue, Jul 03, 2012 at 08:59:11AM +0000, Arnd Bergmann wrote:
+> > On Tuesday 03 July 2012, Thierry Reding wrote:
+> > > I came up with the attached patch. What do you think? It fixes the
+> > > PowerPC allyesconfig issue for me.
+> > 
+> > This one looks correct, but I would still do it the other way around,
+> > putting the depends statements into the locations of the other drivers.
+> > The main difference is that we can then independently convert the
+> > remaining drivers, without having merge conflicts in the same line
+> > every time we remove one of the dependencies.
+> 
+> The downside of that approach, however, is to make PWM override other
+> settings. For instance if you have TWL6030_PWM selected and then decide
+> to also select PWM, then the former will be automatically deselected to
+> satisfy the dependency. I'm not sure if that's desired.
 
---WHz+neNWvhIGAO8A
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+It's true that this may be confusing, but I think it's the right
+approach for future multiplatform kernels. If we have e.g. a combined
+omap+ux500+imx kernel, we can only have one implementation of the
+PWM interfaces, and that should be the new one.
 
-On Mon, Jul 02, 2012 at 12:41:59PM -0700, H. Peter Anvin wrote:
-> On 07/02/2012 11:33 AM, Mark Brown wrote:
+It's less clear for the other architectures. Maybe a mixed approach
+is better there, making CONFIG_PWM depend on !MACH_JZ4740 &&
+!PUV3_NB0916 && !BLACKFIN, but letting the remaining ARM versions
+of the PWM code depend on !PWM.
 
-> >> Last I saw I saw a patch to that effect, asked what the benefit
-> >> was, and got no answer.
-
-> > Are you positive about that?  I don't recall you replying any of
-> > the times I sent out the patch and my mail archive isn't
-> > contradicting me either.
-
-> I said last time I saw a patch to that effect; it might not have been
-> from you.  I might not have seen yours for whatever reason (including
-> losing it on my end.)
-
-I'm kind of surprised anyone else has been sending stuff (unless mine
-got resent by someone else, I did include it in some of my serises for
-the clock API); I know I've posted mine several times now.  In any case,
-I hope the mail you're replying to answers your question about why it's
-useful.
-
-In general I'd probably go further and say that (at least when a generic
-implementation is available) there should be a very good reason for not
-enabling an API on an architecture rather than the other way around.
-
---WHz+neNWvhIGAO8A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP8tHWAAoJEBus8iNuMP3d5sUP/RGmlvwsVzYuojMtOmKiG5Ce
-ipKXHvQWqnuFbMcW0ZgauSYVy8vq4C1R/gjkAB9Kt/2zGWPWfTozVk8Qazti+WPK
-ASgxVmpX4vY2ArzXMuxnMPuMoINS2kM9G2te1Fi4iyauuuSZH0Fnue0FNkAQu4lN
-T+/fLBJJg2ONl+XjTPsXqSmKeCuBzZJayLDWoUjdNnzBMSCEB0dCQxETxUXMdOVz
-xIVBTki/His8rhgSkrZ4p0vvNayJYfqPLCLv7vnfYnt6kyGahUsUmMWgU6Fglzc5
-+AiotwP5s7FkkmP8x6S8oCQdG2ouzy1YPN9oKQi0KH7yJhj1wQeq5MMTNbY/uuLo
-37Ikj3OYp2mD6WT/oMSU4fIe5/TNDa/tqb4qZUafo8pbDtb7K5cYNVA1fTukEkmq
-w4GlQ/oJy6G+kHcVbzUCST8qxy6ENnNljafgGFxFEorDPZdnPfL9FYkjIgWz4/by
-GuZU/yFbVHTAE1lLR2iZsN0rM5u9PQ0ozz8mJOxEKLC4VZDGc6KVg/tu30tgWhSl
-yqSQ3JmkNuCiW+FMdBaD7wwX6fRSOhBs/7XYABrkpmL9dU9m01jb8svh1lIZYWAM
-yv6BriIm0Z0JJvCQagFrFPcnaeKCIOYkrFwJuorXw7KmwEXkw2uHXybNqhbrMOGN
-OV49/m5b+ukYwNADndAI
-=brpJ
------END PGP SIGNATURE-----
-
---WHz+neNWvhIGAO8A--
+	Arnd
