@@ -1,154 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695Ab2GCI3U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 04:29:20 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:42976 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab2GCI3Q (ORCPT
+	id S1751821Ab2GCIdQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 04:33:16 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:37933
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751119Ab2GCIdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 04:29:16 -0400
-X-AuditID: b753bd60-98cf0ba000000f6c-0d-4ff2ad59f969
-X-AuditID: b753bd60-98cf0ba000000f6c-0d-4ff2ad59f969
-Message-ID: <4FF2AD59.6080006@hitachi.com>
-Date: Tue, 03 Jul 2012 17:29:13 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 3 Jul 2012 04:33:13 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-SpamScore: -9
+X-BigFish: VPS-9(zzbb2dI98dI9371I542M1432Izz1202hzz8275bhz2dh2a8h668h839h93fhd25hf0ah)
+From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Axel Lin <axel.lin@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@ti.com>
+Date: Tue, 3 Jul 2012 04:33:19 -0400
+Subject: RE: [PATCH v2] regulator: ad5398: Fix min/max current limit
+ boundary checking
+Thread-Topic: [PATCH v2] regulator: ad5398: Fix min/max current limit
+ boundary checking
+Thread-Index: Ac1Y9LASDb0sXshZTlieIp7EE4/8iQAAY/TQ
+Message-ID: <DB904C5425BA6F4E8424B3B51A1414D17140805DC8@NWD2CMBX1.ad.analog.com>
+References: <1341301353.12050.1.camel@phoenix>
+ <DB904C5425BA6F4E8424B3B51A1414D17140805D85@NWD2CMBX1.ad.analog.com>
+ <4FF2A7F9.3090307@metafoo.de>
+ <DB904C5425BA6F4E8424B3B51A1414D17140805DAB@NWD2CMBX1.ad.analog.com>
+ <4FF2AC24.7090906@metafoo.de>
+In-Reply-To: <4FF2AC24.7090906@metafoo.de>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 5/6] ftrace/x86: Add separate function to save regs
-References: <20120702200322.573660631@goodmis.org> <20120702201821.510485400@goodmis.org>
-In-Reply-To: <20120702201821.510485400@goodmis.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-(2012/07/03 5:03), Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> Add a way to have different functions calling different trampolines.
-> If a ftrace_ops wants regs saved on the return, then have only the
-> functions with ops registered to save regs. Functions registered by
-> other ops would not be affected, unless the functions overlap.
-> 
-> If one ftrace_ops registered functions A, B and C and another ops
-> registered fucntions to save regs on A, and D, then only functions
-> A and D would be saving regs. Function B and C would work as normal.
-> Although A is registered by both ops: normal and saves regs; this is fine
-> as saving the regs is needed to satisfy one of the ops that calls it
-> but the regs are ignored by the other ops function.
-> 
-> x86_64 implements the full regs saving, and i386 just passes a NULL
-> for regs to satisfy the ftrace_ops passing. Where an arch must supply
-> both regs and ftrace_ops parameters, even if regs is just NULL.
-> 
-> It is OK for an arch to pass NULL regs. All function trace users that
-> require regs passing must add the flag FTRACE_OPS_FL_SAVE_REGS when
-> registering the ftrace_ops. If the arch does not support saving regs
-> then the ftrace_ops will fail to register. The flag
-> FTRACE_OPS_FL_SAVE_REGS_IF_SUPPORTED may be set that will prevent the
-> ftrace_ops from failing to register. In this case, the handler may
-> either check if regs is not NULL or check if ARCH_SUPPORTS_FTRACE_SAVE_REGS.
-> If the arch supports passing regs it will set this macro and pass regs
-> for ops that request them. All other archs will just pass NULL.
-
-This is nice for me :)
-It helps me to maintain kprobes on ftrace.
-
-[...]
-> @@ -98,6 +111,67 @@ GLOBAL(ftrace_stub)
->  	retq
->  END(ftrace_caller)
->  
-> +ENTRY(ftrace_regs_caller)
-> +	/* Save the current flags before compare (in SS location)*/
-> +	pushfq
-> +
-> +	/* Check if tracing was disabled (quick check) */
-> +	cmpl $0, function_trace_stop
-> +	jne  ftrace_restore_flags
-> +
-> +	/* skip=8 to skip flags saved in SS */
-> +	ftrace_caller_setup 8
-> +
-> +	/* Save the rest of pt_regs */
-> +	movq %r15, R15(%rsp)
-> +	movq %r14, R14(%rsp)
-> +	movq %r13, R13(%rsp)
-> +	movq %r12, R12(%rsp)
-> +	movq %r11, R11(%rsp)
-> +	movq %r10, R10(%rsp)
-> +	movq %rbp, RBP(%rsp)
-> +	movq %rbx, RBX(%rsp)
-> +	/* Copy saved flags */
-> +	movq SS(%rsp), %rcx
-> +	movq %rcx, EFLAGS(%rsp)
-> +	/* Kernel segments */
-> +	movq $__KERNEL_DS, %rcx
-> +	movq %rcx, SS(%rsp)
-> +	movq $__KERNEL_CS, %rcx
-> +	movq %rcx, CS(%rsp)
-> +	/* Stack - skipping return address */
-> +	leaq SS+16(%rsp), %rcx
-> +	movq %rcx, RSP(%rsp)
-> +
-> +	/* regs go into 4th parameter */
-> +	leaq (%rsp), %rcx
-> +
-> +GLOBAL(ftrace_regs_call)
-> +	call ftrace_stub
-> +
-> +	/* restore the rest of pt_regs */
-> +	movq R15(%rsp), %r15
-> +	movq R14(%rsp), %r14
-> +	movq R13(%rsp), %r13
-> +	movq R12(%rsp), %r12
-> +	movq R10(%rsp), %r10
-> +	movq RBP(%rsp), %rbp
-> +	movq RBX(%rsp), %rbx
-> +
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q638XN8D014537
 
 
-> +	/* Restore flags */
-> +	pushq EFLAGS(%rsp)
-> +	popfq
-> +
-> +	MCOUNT_RESTORE_FRAME
 
-Here, if MCOUNT_RESTORE_FRAME has skip too, I think you don't
-need to restore flags before restoring other registers, like
-below;
+>-----Original Message-----
+>From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+>Sent: Tuesday, July 03, 2012 4:24 PM
+>To: Zhang, Sonic
+>Cc: Axel Lin; Mark Brown; linux-kernel@vger.kernel.org; Liam Girdwood
+>Subject: Re: [PATCH v2] regulator: ad5398: Fix min/max current limit boundary
+>checking
+>
+>On 07/03/2012 10:13 AM, Zhang, Sonic wrote:
+>>
+>>
+>>> -----Original Message-----
+>>> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+>>> Sent: Tuesday, July 03, 2012 4:06 PM
+>>> To: Zhang, Sonic
+>>> Cc: Axel Lin; Mark Brown; linux-kernel@vger.kernel.org; Liam Girdwood
+>>> Subject: Re: [PATCH v2] regulator: ad5398: Fix min/max current limit boundary
+>>> checking
+>>>
+>>> On 07/03/2012 09:54 AM, Zhang, Sonic wrote:
+>>>>
+>>>>
+>>>>> -----Original Message-----
+>>>>> From: Axel Lin [mailto:axel.lin@gmail.com]
+>>>>> Sent: Tuesday, July 03, 2012 3:43 PM
+>>>>> To: Mark Brown
+>>>>> Cc: linux-kernel@vger.kernel.org; Zhang, Sonic; Lars-Peter Clausen; Liam
+>>>>> Girdwood
+>>>>> Subject: [PATCH v2] regulator: ad5398: Fix min/max current limit boundary
+>>>>> checking
+>>>>>
+>>>>> It is ok to request current limit with min_uA < chip->min_uA and
+>>>>> max_uA > chip->max_uA.
+>>>>>
+>>>>> We need to set min_uA = chip->min_uA if (min_uA < chip->min_uA),
+>>>>> this ensures the equation to calcuate selator does not return negative
+>number.
+>>>>>
+>>>>
+>>>> You should not do it in driver. Set a correct min_uA value in your application.
+>>>
+>>> I think the patch makes sense. If a application request a current range
+>>> which overlaps with the range support by the chip, but either the requested
+>>> min is smaller than the supported min or the requested max is larger than
+>>> the supported max the driver will fail with an error. E.g.
+>>>
+>>> req-min     req-max
+>>>   |-----------|
+>>>        |------------|
+>>>     chip-min  chip-max
+>>>
+>>> or even
+>>>
+>>> req-min                req-max
+>>>   |----------------------|
+>>>        |------------|
+>>>     chip-min  chip-max
+>>>
+>>>
+>>> While it is obviously possible for the chip to fulfill this request.
+>>> Axel's patch takes care of this situation and ensures that the request is
+>>> satisfied and the output current is set to a current within the requested
+>>> range and the supported range.
+>>
+>> If the requested minimum current is smaller than the capability of the hardware,
+>does a bigger min value fulfill this request?
+>
+>As long as it is smaller than the maximum requested current, yes. You
+>request a current range with the regulator API and any value within this
+>range is fine as the actual output current.
+>
 
-	MCOUNT_RESTORE_FRAME 8
-	popfq
+If so, please also set the max_uA as well.
 
-And also, this will prevent to modify flags before return by
-addq in MCOUNT_RESTORE_FRAME.
+Sonic
 
-> +
-> +	jmp ftrace_return
-> +ftrace_restore_flags:
-> +	popfq
-> +	jmp  ftrace_stub
-> +
-> +END(ftrace_regs_caller)
-> +
+>>
+>> If this logic is correct, I am fine to ACK.
+>>
+>>
+>> Regards,
+>>
+>> Sonic
+>>
+>>
+>>>
+>>> - Lars
+>>>
+>>>>
+>>>> Regards,
+>>>>
+>>>> Sonic
+>>>>
+>>>>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>>>>> ~
+>>>>> ---
+>>>>> drivers/regulator/ad5398.c |    7 ++++---
+>>>>> 1 file changed, 4 insertions(+), 3 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/regulator/ad5398.c b/drivers/regulator/ad5398.c
+>>>>> index 46d05f3..84fdcda 100644
+>>>>> --- a/drivers/regulator/ad5398.c
+>>>>> +++ b/drivers/regulator/ad5398.c
+>>>>> @@ -89,9 +89,10 @@ static int ad5398_set_current_limit(struct
+>regulator_dev
+>>>>> *rdev, int min_uA, int
+>>>>>       unsigned short data;
+>>>>>       int ret;
+>>>>>
+>>>>> -      if (min_uA > chip->max_uA || min_uA < chip->min_uA)
+>>>>> -              return -EINVAL;
+>>>>> -      if (max_uA > chip->max_uA || max_uA < chip->min_uA)
+>>>>> +      if (min_uA < chip->min_uA)
+>>>>> +              min_uA = chip->min_uA;
+>>>>> +
+>>>>> +      if (min_uA > chip->max_uA || max_uA < chip->min_uA)
+>>>>>               return -EINVAL;
+>>>>>
+>>>>>       selector = DIV_ROUND_UP((min_uA - chip->min_uA) * chip-
+>>current_level,
+>>>>> --
+>>>>> 1.7.9.5
+>>>>>
+>>>>>
+>>>>>
+>>>>
+>>>
+>>
+>
 
-Thank you,
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
