@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933359Ab2GCRQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 13:16:26 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:51320 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933201Ab2GCRQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 13:16:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Oskar Schirmer" <oskar@scara.com>
-Subject: Re: [PATCH 1/2] Documentation: fix typos in power management description
-Date: Tue, 3 Jul 2012 19:21:57 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: "Rob Landley" <rob@landley.net>, linux-kernel@vger.kernel.org,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "David Brownell" <david-b@pacbell.net>,
-        "Alan Stern" <stern@rowland.harvard.edu>
-References: <1341307645-15135-1-git-send-email-oskar@scara.com>
-In-Reply-To: <1341307645-15135-1-git-send-email-oskar@scara.com>
+	id S933321Ab2GCRSz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 13:18:55 -0400
+Received: from exprod7og102.obsmtp.com ([64.18.2.157]:48300 "EHLO
+	exprod7og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752181Ab2GCRSx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 13:18:53 -0400
+Message-ID: <4FF32972.6020604@genband.com>
+Date: Tue, 03 Jul 2012 11:18:42 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+CC: David Miller <davem@davemloft.net>, vincent.sanders@collabora.co.uk,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: AF_BUS socket address family
+References: <4FF1BBD5.8080804@collabora.co.uk> <4FF32352.5040800@genband.com>
+In-Reply-To: <4FF32352.5040800@genband.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207031921.58084.rjw@sisk.pl>
+X-OriginalArrivalTime: 03 Jul 2012 17:18:43.0270 (UTC) FILETIME=[E58DCE60:01CD593F]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19016.000
+X-TM-AS-Result: No--19.155600-8.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 03, 2012, Oskar Schirmer wrote:
-> Just two missing characters.
-> 
-> Signed-off-by: Oskar Schirmer <oskar@scara.com>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: David Brownell <david-b@pacbell.net>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
+On 07/03/2012 10:52 AM, Chris Friesen wrote:
 
-Queued up for inclusion into v3.6 in the pm-doc branch of the linux-pm.git tree.
+> To be fair, since it was implemented as a separate protocol family the
+> maintenance burden actually hasn't been large--it's been fairly simple
+> to port between versions. Also, we do embedded telecom stuff and don't
+> jump kernel versions all that often. (It's a big headache, requires
+> coordinating between multiple vendors, etc.)
+>
+> In our case we typically send small (100-200 byte) messages to a
+> smallish (1-10) number of listeners, though there are exceptions of
+> course. Back before I started the original implementation used a
+> userspace daemon, but it had a number of issues. Originally I was
+> focussed on the performance gains but I must admit that since then other
+> factors have made that less of an issue.
 
-Thanks,
-Rafael
+I should point out that some of the other factors that have been 
+discussed for AF_BUS also hold true for our implementation:
 
+--strict ordering
+--reliable (in our case, if the sender has space in the tx buffer then 
+messages get to all recipients with buffer space, there are kernel logs 
+if recipients don't have space)
 
-> ---
->  Documentation/power/devices.txt |    9 +++++----
->  1 file changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/Documentation/power/devices.txt b/Documentation/power/devices.txt
-> index 872815c..504dfe4 100644
-> --- a/Documentation/power/devices.txt
-> +++ b/Documentation/power/devices.txt
-> @@ -583,9 +583,10 @@ for the given device during all power transitions, instead of the respective
->  subsystem-level callbacks.  Specifically, if a device's pm_domain pointer is
->  not NULL, the ->suspend() callback from the object pointed to by it will be
->  executed instead of its subsystem's (e.g. bus type's) ->suspend() callback and
-> -anlogously for all of the remaining callbacks.  In other words, power management
-> -domain callbacks, if defined for the given device, always take precedence over
-> -the callbacks provided by the device's subsystem (e.g. bus type).
-> +analogously for all of the remaining callbacks.  In other words, power
-> +management domain callbacks, if defined for the given device, always take
-> +precedence over the callbacks provided by the device's subsystem (e.g. bus
-> +type).
->  
->  The support for device power management domains is only relevant to platforms
->  needing to use the same device driver power management callbacks in many
-> @@ -598,7 +599,7 @@ it into account in any way.
->  Device Low Power (suspend) States
->  ---------------------------------
->  Device low-power states aren't standard.  One device might only handle
-> -"on" and "off, while another might support a dozen different versions of
-> +"on" and "off", while another might support a dozen different versions of
->  "on" (how many engines are active?), plus a state that gets back to "on"
->  faster than from a full "off".
->  
-> 
+Also, the fact that it's in the kernel rather than a userspace daemon 
+reduces priority inversion type issues.  Presumably this would apply to 
+an IP-multicast based solution as well.
 
+One problem that I ran into back when I was experimenting with this 
+stuff was trying to isolate host-local IP multicast from the rest of the 
+network.  It would be suboptimal to need to set up filtering and such 
+before being able to use the communication protocol.
+
+Chris
