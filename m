@@ -1,83 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933102Ab2GCNUA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 09:20:00 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:55358 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933065Ab2GCNT4 (ORCPT
+	id S933125Ab2GCNUY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 09:20:24 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:51068 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932412Ab2GCNTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 09:19:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alessandro Rubini <rubini@gnudd.com>
-Subject: Re: [PATCH V2 5/6] x86: add CONFIG_ARM_AMBA, selected by STA2X11
-Date: Tue, 3 Jul 2012 13:19:40 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
-        alan@linux.intel.com, linux@arm.linux.org.uk, x86@kernel.org,
-        gregkh@linuxfoundation.org, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org, linux-arch@vger.kernel.org
-References: <2b797c83-6a3c-4051-841a-a4cfa9d1cae1@email.android.com> <20120701104401.GA4352@mail.gnudd.com> <20120703130042.GA10007@mail.gnudd.com>
-In-Reply-To: <20120703130042.GA10007@mail.gnudd.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207031319.40884.arnd@arndb.de>
-X-Provags-ID: V02:K0:H8jhjzVfpNAAsesByRWHd0Sj15cnWGLxv4cV0aLWWEO
- lXtqPfSJpRnK1H5XTl2ViKgEXqAFUZRN+ITY6y4BnYt+wxB3Az
- Hb2ywQUQMwVHcGYEOLdsrQh6MOhBgXSE9ujiAiAuviU3VFGGWL
- nThYzFYRUHk+Xfwbmranu7JHdFTfwp8WbPTDnnvcZsFdAKgOMd
- c5wx0yUI1xWUdyjg3DfA//O5WU+0gpUK/Noxew8OZKKaq5oqP1
- DOqSc14mmS1Q2LXF3tVsPTtM/EZjOKHSRrZzf0fRX81esjJZT2
- e97fRt+tq7gJ8AP+hL+cHaAxfn1q0Qr2mm8V30AJ4Atbz6Fgbk
- KQgQ4hPou15UxF6/DWjI=
+	Tue, 3 Jul 2012 09:19:54 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: rusty@rustcorp.com.au, kvm@vger.kernel.org
+Subject: [PATCH] virtio-blk: allow toggling host cache between writeback and writethrough
+Date: Tue,  3 Jul 2012 15:19:37 +0200
+Message-Id: <1341321577-24435-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.7.10.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 03 July 2012, Alessandro Rubini wrote:
-> Peter Anvin:
-> > There is no problem with adding ARM or !X86 dependencies to drivers
-> > now and fixing them later or as required.
-> 
-> Ok. This is my summary of the compilation errors I have when
-> enabling ARM_AMBA undex x86 and enabling everything that appears
-> in "make oldconfig":
-> 
-> 
-> This is a sum up of the errors in all driver that are
-> enabled by telling "CONFIG_ARM_AMBA=y" in the x86 config.
-> 
->    drivers/dma/pl330.c: register names conflict with arch symbols
->      proposed fix: use proper prefix names
-> 
->    drivers/dma/amba-pl08x.c: needs <asm/hardware/pl080.h>
->      proposed fix: move pl080.h to include/linux
+This patch adds support for the new VIRTIO_BLK_F_CONFIG_WCE feature,
+which exposes the cache mode in the configuration space and lets the
+driver modify it.  The cache mode is exposed via sysfs.
 
-Note that there is already an include/linux/amba/pl08x.h.
-I would just move the few parts of pl080.h that are actually
-needed with global visibility there, and move the rest
-to drivers/dma/.
+Even if the host does not support the new feature, the cache mode is
+visible (thanks to the existing VIRTIO_BLK_F_WCE), but not modifiable.
 
->    drivers/gpio/gpio-pl061.c: uses chained_irq_enter/exit
->      proposed fix: depend on CONFIG_ARM (the function only exists in arm)
-> 
->    drivers/mmc/host/mmci.c: uses <asm/sizes.h>
->    drivers/mmc/host/mmci.c: uses readsl/writesl
->      proposed fix: use linux/sizes.h and provide readsl/writesl like others do
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ drivers/block/virtio_blk.c |   90 ++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/virtio_blk.h |    5 ++-
+ 2 files changed, 91 insertions(+), 4 deletions(-)
 
-Ack on the linux/sizes.h, that definitely makes sense.
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 693187d..5602505 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -397,6 +397,83 @@ static int virtblk_name_format(char *prefix, int index, char *buf, int buflen)
+ 	return 0;
+ }
+ 
++static int virtblk_get_cache_mode(struct virtio_device *vdev)
++{
++	u8 writeback;
++	int err;
++
++	err = virtio_config_val(vdev, VIRTIO_BLK_F_CONFIG_WCE,
++				offsetof(struct virtio_blk_config, wce),
++				&writeback);
++	if (err)
++		writeback = virtio_has_feature(vdev, VIRTIO_BLK_F_WCE);
++
++	return writeback;
++}
++
++static void virtblk_update_cache_mode(struct virtio_device *vdev)
++{
++	u8 writeback = virtblk_get_cache_mode(vdev);
++	struct virtio_blk *vblk = vdev->priv;
++
++	if (writeback)
++		blk_queue_flush(vblk->disk->queue, REQ_FLUSH);
++	else
++		blk_queue_flush(vblk->disk->queue, 0);
++
++       revalidate_disk(vblk->disk);
++}
++
++static const char *virtblk_cache_types[] = {
++	"write through", "write back"
++};
++
++static ssize_t
++virtblk_cache_type_store(struct device *dev, struct device_attribute *attr,
++			 const char *buf, size_t count)
++{
++	struct gendisk *disk = dev_to_disk(dev);
++	struct virtio_blk *vblk = disk->private_data;
++	struct virtio_device *vdev = vblk->vdev;
++	int i;
++	u8 writeback;
++
++	BUG_ON(!virtio_has_feature(vblk->vdev, VIRTIO_BLK_F_CONFIG_WCE));
++	for (i = ARRAY_SIZE(virtblk_cache_types); --i >= 0; )
++		if (sysfs_streq(buf, virtblk_cache_types[i]))
++			break;
++
++	if (i < 0)
++		return -EINVAL;
++
++	writeback = i;
++	vdev->config->set(vdev,
++			  offsetof(struct virtio_blk_config, wce),
++			  &writeback, sizeof(writeback));
++
++	virtblk_update_cache_mode(vdev);
++	return count;
++}
++
++static ssize_t
++virtblk_cache_type_show(struct device *dev, struct device_attribute *attr,
++			 char *buf)
++{
++	struct gendisk *disk = dev_to_disk(dev);
++	struct virtio_blk *vblk = disk->private_data;
++	u8 writeback = virtblk_get_cache_mode(vblk->vdev);
++
++	BUG_ON(writeback >= ARRAY_SIZE(virtblk_cache_types));
++	return snprintf(buf, 40, "%s\n", virtblk_cache_types[writeback]);
++}
++
++static const struct device_attribute dev_attr_cache_type_ro =
++	__ATTR(cache_type, S_IRUGO,
++	       virtblk_cache_type_show, NULL);
++static const struct device_attribute dev_attr_cache_type_rw =
++	__ATTR(cache_type, S_IRUGO|S_IWUSR,
++	       virtblk_cache_type_show, virtblk_cache_type_store);
++
+ static int __devinit virtblk_probe(struct virtio_device *vdev)
+ {
+ 	struct virtio_blk *vblk;
+@@ -474,8 +549,7 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
+ 	vblk->index = index;
+ 
+ 	/* configure queue flush support */
+-	if (virtio_has_feature(vdev, VIRTIO_BLK_F_FLUSH))
+-		blk_queue_flush(q, REQ_FLUSH);
++	virtblk_update_cache_mode(vdev);
+ 
+ 	/* If disk is read-only in the host, the guest should obey */
+ 	if (virtio_has_feature(vdev, VIRTIO_BLK_F_RO))
+@@ -553,6 +627,14 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
+ 	if (err)
+ 		goto out_del_disk;
+ 
++	if (virtio_has_feature(vdev, VIRTIO_BLK_F_CONFIG_WCE))
++		err = device_create_file(disk_to_dev(vblk->disk),
++					 &dev_attr_cache_type_rw);
++	else
++		err = device_create_file(disk_to_dev(vblk->disk),
++					 &dev_attr_cache_type_ro);
++	if (err)
++		goto out_del_disk;
+ 	return 0;
+ 
+ out_del_disk:
+@@ -655,7 +737,7 @@ static const struct virtio_device_id id_table[] = {
+ static unsigned int features[] = {
+ 	VIRTIO_BLK_F_SEG_MAX, VIRTIO_BLK_F_SIZE_MAX, VIRTIO_BLK_F_GEOMETRY,
+ 	VIRTIO_BLK_F_RO, VIRTIO_BLK_F_BLK_SIZE, VIRTIO_BLK_F_SCSI,
+-	VIRTIO_BLK_F_FLUSH, VIRTIO_BLK_F_TOPOLOGY
++	VIRTIO_BLK_F_WCE, VIRTIO_BLK_F_TOPOLOGY, VIRTIO_BLK_F_CONFIG_WCE
+ };
+ 
+ /*
+diff --git a/include/linux/virtio_blk.h b/include/linux/virtio_blk.h
+index e0edb40..18a1027 100644
+--- a/include/linux/virtio_blk.h
++++ b/include/linux/virtio_blk.h
+@@ -37,8 +37,9 @@
+ #define VIRTIO_BLK_F_RO		5	/* Disk is read-only */
+ #define VIRTIO_BLK_F_BLK_SIZE	6	/* Block size of disk is available*/
+ #define VIRTIO_BLK_F_SCSI	7	/* Supports scsi command passthru */
+-#define VIRTIO_BLK_F_FLUSH	9	/* Cache flush command support */
++#define VIRTIO_BLK_F_WCE	9	/* Writeback mode enabled after reset */
+ #define VIRTIO_BLK_F_TOPOLOGY	10	/* Topology information is available */
++#define VIRTIO_BLK_F_CONFIG_WCE	11	/* Writeback mode available in config */
+ 
+ #define VIRTIO_BLK_ID_BYTES	20	/* ID string length */
+ 
+@@ -69,6 +70,8 @@ struct virtio_blk_config {
+ 	/* optimal sustained I/O size in logical blocks. */
+ 	__u32 opt_io_size;
+ 
++        /* writeback mode (if VIRTIO_BLK_F_CONFIG_WCE) */
++        __u8 wce;
+ } __attribute__((packed));
+ 
+ /*
+-- 
+1.7.1
 
-I'm not sure I want to spread readsl/writesl beyond the architectures
-that already have it. Maybe instead change the driver to use ioread32_rep,
-which is already available on all architectures and is defined the
-same way as readsl on ARM.
-
->    drivers/watchdog/sp805_wdt.c: uses writel_relaxed
->      proposed fix: depend on CONFIG_ARM (this is a spear-only cell by now)
-
-This one on the other hand makes sense to be defined on all architectures
-IMHO. I don't mind restricting the driver to ARM for now, but having
-a generic writel_relaxed would be nice.
-
-	Arnd
