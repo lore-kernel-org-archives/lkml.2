@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933104Ab2GCNZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 09:25:46 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63844 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932990Ab2GCNZo (ORCPT
+	id S933138Ab2GCN0k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 09:26:40 -0400
+Received: from mga01.intel.com ([192.55.52.88]:49074 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932938Ab2GCN0j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 09:25:44 -0400
-Message-ID: <4FF2F2D3.4090200@linaro.org>
-Date: Tue, 03 Jul 2012 15:25:39 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 3 Jul 2012 09:26:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="172941460"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Jan Beulich <JBeulich@suse.com>, Christoph Egger <Christoph.Egger@amd.com>,
+        "Liu, Jinsong" <jinsong.liu@intel.com>
+CC: IanCampbell <Ian.Campbell@citrix.com>, "Raj, Ashok" <ashok.raj@intel.com>,
+        "Dugger, Donald D" <donald.d.dugger@intel.com>,
+        "Shan, Haitao" <haitao.shan@intel.com>,
+        "Nakajima, Jun" <jun.nakajima@intel.com>,
+        "Li, Susie" <susie.li@intel.com>, "Auld, Will" <will.auld@intel.com>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
+        "Jiang, Yunhong" <yunhong.jiang@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KeirFraser <keir@xen.org>
+Subject: RE: [Xen-devel] [xen vMCE RFC V0.2] xen vMCE design
+Thread-Topic: [Xen-devel] [xen vMCE RFC V0.2] xen vMCE design
+Thread-Index: Ac1UGDBj1l9vq4iTRyWE8p2SJy8j9wAiVIkAACk0PAAAAH/aAAABFqYAAACLLgAAB8jhAAAAx60AAAZbD4AAI3vAgACmuPIAABzHbwAAAe3G8A==
+Date: Tue, 3 Jul 2012 13:26:37 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F1933C278@ORSMSX104.amr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC829233525D395@SHSMSX101.ccr.corp.intel.com>
+ <4FEB236C020000780008C392@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC8292335263B9D@SHSMSX101.ccr.corp.intel.com>
+ <4FEC3B4A020000780008C673@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC8292335263D6C@SHSMSX101.ccr.corp.intel.com>
+ <4FEC463E020000780008C6A7@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC8292335264914@SHSMSX101.ccr.corp.intel.com>
+ <4FEC7FB8020000780008C885@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC8292335265284@SHSMSX101.ccr.corp.intel.com>
+ <4FED7C5F.1040908@amd.com>
+ <DE8DF0795D48FD4CA783C40EC8292335282ED5@SHSMSX101.ccr.corp.intel.com>
+ <4FF2B87C020000780008D3E0@nat28.tlf.novell.com>
+In-Reply-To: <4FF2B87C020000780008D3E0@nat28.tlf.novell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org,
-        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>, linux-next@vger.kernel.org,
-        Colin Cross <ccross@android.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rob Lee <rob.lee@linaro.org>, "lenb@kernel.org" <lenb@kernel.org>
-Subject: Re: linux-next : cpuidle - could you add my tree please
-References: <4FDEE98D.7010802@linaro.org> <201207022149.36629.rjw@sisk.pl> <4FF21D48.50301@linaro.org> <201207031059.13758.rjw@sisk.pl> <4FF2EC1A.7020702@linaro.org> <20120703231948.33cca18e3cc3d6e497ab022d@canb.auug.org.au>
-In-Reply-To: <20120703231948.33cca18e3cc3d6e497ab022d@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2012 03:19 PM, Stephen Rothwell wrote:
-> Hi Daniel,
-> 
-> On Tue, 03 Jul 2012 14:56:58 +0200 Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
->>
->>> So do you have a branch in the cpuidle-next.git tree that isn't going to
->>> be rebased?
->>
->> No. I am following Linus tree and adding the patches on top of it.
-> 
-> Please don't rebase your tree more than necessary - it just makes thing
-> hard for anyone using your tree as a base for further development and
-> throws away any testing you may have done.
+> I'm not convinced of the need, and would prefer aiming at a
+> shared implementation unless issues arise that make this
+> impossible.
 
-Ok, let me sync with Len and Rafael about the best way to do that.
+It does sound odd. Yes, Intel and AMD have differences around CMCI ... but we are never
+going to send a CMCI to a guest (there is no point, it can't do anything useful with the
+information, it may do something pointlessly stupid like stop using a guest physical page).
+The only reason I suggested making MCG_CAP pretend that CMCI was supported was a
+small optimization ... if a Linux guest sees that CMCI is supported, it will not poll the machine
+check banks looking for corrected errors.
 
-Thanks
-  -- Daniel
-
-
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+-Tony
