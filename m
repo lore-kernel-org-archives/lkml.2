@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab2GCBOI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 21:14:08 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:44092 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752520Ab2GCBOG (ORCPT
+	id S933258Ab2GCBOk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 21:14:40 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:20596 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756219Ab2GCBOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 21:14:06 -0400
+	Mon, 2 Jul 2012 21:14:38 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-4.tower-160.messagelabs.com!1341278043!7606323!4
-X-Originating-IP: [216.166.12.31]
+X-Msg-Ref: server-12.tower-209.messagelabs.com!1341278077!7586421!1
+X-Originating-IP: [216.166.12.32]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 6/8] staging: comedi: dmm32at: remove unneeded boardinfo variables
-Date: Mon, 2 Jul 2012 18:13:53 -0700
+Subject: [PATCH 7/8] staging: comedi: dmm32at: remove devpriv macro
+Date: Mon, 2 Jul 2012 18:14:27 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
@@ -23,136 +23,121 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201207021813.53876.hartleys@visionengravers.com>
+Message-ID: <201207021814.27700.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Like most of the comedi drivers, this one appears to have been started
-based on the skel driver. Cut-and-paste from that driver has resulted
-in an unnecessarily complex boardinfo struct.
-
-Remove everything from the boardinfo struct, except the 'name', and
-just use the open coded values in the attach function.
+The 'devpriv' macro relies on a local variable having a specific
+name and yields a pointer derived from that local variable. Replace
+the macro with a local variable where used.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Frank Mori Hess <fmhess@users.sourceforge.net>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/dmm32at.c | 71 +++++++++++---------------------
- 1 file changed, 23 insertions(+), 48 deletions(-)
+ drivers/staging/comedi/drivers/dmm32at.c | 20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/dmm32at.c b/drivers/staging/comedi/drivers/dmm32at.c
-index 2ae31e8..1d21e22 100644
+index 1d21e22..f0221e9 100644
 --- a/drivers/staging/comedi/drivers/dmm32at.c
 +++ b/drivers/staging/comedi/drivers/dmm32at.c
-@@ -156,21 +156,8 @@ static const struct comedi_lrange dmm32at_aoranges = {
- 	 }
+@@ -177,12 +177,6 @@ struct dmm32at_private {
  };
  
--/*
-- * Board descriptions for two imaginary boards.  Describing the
-- * boards in this way is optional, and completely driver-dependent.
-- * Some drivers use arrays such as this, other do not.
+ /*
+- * most drivers define the following macro to make it easy to
+- * access the private structure.
 - */
- struct dmm32at_board {
- 	const char *name;
--	int ai_chans;
--	int ai_bits;
--	const struct comedi_lrange *ai_ranges;
--	int ao_chans;
--	int ao_bits;
--	const struct comedi_lrange *ao_ranges;
--	int have_dio;
--	int dio_chans;
- };
- 
- /* this structure is for data unique to this hardware driver.  If
-@@ -880,9 +867,9 @@ static int dmm32at_attach(struct comedi_device *dev,
- 	s->type = COMEDI_SUBD_AI;
- 	/* we support single-ended (ground) and differential */
- 	s->subdev_flags = SDF_READABLE | SDF_GROUND | SDF_DIFF | SDF_CMD_READ;
--	s->n_chan = board->ai_chans;
--	s->maxdata = (1 << board->ai_bits) - 1;
--	s->range_table = board->ai_ranges;
-+	s->n_chan = 32;
-+	s->maxdata = 0xffff;
-+	s->range_table = &dmm32at_airanges;
- 	s->len_chanlist = 32;	/* This is the maximum chanlist length that
- 				   the board can handle */
- 	s->insn_read = dmm32at_ai_rinsn;
-@@ -894,35 +881,31 @@ static int dmm32at_attach(struct comedi_device *dev,
- 	/* analog output subdevice */
- 	s->type = COMEDI_SUBD_AO;
- 	s->subdev_flags = SDF_WRITABLE;
--	s->n_chan = board->ao_chans;
--	s->maxdata = (1 << board->ao_bits) - 1;
--	s->range_table = board->ao_ranges;
-+	s->n_chan = 4;
-+	s->maxdata = 0x0fff;
-+	s->range_table = &dmm32at_aoranges;
- 	s->insn_write = dmm32at_ao_winsn;
- 	s->insn_read = dmm32at_ao_rinsn;
- 
- 	s = dev->subdevices + 2;
- 	/* digital i/o subdevice */
--	if (board->have_dio) {
+-#define devpriv ((struct dmm32at_private *)dev->private)
 -
--		/* get access to the DIO regs */
--		outb(DMM32AT_DIOACC, dev->iobase + DMM32AT_CNTRL);
--		/* set the DIO's to the defualt input setting */
--		devpriv->dio_config = DMM32AT_DIRA | DMM32AT_DIRB |
--		    DMM32AT_DIRCL | DMM32AT_DIRCH | DMM32AT_DIENABLE;
--		outb(devpriv->dio_config, dev->iobase + DMM32AT_DIOCONF);
--
--		/* set up the subdevice */
--		s->type = COMEDI_SUBD_DIO;
--		s->subdev_flags = SDF_READABLE | SDF_WRITABLE;
--		s->n_chan = board->dio_chans;
--		s->maxdata = 1;
--		s->state = 0;
--		s->range_table = &range_digital;
--		s->insn_bits = dmm32at_dio_insn_bits;
--		s->insn_config = dmm32at_dio_insn_config;
--	} else {
--		s->type = COMEDI_SUBD_UNUSED;
--	}
-+
-+	/* get access to the DIO regs */
-+	outb(DMM32AT_DIOACC, dev->iobase + DMM32AT_CNTRL);
-+	/* set the DIO's to the defualt input setting */
-+	devpriv->dio_config = DMM32AT_DIRA | DMM32AT_DIRB |
-+		DMM32AT_DIRCL | DMM32AT_DIRCH | DMM32AT_DIENABLE;
-+	outb(devpriv->dio_config, dev->iobase + DMM32AT_DIOCONF);
-+
-+	/* set up the subdevice */
-+	s->type = COMEDI_SUBD_DIO;
-+	s->subdev_flags = SDF_READABLE | SDF_WRITABLE;
-+	s->n_chan = 24;
-+	s->maxdata = 1;
-+	s->state = 0;
-+	s->range_table = &range_digital;
-+	s->insn_bits = dmm32at_dio_insn_bits;
-+	s->insn_config = dmm32at_dio_insn_config;
+-/*
+  * "instructions" read/write data in "one-shot" or "software-triggered"
+  * mode.
+  */
+@@ -494,6 +488,7 @@ static void dmm32at_setaitimer(struct comedi_device *dev, unsigned int nansec)
  
- 	/* success */
- 	printk(KERN_INFO "comedi%d: dmm32at: attached\n", dev->minor);
-@@ -942,14 +925,6 @@ static void dmm32at_detach(struct comedi_device *dev)
- static const struct dmm32at_board dmm32at_boards[] = {
- 	{
- 		.name		= "dmm32at",
--		.ai_chans	= 32,
--		.ai_bits	= 16,
--		.ai_ranges	= &dmm32at_airanges,
--		.ao_chans	= 4,
--		.ao_bits	= 12,
--		.ao_ranges	= &dmm32at_aoranges,
--		.have_dio	= 1,
--		.dio_chans	= 24,
- 	},
- };
+ static int dmm32at_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ {
++	struct dmm32at_private *devpriv = dev->private;
+ 	struct comedi_cmd *cmd = &s->async->cmd;
+ 	int i, range;
+ 	unsigned char chanlo, chanhi, status;
+@@ -566,17 +561,20 @@ static int dmm32at_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ static int dmm32at_ai_cancel(struct comedi_device *dev,
+ 			     struct comedi_subdevice *s)
+ {
++	struct dmm32at_private *devpriv = dev->private;
++
+ 	devpriv->ai_scans_left = 1;
+ 	return 0;
+ }
  
+ static irqreturn_t dmm32at_isr(int irq, void *d)
+ {
++	struct comedi_device *dev = d;
++	struct dmm32at_private *devpriv = dev->private;
+ 	unsigned char intstat;
+ 	unsigned int samp;
+ 	unsigned short msb, lsb;
+ 	int i;
+-	struct comedi_device *dev = d;
+ 
+ 	if (!dev->attached) {
+ 		comedi_error(dev, "spurious interrupt");
+@@ -622,6 +620,7 @@ static int dmm32at_ao_winsn(struct comedi_device *dev,
+ 			    struct comedi_subdevice *s,
+ 			    struct comedi_insn *insn, unsigned int *data)
+ {
++	struct dmm32at_private *devpriv = dev->private;
+ 	int i;
+ 	int chan = CR_CHAN(insn->chanspec);
+ 	unsigned char hi, lo, status;
+@@ -666,6 +665,7 @@ static int dmm32at_ao_rinsn(struct comedi_device *dev,
+ 			    struct comedi_subdevice *s,
+ 			    struct comedi_insn *insn, unsigned int *data)
+ {
++	struct dmm32at_private *devpriv = dev->private;
+ 	int i;
+ 	int chan = CR_CHAN(insn->chanspec);
+ 
+@@ -684,6 +684,7 @@ static int dmm32at_dio_insn_bits(struct comedi_device *dev,
+ 				 struct comedi_subdevice *s,
+ 				 struct comedi_insn *insn, unsigned int *data)
+ {
++	struct dmm32at_private *devpriv = dev->private;
+ 	unsigned char diobits;
+ 
+ 	/* The insn data is a mask in data[0] and the new data
+@@ -735,6 +736,7 @@ static int dmm32at_dio_insn_config(struct comedi_device *dev,
+ 				   struct comedi_subdevice *s,
+ 				   struct comedi_insn *insn, unsigned int *data)
+ {
++	struct dmm32at_private *devpriv = dev->private;
+ 	unsigned char chanbit;
+ 	int chan = CR_CHAN(insn->chanspec);
+ 
+@@ -772,6 +774,7 @@ static int dmm32at_attach(struct comedi_device *dev,
+ 			  struct comedi_devconfig *it)
+ {
+ 	const struct dmm32at_board *board = comedi_board(dev);
++	struct dmm32at_private *devpriv;
+ 	int ret;
+ 	struct comedi_subdevice *s;
+ 	unsigned char aihi, ailo, fifostat, aistat, intstat, airback;
+@@ -854,8 +857,9 @@ static int dmm32at_attach(struct comedi_device *dev,
+  * Allocate the private structure area.  alloc_private() is a
+  * convenient macro defined in comedidev.h.
+  */
+-	if (alloc_private(dev, sizeof(struct dmm32at_private)) < 0)
++	if (alloc_private(dev, sizeof(*devpriv)) < 0)
+ 		return -ENOMEM;
++	devpriv = dev->private;
+ 
+ 	ret = comedi_alloc_subdevices(dev, 3);
+ 	if (ret)
 -- 
 1.7.11
 
