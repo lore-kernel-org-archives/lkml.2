@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933312Ab2GCQYD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 12:24:03 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:19223 "EHLO relay.sw.ru"
+	id S933324Ab2GCQYO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 12:24:14 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:22419 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932123Ab2GCQYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 12:24:00 -0400
-Subject: [PATCH v3 11/11] NFS: get net after idr allocation
+	id S932123Ab2GCQYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 12:24:09 -0400
+Subject: [PATCH v3 04/11] NFS: callback up - transport backchannel cleanup
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
         linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Tue, 03 Jul 2012 20:20:44 +0400
-Message-ID: <20120703162044.11911.6064.stgit@localhost.localdomain>
+Date: Tue, 03 Jul 2012 20:19:54 +0400
+Message-ID: <20120703161954.11911.49152.stgit@localhost.localdomain>
 In-Reply-To: <20120703161844.11911.92996.stgit@localhost.localdomain>
 References: <20120703161844.11911.92996.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -23,33 +23,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allocation can fail. So instead of put net in case of failure, get net after
-allocation.
+No need to assign transports backchannel server explicitly in
+nfs41_callback_up() -  there is nfs_callback_bc_serv() function for this.
+By using it, nfs4_callback_up() and nfs41_callback_up() can be called without
+transport argument.
+
+Note: service have to be passed to nfs_callback_bc_serv() instead of callback,
+since callback link can be uninitialized.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfs/client.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ fs/nfs/callback.c |   34 +++++++++++++++++-----------------
+ 1 files changed, 17 insertions(+), 17 deletions(-)
 
-diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-index d8c918b..d17aa10 100644
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -175,7 +175,7 @@ static struct nfs_client *nfs_alloc_client(const struct nfs_client_initdata *cl_
- 	clp->cl_rpcclient = ERR_PTR(-EINVAL);
+diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
+index b61ed61..41150ef 100644
+--- a/fs/nfs/callback.c
++++ b/fs/nfs/callback.c
+@@ -128,7 +128,7 @@ nfs4_callback_svc(void *vrqstp)
+  * Prepare to bring up the NFSv4 callback service
+  */
+ static struct svc_rqst *
+-nfs4_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
++nfs4_callback_up(struct svc_serv *serv)
+ {
+ 	return svc_prepare_thread(serv, &serv->sv_pools[0], NUMA_NO_NODE);
+ }
+@@ -184,16 +184,10 @@ nfs41_callback_svc(void *vrqstp)
+  * Bring up the NFSv4.1 callback service
+  */
+ static struct svc_rqst *
+-nfs41_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
++nfs41_callback_up(struct svc_serv *serv)
+ {
+ 	struct svc_rqst *rqstp;
  
- 	clp->cl_proto = cl_init->proto;
--	clp->cl_net = get_net(cl_init->net);
-+	clp->cl_net = cl_init->net;
+-	/*
+-	 * Save the svc_serv in the transport so that it can
+-	 * be referenced when the session backchannel is initialized
+-	 */
+-	xprt->bc_serv = serv;
+-
+ 	INIT_LIST_HEAD(&serv->sv_cb_list);
+ 	spin_lock_init(&serv->sv_cb_lock);
+ 	init_waitqueue_head(&serv->sv_cb_waitq);
+@@ -208,21 +202,25 @@ nfs41_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
+ }
  
- #ifdef CONFIG_NFS_V4
- 	err = nfs_get_cb_ident_idr(clp, cl_init->minorversion);
-@@ -189,6 +189,7 @@ static struct nfs_client *nfs_alloc_client(const struct nfs_client_initdata *cl_
- 	clp->cl_minorversion = cl_init->minorversion;
- 	clp->cl_mvops = nfs_v4_minor_ops[cl_init->minorversion];
- #endif
-+	get_net(clp->cl_net);
- 	cred = rpc_lookup_machine_cred("*");
- 	if (!IS_ERR(cred))
- 		clp->cl_machine_cred = cred;
+ static inline int nfs_minorversion_callback_svc_setup(u32 minorversion,
+-		struct svc_serv *serv, struct rpc_xprt *xprt,
++		struct svc_serv *serv,
+ 		struct svc_rqst **rqstpp, int (**callback_svc)(void *vrqstp))
+ {
+ 	if (minorversion) {
+-		*rqstpp = nfs41_callback_up(serv, xprt);
++		*rqstpp = nfs41_callback_up(serv);
+ 		*callback_svc = nfs41_callback_svc;
+ 	}
+ 	return minorversion;
+ }
+ 
+ static inline void nfs_callback_bc_serv(u32 minorversion, struct rpc_xprt *xprt,
+-		struct nfs_callback_data *cb_info)
++		struct svc_serv *serv)
+ {
+ 	if (minorversion)
+-		xprt->bc_serv = cb_info->serv;
++		/*
++		 * Save the svc_serv in the transport so that it can
++		 * be referenced when the session backchannel is initialized
++		 */
++		xprt->bc_serv = serv;
+ }
+ #else
+ static int nfs41_callback_up_net(struct svc_serv *serv, struct net *net)
+@@ -231,14 +229,14 @@ static int nfs41_callback_up_net(struct svc_serv *serv, struct net *net)
+ }
+ 
+ static inline int nfs_minorversion_callback_svc_setup(u32 minorversion,
+-		struct svc_serv *serv, struct rpc_xprt *xprt,
++		struct svc_serv *serv,
+ 		struct svc_rqst **rqstpp, int (**callback_svc)(void *vrqstp))
+ {
+ 	return 0;
+ }
+ 
+ static inline void nfs_callback_bc_serv(u32 minorversion, struct rpc_xprt *xprt,
+-		struct nfs_callback_data *cb_info)
++		struct svc_serv *serv)
+ {
+ }
+ #endif /* CONFIG_NFS_V4_1 */
+@@ -330,7 +328,7 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
+ 	}
+ 
+ 	if (cb_info->users++ || cb_info->task != NULL) {
+-		nfs_callback_bc_serv(minorversion, xprt, cb_info);
++		nfs_callback_bc_serv(minorversion, xprt, serv);
+ 		goto out;
+ 	}
+ 
+@@ -338,11 +336,13 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
+ 	if (ret < 0)
+ 		goto err_net;
+ 
++	nfs_callback_bc_serv(minorversion, xprt, serv);
++
+ 	minorversion_setup =  nfs_minorversion_callback_svc_setup(minorversion,
+-					serv, xprt, &rqstp, &callback_svc);
++					serv, &rqstp, &callback_svc);
+ 	if (!minorversion_setup) {
+ 		/* v4.0 callback setup */
+-		rqstp = nfs4_callback_up(serv, xprt);
++		rqstp = nfs4_callback_up(serv);
+ 		callback_svc = nfs4_callback_svc;
+ 	}
+ 
 
