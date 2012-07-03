@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab2GCP3Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 11:29:16 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47539 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181Ab2GCP3P (ORCPT
+	id S933133Ab2GCPcW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 11:32:22 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:35831
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754755Ab2GCPcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 11:29:15 -0400
-Date: Wed, 4 Jul 2012 01:29:02 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Russell King <linux@arm.linux.org.uk>, mturquette@ti.com,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clkdev: Add default clkdev.h
-Message-Id: <20120704012902.b45769624f8cad63983b5db5@canb.auug.org.au>
-In-Reply-To: <1341329015-28207-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1341329015-28207-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__4_Jul_2012_01_29_02_+1000_M66dDSF_3k3TklbY"
+	Tue, 3 Jul 2012 11:32:21 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zzbb2dI98dI1432Izz1202hzz8275bhz2dh668h839hd25he5bhf0ah)
+X-WSS-ID: 0M6LCHQ-02-HJ1-02
+X-M-MSG: 
+Message-ID: <4FF310C9.9040108@amd.com>
+Date: Tue, 3 Jul 2012 17:33:29 +0200
+From: Christoph Egger <Christoph.Egger@amd.com>
+User-Agent: Mozilla/5.0 (X11; NetBSD amd64; rv:11.0) Gecko/20120404 Thunderbird/11.0
+MIME-Version: 1.0
+To: Jan Beulich <JBeulich@suse.com>
+CC: Tony Luck <tony.luck@intel.com>, IanCampbell <Ian.Campbell@citrix.com>,
+        Ashok Raj <ashok.raj@intel.com>,
+        Donald D Dugger <donald.d.dugger@intel.com>,
+        Haitao Shan <haitao.shan@intel.com>,
+        Jinsong Liu <jinsong.liu@intel.com>,
+        Jun Nakajima <jun.nakajima@intel.com>, Susie Li <susie.li@intel.com>,
+        Will Auld <will.auld@intel.com>,
+        Xiantao Zhang <xiantao.zhang@intel.com>,
+        Yunhong Jiang <yunhong.jiang@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KeirFraser <keir@xen.org>
+Subject: Re: [Xen-devel] [xen vMCE RFC V0.2] xen vMCE design
+References: <DE8DF0795D48FD4CA783C40EC829233525D395@SHSMSX101.ccr.corp.intel.com> <4FEB236C020000780008C392@nat28.tlf.novell.com> <DE8DF0795D48FD4CA783C40EC8292335263B9D@SHSMSX101.ccr.corp.intel.com> <4FEC3B4A020000780008C673@nat28.tlf.novell.com> <DE8DF0795D48FD4CA783C40EC8292335263D6C@SHSMSX101.ccr.corp.intel.com> <4FEC463E020000780008C6A7@nat28.tlf.novell.com> <DE8DF0795D48FD4CA783C40EC8292335264914@SHSMSX101.ccr.corp.intel.com> <4FEC7FB8020000780008C885@nat28.tlf.novell.com> <DE8DF0795D48FD4CA783C40EC8292335265284@SHSMSX101.ccr.corp.intel.com> <4FED7C5F.1040908@amd.com> <DE8DF0795D48FD4CA783C40EC8292335282ED5@SHSMSX101.ccr.corp.intel.com> <4FF2B87C020000780008D3E0@nat28.tlf.novell.com> <3908561D78D1C84285E8C5FCA982C28F1933C278@ORSMSX104.amr.corp.intel<3908561D78D1C84285E8C5FCA982C28F1933C278@ORSMSX104.amr.corp.intel.com> <4FF306C1.7000100@amd.com> <4FF3270C020000780008D5A9@nat28.tlf.novell.com>
+In-Reply-To: <4FF3270C020000780008D5A9@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__4_Jul_2012_01_29_02_+1000_M66dDSF_3k3TklbY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/03/12 17:08, Jan Beulich wrote:
 
-Hi Mark,
+>>>> On 03.07.12 at 16:50, Christoph Egger <Christoph.Egger@amd.com> wrote:
+>> On 07/03/12 15:26, Luck, Tony wrote:
+>>
+>>>> I'm not convinced of the need, and would prefer aiming at a
+>>>> shared implementation unless issues arise that make this
+>>>> impossible.
+>>>
+>>> It does sound odd. Yes, Intel and AMD have differences around CMCI ... but 
+>> we are never
+>>> going to send a CMCI to a guest (there is no point, it can't do anything 
+>> useful with the
+>>> information, it may do something pointlessly stupid like stop using a guest 
+>> physical page).
+>>> The only reason I suggested making MCG_CAP pretend that CMCI was supported 
+>> was a
+>>> small optimization ... if a Linux guest sees that CMCI is supported, it will 
+>> not poll the machine
+>>> check banks looking for corrected errors.
+>>
+>>
+>> Are you talking about PV or HVM guest?
+>>
+>> For HVM guests yes it makes sense to disable CMCI in MCG_CAP for both
+>> AMD and Intel.
+> 
+> "enable" you mean?
 
-On Tue,  3 Jul 2012 16:23:35 +0100 Mark Brown <broonie@opensource.wolfsonmi=
-cro.com> wrote:
->
-> +static inline int __clk_get(clk) { return 1; }
-> +static inline void __clk_put(clk) { }
 
-struct clk;
+Oh, sorry. I misread one sentence.
+If CMCI for the guest is really just emulated (= 100% software)
+then yes, enable for both AMD and Intel is fine.
 
-static inline int __clk_get(struct clk *clk) { return 1; }
-static inline void __clk_put(struct clk *clk) { }
+Christoph
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+-- 
+---to satisfy European Law for business letters:
+Advanced Micro Devices GmbH
+Einsteinring 24, 85689 Dornach b. Muenchen
+Geschaeftsfuehrer: Alberto Bozzo, Andrew Bowd
+Sitz: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
 
---Signature=_Wed__4_Jul_2012_01_29_02_+1000_M66dDSF_3k3TklbY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP8w++AAoJEECxmPOUX5FEgmwP/3vMHkacVQq2Iggq8Y7vH7N9
-PSQoSShDdT8zPCAd/LQiNdo1Ng1F6dMyq8xGRZFi9Hf8g6a5c2d5HzzmpllYLvmk
-Vj8IVBxSDd6JYY/FZhMVng21OX712hmlO9ygqZXcI4ZQ2DIskD7z+sOEhzwpa3Gr
-FXtqx61KndtE5UTqlGBhQ3irsviyhKZjXUvpmK0MLlAUJd3f+TEKuVpNM/D5lI/h
-MN98Je2d0/4LbtDFKGDNxJjDGaL+h4EhPEsSRMeTXlaALPcTd/f935Pd5scnEv2i
-0fUEJv+KTLNynxeZ7cDKybz7id1tD6Rt02nALqmyDIGXZ/55zoKw0s8pOMtkUC+V
-m6zqE7BpLZQjWdCErygTxJAmEGZIaF95mpEd4aiFwc9zznoW/Q+aivojoVflxbL8
-EIrShXK3lCrDh8I/RhWOMhqcDLbxMrsAL5u6ovHSMRHqjB9dAql1oGyVu6zHedoL
-GsycgGdj/KXfR5kvopSK4mqaA4+uYTvy6l0jEudFK/e9+zaSf2EJThfxsRQqvq5E
-KnaLse8r1Kz1IDkwEyJ7M+G1ylD3gI+dF8aSmp1NBbfEcOYGJlGWMsJZw3LtS+o7
-QYajhU5J77K+vgxu0TYQGQTmDqxFSFMGGS/CMzm2FxF5nFto1serrzO/sDueSond
-ArU3T5kmYKpxQ/Rt3BZm
-=pz/+
------END PGP SIGNATURE-----
-
---Signature=_Wed__4_Jul_2012_01_29_02_+1000_M66dDSF_3k3TklbY--
