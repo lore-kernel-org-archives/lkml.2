@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933321Ab2GCRSz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 13:18:55 -0400
-Received: from exprod7og102.obsmtp.com ([64.18.2.157]:48300 "EHLO
-	exprod7og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181Ab2GCRSx (ORCPT
+	id S933281Ab2GCRWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 13:22:24 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50221 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752181Ab2GCRWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 13:18:53 -0400
-Message-ID: <4FF32972.6020604@genband.com>
-Date: Tue, 03 Jul 2012 11:18:42 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Tue, 3 Jul 2012 13:22:22 -0400
+Message-ID: <4FF329F5.6000801@mvista.com>
+Date: Tue, 03 Jul 2012 21:20:53 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-CC: David Miller <davem@davemloft.net>, vincent.sanders@collabora.co.uk,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: AF_BUS socket address family
-References: <4FF1BBD5.8080804@collabora.co.uk> <4FF32352.5040800@genband.com>
-In-Reply-To: <4FF32352.5040800@genband.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Du, Changbin" <changbin.du@gmail.com>
+CC: balbi@ti.com, gregkh@linuxfoundation.org, ben@simtec.co.uk,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] usb: gadget: s3c-hsotg: fix core reset timeout failure
+References: <4ff252e7.08d4440a.38ee.ffffd7b9@mx.google.com>
+In-Reply-To: <4ff252e7.08d4440a.38ee.ffffd7b9@mx.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Jul 2012 17:18:43.0270 (UTC) FILETIME=[E58DCE60:01CD593F]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19016.000
-X-TM-AS-Result: No--19.155600-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2012 10:52 AM, Chris Friesen wrote:
+Hello.
 
-> To be fair, since it was implemented as a separate protocol family the
-> maintenance burden actually hasn't been large--it's been fairly simple
-> to port between versions. Also, we do embedded telecom stuff and don't
-> jump kernel versions all that often. (It's a big headache, requires
-> coordinating between multiple vendors, etc.)
->
-> In our case we typically send small (100-200 byte) messages to a
-> smallish (1-10) number of listeners, though there are exceptions of
-> course. Back before I started the original implementation used a
-> userspace daemon, but it had a number of issues. Originally I was
-> focussed on the performance gains but I must admit that since then other
-> factors have made that less of an issue.
+On 07/03/2012 06:03 AM, Du, Changbin wrote:
 
-I should point out that some of the other factors that have been 
-discussed for AF_BUS also hold true for our implementation:
+> The timeout values were 1000 and timeout issue occured many times on my
+> s3c6410 Soc based board (mostly when booting whith USB cable not
+> connected). This patch increase the values to 10000 to guarantee the
+> success of reset.
 
---strict ordering
---reliable (in our case, if the sender has space in the tx buffer then 
-messages get to all recipients with buffer space, there are kernel logs 
-if recipients don't have space)
+> Having set timeout to 10000, I printed the remained timeout values
+> which can cause timeout issue before this change (tested several times):
+> the first timeout value remained:
+> 	timeout = 8079
+> 	timeout = 8079
+> 	timeout = 8078
+> 	timeout = 8081
+> the second timeout value remained:
+> 	timeout = 7940
+> 	timeout = 7945
+> 	timeout = 7940
+> 	timeout = 7938
+> Seeing from above values, I think 10000 is big enough.
 
-Also, the fact that it's in the kernel rather than a userspace daemon 
-reduces priority inversion type issues.  Presumably this would apply to 
-an IP-multicast based solution as well.
+> Signed-off-by: Du, Changbin <changbin.du@gmail.com>
+> ---
+>  drivers/usb/gadget/s3c-hsotg.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 
-One problem that I ran into back when I was experimenting with this 
-stuff was trying to isolate host-local IP multicast from the rest of the 
-network.  It would be suboptimal to need to set up filtering and such 
-before being able to use the communication protocol.
+> diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+> index f4abb0e..f3e2234 100644
+> --- a/drivers/usb/gadget/s3c-hsotg.c
+> +++ b/drivers/usb/gadget/s3c-hsotg.c
+> @@ -2215,7 +2215,7 @@ static int s3c_hsotg_corereset(struct s3c_hsotg
+> *hsotg)
 
-Chris
+  Your patch is line wrapped; seems easy to fix manually while applying though...
+
+WBR, Sergei
