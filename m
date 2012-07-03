@@ -1,182 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932443Ab2GCGgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 02:36:33 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:16489 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869Ab2GCGgc (ORCPT
+	id S1755159Ab2GCGg4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 02:36:56 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:32929 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485Ab2GCGgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 02:36:32 -0400
-Message-ID: <4FF292D5.20403@siemens.com>
-Date: Tue, 03 Jul 2012 08:36:05 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 5/6 v5] deal with guest panicked event accoring to -onpanic
- parameter
-References: <4FEAAE6E.7070302@cn.fujitsu.com> <4FEAAFFF.40401@cn.fujitsu.com> <4FEB1B06.4050309@siemens.com> <4FEBB044.1000306@cn.fujitsu.com> <4FEC153B.6040300@siemens.com> <4FF28C17.703@cn.fujitsu.com>
-In-Reply-To: <4FF28C17.703@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Jul 2012 02:36:54 -0400
+From: Alexander Holler <holler@ahsoftware.de>
+To: linux-kernel@vger.kernel.org
+Cc: Shuah Khan <shuahkhan@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Bryan Wu <bryan.wu@canonical.com>, Feng Tang <feng.tang@intel.com>,
+        Alexander Holler <holler@ahsoftware.de>
+Subject: [PATCH] leds: heartbeat: fix bug on panic
+Date: Tue,  3 Jul 2012 08:35:47 +0200
+Message-Id: <1341297347-19336-1-git-send-email-holler@ahsoftware.de>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <20120612162629.15519f39@feng-i7>
+References: <20120612162629.15519f39@feng-i7>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-07-03 08:07, Wen Congyang wrote:
-> At 06/28/2012 04:26 PM, Jan Kiszka Wrote:
->> On 2012-06-28 03:15, Wen Congyang wrote:
->>> At 06/27/2012 10:39 PM, Jan Kiszka Wrote:
->>>> On 2012-06-27 09:02, Wen Congyang wrote:
->>>>> When the guest is panicked, it will write 0x1 to the port KVM_PV_PORT.
->>>>> So if qemu reads 0x1 from this port, we can do the folloing three
->>>>> things according to the parameter -onpanic:
->>>>> 1. emit QEVENT_GUEST_PANICKED only
->>>>> 2. emit QEVENT_GUEST_PANICKED and pause the guest
->>>>> 3. emit QEVENT_GUEST_PANICKED and poweroff the guest
->>>>> 4. emit QEVENT_GUEST_PANICKED and reset the guest
->>>>>
->>>>> Note: if we emit QEVENT_GUEST_PANICKED only, and the management
->>>>> application does not receive this event(the management may not
->>>>> run when the event is emitted), the management won't know the
->>>>> guest is panicked.
->>>>>
->>>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->>>>> ---
->>>>>  kvm-all.c       |  101 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
->>>>>  kvm-stub.c      |    9 +++++
->>>>>  kvm.h           |    3 ++
->>>>>  qemu-options.hx |   15 ++++++++
->>>>>  vl.c            |   10 +++++
->>>>>  5 files changed, 138 insertions(+), 0 deletions(-)
->>>>>
->>>>> diff --git a/kvm-all.c b/kvm-all.c
->>>>> index f8e4328..9494dd2 100644
->>>>> --- a/kvm-all.c
->>>>> +++ b/kvm-all.c
->>>>> @@ -19,6 +19,8 @@
->>>>>  #include <stdarg.h>
->>>>>  
->>>>>  #include <linux/kvm.h>
->>>>> +#include <linux/kvm_para.h>
->>>>> +#include <asm/kvm_para.h>
->>>>>  
->>>>>  #include "qemu-common.h"
->>>>>  #include "qemu-barrier.h"
->>>>> @@ -32,6 +34,9 @@
->>>>>  #include "bswap.h"
->>>>>  #include "memory.h"
->>>>>  #include "exec-memory.h"
->>>>> +#include "iorange.h"
->>>>> +#include "qemu-objects.h"
->>>>> +#include "monitor.h"
->>>>>  
->>>>>  /* This check must be after config-host.h is included */
->>>>>  #ifdef CONFIG_EVENTFD
->>>>> @@ -1931,3 +1936,99 @@ int kvm_on_sigbus(int code, void *addr)
->>>>>  {
->>>>>      return kvm_arch_on_sigbus(code, addr);
->>>>>  }
->>>>> +
->>>>> +/* Possible values for action parameter. */
->>>>> +#define PANICKED_REPORT     1   /* emit QEVENT_GUEST_PANICKED only */
->>>>> +#define PANICKED_PAUSE      2   /* emit QEVENT_GUEST_PANICKED and pause VM */
->>>>> +#define PANICKED_POWEROFF   3   /* emit QEVENT_GUEST_PANICKED and quit VM */
->>>>> +#define PANICKED_RESET      4   /* emit QEVENT_GUEST_PANICKED and reset VM */
->>>>> +
->>>>> +static int panicked_action = PANICKED_REPORT;
->>>>> +
->>>>> +static void kvm_pv_port_read(IORange *iorange, uint64_t offset, unsigned width,
->>>>> +                             uint64_t *data)
->>>>> +{
->>>>> +    *data = (1 << KVM_PV_FEATURE_PANICKED);
->>>>> +}
->>>>> +
->>>>> +static void panicked_mon_event(const char *action)
->>>>> +{
->>>>> +    QObject *data;
->>>>> +
->>>>> +    data = qobject_from_jsonf("{ 'action': %s }", action);
->>>>> +    monitor_protocol_event(QEVENT_GUEST_PANICKED, data);
->>>>> +    qobject_decref(data);
->>>>> +}
->>>>> +
->>>>> +static void panicked_perform_action(void)
->>>>> +{
->>>>> +    switch (panicked_action) {
->>>>> +    case PANICKED_REPORT:
->>>>> +        panicked_mon_event("report");
->>>>> +        break;
->>>>> +
->>>>> +    case PANICKED_PAUSE:
->>>>> +        panicked_mon_event("pause");
->>>>> +        vm_stop(RUN_STATE_GUEST_PANICKED);
->>>>> +        break;
->>>>> +
->>>>> +    case PANICKED_POWEROFF:
->>>>> +        panicked_mon_event("poweroff");
->>>>> +        exit(0);
->>>>> +        break;
->>>>> +    case PANICKED_RESET:
->>>>> +        panicked_mon_event("reset");
->>>>> +        qemu_system_reset_request();
->>>>> +        break;
->>>>> +    }
->>>>> +}
->>>>> +
->>>>> +static void kvm_pv_port_write(IORange *iorange, uint64_t offset, unsigned width,
->>>>> +                              uint64_t data)
->>>>> +{
->>>>> +    if (data == KVM_PV_PANICKED) {
->>>>> +        panicked_perform_action();
->>>>> +    }
->>>>> +}
->>>>> +
->>>>> +static void kvm_pv_port_destructor(IORange *iorange)
->>>>> +{
->>>>> +    g_free(iorange);
->>>>> +}
->>>>> +
->>>>> +static IORangeOps pv_io_range_ops = {
->>>>> +    .read = kvm_pv_port_read,
->>>>> +    .write = kvm_pv_port_write,
->>>>> +    .destructor = kvm_pv_port_destructor,
->>>>> +};
->>>>> +
->>>>> +#if defined(KVM_PV_PORT)
->>>>> +void kvm_pv_port_init(void)
->>>>> +{
->>>>> +    IORange *pv_io_range = g_malloc(sizeof(IORange));
->>>>> +
->>>>> +    iorange_init(pv_io_range, &pv_io_range_ops, KVM_PV_PORT, 1);
->>>>> +    ioport_register(pv_io_range);
->>>>
->>>> This modeling is still not ok. We don't open-code ports anymore, we
->>>> introduce devices. And this doesn't belong inro generic code as it is
->>>
->>> Do you mean introducing a new device instead of I/O port?
->>
->> I mean encapsulating the I/O registration (PIO or MMIO) in a QOM device
-> 
-> A QOM device? Do you mean introduce a new device? If so, the guest should
-> have a driver to know such device. Another problem is: we cannot use
-> such device when the kernel is starting(the device's driver is not ready).
-> If we use a new device, I think virtio-serial is enough. The reason why
-> I do not use virtio-serial is: I want the feature can also work when the
-> kernel is starting.
+With commit 49dca5aebfdeadd4bf27b6cb4c60392147dc35a4 I introduced
+a bug (visible if CONFIG_PROVE_RCU is enabled) which occures when a panic
+has happened:
 
-I'm not talking about changing the interface to the guest, I'm talking
-about how to model it in QEMU. And that difference would be transparent
-to the guest. I pointed you to examples like hw/kvm/clock.c.
+[ 1526.520230] ===============================
+[ 1526.520230] [ INFO: suspicious RCU usage. ]
+[ 1526.520230] 3.5.0-rc1+ #12 Not tainted
+[ 1526.520230] -------------------------------
+[ 1526.520230] /c/kernel-tests/mm/include/linux/rcupdate.h:436 Illegal context switch in RCU read-side critical section!
+[ 1526.520230]
+[ 1526.520230] other info that might help us debug this:
+[ 1526.520230]
+[ 1526.520230]
+[ 1526.520230] rcu_scheduler_active = 1, debug_locks = 0
+[ 1526.520230] 3 locks held by net.agent/3279:
+[ 1526.520230]  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff82f85962>] do_page_fault+0x193/0x390
+[ 1526.520230]  #1:  (panic_lock){+.+...}, at: [<ffffffff82ed2830>] panic+0x37/0x1d3
+[ 1526.520230]  #2:  (rcu_read_lock){.+.+..}, at: [<ffffffff810b9b28>] rcu_lock_acquire+0x0/0x29
+[ 1526.520230]
+[ 1526.520230] stack backtrace:
+[ 1526.520230] Pid: 3279, comm: net.agent Not tainted 3.5.0-rc1+ #12
+[ 1526.520230] Call Trace:
+[ 1526.520230]  [<ffffffff810e1570>] lockdep_rcu_suspicious+0x109/0x112
+[ 1526.520230]  [<ffffffff810bfe3a>] rcu_preempt_sleep_check+0x45/0x47
+[ 1526.520230]  [<ffffffff810bfe5a>] __might_sleep+0x1e/0x19a
+[ 1526.520230]  [<ffffffff82f8010e>] down_write+0x26/0x81
+[ 1526.520230]  [<ffffffff8276a966>] led_trigger_unregister+0x1f/0x9c
+[ 1526.520230]  [<ffffffff8276def5>] heartbeat_reboot_notifier+0x15/0x19
+[ 1526.520230]  [<ffffffff82f85bf5>] notifier_call_chain+0x96/0xcd
+[ 1526.520230]  [<ffffffff82f85cba>] __atomic_notifier_call_chain+0x8e/0xff
+[ 1526.520230]  [<ffffffff81094b7c>] ? kmsg_dump+0x37/0x1eb
+[ 1526.520230]  [<ffffffff82f85d3f>] atomic_notifier_call_chain+0x14/0x16
+[ 1526.520230]  [<ffffffff82ed28e1>] panic+0xe8/0x1d3
+[ 1526.520230]  [<ffffffff811473e2>] out_of_memory+0x15d/0x1d3
 
-Jan
+So in case of a panic, now just turn of the LED. Other approaches like
+scheduling a work to unregister the trigger aren't working because there
+isn't much which still runs after a panic occured (except timers).
 
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+---
+ drivers/leds/ledtrig-heartbeat.c |   16 +++++++++++++++-
+ 1 files changed, 15 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/leds/ledtrig-heartbeat.c b/drivers/leds/ledtrig-heartbeat.c
+index 41dc76d..a019fbb 100644
+--- a/drivers/leds/ledtrig-heartbeat.c
++++ b/drivers/leds/ledtrig-heartbeat.c
+@@ -21,6 +21,8 @@
+ #include <linux/reboot.h>
+ #include "leds.h"
+ 
++static int panic_heartbeats;
++
+ struct heartbeat_trig_data {
+ 	unsigned int phase;
+ 	unsigned int period;
+@@ -34,6 +36,11 @@ static void led_heartbeat_function(unsigned long data)
+ 	unsigned long brightness = LED_OFF;
+ 	unsigned long delay = 0;
+ 
++	if (unlikely(panic_heartbeats)) {
++		led_set_brightness(led_cdev, LED_OFF);
++		return;
++	}
++
+ 	/* acts like an actual heart beat -- ie thump-thump-pause... */
+ 	switch (heartbeat_data->phase) {
+ 	case 0:
+@@ -111,12 +118,19 @@ static int heartbeat_reboot_notifier(struct notifier_block *nb,
+ 	return NOTIFY_DONE;
+ }
+ 
++static int heartbeat_panic_notifier(struct notifier_block *nb,
++				     unsigned long code, void *unused)
++{
++	panic_heartbeats = 1;
++	return NOTIFY_DONE;
++}
++
+ static struct notifier_block heartbeat_reboot_nb = {
+ 	.notifier_call = heartbeat_reboot_notifier,
+ };
+ 
+ static struct notifier_block heartbeat_panic_nb = {
+-	.notifier_call = heartbeat_reboot_notifier,
++	.notifier_call = heartbeat_panic_notifier,
+ };
+ 
+ static int __init heartbeat_trig_init(void)
 -- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
+1.7.6.5
+
