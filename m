@@ -1,105 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425Ab2GCChW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 22:37:22 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37990 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751450Ab2GCChV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 22:37:21 -0400
-Message-ID: <4FF25ADC.8040007@gmail.com>
-Date: Mon, 02 Jul 2012 21:37:16 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1756444Ab2GCCq7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 22:46:59 -0400
+Received: from tundra.namei.org ([65.99.196.166]:45195 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753785Ab2GCCq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 22:46:58 -0400
+Date: Tue, 3 Jul 2012 12:46:54 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [GIT][v3.5] Document no_new_privs
+Message-ID: <alpine.LRH.2.02.1207031244210.28166@tundra.namei.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: "Turquette, Mike" <mturquette@ti.com>
-CC: Chris Ball <cjb@laptop.org>, Mitch Bradley <wmb@laptop.org>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree-discuss@lists.ozlabs.org,
-        sboyd@codeaurora.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>, skannan@codeaurora.org,
-        Olof Johansson <olof@lixom.net>, shawn.guo@linaro.org,
-        s.hauer@pengutronix.de, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 0/4] DT clock bindings
-References: <1339512111-11172-1-git-send-email-robherring2@gmail.com> <87bokd15x7.fsf@octavius.laptop.org> <4FE33723.3040403@gmail.com> <20120621175443.GL4402@gmail.com> <4FEB0273.9050707@gmail.com> <CAJOA=zNFZyOXrv8cpJJYhSyR6kvHr3awDvCwR689XyOKWYCMig@mail.gmail.com>
-In-Reply-To: <CAJOA=zNFZyOXrv8cpJJYhSyR6kvHr3awDvCwR689XyOKWYCMig@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike,
+Hi Linus,
 
-On 07/02/2012 08:30 PM, Turquette, Mike wrote:
-> On Wed, Jun 27, 2012 at 5:54 AM, Rob Herring <robherring2@gmail.com> wrote:
->> On 06/21/2012 12:54 PM, Mike Turquette wrote:
->>> On 20120621-10:00, Rob Herring wrote:
->>>> On 06/21/2012 02:27 AM, Chris Ball wrote:
->>>>>
->>>>> 2) Use alloc_bootmem() instead of kzalloc() in of_clk_add_provider(),
->>>>>    because we need to set up clocks during .init_early on ARM (which
->>>>>    happens pre-slab) so that they are available for platform init.
->>>>
->>>> This depends on 1 as the common clock code would have the same issue.
->>>> Generally, the first place clocks are needed is the timer init. At that
->>>> point, you can call kzalloc. This is where all the clock init used to be
->>>> done until init_early was added and some platforms have moved their
->>>> clock init. I don't think there was really ever much reason to move it
->>>> other than to make the timer init function only deal with timer setup.
->>>>
->>>
->>> Hi Rob,
->>>
->>> Just FYI I've been looking at using alloc_bootmem in the common clk code
->>> as a way to get rid of the static initialization stuff (which only
->>> existed due to very early initialization of timers).
->>
->> The slab is up at the time timers are initialized. The only real problem
->> is mixing clock init into the timer init functions and clk init in
->> init_early is cleaner in that regard.
->>
-> 
-> Hi Rob,
-> 
-> I'm afraid I don't follow you when you say "slab is up at the time
-> timers are initialized".  On some platforms I believe that timer
-> initialization takes place before slab is ready (.early_init).
+Please pull -- this documents a new 3.5 feature.
 
-Timers are not initialized in the .timer init hook? The clock init is
-definitely in init_early in some cases, but I don't think the actual
-timer init can be.
+The following changes since commit ca24a145573124732152daff105ba68cc9a2b545:
+  Linus Torvalds (1):
+        Merge branch 'fixes' of git://git.linaro.org/people/rmk/linux-arm
 
->>> The suggested change above to of_clk_add_provider would jive well with
->>> my change to the common clk code.
->>
->> Are you planning this for 3.6? If not, then this can be addressed at the
->> time the clk framework supports bootmem.
->>
->> I'm not so sure more users of bootmem are desired. There seems to be
->> some effort/desire to remove it:
->>
->> http://lists.linux-foundation.org/pipermail/ksummit-2012-discuss/2012-June/000562.html
->> https://lkml.org/lkml/2012/3/13/586
->> http://lists.infradead.org/pipermail/linux-arm-kernel/2011-December/074886.html
-> 
-> So after looking at those mails it seems using memblock_alloc would be
-> a better alternative.  Did I get that right?
+are available in the git repository at:
 
-Seems so, but my view is avoiding it altogether is the right way to me
-just based on how few users there are of either within drivers/.
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
 
-Anyway, this is all really besides the point for this series. If and
-when the clock framework supports bootmem or memblock, then the DT clk
-code can easily be adapted as part of that. It's just a matter of timing
-and if you're not planning bootmem/memblock for 3.6 we can add this later.
+Andy Lutomirski (1):
+      security: document no_new_privs
 
-Rob
-
-> 
-> Thanks,
-> Mike
-> 
->>
->> Rob
+ Documentation/prctl/no_new_privs.txt |   50 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
+ create mode 100644 Documentation/prctl/no_new_privs.txt
 
 
+commit 09b243577be319ef55310b45c65737008f3ebf12
+Author: Andy Lutomirski <luto@amacapital.net>
+Date:   Mon Jul 2 14:03:58 2012 -0700
+
+    security: document no_new_privs
+    
+    Document no_new_privs.
+    
+    Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+    Acked-by: Kees Cook <keescook@chromium.org>
+    Signed-off-by: James Morris <james.l.morris@oracle.com>
+
+diff --git a/Documentation/prctl/no_new_privs.txt b/Documentation/prctl/no_new_privs.txt
+new file mode 100644
+index 0000000..cb705ec
+--- /dev/null
++++ b/Documentation/prctl/no_new_privs.txt
+@@ -0,0 +1,50 @@
++The execve system call can grant a newly-started program privileges that
++its parent did not have.  The most obvious examples are setuid/setgid
++programs and file capabilities.  To prevent the parent program from
++gaining these privileges as well, the kernel and user code must be
++careful to prevent the parent from doing anything that could subvert the
++child.  For example:
++
++ - The dynamic loader handles LD_* environment variables differently if
++   a program is setuid.
++
++ - chroot is disallowed to unprivileged processes, since it would allow
++   /etc/passwd to be replaced from the point of view of a process that
++   inherited chroot.
++
++ - The exec code has special handling for ptrace.
++
++These are all ad-hoc fixes.  The no_new_privs bit (since Linux 3.5) is a
++new, generic mechanism to make it safe for a process to modify its
++execution environment in a manner that persists across execve.  Any task
++can set no_new_privs.  Once the bit is set, it is inherited across fork,
++clone, and execve and cannot be unset.  With no_new_privs set, execve
++promises not to grant the privilege to do anything that could not have
++been done without the execve call.  For example, the setuid and setgid
++bits will no longer change the uid or gid; file capabilities will not
++add to the permitted set, and LSMs will not relax constraints after
++execve.
++
++Note that no_new_privs does not prevent privilege changes that do not
++involve execve.  An appropriately privileged task can still call
++setuid(2) and receive SCM_RIGHTS datagrams.
++
++There are two main use cases for no_new_privs so far:
++
++ - Filters installed for the seccomp mode 2 sandbox persist across
++   execve and can change the behavior of newly-executed programs.
++   Unprivileged users are therefore only allowed to install such filters
++   if no_new_privs is set.
++
++ - By itself, no_new_privs can be used to reduce the attack surface
++   available to an unprivileged user.  If everything running with a
++   given uid has no_new_privs set, then that uid will be unable to
++   escalate its privileges by directly attacking setuid, setgid, and
++   fcap-using binaries; it will need to compromise something without the
++   no_new_privs bit set first.
++
++In the future, other potentially dangerous kernel features could become
++available to unprivileged tasks if no_new_privs is set.  In principle,
++several options to unshare(2) and clone(2) would be safe when
++no_new_privs is set, and no_new_privs + chroot is considerable less
++dangerous than chroot by itself.
