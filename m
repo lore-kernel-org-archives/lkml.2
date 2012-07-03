@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933485Ab2GCULl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 16:11:41 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:36106 "EHLO isrv.corpit.ru"
+	id S933504Ab2GCULt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 16:11:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:3465 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933424Ab2GCULk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 16:11:40 -0400
-Message-ID: <4FF351F8.1000003@msgid.tls.msk.ru>
-Date: Wed, 04 Jul 2012 00:11:36 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	id S933424Ab2GCULq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 16:11:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="173086410"
+From: Andi Kleen <andi@firstfloor.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Calvin Walton <calvin.walton@kepstin.ca>, Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel@vger.kernel.org, shemminger@vyatta.com
+Subject: Re: long boot delays caused by 070ad7e7 floppy change
+References: <20120702224648.GA20361@tassilo.jf.intel.com>
+	<CA+55aFwre6s=orjUaNKJA=51Fc1mxu_XGX80Bex4Sn-=mWPx5Q@mail.gmail.com>
+	<1341323230.3292.10.camel@nayuki.kepstin.ca>
+	<CA+55aFyvzz3Lp9zeA6X+QMan0iZFWq_0Xd+ff_trnP1tpn2iJQ@mail.gmail.com>
+	<1341337257.2406.1.camel@nayuki.kepstin.ca>
+	<CA+55aFzOD33eWj0FQuZ7RWmF-yYwaeNB-9J-YY+mX4mwP7VXuA@mail.gmail.com>
+	<CA+55aFwQqTAHNafGBXaoPCzVYw83OZvbG_hOYEDUxmuoMODO3Q@mail.gmail.com>
+	<alpine.LNX.2.00.1207032008350.17304@pobox.suse.cz>
+	<20120703185808.GM11413@one.firstfloor.org>
+	<CA+55aFzFQiYhJcBfGD7moL3gC-ocwXJ2-kTjuNrw5hBGGbz4ag@mail.gmail.com>
+	<1341344200.2413.4.camel@nayuki.kepstin.ca>
+	<CA+55aFzn+dW+Aj5T_vVP3XG3n3P+7mqJwGQLsWY14yEwduku5Q@mail.gmail.com>
+Date: Tue, 03 Jul 2012 13:11:43 -0700
+In-Reply-To: <CA+55aFzn+dW+Aj5T_vVP3XG3n3P+7mqJwGQLsWY14yEwduku5Q@mail.gmail.com>
+	(Linus Torvalds's message of "Tue, 3 Jul 2012 13:05:51 -0700")
+Message-ID: <m2ipe4bo5c.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Jeff Garzik <jeff@garzik.org>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Zheng Liu <wenqing.lz@taobao.com>
-Subject: Re: [RFC][PATCH] libata: enable SATA disk fua detection on default
-References: <1336447443-4685-1-git-send-email-wenqing.lz@taobao.com> <20120703090441.GA4804@gmail.com>
-In-Reply-To: <20120703090441.GA4804@gmail.com>
-X-Enigmail-Version: 1.4.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03.07.2012 13:04, Zheng Liu wrote:
-> Hi Jeff,
-> 
-> Sorry for bothering you.  Could you please review this patch, or give me
-> some feedbacks.  If this patch can be applied, I can rebase it to the
-> lastest version of mainline kernel.  Thank you.
-[]
->> -int libata_fua = 0;
->> +int libata_fua = 1;
+Linus Torvalds <torvalds@linux-foundation.org> writes:
+>
+> Doing it asynchronously like Andi does helps a bit,
 
-I guess it can be enabled after LOTS of testing of various drives out
-there, which shows that no current drives have issues with FUA anymore,
-and after building a black-list of devices which misbehave.  It is quite
-a big project, I think.  But what it gives us in return?
+I think it would be more effective if the floppy driver initialized
+earlier, I think I have some slowdown because it starts too late.
 
-(I've no idea if this is the right answer, speaking of myself only)
+> but I suspect we
+> could make the reset timeout shorter still just to make the initial
+> "you don't have a floppy drive" code go faster.
+>
+> That said, why even compile in the floppy driver any more?
 
-Thanks,
+I used to boot simulators from make fdimage some time ago. Until
+the kernels got too large :-)
 
-/mjt
+But yes make isoimage is the way to go and
+
+I'll remove it from my configs.
+
+Thanks for the debugging.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
