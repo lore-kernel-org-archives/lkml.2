@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab2GCJIi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 05:08:38 -0400
-Received: from na3sys010aog108.obsmtp.com ([74.125.245.84]:39216 "HELO
-	na3sys010aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755297Ab2GCJIg (ORCPT
+	id S932139Ab2GCJIy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 05:08:54 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:52170 "HELO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755718Ab2GCJIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 05:08:36 -0400
-From: Roland Dreier <roland@kernel.org>
-To: Tomas Winkler <tomas.winkler@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lekensteyn <lekensteyn@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] misc: mei: set IRQF_ONESHOT for MSI request_threaded_irq() in mei_pci_resume()
-Date: Tue,  3 Jul 2012 02:08:30 -0700
-Message-Id: <1341306510-28808-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <15236906.ttExm1X813@al>
-References: <15236906.ttExm1X813@al>
+	Tue, 3 Jul 2012 05:08:51 -0400
+From: Xiaoguang Chen <chenxg@marvell.com>
+To: linux-kernel@vger.kernel.org
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com, mturquette@ti.com,
+        axel.lin@gmail.com, Xiaoguang Chen <chenxg@marvell.com>
+Subject: [PATCH] PM: Devfreq: fix userspace governor frequency bug
+Date: Tue,  3 Jul 2012 17:08:34 +0800
+Message-Id: <1341306514-19173-1-git-send-email-chenxg@marvell.com>
+X-Mailer: git-send-email 1.7.4.1
+X-OriginalArrivalTime: 03 Jul 2012 09:08:37.0454 (UTC) FILETIME=[6E525EE0:01CD58FB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roland Dreier <roland@purestorage.com>
+The frequency set by userspace governor may not the
+same as the final frequency. If this condition happens,
+then "cat set_freq" will return a wrong value which is
+inconsistant with the real frequency.
 
-When the default quick IRQ handler is used then IRQF_ONESHOT must be set,
-or else the request fails and following error is logged on resume:
+This patch updates data->user_frequency after calling
+of update_devfreq. use devfreq->revious_freq as the
+final user_frequency.
 
-    genirq: Threaded irq requested with handler=NULL and !ONESHOT for irq ...
-
-This is the same fix that commit aa189ecdc0c7 ("misc: mei: set
-IRQF_ONESHOT for msi request_threaded_irq") did in the probe function.
-
-Reported-by: Lekensteyn <lekensteyn@gmail.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
 ---
-Can you try this?  It looks to be needed.
+ drivers/devfreq/governor_userspace.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Thomas/Greg, I think this should get into 3.5 if possible.
-
- drivers/misc/mei/main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index 7de1389..783fcd7 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -1147,7 +1147,7 @@ static int mei_pci_resume(struct device *device)
- 		err = request_threaded_irq(pdev->irq,
- 			NULL,
- 			mei_interrupt_thread_handler,
--			0, mei_driver_name, dev);
-+			IRQF_ONESHOT, mei_driver_name, dev);
- 	else
- 		err = request_threaded_irq(pdev->irq,
- 			mei_interrupt_quick_handler,
+diff --git a/drivers/devfreq/governor_userspace.c b/drivers/devfreq/governor_userspace.c
+index 0681246..85ad80a 100644
+--- a/drivers/devfreq/governor_userspace.c
++++ b/drivers/devfreq/governor_userspace.c
+@@ -59,6 +59,7 @@ static ssize_t store_freq(struct device *dev, struct device_attribute *attr,
+ 	err = update_devfreq(devfreq);
+ 	if (err == 0)
+ 		err = count;
++	data->user_frequency = devfreq->previous_freq;
+ 	mutex_unlock(&devfreq->lock);
+ 	return err;
+ }
 -- 
-1.7.10.4
+1.7.0.4
 
