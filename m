@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933156Ab2GCN1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 09:27:09 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:37718 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932938Ab2GCN1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 09:27:07 -0400
-Date: Tue, 3 Jul 2012 15:26:41 +0200
-From: Alessandro Rubini <rubini@gnudd.com>
-To: arnd@arndb.de
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
-        alan@linux.intel.com, linux@arm.linux.org.uk, x86@kernel.org,
-        gregkh@linuxfoundation.org, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH V2 5/6] x86: add CONFIG_ARM_AMBA, selected by STA2X11
-Message-ID: <20120703132641.GA28437@mail.gnudd.com>
+	id S1756401Ab2GCNbR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 09:31:17 -0400
+Received: from mail-yw0-f51.google.com ([209.85.213.51]:64694 "EHLO
+	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252Ab2GCNbQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 09:31:16 -0400
+Message-ID: <4FF2F417.2010209@redhat.com>
+Date: Tue, 03 Jul 2012 15:31:03 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <201207031319.40884.arnd@arndb.de>
-References: <201207031319.40884.arnd@arndb.de>
-  <2b797c83-6a3c-4051-841a-a4cfa9d1cae1@email.android.com>
- <20120701104401.GA4352@mail.gnudd.com>
- <20120703130042.GA10007@mail.gnudd.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Asias He <asias@redhat.com>, kvm@vger.kernel.org,
+        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Sasha Levin <levinsasha928@gmail.com>, Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH 3/3] virtio-blk: Add bio-based IO path for virtio-blk
+References: <1340002390-3950-1-git-send-email-asias@redhat.com> <1340002390-3950-4-git-send-email-asias@redhat.com> <87hau9yse7.fsf@rustcorp.com.au> <4FDEE0CB.1030505@redhat.com> <87zk81x7dp.fsf@rustcorp.com.au> <4FDF0DA7.40604@redhat.com> <1340019575.22848.2.camel@lappy> <4FDFE926.7030309@redhat.com> <87r4svxcjw.fsf@rustcorp.com.au> <4FF10B31.60609@redhat.com> <8762a6y89v.fsf@rustcorp.com.au>
+In-Reply-To: <8762a6y89v.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 02/07/2012 08:41, Rusty Russell ha scritto:
+>> With the same workload in guest, the guest fires 200K requests to host 
+>> with merges enabled in guest (echo 0 > /sys/block/vdb/queue/nomerges), 
+>> while the guest fires 40000K requests to host with merges disabled in 
+>> guest (echo 2 > /sys/block/vdb/queue/nomerges). This show that the merge 
+>> in block layer reduces the total number of requests fire to host a lot 
+>> (40000K / 200K = 20).
+>> 
 
-Arnd Bergmann:
+40000 / 200 is 200, not 20. :)
 
-> Note that there is already an include/linux/amba/pl08x.h.
-> I would just move the few parts of pl080.h that are actually
-> needed with global visibility there, and move the rest
-> to drivers/dma/.
+Paolo
 
-Ok.
-
->>   proposed fix: use linux/sizes.h and provide readsl/writesl like others do
-
-> Ack on the linux/sizes.h, that definitely makes sense.
-
-I already have this in place for other drivers that I'm going to use
-with the pci-amba bridge. They have already been picked up by Rusell,
-but they are not in linux-next yet.  So maybe other people have more
-errors than me related to sizes.h, but this for mmci is trivial with
-the other stuff in place.
-
-Ok for the rest, I'll submit a patch set following your suggestions
-when the other sizes.h stuff reaches linux-next.
-
-/alessandro
