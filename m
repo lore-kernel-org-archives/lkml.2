@@ -1,86 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933112Ab2GCPXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 11:23:39 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57194 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752321Ab2GCPXh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 11:23:37 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Russell King <linux@arm.linux.org.uk>, mturquette@ti.com
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] clkdev: Add default clkdev.h
-Date: Tue,  3 Jul 2012 16:23:35 +0100
-Message-Id: <1341329015-28207-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	id S1756723Ab2GCPYg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 11:24:36 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:35909
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752321Ab2GCPYe convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 11:24:34 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -8
+X-BigFish: VS-8(zz98dI9371I542M1432Izz1202hzz8275dhz2fh2a8h683h839h944hd25hf0ah)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: Olaf Hering <olaf@aepfle.de>, Greg KH <gregkh@linuxfoundation.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: [PATCH 00/13] drivers: hv: kvp
+Thread-Topic: [PATCH 00/13] drivers: hv: kvp
+Thread-Index: AQHNT/NB00SQsXjmDEmcq7JSjap8hpcFX8+AgADv8yCAAAVogIAFjrOAgAFErgCAAAhKEIAAA3+AgAAAZKCAAp6bAIAGMUUggAB1SYCAABj5oA==
+Date: Tue, 3 Jul 2012 15:24:15 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF9155EF7C6@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <20120621224737.GA5933@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9155EC47A@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120622132547.GA2639@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9155ED14D@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120626213954.GA4840@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9155ED64A@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120626222205.GA5948@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9155ED68D@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120628142340.GA21537@aepfle.de>
+ <426367E2313C2449837CD2DE46E7EAF9155EF399@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120702195721.GE1894@decadent.org.uk>
+In-Reply-To: <20120702195721.GE1894@decadent.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.179.128]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%DECADENT.ORG.UK$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LISTS.OSDL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC102.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC102.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ease the deployment of clkdev by providing a default asm/clkdev.h which
-will be used if the arch does not have an include/asm/clkdev.h.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
 
-The discussion on the previous posting of this patch suggested we should
-be merging this via clk (or possibly clkdev).
+> -----Original Message-----
+> From: Ben Hutchings [mailto:ben@decadent.org.uk]
+> Sent: Monday, July 02, 2012 3:57 PM
+> To: KY Srinivasan
+> Cc: Olaf Hering; Greg KH; apw@canonical.com; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; linux-kernel@vger.kernel.org;
+> netdev@vger.kernel.org
+> Subject: Re: [PATCH 00/13] drivers: hv: kvp
+> 
+> On Mon, Jul 02, 2012 at 03:22:25PM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Olaf Hering [mailto:olaf@aepfle.de]
+> > > Sent: Thursday, June 28, 2012 10:24 AM
+> > > To: KY Srinivasan
+> > > Cc: Greg KH; apw@canonical.com; devel@linuxdriverproject.org;
+> > > virtualization@lists.osdl.org; linux-kernel@vger.kernel.org
+> > > Subject: Re: [PATCH 00/13] drivers: hv: kvp
+> > >
+> > > On Tue, Jun 26, KY Srinivasan wrote:
+> > >
+> > > > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > > > The fact that it was Red Hat specific was the main part, this should be
+> > > > > done in a standard way, with standard tools, right?
+> > > >
+> > > > The reason I asked this question was to make sure I address these
+> > > > issues in addition to whatever I am debugging now. I use the standard
+> > > > tools and calls to retrieve all the IP configuration. As I look at
+> > > > each distribution the files they keep persistent IP configuration
+> > > > Information is different and that is the reason I chose to start with
+> > > > RedHat. If there is a standard way to store the configuration, I will
+> > > > do that.
+> > >
+> > >
+> > > KY,
+> > >
+> > > instead of using system() in kvp_get_ipconfig_info and kvp_set_ip_info,
+> > > wouldnt it be easier to call an external helper script which does all
+> > > the distribution specific work? Just define some API to pass values to
+> > > the script, and something to read values collected by the script back
+> > > into the daemon.
+> >
+> > On the "Get" side I mostly use standard commands/APIs to get all the
+> information:
+> >
+> > 1) IP address information and subnet mask: getifaddrs()
+> > 2) DNS information:  Parsing /etc/resolv.conf
+> > 3) /sbin/ip command for all the routing information
+> 
+> If you're interested in the *current* configuration then (1) and (3)
+> are OK but you should really use the rtnetlink API.
+> 
+> However, I suspect that Hyper-V assumes that current and persistent
+> configuration are the same thing, which is obviously not true in
+> general on Linux.  But if NetworkManager is running then you can
+> assume they are.
 
- include/asm-generic/Kbuild.asm |    4 ++++
- include/asm-generic/clkdev.h   |   26 ++++++++++++++++++++++++++
- 2 files changed, 30 insertions(+)
- create mode 100644 include/asm-generic/clkdev.h
+I am only interested in the currently active information. Why do you
+recommend the use of rtnetlink API over the "ip" command. If I am not
+mistaken, the ip command uses netlink to get the information. 
 
-diff --git a/include/asm-generic/Kbuild.asm b/include/asm-generic/Kbuild.asm
-index c5d2e5d..da121e0 100644
---- a/include/asm-generic/Kbuild.asm
-+++ b/include/asm-generic/Kbuild.asm
-@@ -13,6 +13,10 @@ ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h \
- header-y += a.out.h
- endif
+> 
+> > 4)  Parse /etc/sysconfig/network-scripts/ifcfg-ethx for boot protocol
+
+This is the only information that requires parsing a distro specific configuration file. Do
+you have any suggestion on how I may get this information in a distro independent way.
  
-+ifeq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/clkdev.h),)
-+generic-y += clkdev.h
-+endif
-+
- header-y += auxvec.h
- header-y += bitsperlong.h
- header-y += byteorder.h
-diff --git a/include/asm-generic/clkdev.h b/include/asm-generic/clkdev.h
-new file mode 100644
-index 0000000..7a15bd0
---- /dev/null
-+++ b/include/asm-generic/clkdev.h
-@@ -0,0 +1,26 @@
-+/*
-+ *  include/asm-generic/clkdev.h
-+ *
-+ * Based on the ARM clkdev.h:
-+ *  Copyright (C) 2008 Russell King.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Helper for the clk API to assist looking up a struct clk.
-+ */
-+#ifndef __ASM_CLKDEV_H
-+#define __ASM_CLKDEV_H
-+
-+#include <linux/slab.h>
-+
-+static inline int __clk_get(clk) { return 1; }
-+static inline void __clk_put(clk) { }
-+
-+static inline struct clk_lookup_alloc *__clkdev_alloc(size_t size)
-+{
-+	return kzalloc(size, GFP_KERNEL);
-+}
-+
-+#endif
--- 
-1.7.10
+> >
+> > As you can see, all but the boot protocol is gathered using the "standard distro
+> > independent mechanisms. I was looking at NetworkManager cli and it looks
+> > like I could gather all the information except the boot protocol information. I am
+> > not sure how to gather the boot protocol information in a distro independent
+> fashion.
+> >
+> > On the SET side, I need to persistently store the settings in an appropriate
+> configuration
+> > file and flush these settings down so that the interface is appropriately
+> configured. It is here
+> > that I am struggling to find a distro independent way of doing things. It would
+> be great if I can
+> > use NetworkManager cli (nmcli) to accomplish this. Any help here would be
+> greatly appreciated.
+> [...]
+> 
+> What was wrong with the NetworkManager D-Bus API I pointed you at?
+> I don't see how it makes sense to use nmcli as an API.
+
+I saw some documentation that claimed that nmcli could be used to accomplish
+all that can be done with the GUI interface. I am looking for a portable way
+to accomplish configuring an interface. If nmcli can do that, I would use it. With
+regards to D-BUS API, I took a cursory look at the APIs. I am still evaluating
+my options.
+
+Regards,
+
+K. Y
+
 
