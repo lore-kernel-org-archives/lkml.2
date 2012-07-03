@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab2GCJA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 05:00:59 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59355 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951Ab2GCJA5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 05:00:57 -0400
-From: Arnd Bergmann <arnd.bergmann@linaro.org>
-Organization: Linaro Limited 
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: linux-next: build failure after merge of the final tree (pwm tree related)
-Date: Tue, 3 Jul 2012 09:00:53 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>
-References: <20120629174826.546cc991459b12833f2aaebd@canb.auug.org.au> <201206301920.21158.arnd.bergmann@linaro.org> <CAMuHMdVBs=i5i02_AxZ7CHBukmrj-ik-EjDTG58hZaLkxkc+dQ@mail.gmail.com>
-In-Reply-To: <CAMuHMdVBs=i5i02_AxZ7CHBukmrj-ik-EjDTG58hZaLkxkc+dQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207030900.53470.arnd.bergmann@linaro.org>
-X-Provags-ID: V02:K0:58gYKVTpVwAnf+RhYEiumIqANMICxKIaoPchQmJiED7
- vz5mJOnEIOeDjMMNTh2X9HU1inVQ+W73fkBa9B+SnySUzpoXNP
- ok3Zqk5YYE0TdiCjhnLt9+LlFe8ivOClUmweckxjIEeyEk8Kjb
- qTHDQMnUEmxscQG69xNixxyNfq2WffyBoaf+63F2x1Y6fRMr6k
- ZcbPvwem3A3H9aRaOXOOpwsloLJhDhmNFslTOsppT3DhISNtNA
- O6VuWqo0Ju15QM3pShDvTaw6cLGJx+Yn3eGSRLIG8a8iZcVKDV
- FYGEpKt1sYzUvZ+SoPRMEupPqegSFNOZJzOjSspi8n+Vee16qs
- gKcVEyNjXa9lIyUuqFkrSXCXqUTNu+o1Pv0yc2oKr
+	id S1754852Ab2GCJEI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 05:04:08 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:53019 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752698Ab2GCJEH convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Tue, 3 Jul 2012 05:04:07 -0400
+Message-Id: <4FF2D1DA020000780008D433@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 03 Jul 2012 10:04:58 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <gcosta@redhat.com>,
+        <hpa@zytor.com>
+Cc: "Jeremy Fitzhardinge" <jeremy@goop.org>, <linux-kernel@vger.kernel.org>
+Subject: __force_order usage on x86's CRn accesses
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 03 July 2012, Geert Uytterhoeven wrote:
-> > I think that all the drivers that are not converted to the common PWM
-> > layer yet should depend on not enabling the common code. Once they
-> > are all moved over, that dependency will go away.
-> 
-> Hence you cannot have a single kernel image that contains both legacy and new
-> drivers. I don't know whether there's any such combination that makes sense,
-> though.
+Pretty soon after the introduction of this via "x86: unify paravirt
+parts of system.h" Jeremy had posted a patch to correct the
+(reversed in direction of access) constraints using that auxiliary
+variable. What happened to that change? Was it dropped for a
+reason?
 
-No, it's not a problem really: Before the new layer was added, any combination
-of PWM drivers would conflict, the entire point of the common PWM code is
-to make it possible that to put some drivers into the same kernel. Over time
-I'd hope that all drivers get moved over, so we can have any combination.
+Furthermore, the addition of these constraints happened
+without any real explanation - the code comment that was added
+doesn't really help understand why "volatile" isn't sufficient here.
 
-	Arnd
+Next, I also saw it being suggested somewhere to replace the
+static definition of the variable (causing an instance to appear
+everywhere any of the referencing inline function being used)
+by an extern one. That also never got carried out, causing
+about two dozen pointless instances of this variable to be
+scattered around, likely consuming cache bandwidth here and
+there.
+
+Now, rather than exporting an auxiliary variable like this, how
+about using an existing, rarely referenced (at least in affected
+contexts) but already exported one instead?
+empty_zero_page, __supported_pte_mask, x86_platform, or
+high_memory might be candidates.
+
+Finally (and this is because I lack the explanation why the
+artificial constraint is needed in the first place), why is it that
+clts() doesn't need one too?
+
+Thanks, Jan
+
