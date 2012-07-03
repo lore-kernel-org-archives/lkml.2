@@ -1,177 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933352Ab2GCU1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 16:27:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53524 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753541Ab2GCU1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 16:27:07 -0400
-Message-ID: <4FF35597.7020408@canonical.com>
-Date: Tue, 03 Jul 2012 13:27:03 -0700
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120620 Thunderbird/14.0
+	id S933425Ab2GCUbV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 16:31:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15541 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754990Ab2GCUbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 16:31:20 -0400
+Date: Tue, 3 Jul 2012 22:30:32 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 05/40] autonuma: define _PAGE_NUMA_PTE and _PAGE_NUMA_PMD
+Message-ID: <20120703203032.GV3726@redhat.com>
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
+ <1340888180-15355-6-git-send-email-aarcange@redhat.com>
+ <4FEDBB1F.9030001@redhat.com>
 MIME-Version: 1.0
-To: Yufeng Shen <miletus@chromium.org>
-CC: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        Henrik Rydberg <rydberg@euromail.se>, linux-kernel@vger.kernel.org,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Andrew de los Reyes <adlr@chromium.org>
-Subject: Re: [PATCH 1/2 v2] HID: magicmouse: Removing report_touches switch
-References: <1341341621-15560-1-git-send-email-miletus@chromium.org>
-In-Reply-To: <1341341621-15560-1-git-send-email-miletus@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FEDBB1F.9030001@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2012 11:53 AM, Yufeng Shen wrote:
-> Remove the report_touches switch as it is not so useful to turn
-> off reporting touch events for a touch device. Let the userspace
-> to do the filtering if the turning off is needed.
->
-> V2: Remove report_touches as suggeted by Chase Douglas
->
-> Signed-off-by: Yufeng Shen <miletus@chromium.org>
+Hi Rik,
 
-Acked-by: Chase Douglas <chase.douglas@canonical.com>
+On Fri, Jun 29, 2012 at 10:26:39AM -0400, Rik van Riel wrote:
+> On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
+> 
+> > +/*
+> > + * Cannot be set on pte. The fact it's in between _PAGE_FILE and
+> > + * _PAGE_PROTNONE avoids having to alter the swp entries.
+> > + */
+> > +#define _PAGE_NUMA_PTE	_PAGE_PSE
+> > +/*
+> > + * Cannot be set on pmd, if transparent hugepages will be swapped out
+> > + * the swap entry offset must start above it.
+> > + */
+> > +#define _PAGE_NUMA_PMD	_PAGE_UNUSED2
+> 
+> Those comments only tell us what the flags can NOT be
+> used for, not what they are actually used for.
 
-Thanks!
+You can find an updated version of the comments here:
 
-> ---
->   drivers/hid/hid-magicmouse.c |   95 ++++++++++++++++++++----------------------
->   1 files changed, 45 insertions(+), 50 deletions(-)
->
-> diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-> index 40ac665..fd88f21 100644
-> --- a/drivers/hid/hid-magicmouse.c
-> +++ b/drivers/hid/hid-magicmouse.c
-> @@ -48,10 +48,6 @@ static bool scroll_acceleration = false;
->   module_param(scroll_acceleration, bool, 0644);
->   MODULE_PARM_DESC(scroll_acceleration, "Accelerate sequential scroll events");
->
-> -static bool report_touches = true;
-> -module_param(report_touches, bool, 0644);
-> -MODULE_PARM_DESC(report_touches, "Emit touch records (otherwise, only use them for emulation)");
-> -
->   static bool report_undeciphered;
->   module_param(report_undeciphered, bool, 0644);
->   MODULE_PARM_DESC(report_undeciphered, "Report undeciphered multi-touch state field using a MSC_RAW event");
-> @@ -276,7 +272,7 @@ static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tda
->   		msc->single_touch_id = SINGLE_TOUCH_UP;
->
->   	/* Generate the input events for this touch. */
-> -	if (report_touches && down) {
-> +	if (down) {
->   		input_report_abs(input, ABS_MT_TRACKING_ID, id);
->   		input_report_abs(input, ABS_MT_TOUCH_MAJOR, touch_major << 2);
->   		input_report_abs(input, ABS_MT_TOUCH_MINOR, touch_minor << 2);
-> @@ -335,7 +331,7 @@ static int magicmouse_raw_event(struct hid_device *hdev,
->   		for (ii = 0; ii < npoints; ii++)
->   			magicmouse_emit_touch(msc, ii, data + ii * 8 + 6);
->
-> -		if (report_touches && msc->ntouches == 0)
-> +		if (msc->ntouches == 0)
->   			input_mt_sync(input);
->
->   		/* When emulating three-button mode, it is important
-> @@ -422,53 +418,52 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
->   		__set_bit(INPUT_PROP_BUTTONPAD, input->propbit);
->   	}
->
-> -	if (report_touches) {
-> -		__set_bit(EV_ABS, input->evbit);
-> -
-> -		input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 15, 0, 0);
-> -		input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255 << 2,
-> -				     4, 0);
-> -		input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255 << 2,
-> -				     4, 0);
-> -		input_set_abs_params(input, ABS_MT_ORIENTATION, -31, 32, 1, 0);
-> -
-> -		/* Note: Touch Y position from the device is inverted relative
-> -		 * to how pointer motion is reported (and relative to how USB
-> -		 * HID recommends the coordinates work).  This driver keeps
-> -		 * the origin at the same position, and just uses the additive
-> -		 * inverse of the reported Y.
-> -		 */
-> -		if (input->id.product == USB_DEVICE_ID_APPLE_MAGICMOUSE) {
-> -			input_set_abs_params(input, ABS_MT_POSITION_X,
-> -				MOUSE_MIN_X, MOUSE_MAX_X, 4, 0);
-> -			input_set_abs_params(input, ABS_MT_POSITION_Y,
-> -				MOUSE_MIN_Y, MOUSE_MAX_Y, 4, 0);
-> -
-> -			input_abs_set_res(input, ABS_MT_POSITION_X,
-> -				MOUSE_RES_X);
-> -			input_abs_set_res(input, ABS_MT_POSITION_Y,
-> -				MOUSE_RES_Y);
-> -		} else { /* USB_DEVICE_ID_APPLE_MAGICTRACKPAD */
-> -			input_set_abs_params(input, ABS_X, TRACKPAD_MIN_X,
-> -				TRACKPAD_MAX_X, 4, 0);
-> -			input_set_abs_params(input, ABS_Y, TRACKPAD_MIN_Y,
-> -				TRACKPAD_MAX_Y, 4, 0);
-> -			input_set_abs_params(input, ABS_MT_POSITION_X,
-> -				TRACKPAD_MIN_X, TRACKPAD_MAX_X, 4, 0);
-> -			input_set_abs_params(input, ABS_MT_POSITION_Y,
-> -				TRACKPAD_MIN_Y, TRACKPAD_MAX_Y, 4, 0);
-> -
-> -			input_abs_set_res(input, ABS_X, TRACKPAD_RES_X);
-> -			input_abs_set_res(input, ABS_Y, TRACKPAD_RES_Y);
-> -			input_abs_set_res(input, ABS_MT_POSITION_X,
-> -				TRACKPAD_RES_X);
-> -			input_abs_set_res(input, ABS_MT_POSITION_Y,
-> -				TRACKPAD_RES_Y);
-> -		}
->
-> -		input_set_events_per_packet(input, 60);
-> +	__set_bit(EV_ABS, input->evbit);
-> +
-> +	input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 15, 0, 0);
-> +	input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255 << 2,
-> +			     4, 0);
-> +	input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255 << 2,
-> +			     4, 0);
-> +	input_set_abs_params(input, ABS_MT_ORIENTATION, -31, 32, 1, 0);
-> +
-> +	/* Note: Touch Y position from the device is inverted relative
-> +	 * to how pointer motion is reported (and relative to how USB
-> +	 * HID recommends the coordinates work).  This driver keeps
-> +	 * the origin at the same position, and just uses the additive
-> +	 * inverse of the reported Y.
-> +	 */
-> +	if (input->id.product == USB_DEVICE_ID_APPLE_MAGICMOUSE) {
-> +		input_set_abs_params(input, ABS_MT_POSITION_X,
-> +				     MOUSE_MIN_X, MOUSE_MAX_X, 4, 0);
-> +		input_set_abs_params(input, ABS_MT_POSITION_Y,
-> +				     MOUSE_MIN_Y, MOUSE_MAX_Y, 4, 0);
-> +
-> +		input_abs_set_res(input, ABS_MT_POSITION_X,
-> +				  MOUSE_RES_X);
-> +		input_abs_set_res(input, ABS_MT_POSITION_Y,
-> +				  MOUSE_RES_Y);
-> +	} else { /* USB_DEVICE_ID_APPLE_MAGICTRACKPAD */
-> +		input_set_abs_params(input, ABS_X, TRACKPAD_MIN_X,
-> +				     TRACKPAD_MAX_X, 4, 0);
-> +		input_set_abs_params(input, ABS_Y, TRACKPAD_MIN_Y,
-> +				     TRACKPAD_MAX_Y, 4, 0);
-> +		input_set_abs_params(input, ABS_MT_POSITION_X,
-> +				     TRACKPAD_MIN_X, TRACKPAD_MAX_X, 4, 0);
-> +		input_set_abs_params(input, ABS_MT_POSITION_Y,
-> +				     TRACKPAD_MIN_Y, TRACKPAD_MAX_Y, 4, 0);
-> +
-> +		input_abs_set_res(input, ABS_X, TRACKPAD_RES_X);
-> +		input_abs_set_res(input, ABS_Y, TRACKPAD_RES_Y);
-> +		input_abs_set_res(input, ABS_MT_POSITION_X,
-> +				  TRACKPAD_RES_X);
-> +		input_abs_set_res(input, ABS_MT_POSITION_Y,
-> +				  TRACKPAD_RES_Y);
->   	}
->
-> +	input_set_events_per_packet(input, 60);
-> +
->   	if (report_undeciphered) {
->   		__set_bit(EV_MSC, input->evbit);
->   		__set_bit(MSC_RAW, input->mscbit);
->
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=commitdiff;h=927ca960d78fefe6fa6aaa260a5b35496abafec5
 
+Thanks for all the feedback, I didn't reply immediately but I'm
+handling all the feedback and many more bits have been improved
+already in the autonuma branch. I will post them separately for
+further review.
