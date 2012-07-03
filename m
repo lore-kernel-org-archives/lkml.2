@@ -1,52 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab2GCMyS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 08:54:18 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:50547 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177Ab2GCMyQ convert rfc822-to-8bit (ORCPT
+	id S932349Ab2GCM5J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 08:57:09 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45275 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168Ab2GCM5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 08:54:16 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        "Barry Song" <21cnbao@gmail.com>
-Cc: "Barry Song" <Barry.Song@csr.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, workgroup.linux@csr.com,
-        "Barry Song" <Baohua.Song@csr.com>
-Subject: Re: [PATCH v4] mm: cma: add a simple kernel module as the helper to
- test CMA
-References: <1331120259-30780-1-git-send-email-Barry.Song@csr.com>
- <03e601cd58ec$5b8177b0$12846710$%szyprowski@samsung.com>
- <CAGsJ_4yjV+HDXdYraJ6CdJrSz1EPGgE6BRvO-_9n+6_UWfxqww@mail.gmail.com>
-Date: Tue, 03 Jul 2012 14:54:12 +0200
+	Tue, 3 Jul 2012 08:57:03 -0400
+Message-ID: <4FF2EC1A.7020702@linaro.org>
+Date: Tue, 03 Jul 2012 14:56:58 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.wgvfgmm03l0zgt@mpn-glaptop>
-In-Reply-To: <CAGsJ_4yjV+HDXdYraJ6CdJrSz1EPGgE6BRvO-_9n+6_UWfxqww@mail.gmail.com>
-User-Agent: Opera Mail/12.01 (Linux)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org,
+        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>, linux-next@vger.kernel.org,
+        Colin Cross <ccross@android.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rob Lee <rob.lee@linaro.org>, "lenb@kernel.org" <lenb@kernel.org>
+Subject: Re: linux-next : cpuidle - could you add my tree please
+References: <4FDEE98D.7010802@linaro.org> <201207022149.36629.rjw@sisk.pl> <4FF21D48.50301@linaro.org> <201207031059.13758.rjw@sisk.pl>
+In-Reply-To: <201207031059.13758.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 2012/7/3 Marek Szyprowski <m.szyprowski@samsung.com>:
->> IMHO the right place for such code is in drivers/misc instead of tools/cma.
+On 07/03/2012 10:59 AM, Rafael J. Wysocki wrote:
+> On Tuesday, July 03, 2012, Daniel Lezcano wrote:
+>> On 07/02/2012 09:49 PM, Rafael J. Wysocki wrote:
+>>> On Monday, July 02, 2012, Daniel Lezcano wrote:
+>>>>
+>>>> On 07/02/2012 11:09 AM, Linus Walleij wrote:
+>>>>> On Mon, Jun 25, 2012 at 3:27 PM, Daniel Lezcano
+>>>>> <daniel.lezcano@linaro.org> wrote:
+>>>>>
+>>>>>> we discussed last week to put in place a tree grouping the cpuidle
+>>>>>> modifications [1]. Is it possible to add the tree ?
+>>>>>>
+>>>>>> git://git.linaro.org/people/dlezcano/cpuidle-next.git #cpuidle-next
+>>>>>
+>>>>> Thanks for doing this.
+>>>>>
+>>>>> Since MAINTAINERS is lacking a listed maintainer for cpuidle,
+>>>>> are you also going to add yourself as maintainer and list this
+>>>>> tree in that file, or is this a one-time exercise?
+>>>>
+>>>> I will be glad to do that if Len and Rafael agree on that.
+>>>
+>>> Len Brown has been a cpuidle maintainer for some time now.  Moreover,
+>>> he's been taking patches, but Linus refused to pull his entire tree during the
+>>> last merge window (as you probably know).  I honestly don't think this is
+>>> a good enough reason for replacing him as a cpuidle maintainer by force.
+>>>
+>>> So, you should ask Len whether or not he's willing to pass the cpuidle
+>>> maintenance to someone else.
 >>
->> This patch contains a kernel module source code so it should be put with other kernel
->> modules. tools/ directory is aimed to contain user space code useful for developing and
->> testing Linux kernel.
+>> No, no. You are misunderstanding what I am proposing. I don't want to
+>> replace Len I just want to act as a "proxy". I understand a maintainer
+>> can be busy and could not have enough time to take care of the subsystem
+>> is maintaining during a period because he's too busy for that.
+>> Trust me, I fully understand that :)
+>>
+>> As there are a lot of modifications of cpuidle, I am proposing to take
+>> the patches when they are acked-by, to create a consolidated tree,
+>> providing a better integration for cpuidle, a wider testing, preventing
+>> conflicts and facilitating Len's work if he agrees to pull from this tree.
+>>
+>> If that makes sense to add myself to the MAINTAINER file as a
+>> co-maintainer (understand: send to me also the patches, so I can take
+>> care of them if Len does not respond), I am ok with that.
+>>
+>> It is just about helping :)
+> 
+> Cool. :-)
+> 
+> So do you have a branch in the cpuidle-next.git tree that isn't going to
+> be rebased?
 
-On Tue, 03 Jul 2012 09:39:34 +0200, Barry Song <21cnbao@gmail.com> wrote:
-> this one is aiming to test CMA, it should be in tools/ as Michal
-> Nazarewicz and i have talked about that.
-> it is not a real driver at all.
+No. I am following Linus tree and adding the patches on top of it.
 
-Yeah, I feel like it's better placed in tools/ not to pollute other directories with
-drivers that are of no use to regular users.  I don't have strong feelings about it
-though, so I'm fine either way.
+>>> I know that Len hasn't been responsive recently, but I also know that he
+>>> _does_ respond to inquiries sent directly to him.
+>>
+>> Do you mean to its intel address ?
+> 
+> Yes, CCing the Len's Intel address won't hurt I think.
+
+Ok, I will ping him and give him the pointers to the discussion we had.
+
+Thanks
+  -- Daniel
 
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
