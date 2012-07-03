@@ -1,80 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab2GCNBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 09:01:53 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:37313 "EHLO mail.gnudd.com"
+	id S1756343Ab2GCNCM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 09:02:12 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:31759 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752636Ab2GCNBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 09:01:51 -0400
-Date: Tue, 3 Jul 2012 15:00:42 +0200
-From: Alessandro Rubini <rubini@gnudd.com>
-To: hpa@zytor.com
-Cc: linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
-        alan@linux.intel.com, linux@arm.linux.org.uk, x86@kernel.org,
-        gregkh@linuxfoundation.org, arnd@arndb.de,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH V2 5/6] x86: add CONFIG_ARM_AMBA, selected by STA2X11
-Message-ID: <20120703130042.GA10007@mail.gnudd.com>
+	id S1756114Ab2GCNCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 09:02:10 -0400
+Subject: [PATCH v3] SUNRPC: protect service sockets lists during per-net
+	shutdown
+To: bfields@fieldses.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Tue, 03 Jul 2012 16:58:57 +0400
+Message-ID: <20120703125851.3850.86782.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <2b797c83-6a3c-4051-841a-a4cfa9d1cae1@email.android.com>
-References: <2b797c83-6a3c-4051-841a-a4cfa9d1cae1@email.android.com>
-  <4FECB95D.7010200@zytor.com> <cover.1338222460.git.rubini@gnudd.com>
- <f85fefb10b7a7407b77180be65b18bf0426145b9.1338222461.git.rubini@gnudd.com>
- <20120701104401.GA4352@mail.gnudd.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Anvin:
-> There is no problem with adding ARM or !X86 dependencies to drivers
-> now and fixing them later or as required.
+v3:
+1) rebased on 3.5-rc3 kernel.
 
-Ok. This is my summary of the compilation errors I have when
-enabling ARM_AMBA undex x86 and enabling everything that appears
-in "make oldconfig":
+v2: destruction of currently processing transport added:
+1) Added marking of currently processing transports with XPT_CLOSE on per-net
+shutdown. These transports will be destroyed in svc_xprt_enqueue() (instead of
+enqueueing).
+2) newly created temporary transport in svc_recv() will be destroyed, if it's
+"parent" was marked with XPT_CLOSE.
+3) spin_lock(&serv->sv_lock) was replaced by spin_lock_bh() in
+svc_close_net(&serv->sv_lock).
 
+Service sv_tempsocks and sv_permsocks lists are accessible by tasks with
+different network namespaces, and thus per-net service destruction must be
+protected.
+These lists are protected by service sv_lock. So lets wrap list munipulations
+with this lock and move tranports destruction outside wrapped area to prevent
+deadlocks.
 
-This is a sum up of the errors in all driver that are
-enabled by telling "CONFIG_ARM_AMBA=y" in the x86 config.
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ net/sunrpc/svc_xprt.c |   56 ++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 52 insertions(+), 4 deletions(-)
 
-   drivers/dma/pl330.c: register names conflict with arch symbols
-     proposed fix: use proper prefix names
+diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
+index 88f2bf6..4af2114 100644
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -320,6 +320,7 @@ void svc_xprt_enqueue(struct svc_xprt *xprt)
+ 	struct svc_pool *pool;
+ 	struct svc_rqst	*rqstp;
+ 	int cpu;
++	int destroy = 0;
+ 
+ 	if (!svc_xprt_has_something_to_do(xprt))
+ 		return;
+@@ -338,6 +339,17 @@ void svc_xprt_enqueue(struct svc_xprt *xprt)
+ 
+ 	pool->sp_stats.packets++;
+ 
++	/*
++	 * Check transport close flag. It could be marked as closed on per-net
++	 * service shutdown.
++	 */
++	if (test_bit(XPT_CLOSE, &xprt->xpt_flags)) {
++		/* Don't enqueue transport if it has to be destroyed. */
++		dprintk("svc: transport %p have to be closed\n", xprt);
++		destroy++;
++		goto out_unlock;
++	}
++
+ 	/* Mark transport as busy. It will remain in this state until
+ 	 * the provider calls svc_xprt_received. We update XPT_BUSY
+ 	 * atomically because it also guards against trying to enqueue
+@@ -374,6 +386,8 @@ void svc_xprt_enqueue(struct svc_xprt *xprt)
+ 
+ out_unlock:
+ 	spin_unlock_bh(&pool->sp_lock);
++	if (destroy)
++		svc_delete_xprt(xprt);
+ }
+ EXPORT_SYMBOL_GPL(svc_xprt_enqueue);
+ 
+@@ -714,6 +728,13 @@ int svc_recv(struct svc_rqst *rqstp, long timeout)
+ 			__module_get(newxpt->xpt_class->xcl_owner);
+ 			svc_check_conn_limits(xprt->xpt_server);
+ 			spin_lock_bh(&serv->sv_lock);
++			if (test_bit(XPT_CLOSE, &xprt->xpt_flags)) {
++				dprintk("svc_recv: found XPT_CLOSE on listener\n");
++				set_bit(XPT_DETACHED, &newxpt->xpt_flags);
++				spin_unlock_bh(&pool->sp_lock);
++				svc_delete_xprt(newxpt);
++				goto out_closed;
++			}
+ 			set_bit(XPT_TEMP, &newxpt->xpt_flags);
+ 			list_add(&newxpt->xpt_list, &serv->sv_tempsocks);
+ 			serv->sv_tmpcnt++;
+@@ -739,6 +760,7 @@ int svc_recv(struct svc_rqst *rqstp, long timeout)
+ 			len = xprt->xpt_ops->xpo_recvfrom(rqstp);
+ 		dprintk("svc: got len=%d\n", len);
+ 	}
++out_closed:
+ 	svc_xprt_received(xprt);
+ 
+ 	/* No data, incomplete (TCP) read, or accept() */
+@@ -936,6 +958,7 @@ static void svc_clear_pools(struct svc_serv *serv, struct net *net)
+ 	struct svc_pool *pool;
+ 	struct svc_xprt *xprt;
+ 	struct svc_xprt *tmp;
++	struct svc_rqst *rqstp;
+ 	int i;
+ 
+ 	for (i = 0; i < serv->sv_nrpools; i++) {
+@@ -947,11 +970,16 @@ static void svc_clear_pools(struct svc_serv *serv, struct net *net)
+ 				continue;
+ 			list_del_init(&xprt->xpt_ready);
+ 		}
++		list_for_each_entry(rqstp, &pool->sp_all_threads, rq_all) {
++			if (rqstp->rq_xprt && rqstp->rq_xprt->xpt_net == net)
++				set_bit(XPT_CLOSE, &rqstp->rq_xprt->xpt_flags);
++		}
+ 		spin_unlock_bh(&pool->sp_lock);
+ 	}
+ }
+ 
+-static void svc_clear_list(struct list_head *xprt_list, struct net *net)
++static void svc_clear_list(struct list_head *xprt_list, struct net *net,
++			   struct list_head *kill_list)
+ {
+ 	struct svc_xprt *xprt;
+ 	struct svc_xprt *tmp;
+@@ -959,7 +987,8 @@ static void svc_clear_list(struct list_head *xprt_list, struct net *net)
+ 	list_for_each_entry_safe(xprt, tmp, xprt_list, xpt_list) {
+ 		if (xprt->xpt_net != net)
+ 			continue;
+-		svc_delete_xprt(xprt);
++		list_move(&xprt->xpt_list, kill_list);
++		set_bit(XPT_DETACHED, &xprt->xpt_flags);
+ 	}
+ 	list_for_each_entry(xprt, xprt_list, xpt_list)
+ 		BUG_ON(xprt->xpt_net == net);
+@@ -967,6 +996,15 @@ static void svc_clear_list(struct list_head *xprt_list, struct net *net)
+ 
+ void svc_close_net(struct svc_serv *serv, struct net *net)
+ {
++	struct svc_xprt *xprt, *tmp;
++	LIST_HEAD(kill_list);
++
++	/*
++	 * Protect the lists, since they can be by tasks with different network
++	 * namespace contexts.
++	 */
++	spin_lock_bh(&serv->sv_lock);
++
+ 	svc_close_list(&serv->sv_tempsocks, net);
+ 	svc_close_list(&serv->sv_permsocks, net);
+ 
+@@ -976,8 +1014,18 @@ void svc_close_net(struct svc_serv *serv, struct net *net)
+ 	 * svc_xprt_enqueue will not add new entries without taking the
+ 	 * sp_lock and checking XPT_BUSY.
+ 	 */
+-	svc_clear_list(&serv->sv_tempsocks, net);
+-	svc_clear_list(&serv->sv_permsocks, net);
++	svc_clear_list(&serv->sv_tempsocks, net, &kill_list);
++	svc_clear_list(&serv->sv_permsocks, net, &kill_list);
++
++	spin_unlock_bh(&serv->sv_lock);
++
++	/*
++	 * Destroy collected transports.
++	 * Note: tranports has been marked as XPT_DETACHED on svc_clear_list(),
++	 * so no need to protect againt list_del() in svc_delete_xprt().
++	 */
++	list_for_each_entry_safe(xprt, tmp, &kill_list, xpt_list)
++		svc_delete_xprt(xprt);
+ }
+ 
+ /*
 
-   drivers/dma/amba-pl08x.c: needs <asm/hardware/pl080.h>
-     proposed fix: move pl080.h to include/linux
-
-   drivers/gpio/gpio-pl061.c: uses chained_irq_enter/exit
-     proposed fix: depend on CONFIG_ARM (the function only exists in arm)
-
-   drivers/mmc/host/mmci.c: uses <asm/sizes.h>
-   drivers/mmc/host/mmci.c: uses readsl/writesl
-     proposed fix: use linux/sizes.h and provide readsl/writesl like others do
-
-   drivers/spi/spi-pl022.c: warning for an integer size mismatch
-     proposed fix: none by now
-
-   drivers/watchdog/sp805_wdt.c: uses writel_relaxed
-     proposed fix: depend on CONFIG_ARM (this is a spear-only cell by now)
-
-
-So, if you agree, I would:
-
-    - fix the two dma engines (checking pl080 against russell's pending
-    patches)
-
-    - make pl061 and sp805_wdt.c depends on CONFIG_ARM
-
-    - temporarily do the same for mmci, which I'll make work soon as
-    I have it under my pci bridge
-
-    - ignore the warning on spi-pl022 until I find a fix
-
-    - resubmit my enabling of arm_amba for x86 and my pci-to-amba bridge
-    driver.
-
-thanks
-/alessandro
