@@ -1,89 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab2GCFnb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 01:43:31 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34925 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672Ab2GCFn3 (ORCPT
+	id S1755539Ab2GCFoX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 01:44:23 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:47543 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932473Ab2GCFoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 01:43:29 -0400
-Date: Tue, 3 Jul 2012 15:43:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Arnd Bergmann <arnd.bergmann@linaro.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: linux-next: build failure after merge of the final tree (pwm
- tree related)
-Message-Id: <20120703154318.9e32d4a490c0b32e7d955ca4@canb.auug.org.au>
-In-Reply-To: <20120701065639.GA25470@avionic-0098.adnet.avionic-design.de>
-References: <20120629174826.546cc991459b12833f2aaebd@canb.auug.org.au>
-	<201206301920.21158.arnd.bergmann@linaro.org>
-	<20120630194139.GA24300@avionic-0098.mockup.avionic-design.de>
-	<201206302012.32476.arnd.bergmann@linaro.org>
-	<20120701065639.GA25470@avionic-0098.adnet.avionic-design.de>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__3_Jul_2012_15_43_18_+1000_mg8h.ytcjI5SBTwJ"
+	Tue, 3 Jul 2012 01:44:02 -0400
+From: Cong Meng <mc@linux.vnet.ibm.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: stefanha@linux.vnet.ibm.com, linuxram@us.ibm.com,
+        senwang@linux.vnet.ibm.com, zwanp@cn.ibm.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Cong Meng <mc@linux.vnet.ibm.com>
+Subject: [PATCH v2] virtio-scsi: hotplug support for virtio-scsi
+Date: Tue,  3 Jul 2012 13:41:25 +0800
+Message-Id: <1341294085-17164-1-git-send-email-mc@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.7.6
+x-cbid: 12070305-0542-0000-0000-0000025605FC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__3_Jul_2012_15_43_18_+1000_mg8h.ytcjI5SBTwJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch implements the hotplug support for virtio-scsi.
+When there is a device attached/detached, the virtio-scsi driver will be
+signaled via event virtual queue and it will add/remove the scsi device 
+in question automatically.
 
-Hi all,
+v2: handle no_event event
 
-On Sun, 1 Jul 2012 08:56:39 +0200 Thierry Reding <thierry.reding@avionic-de=
-sign.de> wrote:
->
-> But if we make the new PWM symbol conflict with HAVE_PWM, then it'll do
-> the right thing for any of the legacy PWM implementations, without
-> having to track them down. Furthermore it'll also keep the legacy
-> version by default and not allow the generic one to be enabled in that
-> case. This is more likely to cause less side-effects than the other way
-> around.
->=20
-> > One question though: if the generic pwm implementation does not set
-> > HAVE_PWM, how can a driver check its presence?
->=20
-> The driver depends on PWM. HAVE_PWM is the symbol for the legacy
-> implementations, while PWM is the new PWM API symbol.
+Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
+Signed-off-by: Sen Wang <senwang@linux.vnet.ibm.com>
+---
+ drivers/scsi/virtio_scsi.c  |  113 ++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/virtio_scsi.h |    9 ++++
+ 2 files changed, 121 insertions(+), 1 deletions(-)
 
-I am still getting the mutliple definition errors from my powerpc
-allyesconfg build.
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 9fc5e67..e44b2d6 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -25,6 +25,7 @@
+ #include <scsi/scsi_cmnd.h>
+ 
+ #define VIRTIO_SCSI_MEMPOOL_SZ 64
++#define VIRTIO_SCSI_EVENT_LEN 8
+ 
+ /* Command queue element */
+ struct virtio_scsi_cmd {
+@@ -43,6 +44,12 @@ struct virtio_scsi_cmd {
+ 	} resp;
+ } ____cacheline_aligned_in_smp;
+ 
++struct virtio_scsi_event_node {
++	struct virtio_scsi *vscsi;
++	struct virtio_scsi_event event;
++	struct work_struct work;
++};
++
+ struct virtio_scsi_vq {
+ 	/* Protects vq */
+ 	spinlock_t vq_lock;
+@@ -67,6 +74,9 @@ struct virtio_scsi {
+ 	struct virtio_scsi_vq event_vq;
+ 	struct virtio_scsi_vq req_vq;
+ 
++	/* Get some buffers reday for event vq */
++	struct virtio_scsi_event_node event_list[VIRTIO_SCSI_EVENT_LEN];
++
+ 	struct virtio_scsi_target_state *tgt[];
+ };
+ 
+@@ -202,6 +212,97 @@ static void virtscsi_ctrl_done(struct virtqueue *vq)
+ 	spin_unlock_irqrestore(&vscsi->ctrl_vq.vq_lock, flags);
+ };
+ 
++static int virtscsi_kick_event(struct virtio_scsi *vscsi,
++			       struct virtio_scsi_event_node *event_node)
++{
++	int ret;
++	struct scatterlist sg;
++	unsigned long flags;
++
++	sg_set_buf(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
++
++	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
++
++	ret = virtqueue_add_buf(vscsi->event_vq.vq, &sg, 0, 1, event_node, GFP_ATOMIC);
++	if (ret >= 0)
++		virtqueue_kick(vscsi->event_vq.vq);
++
++	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
++
++	return ret;
++}
++
++static int virtscsi_kick_event_all(struct virtio_scsi *vscsi)
++{
++	int i;
++
++	for (i = 0; i < VIRTIO_SCSI_EVENT_LEN; i++) {
++		vscsi->event_list[i].vscsi = vscsi;
++		virtscsi_kick_event(vscsi, &vscsi->event_list[i]);
++	}
++
++	return 0;
++}
++
++static void virtscsi_handle_transport_reset(struct virtio_scsi *vscsi,
++                                            struct virtio_scsi_event *event)
++{
++	struct scsi_device *sdev;
++	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
++	unsigned int target = event->lun[1];
++	unsigned int lun = (event->lun[2] << 8) | event->lun[3];
++
++	switch (event->reason) {
++	case VIRTIO_SCSI_EVT_RESET_RESCAN:
++		scsi_add_device(shost, 0, target, lun);
++		break;
++	case VIRTIO_SCSI_EVT_RESET_REMOVED:
++		sdev = scsi_device_lookup(shost, 0, target, lun);
++		if (sdev) {
++			scsi_remove_device(sdev);
++			scsi_device_put(sdev);
++		} else {
++			pr_err("SCSI device %d 0 %d %d not found\n",
++				shost->host_no, target, lun);
++		}
++		break;
++	default:
++		pr_info("Unsupport virtio scsi event reason %x\n", event->reason);
++	}
++}
++
++static void virtscsi_handle_event(struct work_struct *work)
++{
++	struct virtio_scsi_event_node *event_node =
++		container_of(work, struct virtio_scsi_event_node, work);
++	struct virtio_scsi *vscsi = event_node->vscsi;
++	struct virtio_scsi_event *event = &event_node->event;
++
++	if (event->event & VIRTIO_SCSI_T_EVENTS_MISSED) {
++		event->event &= (~VIRTIO_SCSI_T_EVENTS_MISSED);
++		/* FIXME: handle event missed here */
++	}
++
++	switch (event->event) {
++	case VIRTIO_SCSI_T_NO_EVENT:
++		break;
++	case VIRTIO_SCSI_T_TRANSPORT_RESET:
++		virtscsi_handle_transport_reset(vscsi, event);
++		break;
++	default:
++		pr_err("Unsupport virtio scsi event %x\n", event->event);
++	}
++	virtscsi_kick_event(vscsi, event_node);
++}
++
++static void virtscsi_complete_event(void *buf)
++{
++	struct virtio_scsi_event_node *event_node = buf;
++
++	INIT_WORK(&event_node->work, virtscsi_handle_event);
++	schedule_work(&event_node->work);
++}
++
+ static void virtscsi_event_done(struct virtqueue *vq)
+ {
+ 	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
+@@ -209,7 +310,7 @@ static void virtscsi_event_done(struct virtqueue *vq)
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
+-	virtscsi_vq_done(vq, virtscsi_complete_free);
++	virtscsi_vq_done(vq, virtscsi_complete_event);
+ 	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
+ };
+ 
+@@ -510,6 +611,10 @@ static int virtscsi_init(struct virtio_device *vdev,
+ 	virtscsi_config_set(vdev, cdb_size, VIRTIO_SCSI_CDB_SIZE);
+ 	virtscsi_config_set(vdev, sense_size, VIRTIO_SCSI_SENSE_SIZE);
+ 
++	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG)) {
++		virtscsi_kick_event_all(vscsi);
++	}
++
+ 	/* We need to know how many segments before we allocate.  */
+ 	sg_elems = virtscsi_config_get(vdev, seg_max) ?: 1;
+ 
+@@ -608,7 +713,13 @@ static struct virtio_device_id id_table[] = {
+ 	{ 0 },
+ };
+ 
++static unsigned int features[] = {
++	VIRTIO_SCSI_F_HOTPLUG
++};
++
+ static struct virtio_driver virtio_scsi_driver = {
++	.feature_table = features,
++	.feature_table_size = ARRAY_SIZE(features),
+ 	.driver.name = KBUILD_MODNAME,
+ 	.driver.owner = THIS_MODULE,
+ 	.id_table = id_table,
+diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
+index 8ddeafd..dc8d305 100644
+--- a/include/linux/virtio_scsi.h
++++ b/include/linux/virtio_scsi.h
+@@ -69,6 +69,10 @@ struct virtio_scsi_config {
+ 	u32 max_lun;
+ } __packed;
+ 
++/* Feature Bits */
++#define VIRTIO_SCSI_F_INOUT                    0
++#define VIRTIO_SCSI_F_HOTPLUG                  1
++
+ /* Response codes */
+ #define VIRTIO_SCSI_S_OK                       0
+ #define VIRTIO_SCSI_S_OVERRUN                  1
+@@ -105,6 +109,11 @@ struct virtio_scsi_config {
+ #define VIRTIO_SCSI_T_TRANSPORT_RESET          1
+ #define VIRTIO_SCSI_T_ASYNC_NOTIFY             2
+ 
++/* Reasons of transport reset event */
++#define VIRTIO_SCSI_EVT_RESET_HARD             0
++#define VIRTIO_SCSI_EVT_RESET_RESCAN           1
++#define VIRTIO_SCSI_EVT_RESET_REMOVED          2
++
+ #define VIRTIO_SCSI_S_SIMPLE                   0
+ #define VIRTIO_SCSI_S_ORDERED                  1
+ #define VIRTIO_SCSI_S_HEAD                     2
+-- 
+1.7.7.6
 
-$ grep PWM .config
-CONFIG_TWL6030_PWM=3Dy
-CONFIG_BACKLIGHT_PWM=3Dy
-CONFIG_PWM=3Dy
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__3_Jul_2012_15_43_18_+1000_mg8h.ytcjI5SBTwJ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP8oZ2AAoJEECxmPOUX5FEkFoP/i+sS7E8wxKvpnaScdfyWwx8
-rXwKJizBOgvcsdLkFrHV4XpBN006BBhkd3CfLA3PuxdBYLr4ZUIMmS0Z6jYgn3Ei
-tNl8PJ5KHUHhjlapX5Yv7iQzsEprnPgEGF/+NAF4AFpRDQutI/2FeogodhIdLtqG
-CBcvEQg90uzjEFRoDd7xOv/lpOLFJKPnm0G17vm95PnjKJSr4088FJXr544pF0EG
-F+sMDbE5kvQfO2lkj0+yeOWMJqcmUZfm8+5TV+4JHQFsopFGUG10Qqslnd/t9/Ug
-P8k9fCLI6Do2Ddt9bdRTQTlcSkx+jPJ1r8u1KI/aRZuG/uei2/VCwUWkJQgsFwH2
-YJje+xYSnY0WPrHOPYeYAQPQ0d2E5us3BgvENHuC5o+WH/PWmOth2lZplcIS2dH6
-NAlXmgGD5fS8PXBA173yRLXC8sF0arsDXMmVJTyK7XRsxNCzcn9qqaN819CYq7sN
-yOWBB0HLcb3hTwPdK+ooq1AmN+Tp+Jh5VMy5RGjkJUrk5EVpLgKwNCoo0wi0h5Ob
-Ck/E6Z2NxA/xFf162y75/Qbs5zLjeAy8nxmrdZPSU7rgzrM0QQkbkCvHfvXK7Xph
-isNSJsAURzc7nblfpu7C2wD17aXrCLcigi7ASYjIpv0i2mj4Elhi8nHLiv9ra9cD
-RhiStMWnLyIPACZQlrTq
-=UVzW
------END PGP SIGNATURE-----
-
---Signature=_Tue__3_Jul_2012_15_43_18_+1000_mg8h.ytcjI5SBTwJ--
