@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab2GCKrU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 06:47:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50006 "EHLO mx1.redhat.com"
+	id S1756282Ab2GCKte (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 06:49:34 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:44996 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750869Ab2GCKrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 06:47:19 -0400
-Date: Tue, 3 Jul 2012 12:45:39 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 04/40] xen: document Xen is using an unused bit for the
- pagetables
-Message-ID: <20120703104539.GR3726@redhat.com>
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
- <1340888180-15355-5-git-send-email-aarcange@redhat.com>
- <20120630044700.GA3975@localhost.localdomain>
+	id S1750869Ab2GCKtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 06:49:32 -0400
+Date: Tue, 3 Jul 2012 11:49:31 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1207031148060.16871@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120630044700.GA3975@localhost.localdomain>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Konrad,
 
-On Sat, Jun 30, 2012 at 12:47:18AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Thu, Jun 28, 2012 at 02:55:44PM +0200, Andrea Arcangeli wrote:
-> > Xen has taken over the last reserved bit available for the pagetables
-> 
-> Some time ago when I saw this patch I asked about it (if there is way
-> to actually stop using this bit) and you mentioned it is not the last
-> bit available for pagemaps. Perhaps you should alter the comment
-> in this description?
+Hi Linus,
 
-As far as I can tell the comment is correct, it is the last bit
-available. Simply I don't need to use it anymore. There are 3 reserved
-bits, one is used by Xen, the second is used by SPECIAL the third is
-used by kmemcheck.
+one regression fix, two radeon fixes (one for an oops), and an i915 fix
+to unload framebuffers earlier.
 
-> > which is set through ioremap, this documents it and makes the code
-> 
-> It actually is through ioremap, gntdev (to map another guest memory),
-> and on pfns which fall in E820 on the non-RAM and gap sections.
+We originally were going to leave the i915 fix until -next, but grub2 in 
+some situations causes vesafb/efifb to be loaded now, and this causes big 
+slowdowns, and I have reports in rawhide I'd like to have fixed.
 
-Well I dropped this patch, there's too much other important work to
-do, this is only a documentation improvement and a cleanup and I don't
-need it.
+Dave.
+
+The following changes since commit 9acc7bde23ebb19a704395f76490685e1513e422:
+
+  Merge tag 'hwmon-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging (2012-06-28 12:38:51 -0700)
+
+are available in the git repository at:
+
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to 9f846a16d213523fbe6daea17e20df6b8ac5a1e5:
+
+  drm/i915: kick any firmware framebuffers before claiming the gtt (2012-07-03 11:18:48 +0100)
+
+----------------------------------------------------------------
+Alex Deucher (1):
+      drm/radeon: fix VM page table setup on SI
+
+Daniel Vetter (1):
+      drm/i915: kick any firmware framebuffers before claiming the gtt
+
+Jerome Glisse (1):
+      drm/radeon: fix rare segfault
+
+Takashi Iwai (1):
+      drm: edid: Don't add inferred modes with higher resolution
+
+ drivers/gpu/drm/drm_edid.c           |   27 ++++++++++++++++++++++---
+ drivers/gpu/drm/i915/i915_dma.c      |   37 +++++++++++++++++++++++++++-------
+ drivers/gpu/drm/radeon/radeon_gart.c |   13 ++++++++++--
+ drivers/gpu/drm/radeon/radeon_gem.c  |   10 +++++----
+ drivers/gpu/drm/radeon/si.c          |    4 ++--
+ 5 files changed, 73 insertions(+), 18 deletions(-)
