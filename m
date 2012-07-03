@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537Ab2GCKkw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 06:40:52 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47636 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932449Ab2GCKkt (ORCPT
+	id S932459Ab2GCKlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 06:41:44 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:44525 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932117Ab2GCKln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 06:40:49 -0400
-Date: Tue, 3 Jul 2012 11:09:43 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, "tiwai@suse.de" <tiwai@suse.de>,
-        "perex@perex.cz" <perex@perex.cz>, Stephen Warren <swarren@nvidia.com>,
-        "lrg@ti.com" <lrg@ti.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] ASoC: tegra: use dmaengine based dma driver
-Message-ID: <20120703100943.GG29030@opensource.wolfsonmicro.com>
-References: <1340969673-7776-1-git-send-email-ldewangan@nvidia.com>
- <1340969673-7776-2-git-send-email-ldewangan@nvidia.com>
- <4FF1D083.7060207@wwwdotorg.org>
- <4FF2914B.1000601@nvidia.com>
+	Tue, 3 Jul 2012 06:41:43 -0400
+Date: Tue, 3 Jul 2012 12:41:35 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: X86-ML <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH -v2 1/2] x86, microcode: Sanitize per-cpu microcode
+ reloading interface
+Message-ID: <20120703104135.GA12820@aftab.osrc.amd.com>
+References: <1340280437-7718-1-git-send-email-bp@amd64.org>
+ <1340280437-7718-2-git-send-email-bp@amd64.org>
+ <1340380019.18025.82.camel@twins>
+ <20120626194043.GB28495@aftab.osrc.amd.com>
+ <1340747178.21991.105.camel@twins>
+ <20120703043717.GB8860@aftab.osrc.amd.com>
+ <1341307568.23484.54.camel@twins>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qxfKREH7IwbezJ+T"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FF2914B.1000601@nvidia.com>
-X-Cookie: Advancement in position.
+In-Reply-To: <1341307568.23484.54.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 03, 2012 at 11:26:08AM +0200, Peter Zijlstra wrote:
+> On Tue, 2012-07-03 at 06:37 +0200, Borislav Petkov wrote:
+> > In thinking about this a bit more, perf callback is only run from the
+> > reload_store interface but we don't run it on module init time. 
+> 
+> @@ -557,7 +560,8 @@ static int __init microcode_init(void)
+>         mutex_lock(&microcode_mutex);
+> 
+>         error = subsys_interface_register(&mc_cpu_interface);
+> -
+> +       if (!error)
+> +               perf_check_microcode();
+>         mutex_unlock(&microcode_mutex);
+>         put_online_cpus();
+> 
+> 
+> I thought that was init time?
 
---qxfKREH7IwbezJ+T
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Doh, I'm blind, sorry :-/
 
-On Tue, Jul 03, 2012 at 11:59:31AM +0530, Laxman Dewangan wrote:
+Thanks.
 
-> Are you taking this patch?
-> I have other independent patch for the writecombine dma support in
-> pcm memory library and wanted to avoid any merge conflicts.
-> So if it goes in your tree then the other patch also need to go in
-> your tree.
+-- 
+Regards/Gruss,
+Boris.
 
-You've not even left 24 hours for me to respond!
-
---qxfKREH7IwbezJ+T
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP8sTYAAoJEBus8iNuMP3d3BsP/0bUbFwwz8ky1BHf3puU+0hO
-MXHEIerCJfUk3T50cRUy/Xt9VINRcb2QaW+KaxhP63gpopcJkWDxdlIhjZAiiYAY
-HKulS/E36PWokG6wFT5KdOp2BCsgxL2r1ejT2rKAS4aIAQllR4yilPdR/RLHQRTZ
-TpCbM7bht9cs9S9CcE2qw5xlZHfnCiebLedMlHt3kax4Ra93fRVSsD98vM1m99jh
-fe28ayF7oGEME+zdJiQlDEtFCYW8B85Q++sNyTaPeYrkpUFIt+L0eS7ndK4ITwm4
-6+UITZNS6Utvo4/62YtdKqGtb1KwwpjjGcMrNJBDpxlAUROMi//9LJH0zqJAPd0x
-kW7OVjxci2LGwBBR1UecB+3He7o8cXoLMTZUm9devi/slA7Z4EUQxmj4ZZVPK4Nz
-LXyWg/u7Q9RXg6frWFlG2cnLQMvq0tbquLk5B5wECU0Z/ps8CohdiJNzsSEqySzj
-TvwodwcU1oc/eog64uM/fM8nqVh3cjyEybECzbc8WZ1Ubnev+3qEZxA4vFCcrYug
-CSLbRFVSCPOXm/e8RL53WDNyGlYsGQPAjVuOffUaBlGVReqqGbv3ueEkeMcS25JO
-sVwEiqometxOqIrLt7AhYG0qtFfozxDqGKaRbDx5Ko/0hqcCIq8qJl0myD3hxGOv
-f7SztCkczc1dUUd1xWoP
-=gZ5d
------END PGP SIGNATURE-----
-
---qxfKREH7IwbezJ+T--
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
