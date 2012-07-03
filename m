@@ -1,84 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933147Ab2GCARG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 20:17:06 -0400
-Received: from nat.nue.novell.com ([195.135.221.2]:53969 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897Ab2GCARF (ORCPT
+	id S933214Ab2GCATe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 20:19:34 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:36357 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752897Ab2GCATd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 20:17:05 -0400
-Message-ID: <4FF239F8.7030101@suse.com>
-Date: Mon, 02 Jul 2012 17:16:56 -0700
-From: Lee Duncan <lduncan@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 2 Jul 2012 20:19:33 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ak8JAK458k95LNXy/2dsb2JhbABFFrUeBIEsgQiCGAEBBTocIxAIAw4KLhQlAyETiAoMux4UiyUUAQYFI4VXA5UzkASCcYFEAQ
+Date: Tue, 3 Jul 2012 10:19:28 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        xfs@oss.sgi.com, dri-devel@lists.freedesktop.org,
+        Keith Packard <keithp@keithp.com>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [MMTests] IO metadata on XFS
+Message-ID: <20120703001928.GV19223@dastard>
+References: <20120620113252.GE4011@suse.de>
+ <20120629111932.GA14154@suse.de>
+ <20120629112505.GF14154@suse.de>
+ <20120701235458.GM19223@dastard>
+ <20120702063226.GA32151@infradead.org>
+ <20120702143215.GS14154@suse.de>
+ <20120702193516.GX14154@suse.de>
 MIME-Version: 1.0
-To: Kai Makisara <Kai.Makisara@kolumbus.fi>
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org, jeffm@suse.com
-Subject: Re: [PATCH v3 3/5] st: get rid of scsi_tapes array
-References: <4FBACC66.80208@suse.com> <alpine.LNX.2.00.1207011147110.3650@kai.makisara.local>
-In-Reply-To: <alpine.LNX.2.00.1207011147110.3650@kai.makisara.local>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120702193516.GX14154@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 02, 2012 at 08:35:16PM +0100, Mel Gorman wrote:
+> Adding dri-devel and a few others because an i915 patch contributed to
+> the regression.
+> 
+> On Mon, Jul 02, 2012 at 03:32:15PM +0100, Mel Gorman wrote:
+> > On Mon, Jul 02, 2012 at 02:32:26AM -0400, Christoph Hellwig wrote:
+> > > > It increases the CPU overhead (dirty_inode can be called up to 4
+> > > > times per write(2) call, IIRC), so with limited numbers of
+> > > > threads/limited CPU power it will result in lower performance. Where
+> > > > you have lots of CPU power, there will be little difference in
+> > > > performance...
+> > > 
+> > > When I checked it it could only be called twice, and we'd already
+> > > optimize away the second call.  I'd defintively like to track down where
+> > > the performance changes happend, at least to a major version but even
+> > > better to a -rc or git commit.
+> > > 
+> > 
+> > By all means feel free to run the test yourself and run the bisection :)
+> > 
+> > It's rare but on this occasion the test machine is idle so I started an
+> > automated git bisection. As you know the milage with an automated bisect
+> > varies so it may or may not find the right commit. Test machine is sandy so
+> > http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__io-metadata-xfs/sandy/comparison.html
+> > is the report of interest. The script is doing a full search between v3.3 and
+> > v3.4 for a point where average files/sec for fsmark-single drops below 25000.
+> > I did not limit the search to fs/xfs on the off-chance that it is an
+> > apparently unrelated patch that caused the problem.
+> > 
+> 
+> It was obvious very quickly that there were two distinct regression so I
+> ran two bisections. One led to a XFS and the other led to an i915 patch
+> that enables RC6 to reduce power usage.
+> 
+> [aa464191: drm/i915: enable plain RC6 on Sandy Bridge by default]
 
-On 07/01/2012 01:57 AM, Kai Makisara wrote:
-> On Mon, 21 May 2012, Lee Duncan wrote:
-> 
->> From: Jeff Mahoney <jeffm@suse.com>
->>
->> st currently allocates an array to store pointers to all of the
->> scsi_tape objects. It's used to discover available indexes to use as the
->> base for the minor number selection and later to look up scsi_tape
->> devices for character devices.
->>
->> We switch to using an IDR for minor selection and a pointer from
->> st_modedef back to scsi_tape for the lookups.
->>
->> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
->> Signed-off-by: Lee Duncan <lduncan@suse.com>
->> ---
->>  drivers/scsi/st.c |  172 ++++++++++++++++++++---------------------------------
->>  drivers/scsi/st.h |    2 +
->>  2 files changed, 65 insertions(+), 109 deletions(-)
->>
-> ... patch removed
-> 
-> I have finally had time to review and test this patch set. I am sorry this 
-> has taken so long.
-> 
-> I have found one change of behaviour and a theoretical problem:
-> The new code does not re-use the tape numbers when freed and re-scanned. 
-> The current code does re-use the freed numbers. Are there any reasons for 
-> this changed behaviour? (The theoretical problem is that the new code 
-> frees the tape structure but leaves the pointer in the idr tree.)
-> 
-> The patch at the end of this message (applies after the whole series) is 
-> an attempt to implement re-use of tape numbers. I am not completely sure 
-> that the change is correctly placed but it seems to work.
+Doesn't seem to be the major cause of the regression. By itself, it
+has impact, but the majority comes from the XFS change...
 
+> [c999a223: xfs: introduce an allocation workqueue]
 
-Thanks for the review, and good catch. I'll look over your added patch
-and give feedback as soon as I can.
+Which indicates that there is workqueue scheduling issues, I think.
+The same amount of work is being done, but half of it is being
+pushed off into a workqueue to avoid stack overflow issues (*).  I
+tested the above patch in anger on an 8p machine, similar to the
+machine you saw no regressions on, but the workload didn't drive it
+to being completely CPU bound (only about 90%) so the allocation
+work was probably always scheduled quickly.
 
-> 
-> Another minor thing is that the documentation should be updated :-)
+How many worker threads have been spawned on these machines
+that are showing the regression? What is the context switch rate on
+the machines whenteh test is running? Can you run latencytop to see
+if there is excessive starvation/wait times for allocation
+completion? A pert top profile comparison might be informative,
+too...
 
-Of course.
+(*) The stack usage below submit_bio() can be more than 5k (DM, MD,
+SCSI, driver, memory allocation), so it's really not safe to do
+allocation anywhere below about 3k of kernel stack being used. e.g.
+on a relatively trivial storage setup without the above commit:
 
-> 
-> The patch at the end also updates the version code. I am not sure if the 
-> version code is useful, but it should be either updated or removed.
-> 
-> Otherwise no problems found. I am ready to ack the patch set after the 
-> re-use thing has been resolved (one way or another).
-> 
-> Thanks,
-> Kai
-> 
+[142296.384921] flush-253:4 used greatest stack depth: 360 bytes left
+
+Fundamentally, 8k stacks on x86-64 are too small for our
+increasingly complex storage layers and the 100+ function deep call
+chains that occur.
+
+Cheers,
+
+Dave.
+
 -- 
-The Lee-Man
-
+Dave Chinner
+david@fromorbit.com
