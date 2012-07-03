@@ -1,89 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab2GCMsJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 08:48:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40308 "EHLO mx2.suse.de"
+	id S1755880Ab2GCMt5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 08:49:57 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:18579 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752520Ab2GCMsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 08:48:07 -0400
-Date: Tue, 3 Jul 2012 14:48:04 +0200
-From: Jan Kara <jack@suse.cz>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCHv3 3/4] ext4: remove unnecessary superblock dirtying
-Message-ID: <20120703124804.GC27388@quack.suse.cz>
-References: <1341316810-22598-1-git-send-email-dedekind1@gmail.com>
- <1341316810-22598-4-git-send-email-dedekind1@gmail.com>
+	id S1751998Ab2GCMt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 08:49:56 -0400
+Subject: [PATCH v3] NFSd: set nfsd_serv to NULL after service destruction
+To: bfields@fieldses.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Tue, 03 Jul 2012 16:46:41 +0400
+Message-ID: <20120703124603.3766.26607.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341316810-22598-4-git-send-email-dedekind1@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi Artem,
+v3:
+1) Rebased for 3.6 kernel.
 
-  thanks for your persistence with this. I wanted to give you my
-Reviewed-by on this patch but I've noticed two (mostly minor) things
-(see below).
+v2:
+1) Set global nfsd_serv pointer to NULL only if no running threads left.
 
-On Tue 03-07-12 15:00:09, Artem Bityutskiy wrote:
-> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-> 
-> This patch changes the '__ext4_handle_dirty_super()' function which is used
-> by ext4 to update the super-block via the journal in the following cases:
-> 
-> 1. When creating the first large file on a file
->    system without EXT4_FEATURE_RO_COMPAT_LARGE_FILE feature.
-> 2. When re-sizing the file-system
-> 3. When creating an xattr on a file-system without the
->    EXT4_FEATURE_COMPAT_EXT_ATTR feature.
-  Since this was written, we seem to have grown a use of
-ext4_handle_dirty_super() in fs/ext4/namei.c when adding inode to orphan
-list.
+Otherwise we will get NULL pointer dereference on last thread exit in
+nfsd_last_thread().
+This patch also introduces nfsd_destroy() helper for per-net NFSd shutdown.
 
-> This function, however, falls back to just marking the superblock as dirty
-> if the file-system has no journal. But it is user really rarely and it does not
-> give any benefit to use the delayed superblock write (via the VFS's
-> 'sync_supers()' kernel thread) in these cases. We can just write out the
-> superblock asynchronously instead.
-> 
-> This patch also removes 's_dirt' condition on the unmount path because we never
-> set it anymore, so we should not test it.
-> 
-> Tested using xfstests for both journalled and non-journalled ext4.
-> 
-> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-> ---
->  fs/ext4/ext4.h      |    1 +
->  fs/ext4/ext4_jbd2.c |    2 +-
->  fs/ext4/super.c     |    5 ++---
->  3 files changed, 4 insertions(+), 4 deletions(-)
-> 
-...
-> diff --git a/fs/ext4/ext4_jbd2.c b/fs/ext4/ext4_jbd2.c
-> index 90f7c2e..27354df 100644
-> --- a/fs/ext4/ext4_jbd2.c
-> +++ b/fs/ext4/ext4_jbd2.c
-> @@ -156,6 +156,6 @@ int __ext4_handle_dirty_super(const char *where, unsigned int line,
->  				(struct ext4_super_block *)bh->b_data);
->  		mark_buffer_dirty(bh);
->  	} else
-> -		sb->s_dirt = 1;
-> +		err = ext4_commit_super(sb, 0);
-  When you look at the whole __ext4_handle_dirty_super() function now, it
-doesn't make much sense like this. When now == 1, we mark superblock buffer
-as dirty, when now == 0, we set wtime, kbytes_written, free blocks and
-inodes in the superblock buffer and then mark it dirty. Looking into all
-the places calling this, I'd just drop the 'now' argument and make
-everything behave as in now == 1 case.
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ fs/nfsd/nfsctl.c |    8 ++------
+ fs/nfsd/nfsd.h   |   11 +++++++++++
+ fs/nfsd/nfssvc.c |   24 ++++++++----------------
+ 3 files changed, 21 insertions(+), 22 deletions(-)
 
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+index c55298e..fa49cff 100644
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -673,9 +673,7 @@ static ssize_t __write_ports_addfd(char *buf)
+ 
+ 	err = svc_addsock(nfsd_serv, fd, buf, SIMPLE_TRANSACTION_LIMIT);
+ 	if (err < 0) {
+-		if (nfsd_serv->sv_nrthreads == 1)
+-			svc_shutdown_net(nfsd_serv, net);
+-		svc_destroy(nfsd_serv);
++		nfsd_destroy(net);
+ 		return err;
+ 	}
+ 
+@@ -744,9 +742,7 @@ out_close:
+ 		svc_xprt_put(xprt);
+ 	}
+ out_err:
+-	if (nfsd_serv->sv_nrthreads == 1)
+-		svc_shutdown_net(nfsd_serv, net);
+-	svc_destroy(nfsd_serv);
++	nfsd_destroy(net);
+ 	return err;
+ }
+ 
+diff --git a/fs/nfsd/nfsd.h b/fs/nfsd/nfsd.h
+index 1671429..1336a65 100644
+--- a/fs/nfsd/nfsd.h
++++ b/fs/nfsd/nfsd.h
+@@ -73,6 +73,17 @@ int		nfsd_nrpools(void);
+ int		nfsd_get_nrthreads(int n, int *);
+ int		nfsd_set_nrthreads(int n, int *);
+ 
++static inline void nfsd_destroy(struct net *net)
++{
++	int destroy = (nfsd_serv->sv_nrthreads == 1);
++
++	if (destroy)
++		svc_shutdown_net(nfsd_serv, net);
++	svc_destroy(nfsd_serv);
++	if (destroy)
++		nfsd_serv = NULL;
++}
++
+ #if defined(CONFIG_NFSD_V2_ACL) || defined(CONFIG_NFSD_V3_ACL)
+ #ifdef CONFIG_NFSD_V2_ACL
+ extern struct svc_version nfsd_acl_version2;
+diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+index ee709fc..240473c 100644
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -254,8 +254,6 @@ static void nfsd_shutdown(void)
+ 
+ static void nfsd_last_thread(struct svc_serv *serv, struct net *net)
+ {
+-	/* When last nfsd thread exits we need to do some clean-up */
+-	nfsd_serv = NULL;
+ 	nfsd_shutdown();
+ 
+ 	svc_rpcb_cleanup(serv, net);
+@@ -332,6 +330,7 @@ static int nfsd_get_default_max_blksize(void)
+ int nfsd_create_serv(void)
+ {
+ 	int error;
++	struct net *net = current->nsproxy->net_ns;
+ 
+ 	WARN_ON(!mutex_is_locked(&nfsd_mutex));
+ 	if (nfsd_serv) {
+@@ -346,7 +345,7 @@ int nfsd_create_serv(void)
+ 	if (nfsd_serv == NULL)
+ 		return -ENOMEM;
+ 
+-	error = svc_bind(nfsd_serv, current->nsproxy->net_ns);
++	error = svc_bind(nfsd_serv, net);
+ 	if (error < 0) {
+ 		svc_destroy(nfsd_serv);
+ 		return error;
+@@ -427,11 +426,7 @@ int nfsd_set_nrthreads(int n, int *nthreads)
+ 		if (err)
+ 			break;
+ 	}
+-
+-	if (nfsd_serv->sv_nrthreads == 1)
+-		svc_shutdown_net(nfsd_serv, net);
+-	svc_destroy(nfsd_serv);
+-
++	nfsd_destroy(net);
+ 	return err;
+ }
+ 
+@@ -478,9 +473,7 @@ out_shutdown:
+ 	if (error < 0 && !nfsd_up_before)
+ 		nfsd_shutdown();
+ out_destroy:
+-	if (nfsd_serv->sv_nrthreads == 1)
+-		svc_shutdown_net(nfsd_serv, net);
+-	svc_destroy(nfsd_serv);		/* Release server */
++	nfsd_destroy(net);		/* Release server */
+ out:
+ 	mutex_unlock(&nfsd_mutex);
+ 	return error;
+@@ -563,12 +556,13 @@ nfsd(void *vrqstp)
+ 	nfsdstats.th_cnt --;
+ 
+ out:
+-	if (rqstp->rq_server->sv_nrthreads == 1)
+-		svc_shutdown_net(rqstp->rq_server, &init_net);
++	rqstp->rq_server = NULL;
+ 
+ 	/* Release the thread */
+ 	svc_exit_thread(rqstp);
+ 
++	nfsd_destroy(&init_net);
++
+ 	/* Release module */
+ 	mutex_unlock(&nfsd_mutex);
+ 	module_put_and_exit(0);
+@@ -682,9 +676,7 @@ int nfsd_pool_stats_release(struct inode *inode, struct file *file)
+ 
+ 	mutex_lock(&nfsd_mutex);
+ 	/* this function really, really should have been called svc_put() */
+-	if (nfsd_serv->sv_nrthreads == 1)
+-		svc_shutdown_net(nfsd_serv, net);
+-	svc_destroy(nfsd_serv);
++	nfsd_destroy(net);
+ 	mutex_unlock(&nfsd_mutex);
+ 	return ret;
+ }
+
