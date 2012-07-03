@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab2GCJPY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 05:15:24 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56017 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab2GCJPX convert rfc822-to-8bit (ORCPT
+	id S1755623Ab2GCJQW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 05:16:22 -0400
+Received: from smtp.syd.comcen.com.au ([203.23.236.77]:1075 "EHLO
+	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937Ab2GCJQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 05:15:23 -0400
-Message-ID: <1341306905.23484.53.camel@twins>
-Subject: Re: [PATCH] perf, x86: Enabled PEBS event to be exported in a raw
- format
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Feng Tang <feng.tang@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <ak@linux.intel.com>
-Date: Tue, 03 Jul 2012 11:15:05 +0200
-In-Reply-To: <1341300987.11663.15.camel@concordia>
-References: <1340899250-26803-1-git-send-email-feng.tang@intel.com>
-	 <1341300987.11663.15.camel@concordia>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 3 Jul 2012 05:16:20 -0400
+Message-ID: <4FF2B7F5.80809@spin.net.au>
+Date: Tue, 03 Jul 2012 19:14:29 +1000
+From: Chris Jones <chrisjones@spin.net.au>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120604 Firefox/13.0 SeaMonkey/2.10
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Linux 3.5-rc5
+References: <CA+55aFws_u8A7tm8abOmnDe_orUY7LnjWpJwYzgXndvjoXRW8w@mail.gmail.com>
+In-Reply-To: <CA+55aFws_u8A7tm8abOmnDe_orUY7LnjWpJwYzgXndvjoXRW8w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-comcen-MailScanner-Information: Please contact the ISP for more information
+X-comcen-MailScanner: Found to be clean
+X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-2.225, required 4, AWL 0.28, BAYES_00 -2.60, RDNS_NONE 0.10)
+X-comcen-MailScanner-From: chrisjones@spin.net.au
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-03 at 17:36 +1000, Michael Ellerman wrote:
-> On Fri, 2012-06-29 at 00:00 +0800, Feng Tang wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > Add support for reporting PEBS records in a raw format that can
-> > be then parsed by perf script.
-> > 
-> > This is roughly similar to the existing AMD IBS support.
-> > 
-> > This is mainly for advanced users and to experiment with
-> > new usages. Widespread PEBS usages are expected to get higher
-> > level interfaces over time, like the existing "precise ip" support.
-> 
-> Hi folks,
-> 
-> Pardon if I slightly hijack this thread, but we'd like to do something
-> similar to this on powerpc.
+Awesome, I've been waiting for this release before dabbling away for my 
+custom kernel. Thanks Linus. :-)
 
-Do expand. What does exact information does it provide?
 
-> I've been telling people not to use PERF_SAMPLE_RAW because it provides
-> no way for the consumer to know what data they're getting, and it's not
-> extensible in any way.
-> 
-> So is shovelling things out using PERF_SAMPLE_RAW generally acceptable
-> for "advanced usage" scenarios?
+Regards
 
-No.
+-- 
+		Chris Jones @ kernel.devproject@gmail.com
+also on oracle.kerneldev@gmail.com and netbsd.kerneldev@gmail.com
+
+OpenSUSE Linux x86_64 (PC)|Android (Smartphone)|Windows 7 (Laptop)|Windows XP (Gaming)
+Linux kernel developer|Solaris kernel developer|BSD kernel developer
+Lead Developer of SDL|Lead Developer of Nest Linux|Gamer and Emulator nut|Web Services|Digital Imaging Services
+Controllers: Rapier V2 Gaming mouse|Logitech Precision|PS3 controller|XB360 controller|Logitech Attack 3 j/stick
+Emulators: Fusion|Gens|ZSNES|Project64|PCSX-R|Stella|WinVICE|WinUAE|DOSBox
+
+PGP Fingerprint: 4E38 0776 B380 63C8 F64F
+A7D6 736C CF56 42A4 FB35
+
