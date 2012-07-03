@@ -1,166 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501Ab2GCIU4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 04:20:56 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:58890 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932609Ab2GCIUv (ORCPT
+	id S933503Ab2GCIVI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 04:21:08 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:59186 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932166Ab2GCIU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 04:20:51 -0400
-Message-ID: <4FF2AB40.6050701@linux.vnet.ibm.com>
-Date: Tue, 03 Jul 2012 13:50:16 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+	Tue, 3 Jul 2012 04:20:58 -0400
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: peterz@infradead.org, mingo@elte.hu, avi@redhat.com,
+        raghukt@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org, jeremy@goop.org,
+        vatsa@linux.vnet.ibm.com, hpa@zytor.com
+Subject: Re: [PATCH v2 3/7] KVM: Add paravirt kvm_flush_tlb_others
+In-Reply-To: <20120703075535.GA13291@amt.cnet>
+References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com> <20120604050629.4560.85284.stgit@abhimanyu.in.ibm.com> <20120703075535.GA13291@amt.cnet>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-unknown-linux-gnu)
+Date: Tue, 03 Jul 2012 13:49:49 +0530
+Message-ID: <87txxpcl3u.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Linux PM mailing list <linux-pm@vger.kernel.org>
-	\"linux-kernel@vger.kernel.org\"" <linux-kernel@vger.kernel.org>,
-        PowerPC email list <linuxppc-dev@lists.ozlabs.org>
-CC: Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>
-Subject: [PATCH v3] cpuidle: (POWER) Replace pseries_notify_cpuidle_add _cpu
- call with a notifier to fix lockdep problem in start_secondary
-References: <4FF29219.10608@linux.vnet.ibm.com>
-In-Reply-To: <4FF29219.10608@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12070308-8878-0000-0000-0000031E6D6A
+Content-Type: text/plain
+x-cbid: 12070222-1396-0000-0000-0000017F2E87
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 3 Jul 2012 04:55:35 -0300, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> > 
+> >    if (!zero_mask)
+> > 	   goto again;
+> 
+> Can you please measure increased vmentry/vmexit overhead? x86/vmexit.c 
+> of git://git.kernel.org/pub/scm/virt/kvm/kvm-unit-tests.git should 
+> help.
+>
+Sure will get back with the result.
 
-cpuidle: (POWER) Replace pseries_notify_cpuidle_add_cpu call with a notifier to fix lockdep problem in start_secondary
+> > +	/* 
+> > +	 * Guest might have seen us offline and would have set
+> > +	 * flush_on_enter. 
+> > +	 */
+> > +	kvm_read_guest_cached(vcpu->kvm, ghc, vs, 2*sizeof(__u32));
+> > +	if (vs->flush_on_enter) 
+> > +		kvm_x86_ops->tlb_flush(vcpu);
+> 
+> 
+> So flush_tlb_page which was an invlpg now flushes the entire TLB. Did
+> you take that into account?
+> 
+When the vcpu is sleeping/pre-empted out, multiple request for flush_tlb
+could have happened. And now when we are here, it is cleaning up all the
+TLB.
 
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+One other approach would be to queue the addresses, that brings us with
+the question: how many request to queue? This would require us adding
+more syncronization between guest and host for updating the area where
+these addresses is shared.
 
-Currently the call to pseries_notify_cpuidle_add_cpu(), that takes
-action on the cpuidle front when a cpu is added/removed
-is being made from smp_xics_setup_cpu().
-This caused lockdep issues as
-reported https://lkml.org/lkml/2012/5/17/2
+> > +again:
+> > +		for_each_cpu(cpu, to_cpumask(f->flush_cpumask)) {
+> > +			v_state = &per_cpu(vcpu_state, cpu);
+> > +
+> > +			if (!v_state->state) {
+> 
+> Should use ACCESS_ONCE to make sure the value is not register cached.
+> \
+> > +				v_state->flush_on_enter = 1;
+> > +				smp_mb();
+> > +				if (!v_state->state)
+> 
+> And here.
+> 
+Sure will add this check for both in my next version.
 
-On addition of each cpu, resources are cleared and re-allocated 
-each time, all in critical section as part of start_secondary() 
-call which has interrupts disabled.
-To resolve this issue, the pseries_notify_cpuidle_add_cpu() call is
-is now being replaced by a hotplug notifier which
-would prevent cpuidle resources from being
-released and allocated each time cpu is onlined in the critical code path.
+> > +					cpumask_clear_cpu(cpu, to_cpumask(f->flush_cpumask));
+> > +			}
+> > +		}
+> > +
+> > +		if (cpumask_empty(to_cpumask(f->flush_cpumask)))
+> > +			goto out;
+> > +
+> > +		apic->send_IPI_mask(to_cpumask(f->flush_cpumask),
+> > +				    INVALIDATE_TLB_VECTOR_START + sender);
+> > +
+> > +		loop = 1000;
+> > +		while (!cpumask_empty(to_cpumask(f->flush_cpumask)) && --loop)
+> > +			cpu_relax();
+> > +
+> > +		if (!cpumask_empty(to_cpumask(f->flush_cpumask)))
+> > +			goto again;
+> 
+> Is this necessary in addition to the in-guest-mode/out-guest-mode
+> detection? If so, why?
+> 
+The "case 3" where we initially saw the vcpu was running, and a flush
+ipi is send to the vcpu. During this time the vcpu might be pre-empted,
+so we come out of the loop=1000 with !empty flushmask. We then re-verify
+the flushmask against the current running vcpu and make sure that the
+vcpu that was pre-empted is un-marked and we can proceed out of the
+kvm_flush_tlb_others_ipi without waiting for sleeping/pre-empted vcpus.
 
-Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-
----
-This patch has in-corporated review comments
-received on the earlier version posted.
-	v1 ->  https://lkml.org/lkml/2012/5/18/174
-	v2 ->  https://lkml.org/lkml/2012/7/3/61
-This applies on 3.5-rc5
-
- arch/powerpc/include/asm/processor.h            |    2 -
- arch/powerpc/platforms/pseries/processor_idle.c |   35 ++++++++++++++++++++---
- arch/powerpc/platforms/pseries/smp.c            |    1 -
- 3 files changed, 30 insertions(+), 8 deletions(-)
-
-diff --git a/arch/powerpc/include/asm/processor.h b/arch/powerpc/include/asm/processor.h
-index 413a5ea..53b6dfa 100644
---- a/arch/powerpc/include/asm/processor.h
-+++ b/arch/powerpc/include/asm/processor.h
-@@ -389,10 +389,8 @@ extern int powersave_nap;	/* set if nap mode can be used in idle loop */
- 
- #ifdef CONFIG_PSERIES_IDLE
- extern void update_smt_snooze_delay(int snooze);
--extern int pseries_notify_cpuidle_add_cpu(int cpu);
- #else
- static inline void update_smt_snooze_delay(int snooze) {}
--static inline int pseries_notify_cpuidle_add_cpu(int cpu) { return 0; }
- #endif
- 
- extern void flush_instruction_cache(void);
-diff --git a/arch/powerpc/platforms/pseries/processor_idle.c b/arch/powerpc/platforms/pseries/processor_idle.c
-index e61483e..da245c0 100644
---- a/arch/powerpc/platforms/pseries/processor_idle.c
-+++ b/arch/powerpc/platforms/pseries/processor_idle.c
-@@ -186,17 +186,40 @@ static struct cpuidle_state shared_states[MAX_IDLE_STATE_COUNT] = {
- 		.enter = &shared_cede_loop },
- };
- 
--int pseries_notify_cpuidle_add_cpu(int cpu)
-+static int pseries_cpuidle_add_cpu_notifier(struct notifier_block *n,
-+			unsigned long action, void *hcpu)
- {
-+	int hotcpu = (unsigned long)hcpu;
- 	struct cpuidle_device *dev =
--			per_cpu_ptr(pseries_cpuidle_devices, cpu);
-+			per_cpu_ptr(pseries_cpuidle_devices, hotcpu);
-+
- 	if (dev && cpuidle_get_driver()) {
--		cpuidle_disable_device(dev);
--		cpuidle_enable_device(dev);
-+		switch (action) {
-+		case CPU_ONLINE:
-+		case CPU_ONLINE_FROZEN:
-+			cpuidle_pause_and_lock();
-+			cpuidle_enable_device(dev);
-+			cpuidle_resume_and_unlock();
-+			break;
-+
-+		case CPU_DEAD:
-+		case CPU_DEAD_FROZEN:
-+			cpuidle_pause_and_lock();
-+			cpuidle_disable_device(dev);
-+			cpuidle_resume_and_unlock();
-+			break;
-+
-+		default:
-+			return NOTIFY_DONE;
-+		}
- 	}
--	return 0;
-+	return NOTIFY_OK;
- }
- 
-+static struct notifier_block setup_hotplug_notifier = {
-+	.notifier_call = pseries_cpuidle_add_cpu_notifier,
-+};
-+
- /*
-  * pseries_cpuidle_driver_init()
-  */
-@@ -321,6 +344,7 @@ static int __init pseries_processor_idle_init(void)
- 		return retval;
- 	}
- 
-+	register_cpu_notifier(&setup_hotplug_notifier);
- 	printk(KERN_DEBUG "pseries_idle_driver registered\n");
- 
- 	return 0;
-@@ -329,6 +353,7 @@ static int __init pseries_processor_idle_init(void)
- static void __exit pseries_processor_idle_exit(void)
- {
- 
-+	unregister_cpu_notifier(&setup_hotplug_notifier);
- 	pseries_idle_devices_uninit();
- 	cpuidle_unregister_driver(&pseries_idle_driver);
- 
-diff --git a/arch/powerpc/platforms/pseries/smp.c b/arch/powerpc/platforms/pseries/smp.c
-index e16bb8d..71706bc 100644
---- a/arch/powerpc/platforms/pseries/smp.c
-+++ b/arch/powerpc/platforms/pseries/smp.c
-@@ -147,7 +147,6 @@ static void __devinit smp_xics_setup_cpu(int cpu)
- 	set_cpu_current_state(cpu, CPU_STATE_ONLINE);
- 	set_default_offline_state(cpu);
- #endif
--	pseries_notify_cpuidle_add_cpu(cpu);
- }
- 
- static int __devinit smp_pSeries_kick_cpu(int nr)
-
-Cheers,
-Deepthi
+Regards
+Nikunj
 
