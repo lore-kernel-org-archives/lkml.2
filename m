@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab2GCKte (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 06:49:34 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:44996 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750869Ab2GCKtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 06:49:32 -0400
-Date: Tue, 3 Jul 2012 11:49:31 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1207031148060.16871@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S932486Ab2GCKwu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 06:52:50 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:44585 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754174Ab2GCKwt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 06:52:49 -0400
+Date: Tue, 3 Jul 2012 12:52:41 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Borislav Petkov <bp@amd64.org>,
+        Ingo Molnar <mingo@kernel.org>, X86-ML <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH -v2 0/2] x86, microcode: Reload ucode only per-system
+Message-ID: <20120703105241.GC12820@aftab.osrc.amd.com>
+References: <1340280437-7718-1-git-send-email-bp@amd64.org>
+ <20120630174503.GA24854@aftab.osrc.amd.com>
+ <1341222838.23484.1.camel@twins>
+ <29cea64a-e041-48ba-bf3e-0965740b862b@email.android.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <29cea64a-e041-48ba-bf3e-0965740b862b@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 02, 2012 at 06:05:56AM -0700, H. Peter Anvin wrote:
+> I put them into x86/microcode already.
 
-Hi Linus,
+Actually with Peter's stuff I meant the ucode version checking callback:
 
-one regression fix, two radeon fixes (one for an oops), and an i915 fix
-to unload framebuffers earlier.
+http://marc.info/?l=linux-kernel&m=134074741324448
 
-We originally were going to leave the i915 fix until -next, but grub2 in 
-some situations causes vesafb/efifb to be loaded now, and this causes big 
-slowdowns, and I have reports in rawhide I'd like to have fixed.
+-- 
+Regards/Gruss,
+Boris.
 
-Dave.
-
-The following changes since commit 9acc7bde23ebb19a704395f76490685e1513e422:
-
-  Merge tag 'hwmon-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging (2012-06-28 12:38:51 -0700)
-
-are available in the git repository at:
-
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to 9f846a16d213523fbe6daea17e20df6b8ac5a1e5:
-
-  drm/i915: kick any firmware framebuffers before claiming the gtt (2012-07-03 11:18:48 +0100)
-
-----------------------------------------------------------------
-Alex Deucher (1):
-      drm/radeon: fix VM page table setup on SI
-
-Daniel Vetter (1):
-      drm/i915: kick any firmware framebuffers before claiming the gtt
-
-Jerome Glisse (1):
-      drm/radeon: fix rare segfault
-
-Takashi Iwai (1):
-      drm: edid: Don't add inferred modes with higher resolution
-
- drivers/gpu/drm/drm_edid.c           |   27 ++++++++++++++++++++++---
- drivers/gpu/drm/i915/i915_dma.c      |   37 +++++++++++++++++++++++++++-------
- drivers/gpu/drm/radeon/radeon_gart.c |   13 ++++++++++--
- drivers/gpu/drm/radeon/radeon_gem.c  |   10 +++++----
- drivers/gpu/drm/radeon/si.c          |    4 ++--
- 5 files changed, 73 insertions(+), 18 deletions(-)
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
