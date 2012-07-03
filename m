@@ -1,112 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933337Ab2GCCVL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 22:21:11 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:51104 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139Ab2GCCVJ (ORCPT
+	id S1030184Ab2GCC2k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 22:28:40 -0400
+Received: from mail-yw0-f51.google.com ([209.85.213.51]:46294 "EHLO
+	mail-yw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932563Ab2GCC2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 22:21:09 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6760"; a="206930594"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] regulator: Fix recursive mutex lockdep warning
-Date: Mon,  2 Jul 2012 19:21:06 -0700
-Message-Id: <1341282066-15325-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.11.1.59.gbc9e7dd
+	Mon, 2 Jul 2012 22:28:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAHdPZaNSqiUg2Vq_CXYGX9wa1E_rJKFT3POL-_Yqu1SEYvLoyA@mail.gmail.com>
+References: <1341218420-22377-1-git-send-email-devendra.aaru@gmail.com>
+ <CAK5ve-JaNGoWuCTP5ddMEEfpA3ucWNL_ayj5ULU3+++5a02pWw@mail.gmail.com>
+ <CAHdPZaNDW+XCrf9Mse-N3jtgtrrx9Z0+W1YZX8nPETa7ZZFB1w@mail.gmail.com> <CAHdPZaNSqiUg2Vq_CXYGX9wa1E_rJKFT3POL-_Yqu1SEYvLoyA@mail.gmail.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Tue, 3 Jul 2012 10:28:17 +0800
+X-Google-Sender-Auth: N5OF8ieV-esYyNVjVwVhZCvA_2I
+Message-ID: <CAK5ve-KnVcXgw0W7-wRrnrCrpu0d9dSkRckGHx=y6p4vdi8i0w@mail.gmail.com>
+Subject: Re: [PATCH] leds-mc13783: set platform data to NULL at mc13783_led_remove
+To: "devendra.aaru" <devendra.aaru@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A recursive lockdep warning occurs if you call
-regulator_set_optimum_mode() on a regulator with a supply because
-there is no nesting annotation for the rdev->mutex. To avoid this
-warning, get the supply's load before locking the regulator's
-mutex to avoid grabbing the same class of lock twice.
+On Tue, Jul 3, 2012 at 2:10 AM, devendra.aaru <devendra.aaru@gmail.com> wrote:
+> Hi Bryan,
+>
+> I Made all the necessary changes, and it touched 21 drivers overall,
+> and i compile tested all except leds-sunfire as i dont have a
+> cross-toolchain for that.
+> all patches are compile tested with
+>
+> gcc (Ubuntu/Linaro 4.6.3-1ubuntu5) 4.6.3, ( my machine's)
+> arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-2012.05-20120523 -
+> Linaro GCC 2012.05) 4.7.1 20120514 (prerelease) (ARM toolchain's)
+>
+> at each cross-compile of a driver i selected the defconfig of each
+> machine, fox ex. for leds-netxbig i chose kirkwood-defconfig, and for
+> leds-s3c24xx i chose s3c2410_defconfig.
+>
 
-=============================================
-[ INFO: possible recursive locking detected ]
-3.4.0 #3257 Tainted: G        W
----------------------------------------------
-swapper/0/1 is trying to acquire lock:
- (&rdev->mutex){+.+.+.}, at: [<c036e9e0>] regulator_get_voltage+0x18/0x38
+Very good, thanks a lot.
 
-but task is already holding lock:
- (&rdev->mutex){+.+.+.}, at: [<c036ef38>] regulator_set_optimum_mode+0x24/0x224
+> Now i have only 1 question in mind :).
+>
+> do i need to submit all in a single patch? or patch per driver?
+>
 
-other info that might help us debug this:
- Possible unsafe locking scenario:
+I prefer to one patch per driver and please add the driver maintainers
+in you Cc list of each patch.
 
-       CPU0
-       ----
-  lock(&rdev->mutex);
-  lock(&rdev->mutex);
-
- *** DEADLOCK ***
-
- May be due to missing lock nesting notation
-
-3 locks held by swapper/0/1:
- #0:  (&__lockdep_no_validate__){......}, at: [<c03dbb48>] __driver_attach+0x40/0x8c
- #1:  (&__lockdep_no_validate__){......}, at: [<c03dbb58>] __driver_attach+0x50/0x8c
- #2:  (&rdev->mutex){+.+.+.}, at: [<c036ef38>] regulator_set_optimum_mode+0x24/0x224
-
-stack backtrace:
-[<c001521c>] (unwind_backtrace+0x0/0x12c) from [<c00cc4d4>] (validate_chain+0x760/0x1080)
-[<c00cc4d4>] (validate_chain+0x760/0x1080) from [<c00cd744>] (__lock_acquire+0x950/0xa10)
-[<c00cd744>] (__lock_acquire+0x950/0xa10) from [<c00cd990>] (lock_acquire+0x18c/0x1e8)
-[<c00cd990>] (lock_acquire+0x18c/0x1e8) from [<c080c248>] (mutex_lock_nested+0x68/0x3c4)
-[<c080c248>] (mutex_lock_nested+0x68/0x3c4) from [<c036e9e0>] (regulator_get_voltage+0x18/0x38)
-[<c036e9e0>] (regulator_get_voltage+0x18/0x38) from [<c036efb8>] (regulator_set_optimum_mode+0xa4/0x224)
-...
-
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
-
-I'm not sure if this is the preferred solution. I also believe there is a
-similar warning in regulator_enable()/disable() when drms_uA_update() is
-called.
-
-Is anything wrong with regulator_get_voltage() never taking the mutex?
-If we did that then this lockdep warning would go away in addition to the
-one in drms_uA_update().
-
- drivers/regulator/core.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index ef07b62..db119f3 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -2544,9 +2544,12 @@ int regulator_set_optimum_mode(struct regulator *regulator, int uA_load)
- {
- 	struct regulator_dev *rdev = regulator->rdev;
- 	struct regulator *consumer;
--	int ret, output_uV, input_uV, total_uA_load = 0;
-+	int ret, output_uV, input_uV = 0, total_uA_load = 0;
- 	unsigned int mode;
- 
-+	if (rdev->supply)
-+		input_uV = regulator_get_voltage(rdev->supply);
-+
- 	mutex_lock(&rdev->mutex);
- 
- 	/*
-@@ -2579,10 +2582,7 @@ int regulator_set_optimum_mode(struct regulator *regulator, int uA_load)
- 		goto out;
- 	}
- 
--	/* get input voltage */
--	input_uV = 0;
--	if (rdev->supply)
--		input_uV = regulator_get_voltage(rdev->supply);
-+	/* No supply? Use constraint voltage */
- 	if (input_uV <= 0)
- 		input_uV = rdev->constraints->input_uV;
- 	if (input_uV <= 0) {
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+-Bryan
