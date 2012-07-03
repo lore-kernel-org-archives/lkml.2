@@ -1,45 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757367Ab2GCWTu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 18:19:50 -0400
-Received: from nm13-vm0.bullet.mail.ird.yahoo.com ([77.238.189.195]:31444 "HELO
-	nm13-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757300Ab2GCWTt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 18:19:49 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 8025.10395.bm@omp1017.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=AxDe6ouMbS9YSl7btKu+wjYrseWKi1TQHSaP6un1lr3+skqa5/0mAdnbN0iWLbabeG/WgTOdcU7SYC47bD/h7Z7NYtzeBUuU3ilBYjW9f2U1zH3Aqn3WXlhoZ2lVmnC2GvmOMfrSQ0Mxqq6hgVxH/HRyOnBhQWvTzvPwtb/VTjY=;
-X-YMail-OSG: aRgYChoVM1mbmR82kRZTisrwPzRG26zjAB8_eXCbzj0JlAr
- dzHdFQFFeL2CO9k74md7Wgx5VwN1Q8pDsQpGXvGODLQy0mOcqA.nvP.3SM38
- Xs0AdbpXDHULUwk.YNq0BOPj0RVywcJ8L82Jp.AiLe3BNEZd96zROwHZebXQ
- 2qexhjbqVXWH2wPf5ygaeEh.PMcsFb_wx2HO4FcU1a8TOE76YnSUPiHLKCbp
- 08k4_zSmIAZBrwqcBDCrfmXl6LF.P3wm61UB7jxvvVtGRq9eyrcmsnVnaAfF
- 911h2cA7CzKz50cPBySXYNFvgIi9hCdhRsj1B8tIA2y2y..x5i9WzdmhwR4u
- 2VbIAiMXKRdkyPhG18KV3W6nhYO8nEe9D6c6FvNxpDSjwClU0JK82ltCrq3R
- 3_PDIcpbQHPRpMsE2b_giDFaXt6tNmEABkHuQEKI15Wrt
-X-Mailer: YahooMailWebService/0.8.118.349524
-Message-ID: <1341353987.10668.YahooMailNeo@web132502.mail.ird.yahoo.com>
-Date: Tue, 3 Jul 2012 23:19:47 +0100 (BST)
-From: Allyson_kleiner <dolorisrswb@yahoo.com>
-Reply-To: Allyson_kleiner <allyson_kleiner@fastemailer.com>
-Subject: There's something I wanna share with you..
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+	id S1757381Ab2GCW0h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 18:26:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40487 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756580Ab2GCW0g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 18:26:36 -0400
+Message-ID: <4FF37190.5020706@kernel.dk>
+Date: Tue, 03 Jul 2012 16:26:24 -0600
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] block bits for 3.5-rc
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello :)
-My name is Allyson. Probably you think that this is pretty strange or something like that but I search on the internet looking for interesting people so this is how I found you. I don't lose anything but I can acquire something doing this, right?)
-I hope you aren't afraid of things like that. So I found you, and I I don't know why but I think that u are an interesting person and also I can predict that it will be an exciting experience for both of us.
-As you could already notice I am open to people, very communicative and kind person. I really enjoy travelling and meeting new people. It is just a really short introduction and I will tell you more about myself after you write to me. Now, please tell me a little bit about yourself! What r u interesting in? What singles you out? Can you tell me something special about you?
-I really hope you aren't going ignore it and you will answer the letter. Now the world is your oyster.)
-Unfortunately I need to go now, please, reply when'll you have time!
-Can't wait to talk to you!
-Allyson
+Hi Linus,
+
+As vacation is coming up, thought I'd better get rid of my pending
+changes in my for-linus branch for this iteration. It contains:
+
+- Two patches for mtip32xx. Killing a non-compliant sysfs interface and
+  moving it to debugfs, where it belongs.
+
+- A few patches from Asias. Two legit bug fixes, and one killing an
+  interface that is no longer in use.
+
+- A patch from Jan, making the annoying partition ioctl warning a bit
+  less annoying, by restricting it to !CAP_SYS_RAWIO only.
+
+- Three bug fixes for drbd from Lars Ellenberg.
+
+- A fix for an old regression for umem, it hasn't really worked since
+  the plugging scheme was changed in 3.0.
+
+- A few fixes from Tejun.
+
+- A splice fix from Eric Dumazet, fixing an issue with pipe resizing.
+
+Please pull!
+
+  git://git.kernel.dk/linux-block.git for-linus
+
+for you to fetch changes up to 6d9359280753d2955f86d6411047516a9431eb51:
+
+  scsi: Silence unnecessary warnings about ioctl to partition (2012-06-15 12:52:46 +0200)
+
+----------------------------------------------------------------
+Asai Thambi S P (2):
+      mtip32xx: Remove 'registers' and 'flags' from sysfs
+      mtip32xx: Create debugfs entries for troubleshooting
+
+Asias He (3):
+      block: Avoid missed wakeup in request waitqueue
+      block: Mitigate lock unbalance caused by lock switching
+      block: Drop dead function blk_abort_queue()
+
+Eric Dumazet (1):
+      splice: fix racy pipe->buffers uses
+
+Jan Kara (1):
+      scsi: Silence unnecessary warnings about ioctl to partition
+
+Jens Axboe (2):
+      Merge branch 'stable/for-jens-3.5' of git://git.kernel.org/.../konrad/xen into for-linus
+      Merge branch 'for-jens' of git://git.drbd.org/linux-drbd into for-linus
+
+Konrad Rzeszutek Wilk (2):
+      xen/blkback: Copy id field when doing BLKIF_DISCARD.
+      xen/blkfront: Add WARN to deal with misbehaving backends.
+
+Lars Ellenberg (3):
+      drbd: fix access of unallocated pages and kernel panic
+      drbd: fix list corruption by failing but already aborted reads
+      drbd: fix null pointer dereference with on-congestion policy when diskless
+
+Sachin Kamat (1):
+      mtip32xx: Remove version.h header file inclusion
+
+Tao Guo (1):
+      umem: fix up unplugging
+
+Tejun Heo (4):
+      block: fix return value on cfq_init() failure
+      block: blkcg_policy_cfq shouldn't be used if !CONFIG_CFQ_GROUP_IOSCHED
+      blkcg: fix blkg_alloc() failure path
+      blkcg: drop local variable @q from blkg_destroy()
+
+ Documentation/ABI/testing/sysfs-block-rssd |   21 ----
+ block/blk-cgroup.c                         |    9 +-
+ block/blk-core.c                           |   25 ++++-
+ block/blk-timeout.c                        |   41 -------
+ block/cfq-iosched.c                        |   30 +++--
+ block/scsi_ioctl.c                         |    5 +-
+ drivers/block/drbd/drbd_bitmap.c           |   11 +-
+ drivers/block/drbd/drbd_req.c              |   66 +++++++----
+ drivers/block/mtip32xx/mtip32xx.c          |  166 ++++++++++++++++++++--------
+ drivers/block/mtip32xx/mtip32xx.h          |    5 +-
+ drivers/block/umem.c                       |   40 +++++++
+ drivers/block/xen-blkback/common.h         |    2 +
+ drivers/block/xen-blkfront.c               |   58 ++++++++--
+ fs/splice.c                                |   35 +++---
+ include/linux/blkdev.h                     |    1 -
+ include/linux/splice.h                     |    8 +-
+ kernel/relay.c                             |    5 +-
+ kernel/trace/trace.c                       |    6 +-
+ mm/shmem.c                                 |    3 +-
+ net/core/skbuff.c                          |    1 +
+ 20 files changed, 338 insertions(+), 200 deletions(-)
+
+-- 
+Jens Axboe
+
+
