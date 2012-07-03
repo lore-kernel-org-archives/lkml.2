@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab2GCR60 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 13:58:26 -0400
-Received: from csmtp3.one.com ([91.198.169.23]:47307 "EHLO csmtp3.one.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754906Ab2GCR6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 13:58:25 -0400
-From: "Henrik Rydberg" <rydberg@bitmath.se>
-Date: Tue, 3 Jul 2012 19:58:42 +0200
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, chatty@enac.fr,
-        benjamin.tissoires@gmail.com, peter.hutterer@who-t.net,
-        chasedouglas@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: MT - Include win8 support
-Message-ID: <20120703175842.GA472@polaris.bitmath.org>
-References: <1340785690-13652-1-git-send-email-rydberg@euromail.se>
+	id S932763Ab2GCR7I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 13:59:08 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64752 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932104Ab2GCR7H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 13:59:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340785690-13652-1-git-send-email-rydberg@euromail.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFzOD33eWj0FQuZ7RWmF-yYwaeNB-9J-YY+mX4mwP7VXuA@mail.gmail.com>
+References: <20120702224648.GA20361@tassilo.jf.intel.com> <CA+55aFwre6s=orjUaNKJA=51Fc1mxu_XGX80Bex4Sn-=mWPx5Q@mail.gmail.com>
+ <1341323230.3292.10.camel@nayuki.kepstin.ca> <CA+55aFyvzz3Lp9zeA6X+QMan0iZFWq_0Xd+ff_trnP1tpn2iJQ@mail.gmail.com>
+ <1341337257.2406.1.camel@nayuki.kepstin.ca> <CA+55aFzOD33eWj0FQuZ7RWmF-yYwaeNB-9J-YY+mX4mwP7VXuA@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 3 Jul 2012 10:58:44 -0700
+X-Google-Sender-Auth: P7WtwCwdvNPCnoccLjWLPLJ1QKU
+Message-ID: <CA+55aFwQqTAHNafGBXaoPCzVYw83OZvbG_hOYEDUxmuoMODO3Q@mail.gmail.com>
+Subject: Re: long boot delays caused by 070ad7e7 floppy change
+To: Calvin Walton <calvin.walton@kepstin.ca>
+Cc: Andi Kleen <andi@firstfloor.org>, Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel@vger.kernel.org, shemminger@vyatta.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 10:28:10AM +0200, Henrik Rydberg wrote:
-> The newly released HID protocol for win8 multitouch devices is capable
-> of transmitting more information about each touch. In particular, it
-> includes details useful for touch alignment. This patch completes the
-> MT protocol with the ABS_MT_TOOL_X/Y events, and documents how to map
-> win8 devices.
-> 
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
-> Hi all,
-> 
-> Here is the patch following the RFC on win8 MT support. An ascii-art
-> version of the figure has been included, Peter's orientation text is
-> there, and the usage section has been extended with more semantics and
-> mappings. Hopefully the similarities and differences between the
-> models are clearer now. Also, the usage of azimuth has been left out,
-> awaiting an actual device using it.
+On Tue, Jul 3, 2012 at 10:50 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> It looks like the code meant for -1 to mean "regular delay"
+> (current_reqD), and -2 to mean MAXTIMEOUT. For some reason the "-1"
+> logic has gotten screwed.
 
-I would like to have a couple of ACK's on this patch, if
-possible. Please? :-)
+So it looks like current_reqD still exists, and sets the drive to
+"current_drive". Which *should* be 0, as far as I can tell.  In fact,
+since "current_drive" is printed out by DPRINTK(), we *know* it's 0
+(it's the "0" in the "floppy0:" message).
 
-Thanks,
-Henrik
+But how the heck does it pick that bogus 20 second delay then? The -1
+should have been caught by
+
+        if (drive == current_reqD)
+                drive = current_drive;
+
+and then we should have used the regular delay for drive 0.
+
+Jiri, any ideas?
+
+                  Linus
