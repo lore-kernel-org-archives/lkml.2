@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933133Ab2GCPcW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 11:32:22 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:35831
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754755Ab2GCPcV (ORCPT
+	id S933172Ab2GCPcz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 11:32:55 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:57476 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753616Ab2GCPcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 11:32:21 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zzbb2dI98dI1432Izz1202hzz8275bhz2dh668h839hd25he5bhf0ah)
-X-WSS-ID: 0M6LCHQ-02-HJ1-02
-X-M-MSG: 
-Message-ID: <4FF310C9.9040108@amd.com>
-Date: Tue, 3 Jul 2012 17:33:29 +0200
-From: Christoph Egger <Christoph.Egger@amd.com>
-User-Agent: Mozilla/5.0 (X11; NetBSD amd64; rv:11.0) Gecko/20120404 Thunderbird/11.0
-MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: Tony Luck <tony.luck@intel.com>, IanCampbell <Ian.Campbell@citrix.com>,
-        Ashok Raj <ashok.raj@intel.com>,
-        Donald D Dugger <donald.d.dugger@intel.com>,
-        Haitao Shan <haitao.shan@intel.com>,
-        Jinsong Liu <jinsong.liu@intel.com>,
-        Jun Nakajima <jun.nakajima@intel.com>, Susie Li <susie.li@intel.com>,
-        Will Auld <will.auld@intel.com>,
-        Xiantao Zhang <xiantao.zhang@intel.com>,
-        Yunhong Jiang <yunhong.jiang@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+	Tue, 3 Jul 2012 11:32:53 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -8
+X-BigFish: VS-8(zz98dI9371I542M1432Izz1202hzz8275dhz2fh2a8h683h839h93fhd25hf0ah)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KeirFraser <keir@xen.org>
-Subject: Re: [Xen-devel] [xen vMCE RFC V0.2] xen vMCE design
-References: <DE8DF0795D48FD4CA783C40EC829233525D395@SHSMSX101.ccr.corp.intel.com> <4FEB236C020000780008C392@nat28.tlf.novell.com> <DE8DF0795D48FD4CA783C40EC8292335263B9D@SHSMSX101.ccr.corp.intel.com> <4FEC3B4A020000780008C673@nat28.tlf.novell.com> <DE8DF0795D48FD4CA783C40EC8292335263D6C@SHSMSX101.ccr.corp.intel.com> <4FEC463E020000780008C6A7@nat28.tlf.novell.com> <DE8DF0795D48FD4CA783C40EC8292335264914@SHSMSX101.ccr.corp.intel.com> <4FEC7FB8020000780008C885@nat28.tlf.novell.com> <DE8DF0795D48FD4CA783C40EC8292335265284@SHSMSX101.ccr.corp.intel.com> <4FED7C5F.1040908@amd.com> <DE8DF0795D48FD4CA783C40EC8292335282ED5@SHSMSX101.ccr.corp.intel.com> <4FF2B87C020000780008D3E0@nat28.tlf.novell.com> <3908561D78D1C84285E8C5FCA982C28F1933C278@ORSMSX104.amr.corp.intel<3908561D78D1C84285E8C5FCA982C28F1933C278@ORSMSX104.amr.corp.intel.com> <4FF306C1.7000100@amd.com> <4FF3270C020000780008D5A9@nat28.tlf.novell.com>
-In-Reply-To: <4FF3270C020000780008D5A9@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: [PATCH 00/13] drivers: hv: kvp
+Thread-Topic: [PATCH 00/13] drivers: hv: kvp
+Thread-Index: AQHNT/NB00SQsXjmDEmcq7JSjap8hpcFX8+AgADv8yCAAAVogIAFjrOAgAFErgCAAAhKEIAAA3+AgAAAZKCAAp6bAIAGMUUggAGY1ICAACO1sA==
+Date: Tue, 3 Jul 2012 15:32:46 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF9155EF7F0@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <20120621224737.GA5933@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9155EC47A@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120622132547.GA2639@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9155ED14D@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120626213954.GA4840@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9155ED64A@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120626222205.GA5948@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF9155ED68D@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120628142340.GA21537@aepfle.de>
+ <426367E2313C2449837CD2DE46E7EAF9155EF399@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120703132049.GA10663@aepfle.de>
+In-Reply-To: <20120703132049.GA10663@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.179.128]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PRD0310HT003.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q63FX1MV016667
 
-On 07/03/12 17:08, Jan Beulich wrote:
 
->>>> On 03.07.12 at 16:50, Christoph Egger <Christoph.Egger@amd.com> wrote:
->> On 07/03/12 15:26, Luck, Tony wrote:
->>
->>>> I'm not convinced of the need, and would prefer aiming at a
->>>> shared implementation unless issues arise that make this
->>>> impossible.
->>>
->>> It does sound odd. Yes, Intel and AMD have differences around CMCI ... but 
->> we are never
->>> going to send a CMCI to a guest (there is no point, it can't do anything 
->> useful with the
->>> information, it may do something pointlessly stupid like stop using a guest 
->> physical page).
->>> The only reason I suggested making MCG_CAP pretend that CMCI was supported 
->> was a
->>> small optimization ... if a Linux guest sees that CMCI is supported, it will 
->> not poll the machine
->>> check banks looking for corrected errors.
->>
->>
->> Are you talking about PV or HVM guest?
->>
->> For HVM guests yes it makes sense to disable CMCI in MCG_CAP for both
->> AMD and Intel.
+
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Tuesday, July 03, 2012 9:21 AM
+> To: KY Srinivasan
+> Cc: Greg KH; apw@canonical.com; devel@linuxdriverproject.org; linux-
+> kernel@vger.kernel.org; netdev@vger.kernel.org
+> Subject: Re: [PATCH 00/13] drivers: hv: kvp
 > 
-> "enable" you mean?
+> On Mon, Jul 02, KY Srinivasan wrote:
+> 
+> > While I toyed with your proposal, I feel it just pushes the problem
+> > out of the daemon code - we would still need to write distro specific
+> > scripts. If this approach is something that everybody is comfortable
+> > with, I can take a stab at implementing that.
+> 
+> Until NetworkManager is feature complete and until every distro is using
+> NetworkManager per default the kvp_daemon needs distro specific code to
+> get and set network related settings.
+> Doing it with an external script will simplify debugging and changes to
+> the code.
 
+Fair enough. I will keep my current implementation of the GET operation as is since
+it is distro independent. On the SET side, I will implement a script as you have suggested.
 
-Oh, sorry. I misread one sentence.
-If CMCI for the guest is really just emulated (= 100% software)
-then yes, enable for both AMD and Intel is fine.
+Regards,
 
-Christoph
+K. Y
 
--- 
----to satisfy European Law for business letters:
-Advanced Micro Devices GmbH
-Einsteinring 24, 85689 Dornach b. Muenchen
-Geschaeftsfuehrer: Alberto Bozzo, Andrew Bowd
-Sitz: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+> 
+> Olaf
+> 
+> 
 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
