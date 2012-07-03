@@ -1,63 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983Ab2GCF1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 01:27:00 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:49299 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125Ab2GCF06 (ORCPT
+	id S933188Ab2GCF1M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 01:27:12 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:33442 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932412Ab2GCF1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 01:26:58 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6760"; a="204586557"
-X-IronPort-AV: E=Sophos;i="4.77,514,1336374000"; 
-   d="scan'208";a="121591027"
-From: "Ren, Cloud" <cjren@qca.qualcomm.com>
-To: <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <qca-linux-team@qualcomm.com>, <nic-devel@qualcomm.com>,
-        Cloud Ren <cjren@qca.qualcomm.com>
-Subject: [PATCH 1/1] atl1c: fix issue of transmit queue 0 timed out
-Date: Tue, 3 Jul 2012 10:27:36 -0300
-Message-ID: <1341322056-26582-1-git-send-email-cjren@qca.qualcomm.com>
-X-Mailer: git-send-email 1.7.7
+	Tue, 3 Jul 2012 01:27:10 -0400
+X-AuditID: b753bd60-982efba000000f6c-3f-4ff282ab3166
+X-AuditID: b753bd60-982efba000000f6c-3f-4ff282ab3166
+Message-ID: <4FF282AA.1050109@hitachi.com>
+Date: Tue, 03 Jul 2012 14:27:06 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.30.39.5]
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 6/6] ftrace/x86: Add save_regs for i386 function calls
+References: <20120702200322.573660631@goodmis.org> <20120702201822.052770797@goodmis.org>
+In-Reply-To: <20120702201822.052770797@goodmis.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cloud Ren <cjren@qca.qualcomm.com>
+(2012/07/03 5:03), Steven Rostedt wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
+> 
+> Add saving full regs for function tracing on i386.
+> The saving of regs was influenced by patches sent out by
+> Masami Hiramatsu.
+> 
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  arch/x86/include/asm/ftrace.h |    2 --
+>  arch/x86/kernel/entry_32.S    |   53 +++++++++++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/ftrace.c      |    4 ----
+>  3 files changed, 53 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
+> index fd10faf..2b396cf 100644
+> --- a/arch/x86/include/asm/ftrace.h
+> +++ b/arch/x86/include/asm/ftrace.h
+> @@ -40,10 +40,8 @@
+>  
+>  #ifdef CONFIG_DYNAMIC_FTRACE
+>  #define ARCH_SUPPORTS_FTRACE_OPS 1
+> -#ifdef CONFIG_X86_64
+>  #define ARCH_SUPPORTS_FTRACE_SAVE_REGS
+>  #endif
+> -#endif
+>  
+>  #ifndef __ASSEMBLY__
+>  extern void mcount(void);
+> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+> index acd4963..e18ea33 100644
+> --- a/arch/x86/kernel/entry_32.S
+> +++ b/arch/x86/kernel/entry_32.S
+> @@ -1123,6 +1123,7 @@ ftrace_call:
+>  	popl %edx
+>  	popl %ecx
+>  	popl %eax
+> +ftrace_ret:
+>  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+>  .globl ftrace_graph_call
+>  ftrace_graph_call:
+> @@ -1134,6 +1135,58 @@ ftrace_stub:
+>  	ret
+>  END(ftrace_caller)
+>  
+> +ENTRY(ftrace_regs_caller)
+> +	pushf	/* push flags before compare */
+> +	cmpl $0, function_trace_stop
+> +	jne ftrace_exit
+> +
+> +	subl $8, %esp	/* skip ip and orig_ax */
+> +	pushl %gs
+> +	pushl %fs
+> +	pushl %es
+> +	pushl %ds
+> +	pushl %eax
+> +	pushl %ebp
+> +	pushl %edi
+> +	pushl %esi
+> +	pushl %edx
+> +	pushl %ecx
+> +	pushl %ebx
+> +	movl 14*4(%esp), %eax	/* Load return address */
+> +	pushl %eax		/* Save return address (+4) */
+> +	subl $MCOUNT_INSN_SIZE, %eax
+> +	movl %eax, 12*4+4(%esp)	/* Store IP */
+> +	movl 13*4+4(%esp), %edx	/* Load flags */
+> +	movl %edx, 14*4+4(%esp)	/* Store flags */
+> +	movl $__KERNEL_CS, %edx
+> +	movl %edx, 13*4+4(%esp)	/* Store CS */
+> +
+> +	movl 0x4(%ebp), %edx
+> +	lea  4(%esp), %ecx
+> +	pushl %ecx		/* Save pt_regs as 4th parameter */
+> +	leal function_trace_op, %ecx
+> +
+> +GLOBAL(ftrace_regs_call)
+> +	call ftrace_stub
+> +
+> +	addl $4,%esp		/* Skip pt_regs */
 
-some people report atl1c could cause system hang with following
-kernel trace info:
----------------------------------------
-WARNING: at.../net/sched/sch_generic.c:258 dev_watchdog+0x1db/0x1d0()
-...
-NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
-...
----------------------------------------
-This is caused by netif_stop_queue calling when cable Link is down.
-So remove netif_stop_queue, because link_watch will take it over.
+Hmm, you need to restoring flags here, because
+original flags is clobbered by KERNEL_CS.
 
-Signed-off-by: xiong <xiong@qca.qualcomm.com>
-Cc: stable <stable@vger.kernel.org>
-Signed-off-by: Cloud Ren <cjren@qca.qualcomm.com>
----
- drivers/net/ethernet/atheros/atl1c/atl1c_main.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+	movl 14*4+4(%esp), %edx
+	movl %edx, 13*4+4(%esp)
 
-diff --git a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-index 85717cb..7901831 100644
---- a/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-+++ b/drivers/net/ethernet/atheros/atl1c/atl1c_main.c
-@@ -261,7 +261,6 @@ static void atl1c_check_link_status(struct atl1c_adapter *adapter)
- 	if ((phy_data & BMSR_LSTATUS) == 0) {
- 		/* link down */
- 		netif_carrier_off(netdev);
--		netif_stop_queue(netdev);
- 		hw->hibernate = true;
- 		if (atl1c_reset_mac(hw) != 0)
- 			if (netif_msg_hw(adapter))
+Thank you,
+
 -- 
-1.7.7
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
