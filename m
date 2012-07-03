@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933259Ab2GCQXm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 12:23:42 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:31864 "EHLO relay.sw.ru"
+	id S933236Ab2GCQ0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 12:26:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61622 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932247Ab2GCQXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 12:23:40 -0400
-Subject: [PATCH v3 08/11] NFS: make nfs_callback_tcpport6 per network context
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Tue, 03 Jul 2012 20:20:22 +0400
-Message-ID: <20120703162022.11911.7120.stgit@localhost.localdomain>
-In-Reply-To: <20120703161844.11911.92996.stgit@localhost.localdomain>
-References: <20120703161844.11911.92996.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S932106Ab2GCQ0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 12:26:15 -0400
+Date: Tue, 3 Jul 2012 13:26:07 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org,
+        virtualization <virtualization@lists.linux-foundation.org>
+Subject: Re: RFD: virtio balloon API use (was Re: [PATCH 5 of 5] virtio:
+ expose added descriptors immediately)
+Message-ID: <20120703162606.GA1727@t510.redhat.com>
+References: <patchbomb.1320306168@localhost6.localdomain6>
+ <f3831c1617c86a51d875.1320306173@localhost6.localdomain6>
+ <20120701092051.GA4515@redhat.com>
+ <87d34fx990.fsf@rustcorp.com.au>
+ <20120702072558.GA8268@redhat.com>
+ <20120702160814.GB1750@t510.redhat.com>
+ <87vci5wtzh.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vci5wtzh.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- fs/nfs/callback.c  |    5 ++---
- fs/nfs/callback.h  |    1 -
- fs/nfs/netns.h     |    1 +
- fs/nfs/nfs4state.c |    2 +-
- 4 files changed, 4 insertions(+), 5 deletions(-)
+On Tue, Jul 03, 2012 at 10:17:46AM +0930, Rusty Russell wrote:
+> On Mon, 2 Jul 2012 13:08:19 -0300, Rafael Aquini <aquini@redhat.com> wrote:
+> > As 'locking in balloon', may I assume the approach I took for the compaction case
+> > is OK and aligned to address these concerns of yours? If not, do not hesitate in
+> > giving me your thoughts, please. I'm respinning a V3 series to address a couple
+> > of extra nitpicks from the compaction standpoint, and I'd love to be able to
+> > address any extra concern you might have on the balloon side of that work.
+> 
+> It's orthogonal, though looks like they clash textually :(
+> 
+> I'll re-spin MST's patch on top of yours, and include both in my tree,
+> otherwise linux-next will have to do the merge.  But I'll await your
+> push before pushing to Linus next merge window.
+>
+Thanks, Rusty.
 
-diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-index 80032fc..97bccb1 100644
---- a/fs/nfs/callback.c
-+++ b/fs/nfs/callback.c
-@@ -39,7 +39,6 @@ static DEFINE_MUTEX(nfs_callback_mutex);
- static struct svc_program nfs4_callback_program;
- 
- unsigned int nfs_callback_set_tcpport;
--unsigned short nfs_callback_tcpport6;
- #define NFS_CALLBACK_MAXPORTNR (65535U)
- 
- static int param_set_portnr(const char *val, const struct kernel_param *kp)
-@@ -79,9 +78,9 @@ static int nfs4_callback_up_net(struct svc_serv *serv, struct net *net)
- 	ret = svc_create_xprt(serv, "tcp", net, PF_INET6,
- 				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
- 	if (ret > 0) {
--		nfs_callback_tcpport6 = ret;
-+		nn->nfs_callback_tcpport6 = ret;
- 		dprintk("NFS: Callback listener port = %u (af %u, net %p)\n",
--				nfs_callback_tcpport6, PF_INET6, net);
-+				nn->nfs_callback_tcpport6, PF_INET6, net);
- 	} else if (ret != -EAFNOSUPPORT)
- 		goto out_err;
- 	return 0;
-diff --git a/fs/nfs/callback.h b/fs/nfs/callback.h
-index 8006959..86b5671 100644
---- a/fs/nfs/callback.h
-+++ b/fs/nfs/callback.h
-@@ -208,6 +208,5 @@ extern int nfs4_set_callback_sessionid(struct nfs_client *clp);
- #define NFS41_BC_MAX_CALLBACKS 1
- 
- extern unsigned int nfs_callback_set_tcpport;
--extern unsigned short nfs_callback_tcpport6;
- 
- #endif /* __LINUX_FS_NFS_CALLBACK_H */
-diff --git a/fs/nfs/netns.h b/fs/nfs/netns.h
-index 06a23fc..097dae1 100644
---- a/fs/nfs/netns.h
-+++ b/fs/nfs/netns.h
-@@ -23,6 +23,7 @@ struct nfs_net {
- #ifdef CONFIG_NFS_V4
- 	struct idr cb_ident_idr; /* Protected by nfs_client_lock */
- 	unsigned short nfs_callback_tcpport;
-+	unsigned short nfs_callback_tcpport6;
- #endif
- 	spinlock_t nfs_client_lock;
- 	struct timespec boot_time;
-diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
-index bc0ddf8..9313249 100644
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -80,7 +80,7 @@ int nfs4_init_clientid(struct nfs_client *clp, struct rpc_cred *cred)
- 		goto do_confirm;
- 	port = nn->nfs_callback_tcpport;
- 	if (clp->cl_addr.ss_family == AF_INET6)
--		port = nfs_callback_tcpport6;
-+		port = nn->nfs_callback_tcpport6;
- 
- 	status = nfs4_proc_setclientid(clp, NFS4_CALLBACK, port, cred, &clid);
- 	if (status != 0)
+I'll post V3 series quite soon.
 
+Cheers!
+Rafael
+ 
+> Thanks,
+> Rusty.
