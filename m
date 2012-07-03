@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab2GCKK3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 06:10:29 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:44701 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750869Ab2GCKK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 06:10:28 -0400
-Date: Tue, 3 Jul 2012 11:10:24 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, jaschut@sandia.gov, minchan@kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH -mm v2] mm: have order > 0 compaction start off where it
- left
-Message-ID: <20120703101024.GG13141@csn.ul.ie>
-References: <20120628135520.0c48b066@annuminas.surriel.com>
- <20120628135940.2c26ada9.akpm@linux-foundation.org>
- <4FECCB89.2050400@redhat.com>
- <20120628143546.d02d13f9.akpm@linux-foundation.org>
- <1341250950.16969.6.camel@lappy>
- <4FF2435F.2070302@redhat.com>
+	id S1754822Ab2GCKKn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 06:10:43 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52553 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750869Ab2GCKKl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 06:10:41 -0400
+Date: Tue, 3 Jul 2012 10:40:29 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        =?utf-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
+        "patches@opensource.wolfsonmicro.com" 
+	<patches@opensource.wolfsonmicro.com>,
+        =?utf-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>,
+        "myungjoo.ham@gmail.com" <myungjoo.ham@gmail.com>
+Subject: Re: Re: [PATCH] Extcon: Arizona: Add driver for Wolfson Arizona
+ class devices
+Message-ID: <20120703094029.GC29030@opensource.wolfsonmicro.com>
+References: <4681354.107331341300035007.JavaMail.weblogic@epml05>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YD3LsXFS42OYHhNZ"
 Content-Disposition: inline
-In-Reply-To: <4FF2435F.2070302@redhat.com>
+In-Reply-To: <4681354.107331341300035007.JavaMail.weblogic@epml05>
+X-Cookie: Advancement in position.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 02, 2012 at 08:57:03PM -0400, Rik van Riel wrote:
-> On 07/02/2012 01:42 PM, Sasha Levin wrote:
-> >On Thu, 2012-06-28 at 14:35 -0700, Andrew Morton wrote:
-> >>On Thu, 28 Jun 2012 17:24:25 -0400 Rik van Riel<riel@redhat.com>  wrote:
-> >>>
-> >>>>>@@ -463,6 +474,8 @@ static void isolate_freepages(struct zone *zone,
-> >>>>>             */
-> >>>>>            if (isolated)
-> >>>>>                    high_pfn = max(high_pfn, pfn);
-> >>>>>+          if (cc->order>   0)
-> >>>>>+                  zone->compact_cached_free_pfn = high_pfn;
-> >>>>
-> >>>>Is high_pfn guaranteed to be aligned to pageblock_nr_pages here?  I
-> >>>>assume so, if lots of code in other places is correct but it's
-> >>>>unobvious from reading this function.
-> >>>
-> >>>Reading the code a few more times, I believe that it is
-> >>>indeed aligned to pageblock size.
-> >>
-> >>I'll slip this into -next for a while.
-> >>
-> >>--- a/mm/compaction.c~isolate_freepages-check-that-high_pfn-is-aligned-as-expected
-> >>+++ a/mm/compaction.c
-> >>@@ -456,6 +456,7 @@ static void isolate_freepages(struct zon
-> >>                 }
-> >>                 spin_unlock_irqrestore(&zone->lock, flags);
-> >>
-> >>+               WARN_ON_ONCE(high_pfn&  (pageblock_nr_pages - 1));
-> >>                 /*
-> >>                  * Record the highest PFN we isolated pages from. When next
-> >>                  * looking for free pages, the search will restart here as
-> >
-> >I've triggered the following with today's -next:
-> 
-> I've been staring at the migrate code for most of the afternoon,
-> and am not sure how this is triggered.
-> 
 
-That warning is placed in isolate_freepages(). When the migration
-scanner and free scanner have almost met it is possible for high_pfn to
-be
+--YD3LsXFS42OYHhNZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-cc->migrate_pfn + pageblock_nr_pages
+On Tue, Jul 03, 2012 at 07:20:38AM +0000, MyungJoo Ham wrote:
 
-and that is not necessarily pageblock aligned. Forcing it to be aligned
-raises the possibility that the free scanner moves to another zone. This
-is very unlikely but could happen if a high zone was very small.
+You should fix your mailer to word wrap within paragraphs, I've reflowed
+your text for legibility.
 
-I should have caught this when the warning was proposed :( IMO it's
-safe to just drop the warning.
+> Though extcon-arizona.c itself does not seem to have problems, when I
+> add the patches from your repository
+> (http://git.kernel.org/?p=linux/kernel/git/broonie/misc.git;a=commit;h=3afbac957e3c59037a4ecaf19d68f6c8104299fc),
 
--- 
-Mel Gorman
-SUSE Labs
+Please provide human readable descriptions of things!
+
+> I get compiler errors if MFD_ARIZONA is enabled in order to enable
+> EXTCON_ARIZONA. (No other Arizona-related devices are enabled; I don't
+> have any of them anyway) This is not an issue w/ extcon-arizona.c, but
+> I just wanted to let you know.
+
+Note the cover letter for the series...
+
+--YD3LsXFS42OYHhNZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP8r4FAAoJEBus8iNuMP3dZLMQAJOu8S8QxTcf6HDMJTTyV//P
+mA9z2M2yC0AMJMEY9yCuLYWlFy/Vqv3rvEBX3yzY4XebyL7cf53f2GD1y73AYwas
+CPznYnJawDIKxVc6IPS/hygoT25BRKuHOCfnhCWj5blK95+KwLWWRA8QqdOZ1KgD
+4kMWydsouCkw0h0u+y9aXOvSWE7IM0DDfsz4eiaNvGo+WA45SeDK3ouI7O4cAx8y
+qs+ZMkSOGL0/w1jGqFRG2QnbIxQCPRAHcgT//3uo0G98pvPsNREORcB9/1DMhM0L
+fS3cBuRFGI+e4HHg91doCtN6euYzHsbXwVvb6mCH1BgsUsrlCrIL87xEmvrXXr50
+PIqzCoj/PyBsRJLb0vtfHLdfUwdvN7jL0Ue/Abp25743pFqfvS5D5uwKL574bFeN
+IR1nfpJ2qVIuhNDMmGL/xKNEgqye9zY8YM9OAsq0n5HED2aO+hAzBkYuGuBroTum
+AXWi/cqHZ3ALpZfAB9k5ACjt7T52V5OhUeITnJgQ+jpkG5icJAQWBWz2hwSVxFFD
+W7LPM3Ebxl7+laYJkUqG1/jSBRrH56FiopCE4Ip0+HQyFEdrhSJg1u2UgzQ8zpM9
+CAcJwcCLfh5oftk0fZZOb8QaYdPUV7uke5nVTQ7KUnZZkggB8aO/n/ZF7uzhZ8Lp
+GpH0CClaHoAYynTBV2Nw
+=5aC+
+-----END PGP SIGNATURE-----
+
+--YD3LsXFS42OYHhNZ--
