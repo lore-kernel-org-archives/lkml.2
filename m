@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932914Ab2GCL75 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 07:59:57 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:46601 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932767Ab2GCL7y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 07:59:54 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linus.walleij@stericsson.com, arnd@arndb.de, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device registration
-Date: Tue,  3 Jul 2012 12:59:48 +0100
-Message-Id: <1341316788-12730-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755768Ab2GCL6l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 07:58:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20967 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755051Ab2GCL6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 07:58:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="166276664"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Theodore Tso <tytso@mit.edu>
+Cc: Jan Kara <jack@suse.cz>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>
+Subject: [PATCHv3 1/4] ext4: Remove useless marking of superblock dirty
+Date: Tue,  3 Jul 2012 15:00:07 +0300
+Message-Id: <1341316810-22598-2-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1341316810-22598-1-git-send-email-dedekind1@gmail.com>
+References: <1341316810-22598-1-git-send-email-dedekind1@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We register the ab8500 as an MFD device from db8500 code during Device Tree
-boot in order to solve some limitations of DT. However, when Device Tree is
-not enabled, we still want to allow platform code to register the ab8500 in
-the normal way. Here we force MFD device registration of the ab8500 only
-when booting with Device Tree enabled.
+From: Jan Kara <jack@suse.cz>
 
-Solves this issue:
-WARNING: at fs/sysfs/dir.c:526 sysfs_add_one+0x88/0xb0()
-sysfs: cannot create duplicate filename '/bus/platform/devices/ab8500-core.0'
+Commit a0375156 properly notes that superblock doesn't need to be marked
+as dirty when only number of free inodes / blocks / number of directories
+changes since that is recomputed on each mount anyway. However that comment
+leaves some unnecessary markings as dirty in place. Remove these.
 
-Reported-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Artem: tested using xfstests for both journalled and non-journalled ext4.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 ---
- drivers/mfd/db8500-prcmu.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ fs/ext4/ialloc.c  |    2 --
+ fs/ext4/mballoc.c |    2 --
+ 2 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index 80def6c..4ec0ed1 100644
---- a/drivers/mfd/db8500-prcmu.c
-+++ b/drivers/mfd/db8500-prcmu.c
-@@ -2964,6 +2964,9 @@ static struct mfd_cell db8500_prcmu_devs[] = {
- 		.name = "cpufreq-u8500",
- 		.of_compatible = "stericsson,cpufreq-u8500",
- 	},
-+};
-+
-+static struct mfd_cell db8500_of_prcmu_devs[] = {
- 	{
- 		.name = "ab8500-core",
- 		.of_compatible = "stericsson,ab8500",
-@@ -3014,6 +3017,15 @@ static int __devinit db8500_prcmu_probe(struct platform_device *pdev)
- 		return err;
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index d48e8b1..25b918c 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -315,7 +315,6 @@ out:
+ 		err = ext4_handle_dirty_metadata(handle, NULL, bitmap_bh);
+ 		if (!fatal)
+ 			fatal = err;
+-		ext4_mark_super_dirty(sb);
+ 	} else
+ 		ext4_error(sb, "bit already cleared for inode %lu", ino);
+ 
+@@ -830,7 +829,6 @@ got:
+ 	percpu_counter_dec(&sbi->s_freeinodes_counter);
+ 	if (S_ISDIR(mode))
+ 		percpu_counter_inc(&sbi->s_dirs_counter);
+-	ext4_mark_super_dirty(sb);
+ 
+ 	if (sbi->s_log_groups_per_flex) {
+ 		flex_group = ext4_flex_group(sbi, group);
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 1cd6994..eabfb4c 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -2825,7 +2825,6 @@ ext4_mb_mark_diskspace_used(struct ext4_allocation_context *ac,
+ 	err = ext4_handle_dirty_metadata(handle, NULL, gdp_bh);
+ 
+ out_err:
+-	ext4_mark_super_dirty(sb);
+ 	brelse(bitmap_bh);
+ 	return err;
+ }
+@@ -4694,7 +4693,6 @@ do_more:
+ 		put_bh(bitmap_bh);
+ 		goto do_more;
  	}
- 
-+	if (np) {
-+		err = mfd_add_devices(&pdev->dev, 0, db8500_of_prcmu_devs,
-+				ARRAY_SIZE(db8500_of_prcmu_devs), NULL, 0);
-+		if (err) {
-+			pr_err("prcmu: Failed to add DT subdevices\n");
-+			return err;
-+		}
-+	}
-+
- 	pr_info("DB8500 PRCMU initialized\n");
- 
- no_irq_return:
+-	ext4_mark_super_dirty(sb);
+ error_return:
+ 	brelse(bitmap_bh);
+ 	ext4_std_error(sb, err);
 -- 
-1.7.9.5
+1.7.7.6
 
