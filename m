@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab2GCOkD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 10:40:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44273 "EHLO mx1.redhat.com"
+	id S1756574Ab2GCOkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 10:40:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:36502 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751729Ab2GCOkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 10:40:01 -0400
-Date: Tue, 3 Jul 2012 10:39:49 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, snitzer@redhat.com,
-        martin.petersen@oracle.com, david@fromorbit.com, xfs@oss.sgi.com,
-        dm-devel@redhat.com, hch@lst.de
-Subject: Re: [dm-devel] [PATCH v2 1/3] block: add sysfs entry for
- discard_alignment
-Message-ID: <20120703143949.GE11272@redhat.com>
-References: <1341235225-27551-1-git-send-email-pbonzini@redhat.com>
- <1341235225-27551-2-git-send-email-pbonzini@redhat.com>
- <20120703023442.GB3586@redhat.com>
- <4FF2DCB1.2090704@redhat.com>
- <20120703140048.GC11272@redhat.com>
- <4FF2FFEE.4000401@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF2FFEE.4000401@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751754Ab2GCOko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 10:40:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="asc'?scan'208";a="166349350"
+Message-ID: <1341326690.2979.84.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 3/3] fs/sysv: stop using write_super and s_dirt
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>
+Date: Tue, 03 Jul 2012 17:44:50 +0300
+In-Reply-To: <20120703151313.36e85254@pyramind.ukuu.org.uk>
+References: <1341323008-29414-1-git-send-email-dedekind1@gmail.com>
+	 <1341323008-29414-4-git-send-email-dedekind1@gmail.com>
+	 <20120703151313.36e85254@pyramind.ukuu.org.uk>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-Nt6XxlznzRO3vIDv2KfP"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 03, 2012 at 04:21:34PM +0200, Paolo Bonzini wrote:
 
-[..]
-> > That raises an interesting question for patch3. If the discard is happening to
-> > a partition, shouldn't you be looking at partition discard_alignment
-> > instead of always looking at queue discard_alignment?
-> 
-> Good point!  Like this?
+--=-Nt6XxlznzRO3vIDv2KfP
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-This looks better.
-> 
-> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> index ba43f40..3530764 100644
-> --- a/include/linux/blkdev.h
-> +++ b/include/linux/blkdev.h
-> @@ -1125,6 +1125,16 @@ static inline int queue_limit_discard_alignment(struct queue_limits *lim, sector
->  		& (lim->discard_granularity - 1);
->  }
->  
-> +static inline int bdev_discard_alignment(struct block_device *bdev)
-> +{
-> +	struct request_queue *q = bdev_get_queue(bdev);
-> +
-> +	if (bdev != bdev->bd_contains)
-> +		return bdev->bd_part->discard_alignment;
-> +
-> +	return q->limits.discard_alignment;
-> +}
-> +
->  static inline unsigned int queue_discard_zeroes_data(struct request_queue *q)
->  {
->  	if (q->limits.max_discard_sectors && q->limits.discard_zeroes_data == 1)
-> diff --git a/block/blk-lib.c b/block/blk-lib.c
-> index b2bde5c..77d8869 100644
-> --- a/block/blk-lib.c
-> +++ b/block/blk-lib.c
-> @@ -58,7 +58,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
->  	/* Zero-sector (unknown) and one-sector granularities are the same.  */
->  	granularity = max(q->limits.discard_granularity >> 9, 1U);
->  	mask = granularity - 1;
-> -	alignment = (q->limits.discard_alignment >> 9) & mask;
-> +	alignment = bdev_discard_alignment(bdev) >> 9;
+On Tue, 2012-07-03 at 15:13 +0100, Alan Cox wrote:
+> > drity and then setting the s_dirt flag. And when 'write_super()' is exe=
+cuted to
+> > handle the s_dirt flag, we just update the timestamp and again mark the
+> > superblock buffer as dirty. Seems pointless.
+>=20
+> It's the way sysv itself does stuff. The timestamp on v7/sys3/sys5
+> reflects the clock on the box. A lot of ancient boxes with no decent
+> hardware clocks used to reset the system time off the root fs superblock
+> on a loss of power.
 
-Why are you removing AND with mask operation? I don't see any AND
-operation being done in bdev_discard_alignment().
+Oh, OK, thanks for the info. Do you think I need to take more efforts to
+preserve the behavior?
 
-Thanks
-Vivek
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-Nt6XxlznzRO3vIDv2KfP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJP8wViAAoJECmIfjd9wqK0UhcP/3rHIGgxYW4tniyRCYVs0PnT
+mM5Nb3Hmv/UsyJ62vbLdf5KkFI0jKCHugBE/cL06nhF6C0ojfyua/8GOsJvQrJeN
+C3DU4Lm926M5OV4m2JJNCNzp5VSxjeNK/qSLcABmOLkBIvfrOMTB7b8b511DpoIK
+p5ZWzj/M5X1A1O5jIemZp56bMnmMbSQ1uiFOe1G9fHz8pXKMl4zkiq8NyyF2yGCr
+qbwH8psVrZ3F1vrdDtipGwJtCfDPjwd2XMMKcjKnN4oBbfo+dt2Lr+AAifIZphVj
+FnlgtrFjCvw3VQQBQ+a1iNf4WAVIis1u5/nXaZaQY5jgCwZg4zn9ee5IGggaYiPS
+nEEFhoqVGqel0ks/+1f44rCUQT7S69y4bqRFaX2I61tWIRK95nkyhidKBbxGiEFc
+loNAryhTFlvnYYXvR6UYEYd13nST7xxNWoZLL4Ou2FItugsyE+7PkzQTr/yQqtPN
+pfh5IY3LLEzLtCjC3bFmJgfFZVAT2/9C/PO0vQq5gJpA4z/yx0UYYXyVb/r7yE0K
+pkNlZCmP7JquhxzF//Av8enc+sWMxeRZZQ08da1mCnD+UbBjwEswd3sp78/UyNaP
+6nX0SNWkNc99mzrIN/CbbxSD534oQSyhqNa4/PBCFWIlpNs0RT/jKAjoZ6xxQw+l
+mJ157hu36QVPsVcVmF50
+=qvsy
+-----END PGP SIGNATURE-----
+
+--=-Nt6XxlznzRO3vIDv2KfP--
+
