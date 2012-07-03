@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850Ab2GCJXe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 05:23:34 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:55558 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754191Ab2GCJXa (ORCPT
+	id S932181Ab2GCJXh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 05:23:37 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42032 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755866Ab2GCJXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 05:23:30 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Patrice Chotard <patrice.chotard@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 2/3] pinctrl/nomadik: add pin group smcs1 and smps0
-Date: Tue, 3 Jul 2012 11:23:04 +0200
-Message-ID: <1341307384-28825-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.9.2
+	Tue, 3 Jul 2012 05:23:34 -0400
+Date: Tue, 3 Jul 2012 11:23:25 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <johnstul@us.ibm.com>, Prarit Bhargava <prarit@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [RFC] Potential fix for leapsecond caused futex
+ related load spikes
+Message-ID: <20120703092325.GA18121@localhost.localdomain>
+References: <4FF06CAB.9020800@redhat.com>
+ <4FF08154.3050407@redhat.com>
+ <4FF088B9.1000308@us.ibm.com>
+ <20120702101606.GA16008@localhost.localdomain>
+ <20120702200821.GA31197@swielinga.nl>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120702200821.GA31197@swielinga.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Patrice Chotard <patrice.chotard@stericsson.com>
+On Mon, Jul 02, 2012 at 10:08:21PM +0200, Sytse Wielinga wrote:
+> Hi Richard,
+> 
+> On Mon, Jul 02, 2012 at 12:16:08PM +0200, Richard Cochran wrote:
+> > I know you didn't like my (originally Michael Hack's) idea of keeping
+> > time in TAI, but wouldn't changing to an internal, continuous time
+> > scale (not necessary TAI) solve these sorts of timer issues?
+> 
+> Doesn't that actually make the problem of leap seconds worse, as you'd have to
+> start tabulating past leap seconds in the kernel?
 
-Add smcs1_b_1_pins as DB8500_PIN_B14 can be SM_CS1 in alt B
-Add smps0_c_1_pins as DB8500_PIN_E8 can be SM_PS0 in alt C
+No, I am not suggesting to do that.
+ 
+> Even worse, *future* leap seconds would need to be tracked and after they've
+> happened stored on disk, and loaded back into the kernel after booting, which
+> seems like a mess.  The trouble here is that leap seconds are only announced a
+> short while before they happen, so there's no way to bake leap seconds into
+> the software; they need to be dynamically added by ntpd.
+> 
+> Or is there somehow some way to avoid that?
 
-Signed-off-by: Patrice Chotard <patrice.chotard@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/pinctrl-nomadik-db8500.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+I think the established practice of announcing the event by network is
+the only sane way of handling this issue. The list of TAI-UTC offsets
+belongs to what David Mills has called our "institutional memory", and
+this is a user space issue. The kernel's job is to just live in the
+moment and provide the right time for *now*.
 
-diff --git a/drivers/pinctrl/pinctrl-nomadik-db8500.c b/drivers/pinctrl/pinctrl-nomadik-db8500.c
-index 4f2a82c..9e7f379 100644
---- a/drivers/pinctrl/pinctrl-nomadik-db8500.c
-+++ b/drivers/pinctrl/pinctrl-nomadik-db8500.c
-@@ -509,9 +509,11 @@ static const unsigned sm_b_1_pins[] = { DB8500_PIN_C6, DB8500_PIN_B3,
- 	DB8500_PIN_D9, DB8500_PIN_A5, DB8500_PIN_B4, DB8500_PIN_C8,
- 	DB8500_PIN_A12, DB8500_PIN_C10, DB8500_PIN_B10, DB8500_PIN_B9,
- 	DB8500_PIN_A9, DB8500_PIN_C7, DB8500_PIN_A7, DB8500_PIN_C5,
--	DB8500_PIN_C9, DB8500_PIN_B14 };
--/* This chip select pin can be "ps0" in alt B so have it separately */
-+	DB8500_PIN_C9 };
-+/* This chip select pin can be "ps0" in alt C so have it separately */
- static const unsigned smcs0_b_1_pins[] = { DB8500_PIN_E8 };
-+/* This chip select pin can be "ps1" in alt C so have it separately */
-+static const unsigned smcs1_b_1_pins[] = { DB8500_PIN_B14 };
- static const unsigned ipgpio7_b_1_pins[] = { DB8500_PIN_B11 };
- static const unsigned ipgpio2_b_1_pins[] = { DB8500_PIN_C12 };
- static const unsigned ipgpio3_b_1_pins[] = { DB8500_PIN_C11 };
-@@ -573,6 +575,7 @@ static const unsigned mc2rstn_c_1_pins[] = { DB8500_PIN_C8 };
- static const unsigned kp_c_1_pins[] = { DB8500_PIN_C9, DB8500_PIN_B11,
- 	DB8500_PIN_C12, DB8500_PIN_C11, DB8500_PIN_D17, DB8500_PIN_D16,
- 	DB8500_PIN_C23, DB8500_PIN_D23 };
-+static const unsigned smps0_c_1_pins[] = { DB8500_PIN_E8 };
- static const unsigned smps1_c_1_pins[] = { DB8500_PIN_B14 };
- static const unsigned u2rxtx_c_3_pins[] = { DB8500_PIN_B17, DB8500_PIN_C16 };
- static const unsigned stmape_c_2_pins[] = { DB8500_PIN_C19, DB8500_PIN_C17,
-@@ -654,6 +657,7 @@ static const struct nmk_pingroup nmk_db8500_groups[] = {
- 	DB8500_PIN_GROUP(kp_b_1, NMK_GPIO_ALT_B),
- 	DB8500_PIN_GROUP(sm_b_1, NMK_GPIO_ALT_B),
- 	DB8500_PIN_GROUP(smcs0_b_1, NMK_GPIO_ALT_B),
-+	DB8500_PIN_GROUP(smcs1_b_1, NMK_GPIO_ALT_B),
- 	DB8500_PIN_GROUP(ipgpio7_b_1, NMK_GPIO_ALT_B),
- 	DB8500_PIN_GROUP(ipgpio2_b_1, NMK_GPIO_ALT_B),
- 	DB8500_PIN_GROUP(ipgpio3_b_1, NMK_GPIO_ALT_B),
-@@ -694,6 +698,7 @@ static const struct nmk_pingroup nmk_db8500_groups[] = {
- 	DB8500_PIN_GROUP(mc5_c_1, NMK_GPIO_ALT_C),
- 	DB8500_PIN_GROUP(mc2rstn_c_1, NMK_GPIO_ALT_C),
- 	DB8500_PIN_GROUP(kp_c_1, NMK_GPIO_ALT_C),
-+	DB8500_PIN_GROUP(smps0_c_1, NMK_GPIO_ALT_C),
- 	DB8500_PIN_GROUP(smps1_c_1, NMK_GPIO_ALT_C),
- 	DB8500_PIN_GROUP(u2rxtx_c_3, NMK_GPIO_ALT_C),
- 	DB8500_PIN_GROUP(stmape_c_2, NMK_GPIO_ALT_C),
-@@ -769,7 +774,8 @@ DB8500_FUNC_GROUPS(uartmod, "uartmodtx_b_1", "uartmodrx_b_1", "uartmodrx_b_2",
- DB8500_FUNC_GROUPS(stmmod, "stmmod_b_1", "stmmod_c_1");
- DB8500_FUNC_GROUPS(spi3, "spi3_b_1");
- /* Select between CS0 on alt B or PS1 on alt C */
--DB8500_FUNC_GROUPS(sm, "sm_b_1", "smcs0_b_1", "smcleale_c_1", "smps1_c_1");
-+DB8500_FUNC_GROUPS(sm, "sm_b_1", "smcs0_b_1", "smcs1_b_1", "smcleale_c_1",
-+		   "smps0_c_1", "smps1_c_1");
- DB8500_FUNC_GROUPS(lcda, "lcdaclk_b_1", "lcda_b_1");
- DB8500_FUNC_GROUPS(ddrtrig, "ddrtrig_b_1");
- DB8500_FUNC_GROUPS(pwl, "pwl_b_1", "pwl_b_2", "pwl_b_3", "pwl_b_4");
--- 
-1.7.9.2
+> > There have been a number of clock/timer/leap bugs over the last
+> > years. Some of these might have been avoided by using a continuous
+> > scale, since no special timer actions would be needed during a leap
+> > second.
+> > 
+> > The run time cost is low, just one additional test and addition when
+> > reading the time. It might be worth it for the peace of mind when
+> > the next leap second rolls around.
+> 
+> I don't know if reworking the system that's been in place for ages is a good
+> way to give us 'peace of mind'.  Then again, I love to be enlightened :-)
 
+There have been lockups and other kernel issues due to leap second
+bugs. That is a fact. Does that give you peace of mind?
+
+My own computers were off for the last leap second. But some people
+cannot afford to do this. I suggest that changing the code so that no
+special actions occur at a leap second would be more reliable than
+having rarely tested code paths just for leap second handling.
+
+Thanks,
+Richard
