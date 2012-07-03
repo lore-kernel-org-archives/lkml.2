@@ -1,172 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933404Ab2GCTeS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 15:34:18 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:3607 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753188Ab2GCTeP (ORCPT
+	id S933436Ab2GCTej (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 15:34:39 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37317 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933032Ab2GCTei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 15:34:15 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839hd24he5bhf0ah)
-From: Fabio Estevam <fabio.estevam@freescale.com>
-To: <vinod.koul@intel.com>
-CC: <kernel@pengutronix.de>, <linux-kernel@vger.kernel.org>,
-        <dan.j.williams@intel.com>, <javier.martin@vista-silicon.com>,
-        Fabio Estevam <festevam@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] dma: imx-dma: Fix kernel crash due to missing clock conversion
-Date: Tue, 3 Jul 2012 15:33:29 -0300
-Message-ID: <1341340409-9347-1-git-send-email-fabio.estevam@freescale.com>
-X-Mailer: git-send-email 1.7.1
+	Tue, 3 Jul 2012 15:34:38 -0400
+Date: Tue, 3 Jul 2012 20:34:03 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Alessandro Rubini <rubini@gnudd.com>, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
+        alan@linux.intel.com, x86@kernel.org, gregkh@linuxfoundation.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH V2 5/6] x86: add CONFIG_ARM_AMBA, selected by STA2X11
+Message-ID: <20120703193403.GA26355@n2100.arm.linux.org.uk>
+References: <2b797c83-6a3c-4051-841a-a4cfa9d1cae1@email.android.com> <20120701104401.GA4352@mail.gnudd.com> <20120703130042.GA10007@mail.gnudd.com> <201207031319.40884.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201207031319.40884.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <festevam@gmail.com>
+On Tue, Jul 03, 2012 at 01:19:40PM +0000, Arnd Bergmann wrote:
+> On Tuesday 03 July 2012, Alessandro Rubini wrote:
+> >    drivers/dma/amba-pl08x.c: needs <asm/hardware/pl080.h>
+> >      proposed fix: move pl080.h to include/linux
+> 
+> Note that there is already an include/linux/amba/pl08x.h.
+> I would just move the few parts of pl080.h that are actually
+> needed with global visibility there, and move the rest
+> to drivers/dma/.
 
-With the new i.MX clock infrastructure we need to request the dma clocks
-seperately: ahb and ipg clocks.
+NAK.  It's the entire register definitions for the PL08x, which we really
+should not be exporting to common code.
 
-This fixes the following kernel crash and make audio to be functional again:
+Please wait until _after_ my DMA engine stuff (which is now in linux-next)
+makes its way upstream before touching any of this stuff, otherwise there's
+going to be conflicts.
 
-root@freescale /home$ aplay audio48k16S.wav 
-Playing WAVE 'audio48k16S.wav' : Signed 16 bit Little Endian, Rate 48000 Hz, Stereo
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-pgd = c7b74000
-[00000000] *pgd=a7bb5831, *pte=00000000, *ppte=00000000
-Internal error: Oops: 17 [#1] PREEMPT ARM
-Modules linked in:
-CPU: 0    Not tainted  (3.5.0-rc5-next-20120702-00007-g3028b64 #1128)
-PC is at snd_dmaengine_pcm_get_chan+0x8/0x10
-LR is at snd_imx_pcm_hw_params+0x18/0xdc
-pc : [<c02d3cf8>]    lr : [<c02e95ec>]    psr: a0000013
-sp : c7b45e30  ip : ffffffff  fp : c7ae58e0
-r10: 00000000  r9 : c7ae981c  r8 : c7b88800
-r7 : c7ae5a60  r6 : c7ae5b20  r5 : c7ae9810  r4 : c7afa060
-r3 : 00000000  r2 : 00000001  r1 : c7b88800  r0 : c7afa060
-Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 0005317f  Table: a7b74000  DAC: 00000015
-Process aplay (pid: 701, stack limit = 0xc7b44270)
-Stack: (0xc7b45e30 to 0xc7b46000)
-5e20:                                     00100000 00000029 c7b88800 c02db870
-5e40: c7ae5a60 c02d4594 00000010 01ae5a60 c7ae5a60 c7ae9810 c7ae9810 c7afa060
-5e60: c7ae5b20 c7ae5a60 c7b88800 c02e3ef0 c02e3e08 c7b1e400 c7afa060 c7b88800
-5e80: 00000000 c0014da8 c7b44000 00000000 bec566ac c02cd400 c7afa060 c7afa060
-5ea0: bec56800 c7b88800 c0014da8 c02cdd7c c04ee710 c04ee7b8 00000003 c005fc74
-5ec0: 00000000 7fffffff c7b45f00 c7afa060 c7b67420 c7ba3070 00000004 c0014da8
-5ee0: c7b44000 00000000 bec566ac c02ced88 c04e95f8 b6f5ab04 c7b45fb0 0145a468
-5f00: 0145a600 bec566bc bec56800 c7b67420 c7ba3070 c00d499c c7b45f18 c7b45f18
-5f20: 0000001a 00000004 00000001 c7b44000 c0527f40 00000009 00000008 00000000
-5f40: c7b44000 c002c9ec 00000001 c04f0ab0 c04ebec0 00000101 00000000 0000000a
-5f60: 60000093 c7b67420 bec56800 c25c4111 00000004 c0014da8 c7b44000 00000000
-5f80: bec566ac c00d4f38 b6ffb658 00000000 c0522d80 0145a468 b6fd5000 0145a418
-5fa0: 00000036 c0014c00 0145a468 b6fd5000 00000004 c25c4111 bec56800 00020001
-5fc0: 0145a468 b6fd5000 0145a418 00000036 0145a468 0145a600 bec566bc bec566ac
-5fe0: 0145a468 bec56388 b6f65ce4 b6dcebec 20000010 00000004 00000000 00000000
-[<c02d3cf8>] (snd_dmaengine_pcm_get_chan+0x8/0x10) from [<c02e95ec>] (snd_imx_pcm_hw_params+0x18/0xdc)
-[<c02e95ec>] (snd_imx_pcm_hw_params+0x18/0xdc) from [<c02e3ef0>] (soc_pcm_hw_params+0xe8/0x1f0)
-[<c02e3ef0>] (soc_pcm_hw_params+0xe8/0x1f0) from [<c02cd400>] (snd_pcm_hw_params+0x124/0x474)
-[<c02cd400>] (snd_pcm_hw_params+0x124/0x474) from [<c02cdd7c>] (snd_pcm_common_ioctl1+0x4b4/0xf74)
-[<c02cdd7c>] (snd_pcm_common_ioctl1+0x4b4/0xf74) from [<c02ced88>] (snd_pcm_playback_ioctl1+0x30/0x510)
-[<c02ced88>] (snd_pcm_playback_ioctl1+0x30/0x510) from [<c00d499c>] (do_vfs_ioctl+0x80/0x5e4)
-[<c00d499c>] (do_vfs_ioctl+0x80/0x5e4) from [<c00d4f38>] (sys_ioctl+0x38/0x60)
-[<c00d4f38>] (sys_ioctl+0x38/0x60) from [<c0014c00>] (ret_fast_syscall+0x0/0x2c)
-Code: e593000c e12fff1e e59030a0 e59330bc (e5930000) 
----[ end trace fa518c8ba3a74e97 ]--
+As part of my patch series, this gets rid of a number of uses of it in
+arch/arm, but there's still the .cctl_memcpy initializer which does. I've
+not yet checked whether all implementations use the same value (they
+probably do), and if so then it should be eliminated from platform code
+and moved into the driver.
 
-Reported-by: Javier Martin <javier.martin@vista-silicon.com>
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/dma/imx-dma.c |   36 +++++++++++++++++++++++++-----------
- 1 files changed, 25 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index fcfeb3c..5084975 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -172,7 +172,8 @@ struct imxdma_engine {
- 	struct device_dma_parameters	dma_parms;
- 	struct dma_device		dma_device;
- 	void __iomem			*base;
--	struct clk			*dma_clk;
-+	struct clk			*dma_ahb;
-+	struct clk			*dma_ipg;
- 	spinlock_t			lock;
- 	struct imx_dma_2d_config	slots_2d[IMX_DMA_2D_SLOTS];
- 	struct imxdma_channel		channel[IMX_DMA_CHANNELS];
-@@ -976,10 +977,20 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 		return 0;
- 	}
- 
--	imxdma->dma_clk = clk_get(NULL, "dma");
--	if (IS_ERR(imxdma->dma_clk))
--		return PTR_ERR(imxdma->dma_clk);
--	clk_enable(imxdma->dma_clk);
-+	imxdma->dma_ipg = devm_clk_get(&pdev->dev, "ipg");
-+	if (IS_ERR(imxdma->dma_ipg)) {
-+		ret = PTR_ERR(imxdma->dma_ipg);
-+		goto err_clk;
-+	}
-+
-+	imxdma->dma_ahb = devm_clk_get(&pdev->dev, "ahb");
-+	if (IS_ERR(imxdma->dma_ahb)) {
-+		ret = PTR_ERR(imxdma->dma_ahb);
-+		goto err_clk;
-+	}
-+
-+	clk_prepare_enable(imxdma->dma_ipg);
-+	clk_prepare_enable(imxdma->dma_ahb);
- 
- 	/* reset DMA module */
- 	imx_dmav1_writel(imxdma, DCR_DRST, DMA_DCR);
-@@ -988,16 +999,14 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 		ret = request_irq(MX1_DMA_INT, dma_irq_handler, 0, "DMA", imxdma);
- 		if (ret) {
- 			dev_warn(imxdma->dev, "Can't register IRQ for DMA\n");
--			kfree(imxdma);
--			return ret;
-+			goto err_enable;
- 		}
- 
- 		ret = request_irq(MX1_DMA_ERR, imxdma_err_handler, 0, "DMA", imxdma);
- 		if (ret) {
- 			dev_warn(imxdma->dev, "Can't register ERRIRQ for DMA\n");
- 			free_irq(MX1_DMA_INT, NULL);
--			kfree(imxdma);
--			return ret;
-+			goto err_enable;
- 		}
- 	}
- 
-@@ -1094,7 +1103,10 @@ err_init:
- 		free_irq(MX1_DMA_INT, NULL);
- 		free_irq(MX1_DMA_ERR, NULL);
- 	}
--
-+err_enable:
-+	clk_disable_unprepare(imxdma->dma_ipg);
-+	clk_disable_unprepare(imxdma->dma_ahb);
-+err_clk:
- 	kfree(imxdma);
- 	return ret;
- }
-@@ -1114,7 +1126,9 @@ static int __exit imxdma_remove(struct platform_device *pdev)
- 		free_irq(MX1_DMA_ERR, NULL);
- 	}
- 
--        kfree(imxdma);
-+	clk_disable_unprepare(imxdma->dma_ipg);
-+	clk_disable_unprepare(imxdma->dma_ahb);
-+	kfree(imxdma);
- 
-         return 0;
- }
--- 
-1.7.1
-
-
+I've talked about asm/hardware/pl080.h within the last week on this very
+thread... and it's disappointing to have to re-say what I said because
+you've not read my previous postings.
