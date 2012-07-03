@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972Ab2GCJbw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 05:31:52 -0400
-Received: from skyrme.org ([193.175.80.135]:44187 "EHLO skyrme.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754595Ab2GCJbv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 05:31:51 -0400
-Date: 3 Jul 2012 09:31:48 +0000
-Message-Id: <1341307908-19223-1-git-send-email-oskar@scara.com>
-From: "Oskar Schirmer" <oskar@scara.com>
-To: "Dan Williams" <dcbw@redhat.com>
-Cc: linux-kernel@vger.kernel.org, "Andrew Morton" <akpm@linux-foundation.org>,
-        "Oskar Schirmer" <oskar@scara.com>,
-        "Marcelo Tosatti" <marcelo@kvack.org>,
-        "Dan Williams" <dcbw@redhat.com>
-Subject: [PATCH] net/wireless: remove macro defined twice with same value
-X-Mailer: git-send-email 1.6.0.3
+	id S1755438Ab2GCJpK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 05:45:10 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:47006 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264Ab2GCJof (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 05:44:35 -0400
+MIME-Version: 1.0
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <DB904C5425BA6F4E8424B3B51A1414D17140805DC8@NWD2CMBX1.ad.analog.com>
+References: <1341301353.12050.1.camel@phoenix> <DB904C5425BA6F4E8424B3B51A1414D17140805D85@NWD2CMBX1.ad.analog.com>
+ <4FF2A7F9.3090307@metafoo.de> <DB904C5425BA6F4E8424B3B51A1414D17140805DAB@NWD2CMBX1.ad.analog.com>
+ <4FF2AC24.7090906@metafoo.de> <DB904C5425BA6F4E8424B3B51A1414D17140805DC8@NWD2CMBX1.ad.analog.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Tue, 3 Jul 2012 17:44:15 +0800
+Message-ID: <CAF+7xWk5qQa5nV3OdFM51U1Kh7g9w3dA5mLL+SGRQ7_AFNkp5A@mail.gmail.com>
+Subject: Re: [PATCH v2] regulator: ad5398: Fix min/max current limit boundary checking
+To: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the list of commands CMD_802_11_EEPROM_ACCESS had been
-defined twice, unnecessarily, luckily with same value.
+>>As long as it is smaller than the maximum requested current, yes. You
+>>request a current range with the regulator API and any value within this
+>>range is fine as the actual output current.
+>>
+>
+> If so, please also set the max_uA as well.
 
-Remove one occurence.
+The equation to calculate the selector does not depend on max_uA.
+So I think we don't need to set the requested max_uA.
 
-Signed-off-by: Oskar Schirmer <oskar@scara.com>
-Cc: Marcelo Tosatti <marcelo@kvack.org>
-Cc: Dan Williams <dcbw@redhat.com>
----
- drivers/net/wireless/libertas/host.h |    1 -
- 1 file changed, 1 deletion(-)
+Current does check the selected current by:
+if (ad5398_calc_current(chip, selector) > max_uA)
+        return -EINVAL;
 
-diff --git a/drivers/net/wireless/libertas/host.h b/drivers/net/wireless/libertas/host.h
-index 2e2dbfa..96726f7 100644
---- a/drivers/net/wireless/libertas/host.h
-+++ b/drivers/net/wireless/libertas/host.h
-@@ -68,7 +68,6 @@
- #define CMD_802_11_BEACON_STOP                  0x0049
- #define CMD_802_11_MAC_ADDRESS                  0x004d
- #define CMD_802_11_LED_GPIO_CTRL                0x004e
--#define CMD_802_11_EEPROM_ACCESS                0x0059
- #define CMD_802_11_BAND_CONFIG                  0x0058
- #define CMD_GSPI_BUS_CONFIG                     0x005a
- #define CMD_802_11D_DOMAIN_INFO                 0x005b
--- 
-1.7.9.5
+This ensures the selected current falls within specified range.
 
+Regards,
+Axel
