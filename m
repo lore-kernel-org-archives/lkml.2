@@ -1,57 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933230Ab2GCHKs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 03:10:48 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:53599 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932169Ab2GCHKr (ORCPT
+	id S933317Ab2GCHOf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 03:14:35 -0400
+Received: from ims-d14.mx.aol.com ([205.188.249.151]:56644 "EHLO
+	ims-d14.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910Ab2GCHOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 03:10:47 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap5MADya8k9V5qg+PGdsb2JhbABFihWsVhkBAQEBHhkNJ4IYAQEFOhwjEAgDGC4UJQoaiCK7OxSLJIU6YAOVNIVmjH8
-X-IronPort-AV: E=Sophos;i="4.77,515,1336341600"; 
-   d="scan'208";a="367476448"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 3 Jul 2012 09:11:02 +0200
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Jan Beulich <jbeulich@suse.com>, Jiri Kosina <jkosina@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: hid/Kconfig:7:error: recursive dependency detected!
-Message-ID: <20120703071102.GA5072@polaris.bitmath.org>
-References: <20120703040640.GA8236@localhost>
- <20120703064407.GA4854@polaris.bitmath.org>
- <20120703064954.GB17367@localhost>
+	Tue, 3 Jul 2012 03:14:33 -0400
+Message-Id: <201207030714.q637ES51008979@ims-d14.mx.aol.com>
+Content-Type: multipart/mixed; boundary="===============1934966412=="
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120703064954.GB17367@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Urgent Assitance Needed
+To: Recipients <no1mudman@aol.com>
+From: "Anita George" <no1mudman@aol.com>
+Date: Tue, 03 Jul 2012 00:10:51 -0700
+Reply-To: georgeanita0125@yahoo.co.jp
+x-aol-global-disposition: S
+X-SPAM-FLAG: YES
+X-AOL-VSS-INFO: 5400.1158/81930
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:427037984:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+X-AOL-REROUTE: YES 
+x-aol-sid: 3039ac1d29454ff29b2e3edb
+X-AOL-IP: 178.162.151.246
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 03, 2012 at 02:49:54PM +0800, Fengguang Wu wrote:
-> On Tue, Jul 03, 2012 at 08:44:07AM +0200, Henrik Rydberg wrote:
-> > Hi Fengguang,
-> > 
-> > > I got this error while doing randconfig test:
-> > > 
-> > >         drivers/hid/Kconfig:7:error: recursive dependency detected!
-> > >         drivers/hid/Kconfig:7:  symbol HID is selected by USB_HID
-> > >         drivers/hid/usbhid/Kconfig:4:   symbol USB_HID depends on HID
-> > 
-> > What kernel tree does this apply to? Reading through the code again
-> > and testing your configuration, I cannot reproduce the
-> > problem. Indeed, in my tree, USB_HID does not depend on HID.
-> 
-> Henrik, I'm testing on today's linux-next.
+You will not see this in a MIME-aware mail reader.
+--===============1934966412==
+Content-Type: text/plain; charset="iso-8859-1"
+MIME-Version: 1.0
+Content-Transfer-Encoding: quoted-printable
+Content-Description: Mail message body
 
-Ah, yes, I see it. The problem is also present in Jiri's for-next
-tree. Jiri: the manual merge of drivers/hid/Kconfig seems to have gone
-wrong; in particular, the source of the usbhid config is inside the
-"if HID" statement, which creates the problem seen by Fengguang.
+OPEN AND READ THE ATTACHMENT  FILE..
+--===============1934966412==
+Content-Type: application/octet-stream
+MIME-Version: 1.0
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="George.rtf"
 
-Thanks,
-Henrik
+e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZvbnR0Ymx7XGYwXGZz
+d2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5lcmF0b3IgTXNmdGVkaXQgNS40MS4yMS4y
+NTA5O31cdmlld2tpbmQ0XHVjMVxwYXJkXGYwXGZzMjAgR3JlZXRpbmdzLFxwYXINClxwYXINCkkg
+a25vdyB5b3Ugd2lsbCBiZSBzdXJwcmlzZWQgdG8gcmVhZCBteSBlbWFpbC4gSSBnb3QgeW91ciBj
+b250YWN0IGZyb20geW91ciBFbWFpbCBkb21haW4sIGFwYXJ0IGZyb20gYmVpbmcgc3VycHJpc2Ug
+eW91IG1heSBiZSBza2VwdGljYWwgdG8gcmVwbHkgbWUgYmVjYXVzZSBiYXNlZCBvbiB3aGF0IGlz
+IGhhcHBlbmluZyBvbiB0aGUgaW50ZXJuZXQgd29ybGQsIG9uZSBoYXMgdG8gYmUgdmVyeSBjYXJl
+ZnVsIGJlY2F1c2UgYSBsb3Qgb2Ygc2NhbW1lcnMgYXJlIG91dCB0aGVyZSB0byBzY2FtIGlubm9j
+ZW50IGNpdGl6ZW5zIGFuZCB0aGlzIGhhcyBtYWRlIGl0IHZlcnkgZGlmZmljdWx0IGZvciBwZW9w
+bGUgdG8gYmVsaWV2ZSBhbnl0aGluZyB0aGF0IGNvbWVzIHRocm91Z2ggdGhlIGludGVybmV0IGJ1
+dCB0aGlzIGlzIGEgZGlmZmVyZW50IGNhc2UuXHBhcg0KXHBhcg0KbGYgeW91IGFyZSB3aWxsaW5n
+IHRvIHNob3cgbWUgeW91ciBob25lc3R5IGFuZCB0cnVzdCwgSSB0aGluayBJIHdpbGwgYmUgYWJs
+ZSB0byB0cnVzdCBhbmQgd29yayB3aXRoIHlvdS4gSSBhbSBhbiBBbWVyaWNhbiBhbmQgeW91IHNo
+b3VsZCBiZSByZXN0IGFzc3VyZWQgdGhhdCBJIGNhbm5vdCBiZSBpbnZvbHZlZCBpbiBzY2FtXHBh
+cg0KXHBhcg0KXHBhcg0KXHBhcg0KTXkgbmFtZSBpcyBDYXB0LiBBbml0YSBHZW9yZ2UgLCBhIG1l
+bWJlciBvZiB0aGUgVS5TLiBBUk1ZIFVTQVJQQUMgbWVkaWNhbCB0ZWFtLCB3aGljaCB3YXMgZGVw
+bG95ZWQgdG8gSXJhcSBhdCB0aGUgYmVnaW5uaW5nIG9mIHRoZSB3YXIgaW4gSXJhcS4gQWx0aG91
+Z2ggdGhlIHdhciBoYXMgZW5kZWQsIGZvciBtZSB0byBwcm92ZWQgdGhpcyB0byB5b3UsIHNlZSB0
+aGUgc2l0ZSBiZWxvdyBmb3IgbW9yZSBpbmZvcm1hdGlvbixccGFyDQpccGFyDQpodHRwOi8vd3d3
+Lmh1ZmZpbmd0b25wb3N0LmNvbS8yMDExLzEyLzMwL2lyYXEtdXMtdHJvb3Atd2l0aGRyYXdhbC1j
+ZWxlYnJhdGlvbnNfbl8xMTc2MzMwLmh0bWxccGFyDQpodHRwOi8vZGFpbHljYWxsZXIuY29tLzIw
+MTEvMTIvMjcvYXMtaXJhcS13YXItZW5kcy1uby1wYXJhZGUtZm9yLXRyb29wcy1pcy1pbW1pbmVu
+dC9ccGFyDQpccGFyDQpCdXQgSSByZWZ1c2VkIHRvIGNvbWUgYWxvbmcgd2l0aCB0aGVtIGluIHJl
+c3BlY3RpdmUgb2YgdGhlIGZhY3QgdGhhdCB0aGUgd2FyIGhhcyBlbmRlZC4gVGhlIHJlYXNvbiBm
+b3IgdGhpcyBpcyB0aGF0IEkgZGVwb3NpdGVkIHR3byBjb25zaWdubWVudCBib3hlcyB3aXRoIGEg
+c2VjdXJpdHkgY29tcGFueSBpbiBJcmFxLiBBcyBhIHJlc3VsdCBvZiB0aGlzLCBJIGhhdmUgdG8g
+ZXNjYXBlIGFuZCBzdGF5ZWQgYmVoaW5kIHRvIG1ha2Ugc3VyZSB0aGF0IEkgYW0gYWJsZSB0byBn
+ZXQgdGhlc2UgYm94ZXMgb3V0IGJlZm9yZSBjb21pbmcgdG8gQW1lcmljYSwga25vd2luZ2x5LCB0
+aGF0IGlmIEkgYW0gYWJsZSB0byBnZXQgdGhpcyBkb25lIEkgd2lsbCBsaXZlIGEgYmV0dGVyIGxp
+ZmUuIFBsZWFzZSwgSSB3YW50IHRoaXMgdG8gYmUgYmV0d2VlbiBtZSBhbmQgeW91IFNpbmNlIEkg
+YW0gYXQgbGFyZ2UuXHBhcg0KVG8gUHJvdmUgbXkgc2luY2VyaXR5LCB5b3UgYXJlIG5vdCBzZW5k
+aW5nIG1lIGFueSBtb25leS4gQmVjYXVzZSBtb3N0IG9mIHRoaXMgc2NhbSBpcyBhYm91dCBzZW5k
+aW5nIG1vbmV5LlxwYXINClxwYXINClRob3VnaCwgSSB3b3VsZCBsaWtlIHRvIGhvbGQgYmFjayBz
+b21lIGluZm9ybWF0aW9ucyBmb3Igc2VjdXJpdHkgcmVhc29ucyBmb3Igbm93IHVudGlsIHlvdSBo
+YXZlIGZvdW5kIHRpbWUgdG8gdmlzaXQgdGhlIEJCQyB3ZWJzaXRlIHN0YXRlZCBiZWxvdyB0byBl
+bmFibGUgeW91IGhhdmUgYW4gaW5zaWdodCBpbnRvIHdoYXQgSSBpbnRlbmQgc2hhcmluZyB3aXRo
+IHlvdSwgYmVsaWV2aW5nIHRoYXQgaXQgd291bGQgYmUgb2YgeW91ciBkZXNpcmVkIGludGVyZXN0
+IG9uZS13YXkgb3IgdGhlIG90aGVyLlxwYXINClxwYXINCmh0dHA6Ly9uZXdzLmJiYy5jby51ay8y
+L2hpL21pZGRsZV9lYXN0LzI5ODg0NTUuc3RtXHBhcg0KaHR0cDovL25ld3MuYmJjLmNvLnVrLzIv
+aGkvbWlkZGxlX2Vhc3QvMjk4ODQ1NS5zdG1ccGFyDQpodHRwOi8vd3d3LmpvbmF0aGFuZm9yZW1h
+bi5jb20vbWlsaXRhcnkvbnlwX2lyYXEvMDQxOTIwMDNfY2hlc3QuaHRtbFxwYXINCmh0dHA6Ly93
+d3cudm9hbmV3cy5jb20vYnVybWVzZS9hcmNoaXZlLzIwMDMtMDQvYS0yMDAzLTA0LTIwLTEtMS5j
+Zm0gKFZPQSBORVdTKVxwYXINClxwYXINCkFsc28sIGNvdWxkIHlvdSBnZXQgYmFjayB0byBtZSBo
+YXZpbmcgdmlzaXRlZCB0aGUgYWJvdmUgd2Vic2l0ZSB0byBlbmFibGUgdXMgZGlzY3VzcyBpbiBh
+IG1vcmUgY2xhcmlmeWluZyBtYW5uZXIgdG8gdGhlIGJlc3Qgb2YgeW91ciB1bmRlcnN0YW5kaW5n
+LiBJIG11c3Qgc2F5IHRoYXQgSSdtIHZlcnkgdW5jb21mb3J0YWJsZSBzZW5kaW5nIHRoaXMgbWVz
+c2FnZSB0byB5b3Ugd2l0aG91dCBrbm93aW5nIHRydWx5IGlmIHlvdSB3b3VsZCBtaXNjb25zdHJ1
+ZSB0aGUgaW1wb3J0YW5jZSBhbmQgZGVjaWRlcyB0byBnbyBwdWJsaWMuIEluIHRoaXMgcmVnYXJk
+cywgSSB3aWxsIG5vdCBob2xkIGJhY2sgdG8gc2F5IHRoYXQgdGhlIGVzc2VuY2Ugb2YgdGhpcyBt
+ZXNzYWdlIGlzIHN0cmljdGx5IGZvciBtdXR1YWwgYmVuZWZpdCBiZXR3ZWVuIHlvdSBhbmQgSSBh
+bmQgbm90aGluZyBtb3JlLlxwYXINCkkgd2lsbCBiZSB2aXZpZCBhbmQgY29oZXJlbnQgaW4gbXkg
+bmV4dCBtZXNzYWdlIGluIHRoaXMgcmVnYXJkcywgbWVhbndoaWxlLCBjb3VsZCB5b3Ugc2VuZCBt
+ZSBhbiBlbWFpbCBjb25maXJtaW5nIHRoYXQgeW91IGhhdmUgdmlzaXRlZCB0aGUgc2l0ZSBhbmQg
+dGhhdCB5b3UgaGF2ZSB1bmRlcnN0b29kIG15IGludGVudGlvbnM/IEkgd291bGQgbGlrZSB5b3Ug
+dG8gZ2V0IGJhY2sgdG8gbWUgd2l0aCB3aXRoIHRoZSBmb2xsb3dpbmcgaW5mb3JtYXRpb25zO1xw
+YXINClxwYXINCjEuIEZ1bGwgTmFtZVxwYXINCjIuIEFkZHJlc3NccGFyDQozLk9jY3VwYXRpb25c
+cGFyDQo0LkFnZVxwYXINClxwYXINCkkgZG8gbm90IG5lZWQgeW91ciB0ZWxlcGhvbmUgbnVtYmVy
+IGJlY2F1c2UgSSBjYW5ub3QgY2FsbCB5b3UsIHdlIGNhbiBvbmx5IGNvbW11bmljYXRlIHRocm91
+Z2ggZW1haWwuXHBhcg0KXHBhcg0KSSB3aWxsIGF3YWl0IHlvdXIgcmVwbHkgdmlhIG15IGVtYWls
+LlxwYXINClxwYXINClRoYW5rcyxccGFyDQpccGFyDQpCZXN0IFJlZ2FyZHNccGFyDQpccGFyDQpD
+YXB0LiBBbml0YSBHZW9yZ2VccGFyDQp9DQoA
+--===============1934966412==--
