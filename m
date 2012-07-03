@@ -1,47 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030202Ab2GCIMp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 04:12:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58003 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756148Ab2GCIMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 04:12:40 -0400
-Date: Tue, 3 Jul 2012 05:07:13 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
-Cc: peterz@infradead.org, mingo@elte.hu, avi@redhat.com,
-        raghukt@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org, jeremy@goop.org,
-        vatsa@linux.vnet.ibm.com, hpa@zytor.com
-Subject: Re: [PATCH v2 5/7] KVM: Introduce PV kick in flush tlb
-Message-ID: <20120703080713.GA12579@amt.cnet>
-References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com>
- <20120604050755.4560.24727.stgit@abhimanyu.in.ibm.com>
+	id S933521Ab2GCINl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 04:13:41 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:10583
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932166Ab2GCINi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 04:13:38 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-SpamScore: -9
+X-BigFish: VPS-9(zzbb2dI98dI9371I542M1432Izz1202hzz8275bhz2dh2a8h668h839h93fhd25hf0ah)
+From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Axel Lin <axel.lin@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@ti.com>
+Date: Tue, 3 Jul 2012 04:13:44 -0400
+Subject: RE: [PATCH v2] regulator: ad5398: Fix min/max current limit
+ boundary checking
+Thread-Topic: [PATCH v2] regulator: ad5398: Fix min/max current limit
+ boundary checking
+Thread-Index: Ac1Y8jTj3uIfQroXRVyBixkvqpPk5QAANLiw
+Message-ID: <DB904C5425BA6F4E8424B3B51A1414D17140805DAB@NWD2CMBX1.ad.analog.com>
+References: <1341301353.12050.1.camel@phoenix>
+ <DB904C5425BA6F4E8424B3B51A1414D17140805D85@NWD2CMBX1.ad.analog.com>
+ <4FF2A7F9.3090307@metafoo.de>
+In-Reply-To: <4FF2A7F9.3090307@metafoo.de>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120604050755.4560.24727.stgit@abhimanyu.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q638DlY7014471
 
-On Mon, Jun 04, 2012 at 10:38:17AM +0530, Nikunj A. Dadhania wrote:
-> In place of looping continuously introduce a halt if we do not succeed
-> after some time.
-> 
-> For vcpus that were running an IPI is sent.  In case, it went to sleep
-> between this, we will be doing flush_on_enter(harmless). But as a
-> flush IPI was already sent, that will be processed in ipi handler,
-> this might result into something undesireable, i.e. It might clear the
-> flush_mask of a new request.
-> 
-> So after sending an IPI and waiting for a while, do a halt and wait
-> for a kick from the last vcpu.
-> 
-> Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-> Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
 
-Again, was it determined that this is necessary from data of 
-benchmarking on the in-guest-mode/out-guest-mode patch?
 
+>-----Original Message-----
+>From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+>Sent: Tuesday, July 03, 2012 4:06 PM
+>To: Zhang, Sonic
+>Cc: Axel Lin; Mark Brown; linux-kernel@vger.kernel.org; Liam Girdwood
+>Subject: Re: [PATCH v2] regulator: ad5398: Fix min/max current limit boundary
+>checking
+>
+>On 07/03/2012 09:54 AM, Zhang, Sonic wrote:
+>>
+>>
+>>> -----Original Message-----
+>>> From: Axel Lin [mailto:axel.lin@gmail.com]
+>>> Sent: Tuesday, July 03, 2012 3:43 PM
+>>> To: Mark Brown
+>>> Cc: linux-kernel@vger.kernel.org; Zhang, Sonic; Lars-Peter Clausen; Liam
+>>> Girdwood
+>>> Subject: [PATCH v2] regulator: ad5398: Fix min/max current limit boundary
+>>> checking
+>>>
+>>> It is ok to request current limit with min_uA < chip->min_uA and
+>>> max_uA > chip->max_uA.
+>>>
+>>> We need to set min_uA = chip->min_uA if (min_uA < chip->min_uA),
+>>> this ensures the equation to calcuate selator does not return negative number.
+>>>
+>>
+>> You should not do it in driver. Set a correct min_uA value in your application.
+>
+>I think the patch makes sense. If a application request a current range
+>which overlaps with the range support by the chip, but either the requested
+>min is smaller than the supported min or the requested max is larger than
+>the supported max the driver will fail with an error. E.g.
+>
+>req-min     req-max
+>   |-----------|
+>        |------------|
+>     chip-min  chip-max
+>
+>or even
+>
+>req-min                req-max
+>   |----------------------|
+>        |------------|
+>     chip-min  chip-max
+>
+>
+>While it is obviously possible for the chip to fulfill this request.
+>Axel's patch takes care of this situation and ensures that the request is
+>satisfied and the output current is set to a current within the requested
+>range and the supported range.
+
+If the requested minimum current is smaller than the capability of the hardware, does a bigger min value fulfill this request?
+
+If this logic is correct, I am fine to ACK.
+
+
+Regards,
+
+Sonic
+
+
+>
+>- Lars
+>
+>>
+>> Regards,
+>>
+>> Sonic
+>>
+>>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>>> ~
+>>> ---
+>>> drivers/regulator/ad5398.c |    7 ++++---
+>>> 1 file changed, 4 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/drivers/regulator/ad5398.c b/drivers/regulator/ad5398.c
+>>> index 46d05f3..84fdcda 100644
+>>> --- a/drivers/regulator/ad5398.c
+>>> +++ b/drivers/regulator/ad5398.c
+>>> @@ -89,9 +89,10 @@ static int ad5398_set_current_limit(struct regulator_dev
+>>> *rdev, int min_uA, int
+>>>       unsigned short data;
+>>>       int ret;
+>>>
+>>> -      if (min_uA > chip->max_uA || min_uA < chip->min_uA)
+>>> -              return -EINVAL;
+>>> -      if (max_uA > chip->max_uA || max_uA < chip->min_uA)
+>>> +      if (min_uA < chip->min_uA)
+>>> +              min_uA = chip->min_uA;
+>>> +
+>>> +      if (min_uA > chip->max_uA || max_uA < chip->min_uA)
+>>>               return -EINVAL;
+>>>
+>>>       selector = DIV_ROUND_UP((min_uA - chip->min_uA) * chip->current_level,
+>>> --
+>>> 1.7.9.5
+>>>
+>>>
+>>>
+>>
+>
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
