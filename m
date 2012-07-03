@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260Ab2GCUlW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 16:41:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36260 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab2GCUlV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 16:41:21 -0400
-Date: Tue, 3 Jul 2012 13:41:20 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
-        Greg KH <greg@kroah.com>, linux-mm@kvack.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH -v5 0/6] notifier error injection
-Message-Id: <20120703134120.dc89c7ae.akpm@linux-foundation.org>
-In-Reply-To: <1341035970-20490-1-git-send-email-akinobu.mita@gmail.com>
-References: <1341035970-20490-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S964780Ab2GCUn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 16:43:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60053 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753277Ab2GCUn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 16:43:56 -0400
+Date: Tue, 3 Jul 2012 17:30:53 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] KVM: MMU: track the refcount when unmap the page
+Message-ID: <20120703203053.GA13581@amt.cnet>
+References: <4FF291A5.5090803@linux.vnet.ibm.com>
+ <4FF291EE.7060408@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF291EE.7060408@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 30 Jun 2012 14:59:24 +0900
-Akinobu Mita <akinobu.mita@gmail.com> wrote:
+On Tue, Jul 03, 2012 at 02:32:14PM +0800, Xiao Guangrong wrote:
+> It will trigger a WARN_ON if the page has been freed but it is still
+> used in mmu, it can help us to detect mm bug early
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index cac3408..af7e076 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -527,6 +527,14 @@ static int mmu_spte_clear_track_bits(u64 *sptep)
+>  		return 0;
+> 
+>  	pfn = spte_to_pfn(old_spte);
+> +
+> +	/*
+> +	 * KVM does not hold the refcount of the page used by
+> +	 * kvm mmu, before reclaiming the page, we should
+> +	 * unmap it from mmu first.
+> +	 */
+> +	WARN_ON(!page_count(pfn_to_page(pfn)));
+> +
 
-> This provides kernel modules that can be used to test the error handling
-> of notifier call chain failures by injecting artifical errors to the
-> following notifier chain callbacks.
+Except for mmio pfns.
 
-No updates to Documentation/fault-injection/?
+Applied patch 1 and 2 to master, thanks.
+
