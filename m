@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933260Ab2GCBaq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jul 2012 21:30:46 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:47358 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756114Ab2GCBap convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jul 2012 21:30:45 -0400
+	id S933306Ab2GCBbM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jul 2012 21:31:12 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51482 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932718Ab2GCBbJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jul 2012 21:31:09 -0400
+Message-ID: <4FF24B59.1060508@wwwdotorg.org>
+Date: Mon, 02 Jul 2012 19:31:05 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <4FEB0273.9050707@gmail.com>
-References: <1339512111-11172-1-git-send-email-robherring2@gmail.com>
- <87bokd15x7.fsf@octavius.laptop.org> <4FE33723.3040403@gmail.com>
- <20120621175443.GL4402@gmail.com> <4FEB0273.9050707@gmail.com>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Mon, 2 Jul 2012 18:30:22 -0700
-Message-ID: <CAJOA=zNFZyOXrv8cpJJYhSyR6kvHr3awDvCwR689XyOKWYCMig@mail.gmail.com>
-Subject: Re: [PATCH v3 0/4] DT clock bindings
-To: Rob Herring <robherring2@gmail.com>
-Cc: Chris Ball <cjb@laptop.org>, Mitch Bradley <wmb@laptop.org>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree-discuss@lists.ozlabs.org,
-        sboyd@codeaurora.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>, skannan@codeaurora.org,
-        Olof Johansson <olof@lixom.net>, shawn.guo@linaro.org,
-        s.hauer@pengutronix.de, linux-arm-kernel@lists.infradead.org
+To: "Turquette, Mike" <mturquette@ti.com>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Subject: Re: [PATCH 4/6] ARM: tegra: Add clk_tegra structure and helper functions
+References: <1340879846-12900-1-git-send-email-pgaikwad@nvidia.com> <1340879846-12900-5-git-send-email-pgaikwad@nvidia.com> <20120628182759.GA28424@gmail.com> <4FED688E.9090408@nvidia.com> <CAJOA=zMt-HWKrgQ-pD-wH0s_Nao5sJA13+ESJSBkHQ_3OBurtg@mail.gmail.com>
+In-Reply-To: <CAJOA=zMt-HWKrgQ-pD-wH0s_Nao5sJA13+ESJSBkHQ_3OBurtg@mail.gmail.com>
+X-Enigmail-Version: 1.4.2
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 5:54 AM, Rob Herring <robherring2@gmail.com> wrote:
-> On 06/21/2012 12:54 PM, Mike Turquette wrote:
->> On 20120621-10:00, Rob Herring wrote:
->>> On 06/21/2012 02:27 AM, Chris Ball wrote:
->>>>
->>>> 2) Use alloc_bootmem() instead of kzalloc() in of_clk_add_provider(),
->>>>    because we need to set up clocks during .init_early on ARM (which
->>>>    happens pre-slab) so that they are available for platform init.
+On 07/02/2012 06:09 PM, Turquette, Mike wrote:
+> On Fri, Jun 29, 2012 at 1:34 AM, Prashant Gaikwad <pgaikwad@nvidia.com> wrote:
+>> On Thursday 28 June 2012 11:58 PM, Mike Turquette wrote:
+>>> We had some discussions in the past on your clock reset and external
+>>> line request operations which you've had to put into struct clk_tegra.
 >>>
->>> This depends on 1 as the common clock code would have the same issue.
->>> Generally, the first place clocks are needed is the timer init. At that
->>> point, you can call kzalloc. This is where all the clock init used to be
->>> done until init_early was added and some platforms have moved their
->>> clock init. I don't think there was really ever much reason to move it
->>> other than to make the timer init function only deal with timer setup.
->>>
+>>> Do you need to expose those ops to code in drivers/*?  I consider that a
+>>> reasonable litmus test to start considering if something should be moved
+>>> into the generic clk.h api.
 >>
->> Hi Rob,
 >>
->> Just FYI I've been looking at using alloc_bootmem in the common clk code
->> as a way to get rid of the static initialization stuff (which only
->> existed due to very early initialization of timers).
->
-> The slab is up at the time timers are initialized. The only real problem
-> is mixing clock init into the timer init functions and clk init in
-> init_early is cleaner in that regard.
->
+>> Yes, we need these ops in drivers. Peter has sent a patch proposing to move
+>> these ops to generic clk.
+>>
+>> In addition, we also need mechanism/ops to change rate and parent from
+>> clk_ops implementation. There was some discussion but I do not know the
+>> latest status.
+>>
+> 
+> Hi Prashant,
+> 
+> OK, that is good to know.  I haven't forgotten about this topic.  I'm
+> still trying to think of the best way to expose less-common operations
+> to drivers...
+> 
+> Based on Stephen's feedback in patch 0 I'll be waiting for another
+> version of this series before taking into clk-next.
 
-Hi Rob,
-
-I'm afraid I don't follow you when you say "slab is up at the time
-timers are initialized".  On some platforms I believe that timer
-initialization takes place before slab is ready (.early_init).
-
->> The suggested change above to of_clk_add_provider would jive well with
->> my change to the common clk code.
->
-> Are you planning this for 3.6? If not, then this can be addressed at the
-> time the clk framework supports bootmem.
->
-> I'm not so sure more users of bootmem are desired. There seems to be
-> some effort/desire to remove it:
->
-> http://lists.linux-foundation.org/pipermail/ksummit-2012-discuss/2012-June/000562.html
-> https://lkml.org/lkml/2012/3/13/586
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2011-December/074886.html
-
-So after looking at those mails it seems using memblock_alloc would be
-a better alternative.  Did I get that right?
-
-Thanks,
-Mike
-
->
-> Rob
+Oh, does this series depend on stuff in clk-next? I was intending to
+take it through the Tegra tree, since it definitely depends on (in
+complex ways through context if nothing else due to to large
+split/rename patches) a bunch of commits in Tegra's for-3.6/common-clk
+branch.
