@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933603Ab2GDHGu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 03:06:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42696 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117Ab2GDHGs (ORCPT
+	id S933636Ab2GDHIG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 03:08:06 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5648 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932117Ab2GDHIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 03:06:48 -0400
-Date: Wed, 4 Jul 2012 09:06:38 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: vinod.koul@intel.com, kernel@pengutronix.de, linux-kernel@vger.kernel.org,
-        dan.j.williams@intel.com, javier.martin@vista-silicon.com,
-        Fabio Estevam <festevam@gmail.com>
-Subject: Re: [PATCH] dma: imx-dma: Fix kernel crash due to missing clock
- conversion
-Message-ID: <20120704070638.GI2698@pengutronix.de>
-References: <1341340409-9347-1-git-send-email-fabio.estevam@freescale.com>
+	Wed, 4 Jul 2012 03:08:02 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 04 Jul 2012 00:04:28 -0700
+Message-ID: <4FF3EAC5.8060209@nvidia.com>
+Date: Wed, 4 Jul 2012 12:33:33 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341340409-9347-1-git-send-email-fabio.estevam@freescale.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:04:59 up 10 days, 22:16, 39 users,  load average: 0.43, 0.77,
- 0.73
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "lrg@ti.com" <lrg@ti.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3 3/3] regulator: dt: add policy to have property "regulator-compatible"
+References: <1340194987-23654-1-git-send-email-ldewangan@nvidia.com> <1340194987-23654-4-git-send-email-ldewangan@nvidia.com> <20120703192508.GG29030@opensource.wolfsonmicro.com>
+In-Reply-To: <20120703192508.GG29030@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 03, 2012 at 03:33:29PM -0300, Fabio Estevam wrote:
-> From: Fabio Estevam <festevam@gmail.com>
-> 
-> With the new i.MX clock infrastructure we need to request the dma clocks
-> seperately: ahb and ipg clocks.
-> 
-> This fixes the following kernel crash and make audio to be functional again:
-> 
-> 
-> Reported-by: Javier Martin <javier.martin@vista-silicon.com>
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+On Wednesday 04 July 2012 12:55 AM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Wed, Jun 20, 2012 at 05:53:07PM +0530, Laxman Dewangan wrote:
+>> Add the policy for regulator DT such that if device have multiple
+>> regulator and its binding contains a child node that describes each
+>> regulator then each regulator child node must have the property
+>> "regulator-compatible" which matches with regulator name of their
+>> hardware counterparts.
+> I tried to apply this but both git and patch are upset with the patch at
+> the line:
+>
+> diff --git a/Documentation/devicetree/bindings/regulator/tps6586x.txt b/Documentation/devicetree/bindings/regulator/tps6586x.txt
+>
+> for reasons I'm not immediately able to discern.  Can you please look
+> into this?
 
-One minor comment inside, should you have to resend this, please
-consider addressing it. Otherwise:
+I will locally try and will resend the patch if anything change.
 
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
-
-> ---
->  drivers/dma/imx-dma.c |   36 +++++++++++++++++++++++++-----------
->  1 files changed, 25 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-> index fcfeb3c..5084975 100644
-> --- a/drivers/dma/imx-dma.c
-> +++ b/drivers/dma/imx-dma.c
-> @@ -172,7 +172,8 @@ struct imxdma_engine {
->  	struct device_dma_parameters	dma_parms;
->  	struct dma_device		dma_device;
->  	void __iomem			*base;
-> -	struct clk			*dma_clk;
-> +	struct clk			*dma_ahb;
-> +	struct clk			*dma_ipg;
-
-I would prefer the names 'clk_*' so that it's a bit more obvious what
-these are.
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
