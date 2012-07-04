@@ -1,73 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933225Ab2GDHBF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 03:01:05 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:53250 "EHLO
+	id S933334Ab2GDHGL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 03:06:11 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:62854 "EHLO
 	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932104Ab2GDHBB (ORCPT
+	with ESMTP id S1752066Ab2GDHGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 03:01:01 -0400
+	Wed, 4 Jul 2012 03:06:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAGsJ_4zGjLgNBHsHF6xmadpsntXBRaOVt58AeOCaawZ-pbQdzQ@mail.gmail.com>
-References: <1331120259-30780-1-git-send-email-Barry.Song@csr.com>
- <03e601cd58ec$5b8177b0$12846710$%szyprowski@samsung.com> <CAGsJ_4yjV+HDXdYraJ6CdJrSz1EPGgE6BRvO-_9n+6_UWfxqww@mail.gmail.com>
- <op.wgvfgmm03l0zgt@mpn-glaptop> <000301cd59b1$87094eb0$951bec10$%szyprowski@samsung.com>
- <CAGsJ_4zGjLgNBHsHF6xmadpsntXBRaOVt58AeOCaawZ-pbQdzQ@mail.gmail.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Wed, 4 Jul 2012 15:00:40 +0800
-Message-ID: <CAGsJ_4w5bL8FU6E59BEBSWGkkU7T8Tr8-KZRV2EUYRR18Vo1TA@mail.gmail.com>
-Subject: Re: [PATCH v4] mm: cma: add a simple kernel module as the helper to
- test CMA
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>, Barry Song <Barry.Song@csr.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        workgroup.linux@csr.com, Barry Song <Baohua.Song@csr.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1341297347-19336-1-git-send-email-holler@ahsoftware.de>
+References: <20120612162629.15519f39@feng-i7> <1341297347-19336-1-git-send-email-holler@ahsoftware.de>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Wed, 4 Jul 2012 15:05:43 +0800
+X-Google-Sender-Auth: KBEdKMjcKyOK1ZPv6-w8ZeQf_2c
+Message-ID: <CAK5ve-JCEeuhmqB=ruy78nCgma7ENL-48N+p5=nhz3e0exS9yg@mail.gmail.com>
+Subject: Re: [PATCH] leds: heartbeat: fix bug on panic
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-kernel@vger.kernel.org, Shuah Khan <shuahkhan@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>, Feng Tang <feng.tang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/4 Barry Song <21cnbao@gmail.com>:
-> Hi Marek,
+On Tue, Jul 3, 2012 at 2:35 PM, Alexander Holler <holler@ahsoftware.de> wrote:
+> With commit 49dca5aebfdeadd4bf27b6cb4c60392147dc35a4 I introduced
+> a bug (visible if CONFIG_PROVE_RCU is enabled) which occures when a panic
+> has happened:
 >
-> 2012/7/4 Marek Szyprowski <m.szyprowski@samsung.com>:
->> Hello,
->>
->> On Tuesday, July 03, 2012 2:54 PM Michal Nazarewicz wrote:
->>
->>> > 2012/7/3 Marek Szyprowski <m.szyprowski@samsung.com>:
->>> >> IMHO the right place for such code is in drivers/misc instead of tools/cma.
->>> >>
->>> >> This patch contains a kernel module source code so it should be put with other kernel
->>> >> modules. tools/ directory is aimed to contain user space code useful for developing and
->>> >> testing Linux kernel.
->>>
->>> On Tue, 03 Jul 2012 09:39:34 +0200, Barry Song <21cnbao@gmail.com> wrote:
->>> > this one is aiming to test CMA, it should be in tools/ as Michal
->>> > Nazarewicz and i have talked about that.
->>> > it is not a real driver at all.
->>>
->>> Yeah, I feel like it's better placed in tools/ not to pollute other directories with
->>> drivers that are of no use to regular users.  I don't have strong feelings about it
->>> though, so I'm fine either way.
->>
->> Other test devices/drivers are in drivers directory (drivers/usb/misc/usbtest.c for
->> example), I don't see any good reason for polluting tools/ directory with kernel code.
->>
->> IMHO the right person to decide if it makes sense to have such drivers in drivers/mics/
->> or tools/cma/ is Greg KH. Barry, please resend it and ask Greg for the decision.
+> [ 1526.520230] ===============================
+> [ 1526.520230] [ INFO: suspicious RCU usage. ]
+> [ 1526.520230] 3.5.0-rc1+ #12 Not tainted
+> [ 1526.520230] -------------------------------
+> [ 1526.520230] /c/kernel-tests/mm/include/linux/rcupdate.h:436 Illegal context switch in RCU read-side critical section!
+> [ 1526.520230]
+> [ 1526.520230] other info that might help us debug this:
+> [ 1526.520230]
+> [ 1526.520230]
+> [ 1526.520230] rcu_scheduler_active = 1, debug_locks = 0
+> [ 1526.520230] 3 locks held by net.agent/3279:
+> [ 1526.520230]  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff82f85962>] do_page_fault+0x193/0x390
+> [ 1526.520230]  #1:  (panic_lock){+.+...}, at: [<ffffffff82ed2830>] panic+0x37/0x1d3
+> [ 1526.520230]  #2:  (rcu_read_lock){.+.+..}, at: [<ffffffff810b9b28>] rcu_lock_acquire+0x0/0x29
+> [ 1526.520230]
+> [ 1526.520230] stack backtrace:
+> [ 1526.520230] Pid: 3279, comm: net.agent Not tainted 3.5.0-rc1+ #12
+> [ 1526.520230] Call Trace:
+> [ 1526.520230]  [<ffffffff810e1570>] lockdep_rcu_suspicious+0x109/0x112
+> [ 1526.520230]  [<ffffffff810bfe3a>] rcu_preempt_sleep_check+0x45/0x47
+> [ 1526.520230]  [<ffffffff810bfe5a>] __might_sleep+0x1e/0x19a
+> [ 1526.520230]  [<ffffffff82f8010e>] down_write+0x26/0x81
+> [ 1526.520230]  [<ffffffff8276a966>] led_trigger_unregister+0x1f/0x9c
+> [ 1526.520230]  [<ffffffff8276def5>] heartbeat_reboot_notifier+0x15/0x19
+> [ 1526.520230]  [<ffffffff82f85bf5>] notifier_call_chain+0x96/0xcd
+> [ 1526.520230]  [<ffffffff82f85cba>] __atomic_notifier_call_chain+0x8e/0xff
+> [ 1526.520230]  [<ffffffff81094b7c>] ? kmsg_dump+0x37/0x1eb
+> [ 1526.520230]  [<ffffffff82f85d3f>] atomic_notifier_call_chain+0x14/0x16
+> [ 1526.520230]  [<ffffffff82ed28e1>] panic+0xe8/0x1d3
+> [ 1526.520230]  [<ffffffff811473e2>] out_of_memory+0x15d/0x1d3
 >
-> sure. thanks.
-
-and BTW, if the only issue is the dir it should be placed to let Greg
-decide, would i also have your reviewed-by before sending to Greg KH?
-
+> So in case of a panic, now just turn of the LED. Other approaches like
+> scheduling a work to unregister the trigger aren't working because there
+> isn't much which still runs after a panic occured (except timers).
 >
->>
->> Best regards
->> --
->> Marek Szyprowski
->> Samsung Poland R&D Center
->>
+> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+> ---
+>  drivers/leds/ledtrig-heartbeat.c |   16 +++++++++++++++-
+>  1 files changed, 15 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/leds/ledtrig-heartbeat.c b/drivers/leds/ledtrig-heartbeat.c
+> index 41dc76d..a019fbb 100644
+> --- a/drivers/leds/ledtrig-heartbeat.c
+> +++ b/drivers/leds/ledtrig-heartbeat.c
+> @@ -21,6 +21,8 @@
+>  #include <linux/reboot.h>
+>  #include "leds.h"
+>
+> +static int panic_heartbeats;
+> +
+>  struct heartbeat_trig_data {
+>         unsigned int phase;
+>         unsigned int period;
+> @@ -34,6 +36,11 @@ static void led_heartbeat_function(unsigned long data)
+>         unsigned long brightness = LED_OFF;
+>         unsigned long delay = 0;
+>
+> +       if (unlikely(panic_heartbeats)) {
+> +               led_set_brightness(led_cdev, LED_OFF);
+> +               return;
+> +       }
+> +
+>         /* acts like an actual heart beat -- ie thump-thump-pause... */
+>         switch (heartbeat_data->phase) {
+>         case 0:
+> @@ -111,12 +118,19 @@ static int heartbeat_reboot_notifier(struct notifier_block *nb,
+>         return NOTIFY_DONE;
+>  }
+>
+> +static int heartbeat_panic_notifier(struct notifier_block *nb,
+> +                                    unsigned long code, void *unused)
+> +{
+> +       panic_heartbeats = 1;
 
--barry
+Can we just set LED as OFF and delete the timer here? because timer is
+also useless after a kernel panic.
+So we don't need this global static variable here.
+
+-Bryan
+
+> +       return NOTIFY_DONE;
+> +}
+> +
+>  static struct notifier_block heartbeat_reboot_nb = {
+>         .notifier_call = heartbeat_reboot_notifier,
+>  };
+>
+>  static struct notifier_block heartbeat_panic_nb = {
+> -       .notifier_call = heartbeat_reboot_notifier,
+> +       .notifier_call = heartbeat_panic_notifier,
+>  };
+>
+>  static int __init heartbeat_trig_init(void)
+> --
+> 1.7.6.5
+>
