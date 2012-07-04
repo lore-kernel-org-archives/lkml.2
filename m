@@ -1,244 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460Ab2GDQSE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 12:18:04 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:59560 "EHLO
+	id S1755486Ab2GDQSU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 12:18:20 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:54448 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755379Ab2GDQR7 (ORCPT
+	with ESMTP id S1754810Ab2GDQSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 12:17:59 -0400
+	Wed, 4 Jul 2012 12:18:00 -0400
 From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 To: Vinod Koul <vinod.koul@intel.com>
 Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
         linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] dma: sh: use an integer slave ID to improve API compatibility
-Date: Wed,  4 Jul 2012 18:17:41 +0200
-Message-Id: <1341418663-24432-3-git-send-email-g.liakhovetski@gmx.de>
+Subject: [PATCH 4/4] mmc: sh_mmcif: switch to the new DMA channel allocation and configuration
+Date: Wed,  4 Jul 2012 18:17:43 +0200
+Message-Id: <1341418663-24432-5-git-send-email-g.liakhovetski@gmx.de>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1341418663-24432-1-git-send-email-g.liakhovetski@gmx.de>
 References: <1341418663-24432-1-git-send-email-g.liakhovetski@gmx.de>
-X-Provags-ID: V02:K0:CzNW9FTZWg8dPm6RPXnOwQ80/w7oXLGi+83deY5MoS6
- 9K7dM8Jig8tfj0EFyiKbl6YBKR/tLLPXu7Y3XuCZBEW98O1ttX
- xQdCkTaPTSdj5fkBVXB688v6MpDqdtsw8PeLAtgUuBAz2R+mol
- 2NaBCEu99Q4QeflB8hbK8JDZNBp5nz/fTyARjP8J8XG3wD4MnF
- C8Xiil+bbmeIfm/XkCLcwRyKJ+/WcZvQ423ofruYIFvC7yJ6U6
- +qzez3phGJlTXpllh0BGcxlRrC87TX3atfAwJmjrjqm7XMe1Bw
- 9MeApDP5SP/xvywfFtHdClMx5KFrFqD76J3LHWt4R3OAoXJk1T
- SHCtOeJxc5JUBmn2jlfQO4BKZclt5H9mPasO9Efl234ap7Ecp/
- WmNdDNBWpnchw==
+X-Provags-ID: V02:K0:dqOGd7EcSUBKsY/67o3iFFV0Lb906QZ2nDd9+B4Tclf
+ YcmaN0/ZxmI1CZU/VYgjEuG5+R7lVfFTfN6dnqf5nwNQQsgvhM
+ n6+m40rYjBZazm0fcNYgzzF92cxvl9VaZt6PtFvB814ZHClOXC
+ Xz+ve+SOnf/d7x4hVQ9S1HPYM6L60AbVtxABTCpmcQ5NG4hgQY
+ y2ADYXT4ctsS+ar4SrZFy7+UHdxcczA9DAS7z5Xkct8a9if13d
+ zlfqVWhDlG/yy4PYpf4s7xa0wuWzLDbqodA1q+gK6bEFH7/9vj
+ mf3YrsW3RlA+Zaq/4m9xjyulbpA5p4cwoEfrPyBp1llcEfn7ld
+ ecCCuQpxj6kmgO8+JnX1ftJo6FqLK4tQ2dKV1ZLMtJaw6iVlDG
+ zF3oIbPjVPhQg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initially struct shdma_slave has been introduced with the only member - an
-unsigned slave ID - to describe common properties of DMA slaves in an
-extensible way. However, experience shows, that a slave ID is indeed the
-only parameter, needed to identify DMA slaves. This is also, what is used
-by the core dmaengine API in struct dma_slave_config. We switch to using
-the slave_id directly, instead of passing a pointer to struct shdma_slave
-to improve compatibility with the core. We also make the slave_id signed
-for easier error checking.
+Using the "private" field from struct dma_chan is deprecated. The sh
+dmaengine driver now also supports the preferred DMA channel allocation
+and configuration method, using a standard filter function and a channel
+configuration operation. This patch updates sh_mmcif to use this new
+method.
 
 Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 ---
- drivers/dma/sh/shdma-base.c |   25 +++++++++++++------------
- drivers/dma/sh/shdma.c      |   12 ++++++------
- include/linux/sh_dma.h      |    8 ++++----
- include/linux/shdma-base.h  |    8 ++++----
- 4 files changed, 27 insertions(+), 26 deletions(-)
+ drivers/mmc/host/sh_mmcif.c |   90 ++++++++++++++++++++++++------------------
+ 1 files changed, 51 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/dma/sh/shdma-base.c b/drivers/dma/sh/shdma-base.c
-index f75ebfa..73db282 100644
---- a/drivers/dma/sh/shdma-base.c
-+++ b/drivers/dma/sh/shdma-base.c
-@@ -76,7 +76,6 @@ static dma_cookie_t shdma_tx_submit(struct dma_async_tx_descriptor *tx)
- 		container_of(tx, struct shdma_desc, async_tx),
- 		*last = desc;
- 	struct shdma_chan *schan = to_shdma_chan(tx->chan);
--	struct shdma_slave *slave = schan->slave;
- 	dma_async_tx_callback callback = tx->callback;
- 	dma_cookie_t cookie;
- 	bool power_up;
-@@ -138,7 +137,7 @@ static dma_cookie_t shdma_tx_submit(struct dma_async_tx_descriptor *tx)
- 			 * Make it int then, on error remove chunks from the
- 			 * queue again
- 			 */
--			ops->setup_xfer(schan, slave);
-+			ops->setup_xfer(schan, schan->slave_id);
+diff --git a/drivers/mmc/host/sh_mmcif.c b/drivers/mmc/host/sh_mmcif.c
+index 9e3b9b1..0f07d28 100644
+--- a/drivers/mmc/host/sh_mmcif.c
++++ b/drivers/mmc/host/sh_mmcif.c
+@@ -211,8 +211,6 @@ struct sh_mmcif_host {
+ 	struct mmc_host *mmc;
+ 	struct mmc_request *mrq;
+ 	struct platform_device *pd;
+-	struct sh_dmae_slave dma_slave_tx;
+-	struct sh_dmae_slave dma_slave_rx;
+ 	struct clk *hclk;
+ 	unsigned int clk;
+ 	int bus_width;
+@@ -371,52 +369,66 @@ static void sh_mmcif_start_dma_tx(struct sh_mmcif_host *host)
+ 		desc, cookie);
+ }
  
- 			if (schan->pm_state == SHDMA_PM_PENDING)
- 				shdma_chan_xfer_ld_queue(schan);
-@@ -186,7 +185,7 @@ static int shdma_alloc_chan_resources(struct dma_chan *chan)
- 	 * never runs concurrently with itself or free_chan_resources.
- 	 */
- 	if (slave) {
--		if (slave->slave_id >= slave_num) {
-+		if (slave->slave_id < 0 || slave->slave_id >= slave_num) {
- 			ret = -EINVAL;
- 			goto evalid;
- 		}
-@@ -196,9 +195,13 @@ static int shdma_alloc_chan_resources(struct dma_chan *chan)
- 			goto etestused;
- 		}
- 
--		ret = ops->set_slave(schan, slave);
-+		ret = ops->set_slave(schan, slave->slave_id);
- 		if (ret < 0)
- 			goto esetslave;
+-static bool sh_mmcif_filter(struct dma_chan *chan, void *arg)
+-{
+-	dev_dbg(chan->device->dev, "%s: slave data %p\n", __func__, arg);
+-	chan->private = arg;
+-	return true;
+-}
+-
+ static void sh_mmcif_request_dma(struct sh_mmcif_host *host,
+ 				 struct sh_mmcif_plat_data *pdata)
+ {
+-	struct sh_dmae_slave *tx, *rx;
++	struct resource *res = platform_get_resource(host->pd, IORESOURCE_MEM, 0);
++	struct dma_slave_config cfg;
++	dma_cap_mask_t mask;
++	int ret;
 +
-+		schan->slave_id = slave->slave_id;
-+	} else {
-+		schan->slave_id = -EINVAL;
- 	}
+ 	host->dma_active = false;
  
- 	schan->desc = kcalloc(NR_DESCS_PER_CHANNEL,
-@@ -208,7 +211,6 @@ static int shdma_alloc_chan_resources(struct dma_chan *chan)
- 		goto edescalloc;
- 	}
- 	schan->desc_num = NR_DESCS_PER_CHANNEL;
--	schan->slave = slave;
++	if (pdata->slave_id_tx <= 0 || pdata->slave_id_rx <= 0)
++		return;
++
+ 	/* We can only either use DMA for both Tx and Rx or not use it at all */
+-	tx = &host->dma_slave_tx;
+-	tx->shdma_slave.slave_id = pdata->slave_id_tx;
+-	rx = &host->dma_slave_rx;
+-	rx->shdma_slave.slave_id = pdata->slave_id_rx;
++	dma_cap_zero(mask);
++	dma_cap_set(DMA_SLAVE, mask);
++
++	host->chan_tx = dma_request_channel(mask, shdma_chan_filter,
++					    (void *)pdata->slave_id_tx);
++	dev_dbg(&host->pd->dev, "%s: TX: got channel %p\n", __func__,
++		host->chan_tx);
  
- 	for (i = 0; i < NR_DESCS_PER_CHANNEL; i++) {
- 		desc = ops->embedded_desc(schan->desc, i);
-@@ -366,10 +368,9 @@ static void shdma_free_chan_resources(struct dma_chan *chan)
- 	if (!list_empty(&schan->ld_queue))
- 		shdma_chan_ld_cleanup(schan, true);
+-	if (tx->shdma_slave.slave_id > 0 && rx->shdma_slave.slave_id > 0) {
+-		dma_cap_mask_t mask;
++	if (!host->chan_tx)
++		return;
  
--	if (schan->slave) {
-+	if (schan->slave_id >= 0) {
- 		/* The caller is holding dma_list_mutex */
--		struct shdma_slave *slave = schan->slave;
--		clear_bit(slave->slave_id, shdma_slave_used);
-+		clear_bit(schan->slave_id, shdma_slave_used);
- 		chan->private = NULL;
- 	}
+-		dma_cap_zero(mask);
+-		dma_cap_set(DMA_SLAVE, mask);
++	cfg.slave_id = pdata->slave_id_tx;
++	cfg.direction = DMA_MEM_TO_DEV;
++	cfg.dst_addr = res->start + MMCIF_CE_DATA;
++	cfg.src_addr = 0;
++	ret = dmaengine_slave_config(host->chan_tx, &cfg);
++	if (ret < 0)
++		goto ecfgtx;
  
-@@ -559,7 +560,7 @@ static struct dma_async_tx_descriptor *shdma_prep_slave_sg(
- 	struct shdma_chan *schan = to_shdma_chan(chan);
- 	struct shdma_dev *sdev = to_shdma_dev(schan->dma_chan.device);
- 	const struct shdma_ops *ops = sdev->ops;
--	struct shdma_slave *slave = schan->slave;
-+	int slave_id = schan->slave_id;
- 	dma_addr_t slave_addr;
+-		host->chan_tx = dma_request_channel(mask, sh_mmcif_filter,
+-						    &tx->shdma_slave);
+-		dev_dbg(&host->pd->dev, "%s: TX: got channel %p\n", __func__,
+-			host->chan_tx);
++	host->chan_rx = dma_request_channel(mask, shdma_chan_filter,
++					    (void *)pdata->slave_id_rx);
++	dev_dbg(&host->pd->dev, "%s: RX: got channel %p\n", __func__,
++		host->chan_rx);
  
- 	if (!chan)
-@@ -568,9 +569,9 @@ static struct dma_async_tx_descriptor *shdma_prep_slave_sg(
- 	BUG_ON(!schan->desc_num);
+-		if (!host->chan_tx)
+-			return;
++	if (!host->chan_rx)
++		goto erqrx;
  
- 	/* Someone calling slave DMA on a generic channel? */
--	if (!slave || !sg_len) {
--		dev_warn(schan->dev, "%s: bad parameter: %p, %d, %d\n",
--			 __func__, slave, sg_len, slave ? slave->slave_id : -1);
-+	if (slave_id < 0 || !sg_len) {
-+		dev_warn(schan->dev, "%s: bad parameter: len=%d, id=%d\n",
-+			 __func__, sg_len, slave_id);
- 		return NULL;
- 	}
+-		host->chan_rx = dma_request_channel(mask, sh_mmcif_filter,
+-						    &rx->shdma_slave);
+-		dev_dbg(&host->pd->dev, "%s: RX: got channel %p\n", __func__,
+-			host->chan_rx);
++	cfg.slave_id = pdata->slave_id_rx;
++	cfg.direction = DMA_DEV_TO_MEM;
++	cfg.dst_addr = 0;
++	cfg.src_addr = res->start + MMCIF_CE_DATA;
++	ret = dmaengine_slave_config(host->chan_rx, &cfg);
++	if (ret < 0)
++		goto ecfgrx;
  
-diff --git a/drivers/dma/sh/shdma.c b/drivers/dma/sh/shdma.c
-index 9f0a2e5..9a10d8b 100644
---- a/drivers/dma/sh/shdma.c
-+++ b/drivers/dma/sh/shdma.c
-@@ -285,12 +285,12 @@ static bool sh_dmae_channel_busy(struct shdma_chan *schan)
+-		if (!host->chan_rx) {
+-			dma_release_channel(host->chan_tx);
+-			host->chan_tx = NULL;
+-			return;
+-		}
++	init_completion(&host->dma_complete);
+ 
+-		init_completion(&host->dma_complete);
+-	}
++	return;
++
++ecfgrx:
++	dma_release_channel(host->chan_rx);
++	host->chan_rx = NULL;
++erqrx:
++ecfgtx:
++	dma_release_channel(host->chan_tx);
++	host->chan_tx = NULL;
  }
  
- static void sh_dmae_setup_xfer(struct shdma_chan *schan,
--			       struct shdma_slave *sslave)
-+			       int slave_id)
- {
- 	struct sh_dmae_chan *sh_chan = container_of(schan, struct sh_dmae_chan,
- 						    shdma_chan);
- 
--	if (sslave) {
-+	if (slave_id >= 0) {
- 		const struct sh_dmae_slave_config *cfg =
- 			sh_chan->config;
- 
-@@ -302,7 +302,7 @@ static void sh_dmae_setup_xfer(struct shdma_chan *schan,
- }
- 
- static const struct sh_dmae_slave_config *dmae_find_slave(
--	struct sh_dmae_chan *sh_chan, unsigned int slave_id)
-+	struct sh_dmae_chan *sh_chan, int slave_id)
- {
- 	struct sh_dmae_device *shdev = to_sh_dev(sh_chan);
- 	struct sh_dmae_pdata *pdata = shdev->pdata;
-@@ -320,11 +320,11 @@ static const struct sh_dmae_slave_config *dmae_find_slave(
- }
- 
- static int sh_dmae_set_slave(struct shdma_chan *schan,
--			     struct shdma_slave *sslave)
-+			     int slave_id)
- {
- 	struct sh_dmae_chan *sh_chan = container_of(schan, struct sh_dmae_chan,
- 						    shdma_chan);
--	const struct sh_dmae_slave_config *cfg = dmae_find_slave(sh_chan, sslave->slave_id);
-+	const struct sh_dmae_slave_config *cfg = dmae_find_slave(sh_chan, slave_id);
- 	if (!cfg)
- 		return -ENODEV;
- 
-@@ -579,7 +579,7 @@ static int sh_dmae_resume(struct device *dev)
- 		if (!sh_chan->shdma_chan.desc_num)
- 			continue;
- 
--		if (sh_chan->shdma_chan.slave) {
-+		if (sh_chan->shdma_chan.slave_id >= 0) {
- 			const struct sh_dmae_slave_config *cfg = sh_chan->config;
- 			dmae_set_dmars(sh_chan, cfg->mid_rid);
- 			dmae_set_chcr(sh_chan, cfg->chcr);
-diff --git a/include/linux/sh_dma.h b/include/linux/sh_dma.h
-index a79f10a..4e83f3e 100644
---- a/include/linux/sh_dma.h
-+++ b/include/linux/sh_dma.h
-@@ -27,10 +27,10 @@ struct sh_dmae_slave {
-  * a certain peripheral
-  */
- struct sh_dmae_slave_config {
--	unsigned int			slave_id;
--	dma_addr_t			addr;
--	u32				chcr;
--	char				mid_rid;
-+	int		slave_id;
-+	dma_addr_t	addr;
-+	u32		chcr;
-+	char		mid_rid;
- };
- 
- struct sh_dmae_channel {
-diff --git a/include/linux/shdma-base.h b/include/linux/shdma-base.h
-index c3a19e9..6263ad2 100644
---- a/include/linux/shdma-base.h
-+++ b/include/linux/shdma-base.h
-@@ -43,7 +43,7 @@ struct device;
-  */
- 
- struct shdma_slave {
--	unsigned int slave_id;
-+	int slave_id;
- };
- 
- struct shdma_desc {
-@@ -66,7 +66,7 @@ struct shdma_chan {
- 	size_t max_xfer_len;		/* max transfer length */
- 	int id;				/* Raw id of this channel */
- 	int irq;			/* Channel IRQ */
--	struct shdma_slave *slave;	/* Client data for slave DMA */
-+	int slave_id;			/* Client ID for slave DMA */
- 	enum shdma_pm_state pm_state;
- };
- 
-@@ -93,8 +93,8 @@ struct shdma_ops {
- 	dma_addr_t (*slave_addr)(struct shdma_chan *);
- 	int (*desc_setup)(struct shdma_chan *, struct shdma_desc *,
- 			  dma_addr_t, dma_addr_t, size_t *);
--	int (*set_slave)(struct shdma_chan *, struct shdma_slave *);
--	void (*setup_xfer)(struct shdma_chan *, struct shdma_slave *);
-+	int (*set_slave)(struct shdma_chan *, int);
-+	void (*setup_xfer)(struct shdma_chan *, int);
- 	void (*start_xfer)(struct shdma_chan *, struct shdma_desc *);
- 	struct shdma_desc *(*embedded_desc)(void *, int);
- 	bool (*chan_irq)(struct shdma_chan *, int);
+ static void sh_mmcif_release_dma(struct sh_mmcif_host *host)
 -- 
 1.7.2.5
 
