@@ -1,129 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933640Ab2GDGWF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 02:22:05 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:60432 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933353Ab2GDGV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 02:21:59 -0400
+	id S933647Ab2GDGWa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 02:22:30 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:54586 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933361Ab2GDGWB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 02:22:01 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
 Cc: John Stultz <johnstul@us.ibm.com>, Prarit Bhargava <prarit@redhat.com>,
         stable@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
         linux@openhuawei.org
-Subject: [PATCH 0/3][RFC] Fix for leapsecond caused futex issue (v4)
-Date: Wed,  4 Jul 2012 02:21:27 -0400
-Message-Id: <1341382890-42324-1-git-send-email-johnstul@us.ibm.com>
+Subject: [PATCH 3/3] [RFC] hrtimer: Update hrtimer base offsets each hrtimer_interrupt
+Date: Wed,  4 Jul 2012 02:21:30 -0400
+Message-Id: <1341382890-42324-4-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1341382890-42324-1-git-send-email-johnstul@us.ibm.com>
+References: <1341382890-42324-1-git-send-email-johnstul@us.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12070406-5112-0000-0000-000009BEEBA6
+x-cbid: 12070406-4242-0000-0000-0000023597EC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, made a few tweaks to address issues caught by Prarit's and my
-testing. This has run for a number of hours now w/ my leap-a-day.c
-test on a few machines.
+This patch introduces a new funciton which captures the
+CLOCK_MONOTONIC time, along with the CLOCK_REALTIME and
+CLOCK_BOOTTIME offsets at the same moment. This new function
+is then used in place of ktime_get() when hrtimer_interrupt()
+is expiring timers.
 
-I'd really appreciate any extra testing, review, or acks at this point.
-I'm targeting mid-late Thursday (to give folks in the US a chance to
-review & test) as a point when I'll submit this upstream if no other
-issues are found.
+This ensures that any changes to realtime or boottime offsets
+are noticed and stored into the per-cpu hrtimer base structures,
+prior to doing any hrtimer expiration. This should ensure that
+timers are not expired early if the offsets changes under us.
 
-
-As widely reported on the internet, many Linux systems after
-the leapsecond was inserted are experiencing futex related load
-spikes (usually connected to MySQL, Firefox, Thunderbird, Java, etc).
-
-An apparent  workaround for this issue is running:
-$ date -s "`date`"
-
-Credit: http://www.sheeri.com/content/mysql-and-leap-second-high-cpu-and-fix
-
-
-To address this issue I'm proposing we do three things:
-1) Fix the clock_was_set() call to remove the limitation that kept
-us from calling it from update_wall_time().
-
-2) Call clock_was_set() when we add/remove a leapsecond.
-
-3) Change hrtimer_interrupt to update the hrtimer base offset values.
-This third item provides additional robustness should the
-clock_was_set() notification (done via a timer if we're in_atomic)
-be delayed significantly.
-
-
-This third item is new and tries to better address the fact that
-the hrtimer code caches its sense of time separately from the
-timekeeping core. This is necessary for performance reasons, as
-hrtimer code is a very hot path, but opens up races between when
-the time offsets have changed and when the hrtimer code updates
-its bases on each cpu. By updating the base offsets prior to
-doing any expiration, we ensure no timers are expired early.
-
-Close review, however, would be appreciated.
-
-I'm fairly happy with this set of changes, so if there's no
-objections, I'd propose merging these for 3.5, and I'll
-start generating backports for -stable (unfortunately
-these won't apply trivially to 3.3 and prior kernels).
-
-I'm also looking to see if we can consolidate the per-cpu base
-offset values, so they are not per-cpu and are protected by their
-own lock, allowing us to update them quickly from atomic context, 
-even while holding the timekeeper.lock (currently I believe there's
-the risk of having an ABBA deadlock between the base.lock and the
-timekeeper.lock if we try to update the base offsets under
-the timekeepr lock). However this will be potentially a more
-significant change and wouldn't be appropriate for backporting,
-so I want to get these three changes to fix the issue merged first.
-
-
-NOTE: Some reports have been of a hard hang right at or before
-the leapsecond. I've not been able to reproduce or diagnose
-this, so this fix does not likely address the reported hard
-hangs (unless they end up being connected to the futex/hrtimer
-issue). Please email lkml and me if you experienced this.
-
-
-TODOs:
-* Collect feedback & acks
-* Submit for merging.
-* Generate a backports for pre-v3.4 kernels
-
-
-v2:
-* Address the issue w/ calling clock_was_set from atomic context,
-pointed out by Prarit and Ben.
-* Rework fix so its simpler.
-
-v3:
-* Change from using a work item to a timer for scheduling the
-do_clock_was_set() call sooner.
-* Add hrtimer_interrupt base offset updating
-
-v4:
-* Fix clock_was_set_timer initialization bug found by Prarit
-* Switch from is_atomic() to irqs_disabled(), since is_atomic()
-  isn't a sufficient check prior to calling smp_call_function()
-  
+This is useful in the case where clock_was_set() is called from
+atomic context and have to schedule the hrtimer base offset update
+via a timer, as it provides extra robustness in the face of any
+possible timer delay.
 
 CC: Prarit Bhargava <prarit@redhat.com>
 CC: stable@vger.kernel.org
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: linux@openhuawei.org
-
-John Stultz (3):
-  [RFC] hrtimer: Fix clock_was_set so it is safe to call from irq
-    context
-  [RFC] time: Fix leapsecond triggered hrtimer/futex load spike issue
-  [RFC] hrtimer: Update hrtimer base offsets each hrtimer_interrupt
-
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+---
  include/linux/hrtimer.h   |    3 +++
- kernel/hrtimer.c          |   31 +++++++++++++++++++++++++++----
- kernel/time/timekeeping.c |   38 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 68 insertions(+), 4 deletions(-)
+ kernel/hrtimer.c          |   14 +++++++++++---
+ kernel/time/timekeeping.c |   34 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 48 insertions(+), 3 deletions(-)
 
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index fd0dc30..f6b2a74 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -320,6 +320,9 @@ extern ktime_t ktime_get(void);
+ extern ktime_t ktime_get_real(void);
+ extern ktime_t ktime_get_boottime(void);
+ extern ktime_t ktime_get_monotonic_offset(void);
++extern void ktime_get_and_real_and_sleep_offset(ktime_t *monotonic,
++						ktime_t *real_offset,
++						ktime_t *sleep_offset);
+ 
+ DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
+ 
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index d730678..56600c4 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1258,18 +1258,26 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
+ void hrtimer_interrupt(struct clock_event_device *dev)
+ {
+ 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
+-	ktime_t expires_next, now, entry_time, delta;
++	ktime_t expires_next, now, entry_time, delta, real_offset, sleep_offset;
+ 	int i, retries = 0;
+ 
+ 	BUG_ON(!cpu_base->hres_active);
+ 	cpu_base->nr_events++;
+ 	dev->next_event.tv64 = KTIME_MAX;
+ 
+-	entry_time = now = ktime_get();
++
++	ktime_get_and_real_and_sleep_offset(&now, &real_offset, &sleep_offset);
++
++	entry_time = now;
+ retry:
+ 	expires_next.tv64 = KTIME_MAX;
+ 
+ 	raw_spin_lock(&cpu_base->lock);
++
++	/* Update base offsets, to avoid early wakeups */
++	cpu_base->clock_base[HRTIMER_BASE_REALTIME].offset = real_offset;
++	cpu_base->clock_base[HRTIMER_BASE_BOOTTIME].offset = sleep_offset;
++
+ 	/*
+ 	 * We set expires_next to KTIME_MAX here with cpu_base->lock
+ 	 * held to prevent that a timer is enqueued in our queue via
+@@ -1346,7 +1354,7 @@ retry:
+ 	 * interrupt routine. We give it 3 attempts to avoid
+ 	 * overreacting on some spurious event.
+ 	 */
+-	now = ktime_get();
++	ktime_get_and_real_and_sleep_offset(&now, &real_offset, &sleep_offset);
+ 	cpu_base->nr_retries++;
+ 	if (++retries < 3)
+ 		goto retry;
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index cc2991d..b3404cf 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1251,6 +1251,40 @@ void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
+ }
+ 
+ /**
++ * ktime_get_and_real_and_sleep_offset() - hrtimer helper, gets monotonic ktime,
++ *	realtime offset, and sleep offsets.
++ */
++void ktime_get_and_real_and_sleep_offset(ktime_t *monotonic,
++						ktime_t *real_offset,
++						ktime_t *sleep_offset)
++{
++	unsigned long seq;
++	struct timespec wtom, sleep;
++	u64 secs, nsecs;
++
++	do {
++		seq = read_seqbegin(&timekeeper.lock);
++
++		secs = timekeeper.xtime.tv_sec +
++				timekeeper.wall_to_monotonic.tv_sec;
++		nsecs = timekeeper.xtime.tv_nsec +
++				timekeeper.wall_to_monotonic.tv_nsec;
++		nsecs += timekeeping_get_ns();
++		/* If arch requires, add in gettimeoffset() */
++		nsecs += arch_gettimeoffset();
++
++		wtom = timekeeper.wall_to_monotonic;
++		sleep = timekeeper.total_sleep_time;
++	} while (read_seqretry(&timekeeper.lock, seq));
++
++	*monotonic = ktime_add_ns(ktime_set(secs, 0), nsecs);
++	set_normalized_timespec(&wtom, -wtom.tv_sec, -wtom.tv_nsec);
++	*real_offset =	timespec_to_ktime(wtom);
++	*sleep_offset = timespec_to_ktime(sleep);
++}
++
++
++/**
+  * ktime_get_monotonic_offset() - get wall_to_monotonic in ktime_t format
+  */
+ ktime_t ktime_get_monotonic_offset(void)
 -- 
 1.7.9.5
 
