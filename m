@@ -1,153 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374Ab2GDJAu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 05:00:50 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:60484 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562Ab2GDJAr (ORCPT
+	id S932289Ab2GDJC3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 05:02:29 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:46039 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562Ab2GDJCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 05:00:47 -0400
-Message-ID: <1341392420.18505.41.camel@ThinkPad-T420>
-Subject: Re: [PATCH powerpc 2/2] kfree the cache name  of pgtable cache if
- SLUB is used
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm <linux-mm@kvack.org>,
-        PowerPC email list <linuxppc-dev@lists.ozlabs.org>
-Date: Wed, 04 Jul 2012 17:00:20 +0800
-In-Reply-To: <alpine.DEB.2.00.1207031535330.14703@router.home>
-References: <1340617984.13778.37.camel@ThinkPad-T420>
-	 <1340618099.13778.39.camel@ThinkPad-T420>
-	 <alpine.DEB.2.00.1207031344240.14703@router.home>
-	 <alpine.DEB.2.00.1207031535330.14703@router.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Wed, 4 Jul 2012 05:02:25 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q6492GgK006782, This message is released by code: ctlocs8528
+From: hayeswang <hayeswang@realtek.com>
+To: "'Francois Romieu'" <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1340966060-2749-1-git-send-email-hayeswang@realtek.com> <1341221002-1522-1-git-send-email-hayeswang@realtek.com> <20120703110101.GA4779@electric-eye.fr.zoreil.com>
+Subject: RE: [PATCH v2 net-next 1/2] r8169: support RTL8106E
+Date: Wed, 4 Jul 2012 17:02:17 +0800
+Message-ID: <C4FBD4FA06A3458594FEA8117B2274B6@realtek.com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12070323-3568-0000-0000-0000021445A0
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: Ac1ZDLbd/5d7ryhCT9u7v+Rxy7NgmwAtGlwg
+In-Reply-To: <20120703110101.GA4779@electric-eye.fr.zoreil.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-03 at 15:36 -0500, Christoph Lameter wrote:
-> Looking through the emails it seems that there is an issue with alias
-> strings. 
-
-To be more precise, there seems no big issue currently. I just wanted to
-make following usage of kmem_cache_create (SLUB) possible:
-
-	name = some string kmalloced
-	kmem_cache_create(name, ...)
-	kfree(name);
-
-And from my understanding of the code, the saved_alias list, which is
-used to keep track of the alias entries during early boot (slab_state <
-SYSFS), is a blocker. It needs the name string to be valid until
-slab_sysfs_init() is finished. 
-
-> That can be solved by duping the name of the slab earlier in kmem_cache_create().
-> Does this patch fix the issue?
-
-I'm afraid not...
-
-With the patch below, we still need to kfree the duplicated name in
-slab_sysfs_init().
-
-And I think it would be easier to understand if we duplicate the name
-string when creating one entry for saved_alias list, and kfree it when
-we remove one entry from saved_alias list. 
-
-I'm not sure whether you got the patch #1 of the two I sent previously.
-If not, would you kindly spend some time reviewing it to see if I missed
-anything? Link below for your convenience:
-  https://lkml.org/lkml/2012/6/27/83
-
-Btw, as Ben suggested, I'm now working on duplicating the name string in
-SLAB to make them consistent, so we don't need the #ifdef CONFIG_SLUB
-any more. Will send it out for your review after it is finished.
-
-> Subject: slub: Dup name earlier in kmem_cache_create
+Francois Romieu [mailto:romieu@fr.zoreil.com] 
+[...]
+> > +#define FIRMWARE_8106E_1	"rtl_nic/rtl8106e-1.fw"
 > 
-> Dup the name earlier in kmem_cache_create so that alias
-> processing is done using the copy of the string and not
-> the string itself.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> ---
->  mm/slub.c |   29 ++++++++++++++---------------
->  1 file changed, 14 insertions(+), 15 deletions(-)
-> 
-> Index: linux-2.6/mm/slub.c
-> ===================================================================
-> --- linux-2.6.orig/mm/slub.c	2012-06-11 08:49:56.000000000 -0500
-> +++ linux-2.6/mm/slub.c	2012-07-03 15:17:37.000000000 -0500
-> @@ -3933,8 +3933,12 @@ struct kmem_cache *kmem_cache_create(con
->  	if (WARN_ON(!name))
->  		return NULL;
-> 
-> +	n = kstrdup(name, GFP_KERNEL);
-> +	if (!n)
-> +		goto out;
-> +
->  	down_write(&slub_lock);
-> -	s = find_mergeable(size, align, flags, name, ctor);
-> +	s = find_mergeable(size, align, flags, n, ctor);
->  	if (s) {
->  		s->refcount++;
->  		/*
-> @@ -3944,7 +3948,7 @@ struct kmem_cache *kmem_cache_create(con
->  		s->objsize = max(s->objsize, (int)size);
->  		s->inuse = max_t(int, s->inuse, ALIGN(size, sizeof(void *)));
-> 
-> -		if (sysfs_slab_alias(s, name)) {
-> +		if (sysfs_slab_alias(s, n)) {
->  			s->refcount--;
->  			goto err;
->  		}
-> @@ -3952,31 +3956,26 @@ struct kmem_cache *kmem_cache_create(con
->  		return s;
->  	}
-> 
-> -	n = kstrdup(name, GFP_KERNEL);
-> -	if (!n)
-> -		goto err;
-> -
->  	s = kmalloc(kmem_size, GFP_KERNEL);
->  	if (s) {
->  		if (kmem_cache_open(s, n,
->  				size, align, flags, ctor)) {
->  			list_add(&s->list, &slab_caches);
->  			up_write(&slub_lock);
-> -			if (sysfs_slab_add(s)) {
-> -				down_write(&slub_lock);
-> -				list_del(&s->list);
-> -				kfree(n);
-> -				kfree(s);
-> -				goto err;
-> -			}
-> -			return s;
-> +			if (!sysfs_slab_add(s))
-> +				return s;
-> +
-> +			down_write(&slub_lock);
-> +			list_del(&s->list);
->  		}
->  		kfree(s);
->  	}
-> -	kfree(n);
-> +
->  err:
-> +	kfree(n);
->  	up_write(&slub_lock);
-> 
-> +out:
->  	if (flags & SLAB_PANIC)
->  		panic("Cannot create slabcache %s\n", name);
->  	else
+> I did not notice it. Was it submitted ?
 > 
 
+I don't submit it yet.
+
+> It was obviously not required for testing :o)
+> 
+> > @@ -1933,6 +1941,8 @@ static void 
+> rtl8169_get_mac_version(struct rtl8169_private *tp,
+> >  		{ 0x7c800000, 0x30000000,	RTL_GIGA_MAC_VER_11 },
+> >  
+> >  		/* 8101 family. */
+> > +		{ 0x7cf00000, 0x44900000,	RTL_GIGA_MAC_VER_39 },
+> > +		{ 0x7c800000, 0x44800000,	RTL_GIGA_MAC_VER_39 },
+> >  		{ 0x7c800000, 0x44000000,	RTL_GIGA_MAC_VER_37 },
+> >  		{ 0x7cf00000, 0x40b00000,	RTL_GIGA_MAC_VER_30 },
+> >  		{ 0x7cf00000, 0x40a00000,	RTL_GIGA_MAC_VER_30 },
+> 
+> Realtek's 1.022.00 8101 driver only maps { 0x7c800000; 0x44800000 } to
+> a generic device - if at all - and it maps { 0x7cf00000; 0x44800000 }
+> to a different chipset (namely CFG_METHOD_15 where RTL_GIGA_MAC_VER_39
+> is CFG_METHOD_16).
+> 
+> Why should both drivers diverge ?
+> 
+
+Our PMs say only 0x44900000 would have mass production. Besides, you could use
+the same setting for both of them. 
+
+Best Regards,
+Hayes
 
