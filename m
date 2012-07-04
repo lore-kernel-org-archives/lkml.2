@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932492Ab2GDWIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 18:08:16 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:53271 "EHLO ogre.sisk.pl"
+	id S932434Ab2GDWJl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 18:09:41 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:25601 "EHLO mail.df.lth.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755890Ab2GDWHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 18:07:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH 3/4] tpm_tis: Use struct dev_pm_ops for power management
-Date: Thu, 5 Jul 2012 00:11:16 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, tpmdd-devel@lists.sourceforge.net,
-        Debora Velarde <debora@linux.vnet.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>
-References: <201207050008.02097.rjw@sisk.pl>
-In-Reply-To: <201207050008.02097.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207050011.16406.rjw@sisk.pl>
+	id S1755782Ab2GDWJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 18:09:40 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mike Turquette <mturquette@ti.com>, Mike Turquette <mturquette@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>, stable@kernel.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Ulf Hansson <ulf.hansson@stericsson.com>
+Subject: [PATCH] clk: allow clocks without parents to change rate
+Date: Thu,  5 Jul 2012 00:09:32 +0200
+Message-Id: <1341439772-649-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+The clk_change_rate() code would dereference clk->parent
+to get clk->parent->rate without first checking that clk->parent
+was valid. This doesn't work if the clock is (A) a root clock
+and (B) can change rate. Such is the case with a VCO clock
+like the ICST which consequently crash like this without
+this patch:
 
-Make the tpm_tis driver define its PM callbacks through
-a struct dev_pm_ops object rather than by using legacy PM hooks
-in struct platform_driver.
+Unable to handle kernel NULL pointer dereference at virtual address 0000001c
+pgd = c0004000
+[0000001c] *pgd=00000000
+Internal error: Oops: 5 [#1] PREEMPT ARM
+Modules linked in:
+CPU: 0    Not tainted  (3.5.0-rc3-00003-g8156866-dirty #193)
+PC is at clk_change_rate+0x34/0xd8
+LR is at clk_change_rate+0x18/0xd8
 
-This allows the driver to use tpm_pm_suspend() as its suspend
-callback directly, without defining its own suspend callback
-routine.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: stable@kernel.org
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Ulf Hansson <ulf.hansson@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/char/tpm/tpm_tis.c |   16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+ drivers/clk/clk.c |   22 +++++++++++++++-------
+ 1 file changed, 15 insertions(+), 7 deletions(-)
 
-Index: linux/drivers/char/tpm/tpm_tis.c
-===================================================================
---- linux.orig/drivers/char/tpm/tpm_tis.c
-+++ linux/drivers/char/tpm/tpm_tis.c
-@@ -806,27 +806,25 @@ module_param_string(hid, tpm_pnp_tbl[TIS
- 		    sizeof(tpm_pnp_tbl[TIS_HID_USR_IDX].id), 0444);
- MODULE_PARM_DESC(hid, "Set additional specific HID for this driver to probe");
- #endif
--static int tpm_tis_suspend(struct platform_device *dev, pm_message_t msg)
--{
--	return tpm_pm_suspend(&dev->dev);
--}
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 687b00d..032d79c 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -854,14 +854,22 @@ static void clk_change_rate(struct clk *clk)
  
--static int tpm_tis_resume(struct platform_device *dev)
-+static int tpm_tis_resume(struct device *dev)
- {
--	struct tpm_chip *chip = dev_get_drvdata(&dev->dev);
-+	struct tpm_chip *chip = dev_get_drvdata(dev);
+ 	old_rate = clk->rate;
  
- 	if (chip->vendor.irq)
- 		tpm_tis_reenable_interrupts(chip);
+-	if (clk->ops->set_rate)
+-		clk->ops->set_rate(clk->hw, clk->new_rate, clk->parent->rate);
++	if (clk->ops->set_rate) {
++		if (clk->parent)
++			clk->ops->set_rate(clk->hw, clk->new_rate,
++					clk->parent->rate);
++		else
++			clk->ops->set_rate(clk->hw, clk->new_rate, 0);
++	}
  
--	return tpm_pm_resume(&dev->dev);
-+	return tpm_pm_resume(dev);
- }
-+
-+static SIMPLE_DEV_PM_OPS(tpm_tis_pm, tpm_pm_suspend, tpm_tis_resume);
-+
- static struct platform_driver tis_drv = {
- 	.driver = {
- 		.name = "tpm_tis",
- 		.owner		= THIS_MODULE,
-+		.pm		= &tpm_tis_pm,
- 	},
--	.suspend = tpm_tis_suspend,
--	.resume = tpm_tis_resume,
- };
+-	if (clk->ops->recalc_rate)
+-		clk->rate = clk->ops->recalc_rate(clk->hw,
+-				clk->parent->rate);
+-	else
+-		clk->rate = clk->parent->rate;
++	if (clk->ops->recalc_rate) {
++		if (clk->parent)
++			clk->rate = clk->ops->recalc_rate(clk->hw,
++							clk->parent->rate);
++		else
++			clk->rate = clk->ops->recalc_rate(clk->hw, 0);
++	} else
++		clk->rate = clk->parent ? clk->parent->rate : 0;
  
- static struct platform_device *pdev;
+ 	if (clk->notifier_count && old_rate != clk->rate)
+ 		__clk_notify(clk, POST_RATE_CHANGE, old_rate, clk->rate);
+-- 
+1.7.10.4
 
