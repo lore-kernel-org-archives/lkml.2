@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384Ab2GDVaZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 17:30:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3737 "EHLO mx1.redhat.com"
+	id S1755897Ab2GDVpZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 17:45:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59068 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755800Ab2GDVaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 17:30:23 -0400
-Date: Thu, 5 Jul 2012 00:30:37 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio-blk: allow toggling host cache between writeback
- and writethrough
-Message-ID: <20120704213037.GA27713@redhat.com>
-References: <1341321577-24435-1-git-send-email-pbonzini@redhat.com>
- <20120704154220.GB27064@redhat.com>
- <4FF46728.7030302@redhat.com>
- <20120704160258.GB27271@redhat.com>
- <4FF46A92.3020009@redhat.com>
+	id S1753903Ab2GDVpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 17:45:22 -0400
+Date: Wed, 4 Jul 2012 23:45:17 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lm8333: Fix check ordering
+In-Reply-To: <20120704200550.GA13248@core.coreip.homeip.net>
+Message-ID: <alpine.LNX.2.00.1207042344570.17304@pobox.suse.cz>
+References: <20120704145653.7910.26502.stgit@localhost.localdomain> <20120704200550.GA13248@core.coreip.homeip.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF46A92.3020009@redhat.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 04, 2012 at 06:08:50PM +0200, Paolo Bonzini wrote:
-> Il 04/07/2012 18:02, Michael S. Tsirkin ha scritto:
-> > On Wed, Jul 04, 2012 at 05:54:16PM +0200, Paolo Bonzini wrote:
-> >> Il 04/07/2012 17:42, Michael S. Tsirkin ha scritto:
-> >>> On Tue, Jul 03, 2012 at 03:19:37PM +0200, Paolo Bonzini wrote:
-> >>>> This patch adds support for the new VIRTIO_BLK_F_CONFIG_WCE feature,
-> >>>> which exposes the cache mode in the configuration space and lets the
-> >>>> driver modify it.  The cache mode is exposed via sysfs.
-> >>>>
-> >>>> Even if the host does not support the new feature, the cache mode is
-> >>>> visible (thanks to the existing VIRTIO_BLK_F_WCE), but not modifiable.
-> >>>>
-> >>>> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> >>>
-> >>> I note this has been applied but I think the userspace
-> >>> API is a bit painful to use. Let's fix it before
-> >>> it gets set in stone?
-> >>
-> >> I'm trying to mimic the existing userspace API for SCSI disks.  FWIW I
-> >> would totally agree with you.
+On Wed, 4 Jul 2012, Dmitry Torokhov wrote:
+
+> > From: Alan Cox <alan@linux.intel.com>
 > > 
-> > Hmm. Want to try fixing scsi? Need to be compatible but it could
-> > maybe ignore spaces.
-> 
-> Honestly I'm not sure it's really worthwhile...  And you also have the
-> same problem when printing.  You cannot remove the spaces, because
-> clients will look for the "old" string, with the spaces.
-
-Right. Oh well.
-
-> >>>> +static int virtblk_get_cache_mode(struct virtio_device *vdev)
-> >>>
-> >>> Why are you converting u8 to int here?
-> >>
-> >> The fact that it is a u8 is really an internal detail.  Perhaps the bug
-> >> is using u8 in the callers.
+> > Fix harmless reference off end of array
 > > 
-> > Make it bool then?
+> > Reported-by: <dcb314@hotmail.com>
+> > Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?43861
+> > Signed-off-by: Alan Cox <alan@linux.intel.com>
+> > ---
 > > 
-> > You are using u8 in the config. So you could get any value
-> > besides 0 and 1, and you interpret that as 1.
-> > Is 1 always a safe value? If not maybe it's better to set
-> > to a safe value if it is not 0 or 1, that is we don't know how to interpret it.
+> >  drivers/input/keyboard/lm8333.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/input/keyboard/lm8333.c b/drivers/input/keyboard/lm8333.c
+> > index ca168a6..081fd9e 100644
+> > --- a/drivers/input/keyboard/lm8333.c
+> > +++ b/drivers/input/keyboard/lm8333.c
+> > @@ -91,7 +91,7 @@ static void lm8333_key_handler(struct lm8333 *lm8333)
+> >  		return;
+> >  	}
+> >  
+> > -	for (i = 0; keys[i] && i < LM8333_FIFO_TRANSFER_SIZE; i++) {
+> > +	for (i = 0; i < LM8333_FIFO_TRANSFER_SIZE && keys[i]; i++) {
+> >  		pressed = keys[i] & 0x80;
+> >  		code = keys[i] & 0x7f;
+> >  
+> > 
 > 
-> That would be a host bug; the spec only gives meaning to 0 and 1.
+> I believe Jiri has already queued this through trivial tree...
 
-Yes but if the other side does not validate values implementations
-*will* have bugs. Why not declare bits 1-7 reserved?
-Then we can reuse other bits later.
-
->  In
-> any case, "have a cache" means "needs to flush", so it's always safe.
-> If you interpret another value as 0, you risk omitting flushes.
-> 
-> Paolo
-
-OK, that's good.
+Yup, it's in -next as 954bd6d1c. Thanks,
 
 -- 
-MST
+Jiri Kosina
+SUSE Labs
