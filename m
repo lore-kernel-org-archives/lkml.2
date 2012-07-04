@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756991Ab2GDKFA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 06:05:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38967 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756377Ab2GDKE7 (ORCPT
+	id S933819Ab2GDKHU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 06:07:20 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36570 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933123Ab2GDKHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 06:04:59 -0400
-Subject: Re: [PATCH 5/5] perf/x86: Add Intel Nehalem-EX uncore support
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: eranian@google.com, mingo@elte.hu, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1341381616-12229-6-git-send-email-zheng.z.yan@intel.com>
-References: <1341381616-12229-1-git-send-email-zheng.z.yan@intel.com>
-	 <1341381616-12229-6-git-send-email-zheng.z.yan@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Jul 2012 12:04:53 +0200
-Message-ID: <1341396293.2507.77.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jul 2012 06:07:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120703134120.dc89c7ae.akpm@linux-foundation.org>
+References: <1341035970-20490-1-git-send-email-akinobu.mita@gmail.com>
+	<20120703134120.dc89c7ae.akpm@linux-foundation.org>
+Date: Wed, 4 Jul 2012 19:07:18 +0900
+Message-ID: <CAC5umyhLEp_T1BF6LRNLBMcO-QEE6_hTLL1PAd=65yYRBg3rpQ@mail.gmail.com>
+Subject: Re: [PATCH -v5 0/6] notifier error injection
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
+        Greg KH <greg@kroah.com>, linux-mm@kvack.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-04 at 14:00 +0800, Yan, Zheng wrote:
-> +static void nhmex_uncore_msr_enable_event(struct intel_uncore_box *box,
-> +                                         struct perf_event *event)
-> +{
-> +       struct hw_perf_event *hwc = &event->hw;
-> +
-> +       if (box->pmu->type == &nhmex_uncore_bbox)
-> +               nhmex_bbox_msr_enable_event(box, event);
-> +       else if (box->pmu->type == &nhmex_uncore_sbox)
-> +               nhmex_sbox_msr_enable_event(box, event);
-> +       else if (box->pmu->type == &nhmex_uncore_mbox)
-> +               nhmex_mbox_msr_enable_event(box, event);
-> +       else if (box->pmu->type == &nhmex_uncore_rbox)
-> +               nhmex_rbox_msr_enable_event(box, event);
-> +       else if (hwc->idx >= UNCORE_PMC_IDX_FIXED)
-> +               wrmsrl(hwc->config_base, NHMEX_PMON_CTL_EN_BIT0);
-> +       else if (box->pmu->type->event_mask & NHMEX_PMON_CTL_EN_BIT0)
-> +               wrmsrl(hwc->config_base, hwc->config | NHMEX_PMON_CTL_EN_BIT22);
-> +       else
-> +               wrmsrl(hwc->config_base, hwc->config | NHMEX_PMON_CTL_EN_BIT0);
-> +} 
+2012/7/4 Andrew Morton <akpm@linux-foundation.org>:
+> On Sat, 30 Jun 2012 14:59:24 +0900
+> Akinobu Mita <akinobu.mita@gmail.com> wrote:
+>
+>> This provides kernel modules that can be used to test the error handling
+>> of notifier call chain failures by injecting artifical errors to the
+>> following notifier chain callbacks.
+>
+> No updates to Documentation/fault-injection/?
 
-wouldn't it be easier to do something like:
-
-  box->pmu->type->enable_event(box, event);
-
-The same for these other functions that are massive ->type switches.
-
-Also, can you please add more comments, note all the face_cpuc stuff,
-and there's some rather dense code in all the alternative stuff. 
-
-Also, how can a single extra register require 192 bits of config space?
-
+Thanks for the remainder.
+I'll prepare to add a document to it.
