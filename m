@@ -1,81 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399Ab2GDVz1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 17:55:27 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:53242 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755800Ab2GDVzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 17:55:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH] omap-rng: Use struct dev_pm_ops for power management
-Date: Thu, 5 Jul 2012 00:00:56 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Deepak Saxena <dsaxena@plexity.net>,
-        linux-omap@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207050000.56356.rjw@sisk.pl>
+	id S1755931Ab2GDWGX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 18:06:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58735 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755829Ab2GDWGW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 18:06:22 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH] netdev/phy: Fixup lockdep warnings in mdio-mux.c
+Date: Wed,  4 Jul 2012 15:06:16 -0700
+Message-Id: <1341439576-1413-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+From: David Daney <david.daney@cavium.com>
 
-Make the omap-rng driver define its PM callbacks through
-a struct dev_pm_ops object rather than by using legacy PM hooks
-in struct platform_driver.
+With lockdep enabled we get:
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+=============================================
+[ INFO: possible recursive locking detected ]
+3.4.4-Cavium-Octeon+ #313 Not tainted
+---------------------------------------------
+kworker/u:1/36 is trying to acquire lock:
+(&bus->mdio_lock){+.+...}, at: [<ffffffff813da7e8>] mdio_mux_read+0x38/0xa0
+
+but task is already holding lock:
+ (&bus->mdio_lock){+.+...}, at: [<ffffffff813d79e4>] mdiobus_read+0x44/0x88
+
+other info that might help us debug this:
+ Possible unsafe locking scenario:
+
+       CPU0
+       ----
+  lock(&bus->mdio_lock);
+  lock(&bus->mdio_lock);
+
+ *** DEADLOCK ***
+
+ May be due to missing lock nesting notation
+.
+.
+.
+
+This is a false positive, since we are indeed using 'nested' locking,
+we need to use mutex_lock_nested().
+
+Now in theory we can stack multiple MDIO multiplexers, but that would
+require passing the nesting level (which is difficult to know) to
+mutex_lock_nested().  Instead we assume the simple case of a single
+level of nesting.  Since these are only warning messages, it isn't so
+important to solve the general case.
+
+Signed-off-by: David Daney <david.daney@cavium.com>
 ---
- drivers/char/hw_random/omap-rng.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ drivers/net/phy/mdio-mux.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
-Index: linux/drivers/char/hw_random/omap-rng.c
-===================================================================
---- linux.orig/drivers/char/hw_random/omap-rng.c
-+++ linux/drivers/char/hw_random/omap-rng.c
-@@ -162,22 +162,24 @@ static int __exit omap_rng_remove(struct
+diff --git a/drivers/net/phy/mdio-mux.c b/drivers/net/phy/mdio-mux.c
+index 39ea067..5c12018 100644
+--- a/drivers/net/phy/mdio-mux.c
++++ b/drivers/net/phy/mdio-mux.c
+@@ -46,7 +46,13 @@ static int mdio_mux_read(struct mii_bus *bus, int phy_id, int regnum)
+ 	struct mdio_mux_parent_bus *pb = cb->parent;
+ 	int r;
  
- #ifdef CONFIG_PM
+-	mutex_lock(&pb->mii_bus->mdio_lock);
++	/* In theory multiple mdio_mux could be stacked, thus creating
++	 * more than a single level of nesting.  But in practice,
++	 * SINGLE_DEPTH_NESTING will cover the vast majority of use
++	 * cases.  We use it, instead of trying to handle the general
++	 * case.
++	 */
++	mutex_lock_nested(&pb->mii_bus->mdio_lock, SINGLE_DEPTH_NESTING);
+ 	r = pb->switch_fn(pb->current_child, cb->bus_number, pb->switch_data);
+ 	if (r)
+ 		goto out;
+@@ -71,7 +77,7 @@ static int mdio_mux_write(struct mii_bus *bus, int phy_id,
  
--static int omap_rng_suspend(struct platform_device *pdev, pm_message_t message)
-+static int omap_rng_suspend(struct device *dev)
- {
- 	omap_rng_write_reg(RNG_MASK_REG, 0x0);
- 	return 0;
- }
+ 	int r;
  
--static int omap_rng_resume(struct platform_device *pdev)
-+static int omap_rng_resume(struct device *dev)
- {
- 	omap_rng_write_reg(RNG_MASK_REG, 0x1);
- 	return 0;
- }
- 
-+static SIMPLE_DEV_PM_OPS(omap_rng_pm, omap_rng_suspend, omap_rng_resume);
-+#define	OMAP_RNG_PM	(&omap_rng_pm)
-+
- #else
- 
--#define	omap_rng_suspend	NULL
--#define	omap_rng_resume		NULL
-+#define	OMAP_RNG_PM	NULL
- 
- #endif
- 
-@@ -188,11 +190,10 @@ static struct platform_driver omap_rng_d
- 	.driver = {
- 		.name		= "omap_rng",
- 		.owner		= THIS_MODULE,
-+		.pm		= OMAP_RNG_PM,
- 	},
- 	.probe		= omap_rng_probe,
- 	.remove		= __exit_p(omap_rng_remove),
--	.suspend	= omap_rng_suspend,
--	.resume		= omap_rng_resume
- };
- 
- static int __init omap_rng_init(void)
+-	mutex_lock(&pb->mii_bus->mdio_lock);
++	mutex_lock_nested(&pb->mii_bus->mdio_lock, SINGLE_DEPTH_NESTING);
+ 	r = pb->switch_fn(pb->current_child, cb->bus_number, pb->switch_data);
+ 	if (r)
+ 		goto out;
+-- 
+1.7.2.3
+
