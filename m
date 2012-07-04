@@ -1,71 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab2GDNBE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 09:01:04 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44943 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032Ab2GDNBA (ORCPT
+	id S1752152Ab2GDNA6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 09:00:58 -0400
+Received: from mga14.intel.com ([143.182.124.37]:61250 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752032Ab2GDNAx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 09:01:00 -0400
-Date: Wed, 4 Jul 2012 15:00:56 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH] pwm-backlight: add regulator and GPIO support
-Message-ID: <20120704130056.GC30009@pengutronix.de>
-References: <1340976167-27298-1-git-send-email-acourbot@nvidia.com>
- <20120704104840.GJ24458@pengutronix.de>
- <4FF43692.2040805@nvidia.com>
+	Wed, 4 Jul 2012 09:00:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="163974924"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>
+CC: "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "kay@vrfy.org" <kay@vrfy.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Subject: [PATCH] printk: fixing the deadlock when calling printk in nmi
+ handle
+Thread-Topic: [PATCH] printk: fixing the deadlock when calling printk in nmi
+ handle
+Thread-Index: Ac1Z5QcLvtA63cR2SZCbqgNGHLXbfA==
+Date: Wed, 4 Jul 2012 13:00:49 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A10C7F6@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF43692.2040805@nvidia.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 14:26:05 up 11 days,  3:37, 73 users,  load average: 4.49, 18.06,
- 11.55
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 04, 2012 at 09:26:58PM +0900, Alex Courbot wrote:
-> Hi Sascha,
-> 
-> On 07/04/2012 07:48 PM, Sascha Hauer wrote:>> +
-> >> +	pb->power_reg = devm_regulator_get(&pdev->dev, "power");
-> >> +	if (IS_ERR(pb->power_reg))
-> >> +		return PTR_ERR(pb->power_reg);
-> >
-> > This looses several resources allocated earlier, like the enable gpio
-> > and the pwm. This is really bad here since I have no regulator specified
-> > and devm_regulator_get returns with -EPROBE_DEFER. Next time the core
-> > tries to probe the driver the driver bails out because the gpio and the
-> > pwm is already requested.
-> 
-> That's very bad indeed. I assumed that the kernel would free
-> devm-allocated resources after probe returned -EPROBE_DEFER,
+From: liu chuansheng <chuansheng.liu@intel.com>
+Subject: [PATCH] printk: fixing the deadlock when calling printk in nmi handle
 
-It indeed does free devm allocated resources, but neither the gpio nor
-the pwm are devm allocated.
+Current printk implementation can not fully support that
+calling it in nmi handler for SMP arch.
 
-Also please be aware that using a regulator in the pwm backlight will
-instantly break all existing users. That's hardly your fault though.
+There is typical case in nmi handler function arch_trigger_all_cpu_backtrace_handler().
 
-Sascha
+In my platform, there are 2 CPUs, when function arch_trigger_all_cpu_backtrace()
+is called, 2 CPUs will recevied the nmi interrupts, and the
+arch_trigger_all_cpu_backtrace_handler() will called on 2 CPUs:
 
+case1:
+CPU0                                            CPU1
+calling arch_trigger_all_cpu_backtrace()        calling printk, and has obtain the logbuf_lock
+nmi interrupt received                          nmi interrupt received
+call arch_trigger_all_cpu_backtrace_handler()   call arch_trigger_all_cpu_backtrace_handler()
+Obtain arch_spin_lock(&lock);                   Waiting for arch_spin_lock(&lock);
+Continue to call printk()
+CPU0 will be blocked by logbuf_lock             CPU1 is blocked by arch_spin_lock(&lock)
+
+The deadlock will be happening.
+
+case2:
+CPU0                                             CPU1:(run dmesg command)
+calling arch_trigger_all_cpu_backtrace()         calling do_syslog
+                                                 Obtaining the logbuf_lock
+nmi interrupt received                           nmi interrupt received
+....
+The dealock will happen also somtimes.
+
+I just write a simple interface to run the arch_trigger_all_cpu_backtrace_handler() every 5s,
+it will trigger dead lock many times.
+
+The solution is when printk is called in nmi handler, we will use trylock instead of lock.
+And in nmi handler, do the call the console write function because normal console write function
+include many spin locks also. This fix can confirm the traces in nmi handler can be output successfully
+almost.
+
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+---
+ kernel/printk.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/printk.c b/kernel/printk.c
+index dba1821..de68e24 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1275,7 +1275,7 @@ static int console_trylock_for_printk(unsigned int cpu)
+ {
+        int retval = 0, wake = 0;
+ 
+-       if (console_trylock()) {
++       if (!in_nmi() && console_trylock()) {
+                retval = 1;
+ 
+                /*
+@@ -1432,7 +1432,13 @@ asmlinkage int vprintk_emit(int facility, int level,
+        }
+ 
+        lockdep_off();
+-       raw_spin_lock(&logbuf_lock);
++       if(unlikely(in_nmi())) {
++               if(!raw_spin_trylock(&logbuf_lock))
++                       goto out_restore_lockdep_irqs;
++       } else {
++               raw_spin_lock(&logbuf_lock);
++       }
++
+        logbuf_cpu = this_cpu;
+ 
+        if (recursion_bug) {
+@@ -1524,6 +1530,7 @@ asmlinkage int vprintk_emit(int facility, int level,
+        if (console_trylock_for_printk(this_cpu))
+                console_unlock();
+ 
++out_restore_lockdep_irqs:
+        lockdep_on();
+ out_restore_irqs:
+        local_irq_restore(flags);
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.7.0.4
