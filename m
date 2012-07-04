@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab2GDRlU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 13:41:20 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:35042 "EHLO
+	id S1755555Ab2GDRqy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 13:46:54 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:40716 "EHLO
 	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986Ab2GDRlS (ORCPT
+	with ESMTP id S1750986Ab2GDRqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 13:41:18 -0400
-Message-ID: <4FF48039.3020505@acm.org>
-Date: Wed, 04 Jul 2012 12:41:13 -0500
-From: Corey Minyard <tcminyard@gmail.com>
-Reply-To: minyard@acm.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Wed, 4 Jul 2012 13:46:50 -0400
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Srinivas_G_Gowda@Dell.com, tcminyard@gmail.com, mjg59@srcf.ucam.org,
-        linux-kernel@vger.kernel.org, openipmi-developer@lists.sourceforge.net,
-        jharg93@gmail.com
-Subject: Re: [PATCH 1/1 v2 ] ipmi: Setting OS name as Linux in BMC
-References: <4FEC8931.5020001@dell.com> <4FEC8A28.4070806@dell.com> <m2k3yrgf4d.fsf@firstfloor.org> <20120629123001.GA26545@srcf.ucam.org> <4FEDBB3C.7080105@acm.org> <4FF3D090.8000403@dell.com> <20120704121726.GP11413@one.firstfloor.org>
-In-Reply-To: <20120704121726.GP11413@one.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1341420818.19870.10.camel@laptop>
+References: <1341381616-12229-1-git-send-email-zheng.z.yan@intel.com>
+	<1341381616-12229-6-git-send-email-zheng.z.yan@intel.com>
+	<1341396293.2507.77.camel@laptop>
+	<4FF46885.2090609@intel.com>
+	<1341420818.19870.10.camel@laptop>
+Date: Thu, 5 Jul 2012 01:46:50 +0800
+X-Google-Sender-Auth: XaIoQinfElegRvOqou3yGHfXZR0
+Message-ID: <CAAM7YA=UdSrNbaoidr+CKBUmth_Yxhvc5=WPxjeb-H9FchkRhg@mail.gmail.com>
+Subject: Re: [PATCH 5/5] perf/x86: Add Intel Nehalem-EX uncore support
+From: "Yan, Zheng " <yanzheng@21cn.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, eranian@google.com, mingo@elte.hu,
+        andi@firstfloor.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2012 07:17 AM, Andi Kleen wrote:
->> Rather than just have a static entry such as 'Linux' I could probably write the version number and more(distro name etc.. )
+On Thu, Jul 5, 2012 at 12:53 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Thu, 2012-07-05 at 00:00 +0800, Yan, Zheng wrote:
 >>
->> Thoughts.. ?
-> I still think "Linux" means nothing even to the management software.
-> What should it do with that?
+>> > Also, how can a single extra register require 192 bits of config space?
+>> >
+>> Some events in the M-Box and R-Box require programming up to 3 extra
+>> registers. For example, the event 0x5 in the R-Box requires programming
+>> extra registers XBR_SET1_MM_CFG, XBR_SET1_MATCH and XBR_SET1_MATCH.
 >
-> If you provide some way for a distro to fill in "foobar linux 1.2.3.4"
-> maybe. But just Linux or even Linux x.y.z would be wrong because the same kernel
-> version can behave very differently.
+> But shouldn't you then use 3 extra_reg instead of blowing up the one?
 >
-> But it would be  better to define specific feature flags for
-> specific needs that actually mean something.
+These 3 registers are within a logical set, are always used at the same time.
+I think it's natural to use a single data structure to track them.
 
-I think the conclusion I have come to is that this really belongs as a 
-small program that runs at startup.  That's not significantly different 
-than having it done in the driver.  I can help you write it, if you like.
-
-I think Andi is right here.  "Linux" may mean something to your 
-management software.  Some other management software may want "Linux 
-x.y.z".  Another may want "SuSE Enterprise Linux x.y".  It's impossible 
-to be general enough in the kernel.
-
->
->> I know there were some concerns with the security aspect, Can you please let me know what kind of security holes we could be looking at ?
-> I don't think there are any security problems. just forward/backward
-> compatibility problems, as the ACPI experience shows.
-
-I had mentioned possible security issues with having some daemon that 
-identified the system directly over IP.  I don't think there are any 
-issues with IPMI, at least not any more than you already have with IPMI, 
-and it's reasonably secure for what it does.
-
--corey
+Regards
+Yan, Zheng
