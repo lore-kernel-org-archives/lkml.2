@@ -1,88 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933055Ab2GDCby (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 22:31:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42468 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339Ab2GDCbv (ORCPT
+	id S1756771Ab2GDCda (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 22:33:30 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52669 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754195Ab2GDCd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 22:31:51 -0400
-Message-ID: <1341369105.10587.8.camel@phoenix>
-Subject: [PATCH RFT] regulator: ab8500: Set enable enable_time in
- regulator_desc
-From: Axel Lin <axel.lin@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Date: Wed, 04 Jul 2012 10:31:45 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Tue, 3 Jul 2012 22:33:29 -0400
+X-AuditID: 9c930197-b7b49ae0000027b8-88-4ff3ab76b3a0
+Message-ID: <4FF3ABA1.3070808@kernel.org>
+Date: Wed, 04 Jul 2012 11:34:09 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, jaschut@sandia.gov,
+        kamezawa.hiroyu@jp.fujitsu.com, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH -mm v2] mm: have order > 0 compaction start off where
+ it left
+References: <20120628135520.0c48b066@annuminas.surriel.com> <20120628135940.2c26ada9.akpm@linux-foundation.org> <4FECCB89.2050400@redhat.com> <20120628143546.d02d13f9.akpm@linux-foundation.org> <1341250950.16969.6.camel@lappy> <4FF2435F.2070302@redhat.com> <20120703101024.GG13141@csn.ul.ie> <20120703144808.4daa4244.akpm@linux-foundation.org>
+In-Reply-To: <20120703144808.4daa4244.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-Hi Linus,
-While working on this patch, I found in original code:
-ab8500_regulator_ops set enable_time callback to ab8500_regulator_enable_time,
-but does not set the delay in ab8500_regulator_info.
-I'm not sure the delay value is 0 for ab8500_regulator_ops, or the setting is
-just missing.
-Anyway, there is no behavior change by this patch.
+Hi Andrew,
 
-Regards,
-Axel
- drivers/regulator/ab8500.c |   10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
+On 07/04/2012 06:48 AM, Andrew Morton wrote:
 
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 13d424f..6230c40 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -238,13 +238,6 @@ static int ab8500_regulator_set_voltage_sel(struct regulator_dev *rdev,
- 	return ret;
- }
- 
--static int ab8500_regulator_enable_time(struct regulator_dev *rdev)
--{
--	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
--
--	return info->delay;
--}
--
- static int ab8500_regulator_set_voltage_time_sel(struct regulator_dev *rdev,
- 					     unsigned int old_sel,
- 					     unsigned int new_sel)
-@@ -261,7 +254,6 @@ static struct regulator_ops ab8500_regulator_ops = {
- 	.get_voltage_sel = ab8500_regulator_get_voltage_sel,
- 	.set_voltage_sel = ab8500_regulator_set_voltage_sel,
- 	.list_voltage	= regulator_list_voltage_table,
--	.enable_time	= ab8500_regulator_enable_time,
- 	.set_voltage_time_sel = ab8500_regulator_set_voltage_time_sel,
- };
- 
-@@ -276,7 +268,6 @@ static struct regulator_ops ab8500_regulator_fixed_ops = {
- 	.is_enabled	= ab8500_regulator_is_enabled,
- 	.get_voltage	= ab8500_fixed_get_voltage,
- 	.list_voltage	= regulator_list_voltage_linear,
--	.enable_time	= ab8500_regulator_enable_time,
- };
- 
- static struct ab8500_regulator_info
-@@ -374,6 +365,7 @@ static struct ab8500_regulator_info
- 			.owner		= THIS_MODULE,
- 			.n_voltages	= 1,
- 			.min_uV		= 2000000,
-+			.enable_time	= 10000,
- 		},
- 		.delay			= 10000,
- 		.update_bank		= 0x03,
+> On Tue, 3 Jul 2012 11:10:24 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
+> 
+>>>>>>>> +          if (cc->order>   0)
+>>>>>>>> +                  zone->compact_cached_free_pfn = high_pfn;
+>>>>>>>
+>>>>>>> Is high_pfn guaranteed to be aligned to pageblock_nr_pages here?  I
+>>>>>>> assume so, if lots of code in other places is correct but it's
+>>>>>>> unobvious from reading this function.
+>>>>>>
+>>>>>> Reading the code a few more times, I believe that it is
+>>>>>> indeed aligned to pageblock size.
+>>>>>
+>>>>> I'll slip this into -next for a while.
+>>>>>
+>>>>> --- a/mm/compaction.c~isolate_freepages-check-that-high_pfn-is-aligned-as-expected
+>>>>> +++ a/mm/compaction.c
+>>>>> @@ -456,6 +456,7 @@ static void isolate_freepages(struct zon
+>>>>>                 }
+>>>>>                 spin_unlock_irqrestore(&zone->lock, flags);
+>>>>>
+>>>>> +               WARN_ON_ONCE(high_pfn&  (pageblock_nr_pages - 1));
+>>>>>                 /*
+>>>>>                  * Record the highest PFN we isolated pages from. When next
+>>>>>                  * looking for free pages, the search will restart here as
+>>>>
+>>>> I've triggered the following with today's -next:
+>>>
+>>> I've been staring at the migrate code for most of the afternoon,
+>>> and am not sure how this is triggered.
+>>>
+>>
+>> That warning is placed in isolate_freepages(). When the migration
+>> scanner and free scanner have almost met it is possible for high_pfn to
+>> be
+>>
+>> cc->migrate_pfn + pageblock_nr_pages
+>>
+>> and that is not necessarily pageblock aligned. Forcing it to be aligned
+>> raises the possibility that the free scanner moves to another zone. This
+>> is very unlikely but could happen if a high zone was very small.
+>>
+>> I should have caught this when the warning was proposed :( IMO it's
+>> safe to just drop the warning.
+> 
+> The rest of this patch takes care to ensure that
+> ->compact_cached_free_pfn is aligned to pageblock_nr_pages.  But it now
+> appears that this particular site will violate that.
+> 
+> What's up?  Do we need to fix this site, or do we remove all that
+> make-compact_cached_free_pfn-aligned code?
+
+
+I vote removing the warning because it doesn't related to Rik's incremental compaction.
+Let's see. 
+
+high_pfn = min(low_pfn, pfn) = cc->migrate_pfn + pageblock_nr_pages.
+In here, cc->migrate_pfn isn't necessarily pageblock aligined.
+So if we don't consider compact_cached_free_pfn, it can hit.
+
+static void isolate_freepages()
+{
+	high_pfn = min(low_pfn, pfn) = cc->migrate_pfn + pageblock_nr_pages;
+	for (..) {
+		...
+		 WARN_ON_ONCE(high_pfn & (pageblock_nr_pages - 1));
+		
+	}
+}
+
 -- 
-1.7.9.5
-
-
-
+Kind regards,
+Minchan Kim
