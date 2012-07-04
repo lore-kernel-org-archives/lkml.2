@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933855Ab2GDKbB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 06:31:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50906 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933489Ab2GDKbA (ORCPT
+	id S1757080Ab2GDKih (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 06:38:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39417 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab2GDKig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 06:31:00 -0400
-Subject: Re: [PATCH 02/10] perf, tool: Fix pmu object initialization
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+	Wed, 4 Jul 2012 06:38:36 -0400
+Subject: Re: [PATCH 04/10] perf, x86: Making hardware events translations
+ available in sysfs
+From: Peter Zijlstra <peterz@infradead.org>
 To: Jiri Olsa <jolsa@redhat.com>
 Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
         linux-kernel@vger.kernel.org
-In-Reply-To: <1341352848-11833-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1341397330.2507.85.camel@laptop>
 References: <1341352848-11833-1-git-send-email-jolsa@redhat.com>
-	 <1341352848-11833-3-git-send-email-jolsa@redhat.com>
+	 <1341352848-11833-5-git-send-email-jolsa@redhat.com>
+	 <1341397330.2507.85.camel@laptop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Jul 2012 12:30:48 +0200
-Message-ID: <1341397848.2507.93.camel@laptop>
+Date: Wed, 04 Jul 2012 12:38:31 +0200
+Message-ID: <1341398311.2507.98.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -26,20 +28,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-04 at 00:00 +0200, Jiri Olsa wrote:
-> The internal pmu list was never used. With each perf_pmu__find() call
-> the pmu structure was created new by parsing sysfs. Beside this it
-> caused memory leaks. We now keep all pmus by adding them to the list.
+On Wed, 2012-07-04 at 12:22 +0200, Peter Zijlstra wrote:
+> How about something like:
 > 
-> Also, pmu_lookup() should return pmus that do not expose the format
-> specifier in sysfs.
+>  u64 config = x86_pmu.event_map(_id);
+>  u64 event = (config & ARCH_PERFMON_EVENTSEL_EVENT) |
+>              (config & AMD64_EVENTSEL_EVENT) >> 24;
+>  u64 umask = (config & ARCH_PERFMON_EVENTSEL_UMASK) >> 8;
 > 
-> We need a valid internal pmu list in a later patch to iterate over all
-> pmus that exist in the system.
+>  WARN_ON_ONCE(config & (ARCH_PERFMON_EVENTSEL_INV |
+>                         ARCH_PERFMON_EVENTSEL_CMASK));
 > 
-> Signed-off-by: Robert Richter <robert.richter@amd.com>
-> [ added same treatment for 'event' sysfs group attribute ]
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com> 
+>  sprintf("event=0x%02llx,umask=0x%02llx\n", event, umask); 
 
-Are we missing a From: ?
+Oh wait, silly me, we actually need the inv and cmask too.
+
+So that gets to be something like:
+
+  u64 config = x86_pmu.event_map(_id);
+  u64 event = (config & ARCH_PERFMON_EVENTSEL_EVENT) |
+              (config & AMD64_EVENTSEL_EVENT) >> 24;
+  u64 umask = (config & ARCH_PERFMON_EVENTSEL_UMASK) >> 8;
+  u64 inv   = (config & ARCH_PERFMON_EVENTSEL_INV) >> 23;
+  u64 cmask = (config & ARCH_PERFMON_EVENTSEL_CMASK) >> 24;
+  ssize_t ret;
+
+  ret = sprintf(page, "event=0x%02llx", event);
+  if (umask)
+    ret += sprintf(page + ret, ",umask=0x%02llx", umask);
+  if (inv)
+    ret += sprintf(page + ret, ",inv");
+  if (cmask)
+    ret += sprintf(page + ret, ",cmask=0x%02llx", cmask);
+  sprintf(page + ret, "\n");
+ 
+  return ret;
 
