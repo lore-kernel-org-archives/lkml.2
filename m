@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab2GDQpI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 12:45:08 -0400
-Received: from mail-in-11.arcor-online.net ([151.189.21.51]:56022 "EHLO
-	mail-in-11.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754401Ab2GDQpF (ORCPT
+	id S1755415Ab2GDQuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 12:50:10 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:56351 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751755Ab2GDQuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 12:45:05 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-17.arcor-online.net 9C12ACBD7C
-Subject: [PATCH] HID: roccat: Added sensor bin-sysfs-attr for Savu
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-Reply-To: erazor_de@users.sourceforge.net
-To: Rob Landley <rob@landley.net>, Jiri Kosina <jkosina@suse.cz>,
-        Stefan Achatz <erazor_de@users.sourceforge.net>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Jul 2012 18:45:03 +0200
-Message-ID: <1341420303.3266.22.camel@neuromancer.tessier-ashpool>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jul 2012 12:50:08 -0400
+X-Sasl-enc: 15LcwPtpd92Km36d2P4rI1hQMI/Uxu4MUg9JqKahRkxs 1341420606
+Date: Wed, 4 Jul 2012 13:50:04 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: ibm-acpi-devel@lists.sourceforge.net, platform-driver-x86@vger.kernel.org,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [ibm-acpi-devel] ethernet-related thermal emergency on
+ Thinkpad x60
+Message-ID: <20120704165004.GB7613@khazad-dum.debian.net>
+References: <20120704141756.GA2089@elf.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120704141756.GA2089@elf.ucw.cz>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sensor attr can be used to tweak the optical sensor of the Savu.
+On Wed, 04 Jul 2012, Pavel Machek wrote:
+> When using nework interface (eth0), machine starts to behave
+> weird. Like... complete freeze, then poweroff, then it hangs on boot
+> (initializing ACPI) until I let it to cool down... and I'm not even
+> using gigabit speed.
+> 
+> Did anyone see it? Any ideas? Should I attempt to open it and clean
+> the dust?
 
-Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
----
- .../ABI/testing/sysfs-driver-hid-roccat-savu       |    9 +++++++++
- drivers/hid/hid-roccat-savu.c                      |    2 ++
- drivers/hid/hid-roccat-savu.h                      |    2 ++
- 3 files changed, 13 insertions(+), 0 deletions(-)
+Opening it up and cleaning things is always a good idea.  Some intel
+boxes have the GbEth MAC inside the chipset, so it is also worth
+checking whether the thermal contact between heatsink and chipset is
+operating properly (or just replace the old thermal compounts with Artic
+Silver 5 or some other non-reactive, extremely high quality compound
+that is suitable for the rapid thermal cycles of laptops).
 
-diff --git a/Documentation/ABI/testing/sysfs-driver-hid-roccat-savu b/Documentation/ABI/testing/sysfs-driver-hid-roccat-savu
-index e233490..b42922c 100644
---- a/Documentation/ABI/testing/sysfs-driver-hid-roccat-savu
-+++ b/Documentation/ABI/testing/sysfs-driver-hid-roccat-savu
-@@ -66,3 +66,12 @@ Description:	The mouse can store 5 profiles which can be switched by the
- 		The data has to be 3 bytes long.
- 		The mouse will reject invalid data.
- Users:		http://roccat.sourceforge.net
-+
-+What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/savu/roccatsavu<minor>/sensor
-+Date:		July 2012
-+Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
-+Description:	The mouse has a Avago ADNS-3090 sensor.
-+		This file allows reading and writing of the mouse sensors registers.
-+		The data has to be 4 bytes long.
-+Users:		http://roccat.sourceforge.net
-+
-diff --git a/drivers/hid/hid-roccat-savu.c b/drivers/hid/hid-roccat-savu.c
-index 29e87d7..014afba 100644
---- a/drivers/hid/hid-roccat-savu.c
-+++ b/drivers/hid/hid-roccat-savu.c
-@@ -121,6 +121,7 @@ SAVU_SYSFS_RW(general, GENERAL)
- SAVU_SYSFS_RW(buttons, BUTTONS)
- SAVU_SYSFS_RW(macro, MACRO)
- SAVU_SYSFS_R(info, INFO)
-+SAVU_SYSFS_RW(sensor, SENSOR)
- 
- static struct bin_attribute savu_bin_attributes[] = {
- 	SAVU_BIN_ATTRIBUTE_W(control, CONTROL),
-@@ -129,6 +130,7 @@ static struct bin_attribute savu_bin_attributes[] = {
- 	SAVU_BIN_ATTRIBUTE_RW(buttons, BUTTONS),
- 	SAVU_BIN_ATTRIBUTE_RW(macro, MACRO),
- 	SAVU_BIN_ATTRIBUTE_R(info, INFO),
-+	SAVU_BIN_ATTRIBUTE_RW(sensor, SENSOR),
- 	__ATTR_NULL
- };
- 
-diff --git a/drivers/hid/hid-roccat-savu.h b/drivers/hid/hid-roccat-savu.h
-index b15a1bb..9120ba7 100644
---- a/drivers/hid/hid-roccat-savu.h
-+++ b/drivers/hid/hid-roccat-savu.h
-@@ -21,6 +21,7 @@ enum {
- 	SAVU_SIZE_BUTTONS = 0x2f,
- 	SAVU_SIZE_MACRO = 0x0823,
- 	SAVU_SIZE_INFO = 0x08,
-+	SAVU_SIZE_SENSOR = 0x04,
- };
- 
- enum savu_control_requests {
-@@ -35,6 +36,7 @@ enum savu_commands {
- 	SAVU_COMMAND_BUTTONS = 0x7,
- 	SAVU_COMMAND_MACRO = 0x8,
- 	SAVU_COMMAND_INFO = 0x9,
-+	SAVU_COMMAND_SENSOR = 0xc,
- };
- 
- struct savu_mouse_report_special {
+> thinkpad_acpi: THERMAL EMERGENCY: a sensor reports something is extremely hot!
+> thinkpad_acpi: temperatures (Celsius): 88 49 N/A 82 40 N/A 40 N/A 52 61 N/A N/A N/A N/A N/A N/A
+
+My guess is that the 82°C reading on the fourth sensor is the problem,
+althouhg the CPU is also quite hot.  That sensor is usually the GPU, but
+if your thinkpad has an integrated GPU, it is likely to have been used
+for the northbridge/chipset.
+
+It can also be a shortcircuity in the ethernet PHY (either the chip, or
+some of the analog auxiliary circuitry).  This is repairable by an
+skilled surface-mount technician if he can get his hands in the
+schematics and source the replacement components, but if you ask Lenovo
+about it, they will want to replace your entire planar card
+(motherboard)...
+
 -- 
-1.7.3.4
-
-
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
