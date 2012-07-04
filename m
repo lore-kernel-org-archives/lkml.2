@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab2GDPY6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 11:24:58 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:44364 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab2GDPYz (ORCPT
+	id S1754156Ab2GDP0Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 11:26:25 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:42622 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab2GDP0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 11:24:55 -0400
-Date: Wed, 4 Jul 2012 16:24:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH] pwm-backlight: add regulator and GPIO support
-Message-ID: <20120704152451.GA7333@sirena.org.uk>
-References: <1340976167-27298-1-git-send-email-acourbot@nvidia.com>
- <20120704104840.GJ24458@pengutronix.de>
- <4FF43692.2040805@nvidia.com>
- <20120704130056.GC30009@pengutronix.de>
- <4FF45DDF.9000306@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF45DDF.9000306@nvidia.com>
-X-Cookie: FORCE YOURSELF TO RELAX!
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Wed, 4 Jul 2012 11:26:24 -0400
+Subject: Re: [PATCH 1/3 v2] slub: prefetch next freelist pointer in
+ __slab_alloc()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: JoonSoo Kim <js1304@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        David Rientjes <rientjes@google.com>
+In-Reply-To: <CAOJsxLGBxeu2sE-wDT+YNyVipmXiPj7Gvmmdo-0zGmJObp2zxg@mail.gmail.com>
+References: <1340389359-2407-1-git-send-email-js1304@gmail.com>
+	 <1340390729-2821-1-git-send-email-js1304@gmail.com>
+	 <CAOJsxLHSboF0rQdGv8bdgGtinBz5dTo+omQbUnj9on_ewzgNAQ@mail.gmail.com>
+	 <CAAmzW4OdDhn5C_vfMhu3ejzzcXmCCt6r0h=nXUqKJaNYZxg8Bw@mail.gmail.com>
+	 <CAOJsxLGBxeu2sE-wDT+YNyVipmXiPj7Gvmmdo-0zGmJObp2zxg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Jul 2012 17:26:19 +0200
+Message-ID: <1341415579.2583.2134.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 12:14:39AM +0900, Alex Courbot wrote:
-> On Wed 04 Jul 2012 10:00:56 PM JST, Sascha Hauer wrote:
+On Wed, 2012-07-04 at 18:08 +0300, Pekka Enberg wrote:
 
-> >Also please be aware that using a regulator in the pwm backlight will
-> >instantly break all existing users. That's hardly your fault though.
+> That doesn't seem like that obvious win to me... Eric, Christoph?
 
-> Sorry, I don't see why. Could you elaborate on this?
+Its the slow path. I am not convinced its useful on real workloads (not
+a benchmark)
 
-All existing machines will start failing during probe as they won't be
-able to find the regulator - you should ideally make sure everyone in
-mainline gets an appropriate regulator set up.
+I mean, if a workload hits badly slow path, some more important work
+should be done to avoid this at a higher level.
+
+
