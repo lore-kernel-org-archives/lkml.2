@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932826Ab2GDFiY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 01:38:24 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17470 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150Ab2GDFiV (ORCPT
+	id S933144Ab2GDFih (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 01:38:37 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48781 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932433Ab2GDFie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 01:38:21 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 03 Jul 2012 22:38:13 -0700
-Message-ID: <4FF3D6BD.1000509@nvidia.com>
-Date: Wed, 4 Jul 2012 11:08:05 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "mturquette@ti.com" <mturquette@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Subject: Re: [PATCH v2 0/6] Port Tegra to generic clk framework
-References: <1341313761-22118-1-git-send-email-pgaikwad@nvidia.com> <4FF31DFC.8030708@wwwdotorg.org>
-In-Reply-To: <4FF31DFC.8030708@wwwdotorg.org>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jul 2012 01:38:34 -0400
+X-AuditID: 9c930197-b7b49ae0000027b8-6f-4ff3d6d8bfd3
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Huewe <peterhuewe@gmx.de>,
+        Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
+Subject: [GIT PULL 00/16] tools lib traceevent: Pending backports of libparseevent
+Date: Wed,  4 Jul 2012 14:34:28 +0900
+Message-Id: <1341380068-23806-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 03 July 2012 09:59 PM, Stephen Warren wrote:
-> On 07/03/2012 05:09 AM, Prashant Gaikwad wrote:
->> This patch set ports Tegra clock code to generic clock framework.
->>
->> Depends on
->> [PATCH v3 0/9] Add clk_prepare/clk_unprepare series
->> [PATCH] ARM: tegra: Remove second instance of uart clk
->> [PATCH] dma: tegra: add clk_prepare/clk_unprepare
->> [PATCH] ARM: tegra: dma: rename driver name for clock to "tegra-apbdma"
->>
->> Tested on Ventana and Cardhu
->>
->> v2:
->>   - Rebased on Tegra's for-3.6/common-clk
-> OK, this applies to for-3.6/common-clk without issue now. However, there
-> are still runtime problems:
->
-> On Tegra20(Ventana), running Tegra's for-next branch with these patches
-> merged in, if I play audio, the sound is much too low a pitch; the I2S
-> clock must be being set too low. Also, if I play the same file twice,
-> once encoded as 48KHz once encoded as 44.1KHz, the pitch is different.
->
-> On Tegra20(Ventana), running next-20120703 plus a few local patches for
-> regulators plus these common clock patches, then I see the same
-> segfaults during boot that I mentioned before. It seems something in
-> linux-next not in Tegra's for-next branch is breaking the common clock
-> code for us.
+Arnaldo,
 
-Does these local patches include any changes in clock init table? Is it 
-possible to share the changes?
+Please pull pending libparseevent improvements from my tree. All
+patches in the tree got acked or signed-off by Steven. They were
+originally in the trace-cmd tree, and format-patched + path name
+adjusted and re-applied.
 
-> Neither problem is seen on Cardhu with the same kernels.
->
-> Can you please investigate and fix these issues? Thanks.
+I've fixed the committer note and Link positions as you requested.  
+(I put the Links right before Steven's s-o-b as he's the original
+committer.) Also changelogs are reflowed (to fit to 70 column width
+that is the default value of emacs fill-paragraph function).
+
+Thanks,
+Namhyung
+
+
+The following changes since commit 17d7a1123f0f6d532830152564cc812cc73db2f3:
+
+  perf bench: Fix confused variable namings and descriptions in mem subsystem (2012-07-02 14:35:45 -0300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git 
+
+for you to fetch changes up to f6ced60fb6c0ee115982157457c47e48802d6e1d:
+
+  tools lib traceevent: Cleanup realloc use (2012-07-04 13:40:31 +0900)
+
+----------------------------------------------------------------
+libtraceevent/core improvements
+
+* Remaining backport of trace-cmd's libparseevent
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+
+----------------------------------------------------------------
+Namhyung Kim (10):
+      tools lib traceevent: Fix printk_cmp()
+      tools lib traceevent: Introduce extend_token()
+      tools lib traceevent: Handle strdup failure cases
+      tools lib traceevent: Handle realloc() failure path
+      tools lib traceevent: Pass string type argument to args
+      tools lib traceevent: Do not call add_event() again if allocation failed
+      tools lib traceevent: Fix some comments
+      tools lib traceevent: Check result of malloc() during reading token
+      tools lib traceevent: Check return value of arg_to_str()
+      tools lib traceevent: Cleanup realloc use
+
+Peter Huewe (1):
+      tools lib traceevent: Add missing break in make_bprint_args
+
+Steven Rostedt (4):
+      tools lib traceevent: Let filtering numbers by string use function names
+      tools lib traceevent: Add support for "%.*s" in bprintk events
+      tools lib traceevent: Add support to show migrate disable counter
+      tools lib traceevent: Fix %pM print format arg handling
+
+Wolfgang Mauerer (1):
+      tools lib traceevent: Fix trace_printk for long integers
+
+ tools/lib/traceevent/event-parse.c  |  287 +++++++++++++++++++++++------------
+ tools/lib/traceevent/parse-filter.c |   86 +++++++----
+ 2 files changed, 251 insertions(+), 122 deletions(-)
+
+-- 
+1.7.10.4
 
