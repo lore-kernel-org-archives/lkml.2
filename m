@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab2GDOx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 10:53:56 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:52642 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661Ab2GDOxv (ORCPT
+	id S1754180Ab2GDOyL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 10:54:11 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:44423 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325Ab2GDOyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 10:53:51 -0400
-Date: Wed, 4 Jul 2012 07:53:45 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, mtosatti@redhat.com, ebiederm@xmission.com,
-        luto@mit.edu, Joerg Roedel <joerg.roedel@amd.com>, dzickus@redhat.com,
-        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH v4 3/3] Documentation: Add ABI entry for vmcs sysfs
- interface
-Message-ID: <20120704145345.GG23020@kroah.com>
-References: <4FF413D2.4030006@cn.fujitsu.com>
- <4FF415A4.8040405@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF415A4.8040405@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 4 Jul 2012 10:54:06 -0400
+Message-ID: <1341413691.18786.0.camel@lappy>
+Subject: Re: rcu: BUG: spinlock recursion on CPU#3, trinity-child19/5970
+From: Sasha Levin <levinsasha928@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 04 Jul 2012 16:54:51 +0200
+In-Reply-To: <20120702145927.GD2508@linux.vnet.ibm.com>
+References: <1340964584.2936.40.camel@lappy>
+	 <20120629172320.GA2416@linux.vnet.ibm.com> <1341006040.26928.4.camel@lappy>
+	 <1341225139.23484.4.camel@twins> <20120702113541.GI2907@linux.vnet.ibm.com>
+	 <1341230352.23484.7.camel@twins> <1341234773.2958.4.camel@lappy>
+	 <20120702133334.GA2508@linux.vnet.ibm.com>
+	 <20120702142252.GA22868@linux.vnet.ibm.com> <1341239813.2958.7.camel@lappy>
+	 <20120702145927.GD2508@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 04, 2012 at 06:06:28PM +0800, Yanfei Zhang wrote:
-> Signed-off-by: zhangyanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  Documentation/ABI/testing/sysfs-devices-system-cpu |   21 ++++++++++++++++++++
->  1 files changed, 21 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-devices-system-cpu b/Documentation/ABI/testing/sysfs-devices-system-cpu
-> index 5dab364..6efbd6c 100644
-> --- a/Documentation/ABI/testing/sysfs-devices-system-cpu
-> +++ b/Documentation/ABI/testing/sysfs-devices-system-cpu
-> @@ -9,6 +9,27 @@ Description:
->  
->  		/sys/devices/system/cpu/cpu#/
->  
-> +What:		/sys/devices/system/cpu/vmcs_id
+On Mon, 2012-07-02 at 07:59 -0700, Paul E. McKenney wrote:
+> On Mon, Jul 02, 2012 at 04:36:53PM +0200, Sasha Levin wrote:
+> > Looks like its running fine for a bit now (~10 min). I'll ping if
+> > anything changes, but on the other tests it has usually failed at this
+> > point.
+> If testing goes well (both yours and mine), I will be submitting this
+> as urgent, since it is a 3.5 regression.  If they don't take it, I will
+> queue it for 3.6.
 
-Wait, aren't these a per-cpu value?  You have them as a "global" value
-for all cpus, is that really the case?  Shouldn't they be under
-/sys/devices/system/cpu/cpu#/ instead?
+2 days later, and this didn't reproduce. I think we can say it's solved.
 
-thanks,
 
-greg k-h
