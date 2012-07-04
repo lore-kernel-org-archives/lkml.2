@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab2GDMmd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 08:42:33 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:34894 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848Ab2GDMmb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 08:42:31 -0400
+	id S1751674Ab2GDMnm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 08:43:42 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:37055 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750869Ab2GDMnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 08:43:39 -0400
+Message-ID: <4FF439D0.1000603@parallels.com>
+Date: Wed, 4 Jul 2012 16:40:48 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120703112828.GA28294@somewhere>
-References: <CAJRGBZw_my_=Z+Jyb2UBYwW48BpCGYdcuD5mu7erHsX8NSKbDg@mail.gmail.com>
-	<20120703112828.GA28294@somewhere>
-Date: Wed, 4 Jul 2012 20:42:29 +0800
-Message-ID: <CAJRGBZzn66mpQo+PCQirzqE=Wdm9T7Z01P20FQsHQnTPEd2mqA@mail.gmail.com>
-Subject: Re: CPU isolation question again
-From: Luming Yu <luming.yu@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, gilad@benyossef.com,
-        Len Brown <lenb@kernel.org>, shli@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+CC: Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-mm <linux-mm@kvack.org>,
+        PowerPC email list <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH powerpc 2/2] kfree the cache name  of pgtable cache if
+ SLUB is used
+References: <1340617984.13778.37.camel@ThinkPad-T420>  <1340618099.13778.39.camel@ThinkPad-T420>  <alpine.DEB.2.00.1207031344240.14703@router.home>  <alpine.DEB.2.00.1207031535330.14703@router.home> <1341392420.18505.41.camel@ThinkPad-T420>
+In-Reply-To: <1341392420.18505.41.camel@ThinkPad-T420>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 3, 2012 at 7:28 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Wed, Jun 27, 2012 at 09:22:09PM +0800, Luming Yu wrote:
->> Hi there,
->>
->> I noticed some discussion about CPU isolation which points me to the
->> patch set (https://lkml.org/lkml/2011/8/15/245). I'm currently
->> preparing a RFC-patch-set to automatically pick up a few suitable CPUs
->> to isolate then kick them out of service for a while. We need to
->> balance between  thermal & power management And overall system
->> performance during this operation as much as possible. So
->> software-cpu-online-offline interface could not be a good option to
->> me. But to make sure I'm not blindly running on a dead-end path, I'd
->> check with experts here to ensure it makes some sense to isolate CPUs
->> to this level, and the idea also makes some sense, and the most
->> important is it's not implemented yet.
->
-> I don't understand what you are trying to do and how exactly. How do you
-> plan to do this isolation and how do you want to balance between thermal
-> and power?
+On 07/04/2012 01:00 PM, Li Zhong wrote:
+> On Tue, 2012-07-03 at 15:36 -0500, Christoph Lameter wrote:
+>> > Looking through the emails it seems that there is an issue with alias
+>> > strings. 
+> To be more precise, there seems no big issue currently. I just wanted to
+> make following usage of kmem_cache_create (SLUB) possible:
+> 
+> 	name = some string kmalloced
+> 	kmem_cache_create(name, ...)
+> 	kfree(name);
 
-My question could be wrong as the question arose several weeks ago
-when I came across
- drivers/acpi/acpi_paid.c which looks like a real user who need to
-request system automatically
-pick up a few CPU to get them isolated and deactivated. Later on, I
-noticed tglx's cpu hot plug re-work.
-I realized we could reuse the interface to do isolation and deactivation work.
+Out of curiosity: Why?
+This is not (currently) possible with the other allocators (may change
+with christoph's unification patches), so you would be making your code
+slub-dependent.
 
-Of cause, to pick up which ones to isolate and deactivate is another problem.
 
-cc'ed the author and ACPI maintainer of the driver as well as tglx.
-
-thanks!
