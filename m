@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab2GDXXt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 19:23:49 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:52822 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754236Ab2GDXXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 19:23:48 -0400
-Message-ID: <1341444227.2058.5.camel@joe2Laptop>
-Subject: Re: [PATCH 2/2] sunrpc/cache.h: replace simple_strtoul
-From: Joe Perches <joe@perches.com>
-To: Eldad Zack <eldad@fogrefinery.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 04 Jul 2012 16:23:47 -0700
-In-Reply-To: <1341442827-21339-2-git-send-email-eldad@fogrefinery.com>
-References: <1341442827-21339-1-git-send-email-eldad@fogrefinery.com>
-	 <1341442827-21339-2-git-send-email-eldad@fogrefinery.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932413Ab2GDXat (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 19:30:49 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:58152 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755588Ab2GDXan (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 19:30:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACxGe6tyO5u7eiq1OiPX-u439YAcQDFz3eOOGZ4bNPtwmYwNkg@mail.gmail.com>
+References: <CACxGe6tyO5u7eiq1OiPX-u439YAcQDFz3eOOGZ4bNPtwmYwNkg@mail.gmail.com>
+Date: Thu, 5 Jul 2012 01:30:42 +0200
+Message-ID: <CACRpkdZ7zZzTD+vqAY82vBHnjNmLDnLWDy7NdU=mEjA1GEBP8A@mail.gmail.com>
+Subject: Re: SPI, GPIO, and DT maintainer ship (cry for help)
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Robert Herring <rob.herring@calxeda.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        spi-devel-general-request@lists.sourceforge.net,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-05 at 01:00 +0200, Eldad Zack wrote:
-> This patch replaces the usage of simple_strtoul with kstrtoint in
-> get_int().
+On Mon, Jul 2, 2012 at 2:49 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
 
-Just some trivia:
+> Since you
+> three have agreed to co-maintain those subsystems with me, can you
+> please take a look at the patches that have been posted, pick up the
+> ones that look ready to go to you, and get them into linux-next?  I
+> may even need you to send pull requests to Linus when the window opens
+> if I'm still under water.
+>
+> Also, if you have any bug fixes that need to go into v3.5, go ahead
+> and send them on to Linus directly (Rob, I think I saw a pull request
+> from you).
 
-> diff --git a/include/linux/sunrpc/cache.h b/include/linux/sunrpc/cache.h
-[]
-> @@ -217,7 +217,7 @@ extern int qword_get(char **bpp, char *dest, int bufsize);
->  static inline int get_int(char **bpp, int *anint)
->  {
->  	char buf[50];
-> -	char *ep;
-> +	ssize_t ret;
->  	int rv;
->  	int len = qword_get(bpp, buf, 50);
+OK I'll see what I can do, sadly I'm a bit swamped too and will be
+on vacation but I'll try.
 
-This would be nicer as
-	int len = qword_get(bpp, buf, sizeof(buf));
-
-> @@ -226,8 +226,8 @@ static inline int get_int(char **bpp, int *anint)
->  	if (len == 0)
->  		return -ENOENT;
->  
-> -	rv = simple_strtol(buf, &ep, 0);
-> -	if (*ep)
-> +	ret = kstrtoint(buf, 0, &rv);
-> +	if (ret)
->  		return -EINVAL;
->  
->  	*anint = rv;
-
-ret and rv aren't useful anymore.
-
-Perhaps:
-
-	if (kstrtoint(buf, 0, anint))
-		return -EINVAL;
-
-	return 0;
-
-
+Linus Walleij
