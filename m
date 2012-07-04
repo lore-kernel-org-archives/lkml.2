@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab2GDCgP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 22:36:15 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46737 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755166Ab2GDCgJ (ORCPT
+	id S1756809Ab2GDCjD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 22:39:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33330 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754426Ab2GDCjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 22:36:09 -0400
-X-AuditID: 9c93016f-b7bccae00000345c-7a-4ff3ac1796b5
-Message-ID: <4FF3AC42.2000503@kernel.org>
-Date: Wed, 04 Jul 2012 11:36:50 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 3 Jul 2012 22:39:00 -0400
+Date: Wed, 4 Jul 2012 10:47:15 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Jeff Garzik <jeff@garzik.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: [RFC][PATCH] libata: enable SATA disk fua detection on default
+Message-ID: <20120704024715.GA17095@gmail.com>
+Mail-Followup-To: Michael Tokarev <mjt@tls.msk.ru>,
+	Jeff Garzik <jeff@garzik.org>, linux-kernel@vger.kernel.org,
+	linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+	Zheng Liu <wenqing.lz@taobao.com>
+References: <1336447443-4685-1-git-send-email-wenqing.lz@taobao.com>
+ <20120703090441.GA4804@gmail.com>
+ <4FF351F8.1000003@msgid.tls.msk.ru>
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        jaschut@sandia.gov, kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [PATCH -mm] mm: minor fixes for compaction
-References: <20120628135520.0c48b066@annuminas.surriel.com> <4FECE844.2050803@kernel.org> <20120703161304.7734fbef@annuminas.surriel.com>
-In-Reply-To: <20120703161304.7734fbef@annuminas.surriel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF351F8.1000003@msgid.tls.msk.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2012 05:13 AM, Rik van Riel wrote:
+Hi Michael,
 
-> This patch makes the comment for cc->wrapped longer, explaining
-> what is really going on. It also incorporates the comment fix
-> pointed out by Minchan.
+On Wed, Jul 04, 2012 at 12:11:36AM +0400, Michael Tokarev wrote:
+> On 03.07.2012 13:04, Zheng Liu wrote:
+> > Hi Jeff,
+> > 
+> > Sorry for bothering you.  Could you please review this patch, or give me
+> > some feedbacks.  If this patch can be applied, I can rebase it to the
+> > lastest version of mainline kernel.  Thank you.
+> []
+> >> -int libata_fua = 0;
+> >> +int libata_fua = 1;
 > 
-> Additionally, Minchan found that, when no pages get isolated,
-> high_pte could be a value that is much lower than desired,
-> which might potentially cause compaction to skip a range of
-> pages.
+> I guess it can be enabled after LOTS of testing of various drives out
+> there, which shows that no current drives have issues with FUA anymore,
+> and after building a black-list of devices which misbehave.  It is quite
+> a big project, I think.  But what it gives us in return?
 > 
-> Only assign zone->compact_cache_free_pfn if we actually
-> isolated free pages for compaction.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
+> (I've no idea if this is the right answer, speaking of myself only)
 
+Thanks for the reply.  Indeed it is quite a big project but we enable
+FUA feature for SAS disk.  Is there any differences?
 
-Reviewed-by: Minchan Kim <minchan@kernel.org>
-
-> ---
-> This does not address the one bit in Minchan's review that I am not sure about...
-
-
-About this part, let's wait of Mel's opinion.
-
-Thanks.
--- 
-Kind regards,
-Minchan Kim
+Regards,
+Zheng
