@@ -1,78 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498Ab2GDNXP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 09:23:15 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58911 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab2GDNXL (ORCPT
+	id S1752539Ab2GDNZI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 09:25:08 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:40479 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168Ab2GDNZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 09:23:11 -0400
-Subject: Re: [PATCH] printk: fixing the deadlock when calling printk in nmi
- handle
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>,
-        "kay@vrfy.org" <kay@vrfy.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A10C7F6@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A10C7F6@SHSMSX101.ccr.corp.intel.com>
+	Wed, 4 Jul 2012 09:25:04 -0400
+Subject: Re: Bridged networking panics
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Massimo Cetra <ctrix+debianbugs@navynet.it>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4FF41E1A.4070102@navynet.it>
+References: <4FEC62DD.6000303@navynet.it>  <4FF41E1A.4070102@navynet.it>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Jul 2012 15:22:49 +0200
-Message-ID: <1341408169.2507.111.camel@laptop>
+Date: Wed, 04 Jul 2012 15:24:58 +0200
+Message-ID: <1341408298.2583.1963.camel@edumazet-glaptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-04 at 13:00 +0000, Liu, Chuansheng wrote:
-> From: liu chuansheng <chuansheng.liu@intel.com>
-> Subject: [PATCH] printk: fixing the deadlock when calling printk in nmi handle
-> 
-> Current printk implementation can not fully support that
-> calling it in nmi handler for SMP arch.
-> 
-> There is typical case in nmi handler function arch_trigger_all_cpu_backtrace_handler().
-> 
-> In my platform, there are 2 CPUs, when function arch_trigger_all_cpu_backtrace()
-> is called, 2 CPUs will recevied the nmi interrupts, and the
-> arch_trigger_all_cpu_backtrace_handler() will called on 2 CPUs:
-> 
-> case1:
-> CPU0                                            CPU1
-> calling arch_trigger_all_cpu_backtrace()        calling printk, and has obtain the logbuf_lock
-> nmi interrupt received                          nmi interrupt received
-> call arch_trigger_all_cpu_backtrace_handler()   call arch_trigger_all_cpu_backtrace_handler()
-> Obtain arch_spin_lock(&lock);                   Waiting for arch_spin_lock(&lock);
-> Continue to call printk()
-> CPU0 will be blocked by logbuf_lock             CPU1 is blocked by arch_spin_lock(&lock)
-> 
-> The deadlock will be happening.
-> 
-> case2:
-> CPU0                                             CPU1:(run dmesg command)
-> calling arch_trigger_all_cpu_backtrace()         calling do_syslog
->                                                  Obtaining the logbuf_lock
-> nmi interrupt received                           nmi interrupt received
-> ....
-> The dealock will happen also somtimes.
-> 
-> I just write a simple interface to run the arch_trigger_all_cpu_backtrace_handler() every 5s,
-> it will trigger dead lock many times.
-> 
-> The solution is when printk is called in nmi handler, we will use trylock instead of lock.
-> And in nmi handler, do the call the console write function because normal console write function
-> include many spin locks also. This fix can confirm the traces in nmi handler can be output successfully
-> almost.
-> 
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+On Wed, 2012-07-04 at 12:42 +0200, Massimo Cetra wrote:
 
+> Ok, waiting for an answer (sincerely i don't understand why no ones 
+> cares for months) i'm attaching 3 more panics happened this morning on a 
+> vanilla 3.2.21.
+> 
+> The problem is related to heavy network traffic.
+> 
+> I'm not a kernel hacker but I see that net_rx_action() is in the backtrace.
+> So (probably reaching wrong conclusions) if those panics are triggered 
+> by incoming network traffic, can an attacker use this to crash a machine ?
+> 
+> Anyone willing to reply or at least tell me what's going on ?
 
-Yuck.. and no. This makes sane things like early 8250 serial console
-less reliable.
+Posting a bug report is not enough to get people working for free on the
+problem.
 
+Apparently your configuration is kind of special if nobody but you hits
+the problem so often.
+
+So it would help if you can reproduce the bug using current kernel and
+provide all necessary steps to reproduce the bug. Ideally a script.sh
+file doing all the configuration you use to trigger the bug, assuming
+a basic machine freshly booted with no special config already done.
+
+The panics dont happen in the bridge code itself, but in the
+BRIDGE_NETFILTER one. Do you need it, and why ?
+
+Are you using vlans ?
+
+Please try following patch
+
+ net/bridge/br_netfilter.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
+index e41456b..a73a8cb 100644
+--- a/net/bridge/br_netfilter.c
++++ b/net/bridge/br_netfilter.c
+@@ -173,9 +173,13 @@ static inline struct rtable *bridge_parent_rtable(const struct net_device *dev)
+ static inline struct net_device *bridge_parent(const struct net_device *dev)
+ {
+ 	struct net_bridge_port *port;
++	struct net_device *parent;
+ 
+ 	port = br_port_get_rcu(dev);
+-	return port ? port->br->dev : NULL;
++	parent = port ? port->br->dev : NULL;
++	if (parent && !(parent->flags & IFF_UP))
++		parent = NULL;
++	return parent;
+ }
+ 
+ static inline struct nf_bridge_info *nf_bridge_alloc(struct sk_buff *skb)
+@@ -510,6 +514,8 @@ static struct net_device *brnf_get_logical_dev(struct sk_buff *skb, const struct
+ 	struct net_device *vlan, *br;
+ 
+ 	br = bridge_parent(dev);
++	if (!br)
++		return NULL;
+ 	if (brnf_pass_vlan_indev == 0 || !vlan_tx_tag_present(skb))
+ 		return br;
+ 
+@@ -748,7 +754,7 @@ static unsigned int br_nf_forward_ip(unsigned int hook, struct sk_buff *skb,
+ 				     int (*okfn)(struct sk_buff *))
+ {
+ 	struct nf_bridge_info *nf_bridge;
+-	struct net_device *parent;
++	struct net_device *parent, *ldev;
+ 	u_int8_t pf;
+ 
+ 	if (!skb->nf_bridge)
+@@ -789,8 +795,11 @@ static unsigned int br_nf_forward_ip(unsigned int hook, struct sk_buff *skb,
+ 	else
+ 		skb->protocol = htons(ETH_P_IPV6);
+ 
+-	NF_HOOK(pf, NF_INET_FORWARD, skb, brnf_get_logical_dev(skb, in), parent,
+-		br_nf_forward_finish);
++	ldev = brnf_get_logical_dev(skb, in);
++	if (!ldev)
++		return NF_DROP;
++
++	NF_HOOK(pf, NF_INET_FORWARD, skb, ldev, parent, br_nf_forward_finish);
+ 
+ 	return NF_STOLEN;
+ }
+@@ -861,12 +870,13 @@ static unsigned int br_nf_post_routing(unsigned int hook, struct sk_buff *skb,
+ 				       int (*okfn)(struct sk_buff *))
+ {
+ 	struct nf_bridge_info *nf_bridge = skb->nf_bridge;
+-	struct net_device *realoutdev = bridge_parent(skb->dev);
++	struct net_device *realoutdev;
+ 	u_int8_t pf;
+ 
+ 	if (!nf_bridge || !(nf_bridge->mask & BRNF_BRIDGED))
+ 		return NF_ACCEPT;
+ 
++	realoutdev = bridge_parent(skb->dev);
+ 	if (!realoutdev)
+ 		return NF_DROP;
+ 
 
 
