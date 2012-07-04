@@ -1,250 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab2GDGKV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 02:10:21 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61679 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab2GDGKR (ORCPT
+	id S933221Ab2GDGOO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 02:14:14 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:58203 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150Ab2GDGOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 02:10:17 -0400
+	Wed, 4 Jul 2012 02:14:11 -0400
+Date: Tue, 3 Jul 2012 23:13:55 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, ocfs2-devel@oss.oracle.com,
+        linux-aio@kvack.org, mfasheh@suse.com, linux-kernel@vger.kernel.org,
+        joe.jin@oracle.com, stable@vger.kernel.org
+Subject: Re: [PATCH v4 1/2] aio: make kiocb->private NUll in
+ init_sync_kiocb()
+Message-ID: <20120704061355.GD14743@dhcp-172-17-9-228.mtv.corp.google.com>
+Mail-Followup-To: Junxiao Bi <junxiao.bi@oracle.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	ocfs2-devel@oss.oracle.com, linux-aio@kvack.org, mfasheh@suse.com,
+	linux-kernel@vger.kernel.org, joe.jin@oracle.com,
+	stable@vger.kernel.org
+References: <1340788195-20623-1-git-send-email-junxiao.bi@oracle.com>
+ <1340788195-20623-2-git-send-email-junxiao.bi@oracle.com>
+ <20120628153956.9b7405d9.akpm@linux-foundation.org>
+ <20120629092255.GB12521@dhcp-172-17-9-228.mtv.corp.google.com>
+ <4FED8847.9000204@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <1341294085-17164-1-git-send-email-mc@linux.vnet.ibm.com>
-References: <1341294085-17164-1-git-send-email-mc@linux.vnet.ibm.com>
-Date: Wed, 4 Jul 2012 14:10:15 +0800
-Message-ID: <CAEH94Liq=F5SWO4HsBbvBy-Yu15ni33qRrL4-4NDgeoqXA+QCQ@mail.gmail.com>
-Subject: Re: [PATCH v2] virtio-scsi: hotplug support for virtio-scsi
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Cong Meng <mc@linux.vnet.ibm.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, stefanha@linux.vnet.ibm.com,
-        linux-scsi@vger.kernel.org, senwang@linux.vnet.ibm.com,
-        zwanp@cn.ibm.com, linuxram@us.ibm.com, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FED8847.9000204@oracle.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 3, 2012 at 1:41 PM, Cong Meng <mc@linux.vnet.ibm.com> wrote:
-> This patch implements the hotplug support for virtio-scsi.
-> When there is a device attached/detached, the virtio-scsi driver will be
-> signaled via event virtual queue and it will add/remove the scsi device
-> in question automatically.
->
-> v2: handle no_event event
->
-> Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
-> Signed-off-by: Sen Wang <senwang@linux.vnet.ibm.com>
-> ---
->  drivers/scsi/virtio_scsi.c  |  113 ++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/virtio_scsi.h |    9 ++++
->  2 files changed, 121 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> index 9fc5e67..e44b2d6 100644
-> --- a/drivers/scsi/virtio_scsi.c
-> +++ b/drivers/scsi/virtio_scsi.c
-> @@ -25,6 +25,7 @@
->  #include <scsi/scsi_cmnd.h>
->
->  #define VIRTIO_SCSI_MEMPOOL_SZ 64
-> +#define VIRTIO_SCSI_EVENT_LEN 8
->
->  /* Command queue element */
->  struct virtio_scsi_cmd {
-> @@ -43,6 +44,12 @@ struct virtio_scsi_cmd {
->         } resp;
->  } ____cacheline_aligned_in_smp;
->
-> +struct virtio_scsi_event_node {
-> +       struct virtio_scsi *vscsi;
-> +       struct virtio_scsi_event event;
-> +       struct work_struct work;
-> +};
-> +
->  struct virtio_scsi_vq {
->         /* Protects vq */
->         spinlock_t vq_lock;
-> @@ -67,6 +74,9 @@ struct virtio_scsi {
->         struct virtio_scsi_vq event_vq;
->         struct virtio_scsi_vq req_vq;
->
-> +       /* Get some buffers reday for event vq */
-s/reday/ready/   ^^^^
-> +       struct virtio_scsi_event_node event_list[VIRTIO_SCSI_EVENT_LEN];
-> +
->         struct virtio_scsi_target_state *tgt[];
->  };
->
-> @@ -202,6 +212,97 @@ static void virtscsi_ctrl_done(struct virtqueue *vq)
->         spin_unlock_irqrestore(&vscsi->ctrl_vq.vq_lock, flags);
->  };
->
-> +static int virtscsi_kick_event(struct virtio_scsi *vscsi,
-> +                              struct virtio_scsi_event_node *event_node)
-> +{
-> +       int ret;
-> +       struct scatterlist sg;
-> +       unsigned long flags;
-> +
-> +       sg_set_buf(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
-> +
-> +       spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
-> +
-> +       ret = virtqueue_add_buf(vscsi->event_vq.vq, &sg, 0, 1, event_node, GFP_ATOMIC);
-> +       if (ret >= 0)
-> +               virtqueue_kick(vscsi->event_vq.vq);
-> +
-> +       spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
-> +
-> +       return ret;
-> +}
-> +
-> +static int virtscsi_kick_event_all(struct virtio_scsi *vscsi)
-> +{
-> +       int i;
-> +
-> +       for (i = 0; i < VIRTIO_SCSI_EVENT_LEN; i++) {
-> +               vscsi->event_list[i].vscsi = vscsi;
-> +               virtscsi_kick_event(vscsi, &vscsi->event_list[i]);
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static void virtscsi_handle_transport_reset(struct virtio_scsi *vscsi,
-> +                                            struct virtio_scsi_event *event)
-> +{
-> +       struct scsi_device *sdev;
-> +       struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
-> +       unsigned int target = event->lun[1];
-> +       unsigned int lun = (event->lun[2] << 8) | event->lun[3];
-> +
-> +       switch (event->reason) {
-> +       case VIRTIO_SCSI_EVT_RESET_RESCAN:
-> +               scsi_add_device(shost, 0, target, lun);
-> +               break;
-> +       case VIRTIO_SCSI_EVT_RESET_REMOVED:
-> +               sdev = scsi_device_lookup(shost, 0, target, lun);
-> +               if (sdev) {
-> +                       scsi_remove_device(sdev);
-> +                       scsi_device_put(sdev);
-> +               } else {
-> +                       pr_err("SCSI device %d 0 %d %d not found\n",
-> +                               shost->host_no, target, lun);
-> +               }
-> +               break;
-> +       default:
-> +               pr_info("Unsupport virtio scsi event reason %x\n", event->reason);
-> +       }
-> +}
-> +
-> +static void virtscsi_handle_event(struct work_struct *work)
-> +{
-> +       struct virtio_scsi_event_node *event_node =
-> +               container_of(work, struct virtio_scsi_event_node, work);
-> +       struct virtio_scsi *vscsi = event_node->vscsi;
-> +       struct virtio_scsi_event *event = &event_node->event;
-> +
-> +       if (event->event & VIRTIO_SCSI_T_EVENTS_MISSED) {
-> +               event->event &= (~VIRTIO_SCSI_T_EVENTS_MISSED);
-> +               /* FIXME: handle event missed here */
-> +       }
-> +
-> +       switch (event->event) {
-> +       case VIRTIO_SCSI_T_NO_EVENT:
-> +               break;
-> +       case VIRTIO_SCSI_T_TRANSPORT_RESET:
-> +               virtscsi_handle_transport_reset(vscsi, event);
-> +               break;
-> +       default:
-> +               pr_err("Unsupport virtio scsi event %x\n", event->event);
-> +       }
-> +       virtscsi_kick_event(vscsi, event_node);
-> +}
-> +
-> +static void virtscsi_complete_event(void *buf)
-> +{
-> +       struct virtio_scsi_event_node *event_node = buf;
-> +
-> +       INIT_WORK(&event_node->work, virtscsi_handle_event);
-> +       schedule_work(&event_node->work);
-> +}
-> +
->  static void virtscsi_event_done(struct virtqueue *vq)
->  {
->         struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
-> @@ -209,7 +310,7 @@ static void virtscsi_event_done(struct virtqueue *vq)
->         unsigned long flags;
->
->         spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
-> -       virtscsi_vq_done(vq, virtscsi_complete_free);
-> +       virtscsi_vq_done(vq, virtscsi_complete_event);
->         spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
->  };
->
-> @@ -510,6 +611,10 @@ static int virtscsi_init(struct virtio_device *vdev,
->         virtscsi_config_set(vdev, cdb_size, VIRTIO_SCSI_CDB_SIZE);
->         virtscsi_config_set(vdev, sense_size, VIRTIO_SCSI_SENSE_SIZE);
->
-> +       if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG)) {
-> +               virtscsi_kick_event_all(vscsi);
-> +       }
-> +
->         /* We need to know how many segments before we allocate.  */
->         sg_elems = virtscsi_config_get(vdev, seg_max) ?: 1;
->
-> @@ -608,7 +713,13 @@ static struct virtio_device_id id_table[] = {
->         { 0 },
->  };
->
-> +static unsigned int features[] = {
-> +       VIRTIO_SCSI_F_HOTPLUG
-> +};
-> +
->  static struct virtio_driver virtio_scsi_driver = {
-> +       .feature_table = features,
-> +       .feature_table_size = ARRAY_SIZE(features),
->         .driver.name = KBUILD_MODNAME,
->         .driver.owner = THIS_MODULE,
->         .id_table = id_table,
-> diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
-> index 8ddeafd..dc8d305 100644
-> --- a/include/linux/virtio_scsi.h
-> +++ b/include/linux/virtio_scsi.h
-> @@ -69,6 +69,10 @@ struct virtio_scsi_config {
->         u32 max_lun;
->  } __packed;
->
-> +/* Feature Bits */
-> +#define VIRTIO_SCSI_F_INOUT                    0
-> +#define VIRTIO_SCSI_F_HOTPLUG                  1
-> +
->  /* Response codes */
->  #define VIRTIO_SCSI_S_OK                       0
->  #define VIRTIO_SCSI_S_OVERRUN                  1
-> @@ -105,6 +109,11 @@ struct virtio_scsi_config {
->  #define VIRTIO_SCSI_T_TRANSPORT_RESET          1
->  #define VIRTIO_SCSI_T_ASYNC_NOTIFY             2
->
-> +/* Reasons of transport reset event */
-> +#define VIRTIO_SCSI_EVT_RESET_HARD             0
-> +#define VIRTIO_SCSI_EVT_RESET_RESCAN           1
-> +#define VIRTIO_SCSI_EVT_RESET_REMOVED          2
-> +
->  #define VIRTIO_SCSI_S_SIMPLE                   0
->  #define VIRTIO_SCSI_S_ORDERED                  1
->  #define VIRTIO_SCSI_S_HEAD                     2
-> --
-> 1.7.7.6
->
-> _______________________________________________
-> Virtualization mailing list
-> Virtualization@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/virtualization
+On Fri, Jun 29, 2012 at 06:49:43PM +0800, Junxiao Bi wrote:
+> On 06/29/2012 05:22 PM, Joel Becker wrote:
+> > On Thu, Jun 28, 2012 at 03:39:56PM -0700, Andrew Morton wrote:
+> >> On Wed, 27 Jun 2012 17:09:54 +0800
+> >> Junxiao Bi <junxiao.bi@oracle.com> wrote:
+> >>
+> >>> Ocfs2 uses kiocb.*private as a flag of unsigned long size. In
+> >>> commit a11f7e6 ocfs2: serialize unaligned aio, the unaligned
+> >>> io flag is involved in it to serialize the unaligned aio. As
+> >>> *private is not initialized in init_sync_kiocb() of do_sync_write(),
+> >>> this unaligned io flag may be unexpectly set in an aligned dio.
+> >>> And this will cause OCFS2_I(inode)->ip_unaligned_aio decreased
+> >>> to -1 in ocfs2_dio_end_io(), thus the following unaligned dio
+> >>> will hang forever at ocfs2_aiodio_wait() in ocfs2_file_aio_write().
+> >>>
+> >>> Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+> >>> Cc: stable@vger.kernel.org
+> >>> Acked-by: Jeff Moyer <jmoyer@redhat.com>
+> >>> Acked-by: Joel Becker <jlbec@evilplan.org>
+> >>> ---
+> >>>  include/linux/aio.h |    1 +
+> >>>  1 file changed, 1 insertion(+)
+> >>>
+> >>> diff --git a/include/linux/aio.h b/include/linux/aio.h
+> >>> index 2314ad8..b1a520e 100644
+> >>> --- a/include/linux/aio.h
+> >>> +++ b/include/linux/aio.h
+> >>> @@ -140,6 +140,7 @@ struct kiocb {
+> >>>  		(x)->ki_dtor = NULL;			\
+> >>>  		(x)->ki_obj.tsk = tsk;			\
+> >>>  		(x)->ki_user_data = 0;                  \
+> >>> +		(x)->private = NULL;			\
+> >>>  	} while (0)
+> >>>  
+> >>>  #define AIO_RING_MAGIC			0xa10a10a1
+> >> hm, that code is rather cruddy.  Pointless macromania.
+> > Agreed.
+> >
+> >> If we do this:
+> >>
+> >> static inline void init_sync_kiocb(struct kiocb *kiocb, struct file *filp)
+> >> {
+> >> 	*kiocb = (struct kiocb) {
+> >> 			.ki_users = 1,
+> >> 			.ki_key = KIOCB_SYNC_KEY,
+> >> 			.ki_filp = filp,
+> >> 			.ki_obj.tsk = current,
+> >> 		};
+> >> }
+> >>
+> >> then fs/read_write.o's .text is shrunk from 9857 bytes to 9714, which
+> >> is rather a lot.
+> >>
+> >> But that's all rather irrelevant to your bugfix.
+> > 	I like your solution.  Junxiao, if you send me that version, I'd
+> > be happy to take it.
+> Joel, since Andrew will feed his cleanup patch later on. Please help
+> merge my patches. Though it is covered by the cleanup patch, but I think
+> it's useful to merge it, at least we can see from the git log this is
+> for an ocfs2 hang bug.
 
+Yes, I'll be pulling it.
 
+Joel
+
+> >
+> > Joel
+> >
+> 
 
 -- 
-Regards,
 
-Zhi Yong Wu
+"In the room the women come and go
+ Talking of Michaelangelo."
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
