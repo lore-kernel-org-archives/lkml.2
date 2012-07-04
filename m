@@ -1,86 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030199Ab2GDDCI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 23:02:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26128 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933208Ab2GDDCF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 23:02:05 -0400
-From: Cong Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org
-Subject: [Patch] mm/policy: use int instead of unsigned for nid
-Date: Wed,  4 Jul 2012 11:01:38 +0800
-Message-Id: <1341370901-14187-1-git-send-email-amwang@redhat.com>
+	id S933255Ab2GDDIa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 23:08:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50219 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756016Ab2GDDIZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 23:08:25 -0400
+From: "Du, Changbin" <changbin.du@gmail.com>
+To: "=?utf-8?Q?'Beno=C3=AEt_Th=C3=A9baudeau'?=" 
+	<benoit.thebaudeau@advansee.com>
+Cc: <tsoni@codeaurora.org>, "'dan carpenter'" <dan.carpenter@oracle.com>,
+        <kumarrav@codeaurora.org>, <linux-media@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <mchehab@infradead.org>
+References: <4ff2c90c.83e6440a.48b4.3727@mx.google.com> <539669167.615856.1341314356547.JavaMail.root@advansee.com>
+In-Reply-To: <539669167.615856.1341314356547.JavaMail.root@advansee.com>
+Subject: RE: [PATCH] media: gpio-ir-recv: add allowed_protos and map_name for platform data
+Date: Wed, 4 Jul 2012 11:08:14 +0800
+Message-ID: <4ff3b3a8.c4ed440a.02c0.ffffe9dc@mx.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac1ZDQb4Ka76yCUATlGwPSM3h6zpBgAhRilA
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: WANG Cong <xiyou.wangcong@gmail.com>
+> Hi Changbin,
+> 
+> On Tue, Jul 3, 2012 at 12:27:19PM +0200, Changbin Du wrote:
+> > It's better to give platform code a chance to specify the allowed
+> > protocols and which keymap to use.
+> 
+> Already half done here:
+> http://git.linuxtv.org/media_tree.git?a=commitdiff;h=2bd237b
 
-'nid' should be 'int', not 'unsigned'.
+Got it, thanks. 
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Rik van Riel <riel@redhat.com>
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+[Du, ChangbinX] 
+> Regards,
+> Benoît
 
----
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 1d771e4..3cabe81 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1580,9 +1580,9 @@ static struct zonelist *policy_zonelist(gfp_t gfp, struct mempolicy *policy,
- }
- 
- /* Do dynamic interleaving for a process */
--static unsigned interleave_nodes(struct mempolicy *policy)
-+static int interleave_nodes(struct mempolicy *policy)
- {
--	unsigned nid, next;
-+	int nid, next;
- 	struct task_struct *me = current;
- 
- 	nid = me->il_next;
-@@ -1638,7 +1638,7 @@ unsigned slab_node(struct mempolicy *policy)
- }
- 
- /* Do static interleaving for a VMA with known offset. */
--static unsigned offset_il_node(struct mempolicy *pol,
-+static int offset_il_node(struct mempolicy *pol,
- 		struct vm_area_struct *vma, unsigned long off)
- {
- 	unsigned nnodes = nodes_weight(pol->v.nodes);
-@@ -1658,7 +1658,7 @@ static unsigned offset_il_node(struct mempolicy *pol,
- }
- 
- /* Determine a node number for interleave */
--static inline unsigned interleave_nid(struct mempolicy *pol,
-+static inline int interleave_nid(struct mempolicy *pol,
- 		 struct vm_area_struct *vma, unsigned long addr, int shift)
- {
- 	if (vma) {
-@@ -1827,7 +1827,7 @@ out:
- /* Allocate a page in interleaved policy.
-    Own path because it needs to do special accounting. */
- static struct page *alloc_page_interleave(gfp_t gfp, unsigned order,
--					unsigned nid)
-+					int nid)
- {
- 	struct zonelist *zl;
- 	struct page *page;
-@@ -1876,7 +1876,7 @@ retry_cpuset:
- 	cpuset_mems_cookie = get_mems_allowed();
- 
- 	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
--		unsigned nid;
-+		int nid;
- 
- 		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT + order);
- 		mpol_cond_put(pol);
