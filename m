@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933565Ab2GCX6S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 19:58:18 -0400
-Received: from mga14.intel.com ([143.182.124.37]:59054 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933512Ab2GCX6M convert rfc822-to-8bit (ORCPT
+	id S1757418Ab2GDASZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 20:18:25 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:52562 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756396Ab2GDASW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 19:58:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="118674209"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>
-CC: "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [RFC][PATCH 2/2] write callback: Check if existing entry is
- erasable
-Thread-Topic: [RFC][PATCH 2/2] write callback: Check if existing entry is
- erasable
-Thread-Index: Ac1ZdICAdYwUKctERYa3qDPOlfZeVAAAh5VA
-Date: Tue, 3 Jul 2012 23:58:05 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F1933C8AA@ORSMSX104.amr.corp.intel.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D401AAED@USINDEM103.corp.hds.com>
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D401AAED@USINDEM103.corp.hds.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 3 Jul 2012 20:18:22 -0400
 MIME-Version: 1.0
+In-Reply-To: <B9B2E09D-99AF-4B36-AC3A-7000A3FDCCA9@sonatest.com>
+References: <B9B2E09D-99AF-4B36-AC3A-7000A3FDCCA9@sonatest.com>
+Date: Wed, 4 Jul 2012 09:18:21 +0900
+Message-ID: <CANKRQnhp3-vOGJ2ptkEEnm2a8CJKUG0SJho2HzjeRfKjVq5ePA@mail.gmail.com>
+Subject: Re: gpio: pch/ml-ioh - leaking struct irq_chip_generic
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: =?ISO-8859-1?Q?Jean=2DFran=E7ois_Dagenais?= 
+	<jeff.dagenais@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>, linus.walleij@stericsson.com
+Cc: open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Perhaps update the comment in include/linux/kmsg_dump.h to mention that
-<= KMSG_DUMP_EMERG may overwrite less important logs (since it already
-mentions the importance of order and significance of the OOPS level).
+On Wed, Jul 4, 2012 at 4:30 AM, Jean-François Dagenais
+<jeff.dagenais@gmail.com> wrote:
+> Am I mistaken or these two drivers are missing a "irq_remove_generic_chip()"
+> then a "kfree" of the struct's memory in their xyz_remove() callbacks?
+>
+> Kinda like "drivers/mfd/jz4740-adc.c" does?
+>
 
--Tony
+Current upstreamed GPIO drivers(showed below) use irq_alloc_generic_chip().
+    drivers/gpio/gpio-ml-ioh.c
+    drivers/gpio/gpio-mxc.c
+    drivers/gpio/gpio-pl061.c
+    drivers/gpio/gpio-pch.c
+    drivers/gpio/gpio-mxs.c
+    drivers/gpio/gpio-sodavil
+    drivers/gpio/gpio-omap.c
+
+However, no GPIO driver uses irq_remove_generic_chip().
+
+I'm not familiar with these things. So I'm not sure whether
+irq_remove_generic_chip is necessary or not.
+
+Could maintainer or specialist of this tell us the information about it ?
+
+thanks.
+------
+ROHM Co., Ltd.
+Tomoya MORINAGA
