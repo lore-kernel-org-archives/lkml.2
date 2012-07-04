@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011Ab2GDXE5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 19:04:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55559 "EHLO mx1.redhat.com"
+	id S1756030Ab2GDXGe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 19:06:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55709 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755910Ab2GDXEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 19:04:55 -0400
-Date: Thu, 5 Jul 2012 01:03:50 +0200
+	id S1755782Ab2GDXGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 19:06:33 -0400
+Date: Thu, 5 Jul 2012 01:05:47 +0200
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: Rik van Riel <riel@redhat.com>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
@@ -29,108 +29,44 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 06/40] autonuma: x86 pte_numa() and pmd_numa()
-Message-ID: <20120704230350.GN25743@redhat.com>
+Subject: Re: [PATCH 04/40] xen: document Xen is using an unused bit for the
+ pagetables
+Message-ID: <20120704230547.GO25743@redhat.com>
 References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
- <1340888180-15355-7-git-send-email-aarcange@redhat.com>
- <4FEDC391.5030502@redhat.com>
+ <1340888180-15355-5-git-send-email-aarcange@redhat.com>
+ <4FEDB8AC.4000209@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FEDC391.5030502@redhat.com>
+In-Reply-To: <4FEDB8AC.4000209@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 29, 2012 at 11:02:41AM -0400, Rik van Riel wrote:
+On Fri, Jun 29, 2012 at 10:16:12AM -0400, Rik van Riel wrote:
 > On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
-> 
-> >   static inline int pte_file(pte_t pte)
-> >   {
-> > -	return pte_flags(pte)&  _PAGE_FILE;
-> > +	return (pte_flags(pte)&  _PAGE_FILE) == _PAGE_FILE;
-> >   }
-> 
-> Wait, why is this change made?  Surely _PAGE_FILE is just
-> one single bit and this change is not useful?
-> 
-> If there is a reason for this change, please document it.
-
-I splitted it off to a separated patch with proper commit log here.
-
-http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=commitdiff;h=7b2292c7ab86205f3d630533dc9987449fea6347
-
-I haven't checked if it spawns the same warning without the patchset
-applied, but I need the build not to show warnings, so while it may be
-irrelevant warning for upstream, I don't like to have warnings.
-
-> >   static inline int pte_hidden(pte_t pte)
-> > @@ -415,7 +417,46 @@ static inline int pte_hidden(pte_t pte)
+> > Xen has taken over the last reserved bit available for the pagetables
+> > which is set through ioremap, this documents it and makes the code
+> > more readable.
 > >
-> >   static inline int pmd_present(pmd_t pmd)
-> >   {
-> > -	return pmd_flags(pmd)&  _PAGE_PRESENT;
-> > +	return pmd_flags(pmd)&  (_PAGE_PRESENT | _PAGE_PROTNONE |
-> > +				 _PAGE_NUMA_PMD);
-> > +}
+> > Signed-off-by: Andrea Arcangeli<aarcange@redhat.com>
+> > ---
+> >   arch/x86/include/asm/pgtable_types.h |   11 +++++++++--
+> >   1 files changed, 9 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+> > index 013286a..b74cac9 100644
+> > --- a/arch/x86/include/asm/pgtable_types.h
+> > +++ b/arch/x86/include/asm/pgtable_types.h
+> > @@ -17,7 +17,7 @@
+> >   #define _PAGE_BIT_PAT		7	/* on 4KB pages */
+> >   #define _PAGE_BIT_GLOBAL	8	/* Global TLB entry PPro+ */
+> >   #define _PAGE_BIT_UNUSED1	9	/* available for programmer */
+> > -#define _PAGE_BIT_IOMAP		10	/* flag used to indicate IO mapping */
+> > +#define _PAGE_BIT_UNUSED2	10
 > 
-> Somewhat subtle. Better documentation in patch 5 will
-> help explain this.
+> Considering that Xen is using it, it is not really
+> unused, is it?
 
-It's as subtle as PROTNONE but I added more explanation below as well
-as in patch 5.
-
-> > +#ifdef CONFIG_AUTONUMA
-> > +static inline int pte_numa(pte_t pte)
-> > +{
-> > +	return (pte_flags(pte)&
-> > +		(_PAGE_NUMA_PTE|_PAGE_PRESENT)) == _PAGE_NUMA_PTE;
-> > +}
-> > +
-> > +static inline int pmd_numa(pmd_t pmd)
-> > +{
-> > +	return (pmd_flags(pmd)&
-> > +		(_PAGE_NUMA_PMD|_PAGE_PRESENT)) == _PAGE_NUMA_PMD;
-> > +}
-> > +#endif
-> 
-> These could use a little explanation of how _PAGE_NUMA_* is
-> used and what the flags mean.
-
-Added:
-
-http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=commitdiff;h=0e6537227de32c40bbf0a5bc6b11d27ba5779e68
-
-> > +static inline pte_t pte_mknotnuma(pte_t pte)
-> > +{
-> > +	pte = pte_clear_flags(pte, _PAGE_NUMA_PTE);
-> > +	return pte_set_flags(pte, _PAGE_PRESENT|_PAGE_ACCESSED);
-> > +}
-> > +
-> > +static inline pmd_t pmd_mknotnuma(pmd_t pmd)
-> > +{
-> > +	pmd = pmd_clear_flags(pmd, _PAGE_NUMA_PMD);
-> > +	return pmd_set_flags(pmd, _PAGE_PRESENT|_PAGE_ACCESSED);
-> > +}
-> > +
-> > +static inline pte_t pte_mknuma(pte_t pte)
-> > +{
-> > +	pte = pte_set_flags(pte, _PAGE_NUMA_PTE);
-> > +	return pte_clear_flags(pte, _PAGE_PRESENT);
-> > +}
-> > +
-> > +static inline pmd_t pmd_mknuma(pmd_t pmd)
-> > +{
-> > +	pmd = pmd_set_flags(pmd, _PAGE_NUMA_PMD);
-> > +	return pmd_clear_flags(pmd, _PAGE_PRESENT);
-> >   }
-> 
-> These functions could use some explanation, too.
-> 
-> Why do the top ones set _PAGE_ACCESSED, while the bottom ones
-> leave _PAGE_ACCESSED alone?
-> 
-> I can guess the answer, but it should be documented so it is
-> also clear to people with less experience in the VM.
-
-Added too in prev link.
+_PAGE_BIT_UNUSED1 is used too (_PAGE_BIT_SPECIAL). Unused stands for
+unused by the CPU, not by the OS. But this patch is dropped.
