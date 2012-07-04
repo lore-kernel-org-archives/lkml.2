@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab2GDVOL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 17:14:11 -0400
-Received: from zlatibor.yubc.net ([212.124.160.6]:44703 "EHLO
+	id S1755885Ab2GDVPZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 17:15:25 -0400
+Received: from zlatibor.yubc.net ([212.124.160.6]:44937 "EHLO
 	zlatibor.yubc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277Ab2GDVOH (ORCPT
+	with ESMTP id S1755701Ab2GDVPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 17:14:07 -0400
-X-Greylist: delayed 377 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Jul 2012 17:14:07 EDT
-Message-ID: <22788.41.206.12.6.1341435933.squirrel@webmail.yubc.net>
-Date: Wed, 4 Jul 2012 23:05:33 +0200 (CEST)
+	Wed, 4 Jul 2012 17:15:24 -0400
+Message-ID: <53901.41.206.12.6.1341436073.squirrel@webmail.yubc.net>
+Date: Wed, 4 Jul 2012 23:07:53 +0200 (CEST)
 Subject: Re
 From: "LIU WANG" <wang@yubc.net>
 Reply-To: mrliuwang@hotmail.com
@@ -20,7 +19,7 @@ Content-Transfer-Encoding: 7BIT
 X-Priority: 3 (Normal)
 Importance: Normal
 X-YUBCNet-MailScanner-Information: Please contact the ISP for more information
-X-YUBCNet-MailScanner-ID: q64L7cko011393
+X-YUBCNet-MailScanner-ID: q64L9x4L013626
 X-YUBCNet-MailScanner: Found to be clean
 X-YUBCNet-MailScanner-SpamScore: sss
 X-YUBCNet-MailScanner-From: wang@yubc.net
