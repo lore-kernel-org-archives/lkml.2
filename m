@@ -1,254 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab2GDFE2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 01:04:28 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:40079 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750770Ab2GDFE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 01:04:26 -0400
-X-IronPort-AV: E=Sophos;i="4.77,520,1336320000"; 
-   d="scan'208";a="5324276"
-Message-ID: <4FF3CFDC.50802@cn.fujitsu.com>
-Date: Wed, 04 Jul 2012 13:08:44 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC PATCH v2 4/13] memory-hotplug : remove /sys/firmware/memmap/X
- sysfs
-References: <4FF287C3.4030901@jp.fujitsu.com> <4FF28996.10702@jp.fujitsu.com> <4FF2929B.7030004@cn.fujitsu.com> <4FF3CA65.1020300@jp.fujitsu.com>
-In-Reply-To: <4FF3CA65.1020300@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/04 13:04:21,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/04 13:04:26,
-	Serialize complete at 2012/07/04 13:04:26
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
+	id S1753370Ab2GDFKb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 01:10:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54629 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841Ab2GDFK2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 01:10:28 -0400
+From: Bryan Wu <bryan.wu@canonical.com>
+To: linux-leds@vger.kernel.org, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 00/25] leds: convert all kzalloc() to devm_kzalloc()
+Date: Wed,  4 Jul 2012 13:09:52 +0800
+Message-Id: <1341378617-10386-1-git-send-email-bryan.wu@canonical.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 07/04/2012 12:45 PM, Yasuaki Ishimatsu Wrote:
-> Hi Wen,
-> 
-> 2012/07/03 15:35, Wen Congyang wrote:
->> At 07/03/2012 01:56 PM, Yasuaki Ishimatsu Wrote:
->>> When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
->>> sysfs files are created. But there is no code to remove these files. The patch
->>> implements the function to remove them.
->>>
->>> Note : The code does not free firmware_map_entry since there is no way to free
->>>         memory which is allocated by bootmem.
->>>
->>> CC: David Rientjes <rientjes@google.com>
->>> CC: Jiang Liu <liuj97@gmail.com>
->>> CC: Len Brown <len.brown@intel.com>
->>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->>> CC: Paul Mackerras <paulus@samba.org>
->>> CC: Christoph Lameter <cl@linux.com>
->>> Cc: Minchan Kim <minchan.kim@gmail.com>
->>> CC: Andrew Morton <akpm@linux-foundation.org>
->>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>>
->>> ---
->>>   drivers/firmware/memmap.c    |   70 +++++++++++++++++++++++++++++++++++++++++++
->>>   include/linux/firmware-map.h |    6 +++
->>>   mm/memory_hotplug.c          |    6 +++
->>>   3 files changed, 81 insertions(+), 1 deletion(-)
->>>
->>> Index: linux-3.5-rc4/mm/memory_hotplug.c
->>> ===================================================================
->>> --- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-07-03 14:22:00.190240794 +0900
->>> +++ linux-3.5-rc4/mm/memory_hotplug.c	2012-07-03 14:22:03.549198802 +0900
->>> @@ -661,7 +661,11 @@ EXPORT_SYMBOL_GPL(add_memory);
->>>
->>>   int remove_memory(int nid, u64 start, u64 size)
->>>   {
->>> -	return -EBUSY;
->>> +	lock_memory_hotplug();
->>> +	/* remove memmap entry */
->>> +	firmware_map_remove(start, start + size - 1, "System RAM");
->>> +	unlock_memory_hotplug();
->>> +	return 0;
->>>
->>>   }
->>>   EXPORT_SYMBOL_GPL(remove_memory);
->>> Index: linux-3.5-rc4/include/linux/firmware-map.h
->>> ===================================================================
->>> --- linux-3.5-rc4.orig/include/linux/firmware-map.h	2012-07-03 14:21:45.766421116 +0900
->>> +++ linux-3.5-rc4/include/linux/firmware-map.h	2012-07-03 14:22:03.550198789 +0900
->>> @@ -25,6 +25,7 @@
->>>
->>>   int firmware_map_add_early(u64 start, u64 end, const char *type);
->>>   int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
->>> +int firmware_map_remove(u64 start, u64 end, const char *type);
->>>
->>>   #else /* CONFIG_FIRMWARE_MEMMAP */
->>>
->>> @@ -38,6 +39,11 @@ static inline int firmware_map_add_hotpl
->>>   	return 0;
->>>   }
->>>
->>> +static inline int firmware_map_remove(u64 start, u64 end, const char *type)
->>> +{
->>> +	return 0;
->>> +}
->>> +
->>>   #endif /* CONFIG_FIRMWARE_MEMMAP */
->>>
->>>   #endif /* _LINUX_FIRMWARE_MAP_H */
->>> Index: linux-3.5-rc4/drivers/firmware/memmap.c
->>> ===================================================================
->>> --- linux-3.5-rc4.orig/drivers/firmware/memmap.c	2012-07-03 14:21:45.761421180 +0900
->>> +++ linux-3.5-rc4/drivers/firmware/memmap.c	2012-07-03 14:22:03.569198549 +0900
->>> @@ -79,7 +79,16 @@ static const struct sysfs_ops memmap_att
->>>   	.show = memmap_attr_show,
->>>   };
->>>
->>> +static void release_firmware_map_entry(struct kobject *kobj)
->>> +{
->>> +	/*
->>> +	 * FIXME : There is no idea.
->>> +	 *         How to free the entry which allocated bootmem?
->>> +	 */
->>
->> I find a function free_bootmem(), but I am not sure whether it can work here.
-> 
-> It cannot work here.
-> 
->> Another problem: how to check whether the entry uses bootmem?
-> 
-> When firmware_map_entry is allocated by kzalloc(), the page has PG_slab.
+This convertion will simply the error handling in drivers.
 
-This is not true. In my test, I find the page does not have PG_slab sometimes.
+Bryan Wu (25):
+  leds: convert Big Networks LED driver to devm_kzalloc()
+  leds: convert HTC ASIC3 LED driver to devm_kzalloc() and cleanup
+    error exit path
+  leds: convert Atmel PWM LED driver to devm_kzalloc()
+  leds: convert LP3944 LED driver to devm_kzalloc()
+  leds: convert DA9030/DA9034 LED driver to devm_kzalloc() and cleanup
+    error exit path
+  leds: convert LP5521 LED driver to devm_kzalloc() and cleanup error
+    exit path
+  leds: convert BD2802 RGB LED driver to devm_kzalloc() and cleanup
+    error exit path
+  leds: convert PCA9633 LED driver to devm_kzalloc()
+  leds: convert LP5523 LED driver to devm_kzalloc() and cleanup error
+    exit path
+  leds: convert Renesas TPU LED driver to devm_kzalloc() and cleanup
+    error exit path
+  leds: convert LT3593 LED driver to devm_kzalloc()
+  leds: convert PCA9532 LED driver to devm_kzalloc()
+  leds: convert Sun Fire LED driver to devm_kzalloc() and cleanup error
+    exit path
+  leds: convert PCA955x LED driver to devm_kzalloc() and cleanup error
+    exit path
+  leds: convert ADP5520 LED driver to devm_kzalloc() and cleanup error
+    exit path
+  leds: convert Freescale MC13783 LED driver to devm_kzalloc() and
+    cleanup error exit path
+  leds: convert TCA6507 LED driver to devm_kzalloc()
+  leds: convert LM3530 LED driver to devm_kzalloc() and cleanup error
+    exit path
+  leds: convert DAC124S085 LED driver to devm_kzalloc()
+  leds: convert Network Space v2 LED driver to devm_kzalloc() and
+    cleanup error exit path
+  leds: convert transient LED trigger driver to devm_kzalloc()
+  leds: convert GPIO LED trigger driver to devm_kzalloc() and cleanup
+    error exit path
+  leds: convert Backlight emulation LED trigger driver to
+    devm_kzalloc() and cleanup error exit path
+  leds: convert Heartbeat LED trigger driver to devm_kzalloc()
+  leds: convert One-shot LED trigger driver to devm_kzalloc() and
+    cleanup error exit path
 
-Thanks
-Wen Congyang.
+ drivers/leds/leds-adp5520.c      |    8 +++-----
+ drivers/leds/leds-asic3.c        |   16 ++++++----------
+ drivers/leds/leds-atmel-pwm.c    |    5 ++---
+ drivers/leds/leds-bd2802.c       |    8 ++------
+ drivers/leds/leds-da903x.c       |    9 ++-------
+ drivers/leds/leds-dac124s085.c   |    4 +---
+ drivers/leds/leds-lm3530.c       |   24 ++++++++----------------
+ drivers/leds/leds-lp3944.c       |    9 +++------
+ drivers/leds/leds-lp5521.c       |   18 +++++++-----------
+ drivers/leds/leds-lp5523.c       |   24 ++++++++++--------------
+ drivers/leds/leds-lt3593.c       |    9 +++------
+ drivers/leds/leds-mc13783.c      |    8 +++-----
+ drivers/leds/leds-netxbig.c      |   10 +++-------
+ drivers/leds/leds-ns2.c          |   19 ++++++-------------
+ drivers/leds/leds-pca9532.c      |   10 ++--------
+ drivers/leds/leds-pca955x.c      |   18 +++++-------------
+ drivers/leds/leds-pca9633.c      |    6 +-----
+ drivers/leds/leds-renesas-tpu.c  |   23 +++++++++--------------
+ drivers/leds/leds-sunfire.c      |   21 ++++++---------------
+ drivers/leds/leds-tca6507.c      |    4 +---
+ drivers/leds/ledtrig-backlight.c |   10 +++-------
+ drivers/leds/ledtrig-gpio.c      |    8 ++------
+ drivers/leds/ledtrig-heartbeat.c |    4 ++--
+ drivers/leds/ledtrig-oneshot.c   |    8 +++-----
+ drivers/leds/ledtrig-transient.c |    5 ++---
+ 25 files changed, 95 insertions(+), 193 deletions(-)
 
-> So we can check whether the entry was allocated by bootmem or not.
-> If the eantry was allocated by kzalloc(), we can free the entry by kfree().
-> But if the entry was allocated by bootmem, we have no way to free the entry.
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
->>
->> Thanks
->> Wen Congyang
->>
->>> +}
->>> +
->>>   static struct kobj_type memmap_ktype = {
->>> +	.release	= release_firmware_map_entry,
->>>   	.sysfs_ops	= &memmap_attr_ops,
->>>   	.default_attrs	= def_attrs,
->>>   };
->>> @@ -123,6 +132,16 @@ static int firmware_map_add_entry(u64 st
->>>   	return 0;
->>>   }
->>>
->>> +/**
->>> + * firmware_map_remove_entry() - Does the real work to remove a firmware
->>> + * memmap entry.
->>> + * @entry: removed entry.
->>> + **/
->>> +static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
->>> +{
->>> +	list_del(&entry->list);
->>> +}
->>> +
->>>   /*
->>>    * Add memmap entry on sysfs
->>>    */
->>> @@ -144,6 +163,31 @@ static int add_sysfs_fw_map_entry(struct
->>>   	return 0;
->>>   }
->>>
->>> +/*
->>> + * Remove memmap entry on sysfs
->>> + */
->>> +static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
->>> +{
->>> +	kobject_put(&entry->kobj);
->>> +}
->>> +
->>> +/*
->>> + * Search memmap entry
->>> + */
->>> +
->>> +struct firmware_map_entry * __meminit
->>> +find_firmware_map_entry(u64 start, u64 end, const char *type)
->>> +{
->>> +	struct firmware_map_entry *entry;
->>> +
->>> +	list_for_each_entry(entry, &map_entries, list)
->>> +		if ((entry->start == start) && (entry->end == end) &&
->>> +		    (!strcmp(entry->type, type)))
->>> +			return entry;
->>> +
->>> +	return NULL;
->>> +}
->>> +
->>>   /**
->>>    * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
->>>    * memory hotplug.
->>> @@ -196,6 +240,32 @@ int __init firmware_map_add_early(u64 st
->>>   	return firmware_map_add_entry(start, end, type, entry);
->>>   }
->>>
->>> +/**
->>> + * firmware_map_remove() - remove a firmware mapping entry
->>> + * @start: Start of the memory range.
->>> + * @end:   End of the memory range (inclusive).
->>> + * @type:  Type of the memory range.
->>> + *
->>> + * removes a firmware mapping entry.
->>> + *
->>> + * Returns 0 on success, or -EINVAL if no entry.
->>> + **/
->>> +int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
->>> +{
->>> +	struct firmware_map_entry *entry;
->>> +
->>> +	entry = find_firmware_map_entry(start, end, type);
->>> +	if (!entry)
->>> +		return -EINVAL;
->>> +
->>> +	/* remove the memmap entry */
->>> +	remove_sysfs_fw_map_entry(entry);
->>> +
->>> +	firmware_map_remove_entry(entry);
->>> +
->>> +	return 0;
->>> +}
->>> +
->>>   /*
->>>    * Sysfs functions -------------------------------------------------------------
->>>    */
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> 
-> 
-> 
-> 
+-- 
+1.7.10.4
 
