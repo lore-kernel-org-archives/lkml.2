@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030263Ab2GDK5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 06:57:13 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61109 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933466Ab2GDK5H (ORCPT
+	id S1030269Ab2GDK6m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 06:58:42 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39420 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030206Ab2GDK6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 06:57:07 -0400
+	Wed, 4 Jul 2012 06:58:41 -0400
+Date: Wed, 4 Jul 2012 11:58:39 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "lrg@ti.com" <lrg@ti.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] regulator: fixed: dt: support for input supply
+Message-ID: <20120704105838.GM4111@opensource.wolfsonmicro.com>
+References: <1341223645-7817-1-git-send-email-ldewangan@nvidia.com>
+ <1341223645-7817-2-git-send-email-ldewangan@nvidia.com>
+ <20120703191704.GE29030@opensource.wolfsonmicro.com>
+ <4FF3EA70.307@nvidia.com>
+ <20120704102144.GE4111@opensource.wolfsonmicro.com>
+ <4FF41E2D.30104@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <CAK=Wgbabj+FXuZhyT9hQNkxozbZJRBLR8TeUxfpCf3B1pwr15Q@mail.gmail.com>
-References: <CAEvN+1i8O-GhJ1s9mpeG1WvX850AjezCHgdsjQop6syP3pJPhQ@mail.gmail.com>
-	<CAK=Wgbabj+FXuZhyT9hQNkxozbZJRBLR8TeUxfpCf3B1pwr15Q@mail.gmail.com>
-Date: Wed, 4 Jul 2012 18:57:06 +0800
-Message-ID: <CAEvN+1jH2F9BM+tx8wRz_gs_hMQt1mGM5O_V-ME7_6+Z+tDvNw@mail.gmail.com>
-Subject: Re: How the registration of rpmsg devices should be done?
-From: Tzu-Jung Lee <roylee17@gmail.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OQhbRXNHSL5w/5po"
+Content-Disposition: inline
+In-Reply-To: <4FF41E2D.30104@nvidia.com>
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 4, 2012 at 4:36 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> Hi,
->
-> On Wed, Jul 4, 2012 at 11:26 AM, Tzu-Jung Lee <roylee17@gmail.com> wrote:
->> I working on the IPC functionality on our SoC and is looking into the
->> rpmsg & remoteproc framework of inux v3.4.
->
-> Great! Which SoC are you working on ?
->> Since rpmsg_create_channel() is static and internal to rpmsg module,
->> I'm wondering how the registration of rpmsg device should be done?
->
-> From Documentation/rpmsg.txt:
->
-> "4. Allocations of rpmsg channels:
->
-> At this point we only support dynamic allocations of rpmsg channels.
->
-> This is possible only with remote processors that have the VIRTIO_RPMSG_F_NS
-> virtio device feature set. This feature bit means that the remote
-> processor supports dynamic name service announcement messages.
->
-> When this feature is enabled, creation of rpmsg devices (i.e. channels)
-> is completely dynamic: the remote processor announces the existence of a
-> remote rpmsg service by sending a name service message (which contains
-> the name and rpmsg addr of the remote service, see struct rpmsg_ns_msg).
->
-> This message is then handled by the rpmsg bus, which in turn dynamically
-> creates and registers an rpmsg channel (which represents the remote service).
-> If/when a relevant rpmsg driver is registered, it will be immediately probed
-> by the bus, and can then start sending messages to the remote service.
->
-> The plan is also to add static creation of rpmsg channels via the virtio
-> config space, but it's not implemented yet."
 
-Got it. Thanks for your prompt guide.
+--OQhbRXNHSL5w/5po
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I'll go with the static route for now  as OMAP branch does, and get
-back later when the "remote end" (maybe a simulated one) getting a
-good shape.
+On Wed, Jul 04, 2012 at 04:12:53PM +0530, Laxman Dewangan wrote:
+> On Wednesday 04 July 2012 03:51 PM, Mark Brown wrote:
+> >On Wed, Jul 04, 2012 at 12:32:08PM +0530, Laxman Dewangan wrote:
 
-Thanks,
-Roy
+> >>In non-DT, the input supply is passed with the regulator_init_data
+> >>through the fixed voltage config and it is filled in board files.
+
+> >No, this is a legacy way of doing things.  All regulators should be
+> >moving to specifying the name in their descriptor except for supplies
+> >that are power roots (which are often fixed voltage regulators).
+
+> Then the input_supply should be set through the regulator init data
+> "init_data->supply_regulator" rather than the desc? If yes then also
+> I need to change the forthcoming patch for tps65910 and tps6586x to
+> pass the supply_regulator through init_data.
+
+No, exactly the opposite way round - it should be being set in the
+descriptor.  The issue with your patch was that it only allowed DT
+systems to do this.
+
+--OQhbRXNHSL5w/5po
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP9CHWAAoJEBus8iNuMP3d2vgP/2DTF0mMPyXfN9tfrqLxl/Y5
+RbxZf2xgJ3ypPQTHXEKRLiab4o6LgFg/fG86buKcQAQuZbNkR9jdQZfB9AY72UKM
+Lxld4uIySgorjTv4GOzYUNs4HfUpXJLDru13K68wmCFkGOiyqATb4DvuHSWd3pej
+zflySzuqaqvIfo/XeDXv5z5IIPrJ5qNMiDHEQnjYW5HyXVksP4P9Mlr8POTGzxgI
+KrJVTwRDr5AuWFvZEDqMumQuYMgF/sU0A7VO0ai3Mre4VoN9l5QHhINzxxc5TAVc
+4NId2AmQA5p/71ObhWZ7RVuLglJ6UU33cD3aAIE9eaC26pLwtuT7MEEdNyyMSVEf
+/CqRg6/WxdO4o7PecGlCS+ebitaWtpoX/37GydgLyxTorbnGvwsg0EUSGh7NC5hT
+sF2L1wDyWIto4FfiVRds77L+i57M9bLAkuBeRSD471h0z/rCRNAfuNxwzsy1vkHT
++nVlsaY9DfPVJaZL5+lvu3fNJZzR48BeWMP5RQZE/sFBry/ZH7aAhSjWlQ05wEVx
+IaI678ynTF2tPX25POl7Nkb/BBtOrYLwgV8BsdL6iJd37nCyPFHknZRk/xgViWtB
+4PEXrzK54TOR0cIdei35GU96AaH82rg3yFrK1+nMwzgbAH654M0nW3W/j5xdiVx+
+kYmz39mpm+wiFqyyLtdQ
+=JXoL
+-----END PGP SIGNATURE-----
+
+--OQhbRXNHSL5w/5po--
