@@ -1,235 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269Ab2GDStG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 14:49:06 -0400
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:57891 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755103Ab2GDStD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 14:49:03 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AoVSAI2P9E9V5qg+PGdsb2JhbABFihmtExkBAQEBHgMWDSeCGAEBBAEnExwTAQ8FCwgDDjgUJQoaE4gGCbo2FJB8YAORV4NfhWaMfw
-X-IronPort-AV: E=Sophos;i="4.77,525,1336341600"; 
-   d="scan'208";a="74717565"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 4 Jul 2012 20:49:25 +0200
-To: Yufeng Shen <miletus@chromium.org>
-Cc: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel@vger.kernel.org, Daniel Kurtz <djkurtz@chromium.org>,
-        Andrew de los Reyes <adlr@chromium.org>,
-        Chase Douglas <chase.douglas@canonical.com>
-Subject: Re: [PATCH 2/2 v4] HID: magicmouse: Implement Multi-touch Protocol B
- (MT-B)
-Message-ID: <20120704184925.GA443@polaris.bitmath.org>
-References: <1341418543-29517-1-git-send-email-miletus@chromium.org>
+	id S932307Ab2GDStj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 14:49:39 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:60626 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932272Ab2GDStH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 14:49:07 -0400
+Message-ID: <4FF4901C.3010701@iki.fi>
+Date: Wed, 04 Jul 2012 21:49:00 +0300
+From: Antti Palosaari <crope@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341418543-29517-1-git-send-email-miletus@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dharam Kumar <dharam.kumar.gupta@gmail.com>
+CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Info on Remote controller keys like upper-right, upper-left ,
+ lower-right, lower-left ,sub-picture etc.
+References: <CAOt5+pSrpsyvuyyT=kQj0k6u5m+KnJTH_+Q7hLhkkW0pNFSqpA@mail.gmail.com>
+In-Reply-To: <CAOt5+pSrpsyvuyyT=kQj0k6u5m+KnJTH_+Q7hLhkkW0pNFSqpA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 82.128.190.162
+X-SA-Exim-Mail-From: crope@iki.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yufeng,
+On 07/04/2012 09:34 PM, Dharam Kumar wrote:
+> Hi All,
+>
+> I've been working on a MHL( www.mhltech.org  ) transmitter driver
+> which needs to receive/handle incoming Remote control keys.
+>
+> The specification tells me that other than normal keys[up,down,left,
+> right etc.] there are certain remote control keys like Upper-right,
+> Upper-left, Lower-right, Lower-left, Sub-picture etc.
+>
+> While creating a key map in the driver, I tried to find whether these
+> keys has been defined in <linux/input.h> ,but I could not find such
+> key definitions
+> in the header file.
+>
+> Please note that, although the Specs do define these Remote Controller
+> keys, the driver will have the choice
+> to support the key depending on the key-map.
+>
+> Something like this:
+> /* Key Map for the driver */
+>    ....
+>   { KEY_UP, <supported> },
+>   { KEY_DOWN, <supported>},
+>   {KEY_UPPERRIGHT, <supported>},      /* No  definition for
+> KEY_UPPERRIGHT in input.h  */
+>   {KEY_UPPERLEFT, <not-supported>},  /* No definition for KEY_UPPERLEFT
+> in input.h, although this key is not supported by driver */
+> ....
+>
+>
+> In other mailing lists[linux-input], it has been suggested that these
+> keys are similar to Joystick keys.
+> I've looked into drivers/input/joystick/analog.c file, but could not
+> find any buttons/pads which are similar to the above one[Am I missing
+> something here??]
+>
+> any pointers??
 
-> The driver for Apple Magic Trackpad/Mouse currently uses
-> Multi-touch Protocol A (MT-A) to report touch events and uses
-> ABS_MT_TRACKING_ID to do finger tracking. The fact of the device
-> being able to track individual finger makes it possible to
-> report touch events using MT-B. This patch converts the driver
-> to use MT-B as it is preferred to MT-A.
-> 
-> V4: Removed BTN_TOUCH evnet.
-> V3: Removed the single touch related logic.
-> V2: Converting entirely to MT-B as Henrik Rydberg suggested.
-> 
-> Signed-off-by: Yufeng Shen <miletus@chromium.org>
-> ---
->  drivers/hid/hid-magicmouse.c |   66 ++++++++++++++----------------------------
->  1 files changed, 22 insertions(+), 44 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-> index fd88f21..7364726 100644
-> --- a/drivers/hid/hid-magicmouse.c
-> +++ b/drivers/hid/hid-magicmouse.c
-> @@ -16,6 +16,7 @@
->  
->  #include <linux/device.h>
->  #include <linux/hid.h>
-> +#include <linux/input/mt.h>
->  #include <linux/module.h>
->  #include <linux/slab.h>
->  #include <linux/usb.h>
-> @@ -68,15 +69,6 @@ MODULE_PARM_DESC(report_undeciphered, "Report undeciphered multi-touch state fie
->  
->  #define SCROLL_ACCEL_DEFAULT 7
->  
-> -/* Single touch emulation should only begin when no touches are currently down.
-> - * This is true when single_touch_id is equal to NO_TOUCHES. If multiple touches
-> - * are down and the touch providing for single touch emulation is lifted,
-> - * single_touch_id is equal to SINGLE_TOUCH_UP. While single touch emulation is
-> - * occurring, single_touch_id corresponds with the tracking id of the touch used.
-> - */
-> -#define NO_TOUCHES -1
-> -#define SINGLE_TOUCH_UP -2
-> -
->  /* Touch surface information. Dimension is in hundredths of a mm, min and max
->   * are in units. */
->  #define MOUSE_DIMENSION_X (float)9056
-> @@ -125,7 +117,6 @@ struct magicmouse_sc {
->  		u8 size;
->  	} touches[16];
->  	int tracking_ids[16];
-> -	int single_touch_id;
->  };
->  
->  static int magicmouse_firm_touch(struct magicmouse_sc *msc)
-> @@ -264,16 +255,14 @@ static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tda
->  		}
->  	}
->  
-> -	if (down) {
-> +	if (down)
->  		msc->ntouches++;
-> -		if (msc->single_touch_id == NO_TOUCHES)
-> -			msc->single_touch_id = id;
-> -	} else if (msc->single_touch_id == id)
-> -		msc->single_touch_id = SINGLE_TOUCH_UP;
-> +
-> +	input_mt_slot(input, id);
-> +	input_mt_report_slot_state(input, MT_TOOL_FINGER, down);
->  
->  	/* Generate the input events for this touch. */
->  	if (down) {
-> -		input_report_abs(input, ABS_MT_TRACKING_ID, id);
->  		input_report_abs(input, ABS_MT_TOUCH_MAJOR, touch_major << 2);
->  		input_report_abs(input, ABS_MT_TOUCH_MINOR, touch_minor << 2);
->  		input_report_abs(input, ABS_MT_ORIENTATION, -orientation);
-> @@ -286,8 +275,6 @@ static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tda
->  			else /* USB_DEVICE_ID_APPLE_MAGICTRACKPAD */
->  				input_event(input, EV_MSC, MSC_RAW, tdata[8]);
->  		}
-> -
-> -		input_mt_sync(input);
->  	}
->  }
->  
-> @@ -308,12 +295,6 @@ static int magicmouse_raw_event(struct hid_device *hdev,
->  		for (ii = 0; ii < npoints; ii++)
->  			magicmouse_emit_touch(msc, ii, data + ii * 9 + 4);
->  
-> -		/* We don't need an MT sync here because trackpad emits a
-> -		 * BTN_TOUCH event in a new frame when all touches are released.
-> -		 */
-> -		if (msc->ntouches == 0)
-> -			msc->single_touch_id = NO_TOUCHES;
-> -
->  		clicks = data[1];
->  
->  		/* The following bits provide a device specific timestamp. They
-> @@ -331,9 +312,6 @@ static int magicmouse_raw_event(struct hid_device *hdev,
->  		for (ii = 0; ii < npoints; ii++)
->  			magicmouse_emit_touch(msc, ii, data + ii * 8 + 6);
->  
-> -		if (msc->ntouches == 0)
-> -			input_mt_sync(input);
-> -
->  		/* When emulating three-button mode, it is important
->  		 * to have the current touch information before
->  		 * generating a click event.
-> @@ -366,25 +344,17 @@ static int magicmouse_raw_event(struct hid_device *hdev,
->  		input_report_rel(input, REL_Y, y);
->  	} else { /* USB_DEVICE_ID_APPLE_MAGICTRACKPAD */
->  		input_report_key(input, BTN_MOUSE, clicks & 1);
-> -		input_report_key(input, BTN_TOUCH, msc->ntouches > 0);
-> -		input_report_key(input, BTN_TOOL_FINGER, msc->ntouches == 1);
-> -		input_report_key(input, BTN_TOOL_DOUBLETAP, msc->ntouches == 2);
-> -		input_report_key(input, BTN_TOOL_TRIPLETAP, msc->ntouches == 3);
-> -		input_report_key(input, BTN_TOOL_QUADTAP, msc->ntouches == 4);
-> -		if (msc->single_touch_id >= 0) {
-> -			input_report_abs(input, ABS_X,
-> -				msc->touches[msc->single_touch_id].x);
-> -			input_report_abs(input, ABS_Y,
-> -				msc->touches[msc->single_touch_id].y);
-> -		}
-> +		input_mt_report_pointer_emulation(input, true);
->  	}
->  
->  	input_sync(input);
->  	return 1;
->  }
->  
-> -static void magicmouse_setup_input(struct input_dev *input, struct hid_device *hdev)
-> +static int magicmouse_setup_input(struct input_dev *input, struct hid_device *hdev)
->  {
-> +	int error;
-> +
->  	__set_bit(EV_KEY, input->evbit);
->  
->  	if (input->id.product == USB_DEVICE_ID_APPLE_MAGICMOUSE) {
-> @@ -413,6 +383,7 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
->  		__set_bit(BTN_TOOL_DOUBLETAP, input->keybit);
->  		__set_bit(BTN_TOOL_TRIPLETAP, input->keybit);
->  		__set_bit(BTN_TOOL_QUADTAP, input->keybit);
-> +		__set_bit(BTN_TOOL_QUINTTAP, input->keybit);
->  		__set_bit(BTN_TOUCH, input->keybit);
->  		__set_bit(INPUT_PROP_POINTER, input->propbit);
->  		__set_bit(INPUT_PROP_BUTTONPAD, input->propbit);
-> @@ -421,7 +392,9 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
->  
->  	__set_bit(EV_ABS, input->evbit);
->  
-> -	input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 15, 0, 0);
-> +	error = input_mt_init_slots(input, 16);
-> +	if (error)
-> +		return error;
->  	input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255 << 2,
->  			     4, 0);
->  	input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255 << 2,
-> @@ -468,6 +441,8 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
->  		__set_bit(EV_MSC, input->evbit);
->  		__set_bit(MSC_RAW, input->mscbit);
->  	}
-> +
-> +	return 0;
->  }
->  
->  static int magicmouse_input_mapping(struct hid_device *hdev,
-> @@ -506,8 +481,6 @@ static int magicmouse_probe(struct hid_device *hdev,
->  	msc->quirks = id->driver_data;
->  	hid_set_drvdata(hdev, msc);
->  
-> -	msc->single_touch_id = NO_TOUCHES;
-> -
->  	ret = hid_parse(hdev);
->  	if (ret) {
->  		hid_err(hdev, "magicmouse hid parse failed\n");
-> @@ -523,8 +496,13 @@ static int magicmouse_probe(struct hid_device *hdev,
->  	/* We do this after hid-input is done parsing reports so that
->  	 * hid-input uses the most natural button and axis IDs.
->  	 */
-> -	if (msc->input)
-> -		magicmouse_setup_input(msc->input, hdev);
-> +	if (msc->input) {
-> +		ret = magicmouse_setup_input(msc->input, hdev);
-> +		if (ret) {
-> +			hid_err(hdev, "magicmouse setup input failed (%d)\n", ret);
-> +			goto err_stop_hw;
-> +		}
-> +	}
->  
->  	if (id->product == USB_DEVICE_ID_APPLE_MAGICMOUSE)
->  		report = hid_register_report(hdev, HID_INPUT_REPORT,
-> -- 
-> 1.7.7.3
-> 
+Here is list of key bindings used for media device remote controllers 
+(television, radio, etc):
+http://linuxtv.org/wiki/index.php/Remote_Controllers
 
-Looks good now, both patches get a
+But still no definitions like up-left etc.
 
-Reviewed-and-tested-by: Henrik Rydberg <rydberg@euromail.se>
+regards
+Antti
 
-Thank you,
-Henrik
+
+-- 
+http://palosaari.fi/
+
+
