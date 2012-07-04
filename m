@@ -1,67 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab2GDX7Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 19:59:25 -0400
-Received: from fieldses.org ([174.143.236.118]:48741 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755958Ab2GDX7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 19:59:24 -0400
-Date: Wed, 4 Jul 2012 19:59:21 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Eldad Zack <eldad@fogrefinery.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] sunrpc/cache.h: replace simple_strtoul
-Message-ID: <20120704235921.GA26797@fieldses.org>
-References: <1341442827-21339-1-git-send-email-eldad@fogrefinery.com>
- <1341442827-21339-2-git-send-email-eldad@fogrefinery.com>
+	id S932437Ab2GEAAB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 20:00:01 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:37881 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755623Ab2GDX77 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 19:59:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341442827-21339-2-git-send-email-eldad@fogrefinery.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1341367403.10587.3.camel@phoenix>
+References: <1341367403.10587.3.camel@phoenix>
+Date: Thu, 5 Jul 2012 01:59:58 +0200
+Message-ID: <CACRpkdbb1Fh5mTxj8AiB-h8mgRcTj_ZjdMYiHqv=1M9_Kcxuzw@mail.gmail.com>
+Subject: Re: [PATCH] regulator: ab3100: Set enable enable_time in regulator_desc
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 01:00:26AM +0200, Eldad Zack wrote:
-> This patch replaces the usage of simple_strtoul with kstrtoint in
-> get_int().
+On Wed, Jul 4, 2012 at 4:03 AM, Axel Lin <axel.lin@gmail.com> wrote:
 
-Why?
-
---b.
-
-> 
-> Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 > ---
->  include/linux/sunrpc/cache.h |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/sunrpc/cache.h b/include/linux/sunrpc/cache.h
-> index 0757887..9a60bcc 100644
-> --- a/include/linux/sunrpc/cache.h
-> +++ b/include/linux/sunrpc/cache.h
-> @@ -217,7 +217,7 @@ extern int qword_get(char **bpp, char *dest, int bufsize);
->  static inline int get_int(char **bpp, int *anint)
->  {
->  	char buf[50];
-> -	char *ep;
-> +	ssize_t ret;
->  	int rv;
->  	int len = qword_get(bpp, buf, 50);
->  
-> @@ -226,8 +226,8 @@ static inline int get_int(char **bpp, int *anint)
->  	if (len == 0)
->  		return -ENOENT;
->  
-> -	rv = simple_strtol(buf, &ep, 0);
-> -	if (*ep)
-> +	ret = kstrtoint(buf, 0, &rv);
-> +	if (ret)
->  		return -EINVAL;
->  
->  	*anint = rv;
-> -- 
-> 1.7.10
-> 
+>  drivers/regulator/ab3100.c |   37 +++++++++----------------------------
+>  1 file changed, 9 insertions(+), 28 deletions(-)
+
+Thanks!
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
