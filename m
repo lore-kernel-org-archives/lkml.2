@@ -1,135 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933428Ab2GDG5R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 02:57:17 -0400
-Received: from ozlabs.org ([203.10.76.45]:53128 "EHLO ozlabs.org"
+	id S933293Ab2GDG5N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 02:57:13 -0400
+Received: from ozlabs.org ([203.10.76.45]:47483 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755956Ab2GDG5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755972Ab2GDG5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jul 2012 02:57:07 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>, Rafael Aquini <aquini@redhat.com>
-Subject: Re: [PATCH v3 2/4] virtio_balloon: handle concurrent accesses to virtio_balloon struct elements
-In-Reply-To: <e5f3c6d456f04adeac9fd714a6278424d71a97a0.1341353014.git.aquini@redhat.com>
-References: <cover.1341353014.git.aquini@redhat.com> <e5f3c6d456f04adeac9fd714a6278424d71a97a0.1341353014.git.aquini@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org
+Subject: Re: [PATCH] virtio-blk: allow toggling host cache between writeback and writethrough
+In-Reply-To: <1341321577-24435-1-git-send-email-pbonzini@redhat.com>
+References: <1341321577-24435-1-git-send-email-pbonzini@redhat.com>
 User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Wed, 04 Jul 2012 16:08:23 +0930
-Message-ID: <87vci4uj34.fsf@rustcorp.com.au>
+Date: Wed, 04 Jul 2012 15:54:26 +0930
+Message-ID: <87y5n0ujqd.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  3 Jul 2012 20:48:50 -0300, Rafael Aquini <aquini@redhat.com> wrote:
-> This patch introduces access sychronization to critical elements of struct
-> virtio_balloon, in order to allow the thread concurrency compaction/migration
-> bits might ended up imposing to the balloon driver on several situations.
+On Tue,  3 Jul 2012 15:19:37 +0200, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> This patch adds support for the new VIRTIO_BLK_F_CONFIG_WCE feature,
+> which exposes the cache mode in the configuration space and lets the
+> driver modify it.  The cache mode is exposed via sysfs.
 > 
-> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> Even if the host does not support the new feature, the cache mode is
+> visible (thanks to the existing VIRTIO_BLK_F_WCE), but not modifiable.
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 
-That's pretty vague, and it's almost impossible to audit this.
+Fixed up some checkpatch warnings for you, too:
 
-It looks very suspicious though:
+virtio:blk_allow_toggling_host_cache_between_writeback_and_writethrough.patch.new:51: WARNING: please, no spaces at the start of a line
+#51: FILE: drivers/block/virtio_blk.c:424:
++       revalidate_disk(vblk->disk);$
 
-> -static void tell_host(struct virtio_balloon *vb, struct virtqueue *vq)
-> -{
-> -	struct scatterlist sg;
-> -
-> -	sg_init_one(&sg, vb->pfns, sizeof(vb->pfns[0]) * vb->num_pfns);
-> +/* Protection for concurrent accesses to balloon virtqueues and vb->acked */
-> +DEFINE_MUTEX(vb_queue_completion);
->  
-> +static void tell_host(struct virtio_balloon *vb, struct virtqueue *vq,
-> +		      struct scatterlist *sg)
-> +{
-> +	mutex_lock(&vb_queue_completion);
->  	init_completion(&vb->acked);
->  
->  	/* We should always be able to add one buffer to an empty queue. */
-> -	if (virtqueue_add_buf(vq, &sg, 1, 0, vb, GFP_KERNEL) < 0)
-> +	if (virtqueue_add_buf(vq, sg, 1, 0, vb, GFP_KERNEL) < 0)
->  		BUG();
->  	virtqueue_kick(vq);
->  
->  	/* When host has read buffer, this completes via balloon_ack */
->  	wait_for_completion(&vb->acked);
-> +	mutex_unlock(&vb_queue_completion);
->  }
+.virtio:blk_allow_toggling_host_cache_between_writeback_and_writethrough.patch.new:54: WARNING: static const char * array should probably be static const char * const
+#54: FILE: drivers/block/virtio_blk.c:427:
++static const char *virtblk_cache_types[] = {
 
-OK, this lock is superceded by Michael's patch, and AFAICT is not due to
-any requirement introduced by these patches.
+.virtio:blk_allow_toggling_host_cache_between_writeback_and_writethrough.patch.new:160: ERROR: code indent should use tabs where possible
+#160: FILE: include/linux/virtio_blk.h:73:
++        /* writeback mode (if VIRTIO_BLK_F_CONFIG_WCE) */$
 
->  static void set_page_pfns(u32 pfns[], struct page *page)
-> @@ -126,9 +132,12 @@ static void set_page_pfns(u32 pfns[], struct page *page)
->  
->  static void fill_balloon(struct virtio_balloon *vb, size_t num)
->  {
-> +	struct scatterlist sg;
-> +	int alloc_failed = 0;
->  	/* We can only do one array worth at a time. */
->  	num = min(num, ARRAY_SIZE(vb->pfns));
->  
-> +	spin_lock(&vb->pfn_list_lock);
->  	for (vb->num_pfns = 0; vb->num_pfns < num;
->  	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
->  		struct page *page = alloc_page(GFP_HIGHUSER | __GFP_NORETRY |
-> @@ -138,8 +147,7 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
->  				dev_printk(KERN_INFO, &vb->vdev->dev,
->  					   "Out of puff! Can't get %zu pages\n",
->  					   num);
-> -			/* Sleep for at least 1/5 of a second before retry. */
-> -			msleep(200);
-> +			alloc_failed = 1;
->  			break;
->  		}
->  		set_page_pfns(vb->pfns + vb->num_pfns, page);
-> @@ -149,10 +157,19 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
->  	}
->  
->  	/* Didn't get any?  Oh well. */
-> -	if (vb->num_pfns == 0)
-> +	if (vb->num_pfns == 0) {
-> +		spin_unlock(&vb->pfn_list_lock);
->  		return;
-> +	}
-> +
-> +	sg_init_one(&sg, vb->pfns, sizeof(vb->pfns[0]) * vb->num_pfns);
-> +	spin_unlock(&vb->pfn_list_lock);
->  
-> -	tell_host(vb, vb->inflate_vq);
-> +	/* alloc_page failed, sleep for at least 1/5 of a sec before retry. */
-> +	if (alloc_failed)
-> +		msleep(200);
-> +
-> +	tell_host(vb, vb->inflate_vq, &sg);
+.virtio:blk_allow_toggling_host_cache_between_writeback_and_writethrough.patch.new:161: ERROR: code indent should use tabs where possible
+#161: FILE: include/linux/virtio_blk.h:74:
++        __u8 wce;$
 
-So, we drop the lock which procects vp->pfns[] and vb->num_pfns, then
-use it in tell_host?  Surely it could be corrupted between there.
+.virtio:blk_allow_toggling_host_cache_between_writeback_and_writethrough.patch.new:161: WARNING: please, no spaces at the start of a line
+#161: FILE: include/linux/virtio_blk.h:74:
++        __u8 wce;$
 
-> diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-> index bfbc15c..d47c5c2 100644
-> --- a/drivers/virtio/virtio_balloon.c
-> +++ b/drivers/virtio/virtio_balloon.c
-> @@ -51,6 +51,10 @@ struct virtio_balloon
->  
->  	/* Number of balloon pages we've told the Host we're not using. */
->  	unsigned int num_pages;
-> +
-> +	/* Protect 'pages', 'pfns' & 'num_pnfs' against concurrent updates */
-> +	spinlock_t pfn_list_lock;
-> +
->  	/*
->  	 * The pages we've told the Host we're not using.
->  	 * Each page on this list adds VIRTIO_BALLOON_PAGES_PER_PAGE
-
-You might be better of taking num_pfns and pfns[] out of struct
-virtio_balloon, and putting them on the stack (maybe 64, not 256).
+total: 2 errors, 3 warnings, 132 lines checked
 
 Cheers,
 Rusty.
