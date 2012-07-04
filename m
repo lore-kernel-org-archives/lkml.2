@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933582Ab2GDFlO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 01:41:14 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58659 "EHLO
+	id S933332Ab2GDFjq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 01:39:46 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63523 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754906Ab2GDFjr (ORCPT
+	with ESMTP id S933090Ab2GDFjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 01:39:47 -0400
-X-AuditID: 9c930179-b7cceae000004195-76-4ff3d71edb3e
+	Wed, 4 Jul 2012 01:39:43 -0400
+X-AuditID: 9c930179-b7cceae000004195-4a-4ff3d71bb106
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Namhyung Kim <namhyung@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 11/16] tools lib traceevent: Do not call add_event() again if allocation failed
-Date: Wed,  4 Jul 2012 14:35:25 +0900
-Message-Id: <1341380130-23863-11-git-send-email-namhyung@kernel.org>
+        Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
+Subject: [PATCH 05/16] tools lib traceevent: Fix trace_printk for long integers
+Date: Wed,  4 Jul 2012 14:35:19 +0900
+Message-Id: <1341380130-23863-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1341380130-23863-1-git-send-email-namhyung@kernel.org>
 References: <1341380068-23806-1-git-send-email-namhyung@kernel.org>
@@ -29,39 +27,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
 
-When memory allocation for the field name is failed, do not goto
-event_failed since we added the event already.
+On 32 bit systems, a conversion of the trace_printk format string
+"%lu" -> "%llu" is intended (similar for %lx etc.) when a trace was
+taken on a machine with 64 bit long integers. However, the current
+code computes the bogus transformation "%lu" -> "%u".  Fix this.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1335157118-14658-8-git-send-email-namhyung.kim@lge.com
+Besides that, the transformation is only required on systems that don't
+use 64 bits for long integers natively.
+
+Signed-off-by: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1332411501-8059-3-git-send-email-wolfgang.mauerer@siemens.com
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/lib/traceevent/event-parse.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ tools/lib/traceevent/event-parse.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 337ca02fb525..99b0cd4b79d4 100644
+index da06c33dcf41..ddee5a8cf135 100644
 --- a/tools/lib/traceevent/event-parse.c
 +++ b/tools/lib/traceevent/event-parse.c
-@@ -4770,7 +4770,8 @@ int pevent_parse_event(struct pevent *pevent,
- 			arg->field.name = strdup(field->name);
- 			if (!arg->field.name) {
- 				do_warning("failed to allocate field name");
--				goto event_failed;
-+				event->flags |= EVENT_FL_FAILED;
-+				return -1;
- 			}
- 			arg->field.field = field;
- 		}
+@@ -3895,14 +3895,15 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
+ 						break;
+ 					}
+ 				}
+-				if (pevent->long_size == 8 && ls) {
++				if (pevent->long_size == 8 && ls &&
++				    sizeof(long) != 8) {
+ 					char *p;
+ 
+ 					ls = 2;
+ 					/* make %l into %ll */
+ 					p = strchr(format, 'l');
+ 					if (p)
+-						memmove(p, p+1, strlen(p)+1);
++						memmove(p+1, p, strlen(p)+1);
+ 					else if (strcmp(format, "%p") == 0)
+ 						strcpy(format, "0x%llx");
+ 				}
 -- 
 1.7.10.4
 
