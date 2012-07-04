@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933307Ab2GDFoZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 01:44:25 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:20973 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932880Ab2GDFoV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 01:44:21 -0400
-Message-ID: <4FF3D757.9060905@huawei.com>
-Date: Wed, 4 Jul 2012 13:40:39 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
+	id S933586Ab2GDFrk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 01:47:40 -0400
+Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:52017 "EHLO
+	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754013Ab2GDFri convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 01:47:38 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Al Viro <viro@ZenIV.linux.org.uk>, shyju pv <shyju.pv@huawei.com>,
+In-Reply-To: <E0D6B3D7803B1A49AC7CEA9958379F630375BD5A@DFLE36.ent.ti.com>
+References: <1340367055-19835-1-git-send-email-kishon@ti.com>
+	<1340367055-19835-3-git-send-email-kishon@ti.com>
+	<E0D6B3D7803B1A49AC7CEA9958379F630375BD5A@DFLE36.ent.ti.com>
+Date: Wed, 4 Jul 2012 11:17:36 +0530
+Message-ID: <CAAe_U6+3sf5Nm5bQeY=Pi=sYMPp3GfXWxfbbbo1mSH2u9xjTyQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/5] usb: musb: twl: use mailbox API to send VBUS or ID events
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: "Matcovschi, Oleg" <oleg.matcovschi@ti.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Sanil kumar <sanil.kumar@huawei.com>,
-        Masanari Iida <standby24x7@gmail.com>
-Subject: Re: [PATCH] cgroup: cgroup_rm_files() was calling simple_unlink()
- with the wrong inode
-References: <20120627182903.GP15811@google.com> <4FEBF4B7.2070105@huawei.com> <20120628180712.GC22641@google.com> <4FED10DB.7040500@huawei.com> <20120629165809.GB21048@google.com> <4FEE98EE.1050409@huawei.com> <20120630064724.GC14083@ZenIV.linux.org.uk> <CAOS58YNnU3J+c2ZQcRCesSoxn0dSJjDLBsZ2qzZ09X6N-ky0fQ@mail.gmail.com> <20120630083421.GD14083@ZenIV.linux.org.uk> <20120703171033.GC555@google.com> <20120703173806.GD555@google.com>
-In-Reply-To: <20120703173806.GD555@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.166.88.115]
-X-CFilter-Loop: Reflected
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo wrote:
+Hi Oleg,
 
->>From 6da2689412c78b97716ec524cc30baf7b46508cd Mon Sep 17 00:00:00 2001
-> From: Tejun Heo <tj@kernel.org>
-> Date: Tue, 3 Jul 2012 10:32:26 -0700
-> 
-> While refactoring cgroup file removal path, 05ef1d7c4a "cgroup:
-> introduce struct cfent" incorrectly changed the @dir argument of
-> simple_unlink() to the inode of the file being deleted instead of that
-> of the containing directory.
-> 
-> The effect of this bug is minor - ctime and mtime of the parent
-> weren't properly updated on file deletion.
-> 
-> Fix it by using @cgrp->dentry->d_inode instead.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+On Tue, Jul 3, 2012 at 11:09 PM, Matcovschi, Oleg
+<oleg.matcovschi@ti.com> wrote:
+>>From: linux-omap-owner@vger.kernel.org [linux-omap-owner@vger.kernel.org] on behalf of ABRAHAM, KISHON VIJAY
+>>Sent: Friday, June 22, 2012 5:10 AM
+>>To: gregkh@linuxfoundation.org; ABRAHAM, KISHON VIJAY; linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org; Balbi, Felipe
+>>Subject: [PATCH v3 2/5] usb: musb: twl: use mailbox API to send VBUS or ID events
+>
+>>The atomic notifier from twl4030/twl6030 to notifiy VBUS and ID events,
+>>is replaced by a direct call to omap musb blue.
+>
+>>Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>---
+>> drivers/usb/musb/omap2430.c   |   94 +++++++++++++++++++++++++---------------
+>> drivers/usb/otg/twl4030-usb.c |   46 ++++++++++----------
+>> drivers/usb/otg/twl6030-usb.c |   47 +++++++++-----------
+>> include/linux/usb/musb-omap.h |   30 +++++++++++++
+>> 4 files changed, 133 insertions(+), 84 deletions(-)
+>> create mode 100644 include/linux/usb/musb-omap.h
+> .....
+> +enum omap_musb_vbus_id_status {
+> +       OMAP_MUSB_UNKNOWN = 0,
+> +       OMAP_MUSB_ID_GROUND,
+> +       OMAP_MUSB_ID_FLOAT,
+> +       OMAP_MUSB_VBUS_VALID,
+> +       OMAP_MUSB_VBUS_OFF,
+> +};
+> +
+>
+> Why did you choose to introduce OMAP_MUSB specific VBUS, ID events?
+> IMHO, it makes more sense to introduce mailbox functionality only without extra translation layer.
+> Same mailbox glue layer could be used for other PHY drivers, not just twl.
 
+We've decided to make twl as a comparator driver since we have a
+separate phy driver (not yet merged). Hence we dint want twl to use
+usb_phy specific events. So if you have other PHY drivers, you can
+still use the OMAP_MUSB specific events.
 
-Acked-By: Li Zefan <lizefan@huawei.com>
+Thanks
+Kishon
