@@ -1,91 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705Ab2GDMWl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 08:22:41 -0400
-Received: from mga11.intel.com ([192.55.52.93]:35128 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751095Ab2GDMWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 08:22:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="173335037"
-Message-ID: <1341404740.2979.91.camel@sauron.fi.intel.com>
-Subject: Re: [PATCHv3 3/4] ext4: remove unnecessary superblock dirtying
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Jan Kara <jack@suse.cz>
-Cc: Theodore Tso <tytso@mit.edu>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>
-Date: Wed, 04 Jul 2012 15:25:40 +0300
-In-Reply-To: <20120703124804.GC27388@quack.suse.cz>
-References: <1341316810-22598-1-git-send-email-dedekind1@gmail.com>
-	 <1341316810-22598-4-git-send-email-dedekind1@gmail.com>
-	 <20120703124804.GC27388@quack.suse.cz>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-7mcIvle6Qt9sbNIqsyc3"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1751720Ab2GDMYk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 08:24:40 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:45228 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206Ab2GDMYi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 08:24:38 -0400
+Date: Wed, 4 Jul 2012 20:24:27 +0800
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        AndrewMorton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>, Arun Sharma <asharma@fb.com>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Wanpeng Li <liwp.linux@gmail.com>
+Subject: Re: [PATCH 1/5 v2] memcg: replace unsigned long by u64 to avoid
+ overflow
+Message-ID: <20120704122427.GA21598@kernel>
+Reply-To: Wanpeng Li <liwp.linux@gmail.com>
+References: <1340604266-7937-1-git-send-email-liwp.linux@gmail.com>
+ <20120625075215.GW27816@cmpxchg.org>
+ <4FE82193.1070307@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FE82193.1070307@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 25, 2012 at 05:30:11PM +0900, Kamezawa Hiroyuki wrote:
+>(2012/06/25 16:52), Johannes Weiner wrote:
+>>On Mon, Jun 25, 2012 at 02:04:20PM +0800, Wanpeng Li wrote:
+>>>Changlog:
+>>>
+>>>V2 -> V1:
+>>>* fix zone_page_state()::/include/linux/vmstat.h returns 'unsigned long'
+>>>
+>>>From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>>>
+>>>Since the return value variable in mem_cgroup_zone_nr_lru_pages and
+>>>mem_cgroup_node_nr_lru_pages functions are u64, so replace the return
+>>>value of funtions by u64 to avoid overflow.
+>>>
+>>>Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+>>>---
+>>>  include/linux/vmstat.h |    2 +-
+>>>  mm/memcontrol.c        |    5 ++---
+>>>  2 files changed, 3 insertions(+), 4 deletions(-)
+>>>
+>>>diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+>>>index 65efb92..6a14291 100644
+>>>--- a/include/linux/vmstat.h
+>>>+++ b/include/linux/vmstat.h
+>>>@@ -106,7 +106,7 @@ static inline unsigned long global_page_state(enum zone_stat_item item)
+>>>  	return x;
+>>>  }
+>>>
+>>>-static inline unsigned long zone_page_state(struct zone *zone,
+>>>+static inline u64 zone_page_state(struct zone *zone,
+>>>  					enum zone_stat_item item)
+>>>  {
+>>>  	long x = atomic_long_read(&zone->vm_stat[item]);
+>>
+>>We established that there is no known reason to use ulong for page
+>>counters and that IF YOU HAD ONE, you should obviously say so and then
+>>do a wholesale conversion.  But I don't think you have one.
+>>
+>>This patch makes absolutely no sense.
+>>
+>I agree. Then, Nack from me.
+>
+>Thanks,
+>-Kame
 
---=-7mcIvle6Qt9sbNIqsyc3
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+static unsigned long
+mem_cgroup_node_nr_lru_pages(struct mem_cgroup *memcg,
+			int nid, unsigned int lru_mask)
+{
+	u64 total = 0;
+	int zid;
 
-On Tue, 2012-07-03 at 14:48 +0200, Jan Kara wrote:
-> > 1. When creating the first large file on a file
-> >    system without EXT4_FEATURE_RO_COMPAT_LARGE_FILE feature.
-> > 2. When re-sizing the file-system
-> > 3. When creating an xattr on a file-system without the
-> >    EXT4_FEATURE_COMPAT_EXT_ATTR feature.
->   Since this was written, we seem to have grown a use of
-> ext4_handle_dirty_super() in fs/ext4/namei.c when adding inode to orphan
-> list.
+	for (zid = 0; zid < MAX_NR_ZONES; zid++)
+		total += mem_cgroup_zone_nr_lru_pages(memcg,
+					    nid, zid, lru_mask);
 
-Re-worked the commit message a bit in v4.
+	return total;
+}
 
-> > +		err =3D ext4_commit_super(sb, 0);
->   When you look at the whole __ext4_handle_dirty_super() function now, it
-> doesn't make much sense like this. When now =3D=3D 1, we mark superblock =
-buffer
-> as dirty, when now =3D=3D 0, we set wtime, kbytes_written, free blocks an=
-d
-> inodes in the superblock buffer and then mark it dirty. Looking into all
-> the places calling this, I'd just drop the 'now' argument and make
-> everything behave as in now =3D=3D 1 case.
+Since you use unsigned long to caculate nr_pages and unsigned long long
+to caculate bytes, so u64 in function mem_cgroup_node_nr_lru_pages should 
+replace by unsigned long to save kernel stack, right?
 
-Done in v4 in patch N5. Thanks a lot for suggestions and the help!
+Regards,
+Wanpeng Li
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-7mcIvle6Qt9sbNIqsyc3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJP9DZEAAoJECmIfjd9wqK0OC8P/jNo4R0bjsn+9tIVHkpzdKC2
-w/xkSu1VzKsCI/os1dhgbbH5Ce2YwmPy0uE3F4+iDp8EgZnvFBtCWIRetZDRGpFZ
-cM7xjRYW7DPaPzNP8NbxOkMfhNU70zYFvWGiWzD7aXnk8sbkFcGBbinjCSwbuBQy
-1Eu5ULw1Ajy1yRF4vMK8D7dXy4mByFEqQRLCg6brDslyNM0Fgfo0eUe4RJ+bjeUy
-pQJuPHwvOu0SekgAWIRgDY5CtcRfr/qb3hk/1dARJTNOFvken9JN9BTwjq8KNGyi
-aqxTVn3oZLyZmraTlTXuSPgHsrvLS3zlhHwWxBu9y+o8a/+9+EHmxyYjX45NKanj
-+swcsvPxVtsLtw6YYat4S0y/EWPx8gs644e/b5FIVlyVLLboc0oGX3/1o90/BKJM
-IH4NMjtuR15XTl9ccFem9Mu/agV/3fbP4RwIDd/+coC5o0ybq7tAJePAcovpww7C
-88rUtDLvbu8sOQQz6f3fRsUTBetvJcVeJQeyzj51/ndLLH1by+f8LeL5oQtIoBVZ
-KfxpolQmuKNqD0rggIq+tVgrCI8vRjQURNZvd2/dxtZylXvLZBNKJ2eYnhFGMthd
-hhApc65hNMx7gjV4GinrN7ABDqwhMKB2QSqlYAD8ypdejez8St3ucHj3Qa0n/5mt
-hWlqWVZY5s9RaX871Y9W
-=IqDP
------END PGP SIGNATURE-----
-
---=-7mcIvle6Qt9sbNIqsyc3--
-
+>
+>
