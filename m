@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933586Ab2GDKCA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 06:02:00 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:20422 "EHLO song.cn.fujitsu.com"
+	id S933817Ab2GDKET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 06:04:19 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:43022 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756949Ab2GDKB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 06:01:57 -0400
+	id S933123Ab2GDKEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 06:04:15 -0400
 X-IronPort-AV: E=Sophos;i="4.77,522,1336320000"; 
-   d="scan'208";a="5328171"
-Message-ID: <4FF413D2.4030006@cn.fujitsu.com>
-Date: Wed, 04 Jul 2012 17:58:42 +0800
+   d="scan'208";a="5328186"
+Message-ID: <4FF4145D.6090202@cn.fujitsu.com>
+Date: Wed, 04 Jul 2012 18:01:01 +0800
 From: Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
@@ -19,161 +19,350 @@ CC: ebiederm@xmission.com, luto@mit.edu, Joerg Roedel <joerg.roedel@amd.com>,
         ludwig.nussel@suse.de, linux-kernel@vger.kernel.org,
         kvm@vger.kernel.org, kexec@lists.infradead.org,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH v4 0/3] Export offsets of VMCS fields as note information
- for kdump
+Subject: [PATCH v4 1/3] KVM: Export symbols for module vmcsinfo-intel
+References: <4FF413D2.4030006@cn.fujitsu.com>
+In-Reply-To: <4FF413D2.4030006@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/04 18:01:52,
+ 2012/07/04 18:04:11,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/04 18:01:57,
-	Serialize complete at 2012/07/04 18:01:57
+ 2012/07/04 18:04:15,
+	Serialize complete at 2012/07/04 18:04:15
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=GB2312
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set exports offsets of VMCS fields as note information for
-kdump. We call it VMCSINFO. The purpose of VMCSINFO is to retrieve
-runtime state of guest machine image, such as registers, in host
-machine's crash dump as VMCS format. The problem is that VMCS internal
-is hidden by Intel in its specification. So, we slove this problem
-by reverse engineering implemented in this patch set. The VMCSINFO
-is exported via sysfs (/sys/devices/system/cpu/vmcs/) to kexec-tools.
+A new module named vmcsinfo-intel is used to fill VMCSINFO. And
+this module depends on kvm-intel and kvm module. So we should
+export some symbols of kvm-intel and kvm module that are needed
+by vmcsinfo-intel.
 
-Here are two usercases for two features that we want.
+Signed-off-by: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+---
+ arch/x86/include/asm/vmx.h |   73 +++++++++++++++++++++++++++++++++++++++
+ arch/x86/kvm/vmx.c         |   81 +++++++-------------------------------------
+ include/linux/kvm_host.h   |    3 ++
+ virt/kvm/kvm_main.c        |    8 ++--
+ 4 files changed, 93 insertions(+), 72 deletions(-)
 
-1) Create guest machine's crash dumpfile from host machine's crash dumpfile
-
-In general, we want to use this feature on failure analysis for the system
-where the processing depends on the communication between host and guest
-machines to look into the system from both machines's viewpoints.
-
-As a concrete situation, consider where there's heartbeat monitoring
-feature on the guest machine's side, where we need to determine in
-which machine side the cause of heartbeat stop lies. In our actual
-experiments, we encountered such situation and we found the cause of
-the bug was in host's process schedular so guest machine's vcpu stopped
-for a long time and then led to heartbeat stop.
-
-The module that judges heartbeat stop is on guest machine, so we need
-to debug guest machine's data. But if the cause lies in host machine
-side, we need to look into host machine's crash dump.
-
-Without this feature, we first create guest machine's dump and then
-create host mahine's, but there's only a short time between two
-processings, during which it's unlikely that buggy situation remains.
-
-So, we think the feature is useful to debug both guest machine's and
-host machine's sides at the same time, and expect we can make failure
-analysis efficiently.
-
-Of course, we believe this feature is commonly useful on the situation
-where guest machine doesn't work well due to something of host machine's.
-
-2) Get offsets of VMCS information on the CPU running on the host machine
-
-If kdump doesn't work well, then it means we cannot use kvm API to get
-register values of guest machine and they are still left on its vmcs
-region. In the case, we use crash dump mechanism running outside of
-linux kernel, such as sadump, a firmware-based crash dump. Then VMCS
-information is then necessary.
-
-TODO:
-  1. In kexec-tools, get VMCSINFO via sysfs and dump it as note information
-     into vmcore.
-  2. Dump VMCS region of each guest vcpu and VMCSINFO into qemu-process
-     core file. To do this, we will modify kernel core dumper, gdb gcore
-     and crash gcore.
-  3. Dump guest image from the qemu-process core file into a vmcore.
-
-Changelog from v3 to v4:
-1. All the variables and functions are moved to vmcsinfo-intel module.
-2. Add a new sysfs interface /sys/devices/system/cpu/vmcs_id to export
-   vmcs revision identifier. And origial sysfs interface is changed
-   from /sys/devices/cpu/vmcs to /sys/devices/system/cpu/vmcs. Thanks
-   Greg KH for his helpful comments about sysfs.
-
-Changelog from v2 to v3:
-1. New VMCSINFO format.
-   Now the VMCSINFO is mainly made up of an array that contains all vmcs
-   fields' offsets. The offsets aren't encoded because we decode them in
-   the module itself. If some field doesn't exist or its offset cannot be
-   decoded correctly, the offset in the array is just set to zero.
-2. New sysfs interface and Documentation/ABI entry. 
-   We expose the actual fields in /sys/devices/cpu/vmcs instead of just
-   exporting the address of VMCSINFO in /sys/kernel/vmcsinfo.
-   For example, /sys/devices/cpu/vmcs/0800 contains the offset of
-   GUEST_DS_SELECTOR. 0800 is the encoding of GUEST_DS_SELECTOR.
-   Accordingly, ABI entry in Documentation is changed from sysfs-kernel-vmcsinfo
-   to sysfs-devices-cpu-vmcs.
-
-Changelog from v1 to v2:
-1. The VMCSINFO now has a simple binary <field><encoded offset> format,
-   as below:
-     +-------------+--------------------------+
-     | Byte offset | Contents                 |
-     +-------------+--------------------------+
-     | 0           | VMCS revision identifier |
-     +-------------+--------------------------+
-     | 4           | <field><encoded offset>  |
-     +-------------+--------------------------+
-     | 16          | <field><encoded offset>  |
-     +-------------+--------------------------+
-     ......
-  
-   The first 32 bits of VMCSINFO contains the VMCS revision identifier.
-   The remainder of VMCSINFO is used for <field><encoded offset> sets.
-   Each set takes 12 bytes: field occupys 4 bytes and its corresponding
-   encoded offset occupys 8 bytes.
-
-   Encoded offsets are raw values read by vmcs_read{16, 64, 32, l}, and
-   they are all unsigned extended to 8 bytes for each <field><encoded offset>
-   set will have the same size. 
-   We do not decode offsets here. The decoding work is delayed in userspace
-   tools for more flexible handling.
-   
-   And here are two examples of the new VMCSINFO:
-   Processor: Intel(R) Core(TM)2 Duo CPU     E7500  @ 2.93GHz
-   VMCSINFO contains:
-     <0000000d>                   --> VMCS revision id = 0xd
-     <00004000><0000000001840180> --> OFFSET(PIN_BASED_VM_EXEC_CONTROL) = 0x01840180
-     <00004002><0000000001940190> --> OFFSET(CPU_BASED_VM_EXEC_CONTROL) = 0x01940190
-     <0000401e><000000000fe40fe0> --> OFFSET(SECONDARY_VM_EXEC_CONTROL) = 0x0fe40fe0
-     <0000400c><0000000001e401e0> --> OFFSET(VM_EXIT_CONTROLS) = 0x01e401e0
-     ......
-
-   Processor: Intel(R) Xeon(R) CPU           E7540  @ 2.00GHz (24 cores)
-   VMCSINFO contains:
-     <0000000e>                   --> VMCS revision id = 0xe 
-     <00004000><0000000005540550> --> OFFSET(PIN_BASED_VM_EXEC_CONTROL) = 0x05540550
-     <00004002><0000000005440540> --> OFFSET(CPU_BASED_VM_EXEC_CONTROL) = 0x05440540
-     <0000401e><00000000054c0548> --> OFFSET(SECONDARY_VM_EXEC_CONTROL) = 0x054c0548
-     <0000400c><00000000057c0578> --> OFFSET(VM_EXIT_CONTROLS) = 0x057c0578
-     ......
-
-2. Add a new kernel module *vmcsinfo-intel* for filling VMCSINFO instead
-   of putting it in module kvm-intel. The new module is auto-loaded
-   when the vmx cpufeature is detected and it depends on module kvm-intel.
-   *Loading and unloading this module will have no side effect on the
-   running guests.*
-3. The sysfs file vmcsinfo is splitted into 2 files:
-   /sys/kernel/vmcsinfo: shows physical address of VMCSINFO note information.
-   /sys/kernel/vmcsinfo_maxsize: shows max size of VMCSINFO.
-4. A new Documentation/ABI entry is added for vmcsinfo and vmcsinfo_maxsize.
-5. Do not update VMCSINFO note when the kernel is panicked.
-
-zhangyanfei (3):
-  KVM: Export symbols for module vmcsinfo-intel
-  KVM-INTEL: Add new module vmcsinfo-intel to fill VMCSINFO
-  Documentation: Add ABI entry for vmcs sysfs interface.
-
- Documentation/ABI/testing/sysfs-devices-system-cpu |   21 +
- arch/x86/include/asm/vmx.h                         |   73 +++
- arch/x86/kvm/Kconfig                               |   11 +
- arch/x86/kvm/Makefile                              |    3 +
- arch/x86/kvm/vmcsinfo.c                            |  586 ++++++++++++++++++++
- arch/x86/kvm/vmx.c                                 |   81 +---
- include/linux/kvm_host.h                           |    3 +
- virt/kvm/kvm_main.c                                |    8 +-
- 8 files changed, 714 insertions(+), 72 deletions(-)
- create mode 100644 arch/x86/kvm/vmcsinfo.c
+diff --git a/arch/x86/include/asm/vmx.h b/arch/x86/include/asm/vmx.h
+index 31f180c..1044e2e 100644
+--- a/arch/x86/include/asm/vmx.h
++++ b/arch/x86/include/asm/vmx.h
+@@ -26,6 +26,7 @@
+  */
+ 
+ #include <linux/types.h>
++#include <linux/kvm_host.h>
+ 
+ /*
+  * Definitions of Primary Processor-Based VM-Execution Controls.
+@@ -481,4 +482,76 @@ enum vm_instruction_error_number {
+ 	VMXERR_INVALID_OPERAND_TO_INVEPT_INVVPID = 28,
+ };
+ 
++#define __ex(x) __kvm_handle_fault_on_reboot(x)
++#define __ex_clear(x, reg) \
++	____kvm_handle_fault_on_reboot(x, "xor " reg " , " reg)
++
++struct vmcs {
++	u32 revision_id;
++	u32 abort;
++	char data[0];
++};
++
++struct vmcs_config {
++	int size;
++	int order;
++	u32 revision_id;
++	u32 pin_based_exec_ctrl;
++	u32 cpu_based_exec_ctrl;
++	u32 cpu_based_2nd_exec_ctrl;
++	u32 vmexit_ctrl;
++	u32 vmentry_ctrl;
++};
++
++extern struct vmcs_config vmcs_config;
++
++DECLARE_PER_CPU(struct vmcs *, current_vmcs);
++
++enum vmcs_field_type {
++	VMCS_FIELD_TYPE_U16 = 0,
++	VMCS_FIELD_TYPE_U64 = 1,
++	VMCS_FIELD_TYPE_U32 = 2,
++	VMCS_FIELD_TYPE_NATURAL_WIDTH = 3
++};
++
++static inline int vmcs_field_type(unsigned long field)
++{
++	if (0x1 & field)	/* the *_HIGH fields are all 32 bit */
++		return VMCS_FIELD_TYPE_U32;
++	return (field >> 13) & 0x3 ;
++}
++
++static __always_inline unsigned long vmcs_readl(unsigned long field)
++{
++	unsigned long value;
++
++	asm volatile (__ex_clear(ASM_VMX_VMREAD_RDX_RAX, "%0")
++		      : "=a"(value) : "d"(field) : "cc");
++	return value;
++}
++
++static __always_inline u16 vmcs_read16(unsigned long field)
++{
++	return vmcs_readl(field);
++}
++
++static __always_inline u32 vmcs_read32(unsigned long field)
++{
++	return vmcs_readl(field);
++}
++
++static __always_inline u64 vmcs_read64(unsigned long field)
++{
++#ifdef CONFIG_X86_64
++	return vmcs_readl(field);
++#else
++	return vmcs_readl(field) | ((u64)vmcs_readl(field+1) << 32);
++#endif
++}
++
++struct vmcs *alloc_vmcs(void);
++void vmcs_load(struct vmcs *);
++void vmcs_clear(struct vmcs *);
++void free_vmcs(struct vmcs *);
++
+ #endif
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 32eb588..43ceae7 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -20,7 +20,6 @@
+ #include "mmu.h"
+ #include "cpuid.h"
+ 
+-#include <linux/kvm_host.h>
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
+@@ -45,10 +44,6 @@
+ 
+ #include "trace.h"
+ 
+-#define __ex(x) __kvm_handle_fault_on_reboot(x)
+-#define __ex_clear(x, reg) \
+-	____kvm_handle_fault_on_reboot(x, "xor " reg " , " reg)
+-
+ MODULE_AUTHOR("Qumranet");
+ MODULE_LICENSE("GPL");
+ 
+@@ -127,12 +122,6 @@ module_param(ple_window, int, S_IRUGO);
+ #define NR_AUTOLOAD_MSRS 8
+ #define VMCS02_POOL_SIZE 1
+ 
+-struct vmcs {
+-	u32 revision_id;
+-	u32 abort;
+-	char data[0];
+-};
+-
+ /*
+  * Track a VMCS that may be loaded on a certain CPU. If it is (cpu!=-1), also
+  * remember whether it was VMLAUNCHed, and maintain a linked list of all VMCSs
+@@ -617,7 +606,9 @@ static void vmx_set_cr3(struct kvm_vcpu *vcpu, unsigned long cr3);
+ static int vmx_set_tss_addr(struct kvm *kvm, unsigned int addr);
+ 
+ static DEFINE_PER_CPU(struct vmcs *, vmxarea);
+-static DEFINE_PER_CPU(struct vmcs *, current_vmcs);
++DEFINE_PER_CPU(struct vmcs *, current_vmcs);
++EXPORT_SYMBOL_GPL(current_vmcs);
++
+ /*
+  * We maintain a per-CPU linked-list of VMCS loaded on that CPU. This is needed
+  * when a CPU is brought down, and we need to VMCLEAR all VMCSs loaded on it.
+@@ -636,16 +627,8 @@ static bool cpu_has_load_perf_global_ctrl;
+ static DECLARE_BITMAP(vmx_vpid_bitmap, VMX_NR_VPIDS);
+ static DEFINE_SPINLOCK(vmx_vpid_lock);
+ 
+-static struct vmcs_config {
+-	int size;
+-	int order;
+-	u32 revision_id;
+-	u32 pin_based_exec_ctrl;
+-	u32 cpu_based_exec_ctrl;
+-	u32 cpu_based_2nd_exec_ctrl;
+-	u32 vmexit_ctrl;
+-	u32 vmentry_ctrl;
+-} vmcs_config;
++struct vmcs_config vmcs_config;
++EXPORT_SYMBOL_GPL(vmcs_config);
+ 
+ static struct vmx_capability {
+ 	u32 ept;
+@@ -940,7 +923,7 @@ static struct shared_msr_entry *find_msr_entry(struct vcpu_vmx *vmx, u32 msr)
+ 	return NULL;
+ }
+ 
+-static void vmcs_clear(struct vmcs *vmcs)
++void vmcs_clear(struct vmcs *vmcs)
+ {
+ 	u64 phys_addr = __pa(vmcs);
+ 	u8 error;
+@@ -952,6 +935,7 @@ static void vmcs_clear(struct vmcs *vmcs)
+ 		printk(KERN_ERR "kvm: vmclear fail: %p/%llx\n",
+ 		       vmcs, phys_addr);
+ }
++EXPORT_SYMBOL_GPL(vmcs_clear);
+ 
+ static inline void loaded_vmcs_init(struct loaded_vmcs *loaded_vmcs)
+ {
+@@ -960,7 +944,7 @@ static inline void loaded_vmcs_init(struct loaded_vmcs *loaded_vmcs)
+ 	loaded_vmcs->launched = 0;
+ }
+ 
+-static void vmcs_load(struct vmcs *vmcs)
++void vmcs_load(struct vmcs *vmcs)
+ {
+ 	u64 phys_addr = __pa(vmcs);
+ 	u8 error;
+@@ -972,6 +956,7 @@ static void vmcs_load(struct vmcs *vmcs)
+ 		printk(KERN_ERR "kvm: vmptrld %p/%llx failed\n",
+ 		       vmcs, phys_addr);
+ }
++EXPORT_SYMBOL_GPL(vmcs_load);
+ 
+ static void __loaded_vmcs_clear(void *arg)
+ {
+@@ -1043,34 +1028,6 @@ static inline void ept_sync_individual_addr(u64 eptp, gpa_t gpa)
+ 	}
+ }
+ 
+-static __always_inline unsigned long vmcs_readl(unsigned long field)
+-{
+-	unsigned long value;
+-
+-	asm volatile (__ex_clear(ASM_VMX_VMREAD_RDX_RAX, "%0")
+-		      : "=a"(value) : "d"(field) : "cc");
+-	return value;
+-}
+-
+-static __always_inline u16 vmcs_read16(unsigned long field)
+-{
+-	return vmcs_readl(field);
+-}
+-
+-static __always_inline u32 vmcs_read32(unsigned long field)
+-{
+-	return vmcs_readl(field);
+-}
+-
+-static __always_inline u64 vmcs_read64(unsigned long field)
+-{
+-#ifdef CONFIG_X86_64
+-	return vmcs_readl(field);
+-#else
+-	return vmcs_readl(field) | ((u64)vmcs_readl(field+1) << 32);
+-#endif
+-}
+-
+ static noinline void vmwrite_error(unsigned long field, unsigned long value)
+ {
+ 	printk(KERN_ERR "vmwrite error: reg %lx value %lx (err %d)\n",
+@@ -2580,15 +2537,17 @@ static struct vmcs *alloc_vmcs_cpu(int cpu)
+ 	return vmcs;
+ }
+ 
+-static struct vmcs *alloc_vmcs(void)
++struct vmcs *alloc_vmcs(void)
+ {
+ 	return alloc_vmcs_cpu(raw_smp_processor_id());
+ }
++EXPORT_SYMBOL_GPL(alloc_vmcs);
+ 
+-static void free_vmcs(struct vmcs *vmcs)
++void free_vmcs(struct vmcs *vmcs)
+ {
+ 	free_pages((unsigned long)vmcs, vmcs_config.order);
+ }
++EXPORT_SYMBOL_GPL(free_vmcs);
+ 
+ /*
+  * Free a VMCS, but before that VMCLEAR it on the CPU where it was last loaded
+@@ -5314,20 +5273,6 @@ static int handle_vmresume(struct kvm_vcpu *vcpu)
+ 	return nested_vmx_run(vcpu, false);
+ }
+ 
+-enum vmcs_field_type {
+-	VMCS_FIELD_TYPE_U16 = 0,
+-	VMCS_FIELD_TYPE_U64 = 1,
+-	VMCS_FIELD_TYPE_U32 = 2,
+-	VMCS_FIELD_TYPE_NATURAL_WIDTH = 3
+-};
+-
+-static inline int vmcs_field_type(unsigned long field)
+-{
+-	if (0x1 & field)	/* the *_HIGH fields are all 32 bit */
+-		return VMCS_FIELD_TYPE_U32;
+-	return (field >> 13) & 0x3 ;
+-}
+-
+ static inline int vmcs_field_readonly(unsigned long field)
+ {
+ 	return (((field >> 10) & 0x3) == 1);
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index c446435..0930fd9 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -95,6 +95,9 @@ enum kvm_bus {
+ 	KVM_NR_BUSES
+ };
+ 
++int hardware_enable_all(void);
++void hardware_disable_all(void);
++
+ int kvm_io_bus_write(struct kvm *kvm, enum kvm_bus bus_idx, gpa_t addr,
+ 		     int len, const void *val);
+ int kvm_io_bus_read(struct kvm *kvm, enum kvm_bus bus_idx, gpa_t addr, int len,
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 7e14068..26fd04d 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -90,8 +90,6 @@ static long kvm_vcpu_ioctl(struct file *file, unsigned int ioctl,
+ static long kvm_vcpu_compat_ioctl(struct file *file, unsigned int ioctl,
+ 				  unsigned long arg);
+ #endif
+-static int hardware_enable_all(void);
+-static void hardware_disable_all(void);
+ 
+ static void kvm_io_bus_destroy(struct kvm_io_bus *bus);
+ 
+@@ -2330,14 +2328,15 @@ static void hardware_disable_all_nolock(void)
+ 		on_each_cpu(hardware_disable_nolock, NULL, 1);
+ }
+ 
+-static void hardware_disable_all(void)
++void hardware_disable_all(void)
+ {
+ 	raw_spin_lock(&kvm_lock);
+ 	hardware_disable_all_nolock();
+ 	raw_spin_unlock(&kvm_lock);
+ }
++EXPORT_SYMBOL_GPL(hardware_disable_all);
+ 
+-static int hardware_enable_all(void)
++int hardware_enable_all(void)
+ {
+ 	int r = 0;
+ 
+@@ -2358,6 +2357,7 @@ static int hardware_enable_all(void)
+ 
+ 	return r;
+ }
++EXPORT_SYMBOL_GPL(hardware_enable_all);
+ 
+ static int kvm_cpu_hotplug(struct notifier_block *notifier, unsigned long val,
+ 			   void *v)
+-- 
+1.7.1
