@@ -1,215 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334Ab2GDQPu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 12:15:50 -0400
-Received: from mail-ee0-f74.google.com ([74.125.83.74]:33216 "EHLO
-	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754683Ab2GDQPq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 12:15:46 -0400
-From: Yufeng Shen <miletus@chromium.org>
-To: linux-input@vger.kernel.org
-Cc: Jiri Kosina <jkosina@suse.cz>, Henrik Rydberg <rydberg@euromail.se>,
-        linux-kernel@vger.kernel.org, Daniel Kurtz <djkurtz@chromium.org>,
-        Andrew de los Reyes <adlr@chromium.org>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Yufeng Shen <miletus@chromium.org>
-Subject: [PATCH 2/2 v4] HID: magicmouse: Implement Multi-touch Protocol B (MT-B)
-Date: Wed,  4 Jul 2012 12:15:43 -0400
-Message-Id: <1341418543-29517-1-git-send-email-miletus@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	id S932147Ab2GDQQA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 12:16:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45947 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754765Ab2GDQP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 12:15:57 -0400
+Date: Wed, 4 Jul 2012 18:15:55 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, gthelen@google.com, yinghan@google.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Sha Zhengju <handai.szj@taobao.com>, Jan Kara <jack@suse.cz>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH 6/7] memcg: add per cgroup writeback pages accounting
+Message-ID: <20120704161555.GM29842@tiehlicka.suse.cz>
+References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>
+ <1340881525-5835-1-git-send-email-handai.szj@taobao.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340881525-5835-1-git-send-email-handai.szj@taobao.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver for Apple Magic Trackpad/Mouse currently uses
-Multi-touch Protocol A (MT-A) to report touch events and uses
-ABS_MT_TRACKING_ID to do finger tracking. The fact of the device
-being able to track individual finger makes it possible to
-report touch events using MT-B. This patch converts the driver
-to use MT-B as it is preferred to MT-A.
+[Let's add writeback people]
 
-V4: Removed BTN_TOUCH evnet.
-V3: Removed the single touch related logic.
-V2: Converting entirely to MT-B as Henrik Rydberg suggested.
+On Thu 28-06-12 19:05:25, Sha Zhengju wrote:
+> From: Sha Zhengju <handai.szj@taobao.com>
+> 
+> Similar to dirty page, we add per cgroup writeback pages accounting. The lock
+> rule still is:
+> 	mem_cgroup_begin_update_page_stat()
+> 	modify page WRITEBACK stat
+> 	mem_cgroup_update_page_stat()
+> 	mem_cgroup_end_update_page_stat()
+> 
+> There're two writeback interface to modify: test_clear/set_page_writeback.
+> 
+> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+> ---
+>  include/linux/memcontrol.h |    1 +
+>  mm/memcontrol.c            |    5 +++++
+>  mm/page-writeback.c        |   12 ++++++++++++
+>  3 files changed, 18 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index ad37b59..9193d93 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -39,6 +39,7 @@ enum mem_cgroup_stat_index {
+>  	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+>  	MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
+>  	MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
+> +	MEM_CGROUP_STAT_FILE_WRITEBACK,  /* # of pages under writeback */
+>  	MEM_CGROUP_STAT_NSTATS,
+>  };
+>  
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 90e2946..8493119 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -83,6 +83,7 @@ static const char * const mem_cgroup_stat_names[] = {
+>  	"mapped_file",
+>  	"swap",
+>  	"dirty",
+> +	"writeback",
+>  };
+>  
+>  enum mem_cgroup_events_index {
+> @@ -2604,6 +2605,10 @@ static int mem_cgroup_move_account(struct page *page,
+>  		mem_cgroup_move_account_page_stat(from, to,
+>  				MEM_CGROUP_STAT_FILE_DIRTY);
+>  
+> +	if (PageWriteback(page))
+> +		mem_cgroup_move_account_page_stat(from, to,
+> +				MEM_CGROUP_STAT_FILE_WRITEBACK);
+> +
+>  	mem_cgroup_charge_statistics(from, anon, -nr_pages);
+>  
+>  	/* caller should have done css_get */
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index e79a2f7..7398836 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -1981,6 +1981,7 @@ EXPORT_SYMBOL(account_page_dirtied);
+>   */
+>  void account_page_writeback(struct page *page)
+>  {
+> +	mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_FILE_WRITEBACK);
+>  	inc_zone_page_state(page, NR_WRITEBACK);
+>  }
+>  EXPORT_SYMBOL(account_page_writeback);
+> @@ -2214,7 +2215,10 @@ int test_clear_page_writeback(struct page *page)
+>  {
+>  	struct address_space *mapping = page_mapping(page);
+>  	int ret;
+> +	bool locked;
+> +	unsigned long flags;
+>  
+> +	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
+>  	if (mapping) {
+>  		struct backing_dev_info *bdi = mapping->backing_dev_info;
+>  		unsigned long flags;
+> @@ -2235,9 +2239,12 @@ int test_clear_page_writeback(struct page *page)
+>  		ret = TestClearPageWriteback(page);
+>  	}
+>  	if (ret) {
+> +		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_WRITEBACK);
+>  		dec_zone_page_state(page, NR_WRITEBACK);
+>  		inc_zone_page_state(page, NR_WRITTEN);
+>  	}
+> +
+> +	mem_cgroup_end_update_page_stat(page, &locked, &flags);
+>  	return ret;
+>  }
+>  
+> @@ -2245,7 +2252,10 @@ int test_set_page_writeback(struct page *page)
+>  {
+>  	struct address_space *mapping = page_mapping(page);
+>  	int ret;
+> +	bool locked;
+> +	unsigned long flags;
+>  
+> +	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
+>  	if (mapping) {
+>  		struct backing_dev_info *bdi = mapping->backing_dev_info;
+>  		unsigned long flags;
+> @@ -2272,6 +2282,8 @@ int test_set_page_writeback(struct page *page)
+>  	}
+>  	if (!ret)
+>  		account_page_writeback(page);
+> +
+> +	mem_cgroup_end_update_page_stat(page, &locked, &flags);
+>  	return ret;
+>  
+>  }
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Signed-off-by: Yufeng Shen <miletus@chromium.org>
----
- drivers/hid/hid-magicmouse.c |   66 ++++++++++++++----------------------------
- 1 files changed, 22 insertions(+), 44 deletions(-)
-
-diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-index fd88f21..7364726 100644
---- a/drivers/hid/hid-magicmouse.c
-+++ b/drivers/hid/hid-magicmouse.c
-@@ -16,6 +16,7 @@
- 
- #include <linux/device.h>
- #include <linux/hid.h>
-+#include <linux/input/mt.h>
- #include <linux/module.h>
- #include <linux/slab.h>
- #include <linux/usb.h>
-@@ -68,15 +69,6 @@ MODULE_PARM_DESC(report_undeciphered, "Report undeciphered multi-touch state fie
- 
- #define SCROLL_ACCEL_DEFAULT 7
- 
--/* Single touch emulation should only begin when no touches are currently down.
-- * This is true when single_touch_id is equal to NO_TOUCHES. If multiple touches
-- * are down and the touch providing for single touch emulation is lifted,
-- * single_touch_id is equal to SINGLE_TOUCH_UP. While single touch emulation is
-- * occurring, single_touch_id corresponds with the tracking id of the touch used.
-- */
--#define NO_TOUCHES -1
--#define SINGLE_TOUCH_UP -2
--
- /* Touch surface information. Dimension is in hundredths of a mm, min and max
-  * are in units. */
- #define MOUSE_DIMENSION_X (float)9056
-@@ -125,7 +117,6 @@ struct magicmouse_sc {
- 		u8 size;
- 	} touches[16];
- 	int tracking_ids[16];
--	int single_touch_id;
- };
- 
- static int magicmouse_firm_touch(struct magicmouse_sc *msc)
-@@ -264,16 +255,14 @@ static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tda
- 		}
- 	}
- 
--	if (down) {
-+	if (down)
- 		msc->ntouches++;
--		if (msc->single_touch_id == NO_TOUCHES)
--			msc->single_touch_id = id;
--	} else if (msc->single_touch_id == id)
--		msc->single_touch_id = SINGLE_TOUCH_UP;
-+
-+	input_mt_slot(input, id);
-+	input_mt_report_slot_state(input, MT_TOOL_FINGER, down);
- 
- 	/* Generate the input events for this touch. */
- 	if (down) {
--		input_report_abs(input, ABS_MT_TRACKING_ID, id);
- 		input_report_abs(input, ABS_MT_TOUCH_MAJOR, touch_major << 2);
- 		input_report_abs(input, ABS_MT_TOUCH_MINOR, touch_minor << 2);
- 		input_report_abs(input, ABS_MT_ORIENTATION, -orientation);
-@@ -286,8 +275,6 @@ static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tda
- 			else /* USB_DEVICE_ID_APPLE_MAGICTRACKPAD */
- 				input_event(input, EV_MSC, MSC_RAW, tdata[8]);
- 		}
--
--		input_mt_sync(input);
- 	}
- }
- 
-@@ -308,12 +295,6 @@ static int magicmouse_raw_event(struct hid_device *hdev,
- 		for (ii = 0; ii < npoints; ii++)
- 			magicmouse_emit_touch(msc, ii, data + ii * 9 + 4);
- 
--		/* We don't need an MT sync here because trackpad emits a
--		 * BTN_TOUCH event in a new frame when all touches are released.
--		 */
--		if (msc->ntouches == 0)
--			msc->single_touch_id = NO_TOUCHES;
--
- 		clicks = data[1];
- 
- 		/* The following bits provide a device specific timestamp. They
-@@ -331,9 +312,6 @@ static int magicmouse_raw_event(struct hid_device *hdev,
- 		for (ii = 0; ii < npoints; ii++)
- 			magicmouse_emit_touch(msc, ii, data + ii * 8 + 6);
- 
--		if (msc->ntouches == 0)
--			input_mt_sync(input);
--
- 		/* When emulating three-button mode, it is important
- 		 * to have the current touch information before
- 		 * generating a click event.
-@@ -366,25 +344,17 @@ static int magicmouse_raw_event(struct hid_device *hdev,
- 		input_report_rel(input, REL_Y, y);
- 	} else { /* USB_DEVICE_ID_APPLE_MAGICTRACKPAD */
- 		input_report_key(input, BTN_MOUSE, clicks & 1);
--		input_report_key(input, BTN_TOUCH, msc->ntouches > 0);
--		input_report_key(input, BTN_TOOL_FINGER, msc->ntouches == 1);
--		input_report_key(input, BTN_TOOL_DOUBLETAP, msc->ntouches == 2);
--		input_report_key(input, BTN_TOOL_TRIPLETAP, msc->ntouches == 3);
--		input_report_key(input, BTN_TOOL_QUADTAP, msc->ntouches == 4);
--		if (msc->single_touch_id >= 0) {
--			input_report_abs(input, ABS_X,
--				msc->touches[msc->single_touch_id].x);
--			input_report_abs(input, ABS_Y,
--				msc->touches[msc->single_touch_id].y);
--		}
-+		input_mt_report_pointer_emulation(input, true);
- 	}
- 
- 	input_sync(input);
- 	return 1;
- }
- 
--static void magicmouse_setup_input(struct input_dev *input, struct hid_device *hdev)
-+static int magicmouse_setup_input(struct input_dev *input, struct hid_device *hdev)
- {
-+	int error;
-+
- 	__set_bit(EV_KEY, input->evbit);
- 
- 	if (input->id.product == USB_DEVICE_ID_APPLE_MAGICMOUSE) {
-@@ -413,6 +383,7 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
- 		__set_bit(BTN_TOOL_DOUBLETAP, input->keybit);
- 		__set_bit(BTN_TOOL_TRIPLETAP, input->keybit);
- 		__set_bit(BTN_TOOL_QUADTAP, input->keybit);
-+		__set_bit(BTN_TOOL_QUINTTAP, input->keybit);
- 		__set_bit(BTN_TOUCH, input->keybit);
- 		__set_bit(INPUT_PROP_POINTER, input->propbit);
- 		__set_bit(INPUT_PROP_BUTTONPAD, input->propbit);
-@@ -421,7 +392,9 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
- 
- 	__set_bit(EV_ABS, input->evbit);
- 
--	input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 15, 0, 0);
-+	error = input_mt_init_slots(input, 16);
-+	if (error)
-+		return error;
- 	input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255 << 2,
- 			     4, 0);
- 	input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255 << 2,
-@@ -468,6 +441,8 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
- 		__set_bit(EV_MSC, input->evbit);
- 		__set_bit(MSC_RAW, input->mscbit);
- 	}
-+
-+	return 0;
- }
- 
- static int magicmouse_input_mapping(struct hid_device *hdev,
-@@ -506,8 +481,6 @@ static int magicmouse_probe(struct hid_device *hdev,
- 	msc->quirks = id->driver_data;
- 	hid_set_drvdata(hdev, msc);
- 
--	msc->single_touch_id = NO_TOUCHES;
--
- 	ret = hid_parse(hdev);
- 	if (ret) {
- 		hid_err(hdev, "magicmouse hid parse failed\n");
-@@ -523,8 +496,13 @@ static int magicmouse_probe(struct hid_device *hdev,
- 	/* We do this after hid-input is done parsing reports so that
- 	 * hid-input uses the most natural button and axis IDs.
- 	 */
--	if (msc->input)
--		magicmouse_setup_input(msc->input, hdev);
-+	if (msc->input) {
-+		ret = magicmouse_setup_input(msc->input, hdev);
-+		if (ret) {
-+			hid_err(hdev, "magicmouse setup input failed (%d)\n", ret);
-+			goto err_stop_hw;
-+		}
-+	}
- 
- 	if (id->product == USB_DEVICE_ID_APPLE_MAGICMOUSE)
- 		report = hid_register_report(hdev, HID_INPUT_REPORT,
 -- 
-1.7.7.3
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
