@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab2GDTD3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 15:03:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51457 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755712Ab2GDTDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 15:03:25 -0400
-Date: Wed, 4 Jul 2012 21:03:19 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Yufeng Shen <miletus@chromium.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Daniel Kurtz <djkurtz@chromium.org>,
-        Andrew de los Reyes <adlr@chromium.org>,
-        Chase Douglas <chase.douglas@canonical.com>
-Subject: Re: [PATCH 2/2 v4] HID: magicmouse: Implement Multi-touch Protocol
- B (MT-B)
-In-Reply-To: <20120704184925.GA443@polaris.bitmath.org>
-Message-ID: <alpine.LNX.2.00.1207042102560.17304@pobox.suse.cz>
-References: <1341418543-29517-1-git-send-email-miletus@chromium.org> <20120704184925.GA443@polaris.bitmath.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932278Ab2GDTHn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 15:07:43 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:47749 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755762Ab2GDTHi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 15:07:38 -0400
+Date: Wed, 4 Jul 2012 12:07:31 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: rcu: BUG: spinlock recursion on CPU#3, trinity-child19/5970
+Message-ID: <20120704190731.GE2522@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1341006040.26928.4.camel@lappy>
+ <1341225139.23484.4.camel@twins>
+ <20120702113541.GI2907@linux.vnet.ibm.com>
+ <1341230352.23484.7.camel@twins>
+ <1341234773.2958.4.camel@lappy>
+ <20120702133334.GA2508@linux.vnet.ibm.com>
+ <20120702142252.GA22868@linux.vnet.ibm.com>
+ <1341239813.2958.7.camel@lappy>
+ <20120702145927.GD2508@linux.vnet.ibm.com>
+ <1341413691.18786.0.camel@lappy>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341413691.18786.0.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12070419-4242-0000-0000-00000236D976
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Jul 2012, Henrik Rydberg wrote:
-
-> > The driver for Apple Magic Trackpad/Mouse currently uses
-> > Multi-touch Protocol A (MT-A) to report touch events and uses
-> > ABS_MT_TRACKING_ID to do finger tracking. The fact of the device
-> > being able to track individual finger makes it possible to
-> > report touch events using MT-B. This patch converts the driver
-> > to use MT-B as it is preferred to MT-A.
-> > 
-> > V4: Removed BTN_TOUCH evnet.
-> > V3: Removed the single touch related logic.
-> > V2: Converting entirely to MT-B as Henrik Rydberg suggested.
-> > 
-> > Signed-off-by: Yufeng Shen <miletus@chromium.org>
-[ ... snip ... ]
+On Wed, Jul 04, 2012 at 04:54:51PM +0200, Sasha Levin wrote:
+> On Mon, 2012-07-02 at 07:59 -0700, Paul E. McKenney wrote:
+> > On Mon, Jul 02, 2012 at 04:36:53PM +0200, Sasha Levin wrote:
+> > > Looks like its running fine for a bit now (~10 min). I'll ping if
+> > > anything changes, but on the other tests it has usually failed at this
+> > > point.
+> > If testing goes well (both yours and mine), I will be submitting this
+> > as urgent, since it is a 3.5 regression.  If they don't take it, I will
+> > queue it for 3.6.
 > 
-> Looks good now, both patches get a
-> 
-> Reviewed-and-tested-by: Henrik Rydberg <rydberg@euromail.se>
+> 2 days later, and this didn't reproduce. I think we can say it's solved.
 
-Now applied. Thanks!
+Very good, and thank you very much for all your testing efforts!
 
--- 
-Jiri Kosina
-SUSE Labs
+I have added a ten-microsecond delay to __rcu_read_unlock() under a
+new CONFIG_RCU_PROVE_DELAY, and have added this to my testing regimen.
+And I guess I have also added it in a probabilistic manner to the various
+randconfig testing out there.  ;-)
+
+Or will have when it hits mainline, probably 3.7.
+
+							Thanx, Paul
+
