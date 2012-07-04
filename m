@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757110Ab2GDKrX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 06:47:23 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11036 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751998Ab2GDKrW (ORCPT
+	id S933859Ab2GDKsq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 06:48:46 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46020 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756961Ab2GDKsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 06:47:22 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 04 Jul 2012 03:47:16 -0700
-Message-ID: <4FF41E2D.30104@nvidia.com>
-Date: Wed, 4 Jul 2012 16:12:53 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Wed, 4 Jul 2012 06:48:45 -0400
+Date: Wed, 4 Jul 2012 12:48:40 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH] pwm-backlight: add regulator and GPIO support
+Message-ID: <20120704104840.GJ24458@pengutronix.de>
+References: <1340976167-27298-1-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "lrg@ti.com" <lrg@ti.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] regulator: fixed: dt: support for input supply
-References: <1341223645-7817-1-git-send-email-ldewangan@nvidia.com> <1341223645-7817-2-git-send-email-ldewangan@nvidia.com> <20120703191704.GE29030@opensource.wolfsonmicro.com> <4FF3EA70.307@nvidia.com> <20120704102144.GE4111@opensource.wolfsonmicro.com>
-In-Reply-To: <20120704102144.GE4111@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340976167-27298-1-git-send-email-acourbot@nvidia.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 12:45:32 up 11 days,  1:57, 78 users,  load average: 0.36, 0.63,
+ 1.92
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 04 July 2012 03:51 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Wed, Jul 04, 2012 at 12:32:08PM +0530, Laxman Dewangan wrote:
->
->> In non-DT, the input supply is passed with the regulator_init_data
->> through the fixed voltage config and it is filled in board files.
-> No, this is a legacy way of doing things.  All regulators should be
-> moving to specifying the name in their descriptor except for supplies
-> that are power roots (which are often fixed voltage regulators).
+Hi Alexandre,
 
-Then the input_supply should be set through the regulator init data 
-"init_data->supply_regulator" rather than the desc? If yes then also I 
-need to change the forthcoming patch for tps65910 and tps6586x to pass 
-the supply_regulator through init_data.
+On Fri, Jun 29, 2012 at 10:22:47PM +0900, Alexandre Courbot wrote:
+> @@ -221,8 +263,6 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+>  		}
+>  	}
+>  
+> -	dev_dbg(&pdev->dev, "got pwm for backlight\n");
+> -
+>  	/*
+>  	 * The DT case will set the pwm_period_ns field to 0 and store the
+>  	 * period, parsed from the DT, in the PWM device. For the non-DT case,
+> @@ -231,6 +271,22 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+>  	if (data->pwm_period_ns > 0)
+>  		pwm_set_period(pb->pwm, data->pwm_period_ns);
+>  
+> +
+> +	pb->power_reg = devm_regulator_get(&pdev->dev, "power");
+> +	if (IS_ERR(pb->power_reg))
+> +		return PTR_ERR(pb->power_reg);
+
+This looses several resources allocated earlier, like the enable gpio
+and the pwm. This is really bad here since I have no regulator specified
+and devm_regulator_get returns with -EPROBE_DEFER. Next time the core
+tries to probe the driver the driver bails out because the gpio and the
+pwm is already requested.
+
+Sascha
 
 
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
