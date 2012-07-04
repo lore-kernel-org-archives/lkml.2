@@ -1,133 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107Ab2GDXuI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 19:50:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63392 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755623Ab2GDXuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 19:50:06 -0400
-Date: Thu, 5 Jul 2012 01:45:57 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 11/40] autonuma: define the autonuma flags
-Message-ID: <20120704234557.GR25743@redhat.com>
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
- <1340888180-15355-12-git-send-email-aarcange@redhat.com>
- <20120630050143.GD3975@localhost.localdomain>
+	id S1756124Ab2GDXun (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 19:50:43 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:63615 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755972Ab2GDXui convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 19:50:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120630050143.GD3975@localhost.localdomain>
+In-Reply-To: <1341409019-32166-1-git-send-email-ohad@wizery.com>
+References: <1341409019-32166-1-git-send-email-ohad@wizery.com>
+Date: Thu, 5 Jul 2012 01:50:37 +0200
+Message-ID: <CACRpkdYr4VFpSLhcy3vst4=ZzTVPG8OKiZvLb_z4VmKmJGrQeg@mail.gmail.com>
+Subject: Re: [PATCH] remoteproc: adopt the driver core's alloc/add/del/put naming
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 30, 2012 at 01:01:44AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Thu, Jun 28, 2012 at 02:55:51PM +0200, Andrea Arcangeli wrote:
-> > +extern unsigned long autonuma_flags;
-> 
-> I could not find the this variable in the preceding patches?
+On Wed, Jul 4, 2012 at 3:36 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+
+> To make remoteproc's API more intuitive for developers, we adopt
+> the driver core's naming, i.e. alloc -> add -> del -> put. We'll also
+> add register/unregister when their first user shows up.
 >
-> Which patch actually uses it?
+> Otherwise - there's no functional change here.
+>
+> Suggested by Russell King <linux@arm.linux.org.uk>.
+>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Stephen Boyd <sboyd@codeaurora.org>
+> Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>
+> Cc: Sjur Brændeland <sjur.brandeland@stericsson.com>
+> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 
-Well the below code also uses the above variable, but the variable is
-defined in mm/autonuma.c in a later patch.
+I understand this patch and it's a good thing, so:
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 
-The aa.git/autonuma branch is constantly tracked by Wu C=1 checker
-with the allconfig tester, every commit is built independently, so if
-I add a minuscule error that breaks inter-bisectability or if I adds a
-C=1 warning for the headers inclusion order I get an automated
-email. Any patch reordering needs to take those things into account,
-while trying to keep the size of the patches small too (I can't put
-all new files in a single patch).
-
-> Also, is there a way to force the AutoNUMA framework
-> from not initializing at all? Hold that thought, it probably
-> is in some of the other patches.
-
-That is what the AUTONUMA_IMPOSSIBLE_FLAG is about, that flag is set
-if you boot with "noautonuma" as parameter to the kernel. (soon that
-flag will be renamed to AUTONUMA_POSSIBLE_FLAG and it'll work in the
-same but opposite way)
-
-The 12 byte per page overhead goes away, the
-knuma_scand/knuma_migratedN kernel daemons are not started, the
-task_autonuma/mm_autonuma are not allocated and the kernel boots as if
-the hardware is not NUMA (the only loss is a pointer in the mm
-struct... the pointer in the task struct is zero cost, stack overflow
-permitting :).
-
-> 
-> > +
-> > +static inline bool autonuma_enabled(void)
-> > +{
-> > +	return !!test_bit(AUTONUMA_FLAG, &autonuma_flags);
-> > +}
-> > +
-> > +static inline bool autonuma_debug(void)
-> > +{
-> > +	return !!test_bit(AUTONUMA_DEBUG_FLAG, &autonuma_flags);
-> > +}
-> > +
-> > +static inline bool autonuma_sched_load_balance_strict(void)
-> > +{
-> > +	return !!test_bit(AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG,
-> > +			  &autonuma_flags);
-> > +}
-> > +
-> > +static inline bool autonuma_sched_clone_reset(void)
-> > +{
-> > +	return !!test_bit(AUTONUMA_SCHED_CLONE_RESET_FLAG,
-> > +			  &autonuma_flags);
-> > +}
-> > +
-> > +static inline bool autonuma_sched_fork_reset(void)
-> > +{
-> > +	return !!test_bit(AUTONUMA_SCHED_FORK_RESET_FLAG,
-> > +			  &autonuma_flags);
-> > +}
-> > +
-> > +static inline bool autonuma_scan_pmd(void)
-> > +{
-> > +	return !!test_bit(AUTONUMA_SCAN_PMD_FLAG, &autonuma_flags);
-> > +}
-> > +
-> > +static inline bool autonuma_scan_use_working_set(void)
-> > +{
-> > +	return !!test_bit(AUTONUMA_SCAN_USE_WORKING_SET_FLAG,
-> > +			  &autonuma_flags);
-> > +}
-> > +
-> > +static inline bool autonuma_migrate_defer(void)
-> > +{
-> > +	return !!test_bit(AUTONUMA_MIGRATE_DEFER_FLAG, &autonuma_flags);
-> > +}
-> > +
-> > +#endif /* _LINUX_AUTONUMA_FLAGS_H */
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> > 
+Yours,
+Linus Walleij
