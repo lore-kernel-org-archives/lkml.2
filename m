@@ -1,84 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab2GDPJu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 11:09:50 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:40142 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752849Ab2GDPJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 11:09:49 -0400
-Message-ID: <1341414588.3627.42.camel@joe2Laptop>
-Subject: Re: [PATCHv3 2/3] lib: printf: append support of '%*ph[CDN]'
-From: Joe Perches <joe@perches.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, proski@gnu.org,
-        Andrei Emeltchenko <andrei.emeltchenko@intel.com>,
-        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Date: Wed, 04 Jul 2012 08:09:48 -0700
-In-Reply-To: <1341391552-4842-2-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1341341280.2012.3.camel@joe2Laptop>
-	 <1341391552-4842-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1341391552-4842-2-git-send-email-andriy.shevchenko@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754214Ab2GDPKU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 11:10:20 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10793 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752821Ab2GDPKR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 11:10:17 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 04 Jul 2012 08:10:12 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>, <grant.likely@secretlab.ca>,
+        <rob@landley.net>, <rob.herring@calxeda.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <swarren@nvidia.com>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2] regulator: fixed: dt: support for input supply
+Date: Wed, 4 Jul 2012 20:35:33 +0530
+Message-ID: <1341414333-6359-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-04 at 11:45 +0300, Andy Shevchenko wrote:
-> This patch adds a support of the variable width buffer to print it
-> as a hex string with a delimiter.
+Add support for input supply in DT parsing of node.
+The input supply will be provided by the property
+"vin-supply" in the regulator node.
 
-Hi again Andy.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+Changes from V1:
+Based on discussion on patch
+[PATCH 2/2] regulator: fixed: dt: support for input supply
+that the supply name should be passed through desc->supply_name
+in both DT and non-DT case.
+Making the change to have this.
 
-> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-[]
-> @@ -655,6 +655,57 @@ char *resource_string(char *buf, char *end, struct resource *res,
->  }
->  
->  static noinline_for_stack
-> +char *hex_string(char *buf, char *end, u8 *addr, struct printf_spec spec,
-> +		 const char *fmt)
-> +{
-> +	char hex_str[8*3+1];	/* support up to 8 bytes to print */
+ .../bindings/regulator/fixed-regulator.txt         |    2 ++
+ drivers/regulator/fixed.c                          |   15 +++++++++++++--
+ 2 files changed, 15 insertions(+), 2 deletions(-)
 
-I think you don't need hex_str at all.
-
-[]
-
-> +	if (spec.field_width <= 0)
-> +		/* nothing to print */
-> +		return buf;
-
-It may be better to default to a 1 and add
-
-	if (addr == ZERO_OR_NULL_PTR)
-
-to avoid dereferencing a NULL or a pointer
-to a zero length object.
-
-> +
-> +	len = min_t(int, spec.field_width, 64);
-> +
-> +	while (i < len) {
-> +		p = hex_str;
-> +		for (j = 0; j < 8 && i < len; j++, i++) {
-> +			p = hex_byte_pack(p, addr[i]);
-> +
-> +			if (separator && i != len - 1)
-> +				*p++ = separator;
-> +		}
-> +		*p = '\0';
-> +
-> +		for (p = hex_str; *p != '\0'; p++) {
-> +			if (buf < end)
-> +				*buf = *p;
-> +			++buf;
-> +		}
-
-why not just directly write to *buf as long as buf < end?
-
-cheers, Joe
+diff --git a/Documentation/devicetree/bindings/regulator/fixed-regulator.txt b/Documentation/devicetree/bindings/regulator/fixed-regulator.txt
+index 2f5b6b1..4fae41d 100644
+--- a/Documentation/devicetree/bindings/regulator/fixed-regulator.txt
++++ b/Documentation/devicetree/bindings/regulator/fixed-regulator.txt
+@@ -10,6 +10,7 @@ Optional properties:
+ If this property is missing, the default assumed is Active low.
+ - gpio-open-drain: GPIO is open drain type.
+   If this property is missing then default assumption is false.
++-vin-supply: Input supply name.
+ 
+ Any property defined as part of the core regulator
+ binding, defined in regulator.txt, can also be used.
+@@ -29,4 +30,5 @@ Example:
+ 		enable-active-high;
+ 		regulator-boot-on;
+ 		gpio-open-drain;
++		vin-supply = <&parent_reg>;
+ 	};
+diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
+index b8c3a91..f56e575 100644
+--- a/drivers/regulator/fixed.c
++++ b/drivers/regulator/fixed.c
+@@ -45,13 +45,14 @@ struct fixed_voltage_data {
+ /**
+  * of_get_fixed_voltage_config - extract fixed_voltage_config structure info
+  * @dev: device requesting for fixed_voltage_config
++ * @vin_supply: pointer to store whether input supply is available or not.
+  *
+  * Populates fixed_voltage_config structure by extracting data from device
+  * tree node, returns a pointer to the populated structure of NULL if memory
+  * alloc fails.
+  */
+ static struct fixed_voltage_config *
+-of_get_fixed_voltage_config(struct device *dev)
++of_get_fixed_voltage_config(struct device *dev, bool *vin_supply)
+ {
+ 	struct fixed_voltage_config *config;
+ 	struct device_node *np = dev->of_node;
+@@ -106,6 +107,9 @@ of_get_fixed_voltage_config(struct device *dev)
+ 	if (of_find_property(np, "gpio-open-drain", NULL))
+ 		config->gpio_is_open_drain = true;
+ 
++	if (of_find_property(np, "vin-supply", NULL))
++		*vin_supply = true;
++
+ 	return config;
+ }
+ 
+@@ -184,13 +188,18 @@ static int __devinit reg_fixed_voltage_probe(struct platform_device *pdev)
+ 	struct fixed_voltage_data *drvdata;
+ 	struct regulator_config cfg = { };
+ 	int ret;
++	const char *supply_reg = NULL;
+ 
+ 	if (pdev->dev.of_node) {
+-		config = of_get_fixed_voltage_config(&pdev->dev);
++		bool vin_supply = false;
++		config = of_get_fixed_voltage_config(&pdev->dev, &vin_supply);
+ 		if (IS_ERR(config))
+ 			return PTR_ERR(config);
++		if (vin_supply)
++			supply_reg = "vin";
+ 	} else {
+ 		config = pdev->dev.platform_data;
++		supply_reg = config->init_data->supply_regulator;
+ 	}
+ 
+ 	if (!config)
+@@ -213,6 +222,8 @@ static int __devinit reg_fixed_voltage_probe(struct platform_device *pdev)
+ 	drvdata->desc.type = REGULATOR_VOLTAGE;
+ 	drvdata->desc.owner = THIS_MODULE;
+ 
++	drvdata->desc.supply_name = supply_reg;
++
+ 	if (config->microvolts)
+ 		drvdata->desc.n_voltages = 1;
+ 
+-- 
+1.7.1.1
 
