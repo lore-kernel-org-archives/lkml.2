@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756809Ab2GDCjD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 22:39:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33330 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754426Ab2GDCjA (ORCPT
+	id S1756846Ab2GDCkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 22:40:45 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:45067 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321Ab2GDCkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 22:39:00 -0400
-Date: Wed, 4 Jul 2012 10:47:15 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Jeff Garzik <jeff@garzik.org>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Zheng Liu <wenqing.lz@taobao.com>
-Subject: Re: [RFC][PATCH] libata: enable SATA disk fua detection on default
-Message-ID: <20120704024715.GA17095@gmail.com>
-Mail-Followup-To: Michael Tokarev <mjt@tls.msk.ru>,
-	Jeff Garzik <jeff@garzik.org>, linux-kernel@vger.kernel.org,
-	linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-	Zheng Liu <wenqing.lz@taobao.com>
-References: <1336447443-4685-1-git-send-email-wenqing.lz@taobao.com>
- <20120703090441.GA4804@gmail.com>
- <4FF351F8.1000003@msgid.tls.msk.ru>
+	Tue, 3 Jul 2012 22:40:43 -0400
+Message-ID: <4FF3AD27.5070901@gmail.com>
+Date: Tue, 03 Jul 2012 21:40:39 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF351F8.1000003@msgid.tls.msk.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [GIT PULL] DT fixes for 3.5
+References: <4FDA9261.2070208@gmail.com>
+In-Reply-To: <4FDA9261.2070208@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+Linus,
 
-On Wed, Jul 04, 2012 at 12:11:36AM +0400, Michael Tokarev wrote:
-> On 03.07.2012 13:04, Zheng Liu wrote:
-> > Hi Jeff,
-> > 
-> > Sorry for bothering you.  Could you please review this patch, or give me
-> > some feedbacks.  If this patch can be applied, I can rebase it to the
-> > lastest version of mainline kernel.  Thank you.
-> []
-> >> -int libata_fua = 0;
-> >> +int libata_fua = 1;
+On 06/14/2012 08:39 PM, Rob Herring wrote:
+> Grant,
 > 
-> I guess it can be enabled after LOTS of testing of various drives out
-> there, which shows that no current drives have issues with FUA anymore,
-> and after building a black-list of devices which misbehave.  It is quite
-> a big project, I think.  But what it gives us in return?
+> Please pull. Mainly some documentation updates and 2 fixes:
 > 
-> (I've no idea if this is the right answer, speaking of myself only)
+> - An export symbol fix for of_platform_populate from Stephen W.
+> - A fix for the order compatible entries are matched to ensure the
+> first compatible string is matched when there are multiple matches.
+> 
 
-Thanks for the reply.  Indeed it is quite a big project but we enable
-FUA feature for SAS disk.  Is there any differences?
+As Grant is offline the next month or two, can you please pull these
+fixes for device tree for 3.5.
 
-Regards,
-Zheng
+Rob
+
+> The following changes since commit cfaf025112d3856637ff34a767ef785ef5cf2ca9:
+> 
+>   Linux 3.5-rc2 (2012-06-08 18:40:09 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://sources.calxeda.com/kernel/linux.git fixes-for-grant
+> 
+> for you to fetch changes up to 107a84e61cdd3406c842a0e4be7efffd3a05dba6:
+> 
+>   of: match by compatible property first (2012-06-14 20:29:40 -0500)
+> 
+> ----------------------------------------------------------------
+> Fabio Estevam (5):
+>       dt: fsl-imx-cspi.txt: Fix comment about GPIOs used for chip selects
+>       dt: fsl-imx-esdhc.txt: Fix gpio number assignment
+>       dt: fsl-mma8450.txt: Add missing 'reg' description
+>       dt: fsl-fec.txt: Fix gpio number assignment
+>       dt: mc13xxx.txt: Fix gpio number assignment
+> 
+> Stephen Warren (1):
+>       of: export of_platform_populate()
+> 
+> Thierry Reding (2):
+>       of: Add Avionic Design vendor prefix
+>       of: match by compatible property first
+> 
+>  .../devicetree/bindings/input/fsl-mma8450.txt      |    1 +
+>  Documentation/devicetree/bindings/mfd/mc13xxx.txt  |    4 +--
+>  .../devicetree/bindings/mmc/fsl-imx-esdhc.txt      |    4 +--
+>  Documentation/devicetree/bindings/net/fsl-fec.txt  |    2 +-
+>  .../devicetree/bindings/spi/fsl-imx-cspi.txt       |    4 +--
+>  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+>  drivers/of/base.c                                  |   30
+> +++++++++++++++++---
+>  drivers/of/platform.c                              |    1 +
+>  8 files changed, 36 insertions(+), 11 deletions(-)
+> 
+
+
