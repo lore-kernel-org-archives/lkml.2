@@ -1,76 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab2GDOgq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 10:36:46 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:39785 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518Ab2GDOgp (ORCPT
+	id S1753989Ab2GDOg7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 10:36:59 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49871 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938Ab2GDOgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 10:36:45 -0400
-Date: Wed, 4 Jul 2012 16:36:39 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Luming Yu <luming.yu@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, gilad@benyossef.com,
-        Len Brown <lenb@kernel.org>, shli@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: CPU isolation question again
-Message-ID: <20120704143635.GE28294@somewhere>
-References: <CAJRGBZw_my_=Z+Jyb2UBYwW48BpCGYdcuD5mu7erHsX8NSKbDg@mail.gmail.com>
- <20120703112828.GA28294@somewhere>
- <CAJRGBZzn66mpQo+PCQirzqE=Wdm9T7Z01P20FQsHQnTPEd2mqA@mail.gmail.com>
- <20120704132539.GD28294@somewhere>
- <CAJRGBZyBGL97MAjBVBa5cKKsePtDFPiWqN4N-Lcw3V8qw35DTQ@mail.gmail.com>
+	Wed, 4 Jul 2012 10:36:53 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH] qla2xxx: print the right array elements
+To: bzhao@marvell.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-scsi@vger.kernel.org
+Date: Wed, 04 Jul 2012 16:35:35 +0100
+Message-ID: <20120704153528.4098.49179.stgit@bluebook>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJRGBZyBGL97MAjBVBa5cKKsePtDFPiWqN4N-Lcw3V8qw35DTQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 04, 2012 at 10:12:43PM +0800, Luming Yu wrote:
-> On Wed, Jul 4, 2012 at 9:25 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > On Wed, Jul 04, 2012 at 08:42:29PM +0800, Luming Yu wrote:
-> >> On Tue, Jul 3, 2012 at 7:28 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >> > On Wed, Jun 27, 2012 at 09:22:09PM +0800, Luming Yu wrote:
-> >> >> Hi there,
-> >> >>
-> >> >> I noticed some discussion about CPU isolation which points me to the
-> >> >> patch set (https://lkml.org/lkml/2011/8/15/245). I'm currently
-> >> >> preparing a RFC-patch-set to automatically pick up a few suitable CPUs
-> >> >> to isolate then kick them out of service for a while. We need to
-> >> >> balance between  thermal & power management And overall system
-> >> >> performance during this operation as much as possible. So
-> >> >> software-cpu-online-offline interface could not be a good option to
-> >> >> me. But to make sure I'm not blindly running on a dead-end path, I'd
-> >> >> check with experts here to ensure it makes some sense to isolate CPUs
-> >> >> to this level, and the idea also makes some sense, and the most
-> >> >> important is it's not implemented yet.
-> >> >
-> >> > I don't understand what you are trying to do and how exactly. How do you
-> >> > plan to do this isolation and how do you want to balance between thermal
-> >> > and power?
-> >>
-> >> My question could be wrong as the question arose several weeks ago
-> >> when I came across
-> >>  drivers/acpi/acpi_paid.c which looks like a real user who need to
-> >> request system automatically
-> >> pick up a few CPU to get them isolated and deactivated. Later on, I
-> >> noticed tglx's cpu hot plug re-work.
-> >> I realized we could reuse the interface to do isolation and deactivation work.
-> >>
-> >> Of cause, to pick up which ones to isolate and deactivate is another problem.
-> >>
-> >> cc'ed the author and ACPI maintainer of the driver as well as tglx.
-> >
-> > May be I'm confused because we both have our own definition of isolation.
-> > I'm not sure what kind of CPU isolation you're looking for.
-> 
-> At first, it needs not avaiable to scheduler.  Then, it needs in
-> deepest power saving mode.
-> At last, it needs available to scheduler again on demand.
-> Sounds very like a typical soft offline cpu, but needs to be low light weight.
+From: Alan Cox <alan@linux.intel.com>
 
-I see. So indeed the latest developments made in CPU hotplug could make it a solution
-for you.
+Coverity id 793583
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+
+ drivers/scsi/qla2xxx/qla_target.c |   27 ++++++++++++++-------------
+ 1 file changed, 14 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
+index 6986552..c5fd001 100644
+--- a/drivers/scsi/qla2xxx/qla_target.c
++++ b/drivers/scsi/qla2xxx/qla_target.c
+@@ -4003,9 +4003,9 @@ void qlt_async_event(uint16_t code, struct scsi_qla_host *vha,
+ 	{
+ 		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf03b,
+ 		    "qla_target(%d): Async LOOP_UP occured "
+-		    "(m[1]=%x, m[2]=%x, m[3]=%x, m[4]=%x)", vha->vp_idx,
+-		    le16_to_cpu(mailbox[1]), le16_to_cpu(mailbox[2]),
+-		    le16_to_cpu(mailbox[3]), le16_to_cpu(mailbox[4]));
++		    "(m[0]=%x, m[1]=%x, m[2]=%x, m[3]=%x)", vha->vp_idx,
++		    le16_to_cpu(mailbox[0]), le16_to_cpu(mailbox[1]),
++		    le16_to_cpu(mailbox[2]), le16_to_cpu(mailbox[3]));
+ 		if (tgt->link_reinit_iocb_pending) {
+ 			qlt_send_notify_ack(vha, (void *)&tgt->link_reinit_iocb,
+ 			    0, 0, 0, 0, 0, 0);
+@@ -4020,18 +4020,19 @@ void qlt_async_event(uint16_t code, struct scsi_qla_host *vha,
+ 	case MBA_RSCN_UPDATE:
+ 		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf03c,
+ 		    "qla_target(%d): Async event %#x occured "
+-		    "(m[1]=%x, m[2]=%x, m[3]=%x, m[4]=%x)", vha->vp_idx, code,
+-		    le16_to_cpu(mailbox[1]), le16_to_cpu(mailbox[2]),
+-		    le16_to_cpu(mailbox[3]), le16_to_cpu(mailbox[4]));
++		    "(m[0]=%x, m[1]=%x, m[2]=%x, m[3]=%x)", vha->vp_idx, code,
++		    le16_to_cpu(mailbox[0]), le16_to_cpu(mailbox[1]),
++		    le16_to_cpu(mailbox[2]), le16_to_cpu(mailbox[3]));
+ 		break;
+ 
+ 	case MBA_PORT_UPDATE:
+ 		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf03d,
+ 		    "qla_target(%d): Port update async event %#x "
+-		    "occured: updating the ports database (m[1]=%x, m[2]=%x, "
+-		    "m[3]=%x, m[4]=%x)", vha->vp_idx, code,
+-		    le16_to_cpu(mailbox[1]), le16_to_cpu(mailbox[2]),
+-		    le16_to_cpu(mailbox[3]), le16_to_cpu(mailbox[4]));
++		    "occured: updating the ports database (m[0]=%x, m[1]=%x, "
++		    "m[2]=%x, m[3]=%x)", vha->vp_idx, code,
++		    le16_to_cpu(mailbox[0]), le16_to_cpu(mailbox[1]),
++		    le16_to_cpu(mailbox[2]), le16_to_cpu(mailbox[3]));
++                /* Check: was the reasoncode also one out ? */
+ 		reason_code = le16_to_cpu(mailbox[2]);
+ 		if (reason_code == 0x4)
+ 			ql_dbg(ql_dbg_tgt_mgt, vha, 0xf03e,
+@@ -4044,9 +4045,9 @@ void qlt_async_event(uint16_t code, struct scsi_qla_host *vha,
+ 	default:
+ 		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf040,
+ 		    "qla_target(%d): Async event %#x occured: "
+-		    "ignore (m[1]=%x, m[2]=%x, m[3]=%x, m[4]=%x)", vha->vp_idx,
+-		    code, le16_to_cpu(mailbox[1]), le16_to_cpu(mailbox[2]),
+-		    le16_to_cpu(mailbox[3]), le16_to_cpu(mailbox[4]));
++		    "ignore (m[0]=%x, m[1]=%x, m[2]=%x, m[3]=%x)", vha->vp_idx,
++		    code, le16_to_cpu(mailbox[0]), le16_to_cpu(mailbox[1]),
++		    le16_to_cpu(mailbox[2]), le16_to_cpu(mailbox[3]));
+ 		break;
+ 	}
+ 
+
