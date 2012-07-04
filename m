@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751062Ab2GDMfW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 08:35:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48141 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750803Ab2GDMfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 08:35:21 -0400
-Message-ID: <4FF43878.3000207@redhat.com>
-Date: Wed, 04 Jul 2012 14:35:04 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1751440Ab2GDMiN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 08:38:13 -0400
+Received: from mail.lippert-at.com ([62.80.22.186]:14212 "EHLO
+	domex.lippertembedded.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750963Ab2GDMiM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 08:38:12 -0400
+X-Greylist: delayed 913 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Jul 2012 08:38:12 EDT
+Message-ID: <4FF4359E.6030808@LiPPERTEmbedded.de>
+Date: Wed, 04 Jul 2012 14:22:54 +0200
+From: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
+User-Agent: Thunderbird 1.5.0.14 (Windows/20071210)
 MIME-Version: 1.0
-To: mc@linux.vnet.ibm.com
-CC: stefanha@linux.vnet.ibm.com, linuxram@us.ibm.com,
-        senwang@linux.vnet.ibm.com, zwanp@cn.ibm.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH v2] virtio-scsi: hotplug support for virtio-scsi
-References: <1341294085-17164-1-git-send-email-mc@linux.vnet.ibm.com> <4FF2DC6C.1010506@redhat.com> <20120704041124.Horde.MN5WeZir309P8-qsGUCj3vA@imap.linux.ibm.com>
-In-Reply-To: <20120704041124.Horde.MN5WeZir309P8-qsGUCj3vA@imap.linux.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] cs5535-clockevt: typo, it's MFGPT, not MFPGT
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Jul 2012 12:22:57.0153 (UTC) FILETIME=[BE74FF10:01CD59DF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/07/2012 10:11, mc@linux.vnet.ibm.com ha scritto:
->>>
->>>
->>> Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
->>> Signed-off-by: Sen Wang <senwang@linux.vnet.ibm.com>
->>
->> The SoB lines are swapped.  Otherwise looks good.  Since you have to
->> respin, please add dropped event support too, it shouldn't be hard.
-> 
-> What does "The SoB lines are swapped" mean? should the changelog be
-> placed after SoB lines?
+cs5535-clockevt: typo, it's MFGPT, not MFPGT
 
-No, the patch sender should be the last SoB line.  Sen Wang should hence
-come before you, not after.
+Had me fooled for a while, "dmesg|grep -i mfgpt" wouldn't show anything.
 
-Paolo
+Signed-off-by: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
+---
 
+--- linux-3.4/drivers/clocksource/cs5535-clockevt.c
++++ mfgpt_typo/drivers/clocksource/cs5535-clockevt.c
+@@ -53,7 +53,7 @@
+ #define MFGPT_PERIODIC (MFGPT_HZ / HZ)
+ 
+ /*
+- * The MFPGT timers on the CS5536 provide us with suitable timers to use
++ * The MFGPT timers on the CS5536 provide us with suitable timers to use
+  * as clock event sources - not as good as a HPET or APIC, but certainly
+  * better than the PIT.  This isn't a general purpose MFGPT driver, but
+  * a simplified one designed specifically to act as a clock event source.
+@@ -144,7 +144,7 @@
+ 
+ 	timer = cs5535_mfgpt_alloc_timer(MFGPT_TIMER_ANY, MFGPT_DOMAIN_WORKING);
+ 	if (!timer) {
+-		printk(KERN_ERR DRV_NAME ": Could not allocate MFPGT timer\n");
++		printk(KERN_ERR DRV_NAME ": Could not allocate MFGPT timer\n");
+ 		return -ENODEV;
+ 	}
+ 	cs5535_event_clock = timer;
+_
