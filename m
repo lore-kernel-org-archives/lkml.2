@@ -1,80 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223Ab2GDGw3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 02:52:29 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:18839 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041Ab2GDGw2 (ORCPT
+	id S932716Ab2GDGzt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 02:55:49 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:61389 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab2GDGzr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 02:52:28 -0400
-X-AuditID: cbfee61a-b7f086d000000e64-30-4ff3e81e62f2
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Barry Song'" <21cnbao@gmail.com>
-Cc: "'Barry Song'" <Barry.Song@csr.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, workgroup.linux@csr.com,
-        "'Barry Song'" <Baohua.Song@csr.com>
-References: <1331120259-30780-1-git-send-email-Barry.Song@csr.com>
- <03e601cd58ec$5b8177b0$12846710$%szyprowski@samsung.com>
- <CAGsJ_4yjV+HDXdYraJ6CdJrSz1EPGgE6BRvO-_9n+6_UWfxqww@mail.gmail.com>
- <op.wgvfgmm03l0zgt@mpn-glaptop>
-In-reply-to: <op.wgvfgmm03l0zgt@mpn-glaptop>
-Subject: RE: [PATCH v4] mm: cma: add a simple kernel module as the helper to
- test CMA
-Date: Wed, 04 Jul 2012 08:52:01 +0200
-Organization: SPRC
-Message-id: <000301cd59b1$87094eb0$951bec10$%szyprowski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1ZGveABTuDXps0TIitfJxuoXMHIwAkYKhQ
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t9jAV25F5/9Da73aVhc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MraeWMRVM4ap4s/EsUwNjO0cXIyeHhICJxLwDO9ggbDGJC/fW
-	A9lcHEICixgldrWsZoFwZjFJLJr8GqyKTcBQouttF5gtIuArsbuhG6yIWWAVo8S9/TMYITqe
-	MUoc2XoSrIpTQEfizqZjrF2MHBzCAuES+1eZg4RZBFQldl47zg4S5hcQkpg4SwEkzCvgIjFp
-	+X9mCFtQ4sfkeywgJcwC6hJTpuSChJkF5CU2r3nLDBKWAAo/+qsLcY2RxNLZ89ghSkQk7jY8
-	Z53AKDwLyaBZCINmIRk0C0nHAkaWVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxjBwf1Magfj
-	ygaLQ4wCHIxKPLwTHnz2F2JNLCuuzD3EKMHBrCTCe3M3UIg3JbGyKrUoP76oNCe1+BCjNAeL
-	kjhvk/UFfyGB9MSS1OzU1ILUIpgsEwenVANj9pm1su9c2zl5A/8XrvA6vvi20Kz1JYGxgc8m
-	BMmxPV3XIN5io6Aa+ufM3YtrV81cYHLtmuSksEc+E5dtiC1pzLmXfUjvzOsJhrJHOrjqWcRD
-	jVr6i4Nlln+cZTSli3cty235IH8dc9napTkRXttPvzoos7DeKLt/f5LrxPxF+ZuqM8K3N7xV
-	YinOSDTUYi4qTgQACedg5WoCAAA=
-X-TM-AS-MML: No
+	Wed, 4 Jul 2012 02:55:47 -0400
+MIME-Version: 1.0
+Date: Wed, 4 Jul 2012 14:55:47 +0800
+Message-ID: <CANuKePntggbPrY7=eq-+AHzqcPG4Y6UGnP+9B57Gs2xNLeCR_A@mail.gmail.com>
+Subject: why Linux kernel will update BIOS's interrupt remapping table base
+ address ? why does Linux Kernel create a new table instead of the one that
+ BIOS provided ?
+From: Lin-Bao Zhang <2004.zhang@gmail.com>
+To: flyboy@gmail.com, yinghai@kernel.org, suresh.b.siddha@intel.com
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Tuesday, July 03, 2012 2:54 PM Michal Nazarewicz wrote:
-
-> > 2012/7/3 Marek Szyprowski <m.szyprowski@samsung.com>:
-> >> IMHO the right place for such code is in drivers/misc instead of tools/cma.
-> >>
-> >> This patch contains a kernel module source code so it should be put with other kernel
-> >> modules. tools/ directory is aimed to contain user space code useful for developing and
-> >> testing Linux kernel.
-> 
-> On Tue, 03 Jul 2012 09:39:34 +0200, Barry Song <21cnbao@gmail.com> wrote:
-> > this one is aiming to test CMA, it should be in tools/ as Michal
-> > Nazarewicz and i have talked about that.
-> > it is not a real driver at all.
-> 
-> Yeah, I feel like it's better placed in tools/ not to pollute other directories with
-> drivers that are of no use to regular users.  I don't have strong feelings about it
-> though, so I'm fine either way.
-
-Other test devices/drivers are in drivers directory (drivers/usb/misc/usbtest.c for
-example), I don't see any good reason for polluting tools/ directory with kernel code. 
-
-IMHO the right person to decide if it makes sense to have such drivers in drivers/mics/
-or tools/cma/ is Greg KH. Barry, please resend it and ask Greg for the decision.
-
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+Hi all,
 
 
+my questions are :
+1, Linux kernel will create a new interrupt remapping table to replace
+BIOS' table ?
+we guys used ITP to know that BIOS' interrupt remapping table pointer
+has been changed . I am tracing related code to see how linux kernel
+creates interrupt remapping table.
+
+2, why ? why linux kernel doesn't directly use BIOS' table ?   our
+bios has enabled x2apic mode ,and also export interrupt remapping
+table
+
+3, what is the relationship between interrupt remapping table with
+"virtual wire mode B" , now , if firmware disabled "virtual wire mode
+B" , linux kernel won't panic , otherwise , linux kernel will panic .
+
+thanks for your replies .
+
+from following commit messages , I have known that BIOS should provide
+a interrupt remapping table and export to OS.
+-------------------------------------------------------------------------------
+commit fb209bd891645bb87b9618b724f0b4928e0df3de
+Author: Yinghai Lu <yinghai@kernel.org>
+Date:   Wed Dec 21 17:45:17 2011 -0800
+
+    x86, x2apic: Fallback to xapic when BIOS doesn't setup interrupt-remapping
+
+    On some of the recent Intel SNB platforms, by default bios is pre-enabling
+    x2apic mode in the cpu with out setting up interrupt-remapping.
+    This case was resulting in the kernel to panic as the cpu is already in
+    x2apic mode but the OS was not able to enable interrupt-remapping (which
+    is a pre-req for using x2apic capability).
+
+    On these platforms all the apic-ids are < 255 and the kernel can fallback to
+    xapic mode if the bios has not enabled interrupt-remapping (which is
+    mostly the case if the bios has not exported interrupt-remapping
+tables to the
+    OS).
+    -------------------------------------------------------------------------------------
+
+But now , I am carefully checking apic.c code to trace how interrupt
+remapping table is enabled again by linux kernel.
+
+
+struct smp_ops smp_ops  define native_smp_prepare_cpus() functions ->
+native_smp_prepare_cpus() -> default_setup_apic_routing() ->
+enable_IR_x2apic() -> enable_IR() -> enable_intr_remapping() ->
+setup_intr_remapping() -> iommu_set_intr_remapping()
+I check iommu_set_intr_remapping() function , it seems that it indeed
+modify INTR remapping base addr.
+
+FYI:
+This function indeed follow “Intel VT for direct IO.pdf” ‘s P109
+static void iommu_set_intr_remapping(struct intel_iommu *iommu, int mode)
+{
+   u64 addr;
+   u32 sts;
+   unsigned long flags;
+
+   addr = virt_to_phys((void *)iommu->ir_table->base);
+
+   raw_spin_lock_irqsave(&iommu->register_lock, flags);
+
+   dmar_writeq(iommu->reg + DMAR_IRTA_REG,   // #define DMAR_IRTA_REG
+0xb8 /* Interrupt remapping table addr register */
+          (addr) | IR_X2APIC_MODE(mode) | INTR_REMAP_TABLE_REG_SIZE);
+
+   /* Set interrupt-remapping table pointer */
+   iommu->gcmd |= DMA_GCMD_SIRTP;     //P109 in Intel VT-d for direct
+IO.pdf  from ftp://download.intel.com/technology/computing/vptech/Intel(r)_VT_for_Direct_IO.pdf
+   writel(iommu->gcmd, iommu->reg + DMAR_GCMD_REG);
+
+   IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
+            readl, (sts & DMA_GSTS_IRTPS), sts);
+   raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
+
+   /*
+   * global invalidation of interrupt entry cache before enabling
+   * interrupt-remapping.
+   */
+   qi_global_iec(iommu);
+
+   raw_spin_lock_irqsave(&iommu->register_lock, flags);
+
+   /* Enable interrupt-remapping */
+   iommu->gcmd |= DMA_GCMD_IRE;
+   writel(iommu->gcmd, iommu->reg + DMAR_GCMD_REG);
+
+   IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
+            readl, (sts & DMA_GSTS_IRES), sts);
+
+   raw_spin_unlock_irqrestore(&iommu->register_lock, flags);
+}
