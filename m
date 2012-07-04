@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757149Ab2GDK35 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 06:29:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55779 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757030Ab2GDK3z (ORCPT
+	id S933840Ab2GDKaN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 06:30:13 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:41263 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932623Ab2GDKaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 06:29:55 -0400
-Message-ID: <4FF41B17.3030304@canonical.com>
-Date: Wed, 04 Jul 2012 18:29:43 +0800
-From: Ike Panhc <ike.pan@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Wed, 4 Jul 2012 06:30:07 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: "Steven J. Magnani" <steve@digidescorp.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] fat (exportfs): drop ineffective get_parent code
+References: <1341342576-15394-1-git-send-email-steve@digidescorp.com>
+	<1341342576-15394-2-git-send-email-steve@digidescorp.com>
+Date: Wed, 04 Jul 2012 19:30:04 +0900
+In-Reply-To: <1341342576-15394-2-git-send-email-steve@digidescorp.com> (Steven
+	J. Magnani's message of "Tue, 3 Jul 2012 14:09:35 -0500")
+Message-ID: <878vezq0nn.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rui.zhang@intel.com, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, dmitry.torokhov@gmail.com,
-        eric.piel@tremplin-utc.net, mjg@redhat.com, herton@canonical.com
-Subject: Re: [PATCH 09/12] ideapad: convert to module_acpi_driver()
-References: <1340881171-14811-1-git-send-email-mika.westerberg@linux.intel.com> <1340881171-14811-10-git-send-email-mika.westerberg@linux.intel.com>
-In-Reply-To: <1340881171-14811-10-git-send-email-mika.westerberg@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 06:59 PM, Mika Westerberg wrote:
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+"Steven J. Magnani" <steve@digidescorp.com> writes:
 
-Acked-by: Ike Panhc <ike.pan@canonical.com>
+> This patch reorganizes existing code for reuse by the next patch in the series.
 
-> ---
->  drivers/platform/x86/ideapad-laptop.c |   14 +-------------
->  1 file changed, 1 insertion(+), 13 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
-> index 4f20f8d..b469654 100644
-> --- a/drivers/platform/x86/ideapad-laptop.c
-> +++ b/drivers/platform/x86/ideapad-laptop.c
-> @@ -813,20 +813,8 @@ static struct acpi_driver ideapad_acpi_driver = {
->  	.ops.notify = ideapad_acpi_notify,
->  	.owner = THIS_MODULE,
->  };
-> -
-> -static int __init ideapad_acpi_module_init(void)
-> -{
-> -	return acpi_bus_register_driver(&ideapad_acpi_driver);
-> -}
-> -
-> -static void __exit ideapad_acpi_module_exit(void)
-> -{
-> -	acpi_bus_unregister_driver(&ideapad_acpi_driver);
-> -}
-> +module_acpi_driver(ideapad_acpi_driver);
->  
->  MODULE_AUTHOR("David Woodhouse <dwmw2@infradead.org>");
->  MODULE_DESCRIPTION("IdeaPad ACPI Extras");
->  MODULE_LICENSE("GPL");
-> -
-> -module_init(ideapad_acpi_module_init);
-> -module_exit(ideapad_acpi_module_exit);
-> 
+Please separate cleanup and logic change. This patch seems to be almost
+all changes are cleanup.
 
+Maybe it would be the cleanup and nfs improvement patches.
 
+> The only functional change is to remove ineffective code from 
+> fat_get_dotdot_entry() and limit fat_get_parent() to immediate children of the
+> root (the only disconnected directory case that can be handled without a 
+> search). The limitation will be removed in the next patch in the series.
+>
+> These changes are a slight improvement over the current situation, in that they
+> allow reconnection of immediate subdirectories of the root, and reporting of
+> ESTALE for other cases.
+
+I can't see why we need the limited get_parent(). I guess, it is better
+to just do in next patch at once.
+
+> The reason the i_pos code in fat_get_dotdot_entry() is ineffective is
+> because the value is the on-disk position of a ".." directory entry.
+> What is needed in order to map NFS file handles back to objects is the on-disk
+> position of the named entry to which ".." refers.
+
+[...]
+
+> +/**
+> + * Create inode from specified directory entry.
+> + * Do not call this directly unless intentionally bypassing the FAT dir cache.
+> + */
+> +static struct inode *fat_build_unhashed_inode(struct super_block *sb,
+> +			struct msdos_dir_entry *de)
+
+fat_new_inode() would be better name.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
