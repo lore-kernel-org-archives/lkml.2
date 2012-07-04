@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030Ab2GDXGe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 19:06:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55709 "EHLO mx1.redhat.com"
+	id S1756073Ab2GDXRj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 19:17:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12815 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755782Ab2GDXGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 19:06:33 -0400
-Date: Thu, 5 Jul 2012 01:05:47 +0200
+	id S1756050Ab2GDXRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 19:17:37 -0400
+Date: Thu, 5 Jul 2012 01:14:25 +0200
 From: Andrea Arcangeli <aarcange@redhat.com>
-To: Rik van Riel <riel@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -22,51 +22,151 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Lai Jiangshan <laijs@cn.fujitsu.com>,
         Bharata B Rao <bharata.rao@gmail.com>,
         Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
         Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Don Morris <don.morris@hp.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 04/40] xen: document Xen is using an unused bit for the
- pagetables
-Message-ID: <20120704230547.GO25743@redhat.com>
+Subject: Re: [PATCH 09/40] autonuma: introduce kthread_bind_node()
+Message-ID: <20120704231425.GP25743@redhat.com>
 References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
- <1340888180-15355-5-git-send-email-aarcange@redhat.com>
- <4FEDB8AC.4000209@redhat.com>
+ <1340888180-15355-10-git-send-email-aarcange@redhat.com>
+ <20120630045013.GB3975@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FEDB8AC.4000209@redhat.com>
+In-Reply-To: <20120630045013.GB3975@localhost.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 29, 2012 at 10:16:12AM -0400, Rik van Riel wrote:
-> On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
-> > Xen has taken over the last reserved bit available for the pagetables
-> > which is set through ioremap, this documents it and makes the code
-> > more readable.
-> >
-> > Signed-off-by: Andrea Arcangeli<aarcange@redhat.com>
+On Sat, Jun 30, 2012 at 12:50:14AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Thu, Jun 28, 2012 at 02:55:49PM +0200, Andrea Arcangeli wrote:
+> > This function makes it easy to bind the per-node knuma_migrated
+> > threads to their respective NUMA nodes. Those threads take memory from
+> > the other nodes (in round robin with a incoming queue for each remote
+> > node) and they move that memory to their local node.
+> > 
+> > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 > > ---
-> >   arch/x86/include/asm/pgtable_types.h |   11 +++++++++--
-> >   1 files changed, 9 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-> > index 013286a..b74cac9 100644
-> > --- a/arch/x86/include/asm/pgtable_types.h
-> > +++ b/arch/x86/include/asm/pgtable_types.h
-> > @@ -17,7 +17,7 @@
-> >   #define _PAGE_BIT_PAT		7	/* on 4KB pages */
-> >   #define _PAGE_BIT_GLOBAL	8	/* Global TLB entry PPro+ */
-> >   #define _PAGE_BIT_UNUSED1	9	/* available for programmer */
-> > -#define _PAGE_BIT_IOMAP		10	/* flag used to indicate IO mapping */
-> > +#define _PAGE_BIT_UNUSED2	10
+> >  include/linux/kthread.h |    1 +
+> >  include/linux/sched.h   |    2 +-
+> >  kernel/kthread.c        |   23 +++++++++++++++++++++++
+> >  3 files changed, 25 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/include/linux/kthread.h b/include/linux/kthread.h
+> > index 0714b24..e733f97 100644
+> > --- a/include/linux/kthread.h
+> > +++ b/include/linux/kthread.h
+> > @@ -33,6 +33,7 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
+> >  })
+> >  
+> >  void kthread_bind(struct task_struct *k, unsigned int cpu);
+> > +void kthread_bind_node(struct task_struct *p, int nid);
+> >  int kthread_stop(struct task_struct *k);
+> >  int kthread_should_stop(void);
+> >  bool kthread_freezable_should_stop(bool *was_frozen);
+> > diff --git a/include/linux/sched.h b/include/linux/sched.h
+> > index 4059c0f..699324c 100644
+> > --- a/include/linux/sched.h
+> > +++ b/include/linux/sched.h
+> > @@ -1792,7 +1792,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+> >  #define PF_SWAPWRITE	0x00800000	/* Allowed to write to swap */
+> >  #define PF_SPREAD_PAGE	0x01000000	/* Spread page cache over cpuset */
+> >  #define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
+> > -#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpu */
+> > +#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpus */
+> >  #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
+> >  #define PF_MEMPOLICY	0x10000000	/* Non-default NUMA mempolicy */
+> >  #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
+> > diff --git a/kernel/kthread.c b/kernel/kthread.c
+> > index 3d3de63..48b36f9 100644
+> > --- a/kernel/kthread.c
+> > +++ b/kernel/kthread.c
+> > @@ -234,6 +234,29 @@ void kthread_bind(struct task_struct *p, unsigned int cpu)
+> >  EXPORT_SYMBOL(kthread_bind);
+> >  
+> >  /**
+> > + * kthread_bind_node - bind a just-created kthread to the CPUs of a node.
+> > + * @p: thread created by kthread_create().
+> > + * @nid: node (might not be online, must be possible) for @k to run on.
+> > + *
+> > + * Description: This function is equivalent to set_cpus_allowed(),
+> > + * except that @nid doesn't need to be online, and the thread must be
+> > + * stopped (i.e., just returned from kthread_create()).
+> > + */
+> > +void kthread_bind_node(struct task_struct *p, int nid)
+> > +{
+> > +	/* Must have done schedule() in kthread() before we set_task_cpu */
+> > +	if (!wait_task_inactive(p, TASK_UNINTERRUPTIBLE)) {
+> > +		WARN_ON(1);
+> > +		return;
+> > +	}
+> > +
+> > +	/* It's safe because the task is inactive. */
+> > +	do_set_cpus_allowed(p, cpumask_of_node(nid));
+> > +	p->flags |= PF_THREAD_BOUND;
+> > +}
+> > +EXPORT_SYMBOL(kthread_bind_node);
 > 
-> Considering that Xen is using it, it is not really
-> unused, is it?
+> _GPL ?
 
-_PAGE_BIT_UNUSED1 is used too (_PAGE_BIT_SPECIAL). Unused stands for
-unused by the CPU, not by the OS. But this patch is dropped.
+/**
+ * kthread_bind - bind a just-created kthread to a cpu.
+ * @p: thread created by kthread_create().
+ * @cpu: cpu (might not be online, must be possible) for @k to run on.
+ *
+ * Description: This function is equivalent to set_cpus_allowed(),
+ * except that @cpu doesn't need to be online, and the thread must be
+ * stopped (i.e., just returned from kthread_create()).
+ */
+void kthread_bind(struct task_struct *p, unsigned int cpu)
+{
+	/* Must have done schedule() in kthread() before we set_task_cpu */
+	if (!wait_task_inactive(p, TASK_UNINTERRUPTIBLE)) {
+		WARN_ON(1);
+		return;
+	}
+
+	/* It's safe because the task is inactive. */
+	do_set_cpus_allowed(p, cpumask_of(cpu));
+	p->flags |= PF_THREAD_BOUND;
+}
+EXPORT_SYMBOL(kthread_bind);
+
+/**
+ * kthread_bind_node - bind a just-created kthread to the CPUs of a node.
+ * @p: thread created by kthread_create().
+ * @nid: node (might not be online, must be possible) for @k to run on.
+ *
+ * Description: This function is equivalent to set_cpus_allowed(),
+ * except that @nid doesn't need to be online, and the thread must be
+ * stopped (i.e., just returned from kthread_create()).
+ */
+void kthread_bind_node(struct task_struct *p, int nid)
+{
+	/* Must have done schedule() in kthread() before we set_task_cpu */
+	if (!wait_task_inactive(p, TASK_UNINTERRUPTIBLE)) {
+		WARN_ON(1);
+		return;
+	}
+
+	/* It's safe because the task is inactive. */
+	do_set_cpus_allowed(p, cpumask_of_node(nid));
+	p->flags |= PF_THREAD_BOUND;
+}
+EXPORT_SYMBOL(kthread_bind_node);
+
+The above should explain why it's not _GPL right now. As far as
+AutoNUMA is concerned I can drop the EXPORT_SYMBOL completely and not
+allow modules to call this. In fact I could have coded this inside
+autonuma too.
+
+I can change it to _GPL, drop the EXPORT_SYMBOL or move it inside the
+autonuma code, let me know what you prefer. If I hear nothing I won't
+make changes.
+
+Thanks,
+Andrea
