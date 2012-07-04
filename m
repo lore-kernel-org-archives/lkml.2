@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab2GDLjs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 07:39:48 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54099 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932274Ab2GDLjo (ORCPT
+	id S1756571Ab2GDLj6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 07:39:58 -0400
+Received: from ims-d12.mx.aol.com ([205.188.249.149]:44445 "EHLO
+	ims-d12.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754458Ab2GDLj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 07:39:44 -0400
-Date: Wed, 4 Jul 2012 12:39:42 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Sonic Zhang <sonic.zhang@analog.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH v3] regulator: ad5398: Fix min/max current limit boundary
- checking
-Message-ID: <20120704113942.GR4111@opensource.wolfsonmicro.com>
-References: <1341374107.27231.1.camel@phoenix>
+	Wed, 4 Jul 2012 07:39:57 -0400
+Message-Id: <201207041136.q64Ba5K6022814@ims-d12.mx.aol.com>
+Content-Type: multipart/mixed; boundary="===============0781369419=="
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mjrw6G9AoRBv8oQK"
-Content-Disposition: inline
-In-Reply-To: <1341374107.27231.1.camel@phoenix>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: VIEW ATTACHED FOR DETAILS AND GET BACK TO ME
+To: David Mason <EMKBLK@aol.com>
+From: "David Mason" <EMKBLK@aol.com>
+Date: Wed, 04 Jul 2012 06:33:54 -0500
+Reply-To: mrdavims1@yahoo.com.ph
+x-aol-global-disposition: S
+X-SPAM-FLAG: YES
+X-AOL-VSS-INFO: 5400.1158/81962
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:193758768:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+X-AOL-REROUTE: YES 
+x-aol-sid: 3039ac1d33864ff42a2413ad
+X-AOL-IP: 173.165.247.106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+You will not see this in a MIME-aware mail reader.
+--===============0781369419==
+Content-Type: text/plain; charset="iso-8859-1"
+MIME-Version: 1.0
+Content-Transfer-Encoding: quoted-printable
+Content-Description: Mail message body
 
---mjrw6G9AoRBv8oQK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Wed, Jul 04, 2012 at 11:55:07AM +0800, Axel Lin wrote:
-> It is ok to request current limit with min_uA < chip->min_uA and
-> max_uA > chip->max_uA.
+--===============0781369419==
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment; filename="Details.txt"
 
-Applied, thanks.
+Hello, this is a management replacement on behalf of an investor whose anon=
+ymity is held in strict confidence because obvious reasons.
 
---mjrw6G9AoRBv8oQK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+We got your details from the United Kingdom Chambers of Commerce and Indust=
+ry while searching for a reliable partner to act as trustee to this funds. =
+The investor is interested in a joint partnership venture with you or your =
+company for a period of 10years,he the investor is willing to re-assign the=
+ proceed of his investment Bond to facilitate the term of agreement that we=
+ may enter with you.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+If you are vast in business and would be capable to handle a capital projec=
+t,please present your details along with your business plan to
+enable us review and set up meeting with you and our brokers here in Europe=
+. Upon the receipt of your information, we shall present the agreement bind=
+ing this transaction for your perusal and signature. I will await your mess=
+age.
 
-iQIcBAEBAgAGBQJP9Ct3AAoJEBus8iNuMP3dOJIP/2S+Q2mDUuAQ1rcd7wq/Na9I
-VfxzZ+8Z5EqEdGAgiSxtNiJ6yod4YmIj3pheoXsLHlEtzL06XnE/FU7SUtqTL4hn
-AVw17qnVmXILwe9woBzx89PDFvPTHbpCJ6Wvd0JHGJVABKw+qguA8nrh3+L6WamE
-44EHZgeuGP4NyPR5XD9WSIF9nwvML4Nz3KiWH4PML2JpT1zDQ27bb3Hst76rnJPF
-Cib2uN30GzuZRWwNiqJVmr4L8+lToeZVg5D93USkAMwNFDOjnzfVzpG4qG1vrv4/
-vfgAyb9033Q/NweDxgXzMQHcqOfAbqyU7e2ZZTRDsrn1QZ80U3FRGmE2vcfyF3/1
-4slDn750EDn0rbn1rBGZkm9ay3WPRwEfOSO+0lKV7aLg5DWOWxBnSmuakqLagIAy
-43+Ic7QXDoQgVQnHTyhNK7nC0GsLbwhdGpDkMka83aQkyAAnNA2Wh4INe3V5tGF/
-TanSr9hd0kUWQdR1ONagN7EY0Nc1881jF2TGVxg9KLdwMnYibEfFXSBMhtH0RrrA
-IPATSiMCsIbCxStzKg/7LpSmqqXZO2H6Une08i5l20j65TcMzwcoowPjGinxAqwb
-TxW5RVeUMfxkq84F9BILgl8SnhtgYCUqw3vful1h7T5eoQhw2wtVyQH57yJ9Cz51
-+RtiKbfylXwohEQifY+K
-=9xo0
------END PGP SIGNATURE-----
-
---mjrw6G9AoRBv8oQK--
+Regards,
+Mr David Mason.
+--===============0781369419==--
