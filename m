@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754245Ab2GDFKm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 01:10:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54631 "EHLO
+	id S1754694Ab2GDFKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 01:10:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54633 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753597Ab2GDFKh (ORCPT
+	with ESMTP id S1753597Ab2GDFKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 01:10:37 -0400
+	Wed, 4 Jul 2012 01:10:45 -0400
 From: Bryan Wu <bryan.wu@canonical.com>
 To: linux-leds@vger.kernel.org, rpurdie@rpsys.net,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 01/25] leds: convert Big Networks LED driver to devm_kzalloc()
-Date: Wed,  4 Jul 2012 13:09:53 +0800
-Message-Id: <1341378617-10386-2-git-send-email-bryan.wu@canonical.com>
+Subject: [PATCH 02/25] leds: convert HTC ASIC3 LED driver to devm_kzalloc() and cleanup error exit path
+Date: Wed,  4 Jul 2012 13:09:54 +0800
+Message-Id: <1341378617-10386-3-git-send-email-bryan.wu@canonical.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1341378617-10386-1-git-send-email-bryan.wu@canonical.com>
 References: <1341378617-10386-1-git-send-email-bryan.wu@canonical.com>
@@ -20,52 +20,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Simon Guinot <sguinot@lacie.com>
+Cc: Paul Parsons <lost.distance@yahoo.com>
 Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
 ---
- drivers/leds/leds-netxbig.c |   10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+ drivers/leds/leds-asic3.c |   16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/leds/leds-netxbig.c b/drivers/leds/leds-netxbig.c
-index 73973fd..e37618e 100644
---- a/drivers/leds/leds-netxbig.c
-+++ b/drivers/leds/leds-netxbig.c
-@@ -362,14 +362,14 @@ static int __devinit netxbig_led_probe(struct platform_device *pdev)
- 	if (!pdata)
- 		return -EINVAL;
+diff --git a/drivers/leds/leds-asic3.c b/drivers/leds/leds-asic3.c
+index 525a924..5de74ff 100644
+--- a/drivers/leds/leds-asic3.c
++++ b/drivers/leds/leds-asic3.c
+@@ -99,12 +99,13 @@ static int __devinit asic3_led_probe(struct platform_device *pdev)
  
--	leds_data = kzalloc(sizeof(struct netxbig_led_data) * pdata->num_leds,
--			    GFP_KERNEL);
-+	leds_data = devm_kzalloc(&pdev->dev,
-+		sizeof(struct netxbig_led_data) * pdata->num_leds, GFP_KERNEL);
- 	if (!leds_data)
- 		return -ENOMEM;
- 
- 	ret = gpio_ext_init(pdata->gpio_ext);
+ 	ret = mfd_cell_enable(pdev);
  	if (ret < 0)
--		goto err_free_data;
+-		goto ret0;
 +		return ret;
  
- 	for (i = 0; i < pdata->num_leds; i++) {
- 		ret = create_netxbig_led(pdev, &leds_data[i], &pdata->leds[i]);
-@@ -386,9 +386,6 @@ err_free_leds:
- 		delete_netxbig_led(&leds_data[i]);
+-	led->cdev = kzalloc(sizeof(struct led_classdev), GFP_KERNEL);
++	led->cdev = devm_kzalloc(&pdev->dev, sizeof(struct led_classdev),
++				GFP_KERNEL);
+ 	if (!led->cdev) {
+ 		ret = -ENOMEM;
+-		goto ret1;
++		goto out;
+ 	}
  
- 	gpio_ext_free(pdata->gpio_ext);
--err_free_data:
--	kfree(leds_data);
--
+ 	led->cdev->name = led->name;
+@@ -115,15 +116,12 @@ static int __devinit asic3_led_probe(struct platform_device *pdev)
+ 
+ 	ret = led_classdev_register(&pdev->dev, led->cdev);
+ 	if (ret < 0)
+-		goto ret2;
++		goto out;
+ 
+ 	return 0;
+ 
+-ret2:
+-	kfree(led->cdev);
+-ret1:
++out:
+ 	(void) mfd_cell_disable(pdev);
+-ret0:
  	return ret;
  }
  
-@@ -404,7 +401,6 @@ static int __devexit netxbig_led_remove(struct platform_device *pdev)
- 		delete_netxbig_led(&leds_data[i]);
+@@ -133,8 +131,6 @@ static int __devexit asic3_led_remove(struct platform_device *pdev)
  
- 	gpio_ext_free(pdata->gpio_ext);
--	kfree(leds_data);
+ 	led_classdev_unregister(led->cdev);
  
- 	return 0;
+-	kfree(led->cdev);
+-
+ 	return mfd_cell_disable(pdev);
  }
+ 
 -- 
 1.7.10.4
 
