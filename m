@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752364Ab2GDNaR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 09:30:17 -0400
-Received: from mga02.intel.com ([134.134.136.20]:4133 "EHLO mga02.intel.com"
+	id S1752658Ab2GDNe6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 09:34:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37599 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797Ab2GDNaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 09:30:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="161353424"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>,
-        "kay@vrfy.org" <kay@vrfy.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Subject: RE: [PATCH] printk: fixing the deadlock when calling printk in nmi
- handle
-Thread-Topic: [PATCH] printk: fixing the deadlock when calling printk in nmi
- handle
-Thread-Index: AQHNWegxNurOYIWfgUuAR26n58tdbpcZHgAw
-Date: Wed, 4 Jul 2012 13:30:10 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A10C84B@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A10C7F6@SHSMSX101.ccr.corp.intel.com>
- <1341408169.2507.111.camel@laptop>
-In-Reply-To: <1341408169.2507.111.camel@laptop>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1752140Ab2GDNe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 09:34:56 -0400
+Date: Wed, 4 Jul 2012 15:34:55 +0200
+From: Jan Kara <jack@suse.cz>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Build regressions/improvements in v3.5-rc5
+Message-ID: <20120704133455.GC29954@quack.suse.cz>
+References: <1341342768-22221-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341342768-22221-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q64DULko022998
 
-> Yuck.. and no. This makes sane things like early 8250 serial console less
-> reliable.
-Peter, could you share more? I took many time to dig out this issue.
-Anyway, in nmi handler, calling printk is dangerous. This patch is for this case.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Tue 03-07-12 21:12:48, Geert Uytterhoeven wrote:
+> Below is the list of build error/warning regressions/improvements in
+> v3.5-rc5[1] compared to v3.4[2].
+> 
+> Too make this mail fit in the lkml limit, I deleted
+>   - all implicit function declaration error improvements
+>   - 245 lines about __mcount_loc on sparc64
+>   - all warning improvements
+> 
+> Summarized:
+>   - build errors: +227/-575
+>   - build warnings: +644/-805
+> 
+> JFYI, when comparing v3.5-rc5 to v3.5-rc4[3], the summaries are:
+>   - build errors: +20/-11
+>   - build warnings: +130/-533
+> 
+> Note that there may be false regressions, as some logs are incomplete.
+> Still, they're build errors/warnings.
+> 
+> As I haven't mastered kup yet, there's no verbose summary at
+> http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.5-rc5.summary.gz
+> 
+> Happy fixing! ;-)
+> 
+> Thanks to the linux-next team for providing the build service.
+...
+>   + fs/quota/quota_tree.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 4 has type 'ssize_t' [-Wformat]:  => 372:4
+>   + fs/quota/quota_v2.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 5 has type 'ssize_t' [-Wformat]:  => 66:92
+  These really look like false positives (there are quite a few of this
+kind). Can we possibly silence them?
+
+									Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
