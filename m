@@ -1,120 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab2GDNA6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 09:00:58 -0400
-Received: from mga14.intel.com ([143.182.124.37]:61250 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752032Ab2GDNAx convert rfc822-to-8bit (ORCPT
+	id S1752032Ab2GDNFO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 09:05:14 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62700 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263Ab2GDNFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 09:00:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="163974924"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>
-CC: "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "kay@vrfy.org" <kay@vrfy.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Subject: [PATCH] printk: fixing the deadlock when calling printk in nmi
- handle
-Thread-Topic: [PATCH] printk: fixing the deadlock when calling printk in nmi
- handle
-Thread-Index: Ac1Z5QcLvtA63cR2SZCbqgNGHLXbfA==
-Date: Wed, 4 Jul 2012 13:00:49 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A10C7F6@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 4 Jul 2012 09:05:10 -0400
 MIME-Version: 1.0
+In-Reply-To: <1340389359-2407-2-git-send-email-js1304@gmail.com>
+References: <1340389359-2407-1-git-send-email-js1304@gmail.com>
+	<1340389359-2407-2-git-send-email-js1304@gmail.com>
+Date: Wed, 4 Jul 2012 16:05:09 +0300
+X-Google-Sender-Auth: JYZLChb43pnmrSabtQuFBNmjnts
+Message-ID: <CAOJsxLEy++a5R6-7bFaHNG4XqmvJoUTEMMJhpVD5nnxLkAafsw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] slub: reduce failure of this_cpu_cmpxchg in
+ put_cpu_partial() after unfreezing
+From: Pekka Enberg <penberg@kernel.org>
+To: Joonsoo Kim <js1304@gmail.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: liu chuansheng <chuansheng.liu@intel.com>
-Subject: [PATCH] printk: fixing the deadlock when calling printk in nmi handle
+On Fri, Jun 22, 2012 at 9:22 PM, Joonsoo Kim <js1304@gmail.com> wrote:
+> In current implementation, after unfreezing, we doesn't touch oldpage,
+> so it remain 'NOT NULL'. When we call this_cpu_cmpxchg()
+> with this old oldpage, this_cpu_cmpxchg() is mostly be failed.
+>
+> We can change value of oldpage to NULL after unfreezing,
+> because unfreeze_partial() ensure that all the cpu partial slabs is removed
+> from cpu partial list. In this time, we could expect that
+> this_cpu_cmpxchg is mostly succeed.
+>
+> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+>
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 92f1c0e..531d8ed 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -1968,6 +1968,7 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+>                                 local_irq_save(flags);
+>                                 unfreeze_partials(s);
+>                                 local_irq_restore(flags);
+> +                               oldpage = NULL;
+>                                 pobjects = 0;
+>                                 pages = 0;
+>                                 stat(s, CPU_PARTIAL_DRAIN);
 
-Current printk implementation can not fully support that
-calling it in nmi handler for SMP arch.
-
-There is typical case in nmi handler function arch_trigger_all_cpu_backtrace_handler().
-
-In my platform, there are 2 CPUs, when function arch_trigger_all_cpu_backtrace()
-is called, 2 CPUs will recevied the nmi interrupts, and the
-arch_trigger_all_cpu_backtrace_handler() will called on 2 CPUs:
-
-case1:
-CPU0                                            CPU1
-calling arch_trigger_all_cpu_backtrace()        calling printk, and has obtain the logbuf_lock
-nmi interrupt received                          nmi interrupt received
-call arch_trigger_all_cpu_backtrace_handler()   call arch_trigger_all_cpu_backtrace_handler()
-Obtain arch_spin_lock(&lock);                   Waiting for arch_spin_lock(&lock);
-Continue to call printk()
-CPU0 will be blocked by logbuf_lock             CPU1 is blocked by arch_spin_lock(&lock)
-
-The deadlock will be happening.
-
-case2:
-CPU0                                             CPU1:(run dmesg command)
-calling arch_trigger_all_cpu_backtrace()         calling do_syslog
-                                                 Obtaining the logbuf_lock
-nmi interrupt received                           nmi interrupt received
-....
-The dealock will happen also somtimes.
-
-I just write a simple interface to run the arch_trigger_all_cpu_backtrace_handler() every 5s,
-it will trigger dead lock many times.
-
-The solution is when printk is called in nmi handler, we will use trylock instead of lock.
-And in nmi handler, do the call the console write function because normal console write function
-include many spin locks also. This fix can confirm the traces in nmi handler can be output successfully
-almost.
-
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
----
- kernel/printk.c |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/printk.c b/kernel/printk.c
-index dba1821..de68e24 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1275,7 +1275,7 @@ static int console_trylock_for_printk(unsigned int cpu)
- {
-        int retval = 0, wake = 0;
- 
--       if (console_trylock()) {
-+       if (!in_nmi() && console_trylock()) {
-                retval = 1;
- 
-                /*
-@@ -1432,7 +1432,13 @@ asmlinkage int vprintk_emit(int facility, int level,
-        }
- 
-        lockdep_off();
--       raw_spin_lock(&logbuf_lock);
-+       if(unlikely(in_nmi())) {
-+               if(!raw_spin_trylock(&logbuf_lock))
-+                       goto out_restore_lockdep_irqs;
-+       } else {
-+               raw_spin_lock(&logbuf_lock);
-+       }
-+
-        logbuf_cpu = this_cpu;
- 
-        if (recursion_bug) {
-@@ -1524,6 +1530,7 @@ asmlinkage int vprintk_emit(int facility, int level,
-        if (console_trylock_for_printk(this_cpu))
-                console_unlock();
- 
-+out_restore_lockdep_irqs:
-        lockdep_on();
- out_restore_irqs:
-        local_irq_restore(flags);
--- 
-1.7.0.4
+Makes sense. Christoph, David?
