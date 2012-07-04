@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab2GDOwW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 10:52:22 -0400
-Received: from tex.lwn.net ([70.33.254.29]:60782 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751400Ab2GDOwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 10:52:15 -0400
-Date: Wed, 4 Jul 2012 08:52:43 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Chris Jones <chrisjones@spin.net.au>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Kernel official involvement
-Message-ID: <20120704085243.1114f3d1@tpl.lwn.net>
-In-Reply-To: <4FF43BBE.80201@spin.net.au>
-References: <4FF43BBE.80201@spin.net.au>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1754102Ab2GDOwv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 10:52:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40281 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab2GDOwt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 10:52:49 -0400
+Date: Wed, 4 Jul 2012 07:52:45 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, mtosatti@redhat.com, ebiederm@xmission.com,
+        luto@mit.edu, Joerg Roedel <joerg.roedel@amd.com>, dzickus@redhat.com,
+        paul.gortmaker@windriver.com, ludwig.nussel@suse.de,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        kexec@lists.infradead.org
+Subject: Re: [PATCH v4 2/3] KVM-INTEL: Add new module vmcsinfo-intel to fill
+ VMCSINFO
+Message-ID: <20120704145245.GF23020@kroah.com>
+References: <4FF413D2.4030006@cn.fujitsu.com>
+ <4FF4155F.6070508@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF4155F.6070508@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 Jul 2012 22:49:02 +1000
-Chris Jones <chrisjones@spin.net.au> wrote:
+On Wed, Jul 04, 2012 at 06:05:19PM +0800, Yanfei Zhang wrote:
+> +int vmcs_sysfs_add(struct device *dev)
+> +{
+> +	return sysfs_create_group(&dev->kobj, &vmcs_attr_group);
+> +}
+> +
+> +void vmcs_sysfs_remove(struct device *dev)
+> +{
+> +	sysfs_remove_group(&dev->kobj, &vmcs_attr_group);
+> +}
 
-> I am just wondering how does anyone get further involved with Linux 
-> kernel development? How do you get selected to be able to push through 
-> patches etc. to the official kernel? Who authorizes who to be able to do so?
+Why are these "add" and "remove" functions here?  Shouldn't you just
+write the lines out where you call them instead, as they are only called
+once.
 
-Please see Documentation/HOWTO and the contents of
-Documentation/development-process in the kernel source tree; that
-should tell you everything you need to know.
+And does this race with adding new cpus to the system (is the uevent
+being sent to userspace before the attributes are added?)  If so, please
+fix that.
 
-Thanks,
+thanks,
 
-jon
-
-
-Jonathan Corbet / LWN.net / corbet@lwn.net
+greg k-h
