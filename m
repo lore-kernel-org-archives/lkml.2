@@ -1,94 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab2GDWGX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 18:06:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58735 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755829Ab2GDWGW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 18:06:22 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH] netdev/phy: Fixup lockdep warnings in mdio-mux.c
-Date: Wed,  4 Jul 2012 15:06:16 -0700
-Message-Id: <1341439576-1413-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S932392Ab2GDWHZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 18:07:25 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:53265 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755782Ab2GDWHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 18:07:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH 0/4] PM / TPM: Convert platform TPM drivers to PM handling based on struct dev_pm_ops
+Date: Thu, 5 Jul 2012 00:08:01 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, tpmdd-devel@lists.sourceforge.net,
+        Debora Velarde <debora@linux.vnet.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207050008.02097.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+Hi all,
 
-With lockdep enabled we get:
+As per
 
-=============================================
-[ INFO: possible recursive locking detected ]
-3.4.4-Cavium-Octeon+ #313 Not tainted
----------------------------------------------
-kworker/u:1/36 is trying to acquire lock:
-(&bus->mdio_lock){+.+...}, at: [<ffffffff813da7e8>] mdio_mux_read+0x38/0xa0
+http://marc.info/?l=linux-kernel&m=133996733422413&w=4
 
-but task is already holding lock:
- (&bus->mdio_lock){+.+...}, at: [<ffffffff813d79e4>] mdiobus_read+0x44/0x88
+the following patches convert the platform TPM drivers to the PM handling
+based on struct dev_pm_ops:
 
-other info that might help us debug this:
- Possible unsafe locking scenario:
+[1/4] Drop the (unused) pm_message_t argument of tpm_pm_suspend().
+[2/4] tpm_atmel: Use struct dev_pm_ops for power management.
+[3/4] tpm_tis: Use struct dev_pm_ops for power management.
+[4/4] tpm_nsc: Use struct dev_pm_ops for power management.
 
-       CPU0
-       ----
-  lock(&bus->mdio_lock);
-  lock(&bus->mdio_lock);
-
- *** DEADLOCK ***
-
- May be due to missing lock nesting notation
-.
-.
-.
-
-This is a false positive, since we are indeed using 'nested' locking,
-we need to use mutex_lock_nested().
-
-Now in theory we can stack multiple MDIO multiplexers, but that would
-require passing the nesting level (which is difficult to know) to
-mutex_lock_nested().  Instead we assume the simple case of a single
-level of nesting.  Since these are only warning messages, it isn't so
-important to solve the general case.
-
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- drivers/net/phy/mdio-mux.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/phy/mdio-mux.c b/drivers/net/phy/mdio-mux.c
-index 39ea067..5c12018 100644
---- a/drivers/net/phy/mdio-mux.c
-+++ b/drivers/net/phy/mdio-mux.c
-@@ -46,7 +46,13 @@ static int mdio_mux_read(struct mii_bus *bus, int phy_id, int regnum)
- 	struct mdio_mux_parent_bus *pb = cb->parent;
- 	int r;
- 
--	mutex_lock(&pb->mii_bus->mdio_lock);
-+	/* In theory multiple mdio_mux could be stacked, thus creating
-+	 * more than a single level of nesting.  But in practice,
-+	 * SINGLE_DEPTH_NESTING will cover the vast majority of use
-+	 * cases.  We use it, instead of trying to handle the general
-+	 * case.
-+	 */
-+	mutex_lock_nested(&pb->mii_bus->mdio_lock, SINGLE_DEPTH_NESTING);
- 	r = pb->switch_fn(pb->current_child, cb->bus_number, pb->switch_data);
- 	if (r)
- 		goto out;
-@@ -71,7 +77,7 @@ static int mdio_mux_write(struct mii_bus *bus, int phy_id,
- 
- 	int r;
- 
--	mutex_lock(&pb->mii_bus->mdio_lock);
-+	mutex_lock_nested(&pb->mii_bus->mdio_lock, SINGLE_DEPTH_NESTING);
- 	r = pb->switch_fn(pb->current_child, cb->bus_number, pb->switch_data);
- 	if (r)
- 		goto out;
--- 
-1.7.2.3
-
+Thanks,
+Rafael
