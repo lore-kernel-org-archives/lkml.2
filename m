@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089Ab2GDOwG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 10:52:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42824 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923Ab2GDOwC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 10:52:02 -0400
-Subject: RE: [PATCH] printk: fixing the deadlock when calling printk in nmi
- handle
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>,
-        "kay@vrfy.org" <kay@vrfy.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>
-In-Reply-To: <1341413431.2507.124.camel@laptop>
-References: <27240C0AC20F114CBF8149A2696CBE4A10C7F6@SHSMSX101.ccr.corp.intel.com>
-	 <1341408169.2507.111.camel@laptop>
-	 <27240C0AC20F114CBF8149A2696CBE4A10C84B@SHSMSX101.ccr.corp.intel.com>
-	 <1341409177.2507.117.camel@laptop>
-	 <27240C0AC20F114CBF8149A2696CBE4A10CA93@SHSMSX101.ccr.corp.intel.com>
-	 <1341413431.2507.124.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Jul 2012 16:52:00 +0200
-Message-ID: <1341413521.2507.125.camel@laptop>
+	id S1754073Ab2GDOwW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 10:52:22 -0400
+Received: from tex.lwn.net ([70.33.254.29]:60782 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751400Ab2GDOwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 10:52:15 -0400
+Date: Wed, 4 Jul 2012 08:52:43 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Chris Jones <chrisjones@spin.net.au>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Kernel official involvement
+Message-ID: <20120704085243.1114f3d1@tpl.lwn.net>
+In-Reply-To: <4FF43BBE.80201@spin.net.au>
+References: <4FF43BBE.80201@spin.net.au>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i386-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-04 at 16:50 +0200, Peter Zijlstra wrote:
-> On Wed, 2012-07-04 at 14:46 +0000, Liu, Chuansheng wrote:
-> > > > I took many time to dig out this issue.
-> > > 
-> > > Well, it was a known issue..
-> > Still feel unfair :)
-> > If this is a known issue that calling printk is not safe in nmi handler,
-> > Why not defense it like this patch before real solution coming out?
-> 
-> Why replace one broken thing with another broken thing?
+On Wed, 04 Jul 2012 22:49:02 +1000
+Chris Jones <chrisjones@spin.net.au> wrote:
 
-Also, I much prefer obviously broken over subtly broken.
+> I am just wondering how does anyone get further involved with Linux 
+> kernel development? How do you get selected to be able to push through 
+> patches etc. to the official kernel? Who authorizes who to be able to do so?
 
+Please see Documentation/HOWTO and the contents of
+Documentation/development-process in the kernel source tree; that
+should tell you everything you need to know.
+
+Thanks,
+
+jon
+
+
+Jonathan Corbet / LWN.net / corbet@lwn.net
