@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab2GDWdL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 18:33:11 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:55856 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755975Ab2GDWdI (ORCPT
+	id S1755995Ab2GDXAp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 19:00:45 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64060 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755940Ab2GDXAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 18:33:08 -0400
-X-Sasl-enc: YpM5NdTiRkBh6u5scEQFPTIpViyl2OZ4Rtd7ipCujuW4 1341441187
-Date: Wed, 4 Jul 2012 19:33:05 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: "D. Stussy" <replies+newsgroups@kd6lvw.ampr.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Intel e1000 ethernet device, change in kernel v3.4, and jumbo
- frames setting DENIED.
-Message-ID: <20120704223305.GB3389@khazad-dum.debian.net>
-References: <jt275t$9i2$1@snarked.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <jt275t$9i2$1@snarked.org>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 4 Jul 2012 19:00:42 -0400
+From: Eldad Zack <eldad@fogrefinery.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eldad Zack <eldad@fogrefinery.com>
+Subject: [PATCH 1/2] sunrpc/cache.h: fix coding style
+Date: Thu,  5 Jul 2012 01:00:25 +0200
+Message-Id: <1341442827-21339-1-git-send-email-eldad@fogrefinery.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 Jul 2012, D. Stussy wrote:
-> There has been some changes to the driver such that things like
-> checksum verification is offloaded from the CPU.  However, this
-> blocks the ability to set a jumbo frame.  The kernel does record an
-> error indicating that checksum offloading need be disabled fro jumbo
-> frame MTU sizes to be used.  My e1000 interfaces use the 82574L
-> chipset.
-> 
-> 1)  Was this an intentional change?
+Neaten code style in get_int()
 
-Yes, but I understand Intel is trying to come up with a way not to need it.
+Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+---
+ include/linux/sunrpc/cache.h |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-> 2)  How do I disable that function so I can set jumbo frames with
-> "ifconfig" or "ip"?  I simply don't know what setting I need to
-> pass.
-
-ethtool can do it.  Check its manpage, it can manipulate the various NIC
-offload engines, as well as other parameters such as dma ring buffer size,
-etc.
-
+diff --git a/include/linux/sunrpc/cache.h b/include/linux/sunrpc/cache.h
+index f5fd616..0757887 100644
+--- a/include/linux/sunrpc/cache.h
++++ b/include/linux/sunrpc/cache.h
+@@ -220,10 +220,16 @@ static inline int get_int(char **bpp, int *anint)
+ 	char *ep;
+ 	int rv;
+ 	int len = qword_get(bpp, buf, 50);
+-	if (len < 0) return -EINVAL;
+-	if (len ==0) return -ENOENT;
++
++	if (len < 0)
++		return -EINVAL;
++	if (len == 0)
++		return -ENOENT;
++
+ 	rv = simple_strtol(buf, &ep, 0);
+-	if (*ep) return -EINVAL;
++	if (*ep)
++		return -EINVAL;
++
+ 	*anint = rv;
+ 	return 0;
+ }
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+1.7.10
+
