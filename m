@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703Ab2GDEMM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 00:12:12 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:8604
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750715Ab2GDEMJ (ORCPT
+	id S1753487Ab2GDEbg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 00:31:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42675 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751038Ab2GDEbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 00:12:09 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-X-SpamScore: -7
-X-BigFish: VPS-7(zz9371I542M1432Izz1202hzz8275bhz2dh2a8h668h839h93fhd25hf0ah)
-From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>, Liam Girdwood <lrg@ti.com>
-Date: Wed, 4 Jul 2012 00:12:03 -0400
-Subject: RE: [PATCH v3] regulator: ad5398: Fix min/max current limit
- boundary checking
-Thread-Topic: [PATCH v3] regulator: ad5398: Fix min/max current limit
- boundary checking
-Thread-Index: Ac1ZmNt3v3sVfORjTQSx0U4ZXqkYAgAAjhtg
-Message-ID: <DB904C5425BA6F4E8424B3B51A1414D171408060D3@NWD2CMBX1.ad.analog.com>
-References: <1341374107.27231.1.camel@phoenix>
-In-Reply-To: <1341374107.27231.1.camel@phoenix>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+	Wed, 4 Jul 2012 00:31:33 -0400
+Message-ID: <1341376279.4852.168.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 11/48] mm: correctly synchronize rss-counters at exit/exec
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Wed, 04 Jul 2012 05:31:19 +0100
+In-Reply-To: <20120702164655.GA15285@redhat.com>
+References: <20120701172008.252571630@decadent.org.uk>
+	 <alpine.LSU.2.00.1207011150480.1905@eggly.anvils>
+	 <1341194519.4852.128.camel@deadeye.wl.decadent.org.uk>
+	 <20120702164655.GA15285@redhat.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-0AbMnQg92gfp3CiCIRbW"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q644CHs7020291
 
-Acked-by: Sonic Zhang <sonic.zhang@analog.com>
 
->-----Original Message-----
->From: Axel Lin [mailto:axel.lin@gmail.com]
->Sent: Wednesday, July 04, 2012 11:55 AM
->To: Mark Brown
->Cc: linux-kernel@vger.kernel.org; Zhang, Sonic; Lars-Peter Clausen; Liam
->Girdwood
->Subject: [PATCH v3] regulator: ad5398: Fix min/max current limit boundary
->checking
->
->It is ok to request current limit with min_uA < chip->min_uA and
->max_uA > chip->max_uA.
->
->We need to set min_uA = chip->min_uA if (min_uA < chip->min_uA),
->this ensures the equation to calcuate selator does not return negative number.
->
->Also set max_uA = chip->max_uA if (max_uA > chip->max_uA), as suggested by
->Sonic.
->
->Signed-off-by: Axel Lin <axel.lin@gmail.com>
->---
-> drivers/regulator/ad5398.c |    9 ++++++---
-> 1 file changed, 6 insertions(+), 3 deletions(-)
->
->diff --git a/drivers/regulator/ad5398.c b/drivers/regulator/ad5398.c
->index 46d05f3..f123f7e 100644
->--- a/drivers/regulator/ad5398.c
->+++ b/drivers/regulator/ad5398.c
->@@ -89,9 +89,12 @@ static int ad5398_set_current_limit(struct regulator_dev
->*rdev, int min_uA, int
->       unsigned short data;
->       int ret;
->
->-      if (min_uA > chip->max_uA || min_uA < chip->min_uA)
->-              return -EINVAL;
->-      if (max_uA > chip->max_uA || max_uA < chip->min_uA)
->+      if (min_uA < chip->min_uA)
->+              min_uA = chip->min_uA;
->+      if (max_uA > chip->max_uA)
->+              max_uA = chip->max_uA;
->+
->+      if (min_uA > chip->max_uA || max_uA < chip->min_uA)
->               return -EINVAL;
->
->       selector = DIV_ROUND_UP((min_uA - chip->min_uA) * chip->current_level,
->--
->1.7.9.5
->
->
->
+--=-0AbMnQg92gfp3CiCIRbW
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Mon, 2012-07-02 at 18:46 +0200, Oleg Nesterov wrote:
+> On 07/02, Ben Hutchings wrote:
+> >
+> > Then I'll assume this should be dropped unless Konstantin or Oleg speak=
+s
+> > up for it.
+>=20
+> Just in case, I agree with Hugh.
+>=20
+> The patch should shut up check_mm() which doesn't exist in 3.2
+
+Thanks; I've dropped this.
+
+Ben.
+
+--=20
+Ben Hutchings
+When in doubt, use brute force. - Ken Thompson
+
+--=-0AbMnQg92gfp3CiCIRbW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAT/PHGOe/yOyVhhEJAQrOyA//cHz9tum2R1roOiGKkHJ6gY0sNeRzLkWw
+u9AfWcJfQHds+iLaD27t1nNKxBPLf0QYCew/GRMneaImO+NDr+J1dt4PAa+LlIjb
++2a9YFonqFp6oIQGiZdOrXqzyzKKIU5xqKY3qyIC5lN0Z1+Igu3Qk8cAteqlNZ3p
+ObqEpKr5h5uBFa/Yc1aVvpNEJMeT4d1glo+Z5/8JAMzYkGD+v3z3SGKoHov0POxb
+s/nD4ECtputZUtZm2P9osVtEGzWYFz0l+XCQY21hJQrw3Vjqctjdod4Xq08WXxIh
++Ysimt6ZPiIssPK8etDLO/kWv9rYTGdVOzQ3otyuW4J19je/qvI7R4rDVAG434P/
++2LXfA4+LbOFuEHT2JVUFbUb2k+CL4Zo7MN7NgwSFL9hxtt3N6I35E7PBnEiumJ2
+ffdDGeBvoHwof8vy+2zI35MpmEeBJqwnR6ubvUspmgN+uzJUkEdrNXBM8TkcFm2k
+X9HoCH44anCdaqk7HELeMP9vR8+0ZFZnJLbgujopZAZJ9j40xo1zRKJ6cVTVqhXE
+yjeV1QOeLxMNccN6dvU714fjyatNQZ9H6XXI9elKLIAXNNHkDsxoIRRsBTDlKeqI
+QF77V+LCmwjLxdRVoeMos3t6wLKQNwcyRiiEBhwNn9GJElGzySS8y0YZIYqpjYzz
+iuDSgPeW9c4=
+=xKT6
+-----END PGP SIGNATURE-----
+
+--=-0AbMnQg92gfp3CiCIRbW--
