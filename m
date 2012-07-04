@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933565Ab2GDJ1L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 05:27:11 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:51806 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755850Ab2GDJ1H (ORCPT
+	id S1756785Ab2GDJdb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 05:33:31 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:34952 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753541Ab2GDJda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 05:27:07 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl/nomadik: kerneldoc fix
-Date: Wed, 4 Jul 2012 11:26:42 +0200
-Message-ID: <1341394002-10393-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.9.2
+	Wed, 4 Jul 2012 05:33:30 -0400
+X-AuditID: b753bd60-9ea82ba000000655-15-4ff40de761d5
+X-AuditID: b753bd60-9ea82ba000000655-15-4ff40de761d5
+Message-ID: <4FF40DEF.5090307@hitachi.com>
+Date: Wed, 04 Jul 2012 18:33:35 +0900
+From: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH 00/18] KVM: x86: CPU isolation and direct interrupts
+ handling by guests
+References: <20120628060719.19298.43879.stgit@localhost.localdomain>
+In-Reply-To: <20120628060719.19298.43879.stgit@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+Hello,
 
-Document a missing function parameter to nmk_config_pin().
+There were some missing pieces for trying this patch series.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/pinctrl-nomadik.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Firstly, the patch is for v3.5-rc4, but that version has an issue
+that it cannot passthrough PCI devices because of genirq changes.
+A patch to avoid this issue is available at
+https://lkml.org/lkml/2012/6/1/261 .
 
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index 095bbc6..e2a2dd1 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -434,7 +434,7 @@ static int __nmk_config_pins(pin_cfg_t *cfgs, int num, bool sleep)
- /**
-  * nmk_config_pin - configure a pin's mux attributes
-  * @cfg: pin confguration
-- *
-+ * @sleep: Non-zero to apply the sleep mode configuration
-  * Configures a pin's mode (alternate function or GPIO), its pull up status,
-  * and its sleep mode based on the specified configuration.  The @cfg is
-  * usually one of the SoC specific macros defined in mach/<soc>-pins.h.  These
+Secondly, to successfully build the patched qemu-kvm, you need the
+following additional definitions to qemu-kvm's header files for KVM.
+
+diff -u -r qemu-kvm-0.15.1/linux-headers/linux/kvm.h qemu-kvm-0.15.1-test/linux-headers/linux/kvm.h
+--- qemu-kvm-0.15.1/linux-headers/linux/kvm.h	2011-10-19 22:54:48.000000000 +0900
++++ qemu-kvm-0.15.1-test/linux-headers/linux/kvm.h	2012-06-25 21:21:20.273488167 +0900
+@@ -544,6 +544,7 @@
+ #define KVM_CAP_TSC_CONTROL 60
+ #define KVM_CAP_GET_TSC_KHZ 61
+ #define KVM_CAP_PPC_BOOKE_SREGS 62
++#define KVM_CAP_SLAVE_CPU 80
+ 
+ #ifdef KVM_CAP_IRQ_ROUTING
+ 
+@@ -746,6 +747,9 @@
+ /* Available with KVM_CAP_XCRS */
+ #define KVM_GET_XCRS		  _IOR(KVMIO,  0xa6, struct kvm_xcrs)
+ #define KVM_SET_XCRS		  _IOW(KVMIO,  0xa7, struct kvm_xcrs)
++/* Available with KVM_CAP_SLAVE_CPU */
++#define KVM_GET_SLAVE_CPU         _IO(KVMIO,  0xae)
++#define KVM_SET_SLAVE_CPU         _IO(KVMIO,  0xaf)
+ 
+ #define KVM_DEV_ASSIGN_ENABLE_IOMMU	(1 << 0)
+ 
+
+
+Thanks,
 -- 
-1.7.9.2
+Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
+Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
 
