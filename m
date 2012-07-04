@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933666Ab2GDGWr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 02:22:47 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:38658 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933361Ab2GDGWn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 02:22:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <1341347160-21170-1-git-send-email-swarren@wwwdotorg.org>
-References: <1341347160-21170-1-git-send-email-swarren@wwwdotorg.org>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Tue, 3 Jul 2012 23:22:21 -0700
-Message-ID: <CAJOA=zN8KhSc57TgiRpcMnDHEHuDzj0Od1dhK02RP676YDsZ1g@mail.gmail.com>
-Subject: Re: [PATCH] clk: fix used-uninitialized warning in__clk_set_parent
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933671Ab2GDGXD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 02:23:03 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:60948 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933608Ab2GDGW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 02:22:57 -0400
+From: John Stultz <johnstul@us.ibm.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: John Stultz <johnstul@us.ibm.com>, Prarit Bhargava <prarit@redhat.com>,
+        stable@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux@openhuawei.org
+Subject: [PATCH 2/3] [RFC] time: Fix leapsecond triggered hrtimer/futex load spike issue
+Date: Wed,  4 Jul 2012 02:21:29 -0400
+Message-Id: <1341382890-42324-3-git-send-email-johnstul@us.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1341382890-42324-1-git-send-email-johnstul@us.ibm.com>
+References: <1341382890-42324-1-git-send-email-johnstul@us.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12070406-5806-0000-0000-000016F5CB7B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 3, 2012 at 1:26 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> From: Stephen Warren <swarren@nvidia.com>
->
-> This fixes:
-> drivers/clk/clk.c: In function '__clk_set_parent':
-> drivers/clk/clk.c:1069:5: warning: 'i' may be used uninitialized in this function
->
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+As widely reported on the internet, some Linux systems after
+the leapsecond was inserted are experiencing futex related load
+spikes (usually connected to MySQL, Firefox, Thunderbird, Java, etc).
 
-Hi Stephen,
+An apparent for this issue workaround is running:
+$ date -s "`date`"
 
-Thanks for the patch.  Rajendra already sent a fix for this one and
-I've pulled it into clk-fixes and sent it for 3.5-rc6 (and Cc'd
-stable), so I won't be taking in your patch.  You can view Rajendra's
-patch on gitweb:
-http://git.linaro.org/gitweb?p=people/mturquette/linux.git;a=commit;h=863b13271f1608ab3af6f7a371047d9a66693e38
+Credit: http://www.sheeri.com/content/mysql-and-leap-second-high-cpu-and-fix
 
-Thanks again for submitting a fix.  Always appreciated.
+I this issue is due to the leapsecond being added without
+calling clock_was_set() to notify the hrtimer subsystem of the
+change.
 
-Mike
+The workaround functions as it forces a clock_was_set()
+call from settimeofday().
 
-> ---
->  drivers/clk/clk.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index 026d901..42647ca 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -1071,13 +1071,15 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent)
->         old_parent = clk->parent;
->
->         /* find index of new parent clock using cached parent ptrs */
-> -       if (clk->parents)
-> +       if (clk->parents) {
->                 for (i = 0; i < clk->num_parents; i++)
->                         if (clk->parents[i] == parent)
->                                 break;
-> -       else
-> +       } else {
->                 clk->parents = kzalloc((sizeof(struct clk*) * clk->num_parents),
->                                                                 GFP_KERNEL);
-> +               i = clk->num_parents;
-> +       }
->
->         /*
->          * find index of new parent clock using string name comparison
-> --
-> 1.7.0.4
->
+This fix adds the required clock_was_set() calls to where
+we adjust for leapseconds.
+
+NOTE: This fix *depends* on the previous fix, which allows
+clock_was_set to be called from atomic context. Do not try
+to apply just this patch.
+
+CC: Prarit Bhargava <prarit@redhat.com>
+CC: stable@vger.kernel.org
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: linux@openhuawei.org
+Reported-by: Jan Engelhardt <jengelh@inai.de>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+---
+ kernel/time/timekeeping.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 6f46a00..cc2991d 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -963,6 +963,8 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 		leap = second_overflow(timekeeper.xtime.tv_sec);
+ 		timekeeper.xtime.tv_sec += leap;
+ 		timekeeper.wall_to_monotonic.tv_sec -= leap;
++		if (leap)
++			clock_was_set();
+ 	}
+ 
+ 	/* Accumulate raw time */
+@@ -1079,6 +1081,8 @@ static void update_wall_time(void)
+ 		leap = second_overflow(timekeeper.xtime.tv_sec);
+ 		timekeeper.xtime.tv_sec += leap;
+ 		timekeeper.wall_to_monotonic.tv_sec -= leap;
++		if (leap)
++			clock_was_set();
+ 	}
+ 
+ 	timekeeping_update(false);
+-- 
+1.7.9.5
+
