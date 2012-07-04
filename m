@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374Ab2GDMDU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 08:03:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33331 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750846Ab2GDMDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 08:03:18 -0400
-Date: Wed, 4 Jul 2012 14:03:07 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] floppy: Run floppy initialization asynchronous
-In-Reply-To: <1341275224-31696-1-git-send-email-andi@firstfloor.org>
-Message-ID: <alpine.LNX.2.00.1207041402010.17304@pobox.suse.cz>
-References: <1341275224-31696-1-git-send-email-andi@firstfloor.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751053Ab2GDMOJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 08:14:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34626 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab2GDMOE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 08:14:04 -0400
+Subject: Re: [PATCH 07/10] perf, tool: Add support to specify hw event as
+ pmu event term
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20120704120001.GC960@krava.redhat.com>
+References: <1341352848-11833-1-git-send-email-jolsa@redhat.com>
+	 <1341352848-11833-8-git-send-email-jolsa@redhat.com>
+	 <1341398360.2507.99.camel@laptop>  <20120704120001.GC960@krava.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Jul 2012 14:13:39 +0200
+Message-ID: <1341404019.2507.107.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Jul 2012, Andi Kleen wrote:
-
-> From: Andi Kleen <ak@linux.intel.com>
+On Wed, 2012-07-04 at 14:00 +0200, Jiri Olsa wrote:
+> On Wed, Jul 04, 2012 at 12:39:20PM +0200, Peter Zijlstra wrote:
+> > On Wed, 2012-07-04 at 00:00 +0200, Jiri Olsa wrote:
+> > > 
+> > > It's possible to use sysfs attribute name as 'event' term value,
+> > > or any possible alias for hw event, e.g.:
+> > >   cycles                     OR cpu-cycles
+> > >   branch_misses              OR branch-misses
+> > >   bus_cycles                 OR bus-cycles
+> > >   cache_misses               OR cache-misses
+> > >   cache_references           OR cache-references
+> > >   ref_cycles                 OR ref-cycles
+> > >   stalled_cycles_backend     OR stalled-cycles-backend
+> > >   stalled_cycles_frontend    OR stalled-cycles-frontend 
+> > 
+> > Do we really want to do that?
 > 
-> floppy_init is quite slow, 3s on my test system to determine
-> that there is no floppy. Run it asynchronous to the other
-> init calls to improve boot time.
+> well, the aliasing works on sysfs filename base.. so when you specify
+>    event=str 
 > 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  drivers/block/floppy.c |   21 ++++++++++++++++++++-
->  1 files changed, 20 insertions(+), 1 deletions(-)
+> 'str' file is looked up in 'events' dir.
+
+Right..
+
+> We use '_' in file names and '-' in event symbol names. I thought it might be
+> confusing allowing just '_' so I added also the '-' version.
 > 
-> diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-> index cce7df3..8b5769b 100644
-> --- a/drivers/block/floppy.c
-> +++ b/drivers/block/floppy.c
-> @@ -191,6 +191,7 @@ static int print_unex = 1;
->  #include <linux/mutex.h>
->  #include <linux/io.h>
->  #include <linux/uaccess.h>
-> +#include <linux/async.h>
->  
->  /*
->   * PS/2 floppies have much slower step rates than regular floppies.
-> @@ -4122,7 +4123,7 @@ static struct kobject *floppy_find(dev_t dev, int *part, void *data)
->  	return get_disk(disks[drive]);
->  }
->  
-> -static int __init floppy_init(void)
-> +static int __init do_floppy_init(void)
->  {
->  	int i, unit, drive;
->  	int err, dr;
-> @@ -4337,6 +4338,24 @@ out_put_disk:
->  	return err;
->  }
->  
-> +#ifndef MODULE
-> +static __init void floppy_async_init(void *data, async_cookie_t cookie)
-> +{
-> +	do_floppy_init();
-> +}
-> +#endif
-> +
-> +static int __init floppy_init(void)
-> +{
-> +#ifdef MODULE
-> +	return do_floppy_init(void);
+> I could keep just the '-' version.. with some more work on kernel ATTR
+> function names ;) but it seems like common sysfs practise to use '_'.
 
-This isn't really a valid C.
+We could map '-' to '_', but I'm not sure about the aliases in general.
+I mean if the sysfs event name is 'cycles' also allowing 'cpu_cycles' is
+somewhat confusing and arbitrary.
 
-I have fixed that and applied.
+I think it would be best to stick to discoverable names only. Anybody?
 
--- 
-Jiri Kosina
-SUSE Labs
+
