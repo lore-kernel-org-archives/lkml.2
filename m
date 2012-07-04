@@ -1,115 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932350Ab2GDUQb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 16:16:31 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:47102 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754466Ab2GDUQ2 (ORCPT
+	id S932359Ab2GDURc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 16:17:32 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52356 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754466Ab2GDUR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 16:16:28 -0400
-Date: Wed, 4 Jul 2012 22:16:00 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        Seth Heasley <seth.heasley@intel.com>, Olof Johansson <olof@lixom.net>,
-        Benson Leung <bleung@chromium.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/8 v3] i2c: i801: enable irq for i801 smbus
- transactions
-Message-ID: <20120704221600.416d4475@endymion.delvare>
-In-Reply-To: <1340805255-8041-8-git-send-email-djkurtz@chromium.org>
-References: <1340805255-8041-1-git-send-email-djkurtz@chromium.org>
-	<1340805255-8041-8-git-send-email-djkurtz@chromium.org>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jul 2012 16:17:29 -0400
+MIME-Version: 1.0
+Date: Wed, 4 Jul 2012 22:17:28 +0200
+X-Google-Sender-Auth: fSnoVGa5fLZ-se8kh0LAI1x5uQw
+Message-ID: <CAMuHMdVJTUF3r=MKzpkvj6y_xdVdw=zEgAy2_wm_hG94jdrhBA@mail.gmail.com>
+Subject: size_t/ssize_t warnings (was: Re: Build regressions/improvements in v3.5-rc5)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Linux-Arch <linux-arch@vger.kernel.org>,
+        linux-cris-kernel@axis.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi again Daniel,
+On Wed, Jul 4, 2012 at 3:34 PM, Jan Kara <jack@suse.cz> wrote:
+>>   + fs/quota/quota_tree.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 4 has type 'ssize_t' [-Wformat]:  => 372:4
+>>   + fs/quota/quota_v2.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 5 has type 'ssize_t' [-Wformat]:  => 66:92
+>   These really look like false positives (there are quite a few of this
+> kind). Can we possibly silence them?
 
-On Wed, 27 Jun 2012 21:54:14 +0800, Daniel Kurtz wrote:
-> Add a new 'feature' to i2c-i801 to enable using i801 interrupts.
-> When the feature is enabled, then an isr is installed for the device's
-> pci irq.
-> 
-> An I2C/SMBus transaction is always terminated by one of the following
-> interrupt sources: FAILED, BUS_ERR, DEV_ERR, or on success: INTR.
-> 
-> When the isr fires for one of these cases, it sets the ->status variable
-> and wakes up the waitq.  The waitq then saves off the status code, and
-> clears ->status (in preparation for some future transaction).
-> The SMBus controller generates an INTR irq at the end of each
-> transaction where INTREN was set in the HST_CNT register.
-> 
-> No locking is needed around accesses to priv->status since all writes to
-> it are serialized: it is only ever set once in the isr at the end of a
-> transaction, and cleared while no irqs can occur.  In addition, the I2C
-> adapter lock guarantees that entire I2C transactions for a single
-> adapter are always serialized.
-> 
-> For this patch, the INTREN bit is set only for SMBus block, byte and word
-> transactions, but not for I2C reads or writes.  The use of the DS
-> (BYTE_DONE) interrupt with byte-by-byte I2C transactions is implemented in
-> a subsequent patch.
+These 2 warnings happen on cris only, because size_t is unsigned int and
+ssize_t is (signed) long. They go away if I make ssize_t int.
 
-Hmm, I have hit a bug with this patch. I was testing it on my ICH3-M
-laptop, and while SMBus byte and word reads worked fine, SMBus block
-reads did fail once in a while.
+I had a look at the various definitions of size_t and ssize_t:
 
-The ICH3-M lacks the block buffer, so SMBus block reads use the
-i801_block_transaction_byte_by_byte function, which at this point does
-not use interrupts. However, the IRQ is heavily shared on this laptop:
-additionally to SMBus, it is used for USB, sound, network and even the
-graphics chip. So function i801_isr() is called all the time.
+                        __kernel_size_t                         __kernel_ssize_t
+                        ---------------                         ----------------
 
-If i801_isr() is being called while
-i801_block_transaction_byte_by_byte() is running, there is a chance
-that the status register will have some flags set, in particular INTR.
-If so, the code in i801_isr() will clear the flags and wake up the
-wait queue while nobody was actually waiting for. And
-i801_block_transaction_byte_by_byte() will wait for an event which was
-already processed, leading to a timeout.
+generic 32-bit:         unsigned int                            int
+generic 64-bit:         __kernel_ulong_t (unsigned long)
+__kernel_long_t (long)
 
-You should be able to reproduce this bug by loading i2c-i801 with
-option disable_features=0x0002, assuming your SMBus IRQ is shared.
+Exceptions:
 
-This leads me to several thoughts (feel free to correct me if I'm
-wrong, I am getting very tired):
+avr32:                  unsigned long                           long
+blackfin:               unsigned long                           long
+cris:                   __SIZE_TYPE__ (unsigned int)            long
+mn10300/__GNUC__ == 4:  unsigned int                            signed int
+mn10300/__GNUC__ != 4:  unsigned long                           signed long
+s390 (32-bit):          unsigned long                           int
+x32:                    __kernel_ulong_t (unsigned long long)
+__kernel_long_t (long long)
 
-1* This must be the reason why a bit was added to the PCI status
-   register starting with the ICH5, telling you if an interrupt has been
-   delivered to you. Checking for it as you originally did was a good idea
-   after all.
+On cris, I get the warning if ssize_t != int.
+Whether size_t is unsigned int or unsigned long doesn't matter.
+So it's not just a mismatch between int and long.
 
-2* Is there any reason why you decided to clear the status bits in
-   i801_isr(), rather than after wait_event()? I am no expert in
-   interrupt handling, I admit, but letting the "caller" clear the status
-   bits would ensure we don't clear status bits when nobody is actually
-   waiting to catch them.
+I also tried blackfin, which has matching unsigned long/long, and it doesn't
+give the warning. Presumably the toolchain has size_t hardcoded to long for
+printf-style format checking?
 
-3* Applying this patch (7/8) without the one adding interrupt support
-   to i801_block_transaction_byte_by_byte (8/8) is not OK: mixing
-   interrupts and polling isn't safe. So unless we implement 1* or 2*,
-   both patches would have to be merged before being pushed upstream.
+I haven't tried s390 yet, which also has a non-matching combination (unsigned
+long vs. int).
 
-4* Even then, we have to keep in mind that i801_isr() may be called
-   before the transaction is finished (if IRQ is shared.) My testing
-   has shown that error flags may be raised before the BUSY flag is
-   cleared, so we should use in i801_isr() the same strict conditions
-   we are now using in the polling code. In other words, if we get an
-   interrupt but the BUSY flag is still set, then it's not our
-   interrupt and we should ignore it. This applies even if 2* or 3*
-   above are implemented, but no longer if 1* is implemented.
+Cris-people: __SIZE_TYPE__ turned out to be hardcoded in my compiler (gcc
+4.6.3 from Tony's collection) to unsigned int. Is that correct?
 
-5* Your claim that no locking is needed might have to be revisited when
-   interrupts are shared.
+And why do some 32-bit architectures use unsigned long/long?
 
-Implementing 1* has the drawback of limiting interrupt support to ICH5
-and later chips, but I suspect it is the easiest and safest way, so I
-have no objection if you want to do that.
+Gr{oetje,eeting}s,
 
--- 
-Jean Delvare
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
