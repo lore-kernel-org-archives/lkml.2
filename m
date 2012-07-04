@@ -1,268 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab2GDFxB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 01:53:01 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57255 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770Ab2GDFw6 (ORCPT
+	id S1754168Ab2GDF6j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 01:58:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:55685 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770Ab2GDF6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 01:52:58 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FF3DA1E.9060505@jp.fujitsu.com>
-Date: Wed, 4 Jul 2012 14:52:30 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 4 Jul 2012 01:58:38 -0400
+Date: Wed, 4 Jul 2012 07:58:28 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] pwm: fix used-uninitialized warning in pwm_get()
+Message-ID: <20120704055828.GC18779@avionic-0098.mockup.avionic-design.de>
+References: <1341347661-26567-1-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
-        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC PATCH v2 4/13] memory-hotplug : remove /sys/firmware/memmap/X
- sysfs
-References: <4FF287C3.4030901@jp.fujitsu.com> <4FF28996.10702@jp.fujitsu.com> <4FF2929B.7030004@cn.fujitsu.com> <4FF3CA65.1020300@jp.fujitsu.com> <4FF3CFDC.50802@cn.fujitsu.com>
-In-Reply-To: <4FF3CFDC.50802@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UoPmpPX/dBe4BELn"
+Content-Disposition: inline
+In-Reply-To: <1341347661-26567-1-git-send-email-swarren@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:37D58e/XPEap+78ZLbm69aFOAdhdrijXKb6SeMu8izT
+ ODYOWcPeXMKEoN//YruFSvx0nALVhtnAHrOg/qKXliHx3bZW5X
+ d/eRVRT0/DznUbrNc6ZG+U9aN5iqRS9Mi2bQw1E2GUEgsLLqUg
+ 0YYKdCg8cRitN7/OF7JD7z35YWf2W8qVr/U1T5dBWad27dz3yC
+ Z0rD0HYfaZoQTTudnc9PkAyAK5gRwM/a+wq1qISbanp1hS1wjl
+ mIjp1/aDrf/jNJ6Qy9rA2kulUAzcKfekonSO5mtRa/yOvpGa4+
+ SohR94Vvy8uDGd3R1V029LtBqj844iA0xkJJ540E6FVOtnOsH9
+ 2tpVAAjFA4K//boJojyq5Lf90U/W0lWWP1Hxi1xm6uDBhhdE1q
+ eaHqUWXuPfmE9gUsL/rqq/ytHRcL89kpp4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wen,
 
-2012/07/04 14:08, Wen Congyang wrote:
-> At 07/04/2012 12:45 PM, Yasuaki Ishimatsu Wrote:
->> Hi Wen,
->>
->> 2012/07/03 15:35, Wen Congyang wrote:
->>> At 07/03/2012 01:56 PM, Yasuaki Ishimatsu Wrote:
->>>> When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
->>>> sysfs files are created. But there is no code to remove these files. The patch
->>>> implements the function to remove them.
->>>>
->>>> Note : The code does not free firmware_map_entry since there is no way to free
->>>>          memory which is allocated by bootmem.
->>>>
->>>> CC: David Rientjes <rientjes@google.com>
->>>> CC: Jiang Liu <liuj97@gmail.com>
->>>> CC: Len Brown <len.brown@intel.com>
->>>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->>>> CC: Paul Mackerras <paulus@samba.org>
->>>> CC: Christoph Lameter <cl@linux.com>
->>>> Cc: Minchan Kim <minchan.kim@gmail.com>
->>>> CC: Andrew Morton <akpm@linux-foundation.org>
->>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>>>
->>>> ---
->>>>    drivers/firmware/memmap.c    |   70 +++++++++++++++++++++++++++++++++++++++++++
->>>>    include/linux/firmware-map.h |    6 +++
->>>>    mm/memory_hotplug.c          |    6 +++
->>>>    3 files changed, 81 insertions(+), 1 deletion(-)
->>>>
->>>> Index: linux-3.5-rc4/mm/memory_hotplug.c
->>>> ===================================================================
->>>> --- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-07-03 14:22:00.190240794 +0900
->>>> +++ linux-3.5-rc4/mm/memory_hotplug.c	2012-07-03 14:22:03.549198802 +0900
->>>> @@ -661,7 +661,11 @@ EXPORT_SYMBOL_GPL(add_memory);
->>>>
->>>>    int remove_memory(int nid, u64 start, u64 size)
->>>>    {
->>>> -	return -EBUSY;
->>>> +	lock_memory_hotplug();
->>>> +	/* remove memmap entry */
->>>> +	firmware_map_remove(start, start + size - 1, "System RAM");
->>>> +	unlock_memory_hotplug();
->>>> +	return 0;
->>>>
->>>>    }
->>>>    EXPORT_SYMBOL_GPL(remove_memory);
->>>> Index: linux-3.5-rc4/include/linux/firmware-map.h
->>>> ===================================================================
->>>> --- linux-3.5-rc4.orig/include/linux/firmware-map.h	2012-07-03 14:21:45.766421116 +0900
->>>> +++ linux-3.5-rc4/include/linux/firmware-map.h	2012-07-03 14:22:03.550198789 +0900
->>>> @@ -25,6 +25,7 @@
->>>>
->>>>    int firmware_map_add_early(u64 start, u64 end, const char *type);
->>>>    int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
->>>> +int firmware_map_remove(u64 start, u64 end, const char *type);
->>>>
->>>>    #else /* CONFIG_FIRMWARE_MEMMAP */
->>>>
->>>> @@ -38,6 +39,11 @@ static inline int firmware_map_add_hotpl
->>>>    	return 0;
->>>>    }
->>>>
->>>> +static inline int firmware_map_remove(u64 start, u64 end, const char *type)
->>>> +{
->>>> +	return 0;
->>>> +}
->>>> +
->>>>    #endif /* CONFIG_FIRMWARE_MEMMAP */
->>>>
->>>>    #endif /* _LINUX_FIRMWARE_MAP_H */
->>>> Index: linux-3.5-rc4/drivers/firmware/memmap.c
->>>> ===================================================================
->>>> --- linux-3.5-rc4.orig/drivers/firmware/memmap.c	2012-07-03 14:21:45.761421180 +0900
->>>> +++ linux-3.5-rc4/drivers/firmware/memmap.c	2012-07-03 14:22:03.569198549 +0900
->>>> @@ -79,7 +79,16 @@ static const struct sysfs_ops memmap_att
->>>>    	.show = memmap_attr_show,
->>>>    };
->>>>
->>>> +static void release_firmware_map_entry(struct kobject *kobj)
->>>> +{
->>>> +	/*
->>>> +	 * FIXME : There is no idea.
->>>> +	 *         How to free the entry which allocated bootmem?
->>>> +	 */
->>>
->>> I find a function free_bootmem(), but I am not sure whether it can work here.
->>
->> It cannot work here.
->>
->>> Another problem: how to check whether the entry uses bootmem?
->>
->> When firmware_map_entry is allocated by kzalloc(), the page has PG_slab.
-> 
-> This is not true. In my test, I find the page does not have PG_slab sometimes.
+--UoPmpPX/dBe4BELn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think that it depends on the allocated size. firmware_map_entry size is
-smaller than PAGE_SIZE. So the page has PG_Slab.
+On Tue, Jul 03, 2012 at 02:34:21PM -0600, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+>=20
+> This fixes:
+> drivers/pwm/core.c: In function 'pwm_get':
+> drivers/pwm/core.c:534:15: warning: 'index' may be used uninitialized in =
+this function
+>=20
+> The addition to the if condition at end of the function isn't strictly
+> necessary to solve the warning, but does make it more obvious that the
+> initialization of "index" to a dummy value isn't just hiding the
+> problem.
 
-Thanks,
-Yasuaki Ishimatsu
+Actually this seems to be a false positive, and one that I don't see (I
+use GCC 4.6.3). index will be initialized when chip is set in the loop.
+My guess is that GCC 4.6.3 actually notices while your version doesn't.
 
-> 
-> Thanks
-> Wen Congyang.
-> 
->> So we can check whether the entry was allocated by bootmem or not.
->> If the eantry was allocated by kzalloc(), we can free the entry by kfree().
->> But if the entry was allocated by bootmem, we have no way to free the entry.
->>
->> Thanks,
->> Yasuaki Ishimatsu
->>
->>>
->>> Thanks
->>> Wen Congyang
->>>
->>>> +}
->>>> +
->>>>    static struct kobj_type memmap_ktype = {
->>>> +	.release	= release_firmware_map_entry,
->>>>    	.sysfs_ops	= &memmap_attr_ops,
->>>>    	.default_attrs	= def_attrs,
->>>>    };
->>>> @@ -123,6 +132,16 @@ static int firmware_map_add_entry(u64 st
->>>>    	return 0;
->>>>    }
->>>>
->>>> +/**
->>>> + * firmware_map_remove_entry() - Does the real work to remove a firmware
->>>> + * memmap entry.
->>>> + * @entry: removed entry.
->>>> + **/
->>>> +static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
->>>> +{
->>>> +	list_del(&entry->list);
->>>> +}
->>>> +
->>>>    /*
->>>>     * Add memmap entry on sysfs
->>>>     */
->>>> @@ -144,6 +163,31 @@ static int add_sysfs_fw_map_entry(struct
->>>>    	return 0;
->>>>    }
->>>>
->>>> +/*
->>>> + * Remove memmap entry on sysfs
->>>> + */
->>>> +static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
->>>> +{
->>>> +	kobject_put(&entry->kobj);
->>>> +}
->>>> +
->>>> +/*
->>>> + * Search memmap entry
->>>> + */
->>>> +
->>>> +struct firmware_map_entry * __meminit
->>>> +find_firmware_map_entry(u64 start, u64 end, const char *type)
->>>> +{
->>>> +	struct firmware_map_entry *entry;
->>>> +
->>>> +	list_for_each_entry(entry, &map_entries, list)
->>>> +		if ((entry->start == start) && (entry->end == end) &&
->>>> +		    (!strcmp(entry->type, type)))
->>>> +			return entry;
->>>> +
->>>> +	return NULL;
->>>> +}
->>>> +
->>>>    /**
->>>>     * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
->>>>     * memory hotplug.
->>>> @@ -196,6 +240,32 @@ int __init firmware_map_add_early(u64 st
->>>>    	return firmware_map_add_entry(start, end, type, entry);
->>>>    }
->>>>
->>>> +/**
->>>> + * firmware_map_remove() - remove a firmware mapping entry
->>>> + * @start: Start of the memory range.
->>>> + * @end:   End of the memory range (inclusive).
->>>> + * @type:  Type of the memory range.
->>>> + *
->>>> + * removes a firmware mapping entry.
->>>> + *
->>>> + * Returns 0 on success, or -EINVAL if no entry.
->>>> + **/
->>>> +int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
->>>> +{
->>>> +	struct firmware_map_entry *entry;
->>>> +
->>>> +	entry = find_firmware_map_entry(start, end, type);
->>>> +	if (!entry)
->>>> +		return -EINVAL;
->>>> +
->>>> +	/* remove the memmap entry */
->>>> +	remove_sysfs_fw_map_entry(entry);
->>>> +
->>>> +	firmware_map_remove_entry(entry);
->>>> +
->>>> +	return 0;
->>>> +}
->>>> +
->>>>    /*
->>>>     * Sysfs functions -------------------------------------------------------------
->>>>     */
->>>>
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>> Please read the FAQ at  http://www.tux.org/lkml/
->>>>
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>
->>
->>
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Thierry
 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+>  drivers/pwm/core.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+> index dbab530..2b401c0 100644
+> --- a/drivers/pwm/core.c
+> +++ b/drivers/pwm/core.c
+> @@ -531,7 +531,7 @@ struct pwm_device *pwm_get(struct device *dev, const =
+char *con_id)
+>  	struct pwm_chip *chip =3D NULL;
+>  	unsigned int best =3D 0;
+>  	struct pwm_lookup *p;
+> -	unsigned int index;
+> +	unsigned int index =3D -1;
+>  	unsigned int match;
+> =20
+>  	/* look up via DT first */
+> @@ -588,7 +588,7 @@ struct pwm_device *pwm_get(struct device *dev, const =
+char *con_id)
+>  		}
+>  	}
+> =20
+> -	if (chip)
+> +	if (chip && index !=3D -1)
+>  		pwm =3D pwm_request_from_chip(chip, index, con_id ?: dev_id);
+> =20
+>  	mutex_unlock(&pwm_lookup_lock);
+> --=20
+> 1.7.0.4
+>=20
+>=20
+>=20
 
+--UoPmpPX/dBe4BELn
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP89uEAAoJEN0jrNd/PrOhCqoP/Ary4L/GYYMhbCP/wQgZSoot
+jw/hGKLGRcmKcfNI+GV8eiCRMZvg7lybYScmpNJL9GltYbF0FuwSh3I/Cf7a5d7M
+cvP6JUWxxDcE2WEAEQPed6rN0JfdLcCcwT4ZAeh6IztPov4YOZuRmLVhhGOXqwFh
+9HWL8yxaPY/Fc1cKB5yFsqFT0VMIs7BdfHOnhTR0RLqRv+3k/csYcb/bZP9hJtPb
+lIueZA/sd+7UtuJgJcdZTrnez8mhcyoFGSskyboFdTDWFOjiteKcssnjT54ciSL2
+wnx/H3VnE7OYJ/hj6VmQOxkYEtzM0kxDQx653Yx+9ah29Lp+7pcTe1/p3tUbpESn
+ju3IftHeSlxkRNDsUAGnGRMcgv+IFp1MuLrhHFZAUvhaXeGzmThWEorWlUPeq1yd
+buVgbOFmepESZl02Jdz+tguMuZVHgKsoTIknWlA93kssQqe/O57FzeBFjee4cMur
+TEJ/xHc38Jwqp5kiX8Ee8ai36rWDxBZyo34EhipuJRfiwwnZomJJ5gV7oPtFHSv8
+6PbdrduFbkoonL+/enIRIDIy98hdJcpNdIwRAvMFzjWMYGCBwGaweXR0/C+TkqNT
+PT9DQE9b8D25fdlWjo2nHAUCqZ2qvtXANEDO/pmIWSIEk3yuyRpYIVN+pd7bT2e7
+2CJzdigW0cztQEsswsh4
+=7cJH
+-----END PGP SIGNATURE-----
+
+--UoPmpPX/dBe4BELn--
