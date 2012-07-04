@@ -1,198 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab2GDPND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 11:13:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46793 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752821Ab2GDPNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 11:13:00 -0400
-Date: Wed, 4 Jul 2012 18:13:16 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, kvm@vger.kernel.org
-Subject: Re: [PATCH] virtio-blk: allow toggling host cache between writeback
- and writethrough
-Message-ID: <20120704151316.GA27064@redhat.com>
-References: <1341321577-24435-1-git-send-email-pbonzini@redhat.com>
+	id S1754353Ab2GDPV3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 11:21:29 -0400
+Received: from [213.199.154.141] ([213.199.154.141]:24964 "EHLO
+	db3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1750841Ab2GDPVS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 11:21:18 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(zz98dI1432Izz1202hzzz2dh2a8h668h839h8e2h8e3hd25he5bhf0ahbe9i)
+From: Tabi Timur-B04825 <B04825@freescale.com>
+To: Zhao Chenhui-B35336 <B35336@freescale.com>
+CC: Zhao Chenhui-B35336 <B35336@freescale.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Yang-R58472 <r58472@freescale.com>,
+        Li Yang-R58472 <r58472@freescale.com>
+Subject: Re: [PATCH v7 1/5] powerpc/85xx: implement hardware timebase sync
+Thread-Topic: [PATCH v7 1/5] powerpc/85xx: implement hardware timebase sync
+Thread-Index: AQHNWRnaavpowtpO5UeeCNsHPM8rhJcYx9kAgAAAxACAAAf8gIAAwfCA
+Date: Wed, 4 Jul 2012 15:19:54 +0000
+Message-ID: <4FF45F19.2080607@freescale.com>
+References: <1341310879-5468-1-git-send-email-chenhui.zhao@freescale.com>
+ <CAOZdJXUeY-_mmBLoA25_g4eLqwHxYX4c_ECbU+KYqfM307THNQ@mail.gmail.com>
+ <20120704031426.GA6133@localhost.localdomain>
+ <4FF3B5B6.8090400@freescale.com>
+ <20120704034545.GA6196@localhost.localdomain>
+In-Reply-To: <20120704034545.GA6196@localhost.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:13.0)
+ Gecko/20120615 Firefox/13.0.1 SeaMonkey/2.10.1
+x-originating-ip: [70.112.118.223]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <78306915DEC017449CCE46EF212EF36B@mgd.freescale.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341321577-24435-1-git-send-email-pbonzini@redhat.com>
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 03, 2012 at 03:19:37PM +0200, Paolo Bonzini wrote:
-> This patch adds support for the new VIRTIO_BLK_F_CONFIG_WCE feature,
-> which exposes the cache mode in the configuration space and lets the
-> driver modify it.  The cache mode is exposed via sysfs.
-> 
-> Even if the host does not support the new feature, the cache mode is
-> visible (thanks to the existing VIRTIO_BLK_F_WCE), but not modifiable.
-> 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Zhao Chenhui wrote:
+> On Tue, Jul 03, 2012 at 10:17:12PM -0500, Tabi Timur-B04825 wrote:
+>> Zhao Chenhui wrote:
+>>> If the guts variable is NULL, it indicates there is error in dts or kernel.
+>>> We should fix the error, rather than ignore it.
+>>
+>> And that's why there's a warning message.  Crashing the kernel is not
+>> going to fix anything.
+>>
+>
+> This error likely crashes the kenel somewhere.
 
-In the future, please copy virtio patches to all interested parties
-listed in MAINTAINERS.  Several are missing. You can use
-scripts/get_maintainer.pl to do this automatically.
+Can you test this, please?
+
+The point I'm trying to make is that it's wrong to intentionally halt the 
+kernel unless you're sure that it's the best option.  A missing device 
+tree node is supposed to only disable a given feature, not break everything.
+
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
 
 
-> ---
->  drivers/block/virtio_blk.c |   90 ++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/virtio_blk.h |    5 ++-
->  2 files changed, 91 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> index 693187d..5602505 100644
-> --- a/drivers/block/virtio_blk.c
-> +++ b/drivers/block/virtio_blk.c
-> @@ -397,6 +397,83 @@ static int virtblk_name_format(char *prefix, int index, char *buf, int buflen)
->  	return 0;
->  }
->  
-> +static int virtblk_get_cache_mode(struct virtio_device *vdev)
-> +{
-> +	u8 writeback;
-> +	int err;
-> +
-> +	err = virtio_config_val(vdev, VIRTIO_BLK_F_CONFIG_WCE,
-> +				offsetof(struct virtio_blk_config, wce),
-> +				&writeback);
-> +	if (err)
-> +		writeback = virtio_has_feature(vdev, VIRTIO_BLK_F_WCE);
-> +
-> +	return writeback;
-> +}
-> +
-> +static void virtblk_update_cache_mode(struct virtio_device *vdev)
-> +{
-> +	u8 writeback = virtblk_get_cache_mode(vdev);
-> +	struct virtio_blk *vblk = vdev->priv;
-> +
-> +	if (writeback)
-> +		blk_queue_flush(vblk->disk->queue, REQ_FLUSH);
-> +	else
-> +		blk_queue_flush(vblk->disk->queue, 0);
-> +
-> +       revalidate_disk(vblk->disk);
-> +}
-> +
-> +static const char *virtblk_cache_types[] = {
-> +	"write through", "write back"
-> +};
-> +
-> +static ssize_t
-> +virtblk_cache_type_store(struct device *dev, struct device_attribute *attr,
-> +			 const char *buf, size_t count)
-> +{
-> +	struct gendisk *disk = dev_to_disk(dev);
-> +	struct virtio_blk *vblk = disk->private_data;
-> +	struct virtio_device *vdev = vblk->vdev;
-> +	int i;
-> +	u8 writeback;
-> +
-> +	BUG_ON(!virtio_has_feature(vblk->vdev, VIRTIO_BLK_F_CONFIG_WCE));
-> +	for (i = ARRAY_SIZE(virtblk_cache_types); --i >= 0; )
-> +		if (sysfs_streq(buf, virtblk_cache_types[i]))
-> +			break;
-> +
-> +	if (i < 0)
-> +		return -EINVAL;
-> +
-> +	writeback = i;
-> +	vdev->config->set(vdev,
-> +			  offsetof(struct virtio_blk_config, wce),
-> +			  &writeback, sizeof(writeback));
-> +
-> +	virtblk_update_cache_mode(vdev);
-> +	return count;
-> +}
-> +
-> +static ssize_t
-> +virtblk_cache_type_show(struct device *dev, struct device_attribute *attr,
-> +			 char *buf)
-> +{
-> +	struct gendisk *disk = dev_to_disk(dev);
-> +	struct virtio_blk *vblk = disk->private_data;
-> +	u8 writeback = virtblk_get_cache_mode(vblk->vdev);
-> +
-> +	BUG_ON(writeback >= ARRAY_SIZE(virtblk_cache_types));
-> +	return snprintf(buf, 40, "%s\n", virtblk_cache_types[writeback]);
-> +}
-> +
-> +static const struct device_attribute dev_attr_cache_type_ro =
-> +	__ATTR(cache_type, S_IRUGO,
-> +	       virtblk_cache_type_show, NULL);
-> +static const struct device_attribute dev_attr_cache_type_rw =
-> +	__ATTR(cache_type, S_IRUGO|S_IWUSR,
-> +	       virtblk_cache_type_show, virtblk_cache_type_store);
-> +
->  static int __devinit virtblk_probe(struct virtio_device *vdev)
->  {
->  	struct virtio_blk *vblk;
-> @@ -474,8 +549,7 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
->  	vblk->index = index;
->  
->  	/* configure queue flush support */
-> -	if (virtio_has_feature(vdev, VIRTIO_BLK_F_FLUSH))
-> -		blk_queue_flush(q, REQ_FLUSH);
-> +	virtblk_update_cache_mode(vdev);
->  
->  	/* If disk is read-only in the host, the guest should obey */
->  	if (virtio_has_feature(vdev, VIRTIO_BLK_F_RO))
-> @@ -553,6 +627,14 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
->  	if (err)
->  		goto out_del_disk;
->  
-> +	if (virtio_has_feature(vdev, VIRTIO_BLK_F_CONFIG_WCE))
-> +		err = device_create_file(disk_to_dev(vblk->disk),
-> +					 &dev_attr_cache_type_rw);
-> +	else
-> +		err = device_create_file(disk_to_dev(vblk->disk),
-> +					 &dev_attr_cache_type_ro);
-> +	if (err)
-> +		goto out_del_disk;
->  	return 0;
->  
->  out_del_disk:
-> @@ -655,7 +737,7 @@ static const struct virtio_device_id id_table[] = {
->  static unsigned int features[] = {
->  	VIRTIO_BLK_F_SEG_MAX, VIRTIO_BLK_F_SIZE_MAX, VIRTIO_BLK_F_GEOMETRY,
->  	VIRTIO_BLK_F_RO, VIRTIO_BLK_F_BLK_SIZE, VIRTIO_BLK_F_SCSI,
-> -	VIRTIO_BLK_F_FLUSH, VIRTIO_BLK_F_TOPOLOGY
-> +	VIRTIO_BLK_F_WCE, VIRTIO_BLK_F_TOPOLOGY, VIRTIO_BLK_F_CONFIG_WCE
->  };
->  
->  /*
-> diff --git a/include/linux/virtio_blk.h b/include/linux/virtio_blk.h
-> index e0edb40..18a1027 100644
-> --- a/include/linux/virtio_blk.h
-> +++ b/include/linux/virtio_blk.h
-> @@ -37,8 +37,9 @@
->  #define VIRTIO_BLK_F_RO		5	/* Disk is read-only */
->  #define VIRTIO_BLK_F_BLK_SIZE	6	/* Block size of disk is available*/
->  #define VIRTIO_BLK_F_SCSI	7	/* Supports scsi command passthru */
-> -#define VIRTIO_BLK_F_FLUSH	9	/* Cache flush command support */
-> +#define VIRTIO_BLK_F_WCE	9	/* Writeback mode enabled after reset */
->  #define VIRTIO_BLK_F_TOPOLOGY	10	/* Topology information is available */
-> +#define VIRTIO_BLK_F_CONFIG_WCE	11	/* Writeback mode available in config */
->  
->  #define VIRTIO_BLK_ID_BYTES	20	/* ID string length */
->  
-> @@ -69,6 +70,8 @@ struct virtio_blk_config {
->  	/* optimal sustained I/O size in logical blocks. */
->  	__u32 opt_io_size;
->  
-> +        /* writeback mode (if VIRTIO_BLK_F_CONFIG_WCE) */
-> +        __u8 wce;
->  } __attribute__((packed));
->  
->  /*
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
