@@ -1,88 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab2GDCkp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 22:40:45 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45067 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321Ab2GDCkn (ORCPT
+	id S1757391Ab2GDCqn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 22:46:43 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62109 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321Ab2GDCqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 22:40:43 -0400
-Message-ID: <4FF3AD27.5070901@gmail.com>
-Date: Tue, 03 Jul 2012 21:40:39 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [GIT PULL] DT fixes for 3.5
-References: <4FDA9261.2070208@gmail.com>
-In-Reply-To: <4FDA9261.2070208@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 3 Jul 2012 22:46:42 -0400
+Message-ID: <1341369994.10587.10.camel@phoenix>
+Subject: [PATCH RFT] regulator: twl: Set enable enable_time in regulator_desc
+From: Axel Lin <axel.lin@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Tero Kristo <t-kristo@ti.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 04 Jul 2012 10:46:34 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/twl-regulator.c |   31 ++++---------------------------
+ 1 file changed, 4 insertions(+), 27 deletions(-)
 
-On 06/14/2012 08:39 PM, Rob Herring wrote:
-> Grant,
-> 
-> Please pull. Mainly some documentation updates and 2 fixes:
-> 
-> - An export symbol fix for of_platform_populate from Stephen W.
-> - A fix for the order compatible entries are matched to ensure the
-> first compatible string is matched when there are multiple matches.
-> 
+diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+index ca308cb..8f0bd56 100644
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -43,9 +43,6 @@ struct twlreg_info {
+ 	u8			table_len;
+ 	const u16		*table;
+ 
+-	/* regulator specific turn-on delay */
+-	u16			delay;
+-
+ 	/* State REMAP default configuration */
+ 	u8			remap;
+ 
+@@ -223,20 +220,6 @@ static int twl6030reg_enable(struct regulator_dev *rdev)
+ 	return ret;
+ }
+ 
+-static int twl4030reg_enable_time(struct regulator_dev *rdev)
+-{
+-	struct twlreg_info	*info = rdev_get_drvdata(rdev);
+-
+-	return info->delay;
+-}
+-
+-static int twl6030reg_enable_time(struct regulator_dev *rdev)
+-{
+-	struct twlreg_info	*info = rdev_get_drvdata(rdev);
+-
+-	return info->delay;
+-}
+-
+ static int twl4030reg_disable(struct regulator_dev *rdev)
+ {
+ 	struct twlreg_info	*info = rdev_get_drvdata(rdev);
+@@ -508,7 +491,6 @@ static struct regulator_ops twl4030ldo_ops = {
+ 	.enable		= twl4030reg_enable,
+ 	.disable	= twl4030reg_disable,
+ 	.is_enabled	= twl4030reg_is_enabled,
+-	.enable_time	= twl4030reg_enable_time,
+ 
+ 	.set_mode	= twl4030reg_set_mode,
+ 
+@@ -622,7 +604,6 @@ static struct regulator_ops twl6030ldo_ops = {
+ 	.enable		= twl6030reg_enable,
+ 	.disable	= twl6030reg_disable,
+ 	.is_enabled	= twl6030reg_is_enabled,
+-	.enable_time	= twl6030reg_enable_time,
+ 
+ 	.set_mode	= twl6030reg_set_mode,
+ 
+@@ -656,7 +637,6 @@ static struct regulator_ops twl4030fixed_ops = {
+ 	.enable		= twl4030reg_enable,
+ 	.disable	= twl4030reg_disable,
+ 	.is_enabled	= twl4030reg_is_enabled,
+-	.enable_time	= twl4030reg_enable_time,
+ 
+ 	.set_mode	= twl4030reg_set_mode,
+ 
+@@ -671,7 +651,6 @@ static struct regulator_ops twl6030fixed_ops = {
+ 	.enable		= twl6030reg_enable,
+ 	.disable	= twl6030reg_disable,
+ 	.is_enabled	= twl6030reg_is_enabled,
+-	.enable_time	= twl6030reg_enable_time,
+ 
+ 	.set_mode	= twl6030reg_set_mode,
+ 
+@@ -682,7 +661,6 @@ static struct regulator_ops twl6030_fixed_resource = {
+ 	.enable		= twl6030reg_enable,
+ 	.disable	= twl6030reg_disable,
+ 	.is_enabled	= twl6030reg_is_enabled,
+-	.enable_time	= twl6030reg_enable_time,
+ 	.get_status	= twl6030reg_get_status,
+ };
+ 
+@@ -879,7 +857,6 @@ static struct regulator_ops twlsmps_ops = {
+ 	.enable			= twl6030reg_enable,
+ 	.disable		= twl6030reg_disable,
+ 	.is_enabled		= twl6030reg_is_enabled,
+-	.enable_time		= twl6030reg_enable_time,
+ 
+ 	.set_mode		= twl6030reg_set_mode,
+ 
+@@ -902,7 +879,6 @@ static struct twlreg_info TWL4030_INFO_##label = { \
+ 	.id = num, \
+ 	.table_len = ARRAY_SIZE(label##_VSEL_table), \
+ 	.table = label##_VSEL_table, \
+-	.delay = turnon_delay, \
+ 	.remap = remap_conf, \
+ 	.desc = { \
+ 		.name = #label, \
+@@ -911,6 +887,7 @@ static struct twlreg_info TWL4030_INFO_##label = { \
+ 		.ops = &twl4030ldo_ops, \
+ 		.type = REGULATOR_VOLTAGE, \
+ 		.owner = THIS_MODULE, \
++		.enable_time = turnon_delay, \
+ 		}, \
+ 	}
+ 
+@@ -918,7 +895,6 @@ static struct twlreg_info TWL4030_INFO_##label = { \
+ static struct twlreg_info TWL4030_INFO_##label = { \
+ 	.base = offset, \
+ 	.id = num, \
+-	.delay = turnon_delay, \
+ 	.remap = remap_conf, \
+ 	.desc = { \
+ 		.name = #label, \
+@@ -926,6 +902,7 @@ static struct twlreg_info TWL4030_INFO_##label = { \
+ 		.ops = &twl4030smps_ops, \
+ 		.type = REGULATOR_VOLTAGE, \
+ 		.owner = THIS_MODULE, \
++		.enable_time = turnon_delay, \
+ 		}, \
+ 	}
+ 
+@@ -980,7 +957,6 @@ static struct twlreg_info TWLFIXED_INFO_##label = { \
+ 	.base = offset, \
+ 	.id = num, \
+ 	.min_mV = mVolts, \
+-	.delay = turnon_delay, \
+ 	.remap = remap_conf, \
+ 	.desc = { \
+ 		.name = #label, \
+@@ -989,19 +965,20 @@ static struct twlreg_info TWLFIXED_INFO_##label = { \
+ 		.ops = &operations, \
+ 		.type = REGULATOR_VOLTAGE, \
+ 		.owner = THIS_MODULE, \
++		.enable_time = turnon_delay, \
+ 		}, \
+ 	}
+ 
+ #define TWL6030_FIXED_RESOURCE(label, offset, turnon_delay) \
+ static struct twlreg_info TWLRES_INFO_##label = { \
+ 	.base = offset, \
+-	.delay = turnon_delay, \
+ 	.desc = { \
+ 		.name = #label, \
+ 		.id = TWL6030_REG_##label, \
+ 		.ops = &twl6030_fixed_resource, \
+ 		.type = REGULATOR_VOLTAGE, \
+ 		.owner = THIS_MODULE, \
++		.enable_time = turnon_delay, \
+ 		}, \
+ 	}
+ 
+-- 
+1.7.9.5
 
-As Grant is offline the next month or two, can you please pull these
-fixes for device tree for 3.5.
-
-Rob
-
-> The following changes since commit cfaf025112d3856637ff34a767ef785ef5cf2ca9:
-> 
->   Linux 3.5-rc2 (2012-06-08 18:40:09 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://sources.calxeda.com/kernel/linux.git fixes-for-grant
-> 
-> for you to fetch changes up to 107a84e61cdd3406c842a0e4be7efffd3a05dba6:
-> 
->   of: match by compatible property first (2012-06-14 20:29:40 -0500)
-> 
-> ----------------------------------------------------------------
-> Fabio Estevam (5):
->       dt: fsl-imx-cspi.txt: Fix comment about GPIOs used for chip selects
->       dt: fsl-imx-esdhc.txt: Fix gpio number assignment
->       dt: fsl-mma8450.txt: Add missing 'reg' description
->       dt: fsl-fec.txt: Fix gpio number assignment
->       dt: mc13xxx.txt: Fix gpio number assignment
-> 
-> Stephen Warren (1):
->       of: export of_platform_populate()
-> 
-> Thierry Reding (2):
->       of: Add Avionic Design vendor prefix
->       of: match by compatible property first
-> 
->  .../devicetree/bindings/input/fsl-mma8450.txt      |    1 +
->  Documentation/devicetree/bindings/mfd/mc13xxx.txt  |    4 +--
->  .../devicetree/bindings/mmc/fsl-imx-esdhc.txt      |    4 +--
->  Documentation/devicetree/bindings/net/fsl-fec.txt  |    2 +-
->  .../devicetree/bindings/spi/fsl-imx-cspi.txt       |    4 +--
->  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
->  drivers/of/base.c                                  |   30
-> +++++++++++++++++---
->  drivers/of/platform.c                              |    1 +
->  8 files changed, 36 insertions(+), 11 deletions(-)
-> 
 
 
