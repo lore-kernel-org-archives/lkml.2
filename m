@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932443Ab2GDLvQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 07:51:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40384 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756207Ab2GDLvJ (ORCPT
+	id S1756840Ab2GDLvb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 07:51:31 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:38316 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756287Ab2GDLv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 07:51:09 -0400
-Subject: Re: [PATCH 02/10] perf, tool: Fix pmu object initialization
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20120704114042.GB960@krava.redhat.com>
-References: <1341352848-11833-1-git-send-email-jolsa@redhat.com>
-	 <1341352848-11833-3-git-send-email-jolsa@redhat.com>
-	 <1341397848.2507.93.camel@laptop>  <20120704114042.GB960@krava.redhat.com>
+	Wed, 4 Jul 2012 07:51:29 -0400
+X-Authenticated: #9962044
+X-Provags-ID: V01U2FsdGVkX19iyZJMah5ilW2HtmeZVdF/6p2eHd7+2iK9dr+JxK
+	Tn5/YfPbrGy5IP
+From: Marc Dietrich <marvin24@gmx.de>
+To: Wei Ni <wni@nvidia.com>
+Cc: Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
+        "ccross@android.com" <ccross@android.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "cjb@laptop.org" <cjb@laptop.org>
+Subject: Re: Re: [PATCH 1/5] ARM: tegra: set up wlan clocks for tegra dt
+Date: Wed, 04 Jul 2012 13:51:23 +0200
+Message-ID: <5111476.afQhu2nTJB@fb07-iapwap2>
+User-Agent: KMail/4.8.4 (Linux/3.4.4-3-desktop; KDE/4.8.4; x86_64; ; )
+In-Reply-To: <1341401013.9009.931.camel@tegra-chromium-2>
+References: <1341394488-13169-1-git-send-email-wni@nvidia.com> <6135516.CD1aogiCta@fb07-iapwap2> <1341401013.9009.931.camel@tegra-chromium-2>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Jul 2012 13:50:56 +0200
-Message-ID: <1341402656.2507.103.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-04 at 13:40 +0200, Jiri Olsa wrote:
-> On Wed, Jul 04, 2012 at 12:30:48PM +0200, Peter Zijlstra wrote:
-> > On Wed, 2012-07-04 at 00:00 +0200, Jiri Olsa wrote:
-> > > The internal pmu list was never used. With each perf_pmu__find() call
-> > > the pmu structure was created new by parsing sysfs. Beside this it
-> > > caused memory leaks. We now keep all pmus by adding them to the list.
+Am Mittwoch, 4. Juli 2012, 19:23:33 schrieb Wei Ni:
+> On Wed, 2012-07-04 at 18:43 +0800, Marc Dietrich wrote:
+> > Am Mittwoch, 4. Juli 2012, 17:34:44 schrieb Wei Ni:
+> > > Set up the wlan clock tree for Tegra20 and Tegra30.
 > > > 
-> > > Also, pmu_lookup() should return pmus that do not expose the format
-> > > specifier in sysfs.
+> > > Signed-off-by: Wei Ni <wni@nvidia.com>
+> > > ---
 > > > 
-> > > We need a valid internal pmu list in a later patch to iterate over all
-> > > pmus that exist in the system.
+> > >  arch/arm/mach-tegra/board-dt-tegra20.c |    1 +
+> > >  arch/arm/mach-tegra/board-dt-tegra30.c |    1 +
+> > >  2 files changed, 2 insertions(+), 0 deletions(-)
 > > > 
-> > > Signed-off-by: Robert Richter <robert.richter@amd.com>
-> > > [ added same treatment for 'event' sysfs group attribute ]
-> > > Signed-off-by: Jiri Olsa <jolsa@redhat.com> 
+> > > diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c
+> > > b/arch/arm/mach-tegra/board-dt-tegra20.c index 70a19a9..fbcc7d9 100644
+> > > --- a/arch/arm/mach-tegra/board-dt-tegra20.c
+> > > +++ b/arch/arm/mach-tegra/board-dt-tegra20.c
+> > > @@ -78,6 +78,7 @@ static __initdata struct tegra_clk_init_table
+> > > tegra_dt_clk_init_table[] = { { "pll_a",      "pll_p_out1",   56448000,
+> > > 
+> > >   true },
+> > >   
+> > >  	{ "pll_a_out0", "pll_a",        11289600,       true },
+> > >  	{ "cdev1",      NULL,           0,              true },
+> > > 
+> > > +	{ "blink",      "clk_32k",      32768,          true },
 > > 
-> > Are we missing a From: ?
+> > what's the reason to enable this on all boards? Would it make sense to set
+> > this to "false" instead?
 > 
-> so first SOB is not enough then.. I'll add it in next version
+> This clock is used for the wlan device, it need to be enabled, so that
+> the wlan device can be powered on, and then the mmc driver can enumerate
+> it.
 
-Not if the patch was written by Robert, in that case you need a From: or
-Author: header on top so that git-am will know to attribute the patch to
-Robert.
+My question was more why you enable it for *all* boards, even those without 
+wlan cards connected to the sdhci. Defining it, but set it to "false", would 
+give the driver the chance to enable it only on request. On the other hand, 
+the impact on additional power consumption may be too low to measure.
 
+Marc
 
+> > 
+> > >  	{ "i2s1",       "pll_a_out0",   11289600,       false},
+> > >  	{ "i2s2",       "pll_a_out0",   11289600,       false},
+> > >  	{ NULL,		NULL,		0,		0},
+> > > 
+> > > diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c
+> > > b/arch/arm/mach-tegra/board-dt-tegra30.c index 53bf60f..2d73c61 100644
+> > > --- a/arch/arm/mach-tegra/board-dt-tegra30.c
+> > > +++ b/arch/arm/mach-tegra/board-dt-tegra30.c
+> > > @@ -61,6 +61,7 @@ static __initdata struct tegra_clk_init_table
+> > > tegra_dt_clk_init_table[] = { { "pll_a_out0",	"pll_a",	11289600,	true },
+> > > 
+> > >  	{ "extern1",	"pll_a_out0",	0,		true },
+> > >  	{ "clk_out_1",	"extern1",	0,		true },
+> > > 
+> > > +	{ "blink",	"clk_32k",	32768,		true },
+> > > 
+> > >  	{ "i2s0",	"pll_a_out0",	11289600,	false},
+> > >  	{ "i2s1",	"pll_a_out0",	11289600,	false},
+> > >  	{ "i2s2",	"pll_a_out0",	11289600,	false},
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
