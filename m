@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933663Ab2GDHbt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 03:31:49 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54234 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932269Ab2GDHbr (ORCPT
+	id S1756308Ab2GDHeV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 03:34:21 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40120 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000Ab2GDHeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 03:31:47 -0400
-Date: Wed, 4 Jul 2012 00:31:36 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: roel <roel.kluin@gmail.com>
-Cc: Mark Fasheh <mfasheh@suse.com>,
-        moderated for non-subscribers <ocfs2-devel@oss.oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ocfs2: Misplaced parens in unlikley
-Message-ID: <20120704073136.GB9863@dhcp-172-17-9-228.mtv.corp.google.com>
-Mail-Followup-To: roel <roel.kluin@gmail.com>,
-	Mark Fasheh <mfasheh@suse.com>,
-	moderated for non-subscribers <ocfs2-devel@oss.oracle.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <4EE682F3.9070905@gmail.com>
+	Wed, 4 Jul 2012 03:34:19 -0400
+Date: Wed, 4 Jul 2012 15:34:24 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: akpm@linux-foundation.org, hughd@google.com
+Subject: [PATCH] radix-tree.h: remove unneeded include of kernel.h
+Message-ID: <20120704073424.GA9247@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	lkml <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org,
+	hughd@google.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EE682F3.9070905@gmail.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 12, 2011 at 11:40:51PM +0100, roel wrote:
-> Fix misplaced parentheses
-> 
-> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
 
-This patch is now (finally) part of the 'fixes' branch of ocfs2.git.
+It seems that we can remove the unneeded include of kernel.h
+from radix-tree.h safely. Any user of radix-tree that need kernel.h
+should include it separately.
 
-Joel
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+---
+ include/linux/radix-tree.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-> ---
->  fs/ocfs2/dlmglue.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/ocfs2/dlmglue.c b/fs/ocfs2/dlmglue.c
-> index 81a4cd2..274529c 100644
-> --- a/fs/ocfs2/dlmglue.c
-> +++ b/fs/ocfs2/dlmglue.c
-> @@ -456,7 +456,7 @@ static void ocfs2_update_lock_stats(struct ocfs2_lock_res *res, int level,
->  	stats->ls_gets++;
->  	stats->ls_total += ktime_to_ns(kt);
->  	/* overflow */
-> -	if (unlikely(stats->ls_gets) == 0) {
-> +	if (unlikely(stats->ls_gets == 0)) {
->  		stats->ls_gets++;
->  		stats->ls_total = ktime_to_ns(kt);
->  	}
-
+diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+index ffc444c..34be4b1 100644
+--- a/include/linux/radix-tree.h
++++ b/include/linux/radix-tree.h
+@@ -24,7 +24,6 @@
+ #include <linux/preempt.h>
+ #include <linux/types.h>
+ #include <linux/bug.h>
+-#include <linux/kernel.h>
+ #include <linux/rcupdate.h>
+ 
+ /*
 -- 
+1.7.3.4
 
-"There are only two ways to live your life. One is as though nothing
- is a miracle. The other is as though everything is a miracle."
-        - Albert Einstein
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
