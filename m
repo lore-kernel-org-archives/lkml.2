@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751053Ab2GDMOJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 08:14:09 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34626 "EHLO
+	id S1750990Ab2GDMOx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 08:14:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35768 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab2GDMOE (ORCPT
+	with ESMTP id S1750768Ab2GDMOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 08:14:04 -0400
-Subject: Re: [PATCH 07/10] perf, tool: Add support to specify hw event as
- pmu event term
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+	Wed, 4 Jul 2012 08:14:52 -0400
+Subject: Re: [PATCH 04/10] perf, x86: Making hardware events translations
+ available in sysfs
+From: Peter Zijlstra <peterz@infradead.org>
 To: Jiri Olsa <jolsa@redhat.com>
 Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
         linux-kernel@vger.kernel.org
-In-Reply-To: <20120704120001.GC960@krava.redhat.com>
+In-Reply-To: <20120704120155.GE960@krava.redhat.com>
 References: <1341352848-11833-1-git-send-email-jolsa@redhat.com>
-	 <1341352848-11833-8-git-send-email-jolsa@redhat.com>
-	 <1341398360.2507.99.camel@laptop>  <20120704120001.GC960@krava.redhat.com>
+	 <1341352848-11833-5-git-send-email-jolsa@redhat.com>
+	 <1341397330.2507.85.camel@laptop> <1341398311.2507.98.camel@laptop>
+	 <20120704120155.GE960@krava.redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Jul 2012 14:13:39 +0200
-Message-ID: <1341404019.2507.107.camel@laptop>
+Date: Wed, 04 Jul 2012 14:14:48 +0200
+Message-ID: <1341404088.2507.108.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -28,40 +29,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-04 at 14:00 +0200, Jiri Olsa wrote:
-> On Wed, Jul 04, 2012 at 12:39:20PM +0200, Peter Zijlstra wrote:
-> > On Wed, 2012-07-04 at 00:00 +0200, Jiri Olsa wrote:
-> > > 
-> > > It's possible to use sysfs attribute name as 'event' term value,
-> > > or any possible alias for hw event, e.g.:
-> > >   cycles                     OR cpu-cycles
-> > >   branch_misses              OR branch-misses
-> > >   bus_cycles                 OR bus-cycles
-> > >   cache_misses               OR cache-misses
-> > >   cache_references           OR cache-references
-> > >   ref_cycles                 OR ref-cycles
-> > >   stalled_cycles_backend     OR stalled-cycles-backend
-> > >   stalled_cycles_frontend    OR stalled-cycles-frontend 
-> > 
-> > Do we really want to do that?
-> 
-> well, the aliasing works on sysfs filename base.. so when you specify
->    event=str 
-> 
-> 'str' file is looked up in 'events' dir.
+On Wed, 2012-07-04 at 14:01 +0200, Jiri Olsa wrote:
+> >   ret = sprintf(page, "event=0x%02llx", event);
+> >   if (umask)
+> >     ret += sprintf(page + ret, ",umask=0x%02llx", umask);
+> >   if (inv)
+> >     ret += sprintf(page + ret, ",inv");
+> >   if (cmask)
+> >     ret += sprintf(page + ret, ",cmask=0x%02llx", cmask);
+> >   sprintf(page + ret, "\n");
 
-Right..
-
-> We use '_' in file names and '-' in event symbol names. I thought it might be
-> confusing allowing just '_' so I added also the '-' version.
-> 
-> I could keep just the '-' version.. with some more work on kernel ATTR
-> function names ;) but it seems like common sysfs practise to use '_'.
-
-We could map '-' to '_', but I'm not sure about the aliases in general.
-I mean if the sysfs event name is 'cycles' also allowing 'cpu_cycles' is
-somewhat confusing and arbitrary.
-
-I think it would be best to stick to discoverable names only. Anybody?
-
+There's a ret += missing there.
 
