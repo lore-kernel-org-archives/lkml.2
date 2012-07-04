@@ -1,117 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933221Ab2GDGOO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 02:14:14 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58203 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab2GDGOL (ORCPT
+	id S933558Ab2GDGUO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 02:20:14 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:3314 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932926Ab2GDGUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 02:14:11 -0400
-Date: Tue, 3 Jul 2012 23:13:55 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, ocfs2-devel@oss.oracle.com,
-        linux-aio@kvack.org, mfasheh@suse.com, linux-kernel@vger.kernel.org,
-        joe.jin@oracle.com, stable@vger.kernel.org
-Subject: Re: [PATCH v4 1/2] aio: make kiocb->private NUll in
- init_sync_kiocb()
-Message-ID: <20120704061355.GD14743@dhcp-172-17-9-228.mtv.corp.google.com>
-Mail-Followup-To: Junxiao Bi <junxiao.bi@oracle.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	ocfs2-devel@oss.oracle.com, linux-aio@kvack.org, mfasheh@suse.com,
-	linux-kernel@vger.kernel.org, joe.jin@oracle.com,
-	stable@vger.kernel.org
-References: <1340788195-20623-1-git-send-email-junxiao.bi@oracle.com>
- <1340788195-20623-2-git-send-email-junxiao.bi@oracle.com>
- <20120628153956.9b7405d9.akpm@linux-foundation.org>
- <20120629092255.GB12521@dhcp-172-17-9-228.mtv.corp.google.com>
- <4FED8847.9000204@oracle.com>
+	Wed, 4 Jul 2012 02:20:09 -0400
+Message-ID: <4FF3E063.5010604@huawei.com>
+Date: Wed, 4 Jul 2012 14:19:15 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FED8847.9000204@oracle.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>
+CC: shyju pv <shyju.pv@huawei.com>, Sanil kumar <sanil.kumar@huawei.com>,
+        Masanari Iida <standby24x7@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <viro@zeniv.linux.org.uk>, <levinsasha928@gmail.com>
+Subject: Re: [PATCH] cgroup: fix dentry still in use bug when dropping css
+ refs after umount
+References: <4FEEA5CB.8070809@huawei.com> <20120703170317.GB555@google.com> <20120703225218.GF555@google.com>
+In-Reply-To: <20120703225218.GF555@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.166.88.115]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 29, 2012 at 06:49:43PM +0800, Junxiao Bi wrote:
-> On 06/29/2012 05:22 PM, Joel Becker wrote:
-> > On Thu, Jun 28, 2012 at 03:39:56PM -0700, Andrew Morton wrote:
-> >> On Wed, 27 Jun 2012 17:09:54 +0800
-> >> Junxiao Bi <junxiao.bi@oracle.com> wrote:
-> >>
-> >>> Ocfs2 uses kiocb.*private as a flag of unsigned long size. In
-> >>> commit a11f7e6 ocfs2: serialize unaligned aio, the unaligned
-> >>> io flag is involved in it to serialize the unaligned aio. As
-> >>> *private is not initialized in init_sync_kiocb() of do_sync_write(),
-> >>> this unaligned io flag may be unexpectly set in an aligned dio.
-> >>> And this will cause OCFS2_I(inode)->ip_unaligned_aio decreased
-> >>> to -1 in ocfs2_dio_end_io(), thus the following unaligned dio
-> >>> will hang forever at ocfs2_aiodio_wait() in ocfs2_file_aio_write().
-> >>>
-> >>> Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-> >>> Cc: stable@vger.kernel.org
-> >>> Acked-by: Jeff Moyer <jmoyer@redhat.com>
-> >>> Acked-by: Joel Becker <jlbec@evilplan.org>
-> >>> ---
-> >>>  include/linux/aio.h |    1 +
-> >>>  1 file changed, 1 insertion(+)
-> >>>
-> >>> diff --git a/include/linux/aio.h b/include/linux/aio.h
-> >>> index 2314ad8..b1a520e 100644
-> >>> --- a/include/linux/aio.h
-> >>> +++ b/include/linux/aio.h
-> >>> @@ -140,6 +140,7 @@ struct kiocb {
-> >>>  		(x)->ki_dtor = NULL;			\
-> >>>  		(x)->ki_obj.tsk = tsk;			\
-> >>>  		(x)->ki_user_data = 0;                  \
-> >>> +		(x)->private = NULL;			\
-> >>>  	} while (0)
-> >>>  
-> >>>  #define AIO_RING_MAGIC			0xa10a10a1
-> >> hm, that code is rather cruddy.  Pointless macromania.
-> > Agreed.
-> >
-> >> If we do this:
-> >>
-> >> static inline void init_sync_kiocb(struct kiocb *kiocb, struct file *filp)
-> >> {
-> >> 	*kiocb = (struct kiocb) {
-> >> 			.ki_users = 1,
-> >> 			.ki_key = KIOCB_SYNC_KEY,
-> >> 			.ki_filp = filp,
-> >> 			.ki_obj.tsk = current,
-> >> 		};
-> >> }
-> >>
-> >> then fs/read_write.o's .text is shrunk from 9857 bytes to 9714, which
-> >> is rather a lot.
-> >>
-> >> But that's all rather irrelevant to your bugfix.
-> > 	I like your solution.  Junxiao, if you send me that version, I'd
-> > be happy to take it.
-> Joel, since Andrew will feed his cleanup patch later on. Please help
-> merge my patches. Though it is covered by the cleanup patch, but I think
-> it's useful to merge it, at least we can see from the git log this is
-> for an ocfs2 hang bug.
+On 2012/7/4 6:52, Tejun Heo wrote:
 
-Yes, I'll be pulling it.
+> Hello,
+> 
+> Shyju, can you please test the following patch?
+> 
+> Sasha, can you please re-test your test case with this patch?  I don't
+> think fa980ca87d "cgroup: superblock can't be released with active
+> dentries" did anything useful.  cgroup always calls d_iput() and
+> d_release() in succession from the same context.  It may just have
+> stretched the timing a bit to hide the race.
+> 
+> Li, this patch reverts fa980ca87d and wraps dput() in css_dput_fn()
+> with s_active refs.  Positive dentry ref means that we have active ref
+> on sb, so wrapping the final dput() with extra s_active ref should
+> avoid premature super destruction. 
 
-Joel
 
-> >
-> > Joel
-> >
+> I think we're horridly broken for
+
+> root cgroup tho - and it has been broken for very long time.  I think
+> it's mostly hidden because most (all?) controllers short-circuit root
+> cgroup.  Eh, well....
 > 
 
--- 
+Could you elaborate a bit on what's broken for root cgroup?
 
-"In the room the women come and go
- Talking of Michaelangelo."
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
