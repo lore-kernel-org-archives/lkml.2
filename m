@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab2GDQYU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 12:24:20 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37621 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154Ab2GDQYT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 12:24:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <1341418517.2583.2252.camel@edumazet-glaptop>
-References: <1340389359-2407-1-git-send-email-js1304@gmail.com>
-	<1340390729-2821-1-git-send-email-js1304@gmail.com>
-	<CAOJsxLHSboF0rQdGv8bdgGtinBz5dTo+omQbUnj9on_ewzgNAQ@mail.gmail.com>
-	<CAAmzW4OdDhn5C_vfMhu3ejzzcXmCCt6r0h=nXUqKJaNYZxg8Bw@mail.gmail.com>
-	<CAOJsxLGBxeu2sE-wDT+YNyVipmXiPj7Gvmmdo-0zGmJObp2zxg@mail.gmail.com>
-	<1341415579.2583.2134.camel@edumazet-glaptop>
-	<CAAmzW4P8itKqMLLUqAAtT7GakKecCixd0PV8y0LgFOL+=g_tZQ@mail.gmail.com>
-	<1341418517.2583.2252.camel@edumazet-glaptop>
-Date: Thu, 5 Jul 2012 01:24:18 +0900
-Message-ID: <CAAmzW4NmJs0nanYt+gMPuRCzTqByg6ufpQZBjQ3w80bapqLwFA@mail.gmail.com>
-Subject: Re: [PATCH 1/3 v2] slub: prefetch next freelist pointer in __slab_alloc()
-From: JoonSoo Kim <js1304@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        David Rientjes <rientjes@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755390Ab2GDQZA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 12:25:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46132 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754794Ab2GDQY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 12:24:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="166923184"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 1/6] mei: mei_device can be const for mei register access functions
+Date: Wed,  4 Jul 2012 19:24:49 +0300
+Message-Id: <1341419094-4204-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/5 Eric Dumazet <eric.dumazet@gmail.com>:
-> On Thu, 2012-07-05 at 00:48 +0900, JoonSoo Kim wrote:
->> 2012/7/5 Eric Dumazet <eric.dumazet@gmail.com>:
->> > Its the slow path. I am not convinced its useful on real workloads (not
->> > a benchmark)
->> >
->> > I mean, if a workload hits badly slow path, some more important work
->> > should be done to avoid this at a higher level.
->> >
->>
->> In hackbench test, fast path allocation is about to 93%.
->> Is it insufficient?
->
-> 7% is insufficient I am afraid.
->
-> One prefetch() in the fast path serves 93% of the allocations,
-> so added icache pressure is ok.
->
-> One prefetch() in slow path serves 7% of the allocations, do you see the
-> difference ?
->
-> Adding a prefetch() is usually a win when a benchmark uses the path one
-> million times per second.
->
-> But adding prefetches also increases kernel size and it hurts globally.
-> (Latency of the kernel depends on its size, when cpu caches are cold)
->
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/mei_dev.h |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-Okay.
-Thanks for comments which is very helpful to me.
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index d60250d..772f74d 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -363,7 +363,8 @@ int mei_find_me_client_index(const struct mei_device *dev, uuid_le cuuid);
+  *
+  * returns register value (u32)
+  */
+-static inline u32 mei_reg_read(struct mei_device *dev, unsigned long offset)
++static inline u32 mei_reg_read(const struct mei_device *dev,
++			       unsigned long offset)
+ {
+ 	return ioread32(dev->mem_addr + offset);
+ }
+@@ -375,8 +376,8 @@ static inline u32 mei_reg_read(struct mei_device *dev, unsigned long offset)
+  * @offset: offset from which to write the data
+  * @value: register value to write (u32)
+  */
+-static inline void mei_reg_write(struct mei_device *dev,
+-				unsigned long offset, u32 value)
++static inline void mei_reg_write(const struct mei_device *dev,
++				 unsigned long offset, u32 value)
+ {
+ 	iowrite32(value, dev->mem_addr + offset);
+ }
+@@ -388,7 +389,7 @@ static inline void mei_reg_write(struct mei_device *dev,
+  *
+  * returns the byte read.
+  */
+-static inline u32 mei_hcsr_read(struct mei_device *dev)
++static inline u32 mei_hcsr_read(const struct mei_device *dev)
+ {
+ 	return mei_reg_read(dev, H_CSR);
+ }
+@@ -400,7 +401,7 @@ static inline u32 mei_hcsr_read(struct mei_device *dev)
+  *
+  * returns ME_CSR_HA register value (u32)
+  */
+-static inline u32 mei_mecsr_read(struct mei_device *dev)
++static inline u32 mei_mecsr_read(const struct mei_device *dev)
+ {
+ 	return mei_reg_read(dev, ME_CSR_HA);
+ }
+@@ -412,7 +413,7 @@ static inline u32 mei_mecsr_read(struct mei_device *dev)
+  *
+  * returns ME_CB_RW register value (u32)
+  */
+-static inline u32 mei_mecbrw_read(struct mei_device *dev)
++static inline u32 mei_mecbrw_read(const struct mei_device *dev)
+ {
+ 	return mei_reg_read(dev, ME_CB_RW);
+ }
+-- 
+1.7.4.4
+
