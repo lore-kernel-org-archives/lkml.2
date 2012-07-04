@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab2GDBNB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 21:13:01 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:57077 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258Ab2GDBNA (ORCPT
+	id S1756298Ab2GDBWk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 21:22:40 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:59175 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753915Ab2GDBWj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 21:13:00 -0400
+	Tue, 3 Jul 2012 21:22:39 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony" <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mikew@google.com" <mikew@google.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [RFC][PATCH 2/2] write callback: Check if existing entry is
+ erasable
+Thread-Topic: [RFC][PATCH 2/2] write callback: Check if existing entry is
+ erasable
+Thread-Index: Ac1ZdICAdYwUKctERYa3qDPOlfZeVAAAh5VAAAMp8cA=
+Date: Wed, 4 Jul 2012 01:22:20 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D401AB85@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D401AAED@USINDEM103.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28F1933C8AA@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1933C8AA@ORSMSX104.amr.corp.intel.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAKA=qzZVVvhjw4gxxAcaDG1e0Lxwf7ROTm1XgXhavgMAExrAVg@mail.gmail.com>
-References: <20120626155332.GJ22557@redhat.com>
-	<CAKA=qzYoX-1nTZ6QfdD7RhWf=KU7J6tWOJXgt-F+Kz2c3Xn0TQ@mail.gmail.com>
-	<20120626205651.GW3869@google.com>
-	<CAKA=qzbBtteDjHiPogCvN5jOSiPrDxx=vn96p02bXUy=6=jAgA@mail.gmail.com>
-	<CAKA=qzaZweeeYUFD2OHDeAO-SQihSvExAZ=ZnXeY5o5sMWpxJg@mail.gmail.com>
-	<CAKA=qzbaM-z7CbASUgq-A7CZWiUq6pdb93e4giYAw63hQK=MCg@mail.gmail.com>
-	<20120627173822.GK15811@google.com>
-	<CAKA=qzY5FT8rWU=z8DwGB7aF6AvCuT=bH2sOJQafyEPqtbkduQ@mail.gmail.com>
-	<20120627175458.GL15811@google.com>
-	<CAKA=qzaArsuwuuqHVKgTqwszY_Zx8d690e6UJsOQUvq_4--hjQ@mail.gmail.com>
-	<20120629230237.GF21048@google.com>
-	<CAKA=qzZVVvhjw4gxxAcaDG1e0Lxwf7ROTm1XgXhavgMAExrAVg@mail.gmail.com>
-Date: Tue, 3 Jul 2012 18:12:58 -0700
-X-Google-Sender-Auth: GYlPI_MXqDasv7C0-heEzoPsNhc
-Message-ID: <CAOS58YO5oDn9Y=2dPiDPQ8u4kk7ewV2GLfMDZnjnaazkv+N-0w@mail.gmail.com>
-Subject: Re: multi-second application stall in open()
-From: Tejun Heo <tj@kernel.org>
-To: Josh Hunt <joshhunt00@gmail.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-07-03_09:2012-07-03,2012-07-03,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1207030297
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Fri, Jun 29, 2012 at 5:37 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
-> Wow. Thanks Tejun. I will try and get to this over the weekend, but it
-> may not be until Monday before I can test it.
+> Perhaps update the comment in include/linux/kmsg_dump.h to mention that <= KMSG_DUMP_EMERG may overwrite less important
+> logs (since it already mentions the importance of order and significance of the OOPS level).
 
-Any progress?
+I will update my patch by adding some comment to linux/kmsg_dump.h
 
-Thanks!
+Thanks, 
 
--- 
-tejun
+Seiji
