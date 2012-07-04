@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751259Ab2GDMCa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 08:02:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37924 "EHLO mx1.redhat.com"
+	id S1751374Ab2GDMDU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 08:03:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33331 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750846Ab2GDMC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 08:02:26 -0400
-Date: Wed, 4 Jul 2012 14:01:55 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/10] perf, x86: Making hardware events translations
- available in sysfs
-Message-ID: <20120704120155.GE960@krava.redhat.com>
-References: <1341352848-11833-1-git-send-email-jolsa@redhat.com>
- <1341352848-11833-5-git-send-email-jolsa@redhat.com>
- <1341397330.2507.85.camel@laptop>
- <1341398311.2507.98.camel@laptop>
+	id S1750846Ab2GDMDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 08:03:18 -0400
+Date: Wed, 4 Jul 2012 14:03:07 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] floppy: Run floppy initialization asynchronous
+In-Reply-To: <1341275224-31696-1-git-send-email-andi@firstfloor.org>
+Message-ID: <alpine.LNX.2.00.1207041402010.17304@pobox.suse.cz>
+References: <1341275224-31696-1-git-send-email-andi@firstfloor.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341398311.2507.98.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 04, 2012 at 12:38:31PM +0200, Peter Zijlstra wrote:
-> On Wed, 2012-07-04 at 12:22 +0200, Peter Zijlstra wrote:
-> > How about something like:
-> > 
-> >  u64 config = x86_pmu.event_map(_id);
-> >  u64 event = (config & ARCH_PERFMON_EVENTSEL_EVENT) |
-> >              (config & AMD64_EVENTSEL_EVENT) >> 24;
-> >  u64 umask = (config & ARCH_PERFMON_EVENTSEL_UMASK) >> 8;
-> > 
-> >  WARN_ON_ONCE(config & (ARCH_PERFMON_EVENTSEL_INV |
-> >                         ARCH_PERFMON_EVENTSEL_CMASK));
-> > 
-> >  sprintf("event=0x%02llx,umask=0x%02llx\n", event, umask); 
-> 
-> Oh wait, silly me, we actually need the inv and cmask too.
-> 
-> So that gets to be something like:
-> 
->   u64 config = x86_pmu.event_map(_id);
->   u64 event = (config & ARCH_PERFMON_EVENTSEL_EVENT) |
->               (config & AMD64_EVENTSEL_EVENT) >> 24;
->   u64 umask = (config & ARCH_PERFMON_EVENTSEL_UMASK) >> 8;
->   u64 inv   = (config & ARCH_PERFMON_EVENTSEL_INV) >> 23;
->   u64 cmask = (config & ARCH_PERFMON_EVENTSEL_CMASK) >> 24;
->   ssize_t ret;
-> 
->   ret = sprintf(page, "event=0x%02llx", event);
->   if (umask)
->     ret += sprintf(page + ret, ",umask=0x%02llx", umask);
->   if (inv)
->     ret += sprintf(page + ret, ",inv");
->   if (cmask)
->     ret += sprintf(page + ret, ",cmask=0x%02llx", cmask);
->   sprintf(page + ret, "\n");
->  
->   return ret;
-> 
+On Mon, 2 Jul 2012, Andi Kleen wrote:
 
-ok
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> floppy_init is quite slow, 3s on my test system to determine
+> that there is no floppy. Run it asynchronous to the other
+> init calls to improve boot time.
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  drivers/block/floppy.c |   21 ++++++++++++++++++++-
+>  1 files changed, 20 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+> index cce7df3..8b5769b 100644
+> --- a/drivers/block/floppy.c
+> +++ b/drivers/block/floppy.c
+> @@ -191,6 +191,7 @@ static int print_unex = 1;
+>  #include <linux/mutex.h>
+>  #include <linux/io.h>
+>  #include <linux/uaccess.h>
+> +#include <linux/async.h>
+>  
+>  /*
+>   * PS/2 floppies have much slower step rates than regular floppies.
+> @@ -4122,7 +4123,7 @@ static struct kobject *floppy_find(dev_t dev, int *part, void *data)
+>  	return get_disk(disks[drive]);
+>  }
+>  
+> -static int __init floppy_init(void)
+> +static int __init do_floppy_init(void)
+>  {
+>  	int i, unit, drive;
+>  	int err, dr;
+> @@ -4337,6 +4338,24 @@ out_put_disk:
+>  	return err;
+>  }
+>  
+> +#ifndef MODULE
+> +static __init void floppy_async_init(void *data, async_cookie_t cookie)
+> +{
+> +	do_floppy_init();
+> +}
+> +#endif
+> +
+> +static int __init floppy_init(void)
+> +{
+> +#ifdef MODULE
+> +	return do_floppy_init(void);
+
+This isn't really a valid C.
+
+I have fixed that and applied.
+
+-- 
+Jiri Kosina
+SUSE Labs
