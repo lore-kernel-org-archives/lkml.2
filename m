@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933562Ab2GDFm6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 01:42:58 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63523 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932493Ab2GDFjm (ORCPT
+	id S933307Ab2GDFoZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 01:44:25 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:20973 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932880Ab2GDFoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 01:39:42 -0400
-X-AuditID: 9c930179-b7cceae000004195-44-4ff3d71b86f8
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <srostedt@redhat.com>
-Subject: [PATCH 04/16] tools lib traceevent: Fix %pM print format arg handling
-Date: Wed,  4 Jul 2012 14:35:18 +0900
-Message-Id: <1341380130-23863-4-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1341380130-23863-1-git-send-email-namhyung@kernel.org>
-References: <1341380068-23806-1-git-send-email-namhyung@kernel.org>
- <1341380130-23863-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 4 Jul 2012 01:44:21 -0400
+Message-ID: <4FF3D757.9060905@huawei.com>
+Date: Wed, 4 Jul 2012 13:40:39 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, shyju pv <shyju.pv@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Sanil kumar <sanil.kumar@huawei.com>,
+        Masanari Iida <standby24x7@gmail.com>
+Subject: Re: [PATCH] cgroup: cgroup_rm_files() was calling simple_unlink()
+ with the wrong inode
+References: <20120627182903.GP15811@google.com> <4FEBF4B7.2070105@huawei.com> <20120628180712.GC22641@google.com> <4FED10DB.7040500@huawei.com> <20120629165809.GB21048@google.com> <4FEE98EE.1050409@huawei.com> <20120630064724.GC14083@ZenIV.linux.org.uk> <CAOS58YNnU3J+c2ZQcRCesSoxn0dSJjDLBsZ2qzZ09X6N-ky0fQ@mail.gmail.com> <20120630083421.GD14083@ZenIV.linux.org.uk> <20120703171033.GC555@google.com> <20120703173806.GD555@google.com>
+In-Reply-To: <20120703173806.GD555@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.166.88.115]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+Tejun Heo wrote:
 
-When %pM is used, the arg value must be a 6 byte character that will
-be printed as a 6 byte MAC address. But the code does a break over the
-main code which updates the current processing arg to point to the
-next arg. If there are other print arguments after a %pM, they will be
-off by one. The next arg will still be processing the %pM arg.
+>>From 6da2689412c78b97716ec524cc30baf7b46508cd Mon Sep 17 00:00:00 2001
+> From: Tejun Heo <tj@kernel.org>
+> Date: Tue, 3 Jul 2012 10:32:26 -0700
+> 
+> While refactoring cgroup file removal path, 05ef1d7c4a "cgroup:
+> introduce struct cfent" incorrectly changed the @dir argument of
+> simple_unlink() to the inode of the file being deleted instead of that
+> of the containing directory.
+> 
+> The effect of this bug is minor - ctime and mtime of the parent
+> weren't properly updated on file deletion.
+> 
+> Fix it by using @cgrp->dentry->d_inode instead.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
 
-Reported-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/n/tip-q3g0n1espikynsdkpbi6ue6t@git.kernel.org
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/lib/traceevent/event-parse.c |    1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 872dd35db051..da06c33dcf41 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -3858,6 +3858,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 				} else if (*(ptr+1) == 'M' || *(ptr+1) == 'm') {
- 					print_mac_arg(s, *(ptr+1), data, size, event, arg);
- 					ptr++;
-+					arg = arg->next;
- 					break;
- 				}
- 
--- 
-1.7.10.4
-
+Acked-By: Li Zefan <lizefan@huawei.com>
