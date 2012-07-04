@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab2GDP0Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 11:26:25 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42622 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab2GDP0Y (ORCPT
+	id S1754319Ab2GDP3M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 11:29:12 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47386 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846Ab2GDP3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 11:26:24 -0400
-Subject: Re: [PATCH 1/3 v2] slub: prefetch next freelist pointer in
- __slab_alloc()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: JoonSoo Kim <js1304@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        David Rientjes <rientjes@google.com>
-In-Reply-To: <CAOJsxLGBxeu2sE-wDT+YNyVipmXiPj7Gvmmdo-0zGmJObp2zxg@mail.gmail.com>
-References: <1340389359-2407-1-git-send-email-js1304@gmail.com>
-	 <1340390729-2821-1-git-send-email-js1304@gmail.com>
-	 <CAOJsxLHSboF0rQdGv8bdgGtinBz5dTo+omQbUnj9on_ewzgNAQ@mail.gmail.com>
-	 <CAAmzW4OdDhn5C_vfMhu3ejzzcXmCCt6r0h=nXUqKJaNYZxg8Bw@mail.gmail.com>
-	 <CAOJsxLGBxeu2sE-wDT+YNyVipmXiPj7Gvmmdo-0zGmJObp2zxg@mail.gmail.com>
+	Wed, 4 Jul 2012 11:29:10 -0400
+Subject: Re: [PATCH 03/16] sched: aggregate load contributed by task
+ entities on parenting cfs_rq
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+In-Reply-To: <20120628022414.30496.73426.stgit@kitami.mtv.corp.google.com>
+References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
+	 <20120628022414.30496.73426.stgit@kitami.mtv.corp.google.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Jul 2012 17:26:19 +0200
-Message-ID: <1341415579.2583.2134.camel@edumazet-glaptop>
+Date: Wed, 04 Jul 2012 17:28:46 +0200
+Message-ID: <1341415726.19870.0.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-04 at 18:08 +0300, Pekka Enberg wrote:
+On Wed, 2012-06-27 at 19:24 -0700, Paul Turner wrote:
+> For a given task t, we can compute its contribution to load as:
+>   task_load(t) = runnable_avg(t) * weight(t)
+> 
+> On a parenting cfs_rq we can then aggregate
+>   runnable_load(cfs_rq) = \Sum task_load(t), for all runnable children t
+> 
+> Maintain this bottom up, with task entities adding their contributed load to
+> the parenting cfs_rq sum.  When a task entities load changes we add the same
+> delta to the maintained sum.
+> 
+> Signed-off-by: Paul Turner <pjt@google.com>
+> Signed-off-by: Ben Segall <bsegall@google.com> 
 
-> That doesn't seem like that obvious win to me... Eric, Christoph?
+A lot of patches have this funny sob trail.. Ben never send me these
+patches, so uhm. ?
 
-Its the slow path. I am not convinced its useful on real workloads (not
-a benchmark)
-
-I mean, if a workload hits badly slow path, some more important work
-should be done to avoid this at a higher level.
-
+Should that be Reviewed-by, or what is the deal with those?
 
