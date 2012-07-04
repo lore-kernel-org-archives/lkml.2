@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab2GDRec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 13:34:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14778 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753374Ab2GDReb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 13:34:31 -0400
-Date: Wed, 4 Jul 2012 19:34:07 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org,
-        drepper@gmail.com
-Subject: Re: [PATCH 2/3] perf, tool: Enable grouping logic for parsed events
-Message-ID: <20120704173407.GA2880@krava.redhat.com>
-References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
- <1340960907-3725-3-git-send-email-jolsa@redhat.com>
- <87bojync4b.fsf@sejong.aot.lge.com>
- <20120702101010.GB967@krava.redhat.com>
- <873959mzi3.fsf@sejong.aot.lge.com>
+	id S1755013Ab2GDRlU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 13:41:20 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:35042 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986Ab2GDRlS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 13:41:18 -0400
+Message-ID: <4FF48039.3020505@acm.org>
+Date: Wed, 04 Jul 2012 12:41:13 -0500
+From: Corey Minyard <tcminyard@gmail.com>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <873959mzi3.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andi Kleen <andi@firstfloor.org>
+CC: Srinivas_G_Gowda@Dell.com, tcminyard@gmail.com, mjg59@srcf.ucam.org,
+        linux-kernel@vger.kernel.org, openipmi-developer@lists.sourceforge.net,
+        jharg93@gmail.com
+Subject: Re: [PATCH 1/1 v2 ] ipmi: Setting OS name as Linux in BMC
+References: <4FEC8931.5020001@dell.com> <4FEC8A28.4070806@dell.com> <m2k3yrgf4d.fsf@firstfloor.org> <20120629123001.GA26545@srcf.ucam.org> <4FEDBB3C.7080105@acm.org> <4FF3D090.8000403@dell.com> <20120704121726.GP11413@one.firstfloor.org>
+In-Reply-To: <20120704121726.GP11413@one.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 03, 2012 at 09:58:44AM +0900, Namhyung Kim wrote:
-> On Mon, 2 Jul 2012 12:10:10 +0200, Jiri Olsa wrote:
-> > On Mon, Jul 02, 2012 at 11:13:56AM +0900, Namhyung Kim wrote:
-> >> On Fri, 29 Jun 2012 11:08:26 +0200, Jiri Olsa wrote:
-> >> > It's possible to use standard event modifier for a group, which spans
-> >> > over all events in the group and overrides any event modifier settings,
-> >> > for example:
-> >> >
-> >> >   # perf record -r '{faults:k,cache-references}:u'
-> >> >
-> >> > resulting in ':u' modifier being used for both 'faults' and 'cache-references'
-> >> > events, regardless of their modifier setup (':k' for faults event).
-> >> >
-> >> 
-> >> So the faults event would get only 'u' for the modifier not 'uk', right?
-> >
-> > right
-> >
-> 
-> I was thinking about the combining the modifiers - i.e. make it 'uk'
-> above. Not sure it's useful in general, but something like "adding 'p'
-> to the leader (only)" looks good to have IMHO.
+On 07/04/2012 07:17 AM, Andi Kleen wrote:
+>> Rather than just have a static entry such as 'Linux' I could probably write the version number and more(distro name etc.. )
+>>
+>> Thoughts.. ?
+> I still think "Linux" means nothing even to the management software.
+> What should it do with that?
+>
+> If you provide some way for a distro to fill in "foobar linux 1.2.3.4"
+> maybe. But just Linux or even Linux x.y.z would be wrong because the same kernel
+> version can behave very differently.
+>
+> But it would be  better to define specific feature flags for
+> specific needs that actually mean something.
 
-just hit the issue with leader 'p' during tests ;) but still not sure which
-way is more usefull thought.. probably better to have both ways available
+I think the conclusion I have come to is that this really belongs as a 
+small program that runs at startup.  That's not significantly different 
+than having it done in the driver.  I can help you write it, if you like.
 
-how about uppercase group modifier overwrites, lowercase means combining
+I think Andi is right here.  "Linux" may mean something to your 
+management software.  Some other management software may want "Linux 
+x.y.z".  Another may want "SuSE Enterprise Linux x.y".  It's impossible 
+to be general enough in the kernel.
 
-or any other way.. ;) thoughts?
+>
+>> I know there were some concerns with the security aspect, Can you please let me know what kind of security holes we could be looking at ?
+> I don't think there are any security problems. just forward/backward
+> compatibility problems, as the ACPI experience shows.
 
-jirka
+I had mentioned possible security issues with having some daemon that 
+identified the system directly over IP.  I don't think there are any 
+issues with IPMI, at least not any more than you already have with IPMI, 
+and it's reasonably secure for what it does.
 
-> 
-> Thanks,
-> Namhyung
+-corey
