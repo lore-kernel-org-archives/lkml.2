@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab2GDSe4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 14:34:56 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62295 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755651Ab2GDSey (ORCPT
+	id S1755746Ab2GDSlg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 14:41:36 -0400
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:33683 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755110Ab2GDSle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 14:34:54 -0400
+	Wed, 4 Jul 2012 14:41:34 -0400
+X-SENDER-IP: [85.230.168.62]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoFSAKiN9E9V5qg+PGdsb2JhbABFihmtExkBAQEBHgMWDSeCGAEBBAEnExwjBQsIAw44FCUKGogZCbo3FJB8YAOVNoVmg0GJPg
+X-IronPort-AV: E=Sophos;i="4.77,525,1336341600"; 
+   d="scan'208";a="368337985"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 4 Jul 2012 20:41:57 +0200
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Chase Douglas <chase.douglas@canonical.com>,
+        Yufeng Shen <miletus@chromium.org>, linux-input@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        Andrew de los Reyes <adlr@chromium.org>
+Subject: Re: [PATCH 1/2 v2] HID: magicmouse: Removing report_touches switch
+Message-ID: <20120704184157.GA272@polaris.bitmath.org>
+References: <1341341621-15560-1-git-send-email-miletus@chromium.org>
+ <4FF35597.7020408@canonical.com>
+ <20120704074049.GA380@polaris.bitmath.org>
+ <CAGS+omDHQkWdmETOwaDu3nkAQEhJeNkLDdDmF+4N=XDTO6+FWg@mail.gmail.com>
+ <20120704083841.GA722@polaris.bitmath.org>
 MIME-Version: 1.0
-From: Dharam Kumar <dharam.kumar.gupta@gmail.com>
-Date: Thu, 5 Jul 2012 00:04:32 +0530
-Message-ID: <CAOt5+pSrpsyvuyyT=kQj0k6u5m+KnJTH_+Q7hLhkkW0pNFSqpA@mail.gmail.com>
-Subject: Info on Remote controller keys like upper-right, upper-left ,
- lower-right, lower-left ,sub-picture etc.
-To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120704083841.GA722@polaris.bitmath.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+> The input events stop coming when I have more than four fingers on the
+> pad, but they start again if I remove the excess fingers. As if the
+> transport layer chokes on messages longer than some value...
 
-I've been working on a MHL( www.mhltech.org  ) transmitter driver
-which needs to receive/handle incoming Remote control keys.
+Yep, that's it. On my system, something sets the L2CAP MTU to a
+whopping 48 bytes, and the code below, from l2cap_core.c,
 
-The specification tells me that other than normal keys[up,down,left,
-right etc.] there are certain remote control keys like Upper-right,
-Upper-left, Lower-right, Lower-left, Sub-picture etc.
+	switch (chan->mode) {
+	case L2CAP_MODE_BASIC:
+		/* If socket recv buffers overflows we drop data here
+		 * which is *bad* because L2CAP has to be reliable.
+		 * But we don't have any other choice. L2CAP doesn't
+		 * provide flow control mechanism. */
 
-While creating a key map in the driver, I tried to find whether these
-keys has been defined in <linux/input.h> ,but I could not find such
-key definitions
-in the header file.
+		if (chan->imtu < skb->len)
+			goto drop;
 
-Please note that, although the Specs do define these Remote Controller
-keys, the driver will have the choice
-to support the key depending on the key-map.
+silently ignores packets larger than that value. Duh.
 
-Something like this:
-/* Key Map for the driver */
-  ....
- { KEY_UP, <supported> },
- { KEY_DOWN, <supported>},
- {KEY_UPPERRIGHT, <supported>},      /* No  definition for
-KEY_UPPERRIGHT in input.h  */
- {KEY_UPPERLEFT, <not-supported>},  /* No definition for KEY_UPPERLEFT
-in input.h, although this key is not supported by driver */
-....
-
-
-In other mailing lists[linux-input], it has been suggested that these
-keys are similar to Joystick keys.
-I've looked into drivers/input/joystick/analog.c file, but could not
-find any buttons/pads which are similar to the above one[Am I missing
-something here??]
-
-any pointers??
-
-Regards,
-Dharam
+Henrik
