@@ -1,201 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723Ab2GDJvo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 05:51:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53629 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753541Ab2GDJvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 05:51:39 -0400
-Date: Wed, 4 Jul 2012 10:51:31 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com, dri-devel@lists.freedesktop.org,
-        Keith Packard <keithp@keithp.com>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [MMTests] IO metadata on XFS
-Message-ID: <20120704095130.GI14154@suse.de>
-References: <20120620113252.GE4011@suse.de>
- <20120629111932.GA14154@suse.de>
- <20120629112505.GF14154@suse.de>
- <20120701235458.GM19223@dastard>
- <20120702063226.GA32151@infradead.org>
- <20120702143215.GS14154@suse.de>
- <20120702193516.GX14154@suse.de>
- <20120703001928.GV19223@dastard>
- <20120703105951.GB14154@suse.de>
- <20120704004706.GD19223@dastard>
+	id S1030189Ab2GDJzE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 05:55:04 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:32867 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756551Ab2GDJzB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 05:55:01 -0400
+Message-ID: <4FF412F5.4030109@atmel.com>
+Date: Wed, 4 Jul 2012 11:55:01 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120704004706.GD19223@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, Paul Bolle <pebolle@tiscali.nl>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Olof Johansson <olof@lixom.net>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: [GIT PULL] at91: first batch of cleanup for 3.6
+References: <4FF19B6D.3010704@atmel.com> <201207022058.34442.arnd@arndb.de> <201207040742.56200.arnd@arndb.de>
+In-Reply-To: <201207040742.56200.arnd@arndb.de>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.159.245.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 04, 2012 at 10:47:06AM +1000, Dave Chinner wrote:
-> > > > <SNIP>
-> > > > [c999a223: xfs: introduce an allocation workqueue]
-> > > 
-> > > Which indicates that there is workqueue scheduling issues, I think.
-> > > The same amount of work is being done, but half of it is being
-> > > pushed off into a workqueue to avoid stack overflow issues (*).  I
-> > > tested the above patch in anger on an 8p machine, similar to the
-> > > machine you saw no regressions on, but the workload didn't drive it
-> > > to being completely CPU bound (only about 90%) so the allocation
-> > > work was probably always scheduled quickly.
-> > 
-> > What test were you using?
+On 07/04/2012 09:42 AM, Arnd Bergmann :
+> On Monday 02 July 2012, Arnd Bergmann wrote:
+>> On Monday 02 July 2012, Nicolas Ferre wrote:
+>>> The following changes since commit
+>>> 6887a4131da3adaab011613776d865f4bcfb5678:
+>>>
+>>>   Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
+>>>
+>>> are available in the git repository at:
+>>>
+>>>   git://github.com/at91linux/linux-at91.git tags/at91-for-next-cleanup
+>>
+>> Pulled into next/cleanup
 > 
-> fsmark, dbench, compilebench, and a few fio workloads. Also,
-> xfstests times each test and I keep track of overall runtime, and
-> none of those showed any performance differential, either...
+> Unfortunately, I got a bunch of new builf errors and warnings:
 > 
+> 8<----
+> ARM: at91: fix new build errors
+> 
+> MULTI_IRQ_HANDLER and SPARSE_IRQ are now required everywhere because
+> mach/irqs.h and mach/entry-macros.S are gone but the symbols are
+> only selected for AT91SAM9, not for the NOMMU parts.
+> 
+> A few files now need to include linux/io.h directly, which used to
+> be included through other headers that have changed.
+> 
+> The new at91_aic_irq_priorities variable is only used with CONFIG_OF
+> enabled and should not be visible otherwise.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+> 
+> Please check these patches for correctness, and try to be more careful
+> to avoid such problems in the future. I found these just building the
+> defconfig files, not even invoking my randconfig scripts.
 
-Sound. I have some coverage on some of the same tests. When I get to
-them I'll keep an eye on the 3.4 figures. It might be due to the disk
-I'm using. It's a single disk and nothing to write home about in terms of
-performance. It's not exactly XFS's usual target audience.
+Sorry for this Arnd, I should have triggered my building scripts earlier
+for this request...
 
-> Indeed, running on a current 3.5-rc5 tree, my usual fsmark
-> benchmarks are running at the same numbers I've been seeing since
-> about 3.0 - somewhere around 18k files/s for a single thread, and
-> 110-115k files/s for 8 threads.
-> 
-> I just ran your variant, and I'm getting about 20kfile/s for a
-> single thread, which is about right because you're using smaller
-> directories than I am (22500 files per dir vs 100k in my tests).
-> 
+Tell me if you can queue your fixing patch or if you prefer that I
+rework it and send it back a series to you...
 
-I had data for an fsmark-single test running with 30M files and FWIW the
-3.4 performance figures were in line with 3.0 and later kernels.
+Anyway, here is my:
 
-> > > How many worker threads have been spawned on these machines
-> > > that are showing the regression?
-> > 
-> > 20 or 21 generally. An example list as spotted by top looks like
-> 
-> Pretty normal.
-> 
-> > > What is the context switch rate on the machines whenteh test is running?
-> .....
-> > Vanilla average context switch rate	4278.53
-> > Revert average context switch rate	1095
-> 
-> That seems about right, too.
-> 
-> > > Can you run latencytop to see
-> > > if there is excessive starvation/wait times for allocation
-> > > completion?
-> > 
-> > I'm not sure what format you are looking for.
-> 
-> Where the context switches are coming from, and how long they are
-> abeing stalled for.
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Noted. Capturing latency_stats over time is enough to do that. It won't
-give a per-process breakdown but in the majority of cases that is not a
-problem. Extracting the data is a bit annoying but not impossible and
-better than parsing latencytop. Ideally, latencytop would be able to log
-data in some sensible format. hmmm.
 
-> Just to get the context switch locations, you
-> can use perf on the sched:sched_switch event, but that doesn't give
-> you stall times.
+Thanks a lot.
 
-No, but both can be captured and roughly correlated with each other
-given sufficient motivation.
-
-> Local testing tells me that about 40% of the
-> switches are from xfs_alloc_vextent, 55% are from the work threads,
-> and the rest are CPU idling events, which is exactly as I'd expect.
+> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+> index 7d0c40a..c8050b1 100644
+> --- a/arch/arm/mach-at91/Kconfig
+> +++ b/arch/arm/mach-at91/Kconfig
+> @@ -37,6 +37,8 @@ config SOC_AT91SAM9
+>  config SOC_AT91RM9200
+>  	bool "AT91RM9200"
+>  	select CPU_ARM920T
+> +	select MULTI_IRQ_HANDLER
+> +	select SPARSE_IRQ
+>  	select GENERIC_CLOCKEVENTS
+>  	select HAVE_AT91_DBGU0
+>  
+> @@ -142,6 +144,8 @@ config ARCH_AT91SAM9G45
+>  config ARCH_AT91X40
+>  	bool "AT91x40"
+>  	depends on !MMU
+> +	select MULTI_IRQ_HANDLER
+> +	select SPARSE_IRQ
+>  	select ARCH_USES_GETTIMEOFFSET
+>  
+>  endchoice
+> diff --git a/arch/arm/mach-at91/at91x40.c b/arch/arm/mach-at91/at91x40.c
+> index 4c0f5fd..46090e6 100644
+> --- a/arch/arm/mach-at91/at91x40.c
+> +++ b/arch/arm/mach-at91/at91x40.c
+> @@ -13,6 +13,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/init.h>
+>  #include <linux/irq.h>
+> +#include <linux/io.h>
+>  #include <asm/proc-fns.h>
+>  #include <asm/system_misc.h>
+>  #include <asm/mach/arch.h>
+> diff --git a/arch/arm/mach-at91/irq.c b/arch/arm/mach-at91/irq.c
+> index c5eaaa0..1e02c0e 100644
+> --- a/arch/arm/mach-at91/irq.c
+> +++ b/arch/arm/mach-at91/irq.c
+> @@ -49,7 +49,6 @@ static struct irq_domain *at91_aic_domain;
+>  static struct device_node *at91_aic_np;
+>  static unsigned int n_irqs = NR_AIC_IRQS;
+>  static unsigned long at91_aic_caps = 0;
+> -static unsigned int *at91_aic_irq_priorities;
+>  
+>  /* AIC5 introduces a Source Select Register */
+>  #define AT91_AIC_CAP_AIC5	(1 << 0)
+> @@ -359,6 +358,8 @@ static void __init __maybe_unused at91_aic5_hw_init(unsigned int spu_vector)
+>  }
+>  
+>  #if defined(CONFIG_OF)
+> +static unsigned int *at91_aic_irq_priorities;
+> +
+>  static int at91_aic_irq_map(struct irq_domain *h, unsigned int virq,
+>  							irq_hw_number_t hw)
+>  {
+> diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
+> index dc474bc..fca9790 100644
+> --- a/drivers/rtc/rtc-at91rm9200.c
+> +++ b/drivers/rtc/rtc-at91rm9200.c
+> @@ -27,6 +27,7 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/ioctl.h>
+>  #include <linux/completion.h>
+> +#include <linux/io.h>
+>  
+>  #include <asm/uaccess.h>
+>  
 > 
-> > > A pert top profile comparison might be informative,
-> > > too...
-> > > 
-> > 
-> > I'm not sure if this is what you really wanted. I thought an oprofile or
-> > perf report would have made more sense but I recorded perf top over time
-> > anyway and it's at the end of the mail.
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 > 
-> perf report and oprofile give you CPU usage across the run, it's not
-> instantaneous and that's where all the interesting information is.
-> e.g. a 5% sample in a 20s profile might be 5% per second for 20s, or
-> it might be 100% for 1s - that's the behaviour run profiles cannot
-> give you insight into....
-> 
-
-Fair point. I'll fix up the timestamping and keep the monitor for future
-reference.
-
-> As it is, the output you posted is nothing unusual.
-> 
-
-Grand. I had taken a look but I saw nothing particularly unusual but I
-also was not 100% sure what I should be looking for.,
-
-> > For just these XFS tests I've uploaded a tarball of the logs to
-> > http://www.csn.ul.ie/~mel/postings/xfsbisect-20120703/xfsbisect-logs.tar.gz
-> 
-> Ok, so the main thing I missed when first looking at this is that
-> you are concerned about single thread regressions.
-
-In this specific test, yes. In the original data I posted I had threaded
-benchmarks but they did not show the regression. This was a rerun with
-just the single threaded case. Generally I run both because I see bug
-reports involving both types of test.
-
-> Well, I can't
-> reproduce your results here. Single threaded with or without the
-> workqueue based allocation gives me roughly 20k +/-0.5k files/s one
-> a single disk, a 12 disk RAID0 array and a RAM disk on a 8p/4GB RAM
-> machine.  That's the same results I've been seeing since I wrote
-> this patch almost 12 months ago....
-> 
-> So, given that this is a metadata intensive workload, the only
-> extent allocation is going to be through inode and directory block
-> allocation. These paths do not consume a large amount of stack, so
-> we can tell the allocator not to switch to workqueue stack for these
-> allocations easily.
-> 
-> The patch below does this. It completely removes all the allocation
-> based context switches from the no-data fsmark workloads being used
-> for this testing. It makes no noticable difference to performance
-> here, so I'm interested if it solves the regression you are seeing
-> on your machines.
 > 
 
-It does. nodefer-metadata is just your patch applied on top of 3.4 and is
-the right-most column. It's within the noise for the reverted patches and
-approximately the same performance as 3.3. If you look at the timing
-stats at the bottom you'll see that hte patch brings the System time way
-down so consider this a
-
-Tested-by: Mel Gorman <mgorman@suse.de>
-
-FS-Mark Single Threaded
-                 fsmark-single      single-3.4.0      single-3.4.0      single-3.4.0      single-3.4.0
-                 3.4.0-vanilla   revert-aa464191   revert-c999a223       revert-both  nodefer-metadata
-Files/s  min       14176.40 ( 0.00%)    17830.60 (25.78%)    24186.70 (70.61%)      25108.00 (77.11%)    25448.40 (79.51%)
-Files/s  mean      16783.35 ( 0.00%)    25029.69 (49.13%)    37513.72 (123.52%)     38169.97 (127.43%)   36393.09 (116.84%)
-Files/s  stddev     1007.26 ( 0.00%)     2644.87 (162.58%)    5344.99 (430.65%)      5599.65 (455.93%)    5961.48 (491.85%)
-Files/s  max       18475.40 ( 0.00%)    27966.10 (51.37%)    45564.60 (146.62%)     47918.10 (159.36%)   47146.20 (155.18%)
-Overhead min      593978.00 ( 0.00%)   386173.00 (34.99%)   253812.00 (57.27%)     247396.00 (58.35%)   248906.00 (58.10%)
-Overhead mean     637782.80 ( 0.00%)   429229.33 (32.70%)   322868.20 (49.38%)     287141.73 (54.98%)   284274.93 (55.43%)
-Overhead stddev    72440.72 ( 0.00%)   100056.96 (-38.12%)  175001.08 (-141.58%)   102018.14 (-40.83%)  114055.47 (-57.45%)
-Overhead max      855637.00 ( 0.00%)   753541.00 (11.93%)   880531.00 (-2.91%)     637932.00 (25.44%)   710720.00 (16.94%)
-
-MMTests Statistics: duration
-Sys Time Running Test (seconds)              44.06     32.25     24.19     23.99     24.38
-User+Sys Time Running Test (seconds)         50.19     36.35     27.24      26.7     27.12
-Total Elapsed Time (seconds)                 59.21     44.76     34.95     34.14     36.11
-
-Thanks.
 
 -- 
-Mel Gorman
-SUSE Labs
+Nicolas Ferre
+
+
