@@ -1,94 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528Ab2GDC4a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 22:56:30 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:57035 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754426Ab2GDC41 (ORCPT
+	id S933167Ab2GDDBW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 23:01:22 -0400
+Received: from nat.nue.novell.com ([195.135.221.2]:18296 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754195Ab2GDDBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 22:56:27 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: -7
-X-BigFish: VPS-7(zz9371I542M1432Izz1202hzzz2dh2a8h668h839h93fhd25hf0ah)
-From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-To: Axel Lin <axel.lin@gmail.com>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@ti.com>
-Date: Tue, 3 Jul 2012 22:56:18 -0400
-Subject: RE: [PATCH v2] regulator: ad5398: Fix min/max current limit
- boundary checking
-Thread-Topic: [PATCH v2] regulator: ad5398: Fix min/max current limit
- boundary checking
-Thread-Index: Ac1ZEBRRpUX6tVLWQO6sFUHrs6xQ6AAgEJMw
-Message-ID: <DB904C5425BA6F4E8424B3B51A1414D1714080606C@NWD2CMBX1.ad.analog.com>
-References: <1341301353.12050.1.camel@phoenix>
-	 <DB904C5425BA6F4E8424B3B51A1414D17140805D85@NWD2CMBX1.ad.analog.com>
-	 <4FF2A7F9.3090307@metafoo.de>
-	 <DB904C5425BA6F4E8424B3B51A1414D17140805DAB@NWD2CMBX1.ad.analog.com>
-	 <4FF2AC24.7090906@metafoo.de>
-	 <DB904C5425BA6F4E8424B3B51A1414D17140805DC8@NWD2CMBX1.ad.analog.com>
-	 <CAF+7xWk5qQa5nV3OdFM51U1Kh7g9w3dA5mLL+SGRQ7_AFNkp5A@mail.gmail.com>
-	 <DB904C5425BA6F4E8424B3B51A1414D17140805E4C@NWD2CMBX1.ad.analog.com>
- <1341315373.3158.3.camel@phoenix>
-In-Reply-To: <1341315373.3158.3.camel@phoenix>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+	Tue, 3 Jul 2012 23:01:17 -0400
+Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
+From: joeyli <jlee@suse.com>
+To: Steven Newbury <steve@snewbury.org.uk>, Yinghai Lu <yinghai@kernel.org>,
+        David Miller <davem@davemloft.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>
+In-Reply-To: <CAGLnvc_ejMWiiubVMo7DLz5ZVn1iMbf67FB4H7crRCCTRRqt2A@mail.gmail.com>
+References: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
+	 <CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
+	 <CAE9FiQX=ECg5BmKm7B2ua_rZ6bOsceeHNsfFQRWBbNZx+8sBfw@mail.gmail.com>
+	 <20120525043651.GA1391@google.com>
+	 <CAE9FiQXvYH4zCqp_uOb2nw7jvm8B=q3yx1tCjJUT+PkdymYEuw@mail.gmail.com>
+	 <CAE9FiQW0rm2_sKdSCWs3TfatJB9yHwvmvt9_vBYMtOq_YBbmfw@mail.gmail.com>
+	 <20120525193716.GA8817@google.com>
+	 <CAE9FiQWrZaBpT1fzC_-mSBfDd4AKGrdGomPxVNSU-SFPrVNvOw@mail.gmail.com>
+	 <CAErSpo7d+zn-qgWKcbro7yneXRtmZQCOHi+kiGzYUTfs+aiF4g@mail.gmail.com>
+	 <CAE9FiQUWWO75WP3gYRwYbyO_ZiWwyjKnzMxOGhfjY4H98w2Hbw@mail.gmail.com>
+	 <CAErSpo46fCCFCijNfMzGYP__pP6hkPFurMS=1=wSAZsg5z0-Lg@mail.gmail.com>
+	 <CAE9FiQWUrkKEpLmEn9kzkKOtEtX7-R8shdVSKGgSyHezKpzJCw@mail.gmail.com>
+	 <4FC50E09.4000204@zytor.com>
+	 <CAE9FiQUtio=dut3A9+jCcsgUWEeNYcpqLP6RpqGOZUfPPAtHWw@mail.gmail.com>
+	 <4FC51D79.6010804@zytor.com>
+	 <CAE9FiQUWMAdU5jtKfq1_=1E-574gW-Afo8Pby49mUFQYFrs9Pw@mail.gmail.com>
+	 <4FC536A5.6020600@zytor.com>
+	 <CAE9FiQXi23-mY6p2Dr1EJmukhTSPxvBGtjvQ8wyJYPDS+6o5ZA@mail.gmail.com>
+	 <CAErSpo67h_mdZtoEn-W_OOXZ8m7gs3g6Q25kte285ZX=2FKf+A@mail.gmail.com>
+	 <CAE9FiQV7jpBWkcXy2vgixnxx2fhid28Wj0iHAhGkVVdQn6epNQ@mail.gmail.com>
+	 <CAErSpo7ivA4NpTv8jT=sxe9qAEZZ89qm6km+WBGq1UZK1Uhz8A@mail.gmail.com>
+	 <CAE9FiQWbET=awz9o=6JBwonv_obe5KzRPNXjowNtFWrN3_4T_w@mail.gmail.com>
+	 <1338975852.5858.2.camel@Nokia-N900>
+	 <CAErSpo7BwkiVugTn9A8pM-OViRnNZ+az-pf9vjxYnd=iZ3AuSQ@mail.gmail.com>
+	 <CAGLnvc_ejMWiiubVMo7DLz5ZVn1iMbf67FB4H7crRCCTRRqt2A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Jul 2012 11:00:31 +0800
+Message-ID: <1341370831.4823.78.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q642uYaP020127
+
+æ–¼ ä¸‰ï¼Œ2012-07-04 æ–¼ 10:56 +0800ï¼Œlee joey æåˆ°ï¼š
+> 
+> 
+> ---------- Forwarded message ----------
+> From: Bjorn Helgaas <bhelgaas@google.com>
+> Date: 2012/6/7
+> Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at
+> first
+> To: Steven Newbury <steve@snewbury.org.uk>
+> Cc: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+> David Miller <davem@davemloft.net>, Tony Luck <tony.luck@intel.com>,
+> Linus Torvalds <torvalds@linux-foundation.org>, Andrew Morton
+> <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
+> linux-kernel@vger.kernel.org
+> 
+> 
+> On Wed, Jun 6, 2012 at 2:44 AM, Steven Newbury <steve@snewbury.org.uk>
+> wrote:
+> > On Tue,   5 Jun 2012, 06:04:57 BST, Yinghai Lu <yinghai@kernel.org>
+> wrote:
+> >> > Linux has a long history of allocating bottom-up.  Windows has a
+> long
+> >> > history of allocating top-down.  You're proposing a third
+> alternative,
+> >> > allocating bottom-up starting at 4GB for 64-bit BARs.  If we
+> change
+> >> > this area, I would prefer something that follows Windows because
+> I
+> >> > think it will be closer to what's been tested by Windows.  Do you
+> >> > think your alternative is better?
+> >>
+> >> hope we can figure out how windows is making it work.
+> >>
+> >> Steve, Can you check if Windows is working with your test case ?
+> >>
+> >> If it works, we may try do the same thing from Linux, so you will
+> not
+> >> need to append "pci=nocrs pci=alloc_high"...
+> >>
+> > Unfortunately I don't have a 64 bit version of Windows to test
+> with.  Vista(32 bit) fails to even boot when docked, hot-plugging
+> fails to allocate resources, but at least doesn't crash.
+> >
+> > From what I've read about the (64 bit) Windows allocation stragegy
+> it's closer to Yinghai's method than the Linux default, preferring 64
+> bit resources (>4G) when possible.  I'll try to find the specification
+> document again.
+> 
+> 
+> Here's the host bridge info from the BIOS (from
+> https://bugzilla.kernel.org/show_bug.cgi?id=10461 attachment
+> https://bugzilla.kernel.org/attachment.cgi?id=72869):
+> 
+> ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+> pci_root PNP0A03:00: host bridge window [io  0x0000-0x0cf7]
+> pci_root PNP0A03:00: host bridge window [io  0x0d00-0xffff]
+> pci_root PNP0A03:00: host bridge window [mem 0x000a0000-0x000bffff]
+> pci_root PNP0A03:00: host bridge window [mem 0x000d0000-0x000dffff]
+> pci_root PNP0A03:00: host bridge window [mem 0xe0000000-0xf7ffffff]
+> pci_root PNP0A03:00: host bridge window [mem 0xfc000000-0xfebfffff]
+> pci_root PNP0A03:00: host bridge window [mem 0xfec10000-0xfecfffff]
+> pci_root PNP0A03:00: host bridge window [mem 0xfed1c000-0xfed1ffff]
+> pci_root PNP0A03:00: host bridge window [mem 0xfed90000-0xfed9ffff]
+> pci_root PNP0A03:00: host bridge window [mem 0xfed40000-0xfed44fff]
+> pci_root PNP0A03:00: host bridge window [mem 0xfeda7000-0xfedfffff]
+> pci_root PNP0A03:00: host bridge window [mem 0xfee10000-0xff9fffff]
+> pci_root PNP0A03:00: host bridge window [mem 0xffc00000-0xffdfffff]
+> 
+> There's no aperture above 4GB.  So I don't think any version of
+> Windows will ever assign a BAR above 4GB.
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+
+Hope have any help...
+
+Here have a document from MSDN talk about the pci allocate strategy on
+Windows server 2003, XP and vista:
+	http://msdn.microsoft.com/en-us/library/windows/hardware/gg462986.aspx
+
+
+Per page 4, looks Microsoft have different strategy on different Windows
+version
+
+On XP and server 2003: First, they ignored BIOS's boot configuration and
+allocate below 4G. If fail, then try to allocate above 4GB.
+
+On Vista: it always respects the boot configuration of devices above 4
+GB.
+
+But, this document didn't cover the behavior on Windows 7, not sure it's
+the same with Vista.
+
+
+Thanks
+
+Joey Lee
 
 
 
->-----Original Message-----
->From: Axel Lin [mailto:axel.lin@gmail.com]
->Sent: Tuesday, July 03, 2012 7:36 PM
->To: Zhang, Sonic
->Cc: Lars-Peter Clausen; Mark Brown; linux-kernel@vger.kernel.org; Liam
->Girdwood
->Subject: RE: [PATCH v2] regulator: ad5398: Fix min/max current limit boundary
->checking
->
->
->> >The equation to calculate the selector does not depend on max_uA.
->> >So I think we don't need to set the requested max_uA.
->> >
->>
->> But, ad5398_set_current_limit() behaves different for min_uA and max_uA with
->you patch. Is this expected?
->>
->
->What we want is to set the smallest current supported by this hardware
->within the range you requested.
->
->Current code uses below equation to choose selector:
->selector = DIV_ROUND_UP((min_uA - chip->min_uA) * chip->current_level,
->                        range_uA);
->
->With this equation, we need to ensure min_uA >= chip->min_uA,
->otherwise it returns a negative selector.
->
->That is why we need to add:
->if (min_uA < chip->min_uA)
->        min_uA = chip->min_uA;
->
-
-Yes, but if you apply this logic to min_uA, you should apply the same logic to max_uA, even though it is not used in your application.
-
-
-Sonic
-
->
->Axel
->
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
