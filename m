@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188Ab2GDLHi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 07:07:38 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:41282 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab2GDLHh (ORCPT
+	id S933395Ab2GDLNb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 07:13:31 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:51136 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab2GDLNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 07:07:37 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "Steven J. Magnani" <steve@digidescorp.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] fat (exportfs): reconnect file handles to evicted inodes/dentries
-References: <1341342576-15394-1-git-send-email-steve@digidescorp.com>
-	<1341342576-15394-3-git-send-email-steve@digidescorp.com>
-Date: Wed, 04 Jul 2012 20:07:34 +0900
-In-Reply-To: <1341342576-15394-3-git-send-email-steve@digidescorp.com> (Steven
-	J. Magnani's message of "Tue, 3 Jul 2012 14:09:36 -0500")
-Message-ID: <87pq8bokcp.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+	Wed, 4 Jul 2012 07:13:30 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [GIT PULL] at91: first batch of cleanup for 3.6
+Date: Wed, 4 Jul 2012 11:10:21 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, Paul Bolle <pebolle@tiscali.nl>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Olof Johansson <olof@lixom.net>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
+References: <4FF19B6D.3010704@atmel.com> <201207040742.56200.arnd@arndb.de> <4FF412F5.4030109@atmel.com>
+In-Reply-To: <4FF412F5.4030109@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207041110.22274.arnd@arndb.de>
+X-Provags-ID: V02:K0:Ix06j/k3mzljFRbsE5t+NEO/SzGWPaNe+ZX9ceuMDiB
+ 94aNR+G2QaPqGtK+DLXnqoDnxBxKH5mizPpjX+olLfI4GTVAmp
+ EZelXMrH8ZJ4gmVvN3NQ2z+JlqIsWNJSm7q25KyKokXGT62P4x
+ nWD/WXRNJQHsxrhsFt30vJV+3nElShug66mGFQLk71sLY6ae8U
+ Ext5yiOyoYK7aQz9quYSYuNG2+W0eekQSSNrMi6O9p7zEJ1Mt+
+ 1jxdIKuaWFTT/GR6iSURZwbO9Qcv6+K0tQdDq3aSKLe8N+67qm
+ 6bFb+nqnu5CoRc0loAxhMGPXKWjdUFuffP+smjuJzXyJT49ejE
+ j1QgrahqaAAyjpQNj2PE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Steven J. Magnani" <steve@digidescorp.com> writes:
+On Wednesday 04 July 2012, Nicolas Ferre wrote:
+> Sorry for this Arnd, I should have triggered my building scripts earlier
+> for this request...
+> 
+> Tell me if you can queue your fixing patch or if you prefer that I
+> rework it and send it back a series to you...
 
-> This patch adds code to support reconstruction of evicted inodes.
-> We walk the on-disk structures where necessary to fill in information
-> not available in the NFS file handle.
->
-> One important point is that when reconstructing an inode, in order to avoid the
-> *client* declaring ESTALE we have to ensure that the NFS file handle of the
-> reconstruction is identical to that of the original. 
+Your choice. I'll apply the fix now, but I can replace the series if you
+prefer to send a more bisectible version.
+ 
+> Anyway, here is my:
+> 
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> 
 
-Sorry, I didn't review fully yet though.
+Thanks for the quick reply.
 
-We would like to add the comment of [0/2] explanation here. Here is
-missing the explanation of the problem.
-
-And the codes of nfs support became larger, and I think we should give
-the place for it. I.e. we would like to add new file (maybe, export.c,
-nfs.c, or something), move nfs code into it.
-
-With it, we don't need to add "NFS ..." annotation in the comment, and
-it would make more clear.
-
-And can you add explanation the test of this? What were tested?
-
-> +/**
-> + * NFS helper: retrieve the name of an anonymous (disconnected) child using
-> + * its i_pos or i_logstart and knowledge of its parent
-> + *
-> + * Returns 0 on success, -ENOENT if child cannot be found,
-> + * -ENOMEM on malloc failure
-> + */
-> +int fat_get_name(struct dentry *parent, char *name,
-> +		 struct dentry *child)
-> +{
-> +	struct super_block *sb = parent->d_inode->i_sb;
-> +
-> +	loff_t child_loc = MSDOS_I(child->d_inode)->i_pos;
-> +	int err;
-> +
-> +	lock_super(sb);
-> +
-> +	if (child_loc) {
-> +		err = fat_name_for_ipos(parent->d_inode, name, NAME_MAX+1,
-> +					child_loc);
-> +	} else {
-> +		child_loc = MSDOS_I(child->d_inode)->i_logstart;
-> +		err = fat_name_for_logstart(parent->d_inode, name, NAME_MAX+1,
-> +					    child_loc);
-> +	}
-> +
-> +	unlock_super(sb);
-> +	return err;
-> +}
-
-Please don't add new lock_super() usage if it is not necessary. Almost
-all of lock_super() just replaced lock_kernel() usage. It rather should
-be removed in future.  Probably, this should use inode->i_mutex instead.
-
-BTW, the above issue is same with all of directory read.
-
-And although this is using i_pos, is there no possibility to be passed
-the detached inode (i.e. open but unlinked inode, i_pos == 0)?
-
-What happens in the case of detached inode?
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+	Arnd
