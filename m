@@ -1,38 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab2GDOOQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 10:14:16 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39671 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab2GDOOP (ORCPT
+	id S1753243Ab2GDOSH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 10:18:07 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40303 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846Ab2GDOSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 10:14:15 -0400
+	Wed, 4 Jul 2012 10:18:05 -0400
+Date: Wed, 4 Jul 2012 16:17:56 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: ibm-acpi-devel@lists.sourceforge.net, platform-driver-x86@vger.kernel.org,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: ethernet-related thermal emergency on Thinkpad x60
+Message-ID: <20120704141756.GA2089@elf.ucw.cz>
 MIME-Version: 1.0
-In-Reply-To: <4FF43BBE.80201@spin.net.au>
-References: <4FF43BBE.80201@spin.net.au>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 4 Jul 2012 08:13:53 -0600
-Message-ID: <CAErSpo6jdzPZYmtggETE-6k2jRLB7db8t68jQ92GRb1yFSto2g@mail.gmail.com>
-Subject: Re: Kernel official involvement
-To: Chris Jones <chrisjones@spin.net.au>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 4, 2012 at 6:49 AM, Chris Jones <chrisjones@spin.net.au> wrote:
-> I am just wondering how does anyone get further involved with Linux kernel
-> development? How do you get selected to be able to push through patches etc.
-> to the official kernel? Who authorizes who to be able to do so?
+Hi!
 
-Anyone can write and post kernel patches.  There is not really a
-concept of "people authorized to push patches."  In Linux, Linus
-*pulls* patches that he thinks are useful.  He generally pulls patches
-from maintainers of various areas, who have already reviewed them and
-decided they are worthwhile.  So you just have to convince the
-maintainer of the area you're changing that your patch is correct and
-useful.  Here are some good hints about how to get started:
+When using nework interface (eth0), machine starts to behave
+weird. Like... complete freeze, then poweroff, then it hangs on boot
+(initializing ACPI) until I let it to cool down... and I'm not even
+using gigabit speed.
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=Documentation/SubmittingPatches;h=c379a2a6949f1c1cac04fb6f185c633512f37061;hb=HEAD
+Did anyone see it? Any ideas? Should I attempt to open it and clean
+the dust?
+
+									Pavel
+
+e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: Rx/Tx
+e1000e 0000:02:00.0: eth0: 10/100 speed: disabling TSO
+coda_read_super: Bad mount data
+coda_read_super: device index: 0
+coda_read_super: rootfid is (01234567.ffffffff.08051c00.00000000)
+coda: Unexpected interruption.
+Failure of coda_cnode_make for root: error -4
+thinkpad_acpi: THERMAL EMERGENCY: a sensor reports something is extremely hot!
+thinkpad_acpi: temperatures (Celsius): 88 49 N/A 82 40 N/A 40 N/A 52 61 N/A N/A N/A N/A N/A N/A
+
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
