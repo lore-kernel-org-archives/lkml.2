@@ -1,52 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756463Ab2GDHjm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 03:39:42 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:31818 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752642Ab2GDHjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 03:39:40 -0400
-Message-ID: <4FF3F332.5030302@parallels.com>
-Date: Wed, 04 Jul 2012 11:39:30 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S933694Ab2GDHjy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 03:39:54 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:62880 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932422Ab2GDHjv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 03:39:51 -0400
+Date: Wed, 4 Jul 2012 09:39:42 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Alex Courbot <acourbot@nvidia.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: Use of the pwm-names DT property
+Message-ID: <20120704073942.GC25386@avionic-0098.mockup.avionic-design.de>
+References: <4FF3E862.8050101@nvidia.com>
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: [rfc 3/7] procfs: Add ability to plugin auxiliary fdinfo providers
-References: <20120627110116.201735815@openvz.org> <20120627110512.574379921@openvz.org>
-In-Reply-To: <20120627110512.574379921@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="69pVuxX8awAiJ7fD"
+Content-Disposition: inline
+In-Reply-To: <4FF3E862.8050101@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:dVcZ8SjfhrBxbTA6rP/DfZMQxXDKURzfqW2V25rTYRH
+ M3ptie22ORVzFG94mJrG9ynHLft72I0+1b06aq4DWDoj6/Flxc
+ 4eQQlSrAFca1ZYxgVR8wR8g30ftNahGh/MtoBJFB79W0akiL1/
+ bDfrWZ1AojhMuMQANXNPbf3NGEctianfZFfWfGZY0aEiOkujrP
+ 6Komw9ukiY1vyBxQN0EDGitF6jUYS92sTFQcygRr8PucqxRAt+
+ ptEMt0bWzF6wdPdAu3QUkkhnJdSxcz2E/ZujSdw8/j7swlazqu
+ H/Gw4MEkB9JFnUPL0L6qFYb+pnO+iexbAW7ACai4uAf2nL2jTW
+ gOACxmLKnwVfezXQbpLj6yX7IdpSplhhN6HW3t2/xUlg581obS
+ /vVpWDsKPt36uFfqHVKsVD34Mb9uY+aLBpndHmDVg9YAQujNgH
+ B+TfU
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2012 03:01 PM, Cyrill Gorcunov wrote:
-> This patch brings ability to plugin auxiliary fdinfo providers.
-> For example in further patches eventfd, evenpoll and fsnotify
-> will print out information associated with files.
-> 
-> This feature is CONFIG_CHECKPOINT_RESTORE guarded to eliminate
-> overhead for those who don't need it at all (this
-> unfortunately makes patch bigger than I wanted).
-> 
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> CC: Al Viro <viro@ZenIV.linux.org.uk>
-> CC: Alexey Dobriyan <adobriyan@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Pavel Emelyanov <xemul@parallels.com>
-> CC: James Bottomley <jbottomley@parallels.com>
-> ---
->  fs/proc/fd.c            |  208 ++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/proc_fs.h |   28 ++++++
->  2 files changed, 236 insertions(+)
 
-How about introducing one more file_operations member and call it in the
-seq_show() (if exists)? Only inotify, eventfd and eventpoll will implement
-one. This will allow to avoid all this complexity with drivers.
+--69pVuxX8awAiJ7fD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, Jul 04, 2012 at 03:53:22PM +0900, Alex Courbot wrote:
+> Hi Thierry,
+>=20
+> Looking at your PWM/DT integration patches for linux-next, I was
+> wondering what is the rationale behind using the pwm-names property.
+> If I got it correctly, its purpose is to be able to reference
+> different PWMs by name, e.g. by having
+>=20
+> 	pwms =3D <&pwm 0 5000000>, <&pwm 1 5000000>;
+> 	pwm-names =3D "backlight", "flash";
+>=20
+> You could get the first PWM in the driver code by calling
+> pwm_get(dev, "backlight") and the second through pwm_get(dev,
+> "flash").
+
+Yes, that's the way it is supposed to work.
+
+> While I am ok with this way of doing, why not having the form that
+> is already used by the regulator and gpio frameworks, in which the
+> consumer is part of the property name?
+>=20
+> 	vdd-supply =3D <&vdd_reg>;
+> 	core-supply =3D <&core_reg>;
+>=20
+> Both regulators are then accessed using regulator_get(dev, "vdd")
+> and regulator_get(dev, "core").
+>=20
+> Wouldn't it make more sense to follow the same scheme that has been
+> popularized by other frameworks? It also has the advantage that you
+> do not need to maintain two different properties which must be the
+> same size.
+
+In fact the *-names properties are rather common. They are used for the
+reg and interrupts properties. The pinctrl subsystem and the upcoming
+clock bindings also use the *-names properties. So one could just as
+well argue that the regulator and gpio bindings should have been using
+regulator-names and gpio-names respectively instead.
+
+Thierry
+
+--69pVuxX8awAiJ7fD
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP8/M+AAoJEN0jrNd/PrOhXL0QAICAYFCpJuukcyIkTBrFuFkc
+a4/Nn7+hwB64ZhMwMt4ug+AxxC+9dqTw0EOm3+7YWe38PskbYEqhGldBKW/r1b0x
+Wwmil6de5yizUANRn7V89RYJ/LGr6gfXYEZ8ekjUvEh0oqcmqMK8dqEOHdhdrRg+
+PR/knFTA/259KvV3oL9a3MO2skK9gvM2fKAx2RTKL6qmnGs3ZoYUhcbJHTL8BIrv
+ivBAxG6TFWkYPKLX3jb2aBiKANUQy8i2QsytD2M7wPxVZb0RXm5pXI7zerNWgmnf
+/t9Am20YlJ0S+3MuxeiBW3PsccqYPKluuOe+E4QAi2EaJZqq0h/tOevSHEoGUwEa
+MCoNiQu/vXpnB8LdJ2j7fTiniZnJUGRJOyqA5XfL81HBfOuV665Y3yRZt2TUQ7XF
+qblngZixUFTeBnDxZ5wP8bOrgC2qpAf1Q0tiKF6vizt0DQpbOep4t5ewr8UdErAx
+WLu5W91e9cWgtOkovQmkRBqRYqh0/LbrLdYBRye1Yt18xcvPMUDtzKUPI/kgvwOI
+DqI4r1C7OdKyrr7Nbr7uzYQ9QOxCVK+SUzV5NDcHeGGnTKyGxNd0bAXJ9CpfMfwr
+PSKjAsMaY64CmKfWwC24ZpCSG3ePuPjNyHC4ACs5Nud10KVBAoO2uWX31F7IZ7KQ
+vc/KSuuY4Ecm4FGWsIca
+=YzxT
+-----END PGP SIGNATURE-----
+
+--69pVuxX8awAiJ7fD--
