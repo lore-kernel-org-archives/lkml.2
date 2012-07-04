@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933150Ab2GDJUU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 05:20:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51698 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755736Ab2GDJUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 05:20:14 -0400
-Date: Wed, 4 Jul 2012 10:20:06 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tony Luck <tony.luck@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Xishi Qiu <qiuxishi@huawei.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH] mm: setup pageblock_order before it's used by sparse
-Message-ID: <20120704092006.GH14154@suse.de>
-References: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com>
- <20120703140705.af23d4d3.akpm@linux-foundation.org>
- <4FF39F0E.4070300@huawei.com>
+	id S933532Ab2GDJU5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 05:20:57 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39904 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755736Ab2GDJUy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 05:20:54 -0400
+Message-ID: <4FF40B7E.20202@linaro.org>
+Date: Wed, 04 Jul 2012 13:23:10 +0400
+From: Dmitry Antipov <dmitry.antipov@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4FF39F0E.4070300@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org
+Subject: perf sched replay again
+Content-Type: multipart/mixed;
+ boundary="------------080801080100060900080608"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 04, 2012 at 09:40:30AM +0800, Jiang Liu wrote:
-> > It's a bit ugly calling set_pageblock_order() from both sparse_init()
-> > and from free_area_init_core().  Can we find a single place from which
-> > to call it?  It looks like here:
-> > 
-> > --- a/init/main.c~a
-> > +++ a/init/main.c
-> > @@ -514,6 +514,7 @@ asmlinkage void __init start_kernel(void
-> >  		   __stop___param - __start___param,
-> >  		   -1, -1, &unknown_bootoption);
-> >  
-> > +	set_pageblock_order();
-> >  	jump_label_init();
-> >  
-> >  	/*
-> > 
-> > would do the trick?
-> > 
-> > (free_area_init_core is __paging_init and set_pageblock_order() is
-> > __init.  I'm too lazy to work out if that's wrong)
-> 
-> Hi Andrew,
-> 	Thanks for you comments. Yes, this's an issue. 
-> And we are trying to find a way to setup  pageorder_block as 
-> early as possible. Yinghai has suggested a good way for IA64,
-> but we still need help from PPC experts because PPC has the 
-> same issue and I'm not familiar with PPC architecture. 
-> We will submit another patch once we find an acceptable
-> solution here.
+This is a multi-part message in MIME format.
+--------------080801080100060900080608
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-I think it's overkill to try and do this on a per-architecture basis unless
-you are aware of a case where the per-architecture code cares about the
-value of pageblock_order. I find it implausible that the architecture
-needs to know the value very early in boot as pageblock_order is part of
-the arch-independent memory model. Andrew's suggestion seems reasonable
-to me once the section mess is figured out.
+I remember that this was rejected some time ago. Nevertheless,
+is it possible to accept this until we will have a better solution?
 
--- 
-Mel Gorman
-SUSE Labs
+Dmitry
+
+--------------080801080100060900080608
+Content-Type: text/plain; charset=UTF-8;
+ name="0001-perf-sched-replay-fix-event-lookup.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="0001-perf-sched-replay-fix-event-lookup.patch"
+
+RnJvbSA3YjM5NDY3MGJlZTU1Y2E2OTRmOTIxYmQ5NmYyMTBiMGQ0YzdkZmUwIE1vbiBTZXAg
+MTcgMDA6MDA6MDAgMjAwMQpGcm9tOiBEbWl0cnkgQW50aXBvdiA8ZG1pdHJ5LmFudGlwb3ZA
+bGluYXJvLm9yZz4KRGF0ZTogV2VkLCA0IEp1bCAyMDEyIDEzOjIwOjU5ICswNDAwClN1Ympl
+Y3Q6IFtQQVRDSF0gcGVyZiBzY2hlZCByZXBsYXk6IGZpeCBldmVudCBsb29rdXAKClVzZSBu
+ZXcgZnVuY3Rpb24gdHJhY2VfZmluZF9ldmVudF9ieV9uYW1lIHRvIGxvb2t1cCBldmVudHMg
+YmVmb3JlCmxvb2tpbmcgdGhyb3VnaCAvc3lzIGZpbGVzLiBUaGlzIGhlbHBzICdwZXJmIHNj
+aGVkIHJlcGxheScgdG8gbWFwCmV2ZW50IG5hbWVzIHRvIElEcyBjb3JyZWN0bHkgd2hlbiBw
+cm9jZXNzaW5nIHBlcmYuZGF0YSByZWNvcmRlZApvbiBhbm90aGVyIG1hY2hpbmUuCgpTaWdu
+ZWQtb2ZmLWJ5OiBEbWl0cnkgQW50aXBvdiA8ZG1pdHJ5LmFudGlwb3ZAbGluYXJvLm9yZz4K
+LS0tCiB0b29scy9wZXJmL3V0aWwvZXZsaXN0LmMgICAgICAgICAgICB8ICAgMjIgKysrKysr
+KysrKysrKysrKysrKystLQogdG9vbHMvcGVyZi91dGlsL3RyYWNlLWV2ZW50LXBhcnNlLmMg
+fCAgICA0ICsrKysKIHRvb2xzL3BlcmYvdXRpbC90cmFjZS1ldmVudC5oICAgICAgIHwgICAg
+MSArCiAzIGZpbGVzIGNoYW5nZWQsIDI1IGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0p
+CgpkaWZmIC0tZ2l0IGEvdG9vbHMvcGVyZi91dGlsL2V2bGlzdC5jIGIvdG9vbHMvcGVyZi91
+dGlsL2V2bGlzdC5jCmluZGV4IDc0MDBmYjMuLjU4YTU0MzMgMTAwNjQ0Ci0tLSBhL3Rvb2xz
+L3BlcmYvdXRpbC9ldmxpc3QuYworKysgYi90b29scy9wZXJmL3V0aWwvZXZsaXN0LmMKQEAg
+LTE3LDYgKzE3LDcgQEAKICNpbmNsdWRlIDx1bmlzdGQuaD4KIAogI2luY2x1ZGUgInBhcnNl
+LWV2ZW50cy5oIgorI2luY2x1ZGUgInRyYWNlLWV2ZW50LmgiCiAKICNpbmNsdWRlIDxzeXMv
+bW1hbi5oPgogCkBAIC0yNDIsMTIgKzI0MywyOSBAQCBpbnQgcGVyZl9ldmxpc3RfX3NldF90
+cmFjZXBvaW50c19oYW5kbGVycyhzdHJ1Y3QgcGVyZl9ldmxpc3QgKmV2bGlzdCwKIAkJCQkJ
+ICBjb25zdCBzdHJ1Y3QgcGVyZl9ldnNlbF9zdHJfaGFuZGxlciAqYXNzb2NzLAogCQkJCQkg
+IHNpemVfdCBucl9hc3NvY3MpCiB7CisJc3RydWN0IGV2ZW50X2Zvcm1hdCAqZXZlbnQ7CiAJ
+c3RydWN0IHBlcmZfZXZzZWwgKmV2c2VsOworCWNoYXIgKnAsICpzeXMsICpuYW1lOwogCWlu
+dCBlcnI7Ci0Jc2l6ZV90IGk7CisJc2l6ZV90IGksIG9mZjsKIAogCWZvciAoaSA9IDA7IGkg
+PCBucl9hc3NvY3M7IGkrKykgewotCQllcnIgPSB0cmFjZV9ldmVudF9faWQoYXNzb2NzW2ld
+Lm5hbWUpOworCQllcnIgPSAtRU5PRU5UOworCQlwID0gc3RyY2hyKGFzc29jc1tpXS5uYW1l
+LCAnOicpOworCQlpZiAoIXApCisJCQlnb3RvIG91dDsKKwkJb2ZmID0gcCAtIGFzc29jc1tp
+XS5uYW1lOworCQlzeXMgPSBtYWxsb2Mob2ZmICsgMSk7CisJCWlmICghc3lzKQorCQkJZXJy
+ID0gLUVOT01FTTsKKwkJZWxzZSB7CisJCQltZW1jcHkoc3lzLCBhc3NvY3NbaV0ubmFtZSwg
+b2ZmKTsKKwkJCXN5c1tvZmZdID0gJ1wwJzsKKwkJCW5hbWUgPSBwICsgMTsKKwkJCWV2ZW50
+ID0gdHJhY2VfZmluZF9ldmVudF9ieV9uYW1lKHN5cywgbmFtZSk7CisJCQllcnIgPSBldmVu
+dCA/IGV2ZW50LT5pZCA6IHRyYWNlX2V2ZW50X19pZChhc3NvY3NbaV0ubmFtZSk7CisJCQlm
+cmVlKHN5cyk7CisJCX0KIAkJaWYgKGVyciA8IDApCiAJCQlnb3RvIG91dDsKIApkaWZmIC0t
+Z2l0IGEvdG9vbHMvcGVyZi91dGlsL3RyYWNlLWV2ZW50LXBhcnNlLmMgYi90b29scy9wZXJm
+L3V0aWwvdHJhY2UtZXZlbnQtcGFyc2UuYwppbmRleCBkZjJmZGRiLi40NGNiYjQwIDEwMDY0
+NAotLS0gYS90b29scy9wZXJmL3V0aWwvdHJhY2UtZXZlbnQtcGFyc2UuYworKysgYi90b29s
+cy9wZXJmL3V0aWwvdHJhY2UtZXZlbnQtcGFyc2UuYwpAQCAtMTc2LDYgKzE3NiwxMCBAQCBz
+dHJ1Y3QgZXZlbnRfZm9ybWF0ICp0cmFjZV9maW5kX2V2ZW50KGludCB0eXBlKQogCXJldHVy
+biBwZXZlbnRfZmluZF9ldmVudChwZXZlbnQsIHR5cGUpOwogfQogCitzdHJ1Y3QgZXZlbnRf
+Zm9ybWF0ICp0cmFjZV9maW5kX2V2ZW50X2J5X25hbWUoY29uc3QgY2hhciAqc3lzLCBjb25z
+dCBjaGFyICpuYW1lKQoreworCXJldHVybiBwZXZlbnRfZmluZF9ldmVudF9ieV9uYW1lKHBl
+dmVudCwgc3lzLCBuYW1lKTsKK30KIAogdm9pZCBwcmludF90cmFjZV9ldmVudChpbnQgY3B1
+LCB2b2lkICpkYXRhLCBpbnQgc2l6ZSkKIHsKZGlmZiAtLWdpdCBhL3Rvb2xzL3BlcmYvdXRp
+bC90cmFjZS1ldmVudC5oIGIvdG9vbHMvcGVyZi91dGlsL3RyYWNlLWV2ZW50LmgKaW5kZXgg
+NjM5ODUyYS4uNjZmODNhMCAxMDA2NDQKLS0tIGEvdG9vbHMvcGVyZi91dGlsL3RyYWNlLWV2
+ZW50LmgKKysrIGIvdG9vbHMvcGVyZi91dGlsL3RyYWNlLWV2ZW50LmgKQEAgLTQwLDYgKzQw
+LDcgQEAgaW50IHBhcnNlX2V2ZW50X2ZpbGUoY2hhciAqYnVmLCB1bnNpZ25lZCBsb25nIHNp
+emUsIGNoYXIgKnN5cyk7CiAKIHN0cnVjdCBwZXZlbnRfcmVjb3JkICp0cmFjZV9wZWVrX2Rh
+dGEoaW50IGNwdSk7CiBzdHJ1Y3QgZXZlbnRfZm9ybWF0ICp0cmFjZV9maW5kX2V2ZW50KGlu
+dCB0eXBlKTsKK3N0cnVjdCBldmVudF9mb3JtYXQgKnRyYWNlX2ZpbmRfZXZlbnRfYnlfbmFt
+ZShjb25zdCBjaGFyICpzeXMsIGNvbnN0IGNoYXIgKm5hbWUpOwogCiB1bnNpZ25lZCBsb25n
+IGxvbmcKIHJhd19maWVsZF92YWx1ZShzdHJ1Y3QgZXZlbnRfZm9ybWF0ICpldmVudCwgY29u
+c3QgY2hhciAqbmFtZSwgdm9pZCAqZGF0YSk7Ci0tIAoxLjcuNy42Cgo=
+--------------080801080100060900080608--
