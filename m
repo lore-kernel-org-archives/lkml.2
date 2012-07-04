@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab2GDOg7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 10:36:59 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49871 "EHLO
+	id S1753960Ab2GDOhc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 10:37:32 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49876 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab2GDOgx (ORCPT
+	with ESMTP id S1753615Ab2GDOhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 10:36:53 -0400
+	Wed, 4 Jul 2012 10:37:31 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] qla2xxx: print the right array elements
-To: bzhao@marvell.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        linux-scsi@vger.kernel.org
-Date: Wed, 04 Jul 2012 16:35:35 +0100
-Message-ID: <20120704153528.4098.49179.stgit@bluebook>
+Subject: [PATCH] fcoe: unsigned long can never be negative
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Date: Wed, 04 Jul 2012 16:36:20 +0100
+Message-ID: <20120704153613.4165.52012.stgit@bluebook>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,69 +22,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-Coverity id 793583
+Coverity id: 703581
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/scsi/qla2xxx/qla_target.c |   27 ++++++++++++++-------------
- 1 file changed, 14 insertions(+), 13 deletions(-)
+ drivers/scsi/fcoe/fcoe_sysfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
-index 6986552..c5fd001 100644
---- a/drivers/scsi/qla2xxx/qla_target.c
-+++ b/drivers/scsi/qla2xxx/qla_target.c
-@@ -4003,9 +4003,9 @@ void qlt_async_event(uint16_t code, struct scsi_qla_host *vha,
- 	{
- 		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf03b,
- 		    "qla_target(%d): Async LOOP_UP occured "
--		    "(m[1]=%x, m[2]=%x, m[3]=%x, m[4]=%x)", vha->vp_idx,
--		    le16_to_cpu(mailbox[1]), le16_to_cpu(mailbox[2]),
--		    le16_to_cpu(mailbox[3]), le16_to_cpu(mailbox[4]));
-+		    "(m[0]=%x, m[1]=%x, m[2]=%x, m[3]=%x)", vha->vp_idx,
-+		    le16_to_cpu(mailbox[0]), le16_to_cpu(mailbox[1]),
-+		    le16_to_cpu(mailbox[2]), le16_to_cpu(mailbox[3]));
- 		if (tgt->link_reinit_iocb_pending) {
- 			qlt_send_notify_ack(vha, (void *)&tgt->link_reinit_iocb,
- 			    0, 0, 0, 0, 0, 0);
-@@ -4020,18 +4020,19 @@ void qlt_async_event(uint16_t code, struct scsi_qla_host *vha,
- 	case MBA_RSCN_UPDATE:
- 		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf03c,
- 		    "qla_target(%d): Async event %#x occured "
--		    "(m[1]=%x, m[2]=%x, m[3]=%x, m[4]=%x)", vha->vp_idx, code,
--		    le16_to_cpu(mailbox[1]), le16_to_cpu(mailbox[2]),
--		    le16_to_cpu(mailbox[3]), le16_to_cpu(mailbox[4]));
-+		    "(m[0]=%x, m[1]=%x, m[2]=%x, m[3]=%x)", vha->vp_idx, code,
-+		    le16_to_cpu(mailbox[0]), le16_to_cpu(mailbox[1]),
-+		    le16_to_cpu(mailbox[2]), le16_to_cpu(mailbox[3]));
- 		break;
+diff --git a/drivers/scsi/fcoe/fcoe_sysfs.c b/drivers/scsi/fcoe/fcoe_sysfs.c
+index 2bc1631..5e75168 100644
+--- a/drivers/scsi/fcoe/fcoe_sysfs.c
++++ b/drivers/scsi/fcoe/fcoe_sysfs.c
+@@ -102,7 +102,7 @@ static int fcoe_str_to_dev_loss(const char *buf, unsigned long *val)
+ 	int ret;
  
- 	case MBA_PORT_UPDATE:
- 		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf03d,
- 		    "qla_target(%d): Port update async event %#x "
--		    "occured: updating the ports database (m[1]=%x, m[2]=%x, "
--		    "m[3]=%x, m[4]=%x)", vha->vp_idx, code,
--		    le16_to_cpu(mailbox[1]), le16_to_cpu(mailbox[2]),
--		    le16_to_cpu(mailbox[3]), le16_to_cpu(mailbox[4]));
-+		    "occured: updating the ports database (m[0]=%x, m[1]=%x, "
-+		    "m[2]=%x, m[3]=%x)", vha->vp_idx, code,
-+		    le16_to_cpu(mailbox[0]), le16_to_cpu(mailbox[1]),
-+		    le16_to_cpu(mailbox[2]), le16_to_cpu(mailbox[3]));
-+                /* Check: was the reasoncode also one out ? */
- 		reason_code = le16_to_cpu(mailbox[2]);
- 		if (reason_code == 0x4)
- 			ql_dbg(ql_dbg_tgt_mgt, vha, 0xf03e,
-@@ -4044,9 +4045,9 @@ void qlt_async_event(uint16_t code, struct scsi_qla_host *vha,
- 	default:
- 		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf040,
- 		    "qla_target(%d): Async event %#x occured: "
--		    "ignore (m[1]=%x, m[2]=%x, m[3]=%x, m[4]=%x)", vha->vp_idx,
--		    code, le16_to_cpu(mailbox[1]), le16_to_cpu(mailbox[2]),
--		    le16_to_cpu(mailbox[3]), le16_to_cpu(mailbox[4]));
-+		    "ignore (m[0]=%x, m[1]=%x, m[2]=%x, m[3]=%x)", vha->vp_idx,
-+		    code, le16_to_cpu(mailbox[0]), le16_to_cpu(mailbox[1]),
-+		    le16_to_cpu(mailbox[2]), le16_to_cpu(mailbox[3]));
- 		break;
- 	}
- 
+ 	ret = kstrtoul(buf, 0, val);
+-	if (ret || *val < 0)
++	if (ret)
+ 		return -EINVAL;
+ 	/*
+ 	 * Check for overflow; dev_loss_tmo is u32
 
