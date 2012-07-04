@@ -1,161 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030189Ab2GDJzE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 05:55:04 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:32867 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756551Ab2GDJzB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 05:55:01 -0400
-Message-ID: <4FF412F5.4030109@atmel.com>
-Date: Wed, 4 Jul 2012 11:55:01 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1030223Ab2GDJ5Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 05:57:24 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:16276 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932459Ab2GDJ5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 05:57:22 -0400
+X-IronPort-AV: E=Sophos;i="4.77,522,1336320000"; 
+   d="scan'208";a="5328127"
+Message-ID: <4FF41484.3070806@cn.fujitsu.com>
+Date: Wed, 04 Jul 2012 18:01:40 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, Paul Bolle <pebolle@tiscali.nl>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Olof Johansson <olof@lixom.net>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [GIT PULL] at91: first batch of cleanup for 3.6
-References: <4FF19B6D.3010704@atmel.com> <201207022058.34442.arnd@arndb.de> <201207040742.56200.arnd@arndb.de>
-In-Reply-To: <201207040742.56200.arnd@arndb.de>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC PATCH v2 4/13] memory-hotplug : remove /sys/firmware/memmap/X
+ sysfs
+References: <4FF287C3.4030901@jp.fujitsu.com> <4FF28996.10702@jp.fujitsu.com> <4FF2929B.7030004@cn.fujitsu.com> <4FF3CA65.1020300@jp.fujitsu.com> <4FF3CFDC.50802@cn.fujitsu.com> <4FF3DA1E.9060505@jp.fujitsu.com>
+In-Reply-To: <4FF3DA1E.9060505@jp.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/04 17:57:16,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/04 17:57:22,
+	Serialize complete at 2012/07/04 17:57:22
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.159.245.112]
+Content-Type: text/plain; charset=ISO-2022-JP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2012 09:42 AM, Arnd Bergmann :
-> On Monday 02 July 2012, Arnd Bergmann wrote:
->> On Monday 02 July 2012, Nicolas Ferre wrote:
->>> The following changes since commit
->>> 6887a4131da3adaab011613776d865f4bcfb5678:
+At 07/04/2012 01:52 PM, Yasuaki Ishimatsu Wrote:
+> Hi Wen,
+> 
+> 2012/07/04 14:08, Wen Congyang wrote:
+>> At 07/04/2012 12:45 PM, Yasuaki Ishimatsu Wrote:
+>>> Hi Wen,
 >>>
->>>   Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
+>>> 2012/07/03 15:35, Wen Congyang wrote:
+>>>> At 07/03/2012 01:56 PM, Yasuaki Ishimatsu Wrote:
+>>>>> When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
+>>>>> sysfs files are created. But there is no code to remove these files. The patch
+>>>>> implements the function to remove them.
+>>>>>
+>>>>> Note : The code does not free firmware_map_entry since there is no way to free
+>>>>>          memory which is allocated by bootmem.
+>>>>>
+>>>>> CC: David Rientjes <rientjes@google.com>
+>>>>> CC: Jiang Liu <liuj97@gmail.com>
+>>>>> CC: Len Brown <len.brown@intel.com>
+>>>>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>>>>> CC: Paul Mackerras <paulus@samba.org>
+>>>>> CC: Christoph Lameter <cl@linux.com>
+>>>>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>>>>> CC: Andrew Morton <akpm@linux-foundation.org>
+>>>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>>>
+>>>>> ---
+>>>>>    drivers/firmware/memmap.c    |   70 +++++++++++++++++++++++++++++++++++++++++++
+>>>>>    include/linux/firmware-map.h |    6 +++
+>>>>>    mm/memory_hotplug.c          |    6 +++
+>>>>>    3 files changed, 81 insertions(+), 1 deletion(-)
+>>>>>
+>>>>> Index: linux-3.5-rc4/mm/memory_hotplug.c
+>>>>> ===================================================================
+>>>>> --- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-07-03 14:22:00.190240794 +0900
+>>>>> +++ linux-3.5-rc4/mm/memory_hotplug.c	2012-07-03 14:22:03.549198802 +0900
+>>>>> @@ -661,7 +661,11 @@ EXPORT_SYMBOL_GPL(add_memory);
+>>>>>
+>>>>>    int remove_memory(int nid, u64 start, u64 size)
+>>>>>    {
+>>>>> -	return -EBUSY;
+>>>>> +	lock_memory_hotplug();
+>>>>> +	/* remove memmap entry */
+>>>>> +	firmware_map_remove(start, start + size - 1, "System RAM");
+>>>>> +	unlock_memory_hotplug();
+>>>>> +	return 0;
+>>>>>
+>>>>>    }
+>>>>>    EXPORT_SYMBOL_GPL(remove_memory);
+>>>>> Index: linux-3.5-rc4/include/linux/firmware-map.h
+>>>>> ===================================================================
+>>>>> --- linux-3.5-rc4.orig/include/linux/firmware-map.h	2012-07-03 14:21:45.766421116 +0900
+>>>>> +++ linux-3.5-rc4/include/linux/firmware-map.h	2012-07-03 14:22:03.550198789 +0900
+>>>>> @@ -25,6 +25,7 @@
+>>>>>
+>>>>>    int firmware_map_add_early(u64 start, u64 end, const char *type);
+>>>>>    int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
+>>>>> +int firmware_map_remove(u64 start, u64 end, const char *type);
+>>>>>
+>>>>>    #else /* CONFIG_FIRMWARE_MEMMAP */
+>>>>>
+>>>>> @@ -38,6 +39,11 @@ static inline int firmware_map_add_hotpl
+>>>>>    	return 0;
+>>>>>    }
+>>>>>
+>>>>> +static inline int firmware_map_remove(u64 start, u64 end, const char *type)
+>>>>> +{
+>>>>> +	return 0;
+>>>>> +}
+>>>>> +
+>>>>>    #endif /* CONFIG_FIRMWARE_MEMMAP */
+>>>>>
+>>>>>    #endif /* _LINUX_FIRMWARE_MAP_H */
+>>>>> Index: linux-3.5-rc4/drivers/firmware/memmap.c
+>>>>> ===================================================================
+>>>>> --- linux-3.5-rc4.orig/drivers/firmware/memmap.c	2012-07-03 14:21:45.761421180 +0900
+>>>>> +++ linux-3.5-rc4/drivers/firmware/memmap.c	2012-07-03 14:22:03.569198549 +0900
+>>>>> @@ -79,7 +79,16 @@ static const struct sysfs_ops memmap_att
+>>>>>    	.show = memmap_attr_show,
+>>>>>    };
+>>>>>
+>>>>> +static void release_firmware_map_entry(struct kobject *kobj)
+>>>>> +{
+>>>>> +	/*
+>>>>> +	 * FIXME : There is no idea.
+>>>>> +	 *         How to free the entry which allocated bootmem?
+>>>>> +	 */
+>>>>
+>>>> I find a function free_bootmem(), but I am not sure whether it can work here.
 >>>
->>> are available in the git repository at:
+>>> It cannot work here.
 >>>
->>>   git://github.com/at91linux/linux-at91.git tags/at91-for-next-cleanup
+>>>> Another problem: how to check whether the entry uses bootmem?
+>>>
+>>> When firmware_map_entry is allocated by kzalloc(), the page has PG_slab.
 >>
->> Pulled into next/cleanup
+>> This is not true. In my test, I find the page does not have PG_slab sometimes.
 > 
-> Unfortunately, I got a bunch of new builf errors and warnings:
+> I think that it depends on the allocated size. firmware_map_entry size is
+> smaller than PAGE_SIZE. So the page has PG_Slab.
+
+In my test, I add printk in the function firmware_map_add_hotplug() to display
+page's flags. And sometimes the page is not allocated by slab(I use PageSlab()
+to verify it).
+
+Thanks
+Wen Congyang
+
 > 
-> 8<----
-> ARM: at91: fix new build errors
+> Thanks,
+> Yasuaki Ishimatsu
 > 
-> MULTI_IRQ_HANDLER and SPARSE_IRQ are now required everywhere because
-> mach/irqs.h and mach/entry-macros.S are gone but the symbols are
-> only selected for AT91SAM9, not for the NOMMU parts.
+>>
+>> Thanks
+>> Wen Congyang.
+>>
+>>> So we can check whether the entry was allocated by bootmem or not.
+>>> If the eantry was allocated by kzalloc(), we can free the entry by kfree().
+>>> But if the entry was allocated by bootmem, we have no way to free the entry.
+>>>
+>>> Thanks,
+>>> Yasuaki Ishimatsu
+>>>
+>>>>
+>>>> Thanks
+>>>> Wen Congyang
+>>>>
+>>>>> +}
+>>>>> +
+>>>>>    static struct kobj_type memmap_ktype = {
+>>>>> +	.release	= release_firmware_map_entry,
+>>>>>    	.sysfs_ops	= &memmap_attr_ops,
+>>>>>    	.default_attrs	= def_attrs,
+>>>>>    };
+>>>>> @@ -123,6 +132,16 @@ static int firmware_map_add_entry(u64 st
+>>>>>    	return 0;
+>>>>>    }
+>>>>>
+>>>>> +/**
+>>>>> + * firmware_map_remove_entry() - Does the real work to remove a firmware
+>>>>> + * memmap entry.
+>>>>> + * @entry: removed entry.
+>>>>> + **/
+>>>>> +static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
+>>>>> +{
+>>>>> +	list_del(&entry->list);
+>>>>> +}
+>>>>> +
+>>>>>    /*
+>>>>>     * Add memmap entry on sysfs
+>>>>>     */
+>>>>> @@ -144,6 +163,31 @@ static int add_sysfs_fw_map_entry(struct
+>>>>>    	return 0;
+>>>>>    }
+>>>>>
+>>>>> +/*
+>>>>> + * Remove memmap entry on sysfs
+>>>>> + */
+>>>>> +static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
+>>>>> +{
+>>>>> +	kobject_put(&entry->kobj);
+>>>>> +}
+>>>>> +
+>>>>> +/*
+>>>>> + * Search memmap entry
+>>>>> + */
+>>>>> +
+>>>>> +struct firmware_map_entry * __meminit
+>>>>> +find_firmware_map_entry(u64 start, u64 end, const char *type)
+>>>>> +{
+>>>>> +	struct firmware_map_entry *entry;
+>>>>> +
+>>>>> +	list_for_each_entry(entry, &map_entries, list)
+>>>>> +		if ((entry->start == start) && (entry->end == end) &&
+>>>>> +		    (!strcmp(entry->type, type)))
+>>>>> +			return entry;
+>>>>> +
+>>>>> +	return NULL;
+>>>>> +}
+>>>>> +
+>>>>>    /**
+>>>>>     * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
+>>>>>     * memory hotplug.
+>>>>> @@ -196,6 +240,32 @@ int __init firmware_map_add_early(u64 st
+>>>>>    	return firmware_map_add_entry(start, end, type, entry);
+>>>>>    }
+>>>>>
+>>>>> +/**
+>>>>> + * firmware_map_remove() - remove a firmware mapping entry
+>>>>> + * @start: Start of the memory range.
+>>>>> + * @end:   End of the memory range (inclusive).
+>>>>> + * @type:  Type of the memory range.
+>>>>> + *
+>>>>> + * removes a firmware mapping entry.
+>>>>> + *
+>>>>> + * Returns 0 on success, or -EINVAL if no entry.
+>>>>> + **/
+>>>>> +int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
+>>>>> +{
+>>>>> +	struct firmware_map_entry *entry;
+>>>>> +
+>>>>> +	entry = find_firmware_map_entry(start, end, type);
+>>>>> +	if (!entry)
+>>>>> +		return -EINVAL;
+>>>>> +
+>>>>> +	/* remove the memmap entry */
+>>>>> +	remove_sysfs_fw_map_entry(entry);
+>>>>> +
+>>>>> +	firmware_map_remove_entry(entry);
+>>>>> +
+>>>>> +	return 0;
+>>>>> +}
+>>>>> +
+>>>>>    /*
+>>>>>     * Sysfs functions -------------------------------------------------------------
+>>>>>     */
+>>>>>
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>>
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>
+>>>
+>>>
+>>>
+>>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
 > 
-> A few files now need to include linux/io.h directly, which used to
-> be included through other headers that have changed.
-> 
-> The new at91_aic_irq_priorities variable is only used with CONFIG_OF
-> enabled and should not be visible otherwise.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> ---
-> 
-> Please check these patches for correctness, and try to be more careful
-> to avoid such problems in the future. I found these just building the
-> defconfig files, not even invoking my randconfig scripts.
-
-Sorry for this Arnd, I should have triggered my building scripts earlier
-for this request...
-
-Tell me if you can queue your fixing patch or if you prefer that I
-rework it and send it back a series to you...
-
-Anyway, here is my:
-
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-
-Thanks a lot.
-
-> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-> index 7d0c40a..c8050b1 100644
-> --- a/arch/arm/mach-at91/Kconfig
-> +++ b/arch/arm/mach-at91/Kconfig
-> @@ -37,6 +37,8 @@ config SOC_AT91SAM9
->  config SOC_AT91RM9200
->  	bool "AT91RM9200"
->  	select CPU_ARM920T
-> +	select MULTI_IRQ_HANDLER
-> +	select SPARSE_IRQ
->  	select GENERIC_CLOCKEVENTS
->  	select HAVE_AT91_DBGU0
->  
-> @@ -142,6 +144,8 @@ config ARCH_AT91SAM9G45
->  config ARCH_AT91X40
->  	bool "AT91x40"
->  	depends on !MMU
-> +	select MULTI_IRQ_HANDLER
-> +	select SPARSE_IRQ
->  	select ARCH_USES_GETTIMEOFFSET
->  
->  endchoice
-> diff --git a/arch/arm/mach-at91/at91x40.c b/arch/arm/mach-at91/at91x40.c
-> index 4c0f5fd..46090e6 100644
-> --- a/arch/arm/mach-at91/at91x40.c
-> +++ b/arch/arm/mach-at91/at91x40.c
-> @@ -13,6 +13,7 @@
->  #include <linux/kernel.h>
->  #include <linux/init.h>
->  #include <linux/irq.h>
-> +#include <linux/io.h>
->  #include <asm/proc-fns.h>
->  #include <asm/system_misc.h>
->  #include <asm/mach/arch.h>
-> diff --git a/arch/arm/mach-at91/irq.c b/arch/arm/mach-at91/irq.c
-> index c5eaaa0..1e02c0e 100644
-> --- a/arch/arm/mach-at91/irq.c
-> +++ b/arch/arm/mach-at91/irq.c
-> @@ -49,7 +49,6 @@ static struct irq_domain *at91_aic_domain;
->  static struct device_node *at91_aic_np;
->  static unsigned int n_irqs = NR_AIC_IRQS;
->  static unsigned long at91_aic_caps = 0;
-> -static unsigned int *at91_aic_irq_priorities;
->  
->  /* AIC5 introduces a Source Select Register */
->  #define AT91_AIC_CAP_AIC5	(1 << 0)
-> @@ -359,6 +358,8 @@ static void __init __maybe_unused at91_aic5_hw_init(unsigned int spu_vector)
->  }
->  
->  #if defined(CONFIG_OF)
-> +static unsigned int *at91_aic_irq_priorities;
-> +
->  static int at91_aic_irq_map(struct irq_domain *h, unsigned int virq,
->  							irq_hw_number_t hw)
->  {
-> diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
-> index dc474bc..fca9790 100644
-> --- a/drivers/rtc/rtc-at91rm9200.c
-> +++ b/drivers/rtc/rtc-at91rm9200.c
-> @@ -27,6 +27,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/ioctl.h>
->  #include <linux/completion.h>
-> +#include <linux/io.h>
->  
->  #include <asm/uaccess.h>
->  
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 > 
 > 
-
-
--- 
-Nicolas Ferre
-
+> 
 
