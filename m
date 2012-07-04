@@ -1,43 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab2GDOX7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 10:23:59 -0400
-Received: from mx.scalarmail.ca ([98.158.95.75]:20191 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753410Ab2GDOX1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 10:23:27 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] Zynq ZC702 bringup
-Date: Wed,  4 Jul 2012 10:13:32 -0400
-Message-Id: <1341411215-3617-1-git-send-email-nbowler@elliptictech.com>
-X-Mailer: git-send-email 1.7.8.6
+	id S1753607Ab2GDO1d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 10:27:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40686 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752797Ab2GDO11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 10:27:27 -0400
+Date: Wed, 4 Jul 2012 16:27:24 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, gthelen@google.com, yinghan@google.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, sage@newdream.net,
+        ceph-devel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH 4/7] Use vfs __set_page_dirty interface instead of doing
+ it inside filesystem
+Message-ID: <20120704142724.GK29842@tiehlicka.suse.cz>
+References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>
+ <1340881423-5703-1-git-send-email-handai.szj@taobao.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1340881423-5703-1-git-send-email-handai.szj@taobao.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This short series allows use of the UART on the Zynq ZC702 for early
-printk, and then fixes some problems that occur during early boot.
+On Thu 28-06-12 19:03:43, Sha Zhengju wrote:
+> From: Sha Zhengju <handai.szj@taobao.com>
+> 
+> Following we will treat SetPageDirty and dirty page accounting as an integrated
+> operation. Filesystems had better use vfs interface directly to avoid those details.
+> 
+> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+> ---
+>  fs/buffer.c                 |    2 +-
+>  fs/ceph/addr.c              |   20 ++------------------
+>  include/linux/buffer_head.h |    2 ++
+>  3 files changed, 5 insertions(+), 19 deletions(-)
+> 
+> diff --git a/fs/buffer.c b/fs/buffer.c
+> index e8d96b8..55522dd 100644
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -610,7 +610,7 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
+>   * If warn is true, then emit a warning if the page is not uptodate and has
+>   * not been truncated.
+>   */
+> -static int __set_page_dirty(struct page *page,
+> +int __set_page_dirty(struct page *page,
+>  		struct address_space *mapping, int warn)
+>  {
+>  	if (unlikely(!mapping))
+> diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+> index 8b67304..d028fbe 100644
+> --- a/fs/ceph/addr.c
+> +++ b/fs/ceph/addr.c
+> @@ -5,6 +5,7 @@
+>  #include <linux/mm.h>
+>  #include <linux/pagemap.h>
+>  #include <linux/writeback.h>	/* generic_writepages */
+> +#include <linux/buffer_head.h>
+>  #include <linux/slab.h>
+>  #include <linux/pagevec.h>
+>  #include <linux/task_io_accounting_ops.h>
+> @@ -73,14 +74,8 @@ static int ceph_set_page_dirty(struct page *page)
+>  	int undo = 0;
+>  	struct ceph_snap_context *snapc;
+>  
+> -	if (unlikely(!mapping))
+> -		return !TestSetPageDirty(page);
+> -
+> -	if (TestSetPageDirty(page)) {
+> -		dout("%p set_page_dirty %p idx %lu -- already dirty\n",
+> -		     mapping->host, page, page->index);
 
-While a lot of things are still not working with this board, these
-changes in addition to the GIC OF initialization patch posted last
-month allow me to bring the system up to a busybox shell.
+I am not familiar with the code but this looks we loose an information
+about something bad(?) is going on?
 
-Nick Bowler (3):
-  ARM: zynq: Allow UART1 to be used as DEBUG_LL console.
-  ARM: zynq: Add compatible entry for the ZC702 board.
-  ARM: zynq: Map DEBUG_LL UARTs in vmalloc space.
-
- arch/arm/Kconfig.debug                     |   17 +++++++++++++++++
- arch/arm/mach-zynq/common.c                |    5 +++--
- arch/arm/mach-zynq/include/mach/zynq_soc.h |   17 ++++++++++++-----
- 3 files changed, 32 insertions(+), 7 deletions(-)
-
+> +	if (!__set_page_dirty(page, mapping, 1))
+>  		return 0;
+> -	}
+>  
+>  	inode = mapping->host;
+>  	ci = ceph_inode(inode);
 -- 
-1.7.8.6
-
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
