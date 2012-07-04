@@ -1,297 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab2GDPtK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 11:49:10 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:44525 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340Ab2GDPtH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 11:49:07 -0400
-Date: Wed, 4 Jul 2012 17:48:41 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        Seth Heasley <seth.heasley@intel.com>, Olof Johansson <olof@lixom.net>,
-        Benson Leung <bleung@chromium.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/8 v3] i2c: i801: enable irq for i801 smbus
- transactions
-Message-ID: <20120704174841.68dc6587@endymion.delvare>
-In-Reply-To: <1340805255-8041-8-git-send-email-djkurtz@chromium.org>
-References: <1340805255-8041-1-git-send-email-djkurtz@chromium.org>
-	<1340805255-8041-8-git-send-email-djkurtz@chromium.org>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754845Ab2GDPwY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 11:52:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44987 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754738Ab2GDPwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 11:52:22 -0400
+Date: Wed, 4 Jul 2012 16:52:17 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [MMTests] Page reclaim performance on ext3
+Message-ID: <20120704155217.GJ14154@suse.de>
+References: <20120620113252.GE4011@suse.de>
+ <20120629111932.GA14154@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120629111932.GA14154@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+Configuration:	global-dhp__pagereclaim-performance-ext3
+Result: 	http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__pagereclaim-performance-ext3
+Benchmarks:	postmark largedd fsmark-single fsmark-threaded micro
 
-On Wed, 27 Jun 2012 21:54:14 +0800, Daniel Kurtz wrote:
-> Add a new 'feature' to i2c-i801 to enable using i801 interrupts.
-> When the feature is enabled, then an isr is installed for the device's
-> pci irq.
-> 
-> An I2C/SMBus transaction is always terminated by one of the following
-> interrupt sources: FAILED, BUS_ERR, DEV_ERR, or on success: INTR.
-> 
-> When the isr fires for one of these cases, it sets the ->status variable
-> and wakes up the waitq.  The waitq then saves off the status code, and
-> clears ->status (in preparation for some future transaction).
-> The SMBus controller generates an INTR irq at the end of each
-> transaction where INTREN was set in the HST_CNT register.
-> 
-> No locking is needed around accesses to priv->status since all writes to
-> it are serialized: it is only ever set once in the isr at the end of a
-> transaction, and cleared while no irqs can occur.  In addition, the I2C
-> adapter lock guarantees that entire I2C transactions for a single
-> adapter are always serialized.
-> 
-> For this patch, the INTREN bit is set only for SMBus block, byte and word
-> transactions, but not for I2C reads or writes.  The use of the DS
-> (BYTE_DONE) interrupt with byte-by-byte I2C transactions is implemented in
-> a subsequent patch.
-> 
-> The interrupt feature has only been enabled for COUGARPOINT hardware.
-> In addition, it is disabled if SMBus is using the SMI# interrupt.
-> 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> ---
->  drivers/i2c/busses/i2c-i801.c |   93 ++++++++++++++++++++++++++++++++++++++---
->  1 files changed, 87 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
-> index 6fa2a0b..6bfedc0 100644
-> --- a/drivers/i2c/busses/i2c-i801.c
-> +++ b/drivers/i2c/busses/i2c-i801.c
-> @@ -60,10 +60,12 @@
->    Block process call transaction   no
->    I2C block read transaction       yes  (doesn't use the block buffer)
->    Slave mode                       no
-> +  Interrupt processing             yes
->  
->    See the file Documentation/i2c/busses/i2c-i801 for details.
->  */
->  
-> +#include <linux/interrupt.h>
->  #include <linux/module.h>
->  #include <linux/pci.h>
->  #include <linux/kernel.h>
-> @@ -76,6 +78,7 @@
->  #include <linux/io.h>
->  #include <linux/dmi.h>
->  #include <linux/slab.h>
-> +#include <linux/wait.h>
->  
->  /* I801 SMBus address offsets */
->  #define SMBHSTSTS(p)	(0 + (p)->smba)
-> @@ -134,8 +137,9 @@
->  #define STATUS_ERROR_FLAGS	(SMBHSTSTS_FAILED | SMBHSTSTS_BUS_ERR | \
->  				 SMBHSTSTS_DEV_ERR)
->  
-> -#define STATUS_FLAGS		(SMBHSTSTS_BYTE_DONE | SMBHSTSTS_INTR | \
-> -				 STATUS_ERROR_FLAGS)
-> +#define STATUS_RESULT_FLAGS	(SMBHSTSTS_INTR | STATUS_ERROR_FLAGS)
+Summary
+=======
 
-I see no good reason to introduce this, you use it only once and
-STATUS_FLAGS would work as well there.
+largedd is showing that in 3.0 that reclaim started writing pages. This
+has been "fixed" by deferring the writeback to flusher threads and
+immediately reclaiming. This is mostly fixed now but it would be worth
+refreshing the memory as to why this happened in the first place.
 
-> +
-> +#define STATUS_FLAGS		(SMBHSTSTS_BYTE_DONE | STATUS_RESULT_FLAGS)
->  
->  /* Older devices have their ID defined in <linux/pci_ids.h> */
->  #define PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS	0x1c22
-> @@ -155,6 +159,10 @@ struct i801_priv {
->  	unsigned char original_hstcfg;
->  	struct pci_dev *pci_dev;
->  	unsigned int features;
-> +
-> +	/* isr processing */
-> +	wait_queue_head_t waitq;
-> +	u8 status;
->  };
->  
->  static struct pci_driver i801_driver;
-> @@ -163,6 +171,7 @@ static struct pci_driver i801_driver;
->  #define FEATURE_BLOCK_BUFFER	(1 << 1)
->  #define FEATURE_BLOCK_PROC	(1 << 2)
->  #define FEATURE_I2C_BLOCK_READ	(1 << 3)
-> +#define FEATURE_IRQ		(1 << 4)
->  /* Not really a feature, but it's convenient to handle it as such */
->  #define FEATURE_IDF		(1 << 15)
->  
-> @@ -171,6 +180,7 @@ static const char *i801_feature_names[] = {
->  	"Block buffer",
->  	"Block process call",
->  	"I2C block read",
-> +	"Interrupt",
->  };
->  
->  static unsigned int disable_features;
-> @@ -211,7 +221,12 @@ static int i801_check_post(struct i801_priv *priv, int status, int timeout)
->  {
->  	int result = 0;
->  
-> -	/* If the SMBus is still busy, we give up */
-> +	/*
-> +	 * If the SMBus is still busy, we give up
-> +	 * Note: This timeout condition only happens when using polling
-> +	 * transactions.  For interrupt operation, NAK/timeout is indicated by
-> +	 * DEV_ERR.
-> +	 */
->  	if (timeout) {
->  		dev_err(&priv->pci_dev->dev, "Transaction timeout\n");
->  		/* try to stop the current command */
-> @@ -287,6 +302,14 @@ static int i801_transaction(struct i801_priv *priv, int xact)
->  	if (result < 0)
->  		return result;
->  
-> +	if (priv->features & FEATURE_IRQ) {
-> +		outb_p(xact | SMBHSTCNT_INTREN | SMBHSTCNT_START,
-> +		       SMBHSTCNT(priv));
-> +		wait_event(priv->waitq, (status = priv->status));
-> +		priv->status = 0;
-> +		return i801_check_post(priv, status, 0);
-> +	}
-> +
->  	/* the current contents of SMBHSTCNT can be overwritten, since PEC,
->  	 * SMBSCMD are passed in xact */
->  	outb_p(xact | SMBHSTCNT_START, SMBHSTCNT(priv));
-> @@ -341,6 +364,37 @@ static int i801_block_transaction_by_block(struct i801_priv *priv,
->  }
->  
->  /*
-> + * i801 signals transaction completion with one of these interrupts:
-> + *   INTR - Success
-> + *   DEV_ERR - Invalid command, NAK or communication timeout
-> + *   BUS_ERR - SMI# transaction collision
-> + *   FAILED - transaction was canceled due to a KILL request
-> + * When any of these occur, update ->status and wake up the waitq.
-> + * ->status must be cleared before kicking off the next transaction.
-> + */
-> +static irqreturn_t i801_isr(int irq, void *dev_id)
-> +{
-> +	struct i801_priv *priv = dev_id;
-> +	u8 hststs;
+Slab shrinking is another area to pay attention to. Scanning in recent
+kernels is consistent with earlier kernels but there are cases where
+the number of inode being reclaimed has changed significantly. Inode
+stealing in one case is why higher since 3.1.
 
-It's named "status" everywhere else, now that the confusion with the
-PCI status register is no longer possible, I would advise that we stick
-with "status".
+postmark detected that there was excessive swapping for some kernels
+between 3.0 and 3.3 but that it's not always reproducible and depends
+on both the workload and the amount of available memory. It does indicate
+that 3.1 and 3.2 might have been very bad kernels for interactivity
+performance under memory pressure.
 
-> +
-> +	hststs = inb_p(SMBHSTSTS(priv));
-> +	dev_dbg(&priv->pci_dev->dev, "irq: hststs = %02x\n", hststs);
-> +
-> +	/*
-> +	 * Clear irq sources and report transaction result.
-> +	 * ->status must be cleared before the next transaction is started.
-> +	 */
-> +	hststs &= STATUS_RESULT_FLAGS;
-> +	if (hststs) {
-> +		outb_p(hststs, SMBHSTSTS(priv));
-> +		priv->status |= hststs;
-> +		wake_up(&priv->waitq);
-> +	}
+largedd in is showing in some cases that there was excessive swap activity
+in 3.1 and 3.2 kernels. This has been fixed but the fixes were not
+backported.
 
-Your original patch did handle shared interrupts, I don't think this
-version does. We are supposed to return IRQ_NONE if the interrupt
-wasn't ours, aren't we? Plus, logging the register value when the
-interrupt isn't ours fills the kernel log very fast for heavily shared
-interrupts (as is the case on my old ICH3-M laptop.)
+Benchmark notes
+===============
 
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +/*
->   * For "byte-by-byte" block transactions:
->   *   I2C write uses cmd=I801_BLOCK_DATA, I2C_EN=1
->   *   I2C read uses cmd=I801_I2C_BLOCK_DATA
-> @@ -801,6 +855,10 @@ static int __devinit i801_probe(struct pci_dev *dev,
->  		break;
->  	}
->  
-> +	/* IRQ processing only tested on CougarPoint PCH */
-> +	if (dev->device == PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS)
-> +		priv->features |= FEATURE_IRQ;
-> +
->  	/* Disable features on user request */
->  	for (i = 0; i < ARRAY_SIZE(i801_feature_names); i++) {
->  		if (priv->features & disable_features & (1 << i))
-> @@ -848,16 +906,31 @@ static int __devinit i801_probe(struct pci_dev *dev,
->  	}
->  	pci_write_config_byte(priv->pci_dev, SMBHSTCFG, temp);
->  
-> -	if (temp & SMBHSTCFG_SMB_SMI_EN)
-> +	if (temp & SMBHSTCFG_SMB_SMI_EN) {
->  		dev_dbg(&dev->dev, "SMBus using interrupt SMI#\n");
-> -	else
-> +		/* Disable SMBus interrupt feature if SMBus using SMI# */
-> +		priv->features &= ~FEATURE_IRQ;
-> +	} else {
->  		dev_dbg(&dev->dev, "SMBus using PCI Interrupt\n");
-> +	}
->  
->  	/* Clear special mode bits */
->  	if (priv->features & (FEATURE_SMBUS_PEC | FEATURE_BLOCK_BUFFER))
->  		outb_p(inb_p(SMBAUXCTL(priv)) &
->  		       ~(SMBAUXCTL_CRC | SMBAUXCTL_E32B), SMBAUXCTL(priv));
->  
-> +	if (priv->features & FEATURE_IRQ) {
-> +		init_waitqueue_head(&priv->waitq);
-> +
-> +		err = request_irq(dev->irq, i801_isr, IRQF_SHARED,
-> +				  i801_driver.name, priv);
-> +		if (err) {
-> +			dev_err(&dev->dev, "Failed to allocate irq %d: %d\n",
-> +				dev->irq, err);
-> +			goto exit_release;
-> +		}
-> +	}
-> +
->  	/* set up the sysfs linkage to our parent device */
->  	priv->adapter.dev.parent = &dev->dev;
->  
-> @@ -869,14 +942,18 @@ static int __devinit i801_probe(struct pci_dev *dev,
->  	err = i2c_add_adapter(&priv->adapter);
->  	if (err) {
->  		dev_err(&dev->dev, "Failed to add SMBus adapter\n");
-> -		goto exit_release;
-> +		goto exit_free_irq;
->  	}
->  
->  	i801_probe_optional_slaves(priv);
->  
->  	pci_set_drvdata(dev, priv);
-> +
->  	return 0;
->  
-> +exit_free_irq:
-> +	if (priv->features & FEATURE_IRQ)
-> +		free_irq(dev->irq, priv);
->  exit_release:
->  	pci_release_region(dev, SMBBAR);
->  exit:
-> @@ -891,6 +968,10 @@ static void __devexit i801_remove(struct pci_dev *dev)
->  	i2c_del_adapter(&priv->adapter);
->  	pci_write_config_byte(dev, SMBHSTCFG, priv->original_hstcfg);
->  	pci_release_region(dev, SMBBAR);
-> +
-> +	if (priv->features & FEATURE_IRQ)
-> +		free_irq(dev->irq, priv);
-> +
+Each of the benchmarks trigger page reclaim in a fairly simple manner. The
+intention is not to be exhaustive but to test basic reclaim patterns that
+the VM should never get wrong. Regressions may also be due to changes in
+the IO scheduler or underlying filesystem.
 
-It should make no difference in practice, but I would prefer that we
-swamp these, to have the exact same order as in the error path of the
-probe function.
+The workloads are predominately file-based. Anonymous page reclaim stress
+testing is covered by another test.
 
->  	pci_set_drvdata(dev, NULL);
->  	kfree(priv);
->  	/*
+mkfs was run on system startup. No attempt was made to age it. No
+special mkfs or mount options were used.
 
+postmark
+  o 15000 transactions
+  o File size ranged 3096 bytes to 5M
+  o 100 subdirectories
+  o Total footprint approximately 4*TOTAL_RAM
+
+  This workload is a single-threaded benchmark intended to measure
+  filesystem performance for many short-lived and small files. It's
+  primary weakness is that it does no application processing and
+  so the page aging is basically on per-file granularity. 
+
+largedd
+  o Target size 8*TOTAL_RAM
+
+  This downloads a large file and makes copies with dd until the
+  target footprint size is reached.
+
+fsmark
+  o Parallel directories were used
+  o 1 Thread per CPU
+  o 30M Filesize
+  o 16 directories
+  o 256 files per directory
+  o TOTAL_RAM_IN_BYTES/FILESIZE files per iteration
+  o 15 iterations
+  Single: ./fs_mark  -d  /tmp/fsmark-25458/1  -D  16  -N  256  -n  532  -L  15  -S0  -s  31457280
+  Thread: ./fs_mark  -d  /tmp/fsmark-28217/1  -d  /tmp/fsmark-28217/2  -d  /tmp/fsmark-28217/3  -d
+/tmp/fsmark-28217/4  -d  /tmp/fsmark-28217/5  -d  /tmp/fsmark-28217/6  -d  /tmp/fsmark-28217/7  -d
+/tmp/fsmark-28217/8  -d  /tmp/fsmark-28217/9  -d  /tmp/fsmark-28217/10  -d  /tmp/fsmark-28217/11  -d
+/tmp/fsmark-28217/12  -d  /tmp/fsmark-28217/13  -d  /tmp/fsmark-28217/14  -d  /tmp/fsmark-28217/15  -d
+/tmp/fsmark-28217/16  -d  /tmp/fsmark-28217/17  -d  /tmp/fsmark-28217/18  -d  /tmp/fsmark-28217/19  -d
+/tmp/fsmark-28217/20  -d  /tmp/fsmark-28217/21  -d  /tmp/fsmark-28217/22  -d  /tmp/fsmark-28217/23  -d
+/tmp/fsmark-28217/24  -d  /tmp/fsmark-28217/25  -d  /tmp/fsmark-28217/26  -d  /tmp/fsmark-28217/27  -d
+/tmp/fsmark-28217/28  -d  /tmp/fsmark-28217/29  -d  /tmp/fsmark-28217/30  -d  /tmp/fsmark-28217/31  -d
+/tmp/fsmark-28217/32  -D  16  -N  256  -n  16  -L  15  -S0  -s  31457280
+
+micro
+  o Total mapping size 10*TOTAL_RAM
+  o NR_CPU threads
+  o 5 iterations
+
+  This creates one process per CPU and creates a large file-backed mapping
+  up to the total mapping size. Each of the threads does a streaming
+  read of the mapping for a number of iterations. It then restarts with
+  a streaming write.
+
+  Completion time is the primary factor here but be careful as a good
+  completion time can be due to excessive reclaim which has an adverse
+  effect on many other workloads.
+
+===========================================================
+Machine:	arnold
+Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__pagereclaim-performance-ext3/arnold/comparison.html
+Arch:		x86
+CPUs:		1 socket, 2 threads
+Model:		Pentium 4
+Disk:		Single Rotary Disk
+Status:		Generally good but pay attention to largedd
+===========================================================
+
+fsmark-single
+-------------
+  Generally this is looking good. There was a small performance dip in
+  3.3 that has been recovered. All the reclaim was done from kswapd in
+  all cases and efficiency was high.
+
+fsmark-threaded
+---------------
+  Generally looking good although the higher variance in 3.4 is a surprise.
+  It is interesting to note that in 2.6.32 and 2.6.34 that direct reclaim
+  was used and that this is no longer the case. kswapd efficiency is high
+  throughout as the scanning velocity is steady. A point of interest is
+  that slabs were not scanned in 3.4. This could be good or bad.
+
+postmark
+--------
+  postmark performance took a dip in 3.2 and 3.3 and this roughly correlates
+  with some other IO tests. It is very interesting to note that there was
+  swap activity in 3.1 and 3.2 that has been since resolved but is something
+  that -stable users might care about. Otherwise kswapd efficiency and
+  scanning rates look good.
+
+largedd
+-------
+  Figures generally look good here. All the reclaim is done by kswapd
+  as expected. It is very interesting to note that in 3.0 and 3.1 that
+  reclaim started writing out pages and that it is now being deferred
+  to flusher threads and then immediately reclaimed.
+
+micro
+-----
+  Completion times generally look good and are improving. Some direct
+  reclaim is happening but at a steady percentage on each release.
+  Efficiency is much lower than other workloads but at least it is
+  consistent.
+
+  Slab shrinking may need examination. It clearly shows that scanning
+  is taking place but fewer inodes are being reclaimed in recent
+  kernels. This is not necessarily bad but worth paying attention to.
+
+  One point of concern is that kswapd CPU usage is high in recent
+  kernels for this test. The graph is a complete mess and needs
+  closer examination.
+   
+==========================================================
+Machine:	hydra
+Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__pagereclaim-performance-ext3/hydra/comparison.html
+Arch:		x86-64
+CPUs:		1 socket, 4 threads
+Model:		AMD Phenom II X4 940
+Disk:		Single Rotary Disk
+Status:		Ok but postmark shows high inode steals
+==========================================================
+
+fsmark-single
+-------------
+  This is all over the place. 3.0 was bad, 3.1 was good but performance
+  has declined since then. The reclaim statistics look ok although slabs
+  are being scanned without being reclaimed which is curious. kswapd is
+  scanning less but that is not necessarily the cause of the problem.
+
+fsmark-threaded
+---------------
+  In contrast to the single-threaded case, this is looking steady although
+  overall kernels are slower than 2.6.32 was.  Direct reclaim velocity is
+  slightly higher but still a small percentage of overall scanning. It's
+  cause for some concern but not an immediate panic as reclaim efficiency
+  is high.
+
+postmark
+-------
+  postmark performance took a serious dip in 3.2 and 3.3 and while it
+  has recovered in 3.4 a bit, it's still far below the peak seen in 3.1.
+  For the most part, reclaim statistics look ok with the exception of
+  slab shrinking. Inode stealing is way up 3.1 and later kernels.
+
+largedd
+-------
+  Recent figures look good but in 3.1 and 3.2 there was excessive swapping.
+  This was matched by pages reclaimed by direct reclaim in the same kernels
+  and this likely shot interactive performance to hell with doing large
+  copies on those kernels. This roughly matches other bug reports so it's
+  interesting but clearly the patches did not get backported to -stable.
+
+micro
+-----
+   Completion times looking generally good. 3.1 and 3.2 show better times
+   but as it is matched by excessive amounts of reclaim it is not likely
+   to be a good trade-off so lets not "fix" that.
+
+==========================================================
+Machine:	sandy
+Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__pagereclaim-performance-ext3/sandy/comparison.html
+Arch:		x86-64
+CPUs:		1 socket, 8 threads
+Model:		Intel Core i7-2600
+Disk:		Single Rotary Disk
+Status:		
+==========================================================
+
+fsmark-single
+-------------
+  There was a performance dip in 3.4 but otherwise looks ok. Reclaim stats
+  look fine.
+
+fsmark-threaded
+---------------
+  Other than something crazy happening to variance in 3.1, figures look ok.
+  There is some direct reclaim going on but the efficiency is high. There
+  are 8 threads on this machine and only one disk so some stalling due
+  to direct reclaim would be expected if IO was not keeping up.
+
+postmark
+--------
+  postmark performance took a serious dip in 3.1 and 3.2 which is a kernel
+  version earlier than the same dip seen in hydra. No explanation for this
+  but it is matched by swap activity in the same kernels so it might be
+  an indication there was general swapping-related damage in the 3.0-3.3
+  time-frame.
+
+largedd
+-------
+  Recent figures look good. Again, some swap activity is visible in 3.1 and
+  3.2 that has been since fixed but obviously not backported.
+
+micro
+-----
+  Okish I suppose. Completion times have improved but are all over the place
+  and as seen elsewhere good completion times on micro can be sometimes
+  due to excessive reclaim and is not necessarily a good thing.
 
 -- 
-Jean Delvare
+Mel Gorman
+SUSE Labs
