@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926Ab2GDOey (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 10:34:54 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49864 "EHLO
+	id S1753875Ab2GDOgJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 10:36:09 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49867 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861Ab2GDOew (ORCPT
+	with ESMTP id S1753535Ab2GDOgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 10:34:52 -0400
+	Wed, 4 Jul 2012 10:36:04 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] wireless: fix leak found by coverity
-To: bzhao@marvell.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Date: Wed, 04 Jul 2012 16:33:34 +0100
-Message-ID: <20120704153327.4012.76171.stgit@bluebook>
+Subject: [PATCH] kernel: fix mishandling of out of memory in poweroff
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Date: Wed, 04 Jul 2012 16:34:51 +0100
+Message-ID: <20120704153443.4055.53130.stgit@bluebook>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -22,22 +22,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
+Coverity 703573
+
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/net/wireless/mwifiex/cfg80211.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/sys.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/mwifiex/cfg80211.c b/drivers/net/wireless/mwifiex/cfg80211.c
-index 97de652..497a05a 100644
---- a/drivers/net/wireless/mwifiex/cfg80211.c
-+++ b/drivers/net/wireless/mwifiex/cfg80211.c
-@@ -1003,6 +1003,7 @@ static int mwifiex_cfg80211_start_ap(struct wiphy *wiphy,
- 	case NL80211_HIDDEN_SSID_ZERO_CONTENTS:
- 		/* firmware doesn't support this type of hidden SSID */
- 	default:
-+		kfree(bss_cfg);
- 		return -EINVAL;
- 	}
+diff --git a/kernel/sys.c b/kernel/sys.c
+index b04ae03..9271b7c 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -2212,13 +2212,13 @@ int orderly_poweroff(bool force)
  
+ 	ret = call_usermodehelper_fns(argv[0], argv, envp, UMH_NO_WAIT,
+ 				      NULL, argv_cleanup, NULL);
+-out:
+ 	if (likely(!ret))
+ 		return 0;
+ 
+ 	if (ret == -ENOMEM)
+ 		argv_free(argv);
+ 
++out:
+ 	if (force) {
+ 		printk(KERN_WARNING "Failed to start orderly shutdown: "
+ 		       "forcing the issue\n");
 
