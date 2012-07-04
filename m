@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab2GDPGM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 11:06:12 -0400
-Received: from mga09.intel.com ([134.134.136.24]:19966 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752849Ab2GDPGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 11:06:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="166895797"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>,
-        "kay@vrfy.org" <kay@vrfy.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Subject: RE: [PATCH] printk: fixing the deadlock when calling printk in nmi
- handle
-Thread-Topic: [PATCH] printk: fixing the deadlock when calling printk in nmi
- handle
-Thread-Index: AQHNWfRptMUUmgrTR0OSqLbmXZzgzpcYrxwAgACI/UA=
-Date: Wed, 4 Jul 2012 15:06:06 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A10CADD@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A10C7F6@SHSMSX101.ccr.corp.intel.com>
-	 <1341408169.2507.111.camel@laptop>
-	 <27240C0AC20F114CBF8149A2696CBE4A10C84B@SHSMSX101.ccr.corp.intel.com>
-	 <1341409177.2507.117.camel@laptop>
-	 <27240C0AC20F114CBF8149A2696CBE4A10CA93@SHSMSX101.ccr.corp.intel.com>
-	 <1341413431.2507.124.camel@laptop> <1341413521.2507.125.camel@laptop>
-In-Reply-To: <1341413521.2507.125.camel@laptop>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1754207Ab2GDPGZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 11:06:25 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:35843 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752849Ab2GDPGU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 11:06:20 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiIFADhb9E9XQAxf/2dsb2JhbABFs1KDW4EIghgBAQVWIxALGAklDwIoHgYNAQcBAYgLu0aLOYY3A5sNii2CYQ
+Message-ID: <4FF45B24.20804@computer.org>
+Date: Wed, 04 Jul 2012 17:03:00 +0200
+From: Jan Ceuleers <jan.ceuleers@computer.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
+To: Pavel Machek <pavel@ucw.cz>
+CC: ibm-acpi-devel@lists.sourceforge.net, platform-driver-x86@vger.kernel.org,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: ethernet-related thermal emergency on Thinkpad x60
+References: <20120704141756.GA2089@elf.ucw.cz>
+In-Reply-To: <20120704141756.GA2089@elf.ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q64F6Gr0023593
 
-> -----Original Message-----
-> From: Peter Zijlstra [mailto:peterz@infradead.org]
-> Sent: Wednesday, July 04, 2012 10:52 PM
-> To: Liu, Chuansheng
-> Cc: 'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org); kay@vrfy.org;
-> gregkh@linuxfoundation.org; mingo@elte.hu
-> Subject: RE: [PATCH] printk: fixing the deadlock when calling printk in nmi
-> handle
+On 07/04/2012 04:17 PM, Pavel Machek wrote:
+> Hi!
 > 
-> On Wed, 2012-07-04 at 16:50 +0200, Peter Zijlstra wrote:
-> > On Wed, 2012-07-04 at 14:46 +0000, Liu, Chuansheng wrote:
-> > > > > I took many time to dig out this issue.
-> > > >
-> > > > Well, it was a known issue..
-> > > Still feel unfair :)
-> > > If this is a known issue that calling printk is not safe in nmi
-> > > handler, Why not defense it like this patch before real solution coming out?
-> >
-> > Why replace one broken thing with another broken thing?
-> 
-> Also, I much prefer obviously broken over subtly broken.
-Supporting your opinion totally, but from production view, it is not a good thing that system crash,
-I prefer to lose one log instead:)
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> When using nework interface (eth0), machine starts to behave
+> weird. Like... complete freeze, then poweroff, then it hangs on boot
+> (initializing ACPI) until I let it to cool down... and I'm not even
+> using gigabit speed.
+
+Hi Pavel.
+
+Please could you clarify why you believe that this is related to
+Ethernet? I.e. does the problem not happen when you're not using
+Ethernet (but rather wifi or no networking at all)?
+
+Does the problem start to happen when you plug in the Ethernet cable,
+having previously booted the machine without being connected to the network?
+
+Where does the CPU spend its time when the problem occurs?
+
+Basic question: does your CPU fan work? Nothing is obstructing the
+airflow (e.g. dust)? If you're using fancontrol in order to regulate the
+fan speed, it is set up properly to prevent overheating?
+
+HTH, Jan
