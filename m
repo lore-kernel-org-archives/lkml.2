@@ -1,125 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713Ab2GDJGm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 05:06:42 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:42181 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753541Ab2GDJGl (ORCPT
+	id S1756189Ab2GDJHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 05:07:24 -0400
+Received: from mail-gh0-f202.google.com ([209.85.160.202]:56604 "EHLO
+	mail-gh0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754008Ab2GDJHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 05:06:41 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl/nomadik: use devm_* allocators for gpio probe
-Date: Wed, 4 Jul 2012 11:05:48 +0200
-Message-ID: <1341392748-9904-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.9.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 4 Jul 2012 05:07:21 -0400
+From: Daniel Kurtz <djkurtz@chromium.org>
+To: Alessandro Rubini <rubini@cvml.unipv.it>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>
+Cc: Olof Johansson <olof@lixom.net>, Benson Leung <bleung@chromium.org>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH 2/2 v2] Input: synaptics - add sysfs access to firmware ID & board ID
+Date: Wed,  4 Jul 2012 17:07:17 +0800
+Message-Id: <1341392837-19115-2-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1341392837-19115-1-git-send-email-djkurtz@chromium.org>
+References: <1341392837-19115-1-git-send-email-djkurtz@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPIO portions of the Nomadik pinctrl driver was not using
-the managed devm_* interfaces, lets' use them consequently and
-cut down the error path and special case handling.
+Allow userspace to query firmware ID and board ID, which are read and
+cached during device initialization.
 
-Acked-by: Patrice Chotard <patrice.chotard@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+This information can be read, for instance, by a userspace feedback
+reporting tool, to include this information in its reports.
+
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/pinctrl/pinctrl-nomadik.c |   35 +++++++++--------------------------
- 1 file changed, 9 insertions(+), 26 deletions(-)
+ drivers/input/mouse/synaptics.c |   41 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 41 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index 3e7e47d..095bbc6 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -1194,7 +1194,7 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 7e0eca7..3b24a0f 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -1258,6 +1258,17 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
+ 	}
+ }
+ 
++/*****************************************************************************
++ *	sysfs interface
++ ****************************************************************************/
++/* Sysfs entry for board ID */
++static ssize_t synaptics_show_board_id(struct psmouse *psmouse, void *data,
++				       char *buf)
++{
++	struct synaptics_data *priv = psmouse->private;
++	return scnprintf(buf, PAGE_SIZE, "%lu\n", priv->board_id);
++}
++
+ static ssize_t synaptics_show_disable_gesture(struct psmouse *psmouse,
+ 					      void *data, char *buf)
+ {
+@@ -1296,9 +1307,30 @@ static ssize_t synaptics_set_disable_gesture(struct psmouse *psmouse,
+ 	return len;
+ }
+ 
++/* Sysfs entry for firmware ID */
++static ssize_t synaptics_show_firmware_id(struct psmouse *psmouse, void *data,
++					  char *buf)
++{
++	struct synaptics_data *priv = psmouse->private;
++	return scnprintf(buf, PAGE_SIZE, "%lu\n", priv->firmware_id);
++}
++
++PSMOUSE_DEFINE_RO_ATTR(board_id, S_IRUGO, NULL, synaptics_show_board_id);
+ PSMOUSE_DEFINE_ATTR(disable_gesture, S_IWUSR | S_IRUGO, NULL,
+ 		    synaptics_show_disable_gesture,
+ 		    synaptics_set_disable_gesture);
++PSMOUSE_DEFINE_RO_ATTR(firmware_id, S_IRUGO, NULL, synaptics_show_firmware_id);
++
++static struct attribute *synaptics_attrs[] = {
++	&psmouse_attr_board_id.dattr.attr,
++	&psmouse_attr_firmware_id.dattr.attr,
++	NULL
++};
++
++static struct attribute_group synaptics_attr_group = {
++	.attrs = synaptics_attrs,
++};
++
+ 
+ static void synaptics_disconnect(struct psmouse *psmouse)
+ {
+@@ -1308,6 +1340,9 @@ static void synaptics_disconnect(struct psmouse *psmouse)
+ 		device_remove_file(&psmouse->ps2dev.serio->dev,
+ 				   &psmouse_attr_disable_gesture.dattr);
+ 
++	sysfs_remove_group(&psmouse->ps2dev.serio->dev.kobj,
++			   &synaptics_attr_group);
++
+ 	synaptics_reset(psmouse);
+ 	kfree(priv);
+ 	psmouse->private = NULL;
+@@ -1528,6 +1563,12 @@ static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
+ 		}
  	}
  
- 	if (np) {
--		pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
-+		pdata = devm_kzalloc(&dev->dev, sizeof(*pdata), GFP_KERNEL);
- 		if (!pdata)
- 			return -ENOMEM;
- 
-@@ -1229,29 +1229,23 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
- 		goto out;
- 	}
- 
--	if (request_mem_region(res->start, resource_size(res),
--			       dev_name(&dev->dev)) == NULL) {
--		ret = -EBUSY;
--		goto out;
--	}
--
--	base = ioremap(res->start, resource_size(res));
-+	base = devm_request_and_ioremap(&dev->dev, res);
- 	if (!base) {
- 		ret = -ENOMEM;
--		goto out_release;
-+		goto out;
- 	}
- 
--	clk = clk_get(&dev->dev, NULL);
-+	clk = devm_clk_get(&dev->dev, NULL);
- 	if (IS_ERR(clk)) {
- 		ret = PTR_ERR(clk);
--		goto out_unmap;
-+		goto out;
- 	}
- 	clk_prepare(clk);
- 
--	nmk_chip = kzalloc(sizeof(*nmk_chip), GFP_KERNEL);
-+	nmk_chip = devm_kzalloc(&dev->dev, sizeof(*nmk_chip), GFP_KERNEL);
- 	if (!nmk_chip) {
- 		ret = -ENOMEM;
--		goto out_clk;
-+		goto out;
- 	}
- 
- 	/*
-@@ -1286,7 +1280,7 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
- 
- 	ret = gpiochip_add(&nmk_chip->chip);
- 	if (ret)
--		goto out_free;
-+		goto out;
- 
- 	BUG_ON(nmk_chip->bank >= ARRAY_SIZE(nmk_gpio_chips));
- 
-@@ -1300,7 +1294,7 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
- 	if (!nmk_chip->domain) {
- 		pr_err("%s: Failed to create irqdomain\n", np->full_name);
- 		ret = -ENOSYS;
--		goto out_free;
-+		goto out;
- 	}
- 
- 	nmk_gpio_init_irq(nmk_chip);
-@@ -1309,20 +1303,9 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
- 
++	err = sysfs_create_group(&psmouse->ps2dev.serio->dev.kobj,
++				 &synaptics_attr_group);
++	if (err)
++		psmouse_warn(psmouse,
++			    "Failed to create sysfs attributes (%d)", err);
++
  	return 0;
  
--out_free:
--	kfree(nmk_chip);
--out_clk:
--	clk_disable(clk);
--	clk_put(clk);
--out_unmap:
--	iounmap(base);
--out_release:
--	release_mem_region(res->start, resource_size(res));
- out:
- 	dev_err(&dev->dev, "Failure %i for GPIO %i-%i\n", ret,
- 		  pdata->first_gpio, pdata->first_gpio+31);
--	if (np)
--		kfree(pdata);
- 
- 	return ret;
- }
+  init_fail:
 -- 
-1.7.9.2
+1.7.7.3
 
