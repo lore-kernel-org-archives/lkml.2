@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899Ab2GDIqU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 04:46:20 -0400
-Received: from mga03.intel.com ([143.182.124.21]:50323 "EHLO mga03.intel.com"
+	id S1756971Ab2GDIqZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 04:46:25 -0400
+Received: from mga11.intel.com ([192.55.52.93]:7380 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753035Ab2GDIqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 04:46:18 -0400
+	id S1756912Ab2GDIqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 04:46:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="118789195"
+   d="scan'208";a="173277834"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>, proski@gnu.org,
         Andrei Emeltchenko <andrei.emeltchenko@intel.com>,
         linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
         joe@perches.com, Larry Finger <Larry.Finger@lwfinger.net>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv3 2/3] lib: printf: append support of '%*ph[CDN]'
-Date: Wed,  4 Jul 2012 11:45:51 +0300
-Message-Id: <1341391552-4842-2-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv3 3/3] wireless: at76c50x: eliminate hex2str()
+Date: Wed,  4 Jul 2012 11:45:52 +0300
+Message-Id: <1341391552-4842-3-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1341391552-4842-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1341341280.2012.3.camel@joe2Laptop>
@@ -26,139 +26,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are many places in the kernel where the drivers print small buffers as a
-hex string. This patch adds a support of the variable width buffer to print it
-as a hex string with a delimiter. The idea came from Pavel Roskin here:
-http://www.digipedia.pl/usenet/thread/18835/17449/
-
-Sample output of
-	pr_info("buf[%d:%d] %*phC\n", from, len, len, &buf[from]);
-could be look like this:
-	[ 0.726130] buf[51:8] e8:16:b6:ef:e3:74:45:6e
-	[ 0.750736] buf[59:15] 31:81:b8:3f:35:49:06:ae:df:32:06:05:4a:af:55
-	[ 0.757602] buf[17:5] ac:16:d5:2c:ef
+The hex2str() is substituted by '%*phD' specificator.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- Documentation/printk-formats.txt |   10 ++++++
- lib/vsprintf.c                   |   62 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 72 insertions(+)
+ drivers/net/wireless/at76c50x-usb.c |   54 ++++++++---------------------------
+ 1 file changed, 12 insertions(+), 42 deletions(-)
 
-diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
-index 90ff4d7..8ffb274 100644
---- a/Documentation/printk-formats.txt
-+++ b/Documentation/printk-formats.txt
-@@ -53,6 +53,16 @@ Struct Resources:
- 	For printing struct resources. The 'R' and 'r' specifiers result in a
- 	printed resource with ('R') or without ('r') a decoded flags member.
- 
-+Raw buffer as a hex string:
-+	%*ph	00 01 02  ...  3f
-+	%*phC	00:01:02: ... :3f
-+	%*phD	00-01-02- ... -3f
-+	%*phN	000102 ... 3f
-+
-+	For printing a small buffers (up to 64 bytes long) as a hex string with
-+	certain separator. For the larger buffers consider to use
-+	print_hex_dump().
-+
- MAC/FDDI addresses:
- 
- 	%pM	00:01:02:03:04:05
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index e500158..86d6a12 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -655,6 +655,57 @@ char *resource_string(char *buf, char *end, struct resource *res,
+diff --git a/drivers/net/wireless/at76c50x-usb.c b/drivers/net/wireless/at76c50x-usb.c
+index efc162e..e5bd2ad 100644
+--- a/drivers/net/wireless/at76c50x-usb.c
++++ b/drivers/net/wireless/at76c50x-usb.c
+@@ -498,36 +498,6 @@ exit:
+ 	return ret;
  }
  
- static noinline_for_stack
-+char *hex_string(char *buf, char *end, u8 *addr, struct printf_spec spec,
-+		 const char *fmt)
-+{
-+	char hex_str[8*3+1];	/* support up to 8 bytes to print */
-+	int len;
-+	char *p;
-+	int i = 0, j;
-+	char separator;
-+
-+	switch (fmt[1]) {
-+	case 'C':
-+		separator = ':';
-+		break;
-+	case 'D':
-+		separator = '-';
-+		break;
-+	case 'N':
-+		separator = 0;
-+		break;
-+	default:
-+		separator = ' ';
-+		break;
-+	}
-+
-+	if (spec.field_width <= 0)
-+		/* nothing to print */
-+		return buf;
-+
-+	len = min_t(int, spec.field_width, 64);
-+
-+	while (i < len) {
-+		p = hex_str;
-+		for (j = 0; j < 8 && i < len; j++, i++) {
-+			p = hex_byte_pack(p, addr[i]);
-+
-+			if (separator && i != len - 1)
-+				*p++ = separator;
-+		}
-+		*p = '\0';
-+
-+		for (p = hex_str; *p != '\0'; p++) {
-+			if (buf < end)
-+				*buf = *p;
-+			++buf;
-+		}
-+	}
-+
-+	return buf;
-+}
-+
-+static noinline_for_stack
- char *mac_address_string(char *buf, char *end, u8 *addr,
- 			 struct printf_spec spec, const char *fmt)
- {
-@@ -974,6 +1025,13 @@ int kptr_restrict __read_mostly;
-  *       correctness of the format string and va_list arguments.
-  * - 'K' For a kernel pointer that should be hidden from unprivileged users
-  * - 'NF' For a netdev_features_t
-+ * - 'h[CDN]' For a variable-length buffer, it prints it as a hex string with
-+ *            a certain separator (' ' by default):
-+ *              C colon
-+ *              D dash
-+ *              N no separator
-+ *            The maximum supported length is 64 bytes of the input. Consider
-+ *            to use print_hex_dump() for the larger input.
-  *
-  * Note: The difference between 'S' and 'F' is that on ia64 and ppc64
-  * function pointers are really function descriptors, which contain a
-@@ -1007,6 +1065,8 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
- 	case 'R':
- 	case 'r':
- 		return resource_string(buf, end, ptr, spec, fmt);
-+	case 'h':
-+		return hex_string(buf, end, ptr, spec, fmt);
- 	case 'M':			/* Colon separated: 00:01:02:03:04:05 */
- 	case 'm':			/* Contiguous: 000102030405 */
- 					/* [mM]F (FDDI) */
-@@ -1298,6 +1358,8 @@ qualifier:
-  * %pI6c print an IPv6 address as specified by RFC 5952
-  * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
-  *   case.
-+ * %*ph[CDN] a variable-length hex string with a separator (supports up to 64
-+ *           bytes of the input)
-  * %n is ignored
-  *
-  * ** Please update Documentation/printk-formats.txt when making changes **
+-#define HEX2STR_BUFFERS 4
+-#define HEX2STR_MAX_LEN 64
+-
+-/* Convert binary data into hex string */
+-static char *hex2str(void *buf, size_t len)
+-{
+-	static atomic_t a = ATOMIC_INIT(0);
+-	static char bufs[HEX2STR_BUFFERS][3 * HEX2STR_MAX_LEN + 1];
+-	char *ret = bufs[atomic_inc_return(&a) & (HEX2STR_BUFFERS - 1)];
+-	char *obuf = ret;
+-	u8 *ibuf = buf;
+-
+-	if (len > HEX2STR_MAX_LEN)
+-		len = HEX2STR_MAX_LEN;
+-
+-	if (len == 0)
+-		goto exit;
+-
+-	while (len--) {
+-		obuf = hex_byte_pack(obuf, *ibuf++);
+-		*obuf++ = '-';
+-	}
+-	obuf--;
+-
+-exit:
+-	*obuf = '\0';
+-
+-	return ret;
+-}
+-
+ /* LED trigger */
+ static int tx_activity;
+ static void at76_ledtrig_tx_timerfunc(unsigned long data);
+@@ -1004,9 +974,9 @@ static void at76_dump_mib_mac_wep(struct at76_priv *priv)
+ 	    WEP_SMALL_KEY_LEN : WEP_LARGE_KEY_LEN;
+ 
+ 	for (i = 0; i < WEP_KEYS; i++)
+-		at76_dbg(DBG_MIB, "%s: MIB MAC_WEP: key %d: %s",
++		at76_dbg(DBG_MIB, "%s: MIB MAC_WEP: key %d: %*phD",
+ 			 wiphy_name(priv->hw->wiphy), i,
+-			 hex2str(m->wep_default_keyvalue[i], key_len));
++			 key_len, m->wep_default_keyvalue[i]);
+ exit:
+ 	kfree(m);
+ }
+@@ -1031,7 +1001,7 @@ static void at76_dump_mib_mac_mgmt(struct at76_priv *priv)
+ 	at76_dbg(DBG_MIB, "%s: MIB MAC_MGMT: beacon_period %d CFP_max_duration "
+ 		 "%d medium_occupancy_limit %d station_id 0x%x ATIM_window %d "
+ 		 "CFP_mode %d privacy_opt_impl %d DTIM_period %d CFP_period %d "
+-		 "current_bssid %pM current_essid %s current_bss_type %d "
++		 "current_bssid %pM current_essid %*phD current_bss_type %d "
+ 		 "pm_mode %d ibss_change %d res %d "
+ 		 "multi_domain_capability_implemented %d "
+ 		 "international_roaming %d country_string %.3s",
+@@ -1041,7 +1011,7 @@ static void at76_dump_mib_mac_mgmt(struct at76_priv *priv)
+ 		 le16_to_cpu(m->station_id), le16_to_cpu(m->ATIM_window),
+ 		 m->CFP_mode, m->privacy_option_implemented, m->DTIM_period,
+ 		 m->CFP_period, m->current_bssid,
+-		 hex2str(m->current_essid, IW_ESSID_MAX_SIZE),
++		 IW_ESSID_MAX_SIZE, m->current_essid,
+ 		 m->current_bss_type, m->power_mgmt_mode, m->ibss_change,
+ 		 m->res, m->multi_domain_capability_implemented,
+ 		 m->multi_domain_capability_enabled, m->country_string);
+@@ -1069,7 +1039,7 @@ static void at76_dump_mib_mac(struct at76_priv *priv)
+ 		 "cwmin %d cwmax %d short_retry_time %d long_retry_time %d "
+ 		 "scan_type %d scan_channel %d probe_delay %u "
+ 		 "min_channel_time %d max_channel_time %d listen_int %d "
+-		 "desired_ssid %s desired_bssid %pM desired_bsstype %d",
++		 "desired_ssid %*phD desired_bssid %pM desired_bsstype %d",
+ 		 wiphy_name(priv->hw->wiphy),
+ 		 le32_to_cpu(m->max_tx_msdu_lifetime),
+ 		 le32_to_cpu(m->max_rx_lifetime),
+@@ -1080,7 +1050,7 @@ static void at76_dump_mib_mac(struct at76_priv *priv)
+ 		 le16_to_cpu(m->min_channel_time),
+ 		 le16_to_cpu(m->max_channel_time),
+ 		 le16_to_cpu(m->listen_interval),
+-		 hex2str(m->desired_ssid, IW_ESSID_MAX_SIZE),
++		 IW_ESSID_MAX_SIZE, m->desired_ssid,
+ 		 m->desired_bssid, m->desired_bsstype);
+ exit:
+ 	kfree(m);
+@@ -1160,13 +1130,13 @@ static void at76_dump_mib_mdomain(struct at76_priv *priv)
+ 		goto exit;
+ 	}
+ 
+-	at76_dbg(DBG_MIB, "%s: MIB MDOMAIN: channel_list %s",
++	at76_dbg(DBG_MIB, "%s: MIB MDOMAIN: channel_list %*phD",
+ 		 wiphy_name(priv->hw->wiphy),
+-		 hex2str(m->channel_list, sizeof(m->channel_list)));
++		 (int)sizeof(m->channel_list), m->channel_list);
+ 
+-	at76_dbg(DBG_MIB, "%s: MIB MDOMAIN: tx_powerlevel %s",
++	at76_dbg(DBG_MIB, "%s: MIB MDOMAIN: tx_powerlevel %*phD",
+ 		 wiphy_name(priv->hw->wiphy),
+-		 hex2str(m->tx_powerlevel, sizeof(m->tx_powerlevel)));
++		 (int)sizeof(m->tx_powerlevel), m->tx_powerlevel);
+ exit:
+ 	kfree(m);
+ }
+@@ -1369,9 +1339,9 @@ static int at76_startup_device(struct at76_priv *priv)
+ 	int ret;
+ 
+ 	at76_dbg(DBG_PARAMS,
+-		 "%s param: ssid %.*s (%s) mode %s ch %d wep %s key %d "
++		 "%s param: ssid %.*s (%*phD) mode %s ch %d wep %s key %d "
+ 		 "keylen %d", wiphy_name(priv->hw->wiphy), priv->essid_size,
+-		 priv->essid, hex2str(priv->essid, IW_ESSID_MAX_SIZE),
++		 priv->essid, IW_ESSID_MAX_SIZE, priv->essid,
+ 		 priv->iw_mode == IW_MODE_ADHOC ? "adhoc" : "infra",
+ 		 priv->channel, priv->wep_enabled ? "enabled" : "disabled",
+ 		 priv->wep_key_id, priv->wep_keys_len[priv->wep_key_id]);
 -- 
 1.7.10
 
