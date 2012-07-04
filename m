@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab2GDJOJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 05:14:09 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48057 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab2GDJN4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 05:13:56 -0400
-Message-ID: <1341393205.23484.111.camel@twins>
-Subject: Re: [PATCH] perf, x86: Enabled PEBS event to be exported in a raw
- format
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Feng Tang <feng.tang@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Robert Richter <robert.richter@amd.com>
-Date: Wed, 04 Jul 2012 11:13:25 +0200
-In-Reply-To: <1341389237.22063.7.camel@concordia>
-References: <1340899250-26803-1-git-send-email-feng.tang@intel.com>
-	 <1341300987.11663.15.camel@concordia> <1341306905.23484.53.camel@twins>
-	 <1341389237.22063.7.camel@concordia>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S933150Ab2GDJUU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 05:20:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51698 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755736Ab2GDJUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 05:20:14 -0400
+Date: Wed, 4 Jul 2012 10:20:06 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tony Luck <tony.luck@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Xishi Qiu <qiuxishi@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH] mm: setup pageblock_order before it's used by sparse
+Message-ID: <20120704092006.GH14154@suse.de>
+References: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com>
+ <20120703140705.af23d4d3.akpm@linux-foundation.org>
+ <4FF39F0E.4070300@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4FF39F0E.4070300@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-04 at 18:07 +1000, Michael Ellerman wrote:
-> Basically we have three registers which provide various information about
-> the instruction which caused an event to overflow.
+On Wed, Jul 04, 2012 at 09:40:30AM +0800, Jiang Liu wrote:
+> > It's a bit ugly calling set_pageblock_order() from both sparse_init()
+> > and from free_area_init_core().  Can we find a single place from which
+> > to call it?  It looks like here:
+> > 
+> > --- a/init/main.c~a
+> > +++ a/init/main.c
+> > @@ -514,6 +514,7 @@ asmlinkage void __init start_kernel(void
+> >  		   __stop___param - __start___param,
+> >  		   -1, -1, &unknown_bootoption);
+> >  
+> > +	set_pageblock_order();
+> >  	jump_label_init();
+> >  
+> >  	/*
+> > 
+> > would do the trick?
+> > 
+> > (free_area_init_core is __paging_init and set_pageblock_order() is
+> > __init.  I'm too lazy to work out if that's wrong)
 > 
-> The first reports the address of the instruction, the second the data
-> address associated with the instruction, and the third reports "other
-> stuff".
-> 
-> We use the first for SAMPLE_IP, and the second for SAMPLE_ADDR, but
-> currently we have no way of spitting out the third register.
-> 
-> There's a whole bunch of info in there. I think the most interesting are
-> stuff like whether and where in the pipeline the instruction stalled, or
-> where a load was serviced from. I'm not sure to be honest, so I've asked
-> the HW guys what they're most interested in.
-> 
-> So I can imagine us coming up with a generic sample type for "sample
-> other info at event overflow", but I'm struggling to see how we'd make
-> the content of the sample non architecture specific, or even processor
-> version specific. 
+> Hi Andrew,
+> 	Thanks for you comments. Yes, this's an issue. 
+> And we are trying to find a way to setup  pageorder_block as 
+> early as possible. Yinghai has suggested a good way for IA64,
+> but we still need help from PPC experts because PPC has the 
+> same issue and I'm not familiar with PPC architecture. 
+> We will submit another patch once we find an acceptable
+> solution here.
 
-Right so we're working on a data-source like thing, the last attempt at
-adding something like that is in this thread:
+I think it's overkill to try and do this on a per-architecture basis unless
+you are aware of a case where the per-architecture code cares about the
+value of pageblock_order. I find it implausible that the architecture
+needs to know the value very early in boot as pageblock_order is part of
+the arch-independent memory model. Andrew's suggestion seems reasonable
+to me once the section mess is figured out.
 
- http://marc.info/?l=linux-kernel&m=130987553915170&w=2
- http://marc.info/?l=linux-kernel&m=131000375226044
-
-I think Stephane is currently trying to revive that, although he hasn't
-posted yet. Please have a look if that captures the possible PPC states
-as well. Stephane could you share your current stuff so Michael can have
-a look?
-
-
-Not quite sure what to do for your pipeline stage thing, I'm not sure
-I've seen that elsewhere.
-
-
-Anyway, yes PERF_SAMPLE_RAW is the 'other info at overflow' which is
-specific to the current cpu and phase of moon type field, and it does
-get (ab)used in various places, but I still cringe every time I see it
-used.
-
-The problem with that thing is that it gives people the data they need
-for their special tools and thus removes them from the incentive pool to
-help create more generic,useful tools.
-
-For AMD IBS we've given in since that thing is completely weird, IIRC
-Robert was going to grow perf-ibs to record and report the data it
-captures so we've at least got a useful open-source tool for it.
+-- 
+Mel Gorman
+SUSE Labs
