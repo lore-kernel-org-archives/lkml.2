@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847Ab2GDU7H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 16:59:07 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:48920 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752938Ab2GDU7C (ORCPT
+	id S1755865Ab2GDVKj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 17:10:39 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:62660 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753277Ab2GDVKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 16:59:02 -0400
-From: Bing Zhao <bzhao@marvell.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-CC: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Date: Wed, 4 Jul 2012 13:58:49 -0700
-Subject: RE: [PATCH] wireless: fix leak found by coverity
-Thread-Topic: [PATCH] wireless: fix leak found by coverity
-Thread-Index: Ac1Z8ivUkP4Hfy/5SDOWbEKItQ15FwANMiAg
-Message-ID: <477F20668A386D41ADCC57781B1F7043083AA5506F@SC-VEXCH1.marvell.com>
-References: <20120704153327.4012.76171.stgit@bluebook>
-In-Reply-To: <20120704153327.4012.76171.stgit@bluebook>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Wed, 4 Jul 2012 17:10:36 -0400
+Message-ID: <1341436285.18786.6.camel@lappy>
+Subject: Re: [PATCH] virtio-blk: allow toggling host cache between writeback
+ and writethrough
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, kvm@vger.kernel.org
+Date: Wed, 04 Jul 2012 23:11:25 +0200
+In-Reply-To: <4FF47023.7080206@redhat.com>
+References: <1341321577-24435-1-git-send-email-pbonzini@redhat.com>
+	 <1341419217.18786.3.camel@lappy> <4FF47023.7080206@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q64KxXm5025073
 
-Hi Alan,
-
-> Subject: [PATCH] wireless: fix leak found by coverity
-
-I've sent a similar patch to linux-wireless list.
-
-[PATCH 3.5] mwifiex: fix Coverity SCAN CID 709078: Resource leak (RESOURCE_LEAK)
-
-http://marc.info/?l=linux-wireless&m=134135643727424&w=2
-
-Thanks,
-Bing
-
+On Wed, 2012-07-04 at 18:32 +0200, Paolo Bonzini wrote:
+> Il 04/07/2012 18:26, Sasha Levin ha scritto:
+> > On Tue, 2012-07-03 at 15:19 +0200, Paolo Bonzini wrote:
+> >> diff --git a/include/linux/virtio_blk.h b/include/linux/virtio_blk.h
+> >> index e0edb40..18a1027 100644
+> >> --- a/include/linux/virtio_blk.h
+> >> +++ b/include/linux/virtio_blk.h
+> >> @@ -37,8 +37,9 @@
+> >>  #define VIRTIO_BLK_F_RO                5       /* Disk is read-only */
+> >>  #define VIRTIO_BLK_F_BLK_SIZE  6       /* Block size of disk is available*/
+> >>  #define VIRTIO_BLK_F_SCSI      7       /* Supports scsi command passthru */
+> >> -#define VIRTIO_BLK_F_FLUSH     9       /* Cache flush command support */
+> >> +#define VIRTIO_BLK_F_WCE       9       /* Writeback mode enabled after reset */
+> >>  #define VIRTIO_BLK_F_TOPOLOGY  10      /* Topology information is available */
+> >> +#define VIRTIO_BLK_F_CONFIG_WCE        11      /* Writeback mode available in config */ 
+> > 
+> > Wouldn't this change break any usermode code that implements virtio-blk?
 > 
-> From: Alan Cox <alan@linux.intel.com>
+> No, the change is really just clarifying the existing spec, and
+> mandating that virtio-blk implementations follow certain assumptions of
+> the Linux driver.
 > 
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> ---
+> In particular, the Linux driver is already assuming that the host
+> exposes VIRTIO_BLK_F_FLUSH if and only if it exposes a volatile write
+> cache.  This works because if you have a writeback cache, but provide no
+> way to flush it, the guest driver really cannot do anything about it
+> anyway.  Might as well treat it as writethrough, i.e. blk_queue_flush(q, 0).
 > 
->  drivers/net/wireless/mwifiex/cfg80211.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/net/wireless/mwifiex/cfg80211.c b/drivers/net/wireless/mwifiex/cfg80211.c
-> index 97de652..497a05a 100644
-> --- a/drivers/net/wireless/mwifiex/cfg80211.c
-> +++ b/drivers/net/wireless/mwifiex/cfg80211.c
-> @@ -1003,6 +1003,7 @@ static int mwifiex_cfg80211_start_ap(struct wiphy *wiphy,
->  	case NL80211_HIDDEN_SSID_ZERO_CONTENTS:
->  		/* firmware doesn't support this type of hidden SSID */
->  	default:
-> +		kfree(bss_cfg);
->  		return -EINVAL;
->  	}
-> 
+> QEMU in fact has already behaved like that, and even called the flag
+> VIRTIO_BLK_F_WCACHE instead of VIRRTIO_BLK_F_FLUSH.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+There are two things going on here:
+ 1. Rename VIRTIO_BLK_F_FLUSH to VIRTIO_BLK_F_WCE
+ 2. Add a new VIRTIO_BLK_F_CONFIG_WCE
+
+I'm concerned that the first change is going to break compilation for
+any code that included linux/virtio-blk.h and used VIRTIO_BLK_F_FLUSH.
+
