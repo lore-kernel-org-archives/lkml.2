@@ -1,113 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab2GDPyc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 11:54:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29938 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754340Ab2GDPy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 11:54:26 -0400
-Message-ID: <4FF46728.7030302@redhat.com>
-Date: Wed, 04 Jul 2012 17:54:16 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1754960Ab2GDQAA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 12:00:00 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:45033 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293Ab2GDP76 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 11:59:58 -0400
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio-blk: allow toggling host cache between writeback
- and writethrough
-References: <1341321577-24435-1-git-send-email-pbonzini@redhat.com> <20120704154220.GB27064@redhat.com>
-In-Reply-To: <20120704154220.GB27064@redhat.com>
+In-Reply-To: <CAAmzW4NGinc=7qEwhAH354Q7thkYy-HzpRNfVLtfaax4CEBB=g@mail.gmail.com>
+References: <1340389359-2407-1-git-send-email-js1304@gmail.com>
+	<1340390729-2821-1-git-send-email-js1304@gmail.com>
+	<CAOJsxLHSboF0rQdGv8bdgGtinBz5dTo+omQbUnj9on_ewzgNAQ@mail.gmail.com>
+	<CAAmzW4OdDhn5C_vfMhu3ejzzcXmCCt6r0h=nXUqKJaNYZxg8Bw@mail.gmail.com>
+	<CAOJsxLGBxeu2sE-wDT+YNyVipmXiPj7Gvmmdo-0zGmJObp2zxg@mail.gmail.com>
+	<CAAmzW4NGinc=7qEwhAH354Q7thkYy-HzpRNfVLtfaax4CEBB=g@mail.gmail.com>
+Date: Wed, 4 Jul 2012 18:59:57 +0300
+X-Google-Sender-Auth: FYAMSEWa4XjGCXAvY6jPags_qsM
+Message-ID: <CAOJsxLFwtwWHP8At6B8t0o6mKFKKfo6e7CEZj5Zi2AROgyMcfw@mail.gmail.com>
+Subject: Re: [PATCH 1/3 v2] slub: prefetch next freelist pointer in __slab_alloc()
+From: Pekka Enberg <penberg@kernel.org>
+To: JoonSoo Kim <js1304@gmail.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        David Rientjes <rientjes@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/07/2012 17:42, Michael S. Tsirkin ha scritto:
-> On Tue, Jul 03, 2012 at 03:19:37PM +0200, Paolo Bonzini wrote:
->> This patch adds support for the new VIRTIO_BLK_F_CONFIG_WCE feature,
->> which exposes the cache mode in the configuration space and lets the
->> driver modify it.  The cache mode is exposed via sysfs.
+On Wed, Jul 4, 2012 at 6:45 PM, JoonSoo Kim <js1304@gmail.com> wrote:
+>> Prefetching can also have negative effect on overall performance:
 >>
->> Even if the host does not support the new feature, the cache mode is
->> visible (thanks to the existing VIRTIO_BLK_F_WCE), but not modifiable.
->>
->> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> 
-> I note this has been applied but I think the userspace
-> API is a bit painful to use. Let's fix it before
-> it gets set in stone?
+>> http://lwn.net/Articles/444336/
+>
+> Thanks for good article which is very helpful to me.
+>
+>> That doesn't seem like that obvious win to me... Eric, Christoph?
+>
+> Could you tell me how I test this patch more deeply, plz?
+> I am a kernel newbie and in the process of learning.
+> I doesn't know what I can do more for this.
+> I googling previous patch related to slub, some people use netperf.
+>
+> Just do below is sufficient?
+> How is this test related to slub?
+>
+> for in in `seq 1 32`
+> do
+>  netperf -H 192.168.0.8 -v 0 -l -100000 -t TCP_RR > /dev/null &
+> done
+> wait
 
-I'm trying to mimic the existing userspace API for SCSI disks.  FWIW I
-would totally agree with you.
+The networking subsystem is sensitive to slab allocator performance
+which makes netperf an interesting benchmark, that's all.
 
->> +static int virtblk_get_cache_mode(struct virtio_device *vdev)
-> 
-> Why are you converting u8 to int here?
+As for slab benchmarking, you might want to look at what Mel Gorman
+has done in the past:
 
-The fact that it is a u8 is really an internal detail.  Perhaps the bug
-is using u8 in the callers.
+https://lkml.org/lkml/2009/2/16/252
 
->> +static const char *virtblk_cache_types[] = {
->> +	"write through", "write back"
->> +};
->> +
-> 
-> I wonder whether something that lacks space would have been better,
-> especially for show: shells might get confused and split
-> a string at a space. How about we change it to writethrough,
-> writeback before it's too late? It's part of a userspace API
-> after all, and you see to prefer writeback in one word in your own
-> code so let's not inflict pain on others :)
-> 
-> Also, would be nice to make it discoverable what the legal
-> values are. Another attribute valid_cache_types with all values
-> space separated?
-
-We probably should add such an attribute to SCSI disks too... Even with
-the spaces we could make the values \n-separated.
-
->> +static ssize_t
->> +virtblk_cache_type_store(struct device *dev, struct device_attribute *attr,
->> +			 const char *buf, size_t count)
->> +{
->> +	struct gendisk *disk = dev_to_disk(dev);
->> +	struct virtio_blk *vblk = disk->private_data;
->> +	struct virtio_device *vdev = vblk->vdev;
->> +	int i;
->> +	u8 writeback;
->> +
->> +	BUG_ON(!virtio_has_feature(vblk->vdev, VIRTIO_BLK_F_CONFIG_WCE));
->> +	for (i = ARRAY_SIZE(virtblk_cache_types); --i >= 0; )
->> +		if (sysfs_streq(buf, virtblk_cache_types[i]))
->> +			break;
->> +
->> +	if (i < 0)
->> +		return -EINVAL;
->> +
->> +	writeback = i;
->> +	vdev->config->set(vdev,
->> +			  offsetof(struct virtio_blk_config, wce),
->> +			  &writeback, sizeof(writeback));
->> +
->> +	virtblk_update_cache_mode(vdev);
->> +	return count;
->> +}
->> +
->> +static ssize_t
->> +virtblk_cache_type_show(struct device *dev, struct device_attribute *attr,
->> +			 char *buf)
->> +{
->> +	struct gendisk *disk = dev_to_disk(dev);
->> +	struct virtio_blk *vblk = disk->private_data;
->> +	u8 writeback = virtblk_get_cache_mode(vblk->vdev);
->> +
->> +	BUG_ON(writeback >= ARRAY_SIZE(virtblk_cache_types));
->> +	return snprintf(buf, 40, "%s\n", virtblk_cache_types[writeback]);
-> 
-> Why 40? Why snprintf? A plain sprintf won't do?
-
-I plead guilty of cut-and-paste from drivers/scsi/sd.c. :)
-
-Paolo
+For something like prefetch optimization, you'd really want to see a
+noticeable win in some benchmark. The kind of improvement you're
+seeing with your patch is likely to be lost in the noise - or even
+worse, cause negative performance for real world workloads.
