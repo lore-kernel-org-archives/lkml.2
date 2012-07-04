@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933714Ab2GDHkn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 03:40:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41225 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932986Ab2GDHkk (ORCPT
+	id S933710Ab2GDHlG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 03:41:06 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44678 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932986Ab2GDHlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 03:40:40 -0400
-Date: Wed, 4 Jul 2012 00:42:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, jaschut@sandia.gov,
-        kamezawa.hiroyu@jp.fujitsu.com, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH -mm v2] mm: have order > 0 compaction start off where it
- left
-Message-Id: <20120704004219.47d0508d.akpm@linux-foundation.org>
-In-Reply-To: <4FF3ABA1.3070808@kernel.org>
-References: <20120628135520.0c48b066@annuminas.surriel.com>
-	<20120628135940.2c26ada9.akpm@linux-foundation.org>
-	<4FECCB89.2050400@redhat.com>
-	<20120628143546.d02d13f9.akpm@linux-foundation.org>
-	<1341250950.16969.6.camel@lappy>
-	<4FF2435F.2070302@redhat.com>
-	<20120703101024.GG13141@csn.ul.ie>
-	<20120703144808.4daa4244.akpm@linux-foundation.org>
-	<4FF3ABA1.3070808@kernel.org>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jul 2012 03:41:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <1341378617-10386-16-git-send-email-bryan.wu@canonical.com>
+References: <1341378617-10386-1-git-send-email-bryan.wu@canonical.com> <1341378617-10386-16-git-send-email-bryan.wu@canonical.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Wed, 4 Jul 2012 15:40:41 +0800
+X-Google-Sender-Auth: sgf5NYAVS17ZNyTwL5Zt2gXul2A
+Message-ID: <CAK5ve-LeSWx=SRqswg1uiFrbZDwK_F-3iKZkg0BaNKp1+5-aOA@mail.gmail.com>
+Subject: Re: [PATCH 15/25] leds: convert ADP5520 LED driver to devm_kzalloc()
+ and cleanup error exit path
+To: linux-leds@vger.kernel.org, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 Jul 2012 11:34:09 +0900 Minchan Kim <minchan@kernel.org> wrote:
+On Wed, Jul 4, 2012 at 1:10 PM, Bryan Wu <bryan.wu@canonical.com> wrote:
+> Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>
+> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+> ---
+>  drivers/leds/leds-adp5520.c |    8 +++-----
+>  1 file changed, 3 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/leds/leds-adp5520.c b/drivers/leds/leds-adp5520.c
+> index b1400db..72b110f 100644
+> --- a/drivers/leds/leds-adp5520.c
+> +++ b/drivers/leds/leds-adp5520.c
+> @@ -119,7 +119,8 @@ static int __devinit adp5520_led_probe(struct platform_device *pdev)
+>                 return -EFAULT;
+>         }
+>
+> -       led = kzalloc(sizeof(*led) * pdata->num_leds, GFP_KERNEL);
+> +       led = devm_kzalloc(&pdev->dev, sizeof(*led) * pdata->num_leds,
+> +                               GFP_KERNEL);
+>         if (led == NULL) {
+>                 dev_err(&pdev->dev, "failed to alloc memory\n");
+>                 return -ENOMEM;
+> @@ -129,7 +130,7 @@ static int __devinit adp5520_led_probe(struct platform_device *pdev)
+>
+>         if (ret) {
+>                 dev_err(&pdev->dev, "failed to write\n");
+> -               goto err_free;
+> +               return ret
+Missed one ";" at end of this line. I've fixed it in my devel branch.
 
-> > The rest of this patch takes care to ensure that
-> > ->compact_cached_free_pfn is aligned to pageblock_nr_pages.  But it now
-> > appears that this particular site will violate that.
-> > 
-> > What's up?  Do we need to fix this site, or do we remove all that
-> > make-compact_cached_free_pfn-aligned code?
-> 
-> 
-> I vote removing the warning because it doesn't related to Rik's incremental compaction.
-> Let's see. 
-> 
-> high_pfn = min(low_pfn, pfn) = cc->migrate_pfn + pageblock_nr_pages.
-> In here, cc->migrate_pfn isn't necessarily pageblock aligined.
-> So if we don't consider compact_cached_free_pfn, it can hit.
-> 
-> static void isolate_freepages()
-> {
-> 	high_pfn = min(low_pfn, pfn) = cc->migrate_pfn + pageblock_nr_pages;
-> 	for (..) {
-> 		...
-> 		 WARN_ON_ONCE(high_pfn & (pageblock_nr_pages - 1));
-> 		
-> 	}
-> }
+Thanks,
+-Bryan
 
-Please, look at the patch.  In numerous places it is aligning
-compact_cached_free_pfn to a multiple of pageblock_nr_pages.  But in
-one place it doesn't do that.  So are all those alignment operations
-necessary?
+>         }
+>
+>         for (i = 0; i < pdata->num_leds; ++i) {
+> @@ -179,8 +180,6 @@ err:
+>                 }
+>         }
+>
+> -err_free:
+> -       kfree(led);
+>         return ret;
+>  }
+>
+> @@ -200,7 +199,6 @@ static int __devexit adp5520_led_remove(struct platform_device *pdev)
+>                 cancel_work_sync(&led[i].work);
+>         }
+>
+> -       kfree(led);
+>         return 0;
+>  }
+>
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-leds" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
+
+
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.186-168-78255 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
