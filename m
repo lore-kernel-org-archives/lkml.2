@@ -1,157 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971Ab2GDIqZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 04:46:25 -0400
+	id S1755513Ab2GDIqh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 04:46:37 -0400
 Received: from mga11.intel.com ([192.55.52.93]:7380 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756912Ab2GDIqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 04:46:20 -0400
+	id S1751429Ab2GDIqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 04:46:23 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="173277834"
+   d="scan'208";a="173277829"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>, proski@gnu.org,
         Andrei Emeltchenko <andrei.emeltchenko@intel.com>,
         linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
         joe@perches.com, Larry Finger <Larry.Finger@lwfinger.net>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv3 3/3] wireless: at76c50x: eliminate hex2str()
-Date: Wed,  4 Jul 2012 11:45:52 +0300
-Message-Id: <1341391552-4842-3-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv3 1/3] lib: printf: update documentation to cover all of %p[Mm][FR]
+Date: Wed,  4 Jul 2012 11:45:50 +0300
+Message-Id: <1341391552-4842-1-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1341391552-4842-1-git-send-email-andriy.shevchenko@linux.intel.com>
+In-Reply-To: <1341341280.2012.3.camel@joe2Laptop>
 References: <1341341280.2012.3.camel@joe2Laptop>
- <1341391552-4842-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hex2str() is substituted by '%*phD' specificator.
-
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- drivers/net/wireless/at76c50x-usb.c |   54 ++++++++---------------------------
- 1 file changed, 12 insertions(+), 42 deletions(-)
+ Documentation/printk-formats.txt |    1 +
+ lib/vsprintf.c                   |    5 ++++-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/at76c50x-usb.c b/drivers/net/wireless/at76c50x-usb.c
-index efc162e..e5bd2ad 100644
---- a/drivers/net/wireless/at76c50x-usb.c
-+++ b/drivers/net/wireless/at76c50x-usb.c
-@@ -498,36 +498,6 @@ exit:
- 	return ret;
- }
+diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+index d8d168fa..90ff4d7 100644
+--- a/Documentation/printk-formats.txt
++++ b/Documentation/printk-formats.txt
+@@ -59,6 +59,7 @@ MAC/FDDI addresses:
+ 	%pMR	05:04:03:02:01:00
+ 	%pMF	00-01-02-03-04-05
+ 	%pm	000102030405
++	%pmR	050403020100
  
--#define HEX2STR_BUFFERS 4
--#define HEX2STR_MAX_LEN 64
--
--/* Convert binary data into hex string */
--static char *hex2str(void *buf, size_t len)
--{
--	static atomic_t a = ATOMIC_INIT(0);
--	static char bufs[HEX2STR_BUFFERS][3 * HEX2STR_MAX_LEN + 1];
--	char *ret = bufs[atomic_inc_return(&a) & (HEX2STR_BUFFERS - 1)];
--	char *obuf = ret;
--	u8 *ibuf = buf;
--
--	if (len > HEX2STR_MAX_LEN)
--		len = HEX2STR_MAX_LEN;
--
--	if (len == 0)
--		goto exit;
--
--	while (len--) {
--		obuf = hex_byte_pack(obuf, *ibuf++);
--		*obuf++ = '-';
--	}
--	obuf--;
--
--exit:
--	*obuf = '\0';
--
--	return ret;
--}
--
- /* LED trigger */
- static int tx_activity;
- static void at76_ledtrig_tx_timerfunc(unsigned long data);
-@@ -1004,9 +974,9 @@ static void at76_dump_mib_mac_wep(struct at76_priv *priv)
- 	    WEP_SMALL_KEY_LEN : WEP_LARGE_KEY_LEN;
- 
- 	for (i = 0; i < WEP_KEYS; i++)
--		at76_dbg(DBG_MIB, "%s: MIB MAC_WEP: key %d: %s",
-+		at76_dbg(DBG_MIB, "%s: MIB MAC_WEP: key %d: %*phD",
- 			 wiphy_name(priv->hw->wiphy), i,
--			 hex2str(m->wep_default_keyvalue[i], key_len));
-+			 key_len, m->wep_default_keyvalue[i]);
- exit:
- 	kfree(m);
- }
-@@ -1031,7 +1001,7 @@ static void at76_dump_mib_mac_mgmt(struct at76_priv *priv)
- 	at76_dbg(DBG_MIB, "%s: MIB MAC_MGMT: beacon_period %d CFP_max_duration "
- 		 "%d medium_occupancy_limit %d station_id 0x%x ATIM_window %d "
- 		 "CFP_mode %d privacy_opt_impl %d DTIM_period %d CFP_period %d "
--		 "current_bssid %pM current_essid %s current_bss_type %d "
-+		 "current_bssid %pM current_essid %*phD current_bss_type %d "
- 		 "pm_mode %d ibss_change %d res %d "
- 		 "multi_domain_capability_implemented %d "
- 		 "international_roaming %d country_string %.3s",
-@@ -1041,7 +1011,7 @@ static void at76_dump_mib_mac_mgmt(struct at76_priv *priv)
- 		 le16_to_cpu(m->station_id), le16_to_cpu(m->ATIM_window),
- 		 m->CFP_mode, m->privacy_option_implemented, m->DTIM_period,
- 		 m->CFP_period, m->current_bssid,
--		 hex2str(m->current_essid, IW_ESSID_MAX_SIZE),
-+		 IW_ESSID_MAX_SIZE, m->current_essid,
- 		 m->current_bss_type, m->power_mgmt_mode, m->ibss_change,
- 		 m->res, m->multi_domain_capability_implemented,
- 		 m->multi_domain_capability_enabled, m->country_string);
-@@ -1069,7 +1039,7 @@ static void at76_dump_mib_mac(struct at76_priv *priv)
- 		 "cwmin %d cwmax %d short_retry_time %d long_retry_time %d "
- 		 "scan_type %d scan_channel %d probe_delay %u "
- 		 "min_channel_time %d max_channel_time %d listen_int %d "
--		 "desired_ssid %s desired_bssid %pM desired_bsstype %d",
-+		 "desired_ssid %*phD desired_bssid %pM desired_bsstype %d",
- 		 wiphy_name(priv->hw->wiphy),
- 		 le32_to_cpu(m->max_tx_msdu_lifetime),
- 		 le32_to_cpu(m->max_rx_lifetime),
-@@ -1080,7 +1050,7 @@ static void at76_dump_mib_mac(struct at76_priv *priv)
- 		 le16_to_cpu(m->min_channel_time),
- 		 le16_to_cpu(m->max_channel_time),
- 		 le16_to_cpu(m->listen_interval),
--		 hex2str(m->desired_ssid, IW_ESSID_MAX_SIZE),
-+		 IW_ESSID_MAX_SIZE, m->desired_ssid,
- 		 m->desired_bssid, m->desired_bsstype);
- exit:
- 	kfree(m);
-@@ -1160,13 +1130,13 @@ static void at76_dump_mib_mdomain(struct at76_priv *priv)
- 		goto exit;
- 	}
- 
--	at76_dbg(DBG_MIB, "%s: MIB MDOMAIN: channel_list %s",
-+	at76_dbg(DBG_MIB, "%s: MIB MDOMAIN: channel_list %*phD",
- 		 wiphy_name(priv->hw->wiphy),
--		 hex2str(m->channel_list, sizeof(m->channel_list)));
-+		 (int)sizeof(m->channel_list), m->channel_list);
- 
--	at76_dbg(DBG_MIB, "%s: MIB MDOMAIN: tx_powerlevel %s",
-+	at76_dbg(DBG_MIB, "%s: MIB MDOMAIN: tx_powerlevel %*phD",
- 		 wiphy_name(priv->hw->wiphy),
--		 hex2str(m->tx_powerlevel, sizeof(m->tx_powerlevel)));
-+		 (int)sizeof(m->tx_powerlevel), m->tx_powerlevel);
- exit:
- 	kfree(m);
- }
-@@ -1369,9 +1339,9 @@ static int at76_startup_device(struct at76_priv *priv)
- 	int ret;
- 
- 	at76_dbg(DBG_PARAMS,
--		 "%s param: ssid %.*s (%s) mode %s ch %d wep %s key %d "
-+		 "%s param: ssid %.*s (%*phD) mode %s ch %d wep %s key %d "
- 		 "keylen %d", wiphy_name(priv->hw->wiphy), priv->essid_size,
--		 priv->essid, hex2str(priv->essid, IW_ESSID_MAX_SIZE),
-+		 priv->essid, IW_ESSID_MAX_SIZE, priv->essid,
- 		 priv->iw_mode == IW_MODE_ADHOC ? "adhoc" : "infra",
- 		 priv->channel, priv->wep_enabled ? "enabled" : "disabled",
- 		 priv->wep_key_id, priv->wep_keys_len[priv->wep_key_id]);
+ 	For printing 6-byte MAC/FDDI addresses in hex notation. The 'M' and 'm'
+ 	specifiers result in a printed address with ('M') or without ('m') byte
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index a0b5f15..e500158 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -946,7 +946,7 @@ int kptr_restrict __read_mostly;
+  * - 'm' For a 6-byte MAC address, it prints the hex address without colons
+  * - 'MF' For a 6-byte MAC FDDI address, it prints the address
+  *       with a dash-separated hex notation
+- * - '[mM]R For a 6-byte MAC address, Reverse order (Bluetooth)
++ * - '[mM]R' For a 6-byte MAC address, Reverse order (Bluetooth)
+  * - 'I' [46] for IPv4/IPv6 addresses printed in the usual way
+  *       IPv4 uses dot-separated decimal without leading 0's (1.2.3.4)
+  *       IPv6 uses colon separated network-order 16 bit hex with leading 0's
+@@ -1287,7 +1287,10 @@ qualifier:
+  * %pR output the address range in a struct resource with decoded flags
+  * %pr output the address range in a struct resource with raw flags
+  * %pM output a 6-byte MAC address with colons
++ * %pMR output a 6-byte MAC address with colons in reversed order
++ * %pMF output a 6-byte MAC address with dashes
+  * %pm output a 6-byte MAC address without colons
++ * %pmR output a 6-byte MAC address without colons in reversed order
+  * %pI4 print an IPv4 address without leading zeros
+  * %pi4 print an IPv4 address with leading zeros
+  * %pI6 print an IPv6 address with colons
 -- 
 1.7.10
 
