@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932930Ab2GDBpc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 21:45:32 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:48577 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932541Ab2GDBpa (ORCPT
+	id S933013Ab2GDBsO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 21:48:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59234 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932541Ab2GDBsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 21:45:30 -0400
-Message-ID: <4FF39F0E.4070300@huawei.com>
-Date: Wed, 4 Jul 2012 09:40:30 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Tue, 3 Jul 2012 21:48:11 -0400
+From: "Du, Changbin" <changbin.du@gmail.com>
+To: "'Sergei Shtylyov'" <sshtylyov@mvista.com>
+Cc: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <ben@simtec.co.uk>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <4ff252e7.08d4440a.38ee.ffffd7b9@mx.google.com> <4FF329F5.6000801@mvista.com>
+In-Reply-To: <4FF329F5.6000801@mvista.com>
+Subject: RE: [PATCH 1/1] usb: gadget: s3c-hsotg: fix core reset timeout failure
+Date: Wed, 4 Jul 2012 09:48:01 +0800
+Message-ID: <4ff3a0da.cae2440a.7e4a.328e@mx.google.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>, Tony Luck <tony.luck@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Xishi Qiu <qiuxishi@huawei.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>, <linux-mm@kvack.org>,
-        <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH] mm: setup pageblock_order before it's used by sparse
-References: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com> <20120703140705.af23d4d3.akpm@linux-foundation.org>
-In-Reply-To: <20120703140705.af23d4d3.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain;
+	charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac1ZQGftjd+FTgsuS9yT1CXtzR13YQARhBLA
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It's a bit ugly calling set_pageblock_order() from both sparse_init()
-> and from free_area_init_core().  Can we find a single place from which
-> to call it?  It looks like here:
+> > Seeing from above values, I think 10000 is big enough.
 > 
-> --- a/init/main.c~a
-> +++ a/init/main.c
-> @@ -514,6 +514,7 @@ asmlinkage void __init start_kernel(void
->  		   __stop___param - __start___param,
->  		   -1, -1, &unknown_bootoption);
->  
-> +	set_pageblock_order();
->  	jump_label_init();
->  
->  	/*
+> > Signed-off-by: Du, Changbin <changbin.du@gmail.com>
+> > ---
+> >  drivers/usb/gadget/s3c-hsotg.c |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> would do the trick?
+> > diff --git a/drivers/usb/gadget/s3c-hsotg.c
+b/drivers/usb/gadget/s3c-hsotg.c
+> > index f4abb0e..f3e2234 100644
+> > --- a/drivers/usb/gadget/s3c-hsotg.c
+> > +++ b/drivers/usb/gadget/s3c-hsotg.c
+> > @@ -2215,7 +2215,7 @@ static int s3c_hsotg_corereset(struct s3c_hsotg
+> > *hsotg)
 > 
-> (free_area_init_core is __paging_init and set_pageblock_order() is
-> __init.  I'm too lazy to work out if that's wrong)
+>   Your patch is line wrapped; seems easy to fix manually while applying
+> though...
 
-Hi Andrew,
-	Thanks for you comments. Yes, this's an issue. 
-And we are trying to find a way to setup  pageorder_block as 
-early as possible. Yinghai has suggested a good way for IA64,
-but we still need help from PPC experts because PPC has the 
-same issue and I'm not familiar with PPC architecture. 
-We will submit another patch once we find an acceptable
-solution here.
-	Thanks!
-	Gerry
+Sorry, it's done by my mail client. I will send a new one soon. Thanks for
+pointing out it.
+
+Du, Changbin
+
+> 
+> WBR, Sergei
 
