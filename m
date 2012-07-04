@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751135Ab2GDMRf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 08:17:35 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:45131 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926Ab2GDMRc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 08:17:32 -0400
-Date: Wed, 4 Jul 2012 14:17:26 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Srinivas_G_Gowda@Dell.com
-Cc: minyard@acm.org, tcminyard@gmail.com, mjg59@srcf.ucam.org,
-        andi@firstfloor.org, linux-kernel@vger.kernel.org,
-        openipmi-developer@lists.sourceforge.net, jharg93@gmail.com
-Subject: Re: [PATCH 1/1 v2 ] ipmi: Setting OS name as Linux in BMC
-Message-ID: <20120704121726.GP11413@one.firstfloor.org>
-References: <4FEC8931.5020001@dell.com> <4FEC8A28.4070806@dell.com> <m2k3yrgf4d.fsf@firstfloor.org> <20120629123001.GA26545@srcf.ucam.org> <4FEDBB3C.7080105@acm.org> <4FF3D090.8000403@dell.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF3D090.8000403@dell.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1751393Ab2GDMU0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 08:20:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45031 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751054Ab2GDMUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 08:20:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="161336835"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>
+Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>
+Subject: [PATCHv4 1/5] ext4: Remove useless marking of superblock dirty
+Date: Wed,  4 Jul 2012 15:21:50 +0300
+Message-Id: <1341404514-13660-2-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1341404514-13660-1-git-send-email-dedekind1@gmail.com>
+References: <1341404514-13660-1-git-send-email-dedekind1@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The intend of this patch was not to really workaround any issues, the aim was for the management software to use this data. 
+From: Jan Kara <jack@suse.cz>
 
-.. use it to do something "Linux" specific right?
+Commit a0375156 properly notes that superblock doesn't need to be marked
+as dirty when only number of free inodes / blocks / number of directories
+changes since that is recomputed on each mount anyway. However that comment
+leaves some unnecessary markings as dirty in place. Remove these.
 
-I think Corey summed it up pretty well in his previous comment. Management software associated with BMC usually use this information to let the users know about the OS that is using the BMC. Generally there are 3rd party application software that goes and pretty much fills up the OS env information and the management software uses this. My intend was why don't we get this information loaded by the driver itself. If there are applications that wants to rewrite it, so be it..! 
-> Rather than just have a static entry such as 'Linux' I could probably write the version number and more(distro name etc.. ) 
-> 
-> Thoughts.. ? 
+Artem: tested using xfstests for both journalled and non-journalled ext4.
 
-I still think "Linux" means nothing even to the management software.
-What should it do with that?
+Signed-off-by: Jan Kara <jack@suse.cz>
+Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+---
+ fs/ext4/ialloc.c  |    2 --
+ fs/ext4/mballoc.c |    2 --
+ 2 files changed, 0 insertions(+), 4 deletions(-)
 
-If you provide some way for a distro to fill in "foobar linux 1.2.3.4"
-maybe. But just Linux or even Linux x.y.z would be wrong because the same kernel 
-version can behave very differently.
-
-But it would be  better to define specific feature flags for
-specific needs that actually mean something.
-
-> I know there were some concerns with the security aspect, Can you please let me know what kind of security holes we could be looking at ? 
-
-I don't think there are any security problems. just forward/backward
-compatibility problems, as the ACPI experience shows.
-
--Andi
-
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index d48e8b1..25b918c 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -315,7 +315,6 @@ out:
+ 		err = ext4_handle_dirty_metadata(handle, NULL, bitmap_bh);
+ 		if (!fatal)
+ 			fatal = err;
+-		ext4_mark_super_dirty(sb);
+ 	} else
+ 		ext4_error(sb, "bit already cleared for inode %lu", ino);
+ 
+@@ -830,7 +829,6 @@ got:
+ 	percpu_counter_dec(&sbi->s_freeinodes_counter);
+ 	if (S_ISDIR(mode))
+ 		percpu_counter_inc(&sbi->s_dirs_counter);
+-	ext4_mark_super_dirty(sb);
+ 
+ 	if (sbi->s_log_groups_per_flex) {
+ 		flex_group = ext4_flex_group(sbi, group);
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 1cd6994..eabfb4c 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -2825,7 +2825,6 @@ ext4_mb_mark_diskspace_used(struct ext4_allocation_context *ac,
+ 	err = ext4_handle_dirty_metadata(handle, NULL, gdp_bh);
+ 
+ out_err:
+-	ext4_mark_super_dirty(sb);
+ 	brelse(bitmap_bh);
+ 	return err;
+ }
+@@ -4694,7 +4693,6 @@ do_more:
+ 		put_bh(bitmap_bh);
+ 		goto do_more;
+ 	}
+-	ext4_mark_super_dirty(sb);
+ error_return:
+ 	brelse(bitmap_bh);
+ 	ext4_std_error(sb, err);
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.7.7.6
+
