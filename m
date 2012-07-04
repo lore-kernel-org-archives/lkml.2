@@ -1,54 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab2GDONH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 10:13:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50583 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab2GDONE (ORCPT
+	id S1752790Ab2GDOOQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 10:14:16 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39671 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab2GDOOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 10:13:04 -0400
-Subject: RE: [PATCH] printk: fixing the deadlock when calling printk in nmi
- handle
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>,
-        "kay@vrfy.org" <kay@vrfy.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>
-In-Reply-To: <1341410957.2507.120.camel@laptop>
-References: <27240C0AC20F114CBF8149A2696CBE4A10C7F6@SHSMSX101.ccr.corp.intel.com>
-	 <1341408169.2507.111.camel@laptop>
-	 <27240C0AC20F114CBF8149A2696CBE4A10C84B@SHSMSX101.ccr.corp.intel.com>
-	 <1341409177.2507.117.camel@laptop>  <1341410957.2507.120.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Jul 2012 16:12:51 +0200
-Message-ID: <1341411171.2507.123.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jul 2012 10:14:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FF43BBE.80201@spin.net.au>
+References: <4FF43BBE.80201@spin.net.au>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 4 Jul 2012 08:13:53 -0600
+Message-ID: <CAErSpo6jdzPZYmtggETE-6k2jRLB7db8t68jQ92GRb1yFSto2g@mail.gmail.com>
+Subject: Re: Kernel official involvement
+To: Chris Jones <chrisjones@spin.net.au>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-04 at 16:09 +0200, Peter Zijlstra wrote:
-> On Wed, 2012-07-04 at 15:39 +0200, Peter Zijlstra wrote:
-> > > Anyway, in nmi handler, calling printk is dangerous. This patch is for this case.
-> > 
-> > But its ugly and decreases reliability..  Your 'solution' is to
-> > basically ignore serialization and pray, that's not a solution, that's
-> > gambling. 
-> 
-> If you want to fix it, do something like:
-> 
->   http://marc.info/?l=linux-kernel&m=132446646923333
+On Wed, Jul 4, 2012 at 6:49 AM, Chris Jones <chrisjones@spin.net.au> wrote:
+> I am just wondering how does anyone get further involved with Linux kernel
+> development? How do you get selected to be able to push through patches etc.
+> to the official kernel? Who authorizes who to be able to do so?
 
+Anyone can write and post kernel patches.  There is not really a
+concept of "people authorized to push patches."  In Linux, Linus
+*pulls* patches that he thinks are useful.  He generally pulls patches
+from maintainers of various areas, who have already reviewed them and
+decided they are worthwhile.  So you just have to convince the
+maintainer of the area you're changing that your patch is correct and
+useful.  Here are some good hints about how to get started:
 
-Note that the one 'down' side of this is that the folks who care about
-logbuf content might get upset since we don't put all msgs in there
-anymore.
-
-These would be the kmsg_dump users..
-
-
-
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob;f=Documentation/SubmittingPatches;h=c379a2a6949f1c1cac04fb6f185c633512f37061;hb=HEAD
