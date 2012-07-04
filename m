@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933878Ab2GDKoI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 06:44:08 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:48031 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751998Ab2GDKoE (ORCPT
+	id S1757110Ab2GDKrX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 06:47:23 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11036 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998Ab2GDKrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 06:44:04 -0400
-X-Authenticated: #9962044
-X-Provags-ID: V01U2FsdGVkX18lOtsJxKkl0iWSVRbrisHul2oaq+Yj+KiUr5GNrD
-	m4NfNDc+Q1o8PR
-From: Marc Dietrich <marvin24@gmx.de>
-To: Wei Ni <wni@nvidia.com>
-Cc: swarren@nvidia.com, olof@lixom.net, ccross@android.com,
-        linux@arm.linux.org.uk, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        ldewangan@nvidia.com, arnd@arndb.de, grant.likely@secretlab.ca,
-        cjb@laptop.org
-Subject: Re: [PATCH 1/5] ARM: tegra: set up wlan clocks for tegra dt
-Date: Wed, 04 Jul 2012 12:43:50 +0200
-Message-ID: <6135516.CD1aogiCta@fb07-iapwap2>
-User-Agent: KMail/4.8.4 (Linux/3.4.4-3-desktop; KDE/4.8.4; x86_64; ; )
-In-Reply-To: <1341394488-13169-2-git-send-email-wni@nvidia.com>
-References: <1341394488-13169-1-git-send-email-wni@nvidia.com> <1341394488-13169-2-git-send-email-wni@nvidia.com>
+	Wed, 4 Jul 2012 06:47:22 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 04 Jul 2012 03:47:16 -0700
+Message-ID: <4FF41E2D.30104@nvidia.com>
+Date: Wed, 4 Jul 2012 16:12:53 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Y-GMX-Trusted: 0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "lrg@ti.com" <lrg@ti.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] regulator: fixed: dt: support for input supply
+References: <1341223645-7817-1-git-send-email-ldewangan@nvidia.com> <1341223645-7817-2-git-send-email-ldewangan@nvidia.com> <20120703191704.GE29030@opensource.wolfsonmicro.com> <4FF3EA70.307@nvidia.com> <20120704102144.GE4111@opensource.wolfsonmicro.com>
+In-Reply-To: <20120704102144.GE4111@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 4. Juli 2012, 17:34:44 schrieb Wei Ni:
-> Set up the wlan clock tree for Tegra20 and Tegra30.
-> 
-> Signed-off-by: Wei Ni <wni@nvidia.com>
-> ---
->  arch/arm/mach-tegra/board-dt-tegra20.c |    1 +
->  arch/arm/mach-tegra/board-dt-tegra30.c |    1 +
->  2 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c
-> b/arch/arm/mach-tegra/board-dt-tegra20.c index 70a19a9..fbcc7d9 100644
-> --- a/arch/arm/mach-tegra/board-dt-tegra20.c
-> +++ b/arch/arm/mach-tegra/board-dt-tegra20.c
-> @@ -78,6 +78,7 @@ static __initdata struct tegra_clk_init_table
-> tegra_dt_clk_init_table[] = { { "pll_a",      "pll_p_out1",   56448000,    
->   true },
->  	{ "pll_a_out0", "pll_a",        11289600,       true },
->  	{ "cdev1",      NULL,           0,              true },
-> +	{ "blink",      "clk_32k",      32768,          true },
+On Wednesday 04 July 2012 03:51 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Wed, Jul 04, 2012 at 12:32:08PM +0530, Laxman Dewangan wrote:
+>
+>> In non-DT, the input supply is passed with the regulator_init_data
+>> through the fixed voltage config and it is filled in board files.
+> No, this is a legacy way of doing things.  All regulators should be
+> moving to specifying the name in their descriptor except for supplies
+> that are power roots (which are often fixed voltage regulators).
 
-what's the reason to enable this on all boards? Would it make sense to set 
-this to "false" instead?
-
-Marc
+Then the input_supply should be set through the regulator init data 
+"init_data->supply_regulator" rather than the desc? If yes then also I 
+need to change the forthcoming patch for tps65910 and tps6586x to pass 
+the supply_regulator through init_data.
 
 
->  	{ "i2s1",       "pll_a_out0",   11289600,       false},
->  	{ "i2s2",       "pll_a_out0",   11289600,       false},
->  	{ NULL,		NULL,		0,		0},
-> diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c
-> b/arch/arm/mach-tegra/board-dt-tegra30.c index 53bf60f..2d73c61 100644
-> --- a/arch/arm/mach-tegra/board-dt-tegra30.c
-> +++ b/arch/arm/mach-tegra/board-dt-tegra30.c
-> @@ -61,6 +61,7 @@ static __initdata struct tegra_clk_init_table
-> tegra_dt_clk_init_table[] = { { "pll_a_out0",	"pll_a",	11289600,	true },
->  	{ "extern1",	"pll_a_out0",	0,		true },
->  	{ "clk_out_1",	"extern1",	0,		true },
-> +	{ "blink",	"clk_32k",	32768,		true },
->  	{ "i2s0",	"pll_a_out0",	11289600,	false},
->  	{ "i2s1",	"pll_a_out0",	11289600,	false},
->  	{ "i2s2",	"pll_a_out0",	11289600,	false},
