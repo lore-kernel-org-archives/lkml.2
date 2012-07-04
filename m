@@ -1,168 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab2GDQOv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 12:14:51 -0400
-Received: from mail-fa0-f74.google.com ([209.85.161.74]:54387 "EHLO
-	mail-fa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab2GDQOr (ORCPT
+	id S1755290Ab2GDQPZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 12:15:25 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:59287 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755Ab2GDQPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 12:14:47 -0400
-From: Yufeng Shen <miletus@chromium.org>
-To: linux-input@vger.kernel.org
-Cc: Jiri Kosina <jkosina@suse.cz>, Henrik Rydberg <rydberg@euromail.se>,
-        linux-kernel@vger.kernel.org, Daniel Kurtz <djkurtz@chromium.org>,
-        Andrew de los Reyes <adlr@chromium.org>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Yufeng Shen <miletus@chromium.org>
-Subject: [PATCH 1/2 v4] HID: magicmouse: Removing report_touches switch
-Date: Wed,  4 Jul 2012 12:14:43 -0400
-Message-Id: <1341418483-29430-1-git-send-email-miletus@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Wed, 4 Jul 2012 12:15:22 -0400
+Subject: Re: [PATCH 1/3 v2] slub: prefetch next freelist pointer in
+ __slab_alloc()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: JoonSoo Kim <js1304@gmail.com>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        David Rientjes <rientjes@google.com>
+In-Reply-To: <CAAmzW4P8itKqMLLUqAAtT7GakKecCixd0PV8y0LgFOL+=g_tZQ@mail.gmail.com>
+References: <1340389359-2407-1-git-send-email-js1304@gmail.com>
+	 <1340390729-2821-1-git-send-email-js1304@gmail.com>
+	 <CAOJsxLHSboF0rQdGv8bdgGtinBz5dTo+omQbUnj9on_ewzgNAQ@mail.gmail.com>
+	 <CAAmzW4OdDhn5C_vfMhu3ejzzcXmCCt6r0h=nXUqKJaNYZxg8Bw@mail.gmail.com>
+	 <CAOJsxLGBxeu2sE-wDT+YNyVipmXiPj7Gvmmdo-0zGmJObp2zxg@mail.gmail.com>
+	 <1341415579.2583.2134.camel@edumazet-glaptop>
+	 <CAAmzW4P8itKqMLLUqAAtT7GakKecCixd0PV8y0LgFOL+=g_tZQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Jul 2012 18:15:17 +0200
+Message-ID: <1341418517.2583.2252.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the report_touches switch as it is not so useful to turn
-off reporting touch events for a touch device. Let the userspace
-to do the filtering if the turning off is needed.
+On Thu, 2012-07-05 at 00:48 +0900, JoonSoo Kim wrote:
+> 2012/7/5 Eric Dumazet <eric.dumazet@gmail.com>:
+> > Its the slow path. I am not convinced its useful on real workloads (not
+> > a benchmark)
+> >
+> > I mean, if a workload hits badly slow path, some more important work
+> > should be done to avoid this at a higher level.
+> >
+> 
+> In hackbench test, fast path allocation is about to 93%.
+> Is it insufficient?
 
-V2: Remove report_touches as suggeted by Chase Douglas
+7% is insufficient I am afraid.
 
-Signed-off-by: Yufeng Shen <miletus@chromium.org>
----
- drivers/hid/hid-magicmouse.c |   95 ++++++++++++++++++++----------------------
- 1 files changed, 45 insertions(+), 50 deletions(-)
+One prefetch() in the fast path serves 93% of the allocations,
+so added icache pressure is ok.
 
-diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
-index 40ac665..fd88f21 100644
---- a/drivers/hid/hid-magicmouse.c
-+++ b/drivers/hid/hid-magicmouse.c
-@@ -48,10 +48,6 @@ static bool scroll_acceleration = false;
- module_param(scroll_acceleration, bool, 0644);
- MODULE_PARM_DESC(scroll_acceleration, "Accelerate sequential scroll events");
- 
--static bool report_touches = true;
--module_param(report_touches, bool, 0644);
--MODULE_PARM_DESC(report_touches, "Emit touch records (otherwise, only use them for emulation)");
--
- static bool report_undeciphered;
- module_param(report_undeciphered, bool, 0644);
- MODULE_PARM_DESC(report_undeciphered, "Report undeciphered multi-touch state field using a MSC_RAW event");
-@@ -276,7 +272,7 @@ static void magicmouse_emit_touch(struct magicmouse_sc *msc, int raw_id, u8 *tda
- 		msc->single_touch_id = SINGLE_TOUCH_UP;
- 
- 	/* Generate the input events for this touch. */
--	if (report_touches && down) {
-+	if (down) {
- 		input_report_abs(input, ABS_MT_TRACKING_ID, id);
- 		input_report_abs(input, ABS_MT_TOUCH_MAJOR, touch_major << 2);
- 		input_report_abs(input, ABS_MT_TOUCH_MINOR, touch_minor << 2);
-@@ -335,7 +331,7 @@ static int magicmouse_raw_event(struct hid_device *hdev,
- 		for (ii = 0; ii < npoints; ii++)
- 			magicmouse_emit_touch(msc, ii, data + ii * 8 + 6);
- 
--		if (report_touches && msc->ntouches == 0)
-+		if (msc->ntouches == 0)
- 			input_mt_sync(input);
- 
- 		/* When emulating three-button mode, it is important
-@@ -422,53 +418,52 @@ static void magicmouse_setup_input(struct input_dev *input, struct hid_device *h
- 		__set_bit(INPUT_PROP_BUTTONPAD, input->propbit);
- 	}
- 
--	if (report_touches) {
--		__set_bit(EV_ABS, input->evbit);
--
--		input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 15, 0, 0);
--		input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255 << 2,
--				     4, 0);
--		input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255 << 2,
--				     4, 0);
--		input_set_abs_params(input, ABS_MT_ORIENTATION, -31, 32, 1, 0);
--
--		/* Note: Touch Y position from the device is inverted relative
--		 * to how pointer motion is reported (and relative to how USB
--		 * HID recommends the coordinates work).  This driver keeps
--		 * the origin at the same position, and just uses the additive
--		 * inverse of the reported Y.
--		 */
--		if (input->id.product == USB_DEVICE_ID_APPLE_MAGICMOUSE) {
--			input_set_abs_params(input, ABS_MT_POSITION_X,
--				MOUSE_MIN_X, MOUSE_MAX_X, 4, 0);
--			input_set_abs_params(input, ABS_MT_POSITION_Y,
--				MOUSE_MIN_Y, MOUSE_MAX_Y, 4, 0);
--
--			input_abs_set_res(input, ABS_MT_POSITION_X,
--				MOUSE_RES_X);
--			input_abs_set_res(input, ABS_MT_POSITION_Y,
--				MOUSE_RES_Y);
--		} else { /* USB_DEVICE_ID_APPLE_MAGICTRACKPAD */
--			input_set_abs_params(input, ABS_X, TRACKPAD_MIN_X,
--				TRACKPAD_MAX_X, 4, 0);
--			input_set_abs_params(input, ABS_Y, TRACKPAD_MIN_Y,
--				TRACKPAD_MAX_Y, 4, 0);
--			input_set_abs_params(input, ABS_MT_POSITION_X,
--				TRACKPAD_MIN_X, TRACKPAD_MAX_X, 4, 0);
--			input_set_abs_params(input, ABS_MT_POSITION_Y,
--				TRACKPAD_MIN_Y, TRACKPAD_MAX_Y, 4, 0);
--
--			input_abs_set_res(input, ABS_X, TRACKPAD_RES_X);
--			input_abs_set_res(input, ABS_Y, TRACKPAD_RES_Y);
--			input_abs_set_res(input, ABS_MT_POSITION_X,
--				TRACKPAD_RES_X);
--			input_abs_set_res(input, ABS_MT_POSITION_Y,
--				TRACKPAD_RES_Y);
--		}
- 
--		input_set_events_per_packet(input, 60);
-+	__set_bit(EV_ABS, input->evbit);
-+
-+	input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 15, 0, 0);
-+	input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255 << 2,
-+			     4, 0);
-+	input_set_abs_params(input, ABS_MT_TOUCH_MINOR, 0, 255 << 2,
-+			     4, 0);
-+	input_set_abs_params(input, ABS_MT_ORIENTATION, -31, 32, 1, 0);
-+
-+	/* Note: Touch Y position from the device is inverted relative
-+	 * to how pointer motion is reported (and relative to how USB
-+	 * HID recommends the coordinates work).  This driver keeps
-+	 * the origin at the same position, and just uses the additive
-+	 * inverse of the reported Y.
-+	 */
-+	if (input->id.product == USB_DEVICE_ID_APPLE_MAGICMOUSE) {
-+		input_set_abs_params(input, ABS_MT_POSITION_X,
-+				     MOUSE_MIN_X, MOUSE_MAX_X, 4, 0);
-+		input_set_abs_params(input, ABS_MT_POSITION_Y,
-+				     MOUSE_MIN_Y, MOUSE_MAX_Y, 4, 0);
-+
-+		input_abs_set_res(input, ABS_MT_POSITION_X,
-+				  MOUSE_RES_X);
-+		input_abs_set_res(input, ABS_MT_POSITION_Y,
-+				  MOUSE_RES_Y);
-+	} else { /* USB_DEVICE_ID_APPLE_MAGICTRACKPAD */
-+		input_set_abs_params(input, ABS_X, TRACKPAD_MIN_X,
-+				     TRACKPAD_MAX_X, 4, 0);
-+		input_set_abs_params(input, ABS_Y, TRACKPAD_MIN_Y,
-+				     TRACKPAD_MAX_Y, 4, 0);
-+		input_set_abs_params(input, ABS_MT_POSITION_X,
-+				     TRACKPAD_MIN_X, TRACKPAD_MAX_X, 4, 0);
-+		input_set_abs_params(input, ABS_MT_POSITION_Y,
-+				     TRACKPAD_MIN_Y, TRACKPAD_MAX_Y, 4, 0);
-+
-+		input_abs_set_res(input, ABS_X, TRACKPAD_RES_X);
-+		input_abs_set_res(input, ABS_Y, TRACKPAD_RES_Y);
-+		input_abs_set_res(input, ABS_MT_POSITION_X,
-+				  TRACKPAD_RES_X);
-+		input_abs_set_res(input, ABS_MT_POSITION_Y,
-+				  TRACKPAD_RES_Y);
- 	}
- 
-+	input_set_events_per_packet(input, 60);
-+
- 	if (report_undeciphered) {
- 		__set_bit(EV_MSC, input->evbit);
- 		__set_bit(MSC_RAW, input->mscbit);
--- 
-1.7.7.3
+One prefetch() in slow path serves 7% of the allocations, do you see the
+difference ?
+
+Adding a prefetch() is usually a win when a benchmark uses the path one
+million times per second.
+
+But adding prefetches also increases kernel size and it hurts globally.
+(Latency of the kernel depends on its size, when cpu caches are cold)
+
+
 
