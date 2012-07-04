@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897Ab2GDVpZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 17:45:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59068 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753903Ab2GDVpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 17:45:22 -0400
-Date: Wed, 4 Jul 2012 23:45:17 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lm8333: Fix check ordering
-In-Reply-To: <20120704200550.GA13248@core.coreip.homeip.net>
-Message-ID: <alpine.LNX.2.00.1207042344570.17304@pobox.suse.cz>
-References: <20120704145653.7910.26502.stgit@localhost.localdomain> <20120704200550.GA13248@core.coreip.homeip.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755916Ab2GDVsx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 17:48:53 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:38067 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753903Ab2GDVsu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 17:48:50 -0400
+From: David Herrmann <dh.herrmann@googlemail.com>
+To: linux-serial@vger.kernel.org
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, gregkh@linuxfoundation.org,
+        David Herrmann <dh.herrmann@googlemail.com>
+Subject: [PATCH 0/2] Split off bitblit operations for fblog
+Date: Wed,  4 Jul 2012 23:48:32 +0200
+Message-Id: <1341438514-1786-1-git-send-email-dh.herrmann@googlemail.com>
+X-Mailer: git-send-email 1.7.11.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Jul 2012, Dmitry Torokhov wrote:
+Hi
 
-> > From: Alan Cox <alan@linux.intel.com>
-> > 
-> > Fix harmless reference off end of array
-> > 
-> > Reported-by: <dcb314@hotmail.com>
-> > Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?43861
-> > Signed-off-by: Alan Cox <alan@linux.intel.com>
-> > ---
-> > 
-> >  drivers/input/keyboard/lm8333.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/input/keyboard/lm8333.c b/drivers/input/keyboard/lm8333.c
-> > index ca168a6..081fd9e 100644
-> > --- a/drivers/input/keyboard/lm8333.c
-> > +++ b/drivers/input/keyboard/lm8333.c
-> > @@ -91,7 +91,7 @@ static void lm8333_key_handler(struct lm8333 *lm8333)
-> >  		return;
-> >  	}
-> >  
-> > -	for (i = 0; keys[i] && i < LM8333_FIFO_TRANSFER_SIZE; i++) {
-> > +	for (i = 0; i < LM8333_FIFO_TRANSFER_SIZE && keys[i]; i++) {
-> >  		pressed = keys[i] & 0x80;
-> >  		code = keys[i] & 0x7f;
-> >  
-> > 
-> 
-> I believe Jiri has already queued this through trivial tree...
+This is a patchset that moves update_attr() and bit_putcs() into a separate
+source file and makes both files not depend on any vc_* or fbcon_* structures
+and code. That is, we can now safely use both in the fblog patchset that I sent
+last month. Otherwise, we would need to copy both functionalities.
 
-Yup, it's in -next as 954bd6d1c. Thanks,
+The rotation helpers have very similar functions which do the same but with
+rotation in mind. I didn't find an efficient way to merge them so I decided to
+leave them as they are. Furthermore, I am not using them so there is no need to
+split them off.
+
+I actually don't know who is taking patches for fblog and which trees they are
+going through, but if you think I should include the patches in the fblog
+patchset instead, I will do so. Otherwise, it would be nice if they could be
+applied separately. The second fblog patchset will follow tomorrow.
+
+I also tested both patches on my machine and couldn't notice any performance
+breakdowns, but it would be nice if someone else could test them, too. The
+second patch mentions this shortly, regarding the additional kmalloc().
+
+Regards
+David
+
+David Herrmann (2):
+  fbcon: move update_attr() into separate source file
+  fbcon: move bit_putcs() into separate source file
+
+ drivers/video/console/Makefile  |   3 +-
+ drivers/video/console/bitblit.c | 149 +++-------------------------------
+ drivers/video/console/fbcon.h   |   5 +-
+ drivers/video/console/fbdraw.c  | 171 ++++++++++++++++++++++++++++++++++++++++
+ drivers/video/console/fbdraw.h  |  30 +++++++
+ 5 files changed, 215 insertions(+), 143 deletions(-)
+ create mode 100644 drivers/video/console/fbdraw.c
+ create mode 100644 drivers/video/console/fbdraw.h
 
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.11.1
+
