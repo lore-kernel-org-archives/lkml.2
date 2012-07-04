@@ -1,270 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab2GDNhQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 09:37:16 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35715 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab2GDNhO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 09:37:14 -0400
-From: Ohad Ben-Cohen <ohad@wizery.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCH] remoteproc: adopt the driver core's alloc/add/del/put naming
-Date: Wed,  4 Jul 2012 16:36:59 +0300
-Message-Id: <1341409019-32166-1-git-send-email-ohad@wizery.com>
-X-Mailer: git-send-email 1.7.10.rc3.1067.gb129051
+	id S1752719Ab2GDNie (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 09:38:34 -0400
+Received: from sam.nabble.com ([216.139.236.26]:34194 "EHLO sam.nabble.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751895Ab2GDNid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 09:38:33 -0400
+Message-ID: <34113132.post@talk.nabble.com>
+Date: Wed, 4 Jul 2012 06:38:33 -0700 (PDT)
+From: IamTrying <iamtrying.test@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Linux kernel or Hurd or Plan9front? Google damaged spoiled linux
+ kernel too finally?
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Nabble-From: iamtrying.test@gmail.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To make remoteproc's API more intuitive for developers, we adopt
-the driver core's naming, i.e. alloc -> add -> del -> put. We'll also
-add register/unregister when their first user shows up.
 
-Otherwise - there's no functional change here.
+http://pastehtml.com/view/c3kw80dyq.html - Do you know the new 2012 list?
 
-Suggested by Russell King <linux@arm.linux.org.uk>.
+1) How many Linux core kernel developer left now and working as stable? 
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>
-Cc: Sjur Brændeland <sjur.brandeland@stericsson.com>
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
----
- Documentation/remoteproc.txt         | 18 +++++++++---------
- drivers/remoteproc/omap_remoteproc.c |  8 ++++----
- drivers/remoteproc/remoteproc_core.c | 32 ++++++++++++++++----------------
- include/linux/remoteproc.h           |  6 +++---
- 4 files changed, 32 insertions(+), 32 deletions(-)
+2) http://harmful.cat-v.org/software/operating-systems/linux/ 
+- This guy also works in Google
 
-diff --git a/Documentation/remoteproc.txt b/Documentation/remoteproc.txt
-index f33c3bb..23a09b8 100644
---- a/Documentation/remoteproc.txt
-+++ b/Documentation/remoteproc.txt
-@@ -90,21 +90,21 @@ int dummy_rproc_example(struct rproc *my_rproc)
-       This function should be used by rproc implementations during
-       initialization of the remote processor.
-       After creating an rproc handle using this function, and when ready,
--      implementations should then call rproc_register() to complete
-+      implementations should then call rproc_add() to complete
-       the registration of the remote processor.
-       On success, the new rproc is returned, and on failure, NULL.
- 
-       Note: _never_ directly deallocate @rproc, even if it was not registered
--      yet. Instead, when you need to unroll rproc_alloc(), use rproc_free().
-+      yet. Instead, when you need to unroll rproc_alloc(), use rproc_put().
- 
--  void rproc_free(struct rproc *rproc)
-+  void rproc_put(struct rproc *rproc)
-     - Free an rproc handle that was allocated by rproc_alloc.
-       This function essentially unrolls rproc_alloc(), by decrementing the
-       rproc's refcount. It doesn't directly free rproc; that would happen
-       only if there are no other references to rproc and its refcount now
-       dropped to zero.
- 
--  int rproc_register(struct rproc *rproc)
-+  int rproc_add(struct rproc *rproc)
-     - Register @rproc with the remoteproc framework, after it has been
-       allocated with rproc_alloc().
-       This is called by the platform-specific rproc implementation, whenever
-@@ -117,15 +117,15 @@ int dummy_rproc_example(struct rproc *my_rproc)
-       of registering this remote processor, additional virtio drivers might get
-       probed.
- 
--  int rproc_unregister(struct rproc *rproc)
--    - Unroll rproc_register().
-+  int rproc_del(struct rproc *rproc)
-+    - Unroll rproc_add().
-       This function should be called when the platform specific rproc
-       implementation decides to remove the rproc device. it should
--      _only_ be called if a previous invocation of rproc_register()
-+      _only_ be called if a previous invocation of rproc_add()
-       has completed successfully.
- 
--      After rproc_unregister() returns, @rproc is still valid, and its
--      last refcount should be decremented by calling rproc_free().
-+      After rproc_del() returns, @rproc is still valid, and its
-+      last refcount should be decremented by calling rproc_put().
- 
-       Returns 0 on success and -EINVAL if @rproc isn't valid.
- 
-diff --git a/drivers/remoteproc/omap_remoteproc.c b/drivers/remoteproc/omap_remoteproc.c
-index 0f1afc9..a1f7ac1 100644
---- a/drivers/remoteproc/omap_remoteproc.c
-+++ b/drivers/remoteproc/omap_remoteproc.c
-@@ -199,14 +199,14 @@ static int __devinit omap_rproc_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, rproc);
- 
--	ret = rproc_register(rproc);
-+	ret = rproc_add(rproc);
- 	if (ret)
- 		goto free_rproc;
- 
- 	return 0;
- 
- free_rproc:
--	rproc_free(rproc);
-+	rproc_put(rproc);
- 	return ret;
- }
- 
-@@ -214,8 +214,8 @@ static int __devexit omap_rproc_remove(struct platform_device *pdev)
- {
- 	struct rproc *rproc = platform_get_drvdata(pdev);
- 
--	rproc_unregister(rproc);
--	rproc_free(rproc);
-+	rproc_del(rproc);
-+	rproc_put(rproc);
- 
- 	return 0;
- }
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index cbe4f7a..c0a701d 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -1102,7 +1102,7 @@ static void rproc_fw_config_virtio(const struct firmware *fw, void *context)
- out:
- 	if (fw)
- 		release_firmware(fw);
--	/* allow rproc_unregister() contexts, if any, to proceed */
-+	/* allow rproc_del() contexts, if any, to proceed */
- 	complete_all(&rproc->firmware_loading_complete);
- }
- 
-@@ -1251,7 +1251,7 @@ out:
- EXPORT_SYMBOL(rproc_shutdown);
- 
- /**
-- * rproc_register() - register a remote processor
-+ * rproc_add() - register a remote processor
-  * @rproc: the remote processor handle to register
-  *
-  * Registers @rproc with the remoteproc framework, after it has been
-@@ -1270,7 +1270,7 @@ EXPORT_SYMBOL(rproc_shutdown);
-  * of registering this remote processor, additional virtio drivers might be
-  * probed.
-  */
--int rproc_register(struct rproc *rproc)
-+int rproc_add(struct rproc *rproc)
- {
- 	struct device *dev = &rproc->dev;
- 	int ret = 0;
-@@ -1287,7 +1287,7 @@ int rproc_register(struct rproc *rproc)
- 	/* create debugfs entries */
- 	rproc_create_debug_dir(rproc);
- 
--	/* rproc_unregister() calls must wait until async loader completes */
-+	/* rproc_del() calls must wait until async loader completes */
- 	init_completion(&rproc->firmware_loading_complete);
- 
- 	/*
-@@ -1308,7 +1308,7 @@ int rproc_register(struct rproc *rproc)
- 
- 	return ret;
- }
--EXPORT_SYMBOL(rproc_register);
-+EXPORT_SYMBOL(rproc_add);
- 
- /**
-  * rproc_type_release() - release a remote processor instance
-@@ -1356,13 +1356,13 @@ static struct device_type rproc_type = {
-  * of the remote processor.
-  *
-  * After creating an rproc handle using this function, and when ready,
-- * implementations should then call rproc_register() to complete
-+ * implementations should then call rproc_add() to complete
-  * the registration of the remote processor.
-  *
-  * On success the new rproc is returned, and on failure, NULL.
-  *
-  * Note: _never_ directly deallocate @rproc, even if it was not registered
-- * yet. Instead, when you need to unroll rproc_alloc(), use rproc_free().
-+ * yet. Instead, when you need to unroll rproc_alloc(), use rproc_put().
-  */
- struct rproc *rproc_alloc(struct device *dev, const char *name,
- 				const struct rproc_ops *ops,
-@@ -1416,7 +1416,7 @@ struct rproc *rproc_alloc(struct device *dev, const char *name,
- EXPORT_SYMBOL(rproc_alloc);
- 
- /**
-- * rproc_free() - unroll rproc_alloc()
-+ * rproc_put() - unroll rproc_alloc()
-  * @rproc: the remote processor handle
-  *
-  * This function decrements the rproc dev refcount.
-@@ -1424,28 +1424,28 @@ EXPORT_SYMBOL(rproc_alloc);
-  * If no one holds any reference to rproc anymore, then its refcount would
-  * now drop to zero, and it would be freed.
-  */
--void rproc_free(struct rproc *rproc)
-+void rproc_put(struct rproc *rproc)
- {
- 	put_device(&rproc->dev);
- }
--EXPORT_SYMBOL(rproc_free);
-+EXPORT_SYMBOL(rproc_put);
- 
- /**
-- * rproc_unregister() - unregister a remote processor
-+ * rproc_del() - unregister a remote processor
-  * @rproc: rproc handle to unregister
-  *
-  * This function should be called when the platform specific rproc
-  * implementation decides to remove the rproc device. it should
-- * _only_ be called if a previous invocation of rproc_register()
-+ * _only_ be called if a previous invocation of rproc_add()
-  * has completed successfully.
-  *
-- * After rproc_unregister() returns, @rproc isn't freed yet, because
-+ * After rproc_del() returns, @rproc isn't freed yet, because
-  * of the outstanding reference created by rproc_alloc. To decrement that
-- * one last refcount, one still needs to call rproc_free().
-+ * one last refcount, one still needs to call rproc_put().
-  *
-  * Returns 0 on success and -EINVAL if @rproc isn't valid.
-  */
--int rproc_unregister(struct rproc *rproc)
-+int rproc_del(struct rproc *rproc)
- {
- 	struct rproc_vdev *rvdev, *tmp;
- 
-@@ -1463,7 +1463,7 @@ int rproc_unregister(struct rproc *rproc)
- 
- 	return 0;
- }
--EXPORT_SYMBOL(rproc_unregister);
-+EXPORT_SYMBOL(rproc_del);
- 
- static int __init remoteproc_init(void)
- {
-diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
-index b88d6af..eea3ac8 100644
---- a/include/linux/remoteproc.h
-+++ b/include/linux/remoteproc.h
-@@ -452,9 +452,9 @@ struct rproc_vdev {
- struct rproc *rproc_alloc(struct device *dev, const char *name,
- 				const struct rproc_ops *ops,
- 				const char *firmware, int len);
--void rproc_free(struct rproc *rproc);
--int rproc_register(struct rproc *rproc);
--int rproc_unregister(struct rproc *rproc);
-+void rproc_put(struct rproc *rproc);
-+int rproc_add(struct rproc *rproc);
-+int rproc_del(struct rproc *rproc);
- 
- int rproc_boot(struct rproc *rproc);
- void rproc_shutdown(struct rproc *rproc);
+What is the future of Linux kernel? OR should everyone contribute to Hurd
+and Plan9front?
 -- 
-1.7.10.rc3.1067.gb129051
+View this message in context: http://old.nabble.com/Linux-kernel-or-Hurd-or-Plan9front--Google-damaged-spoiled-linux-kernel-too-finally--tp34113132p34113132.html
+Sent from the linux-kernel mailing list archive at Nabble.com.
 
