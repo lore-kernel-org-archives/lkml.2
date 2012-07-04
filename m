@@ -1,120 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab2GDSL6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 14:11:58 -0400
-Received: from mail.digidescorp.com ([50.73.98.161]:6638 "EHLO
-	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547Ab2GDSLz (ORCPT
+	id S932200Ab2GDSV3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 14:21:29 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:56555 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab2GDSV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 14:11:55 -0400
-X-Greylist: delayed 520 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Jul 2012 14:11:55 EDT
-DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
-	c=simple; q=dns; h=from:message-id;
-	b=EIqH8rbdpihJMYcK//g3TE9VrrCZlDL0TApwzFn6utg2aXreqS7LH6Z0prwL
-	Q19YHto5UJhoL78++gd5CCsuSzHDa8rvs3jfUnjsiCcvnkomgCSgCAKOW
-	+E8tJzFOChNlfk2b3lE43rLWwHJydzs9xbrF8ac/xtXdTuNPhJ5hPw=;
-X-Spam-Processed: mail.digidescorp.com, Wed, 04 Jul 2012 13:03:14 -0500
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=15322b18cf=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Date: Wed, 04 Jul 2012 13:03:12 -0500
-From: "Steve Magnani" <steve@digidescorp.com>
-To: "OGAWA Hirofumi" <hirofumi@mail.parknet.co.jp>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] fat (exportfs): reconnect file handles to evicted
-	inodes/dentries
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Message-ID: <WC20120704180312.82023C@digidescorp.com>
-X-Mailer: WorldClient 12.5.5
-In-Reply-To: <87pq8bokcp.fsf@devron.myhome.or.jp>
-References: <1341342576-15394-1-git-send-email-steve@digidescorp.com> <1341342576-15394-3-git-send-email-steve@digidescorp.com> <87pq8bokcp.fsf@devron.myhome.or.jp>
+	Wed, 4 Jul 2012 14:21:26 -0400
+Message-ID: <1341426082.4131.8.camel@piranha.localdomain>
+Subject: Re: Logitech HD Webcam C525 does not work when connected to USB 2
+ port, works on USB 3
+From: Frederik Himpe <fhimpe@telenet.be>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-uvc-devel@lists.sourceforge.net
+Date: Wed, 04 Jul 2012 20:21:22 +0200
+In-Reply-To: <Pine.LNX.4.44L0.1207022039360.27935-100000@netrider.rowland.org>
+References: <Pine.LNX.4.44L0.1207022039360.27935-100000@netrider.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
-> "Steven J. Magnani" <steve@digidescorp.com> writes:
+On Mon, 2012-07-02 at 20:40 -0400, Alan Stern wrote:
+> On Mon, 2 Jul 2012, Frederik Himpe wrote:
 > 
-> > This patch adds code to support reconstruction of evicted inodes.
-> > We walk the on-disk structures where necessary to fill in information
-> > not available in the NFS file handle.
-> >
-> > One important point is that when reconstructing an inode, in order to
-> > avoid the *client* declaring ESTALE we have to ensure that the NFS
-> > file handle of the reconstruction is identical to that of the
-> > original. 
-
-> We would like to add the comment of [0/2] explanation here. Here is
-> missing the explanation of the problem.
-
-OK
-
-> And the codes of nfs support became larger, and I think we should give
-> the place for it. I.e. we would like to add new file (maybe, export.c,
-> nfs.c, or something), move nfs code into it.
+> > > Have you tried using the webcam on a different computer?
+> > 
+> > I just tried it on a different system (Dell Latitude E6400), and it
+> > worked fine on the USB2 ports (kernel version was 3.4.1 on that system,
+> > though). The webcam also works fine on the affected system and USB2
+> > ports in Windows.
 > 
-> With it, we don't need to add "NFS ..." annotation in the comment, and
-> it would make more clear.
+> What happens if you disable USB runtime suspend on the affected system?  
+> Windows tends not to use it.
 
-Sure.
+It appears to make a difference, but it still does not work perfectly.
 
-> And can you add explanation the test of this? What were tested?
+I disabled autosuspend like this:
+root@piranha:/sys# for i in $(find -name autosuspend); do echo 0 > $i; done
 
-I set up a memory-limited virtual machine with a 2 GB FAT partition 
-containing a kernel tree (~770 MB, ~40000 files, 9 levels) and did some 
-'cp -r' and 'ls -lR' operations on it, some overlapping, some not.
+Then I started usbmon, connected the camera, and tried different times
+to run mplayer. All failed again:
+http://artipc10.vub.ac.be/~frederik/webcam/usb2-no-autosupend.mon.out
 
-> > +int fat_get_name(struct dentry *parent, char *name,
-> > +		 struct dentry *child)
-> > +{
-> > +	struct super_block *sb = parent->d_inode->i_sb;
-> > +
-> > +	loff_t child_loc = MSDOS_I(child->d_inode)->i_pos;
-> > +	int err;
-> > +
-> > +	lock_super(sb);
-> > +
-> > +	if (child_loc) {
-> > +		err = fat_name_for_ipos(parent->d_inode, name, NAME_MAX+1,
-> > +					child_loc);
-> > +	} else {
-> > +		child_loc = MSDOS_I(child->d_inode)->i_logstart;
-> > +		err = fat_name_for_logstart(parent->d_inode, name, 
-NAME_MAX+1,
-> > +					    child_loc);
-> > +	}
-> > +
-> > +	unlock_super(sb);
-> > +	return err;
-> > +}
-> 
-> Please don't add new lock_super() usage if it is not necessary. Almost
-> all of lock_super() just replaced lock_kernel() usage. It rather should
-> be removed in future.  Probably, this should use inode->i_mutex
-> instead.
+I stopped usbmon. I Tried again starting mplayer, and then 1 in 2 cases,
+I got a working image now. However, after a few seconds, the image
+starts to lag, stutter and freeze, just like it cannot keep up with the
+image from the camera.
 
-I will look into this. My concern was freezing the filesystem while we 
-walk the on-disk structures. Also I developed this patch against 2.6.35 
-(the Bad Old BKL days) and ported it forward to 3.5.
+I started usbmon again, and made a trace of this image freezing
+happening after a few seconds:
+http://artipc10.vub.ac.be/~frederik/webcam/usb2-no-autosupend.mon.out2
 
-> BTW, the above issue is same with all of directory read.
-> 
-> And although this is using i_pos, is there no possibility to be passed
-> the detached inode (i.e. open but unlinked inode, i_pos == 0)?
+I also don't know whether this is related, but when it's connected to
+the usb3 port, the Cheese webcam application tends to freeze when
+starting a recording. kernel logs contain these errors when it's
+connected to USB3:
+[ 1970.959798] usb 3-2: new high-speed USB device number 3 using xhci_hcd
+[ 1971.244188] usb 3-2: New USB device found, idVendor=046d, idProduct=0826
+[ 1971.244198] usb 3-2: New USB device strings: Mfr=0, Product=2, SerialNumber=1
+[ 1971.244202] usb 3-2: Product: HD Webcam C525
+[ 1971.244205] usb 3-2: SerialNumber: 1E83E9D0
+[ 1971.511718] uvcvideo: Found UVC 1.00 device HD Webcam C525 (046d:0826)
+[ 1971.524373] input: HD Webcam C525 as /devices/pci0000:00/0000:00:14.0/usb3/3-2/3-2:1.2/input/input68
+[ 1971.524608] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 14 with no TDs queued?
+[ 1971.524617] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 0 with no TDs queued?
+[ 1971.673352] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 14 with no TDs queued?
+[ 1971.673364] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 0 with no TDs queued?
+[ 1971.805117] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 14 with no TDs queued?
+[ 1971.805128] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 0 with no TDs queued?
+[ 1971.961869] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 0 with no TDs queued?
+[ 1972.096266] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 14 with no TDs queued?
+[ 1972.096276] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 0 with no TDs queued?
+[ 1972.227921] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 14 with no TDs queued?
+[ 1972.227931] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 0 with no TDs queued?
+[ 1972.359564] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 14 with no TDs queued?
+[ 1972.359574] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 0 with no TDs queued?
+[ 1972.491529] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 14 with no TDs queued?
+[ 1972.491542] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 0 with no TDs queued?
+[ 1972.631005] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 14 with no TDs queued?
+[ 1972.631016] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 0 with no TDs queued?
+[ 2013.465947] xhci_queue_intr_tx: 53 callbacks suppressed
+[ 2018.555341] xhci_queue_intr_tx: 34 callbacks suppressed
+[ 2023.565002] xhci_queue_intr_tx: 38 callbacks suppressed
+[ 2026.437417] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 0 with no TDs queued?
+[ 2051.915715] xhci_queue_intr_tx: 12 callbacks suppressed
+[ 2058.361261] xhci_queue_intr_tx: 58 callbacks suppressed
+[ 2120.614792] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 0 with no TDs queued?
+[ 2137.622105] xhci_queue_intr_tx: 29 callbacks suppressed
+[ 2142.839167] xhci_queue_intr_tx: 31 callbacks suppressed
+[ 2156.751270] xhci_queue_intr_tx: 22 callbacks suppressed
+[ 2163.164907] xhci_queue_intr_tx: 33 callbacks suppressed
+[ 2165.447345] xhci_hcd 0000:00:14.0: WARN Event TRB for slot 2 ep 0 with no TDs queued?
 
-It is possible, that's why I added code to fall back to using logstart.
+But at least mplayer works fine when it's connected to USB3.
 
-I may yet rip out the get_name code. The testing I did before posting the 
-patch seemed to indicate that it was needed - I saw ESTALE errors without 
-get_name support that I did not see with it present. But I've been 
-digging into this some more and I think that was just a coincidence; 
-probably I just generated more extreme memory pressure when testing 
-without get_name. I should know more tomorrow.
-
-Thanks for the quick feedback.
-Steve
-
+-- 
+Frederik Himpe <fhimpe@telenet.be>
 
