@@ -1,80 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757425Ab2GDAV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 20:21:26 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:59870 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756396Ab2GDAVW (ORCPT
+	id S1757459Ab2GDArP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 20:47:15 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:33183 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756556Ab2GDArL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 20:21:22 -0400
-Message-ID: <4FF38C2A.9080301@us.ibm.com>
-Date: Tue, 03 Jul 2012 17:19:54 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Tue, 3 Jul 2012 20:47:11 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlAJABaR8095LL2J/2dsb2JhbAA/Bha1TQSBLIEIghgBAQQBJxMcIwULCAMOBwMuFCUDIROIBgQMulgUiyMUAQUBCyEFAoUJYAOVNJAEgnGBRAEI
+Date: Wed, 4 Jul 2012 10:47:06 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        xfs@oss.sgi.com, dri-devel@lists.freedesktop.org,
+        Keith Packard <keithp@keithp.com>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [MMTests] IO metadata on XFS
+Message-ID: <20120704004706.GD19223@dastard>
+References: <20120620113252.GE4011@suse.de>
+ <20120629111932.GA14154@suse.de>
+ <20120629112505.GF14154@suse.de>
+ <20120701235458.GM19223@dastard>
+ <20120702063226.GA32151@infradead.org>
+ <20120702143215.GS14154@suse.de>
+ <20120702193516.GX14154@suse.de>
+ <20120703001928.GV19223@dastard>
+ <20120703105951.GB14154@suse.de>
 MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/3][RFC] Potential fix for leapsecond caused futex issue
- (v3)
-References: <1341281766-22722-1-git-send-email-johnstul@us.ibm.com> <4FF28CB1.7020304@us.ibm.com> <4FF30F48.3030702@redhat.com>
-In-Reply-To: <4FF30F48.3030702@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12070400-4242-0000-0000-0000023522E0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120703105951.GB14154@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2012 08:27 AM, Prarit Bhargava wrote:
-> Thanks John -- I moved to using this for testing and hit the following
-> softlockup when running latest + your patchset:
->
-> [ 1084.433362] BUG: soft lockup - CPU#17 stuck for 22s! [leap-a-day:1275]^M
-[snip]
-> [ 1084.531860] RIP: 0010:[<ffffffff810b3d57>]  [<ffffffff810b3d57>]
-> smp_call_function_many+0x1f7/0x260^M
-[snip]
-> [ 1084.663723] Call Trace:^M
-> [ 1084.666466]  [<ffffffff8107e960>] ? hrtimer_wakeup+0x30/0x30^M
-> [ 1084.672784]  [<ffffffff8107e960>] ? hrtimer_wakeup+0x30/0x30^M
-> [ 1084.679107]  [<ffffffff810b3f12>] smp_call_function+0x22/0x30^M
-> [ 1084.685530]  [<ffffffff810b3f78>] on_each_cpu+0x28/0x70^M
-> [ 1084.691371]  [<ffffffff8107ec1c>] do_clock_was_set+0x1c/0x30^M
-> [ 1084.697691]  [<ffffffff8107f005>] clock_was_set+0x55/0x60^M
-> [ 1084.703732]  [<ffffffff810a6a23>] do_settimeofday+0xd3/0xe0^M
-> [ 1084.709971]  [<ffffffff8105f4e5>] do_sys_settimeofday+0xb5/0x110^M
-> [ 1084.716677]  [<ffffffff8105f5c3>] sys_settimeofday+0x83/0xb0^M
-> [ 1084.723012]  [<ffffffff8160f129>] system_call_fastpath+0x16/0x1b^M
-> [ 1084.729782] Code: f7 ff 15 95 89 b6 00 80 7d bf 00 0f 84 9c fe ff ff 41 f6 47
-> 20 01 0f 84 91 fe ff ff 0f 1f 84 00 00 00 00 00 f3 90 41 f6 47 20 01 <75> f7 e9
-> 7b fe ff ff 66 90 4c 89 e2 4c 89 ee 89 df e8 53 8b 21 ^M
->
-> I'm taking a look now ... I'm not sure I believe the hrtimer_wakeup() calls on
-> the stack.
-I worked with Prarit and Thomas today to try to chase this down.
+On Tue, Jul 03, 2012 at 11:59:51AM +0100, Mel Gorman wrote:
+> On Tue, Jul 03, 2012 at 10:19:28AM +1000, Dave Chinner wrote:
+> > On Mon, Jul 02, 2012 at 08:35:16PM +0100, Mel Gorman wrote:
+> > > Adding dri-devel and a few others because an i915 patch contributed to
+> > > the regression.
+> > > 
+> > > On Mon, Jul 02, 2012 at 03:32:15PM +0100, Mel Gorman wrote:
+> > > > On Mon, Jul 02, 2012 at 02:32:26AM -0400, Christoph Hellwig wrote:
+> > > > > > It increases the CPU overhead (dirty_inode can be called up to 4
+> > > > > > times per write(2) call, IIRC), so with limited numbers of
+> > > > > > threads/limited CPU power it will result in lower performance. Where
+> > > > > > you have lots of CPU power, there will be little difference in
+> > > > > > performance...
+> > > > > 
+> > > > > When I checked it it could only be called twice, and we'd already
+> > > > > optimize away the second call.  I'd defintively like to track down where
+> > > > > the performance changes happend, at least to a major version but even
+> > > > > better to a -rc or git commit.
+> > > > > 
+> > > > 
+> > > > By all means feel free to run the test yourself and run the bisection :)
+> > > > 
+> > > > It's rare but on this occasion the test machine is idle so I started an
+> > > > automated git bisection. As you know the milage with an automated bisect
+> > > > varies so it may or may not find the right commit. Test machine is sandy so
+> > > > http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__io-metadata-xfs/sandy/comparison.html
+> > > > is the report of interest. The script is doing a full search between v3.3 and
+> > > > v3.4 for a point where average files/sec for fsmark-single drops below 25000.
+> > > > I did not limit the search to fs/xfs on the off-chance that it is an
+> > > > apparently unrelated patch that caused the problem.
+> > > > 
+> > > 
+> > > It was obvious very quickly that there were two distinct regression so I
+> > > ran two bisections. One led to a XFS and the other led to an i915 patch
+> > > that enables RC6 to reduce power usage.
+> > > 
+> > > [aa464191: drm/i915: enable plain RC6 on Sandy Bridge by default]
+> > 
+> > Doesn't seem to be the major cause of the regression. By itself, it
+> > has impact, but the majority comes from the XFS change...
+> > 
+> 
+> The fact it has an impact at all is weird but lets see what the DRI
+> folks think about it.
+> 
+> > > [c999a223: xfs: introduce an allocation workqueue]
+> > 
+> > Which indicates that there is workqueue scheduling issues, I think.
+> > The same amount of work is being done, but half of it is being
+> > pushed off into a workqueue to avoid stack overflow issues (*).  I
+> > tested the above patch in anger on an 8p machine, similar to the
+> > machine you saw no regressions on, but the workload didn't drive it
+> > to being completely CPU bound (only about 90%) so the allocation
+> > work was probably always scheduled quickly.
+> 
+> What test were you using?
 
-Prarit was also seeing "BUG at kernel/timer.c:1091!" problems, and once 
-he sent me his config I was able to reproduce the problem. Thomas 
-suggested enabling debugobjects and that quickly pointed out the 
-think-o: I had mistook __hrtimer_init() as the hrtimer subsystem 
-initialization, rather then what gets to initialize every hrtimer. So 
-when in my patch I initialized the clock_was_set_timer there, we end up 
-potentially re-initializing that timer while it is enqueued, which can 
-cause the cpu its enqueued on to lockup with irqs off, which then gums 
-up the smp_call_function().
+fsmark, dbench, compilebench, and a few fio workloads. Also,
+xfstests times each test and I keep track of overall runtime, and
+none of those showed any performance differential, either...
 
-The obvious fix is to initialize the clock_was_set_timer when we define it.
+Indeed, running on a current 3.5-rc5 tree, my usual fsmark
+benchmarks are running at the same numbers I've been seeing since
+about 3.0 - somewhere around 18k files/s for a single thread, and
+110-115k files/s for 8 threads.
 
-Thanks for Prarit for testing and noticing the problem and Thomas for 
-suggesting how to isolate it!
+I just ran your variant, and I'm getting about 20kfile/s for a
+single thread, which is about right because you're using smaller
+directories than I am (22500 files per dir vs 100k in my tests).
 
-I'm going to continue testing for a bit longer and then will send out 
-the revised patchset. Hopefully I can collect some acks tomorrow and 
-hopefully try to get it merged later Thursday  (I'd like for Prarit to 
-get a chance to test the patch thurs before pushing it).
+> > How many worker threads have been spawned on these machines
+> > that are showing the regression?
+> 
+> 20 or 21 generally. An example list as spotted by top looks like
 
-thanks
--john
+Pretty normal.
 
+> > What is the context switch rate on the machines whenteh test is running?
+.....
+> Vanilla average context switch rate	4278.53
+> Revert average context switch rate	1095
+
+That seems about right, too.
+
+> > Can you run latencytop to see
+> > if there is excessive starvation/wait times for allocation
+> > completion?
+> 
+> I'm not sure what format you are looking for.
+
+Where the context switches are coming from, and how long they are
+abeing stalled for. Just to get the context switch locations, you
+can use perf on the sched:sched_switch event, but that doesn't give
+you stall times. Local testing tells me that about 40% of the
+switches are from xfs_alloc_vextent, 55% are from the work threads,
+and the rest are CPU idling events, which is exactly as I'd expect.
+
+> > A pert top profile comparison might be informative,
+> > too...
+> > 
+> 
+> I'm not sure if this is what you really wanted. I thought an oprofile or
+> perf report would have made more sense but I recorded perf top over time
+> anyway and it's at the end of the mail.
+
+perf report and oprofile give you CPU usage across the run, it's not
+instantaneous and that's where all the interesting information is.
+e.g. a 5% sample in a 20s profile might be 5% per second for 20s, or
+it might be 100% for 1s - that's the behaviour run profiles cannot
+give you insight into....
+
+As it is, the output you posted is nothing unusual.
+
+> For just these XFS tests I've uploaded a tarball of the logs to
+> http://www.csn.ul.ie/~mel/postings/xfsbisect-20120703/xfsbisect-logs.tar.gz
+
+Ok, so the main thing I missed when first looking at this is that
+you are concerned about single thread regressions. Well, I can't
+reproduce your results here. Single threaded with or without the
+workqueue based allocation gives me roughly 20k +/-0.5k files/s one
+a single disk, a 12 disk RAID0 array and a RAM disk on a 8p/4GB RAM
+machine.  That's the same results I've been seeing since I wrote
+this patch almost 12 months ago....
+
+So, given that this is a metadata intensive workload, the only
+extent allocation is going to be through inode and directory block
+allocation. These paths do not consume a large amount of stack, so
+we can tell the allocator not to switch to workqueue stack for these
+allocations easily.
+
+The patch below does this. It completely removes all the allocation
+based context switches from the no-data fsmark workloads being used
+for this testing. It makes no noticable difference to performance
+here, so I'm interested if it solves the regression you are seeing
+on your machines.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
+
+
+xfs: don't defer metadata allocation to the workqueue
+
+From: Dave Chinner <dchinner@redhat.com>
+
+Almost all metadata allocations come from shallow stack usage
+situations. Avoid the overhead of switching the allocation to a
+workqueue as we are not in danger of running out of stack when
+making these allocations. Metadata allocations are already marked
+through the args that are passed down, so this is trivial to do.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+---
+ fs/xfs/xfs_alloc.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/fs/xfs/xfs_alloc.c b/fs/xfs/xfs_alloc.c
+index f654f51..4f33c32 100644
+--- a/fs/xfs/xfs_alloc.c
++++ b/fs/xfs/xfs_alloc.c
+@@ -2434,13 +2434,22 @@ xfs_alloc_vextent_worker(
+ 	current_restore_flags_nested(&pflags, PF_FSTRANS);
+ }
+ 
+-
+-int				/* error */
++/*
++ * Data allocation requests often come in with little stack to work on. Push
++ * them off to a worker thread so there is lots of stack to use. Metadata
++ * requests, OTOH, are generally from low stack usage paths, so avoid the
++ * context switch overhead here.
++ */
++int
+ xfs_alloc_vextent(
+-	xfs_alloc_arg_t	*args)	/* allocation argument structure */
++	struct xfs_alloc_arg	*args)
+ {
+ 	DECLARE_COMPLETION_ONSTACK(done);
+ 
++	if (!args->userdata)
++		return __xfs_alloc_vextent(args);
++
++
+ 	args->done = &done;
+ 	INIT_WORK_ONSTACK(&args->work, xfs_alloc_vextent_worker);
+ 	queue_work(xfs_alloc_wq, &args->work);
