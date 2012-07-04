@@ -1,56 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933636Ab2GDHIG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 03:08:06 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5648 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117Ab2GDHIC (ORCPT
+	id S933376Ab2GDHLi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 03:11:38 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:52820 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932104Ab2GDHLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 03:08:02 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 04 Jul 2012 00:04:28 -0700
-Message-ID: <4FF3EAC5.8060209@nvidia.com>
-Date: Wed, 4 Jul 2012 12:33:33 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Wed, 4 Jul 2012 03:11:36 -0400
+Message-ID: <4FF3EC87.4090001@ahsoftware.de>
+Date: Wed, 04 Jul 2012 09:11:03 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "lrg@ti.com" <lrg@ti.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 3/3] regulator: dt: add policy to have property "regulator-compatible"
-References: <1340194987-23654-1-git-send-email-ldewangan@nvidia.com> <1340194987-23654-4-git-send-email-ldewangan@nvidia.com> <20120703192508.GG29030@opensource.wolfsonmicro.com>
-In-Reply-To: <20120703192508.GG29030@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Bryan Wu <bryan.wu@canonical.com>
+CC: linux-kernel@vger.kernel.org, Shuah Khan <shuahkhan@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>, Feng Tang <feng.tang@intel.com>
+Subject: Re: [PATCH] leds: heartbeat: fix bug on panic
+References: <20120612162629.15519f39@feng-i7> <1341297347-19336-1-git-send-email-holler@ahsoftware.de> <CAK5ve-JCEeuhmqB=ruy78nCgma7ENL-48N+p5=nhz3e0exS9yg@mail.gmail.com>
+In-Reply-To: <CAK5ve-JCEeuhmqB=ruy78nCgma7ENL-48N+p5=nhz3e0exS9yg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 04 July 2012 12:55 AM, Mark Brown wrote:
-> * PGP Signed by an unknown key
+Am 04.07.2012 09:05, schrieb Bryan Wu:
+> On Tue, Jul 3, 2012 at 2:35 PM, Alexander Holler <holler@ahsoftware.de> wrote:
+>> With commit 49dca5aebfdeadd4bf27b6cb4c60392147dc35a4 I introduced
+>> a bug (visible if CONFIG_PROVE_RCU is enabled) which occures when a panic
+>> has happened:
+>>
+>> [ 1526.520230] ===============================
+>> [ 1526.520230] [ INFO: suspicious RCU usage. ]
+>> [ 1526.520230] 3.5.0-rc1+ #12 Not tainted
+>> [ 1526.520230] -------------------------------
+>> [ 1526.520230] /c/kernel-tests/mm/include/linux/rcupdate.h:436 Illegal context switch in RCU read-side critical section!
+>> [ 1526.520230]
+>> [ 1526.520230] other info that might help us debug this:
+>> [ 1526.520230]
+>> [ 1526.520230]
+>> [ 1526.520230] rcu_scheduler_active = 1, debug_locks = 0
+>> [ 1526.520230] 3 locks held by net.agent/3279:
+>> [ 1526.520230]  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff82f85962>] do_page_fault+0x193/0x390
+>> [ 1526.520230]  #1:  (panic_lock){+.+...}, at: [<ffffffff82ed2830>] panic+0x37/0x1d3
+>> [ 1526.520230]  #2:  (rcu_read_lock){.+.+..}, at: [<ffffffff810b9b28>] rcu_lock_acquire+0x0/0x29
+>> [ 1526.520230]
+>> [ 1526.520230] stack backtrace:
+>> [ 1526.520230] Pid: 3279, comm: net.agent Not tainted 3.5.0-rc1+ #12
+>> [ 1526.520230] Call Trace:
+>> [ 1526.520230]  [<ffffffff810e1570>] lockdep_rcu_suspicious+0x109/0x112
+>> [ 1526.520230]  [<ffffffff810bfe3a>] rcu_preempt_sleep_check+0x45/0x47
+>> [ 1526.520230]  [<ffffffff810bfe5a>] __might_sleep+0x1e/0x19a
+>> [ 1526.520230]  [<ffffffff82f8010e>] down_write+0x26/0x81
+>> [ 1526.520230]  [<ffffffff8276a966>] led_trigger_unregister+0x1f/0x9c
+>> [ 1526.520230]  [<ffffffff8276def5>] heartbeat_reboot_notifier+0x15/0x19
+>> [ 1526.520230]  [<ffffffff82f85bf5>] notifier_call_chain+0x96/0xcd
+>> [ 1526.520230]  [<ffffffff82f85cba>] __atomic_notifier_call_chain+0x8e/0xff
+>> [ 1526.520230]  [<ffffffff81094b7c>] ? kmsg_dump+0x37/0x1eb
+>> [ 1526.520230]  [<ffffffff82f85d3f>] atomic_notifier_call_chain+0x14/0x16
+>> [ 1526.520230]  [<ffffffff82ed28e1>] panic+0xe8/0x1d3
+>> [ 1526.520230]  [<ffffffff811473e2>] out_of_memory+0x15d/0x1d3
+>>
+>> So in case of a panic, now just turn of the LED. Other approaches like
+>> scheduling a work to unregister the trigger aren't working because there
+>> isn't much which still runs after a panic occured (except timers).
+>>
+>> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+>> ---
+>>   drivers/leds/ledtrig-heartbeat.c |   16 +++++++++++++++-
+>>   1 files changed, 15 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/leds/ledtrig-heartbeat.c b/drivers/leds/ledtrig-heartbeat.c
+>> index 41dc76d..a019fbb 100644
+>> --- a/drivers/leds/ledtrig-heartbeat.c
+>> +++ b/drivers/leds/ledtrig-heartbeat.c
+>> @@ -21,6 +21,8 @@
+>>   #include <linux/reboot.h>
+>>   #include "leds.h"
+>>
+>> +static int panic_heartbeats;
+>> +
+>>   struct heartbeat_trig_data {
+>>          unsigned int phase;
+>>          unsigned int period;
+>> @@ -34,6 +36,11 @@ static void led_heartbeat_function(unsigned long data)
+>>          unsigned long brightness = LED_OFF;
+>>          unsigned long delay = 0;
+>>
+>> +       if (unlikely(panic_heartbeats)) {
+>> +               led_set_brightness(led_cdev, LED_OFF);
+>> +               return;
+>> +       }
+>> +
+>>          /* acts like an actual heart beat -- ie thump-thump-pause... */
+>>          switch (heartbeat_data->phase) {
+>>          case 0:
+>> @@ -111,12 +118,19 @@ static int heartbeat_reboot_notifier(struct notifier_block *nb,
+>>          return NOTIFY_DONE;
+>>   }
+>>
+>> +static int heartbeat_panic_notifier(struct notifier_block *nb,
+>> +                                    unsigned long code, void *unused)
+>> +{
+>> +       panic_heartbeats = 1;
 >
-> On Wed, Jun 20, 2012 at 05:53:07PM +0530, Laxman Dewangan wrote:
->> Add the policy for regulator DT such that if device have multiple
->> regulator and its binding contains a child node that describes each
->> regulator then each regulator child node must have the property
->> "regulator-compatible" which matches with regulator name of their
->> hardware counterparts.
-> I tried to apply this but both git and patch are upset with the patch at
-> the line:
->
-> diff --git a/Documentation/devicetree/bindings/regulator/tps6586x.txt b/Documentation/devicetree/bindings/regulator/tps6586x.txt
->
-> for reasons I'm not immediately able to discern.  Can you please look
-> into this?
+> Can we just set LED as OFF and delete the timer here? because timer is
+> also useless after a kernel panic.
+> So we don't need this global static variable here.
 
-I will locally try and will resend the patch if anything change.
+No, the necessary information (heartbeat_trig_data) isn't available here.
+
+Regards,
+
+Alexander
 
