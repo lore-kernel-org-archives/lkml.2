@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124Ab2GDXun (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 19:50:43 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:63615 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755972Ab2GDXui convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 19:50:38 -0400
+	id S1756112Ab2GDX7Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 19:59:25 -0400
+Received: from fieldses.org ([174.143.236.118]:48741 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755958Ab2GDX7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 19:59:24 -0400
+Date: Wed, 4 Jul 2012 19:59:21 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Eldad Zack <eldad@fogrefinery.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] sunrpc/cache.h: replace simple_strtoul
+Message-ID: <20120704235921.GA26797@fieldses.org>
+References: <1341442827-21339-1-git-send-email-eldad@fogrefinery.com>
+ <1341442827-21339-2-git-send-email-eldad@fogrefinery.com>
 MIME-Version: 1.0
-In-Reply-To: <1341409019-32166-1-git-send-email-ohad@wizery.com>
-References: <1341409019-32166-1-git-send-email-ohad@wizery.com>
-Date: Thu, 5 Jul 2012 01:50:37 +0200
-Message-ID: <CACRpkdYr4VFpSLhcy3vst4=ZzTVPG8OKiZvLb_z4VmKmJGrQeg@mail.gmail.com>
-Subject: Re: [PATCH] remoteproc: adopt the driver core's alloc/add/del/put naming
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341442827-21339-2-git-send-email-eldad@fogrefinery.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 4, 2012 at 3:36 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+On Thu, Jul 05, 2012 at 01:00:26AM +0200, Eldad Zack wrote:
+> This patch replaces the usage of simple_strtoul with kstrtoint in
+> get_int().
 
-> To make remoteproc's API more intuitive for developers, we adopt
-> the driver core's naming, i.e. alloc -> add -> del -> put. We'll also
-> add register/unregister when their first user shows up.
->
-> Otherwise - there's no functional change here.
->
-> Suggested by Russell King <linux@arm.linux.org.uk>.
->
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>
-> Cc: Sjur Brændeland <sjur.brandeland@stericsson.com>
-> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+Why?
 
-I understand this patch and it's a good thing, so:
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+--b.
 
-Yours,
-Linus Walleij
+> 
+> Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+> ---
+>  include/linux/sunrpc/cache.h |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/sunrpc/cache.h b/include/linux/sunrpc/cache.h
+> index 0757887..9a60bcc 100644
+> --- a/include/linux/sunrpc/cache.h
+> +++ b/include/linux/sunrpc/cache.h
+> @@ -217,7 +217,7 @@ extern int qword_get(char **bpp, char *dest, int bufsize);
+>  static inline int get_int(char **bpp, int *anint)
+>  {
+>  	char buf[50];
+> -	char *ep;
+> +	ssize_t ret;
+>  	int rv;
+>  	int len = qword_get(bpp, buf, 50);
+>  
+> @@ -226,8 +226,8 @@ static inline int get_int(char **bpp, int *anint)
+>  	if (len == 0)
+>  		return -ENOENT;
+>  
+> -	rv = simple_strtol(buf, &ep, 0);
+> -	if (*ep)
+> +	ret = kstrtoint(buf, 0, &rv);
+> +	if (ret)
+>  		return -EINVAL;
+>  
+>  	*anint = rv;
+> -- 
+> 1.7.10
+> 
