@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516Ab2GDDRT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jul 2012 23:17:19 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:7247 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756016Ab2GDDRQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jul 2012 23:17:16 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz98dIzz1202hzzz2dh2a8h668h839h8e2h8e3hd25he5bhf0ahbe9i)
-From: Tabi Timur-B04825 <B04825@freescale.com>
-To: Zhao Chenhui-B35336 <B35336@freescale.com>
-CC: Zhao Chenhui-B35336 <B35336@freescale.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+	id S1757540Ab2GDDTC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jul 2012 23:19:02 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:47766 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756744Ab2GDDS7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jul 2012 23:18:59 -0400
+Message-ID: <1341371928.25411.2.camel@phoenix>
+Subject: RE: [PATCH v2] regulator: ad5398: Fix min/max current limit
+ boundary checking
+From: Axel Lin <axel.lin@gmail.com>
+To: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Yang-R58472 <r58472@freescale.com>
-Subject: Re: [PATCH v7 1/5] powerpc/85xx: implement hardware timebase sync
-Thread-Topic: [PATCH v7 1/5] powerpc/85xx: implement hardware timebase sync
-Thread-Index: AQHNWRnaavpowtpO5UeeCNsHPM8rhJcYx9kAgAAAxAA=
-Date: Wed, 4 Jul 2012 03:17:12 +0000
-Message-ID: <4FF3B5B6.8090400@freescale.com>
-References: <1341310879-5468-1-git-send-email-chenhui.zhao@freescale.com>
- <CAOZdJXUeY-_mmBLoA25_g4eLqwHxYX4c_ECbU+KYqfM307THNQ@mail.gmail.com>
- <20120704031426.GA6133@localhost.localdomain>
-In-Reply-To: <20120704031426.GA6133@localhost.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:13.0)
- Gecko/20120615 Firefox/13.0.1 SeaMonkey/2.10.1
-x-originating-ip: [70.112.118.223]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <FAB8AFF07C42C047B4A361E803CCDA32@mgd.freescale.com>
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+        Liam Girdwood <lrg@ti.com>
+Date: Wed, 04 Jul 2012 11:18:48 +0800
+In-Reply-To: <DB904C5425BA6F4E8424B3B51A1414D1714080606C@NWD2CMBX1.ad.analog.com>
+References: <1341301353.12050.1.camel@phoenix>
+	 <DB904C5425BA6F4E8424B3B51A1414D17140805D85@NWD2CMBX1.ad.analog.com>
+	 <4FF2A7F9.3090307@metafoo.de>
+	 <DB904C5425BA6F4E8424B3B51A1414D17140805DAB@NWD2CMBX1.ad.analog.com>
+	 <4FF2AC24.7090906@metafoo.de>
+	 <DB904C5425BA6F4E8424B3B51A1414D17140805DC8@NWD2CMBX1.ad.analog.com>
+	 <CAF+7xWk5qQa5nV3OdFM51U1Kh7g9w3dA5mLL+SGRQ7_AFNkp5A@mail.gmail.com>
+	 <DB904C5425BA6F4E8424B3B51A1414D17140805E4C@NWD2CMBX1.ad.analog.com>
+	 <1341315373.3158.3.camel@phoenix>
+	 <DB904C5425BA6F4E8424B3B51A1414D1714080606C@NWD2CMBX1.ad.analog.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zhao Chenhui wrote:
-> If the guts variable is NULL, it indicates there is error in dts or kernel.
-> We should fix the error, rather than ignore it.
 
-And that's why there's a warning message.  Crashing the kernel is not 
-going to fix anything.
+> >That is why we need to add:
+> >if (min_uA < chip->min_uA)
+> >        min_uA = chip->min_uA;
+> >
+> 
+> Yes, but if you apply this logic to min_uA, you should apply the same logic to max_uA, even though it is not used in your application.
 
-> Moreover, if smp_85xx_ops.give/take_timebase is NULL, kernel can not do the timebase sync.
+Actually, the logic is the same:
+to find a supported (minmal) current in specified range.
 
-Is that necessary for the kernel to boot?
+The question is the equation used in current code does not allow
+min_uA < chip->min_uA.
+Setting min_uA = chip->min_uA if min_uA < chip->min_uA does make sense
+because botch request actually returns the same current value.
+( I mean no user visible change )
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+Adding below logic is not necessary.
+( Note: Adding this or not does not have any user visible change, it's
+just not necessary)
+
+if (max_uA > chip->min_uA)
+        max_uA = chip->max_uA;
+
+It is not necessary because the equation to choose selector does not
+depends on max_uA. No matter if we set max_uA = chip->max_uA or not in
+this case, it does not impact the equation to choose the selector.
+
+But, well, if you really prefer adding it. I'll send a v3 for it.
+Just let me know how do you think.
+
+Regards,
+Axel
 
 
