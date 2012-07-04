@@ -1,108 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354Ab2GDNVB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 09:21:01 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:39699 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751364Ab2GDNU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 09:20:58 -0400
-Message-ID: <4FF44296.4020209@parallels.com>
-Date: Wed, 4 Jul 2012 17:18:14 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Wanpeng Li <liwp.linux@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        "Balbir Singh" <bsingharora@gmail.com>,
-        AndrewMorton <akpm@linux-foundation.org>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>, "Arun Sharma" <asharma@fb.com>,
-        <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>
-Subject: Re: [PATCH 1/5 v2] memcg: replace unsigned long by u64 to avoid overflow
-References: <1340604266-7937-1-git-send-email-liwp.linux@gmail.com> <20120625075215.GW27816@cmpxchg.org> <4FE82193.1070307@jp.fujitsu.com> <20120704122427.GA21598@kernel> <4FF4373C.8020100@parallels.com> <20120704131631.GD7881@cmpxchg.org>
-In-Reply-To: <20120704131631.GD7881@cmpxchg.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1752498Ab2GDNXP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 09:23:15 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58911 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022Ab2GDNXL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 09:23:11 -0400
+Subject: Re: [PATCH] printk: fixing the deadlock when calling printk in nmi
+ handle
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: "'linux-kernel@vger.kernel.org' (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>,
+        "kay@vrfy.org" <kay@vrfy.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A10C7F6@SHSMSX101.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A10C7F6@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Jul 2012 15:22:49 +0200
+Message-ID: <1341408169.2507.111.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2012 05:16 PM, Johannes Weiner wrote:
-> On Wed, Jul 04, 2012 at 04:29:48PM +0400, Glauber Costa wrote:
->> On 07/04/2012 04:24 PM, Wanpeng Li wrote:
->>> On Mon, Jun 25, 2012 at 05:30:11PM +0900, Kamezawa Hiroyuki wrote:
->>>> (2012/06/25 16:52), Johannes Weiner wrote:
->>>>> On Mon, Jun 25, 2012 at 02:04:20PM +0800, Wanpeng Li wrote:
->>>>>> Changlog:
->>>>>>
->>>>>> V2 -> V1:
->>>>>> * fix zone_page_state()::/include/linux/vmstat.h returns 'unsigned long'
->>>>>>
->>>>>> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
->>>>>>
->>>>>> Since the return value variable in mem_cgroup_zone_nr_lru_pages and
->>>>>> mem_cgroup_node_nr_lru_pages functions are u64, so replace the return
->>>>>> value of funtions by u64 to avoid overflow.
->>>>>>
->>>>>> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
->>>>>> ---
->>>>>>  include/linux/vmstat.h |    2 +-
->>>>>>  mm/memcontrol.c        |    5 ++---
->>>>>>  2 files changed, 3 insertions(+), 4 deletions(-)
->>>>>>
->>>>>> diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
->>>>>> index 65efb92..6a14291 100644
->>>>>> --- a/include/linux/vmstat.h
->>>>>> +++ b/include/linux/vmstat.h
->>>>>> @@ -106,7 +106,7 @@ static inline unsigned long global_page_state(enum zone_stat_item item)
->>>>>>  	return x;
->>>>>>  }
->>>>>>
->>>>>> -static inline unsigned long zone_page_state(struct zone *zone,
->>>>>> +static inline u64 zone_page_state(struct zone *zone,
->>>>>>  					enum zone_stat_item item)
->>>>>>  {
->>>>>>  	long x = atomic_long_read(&zone->vm_stat[item]);
->>>>>
->>>>> We established that there is no known reason to use ulong for page
->>>>> counters and that IF YOU HAD ONE, you should obviously say so and then
->>>>> do a wholesale conversion.  But I don't think you have one.
->>>>>
->>>>> This patch makes absolutely no sense.
->>>>>
->>>> I agree. Then, Nack from me.
->>>>
->>>> Thanks,
->>>> -Kame
->>>
->>> static unsigned long
->>> mem_cgroup_node_nr_lru_pages(struct mem_cgroup *memcg,
->>> 			int nid, unsigned int lru_mask)
->>> {
->>> 	u64 total = 0;
->>> 	int zid;
->>>
->>> 	for (zid = 0; zid < MAX_NR_ZONES; zid++)
->>> 		total += mem_cgroup_zone_nr_lru_pages(memcg,
->>> 					    nid, zid, lru_mask);
->>>
->>> 	return total;
->>> }
->>>
->>> Since you use unsigned long to caculate nr_pages and unsigned long long
->>> to caculate bytes, so u64 in function mem_cgroup_node_nr_lru_pages should 
->>> replace by unsigned long to save kernel stack, right?
->>
->> How many bytes do you intend to save by replacing "u64" with "unsigned
->> long" ? Have you asked yourself this question ?
+On Wed, 2012-07-04 at 13:00 +0000, Liu, Chuansheng wrote:
+> From: liu chuansheng <chuansheng.liu@intel.com>
+> Subject: [PATCH] printk: fixing the deadlock when calling printk in nmi handle
 > 
-> I think fixing these types is a good thing.  Not for their memory
-> savings but to clarify the code.  Otherwise, people will scratch their
-> heads and waste time over whether there is something that requires the
-> counter to be 64-bit on a 32-bit system when really there isn't.
+> Current printk implementation can not fully support that
+> calling it in nmi handler for SMP arch.
 > 
-I don't see a reason not to be type consistent, it's just not a stack
-issue at all. Being just a type fix, its benefits need to be offset
-against any problems it may bring, such as conflicts with other people
-working on that, risking doing a mid-term conversion that break
-something, and all the likes.
+> There is typical case in nmi handler function arch_trigger_all_cpu_backtrace_handler().
+> 
+> In my platform, there are 2 CPUs, when function arch_trigger_all_cpu_backtrace()
+> is called, 2 CPUs will recevied the nmi interrupts, and the
+> arch_trigger_all_cpu_backtrace_handler() will called on 2 CPUs:
+> 
+> case1:
+> CPU0                                            CPU1
+> calling arch_trigger_all_cpu_backtrace()        calling printk, and has obtain the logbuf_lock
+> nmi interrupt received                          nmi interrupt received
+> call arch_trigger_all_cpu_backtrace_handler()   call arch_trigger_all_cpu_backtrace_handler()
+> Obtain arch_spin_lock(&lock);                   Waiting for arch_spin_lock(&lock);
+> Continue to call printk()
+> CPU0 will be blocked by logbuf_lock             CPU1 is blocked by arch_spin_lock(&lock)
+> 
+> The deadlock will be happening.
+> 
+> case2:
+> CPU0                                             CPU1:(run dmesg command)
+> calling arch_trigger_all_cpu_backtrace()         calling do_syslog
+>                                                  Obtaining the logbuf_lock
+> nmi interrupt received                           nmi interrupt received
+> ....
+> The dealock will happen also somtimes.
+> 
+> I just write a simple interface to run the arch_trigger_all_cpu_backtrace_handler() every 5s,
+> it will trigger dead lock many times.
+> 
+> The solution is when printk is called in nmi handler, we will use trylock instead of lock.
+> And in nmi handler, do the call the console write function because normal console write function
+> include many spin locks also. This fix can confirm the traces in nmi handler can be output successfully
+> almost.
+> 
+> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+
+
+Yuck.. and no. This makes sane things like early 8250 serial console
+less reliable.
+
+
+
