@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933322Ab2GDLT7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 07:19:59 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:4689 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932541Ab2GDLT5 (ORCPT
+	id S933264Ab2GDLVC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 07:21:02 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33284 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752606Ab2GDLU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 07:19:57 -0400
-Date: Wed, 4 Jul 2012 13:19:37 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rui.zhang@intel.com, ben-linux@fluff.org, w.sang@pengutronix.de,
-        dmitry.torokhov@gmail.com, eric.piel@tremplin-utc.net, mjg@redhat.com,
-        ike.pan@canonical.com, herton@canonical.com
-Subject: Re: [PATCH 06/12] i2c-scmi: convert to module_acpi_driver()
-Message-ID: <20120704131937.41194e7e@endymion.delvare>
-In-Reply-To: <1340881171-14811-7-git-send-email-mika.westerberg@linux.intel.com>
-References: <1340881171-14811-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1340881171-14811-7-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 4 Jul 2012 07:20:58 -0400
+Message-ID: <4FF42711.50303@gmail.com>
+Date: Wed, 04 Jul 2012 19:20:49 +0800
+From: Sha Zhengju <handai.szj@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: linux-mm@kvack.org, cgroups@vger.kernel.org, gthelen@google.com,
+        yinghan@google.com, akpm@linux-foundation.org, mhocko@suse.cz,
+        linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH 7/7] memcg: print more detailed info while memcg oom happening
+References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com> <1340881609-5935-1-git-send-email-handai.szj@taobao.com> <4FF3FED6.9010700@jp.fujitsu.com>
+In-Reply-To: <4FF3FED6.9010700@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Jun 2012 13:59:25 +0300, Mika Westerberg wrote:
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
->  drivers/i2c/busses/i2c-scmi.c |   14 +-------------
->  1 file changed, 1 insertion(+), 13 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-scmi.c b/drivers/i2c/busses/i2c-scmi.c
-> index 388cbdc..6aafa3d 100644
-> --- a/drivers/i2c/busses/i2c-scmi.c
-> +++ b/drivers/i2c/busses/i2c-scmi.c
-> @@ -426,19 +426,7 @@ static struct acpi_driver acpi_smbus_cmi_driver = {
->  		.remove = acpi_smbus_cmi_remove,
->  	},
->  };
-> -
-> -static int __init acpi_smbus_cmi_init(void)
-> -{
-> -	return acpi_bus_register_driver(&acpi_smbus_cmi_driver);
-> -}
-> -
-> -static void __exit acpi_smbus_cmi_exit(void)
-> -{
-> -	acpi_bus_unregister_driver(&acpi_smbus_cmi_driver);
-> -}
-> -
-> -module_init(acpi_smbus_cmi_init);
-> -module_exit(acpi_smbus_cmi_exit);
-> +module_acpi_driver(acpi_smbus_cmi_driver);
->  
->  MODULE_LICENSE("GPL");
->  MODULE_AUTHOR("Crane Cai <crane.cai@amd.com>");
+On 07/04/2012 04:29 PM, Kamezawa Hiroyuki wrote:
+> (2012/06/28 20:06), Sha Zhengju wrote:
+>> From: Sha Zhengju <handai.szj@taobao.com>
+>>
+>> While memcg oom happening, the dump info is limited, so add this
+>> to provide memcg page stat.
+>>
+>> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+> Could you split this into a different series ?
+> seems good to me in general but...one concern is hierarchy handling.
+>
+> IIUC, the passed 'memcg' is the root of hierarchy which gets OOM.
+> So, the LRU info, which is local to the root memcg, may not contain any good
+> information. I think you should visit all memcg under the tree.
+>
+Yes, you're right!
+I did not handle hierarchy here, and just now I make a test case to
+prove this.
+I'll split it to another series later.
 
-Acked-by: Jean Delvare <khali@linux-fr.org>
+Thanks for reviewing!
 
--- 
-Jean Delvare
+
+Thanks,
+Sha
