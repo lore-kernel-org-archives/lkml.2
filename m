@@ -1,95 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933532Ab2GDJU5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 05:20:57 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39904 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755736Ab2GDJUy (ORCPT
+	id S1756832Ab2GDJXC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 05:23:02 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50409 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756472Ab2GDJW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 05:20:54 -0400
-Message-ID: <4FF40B7E.20202@linaro.org>
-Date: Wed, 04 Jul 2012 13:23:10 +0400
-From: Dmitry Antipov <dmitry.antipov@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 4 Jul 2012 05:22:59 -0400
+Date: Wed, 4 Jul 2012 10:22:56 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Russell King <linux@arm.linux.org.uk>, mturquette@ti.com,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH] clkdev: Add default clkdev.h
+Message-ID: <20120704092255.GA4111@opensource.wolfsonmicro.com>
+References: <1341329015-28207-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <CAMuHMdXzE48MCpQWjaxdrYMEwi-Cn5GR6NYrDAOAKwqiJ3m7Yg@mail.gmail.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org
-Subject: perf sched replay again
-Content-Type: multipart/mixed;
- boundary="------------080801080100060900080608"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cNdxnHkX5QqsyA0e"
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdXzE48MCpQWjaxdrYMEwi-Cn5GR6NYrDAOAKwqiJ3m7Yg@mail.gmail.com>
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080801080100060900080608
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 
-I remember that this was rejected some time ago. Nevertheless,
-is it possible to accept this until we will have a better solution?
+--cNdxnHkX5QqsyA0e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Dmitry
+On Wed, Jul 04, 2012 at 10:00:50AM +0200, Geert Uytterhoeven wrote:
 
---------------080801080100060900080608
-Content-Type: text/plain; charset=UTF-8;
- name="0001-perf-sched-replay-fix-event-lookup.patch"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="0001-perf-sched-replay-fix-event-lookup.patch"
+> Quoting Sam:
+> "Any use of wildcards in include/asm-generic/Kbuild.asm is bogus."
 
-RnJvbSA3YjM5NDY3MGJlZTU1Y2E2OTRmOTIxYmQ5NmYyMTBiMGQ0YzdkZmUwIE1vbiBTZXAg
-MTcgMDA6MDA6MDAgMjAwMQpGcm9tOiBEbWl0cnkgQW50aXBvdiA8ZG1pdHJ5LmFudGlwb3ZA
-bGluYXJvLm9yZz4KRGF0ZTogV2VkLCA0IEp1bCAyMDEyIDEzOjIwOjU5ICswNDAwClN1Ympl
-Y3Q6IFtQQVRDSF0gcGVyZiBzY2hlZCByZXBsYXk6IGZpeCBldmVudCBsb29rdXAKClVzZSBu
-ZXcgZnVuY3Rpb24gdHJhY2VfZmluZF9ldmVudF9ieV9uYW1lIHRvIGxvb2t1cCBldmVudHMg
-YmVmb3JlCmxvb2tpbmcgdGhyb3VnaCAvc3lzIGZpbGVzLiBUaGlzIGhlbHBzICdwZXJmIHNj
-aGVkIHJlcGxheScgdG8gbWFwCmV2ZW50IG5hbWVzIHRvIElEcyBjb3JyZWN0bHkgd2hlbiBw
-cm9jZXNzaW5nIHBlcmYuZGF0YSByZWNvcmRlZApvbiBhbm90aGVyIG1hY2hpbmUuCgpTaWdu
-ZWQtb2ZmLWJ5OiBEbWl0cnkgQW50aXBvdiA8ZG1pdHJ5LmFudGlwb3ZAbGluYXJvLm9yZz4K
-LS0tCiB0b29scy9wZXJmL3V0aWwvZXZsaXN0LmMgICAgICAgICAgICB8ICAgMjIgKysrKysr
-KysrKysrKysrKysrKystLQogdG9vbHMvcGVyZi91dGlsL3RyYWNlLWV2ZW50LXBhcnNlLmMg
-fCAgICA0ICsrKysKIHRvb2xzL3BlcmYvdXRpbC90cmFjZS1ldmVudC5oICAgICAgIHwgICAg
-MSArCiAzIGZpbGVzIGNoYW5nZWQsIDI1IGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0p
-CgpkaWZmIC0tZ2l0IGEvdG9vbHMvcGVyZi91dGlsL2V2bGlzdC5jIGIvdG9vbHMvcGVyZi91
-dGlsL2V2bGlzdC5jCmluZGV4IDc0MDBmYjMuLjU4YTU0MzMgMTAwNjQ0Ci0tLSBhL3Rvb2xz
-L3BlcmYvdXRpbC9ldmxpc3QuYworKysgYi90b29scy9wZXJmL3V0aWwvZXZsaXN0LmMKQEAg
-LTE3LDYgKzE3LDcgQEAKICNpbmNsdWRlIDx1bmlzdGQuaD4KIAogI2luY2x1ZGUgInBhcnNl
-LWV2ZW50cy5oIgorI2luY2x1ZGUgInRyYWNlLWV2ZW50LmgiCiAKICNpbmNsdWRlIDxzeXMv
-bW1hbi5oPgogCkBAIC0yNDIsMTIgKzI0MywyOSBAQCBpbnQgcGVyZl9ldmxpc3RfX3NldF90
-cmFjZXBvaW50c19oYW5kbGVycyhzdHJ1Y3QgcGVyZl9ldmxpc3QgKmV2bGlzdCwKIAkJCQkJ
-ICBjb25zdCBzdHJ1Y3QgcGVyZl9ldnNlbF9zdHJfaGFuZGxlciAqYXNzb2NzLAogCQkJCQkg
-IHNpemVfdCBucl9hc3NvY3MpCiB7CisJc3RydWN0IGV2ZW50X2Zvcm1hdCAqZXZlbnQ7CiAJ
-c3RydWN0IHBlcmZfZXZzZWwgKmV2c2VsOworCWNoYXIgKnAsICpzeXMsICpuYW1lOwogCWlu
-dCBlcnI7Ci0Jc2l6ZV90IGk7CisJc2l6ZV90IGksIG9mZjsKIAogCWZvciAoaSA9IDA7IGkg
-PCBucl9hc3NvY3M7IGkrKykgewotCQllcnIgPSB0cmFjZV9ldmVudF9faWQoYXNzb2NzW2ld
-Lm5hbWUpOworCQllcnIgPSAtRU5PRU5UOworCQlwID0gc3RyY2hyKGFzc29jc1tpXS5uYW1l
-LCAnOicpOworCQlpZiAoIXApCisJCQlnb3RvIG91dDsKKwkJb2ZmID0gcCAtIGFzc29jc1tp
-XS5uYW1lOworCQlzeXMgPSBtYWxsb2Mob2ZmICsgMSk7CisJCWlmICghc3lzKQorCQkJZXJy
-ID0gLUVOT01FTTsKKwkJZWxzZSB7CisJCQltZW1jcHkoc3lzLCBhc3NvY3NbaV0ubmFtZSwg
-b2ZmKTsKKwkJCXN5c1tvZmZdID0gJ1wwJzsKKwkJCW5hbWUgPSBwICsgMTsKKwkJCWV2ZW50
-ID0gdHJhY2VfZmluZF9ldmVudF9ieV9uYW1lKHN5cywgbmFtZSk7CisJCQllcnIgPSBldmVu
-dCA/IGV2ZW50LT5pZCA6IHRyYWNlX2V2ZW50X19pZChhc3NvY3NbaV0ubmFtZSk7CisJCQlm
-cmVlKHN5cyk7CisJCX0KIAkJaWYgKGVyciA8IDApCiAJCQlnb3RvIG91dDsKIApkaWZmIC0t
-Z2l0IGEvdG9vbHMvcGVyZi91dGlsL3RyYWNlLWV2ZW50LXBhcnNlLmMgYi90b29scy9wZXJm
-L3V0aWwvdHJhY2UtZXZlbnQtcGFyc2UuYwppbmRleCBkZjJmZGRiLi40NGNiYjQwIDEwMDY0
-NAotLS0gYS90b29scy9wZXJmL3V0aWwvdHJhY2UtZXZlbnQtcGFyc2UuYworKysgYi90b29s
-cy9wZXJmL3V0aWwvdHJhY2UtZXZlbnQtcGFyc2UuYwpAQCAtMTc2LDYgKzE3NiwxMCBAQCBz
-dHJ1Y3QgZXZlbnRfZm9ybWF0ICp0cmFjZV9maW5kX2V2ZW50KGludCB0eXBlKQogCXJldHVy
-biBwZXZlbnRfZmluZF9ldmVudChwZXZlbnQsIHR5cGUpOwogfQogCitzdHJ1Y3QgZXZlbnRf
-Zm9ybWF0ICp0cmFjZV9maW5kX2V2ZW50X2J5X25hbWUoY29uc3QgY2hhciAqc3lzLCBjb25z
-dCBjaGFyICpuYW1lKQoreworCXJldHVybiBwZXZlbnRfZmluZF9ldmVudF9ieV9uYW1lKHBl
-dmVudCwgc3lzLCBuYW1lKTsKK30KIAogdm9pZCBwcmludF90cmFjZV9ldmVudChpbnQgY3B1
-LCB2b2lkICpkYXRhLCBpbnQgc2l6ZSkKIHsKZGlmZiAtLWdpdCBhL3Rvb2xzL3BlcmYvdXRp
-bC90cmFjZS1ldmVudC5oIGIvdG9vbHMvcGVyZi91dGlsL3RyYWNlLWV2ZW50LmgKaW5kZXgg
-NjM5ODUyYS4uNjZmODNhMCAxMDA2NDQKLS0tIGEvdG9vbHMvcGVyZi91dGlsL3RyYWNlLWV2
-ZW50LmgKKysrIGIvdG9vbHMvcGVyZi91dGlsL3RyYWNlLWV2ZW50LmgKQEAgLTQwLDYgKzQw
-LDcgQEAgaW50IHBhcnNlX2V2ZW50X2ZpbGUoY2hhciAqYnVmLCB1bnNpZ25lZCBsb25nIHNp
-emUsIGNoYXIgKnN5cyk7CiAKIHN0cnVjdCBwZXZlbnRfcmVjb3JkICp0cmFjZV9wZWVrX2Rh
-dGEoaW50IGNwdSk7CiBzdHJ1Y3QgZXZlbnRfZm9ybWF0ICp0cmFjZV9maW5kX2V2ZW50KGlu
-dCB0eXBlKTsKK3N0cnVjdCBldmVudF9mb3JtYXQgKnRyYWNlX2ZpbmRfZXZlbnRfYnlfbmFt
-ZShjb25zdCBjaGFyICpzeXMsIGNvbnN0IGNoYXIgKm5hbWUpOwogCiB1bnNpZ25lZCBsb25n
-IGxvbmcKIHJhd19maWVsZF92YWx1ZShzdHJ1Y3QgZXZlbnRfZm9ybWF0ICpldmVudCwgY29u
-c3QgY2hhciAqbmFtZSwgdm9pZCAqZGF0YSk7Ci0tIAoxLjcuNy42Cgo=
---------------080801080100060900080608--
+> http://lkml.indiana.edu/hypermail/linux/kernel/1206.2/01507.html
+
+Without actually explaining why which isn't terribly helpful :/
+
+As far as I can tell it looks like this is for headers which may
+optionally be absent but clkdev.h is a header which should never be
+absent, either the architecture defines it or it uses the generic one.
+
+As I said further up the thread having to go round ever single
+architecture and get them to actually apply patches for stuff like this
+is needlessly painful.
+
+--cNdxnHkX5QqsyA0e
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP9AsUAAoJEBus8iNuMP3dMOoP/07hHKd23hk+4gebt3Y82PdD
+TL0y8CZEWpF1qn10hpNaDmWwNagYg12zr/UZb08dzH0E8APGw+rxfnGQoY+4Uunj
+zL3SPUCQ9X9uGtkOfg8BDWXCjj5cYMUJ99RzGw22/4yFN3ofF3wc49Ws87vhjDH8
+W4qpzehu3hELmYSNvU6PGw9Q/YQAj/fn/oHpMZzw4t4FqyHigZs/hMzXeYh88ex/
+ZseXTXOaJzT4kHrLVtf22esZgumLJyZnoaFA8UkT1Lf95zEI2yv8Iofqw82lInQ4
+ps1ORjs4J0xHvv9qMklDn21Ct6UcdBCKyGCZ3zszxJJwpl4H/2Gu2roNLLxOMZgL
++htnRe3rJC2xYUFGjwZsfHh32JCIHd2i9PflRxbRZ+fu87g+Xo0V6yPvwd+S9uat
+KBey7kOZK+QpwG0V4rSPvACy57BHy8VQyrnT6K7Fg9SMxKDthdlaxoUEhmPy0Uy/
+86k5cD6LLq/OzmEwD0IVFientTXJplQy4kcWuBQbOS3Ov7sLRJSZeQMdeRrUC76L
+jUUK+s6KpBZkmQewkstxLL8ct8s2RFyb9q+25OO5bpIQTvx7DIlFJMqqNkvoh6lJ
+o+1VmR1fx3LJOzEoVPvnblJiz9DEiuR9H0Jvt0rJuv+EoFqP3LM3tEMtghfBUEnd
+48CN7Tzw/r07sH+44ohv
+=Gp+d
+-----END PGP SIGNATURE-----
+
+--cNdxnHkX5QqsyA0e--
