@@ -1,132 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933255Ab2GDJIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 05:08:16 -0400
-Received: from orion.tchmachines.com ([208.76.84.200]:32965 "EHLO
-	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951Ab2GDJIO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 05:08:14 -0400
-From: Vlad Zolotarov <vlad@scalemp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Chinmay V S <cvs268@gmail.com>, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shai@scalemp.com
-Subject: Re: [PATCH RESEND] fs: Move bh_cachep to the __read_mostly section
-Date: Wed, 04 Jul 2012 12:08:12 +0300
-Message-ID: <6448205.KkruCZixvF@vlad>
-Organization: ScaleMP Ltd.
-User-Agent: KMail/4.8.4 (Linux/3.2.0-26-generic; KDE/4.8.4; i686; ; )
-In-Reply-To: <20120703142348.3c963378.akpm@linux-foundation.org>
-References: <2325453.OX7ktP55U1@vlad> <CAK-9PRBi3XOVtW3gs3doO=ecD0XWfNffVefdRCC1sGnLdT_9LA@mail.gmail.com> <20120703142348.3c963378.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - orion.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
+	id S933266Ab2GDJIx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 05:08:53 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:12073 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754033Ab2GDJIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 05:08:51 -0400
+From: Andrew Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arun Sharma <asharma@fb.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Vagin <avagin@openvz.org>
+Subject: [PATCH] trace: add ability to set a target task for events
+Date: Wed,  4 Jul 2012 13:08:31 +0400
+Message-Id: <1341392911-1888300-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 03 July 2012 14:23:48 Andrew Morton wrote:
-> On Mon, 2 Jul 2012 23:54:09 +0530
-> 
-> Chinmay V S <cvs268@gmail.com> wrote:
-> > Hi Vlad,
-> > 
-> > I suppose we both are looking at opposite sides of the same coin.
-> > While i am wary of the potential pitfalls,
-> > you have focused on the benefits of using __read_mostly.
-> > 
-> > At this point i would like to send out a shout to everyone concerned to
-> > please clarify the status of __read_mostly:
-> > 
-> > 1. Is it being actively pursued? (systems that *will* clearly benefit from
-> > it) 2. Any actual results on real world use-cases? (w/ & w/o
-> > __read_mostly) 3. Is __read_mostly being accepted in non-architecture
-> > specific kernel code? 4. Is anyone working on a potential replacement for
-> > it?
-> 
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Andrew, thanks for joining! :)
+A few events are interesting not only for a current task.
+For example, sched_stat_* are interesting to a task, which
+wake up. For this reason, it will be good, if such events will
+be delivered to a target task too.
 
-> I don't recall ever having seen any serious work justifying or
-> condemning __read_mostly.  
+Now a target task can be set by using __perf_task().
 
-Back in the thread I've pointed out that __read_mostly variables (are meant 
-to) have actually the same nature as the constants except the fact that they 
-are initialized with the some value that may change from one boot (of the 
-kernel) to another: e.g. kalloc() returned value, values initialized in __init 
-functions, etc.
+The original idea and a draft patch belongs to Peter Zijlstra.
 
-Have u ever seen any serious work justifying or condemning the usage for 
-"const" qualifier? 
-If u did, (could u, pls., point us to it) the same reasoning hold in the 
-context of __read_mostly. 
-If not - do u think somebody should perform such a work? Or maybe we all 
-understand that if there a constant in my code I should define it as const? 
-And we all agree on const, why do we still arguing about __read_mostly which 
-are actually the same?
+Inspired-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arun Sharma <asharma@fb.com>
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ include/linux/ftrace_event.h    |    5 +++--
+ include/linux/perf_event.h      |    3 ++-
+ include/trace/events/sched.h    |    1 +
+ include/trace/ftrace.h          |    6 +++++-
+ kernel/events/core.c            |   26 +++++++++++++++++++++++++-
+ kernel/trace/trace_event_perf.c |    2 +-
+ kernel/trace/trace_kprobe.c     |    4 ++--
+ kernel/trace/trace_syscalls.c   |    4 ++--
+ 8 files changed, 41 insertions(+), 10 deletions(-)
 
-> It's one of those things which seemed a good idea at the time, got added and 
-> nobody did anything further with it, as far as I know.  
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 176a939..55b96e3 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -303,9 +303,10 @@ extern void *perf_trace_buf_prepare(int size, unsigned short type,
+ 
+ static inline void
+ perf_trace_buf_submit(void *raw_data, int size, int rctx, u64 addr,
+-		       u64 count, struct pt_regs *regs, void *head)
++		       u64 count, struct pt_regs *regs, void *head,
++		       struct task_struct *task)
+ {
+-	perf_tp_event(addr, count, raw_data, size, regs, head, rctx);
++	perf_tp_event(addr, count, raw_data, size, regs, head, rctx, task);
+ }
+ #endif
+ 
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 45db49f..14acc5d 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1269,7 +1269,8 @@ static inline bool perf_paranoid_kernel(void)
+ extern void perf_event_init(void);
+ extern void perf_tp_event(u64 addr, u64 count, void *record,
+ 			  int entry_size, struct pt_regs *regs,
+-			  struct hlist_head *head, int rctx);
++			  struct hlist_head *head, int rctx,
++			  struct task_struct *task);
+ extern void perf_bp_event(struct perf_event *event, void *data);
+ 
+ #ifndef perf_misc_flags
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index ea7a203..9e3999a 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -325,6 +325,7 @@ DECLARE_EVENT_CLASS(sched_stat_template,
+ 	)
+ 	TP_perf_assign(
+ 		__perf_count(delay);
++		__perf_task(tsk);
+ 	),
+ 
+ 	TP_printk("comm=%s pid=%d delay=%Lu [ns]",
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 7697249..db14daf 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -711,6 +711,9 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+ #undef __perf_count
+ #define __perf_count(c) __count = (c)
+ 
++#undef __perf_task
++#define __perf_task(t) __task = (t)
++
+ #undef TP_perf_assign
+ #define TP_perf_assign(args...) args
+ 
+@@ -724,6 +727,7 @@ perf_trace_##call(void *__data, proto)					\
+ 	struct ftrace_raw_##call *entry;				\
+ 	struct pt_regs __regs;						\
+ 	u64 __addr = 0, __count = 1;					\
++	struct task_struct *__task = NULL;				\
+ 	struct hlist_head *head;					\
+ 	int __entry_size;						\
+ 	int __data_size;						\
+@@ -751,7 +755,7 @@ perf_trace_##call(void *__data, proto)					\
+ 									\
+ 	head = this_cpu_ptr(event_call->perf_events);			\
+ 	perf_trace_buf_submit(entry, __entry_size, rctx, __addr,	\
+-		__count, &__regs, head);				\
++		__count, &__regs, head, __task);			\
+ }
+ 
+ /*
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index d7d71d6..164c309 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5207,7 +5207,8 @@ static int perf_tp_event_match(struct perf_event *event,
+ }
+ 
+ void perf_tp_event(u64 addr, u64 count, void *record, int entry_size,
+-		   struct pt_regs *regs, struct hlist_head *head, int rctx)
++		   struct pt_regs *regs, struct hlist_head *head, int rctx,
++		   struct task_struct *task)
+ {
+ 	struct perf_sample_data data;
+ 	struct perf_event *event;
+@@ -5226,6 +5227,29 @@ void perf_tp_event(u64 addr, u64 count, void *record, int entry_size,
+ 			perf_swevent_event(event, count, &data, regs);
+ 	}
+ 
++	/*
++	 * If we got specified a target task, also iterate its context and
++	 * deliver this event there too.
++	 */
++	if (task && task != current) {
++		struct perf_event_context *ctx;
++		struct trace_entry *entry = record;
++
++		rcu_read_lock();
++		ctx = rcu_dereference(task->perf_event_ctxp[perf_sw_context]);
++		if (!ctx)
++			goto unlock;
++
++		list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
++			if (entry->type != event->attr.config)
++				continue;
++			if (perf_tp_event_match(event, &data, regs))
++				perf_swevent_event(event, count, &data, regs);
++		}
++unlock:
++		rcu_read_unlock();
++	}
++
+ 	perf_swevent_put_recursion_context(rctx);
+ }
+ EXPORT_SYMBOL_GPL(perf_tp_event);
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index fee3752..8a6d2ee 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -281,7 +281,7 @@ perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip)
+ 
+ 	head = this_cpu_ptr(event_function.perf_events);
+ 	perf_trace_buf_submit(entry, ENTRY_SIZE, rctx, 0,
+-			      1, &regs, head);
++			      1, &regs, head, NULL);
+ 
+ #undef ENTRY_SIZE
+ }
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index b31d3d5..2feeaa0 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -1002,7 +1002,7 @@ static __kprobes void kprobe_perf_func(struct kprobe *kp,
+ 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+ 
+ 	head = this_cpu_ptr(call->perf_events);
+-	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, regs, head);
++	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, regs, head, NULL);
+ }
+ 
+ /* Kretprobe profile handler */
+@@ -1033,7 +1033,7 @@ static __kprobes void kretprobe_perf_func(struct kretprobe_instance *ri,
+ 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
+ 
+ 	head = this_cpu_ptr(call->perf_events);
+-	perf_trace_buf_submit(entry, size, rctx, entry->ret_ip, 1, regs, head);
++	perf_trace_buf_submit(entry, size, rctx, entry->ret_ip, 1, regs, head, NULL);
+ }
+ #endif	/* CONFIG_PERF_EVENTS */
+ 
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 96fc733..60e4d78 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -532,7 +532,7 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
+ 			       (unsigned long *)&rec->args);
+ 
+ 	head = this_cpu_ptr(sys_data->enter_event->perf_events);
+-	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head);
++	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head, NULL);
+ }
+ 
+ int perf_sysenter_enable(struct ftrace_event_call *call)
+@@ -608,7 +608,7 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
+ 	rec->ret = syscall_get_return_value(current, regs);
+ 
+ 	head = this_cpu_ptr(sys_data->exit_event->perf_events);
+-	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head);
++	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head, NULL);
+ }
+ 
+ int perf_sysexit_enable(struct ftrace_event_call *call)
+-- 
+1.7.1
 
-Hmmm... ~1300 __read_mostly appearances in the kernel doesn't sound like 
-nothing to me... ;) People use it! ;) 
-
-
-> I've always been rather wobbly about it, for reasons discussed up-thread.
-
-Could u, pls., comment on the following statements that conclude this thread:
-
-1) There are no "pitfalls" in the __read_mostly usage/infrastructure - there 
-is a bad code that is being revealed by the usage of __read_mostly.
-2) The bad code mentioned above is bad and may regress the performance 
-regardless the usage of __read_mostly, thus it must be fixed.
-3) From (1) and (2) above follows that __read_mostly is a tool that helps to 
-discover the bad code thus it should be used as much as possible to do so.
-4) To make the discovery of bad code easy __read_mostly qualifiers should be 
-added one-by-one despite the natural desire to replace all variables of a 
-certain type/nature (like "struct kmem_cache") in one shot.
-5) __read_mostly as it's implemented today for x86 arch is good for any SMP 
-architecture that have L1 cache. More than that, the less is the level of the 
-associativity in the L1 cache the more this platform's performance is 
-susceptible to the bad code mentioned in (1) and (2). Therefore according to 
-(3) these platforms should use __read_mostly both to gain from straight 
-forward benefits of the __read_mostly mechanism and to locate the bad code 
-mentioned above and fix it. ARM is one of such platforms and there must have 
-been REALLY GOOD reason not to use it.
-
-> 
-> 
-> If some problem has indeed been observed then an alternative to
-> __read_mostly is to pad bh_cachep to a cacheline boundary with
-> ____cacheline_aligned_in_smp or similar.  Or, perhaps better, identify
-> the variable which bh_cachep is sharing with, and pad *that* variable
-> to a cacheline so it can't cause cache thrashing with something else in
-> the future.  And once this mystery variable is identified, we can
-> perhaps beneficially group it into the same cacheline with some other
-> variables which are related to it.
-
-Again, I don't understand it - we are talking about a constant here. Why to 
-pad it or do anything else except for defining it as a constant? The one who 
-originally wrote this line (with bh_cachep) either missed that fact or there 
-wasn't __read_mostly infrastructure at that time. Either way this patch fixes 
-it. What else should be told? Why do we have to justify declaring the const 
-object as const?
-
-Thanks in advance for your comments.
-vlad
-
-> 
-> But I'm madly guessing and can't say aything dispositive or even
-> useful, because we haven't been told what the problem was.  Still.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
