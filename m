@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab2GDOdQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 10:33:16 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48809 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752628Ab2GDOdP (ORCPT
+	id S1753836Ab2GDOec (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 10:34:32 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40149 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604Ab2GDOea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 10:33:15 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: linux-mm@kvack.org
-Cc: akpm@linux-foundation.org, dhillf@gmail.com, mhocko@suse.cz,
-        linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge page to userspace
-Date: Wed,  4 Jul 2012 15:32:56 +0100
-Message-Id: <1341412376-6272-1-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.7.4.1
+	Wed, 4 Jul 2012 10:34:30 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de
+Cc: Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH] ARM: ux500: Register pinctrl from platform code until it's been DT:ed
+Date: Wed,  4 Jul 2012 15:34:12 +0100
+Message-Id: <1341412452-3808-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When allocating and returning clear huge pages to userspace as a
-response to a fault, we may zero and return a mapping to a previously
-dirtied physical region (for example, it may have been written by
-a private mapping which was freed as a result of an ftruncate on the
-backing file). On architectures with Harvard caches, this can lead to
-I/D inconsistency since the zeroed view may not be visible to the
-instruction stream.
+There are some inconsistencies with the way pinctrl devices are named
+when registered from platform code to the ones registered by Device
+Tree. Platform devices look like 'pinctrl-db8500', whereas the ones
+registered from Device Tree look more like 'pinctrl.2'. This leads to
+failure when carrying out name-based searches for known devices.
 
-This patch solves the problem by flushing the region after allocating
-and clearing a new huge page. Note that PowerPC avoids this issue by
-performing the flushing in their clear_user_page implementation to keep
-the loader happy, however this is closely tied to the semantics of the
-PG_arch_1 page flag which is architecture-specific.
+Until the correct DT bindings have been applied to the pinctrl driver
+it will fail to function correctly. For instance, during a Device
+Tree boot on Snowball no bootlog is visible due to a UART port probe
+failure. Regulators fail in a similar way.
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+This patch prevents Device Tree from probing the pinctrl driver and
+ensures registration is completed from platform code instead.
+
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- mm/hugetlb.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/arm/boot/dts/db8500.dtsi      |    1 +
+ arch/arm/mach-ux500/board-mop500.c |    2 ++
+ 2 files changed, 3 insertions(+)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index e198831..b83d026 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2646,6 +2646,7 @@ retry:
- 			goto out;
- 		}
- 		clear_huge_page(page, address, pages_per_huge_page(h));
-+		flush_dcache_page(page);
- 		__SetPageUptodate(page);
+diff --git a/arch/arm/boot/dts/db8500.dtsi b/arch/arm/boot/dts/db8500.dtsi
+index 4ad5160..0e9ca87 100644
+--- a/arch/arm/boot/dts/db8500.dtsi
++++ b/arch/arm/boot/dts/db8500.dtsi
+@@ -172,6 +172,7 @@
  
- 		if (vma->vm_flags & VM_MAYSHARE) {
+ 		pinctrl {
+ 			compatible = "stericsson,nmk_pinctrl";
++			status = "disabled";
+ 		};
+ 
+ 		usb@a03e0000 {
+diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+index 461012a..2a5d46f 100644
+--- a/arch/arm/mach-ux500/board-mop500.c
++++ b/arch/arm/mach-ux500/board-mop500.c
+@@ -824,6 +824,8 @@ static void __init u8500_init_machine(void)
+ 	/* automatically probe child nodes of db8500 device */
+ 	of_platform_populate(NULL, u8500_local_bus_nodes, u8500_auxdata_lookup, parent);
+ 
++	dbx500_add_pinctrl(parent, "pinctrl-db8500");
++
+ 	if (of_machine_is_compatible("st-ericsson,mop500")) {
+ 		mop500_gpio_keys[0].gpio = GPIO_PROX_SENSOR;
+ 
 -- 
-1.7.4.1
+1.7.9.5
 
