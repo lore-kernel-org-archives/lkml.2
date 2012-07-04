@@ -1,72 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab2GDIqh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 04:46:37 -0400
-Received: from mga11.intel.com ([192.55.52.93]:7380 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429Ab2GDIqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 04:46:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="173277829"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>, proski@gnu.org,
-        Andrei Emeltchenko <andrei.emeltchenko@intel.com>,
-        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        joe@perches.com, Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv3 1/3] lib: printf: update documentation to cover all of %p[Mm][FR]
-Date: Wed,  4 Jul 2012 11:45:50 +0300
-Message-Id: <1341391552-4842-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1341341280.2012.3.camel@joe2Laptop>
-References: <1341341280.2012.3.camel@joe2Laptop>
+	id S1754374Ab2GDJAu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 05:00:50 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:60484 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562Ab2GDJAr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 05:00:47 -0400
+Message-ID: <1341392420.18505.41.camel@ThinkPad-T420>
+Subject: Re: [PATCH powerpc 2/2] kfree the cache name  of pgtable cache if
+ SLUB is used
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-mm <linux-mm@kvack.org>,
+        PowerPC email list <linuxppc-dev@lists.ozlabs.org>
+Date: Wed, 04 Jul 2012 17:00:20 +0800
+In-Reply-To: <alpine.DEB.2.00.1207031535330.14703@router.home>
+References: <1340617984.13778.37.camel@ThinkPad-T420>
+	 <1340618099.13778.39.camel@ThinkPad-T420>
+	 <alpine.DEB.2.00.1207031344240.14703@router.home>
+	 <alpine.DEB.2.00.1207031535330.14703@router.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12070323-3568-0000-0000-0000021445A0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- Documentation/printk-formats.txt |    1 +
- lib/vsprintf.c                   |    5 ++++-
- 2 files changed, 5 insertions(+), 1 deletion(-)
+On Tue, 2012-07-03 at 15:36 -0500, Christoph Lameter wrote:
+> Looking through the emails it seems that there is an issue with alias
+> strings. 
 
-diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
-index d8d168fa..90ff4d7 100644
---- a/Documentation/printk-formats.txt
-+++ b/Documentation/printk-formats.txt
-@@ -59,6 +59,7 @@ MAC/FDDI addresses:
- 	%pMR	05:04:03:02:01:00
- 	%pMF	00-01-02-03-04-05
- 	%pm	000102030405
-+	%pmR	050403020100
- 
- 	For printing 6-byte MAC/FDDI addresses in hex notation. The 'M' and 'm'
- 	specifiers result in a printed address with ('M') or without ('m') byte
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index a0b5f15..e500158 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -946,7 +946,7 @@ int kptr_restrict __read_mostly;
-  * - 'm' For a 6-byte MAC address, it prints the hex address without colons
-  * - 'MF' For a 6-byte MAC FDDI address, it prints the address
-  *       with a dash-separated hex notation
-- * - '[mM]R For a 6-byte MAC address, Reverse order (Bluetooth)
-+ * - '[mM]R' For a 6-byte MAC address, Reverse order (Bluetooth)
-  * - 'I' [46] for IPv4/IPv6 addresses printed in the usual way
-  *       IPv4 uses dot-separated decimal without leading 0's (1.2.3.4)
-  *       IPv6 uses colon separated network-order 16 bit hex with leading 0's
-@@ -1287,7 +1287,10 @@ qualifier:
-  * %pR output the address range in a struct resource with decoded flags
-  * %pr output the address range in a struct resource with raw flags
-  * %pM output a 6-byte MAC address with colons
-+ * %pMR output a 6-byte MAC address with colons in reversed order
-+ * %pMF output a 6-byte MAC address with dashes
-  * %pm output a 6-byte MAC address without colons
-+ * %pmR output a 6-byte MAC address without colons in reversed order
-  * %pI4 print an IPv4 address without leading zeros
-  * %pi4 print an IPv4 address with leading zeros
-  * %pI6 print an IPv6 address with colons
--- 
-1.7.10
+To be more precise, there seems no big issue currently. I just wanted to
+make following usage of kmem_cache_create (SLUB) possible:
+
+	name = some string kmalloced
+	kmem_cache_create(name, ...)
+	kfree(name);
+
+And from my understanding of the code, the saved_alias list, which is
+used to keep track of the alias entries during early boot (slab_state <
+SYSFS), is a blocker. It needs the name string to be valid until
+slab_sysfs_init() is finished. 
+
+> That can be solved by duping the name of the slab earlier in kmem_cache_create().
+> Does this patch fix the issue?
+
+I'm afraid not...
+
+With the patch below, we still need to kfree the duplicated name in
+slab_sysfs_init().
+
+And I think it would be easier to understand if we duplicate the name
+string when creating one entry for saved_alias list, and kfree it when
+we remove one entry from saved_alias list. 
+
+I'm not sure whether you got the patch #1 of the two I sent previously.
+If not, would you kindly spend some time reviewing it to see if I missed
+anything? Link below for your convenience:
+  https://lkml.org/lkml/2012/6/27/83
+
+Btw, as Ben suggested, I'm now working on duplicating the name string in
+SLAB to make them consistent, so we don't need the #ifdef CONFIG_SLUB
+any more. Will send it out for your review after it is finished.
+
+> Subject: slub: Dup name earlier in kmem_cache_create
+> 
+> Dup the name earlier in kmem_cache_create so that alias
+> processing is done using the copy of the string and not
+> the string itself.
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> ---
+>  mm/slub.c |   29 ++++++++++++++---------------
+>  1 file changed, 14 insertions(+), 15 deletions(-)
+> 
+> Index: linux-2.6/mm/slub.c
+> ===================================================================
+> --- linux-2.6.orig/mm/slub.c	2012-06-11 08:49:56.000000000 -0500
+> +++ linux-2.6/mm/slub.c	2012-07-03 15:17:37.000000000 -0500
+> @@ -3933,8 +3933,12 @@ struct kmem_cache *kmem_cache_create(con
+>  	if (WARN_ON(!name))
+>  		return NULL;
+> 
+> +	n = kstrdup(name, GFP_KERNEL);
+> +	if (!n)
+> +		goto out;
+> +
+>  	down_write(&slub_lock);
+> -	s = find_mergeable(size, align, flags, name, ctor);
+> +	s = find_mergeable(size, align, flags, n, ctor);
+>  	if (s) {
+>  		s->refcount++;
+>  		/*
+> @@ -3944,7 +3948,7 @@ struct kmem_cache *kmem_cache_create(con
+>  		s->objsize = max(s->objsize, (int)size);
+>  		s->inuse = max_t(int, s->inuse, ALIGN(size, sizeof(void *)));
+> 
+> -		if (sysfs_slab_alias(s, name)) {
+> +		if (sysfs_slab_alias(s, n)) {
+>  			s->refcount--;
+>  			goto err;
+>  		}
+> @@ -3952,31 +3956,26 @@ struct kmem_cache *kmem_cache_create(con
+>  		return s;
+>  	}
+> 
+> -	n = kstrdup(name, GFP_KERNEL);
+> -	if (!n)
+> -		goto err;
+> -
+>  	s = kmalloc(kmem_size, GFP_KERNEL);
+>  	if (s) {
+>  		if (kmem_cache_open(s, n,
+>  				size, align, flags, ctor)) {
+>  			list_add(&s->list, &slab_caches);
+>  			up_write(&slub_lock);
+> -			if (sysfs_slab_add(s)) {
+> -				down_write(&slub_lock);
+> -				list_del(&s->list);
+> -				kfree(n);
+> -				kfree(s);
+> -				goto err;
+> -			}
+> -			return s;
+> +			if (!sysfs_slab_add(s))
+> +				return s;
+> +
+> +			down_write(&slub_lock);
+> +			list_del(&s->list);
+>  		}
+>  		kfree(s);
+>  	}
+> -	kfree(n);
+> +
+>  err:
+> +	kfree(n);
+>  	up_write(&slub_lock);
+> 
+> +out:
+>  	if (flags & SLAB_PANIC)
+>  		panic("Cannot create slabcache %s\n", name);
+>  	else
+> 
+
 
