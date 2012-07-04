@@ -1,105 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab2GDUnc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 16:43:32 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:46367 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753903Ab2GDUna (ORCPT
+	id S1755847Ab2GDU7H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 16:59:07 -0400
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:48920 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752938Ab2GDU7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 16:43:30 -0400
-Date: Wed, 4 Jul 2012 16:43:26 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] zsmalloc improvements
-Message-ID: <20120704204325.GB2924@localhost.localdomain>
-References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	Wed, 4 Jul 2012 16:59:02 -0400
+From: Bing Zhao <bzhao@marvell.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+CC: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Date: Wed, 4 Jul 2012 13:58:49 -0700
+Subject: RE: [PATCH] wireless: fix leak found by coverity
+Thread-Topic: [PATCH] wireless: fix leak found by coverity
+Thread-Index: Ac1Z8ivUkP4Hfy/5SDOWbEKItQ15FwANMiAg
+Message-ID: <477F20668A386D41ADCC57781B1F7043083AA5506F@SC-VEXCH1.marvell.com>
+References: <20120704153327.4012.76171.stgit@bluebook>
+In-Reply-To: <20120704153327.4012.76171.stgit@bluebook>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q64KxXm5025073
 
-On Mon, Jul 02, 2012 at 04:15:48PM -0500, Seth Jennings wrote:
-> This patchset removes the current x86 dependency for zsmalloc
-> and introduces some performance improvements in the object
-> mapping paths.
-> 
-> It was meant to be a follow-on to my previous patchest
-> 
-> https://lkml.org/lkml/2012/6/26/540
-> 
-> However, this patchset differed so much in light of new performance
-> information that I mostly started over.
-> 
-> In the past, I attempted to compare different mapping methods
-> via the use of zcache and frontswap.  However, the nature of those
-> two features makes comparing mapping method efficiency difficult
-> since the mapping is a very small part of the overall code path.
-> 
-> In an effort to get more useful statistics on the mapping speed,
-> I wrote a microbenchmark module named zsmapbench, designed to
-> measure mapping speed by calling straight into the zsmalloc
-> paths.
-> 
-> https://github.com/spartacus06/zsmapbench
-> 
-> This exposed an interesting and unexpected result: in all
-> cases that I tried, copying the objects that span pages instead
-> of using the page table to map them, was _always_ faster.  I could
-> not find a case in which the page table mapping method was faster.
+Hi Alan,
 
-Which architecture was this under? It sounds x86-ish? Is this on
-Westmere and more modern machines? What about Core2 architecture?
+> Subject: [PATCH] wireless: fix leak found by coverity
 
-Oh how did it work on AMD Phenom boxes?
+I've sent a similar patch to linux-wireless list.
+
+[PATCH 3.5] mwifiex: fix Coverity SCAN CID 709078: Resource leak (RESOURCE_LEAK)
+
+http://marc.info/?l=linux-wireless&m=134135643727424&w=2
+
+Thanks,
+Bing
+
 > 
-> zsmapbench measures the copy-based mapping at ~560 cycles for a
-> map/unmap operation on spanned object for both KVM guest and bare-metal,
-> while the page table mapping was ~1500 cycles on a VM and ~760 cycles
-> bare-metal.  The cycles for the copy method will vary with
-> allocation size, however, it is still faster even for the largest
-> allocation that zsmalloc supports.
+> From: Alan Cox <alan@linux.intel.com>
 > 
-> The result is convenient though, as mempcy is very portable :)
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> ---
 > 
-> This patchset replaces the x86-only page table mapping code with
-> copy-based mapping code. It also makes changes to optimize this
-> new method further.
+>  drivers/net/wireless/mwifiex/cfg80211.c |    1 +
+>  1 file changed, 1 insertion(+)
 > 
-> There are no changes in arch/x86 required.
+> diff --git a/drivers/net/wireless/mwifiex/cfg80211.c b/drivers/net/wireless/mwifiex/cfg80211.c
+> index 97de652..497a05a 100644
+> --- a/drivers/net/wireless/mwifiex/cfg80211.c
+> +++ b/drivers/net/wireless/mwifiex/cfg80211.c
+> @@ -1003,6 +1003,7 @@ static int mwifiex_cfg80211_start_ap(struct wiphy *wiphy,
+>  	case NL80211_HIDDEN_SSID_ZERO_CONTENTS:
+>  		/* firmware doesn't support this type of hidden SSID */
+>  	default:
+> +		kfree(bss_cfg);
+>  		return -EINVAL;
+>  	}
 > 
-> Patchset is based on greg's staging-next.
-> 
-> Seth Jennings (4):
->   zsmalloc: remove x86 dependency
->   zsmalloc: add single-page object fastpath in unmap
->   zsmalloc: add details to zs_map_object boiler plate
->   zsmalloc: add mapping modes
-> 
->  drivers/staging/zcache/zcache-main.c     |    6 +-
->  drivers/staging/zram/zram_drv.c          |    7 +-
->  drivers/staging/zsmalloc/Kconfig         |    4 -
->  drivers/staging/zsmalloc/zsmalloc-main.c |  124 ++++++++++++++++++++++--------
->  drivers/staging/zsmalloc/zsmalloc.h      |   14 +++-
->  drivers/staging/zsmalloc/zsmalloc_int.h  |    6 +-
->  6 files changed, 114 insertions(+), 47 deletions(-)
-> 
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
