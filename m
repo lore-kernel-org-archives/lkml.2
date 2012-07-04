@@ -1,212 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab2GDPxr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 11:53:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45025 "EHLO mx2.suse.de"
+	id S1754928Ab2GDPyc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 11:54:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29938 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754627Ab2GDPxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 11:53:44 -0400
-Date: Wed, 4 Jul 2012 16:53:41 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [MMTests] Page reclaim performance on xfs
-Message-ID: <20120704155341.GL14154@suse.de>
-References: <20120620113252.GE4011@suse.de>
- <20120629111932.GA14154@suse.de>
+	id S1754340Ab2GDPy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 11:54:26 -0400
+Message-ID: <4FF46728.7030302@redhat.com>
+Date: Wed, 04 Jul 2012 17:54:16 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120629111932.GA14154@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] virtio-blk: allow toggling host cache between writeback
+ and writethrough
+References: <1341321577-24435-1-git-send-email-pbonzini@redhat.com> <20120704154220.GB27064@redhat.com>
+In-Reply-To: <20120704154220.GB27064@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Configuration:	global-dhp__pagereclaim-performance-xfs
-Result: 	http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__pagereclaim-performance-xfs
-Benchmarks:	postmark largedd fsmark-single fsmark-threaded micro
+Il 04/07/2012 17:42, Michael S. Tsirkin ha scritto:
+> On Tue, Jul 03, 2012 at 03:19:37PM +0200, Paolo Bonzini wrote:
+>> This patch adds support for the new VIRTIO_BLK_F_CONFIG_WCE feature,
+>> which exposes the cache mode in the configuration space and lets the
+>> driver modify it.  The cache mode is exposed via sysfs.
+>>
+>> Even if the host does not support the new feature, the cache mode is
+>> visible (thanks to the existing VIRTIO_BLK_F_WCE), but not modifiable.
+>>
+>> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> 
+> I note this has been applied but I think the userspace
+> API is a bit painful to use. Let's fix it before
+> it gets set in stone?
 
-Summary
-=======
+I'm trying to mimic the existing userspace API for SCSI disks.  FWIW I
+would totally agree with you.
 
-For the most part this is looking good. There is excessive swapping
-visible on 3.1 and 3.2 which is seen elsewhere.
+>> +static int virtblk_get_cache_mode(struct virtio_device *vdev)
+> 
+> Why are you converting u8 to int here?
 
-There is a concern with postmark figures. It is showing that we started
-entering direct reclaim in 3.1 on hydra and while the swapping problem
-has been addressed, we are still using direct reclaim and in some cases
-it is quite a high percentage. This did not happen on older kernels.
+The fact that it is a u8 is really an internal detail.  Perhaps the bug
+is using u8 in the callers.
 
-Benchmark notes
-===============
+>> +static const char *virtblk_cache_types[] = {
+>> +	"write through", "write back"
+>> +};
+>> +
+> 
+> I wonder whether something that lacks space would have been better,
+> especially for show: shells might get confused and split
+> a string at a space. How about we change it to writethrough,
+> writeback before it's too late? It's part of a userspace API
+> after all, and you see to prefer writeback in one word in your own
+> code so let's not inflict pain on others :)
+> 
+> Also, would be nice to make it discoverable what the legal
+> values are. Another attribute valid_cache_types with all values
+> space separated?
 
-Each of the benchmarks trigger page reclaim in a fairly simple manner. The
-intention is not to be exhaustive but to test basic reclaim patterns that
-the VM should never get wrong. Regressions may also be due to changes in
-the IO scheduler or underlying filesystem.
+We probably should add such an attribute to SCSI disks too... Even with
+the spaces we could make the values \n-separated.
 
-The workloads are predominately file-based. Anonymous page reclaim stress
-testing is covered by another test.
+>> +static ssize_t
+>> +virtblk_cache_type_store(struct device *dev, struct device_attribute *attr,
+>> +			 const char *buf, size_t count)
+>> +{
+>> +	struct gendisk *disk = dev_to_disk(dev);
+>> +	struct virtio_blk *vblk = disk->private_data;
+>> +	struct virtio_device *vdev = vblk->vdev;
+>> +	int i;
+>> +	u8 writeback;
+>> +
+>> +	BUG_ON(!virtio_has_feature(vblk->vdev, VIRTIO_BLK_F_CONFIG_WCE));
+>> +	for (i = ARRAY_SIZE(virtblk_cache_types); --i >= 0; )
+>> +		if (sysfs_streq(buf, virtblk_cache_types[i]))
+>> +			break;
+>> +
+>> +	if (i < 0)
+>> +		return -EINVAL;
+>> +
+>> +	writeback = i;
+>> +	vdev->config->set(vdev,
+>> +			  offsetof(struct virtio_blk_config, wce),
+>> +			  &writeback, sizeof(writeback));
+>> +
+>> +	virtblk_update_cache_mode(vdev);
+>> +	return count;
+>> +}
+>> +
+>> +static ssize_t
+>> +virtblk_cache_type_show(struct device *dev, struct device_attribute *attr,
+>> +			 char *buf)
+>> +{
+>> +	struct gendisk *disk = dev_to_disk(dev);
+>> +	struct virtio_blk *vblk = disk->private_data;
+>> +	u8 writeback = virtblk_get_cache_mode(vblk->vdev);
+>> +
+>> +	BUG_ON(writeback >= ARRAY_SIZE(virtblk_cache_types));
+>> +	return snprintf(buf, 40, "%s\n", virtblk_cache_types[writeback]);
+> 
+> Why 40? Why snprintf? A plain sprintf won't do?
 
-mkfs was run on system startup.
-mkfs parameters -f -d agcount=8
-mount options inode64,delaylog,logbsize=262144,nobarrier for the most part.
-        On kernels to old to support delaylog was removed. On kernels
-        where it was the default, it was specified and the warning ignored.
+I plead guilty of cut-and-paste from drivers/scsi/sd.c. :)
 
-postmark
-  o 15000 transactions
-  o File size ranged 3096 bytes to 5M
-  o 100 subdirectories
-  o Total footprint approximately 4*TOTAL_RAM
-
-  This workload is a single-threaded benchmark intended to measure
-  filesystem performance for many short-lived and small files. It's
-  primary weakness is that it does no application processing and
-  so the page aging is basically on per-file granularity. 
-
-largedd
-  o Target size 8*TOTAL_RAM
-
-  This downloads a large file and makes copies with dd until the
-  target footprint size is reached.
-
-fsmark
-  o Parallel directories were used
-  o 1 Thread per CPU
-  o 30M Filesize
-  o 16 directories
-  o 256 files per directory
-  o TOTAL_RAM_IN_BYTES/FILESIZE files per iteration
-  o 15 iterations
-  Single: ./fs_mark  -d  /tmp/fsmark-25458/1  -D  16  -N  256  -n  532  -L  15  -S0  -s  31457280
-  Thread: ./fs_mark  -d  /tmp/fsmark-28217/1  -d  /tmp/fsmark-28217/2  -d  /tmp/fsmark-28217/3  -d
-/tmp/fsmark-28217/4  -d  /tmp/fsmark-28217/5  -d  /tmp/fsmark-28217/6  -d  /tmp/fsmark-28217/7  -d
-/tmp/fsmark-28217/8  -d  /tmp/fsmark-28217/9  -d  /tmp/fsmark-28217/10  -d  /tmp/fsmark-28217/11  -d
-/tmp/fsmark-28217/12  -d  /tmp/fsmark-28217/13  -d  /tmp/fsmark-28217/14  -d  /tmp/fsmark-28217/15  -d
-/tmp/fsmark-28217/16  -d  /tmp/fsmark-28217/17  -d  /tmp/fsmark-28217/18  -d  /tmp/fsmark-28217/19  -d
-/tmp/fsmark-28217/20  -d  /tmp/fsmark-28217/21  -d  /tmp/fsmark-28217/22  -d  /tmp/fsmark-28217/23  -d
-/tmp/fsmark-28217/24  -d  /tmp/fsmark-28217/25  -d  /tmp/fsmark-28217/26  -d  /tmp/fsmark-28217/27  -d
-/tmp/fsmark-28217/28  -d  /tmp/fsmark-28217/29  -d  /tmp/fsmark-28217/30  -d  /tmp/fsmark-28217/31  -d
-/tmp/fsmark-28217/32  -D  16  -N  256  -n  16  -L  15  -S0  -s  31457280
-
-micro
-  o Total mapping size 10*TOTAL_RAM
-  o NR_CPU threads
-  o 5 iterations
-
-  This creates one process per CPU and creates a large file-backed mapping
-  up to the total mapping size. Each of the threads does a streaming
-  read of the mapping for a number of iterations. It then restarts with
-  a streaming write.
-
-  Completion time is the primary factor here but be careful as a good
-  completion time can be due to excessive reclaim which has an adverse
-  effect on many other workloads.
-
-===========================================================
-Machine:	arnold
-Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__pagereclaim-performance-xfs/arnold/comparison.html
-Arch:		x86
-CPUs:		1 socket, 2 threads
-Model:		Pentium 4
-Disk:		Single Rotary Disk
-Status:		Generally good but postmark shows direct reclaim
-===========================================================
-
-fsmark-single
--------------
-  Generally good, steady performance throughout. There was direct
-  reclaim activity in early kernels but not any more.
-
-fsmark-threaded
----------------
-  Generally good as well.
-
-postmark
---------
-  This is interesting. There was a mild performance dip in 3.2 but
-  while the excessive swapping is visible in 3.1 and 3.2 as seen
-  on other tests, it did not translate into a performance drop.
-  What is of concern is that direct reclaim figures are still high
-  for recent kernels even if it is not swapping.
-
-largedd
--------
-  Completion times have suffered a little and the usual swapping
-  in 3.1 and 3.2 is visible but it's tiny.
-
-micro
------
-  Looking great.
-   
-==========================================================
-Machine:	hydra
-Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__pagereclaim-performance-xfs/hydra/comparison.html
-Arch:		x86-64
-CPUs:		1 socket, 4 threads
-Model:		AMD Phenom II X4 940
-Disk:		Single Rotary Disk
-Status:		Generally ok, but swapping in 3.1 and 3.2
-==========================================================
-
-fsmark-single
--------------
-  Generally good, swap in 3.1 and 3.2
-
-fsmark-threaded
----------------
-  Generally good, no direct reclaim on recent kernels
-
-postmark
--------
-  Looking great other than swapping in 3.1 and 3.2 which again
-  does not appear to translate into a performance drop. Direct
-  reclaim started around kernel 3.1 and this has not eased off.
-  It's a sizable percentage.
-
-largedd
--------
-  Completion times ok, swap on 3.1 and 3.2 is not.
-
-micro
------
-  Ok.
-
-==========================================================
-Machine:	sandy
-Result:		http://www.csn.ul.ie/~mel/postings/mmtests-20120424/global-dhp__pagereclaim-performance-xfs/sandy/comparison.html
-Arch:		x86-64
-CPUs:		1 socket, 8 threads
-Model:		Intel Core i7-2600
-Disk:		Single Rotary Disk
-Status:		Generally ok, but swapping in 3.1 and 3.2
-==========================================================
-
-fsmark-single
--------------
-  Generally good. No swapping visible on 3.1 and 3.2 but this machine
-  also has more memory.
-
-fsmark-threaded
----------------
-  Generally good although 3.2 showed that a lot of inodes were reclaimed.
-  This matches a similar test on ext4 so something odd happened there.
-
-postmark
---------
-  Looking great for performance although some swapping in 3.1 and 3.2
-  and direct reclaim scanning is still high.
-
-largedd
--------
-  Completion times look good 
-
-micro
------
-  Look ok.
-
--- 
-Mel Gorman
-SUSE Labs
+Paolo
