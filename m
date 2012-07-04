@@ -1,224 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab2GDPmN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 11:42:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57898 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754461Ab2GDPmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 11:42:11 -0400
-Date: Wed, 4 Jul 2012 18:42:20 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio-blk: allow toggling host cache between writeback
- and writethrough
-Message-ID: <20120704154220.GB27064@redhat.com>
-References: <1341321577-24435-1-git-send-email-pbonzini@redhat.com>
+	id S1754670Ab2GDPqA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 11:46:00 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37886 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754366Ab2GDPp4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 11:45:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341321577-24435-1-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <CAOJsxLGBxeu2sE-wDT+YNyVipmXiPj7Gvmmdo-0zGmJObp2zxg@mail.gmail.com>
+References: <1340389359-2407-1-git-send-email-js1304@gmail.com>
+	<1340390729-2821-1-git-send-email-js1304@gmail.com>
+	<CAOJsxLHSboF0rQdGv8bdgGtinBz5dTo+omQbUnj9on_ewzgNAQ@mail.gmail.com>
+	<CAAmzW4OdDhn5C_vfMhu3ejzzcXmCCt6r0h=nXUqKJaNYZxg8Bw@mail.gmail.com>
+	<CAOJsxLGBxeu2sE-wDT+YNyVipmXiPj7Gvmmdo-0zGmJObp2zxg@mail.gmail.com>
+Date: Thu, 5 Jul 2012 00:45:56 +0900
+Message-ID: <CAAmzW4NGinc=7qEwhAH354Q7thkYy-HzpRNfVLtfaax4CEBB=g@mail.gmail.com>
+Subject: Re: [PATCH 1/3 v2] slub: prefetch next freelist pointer in __slab_alloc()
+From: JoonSoo Kim <js1304@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 03, 2012 at 03:19:37PM +0200, Paolo Bonzini wrote:
-> This patch adds support for the new VIRTIO_BLK_F_CONFIG_WCE feature,
-> which exposes the cache mode in the configuration space and lets the
-> driver modify it.  The cache mode is exposed via sysfs.
-> 
-> Even if the host does not support the new feature, the cache mode is
-> visible (thanks to the existing VIRTIO_BLK_F_WCE), but not modifiable.
-> 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+2012/7/5 Pekka Enberg <penberg@kernel.org>:
+>> 2012/7/4 Pekka Enberg <penberg@kernel.org>:
+>>> Well, can you show improvement in any benchmark or workload?
+>>> Prefetching is not always an obvious win and the reason we merged
+>>> Eric's patch was that he was able to show an improvement in hackbench.
+>
+> On Wed, Jul 4, 2012 at 5:30 PM, JoonSoo Kim <js1304@gmail.com> wrote:
+>> I thinks that this patch is perfectly same effect as Eric's patch, so
+>> doesn't include benchmark result.
+>> Eric's patch which add "prefetch instruction" in fastpath works for
+>> second ~ last object of cpu slab.
+>> This patch which add "prefetch instrunction" in slowpath works for
+>> first object of cpu slab.
+>
+> Prefetching can also have negative effect on overall performance:
+>
+> http://lwn.net/Articles/444336/
+>
 
-I note this has been applied but I think the userspace
-API is a bit painful to use. Let's fix it before
-it gets set in stone?
+Thanks for good article which is very helpful to me.
 
-Some more minor nits below.
-Also Cc lists from MAINTAINERS.
+> That doesn't seem like that obvious win to me... Eric, Christoph?
 
-> ---
->  drivers/block/virtio_blk.c |   90 ++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/virtio_blk.h |    5 ++-
->  2 files changed, 91 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> index 693187d..5602505 100644
-> --- a/drivers/block/virtio_blk.c
-> +++ b/drivers/block/virtio_blk.c
-> @@ -397,6 +397,83 @@ static int virtblk_name_format(char *prefix, int index, char *buf, int buflen)
->  	return 0;
->  }
->  
-> +static int virtblk_get_cache_mode(struct virtio_device *vdev)
+Could you tell me how I test this patch more deeply, plz?
+I am a kernel newbie and in the process of learning.
+I doesn't know what I can do more for this.
+I googling previous patch related to slub, some people use netperf.
 
-Why are you converting u8 to int here?
-All users convert it back ...
-Also, this is not really "get cache mode" it's more of a
-"writeback_enabled".
+Just do below is sufficient?
+How is this test related to slub?
 
-
-> +{
-> +	u8 writeback;
-> +	int err;
-> +
-> +	err = virtio_config_val(vdev, VIRTIO_BLK_F_CONFIG_WCE,
-> +				offsetof(struct virtio_blk_config, wce),
-> +				&writeback);
-> +	if (err)
-> +		writeback = virtio_has_feature(vdev, VIRTIO_BLK_F_WCE);
-> +
-> +	return writeback;
-> +}
-> +
-> +static void virtblk_update_cache_mode(struct virtio_device *vdev)
-> +{
-> +	u8 writeback = virtblk_get_cache_mode(vdev);
-> +	struct virtio_blk *vblk = vdev->priv;
-> +
-> +	if (writeback)
-> +		blk_queue_flush(vblk->disk->queue, REQ_FLUSH);
-> +	else
-> +		blk_queue_flush(vblk->disk->queue, 0);
-> +
-> +       revalidate_disk(vblk->disk);
-> +}
-> +
-> +static const char *virtblk_cache_types[] = {
-> +	"write through", "write back"
-> +};
-> +
-
-I wonder whether something that lacks space would have been better,
-especially for show: shells might get confused and split
-a string at a space. How about we change it to writethrough,
-writeback before it's too late? It's part of a userspace API
-after all, and you see to prefer writeback in one word in your own
-code so let's not inflict pain on others :)
-
-Also, would be nice to make it discoverable what the legal
-values are. Another attribute valid_cache_types with all values
-space separated?
-
-
-> +static ssize_t
-> +virtblk_cache_type_store(struct device *dev, struct device_attribute *attr,
-> +			 const char *buf, size_t count)
-> +{
-> +	struct gendisk *disk = dev_to_disk(dev);
-> +	struct virtio_blk *vblk = disk->private_data;
-> +	struct virtio_device *vdev = vblk->vdev;
-> +	int i;
-> +	u8 writeback;
-> +
-> +	BUG_ON(!virtio_has_feature(vblk->vdev, VIRTIO_BLK_F_CONFIG_WCE));
-> +	for (i = ARRAY_SIZE(virtblk_cache_types); --i >= 0; )
-> +		if (sysfs_streq(buf, virtblk_cache_types[i]))
-> +			break;
-> +
-> +	if (i < 0)
-> +		return -EINVAL;
-> +
-> +	writeback = i;
-> +	vdev->config->set(vdev,
-> +			  offsetof(struct virtio_blk_config, wce),
-> +			  &writeback, sizeof(writeback));
-> +
-> +	virtblk_update_cache_mode(vdev);
-> +	return count;
-> +}
-> +
-> +static ssize_t
-> +virtblk_cache_type_show(struct device *dev, struct device_attribute *attr,
-> +			 char *buf)
-> +{
-> +	struct gendisk *disk = dev_to_disk(dev);
-> +	struct virtio_blk *vblk = disk->private_data;
-> +	u8 writeback = virtblk_get_cache_mode(vblk->vdev);
-> +
-> +	BUG_ON(writeback >= ARRAY_SIZE(virtblk_cache_types));
-> +	return snprintf(buf, 40, "%s\n", virtblk_cache_types[writeback]);
-
-Why 40? Why snprintf? A plain sprintf won't do?
-
-> +}
-> +
-> +static const struct device_attribute dev_attr_cache_type_ro =
-> +	__ATTR(cache_type, S_IRUGO,
-> +	       virtblk_cache_type_show, NULL);
-> +static const struct device_attribute dev_attr_cache_type_rw =
-> +	__ATTR(cache_type, S_IRUGO|S_IWUSR,
-> +	       virtblk_cache_type_show, virtblk_cache_type_store);
-> +
->  static int __devinit virtblk_probe(struct virtio_device *vdev)
->  {
->  	struct virtio_blk *vblk;
-> @@ -474,8 +549,7 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
->  	vblk->index = index;
->  
->  	/* configure queue flush support */
-> -	if (virtio_has_feature(vdev, VIRTIO_BLK_F_FLUSH))
-> -		blk_queue_flush(q, REQ_FLUSH);
-> +	virtblk_update_cache_mode(vdev);
->  
->  	/* If disk is read-only in the host, the guest should obey */
->  	if (virtio_has_feature(vdev, VIRTIO_BLK_F_RO))
-> @@ -553,6 +627,14 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
->  	if (err)
->  		goto out_del_disk;
->  
-> +	if (virtio_has_feature(vdev, VIRTIO_BLK_F_CONFIG_WCE))
-> +		err = device_create_file(disk_to_dev(vblk->disk),
-> +					 &dev_attr_cache_type_rw);
-> +	else
-> +		err = device_create_file(disk_to_dev(vblk->disk),
-> +					 &dev_attr_cache_type_ro);
-> +	if (err)
-> +		goto out_del_disk;
->  	return 0;
->  
->  out_del_disk:
-> @@ -655,7 +737,7 @@ static const struct virtio_device_id id_table[] = {
->  static unsigned int features[] = {
->  	VIRTIO_BLK_F_SEG_MAX, VIRTIO_BLK_F_SIZE_MAX, VIRTIO_BLK_F_GEOMETRY,
->  	VIRTIO_BLK_F_RO, VIRTIO_BLK_F_BLK_SIZE, VIRTIO_BLK_F_SCSI,
-> -	VIRTIO_BLK_F_FLUSH, VIRTIO_BLK_F_TOPOLOGY
-> +	VIRTIO_BLK_F_WCE, VIRTIO_BLK_F_TOPOLOGY, VIRTIO_BLK_F_CONFIG_WCE
->  };
->  
->  /*
-> diff --git a/include/linux/virtio_blk.h b/include/linux/virtio_blk.h
-> index e0edb40..18a1027 100644
-> --- a/include/linux/virtio_blk.h
-> +++ b/include/linux/virtio_blk.h
-> @@ -37,8 +37,9 @@
->  #define VIRTIO_BLK_F_RO		5	/* Disk is read-only */
->  #define VIRTIO_BLK_F_BLK_SIZE	6	/* Block size of disk is available*/
->  #define VIRTIO_BLK_F_SCSI	7	/* Supports scsi command passthru */
-> -#define VIRTIO_BLK_F_FLUSH	9	/* Cache flush command support */
-> +#define VIRTIO_BLK_F_WCE	9	/* Writeback mode enabled after reset */
->  #define VIRTIO_BLK_F_TOPOLOGY	10	/* Topology information is available */
-> +#define VIRTIO_BLK_F_CONFIG_WCE	11	/* Writeback mode available in config */
->  
->  #define VIRTIO_BLK_ID_BYTES	20	/* ID string length */
->  
-> @@ -69,6 +70,8 @@ struct virtio_blk_config {
->  	/* optimal sustained I/O size in logical blocks. */
->  	__u32 opt_io_size;
->  
-> +        /* writeback mode (if VIRTIO_BLK_F_CONFIG_WCE) */
-> +        __u8 wce;
->  } __attribute__((packed));
->  
->  /*
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+for in in `seq 1 32`
+do
+ netperf -H 192.168.0.8 -v 0 -l -100000 -t TCP_RR > /dev/null &
+done
+wait
