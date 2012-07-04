@@ -1,109 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab2GDIBE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 04:01:04 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56474 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774Ab2GDIA6 (ORCPT
+	id S933733Ab2GDID4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 04:03:56 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54619 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab2GDIDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 04:00:58 -0400
-X-AuditID: 9c930197-b7b49ae0000027b8-08-4ff3f838841f
-Message-ID: <4FF3F864.3000204@kernel.org>
-Date: Wed, 04 Jul 2012 17:01:40 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 4 Jul 2012 04:03:50 -0400
+Date: Wed, 4 Jul 2012 12:03:45 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: Re: [rfc 2/7] procfs: Convert /proc/pid/fdinfo/ handling routines to
+ seq-file
+Message-ID: <20120704080345.GD1999@moon>
+References: <20120627110116.201735815@openvz.org>
+ <20120627110512.485189390@openvz.org>
+ <4FF3F2B6.5040909@parallels.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, jaschut@sandia.gov,
-        kamezawa.hiroyu@jp.fujitsu.com, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH -mm v2] mm: have order > 0 compaction start off where
- it left
-References: <20120628135520.0c48b066@annuminas.surriel.com> <20120628135940.2c26ada9.akpm@linux-foundation.org> <4FECCB89.2050400@redhat.com> <20120628143546.d02d13f9.akpm@linux-foundation.org> <1341250950.16969.6.camel@lappy> <4FF2435F.2070302@redhat.com> <20120703101024.GG13141@csn.ul.ie> <20120703144808.4daa4244.akpm@linux-foundation.org> <4FF3ABA1.3070808@kernel.org> <20120704004219.47d0508d.akpm@linux-foundation.org>
-In-Reply-To: <20120704004219.47d0508d.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF3F2B6.5040909@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2012 04:42 PM, Andrew Morton wrote:
-
-> On Wed, 04 Jul 2012 11:34:09 +0900 Minchan Kim <minchan@kernel.org> wrote:
+On Wed, Jul 04, 2012 at 11:37:26AM +0400, Pavel Emelyanov wrote:
+> >  
+> > -static ssize_t proc_fdinfo_read(struct file *file, char __user *buf,
+> > -				size_t len, loff_t *ppos)
+> > -{
+> > -	char tmp[PROC_FDINFO_MAX];
+> > -	int err = proc_fd_info(file->f_path.dentry->d_inode, NULL, tmp);
+> > -	if (!err)
+> > -		err = simple_read_from_buffer(buf, len, ppos, tmp, strlen(tmp));
+> > -	return err;
+> > -}
+> > -
 > 
->>> The rest of this patch takes care to ensure that
->>> ->compact_cached_free_pfn is aligned to pageblock_nr_pages.  But it now
->>> appears that this particular site will violate that.
->>>
->>> What's up?  Do we need to fix this site, or do we remove all that
->>> make-compact_cached_free_pfn-aligned code?
->>
->>
->> I vote removing the warning because it doesn't related to Rik's incremental compaction.
->> Let's see. 
->>
->> high_pfn = min(low_pfn, pfn) = cc->migrate_pfn + pageblock_nr_pages.
->> In here, cc->migrate_pfn isn't necessarily pageblock aligined.
->> So if we don't consider compact_cached_free_pfn, it can hit.
->>
->> static void isolate_freepages()
->> {
->> 	high_pfn = min(low_pfn, pfn) = cc->migrate_pfn + pageblock_nr_pages;
->> 	for (..) {
->> 		...
->> 		 WARN_ON_ONCE(high_pfn & (pageblock_nr_pages - 1));
->> 		
->> 	}
->> }
-> 
-> Please, look at the patch.  In numerous places it is aligning
+> I believe we can still have the proc_fdinfo_read and proc_fd_link code non-splitted.
+> Just push a callback pointer ino the proc_fd_info (as usual -- we an opaque void *argument).
 
-> compact_cached_free_pfn to a multiple of pageblock_nr_pages.  But in
+Thanks! Will try.
 
-> one place it doesn't do that.  So are all those alignment operations
-> necessary?
-
-
-I mean if you *really* want to check the align, you should do following as
-
-barrios@bbox:~/linux-memcg$ git diff
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 6bb3e9f..12416d4 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -467,16 +467,18 @@ static void isolate_freepages(struct zone *zone,
-                }
-                spin_unlock_irqrestore(&zone->lock, flags);
- 
--               WARN_ON_ONCE(high_pfn & (pageblock_nr_pages - 1));
-                /*
-                 * Record the highest PFN we isolated pages from. When next
-                 * looking for free pages, the search will restart here as
-                 * page migration may have returned some pages to the allocator
-                 */
--               if (isolated)
-+               if (isolated) {
-                        high_pfn = max(high_pfn, pfn);
--               if (cc->order > 0)
--                       zone->compact_cached_free_pfn = high_pfn;
-+                       if (cc->order > 0) {
-+                               WARN_ON_ONCE(high_pfn & (pageblock_nr_pages - 1));
-+                               zone->compact_cached_free_pfn = high_pfn;
-+                       }
-+               }
-        }
- 
-        /* split_free_page does not map the pages */
-
-
-Because high_pfn could be not aligned in loop if it doesn't reset by max(high_pfn, pfn).
-and it's legal. So regardless of Rik's patch, if you add such warning in that code,
-it could emit WARNING, too. Rik already sent a patch which was similar to above
-but he wanted to solve WARN_ON_ONCE problem by someone else.
-
-
--- 
-Kind regards,
-Minchan Kim
+	Cyrill
