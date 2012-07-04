@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab2GDUTc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 16:19:32 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:49095 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755781Ab2GDUTb (ORCPT
+	id S932353Ab2GDU0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 16:26:53 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:59806 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755651Ab2GDU0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 16:19:31 -0400
-Message-ID: <1341433169.4131.13.camel@piranha.localdomain>
-Subject: Re: Logitech HD Webcam C525 does not work when connected to USB 2
- port, works on USB 3
-From: Frederik Himpe <fhimpe@telenet.be>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-uvc-devel@lists.sourceforge.net
-Date: Wed, 04 Jul 2012 22:19:29 +0200
-In-Reply-To: <Pine.LNX.4.44L0.1207041425330.15857-100000@netrider.rowland.org>
-References: <Pine.LNX.4.44L0.1207041425330.15857-100000@netrider.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jul 2012 16:26:50 -0400
+Date: Wed, 4 Jul 2012 22:26:44 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Alex Courbot <acourbot@nvidia.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCH] pwm-backlight: add regulator and GPIO support
+Message-ID: <20120704202644.GG30009@pengutronix.de>
+References: <1340976167-27298-1-git-send-email-acourbot@nvidia.com>
+ <20120704104840.GJ24458@pengutronix.de>
+ <4FF43692.2040805@nvidia.com>
+ <20120704130056.GC30009@pengutronix.de>
+ <4FF45DDF.9000306@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF45DDF.9000306@nvidia.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 22:25:53 up 11 days, 11:37, 40 users,  load average: 9.55, 10.16,
+ 6.66
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-04 at 14:42 -0400, Alan Stern wrote:
-> On Wed, 4 Jul 2012, Frederik Himpe wrote:
+On Thu, Jul 05, 2012 at 12:14:39AM +0900, Alex Courbot wrote:
+> On Wed 04 Jul 2012 10:00:56 PM JST, Sascha Hauer wrote:
+> >>That's very bad indeed. I assumed that the kernel would free
+> >>devm-allocated resources after probe returned -EPROBE_DEFER,
+> >
+> >It indeed does free devm allocated resources, but neither the gpio nor
+> >the pwm are devm allocated.
 > 
-> > > What happens if you disable USB runtime suspend on the affected system?  
-> > > Windows tends not to use it.
-> > 
-> > It appears to make a difference, but it still does not work perfectly.
-> > 
-> > I disabled autosuspend like this:
-> > root@piranha:/sys# for i in $(find -name autosuspend); do echo 0 > $i; done
+> As far as I can tell the gpio is allocated through devm as well:
 > 
-> That doesn't disable autosuspend.  The proper way is:
-> 
-> 	echo on >/sys/bus/usb/devices/.../power/control
-> 
-> where you fill in the "..." with the directory name for the webcam.
+> > +		ret = devm_gpio_request_one(&pdev->dev, data->enable_gpio,
+> > +				GPIOF_OUT_INIT_HIGH, "backlight_enable");
 
-usb trace from trying mplayer a few times after disabling autosuspend:
+You're right. For the GPIO it's ok the way it is.
 
-ffff880415761ec0 897158138 S Ii:1:081:7 -115:128 16 <
-ffff8803c49ec800 897158252 S Co:1:081:0 s 21 01 0100 0003 001a 26 = 01000101 15160500 00000000 00000000 00000000 00000000 0000
-ffff8803c49ec800 897162252 C Co:1:081:0 -71 0
-ffff8803c49ec800 897162388 S Co:1:081:0 s 01 0b 0000 0003 0000 0
-ffff8803c49ec800 897166377 C Co:1:081:0 -71 0
-ffff880415761ec0 897166486 C Ii:1:081:7 -2:128 0
-ffff880415761ec0 897844606 S Ii:1:081:7 -115:128 16 <
-ffff8803c49ec800 897844749 S Co:1:081:0 s 21 01 0100 0003 001a 26 = 01000101 15160500 00000000 00000000 00000000 00000000 0000
-ffff8803c49ec800 897848746 C Co:1:081:0 -71 0
-ffff8803c49ec800 897848879 S Co:1:081:0 s 01 0b 0000 0003 0000 0
-ffff8803c49ec800 897852873 C Co:1:081:0 -71 0
-ffff880415761ec0 897852965 C Ii:1:081:7 -2:128 16 = 0000e83f 335dbc5f f438be84 08004500
-ffff880415761ec0 898444380 S Ii:1:081:7 -115:128 16 <
-ffff8803c49ecd40 898444471 S Co:1:081:0 s 21 01 0100 0003 001a 26 = 01000101 15160500 00000000 00000000 00000000 00000000 0000
-ffff8803c49ecd40 898448507 C Co:1:081:0 -71 0
-ffff8803c49ecd40 898448639 S Co:1:081:0 s 01 0b 0000 0003 0000 0
-ffff8803c49ecd40 898452616 C Co:1:081:0 -71 0
-ffff880415761ec0 898452722 C Ii:1:081:7 -2:128 0
-ffff880415761ec0 899007841 S Ii:1:081:7 -115:128 16 <
-ffff8803c49ec800 899007939 S Co:1:081:0 s 21 01 0100 0003 001a 26 = 01000101 15160500 00000000 00000000 00000000 00000000 0000
-ffff8803c49ec800 899011863 C Co:1:081:0 -71 0
-ffff8803c49ec800 899012005 S Co:1:081:0 s 01 0b 0000 0003 0000 0
-ffff8803c49ec800 899015986 C Co:1:081:0 -71 0
-ffff880415761ec0 899016082 C Ii:1:081:7 -2:128 0
-
-dmesg contains:
-[ 9146.620398] uvcvideo: Failed to set UVC probe control : -71 (exp. 26).
+Sascha
 
 -- 
-Frederik Himpe <fhimpe@telenet.be>
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
