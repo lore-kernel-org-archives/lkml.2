@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab2GDOec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 10:34:32 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40149 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753604Ab2GDOea (ORCPT
+	id S1753926Ab2GDOey (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 10:34:54 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49864 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753861Ab2GDOew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 10:34:30 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de
-Cc: Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] ARM: ux500: Register pinctrl from platform code until it's been DT:ed
-Date: Wed,  4 Jul 2012 15:34:12 +0100
-Message-Id: <1341412452-3808-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 4 Jul 2012 10:34:52 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH] wireless: fix leak found by coverity
+To: bzhao@marvell.com, linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Date: Wed, 04 Jul 2012 16:33:34 +0100
+Message-ID: <20120704153327.4012.76171.stgit@bluebook>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are some inconsistencies with the way pinctrl devices are named
-when registered from platform code to the ones registered by Device
-Tree. Platform devices look like 'pinctrl-db8500', whereas the ones
-registered from Device Tree look more like 'pinctrl.2'. This leads to
-failure when carrying out name-based searches for known devices.
+From: Alan Cox <alan@linux.intel.com>
 
-Until the correct DT bindings have been applied to the pinctrl driver
-it will fail to function correctly. For instance, during a Device
-Tree boot on Snowball no bootlog is visible due to a UART port probe
-failure. Regulators fail in a similar way.
-
-This patch prevents Device Tree from probing the pinctrl driver and
-ensures registration is completed from platform code instead.
-
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
- arch/arm/boot/dts/db8500.dtsi      |    1 +
- arch/arm/mach-ux500/board-mop500.c |    2 ++
- 2 files changed, 3 insertions(+)
 
-diff --git a/arch/arm/boot/dts/db8500.dtsi b/arch/arm/boot/dts/db8500.dtsi
-index 4ad5160..0e9ca87 100644
---- a/arch/arm/boot/dts/db8500.dtsi
-+++ b/arch/arm/boot/dts/db8500.dtsi
-@@ -172,6 +172,7 @@
+ drivers/net/wireless/mwifiex/cfg80211.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/wireless/mwifiex/cfg80211.c b/drivers/net/wireless/mwifiex/cfg80211.c
+index 97de652..497a05a 100644
+--- a/drivers/net/wireless/mwifiex/cfg80211.c
++++ b/drivers/net/wireless/mwifiex/cfg80211.c
+@@ -1003,6 +1003,7 @@ static int mwifiex_cfg80211_start_ap(struct wiphy *wiphy,
+ 	case NL80211_HIDDEN_SSID_ZERO_CONTENTS:
+ 		/* firmware doesn't support this type of hidden SSID */
+ 	default:
++		kfree(bss_cfg);
+ 		return -EINVAL;
+ 	}
  
- 		pinctrl {
- 			compatible = "stericsson,nmk_pinctrl";
-+			status = "disabled";
- 		};
- 
- 		usb@a03e0000 {
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index 461012a..2a5d46f 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -824,6 +824,8 @@ static void __init u8500_init_machine(void)
- 	/* automatically probe child nodes of db8500 device */
- 	of_platform_populate(NULL, u8500_local_bus_nodes, u8500_auxdata_lookup, parent);
- 
-+	dbx500_add_pinctrl(parent, "pinctrl-db8500");
-+
- 	if (of_machine_is_compatible("st-ericsson,mop500")) {
- 		mop500_gpio_keys[0].gpio = GPIO_PROX_SENSOR;
- 
--- 
-1.7.9.5
 
