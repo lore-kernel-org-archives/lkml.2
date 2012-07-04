@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695Ab2GDMuJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 08:50:09 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:1302 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869Ab2GDMuG (ORCPT
+	id S1752004Ab2GDMvs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 08:51:48 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47219 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911Ab2GDMvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 08:50:06 -0400
-Message-ID: <4FF43BBE.80201@spin.net.au>
-Date: Wed, 04 Jul 2012 22:49:02 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120604 Firefox/13.0 SeaMonkey/2.10
+	Wed, 4 Jul 2012 08:51:45 -0400
 MIME-Version: 1.0
+Date: Wed, 4 Jul 2012 18:21:44 +0530
+Message-ID: <CADa7JjU0fRQw-erC5w7PbLdF_nHVxJuVb3zJ5TcRMV2DLK4BJw@mail.gmail.com>
+Subject: Not getting login prompt after CPU entered into cpu_idle() state
+From: Srinidhi M <srinidhi.m26@gmail.com>
 To: linux-kernel@vger.kernel.org
-Subject: Kernel official involvement
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-2.227, required 4, AWL 0.27, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am just wondering how does anyone get further involved with Linux 
-kernel development? How do you get selected to be able to push through 
-patches etc. to the official kernel? Who authorizes who to be able to do so?
+Hi All,
 
+We have ported the kernel from 2.6.10 version to 2.6.32 kernel version
+for our Phytec LPC-3180 board. We have done good work and able to
+complete the kernel part i.e. completed the start_kernel function and
+CPU entered into IDLE state from cpu_idle() function which is defined
+in rest_init() function in main.c file. However, rest_init() function
+also creates TWO threads. One thread is for running the kernel_init()
+function where it calls the init_post() function. In this, after a few
+other calls, there is a call to init the init-process i.e.
+run_init_process("/sbin/init"). After this, we are not seeing neither
+any errors nor login prompt in hyper terminal. We end up without
+getting any login prompt. Any idea would be greatly help us in getting
+the login prompt / for debugging the sources further for identifying
+the exact reason / location to find out the error.
 
-Regards
+Here are the final debug statements which we are seeing in the hyper terminal.
 
--- 
-		Chris Jones @ kernel.devproject@gmail.com
-also on oracle.kerneldev@gmail.com and netbsd.kerneldev@gmail.com
+<6>VFP support v0.3: implementor 41 architecture 1 part 10 variant 9 rev 1
+<5>RAMDISK: gzip image found at block 0
+VFS: Mounted root (ext2 filesystem) on device 1:0.
+<6>Freeing init memory: 80K
+.....@ <init/main.c>  <init_post>  <900>
+.....@ <arch/arm/kernel/sys_arm.c>  <kernel_execve>  <271> ret = 0 : /sbin/init
+.....@ <arch/arm/kernel/sys_arm.c>  <kernel_execve>  <274>
+.....@ <arch/arm/kernel/sys_arm.c>  <kernel_execve>  <271> ret = 0 :
+/sbin/modprobe
+.....@ <arch/arm/kernel/sys_arm.c>  <kernel_execve>  <274>
+.....@ <arch/arm/kernel/sys_arm.c>  <kernel_execve>  <271> ret = 0 :
+/sbin/modprobe
+.....@ <arch/arm/kernel/sys_arm.c>  <kernel_execve>  <274>
+.....@ <arch/arm/kernel/sys_arm.c>  <kernel_execve>  <271> ret = 0 :
+/sbin/modprobe
+.....@ <arch/arm/kernel/sys_arm.c>  <kernel_execve>  <274>
+.....@ <arch/arm/kernel/sys_arm.c>  <kernel_execve>  <271> ret = 0 :
+/sbin/modprobe
+.....@ <arch/arm/kernel/sys_arm.c>  <kernel_execve>  <274>
 
-OpenSUSE Linux x86_64 (PC)|Android (Smartphone)|Windows 7 (Laptop)|Windows XP (Gaming)
-Linux kernel developer|Solaris kernel developer|BSD kernel developer
-Lead Developer of SDL|Lead Developer of Nest Linux|Gamer and Emulator nut|Web Services|Digital Imaging Services
-Controllers: Rapier V2 Gaming mouse|Logitech Precision|PS3 controller|XB360 controller|Logitech Attack 3 j/stick
-Emulators: Fusion|Gens|ZSNES|Project64|PCSX-R|Stella|WinVICE|WinUAE|DOSBox
+If we load 2.6.10 kernel image, we are getting login prompt in the
+hyper terminal on the same Phytec board.
 
-PGP Fingerprint: 4E38 0776 B380 63C8 F64F
-A7D6 736C CF56 42A4 FB35
+NOTE: We are using the same file system on 2.6.32 kernel which was
+running fine on 2.6.10 kernel.
 
+We will provide if any one need additional information / complete log.
+
+Thanks in advance.
+
+Regards,
+Srinidhi.
