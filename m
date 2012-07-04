@@ -1,71 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933586Ab2GDFrk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 01:47:40 -0400
-Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:52017 "EHLO
-	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754013Ab2GDFri convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 01:47:38 -0400
+	id S1753915Ab2GDFxB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 01:53:01 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57255 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770Ab2GDFw6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 01:52:58 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FF3DA1E.9060505@jp.fujitsu.com>
+Date: Wed, 4 Jul 2012 14:52:30 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <E0D6B3D7803B1A49AC7CEA9958379F630375BD5A@DFLE36.ent.ti.com>
-References: <1340367055-19835-1-git-send-email-kishon@ti.com>
-	<1340367055-19835-3-git-send-email-kishon@ti.com>
-	<E0D6B3D7803B1A49AC7CEA9958379F630375BD5A@DFLE36.ent.ti.com>
-Date: Wed, 4 Jul 2012 11:17:36 +0530
-Message-ID: <CAAe_U6+3sf5Nm5bQeY=Pi=sYMPp3GfXWxfbbbo1mSH2u9xjTyQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/5] usb: musb: twl: use mailbox API to send VBUS or ID events
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: "Matcovschi, Oleg" <oleg.matcovschi@ti.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
+        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
+        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC PATCH v2 4/13] memory-hotplug : remove /sys/firmware/memmap/X
+ sysfs
+References: <4FF287C3.4030901@jp.fujitsu.com> <4FF28996.10702@jp.fujitsu.com> <4FF2929B.7030004@cn.fujitsu.com> <4FF3CA65.1020300@jp.fujitsu.com> <4FF3CFDC.50802@cn.fujitsu.com>
+In-Reply-To: <4FF3CFDC.50802@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleg,
+Hi Wen,
 
-On Tue, Jul 3, 2012 at 11:09 PM, Matcovschi, Oleg
-<oleg.matcovschi@ti.com> wrote:
->>From: linux-omap-owner@vger.kernel.org [linux-omap-owner@vger.kernel.org] on behalf of ABRAHAM, KISHON VIJAY
->>Sent: Friday, June 22, 2012 5:10 AM
->>To: gregkh@linuxfoundation.org; ABRAHAM, KISHON VIJAY; linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org; Balbi, Felipe
->>Subject: [PATCH v3 2/5] usb: musb: twl: use mailbox API to send VBUS or ID events
->
->>The atomic notifier from twl4030/twl6030 to notifiy VBUS and ID events,
->>is replaced by a direct call to omap musb blue.
->
->>Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>---
->> drivers/usb/musb/omap2430.c   |   94 +++++++++++++++++++++++++---------------
->> drivers/usb/otg/twl4030-usb.c |   46 ++++++++++----------
->> drivers/usb/otg/twl6030-usb.c |   47 +++++++++-----------
->> include/linux/usb/musb-omap.h |   30 +++++++++++++
->> 4 files changed, 133 insertions(+), 84 deletions(-)
->> create mode 100644 include/linux/usb/musb-omap.h
-> .....
-> +enum omap_musb_vbus_id_status {
-> +       OMAP_MUSB_UNKNOWN = 0,
-> +       OMAP_MUSB_ID_GROUND,
-> +       OMAP_MUSB_ID_FLOAT,
-> +       OMAP_MUSB_VBUS_VALID,
-> +       OMAP_MUSB_VBUS_OFF,
-> +};
-> +
->
-> Why did you choose to introduce OMAP_MUSB specific VBUS, ID events?
-> IMHO, it makes more sense to introduce mailbox functionality only without extra translation layer.
-> Same mailbox glue layer could be used for other PHY drivers, not just twl.
+2012/07/04 14:08, Wen Congyang wrote:
+> At 07/04/2012 12:45 PM, Yasuaki Ishimatsu Wrote:
+>> Hi Wen,
+>>
+>> 2012/07/03 15:35, Wen Congyang wrote:
+>>> At 07/03/2012 01:56 PM, Yasuaki Ishimatsu Wrote:
+>>>> When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
+>>>> sysfs files are created. But there is no code to remove these files. The patch
+>>>> implements the function to remove them.
+>>>>
+>>>> Note : The code does not free firmware_map_entry since there is no way to free
+>>>>          memory which is allocated by bootmem.
+>>>>
+>>>> CC: David Rientjes <rientjes@google.com>
+>>>> CC: Jiang Liu <liuj97@gmail.com>
+>>>> CC: Len Brown <len.brown@intel.com>
+>>>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>>>> CC: Paul Mackerras <paulus@samba.org>
+>>>> CC: Christoph Lameter <cl@linux.com>
+>>>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>>>> CC: Andrew Morton <akpm@linux-foundation.org>
+>>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>>
+>>>> ---
+>>>>    drivers/firmware/memmap.c    |   70 +++++++++++++++++++++++++++++++++++++++++++
+>>>>    include/linux/firmware-map.h |    6 +++
+>>>>    mm/memory_hotplug.c          |    6 +++
+>>>>    3 files changed, 81 insertions(+), 1 deletion(-)
+>>>>
+>>>> Index: linux-3.5-rc4/mm/memory_hotplug.c
+>>>> ===================================================================
+>>>> --- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-07-03 14:22:00.190240794 +0900
+>>>> +++ linux-3.5-rc4/mm/memory_hotplug.c	2012-07-03 14:22:03.549198802 +0900
+>>>> @@ -661,7 +661,11 @@ EXPORT_SYMBOL_GPL(add_memory);
+>>>>
+>>>>    int remove_memory(int nid, u64 start, u64 size)
+>>>>    {
+>>>> -	return -EBUSY;
+>>>> +	lock_memory_hotplug();
+>>>> +	/* remove memmap entry */
+>>>> +	firmware_map_remove(start, start + size - 1, "System RAM");
+>>>> +	unlock_memory_hotplug();
+>>>> +	return 0;
+>>>>
+>>>>    }
+>>>>    EXPORT_SYMBOL_GPL(remove_memory);
+>>>> Index: linux-3.5-rc4/include/linux/firmware-map.h
+>>>> ===================================================================
+>>>> --- linux-3.5-rc4.orig/include/linux/firmware-map.h	2012-07-03 14:21:45.766421116 +0900
+>>>> +++ linux-3.5-rc4/include/linux/firmware-map.h	2012-07-03 14:22:03.550198789 +0900
+>>>> @@ -25,6 +25,7 @@
+>>>>
+>>>>    int firmware_map_add_early(u64 start, u64 end, const char *type);
+>>>>    int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
+>>>> +int firmware_map_remove(u64 start, u64 end, const char *type);
+>>>>
+>>>>    #else /* CONFIG_FIRMWARE_MEMMAP */
+>>>>
+>>>> @@ -38,6 +39,11 @@ static inline int firmware_map_add_hotpl
+>>>>    	return 0;
+>>>>    }
+>>>>
+>>>> +static inline int firmware_map_remove(u64 start, u64 end, const char *type)
+>>>> +{
+>>>> +	return 0;
+>>>> +}
+>>>> +
+>>>>    #endif /* CONFIG_FIRMWARE_MEMMAP */
+>>>>
+>>>>    #endif /* _LINUX_FIRMWARE_MAP_H */
+>>>> Index: linux-3.5-rc4/drivers/firmware/memmap.c
+>>>> ===================================================================
+>>>> --- linux-3.5-rc4.orig/drivers/firmware/memmap.c	2012-07-03 14:21:45.761421180 +0900
+>>>> +++ linux-3.5-rc4/drivers/firmware/memmap.c	2012-07-03 14:22:03.569198549 +0900
+>>>> @@ -79,7 +79,16 @@ static const struct sysfs_ops memmap_att
+>>>>    	.show = memmap_attr_show,
+>>>>    };
+>>>>
+>>>> +static void release_firmware_map_entry(struct kobject *kobj)
+>>>> +{
+>>>> +	/*
+>>>> +	 * FIXME : There is no idea.
+>>>> +	 *         How to free the entry which allocated bootmem?
+>>>> +	 */
+>>>
+>>> I find a function free_bootmem(), but I am not sure whether it can work here.
+>>
+>> It cannot work here.
+>>
+>>> Another problem: how to check whether the entry uses bootmem?
+>>
+>> When firmware_map_entry is allocated by kzalloc(), the page has PG_slab.
+> 
+> This is not true. In my test, I find the page does not have PG_slab sometimes.
 
-We've decided to make twl as a comparator driver since we have a
-separate phy driver (not yet merged). Hence we dint want twl to use
-usb_phy specific events. So if you have other PHY drivers, you can
-still use the OMAP_MUSB specific events.
+I think that it depends on the allocated size. firmware_map_entry size is
+smaller than PAGE_SIZE. So the page has PG_Slab.
 
-Thanks
-Kishon
+Thanks,
+Yasuaki Ishimatsu
+
+> 
+> Thanks
+> Wen Congyang.
+> 
+>> So we can check whether the entry was allocated by bootmem or not.
+>> If the eantry was allocated by kzalloc(), we can free the entry by kfree().
+>> But if the entry was allocated by bootmem, we have no way to free the entry.
+>>
+>> Thanks,
+>> Yasuaki Ishimatsu
+>>
+>>>
+>>> Thanks
+>>> Wen Congyang
+>>>
+>>>> +}
+>>>> +
+>>>>    static struct kobj_type memmap_ktype = {
+>>>> +	.release	= release_firmware_map_entry,
+>>>>    	.sysfs_ops	= &memmap_attr_ops,
+>>>>    	.default_attrs	= def_attrs,
+>>>>    };
+>>>> @@ -123,6 +132,16 @@ static int firmware_map_add_entry(u64 st
+>>>>    	return 0;
+>>>>    }
+>>>>
+>>>> +/**
+>>>> + * firmware_map_remove_entry() - Does the real work to remove a firmware
+>>>> + * memmap entry.
+>>>> + * @entry: removed entry.
+>>>> + **/
+>>>> +static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
+>>>> +{
+>>>> +	list_del(&entry->list);
+>>>> +}
+>>>> +
+>>>>    /*
+>>>>     * Add memmap entry on sysfs
+>>>>     */
+>>>> @@ -144,6 +163,31 @@ static int add_sysfs_fw_map_entry(struct
+>>>>    	return 0;
+>>>>    }
+>>>>
+>>>> +/*
+>>>> + * Remove memmap entry on sysfs
+>>>> + */
+>>>> +static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
+>>>> +{
+>>>> +	kobject_put(&entry->kobj);
+>>>> +}
+>>>> +
+>>>> +/*
+>>>> + * Search memmap entry
+>>>> + */
+>>>> +
+>>>> +struct firmware_map_entry * __meminit
+>>>> +find_firmware_map_entry(u64 start, u64 end, const char *type)
+>>>> +{
+>>>> +	struct firmware_map_entry *entry;
+>>>> +
+>>>> +	list_for_each_entry(entry, &map_entries, list)
+>>>> +		if ((entry->start == start) && (entry->end == end) &&
+>>>> +		    (!strcmp(entry->type, type)))
+>>>> +			return entry;
+>>>> +
+>>>> +	return NULL;
+>>>> +}
+>>>> +
+>>>>    /**
+>>>>     * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
+>>>>     * memory hotplug.
+>>>> @@ -196,6 +240,32 @@ int __init firmware_map_add_early(u64 st
+>>>>    	return firmware_map_add_entry(start, end, type, entry);
+>>>>    }
+>>>>
+>>>> +/**
+>>>> + * firmware_map_remove() - remove a firmware mapping entry
+>>>> + * @start: Start of the memory range.
+>>>> + * @end:   End of the memory range (inclusive).
+>>>> + * @type:  Type of the memory range.
+>>>> + *
+>>>> + * removes a firmware mapping entry.
+>>>> + *
+>>>> + * Returns 0 on success, or -EINVAL if no entry.
+>>>> + **/
+>>>> +int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
+>>>> +{
+>>>> +	struct firmware_map_entry *entry;
+>>>> +
+>>>> +	entry = find_firmware_map_entry(start, end, type);
+>>>> +	if (!entry)
+>>>> +		return -EINVAL;
+>>>> +
+>>>> +	/* remove the memmap entry */
+>>>> +	remove_sysfs_fw_map_entry(entry);
+>>>> +
+>>>> +	firmware_map_remove_entry(entry);
+>>>> +
+>>>> +	return 0;
+>>>> +}
+>>>> +
+>>>>    /*
+>>>>     * Sysfs functions -------------------------------------------------------------
+>>>>     */
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>
+>>
+>>
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
+
