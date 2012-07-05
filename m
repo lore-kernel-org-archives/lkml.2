@@ -1,150 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642Ab2GEEbf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 00:31:35 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:57661 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765Ab2GEEbc (ORCPT
+	id S1751213Ab2GEFAc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 01:00:32 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43635 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886Ab2GEFA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 00:31:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120704221600.416d4475@endymion.delvare>
-References: <1340805255-8041-1-git-send-email-djkurtz@chromium.org>
- <1340805255-8041-8-git-send-email-djkurtz@chromium.org> <20120704221600.416d4475@endymion.delvare>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Thu, 5 Jul 2012 12:31:11 +0800
-X-Google-Sender-Auth: dBc2mwyt_vD3_KTKyLwg90BeHtg
-Message-ID: <CAGS+omAwkwd17MVe3uWoPNCL3y0BvKDvbFGWwjhJ5CpTqncsXA@mail.gmail.com>
-Subject: Re: [PATCH 7/8 v3] i2c: i801: enable irq for i801 smbus transactions
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        Seth Heasley <seth.heasley@intel.com>, Olof Johansson <olof@lixom.net>,
-        Benson Leung <bleung@chromium.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Thu, 5 Jul 2012 01:00:29 -0400
+Date: Thu, 5 Jul 2012 15:00:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: linux-next: manual merge of the tip tree with the vfs tree
+Message-Id: <20120705150012.63b7d7be0a0f549cfe650515@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__5_Jul_2012_15_00_12_+1000_YnM/5neaDbvMchVN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
+--Signature=_Thu__5_Jul_2012_15_00_12_+1000_YnM/5neaDbvMchVN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jul 5, 2012 at 4:16 AM, Jean Delvare <khali@linux-fr.org> wrote:
-> Hi again Daniel,
->
-> On Wed, 27 Jun 2012 21:54:14 +0800, Daniel Kurtz wrote:
->> Add a new 'feature' to i2c-i801 to enable using i801 interrupts.
->> When the feature is enabled, then an isr is installed for the device's
->> pci irq.
->>
->> An I2C/SMBus transaction is always terminated by one of the following
->> interrupt sources: FAILED, BUS_ERR, DEV_ERR, or on success: INTR.
->>
->> When the isr fires for one of these cases, it sets the ->status variable
->> and wakes up the waitq.  The waitq then saves off the status code, and
->> clears ->status (in preparation for some future transaction).
->> The SMBus controller generates an INTR irq at the end of each
->> transaction where INTREN was set in the HST_CNT register.
->>
->> No locking is needed around accesses to priv->status since all writes to
->> it are serialized: it is only ever set once in the isr at the end of a
->> transaction, and cleared while no irqs can occur.  In addition, the I2C
->> adapter lock guarantees that entire I2C transactions for a single
->> adapter are always serialized.
->>
->> For this patch, the INTREN bit is set only for SMBus block, byte and word
->> transactions, but not for I2C reads or writes.  The use of the DS
->> (BYTE_DONE) interrupt with byte-by-byte I2C transactions is implemented in
->> a subsequent patch.
->
-> Hmm, I have hit a bug with this patch. I was testing it on my ICH3-M
-> laptop, and while SMBus byte and word reads worked fine, SMBus block
-> reads did fail once in a while.
->
-> The ICH3-M lacks the block buffer, so SMBus block reads use the
-> i801_block_transaction_byte_by_byte function, which at this point does
-> not use interrupts. However, the IRQ is heavily shared on this laptop:
-> additionally to SMBus, it is used for USB, sound, network and even the
-> graphics chip. So function i801_isr() is called all the time.
->
-> If i801_isr() is being called while
-> i801_block_transaction_byte_by_byte() is running, there is a chance
-> that the status register will have some flags set, in particular INTR.
-> If so, the code in i801_isr() will clear the flags and wake up the
-> wait queue while nobody was actually waiting for. And
-> i801_block_transaction_byte_by_byte() will wait for an event which was
-> already processed, leading to a timeout.
->
-> You should be able to reproduce this bug by loading i2c-i801 with
-> option disable_features=0x0002, assuming your SMBus IRQ is shared.
->
-> This leads me to several thoughts (feel free to correct me if I'm
-> wrong, I am getting very tired):
->
-> 1* This must be the reason why a bit was added to the PCI status
->    register starting with the ICH5, telling you if an interrupt has been
->    delivered to you. Checking for it as you originally did was a good idea
->    after all.
+Hi all,
 
-Reducing scope to get accepted patches in sooner sounds like a good plan to me.
+Today's linux-next merge of the tip tree got a conflict in kernel/fork.c
+between commit 7ab538da1f8a ("trim task_work: get rid of hlist") from the
+vfs tree and commit 0ea86208345b ("sched, mm: Rework sched_{fork,exec}
+node assignment") from the tip tree.
 
-> 2* Is there any reason why you decided to clear the status bits in
->    i801_isr(), rather than after wait_event()? I am no expert in
->    interrupt handling, I admit, but letting the "caller" clear the status
->    bits would ensure we don't clear status bits when nobody is actually
->    waiting to catch them.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-BYTE_DONE is cleared to kick off the next byte, and it doesn't
-generate a wait_event, thus it is cleared right in the irq.
+diff --cc kernel/fork.c
+index bebabad,1a69745..0000000
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@@ -1414,8 -1415,7 +1415,7 @@@ static struct task_struct *copy_process
+  	 * We dont wake it up yet.
+  	 */
+  	p->group_leader =3D p;
+- 	INIT_LIST_HEAD(&p->thread_group);
+ -	INIT_HLIST_HEAD(&p->task_works);
+ +	p->task_works =3D NULL;
+ =20
+  	/* Now that the task is set up, run cgroup callbacks if
+  	 * necessary. We need to run them before the task is visible
 
-The logic for clearing the STATUS_FLAGS was simply that they all
-indicate the end of a transaction, so there won't be any further
-interrupts.  Thus, it is safe to clear it in the irq, since the irq
-will be followed by exactly one wait_event, which can read and process
-saved status.
+--Signature=_Thu__5_Jul_2012_15_00_12_+1000_YnM/5neaDbvMchVN
+Content-Type: application/pgp-signature
 
-> 3* Applying this patch (7/8) without the one adding interrupt support
->    to i801_block_transaction_byte_by_byte (8/8) is not OK: mixing
->    interrupts and polling isn't safe. So unless we implement 1* or 2*,
->    both patches would have to be merged before being pushed upstream.
->
-> 4* Even then, we have to keep in mind that i801_isr() may be called
->    before the transaction is finished (if IRQ is shared.) My testing
->    has shown that error flags may be raised before the BUSY flag is
->    cleared, so we should use in i801_isr() the same strict conditions
->    we are now using in the polling code. In other words, if we get an
->    interrupt but the BUSY flag is still set, then it's not our
->    interrupt and we should ignore it. This applies even if 2* or 3*
->    above are implemented, but no longer if 1* is implemented.
->
-> 5* Your claim that no locking is needed might have to be revisited when
->    interrupts are shared.
->
-> Implementing 1* has the drawback of limiting interrupt support to ICH5
-> and later chips, but I suspect it is the easiest and safest way, so I
-> have no objection if you want to do that.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Let's do this first, and then refactor later to add support for
-pre-ICH5 parts, if needed.
-It sounds like supporting the pre-ICH5 parts w/ shared IRQ is not very
-pretty, since we are no longer guaranteed that we get a single
-transaction terminating interrupt.
+iQIcBAEBCAAGBQJP9R9cAAoJEECxmPOUX5FEwmwQAJariZxQ3Ns7OP6K4rhzHPdH
+6UVYciiZBozMS1Jk+uMeI8sdgFmAVDEvAjXU5bd5LoNTq4jq9xWDyuGwXIk+oU6d
+HmxhT6al/GzZuJFKqRAA8dMgm54AisDigZMl5EEO7ps2VUslnablu9pJUdcQ+Vwj
+Whr/G05jVtm7dZqPRght9eVgjdWWKM8vN4pVdToCN24gcuUnKdfyd7O5EnZkMR7M
+f1DSmp1sc5lAUfJUUJxHS9wKA5c4mKtHrwJ13wCqtSZymAJk3Jhp4+HyHYVGFJuI
+MsQr7kwbS/UP++wzAXEskirDqRTskgfUKew3YVvdML6XkjdVi+Jbulrfq4FapPmt
+g+dVkBIm+mpyyWmpMTti62X4ittzd0AdN7MdRSW7nx12TcYK1olU5GArhhZlYgtq
+NprbaPNMd7XBGVtTFnYPYnvjqx8AkLEsCBMChWxWk2Hn84rY+dkmctyev2miz3ue
+SCRuyF7awugYP5xVu71cXrgKNWbV0jJE0GiJ0SuU78N0o9HisE1V/szSFWZtrHA8
+GGGciacrCdV90zjLtIUt9MvQ/0/hw89OpuBDX1LY2o29GPx8ejHVkXwn/hpkgefE
+KBeOOWczX53ba6WmmubGuAeZggPhAb4Bjy2b7PIZQiQMxyfLd8rw8bpJ6EgEe3mY
+RhpBaM1E1yZjg6jkCyxi
+=U0pl
+-----END PGP SIGNATURE-----
 
->
-> --
-> Jean Delvare
-
-Do you still maintain a public git repository?
-Have you updated it with the accepted version of the previous cleanup patches?
-I see this one, but it doesn't look updated:
-  http://git.kernel.org/?p=linux/kernel/git/jdelvare/staging.git;a=summary
-
-I'd like to fix up the interrupt patches per your feedback, but I'm
-not quite sure what the current status is of all the cleanup patches.
-
-In other words, if you push up the complete set of cleanup patches, I
-can then rebase the new consolidated irq patch onto it, and send them
-here for review.
-
-Thanks!
--Dan
+--Signature=_Thu__5_Jul_2012_15_00_12_+1000_YnM/5neaDbvMchVN--
