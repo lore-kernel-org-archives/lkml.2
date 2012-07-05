@@ -1,92 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757396Ab2GEUI2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 16:08:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14053 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756074Ab2GEUII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 16:08:08 -0400
-Date: Thu, 5 Jul 2012 22:07:32 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+	id S1756080Ab2GEUJY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 16:09:24 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35357 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752240Ab2GEUJX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 16:09:23 -0400
+Date: Thu, 5 Jul 2012 22:09:17 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Robert Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 09/40] autonuma: introduce kthread_bind_node()
-Message-ID: <20120705200732.GP25422@redhat.com>
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
- <1340888180-15355-10-git-send-email-aarcange@redhat.com>
- <4FEDCB7A.1060007@redhat.com>
- <20120629163820.GQ6676@redhat.com>
- <4FEDDE99.2090105@redhat.com>
- <20120705130902.GF7881@cmpxchg.org>
- <4FF5DDFF.70900@parallels.com>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        spi-devel-general-request@lists.sourceforge.net,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>
+Subject: Re: SPI, GPIO, and DT maintainer ship (cry for help)
+Message-ID: <20120705200917.GA15639@pengutronix.de>
+References: <CACxGe6tyO5u7eiq1OiPX-u439YAcQDFz3eOOGZ4bNPtwmYwNkg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
 Content-Disposition: inline
-In-Reply-To: <4FF5DDFF.70900@parallels.com>
+In-Reply-To: <CACxGe6tyO5u7eiq1OiPX-u439YAcQDFz3eOOGZ4bNPtwmYwNkg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johannes and Glauber,
 
-> On 07/05/2012 05:09 PM, Johannes Weiner wrote:
-> > In the very first review iteration of AutoNUMA, Peter argued that the
-> > scheduler people want to use this flag in other places where they rely
-> > on this thing meaning a single cpu, not a group of them (check out the
-> > cpumask test in debug_smp_processor_id() in lib/smp_processor_id.c).
+--uAKRQypu60I7Lcqm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I already suggested to add a new bitflag for that future optimization,
-when adding the future code, if that optimization is so worth it.
+Hi Grant,
 
-> > 
-> > He also argued that preventing root from rebinding the numa daemons is
-> > not critical to this feature at all.  And I have to agree.
+> I believe all three of you know that I'm in the process of moving to
+> Scotland. The house is on the market and we have flights booked for
+> the end of July.
 
-It's not critical indeed, it was just a minor reliability
-improvement just like it is right now for all other usages.
+That's news to me. Good luck!
 
-On Thu, Jul 05, 2012 at 10:33:35PM +0400, Glauber Costa wrote:
-> Despite not being a scheduler expert, I'll have to side with that as
-> well. The thing I have in mind is: We have people whose usecase depend
-> on completely isolating cpus, with nothing but a specialized task
-> running on it. For those people, even the hard binding between cpu0 and
-> the timer interrupt is a big problem.
-> 
-> If you force a per-node binding of a kthread, you are basically saying
-> that those people are unable to isolate a node. Or else, that they have
-> to choose between that, and AutoNUMA. Both are suboptimal choices, to
-> say the least.
+>=20
+> settled in their new school (mid August).  I need help to prepare for
+> the next merge window, and quite possibly the next window.  Since you
+> three have agreed to co-maintain those subsystems with me, can you
+> please take a look at the patches that have been posted, pick up the
+> ones that look ready to go to you, and get them into linux-next?  I
 
-I'm afraid AutoNUMA in those nanosecond latency setups will be
-disabled, so knuma_migrated won't ever have a chance to run in the
-first place. I doubt they want to risk to hit on a migration fault,
-even if the migration is async with AutoNUMA there's still a chance
-for userland to hit on a migration pte. Plus who starts to alter CPU
-binding on kernel daemon and remove irqs from cpus, is likely to be
-using hard bindings on the userland app too, so not needing AutoNUMA.
+Though I'd like to help out, I need to pass on this time. My resources
+simply won't allow to do the job (with the quality I envision, that is).
+I hope somebody else can jump in? If not, I can collect urgent patches,
+at least.
 
-However we cannot fell for sure I agree, so your argument of wanting
-to isolate the CPU while leaving AutoNUMA enabled is the most
-convincing argument so far in favour of stopping setting the flag on
-knuma_migrated.
+Regards,
 
-Thanks,
-Andrea
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--uAKRQypu60I7Lcqm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk/19G0ACgkQD27XaX1/VRtl1gCgszMnvSuU4+7tmexsF0N2KR9Y
+T7sAnj75I1MvnFay4PaB9EQUKqo5QmCp
+=lu+T
+-----END PGP SIGNATURE-----
+
+--uAKRQypu60I7Lcqm--
