@@ -1,118 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930Ab2GEJ3M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 05:29:12 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53900 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab2GEJ3J (ORCPT
+	id S1755463Ab2GEJ3S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 05:29:18 -0400
+Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:34644 "EHLO
+	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755258Ab2GEJ3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 05:29:09 -0400
+	Thu, 5 Jul 2012 05:29:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <4FAD89DC.2090307@codeaurora.org>
-References: <4FAC200D.2080306@codeaurora.org> <02fc01cd2f50$5d77e4c0$1867ae40$%szyprowski@samsung.com>
- <4FAD89DC.2090307@codeaurora.org>
-From: Rabin Vincent <rabin@rab.in>
-Date: Thu, 5 Jul 2012 14:58:27 +0530
-X-Google-Sender-Auth: ZFWfAZKGbeirMN37qfqlgMBk3II
-Message-ID: <CAH+eYFBhO9P7V7Nf+yi+vFPveBks7SFKRHfkz3JOQMBKqnkkUQ@mail.gmail.com>
-Subject: Re: Bad use of highmem with buffer_migrate_page?
-To: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>
-Cc: Laura Abbott <lauraa@codeaurora.org>, linaro-mm-sig@lists.linaro.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1341480207-5651-1-git-send-email-shubhrajyoti@ti.com>
+References: <1341480207-5651-1-git-send-email-shubhrajyoti@ti.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Thu, 5 Jul 2012 14:58:20 +0530
+Message-ID: <CAMQu2gzJgkGk5VCkUc1o7oxRhzSY1=Qp0HNR5jt0YFKzwsB10w@mail.gmail.com>
+Subject: Re: [PATCH RFC] spi: omap2-mcspi: Fix the dma_unmap warning
+To: Shubhrajyoti D <shubhrajyoti@ti.com>
+Cc: spi-devel-general@lists.sourceforge.net, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 12, 2012 at 3:21 AM, Laura Abbott <lauraa@codeaurora.org> wrote:
-> On 5/11/2012 1:30 AM, Marek Szyprowski wrote:
->> On Thursday, May 10, 2012 10:08 PM Laura Abbott wrote:
->>> I did a backport of the Contiguous Memory Allocator to a 3.0.8 tree. I
->>> wrote fairly simple test case that, in 1MB chunks, allocs up to 40MB
->>> from a reserved area, maps, writes, unmaps and then frees in an infinite
->>> loop. When running this with another program in parallel to put some
->>> stress on the filesystem, I hit data aborts in the filesystem/journal
->>> layer, although not always the same backtrace. As an example:
->>>
->>> [<c02907a4>] (__ext4_check_dir_entry+0x20/0x184) from [<c029e1a8>]
->>> (add_dirent_to_buf+0x70/0x2ac)
->>> [<c029e1a8>] (add_dirent_to_buf+0x70/0x2ac) from [<c029f3f0>]
->>> (ext4_add_entry+0xd8/0x4bc)
->>> [<c029f3f0>] (ext4_add_entry+0xd8/0x4bc) from [<c029fe90>]
->>> (ext4_add_nondir+0x14/0x64)
->>> [<c029fe90>] (ext4_add_nondir+0x14/0x64) from [<c02a04c4>]
->>> (ext4_create+0xd8/0x120)
->>> [<c02a04c4>] (ext4_create+0xd8/0x120) from [<c022e134>]
->>> (vfs_create+0x74/0xa4)
->>> [<c022e134>] (vfs_create+0x74/0xa4) from [<c022ed3c>]
->>> (do_last+0x588/0x8d4)
->>> [<c022ed3c>] (do_last+0x588/0x8d4) from [<c022fe64>]
->>> (path_openat+0xc4/0x394)
->>> [<c022fe64>] (path_openat+0xc4/0x394) from [<c0230214>]
->>> (do_filp_open+0x30/0x7c)
->>> [<c0230214>] (do_filp_open+0x30/0x7c) from [<c0220cb4>]
->>> (do_sys_open+0xd8/0x174)
->>> [<c0220cb4>] (do_sys_open+0xd8/0x174) from [<c0105ea0>]
->>> (ret_fast_syscall+0x0/0x30)
->>>
->>> Every panic had the same issue where a struct buffer_head [1] had a
->>> b_data that was unexpectedly NULL.
->>>
->>> During the course of CMA, buffer_migrate_page could be called to migrate
->>> from a CMA page to a new page. buffer_migrate_page calls set_bh_page[2]
->>> to set the new page for the buffer_head. If the new page is a highmem
->>> page though, the bh->b_data ends up as NULL, which could produce the
->>> panics seen above.
->>>
->>> This seems to indicate that highmem pages are not not appropriate for
->>> use as pages to migrate to. The following made the problem go away for
->>> me:
->>>
->>> --- a/mm/page_alloc.c
->>> +++ b/mm/page_alloc.c
->>> @@ -5753,7 +5753,7 @@ static struct page *
->>>    __alloc_contig_migrate_alloc(struct page *page, unsigned long private,
->>>                                int **resultp)
->>>    {
->>> -       return alloc_page(GFP_HIGHUSER_MOVABLE);
->>> +       return alloc_page(GFP_USER | __GFP_MOVABLE);
->>>    }
->>>
->>>
->>> Does this seem like an actual issue or is this an artifact of my
->>> backport to 3.0? I'm not familiar enough with the filesystem layer to be
->>> able to tell where highmem can actually be used.
->>
->>
->> I will need to investigate this further as this issue doesn't appear on
->> v3.3+ kernels, but I remember I saw something similar when I tried CMA
->> backported to v3.0.
-
-The problem is still present on latest mainline.  The filesystem layer
-expects that the pages in the block device's mapping are not in highmem
-(the mapping's gfp mask is set in bdget()), but CMA replaces lowmem
-pages with highmem pages leading to the crashes.
-
-The above fix should work, but perhaps the following is preferable since
-it should allow moving highmem pages to other highmem pages?
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4403009..4a4f921 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5635,7 +5635,12 @@ static struct page *
- __alloc_contig_migrate_alloc(struct page *page, unsigned long private,
- 			     int **resultp)
- {
--	return alloc_page(GFP_HIGHUSER_MOVABLE);
-+	gfp_t gfp_mask = GFP_USER | __GFP_MOVABLE;
-+
-+	if (PageHighMem(page))
-+		gfp_mask |= __GFP_HIGHMEM;
-+
-+	return alloc_page(gfp_mask);
- }
-
- /* [start, end) must belong to a single zone. */
+On Thu, Jul 5, 2012 at 2:53 PM, Shubhrajyoti D <shubhrajyoti@ti.com> wrote:
+> The dma_map and dma_unmap should have same parameter
+> passed otherwise we get the below warn.
+>
+> ks8851 spi1.0: DMA-API: device driver tries to free DMA memory it has not allocated [device address=0x000000009f22]
+>
+> [    2.066925] Modules linked in:
+> [    2.070312]
+> [    2.071929] [<c001c250>] (unwind_backtrace+0x0/0x130) from [<c0043d84>] (warn_slowpath_common+0x4c/0x64)
+> [    2.081909] [<c0043d84>] (warn_slowpath_common+0x4c/0x64) from [<c0043e30>] (warn_slowpath_fmt+0x30/0x40)
+> [    2.091949] [<c0043e30>] (warn_slowpath_fmt+0x30/0x40) from [<c0293824>] (check_unmap+0x6d0/0x7b0)
+> [    2.101348] [<c0293824>] (check_unmap+0x6d0/0x7b0) from [<c02939cc>] (debug_dma_unmap_page+0x64/0x70)
+> [    2.111053] [<c02939cc>] (debug_dma_unmap_page+0x64/0x70) from [<c03519a4>] (omap2_mcspi_txrx_dma+0x2d8/0x4fc)
+> [    2.121582] [<c03519a4>] (omap2_mcspi_txrx_dma+0x2d8/0x4fc) from [<c03524d8>] (omap2_mcspi_work.clone.4+0xf0/0x290)
+> [    2.132537] [<c03524d8>] (omap2_mcspi_work.clone.4+0xf0/0x290) from [<c0352900>] (omap2_mcspi_transfer_one_message+0x288/0x438)
+> [    2.144592] [<c0352900>] (omap2_mcspi_transfer_one_message+0x288/0x438) from [<c03503bc>] (spi_pump_messages+0x100/0x160)
+> [    2.156127] [<c03503bc>] (spi_pump_messages+0x100/0x160) from [<c006635c>] (kthread_worker_fn+0xac/0x180)
+> [    2.166168] [<c006635c>] (kthread_worker_fn+0xac/0x180) from [<c0066578>] (kthread+0x90/0x9c)
+> [    2.175140] [<c0066578>] (kthread+0x90/0x9c) from [<c00157fc>] (kernel_thread_exit+0x0/0x8)
+> [    2.183898] ---[ end trace d1830ce6e44292f2 ]---
+>
+> Fix the warn by changing the unmap parameter to the one used while doing
+> dma_map.
+>
+> Reported-by: Russell King <linux@arm.linux.org.uk>
+> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+> ---
+Looks fine to me.
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
