@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab2GEGk6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 02:40:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59690 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081Ab2GEGk5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 02:40:57 -0400
-Date: Thu, 5 Jul 2012 16:40:49 +1000
-From: Ben Skeggs <skeggsb@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [REGRESSION] nouveau: Memory corruption using nva3 engine for
- 0xaf
-Message-ID: <20120705064049.GA8693@nisroch.bne.redhat.com>
-References: <1341469873-1582-1-git-send-email-rydberg@euromail.se>
+	id S1752309Ab2GEGqP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 02:46:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11299 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004Ab2GEGqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 02:46:14 -0400
+Message-ID: <4FF53824.6090303@redhat.com>
+Date: Thu, 05 Jul 2012 08:45:56 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341469873-1582-1-git-send-email-rydberg@euromail.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] virtio-blk: allow toggling host cache between writeback
+ and writethrough
+References: <1341321577-24435-1-git-send-email-pbonzini@redhat.com> <20120704154220.GB27064@redhat.com> <4FF46728.7030302@redhat.com> <20120704160258.GB27271@redhat.com> <4FF46A92.3020009@redhat.com> <20120704213037.GA27713@redhat.com>
+In-Reply-To: <20120704213037.GA27713@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 08:31:13AM +0200, Henrik Rydberg wrote:
-> Hi Ben, Dave,
-Hey Henrik,
+Il 04/07/2012 23:30, Michael S. Tsirkin ha scritto:
+>>>>>> +static int virtblk_get_cache_mode(struct virtio_device *vdev)
+>>>>>
+>>>>> Why are you converting u8 to int here?
+>>>>
+>>>> The fact that it is a u8 is really an internal detail.  Perhaps the bug
+>>>> is using u8 in the callers.
+>>>
+>>> Make it bool then?
+>>>
+>>> You are using u8 in the config. So you could get any value
+>>> besides 0 and 1, and you interpret that as 1.
+>>> Is 1 always a safe value? If not maybe it's better to set
+>>> to a safe value if it is not 0 or 1, that is we don't know how to interpret it.
+>>
+>> That would be a host bug; the spec only gives meaning to 0 and 1.
+> 
+> Yes but if the other side does not validate values implementations
+> *will* have bugs. Why not declare bits 1-7 reserved?
 
-> 
-> Since 3.5-rc0, I have been experiencing occasional screen corruption
-> on my MacBookAir3,1, using a GeForce 320M (nv50, 0xaf). The X driver
-> version is xf86-video-nouvea-1.0.1-1 (arch).
-> 
-> I do not know what the root problem is, but I have been able to
-> isolate the symptoms to the usage of nva3_copy.c. The patch below is
-> the least intrusive way I could find which kills the symptoms.
-> 
-> Hopefully this will sched some light on the true problem, such that a
-> fix can be found for 3.5.
-Thanks for tracking down the source of this corruption.  I don't have
-any such hardware, so until someone can figure it out, I think we
-should apply this patch.
+Ok, that would be a different change.  I thought about it yesterday, but
+it seemed like a useless complication.  It's not like we have been
+adding configuration fields every other week. :)
 
-Cheers,
-Ben.
+But I can certainly prepare patches to both virtio-blk and the spec for
+that if you prefer.
 
-> 
-> Thanks,
-> Henrik
-> 
-> The nva3 copy engine exhibits random memory corruption in at least one
-> case, the GeForce 320M (nv50, 0xaf) in the MacBookAir3,1.  This patch
-> omits creating the engine for the specific chipset, falling back to
-> M2MF, which kills the symptoms.
-> ---
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-
->  drivers/gpu/drm/nouveau/nouveau_state.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/gpu/drm/nouveau/nouveau_state.c b/drivers/gpu/drm/nouveau/nouveau_state.c
-> index 19706f0..b466937 100644
-> --- a/drivers/gpu/drm/nouveau/nouveau_state.c
-> +++ b/drivers/gpu/drm/nouveau/nouveau_state.c
-> @@ -731,7 +731,6 @@ nouveau_card_init(struct drm_device *dev)
->  			case 0xa3:
->  			case 0xa5:
->  			case 0xa8:
-> -			case 0xaf:
->  				nva3_copy_create(dev);
->  				break;
->  			}
-> 
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+Paolo
