@@ -1,96 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751559Ab2GEFs1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 01:48:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56691 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927Ab2GEFs0 (ORCPT
+	id S1751741Ab2GEFti (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 01:49:38 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52393 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098Ab2GEFth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 01:48:26 -0400
-Message-ID: <4FF52A9B.3050806@debian.org>
-Date: Thu, 05 Jul 2012 13:48:11 +0800
-From: "Ying-Chun Liu (PaulLiu)" <paulliu@debian.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        Samuel Ortiz <sameo@linux.intel.com>, patches@linaro.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Robin Gong <B38343@freescale.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mfd: Add Freescale's PMIC MC34708 support
-References: <1334853521-23792-1-git-send-email-paul.liu@linaro.org> <20120704073749.GD5398@pengutronix.de> <CAAQ0ZWST5DgS+2Er5EsNscxXtThO7H9-HAO=TtM6Me7EHygK7w@mail.gmail.com>
-In-Reply-To: <CAAQ0ZWST5DgS+2Er5EsNscxXtThO7H9-HAO=TtM6Me7EHygK7w@mail.gmail.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enigC4B6D102BE67716B920F9EF5"
+	Thu, 5 Jul 2012 01:49:37 -0400
+Date: Thu, 5 Jul 2012 15:49:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alexander Graf <agraf@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stuart Yoder <stuart.yoder@freescale.com>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: linux-next: build failure after merge of the kvm-ppc tree
+Message-Id: <20120705154929.219789032ef59f9243d0b8a5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__5_Jul_2012_15_49_29_+1000_=prvsJydXyRidabc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigC4B6D102BE67716B920F9EF5
-Content-Type: text/plain; charset=UTF-8
+--Signature=_Thu__5_Jul_2012_15_49_29_+1000_=prvsJydXyRidabc
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-(2012=E5=B9=B407=E6=9C=8804=E6=97=A5 21:44), Shawn Guo wrote:
-> On 4 July 2012 15:37, Uwe Kleine-K=C3=B6nig <u.kleine-koenig@pengutroni=
-x.de> wrote:
->> I want to push that forward. What is the state of these patches on you=
-r
->> end? Did you start to address the comments? Are there more recent
->> patches than the ones in this thread?
->>
->> Whatever you might have it would be great if you could share it to hel=
-p
->> preventing duplicate efforts.
->>
-> As far as I know, Paul hasn't been on that effort any more.
->=20
-> Copied his another email address.
->=20
-> Regards,
-> Shawn
+Hi Alexander,
 
-Hi Uwe,
+After merging the kvm-ppc tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-Please take it over.
-I don't have much time left to work on this patch.
-I don't have a new version of this driver either.
+arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
+arch/powerpc/kernel/exceptions-64s.S:479: Error: wrong number of operands
+arch/powerpc/kernel/exceptions-64s.S:486: Error: wrong number of operands
+arch/powerpc/kernel/exceptions-64s.S:486: Error: wrong number of operands
+arch/powerpc/kernel/exceptions-64s.S:487: Error: wrong number of operands
+arch/powerpc/kernel/exceptions-64s.S:487: Error: wrong number of operands
+arch/powerpc/kernel/exceptions-64s.S:494: Error: wrong number of operands
+arch/powerpc/kernel/exceptions-64s.S:494: Error: wrong number of operands
 
-Many Thanks,
-Paul
+Caused by commit bc8cc4993e19 ("PPC: use CURRENT_THREAD_INFO instead of
+open coded assembly").  The fact that this patch has problems was already
+pointed out on the linuxppc-dev mailing list and it clearly hasn't been
+build tested.
 
+I have used the version of the kvm-ppc tree from next-20120703 for today.
 --=20
-                                PaulLiu (=E5=8A=89=E7=A9=8E=E9=A7=BF)
-E-mail: Ying-Chun Liu (PaulLiu) <paulliu@debian.org>
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-
---------------enigC4B6D102BE67716B920F9EF5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+--Signature=_Thu__5_Jul_2012_15_49_29_+1000_=prvsJydXyRidabc
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-iQIcBAEBCgAGBQJP9SqjAAoJEPgLgUbQQog2ICEP/jg+BmwSdJ62swFPaRMbMOaP
-7bLikde3ykSh1FGJ0wHsx5+DG4CTBtEWvkRAUeBrEfTkiB7C1S6LcSNwiG8mRAKH
-g8EmzINJ2dfylyezEJlikvM6RNkfkkVaunS+T0rJ8lil8q/RZfOsxhHUmCqKKutr
-kmVvjR36YJpw5DN/TQlOPqsu0x998Hy4lcnoP5pu1EwF1l+mus6jfrvDZoyur3f+
-jF+PaMUgidA9NcbbMNz5ovS2uzd+tbNDQVqm3b879UnJbH/tnV6P/LI4Xlr/rPDH
-wyw+ZF1x2Q1RJ5+9RR5IjPrI04W6hkw0dl1dvgN9c+fKj+OM995eYx1t3PKrJOfG
-2316ef0638IbiMBjisNzWVBytrfljQBGqmvjQ3Rkah4i/ODLiutE1XPzrtWXVuhK
-W5mRUvXdE8lkDiZiQt/tm6ynpekpAEGK2WAZegdOFZJKmINcBMEMu/bjw7jItnpe
-aoAHZUUgsbHCyCDCuxdVg5witkYSXhnvfpTnTk2pPIP6Ze/keoBC9roDUlptNv8j
-fZghPxGJt6pmePxGjOeC4cDpgxs7ZfcPwjRpnN5A/8Az7GI1Fzi4anTZxvoADuZJ
-qH1db5OngkEnqd2A1MDtjYqZQxQNNGPlwWIBkiuANR1IbpDeAFe3AUerM+B7VnKn
-gGJZRjS3+89hUaeJfirC
-=PhHB
+iQIcBAEBCAAGBQJP9SrpAAoJEECxmPOUX5FEZZkQAJxNa1Um+xGuhziscd5TI0N5
+NU2ZYiyMZcI0uh7fS2WaOrwop4i70mltOp2fV+z9pamFS8K46Bf/Uxr1jrr265cy
+4M9oXUhbYo7/z8O5BiUzBc+cCtA4BbjGoaux5apuHMHpUFamE1Fty86LtaF9Dauj
+g3DOn0cJMZ+y1Uf0Q1tK72GNt3nmPeU01effqgFLvi+bC//q/OHfBoWwAQcRjEqK
+ncp5ZES5ef4VfQfPal24anUTqxgqTvIWW2kc4JcwgnmkkUxJa4MCVD1vQljJkNWD
+r9SOv2DxW+ZTNZIQrF8nlW6azVgvS/l6Albiyngfr8T7e0Yg7xpyPDlJ4IiKSjst
+1eqC3nyB1A++w/YwEtgRR1An3QGpo3JhduWtxQnabQE5is0EgT93MtfmiQVb+1md
+W7W/MGhkLAb/sHfET1wnpLXJBBx9ua+0TY00bQ66ZgWv44t7mcCkP8nE7FKYom2c
+2vTFc6iCM/J7eCVqEv4I270p/3Gw+D+EekYbEtOmW9UnWfUksRyXrjIaA2XT4fhX
++U8etlZZDtfK9eh6+7MrFHhe+gzj+dcwBRzS70MdbbGndR7lX3SJYBwVtVttfdMy
+Bj9d5w3aZScZeU9BS0XsTfBASw9ImQ8x1HGx6sb1W+qNk2PeD3cW0S4HLQtLJ1EV
+3nq7i8aHGa2f6lP3AKdO
+=95m6
 -----END PGP SIGNATURE-----
 
---------------enigC4B6D102BE67716B920F9EF5--
+--Signature=_Thu__5_Jul_2012_15_49_29_+1000_=prvsJydXyRidabc--
