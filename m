@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933073Ab2GENis (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 09:38:48 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:41606 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756038Ab2GENir (ORCPT
+	id S1756490Ab2GENt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 09:49:26 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:46076 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756225Ab2GENtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 09:38:47 -0400
+	Thu, 5 Jul 2012 09:49:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <1341493725.19870.46.camel@laptop>
-References: <CACV3sbLSzPoYYFJky=sFpca4L2gKdoOoEySn+mVHh1aphQLkyw@mail.gmail.com>
-	<1341476877.7709.0.camel@twins>
-	<CACV3sb+aadXJYu7_JUedCodgQmF8d1q7OxSVoz=vwfc+Ow_caA@mail.gmail.com>
-	<CACV3sbLJpv2KSSkrRRDVuJ6xtJOSwCKaJfhO1wMF6DgAU9eCBw@mail.gmail.com>
-	<1341493725.19870.46.camel@laptop>
-Date: Thu, 5 Jul 2012 21:38:46 +0800
-Message-ID: <CACV3sb+rixP3HZ2=dJoe7x+9Rc5amRKu7dyj_4mcaZajwH2MSA@mail.gmail.com>
-Subject: Re: [PATCH] perf: add /proc/perf_events file for dump perf events info
-From: Jovi Zhang <bookjovi@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Date: Thu, 5 Jul 2012 21:49:00 +0800
+X-Google-Sender-Auth: l3Vfl1D5d6N5mbiWX9jovgjESk8
+Message-ID: <CAAwpLmyKrXk=RwNv2jmaqczJyzUz7TQ808EBr1AQdopor8KGjQ@mail.gmail.com>
+Subject: Add MEDIATEK products to option driver
+From: gaosen <gaosen.zhang@mediatek.com>
+To: smurf@smurf.noris.de, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 5, 2012 at 9:08 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Thu, 2012-07-05 at 21:02 +0800, Jovi Zhang wrote:
->> > Watch all perf events in system wide can be very useful for perf subsystem issue handling,
->> > to know which perf event is active in system,
->> > perf event is a resouce, it would like to be managed easily for user, with more visable, like /proc/timer, etc...
->> >
->> > .jovi
->>
->>
->> Ping...
->
-> Never saw your reply, due to HTML it landed in the spam folder.
->
-> That's a pretty non-specific answer.. again, why are you interested,
-> what specific problem are you wanting to solve.
->
-> I've never had this need myself.
->
-sorry, I will try to explain more.
+>From bb4d2a7155393b5d1207c398c3f9644898588e8a Mon Sep 17 00:00:00 2001
+From: "gaosen.zhang" <gaosen.zhang@mediatek.com>
+Date: Thu, 5 Jul 2012 20:01:54 +0800
+Subject: [PATCH 1/1] Add MEDIATEK products to option driver
 
-One problem I faced is about hw_breakpoint.
-As you known, hw_breakpoint use limit debug register in most architecture,
-In multi-user environment, sometime user cannot set hw_breakpoint because
-other user already occupy hw_breakpoint slots. currently, there don't
-have a way to know
-how many hw_breakpint perf event already is used in system, so that's
-why I thinking
-we might need a way to get perf event in systerm wide, with visable output.
 
-Also this method is not only used for hw_breakpoint, others perf event
-might have similar problem,
-even other perf event don't have limit number, but it can make use of
-this /proc/perf_events
+Signed-off-by: gaosen.zhang <gaosen.zhang@mediatek.com>
+---
+ drivers/usb/serial/option.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-Active perf events is cpu consumer at most time, at this point of
-view, system administrator also can use this
-/proc/perf_events to detect is there have any perf events is consuming cpu.
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index e668a24..3d47661 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -496,6 +496,15 @@ static void option_instat_callback(struct urb *urb);
 
-A method to detect perf event leak? of couse our perf subsystem is
-very stable right now, ingnore this :)
+ /* MediaTek products */
+ #define MEDIATEK_VENDOR_ID			0x0e8d
++#define MEDIATEK_PRODUCT_DC_1COM		0x00a0
++#define MEDIATEK_PRODUCT_DC_4COM		0x00a5
++#define MEDIATEK_PRODUCT_DC_5COM		0x00a4
++#define MEDIATEK_PRODUCT_7208_1COM		0x7101
++#define MEDIATEK_PRODUCT_7208_2COM		0x7102
++#define MEDIATEK_PRODUCT_FP_1COM		0x0003
++#define MEDIATEK_PRODUCT_FP_2COM		0x0023
++#define MEDIATEK_PRODUCT_FPDC_1COM		0x0043
++#define MEDIATEK_PRODUCT_FPDC_2COM		0x0033
 
-.jovi
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+@@ -1233,6 +1242,17 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff,
+0x02, 0x01) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff,
+0x00, 0x00) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff,
+0x02, 0x01) },        /* MediaTek MT6276M modem & app port */
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID,
+MEDIATEK_PRODUCT_DC_1COM, 0x0a, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID,
+MEDIATEK_PRODUCT_DC_5COM, 0xff, 0x02, 0x01) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID,
+MEDIATEK_PRODUCT_DC_5COM, 0xff, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID,
+MEDIATEK_PRODUCT_DC_4COM, 0xff, 0x02, 0x01) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID,
+MEDIATEK_PRODUCT_DC_4COM, 0xff, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID,
+MEDIATEK_PRODUCT_7208_1COM, 0x02, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID,
+MEDIATEK_PRODUCT_7208_2COM, 0x02, 0x02, 0x01) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID,
+MEDIATEK_PRODUCT_FP_1COM, 0x0a, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID,
+MEDIATEK_PRODUCT_FP_2COM, 0x0a, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID,
+MEDIATEK_PRODUCT_FPDC_1COM, 0x0a, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID,
+MEDIATEK_PRODUCT_FPDC_2COM, 0x0a, 0x00, 0x00) },
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
+-- 
+1.7.9.5
