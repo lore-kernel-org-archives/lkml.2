@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860Ab2GEHaQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 03:30:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54293 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab2GEHaO (ORCPT
+	id S1754023Ab2GEHdv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 03:33:51 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:44110 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853Ab2GEHdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 03:30:14 -0400
+	Thu, 5 Jul 2012 03:33:50 -0400
+Message-ID: <4FF5435A.1000909@linaro.org>
+Date: Thu, 05 Jul 2012 08:33:46 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <1341473198-3883-1-git-send-email-zwu.kernel@gmail.com>
-References: <1341473198-3883-1-git-send-email-zwu.kernel@gmail.com>
-Date: Thu, 5 Jul 2012 15:30:13 +0800
-Message-ID: <CAEH94Lg7owGgK=EcY_FVjQPYt4jF3DpEMaVayEy0YH_uMofc_g@mail.gmail.com>
-Subject: Re: [PATCH] btrfs-progs: rework the code logic
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: linux-btrfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Lee Jones <lee.jones@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
+        arnd@arndb.de, sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device
+ registration
+References: <1341316788-12730-1-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1341316788-12730-1-git-send-email-lee.jones@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, please ignore this patch.
+Hi Sam,
 
-On Thu, Jul 5, 2012 at 3:26 PM,  <zwu.kernel@gmail.com> wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On 03/07/12 12:59, Lee Jones wrote:
+> We register the ab8500 as an MFD device from db8500 code during Device Tree
+> boot in order to solve some limitations of DT. However, when Device Tree is
+> not enabled, we still want to allow platform code to register the ab8500 in
+> the normal way. Here we force MFD device registration of the ab8500 only
+> when booting with Device Tree enabled.
 >
-> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> ---
->  extent-cache.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+> Solves this issue:
+> WARNING: at fs/sysfs/dir.c:526 sysfs_add_one+0x88/0xb0()
+> sysfs: cannot create duplicate filename '/bus/platform/devices/ab8500-core.0'
 >
-> diff --git a/extent-cache.c b/extent-cache.c
-> index 3dd6434..a5084ee 100644
-> --- a/extent-cache.c
-> +++ b/extent-cache.c
-> @@ -136,10 +136,10 @@ struct cache_extent *find_first_cache_extent(struct cache_tree *tree,
->         struct cache_extent *entry;
->
->         ret = __tree_search(&tree->root, start, 1, &prev);
-> -       if (!ret)
-> +       if (!ret) {
->                 ret = prev;
-> -       if (!ret)
->                 return NULL;
-> +        }
->         entry = rb_entry(ret, struct cache_extent, rb_node);
->         return entry;
->  }
-> --
-> 1.7.6
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Reported-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
+Are you planning on taking this in any time soon? I'd really like to fix 
+this bug for Linus in -next.
 
+Kind regards,
+Lee
 
 -- 
-Regards,
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
 
-Zhi Yong Wu
+
