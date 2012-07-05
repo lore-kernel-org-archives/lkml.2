@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933037Ab2GEN03 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 09:26:29 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:34249 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932483Ab2GEN02 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 09:26:28 -0400
+	id S933049Ab2GEN0h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 09:26:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61103 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932483Ab2GEN0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 09:26:34 -0400
+Message-ID: <4FF59606.4060504@redhat.com>
+Date: Thu, 05 Jul 2012 16:26:30 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <1340945879-11712-2-git-send-email-acourbot@nvidia.com>
-References: <1340945879-11712-1-git-send-email-acourbot@nvidia.com>
-	<1340945879-11712-2-git-send-email-acourbot@nvidia.com>
-Date: Thu, 5 Jul 2012 15:26:27 +0200
-Message-ID: <CACRpkdbjHCc0pud8hnjJi1AMM5XQUmS=duhSnzXO+QO29YLk0A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] of: return -ENOENT when no property
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <acourbot@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+To: Prarit Bhargava <prarit@redhat.com>
+CC: linux-kernel@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 1/2] kvm, Add x86_hyper_kvm to complete detect_hypervisor_platform
+ check [v2]
+References: <1341493877-16622-1-git-send-email-prarit@redhat.com> <1341493877-16622-2-git-send-email-prarit@redhat.com>
+In-Reply-To: <1341493877-16622-2-git-send-email-prarit@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 29, 2012 at 6:57 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+On 07/05/2012 04:11 PM, Prarit Bhargava wrote:
+> While debugging I noticed that unlike all the other hypervisor code in the
+> kernel, kvm does not have an entry for x86_hyper which is used in
+> detect_hypervisor_platform() which results in a nice printk in the
+> syslog.  This is only really a stub function but it
+> does make kvm more consistent with the other hypervisors.
+> 
+> [v2]: add detect and _GPL export
+> 
 
-> Make of_parse_phandle_with_args return -ENOENT instead of -EINVAL when
-> no matching property is found, which allows to discriminate between
-> absence of property and parsing error.
->
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+Please copy at least kvm@vger.kernel.org, and preferably Marcelo as well
+(the other kvm co-maintainer).
 
-Rob can you take this into the DT git?
 
-Yours,
-Linus Walleij
+
+-- 
+error compiling committee.c: too many arguments to function
+
+
