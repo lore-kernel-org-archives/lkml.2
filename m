@@ -1,36 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab2GEM1M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 08:27:12 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:49709 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613Ab2GEM1L (ORCPT
+	id S1756064Ab2GEM3H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 08:29:07 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:51227 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753799Ab2GEM3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 08:27:11 -0400
+	Thu, 5 Jul 2012 08:29:06 -0400
 MIME-Version: 1.0
-Date: Thu, 5 Jul 2012 20:27:09 +0800
-Message-ID: <CAJd=RBAv=5B7FPRYQtEKnxTHCz65eC29d0w+ANoQivMWnhMfhQ@mail.gmail.com>
-Subject: [patch] BFS 421-1: cleanup rt_queue
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20120527205541.GA3164@mail.gnudd.com>
+References: <20120527205541.GA3164@mail.gnudd.com>
+Date: Thu, 5 Jul 2012 14:29:04 +0200
+Message-ID: <CACRpkdaVgtSuGE4Usn-0ggqWp3XG6aLdgashC9rNPSdrhU6U1g@mail.gmail.com>
+Subject: Re: [PATCH] gpio-sta2x11: don't use pdata if null
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alessandro Rubini <rubini@gnudd.com>
+Cc: linux-kernel@vger.kernel.org, Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first patch, a tiny cleanup, in the round of 421-1.
+On Sun, May 27, 2012 at 10:55 PM, Alessandro Rubini <rubini@gnudd.com> wrote:
 
-SOB: Hillf Danton <dhillf@gmail.com>
----
+> If there is no platform data available, the driver shouldn't use the
+> pointer or it will oops.  Since things will mostly work nonetheless,
+> (the BIOS may have set up the pins properly), I'd better not fail the
+> probe even in this case.
+>
+> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
 
---- a/kernel/sched/bfs.c	Thu Jul  5 20:08:04 2012
-+++ b/kernel/sched/bfs.c	Thu Jul  5 20:10:36 2012
-@@ -84,7 +84,6 @@
+Applied.
 
- #define rt_prio(prio)		unlikely((prio) < MAX_RT_PRIO)
- #define rt_task(p)		rt_prio((p)->prio)
--#define rt_queue(rq)		rt_prio((rq)->rq_prio)
- #define batch_task(p)		(unlikely((p)->policy == SCHED_BATCH))
- #define is_rt_policy(policy)	((policy) == SCHED_FIFO || \
- 					(policy) == SCHED_RR)
---
+Thanks,
+Linus Walleij
