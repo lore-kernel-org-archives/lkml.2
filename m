@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933388Ab2GEQsG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 12:48:06 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42421 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346Ab2GEQsF (ORCPT
+	id S1751798Ab2GERL2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 13:11:28 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:40830
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750910Ab2GERL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 12:48:05 -0400
-Message-ID: <4FF5C53F.30105@gmail.com>
-Date: Thu, 05 Jul 2012 10:47:59 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 5 Jul 2012 13:11:27 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1202hzzz2dh2a8h668h839h93fhd25he5bhf0ah107ah)
+Message-ID: <4FF5CAB5.5090904@freescale.com>
+Date: Thu, 5 Jul 2012 12:11:17 -0500
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] perf tool: save cmdline from user in file header vs what
- is passed to record
-References: <1341288506-85207-1-git-send-email-dsahern@gmail.com> <CABPqkBSP9=QfU5SYfm0ys9FA6jro+az07zTMFnNAx+MMFr7+Vw@mail.gmail.com>
-In-Reply-To: <CABPqkBSP9=QfU5SYfm0ys9FA6jro+az07zTMFnNAx+MMFr7+Vw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Zhao Chenhui <chenhui.zhao@freescale.com>
+CC: Tabi Timur-B04825 <B04825@freescale.com>,
+        Zhao Chenhui-B35336 <B35336@freescale.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Yang-R58472 <r58472@freescale.com>, <leoli@freescale.com>
+Subject: Re: [PATCH v7 1/5] powerpc/85xx: implement hardware timebase sync
+References: <1341310879-5468-1-git-send-email-chenhui.zhao@freescale.com> <CAOZdJXUeY-_mmBLoA25_g4eLqwHxYX4c_ECbU+KYqfM307THNQ@mail.gmail.com> <20120704031426.GA6133@localhost.localdomain> <4FF3B5B6.8090400@freescale.com> <20120704034545.GA6196@localhost.localdomain>
+In-Reply-To: <20120704034545.GA6196@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/5/12 9:48 AM, Stephane Eranian wrote:
-> On Tue, Jul 3, 2012 at 6:08 AM, David Ahern <dsahern@gmail.com> wrote:
-> Yes, you need to manually add the pfm_header__set_cmdline(). That begs
+On 07/03/2012 10:45 PM, Zhao Chenhui wrote:
+> On Tue, Jul 03, 2012 at 10:17:12PM -0500, Tabi Timur-B04825 wrote:
+>> Zhao Chenhui wrote:
+>>> If the guts variable is NULL, it indicates there is error in dts or kernel.
+>>> We should fix the error, rather than ignore it.
+>>
+>> And that's why there's a warning message.  Crashing the kernel is not 
+>> going to fix anything.
+>>
+> 
+> This error likely crashes the kenel somewhere.
 
-I take it you meant perf_header__set_cmdline, not pfm_header...
+Only if you're doing cpu hotplug or kexec.
 
-> the question
-> as to whether or not it would not be better to move this call directly into
-> the parse_option() function given that it must be done BEFORE parsing actually
-> takes place.That way we would be sure all present and future commands would
-> be covered.
+-Scott
 
-Sure, I'll move it to parse_options.
-
-David
