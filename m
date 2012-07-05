@@ -1,57 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab2GEP4y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 11:56:54 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54186 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab2GEP4x (ORCPT
+	id S1756866Ab2GEP5z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 11:57:55 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34043 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173Ab2GEP5w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 11:56:53 -0400
-Message-ID: <4FF5B942.6080101@wwwdotorg.org>
-Date: Thu, 05 Jul 2012 09:56:50 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Thu, 5 Jul 2012 11:57:52 -0400
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] pwm: fix used-uninitialized warning in pwm_get()
-References: <1341347661-26567-1-git-send-email-swarren@wwwdotorg.org> <20120704055828.GC18779@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20120704055828.GC18779@avionic-0098.mockup.avionic-design.de>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1341393205.23484.111.camel@twins>
+References: <1340899250-26803-1-git-send-email-feng.tang@intel.com>
+	<1341300987.11663.15.camel@concordia>
+	<1341306905.23484.53.camel@twins>
+	<1341389237.22063.7.camel@concordia>
+	<1341393205.23484.111.camel@twins>
+Date: Thu, 5 Jul 2012 17:57:51 +0200
+Message-ID: <CABPqkBS=eXZXXf6HKtw=LgaKMW9Pe2tfMiuD+FGw5CWkPY-SuA@mail.gmail.com>
+Subject: Re: [PATCH] perf, x86: Enabled PEBS event to be exported in a raw format
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Michael Ellerman <michael@ellerman.id.au>, Feng Tang <feng.tang@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Robert Richter <robert.richter@amd.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2012 11:58 PM, Thierry Reding wrote:
-> On Tue, Jul 03, 2012 at 02:34:21PM -0600, Stephen Warren wrote:
->> From: Stephen Warren <swarren@nvidia.com>
->> 
->> This fixes: drivers/pwm/core.c: In function 'pwm_get': 
->> drivers/pwm/core.c:534:15: warning: 'index' may be used
->> uninitialized in this function
->> 
->> The addition to the if condition at end of the function isn't
->> strictly necessary to solve the warning, but does make it more
->> obvious that the initialization of "index" to a dummy value isn't
->> just hiding the problem.
-> 
-> Actually this seems to be a false positive, and one that I don't
-> see (I use GCC 4.6.3). index will be initialized when chip is set
-> in the loop. My guess is that GCC 4.6.3 actually notices while your
-> version doesn't.
+On Wed, Jul 4, 2012 at 11:13 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2012-07-04 at 18:07 +1000, Michael Ellerman wrote:
+>> Basically we have three registers which provide various information about
+>> the instruction which caused an event to overflow.
+>>
+>> The first reports the address of the instruction, the second the data
+>> address associated with the instruction, and the third reports "other
+>> stuff".
+>>
+>> We use the first for SAMPLE_IP, and the second for SAMPLE_ADDR, but
+>> currently we have no way of spitting out the third register.
+>>
+>> There's a whole bunch of info in there. I think the most interesting are
+>> stuff like whether and where in the pipeline the instruction stalled, or
+>> where a load was serviced from. I'm not sure to be honest, so I've asked
+>> the HW guys what they're most interested in.
+>>
+>> So I can imagine us coming up with a generic sample type for "sample
+>> other info at event overflow", but I'm struggling to see how we'd make
+>> the content of the sample non architecture specific, or even processor
+>> version specific.
+>
+> Right so we're working on a data-source like thing, the last attempt at
+> adding something like that is in this thread:
+>
+>  http://marc.info/?l=linux-kernel&m=130987553915170&w=2
+>  http://marc.info/?l=linux-kernel&m=131000375226044
+>
+> I think Stephane is currently trying to revive that, although he hasn't
+> posted yet. Please have a look if that captures the possible PPC states
+> as well. Stephane could you share your current stuff so Michael can have
+> a look?
+>
+I am currently on vacation and with limited internet access.
 
-Yes, it is a false-positive, which is why I was fine with just
-initializing the variable to hide the warning rather than making some
-other code change. I think there's still value in hiding the warning
-though, so that:
+But yes, the PEBS-LL patchset I have been working on
+does abstract PEBS-LL and offers an abstracted data source
+field. It uses:
+PERF_SAMPLE_IP: for instr address
+PERF_SAMPLE_ADDR: for the data address
 
-a) Nobody else has to look at the warning and decide it's a false
-positive and remember to ignore it.
+It introduces:
+PERF_SAMPLE_LATENCY: to capture the access latency
+PERF_SAMPLE_DSRC: to encode the data source.
 
-b) The fewer warnings there are, the more likely new warnings will be
-noticed and analyzed.
+That latter value is a structured bitmask which covers:
+- type of access (load, store, prefetch, instr)
+- mem level: hit or miss in L1, LFB, L2, L3, LOC_RAM, REM_RAM, uncached, IO
+- snoop access: hit, miss, none
+- TLB access: hit or miss in L1, L2, HW walker, OS fault
 
-So I'd still argue for this change, or some other fix for the warning,
-be merged.
+Hopefully those are generic enough to cover all possible cases across
+architectures. PPC would be a good test case.
+Note that multiple bits per category may be set in case the HW cannot
+disambiguate like this is the case on with PEBS-LL sometimes.
+
+>
+> Not quite sure what to do for your pipeline stage thing, I'm not sure
+> I've seen that elsewhere.
+>
+>
+> Anyway, yes PERF_SAMPLE_RAW is the 'other info at overflow' which is
+> specific to the current cpu and phase of moon type field, and it does
+> get (ab)used in various places, but I still cringe every time I see it
+> used.
+>
+> The problem with that thing is that it gives people the data they need
+> for their special tools and thus removes them from the incentive pool to
+> help create more generic,useful tools.
+>
+> For AMD IBS we've given in since that thing is completely weird, IIRC
+> Robert was going to grow perf-ibs to record and report the data it
+> captures so we've at least got a useful open-source tool for it.
