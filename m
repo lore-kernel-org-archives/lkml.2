@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367Ab2GERhp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 13:37:45 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:58426 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518Ab2GERhm (ORCPT
+	id S1756518Ab2GERmv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 13:42:51 -0400
+Received: from emh03.mail.saunalahti.fi ([62.142.5.109]:43357 "EHLO
+	emh03.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974Ab2GERmu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 13:37:42 -0400
-Date: Thu, 5 Jul 2012 21:37:29 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: [rfc 2/7] procfs: Convert /proc/pid/fdinfo/ handling routines to
- seq-file
-Message-ID: <20120705173729.GC16586@moon>
-References: <20120627110116.201735815@openvz.org>
- <20120627110512.485189390@openvz.org>
- <4FF3F2B6.5040909@parallels.com>
+	Thu, 5 Jul 2012 13:42:50 -0400
+Date: Thu, 5 Jul 2012 20:42:40 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Miguel =?iso-8859-1?Q?G=F3mez?= <magomez@igalia.com>
+Cc: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
+        dan.carpenter@oracle.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/19] Staging: xgifb: Improve debug strings.
+Message-ID: <20120705174240.GB4519@blackmetal.musicnaut.iki.fi>
+References: <cover.1341498465.git.magomez@igalia.com>
+ <8e9d31bda6a900ef71ba4a19014624939540455c.1341498465.git.magomez@igalia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4FF3F2B6.5040909@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <8e9d31bda6a900ef71ba4a19014624939540455c.1341498465.git.magomez@igalia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Antivirus: VAMS
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 04, 2012 at 11:37:26AM +0400, Pavel Emelyanov wrote:
-...
-> 
-> I believe we can still have the proc_fdinfo_read and proc_fd_link code non-splitted.
-> Just push a callback pointer ino the proc_fd_info (as usual -- we an opaque void *argument).
+Hi,
 
-Hi Pavel, sorry for delay (was busy a bit). It seems this wont work.
-Look, previously we have had
+On Thu, Jul 05, 2012 at 04:45:48PM +0200, Miguel Gómez wrote:
+>  	if (!htotal || !vtotal) {
+> -		pr_debug("XGIfb: Invalid 'var' information\n");
+> +		pr_debug("Invalid 'var' information\n");
+[...]
+> -		pr_err("xgifb: invalid value for option: %s\n", fullopt);
+> +		pr_err("Invalid value for option: %s\n", fullopt);
+[...]
+> -	pr_info("xgifb: options: %s\n", options);
+> +	pr_info("Options: %s\n", options);
 
-static int proc_fd_info(struct inode *inode, struct path *path, char *info)
-{
-	struct task_struct *task = get_proc_task(inode);
-	...
+Can you really remove the driver prefix?
 
-	if (info) {
-		...
-	}
+>  	if (reg1 != 0xa1) { /*I/O error */
+> -		dev_err(&pdev->dev, "I/O error!!!");
+> +		dev_err(&pdev->dev, "I/O error!!!\n");
 
-	this makes info argument optional
-}
+Those exclamation marks are just redundant noise.
 
-static int proc_fd_link(struct dentry *dentry, struct path *path)
-{
-	return proc_fd_info(dentry->d_inode, path, NULL);
-}
+> -		dev_err(&pdev->dev, "unable request memory size %x\n",
+> +		dev_err(&pdev->dev, "Unable request memory size %x\n",
+[...]
+> -		dev_err(&pdev->dev, "no supported video mode found\n");
+> +		dev_err(&pdev->dev, "No supported video mode found\n");
+[...]
+> -		dev_info(&pdev->dev, "added MTRR\n");
+> +		dev_info(&pdev->dev, "Added MTRR\n");
+[...]
+> -		dev_err(&pdev->dev, "video BIOS not available\n");
+> +		dev_err(&pdev->dev, "Video BIOS not available\n");
+[...]
+> -	dev_err(&pdev->dev, "video BIOS corrupted\n");
+> +	dev_err(&pdev->dev, "Video BIOS corrupted\n");
 
-it's possible because we didn't use seq-files engine. One we switch to
-seq-files the old proc_fd_info become a part of
+What is the improvement?
 
-static const struct file_operations proc_fdinfo_file_operations = {
-	.open		= seq_fdinfo_open,
-
-ie the declaration of seq_fdinfo_open is restricted to file_operations::open
-method and I can't add opaque void *argument here.
-
-Sure I can add one more wrapper function but I guess this increase code
-complexity which I tried to escape.
-
-	Cyrill
+A.
