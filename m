@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab2GEHfA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 03:35:00 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:35846 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581Ab2GEHe7 (ORCPT
+	id S1754041Ab2GEHfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 03:35:47 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44334 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752581Ab2GEHfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 03:34:59 -0400
-From: Dong Hao <haodong@linux.vnet.ibm.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Hao Dong <haodong@linux.vnet.ibm.com>
-Subject: [PATCH] lib/kobject: restore old name when rename failure
-Date: Thu,  5 Jul 2012 15:34:49 +0800
-Message-Id: <1341473689-2987-1-git-send-email-haodong@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.2.5
-x-cbid: 12070507-0342-0000-0000-00000232914C
+	Thu, 5 Jul 2012 03:35:46 -0400
+Date: Thu, 5 Jul 2012 17:35:26 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>, Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the signal tree with the arm-current
+ tree
+Message-Id: <20120705173526.bf8772adb18edfc91adddea8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__5_Jul_2012_17_35_26_+1000_/=+Hn5Nt1x+sjv1d"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hao Dong <haodong@linux.vnet.ibm.com>
+--Signature=_Thu__5_Jul_2012_17_35_26_+1000_/=+Hn5Nt1x+sjv1d
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Function kobject_set_name_vargs() was implemented to rename the
-existing kobject. That depends on kvasprintf(), which might return
-NULL. So it's possible the kobject name becomes NULL and in that case we
-would lose the old name.
+Hi Al,
 
-The patch restores the old name when kvasprintf() returns NULL.
+Today's linux-next merge of the signal tree got a conflict in
+arch/arm/kernel/signal.c between commit f73e2ca64281 ("ARM: 7443/1:
+Revert "new way of handling ERESTART_RESTARTBLOCK"") from the arm-current
+tree and commits 9c802c169f96 ("arm: deal with handlerless restarts
+without leaving the kernel") and 76c3f4da3ee4 ("arm: get rid of
+TIF_SYSCALL_RESTARTSYS") from the signal tree.
 
-Signed-off-by: Dong Hao<haodong@linux.vnet.ibm.com>
----
- lib/kobject.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+I have no idea how to cope with this.  So I have effectively reverted
+commit f73e2ca64281 ("ARM: 7443/1: Revert "new way of handling
+ERESTART_RESTARTBLOCK"") for today (though parts of that commit are also
+implemented by the above signal tree commits).
 
-diff --git a/lib/kobject.c b/lib/kobject.c
-index e07ee1f..c6e201a 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -220,8 +220,10 @@ int kobject_set_name_vargs(struct kobject *kobj, const char *fmt,
- 		return 0;
- 
- 	kobj->name = kvasprintf(GFP_KERNEL, fmt, vargs);
--	if (!kobj->name)
-+	if (!kobj->name) {
-+		kobj->name = old_name;
- 		return -ENOMEM;
-+	}
- 
- 	/* ewww... some of these buggers have '/' in the name ... */
- 	while ((s = strchr(kobj->name, '/')))
--- 
-1.7.9.5
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Thu__5_Jul_2012_17_35_26_+1000_/=+Hn5Nt1x+sjv1d
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP9UO+AAoJEECxmPOUX5FEuKQP/RAjzQcnV49SDLCaXk3YPne7
+lrdJGj1qg/VcjUyfSZCMZo7WUUkhkK/YCSWEUOJM0B8vyA8zFOwhxZYbQDvWgt59
+T7Ulac4fftaI5RTqsDmN/A10M8lPUq/UxCxPuhiViIyxvzjgDS4X+f0/u0VMReAn
+ETFn3N0E65X453dY4m21ywygF8ukW7TCTd5WNAzOWmD4Rj82Qmn88R1T4x2BmVab
+tiYGnahJPa4XiXhOMqETTiJy0KZu7QIFtyJoTeTaWd/YNjzrZjRejpw2KwdIpuYG
+QCaQd/yp+VCODvtj5Y9Os5kzXBqt5VtaR2lyBhVq/ikt4WPW5lib2J3J0Qdt7A64
+PhK34AestcCVWTkn74+EcpBfwL8f8o8NubnG78ZT3NiMWP+1wbvBTTai+ybho/nV
+sJ2FUpVwJruo1U6ORQIctMGIZZ8lCv0FICa6EiYEGKfAtl3L6BgWhDqvXqlifFm0
+D7Z5CfLfV8i+cPDQKDj8GS2AGa4GdxNFgFumxXntSjs6opX/14QMBwTmY8dLpSeZ
+t1HY1IXF9/U6b+tZ30kycaFVlYdwmaFalxJCbPGl2GbANMkVCq1pcJhRwB8ooA1W
+IOGFXsaIZHmhO3QaNqB6A09RX5Zxq/JkxHFBgxXEhP/hVwv7suXt6ldWZcM18rJB
+MF9w8+slq6wkpwqJccT3
+=dxst
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__5_Jul_2012_17_35_26_+1000_/=+Hn5Nt1x+sjv1d--
