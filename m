@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab2GEPan (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 11:30:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8117 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754123Ab2GEPal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 11:30:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="167380757"
-Date: Thu, 5 Jul 2012 17:42:02 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, lauro.venancio@openbossa.org,
-        aloisio.almeida@openbossa.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFC: Prevent NULL deref when getting socket name
-Message-ID: <20120705154202.GI18200@sortiz-mobl>
-References: <1341050207-13145-1-git-send-email-levinsasha928@gmail.com>
- <20120702182438.GB2010@tuxdriver.com>
+	id S1756752Ab2GEPbB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 11:31:01 -0400
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:57619
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756707Ab2GEPa6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 11:30:58 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(zz98dIzz1202h1082kzzz2dh2a8h668h839hd25he5bhf0ah107ah)
+Message-ID: <4FF5B329.9090005@freescale.com>
+Date: Thu, 5 Jul 2012 10:30:49 -0500
+From: Timur Tabi <b04825@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120702182438.GB2010@tuxdriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Zhao Chenhui <chenhui.zhao@freescale.com>
+CC: Zhao Chenhui-B35336 <B35336@freescale.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Yang-R58472 <r58472@freescale.com>, <leoli@freescale.com>
+Subject: Re: [PATCH v7 1/5] powerpc/85xx: implement hardware timebase sync
+References: <1341310879-5468-1-git-send-email-chenhui.zhao@freescale.com> <CAOZdJXUeY-_mmBLoA25_g4eLqwHxYX4c_ECbU+KYqfM307THNQ@mail.gmail.com> <20120704031426.GA6133@localhost.localdomain> <4FF3B5B6.8090400@freescale.com> <20120704034545.GA6196@localhost.localdomain> <4FF45F19.2080607@freescale.com> <20120705102529.GA7982@localhost.localdomain>
+In-Reply-To: <20120705102529.GA7982@localhost.localdomain>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+Zhao Chenhui wrote:
+> If the guts node is missing, this code snippet will be skipped. If the guts node is existed,
+> the return value of of_iomap(), namely guts, will be tested. If it is NULL, it shows
+> that there is error in dts, or the ioremap() in of_iomap() failed. I think
+> these errors are fatal errors, so I print an error info and return.
 
-On Mon, Jul 02, 2012 at 02:24:38PM -0400, John W. Linville wrote:
-> On Sat, Jun 30, 2012 at 11:56:47AM +0200, Sasha Levin wrote:
-> > llcp_sock_getname can be called without a device attached to the nfc_llcp_sock.
-> > 
-> > This would lead to the following BUG:
-> > 
-> > [  362.341807] BUG: unable to handle kernel NULL pointer dereference at           (null)
-> > [  362.341815] IP: [<ffffffff836258e5>] llcp_sock_getname+0x75/0xc0
-> > [  362.341818] PGD 31b35067 PUD 30631067 PMD 0
-> > [  362.341821] Oops: 0000 [#627] PREEMPT SMP DEBUG_PAGEALLOC
-> > [  362.341826] CPU 3
-> > [  362.341827] Pid: 7816, comm: trinity-child55 Tainted: G      D W    3.5.0-rc4-next-20120628-sasha-00005-g9f23eb7 #479
-> > [  362.341831] RIP: 0010:[<ffffffff836258e5>]  [<ffffffff836258e5>] llcp_sock_getname+0x75/0xc0
-> > [  362.341832] RSP: 0018:ffff8800304fde88  EFLAGS: 00010286
-> > [  362.341834] RAX: 0000000000000000 RBX: ffff880033cb8000 RCX: 0000000000000001
-> > [  362.341835] RDX: ffff8800304fdec4 RSI: ffff8800304fdec8 RDI: ffff8800304fdeda
-> > [  362.341836] RBP: ffff8800304fdea8 R08: 7ebcebcb772b7ffb R09: 5fbfcb9c35bdfd53
-> > [  362.341838] R10: 4220020c54326244 R11: 0000000000000246 R12: ffff8800304fdec8
-> > [  362.341839] R13: ffff8800304fdec4 R14: ffff8800304fdec8 R15: 0000000000000044
-> > [  362.341841] FS:  00007effa376e700(0000) GS:ffff880035a00000(0000) knlGS:0000000000000000
-> > [  362.341843] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> > [  362.341844] CR2: 0000000000000000 CR3: 0000000030438000 CR4: 00000000000406e0
-> > [  362.341851] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > [  362.341856] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > [  362.341858] Process trinity-child55 (pid: 7816, threadinfo ffff8800304fc000, task ffff880031270000)
-> > [  362.341858] Stack:
-> > [  362.341862]  ffff8800304fdea8 ffff880035156780 0000000000000000 0000000000001000
-> > [  362.341865]  ffff8800304fdf78 ffffffff83183b40 00000000304fdec8 0000006000000000
-> > [  362.341868]  ffff8800304f0027 ffffffff83729649 ffff8800304fdee8 ffff8800304fdf48
-> > [  362.341869] Call Trace:
-> > [  362.341874]  [<ffffffff83183b40>] sys_getpeername+0xa0/0x110
-> > [  362.341877]  [<ffffffff83729649>] ? _raw_spin_unlock_irq+0x59/0x80
-> > [  362.341882]  [<ffffffff810f342b>] ? do_setitimer+0x23b/0x290
-> > [  362.341886]  [<ffffffff81985ede>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> > [  362.341889]  [<ffffffff8372a539>] system_call_fastpath+0x16/0x1b
-> > [  362.341921] Code: 84 00 00 00 00 00 b8 b3 ff ff ff 48 85 db 74 54 66 41 c7 04 24 27 00 49 8d 7c 24 12 41 c7 45 00 60 00 00 00 48 8b 83 28 05 00 00 <8b> 00 41 89 44 24 04 0f b6 83 41 05 00 00 41 88 44 24 10 0f b6
-> > [  362.341924] RIP  [<ffffffff836258e5>] llcp_sock_getname+0x75/0xc0
-> > [  362.341925]  RSP <ffff8800304fde88>
-> > [  362.341926] CR2: 0000000000000000
-> > [  362.341928] ---[ end trace 6d450e935ee18bf3 ]---
-> > 
-> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> 
-> Samuel, I'm taking this one directly.
-Thanks. It was already on my for-wireless branch.
-
-Cheers,
-Samuel.
+Ok, I see your point now.  I'm concerned about what might happen if
+someone else updates mpc85xx_smp_init() in the future, but there's nothing
+actually wrong with your patch today.
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Timur Tabi
+Linux kernel developer at Freescale
+
