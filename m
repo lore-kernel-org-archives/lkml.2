@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab2GED7b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 23:59:31 -0400
+	id S1755489Ab2GED7g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 23:59:36 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:59084 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956Ab2GED72 (ORCPT
+	with ESMTP id S1751956Ab2GED7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 23:59:28 -0400
+	Wed, 4 Jul 2012 23:59:32 -0400
 From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: sameo@linux.intel.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
@@ -15,9 +15,9 @@ Cc: sameo@linux.intel.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Chiwoong Byun <woong.byun@samsung.com>,
         Yadwinder Singh Brar <yadi.brar@samsung.com>
-Subject: [PATCH 3/6] mfd: max77686: Allow to specify interrupt through DT or platform file also.
-Date: Thu,  5 Jul 2012 09:28:22 +0530
-Message-Id: <1341460705-10868-3-git-send-email-yadi.brar@samsung.com>
+Subject: [PATCH 4/6] mfd: max77686: Add device tree support.
+Date: Thu,  5 Jul 2012 09:28:23 +0530
+Message-Id: <1341460705-10868-4-git-send-email-yadi.brar@samsung.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1341460705-10868-1-git-send-email-yadi.brar@samsung.com>
 References: <1341460705-10868-1-git-send-email-yadi.brar@samsung.com>
@@ -25,73 +25,161 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Presently driver expects irq_gpio pin in platform data and maps it to irq
-itself. But we can also directly specify the interrupt in DT or platform file.
+This patch adds device tree support for mfd driver and adds
+Documentation/devicetree/bindings/mfd/max77686.txt
 
 Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
 ---
- drivers/mfd/max77686-irq.c |   33 ++++++++++++++++++++-------------
- drivers/mfd/max77686.c     |    1 +
- 2 files changed, 21 insertions(+), 13 deletions(-)
+ Documentation/devicetree/bindings/mfd/max77686.txt |   57 ++++++++++++++++++++
+ drivers/mfd/max77686.c                             |   43 +++++++++++++--
+ 2 files changed, 95 insertions(+), 5 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/max77686.txt
 
-diff --git a/drivers/mfd/max77686-irq.c b/drivers/mfd/max77686-irq.c
-index 0758fac..1fbbc64 100644
---- a/drivers/mfd/max77686-irq.c
-+++ b/drivers/mfd/max77686-irq.c
-@@ -252,21 +252,28 @@ int max77686_irq_init(struct max77686_dev *max77686)
- 
- 	mutex_init(&max77686->irqlock);
- 
--	max77686->irq = gpio_to_irq(max77686->irq_gpio);
--
--	if (debug_mask & MAX77686_DEBUG_IRQ_INT) {
--		ret = gpio_request(max77686->irq_gpio, "pmic_irq");
--		if (ret < 0) {
--			dev_err(max77686->dev,
--				"Failed to request gpio %d with ret: %d\n",
--				max77686->irq_gpio, ret);
--			return IRQ_NONE;
-+	if (max77686->irq_gpio && !max77686->irq) {
-+		max77686->irq = gpio_to_irq(max77686->irq_gpio);
+diff --git a/Documentation/devicetree/bindings/mfd/max77686.txt b/Documentation/devicetree/bindings/mfd/max77686.txt
+new file mode 100644
+index 0000000..b14434f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/max77686.txt
+@@ -0,0 +1,57 @@
++Maxim MAX77686 multi-function device
 +
-+		if (debug_mask & MAX77686_DEBUG_IRQ_INT) {
-+			ret = gpio_request(max77686->irq_gpio, "pmic_irq");
-+			if (ret < 0) {
-+				dev_err(max77686->dev,
-+					"Failed to request gpio %d with ret:"
-+					"%d\n",	max77686->irq_gpio, ret);
-+				return IRQ_NONE;
-+			}
++MAX77686 is a Mulitifunction device with PMIC, RTC and Charger on chip. It is
++interfaced to host controller using i2c interface. PMIC and Charger submodules
++are addressed using same i2c slave address whereas RTC submodule uses
++different i2c slave address,presently for which we are statically creating i2c
++client while probing.This document describes the binding for mfd device and
++PMIC submodule.
 +
-+			gpio_direction_input(max77686->irq_gpio);
-+			val = gpio_get_value(max77686->irq_gpio);
-+			gpio_free(max77686->irq_gpio);
-+			pr_info("%s: gpio_irq=%x\n", __func__, val);
- 		}
++Required properties:
++- compatible : Must be "maxim,max77686";
++- reg : Specifies the i2c slave address of PMIC block.
++- interrupts : This i2c device has an IRQ line connected to the main SoC.
++- interrupt-parent : The parent interrupt controller.
++
++Optional node:
++- voltage-regulators : The regulators of max77686 have to be instantiated
++  under subnode named "voltage-regulators" uing the following format.
++
++	regulator_name {
++		standard regulator constraints....
++	};
++	refer Documentation/devicetree/bindings/regulator/regulator.txt
++
++  The names of regulator should be as follow:
++
++	-LDOn 	:	for LDOs, where n can lie in range 1 to 26.
++		 	example: LDO1, LDO2, LDO26.
++	-BUCKn 	:	for BUCKs, where n can lie in range 1 to 9.
++			example: BUCK1, BUCK5, BUCK9.
++
++
++Example:
++
++
++	max77686@09 {
++		compatible = "maxim,max77686";
++		interrupt-parent = <&wakeup_eint>;
++		interrupts = <26 0>;
++		reg = <0x09>;
++
++		voltage-regulators {
++			ldo11_reg: LDO11 {
++				regulator-name = "vdd_ldo11";
++				regulator-min-microvolt = <1900000>;
++				regulator-max-microvolt = <1900000>;
++				regulator-always-on;
++			};
++
++			buck1_reg: BUCK1 {
++				regulator-name = "vdd_mif";
++				regulator-min-microvolt = <950000>;
++				regulator-max-microvolt = <1300000>;
++				regulator-always-on;
++				regulator-boot-on;
++			};
 +	}
- 
--		gpio_direction_input(max77686->irq_gpio);
--		val = gpio_get_value(max77686->irq_gpio);
--		gpio_free(max77686->irq_gpio);
--		pr_info("%s: gpio_irq=%x\n", __func__, val);
-+	if (!max77686->irq) {
-+		dev_err(max77686->dev, "irq is not specified\n");
-+		return -ENODEV;
- 	}
- 
- 	/* Mask individual interrupt sources */
 diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-index 11e5601..5c78e94 100644
+index 5c78e94..21bc8c5 100644
 --- a/drivers/mfd/max77686.c
 +++ b/drivers/mfd/max77686.c
-@@ -78,6 +78,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+@@ -35,6 +35,11 @@
  
+ #define I2C_ADDR_RTC	(0x0C >> 1)
+ 
++static struct of_device_id __devinitdata max77686_pmic_dt_match[] = {
++	{.compatible = "maxim,max77686",        .data = 0},
++	{},
++};
++
+ static struct mfd_cell max77686_devs[] = {
+ 	{ .name = "max77686-pmic", },
+ 	{ .name = "max77686-rtc", },
+@@ -45,6 +50,29 @@ static struct regmap_config max77686_regmap_config = {
+ 	.val_bits = 8,
+ };
+ 
++#ifdef CONFIG_OF
++static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
++								  *dev)
++{
++	struct max77686_platform_data *pd;
++
++	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
++	if (!pd) {
++		dev_err(dev, "could not allocate memory for pdata\n");
++		return NULL;
++	}
++
++	dev->platform_data = pd;
++	return pd;
++}
++#else
++static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
++								  *dev)
++{
++	return 0;
++}
++#endif
++
+ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 			      const struct i2c_device_id *id)
+ {
+@@ -53,6 +81,15 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 	unsigned int data;
+ 	int ret = 0;
+ 
++	if (i2c->dev.of_node)
++		pdata = max77686_i2c_parse_dt_pdata(&i2c->dev);
++
++	if (!pdata) {
++		ret = -EIO;
++		dev_err(&i2c->dev, "No platform data found.\n");
++		goto err;
++	}
++
+ 	max77686 = kzalloc(sizeof(struct max77686_dev), GFP_KERNEL);
+ 	if (max77686 == NULL)
+ 		return -ENOMEM;
+@@ -71,11 +108,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 	max77686->i2c = i2c;
+ 	max77686->type = id->driver_data;
+ 
+-	if (!pdata) {
+-		ret = -EIO;
+-		goto err;
+-	}
+-
  	max77686->wakeup = pdata->wakeup;
  	max77686->irq_gpio = pdata->irq_gpio;
-+	max77686->irq = i2c->irq;
- 
- 	mutex_init(&max77686->iolock);
- 
+ 	max77686->irq = i2c->irq;
+@@ -133,6 +165,7 @@ static struct i2c_driver max77686_i2c_driver = {
+ 	.driver = {
+ 		   .name = "max77686",
+ 		   .owner = THIS_MODULE,
++		   .of_match_table = of_match_ptr(max77686_pmic_dt_match),
+ 	},
+ 	.probe = max77686_i2c_probe,
+ 	.remove = max77686_i2c_remove,
 -- 
 1.7.0.4
 
