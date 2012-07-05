@@ -1,91 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932241Ab2GEMGF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 08:06:05 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35561 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752658Ab2GEMGC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 08:06:02 -0400
-Date: Thu, 5 Jul 2012 13:06:00 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de, sameo@linux.intel.com
-Subject: Re: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device
- registration
-Message-ID: <20120705120600.GT4111@opensource.wolfsonmicro.com>
-References: <1341316788-12730-1-git-send-email-lee.jones@linaro.org>
- <20120703123552.GC25995@sirena.org.uk>
- <4FF2EEA1.6080204@linaro.org>
- <20120703132447.GN29030@opensource.wolfsonmicro.com>
- <4FF2F82D.9080507@linaro.org>
- <20120703142123.GQ29030@opensource.wolfsonmicro.com>
- <4FF54406.3000307@linaro.org>
- <20120705094541.GK4111@opensource.wolfsonmicro.com>
- <4FF57EA9.7060107@linaro.org>
+	id S1752431Ab2GEMGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 08:06:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4809 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750910Ab2GEMGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 08:06:41 -0400
+Message-ID: <4FF58320.1050606@redhat.com>
+Date: Thu, 05 Jul 2012 14:05:52 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="doRsZBpDQ+I4/+/t"
-Content-Disposition: inline
-In-Reply-To: <4FF57EA9.7060107@linaro.org>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>
+Subject: Re: [PATCH v2 2/2] ata: implement MODE SELECT command
+References: <1341481235-12708-1-git-send-email-pbonzini@redhat.com> <1341481235-12708-3-git-send-email-pbonzini@redhat.com> <4FF57DAA.8010405@mvista.com>
+In-Reply-To: <4FF57DAA.8010405@mvista.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 05/07/2012 13:42, Sergei Shtylyov ha scritto:
+>> +    six_byte = (cdb[0] == MODE_SELECT);
+>> +    if (six_byte) {
+>> +        if (scmd->cmd_len < 5)
+>> +            goto invalid_fld;
+> 
+>    Strictly speaking, it should be "invalid phase" error.
+> 
+>> +
+>> +        len = cdb[4];
+>> +    } else {
+>> +        if (scmd->cmd_len < 9)
+>> +            goto invalid_fld;
+> 
+>    The same.
+> 
+>> +
+>> +        len = (cdb[7] << 8) + cdb[8];
+>> +    }
+>> +    /* Test early for possible overrun.  */
+>> +    if (!scsi_sg_count(scmd) || scsi_sglist(scmd)->length < len)
+>> +        goto invalid_param_len;
+> 
+>     Strictly speaking, it's "data underrun" error.
 
---doRsZBpDQ+I4/+/t
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The exact errors don't really matter, they shouldn't happen at all.  But
+they're important so that we don't access uninitialized memory in case
+they do.  Existing xlat functions are similarly hand-wavy.
 
-On Thu, Jul 05, 2012 at 12:46:49PM +0100, Lee Jones wrote:
+>> +    p = page_address(sg_page(scsi_sglist(scmd)));
+> 
+>    What if the S/G list spans multiple non-consecutive pages?
 
-> Besides, the main role of Device Tree is to eradicate platform code.
-> Whereas the code in the MFD driver used to register the AB8500 devices
-> is not platform code.
+Hmm, with a large number of block descriptors we could indeed span more
+than one page.  On the other hand, we can just fail with invalid_param
+if there is more than one block descriptor, so we're guaranteed not to
+look beyond the first page (4 bytes for the header, 8 bytes for the
+block descriptor, 4 bytes for the mode page header, 10 bytes for the
+mode page).
 
-Right, this is a big part of what I'm saying.
+>> +
+>> +    /* Move past header and block descriptors.  */
+>> +    if (six_byte)
+>> +        hdr_len = p[3] + 4;
+>> +    else
+>> +        hdr_len = (p[6] << 8) + p[7] + 8;
+>> +
+>> +    if (len < hdr_len)
+>> +        goto invalid_param_len;
+>> +
+>> +    len -= hdr_len;
+>> +    p += hdr_len;
+>> +    if (len == 0)
+>> +        goto skip;
+>> +
+>> +    /* Parse both possible formats for the mode page headers.  */
+>> +    pg = p[0] & 0x3f;
+>> +    if (p[0] & 0x40) {
+>> +        if (len < 4)
+>> +            goto invalid_param_len;
+>> +
+>> +        spg = p[1];
+>> +        pg_len = (p[2] << 8) | p[3];
+>> +        p += 4;
+>> +        len -= 4;
+>> +    } else {
+>> +        if (len < 2)
+>> +            goto invalid_param_len;
+>> +
+>> +        spg = 0;
+>> +        pg_len = p[1];
+>> +        p += 2;
+>> +        len -= 2;
+>> +    }
+>> +
+>> +    /*
+>> +     * Only one page has changeable data, so we only support setting one
+>> +     * page at a time.
+>> +     */
+>> +    if (len < pg_len)
+>> +        goto invalid_param;
+> 
+>     Not 'invalid_param_len'?
 
-> Does that answer your question better?
+No (it is more like a shortcut for the "default" case of the switch
+statement below), but it should be "if (len > pg_len)" rather than <.
+It's also clearer to move it closer to the end of the function.
 
-Not really, no. =20
+>> +
+>> +    /*
+>> +     * No mode subpages supported (yet) but asking for _all_
+>> +     * subpages may be valid
+>> +     */
+>> +    if (spg && (spg != ALL_SUB_MPAGES))
+>> +        goto invalid_param;
+> 
+>    Rather "paramater not supported" (0x26/0x01)...
 
-> >> By the way, this patch has nothing to do with registering these
-> >> devices when DT is enabled. The code already does that. This is a
-> >> bug fix, to stop multiple registration of the ab8500 when DT is
-> >> _not_ enabled.
+SCSI spec begs to differ... there is no reference to that sense code in
+the whole SPC spec.
 
-> > Really?  It seems really surprising that adding more DT support to the
-> > MFD core would have any bearing on something like this...
+>> +    if (pg_len > len)
+>> +        goto invalid_param_len;
+> 
+>    We have just checked this.
 
-> I'm not really sure what you mean by this.
+See above.
 
-You seemed to be suggesting that your fix was in some way related to the
-DT changes in the MFD core.  I'm unsure as to the relationship here.
+>> +    switch (pg) {
+>> +    case CACHE_MPAGE:
+>> +        if (ata_mselect_caching(qc, p, pg_len) < 0)
+>> +            goto invalid_param;
+> 
+>    Rather "parameter not supported"?
 
---doRsZBpDQ+I4/+/t
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Same here, SCSI spec says "invalid field in parameter list", I obey.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+>> +        break;
+>> +
+>> +    default:        /* invalid page code */
+>> +        goto invalid_param;
+> 
+>    Rather "paramater not supported"...
 
-iQIcBAEBAgAGBQJP9YMhAAoJEBus8iNuMP3df4QP/jPjybznwL8ptYvjORHPDJwC
-gufNckWIce2mJo3h3p4DDFhBK44FXk4pwL8taoxCobZp+oAAx2Hu+5gMNxo4y8zr
-oLhuDbl5AtodeNsRT+l70t8gRnkCMrPAzA+N2fTgaqOHVMyGE2qbHLqHfvQInzfw
-uCAQbKMfu6V0AfR1dxr+R3ybUDS4WAiKRxKMjkBGY7SQRorJItZCg4WhL+hRLopU
-U201MBW8Etqtzrm1Hr1NpLbOkpo+9nRkoWTQ1olq+BncOW5QEATTXBa7PJcyVA14
-WnPZVSMqdnnEwx1HXP2TQTVblVOU0ulpa8bz7Sic/Zt21/Ds8tFus57/aNdH9GMi
-oQQ1fxZpcJ2GwSFkyjnle/au/tkY7nH7pGteeTsxswlxPMYNsyFUUMZ9RS/CtpZW
-wtGuin5ZzD0bGu2gsZOJjbMokhPvNSgVLWDYoKaHvRCld1dG5H7bHg0an5XxB504
-nzzswcjEJv8wKeyA6+ORWZvNo4v/v7SCCwH0CezCl2LJd86ona+aZtDrYmOKJQwT
-0Ey7uYu5t5bzB8uXmPqAwt9j0ttJTFB0yTTNosnHmmK9boGHevLLkNXrSyX/2PC1
-8pSwXPQl1aYF7b70HCgS9U8hfNFVcrOOpMeyX64z15gxa2NGeg9NkeDbj+MO5KcF
-akL6VGs/is1z5jzhtPuM
-=F1ct
------END PGP SIGNATURE-----
+Same here too.
 
---doRsZBpDQ+I4/+/t--
+Thanks for the review.
+
+Paolo
+
+>> +    }
+>> +
+>> +    return 0;
+> 
+> MBR, Sergei
+
+
