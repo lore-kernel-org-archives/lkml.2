@@ -1,54 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932689Ab2GENOG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 09:14:06 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:52030 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932339Ab2GENOD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 09:14:03 -0400
-Message-ID: <4FF59315.2040105@linaro.org>
-Date: Thu, 05 Jul 2012 14:13:57 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S932837Ab2GENS0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 09:18:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43147 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756463Ab2GENSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 09:18:24 -0400
+Date: Thu, 5 Jul 2012 09:18:02 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "mikew@google.com" <mikew@google.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [RFC][PATCH 1/2] Duplicate a shared code between write and erase
+ callbacks
+Message-ID: <20120705131802.GE5637@redhat.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D401AAD8@USINDEM103.corp.hds.com>
 MIME-Version: 1.0
-To: Fabio Estevam <festevam@gmail.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de, sameo@linux.intel.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device
- registration
-References: <1341316788-12730-1-git-send-email-lee.jones@linaro.org> <CAOMZO5BQuJzAYPe+B792aNYv+xew3O0wp-UOjwggV28MbSZr9w@mail.gmail.com>
-In-Reply-To: <CAOMZO5BQuJzAYPe+B792aNYv+xew3O0wp-UOjwggV28MbSZr9w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D401AAD8@USINDEM103.corp.hds.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabio,
+On Tue, Jul 03, 2012 at 11:34:58PM +0000, Seiji Aguchi wrote:
+> This patch duplicates a code of erase callback shared with write callback so that they work independently.
 
-> On Tue, Jul 3, 2012 at 8:59 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> We register the ab8500 as an MFD device from db8500 code during Device Tree
->> boot in order to solve some limitations of DT. However, when Device Tree is
->> not enabled, we still want to allow platform code to register the ab8500 in
->> the normal way. Here we force MFD device registration of the ab8500 only
->> when booting with Device Tree enabled.
->>
->> Solves this issue:
->> WARNING: at fs/sysfs/dir.c:526 sysfs_add_one+0x88/0xb0()
->> sysfs: cannot create duplicate filename '/bus/platform/devices/ab8500-core.0'
->
-> Does the following patch fix your issue?
-> http://www.spinics.net/lists/arm-kernel/msg182827.html
+Can you expand this changelog to explain why this is needed and what
+problem you are trying to fix?  I know you talked about it in the patch
+series header, but the header doesn't get committed.
 
-No, it's unrelated.
+Cheers,
+Don
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
-
-
+> 
+> Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+> ---
+>  drivers/firmware/efivars.c |   46 +++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 45 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c index 47408e8..4929254 100644
+> --- a/drivers/firmware/efivars.c
+> +++ b/drivers/firmware/efivars.c
+> @@ -756,7 +756,51 @@ static int efi_pstore_write(enum pstore_type_id type,  static int efi_pstore_erase(enum pstore_type_id type, u64 id,
+>  			    struct pstore_info *psi)
+>  {
+> -	efi_pstore_write(type, 0, &id, (unsigned int)id, 0, psi);
+> +	char stub_name[DUMP_NAME_LEN];
+> +	efi_char16_t efi_name[DUMP_NAME_LEN];
+> +	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
+> +	struct efivars *efivars = psi->data;
+> +	struct efivar_entry *entry, *found = NULL;
+> +	int i;
+> +
+> +	sprintf(stub_name, "dump-type%u-%llu-", type, id);
+> +
+> +	spin_lock(&efivars->lock);
+> +
+> +	for (i = 0; i < DUMP_NAME_LEN; i++)
+> +		efi_name[i] = stub_name[i];
+> +
+> +	/*
+> +	 * Clean up any entries with the same name
+> +	 */
+> +
+> +	list_for_each_entry(entry, &efivars->list, list) {
+> +		get_var_data_locked(efivars, &entry->var);
+> +
+> +		if (efi_guidcmp(entry->var.VendorGuid, vendor))
+> +			continue;
+> +		if (utf16_strncmp(entry->var.VariableName, efi_name,
+> +				  utf16_strlen(efi_name)))
+> +			continue;
+> +		/* Needs to be a prefix */
+> +		if (entry->var.VariableName[utf16_strlen(efi_name)] == 0)
+> +			continue;
+> +
+> +		/* found */
+> +		found = entry;
+> +		efivars->ops->set_variable(entry->var.VariableName,
+> +					   &entry->var.VendorGuid,
+> +					   PSTORE_EFI_ATTRIBUTES,
+> +					   0, NULL);
+> +	}
+> +
+> +	if (found)
+> +		list_del(&found->list);
+> +
+> +	spin_unlock(&efivars->lock);
+> +
+> +	if (found)
+> +		efivar_unregister(found);
+>  
+>  	return 0;
+>  }
+> --
+> 1.7.1
+> 
+> 
