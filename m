@@ -1,48 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932972Ab2GENJM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 09:09:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47237 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932824Ab2GENI4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 09:08:56 -0400
-Subject: Re: [PATCH] perf: add /proc/perf_events file for dump perf events
- info
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jovi Zhang <bookjovi@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <CACV3sbLJpv2KSSkrRRDVuJ6xtJOSwCKaJfhO1wMF6DgAU9eCBw@mail.gmail.com>
-References: <CACV3sbLSzPoYYFJky=sFpca4L2gKdoOoEySn+mVHh1aphQLkyw@mail.gmail.com>
-	 <1341476877.7709.0.camel@twins>
-	 <CACV3sb+aadXJYu7_JUedCodgQmF8d1q7OxSVoz=vwfc+Ow_caA@mail.gmail.com>
-	 <CACV3sbLJpv2KSSkrRRDVuJ6xtJOSwCKaJfhO1wMF6DgAU9eCBw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Jul 2012 15:08:45 +0200
-Message-ID: <1341493725.19870.46.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S932988Ab2GENJU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 09:09:20 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53442 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932721Ab2GENJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 09:09:15 -0400
+Date: Thu, 5 Jul 2012 15:09:02 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
+        Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 09/40] autonuma: introduce kthread_bind_node()
+Message-ID: <20120705130902.GF7881@cmpxchg.org>
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
+ <1340888180-15355-10-git-send-email-aarcange@redhat.com>
+ <4FEDCB7A.1060007@redhat.com>
+ <20120629163820.GQ6676@redhat.com>
+ <4FEDDE99.2090105@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FEDDE99.2090105@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-05 at 21:02 +0800, Jovi Zhang wrote:
-> > Watch all perf events in system wide can be very useful for perf subsystem issue handling,
-> > to know which perf event is active in system,
-> > perf event is a resouce, it would like to be managed easily for user, with more visable, like /proc/timer, etc...
+On Fri, Jun 29, 2012 at 12:58:01PM -0400, Rik van Riel wrote:
+> On 06/29/2012 12:38 PM, Andrea Arcangeli wrote:
+> >On Fri, Jun 29, 2012 at 11:36:26AM -0400, Rik van Riel wrote:
+> >>On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
+> >>
+> >>>--- a/include/linux/sched.h
+> >>>+++ b/include/linux/sched.h
+> >>>@@ -1792,7 +1792,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+> >>>   #define PF_SWAPWRITE	0x00800000	/* Allowed to write to swap */
+> >>>   #define PF_SPREAD_PAGE	0x01000000	/* Spread page cache over cpuset */
+> >>>   #define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
+> >>>-#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpu */
+> >>>+#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpus */
+> >>>   #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
+> >>>   #define PF_MEMPOLICY	0x10000000	/* Non-default NUMA mempolicy */
+> >>>   #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
+> >>
+> >>Changing the semantics of PF_THREAD_BOUND without so much as
+> >>a comment in your changelog or buy-in from the scheduler
+> >>maintainers is a big no-no.
+> >>
+> >>Is there any reason you even need PF_THREAD_BOUND in your
+> >>kernel numa threads?
+> >>
+> >>I do not see much at all in the scheduler code that uses
+> >>PF_THREAD_BOUND and it is not clear at all that your
+> >>numa threads get any benefit from them...
+> >>
+> >>Why do you think you need it?
+> 
+> >This flag is only used to prevent userland to mess with the kernel CPU
+> >binds of kernel threads. It is used to avoid the root user to shoot
+> >itself in the foot.
 > >
-> > .jovi
+> >So far it has been used to prevent changing bindings to a single
+> >CPU. I'm setting it also after making a multiple-cpu bind (all CPUs of
+> >the node, instead of just 1 CPU).
 > 
+> Fair enough.  Looking at the scheduler code some more, I
+> see that all PF_THREAD_BOUND seems to do is block userspace
+> from changing a thread's CPU bindings.
 > 
-> Ping... 
+> Peter and Ingo, what is the special magic in PF_THREAD_BOUND
+> that should make it only apply to kernel threads that are bound
+> to a single CPU?
 
-Never saw your reply, due to HTML it landed in the spam folder.
+In the very first review iteration of AutoNUMA, Peter argued that the
+scheduler people want to use this flag in other places where they rely
+on this thing meaning a single cpu, not a group of them (check out the
+cpumask test in debug_smp_processor_id() in lib/smp_processor_id.c).
 
-That's a pretty non-specific answer.. again, why are you interested,
-what specific problem are you wanting to solve.
+He also argued that preventing root from rebinding the numa daemons is
+not critical to this feature at all.  And I have to agree.
 
-I've never had this need myself.
+I certainly think this is NOT the change to make a stand about in this
+patch set, seriously.  Not about a nice-to-have thing like this that
+doesn't really hurt dropping but does create contention.
 
+It can always be a separate effort to bring in such a flag that would
+allow it to be used by other daemons, but this really should be a
+separate effort and I don't think anything is really lost by dropping
+the change from this series.
