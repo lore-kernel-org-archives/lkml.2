@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964784Ab2GEPpb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 11:45:31 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59090 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964781Ab2GEPp3 (ORCPT
+	id S933357Ab2GEPus (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 11:50:48 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42655 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933277Ab2GEPup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 11:45:29 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Wolfgang Mauerer <wolfgang.mauerer@siemens.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 05/20] tools lib traceevent: Fix trace_printk for long integers
-Date: Thu,  5 Jul 2012 12:45:03 -0300
-Message-Id: <1341503118-13198-6-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1341503118-13198-1-git-send-email-acme@infradead.org>
-References: <1341503118-13198-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 5 Jul 2012 11:50:45 -0400
+Message-ID: <4FF5B7D2.8000909@linaro.org>
+Date: Thu, 05 Jul 2012 16:50:42 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Rob Herring <robherring2@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
+        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, STEricsson_nomadik_linux@list.st.com
+Subject: Re: [PATCH] of: address: Don't fail a lookup just because a node
+ has no reg property
+References: <1341498754-30445-1-git-send-email-lee.jones@linaro.org> <4FF5AB4D.6090500@gmail.com> <4FF5B004.4080100@linaro.org> <201207051538.37687.arnd@arndb.de>
+In-Reply-To: <201207051538.37687.arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
+On 05/07/12 16:38, Arnd Bergmann wrote:
+> On Thursday 05 July 2012, Lee Jones wrote:
+>>>
+>>> Acked-by: Rob Herring <rob.herring@calxeda.com>
+>>>
+>>> Do you have something dependent on this or want me to apply?
+>>
+>> I have things that require this patch yes. Please apply.
+>
+> I guess Rob's question was whether you want to keep this together
+> with the patch that depends on it rather than him applying just
+> the one patch.
 
-On 32 bit systems, a conversion of the trace_printk format string
-"%lu" -> "%llu" is intended (similar for %lx etc.) when a trace was
-taken on a machine with 64 bit long integers. However, the current
-code computes the bogus transformation "%lu" -> "%u".  Fix this.
+No, it's not important.
 
-Besides that, the transformation is only required on systems that don't
-use 64 bits for long integers natively.
+I'll send you the other patch as part of my DT pull-request.
 
-Signed-off-by: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1332411501-8059-3-git-send-email-wolfgang.mauerer@siemens.com
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/lib/traceevent/event-parse.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+I'm just waiting on Linus' Ack on a few patches and it'll be ready.
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index da06c33..ddee5a8 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -3895,14 +3895,15 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 						break;
- 					}
- 				}
--				if (pevent->long_size == 8 && ls) {
-+				if (pevent->long_size == 8 && ls &&
-+				    sizeof(long) != 8) {
- 					char *p;
- 
- 					ls = 2;
- 					/* make %l into %ll */
- 					p = strchr(format, 'l');
- 					if (p)
--						memmove(p, p+1, strlen(p)+1);
-+						memmove(p+1, p, strlen(p)+1);
- 					else if (strcmp(format, "%p") == 0)
- 						strcpy(format, "0x%llx");
- 				}
 -- 
-1.7.9.2.358.g22243
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
+
 
