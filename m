@@ -1,105 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756866Ab2GEP5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 11:57:55 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34043 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752173Ab2GEP5w (ORCPT
+	id S1755102Ab2GEP6P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 11:58:15 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:60548 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab2GEP6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 11:57:52 -0400
+	Thu, 5 Jul 2012 11:58:13 -0400
+Message-ID: <4FF5B991.9070807@linaro.org>
+Date: Thu, 05 Jul 2012 16:58:09 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <1341393205.23484.111.camel@twins>
-References: <1340899250-26803-1-git-send-email-feng.tang@intel.com>
-	<1341300987.11663.15.camel@concordia>
-	<1341306905.23484.53.camel@twins>
-	<1341389237.22063.7.camel@concordia>
-	<1341393205.23484.111.camel@twins>
-Date: Thu, 5 Jul 2012 17:57:51 +0200
-Message-ID: <CABPqkBS=eXZXXf6HKtw=LgaKMW9Pe2tfMiuD+FGw5CWkPY-SuA@mail.gmail.com>
-Subject: Re: [PATCH] perf, x86: Enabled PEBS event to be exported in a raw format
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Michael Ellerman <michael@ellerman.id.au>, Feng Tang <feng.tang@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Robert Richter <robert.richter@amd.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de,
+        Gabriel FERNANDEZ <gabriel.fernandez@stericsson.com>,
+        Loic Pallardy <loic.pallardy@stericsson.com>,
+        Patrice CHOTARD <patrice.chotard@stericsson.com>
+Subject: Re: [PATCH] ARM: ux500: Register pinctrl from platform code until
+ it's been DT:ed
+References: <1341412452-3808-1-git-send-email-lee.jones@linaro.org> <CACRpkdb1rZQWpuUxQoxqg2eYanf4tnm0SmFkQQBwvSuyYV00Gw@mail.gmail.com> <4FF56029.2060007@linaro.org> <4FF5B8B9.8030200@wwwdotorg.org>
+In-Reply-To: <4FF5B8B9.8030200@wwwdotorg.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 4, 2012 at 11:13 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2012-07-04 at 18:07 +1000, Michael Ellerman wrote:
->> Basically we have three registers which provide various information about
->> the instruction which caused an event to overflow.
+On 05/07/12 16:54, Stephen Warren wrote:
+> On 07/05/2012 03:36 AM, Lee Jones wrote:
+>> On 05/07/12 09:55, Linus Walleij wrote:
+> ...
+>>> There are plenty of
+>>> examples of how to do this in for example:
+>>> arch/arm/boot/dts/tegra-seaboard.dts
 >>
->> The first reports the address of the instruction, the second the data
->> address associated with the instruction, and the third reports "other
->> stuff".
->>
->> We use the first for SAMPLE_IP, and the second for SAMPLE_ADDR, but
->> currently we have no way of spitting out the third register.
->>
->> There's a whole bunch of info in there. I think the most interesting are
->> stuff like whether and where in the pipeline the instruction stalled, or
->> where a load was serviced from. I'm not sure to be honest, so I've asked
->> the HW guys what they're most interested in.
->>
->> So I can imagine us coming up with a generic sample type for "sample
->> other info at event overflow", but I'm struggling to see how we'd make
->> the content of the sample non architecture specific, or even processor
->> version specific.
+>> I don't see this file anywhere?
 >
-> Right so we're working on a data-source like thing, the last attempt at
-> adding something like that is in this thread:
+> It was recently renamed to tegra20-seaboard.dts.
 >
->  http://marc.info/?l=linux-kernel&m=130987553915170&w=2
->  http://marc.info/?l=linux-kernel&m=131000375226044
+> While Tegra doesn't need any AUXDATA for the pinctrl driver specifically
+> (since we're purely initializing pinctrl from DT now when booting with
+> DT), we do need AUXDATA for other devices mainly for clocks. You can
+> find the AUXDATA setup in:
 >
-> I think Stephane is currently trying to revive that, although he hasn't
-> posted yet. Please have a look if that captures the possible PPC states
-> as well. Stephane could you share your current stuff so Michael can have
-> a look?
->
-I am currently on vacation and with limited internet access.
+> arch/arch/mach-tegra/board-dt-tegra*.c
 
-But yes, the PEBS-LL patchset I have been working on
-does abstract PEBS-LL and offers an abstracted data source
-field. It uses:
-PERF_SAMPLE_IP: for instr address
-PERF_SAMPLE_ADDR: for the data address
+That's okay.
 
-It introduces:
-PERF_SAMPLE_LATENCY: to capture the access latency
-PERF_SAMPLE_DSRC: to encode the data source.
+We use it quite a lot in arch/arch/mach-ux500/board-mop500.c already 
+(also for things like clocks, dma and call-backs).
 
-That latter value is a structured bitmask which covers:
-- type of access (load, store, prefetch, instr)
-- mem level: hit or miss in L1, LFB, L2, L3, LOC_RAM, REM_RAM, uncached, IO
-- snoop access: hit, miss, none
-- TLB access: hit or miss in L1, L2, HW walker, OS fault
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
 
-Hopefully those are generic enough to cover all possible cases across
-architectures. PPC would be a good test case.
-Note that multiple bits per category may be set in case the HW cannot
-disambiguate like this is the case on with PEBS-LL sometimes.
 
->
-> Not quite sure what to do for your pipeline stage thing, I'm not sure
-> I've seen that elsewhere.
->
->
-> Anyway, yes PERF_SAMPLE_RAW is the 'other info at overflow' which is
-> specific to the current cpu and phase of moon type field, and it does
-> get (ab)used in various places, but I still cringe every time I see it
-> used.
->
-> The problem with that thing is that it gives people the data they need
-> for their special tools and thus removes them from the incentive pool to
-> help create more generic,useful tools.
->
-> For AMD IBS we've given in since that thing is completely weird, IIRC
-> Robert was going to grow perf-ibs to record and report the data it
-> captures so we've at least got a useful open-source tool for it.
