@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab2GEUDn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 16:03:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32987 "EHLO mx1.redhat.com"
+	id S1754949Ab2GEUD5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 16:03:57 -0400
+Received: from mga11.intel.com ([192.55.52.93]:1430 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751383Ab2GEUDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 16:03:41 -0400
-Message-ID: <4FF5F2F2.9050307@redhat.com>
-Date: Fri, 06 Jul 2012 04:02:58 +0800
-From: Amos Kong <akong@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752228Ab2GEUDm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 16:03:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="173860589"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Don Zickus <dzickus@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mikew@google.com" <mikew@google.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [RFC][PATCH 2/2] write callback: Check if existing entry is
+ erasable
+Thread-Topic: [RFC][PATCH 2/2] write callback: Check if existing entry is
+ erasable
+Thread-Index: Ac1ZdICAdYwUKctERYa3qDPOlfZeVABeLqqAAAEWsxA=
+Date: Thu, 5 Jul 2012 20:03:40 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F1934755B@ORSMSX104.amr.corp.intel.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D401AAED@USINDEM103.corp.hds.com>
+ <20120705133201.GG5637@redhat.com>
+In-Reply-To: <20120705133201.GG5637@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>
-CC: mst@redhat.com, mashirle@us.ibm.com, krkumar2@in.ibm.com,
-        habanero@linux.vnet.ibm.com, rusty@rustcorp.com.au,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, edumazet@google.com,
-        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
-        kvm@vger.kernel.org, sri@us.ibm.com
-Subject: Re: [net-next RFC V5 4/5] virtio_net: multiqueue support
-References: <1341484194-8108-1-git-send-email-jasowang@redhat.com> <1341484194-8108-5-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1341484194-8108-5-git-send-email-jasowang@redhat.com>
-X-Enigmail-Version: 1.5pre
-OpenPGP: id=39BCFF63
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2012 06:29 PM, Jason Wang wrote:
-> This patch converts virtio_net to a multi queue device. After negotiated
-> VIRTIO_NET_F_MULTIQUEUE feature, the virtio device has many tx/rx queue pairs,
-> and driver could read the number from config space.
-> 
-> The driver expects the number of rx/tx queue paris is equal to the number of
-> vcpus. To maximize the performance under this per-cpu rx/tx queue pairs, some
-> optimization were introduced:
-> 
-> - Txq selection is based on the processor id in order to avoid contending a lock
->   whose owner may exits to host.
-> - Since the txq/txq were per-cpu, affinity hint were set to the cpu that owns
->   the queue pairs.
-> 
-> Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
+>>     - In case where an existing entry is oops/shutdown/halt/poweroff
+>>       -  It is erasable if an error ,panic, emergency or oops, happen in new event.
+>>            - Oops is erasable because system may still be running and its message may be saved 
+>>              into /var/log/messages.
+>
+> Then why save it to begin with?
 
-...
+It would be useful in the case where an OOPS is followed quickly by a system hang.
 
->  
->  static int virtnet_probe(struct virtio_device *vdev)
->  {
-> -	int err;
-> +	int i, err;
->  	struct net_device *dev;
->  	struct virtnet_info *vi;
-> +	u16 num_queues, num_queue_pairs;
-> +
-> +	/* Find if host supports multiqueue virtio_net device */
-> +	err = virtio_config_val(vdev, VIRTIO_NET_F_MULTIQUEUE,
-> +				offsetof(struct virtio_net_config,
-> +				num_queues), &num_queues);
-> +
-> +	/* We need atleast 2 queue's */
-
-
-s/atleast/at least/
-
-
-> +	if (err || num_queues < 2)
-> +		num_queues = 2;
-> +	if (num_queues > MAX_QUEUES * 2)
-> +		num_queues = MAX_QUEUES;
-
-                num_queues = MAX_QUEUES * 2;
-
-MAX_QUEUES is the limitation of RX or TX.
-
-> +
-> +	num_queue_pairs = num_queues / 2;
-
-...
-
--- 
-			Amos.
+-Tony
+ 
