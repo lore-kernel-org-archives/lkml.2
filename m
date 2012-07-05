@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab2GEMK2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 08:10:28 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33787 "EHLO
+	id S1754319Ab2GEMM7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 08:12:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57176 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752887Ab2GEMK0 (ORCPT
+	by vger.kernel.org with ESMTP id S1751400Ab2GEMM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 08:10:26 -0400
-Date: Thu, 5 Jul 2012 13:10:24 +0100
+	Thu, 5 Jul 2012 08:12:57 -0400
+Date: Thu, 5 Jul 2012 13:12:55 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        swarren@nvidia.com
-Subject: Re: [PATCH V3] regulator: fixed: dt: support for input supply
-Message-ID: <20120705121024.GV4111@opensource.wolfsonmicro.com>
-References: <1341471708-1225-1-git-send-email-ldewangan@nvidia.com>
+Cc: lrg@ti.com, rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        arnd@arndb.de, linus.walleij@linaro.org, lee.jones@linaro.org,
+        swarren@wwwdotorg.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V4] regulator: dt: add policy to have property
+ "regulator-compatible"
+Message-ID: <20120705121255.GW4111@opensource.wolfsonmicro.com>
+References: <1341472984-1503-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="w5nY8nmEklXMR7Cj"
+	protocol="application/pgp-signature"; boundary="/eSpIzx5LyAe5lwl"
 Content-Disposition: inline
-In-Reply-To: <1341471708-1225-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1341472984-1503-1-git-send-email-ldewangan@nvidia.com>
 X-Cookie: You're at the end of the road again.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,37 +30,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---w5nY8nmEklXMR7Cj
+--/eSpIzx5LyAe5lwl
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Jul 05, 2012 at 12:31:48PM +0530, Laxman Dewangan wrote:
-> Add support for input supply in DT parsing of node.
-> The input supply will be provided by the property
-> "vin-supply" in the regulator node.
+On Thu, Jul 05, 2012 at 12:53:04PM +0530, Laxman Dewangan wrote:
+> Add the policy for regulator DT such that if device have multiple
+> regulator and its binding contains a child node that describes each
+> regulator then each regulator child node must have the property
+> "regulator-compatible" which matches with regulator name of their
+> hardware counterparts.
 
-This doesn't apply, always send patches against current code...
+Applied, thanks.
 
---w5nY8nmEklXMR7Cj
+--/eSpIzx5LyAe5lwl
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJP9YQqAAoJEBus8iNuMP3djukP/2vlxZKtNQzBk4S9OTKed5uu
-H706ILUjL7umguzhzru75AAd4FVnkjcXkQB/u8e6lV6CB1OAN6WfKCfFtuqlKo/d
-ZJTfDY9YJ+02f4vQvXMJ//ovEWE5D28BtJcuhROJhlYMiI8nxEVbaxHP65m7TpYn
-fMCuOtPO6GtClk8Dq0jFrGPUShLaOlNkSoU2Ui167oKROPa9KWK4p3ZvzTJqlsVj
-eK4m+alHUafzfJbot6JreErors8I+XMBsxc2sgJiFZn1tI9B7oXnwtGGp1hssmBa
-Hfj7mzy+aemkpVSxBorSB6cfAU21lkUl54Wxc2SJpM4fewlV9JYpIaQGJlGe/tpY
-w74NvS72wwI5c03n5uJKwAU63gQf4IDUuXOhf/F05kARbJW4cGr+yFLCsoZWZnwo
-5mKDeM5c5KgKYO+IXC67on3aWUmN9ewJeRDsFjtq+idWjCjNvZb9sBRCt1oBwtTM
-iDVO/7w8NUgkqqmteeW1bJJaR+aszj4VUhQzHHvbF10IghRJyGpcEsOgltgkPaOr
-RagCHDpa3wNBHOLWjxois8xcnoVohexNSF9O4HernEREI3mMIe/R3QgQgOhtxlni
-tVHxrYKN/fRmOgY6aknk8tik85wgA1CT+VhABMFcv7a3paEUiCZGFYbZr4GtpBbw
-sOyMDAnod6Mq2uIH/r1R
-=W7n2
+iQIcBAEBAgAGBQJP9YTAAAoJEBus8iNuMP3dULwP/3DYfhS+PWsR7J6Cvxu9ebz9
+ECIb1o0UOO2alrj7MmL2xDD6tjTNGa1pT79KeOgX+D/OY3hLk7/zuRei7/LYDkbM
+iRuemgOFXrLxMIyt3GCSPg/Y+6XEuKPSUZGlulIC6NWgtPbcD7ZJOnY0ZcannRfh
+u73k+qPGsOqkvsVYPZCw5FP4yfNFfSP92TwY8RqUa/h1vafrA6OQhpGI3yyKYWGo
+h9zAuCGcYDhDTThbUosUMKBg7jKKYOTR4wUd0txeJXIgpxNlA5ggjhsIf5+ITGKf
+FwV1Jwu3l7/SARlIK+1xQ3LoHwwriU5Kbb+HD67UJ1Qq0Ili3P8IZq3+Me0YebeL
+ZAK7MlZO88ySirYa6vugBNqW3vpDtEDa3Y096+XB0RCHdrIxE0FNbp3vi5O/GxZg
+P+iIz8jK0fBQ0eP4uoCDHzLMGvDCJHLP/kNrU22BoPBvht4CSgjOO2hi7+kh+nEQ
+Z7yGtCXNwxBwHSWmD4Sr9N0JGWfm/PJ0woJ3iFc4on7xQnHTnijPmrjuakvW15Pz
+nF7FF0v75ozf6/IE/aLK0pJ68/72lNva4UHacjKixdyYLFprXEhobslt52jOGIP+
+9ifD7JYlH7Fmha1AiRp+Qv/Pj0HrtjWgzfHEOZF+xKQhxv+2bz30B2f3Qu196lwa
+d3SOOQCgkOzGIYB3mpxL
+=guHf
 -----END PGP SIGNATURE-----
 
---w5nY8nmEklXMR7Cj--
+--/eSpIzx5LyAe5lwl--
