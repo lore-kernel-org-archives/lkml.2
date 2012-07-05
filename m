@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932922Ab2GENIW (ORCPT <rfc822;w@1wt.eu>);
+	id S932952Ab2GENIZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 09:08:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16459 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932881Ab2GENIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jul 2012 09:08:22 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:52773 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932821Ab2GENGn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 09:06:43 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 5/9] ARM: ux500: Remove temporary snowball_of_platform_devs enablement structure
-Date: Thu,  5 Jul 2012 14:06:08 +0100
-Message-Id: <1341493572-29735-6-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1341493572-29735-1-git-send-email-lee.jones@linaro.org>
-References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org>
+Date: Thu, 5 Jul 2012 10:08:07 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Cc: avi@redhat.com, agraf@suse.de, paulus@samba.org, aarcange@redhat.com,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, takuya.yoshikawa@gmail.com
+Subject: Re: [PATCH 0/8] KVM: Optimize MMU notifier's THP page invalidation
+ -v4
+Message-ID: <20120705130807.GA30235@amt.cnet>
+References: <20120702175239.5fec56b3.yoshikawa.takuya@oss.ntt.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120702175239.5fec56b3.yoshikawa.takuya@oss.ntt.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All Device Tree enablement for Snowball's Platform  devices; LEDs, Keys,
-Ethernet and all associated AB8500 Multi-Functional Devices are now
-complete, so here we remove any trace of adding those devices when Device
-Tree is enabled.
+On Mon, Jul 02, 2012 at 05:52:39PM +0900, Takuya Yoshikawa wrote:
+> v3->v4: Resolved trace_kvm_age_page() issue -- patch 6,7
+> v2->v3: Fixed intersection calculations. -- patch 3, 8
+> 
+> 	Takuya
+> 
+> Takuya Yoshikawa (8):
+>   KVM: MMU: Use __gfn_to_rmap() to clean up kvm_handle_hva()
+>   KVM: Introduce hva_to_gfn_memslot() for kvm_handle_hva()
+>   KVM: MMU: Make kvm_handle_hva() handle range of addresses
+>   KVM: Introduce kvm_unmap_hva_range() for kvm_mmu_notifier_invalidate_range_start()
+>   KVM: Separate rmap_pde from kvm_lpage_info->write_count
+>   KVM: MMU: Add memslot parameter to hva handlers
+>   KVM: MMU: Push trace_kvm_age_page() into kvm_age_rmapp()
+>   KVM: MMU: Avoid handling same rmap_pde in kvm_handle_hva_range()
+> 
+>  arch/powerpc/include/asm/kvm_host.h |    2 +
+>  arch/powerpc/kvm/book3s_64_mmu_hv.c |   47 ++++++++++++---
+>  arch/x86/include/asm/kvm_host.h     |    3 +-
+>  arch/x86/kvm/mmu.c                  |  107 +++++++++++++++++++++++------------
+>  arch/x86/kvm/x86.c                  |   11 ++++
+>  include/linux/kvm_host.h            |    8 +++
+>  virt/kvm/kvm_main.c                 |    3 +-
+>  7 files changed, 131 insertions(+), 50 deletions(-)
+> 
+> 
+> >From v2:
+> 
+> The new test result was impressively good, see below, and THP page
+> invalidation was more than 5 times faster on my x86 machine.
+> 
+> Before:
+>   ...
+>   19.852 us  |  __mmu_notifier_invalidate_range_start();
+>   28.033 us  |  __mmu_notifier_invalidate_range_start();
+>   19.066 us  |  __mmu_notifier_invalidate_range_start();
+>   44.715 us  |  __mmu_notifier_invalidate_range_start();
+>   31.613 us  |  __mmu_notifier_invalidate_range_start();
+>   20.659 us  |  __mmu_notifier_invalidate_range_start();
+>   19.979 us  |  __mmu_notifier_invalidate_range_start();
+>   20.416 us  |  __mmu_notifier_invalidate_range_start();
+>   20.632 us  |  __mmu_notifier_invalidate_range_start();
+>   22.316 us  |  __mmu_notifier_invalidate_range_start();
+>   ...
+> 
+> After:
+>   ...
+>   4.089 us   |  __mmu_notifier_invalidate_range_start();
+>   4.096 us   |  __mmu_notifier_invalidate_range_start();
+>   3.560 us   |  __mmu_notifier_invalidate_range_start();
+>   3.376 us   |  __mmu_notifier_invalidate_range_start();
+>   3.772 us   |  __mmu_notifier_invalidate_range_start();
+>   3.353 us   |  __mmu_notifier_invalidate_range_start();
+>   3.332 us   |  __mmu_notifier_invalidate_range_start();
+>   3.332 us   |  __mmu_notifier_invalidate_range_start();
+>   3.332 us   |  __mmu_notifier_invalidate_range_start();
+>   3.337 us   |  __mmu_notifier_invalidate_range_start();
+>   ...
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/mach-ux500/board-mop500.c |   17 -----------------
- 1 file changed, 17 deletions(-)
+Neat.
 
-diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-index 3b76115..c12cd97 100644
---- a/arch/arm/mach-ux500/board-mop500.c
-+++ b/arch/arm/mach-ux500/board-mop500.c
-@@ -745,10 +745,6 @@ MACHINE_END
- 
- #ifdef CONFIG_MACH_UX500_DT
- 
--static struct platform_device *snowball_of_platform_devs[] __initdata = {
--	&snowball_key_dev,
--};
--
- struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
- 	/* Requires DMA and call-back bindings. */
- 	OF_DEV_AUXDATA("arm,pl011", 0x80120000, "uart0", &uart0_plat),
-@@ -802,8 +798,6 @@ static void __init u8500_init_machine(void)
- 
- 	for (i = 0; i < ARRAY_SIZE(mop500_platform_devs); i++)
- 		mop500_platform_devs[i]->dev.parent = parent;
--	for (i = 0; i < ARRAY_SIZE(snowball_platform_devs); i++)
--		snowball_platform_devs[i]->dev.parent = parent;
- 
- 	/* automatically probe child nodes of db8500 device */
- 	of_platform_populate(NULL, u8500_local_bus_nodes, u8500_auxdata_lookup, parent);
-@@ -822,17 +816,6 @@ static void __init u8500_init_machine(void)
- 
- 		mop500_uib_init();
- 
--	} else if (of_machine_is_compatible("calaosystems,snowball-a9500")) {
--		/*
--		 * Devices to be DT:ed:
--		 *   snowball_led_dev   = done
--		 *   snowball_key_dev   = todo
--		 *   snowball_sbnet_dev = done
--		 *   ab8500_device      = done
--		 */
--		platform_add_devices(snowball_of_platform_devs,
--				ARRAY_SIZE(snowball_of_platform_devs));
--
- 	} else if (of_machine_is_compatible("st-ericsson,hrefv60+")) {
- 		/*
- 		 * The HREFv60 board removed a GPIO expander and routed
--- 
-1.7.9.5
+Andrea can you please ACK?
 
