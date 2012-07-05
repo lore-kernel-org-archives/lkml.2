@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab2GEQPl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 12:15:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50853 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497Ab2GEQPi (ORCPT
+	id S1756899Ab2GEQSy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 12:18:54 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:44989 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812Ab2GEQSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 12:15:38 -0400
-Message-ID: <4FF5BD9D.9040101@gmail.com>
-Date: Fri, 06 Jul 2012 00:15:25 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Thu, 5 Jul 2012 12:18:52 -0400
+Date: Thu, 5 Jul 2012 09:16:44 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org, levinsasha928@gmail.com
+Subject: [GIT RFC PULL rcu/urgent] Revert to fix RCU-related
+ deadlock/softlockup
+Message-ID: <20120705161644.GA10670@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Jiang Liu <jiang.liu@huawei.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, Mel Gorman <mgorman@suse.de>,
-        Yinghai Lu <yinghai@kernel.org>, Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/4] mm: make consistent use of PG_slab flag
-References: <1341287837-7904-1-git-send-email-jiang.liu@huawei.com> <1341287837-7904-2-git-send-email-jiang.liu@huawei.com> <alpine.DEB.2.00.1207050945310.4984@router.home>
-In-Reply-To: <alpine.DEB.2.00.1207050945310.4984@router.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12070516-5518-0000-0000-000005CB66BA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2012 10:47 PM, Christoph Lameter wrote:
-> On Tue, 3 Jul 2012, Jiang Liu wrote:
-> 
->> PG_slabobject:	mark whether a (compound) page hosts SLUB/SLOB objects.
-> 
-> Any subsystem may allocate a compound page to store metadata.
-> 
-> The compound pages used by SLOB and SLUB are not managed in any way but
-> the calls to kfree and kmalloc are converted to calls to the page
-> allocator. There is no "management" by the slab allocators for these
-> cases and its inaccurate to say that these are SLUB/SLOB objects since the
-> allocators never deal with these objects.
-> 
-Hi Chris,
-	I think there's a little difference with SLUB and SLOB for compound page.
-For SLOB, it relies on the page allocator to allocate compound page to fulfill
-request bigger than one page. For SLUB, it relies on the page allocator if the
-request is bigger than two pages. So SLUB may allocate a 2-pages compound page
-to host SLUB managed objects.
-	My proposal may be summarized as below:
-	1) PG_slab flag marks a memory object is allocated from slab allocator.
-	2) PG_slabobject marks a (compound) page hosts SLUB/SLOB managed objects.
-	3) Only set PG_slab/PG_slabobject on the head page of compound pages.
-	4) For SLAB, PG_slabobject is redundant and so not used.
+Hello, Ingo,
 
-	A summary of proposed usage of PG_slab(S) and PG_slabobject(O) with 
-SLAB/SLUB/SLOB allocators as below:
-pagesize	SLAB			SLUB			SLOB
-1page		S			S,O			S,O
-2page		S			S,O			S
->=4page		S			S			S
+This series has a single revert from the ill-starred attempt to inline
+__rcu_read_lock() for preemptible RCU.  Without this revert, on mainline
+kernels using CONFIG_RCU_BOOST there is a low-probability deadlock on the
+runqueue locks, but one that actually appeared in Sasha Levin's testing.
+With the revert, and with an diagnostic patch that increased probability
+of the deadlock to a MTBF of roughly 10 seconds, Sasha's tests ran for
+two days with no failure.
 
-	Thanks!
-	Gerry
+The sequence of events leading to the deadlock is as follows:
 
+1.	A task enters an RCU read-side critical section, and is both
+	preempted and subjected to RCU priority boosting.
+2.	The task starts to exit its RCU read-side critical section,
+	but is preempted in __rcu_read_unlock() just after the assignment
+	setting t->rcu_read_lock_nesting to INT_MIN.  (The diagnostic
+	patch mentioned above expands this window by ten microseconds,
+	and is available in -rcu as a debug option queued for 3.7.)
+3.	The task enters the scheduler, where it acquires the corresponding
+	runqueue lock, then invokes rcu_switch_from() which in turn
+	invokes rcu_preempt_note_context_switch(), which in turn invokes
+	rcu_read_unlock_special(), which attempts to deboost the task.
+4.	The attempt to deboost the task recursively enters the scheduler
+	with a runqueue lock held, which can result in deadlock.
+
+The revert moves the point at which rcu_preempt_note_context_switch() is
+called to a point in the scheduler code before the runqueue lock is
+acquired, avoiding the deadlock.
+
+This pull is marked "RFC" because CONFIG_RCU_BOOST=y is not used much
+outside of the real-time community.  I will be sending another pull
+request later today (Pacific Time) for 3.6 RCU commits, which will
+include this commit as well.  Your choice.  ;-)
+
+This change is available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/urgent
+
+							Thanx, Paul
+
+------------------>
+Paul E. McKenney (1):
+      Revert "rcu: Move PREEMPT_RCU preemption to switch_to() invocation"
+
+ arch/um/drivers/mconsole_kern.c |    1 -
+ include/linux/rcupdate.h        |    1 -
+ include/linux/rcutiny.h         |    6 ++++++
+ include/linux/sched.h           |   10 ----------
+ kernel/rcutree.c                |    1 +
+ kernel/rcutree.h                |    1 +
+ kernel/rcutree_plugin.h         |   14 +++++++++++---
+ kernel/sched/core.c             |    1 -
+ 8 files changed, 19 insertions(+), 16 deletions(-)
 
