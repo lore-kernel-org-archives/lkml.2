@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933270Ab2GEPRb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 11:17:31 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:52208 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933226Ab2GEPR2 (ORCPT
+	id S933261Ab2GEPUn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 11:20:43 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:36348 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756647Ab2GEPUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 11:17:28 -0400
-Message-ID: <4FF5B004.4080100@linaro.org>
-Date: Thu, 05 Jul 2012 16:17:24 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Thu, 5 Jul 2012 11:20:39 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av4EAJGv9U9bdWOb/2dsb2JhbABFhV+xSIEHghkBBSMECwFGECUCJgICVwcSiA+mdZJSgSCPRYESA5U3kAOCYQ
+X-IronPort-AV: E=Sophos;i="4.77,531,1336341600"; 
+   d="scan'208";a="939596338"
+From: =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
+To: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
+        aaro.koskinen@iki.fi, dan.carpenter@oracle.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
+Subject: [PATCH 19/19] Staging: xgifb: Remove useless condition.
+Date: Thu,  5 Jul 2012 16:46:02 +0200
+Message-Id: <f64e8df7464f6e1a9021f8c2c57bca720872c7bb.1341498466.git.magomez@igalia.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1341498465.git.magomez@igalia.com>
+References: <cover.1341498465.git.magomez@igalia.com>
+In-Reply-To: <cover.1341498465.git.magomez@igalia.com>
+References: <cover.1341498465.git.magomez@igalia.com>
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de,
-        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, STEricsson_nomadik_linux@list.st.com
-Subject: Re: [PATCH] of: address: Don't fail a lookup just because a node
- has no reg property
-References: <1341498754-30445-1-git-send-email-lee.jones@linaro.org> <4FF5AB4D.6090500@gmail.com>
-In-Reply-To: <4FF5AB4D.6090500@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/12 15:57, Rob Herring wrote:
-> On 07/05/2012 09:32 AM, Lee Jones wrote:
->> Sometimes it doesn't make any sense for a node to have an address.
->> In this case device lookup will always be unsuccessful because we
->> currently assume every node will have a reg property. This patch
->> changes the semantics so that the resource address and the lookup
->> address will only be compared if one exists.
->>
->> Things like AUXDATA() rely on of_dev_lookup to return the lookup
->> entry of a particular device in order to do things like apply
->> platform_data to a device. However, this is currently broken for
->> nodes which do not have a reg property, meaning that platform_data
->> can not be passed in those cases.
->>
->> Acked-by: Arnd Bergmann <arnd@arndb.de>
->> Signed-off-by: Lee Jones <lee.jones@linaro.org>
->> ---
->
-> Acked-by: Rob Herring <rob.herring@calxeda.com>
->
-> Do you have something dependent on this or want me to apply?
+Remove last if branch in XGIfb_do_set_var(), as it has no action assigned.
 
-I have things that require this patch yes. Please apply.
+Signed-off-by: Miguel Gómez <magomez@igalia.com>
+---
+ drivers/staging/xgifb/XGI_main_26.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-Thanks Rob.
-
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index 895e408..c29a5fc 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -963,8 +963,6 @@ static int XGIfb_do_set_var(struct fb_var_screeninfo *var, int isactive,
+ 		vtotal <<= 1;
+ 	else if ((var->vmode & FB_VMODE_MASK) == FB_VMODE_DOUBLE)
+ 		vtotal <<= 2;
+-	else if ((var->vmode & FB_VMODE_MASK) == FB_VMODE_INTERLACED) {
+-	}
+ 
+ 	if (!htotal || !vtotal) {
+ 		pr_debug("Invalid 'var' information\n");
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
-
+1.7.9.5
 
