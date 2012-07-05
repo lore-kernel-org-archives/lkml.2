@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932675Ab2GEMhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 08:37:21 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:49945
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932579Ab2GEMhI (ORCPT
+	id S932725Ab2GEMhw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 08:37:52 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:45764 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932699Ab2GEMhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 08:37:08 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah)
-X-WSS-ID: 0M6OTPL-02-6NP-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 19/28] iommu/amd: Add IRTE invalidation routine
-Date: Thu, 5 Jul 2012 14:36:39 +0200
-Message-ID: <1341491808-23083-20-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
-References: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
+	Thu, 5 Jul 2012 08:37:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+In-Reply-To: <1341412376-6272-1-git-send-email-will.deacon@arm.com>
+References: <1341412376-6272-1-git-send-email-will.deacon@arm.com>
+Date: Thu, 5 Jul 2012 20:37:46 +0800
+Message-ID: <CAJd=RBAmF3dtb8wtEbS-A7BNT=RLsb5emQQWVU8ioeQOO8D7NA@mail.gmail.com>
+Subject: Re: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
+ page to userspace
+From: Hillf Danton <dhillf@gmail.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, mhocko@suse.cz,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add routine to invalidate the IOMMU cache for interupt
-translations. Also include the IRTE caches when flushing all
-IOMMU caches.
+On Wed, Jul 4, 2012 at 10:32 PM, Will Deacon <will.deacon@arm.com> wrote:
+> When allocating and returning clear huge pages to userspace as a
+> response to a fault, we may zero and return a mapping to a previously
+> dirtied physical region (for example, it may have been written by
+> a private mapping which was freed as a result of an ftruncate on the
+> backing file). On architectures with Harvard caches, this can lead to
+> I/D inconsistency since the zeroed view may not be visible to the
+> instruction stream.
+>
+> This patch solves the problem by flushing the region after allocating
+> and clearing a new huge page. Note that PowerPC avoids this issue by
+> performing the flushing in their clear_user_page implementation to keep
+> the loader happy, however this is closely tied to the semantics of the
+> PG_arch_1 page flag which is architecture-specific.
+>
+> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> ---
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- drivers/iommu/amd_iommu.c       |   27 +++++++++++++++++++++++++++
- drivers/iommu/amd_iommu_types.h |    1 +
- 2 files changed, 28 insertions(+)
+Thanks:)
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 6282dab..7006605 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -834,6 +834,13 @@ static void build_inv_all(struct iommu_cmd *cmd)
- 	CMD_SET_TYPE(cmd, CMD_INV_ALL);
- }
- 
-+static void build_inv_irt(struct iommu_cmd *cmd, u16 devid)
-+{
-+	memset(cmd, 0, sizeof(*cmd));
-+	cmd->data[0] = devid;
-+	CMD_SET_TYPE(cmd, CMD_INV_IRT);
-+}
-+
- /*
-  * Writes the command to the IOMMUs command buffer and informs the
-  * hardware about the new command.
-@@ -955,12 +962,32 @@ static void iommu_flush_all(struct amd_iommu *iommu)
- 	iommu_completion_wait(iommu);
- }
- 
-+static void iommu_flush_irt(struct amd_iommu *iommu, u16 devid)
-+{
-+	struct iommu_cmd cmd;
-+
-+	build_inv_irt(&cmd, devid);
-+
-+	iommu_queue_command(iommu, &cmd);
-+}
-+
-+static void iommu_flush_irt_all(struct amd_iommu *iommu)
-+{
-+	u32 devid;
-+
-+	for (devid = 0; devid <= 0xffff; ++devid)
-+		iommu_flush_irt(iommu, devid);
-+
-+	iommu_completion_wait(iommu);
-+}
-+
- void iommu_flush_all_caches(struct amd_iommu *iommu)
- {
- 	if (iommu_feature(iommu, FEATURE_IA)) {
- 		iommu_flush_all(iommu);
- 	} else {
- 		iommu_flush_dte_all(iommu);
-+		iommu_flush_irt_all(iommu);
- 		iommu_flush_tlb_all(iommu);
- 	}
- }
-diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
-index 1155389..0791451 100644
---- a/drivers/iommu/amd_iommu_types.h
-+++ b/drivers/iommu/amd_iommu_types.h
-@@ -152,6 +152,7 @@
- #define CMD_INV_DEV_ENTRY       0x02
- #define CMD_INV_IOMMU_PAGES	0x03
- #define CMD_INV_IOTLB_PAGES	0x04
-+#define CMD_INV_IRT		0x05
- #define CMD_COMPLETE_PPR	0x07
- #define CMD_INV_ALL		0x08
- 
--- 
-1.7.9.5
+Acked-by: Hillf Danton <dhillf@gmail.com>
 
-
+>  mm/hugetlb.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index e198831..b83d026 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -2646,6 +2646,7 @@ retry:
+>                         goto out;
+>                 }
+>                 clear_huge_page(page, address, pages_per_huge_page(h));
+> +               flush_dcache_page(page);
+>                 __SetPageUptodate(page);
+>
+>                 if (vma->vm_flags & VM_MAYSHARE) {
+> --
+> 1.7.4.1
+>
