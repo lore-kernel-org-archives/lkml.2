@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab2GEUMH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 16:12:07 -0400
-Received: from mail.digidescorp.com ([50.73.98.161]:21283 "EHLO
-	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752698Ab2GEUMF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 16:12:05 -0400
-X-Greylist: delayed 496 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Jul 2012 16:12:05 EDT
-DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
-	c=simple; q=dns; h=message-id:from;
-	b=hnpKoNAfD3enxWE1cxpYxYD9V6pJzpH2ndgUf7AgUK3FxRWvSd6JoAUT6KHn
-	/LSh/KxoNZLcb7KuvqAhXcq3gBoiGx/svi0d1SgsLzUnapGIACp40lxAE
-	KxiKcIcXwnhEGpfWucnAnPaMOzdAltumw9p7tNKhICofKT/SMPhvuY=;
-X-Spam-Processed: mail.digidescorp.com, Thu, 05 Jul 2012 15:03:47 -0500
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=1533b6ee34=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Message-ID: <1341518624.2012.19.camel@iscandar.digidescorp.com>
-Subject: Re: [PATCH 2/2] fat (exportfs): reconnect file handles to evicted
- inodes/dentries
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 05 Jul 2012 15:03:44 -0500
-In-Reply-To: <87a9zeeu4a.fsf@devron.myhome.or.jp>
-References: <1341342576-15394-1-git-send-email-steve@digidescorp.com>
-	 <1341342576-15394-3-git-send-email-steve@digidescorp.com>
-	 <87pq8bokcp.fsf@devron.myhome.or.jp>
-	 <WC20120704180312.82023C@digidescorp.com>
-	 <87a9zeeu4a.fsf@devron.myhome.or.jp>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
-Mime-Version: 1.0
+	id S1757423Ab2GEUMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 16:12:18 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:55012 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757349Ab2GEUMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 16:12:15 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [RFD] PM: Device tree representation of power domains
+Date: Thu, 5 Jul 2012 22:17:47 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>
+References: <201207032302.17805.rjw@sisk.pl> <20120704115637.GS4111@opensource.wolfsonmicro.com>
+In-Reply-To: <20120704115637.GS4111@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201207052217.48086.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-05 at 12:59 +0900, OGAWA Hirofumi wrote: 
-> "Steve Magnani" <steve@digidescorp.com> writes:
-> > I may yet rip out the get_name code. The testing I did before posting the 
-> > patch seemed to indicate that it was needed - I saw ESTALE errors without 
-> > get_name support that I did not see with it present. But I've been 
-> > digging into this some more and I think that was just a coincidence; 
-> > probably I just generated more extreme memory pressure when testing 
-> > without get_name. I should know more tomorrow.
+On Wednesday, July 04, 2012, Mark Brown wrote:
+> On Tue, Jul 03, 2012 at 11:02:17PM +0200, Rafael J. Wysocki wrote:
+> 
+> > I actually don't have any ideas how to do that at the moment, but I wonder
+> > if anyone has already thought about it?
+> 
+> > For one, I don't think that representing a power domain as a platform device
+> > would be a good approach and I'm not sure how to represent the relationships
+> > between devices and the domains they belong to.
+> 
+> I guess the OMAP hwmod stuff is the closest thing we've got at the
+> minute (I don't recall seeing any other implementations in mainline) but
+> the hwmods themselves don't appear in the DTS right now.  They have a
+> ti,hwmods property on each device naming the hwmod it's in, something
+> like that seems like a reasonable approach, possibly a reference to
+> another DT node rather than or as well as a string?  That seems fairly
+> easy.
 
-The get_name code can go away.
+Well, it looks like (and please tell me if I'm wrong) the hwmons are just
+string attributes that are parsed by the platform-specific code through
+a platform bus type notifier.
 
-It turns out that it is much harder to generate severe memory pressure
-in my virtual 3.5 kernel than in my embedded 2.6.35 kernel.
-fat_reconstitute_inode() was not being exercised in 3.5 as much as I
-thought.
+We could do that for power domains too, but then each platform wanting to
+use them would need to implement such a notifier and add its own routine
+for parsing those strings.  Would that be acceptable to everyone concerned?
 
-And, there was a change made in 3.5
-(b0b0382bb4904965a9e9fca77ad87514dfda0d1c) that causes the parent
-i_logstart field not to be populated when building NFS file handles for
-shares marked 'no_subtree_check'. That causes fat_reconstitute_inode()
-to fail, because it interprets the parent of such objects as 'root'
-rather than as 'unknown'.
-
-I'm reworking the patch to cope with the 'unknown' case, and to address
-your other comments. Still need to look into lock_super() vs.
-inode->i_mutex.
-
-Steve
-------------------------------------------------------------------------
-Steven J. Magnani               "I claim this network for MARS!
-www.digidescorp.com              Earthling, return my space modulator!"
-
-#include <standard.disclaimer>
-
-
+Rafael
