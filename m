@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756798Ab2GEPpn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 11:45:43 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59135 "EHLO
+	id S1756780Ab2GEPpl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 11:45:41 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59137 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030179Ab2GEPph (ORCPT
+	with ESMTP id S1030232Ab2GEPpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 11:45:37 -0400
+	Thu, 5 Jul 2012 11:45:38 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 09/20] tools lib traceevent: Handle realloc() failure path
-Date: Thu,  5 Jul 2012 12:45:07 -0300
-Message-Id: <1341503118-13198-10-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 17/20] perf test: Use ARRAY_SIZE in parse events tests
+Date: Thu,  5 Jul 2012 12:45:15 -0300
+Message-Id: <1341503118-13198-18-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1341503118-13198-1-git-send-email-acme@infradead.org>
 References: <1341503118-13198-1-git-send-email-acme@infradead.org>
@@ -28,162 +29,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-The realloc can fail so that we should handle it properly.
+Use ARRAY_SIZE instead of defining the sizes separately for each test
+arrays.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1333940074-19052-7-git-send-email-namhyung.kim@lge.com
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1341352848-11833-10-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.c |   76 ++++++++++++++++++++++++++++--------
- 1 file changed, 60 insertions(+), 16 deletions(-)
+ tools/perf/util/parse-events-test.c |   29 ++++++++++-------------------
+ 1 file changed, 10 insertions(+), 19 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index cd334d5..05eb6b4 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -1264,9 +1264,15 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 					field->flags |= FIELD_IS_POINTER;
+diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
+index dd0c306..1b997d2 100644
+--- a/tools/perf/util/parse-events-test.c
++++ b/tools/perf/util/parse-events-test.c
+@@ -634,8 +634,6 @@ static struct test__event_st test__events[] = {
+ 	},
+ };
  
- 				if (field->type) {
--					field->type = realloc(field->type,
--							      strlen(field->type) +
--							      strlen(last_token) + 2);
-+					char *new_type;
-+					new_type = realloc(field->type,
-+							   strlen(field->type) +
-+							   strlen(last_token) + 2);
-+					if (!new_type) {
-+						free(last_token);
-+						goto fail;
-+					}
-+					field->type = new_type;
- 					strcat(field->type, " ");
- 					strcat(field->type, last_token);
- 					free(last_token);
-@@ -1291,6 +1297,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 		if (strcmp(token, "[") == 0) {
- 			enum event_type last_type = type;
- 			char *brackets = token;
-+			char *new_brackets;
- 			int len;
+-#define TEST__EVENTS_CNT (sizeof(test__events) / sizeof(struct test__event_st))
+-
+ static struct test__event_st test__events_pmu[] = {
+ 	[0] = {
+ 		.name  = "cpu/config=10,config1,config2=3,period=1000/u",
+@@ -647,9 +645,6 @@ static struct test__event_st test__events_pmu[] = {
+ 	},
+ };
  
- 			field->flags |= FIELD_IS_ARRAY;
-@@ -1310,9 +1317,14 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 					len = 1;
- 				last_type = type;
+-#define TEST__EVENTS_PMU_CNT (sizeof(test__events_pmu) / \
+-			      sizeof(struct test__event_st))
+-
+ struct test__term {
+ 	const char *str;
+ 	__u32 type;
+@@ -765,21 +760,17 @@ int parse_events__test(void)
+ {
+ 	int ret;
  
--				brackets = realloc(brackets,
--						   strlen(brackets) +
--						   strlen(token) + len);
-+				new_brackets = realloc(brackets,
-+						       strlen(brackets) +
-+						       strlen(token) + len);
-+				if (!new_brackets) {
-+					free(brackets);
-+					goto fail;
-+				}
-+				brackets = new_brackets;
- 				if (len == 2)
- 					strcat(brackets, " ");
- 				strcat(brackets, token);
-@@ -1328,7 +1340,12 @@ static int event_read_fields(struct event_format *event, struct format_field **f
+-	do {
+-		ret = test_events(test__events, TEST__EVENTS_CNT);
+-		if (ret)
+-			break;
+-
+-		if (test_pmu()) {
+-			ret = test_events(test__events_pmu,
+-					  TEST__EVENTS_PMU_CNT);
+-			if (ret)
+-				break;
+-		}
++#define TEST_EVENTS(tests)				\
++do {							\
++	ret = test_events(tests, ARRAY_SIZE(tests));	\
++	if (ret)					\
++		return ret;				\
++} while (0)
  
- 			free_token(token);
+-		ret = test_terms(test__terms, TEST__TERMS_CNT);
++	TEST_EVENTS(test__events);
  
--			brackets = realloc(brackets, strlen(brackets) + 2);
-+			new_brackets = realloc(brackets, strlen(brackets) + 2);
-+			if (!new_brackets) {
-+				free(brackets);
-+				goto fail;
-+			}
-+			brackets = new_brackets;
- 			strcat(brackets, "]");
+-	} while (0);
++	if (test_pmu())
++		TEST_EVENTS(test__events_pmu);
  
- 			/* add brackets to type */
-@@ -1339,10 +1356,16 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 			 * the format: type [] item;
- 			 */
- 			if (type == EVENT_ITEM) {
--				field->type = realloc(field->type,
--						      strlen(field->type) +
--						      strlen(field->name) +
--						      strlen(brackets) + 2);
-+				char *new_type;
-+				new_type = realloc(field->type,
-+						   strlen(field->type) +
-+						   strlen(field->name) +
-+						   strlen(brackets) + 2);
-+				if (!new_type) {
-+					free(brackets);
-+					goto fail;
-+				}
-+				field->type = new_type;
- 				strcat(field->type, " ");
- 				strcat(field->type, field->name);
- 				free_token(field->name);
-@@ -1350,9 +1373,15 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 				field->name = token;
- 				type = read_token(&token);
- 			} else {
--				field->type = realloc(field->type,
--						      strlen(field->type) +
--						      strlen(brackets) + 1);
-+				char *new_type;
-+				new_type = realloc(field->type,
-+						   strlen(field->type) +
-+						   strlen(brackets) + 1);
-+				if (!new_type) {
-+					free(brackets);
-+					goto fail;
-+				}
-+				field->type = new_type;
- 				strcat(field->type, brackets);
- 			}
- 			free(brackets);
-@@ -1735,10 +1764,16 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 		/* could just be a type pointer */
- 		if ((strcmp(arg->op.op, "*") == 0) &&
- 		    type == EVENT_DELIM && (strcmp(token, ")") == 0)) {
-+			char *new_atom;
-+
- 			if (left->type != PRINT_ATOM)
- 				die("bad pointer type");
--			left->atom.atom = realloc(left->atom.atom,
-+			new_atom = realloc(left->atom.atom,
- 					    strlen(left->atom.atom) + 3);
-+			if (!new_atom)
-+				goto out_free;
-+
-+			left->atom.atom = new_atom;
- 			strcat(left->atom.atom, " *");
- 			free(arg->op.op);
- 			*arg = *left;
-@@ -2597,7 +2632,16 @@ process_arg_token(struct event_format *event, struct print_arg *arg,
- 		}
- 		/* atoms can be more than one token long */
- 		while (type == EVENT_ITEM) {
--			atom = realloc(atom, strlen(atom) + strlen(token) + 2);
-+			char *new_atom;
-+			new_atom = realloc(atom,
-+					   strlen(atom) + strlen(token) + 2);
-+			if (!new_atom) {
-+				free(atom);
-+				*tok = NULL;
-+				free_token(token);
-+				return EVENT_ERROR;
-+			}
-+			atom = new_atom;
- 			strcat(atom, " ");
- 			strcat(atom, token);
- 			free_token(token);
+-	return ret;
++	return test_terms(test__terms, ARRAY_SIZE(test__terms));
+ }
 -- 
 1.7.9.2.358.g22243
 
