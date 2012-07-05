@@ -1,104 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab2GEANf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 20:13:35 -0400
-Received: from mo-p03-ob.rzone.de ([81.169.146.174]:44807 "EHLO
-	mo-p03-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab2GEANe (ORCPT
+	id S1756118Ab2GEAfv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 20:35:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48114 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495Ab2GEAfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 20:13:34 -0400
-X-RZG-AUTH: :PGMXYU2paOu7c9X7eJvdiGdJFTIFuZtRmKo5FQ7o7z/0kvf3OKuV9jFlWkwfMC5chtZUQ7yAaYgb2aXQ0BA=
-Message-ID: <e023b5o64LQ07Z.RZmta@mo-p03-ob.rzone.de>
-X-RZG-CLASS-ID: mo03
-Content-Type: multipart/mixed; boundary="===============2039529458=="
-MIME-Version: 1.0
-Subject: RE:CASH PAYMENT DELIVERY (Read the attached file below).
-To: Recipients <post@feldker-grosssittiche.de>
-From: "Dr. Nelson Walter" <post@feldker-grosssittiche.de>
-Date: Thu, 05 Jul 2012 02:07:00 +0200
-Reply-To: nelsonwalter022@e-mail.ua
+	Wed, 4 Jul 2012 20:35:48 -0400
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwp.linux@gmail.com>
+Subject: [PATCH] mm/memcg: clarify type in memory cgroup
+Date: Thu,  5 Jul 2012 08:35:28 +0800
+Message-Id: <1341448528-3875-1-git-send-email-liwp.linux@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You will not see this in a MIME-aware mail reader.
---===============2039529458==
-Content-Type: text/plain; charset="iso-8859-1"
-MIME-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-Content-Description: Mail message body
+From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
+Generally we use 'unsigned long' for number of pages and 'u64' for
+number of bytes. But function mem_cgroup_zone_nr_lru_pages and
+mem_cgroup_node_nr_lru_pages use local variable whose type is 'u64'
+to caculate numbers of pages, however, the return value type of funtion
+which describes the numbers of pages is 'unsigned long'. Replace 'u64'
+by 'unsigned long' in order to clean up this inconsistent.
 
---===============2039529458==
-Content-Type: application/octet-stream
-MIME-Version: 1.0
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="Dr. Nelson Walter.rtf"
+Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+---
+ mm/memcontrol.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzF7XGZvbnR0Ymx7XGYwXGZu
-aWxcZmNoYXJzZXQwIENhbGlicmk7fX0NCntcKlxnZW5lcmF0b3IgTXNmdGVkaXQgNS40MS4yMS4y
-NTEwO31cdmlld2tpbmQ0XHVjMVxwYXJkXHNhMjAwXHNsMjc2XHNsbXVsdDFcbGFuZzlcZjBcZnMy
-MiBGcm9tIHRoZSBEZXNrIG9mIERyLiBOZWxzb24gV2FsdGVyLFxwYXINCkFjY291bnRhbnQgR2Vu
-ZXJhbCxDZW50cmFsIEJhbmsgT2YgTmlnZXJpYSAoIENCTiApLlxwYXINClRlbGVwaG9uZTogICAg
-KzIzNDgwMjMzNjg0OTkgICAgICAgICAgICAgIFxwYXINClxwYXINCiBccGFyDQogICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgIENPTkZJREVOVElBTCAvIENBU0ggUEFZTUVOVCBERUxJVkVS
-WVxwYXINCiBccGFyDQogXHBhcg0KQXR0ZW50aW9uOiBccGFyDQogXHBhcg0KSSBBbSBEci4gTmVs
-c29uIFdhbHRlciwgQWNjb3VudGFudCBHZW5lcmFsIENlbnRyYWwgQmFuayBPZiBOaWdlcmlhLCBJ
-IGRlY2lkZWQgIHRvIGNvbnRhY3QgeW91IGJhc2VkIG9uIHRoZSBpbmZvcm1hdGlvbiB3ZSBnYXRo
-ZXJlZCBjb25jZXJuaW5nIHlvdXIgIGNvbnRyYWN0L2luaGVyaXRhbmNlIGZ1bmRzLCB3aGljaCB3
-ZSBhcmUgc3RpbGwgdW5hYmxlIHRvIHBheSB5b3UuXHBhcg0KIFxwYXINCkFmdGVyIG91ciB5ZWFy
-IDIwMTIgQXVkaXQsIHdlIGRpc2NvdmVyZWQgdGhyb3VnaCBvdXIgcGF5bWVudCBmaWxlcyB0aGF0
-IHlvdXIgIGNvbnRyYWN0L2luaGVyaXRhbmNlIHBheW1lbnQgYXJlIHN0aWxsIHVucGFpZCB0byB5
-b3UgYW5kIHdlIHRyaWVkIHRvIGZpbmQgb3V0XHBhcg0Kd2h5IHlvdSBoYXZlIG5vdCByZWNlaXZl
-ZCB5b3VyIHBheW1lbnQgdXAgdGlsbCB0aGlzIG1vbWVudCBhbmQgd2UgY291bGQgbm90IGZpbmQg
-b3V0IGFueSBnb29kIHJlYXNvbiB3aHkgaGUgb2ZmaWNpYWxzIG9mIHRoaXMgYmFuayBkZWNpZGVk
-IHRvIHN0b3AgeW91ciBwYXltZW50IGFuZCB3ZSBhbHNvIGRpc2NvdmVyZWQgaW4gb3VyIGZpbGVz
-IHRoYXQgeW91IGhhdmUgbWFkZSBzZXZlcmFsIHBheW1lbnQgaW4gb3JkZXIgdG8gcmVjZWl2ZSB5
-b3VyIHBheW1lbnQgYnV0IGFsbCB0byBubyBhdmFpbC5ccGFyDQogXHBhcg0KV2UgaGF2ZSBzdW1t
-b25lZCBzb21lIG9mIG91ciBvZmZpY2lhbHMgbGlrZTogTXIuIFR1bmRlIExlbW8sTXIuIE1heHdl
-bGwgUmljaGFyZCwgRHIuIFBhdHJpY2sgVXpvLCBQcm9mLiBDaGFybGVzIFNvbHVkbywgRHIuIEph
-bWVzIE9rdWt1IGFuZCBNcnMuIFN0ZWxsYSBEaWtlIGFuZCB0aGUgcmVzdCBvZiB0aGUgZGlyZWN0
-b3JzIHRvIHF1ZXJ5IHRoZW0gd2h5IHRoZXkgaGF2ZSBub3QgcGFpZCB5b3UgYWZ0ZXIgYWxsIHRo
-ZSB0aW1lIGFuZCBtb25leSB5b3UgaGF2ZSBzcGVudCBzbyBmYXIgYW5kIGF0IHRoZSBlbmQgb2Yg
-b3VyIHF1ZXJ5IGFuZCBpbnZlc3RpZ2F0aW9uIHdlIGRpc2NvdmVyZWQgdGhhdCB0aGV5IHdhbnQg
-dG8gZnJ1c3RyYXRlIHlvdSBzbyB0aGF0IHlvdSB3aWxsIGFiYW5kb24geW91ciBmdW5kcyBmb3Ig
-dGhlbSB0byBkaXZlcnQgaW50byB0aGVpciBwZXJzb25hbCBhY2NvdW50IGZvciB0aGVyZSBwZXJz
-b25hbCB1c2UuXHBhcg0KIFxwYXINCkJhc2VkIG9uIHRoaXMgd2UgaGF2ZSBzdG9wcGVkIHRoZW0g
-ZnJvbSBoYW5kbGluZyBhbnkgZm9yZWlnbiBjb250cmFjdG9ycy9pbmhlcml0YW5jZSBwYXltZW50
-cyB0byBhdm9pZCB0aGVtIG5vdCB0byB0YXJuaXNoIHRoZSBpbWFnZSBvZiBvdXIgY291bnRyeSBh
-bmQgYmFuayBzbyBpZiB5b3UgYXJlIGluIGFueSB3YXkgY29tbXVuaWNhdGluZyBvciBkZWFsaW5n
-IHdpdGggYW55IGJvZHkgb3IgcGVyc29uKHMpIGluIHJlZ2FyZHMgdG8geW91ciBwYXltZW50LCB5
-b3UgYXJlIG5vdyBhZHZpc2VkIHRvIHN0b3AgYW5kIGFueSBtb25leSB5b3Ugc2VuZCB0byBhbnkg
-b2YgdGhlbSBpcyBhdCB5b3VyIG93biByaXNrLiBGb3IgdGhlIGZhY3QgdGhhdCB5b3VyIHBheW1l
-bnQgaGFzIGJlZW4gZGVsYXllZCBmb3Igc28gbG9uZyB3aXRoIHVzIGFuZCB5b3UgaGF2ZSBnb25l
-IG1hbnkgd2F5cyB0byByZWNlaXZlIHRoZSBwYXltZW50IGJ5IGJhbmsgdG8gYmFuayB0cmFuc2Zl
-ciBhbGwgYXQgdG8gbm8gYXZhaWwgYmVjYXVzZSBvZiB0aGUgc3RvcCBvcmRlciBhbmQgZGVtYW5k
-cyBvZiBzZXZlcmFsIGNlcnRpZmljYXRlcyBhbmQgZG9jdW1lbnRhdGlvbnMuXHBhcg0KIFxwYXIN
-CldlIGhhdmUgdGhlcmVmb3JlIGNvbmNsdWRlZCBhZnRlciBvdXIgeWVzdGVyZGF5IG1lZXRpbmcg
-d2l0aCB0aGUgUHJlc2lkZW5jeSB0aGF0IGFsbCB0aGUgY29udHJhY3RvcnMvaW5oZXJpdGFuY2Ug
-YmVuZWZpY2lhcmllcyB3aWxsIGJlIHJlY2VpdmluZyB0aGVpclxwYXINCm92ZXJkdWUgcGF5bWVu
-dCB2aWEgQ2FzaCBEaXBsb21hdGljIFBheW1lbnQgRGVsaXZlcnkgRGlyZWN0IHRvIGhvbWUgY291
-bnRyeSB3aGVyZSB5b3Ugd2lsbCByZWNlaXZlIHlvdXIgcGF5bWVudC4gVGhpcyBpcyB0aGUgb25s
-eSB3YXkgeW91IHdpbGwgcmVjZWl2ZSB5b3VyIHBheW1lbnQgd2l0aG91dCBzdHJlc3Mgb3IgbW9y
-ZSBleHBlbnNlcy4gQWxsIHRoZSBuZWNlc3NhcnkgYXJyYW5nZW1lbnRzIHJlZ2FyZGluZyB0aGUg
-ZGVsaXZlcnkgb2YgeW91ciBwYXltZW50IGhhcyBiZWVuIHB1dCB0byBwbGFjZSBvbmx5IHdhaXRp
-bmdccGFyDQp0byBoZWFyIGZyb20geW91IGFzIHNvb24gYXMgeW91IHJlY2VpdmUgdGhpcyBtZXNz
-YWdlIHRvZGF5LlxwYXINClxwYXINCkFzIHNvb24gYXMgd2UgaGVhciBmcm9tIHlvdSB3ZSBzaGFs
-bCBkaXNjbG9zZSB0byB5b3UgdGhlIGFtb3VudCB0byBiZSBwYWlkIHRvIHlvdSBhbmQgaG93IHRo
-ZSBtb25leSBpcyBhcnJhbmdlZCBmb3IgZGVsaXZlcnkgYW5kIHRoZSBuYW1lIG9mIHRoZSBwZXJz
-b24gaW4gY2hhcmdlIG9mIGRlbGl2ZXJpbmcgdGhlIG1vbmV5IHRvIHlvdS4gQWZ0ZXIgZ29pbmcg
-dGhyb3VnaCB0aGlzIG1haWwsICB5b3UgYXJlIHJlcXVpcmVkIHRvIGZ1cm5pc2ggdXMgd2l0aCB0
-aGUgZm9sbG93aW5nIGluZm9ybWF0aW9uIGJlbG93IHNvIHRvIGF2b2lkIGltcG9zdG9ycyBvciBw
-YXlpbmcgdG8gdGhlIHdyb25nIHBlcnNvbihzXHBhcg0KXHBhcg0KMS4gWW91ciBmdWxsIGhvdXNl
-IGFkZHJlc3M6XHBhcg0KMi4gWW91ciBpZGVudGl0eSBzdWNoIGFzLCBpbnRlcm5hdGlvbmFsIHBh
-c3Nwb3J0IG9yIGRyaXZlcidzIGxpY2Vuc2U6XHBhcg0KMy4gWW91ciBjb250YWN0IGNlbGwgcGhv
-bmUgbnVtYmVyczogKERpcmVjdCBMaW5lKVxwYXINCjQuIFlvdXIgRnVsbCBOYW1lOlxwYXINCjUu
-IFlvdXIgb2NjdXBhdGlvbjpccGFyDQpccGFyDQpOb3RlOiBJdCB3YXMgbWFuZGF0ZWQgYnkgRmVk
-ZXJhbCBHb3Zlcm5tZW50IG9mIE5pZ2VyaWEgdG8gZmluYWxpemUgd2l0aCB5b3VyIHBheW1lbnQg
-b24gb3IgYmVmb3JlIG5leHQgd2VlayBXZWRuZXNkYXkgc28gYXMgdG8gdXBkYXRlIG91ciBwYXlt
-ZW50IHJlY29yZCBiZWZvcmUgdGhlIG1vbnRoIHJ1bnMgb3V0LiBUaGVyZWZvcmUsIHlvdSBhcmUg
-YWR2aWNlIHRvIHJlc3BvbmQgdG8gdGhpcyBtZXNzYWdlIGltbWVkaWF0ZWx5IGFuZCBjYWxsIG1l
-IGFzIHlvdSByZWFkIHRoaXMgbWFpbC5ccGFyDQogXHBhcg0KQmVzdCBSZWdhcmRzLFxwYXINCiBc
-cGFyDQpEci4gTmVsc29uIFdhbHRlcixccGFyDQpBY2NvdW50YW50IEdlbmVyYWwsXHBhcg0KQ2Vu
-dHJhbCBCYW5rIG9mIE5pZ2VyaWFccGFyDQp9DQoA
---===============2039529458==--
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index f72b5e5..3d318f6 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -781,7 +781,7 @@ static unsigned long
+ mem_cgroup_node_nr_lru_pages(struct mem_cgroup *memcg,
+ 			int nid, unsigned int lru_mask)
+ {
+-	u64 total = 0;
++	unsigned long total = 0;
+ 	int zid;
+ 
+ 	for (zid = 0; zid < MAX_NR_ZONES; zid++)
+@@ -795,7 +795,7 @@ static unsigned long mem_cgroup_nr_lru_pages(struct mem_cgroup *memcg,
+ 			unsigned int lru_mask)
+ {
+ 	int nid;
+-	u64 total = 0;
++	unsigned long total = 0;
+ 
+ 	for_each_node_state(nid, N_HIGH_MEMORY)
+ 		total += mem_cgroup_node_nr_lru_pages(memcg, nid, lru_mask);
+-- 
+1.7.5.4
+
