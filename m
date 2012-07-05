@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932651Ab2GEMhT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 08:37:19 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:42043
+	id S932631Ab2GEMhR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 08:37:17 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:21845
 	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932580Ab2GEMhI (ORCPT
+	by vger.kernel.org with ESMTP id S932581Ab2GEMhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jul 2012 08:37:08 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah)
-X-WSS-ID: 0M6OTPO-02-6O1-02
+X-WSS-ID: 0M6OTPM-02-6NU-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 24/28] iommu/amd: Add initialization routines for AMD interrupt remapping
-Date: Thu, 5 Jul 2012 14:36:44 +0200
-Message-ID: <1341491808-23083-25-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 25/28] iommu/amd: Make sure irq remapping still works on dma init failure
+Date: Thu, 5 Jul 2012 14:36:45 +0200
+Message-ID: <1341491808-23083-26-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
 References: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
@@ -28,131 +28,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the six routines required to setup interrupt remapping
-with the AMD IOMMU. Also put it all together into the AMD
-specific irq_remap_ops.
+Do not deinitialize the AMD IOMMU driver completly when
+interrupt remapping is already in use but the initialization
+of the DMA layer fails for some reason. Make sure the IOMMU
+can still be used to remap interrupts.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/iommu/amd_iommu.c       |   18 +++++++++++++++++
- drivers/iommu/amd_iommu_init.c  |   42 +++++++++++++++++++++++++++++++++++++++
- drivers/iommu/amd_iommu_proto.h |    8 ++++++++
- 3 files changed, 68 insertions(+)
+ drivers/iommu/amd_iommu_init.c |   40 +++++++++++++++++++++++++++++++---------
+ 1 file changed, 31 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index fed1395..41fe178 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -45,6 +45,7 @@
- 
- #include "amd_iommu_proto.h"
- #include "amd_iommu_types.h"
-+#include "irq_remapping.h"
- 
- #define CMD_SET_TYPE(cmd, t) ((cmd)->data[1] |= ((t) << 28))
- 
-@@ -4154,4 +4155,21 @@ static int setup_hpet_msi(unsigned int irq, unsigned int id)
- 	return 0;
- }
- 
-+struct irq_remap_ops amd_iommu_irq_ops = {
-+	.supported		= amd_iommu_supported,
-+	.prepare		= amd_iommu_prepare,
-+	.enable			= amd_iommu_enable,
-+	.disable		= amd_iommu_disable,
-+	.reenable		= amd_iommu_reenable,
-+	.enable_faulting	= amd_iommu_enable_faulting,
-+	.setup_ioapic_entry	= setup_ioapic_entry,
-+#ifdef CONFIG_SMP
-+	.set_affinity		= set_affinity,
-+#endif
-+	.free_irq		= free_irq,
-+	.compose_msi_msg	= compose_msi_msg,
-+	.msi_alloc_irq		= msi_alloc_irq,
-+	.msi_setup_irq		= msi_setup_irq,
-+	.setup_hpet_msi		= setup_hpet_msi,
-+};
- #endif
 diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index c487822..204dfea 100644
+index 204dfea..1bfeef5 100644
 --- a/drivers/iommu/amd_iommu_init.c
 +++ b/drivers/iommu/amd_iommu_init.c
-@@ -33,6 +33,7 @@
- #include <asm/gart.h>
- #include <asm/x86_init.h>
- #include <asm/iommu_table.h>
-+#include <asm/irq_remapping.h>
- 
- #include "amd_iommu_proto.h"
- #include "amd_iommu_types.h"
-@@ -1896,7 +1897,48 @@ static int __init iommu_go_to_state(enum iommu_init_state state)
- 	return ret;
+@@ -1401,6 +1401,16 @@ static void init_device_table_dma(void)
+ 	}
  }
  
-+#ifdef CONFIG_IRQ_REMAP
-+int __init amd_iommu_prepare(void)
++static void __init uninit_device_table_dma(void)
 +{
-+	return iommu_go_to_state(IOMMU_ACPI_FINISHED);
++	u32 devid;
++
++	for (devid = 0; devid <= amd_iommu_last_bdf; ++devid) {
++		amd_iommu_dev_table[devid].data[0] = 0ULL;
++		amd_iommu_dev_table[devid].data[1] = 0ULL;
++	}
 +}
 +
-+int __init amd_iommu_supported(void)
-+{
-+	return amd_iommu_irq_remap ? 1 : 0;
-+}
-+
-+int __init amd_iommu_enable(void)
-+{
-+	int ret;
-+
-+	ret = iommu_go_to_state(IOMMU_ENABLED);
-+	if (ret)
-+		return ret;
+ static void init_device_table(void)
+ {
+ 	u32 devid;
+@@ -1569,11 +1579,6 @@ static void __init free_on_init_error(void)
  
-+	irq_remapping_enabled = 1;
-+
-+	return 0;
-+}
-+
-+void amd_iommu_disable(void)
-+{
-+	amd_iommu_suspend();
-+}
-+
-+int amd_iommu_reenable(int mode)
-+{
-+	amd_iommu_resume();
-+
-+	return 0;
-+}
-+
-+int __init amd_iommu_enable_faulting(void)
-+{
-+	/* We enable MSI later when PCI is initialized */
-+	return 0;
-+}
-+#endif
+ 	}
  
+-	amd_iommu_uninit_devices();
+-
+-	free_pages((unsigned long)amd_iommu_pd_alloc_bitmap,
+-		   get_order(MAX_DOMAIN_ID/8));
+-
+ 	free_pages((unsigned long)amd_iommu_rlookup_table,
+ 		   get_order(rlookup_table_size));
+ 
+@@ -1585,8 +1590,6 @@ static void __init free_on_init_error(void)
+ 
+ 	free_iommu_all();
+ 
+-	free_unity_maps();
+-
+ #ifdef CONFIG_GART_IOMMU
+ 	/*
+ 	 * We failed to initialize the AMD IOMMU - try fallback to GART
+@@ -1614,6 +1617,16 @@ static bool __init check_ioapic_information(void)
+ 	return true;
+ }
+ 
++static void __init free_dma_resources(void)
++{
++	amd_iommu_uninit_devices();
++
++	free_pages((unsigned long)amd_iommu_pd_alloc_bitmap,
++		   get_order(MAX_DOMAIN_ID/8));
++
++	free_unity_maps();
++}
++
  /*
-  * This is the core init function for AMD IOMMU hardware in the system.
-diff --git a/drivers/iommu/amd_iommu_proto.h b/drivers/iommu/amd_iommu_proto.h
-index 1a7f41c..c294961 100644
---- a/drivers/iommu/amd_iommu_proto.h
-+++ b/drivers/iommu/amd_iommu_proto.h
-@@ -32,6 +32,14 @@ extern void amd_iommu_uninit_devices(void);
- extern void amd_iommu_init_notifier(void);
- extern void amd_iommu_init_api(void);
+  * This is the hardware init function for AMD IOMMU in the system.
+  * This function is called either from amd_iommu_init or from the interrupt
+@@ -1951,8 +1964,17 @@ static int __init amd_iommu_init(void)
  
-+/* Needed for interrupt remapping */
-+extern int amd_iommu_supported(void);
-+extern int amd_iommu_prepare(void);
-+extern int amd_iommu_enable(void);
-+extern void amd_iommu_disable(void);
-+extern int amd_iommu_reenable(int);
-+extern int amd_iommu_enable_faulting(void);
+ 	ret = iommu_go_to_state(IOMMU_INITIALIZED);
+ 	if (ret) {
+-		disable_iommus();
+-		free_on_init_error();
++		free_dma_resources();
++		if (!irq_remapping_enabled) {
++			disable_iommus();
++			free_on_init_error();
++		} else {
++			struct amd_iommu *iommu;
 +
- /* IOMMUv2 specific functions */
- struct iommu_domain;
++			uninit_device_table_dma();
++			for_each_iommu(iommu)
++				iommu_flush_all_caches(iommu);
++		}
+ 	}
  
+ 	return ret;
 -- 
 1.7.9.5
 
