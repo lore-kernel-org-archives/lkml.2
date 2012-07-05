@@ -1,66 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045Ab2GEJ23 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 05:28:29 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57348 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753704Ab2GEJ21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 05:28:27 -0400
-X-IronPort-AV: E=Sophos;i="4.77,530,1336320000"; 
-   d="scan'208";a="5334944"
-From: Gao feng <gaofeng@cn.fujitsu.com>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nhorman@tuxdriver.com, tj@kernel.org, lizefan@huawei.com,
-        eric.dumazet@gmail.com, Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH v2] cgroup: fix panic in netprio_cgroup
-Date: Thu, 5 Jul 2012 17:28:40 +0800
-Message-Id: <1341480520-25081-1-git-send-email-gaofeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.7.6
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/05 17:28:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/05 17:28:27,
-	Serialize complete at 2012/07/05 17:28:27
+	id S1754930Ab2GEJ3M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 05:29:12 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53900 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab2GEJ3J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 05:29:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FAD89DC.2090307@codeaurora.org>
+References: <4FAC200D.2080306@codeaurora.org> <02fc01cd2f50$5d77e4c0$1867ae40$%szyprowski@samsung.com>
+ <4FAD89DC.2090307@codeaurora.org>
+From: Rabin Vincent <rabin@rab.in>
+Date: Thu, 5 Jul 2012 14:58:27 +0530
+X-Google-Sender-Auth: ZFWfAZKGbeirMN37qfqlgMBk3II
+Message-ID: <CAH+eYFBhO9P7V7Nf+yi+vFPveBks7SFKRHfkz3JOQMBKqnkkUQ@mail.gmail.com>
+Subject: Re: Bad use of highmem with buffer_migrate_page?
+To: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>
+Cc: Laura Abbott <lauraa@codeaurora.org>, linaro-mm-sig@lists.linaro.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-we set max_prioidx to the first zero bit index of prioidx_map in
-function get_prioidx.
+On Sat, May 12, 2012 at 3:21 AM, Laura Abbott <lauraa@codeaurora.org> wrote:
+> On 5/11/2012 1:30 AM, Marek Szyprowski wrote:
+>> On Thursday, May 10, 2012 10:08 PM Laura Abbott wrote:
+>>> I did a backport of the Contiguous Memory Allocator to a 3.0.8 tree. I
+>>> wrote fairly simple test case that, in 1MB chunks, allocs up to 40MB
+>>> from a reserved area, maps, writes, unmaps and then frees in an infinite
+>>> loop. When running this with another program in parallel to put some
+>>> stress on the filesystem, I hit data aborts in the filesystem/journal
+>>> layer, although not always the same backtrace. As an example:
+>>>
+>>> [<c02907a4>] (__ext4_check_dir_entry+0x20/0x184) from [<c029e1a8>]
+>>> (add_dirent_to_buf+0x70/0x2ac)
+>>> [<c029e1a8>] (add_dirent_to_buf+0x70/0x2ac) from [<c029f3f0>]
+>>> (ext4_add_entry+0xd8/0x4bc)
+>>> [<c029f3f0>] (ext4_add_entry+0xd8/0x4bc) from [<c029fe90>]
+>>> (ext4_add_nondir+0x14/0x64)
+>>> [<c029fe90>] (ext4_add_nondir+0x14/0x64) from [<c02a04c4>]
+>>> (ext4_create+0xd8/0x120)
+>>> [<c02a04c4>] (ext4_create+0xd8/0x120) from [<c022e134>]
+>>> (vfs_create+0x74/0xa4)
+>>> [<c022e134>] (vfs_create+0x74/0xa4) from [<c022ed3c>]
+>>> (do_last+0x588/0x8d4)
+>>> [<c022ed3c>] (do_last+0x588/0x8d4) from [<c022fe64>]
+>>> (path_openat+0xc4/0x394)
+>>> [<c022fe64>] (path_openat+0xc4/0x394) from [<c0230214>]
+>>> (do_filp_open+0x30/0x7c)
+>>> [<c0230214>] (do_filp_open+0x30/0x7c) from [<c0220cb4>]
+>>> (do_sys_open+0xd8/0x174)
+>>> [<c0220cb4>] (do_sys_open+0xd8/0x174) from [<c0105ea0>]
+>>> (ret_fast_syscall+0x0/0x30)
+>>>
+>>> Every panic had the same issue where a struct buffer_head [1] had a
+>>> b_data that was unexpectedly NULL.
+>>>
+>>> During the course of CMA, buffer_migrate_page could be called to migrate
+>>> from a CMA page to a new page. buffer_migrate_page calls set_bh_page[2]
+>>> to set the new page for the buffer_head. If the new page is a highmem
+>>> page though, the bh->b_data ends up as NULL, which could produce the
+>>> panics seen above.
+>>>
+>>> This seems to indicate that highmem pages are not not appropriate for
+>>> use as pages to migrate to. The following made the problem go away for
+>>> me:
+>>>
+>>> --- a/mm/page_alloc.c
+>>> +++ b/mm/page_alloc.c
+>>> @@ -5753,7 +5753,7 @@ static struct page *
+>>>    __alloc_contig_migrate_alloc(struct page *page, unsigned long private,
+>>>                                int **resultp)
+>>>    {
+>>> -       return alloc_page(GFP_HIGHUSER_MOVABLE);
+>>> +       return alloc_page(GFP_USER | __GFP_MOVABLE);
+>>>    }
+>>>
+>>>
+>>> Does this seem like an actual issue or is this an artifact of my
+>>> backport to 3.0? I'm not familiar enough with the filesystem layer to be
+>>> able to tell where highmem can actually be used.
+>>
+>>
+>> I will need to investigate this further as this issue doesn't appear on
+>> v3.3+ kernels, but I remember I saw something similar when I tried CMA
+>> backported to v3.0.
 
-So when we delete the low index netprio cgroup and adding a new
-netprio cgroup again,the max_prioidx will be set to the low index.
+The problem is still present on latest mainline.  The filesystem layer
+expects that the pages in the block device's mapping are not in highmem
+(the mapping's gfp mask is set in bdget()), but CMA replaces lowmem
+pages with highmem pages leading to the crashes.
 
-when we set the high index cgroup's net_prio.ifpriomap,the function
-write_priomap will call update_netdev_tables to alloc memory which
-size is sizeof(struct netprio_map) + sizeof(u32) * (max_prioidx + 1),
-so the size of array that map->priomap point to is max_prioidx +1,
-which is low than what we actually need.
+The above fix should work, but perhaps the following is preferable since
+it should allow moving highmem pages to other highmem pages?
 
-fix this by adding check in get_prioidx,only set max_prioidx when
-max_prioidx low than the new prioidx.
-
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
----
- net/core/netprio_cgroup.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-index 5b8aa2f..aa907ed 100644
---- a/net/core/netprio_cgroup.c
-+++ b/net/core/netprio_cgroup.c
-@@ -49,8 +49,9 @@ static int get_prioidx(u32 *prio)
- 		return -ENOSPC;
- 	}
- 	set_bit(prioidx, prioidx_map);
-+	if (atomic_read(&max_prioidx) < prioidx)
-+		atomic_set(&max_prioidx, prioidx);
- 	spin_unlock_irqrestore(&prioidx_map_lock, flags);
--	atomic_set(&max_prioidx, prioidx);
- 	*prio = prioidx;
- 	return 0;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 4403009..4a4f921 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5635,7 +5635,12 @@ static struct page *
+ __alloc_contig_migrate_alloc(struct page *page, unsigned long private,
+ 			     int **resultp)
+ {
+-	return alloc_page(GFP_HIGHUSER_MOVABLE);
++	gfp_t gfp_mask = GFP_USER | __GFP_MOVABLE;
++
++	if (PageHighMem(page))
++		gfp_mask |= __GFP_HIGHMEM;
++
++	return alloc_page(gfp_mask);
  }
--- 
-1.7.7.6
 
+ /* [start, end) must belong to a single zone. */
