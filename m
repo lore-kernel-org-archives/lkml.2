@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab2GET7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 15:59:17 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58434 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab2GET7P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 15:59:15 -0400
-Message-ID: <4FF5F20F.2050005@wwwdotorg.org>
-Date: Thu, 05 Jul 2012 13:59:11 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1754038Ab2GEUDn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 16:03:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32987 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751383Ab2GEUDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 16:03:41 -0400
+Message-ID: <4FF5F2F2.9050307@redhat.com>
+Date: Fri, 06 Jul 2012 04:02:58 +0800
+From: Amos Kong <akong@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Wei Ni <wni@nvidia.com>
-CC: swarren@nvidia.com, olof@lixom.net, ccross@android.com,
-        linux@arm.linux.org.uk, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        ldewangan@nvidia.com, arnd@arndb.de, grant.likely@secretlab.ca,
-        cjb@laptop.org
-Subject: Re: [PATCH 5/5] ARM: tegra: enable wireless in defconfig
-References: <1341394488-13169-1-git-send-email-wni@nvidia.com> <1341394488-13169-6-git-send-email-wni@nvidia.com>
-In-Reply-To: <1341394488-13169-6-git-send-email-wni@nvidia.com>
-X-Enigmail-Version: 1.4.2
+To: Jason Wang <jasowang@redhat.com>
+CC: mst@redhat.com, mashirle@us.ibm.com, krkumar2@in.ibm.com,
+        habanero@linux.vnet.ibm.com, rusty@rustcorp.com.au,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, edumazet@google.com,
+        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
+        kvm@vger.kernel.org, sri@us.ibm.com
+Subject: Re: [net-next RFC V5 4/5] virtio_net: multiqueue support
+References: <1341484194-8108-1-git-send-email-jasowang@redhat.com> <1341484194-8108-5-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1341484194-8108-5-git-send-email-jasowang@redhat.com>
+X-Enigmail-Version: 1.5pre
+OpenPGP: id=39BCFF63
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2012 03:34 AM, Wei Ni wrote:
-> New options enabled:
-> * WIRELESS: (dependency)
-> * CFG80211: (dependency)
-> * WLAN: (dependency)
-> * BRCMFMAC: wlan driver, enable as module.
+On 07/05/2012 06:29 PM, Jason Wang wrote:
+> This patch converts virtio_net to a multi queue device. After negotiated
+> VIRTIO_NET_F_MULTIQUEUE feature, the virtio device has many tx/rx queue pairs,
+> and driver could read the number from config space.
+> 
+> The driver expects the number of rx/tx queue paris is equal to the number of
+> vcpus. To maximize the performance under this per-cpu rx/tx queue pairs, some
+> optimization were introduced:
+> 
+> - Txq selection is based on the processor id in order to avoid contending a lock
+>   whose owner may exits to host.
+> - Since the txq/txq were per-cpu, affinity hint were set to the cpu that owns
+>   the queue pairs.
+> 
+> Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
 
-> diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+...
 
-> +CONFIG_BRCMFMAC=m
+>  
+>  static int virtnet_probe(struct virtio_device *vdev)
+>  {
+> -	int err;
+> +	int i, err;
+>  	struct net_device *dev;
+>  	struct virtnet_info *vi;
+> +	u16 num_queues, num_queue_pairs;
+> +
+> +	/* Find if host supports multiqueue virtio_net device */
+> +	err = virtio_config_val(vdev, VIRTIO_NET_F_MULTIQUEUE,
+> +				offsetof(struct virtio_net_config,
+> +				num_queues), &num_queues);
+> +
+> +	/* We need atleast 2 queue's */
 
-Why does this need to be a module? Everything else in tegra_defconfig is
-built-in, and it'd be nice to be consistent here. Built-in makes
-net-booting new kernels from U-Boot much easier, since there aren't any
-modules to copy.
 
-When I built a kernel with this series, I observed the following:
+s/atleast/at least/
 
-CONFIG_BRCMFMAC=m
 
-* Neither Cardhu nor Ventana auto-load the module. When the module is
-manually modprobe'd, I still see no wireless device being created.
+> +	if (err || num_queues < 2)
+> +		num_queues = 2;
+> +	if (num_queues > MAX_QUEUES * 2)
+> +		num_queues = MAX_QUEUES;
 
-CONFIG_BRCMFMAC=y
+                num_queues = MAX_QUEUES * 2;
 
-* Cardhu: No wireless device created. I do see some kernel spew such as
-"mmc1: queuing unknown CIS tuple 0x80" which I believe is the SDIO
-device being probed, but I don't see any Linux device being created.
+MAX_QUEUES is the limitation of RX or TX.
 
-* Ventana: There's a 60s hang during boot, I believe related to the BRCM
-driver, since the hang doesn't occur without the series.
+> +
+> +	num_queue_pairs = num_queues / 2;
 
-In summary, this series doesn't work at all for me. Can you please
-explain what you tested and how? Are there any differences between the
-various Cardhu and Ventana board revisions and/or the 2 different
-wireless cards possible on Cardhu that'd explain this?
+...
 
-Thanks.
+-- 
+			Amos.
