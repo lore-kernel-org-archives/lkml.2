@@ -1,74 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703Ab2GEIjy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 04:39:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64454 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab2GEIjv (ORCPT
+	id S1752274Ab2GEIkL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 04:40:11 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:44241 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750917Ab2GEIkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 04:39:51 -0400
+	Thu, 5 Jul 2012 04:40:07 -0400
+X-Authenticated: #9962044
+X-Provags-ID: V01U2FsdGVkX18oCklNyO8oUnm5EnqXrrnGI6qvzY4+9/3QCt3Vvz
+	pk+xuh2jAdCuR2
+From: Marc Dietrich <marvin24@gmx.de>
+To: Wei Ni <wni@nvidia.com>
+Cc: Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
+        "ccross@android.com" <ccross@android.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "cjb@laptop.org" <cjb@laptop.org>
+Subject: Re: [PATCH 1/5] ARM: tegra: set up wlan clocks for tegra dt
+Date: Thu, 05 Jul 2012 10:39:56 +0200
+Message-ID: <1721436.iVeh2uNYS7@fb07-iapwap2>
+User-Agent: KMail/4.8.4 (Linux/3.4.4-3-desktop; KDE/4.8.4; x86_64; ; )
+In-Reply-To: <1341458294.9009.973.camel@tegra-chromium-2>
+References: <1341394488-13169-1-git-send-email-wni@nvidia.com> <5111476.afQhu2nTJB@fb07-iapwap2> <1341458294.9009.973.camel@tegra-chromium-2>
 MIME-Version: 1.0
-In-Reply-To: <22482.1341471787@neuling.org>
-References: <1340651142.7037.2.camel@gandalf.stny.rr.com> <20120625150722.8cd4f45d.akpm@linux-foundation.org>
- <20120625235531.GB3652@kroah.com> <CA+55aFwczZTA=JUahoj_Sw1fQssDwoM2LGJ6g5nPvehTLxnSpg@mail.gmail.com>
- <20120626002307.GA4389@kroah.com> <CA+55aFxhYRqcU2EUmcsuLrhgo4FEO6-b+mB57wB3JRiXEp3ZrA@mail.gmail.com>
- <CAPXgP10cPFSmZ5yr6Z4wVtDa+x2J1yQDF57NJXtxjUuxMHm=Lw@mail.gmail.com>
- <CA+55aFzkX=jCC1O6+2oz8meswOqZQ+Q8Ao60q8eAS1G3AuEStQ@mail.gmail.com>
- <1340726856.977.6.camel@mop> <22482.1341471787@neuling.org>
-From: Kay Sievers <kay@vrfy.org>
-Date: Thu, 5 Jul 2012 10:39:31 +0200
-Message-ID: <CAPXgP11=o5WB4WejaQCSCL-+5e4sL7tfVz_r3Khyrq3SyrMvsA@mail.gmail.com>
-Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
-To: Michael Neuling <mikey@neuling.org>
-Cc: linuxppc-dev@ozlabs.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Wu Fengguang <fengguang.wu@intel.com>, Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="UTF-8"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 5, 2012 at 9:03 AM, Michael Neuling <mikey@neuling.org> wrote:
->> On Mon, 2012-06-25 at 18:40 -0700, Linus Torvalds wrote:
+Am Donnerstag, 5. Juli 2012, 11:18:14 schrieb Wei Ni:
+> On Wed, 2012-07-04 at 19:51 +0800, Marc Dietrich wrote:
+> > Am Mittwoch, 4. Juli 2012, 19:23:33 schrieb Wei Ni:
+> > > On Wed, 2012-07-04 at 18:43 +0800, Marc Dietrich wrote:
+> > > > Am Mittwoch, 4. Juli 2012, 17:34:44 schrieb Wei Ni:
+> > > > > Set up the wlan clock tree for Tegra20 and Tegra30.
+> > > > > 
+> > > > > Signed-off-by: Wei Ni <wni@nvidia.com>
+> > > > > ---
+> > > > > 
+> > > > >  arch/arm/mach-tegra/board-dt-tegra20.c |    1 +
+> > > > >  arch/arm/mach-tegra/board-dt-tegra30.c |    1 +
+> > > > >  2 files changed, 2 insertions(+), 0 deletions(-)
+> > > > > 
+> > > > > diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c
+> > > > > b/arch/arm/mach-tegra/board-dt-tegra20.c index 70a19a9..fbcc7d9
+> > > > > 100644
+> > > > > --- a/arch/arm/mach-tegra/board-dt-tegra20.c
+> > > > > +++ b/arch/arm/mach-tegra/board-dt-tegra20.c
+> > > > > @@ -78,6 +78,7 @@ static __initdata struct tegra_clk_init_table
+> > > > > tegra_dt_clk_init_table[] = { { "pll_a",      "pll_p_out1",  
+> > > > > 56448000,
+> > > > > 
+> > > > >   true },
+> > > > >   
+> > > > >  	{ "pll_a_out0", "pll_a",        11289600,       true },
+> > > > >  	{ "cdev1",      NULL,           0,              true },
+> > > > > 
+> > > > > +	{ "blink",      "clk_32k",      32768,          true },
+> > > > 
+> > > > what's the reason to enable this on all boards? Would it make sense to
+> > > > set
+> > > > this to "false" instead?
+> > > 
+> > > This clock is used for the wlan device, it need to be enabled, so that
+> > > the wlan device can be powered on, and then the mmc driver can enumerate
+> > > it.
+> > ...
+> Yes we have thought about this issue.
+> In here we need to enable this clock before loading wifi driver, so that
+> the mmc driver can enumerate it.
+> This likes another thing that the SD controller should be taught how to
+> provide to clients, such as trigger the power/reset gpios. We had talked
+> about it in the:
+> http://www.spinics.net/lists/linux-wireless/msg92093.html
 
->> > I think it might be a great idea to buffer for logging in order to
->> > generate one individual buffer record there.
->> >
->> > But it needs to be printed as it is generated.
->>
->> That's a good idea.
->>
->> Something like this could work - only minimally tested at this moment.
->
-> This breaks some powerpc configs and is in Linus' tree now as
-> 084681d14e.
->
-> When we have printks without a newline (like show_regs()), it
-> sometimes:
+ah, sorry, I didn't followed this discussion.
 
-x86 has that a lot too.
+> And we are trying to provide the tegra clk framework support, so at that
+> time we could set this clock for different boards.
+> 
+> So I suppose we can just dump it into the clk init tables for now.
 
-> 1) drops the console output for that line (dmesg is fine).  Patch to fix
->    this below.
+ok, thanks for explanation. Let's hope there will be a better solution in the 
+future.
 
-That doesn't look right. We should already have put that out to the
-console, and we only want to store it away. Your patch, as expected,
-duplicates all the continuation lines on the console here:
-[    0.674957] hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0
-[    0.674957] hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0
+Thanks!
 
-> 2) adds a newline unnecessary to both console and dmesg.  I have no fix
->    for this currently.
-> Reverting this patch fixes both problems.
+Marc
 
-Not here. I can't reproduce any of this here, it all looks fine.
 
-Is that possibly some early printk() or other console trickery on ppc
-that produces the issue?
-
-Thanks,
-Kay
