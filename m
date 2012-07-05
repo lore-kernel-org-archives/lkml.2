@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932791Ab2GEMnh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 08:43:37 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:32482
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932494Ab2GEMhD (ORCPT
+	id S932739Ab2GEMnf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 08:43:35 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:59715
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932504Ab2GEMhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jul 2012 08:37:03 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dh668h839hd24he5bhf0ah107ah)
-X-WSS-ID: 0M6OTPD-02-6N4-02
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah)
+X-WSS-ID: 0M6OTPH-02-6NL-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        <x86@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [PATCH 02/28] x86/irq: Introduce irq_cfg->remapped
-Date: Thu, 5 Jul 2012 14:36:22 +0200
-Message-ID: <1341491808-23083-3-git-send-email-joerg.roedel@amd.com>
+CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 13/28] iommu/amd: Add slab-cache for irq remapping tables
+Date: Thu, 5 Jul 2012 14:36:33 +0200
+Message-ID: <1341491808-23083-14-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
 References: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
@@ -30,80 +28,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This flag will show whether the interrupt is remapped in a
-way that works for VT-d and AMD-Vi.
+The irq remapping tables for the AMD IOMMU need to be
+aligned on a 128 byte boundary. Create a seperate slab-cache
+to guarantee this alignment.
 
-Cc: x86@kernel.org
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/hw_irq.h       |    1 +
- arch/x86/kernel/apic/io_apic.c      |    2 +-
- drivers/iommu/intel_irq_remapping.c |    4 ++++
- 3 files changed, 6 insertions(+), 1 deletion(-)
+ drivers/iommu/amd_iommu.c       |    2 ++
+ drivers/iommu/amd_iommu_init.c  |   23 +++++++++++++++++++++++
+ drivers/iommu/amd_iommu_types.h |    9 +++++++++
+ drivers/iommu/irq_remapping.h   |    4 ++++
+ 4 files changed, 38 insertions(+)
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index b6171e6..71bb327 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -132,6 +132,7 @@ struct irq_cfg {
- 	u8			vector;
- 	u8			move_in_progress : 1;
- #ifdef CONFIG_IRQ_REMAP
-+	bool			remapped;
- 	union irq_remap_info    irq_remap_info;
- #endif
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index cca9c70..6282dab 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -93,6 +93,8 @@ struct iommu_cmd {
+ 	u32 data[4];
  };
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 08f666c..d5bccc0 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -72,7 +72,7 @@
- static void irq_remap_modify_chip_defaults(struct irq_chip *chip);
- static inline bool irq_remapped(struct irq_cfg *cfg)
+ 
++struct kmem_cache *amd_iommu_irq_cache;
++
+ static void update_domain(struct protection_domain *domain);
+ static int __init alloc_passthrough_domain(void);
+ 
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index b4cc3a7..34b46b7 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -36,6 +36,7 @@
+ 
+ #include "amd_iommu_proto.h"
+ #include "amd_iommu_types.h"
++#include "irq_remapping.h"
+ 
+ /*
+  * definitions for the ACPI scanning code
+@@ -124,6 +125,7 @@ struct ivmd_header {
+ } __attribute__((packed));
+ 
+ bool amd_iommu_dump;
++bool amd_iommu_irq_remap __read_mostly;
+ 
+ static bool amd_iommu_detected;
+ static bool __initdata amd_iommu_disabled;
+@@ -1533,6 +1535,11 @@ static struct syscore_ops amd_iommu_syscore_ops = {
+ 
+ static void __init free_on_init_error(void)
  {
--	return cfg->irq_remap_info.irq_2_iommu.iommu != NULL;
-+	return cfg->remapped;
++	if (amd_iommu_irq_cache) {
++		kmem_cache_destroy(amd_iommu_irq_cache);
++		amd_iommu_irq_cache = NULL;
++	}
++
+ 	amd_iommu_uninit_devices();
+ 
+ 	free_pages((unsigned long)amd_iommu_pd_alloc_bitmap,
+@@ -1672,6 +1679,19 @@ static int __init early_amd_iommu_init(void)
+ 	if (ret)
+ 		goto out;
+ 
++	if (amd_iommu_irq_remap) {
++		/*
++		 * Interrupt remapping enabled, create kmem_cache for the
++		 * remapping tables.
++		 */
++		amd_iommu_irq_cache = kmem_cache_create("irq_remap_cache",
++				MAX_IRQS_PER_TABLE * sizeof(u32),
++				IRQ_TABLE_ALIGNMENT,
++				0, NULL);
++		if (!amd_iommu_irq_cache)
++			goto out;
++	}
++
+ 	ret = init_memory_definitions(ivrs_base);
+ 	if (ret)
+ 		goto out;
+@@ -1716,6 +1736,9 @@ static bool detect_ivrs(void)
+ 
+ 	early_acpi_os_unmap_memory((char *)ivrs_base, ivrs_size);
+ 
++	if (!disable_irq_remap)
++		amd_iommu_irq_remap = true;
++
+ 	return true;
  }
- #else
- static inline bool irq_remapped(struct irq_cfg *cfg)
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index e4e4334..29411ed 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -68,6 +68,7 @@ static int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
- {
- 	struct ir_table *table = iommu->ir_table;
- 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
-+	struct irq_cfg *cfg = irq_get_chip_data(irq);
- 	u16 index, start_index;
- 	unsigned int mask = 0;
- 	unsigned long flags;
-@@ -115,6 +116,7 @@ static int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
- 	for (i = index; i < index + count; i++)
- 		table->base[i].present = 1;
  
-+	cfg->remapped = true;
- 	irq_iommu->iommu = iommu;
- 	irq_iommu->irte_index =  index;
- 	irq_iommu->sub_handle = 0;
-@@ -155,6 +157,7 @@ static int map_irq_to_irte_handle(int irq, u16 *sub_handle)
- static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subhandle)
- {
- 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
-+	struct irq_cfg *cfg = irq_get_chip_data(irq);
- 	unsigned long flags;
+diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
+index 925885d..c9e0049 100644
+--- a/drivers/iommu/amd_iommu_types.h
++++ b/drivers/iommu/amd_iommu_types.h
+@@ -334,6 +334,15 @@ extern bool amd_iommu_np_cache;
+ /* Only true if all IOMMUs support device IOTLBs */
+ extern bool amd_iommu_iotlb_sup;
  
- 	if (!irq_iommu)
-@@ -162,6 +165,7 @@ static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subha
++#define MAX_IRQS_PER_TABLE	256
++#define IRQ_TABLE_ALIGNMENT	128
++
++/* Interrupt remapping feature used? */
++extern bool amd_iommu_irq_remap;
++
++/* kmem_cache to get tables with 128 byte alignement */
++extern struct kmem_cache *amd_iommu_irq_cache;
++
+ /*
+  * Make iterating over all IOMMUs easier
+  */
+diff --git a/drivers/iommu/irq_remapping.h b/drivers/iommu/irq_remapping.h
+index be9d729..b3f70c9 100644
+--- a/drivers/iommu/irq_remapping.h
++++ b/drivers/iommu/irq_remapping.h
+@@ -85,6 +85,10 @@ struct irq_remap_ops {
  
- 	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
+ extern struct irq_remap_ops intel_irq_remap_ops;
  
-+	cfg->remapped = true;
- 	irq_iommu->iommu = iommu;
- 	irq_iommu->irte_index = index;
- 	irq_iommu->sub_handle = subhandle;
++#else  /* CONFIG_IRQ_REMAP */
++
++#define disable_irq_remap	1
++
+ #endif /* CONFIG_IRQ_REMAP */
+ 
+ #endif /* __IRQ_REMAPPING_H */
 -- 
 1.7.9.5
 
