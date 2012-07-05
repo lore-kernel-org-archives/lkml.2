@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab2GEMAY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 08:00:24 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40442 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754727Ab2GEMAW (ORCPT
+	id S1755997Ab2GEMCT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 08:02:19 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35540 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754276Ab2GEMCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 08:00:22 -0400
-From: Max Neklyudov <macscomp@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Max Neklyudov <macscomp@gmail.com>
-Subject: [PATCH 1/1] arm: Fix kernel crash problem in binfmt_flat.c
-Date: Thu,  5 Jul 2012 15:59:59 +0400
-Message-Id: <1341489599-29463-1-git-send-email-macscomp@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 5 Jul 2012 08:02:18 -0400
+Date: Thu, 5 Jul 2012 13:02:15 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        mathias.nyman@linux.intel.com, mika.westerberg@linux.intel.com
+Subject: Re: [PATCH] irq_domain: Standardise legacy/linear domain selection
+Message-ID: <20120705120215.GS4111@opensource.wolfsonmicro.com>
+References: <1341487159-3919-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <CAHp75Vesp7KrYvQrNXK=fGOH5y+jk9AMHVJkGyu8o+72F9LSrg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tTvAEuyWWbMF5UF4"
+Content-Disposition: inline
+In-Reply-To: <CAHp75Vesp7KrYvQrNXK=fGOH5y+jk9AMHVJkGyu8o+72F9LSrg@mail.gmail.com>
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If createion of the new process is aborted due to some erros
-(lack of memory in my case) kernel will crash because created process
-is not terminated properly.
-I just sent SIG_KILL in all such points.
 
-Tested on my LM3S1D21 based board
+--tTvAEuyWWbMF5UF4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Max Neklyudov <macscomp@gmail.com>
----
- fs/binfmt_flat.c |    5 +++++
- 1 file changed, 5 insertions(+)
+On Thu, Jul 05, 2012 at 02:43:42PM +0300, Andy Shevchenko wrote:
 
-diff --git a/fs/binfmt_flat.c b/fs/binfmt_flat.c
-index 178cb70..79c9838 100644
---- a/fs/binfmt_flat.c
-+++ b/fs/binfmt_flat.c
-@@ -545,6 +545,7 @@ static int load_flat_file(struct linux_binprm * bprm,
- 		textpos = vm_mmap(bprm->file, 0, text_len, PROT_READ|PROT_EXEC,
- 				  MAP_PRIVATE|MAP_EXECUTABLE, 0);
- 		if (!textpos || IS_ERR_VALUE(textpos)) {
-+			send_sig(SIGKILL, current, 0);
- 			if (!textpos)
- 				textpos = (unsigned long) -ENOMEM;
- 			printk("Unable to mmap process text, errno %d\n", (int)-textpos);
-@@ -558,6 +559,7 @@ static int load_flat_file(struct linux_binprm * bprm,
- 			PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE, 0);
- 
- 		if (realdatastart == 0 || IS_ERR_VALUE(realdatastart)) {
-+			send_sig(SIGKILL, current, 0);
- 			if (!realdatastart)
- 				realdatastart = (unsigned long) -ENOMEM;
- 			printk("Unable to allocate RAM for process data, errno %d\n",
-@@ -585,6 +587,7 @@ static int load_flat_file(struct linux_binprm * bprm,
- 					data_len + (relocs * sizeof(unsigned long)), &fpos);
- 		}
- 		if (IS_ERR_VALUE(result)) {
-+			send_sig(SIGKILL, current, 0);
- 			printk("Unable to read data+bss, errno %d\n", (int)-result);
- 			vm_munmap(textpos, text_len);
- 			vm_munmap(realdatastart, len);
-@@ -603,6 +606,7 @@ static int load_flat_file(struct linux_binprm * bprm,
- 			PROT_READ | PROT_EXEC | PROT_WRITE, MAP_PRIVATE, 0);
- 
- 		if (!textpos || IS_ERR_VALUE(textpos)) {
-+			send_sig(SIGKILL, current, 0);
- 			if (!textpos)
- 				textpos = (unsigned long) -ENOMEM;
- 			printk("Unable to allocate RAM for process text/data, errno %d\n",
-@@ -653,6 +657,7 @@ static int load_flat_file(struct linux_binprm * bprm,
- 			}
- 		}
- 		if (IS_ERR_VALUE(result)) {
-+			send_sig(SIGKILL, current, 0);
- 			printk("Unable to read code+data+bss, errno %d\n",(int)-result);
- 			vm_munmap(textpos, text_len + data_len + extra +
- 				MAX_SHARED_LIBS * sizeof(unsigned long));
--- 
-1.7.9.5
+> The issue is in plain array of the numbers that are assigned to the devices.
+> Somehow looks better to have real namespaces, or even hide irq number in the API
+> struct device, request_irq(), but keep reference between driver and PIC via some
+> object.
 
+> So, given solution just hides an issue, but doesn't resolve it fully
+> from my p.o.v.
+
+This is unrelated to what you're talking about.  The devices concerned
+are mostly MFDs which use their own interrupts.  Where other things need
+to use the interrupt numbers then legacy mappings should still be used
+and IRQ domains have no effect at all on the situation.
+
+--tTvAEuyWWbMF5UF4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP9YIjAAoJEBus8iNuMP3dg6wP/i6SOms/GhpLNmUzyIyEoKi2
+Kb6130iUKz/kUEdTym+wCyDleKGhAGq4JYmfcjCbanTyzLitTIqG0XlFvEph3gmV
+PJMCsM+dWRpSWOXA3kCRPwG7Aa14GY/ah6N4FqDGP61aOrMM5VyaD1D8c55KOSxx
+o9+x/yoH5OxEtWGfIoa9aAaqX+XGSdpXQpSc51YtpWeaEk1Pj31Qxft+6ayBs/yx
+MGt+UM4MdxYLk5SOp4K96KyHtpaK96JkGdGJt0aRSQ/2fu3vTihk0xO05ew8DMsq
+vmGHL6YDJNbg/iEKnPLqb0L1/J6ciiRkO/jtQhkdnwm+zOApsdrfnydNMRGBn0j4
+n0OlFOxL7PfIV5tEodDQhvpGBZN6kQzHdEGvZlkWg/fMc5o7ORRHURLBrPFbQyXU
+S+IglnKFD68E85bRENSxuiMPefmnEQf55X5ERAaO0bJa7RuWFZwxAH9JPEdjmXYI
+L3em9cQTplTv0LJPqD28hBJCCdd8O/aL3OkLcBoGqEgd/NvqQfCjkCUhzE40lusn
+g+GM/ZQWuvLg6S0NQTQjk2PednJA1pckPZnl6+xoCvvXKW3Zmz3FklMns7aeQ/e1
+Y15dpzHTC1d2z1w0ceWl7fZ8ZLiDaqs1kxN2JuinLjLE4plevtJu7m+KKFFFdx3X
+7MIIMxu8fnH0UFWe+4AG
+=JoDt
+-----END PGP SIGNATURE-----
+
+--tTvAEuyWWbMF5UF4--
