@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964779Ab2GENhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 09:37:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40122 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933068Ab2GENhO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 09:37:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120705124141.GB4111@opensource.wolfsonmicro.com>
-References: <1341460705-10868-1-git-send-email-yadi.brar@samsung.com>
-	<1341460705-10868-4-git-send-email-yadi.brar@samsung.com>
-	<20120705124141.GB4111@opensource.wolfsonmicro.com>
-Date: Thu, 5 Jul 2012 19:07:14 +0530
-Message-ID: <CAKew6eWqEcyGGGr-WfJwe0xmk46qK67-4U+MGk5ts4_8Ps0BFg@mail.gmail.com>
-Subject: Re: [PATCH 4/6] mfd: max77686: Add device tree support.
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com,
-        Liam Girdwood <lrg@ti.com>, Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Chiwoong Byun <woong.byun@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933072Ab2GENhz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 09:37:55 -0400
+Received: from plane.gmane.org ([80.91.229.3]:53047 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932367Ab2GENhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 09:37:53 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Cong Wang <xiyou.wangcong@gmail.com>
+Subject: Re: [Patch] mm/policy: use int instead of unsigned for nid
+Date: Thu, 5 Jul 2012 13:37:31 +0000 (UTC)
+Message-ID: <jt45ar$lq0$3@dough.gmane.org>
+References: <1341370901-14187-1-git-send-email-amwang@redhat.com>
+ <alpine.DEB.2.00.1207032342120.32556@chino.kir.corp.google.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 117.57.98.8
+User-Agent: slrn/0.9.9p1 (Linux)
+Cc: linux-mm@kvack.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 5, 2012 at 6:11 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Thu, Jul 05, 2012 at 09:28:23AM +0530, Yadwinder Singh Brar wrote:
+On Wed, 04 Jul 2012 at 06:43 GMT, David Rientjes <rientjes@google.com> wrote:
+> On Wed, 4 Jul 2012, Cong Wang wrote:
 >
->> +     regulator_name {
->> +             standard regulator constraints....
->> +     };
->> +     refer Documentation/devicetree/bindings/regulator/regulator.txt
+>> From: WANG Cong <xiyou.wangcong@gmail.com>
+>> 
+>> 'nid' should be 'int', not 'unsigned'.
+>> 
 >
->> +  The names of regulator should be as follow:
->> +
->> +     -LDOn   :       for LDOs, where n can lie in range 1 to 26.
->> +                     example: LDO1, LDO2, LDO26.
->> +     -BUCKn  :       for BUCKs, where n can lie in range 1 to 9.
->> +                     example: BUCK1, BUCK5, BUCK9.
+> unsigned is already of type int, so you're saying these occurrences should 
+> become signed, but that's not true since they never return NUMA_NO_NODE.  
+> They are all safe returning unsigned.
 >
-> You need to update this to use the regulator-compatible property.
 
-Yes. I missed it. I will update Documentation.
+Yeah, I knew, just thought using 'int' is consistent, this is a
+trivial patch, not a bugfix.
 
-Thanks.
+> And alloc_page_interleave() doesn't exist anymore since the sched/numa 
+> bits were merged into sched/core, so nobody could apply this patch anyway.
+
+Ah, I made this patch against linus tree...
+
