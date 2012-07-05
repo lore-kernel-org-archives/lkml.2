@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603Ab2GEMnb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 08:43:31 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:17387
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932526Ab2GEMhD (ORCPT
+	id S1756377Ab2GEMn2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 08:43:28 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:6076 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932530Ab2GEMhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Jul 2012 08:37:03 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah)
-X-WSS-ID: 0M6OTPK-01-2UY-02
+X-WSS-ID: 0M6OTPG-02-6NJ-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 05/28] iommu/amd: Split out PCI related parts of IOMMU initialization
-Date: Thu, 5 Jul 2012 14:36:25 +0200
-Message-ID: <1341491808-23083-6-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 11/28] iommu/amd: Convert iommu initialization to state machine
+Date: Thu, 5 Jul 2012 14:36:31 +0200
+Message-ID: <1341491808-23083-12-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
 References: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
@@ -28,314 +28,299 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For interrupt remapping the relevant IOMMU initialization
-needs to run earlier at boot when the PCI subsystem is not
-yet initialized. To support that this patch splits the parts
-of IOMMU initialization which need PCI accesses out of the
-initial setup path so that this can be done later.
+This step makes it very easy to keep track about the current
+intialization state of the iommu driver. With this change we
+can initialize the IOMMU hardware to a point where it can
+remap interrupts and later resume the initializion to enable
+dma remapping.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/iommu/amd_iommu_init.c  |  224 +++++++++++++++++++++------------------
- drivers/iommu/amd_iommu_types.h |    5 +-
- 2 files changed, 121 insertions(+), 108 deletions(-)
+ drivers/iommu/amd_iommu_init.c |  174 +++++++++++++++++++++++++---------------
+ 1 file changed, 109 insertions(+), 65 deletions(-)
 
 diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index fb118bb..1354497 100644
+index 0afd89c..8d1780c 100644
 --- a/drivers/iommu/amd_iommu_init.c
 +++ b/drivers/iommu/amd_iommu_init.c
-@@ -721,90 +721,6 @@ static void __init set_device_exclusion_range(u16 devid, struct ivmd_header *m)
+@@ -193,7 +193,23 @@ static u32 rlookup_table_size;	/* size if the rlookup table */
+  */
+ extern void iommu_flush_all_caches(struct amd_iommu *iommu);
+ 
++enum iommu_init_state {
++	IOMMU_START_STATE,
++	IOMMU_IVRS_DETECTED,
++	IOMMU_ACPI_FINISHED,
++	IOMMU_ENABLED,
++	IOMMU_PCI_INIT,
++	IOMMU_INTERRUPTS_EN,
++	IOMMU_DMA_OPS,
++	IOMMU_INITIALIZED,
++	IOMMU_NOT_FOUND,
++	IOMMU_INIT_ERROR,
++};
++
++enum iommu_init_state init_state = IOMMU_START_STATE;
++
+ static int amd_iommu_enable_interrupts(void);
++static int __init iommu_go_to_state(enum iommu_init_state state);
+ 
+ static inline void update_last_devid(u16 devid)
+ {
+@@ -1107,7 +1123,7 @@ static void print_iommu_info(void)
+ 	}
  }
  
- /*
-- * This function reads some important data from the IOMMU PCI space and
-- * initializes the driver data structure with it. It reads the hardware
-- * capabilities and the first/last device entries
-- */
--static void __init init_iommu_from_pci(struct amd_iommu *iommu)
--{
--	int cap_ptr = iommu->cap_ptr;
--	u32 range, misc, low, high;
--	int i, j;
+-static int amd_iommu_init_pci(void)
++static int __init amd_iommu_init_pci(void)
+ {
+ 	struct amd_iommu *iommu;
+ 	int ret = 0;
+@@ -1396,9 +1412,6 @@ static void early_enable_iommus(void)
+ 		iommu_enable(iommu);
+ 		iommu_flush_all_caches(iommu);
+ 	}
 -
--	pci_read_config_dword(iommu->dev, cap_ptr + MMIO_CAP_HDR_OFFSET,
--			      &iommu->cap);
--	pci_read_config_dword(iommu->dev, cap_ptr + MMIO_RANGE_OFFSET,
--			      &range);
--	pci_read_config_dword(iommu->dev, cap_ptr + MMIO_MISC_OFFSET,
--			      &misc);
+-	x86_platform.iommu_shutdown = disable_iommus;
 -
--	iommu->first_device = calc_devid(MMIO_GET_BUS(range),
--					 MMIO_GET_FD(range));
--	iommu->last_device = calc_devid(MMIO_GET_BUS(range),
--					MMIO_GET_LD(range));
--	iommu->evt_msi_num = MMIO_MSI_NUM(misc);
--
--	if (!(iommu->cap & (1 << IOMMU_CAP_IOTLB)))
--		amd_iommu_iotlb_sup = false;
--
--	/* read extended feature bits */
--	low  = readl(iommu->mmio_base + MMIO_EXT_FEATURES);
--	high = readl(iommu->mmio_base + MMIO_EXT_FEATURES + 4);
--
--	iommu->features = ((u64)high << 32) | low;
--
--	if (iommu_feature(iommu, FEATURE_GT)) {
--		int glxval;
--		u32 pasids;
--		u64 shift;
--
--		shift   = iommu->features & FEATURE_PASID_MASK;
--		shift >>= FEATURE_PASID_SHIFT;
--		pasids  = (1 << shift);
--
--		amd_iommu_max_pasids = min(amd_iommu_max_pasids, pasids);
--
--		glxval   = iommu->features & FEATURE_GLXVAL_MASK;
--		glxval >>= FEATURE_GLXVAL_SHIFT;
--
--		if (amd_iommu_max_glx_val == -1)
--			amd_iommu_max_glx_val = glxval;
--		else
--			amd_iommu_max_glx_val = min(amd_iommu_max_glx_val, glxval);
+ }
+ 
+ static void enable_iommus_v2(void)
+@@ -1522,11 +1535,6 @@ static int __init early_amd_iommu_init(void)
+ 	if (!amd_iommu_detected)
+ 		return -ENODEV;
+ 
+-	if (amd_iommu_dev_table != NULL) {
+-		/* Hardware already initialized */
+-		return 0;
 -	}
 -
--	if (iommu_feature(iommu, FEATURE_GT) &&
--	    iommu_feature(iommu, FEATURE_PPR)) {
--		iommu->is_iommu_v2   = true;
--		amd_iommu_v2_present = true;
--	}
+ 	status = acpi_get_table_with_size("IVRS", 0, &ivrs_base, &ivrs_size);
+ 	if (status == AE_NOT_FOUND)
+ 		return -ENODEV;
+@@ -1541,7 +1549,8 @@ static int __init early_amd_iommu_init(void)
+ 	 * we need to handle. Upon this information the shared data
+ 	 * structures for the IOMMUs in the system will be allocated
+ 	 */
+-	if (find_last_devid_acpi(ivrs_base))
++	ret = find_last_devid_acpi(ivrs_base);
++	if (ret)
+ 		goto out;
+ 
+ 	dev_table_size     = tbl_size(DEV_TABLE_ENTRY_SIZE);
+@@ -1562,20 +1571,20 @@ static int __init early_amd_iommu_init(void)
+ 	amd_iommu_alias_table = (void *)__get_free_pages(GFP_KERNEL,
+ 			get_order(alias_table_size));
+ 	if (amd_iommu_alias_table == NULL)
+-		goto free;
++		goto out;
+ 
+ 	/* IOMMU rlookup table - find the IOMMU for a specific device */
+ 	amd_iommu_rlookup_table = (void *)__get_free_pages(
+ 			GFP_KERNEL | __GFP_ZERO,
+ 			get_order(rlookup_table_size));
+ 	if (amd_iommu_rlookup_table == NULL)
+-		goto free;
++		goto out;
+ 
+ 	amd_iommu_pd_alloc_bitmap = (void *)__get_free_pages(
+ 					    GFP_KERNEL | __GFP_ZERO,
+ 					    get_order(MAX_DOMAIN_ID/8));
+ 	if (amd_iommu_pd_alloc_bitmap == NULL)
+-		goto free;
++		goto out;
+ 
+ 	/* init the device table */
+ 	init_device_table();
+@@ -1600,11 +1609,11 @@ static int __init early_amd_iommu_init(void)
+ 	 */
+ 	ret = init_iommu_all(ivrs_base);
+ 	if (ret)
+-		goto free;
++		goto out;
+ 
+ 	ret = init_memory_definitions(ivrs_base);
+ 	if (ret)
+-		goto free;
++		goto out;
+ 
+ out:
+ 	/* Don't leak any ACPI memory */
+@@ -1612,30 +1621,6 @@ out:
+ 	ivrs_base = NULL;
+ 
+ 	return ret;
 -
--	if (!is_rd890_iommu(iommu->dev))
--		return;
+-free:
+-	free_on_init_error();
 -
--	/*
--	 * Some rd890 systems may not be fully reconfigured by the BIOS, so
--	 * it's necessary for us to store this information so it can be
--	 * reprogrammed on resume
--	 */
--
--	pci_read_config_dword(iommu->dev, iommu->cap_ptr + 4,
--			      &iommu->stored_addr_lo);
--	pci_read_config_dword(iommu->dev, iommu->cap_ptr + 8,
--			      &iommu->stored_addr_hi);
--
--	/* Low bit locks writes to configuration space */
--	iommu->stored_addr_lo &= ~1;
--
--	for (i = 0; i < 6; i++)
--		for (j = 0; j < 0x12; j++)
--			iommu->stored_l1[i][j] = iommu_read_l1(iommu, i, j);
--
--	for (i = 0; i < 0x83; i++)
--		iommu->stored_l2[i] = iommu_read_l2(iommu, i);
+-	goto out;
 -}
 -
--/*
-  * Takes a pointer to an AMD IOMMU entry in the ACPI table and
-  * initializes the hardware and our data structures with it.
-  */
-@@ -1020,13 +936,7 @@ static int __init init_iommu_one(struct amd_iommu *iommu, struct ivhd_header *h)
- 	/*
- 	 * Copy data from ACPI table entry to the iommu struct
- 	 */
--	iommu->dev = pci_get_bus_and_slot(PCI_BUS(h->devid), h->devid & 0xff);
--	if (!iommu->dev)
--		return 1;
+-int amd_iommu_init_hardware(void)
+-{
+-	int ret = 0;
 -
--	iommu->root_pdev = pci_get_bus_and_slot(iommu->dev->bus->number,
--						PCI_DEVFN(0, 0));
+-	ret = early_amd_iommu_init();
+-	if (ret)
+-		return ret;
 -
-+	iommu->devid   = h->devid;
- 	iommu->cap_ptr = h->cap_ptr;
- 	iommu->pci_seg = h->pci_seg;
- 	iommu->mmio_phys = h->mmio_phys;
-@@ -1044,20 +954,10 @@ static int __init init_iommu_one(struct amd_iommu *iommu, struct ivhd_header *h)
- 
- 	iommu->int_enabled = false;
- 
--	init_iommu_from_pci(iommu);
- 	init_iommu_from_acpi(iommu, h);
- 	init_iommu_devices(iommu);
- 
--	if (iommu_feature(iommu, FEATURE_PPR)) {
--		iommu->ppr_log = alloc_ppr_log(iommu);
--		if (!iommu->ppr_log)
--			return -ENOMEM;
--	}
+-	ret = amd_iommu_init_pci();
+-	if (ret)
+-		return ret;
 -
--	if (iommu->cap & (1UL << IOMMU_CAP_NPCACHE))
--		amd_iommu_np_cache = true;
+-	enable_iommus();
 -
--	return pci_enable_device(iommu->dev);
-+	return 0;
+-	register_syscore_ops(&amd_iommu_syscore_ops);
+-
+-	return ret;
  }
  
- /*
-@@ -1106,6 +1006,121 @@ static int __init init_iommu_all(struct acpi_table_header *table)
+ static int amd_iommu_enable_interrupts(void)
+@@ -1692,42 +1677,99 @@ static int amd_iommu_init_dma(void)
  	return 0;
  }
  
-+static int iommu_init_pci(struct amd_iommu *iommu)
-+{
-+	int cap_ptr = iommu->cap_ptr;
-+	u32 range, misc, low, high;
+-/*
+- * This is the core init function for AMD IOMMU hardware in the system.
+- * This function is called from the generic x86 DMA layer initialization
+- * code.
++/****************************************************************************
+  *
+- * The function calls amd_iommu_init_hardware() to setup and enable the
+- * IOMMU hardware if this has not happened yet. After that the driver
+- * registers for the DMA-API and for the IOMMU-API as necessary.
+- */
+-static int __init amd_iommu_init(void)
++ * AMD IOMMU Initialization State Machine
++ *
++ ****************************************************************************/
 +
-+	iommu->dev = pci_get_bus_and_slot(PCI_BUS(iommu->devid),
-+					  iommu->devid & 0xff);
-+	if (!iommu->dev)
-+		return -ENODEV;
-+
-+	pci_read_config_dword(iommu->dev, cap_ptr + MMIO_CAP_HDR_OFFSET,
-+			      &iommu->cap);
-+	pci_read_config_dword(iommu->dev, cap_ptr + MMIO_RANGE_OFFSET,
-+			      &range);
-+	pci_read_config_dword(iommu->dev, cap_ptr + MMIO_MISC_OFFSET,
-+			      &misc);
-+
-+	iommu->first_device = calc_devid(MMIO_GET_BUS(range),
-+					 MMIO_GET_FD(range));
-+	iommu->last_device = calc_devid(MMIO_GET_BUS(range),
-+					MMIO_GET_LD(range));
-+
-+	if (!(iommu->cap & (1 << IOMMU_CAP_IOTLB)))
-+		amd_iommu_iotlb_sup = false;
-+
-+	/* read extended feature bits */
-+	low  = readl(iommu->mmio_base + MMIO_EXT_FEATURES);
-+	high = readl(iommu->mmio_base + MMIO_EXT_FEATURES + 4);
-+
-+	iommu->features = ((u64)high << 32) | low;
-+
-+	if (iommu_feature(iommu, FEATURE_GT)) {
-+		int glxval;
-+		u32 pasids;
-+		u64 shift;
-+
-+		shift   = iommu->features & FEATURE_PASID_MASK;
-+		shift >>= FEATURE_PASID_SHIFT;
-+		pasids  = (1 << shift);
-+
-+		amd_iommu_max_pasids = min(amd_iommu_max_pasids, pasids);
-+
-+		glxval   = iommu->features & FEATURE_GLXVAL_MASK;
-+		glxval >>= FEATURE_GLXVAL_SHIFT;
-+
-+		if (amd_iommu_max_glx_val == -1)
-+			amd_iommu_max_glx_val = glxval;
-+		else
-+			amd_iommu_max_glx_val = min(amd_iommu_max_glx_val, glxval);
++static int __init state_next(void)
+ {
+ 	int ret = 0;
+ 
+-	ret = amd_iommu_init_hardware();
+-	if (ret)
+-		goto out;
++	switch (init_state) {
++	case IOMMU_START_STATE:
++		if (!detect_ivrs()) {
++			init_state	= IOMMU_NOT_FOUND;
++			ret		= -ENODEV;
++		} else {
++			init_state	= IOMMU_IVRS_DETECTED;
++		}
++		break;
++	case IOMMU_IVRS_DETECTED:
++		ret = early_amd_iommu_init();
++		init_state = ret ? IOMMU_INIT_ERROR : IOMMU_ACPI_FINISHED;
++		break;
++	case IOMMU_ACPI_FINISHED:
++		early_enable_iommus();
++		register_syscore_ops(&amd_iommu_syscore_ops);
++		x86_platform.iommu_shutdown = disable_iommus;
++		init_state = IOMMU_ENABLED;
++		break;
++	case IOMMU_ENABLED:
++		ret = amd_iommu_init_pci();
++		init_state = ret ? IOMMU_INIT_ERROR : IOMMU_PCI_INIT;
++		enable_iommus_v2();
++		break;
++	case IOMMU_PCI_INIT:
++		ret = amd_iommu_enable_interrupts();
++		init_state = ret ? IOMMU_INIT_ERROR : IOMMU_INTERRUPTS_EN;
++		break;
++	case IOMMU_INTERRUPTS_EN:
++		ret = amd_iommu_init_dma();
++		init_state = ret ? IOMMU_INIT_ERROR : IOMMU_DMA_OPS;
++		break;
++	case IOMMU_DMA_OPS:
++		init_state = IOMMU_INITIALIZED;
++		break;
++	case IOMMU_INITIALIZED:
++		/* Nothing to do */
++		break;
++	case IOMMU_NOT_FOUND:
++	case IOMMU_INIT_ERROR:
++		/* Error states => do nothing */
++		ret = -EINVAL;
++		break;
++	default:
++		/* Unknown state */
++		BUG();
 +	}
-+
-+	if (iommu_feature(iommu, FEATURE_GT) &&
-+	    iommu_feature(iommu, FEATURE_PPR)) {
-+		iommu->is_iommu_v2   = true;
-+		amd_iommu_v2_present = true;
-+	}
-+
-+	if (iommu_feature(iommu, FEATURE_PPR)) {
-+		iommu->ppr_log = alloc_ppr_log(iommu);
-+		if (!iommu->ppr_log)
-+			return -ENOMEM;
-+	}
-+
-+	if (iommu->cap & (1UL << IOMMU_CAP_NPCACHE))
-+		amd_iommu_np_cache = true;
-+
-+	if (is_rd890_iommu(iommu->dev)) {
-+		int i, j;
-+
-+		iommu->root_pdev = pci_get_bus_and_slot(iommu->dev->bus->number,
-+				PCI_DEVFN(0, 0));
-+
-+		/*
-+		 * Some rd890 systems may not be fully reconfigured by the
-+		 * BIOS, so it's necessary for us to store this information so
-+		 * it can be reprogrammed on resume
-+		 */
-+		pci_read_config_dword(iommu->dev, iommu->cap_ptr + 4,
-+				&iommu->stored_addr_lo);
-+		pci_read_config_dword(iommu->dev, iommu->cap_ptr + 8,
-+				&iommu->stored_addr_hi);
-+
-+		/* Low bit locks writes to configuration space */
-+		iommu->stored_addr_lo &= ~1;
-+
-+		for (i = 0; i < 6; i++)
-+			for (j = 0; j < 0x12; j++)
-+				iommu->stored_l1[i][j] = iommu_read_l1(iommu, i, j);
-+
-+		for (i = 0; i < 0x83; i++)
-+			iommu->stored_l2[i] = iommu_read_l2(iommu, i);
-+	}
-+
-+	return pci_enable_device(iommu->dev);
-+}
-+
-+static int amd_iommu_init_pci(void)
-+{
-+	struct amd_iommu *iommu;
-+	int ret = 0;
-+
-+	for_each_iommu(iommu) {
-+		ret = iommu_init_pci(iommu);
-+		if (ret)
-+			break;
-+	}
-+
-+	/* Make sure ACS will be enabled */
-+	pci_request_acs();
-+
-+	ret = amd_iommu_init_devices();
-+
+ 
+-	ret = amd_iommu_enable_interrupts();
+-	if (ret)
+-		goto free;
 +	return ret;
 +}
+ 
+-	ret = amd_iommu_init_dma();
+-	if (ret)
+-		goto free;
++static int __init iommu_go_to_state(enum iommu_init_state state)
++{
++	int ret = 0;
+ 
+-	amd_iommu_init_api();
++	while (init_state != state) {
++		ret = state_next();
++		if (init_state == IOMMU_NOT_FOUND ||
++		    init_state == IOMMU_INIT_ERROR)
++			break;
++	}
+ 
+-out:
+ 	return ret;
++}
+ 
+-free:
+-	disable_iommus();
+ 
+-	free_on_init_error();
+ 
+-	goto out;
++/*
++ * This is the core init function for AMD IOMMU hardware in the system.
++ * This function is called from the generic x86 DMA layer initialization
++ * code.
++ */
++static int __init amd_iommu_init(void)
++{
++	int ret;
 +
- /****************************************************************************
-  *
-  * The following functions initialize the MSI interrupts for all IOMMUs
-@@ -1569,7 +1584,7 @@ int __init amd_iommu_init_hardware(void)
- 	if (ret)
- 		goto free;
- 
--	ret = amd_iommu_init_devices();
-+	ret = amd_iommu_init_pci();
- 	if (ret)
- 		goto free;
- 
-@@ -1702,9 +1717,6 @@ int __init amd_iommu_detect(void)
- 	iommu_detected = 1;
- 	x86_init.iommu.iommu_init = amd_iommu_init;
- 
--	/* Make sure ACS will be enabled */
--	pci_request_acs();
--
- 	return 0;
++	ret = iommu_go_to_state(IOMMU_INITIALIZED);
++	if (ret) {
++		disable_iommus();
++		free_on_init_error();
++	}
++
++	return ret;
  }
  
-diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
-index 2435555..6f32d7b 100644
---- a/drivers/iommu/amd_iommu_types.h
-+++ b/drivers/iommu/amd_iommu_types.h
-@@ -501,6 +501,9 @@ struct amd_iommu {
- 	/* IOMMUv2 */
- 	bool is_iommu_v2;
+ /****************************************************************************
+@@ -1739,6 +1781,7 @@ free:
+  ****************************************************************************/
+ int __init amd_iommu_detect(void)
+ {
++	int ret;
  
-+	/* PCI device id of the IOMMU device */
-+	u16 devid;
-+
- 	/*
- 	 * Capability pointer. There could be more than one IOMMU per PCI
- 	 * device function if there are more than one AMD IOMMU capability
-@@ -530,8 +533,6 @@ struct amd_iommu {
- 	u32 evt_buf_size;
- 	/* event buffer virtual address */
- 	u8 *evt_buf;
--	/* MSI number for event interrupt */
--	u16 evt_msi_num;
+ 	if (no_iommu || (iommu_detected && !gart_iommu_aperture))
+ 		return -ENODEV;
+@@ -1746,8 +1789,9 @@ int __init amd_iommu_detect(void)
+ 	if (amd_iommu_disabled)
+ 		return -ENODEV;
  
- 	/* Base of the PPR log, if present */
- 	u8 *ppr_log;
+-	if (!detect_ivrs())
+-		return -ENODEV;
++	ret = iommu_go_to_state(IOMMU_IVRS_DETECTED);
++	if (ret)
++		return ret;
+ 
+ 	amd_iommu_detected = true;
+ 	iommu_detected = 1;
 -- 
 1.7.9.5
 
