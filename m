@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246Ab2GEMeW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 08:34:22 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35646 "EHLO
+	id S1756260Ab2GEMfc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 08:35:32 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35656 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752948Ab2GEMeV (ORCPT
+	by vger.kernel.org with ESMTP id S1753630Ab2GEMfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 08:34:21 -0400
-Date: Thu, 5 Jul 2012 13:34:19 +0100
+	Thu, 5 Jul 2012 08:35:31 -0400
+Date: Thu, 5 Jul 2012 13:35:24 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Axel Lin <axel.lin@gmail.com>
 Cc: Lee Jones <lee.jones@linaro.org>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: ab3100: Set enable enable_time in
- regulator_desc
-Message-ID: <20120705123419.GZ4111@opensource.wolfsonmicro.com>
-References: <1341367403.10587.3.camel@phoenix>
+Subject: Re: [PATCH] regulator: ab3100: Use rdev_get_drvdata() rather than
+ use reg->reg_data driectly
+Message-ID: <20120705123524.GA4111@opensource.wolfsonmicro.com>
+References: <1341452295.5435.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1RuPiyELjUd36Oro"
+	protocol="application/pgp-signature"; boundary="fIj/D6Y6BN1okdX1"
 Content-Disposition: inline
-In-Reply-To: <1341367403.10587.3.camel@phoenix>
+In-Reply-To: <1341452295.5435.1.camel@phoenix>
 X-Cookie: You're at the end of the road again.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,35 +29,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---1RuPiyELjUd36Oro
+--fIj/D6Y6BN1okdX1
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Wed, Jul 04, 2012 at 10:03:23AM +0800, Axel Lin wrote:
+On Thu, Jul 05, 2012 at 09:38:15AM +0800, Axel Lin wrote:
+
 > Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
 Applied, thanks.
 
---1RuPiyELjUd36Oro
+--fIj/D6Y6BN1okdX1
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJP9YnEAAoJEBus8iNuMP3dhI0P/1ujHcjk3FM0l4k5nz4EHVA2
-SIY6+x5LpGtp9FW9fd3y+FjYpw2Zg+Pwk3dQNekH3oP0FOk+RxXykbxG0oiQFo7Z
-JKsgdkHIFxaqJCHBKGuUnsIPmVgixJB0c+RWZbOa80e0Gf5hkkvIWOpdg3UHiFRf
-ww3LEkaJtJ70xVP/8dEDA46qs5I8w27QYDbMbknk8JL4ZwCkhoqCO5m/Gk+G0HyZ
-225YzpYIqdPBK3MfDPiaKuSJohXg8YYD8HySkWEg+3uf3bWFmG6lSYl/DutAZ8BG
-4q3Afje0BiPRhnRr6MHEOe05SnpewnSESEuS05gY0rTFd1sryx4y7HCrtaSaMpcu
-U/evyJ4+GlXw2twSxTCw4w1jnEypJb6mTOOKC0sE3gqD+X61lNVRCjMjZjhAh+fu
-cKPNhPUhvVJQ67/HnnONzc9+xfoqs/sFXtZjDRe3lQm0oApra00aDF8Qh4cuY5R9
-rMboFLtUop8B5M8odJ9OvEVfoYsRhQQFTZZOVeowuOXURWVtHQKo6c1rP8B3Ea3w
-wPapUtcPWjS8bC+LNtSUjhGtrNdSIFcjompugPvBoRbhqOqERv3EwWPrFmETC/tn
-SEotUumuvgrq4gCBz8LfhLU2siCZAkDVKy1bJd57IKerAVZ1F0RF44VSQNZcK2GA
-vcMbHFwlWQLhypb9XGLp
-=VBCL
+iQIcBAEBAgAGBQJP9YnvAAoJEBus8iNuMP3dEhUP/1epLn7c5p3+kxolR2qA5yxT
+4fhxgeSuDKbU38ws2OVV5H8uZm68uInv2ohta3g6JJYGtY8egWe0gcT61CeSQjlK
+JOil/wAyJ66ZyJUtjqI1BoJsGC9pCr647mHxid5ZdviO32zLCRalsWiPJvAbTklz
+buIJ9AT7zWfCR2Ig8K3bVauNmB/y4395A+dW+CObW/lYxNnnMNXx7Vtz0j5EfGkQ
+/plH8rrE3x1N95YfUvcqxxF3R33BFY2H9/srX9X5FeTI/Xki/7ia3ah0wBqJC+z3
+w4D6yBdYxLil9CSCKPN621dFs2A3NmkFoQrThLXkQKaQAhhoZ0Fox7H1NzHbCuAp
+jIbT1TZKJAQgkINsxWxtC9OXkm5xNAaP24Y6WQRfto8Y+6i+RzQU/DT2RLISasAL
+fh0lylRPn2gw2IxzUSEx+MGVS4p0kujOaefUL8kToGV79gUSsdTsLWtIxifINHt2
+dKPpYl6yyYca0WatF6nWi/wde3N9JtVYryNi5+tnhJUkAOBx4wNmcD9fo506bXX9
+ovQ7TOHXnf5R7He993WGuzISXQNhrbSuFmFQRoQ/1Hc8EpwH6Yeh4ko5dljlTvRF
+MKMQI6DFMrvU3hMVm91MLHMt9nd1zNo3ebm/WbJCJcrmjoCkFgp03HbePc25+80T
+n5QDJxkEfQhUV9EKRg+o
+=hXhJ
 -----END PGP SIGNATURE-----
 
---1RuPiyELjUd36Oro--
+--fIj/D6Y6BN1okdX1--
