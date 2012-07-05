@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030193Ab2GEXPK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 19:15:10 -0400
+	id S933445Ab2GEXPS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 19:15:18 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:56057 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933414Ab2GEXPG (ORCPT
+	with ESMTP id S933414Ab2GEXPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 19:15:06 -0400
+	Thu, 5 Jul 2012 19:15:13 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>,
         Jason Wessel <jason.wessel@windriver.com>
@@ -15,9 +15,9 @@ Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linaro-kernel@lists.linaro.org, patches@linaro.org,
         kernel-team@android.com, kgdb-bugreport@lists.sourceforge.net
-Subject: [PATCH 2/6] kernel/debug: Mask KGDB NMI upon entry
-Date: Thu,  5 Jul 2012 16:12:36 -0700
-Message-Id: <1341529960-18370-2-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 5/6] ARM: VIC: Add a couple of low-level FIQ management helpers
+Date: Thu,  5 Jul 2012 16:12:39 -0700
+Message-Id: <1341529960-18370-5-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <20120705231034.GA16931@lizard>
 References: <20120705231034.GA16931@lizard>
@@ -25,77 +25,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new arch callback should manage NMIs that usually cause KGDB to
-enter. That is, not all NMIs should be enabled/disabled, but only
-those that issue kgdb_handle_exception().
-
-We must mask it as serial-line interrupt can be used as an NMI, so
-if the original KGDB-entry cause was say a breakpoint, then every
-input to KDB console will cause KGDB to reenter, which we don't want.
+Just a couple of calls to manage VIC FIQ routing. We'll use them for
+KGDB FIQ support on ARM Versatile machines.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- include/linux/kgdb.h      |    9 +++++++++
- kernel/debug/debug_core.c |   12 +++++++++++-
- 2 files changed, 20 insertions(+), 1 deletion(-)
+ arch/arm/common/vic.c               |   28 ++++++++++++++++++++++++++++
+ arch/arm/include/asm/hardware/vic.h |    2 ++
+ 2 files changed, 30 insertions(+)
 
-diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
-index c4d2fc1..47e739e 100644
---- a/include/linux/kgdb.h
-+++ b/include/linux/kgdb.h
-@@ -221,6 +221,15 @@ extern int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt);
-  */
- extern void kgdb_arch_late(void);
+diff --git a/arch/arm/common/vic.c b/arch/arm/common/vic.c
+index e0d5388..df2fc82 100644
+--- a/arch/arm/common/vic.c
++++ b/arch/arm/common/vic.c
+@@ -66,6 +66,34 @@ static struct vic_device vic_devices[CONFIG_ARM_VIC_NR];
  
-+/**
-+ *	kgdb_arch_enable_nmi - Enable or disable KGDB-entry NMI
-+ *	@on: Flag to either enable or disable an NMI
-+ *
-+ *	This function manages NMIs that usually cause KGDB to enter. That is,
-+ *	not all NMIs should be enabled or disabled, but only those that issue
-+ *	kgdb_handle_exception().
-+ */
-+extern void kgdb_arch_enable_nmi(bool on);
+ static int vic_id;
  
- /**
-  * struct kgdb_arch - Describe architecture specific values.
-diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-index 0557f24..e285600 100644
---- a/kernel/debug/debug_core.c
-+++ b/kernel/debug/debug_core.c
-@@ -214,6 +214,10 @@ int __weak kgdb_skipexception(int exception, struct pt_regs *regs)
- 	return 0;
- }
- 
-+void __weak kgdb_arch_enable_nmi(bool on)
++static void __iomem *vic_base(struct irq_data *d)
 +{
++	return (void __iomem *)irq_data_get_irq_chip_data(d);
 +}
 +
- /*
-  * Some architectures need cache flushes when we set/clear a
-  * breakpoint:
-@@ -672,6 +676,9 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
- {
- 	struct kgdb_state kgdb_var;
- 	struct kgdb_state *ks = &kgdb_var;
-+	int ret;
++void vic_fiq_select(unsigned int irq, bool on)
++{
++	void __iomem *base = vic_base(&irq_to_desc(irq)->irq_data);
++	void __iomem *sel = base + VIC_INT_SELECT;
++	u32 msk = 1 << irq;
++	u32 val;
 +
-+	kgdb_arch_enable_nmi(0);
- 
- 	ks->cpu			= raw_smp_processor_id();
- 	ks->ex_vector		= evector;
-@@ -685,7 +692,10 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
- 	if (kgdb_info[ks->cpu].enter_kgdb != 0)
- 		return 0;
- 
--	return kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
-+	ret = kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
++	pr_debug("rerouting VIC vector %d to %s\n", irq, on ? "FIQ" : "IRQ");
 +
-+	kgdb_arch_enable_nmi(1);
-+	return ret;
- }
++	val = readl(sel);
++	val &= ~msk;
++	if (on)
++		val |= msk;
++	writel(val, sel);
++}
++
++bool vic_is_fiq_rised(unsigned int irq)
++{
++	void __iomem *base = vic_base(&irq_to_desc(irq)->irq_data);
++
++	return readl(base + VIC_FIQ_STATUS) & (1 << irq);
++}
++
+ /**
+  * vic_init2 - common initialisation code
+  * @base: Base of the VIC.
+diff --git a/arch/arm/include/asm/hardware/vic.h b/arch/arm/include/asm/hardware/vic.h
+index e14af1a..2728975 100644
+--- a/arch/arm/include/asm/hardware/vic.h
++++ b/arch/arm/include/asm/hardware/vic.h
+@@ -52,6 +52,8 @@ void __vic_init(void __iomem *base, unsigned int irq_start, u32 vic_sources,
+ void vic_init(void __iomem *base, unsigned int irq_start, u32 vic_sources, u32 resume_sources);
+ int vic_of_init(struct device_node *node, struct device_node *parent);
+ void vic_handle_irq(struct pt_regs *regs);
++void vic_fiq_select(unsigned int irq, bool on);
++bool vic_is_fiq_rised(unsigned int irq);
  
- int kgdb_nmicallback(int cpu, void *regs)
+ #endif /* __ASSEMBLY__ */
+ #endif
 -- 
 1.7.10.4
 
