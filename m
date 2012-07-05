@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933238Ab2GEOsq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 10:48:46 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:44523 "EHLO
+	id S933183Ab2GEOt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 10:49:26 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:34422 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932288Ab2GEOqY (ORCPT
+	with ESMTP id S932602Ab2GEOqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 10:46:24 -0400
+	Thu, 5 Jul 2012 10:46:23 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av4EANqn9U9bdWOb/2dsb2JhbABFhV+xR4EHghkBBSMECwFGECUCJgICVwcSiA+mepJWgSCBIY4kgRIDlTeJJoZdgmE
+X-IronPort-Anti-Spam-Result: Av4EANqn9U9bdWOb/2dsb2JhbABFhV+xR4EHghkBBSMECwFGECUCJgICVwcSiA+mepJWgSCPRYESA5U3iSaGXYJh
 X-IronPort-AV: E=Sophos;i="4.77,531,1336341600"; 
-   d="scan'208";a="926562644"
+   d="scan'208";a="926562637"
 From: =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
 To: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
         aaro.koskinen@iki.fi, dan.carpenter@oracle.com
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
-Subject: [PATCH 14/19] Staging: xgifb: Refactor XGI_GetCRT2ResInfo().
-Date: Thu,  5 Jul 2012 16:45:57 +0200
-Message-Id: <48e204cc0b51e465abfd8ae9c3ead1e72aae82e5.1341498466.git.magomez@igalia.com>
+Subject: [PATCH 08/19] Staging: xgifb: Remove unneeded var and condition in XGIfb_search_vesamode().
+Date: Thu,  5 Jul 2012 16:45:51 +0200
+Message-Id: <2337265cc74edc7de4d7a6a761489d0301ed11ce.1341498466.git.magomez@igalia.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1341498465.git.magomez@igalia.com>
 References: <cover.1341498465.git.magomez@igalia.com>
@@ -31,95 +31,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a goto to remove one level of indentation, fixing style warnings.
-
 Signed-off-by: Miguel Gómez <magomez@igalia.com>
 ---
- drivers/staging/xgifb/vb_setmode.c |   61 ++++++++++++++++++------------------
- 1 file changed, 31 insertions(+), 30 deletions(-)
+ drivers/staging/xgifb/XGI_main_26.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
-index 9dfc2de..a7ba99f 100644
---- a/drivers/staging/xgifb/vb_setmode.c
-+++ b/drivers/staging/xgifb/vb_setmode.c
-@@ -3263,46 +3263,47 @@ static void XGI_GetCRT2ResInfo(unsigned short ModeNo,
- 	if (modeflag & DoubleScanMode)
- 		yres *= 2;
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index b360ad3..8ae9402 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -299,7 +299,7 @@ invalid_mode:
+ static void XGIfb_search_vesamode(struct xgifb_video_info *xgifb_info,
+ 				  unsigned int vesamode)
+ {
+-	int i = 0, j = 0;
++	int i = 0;
  
--	if (pVBInfo->VBInfo & SetCRT2ToLCD) {
--		if (pVBInfo->IF_DEF_LVDS == 0) {
--			if (pVBInfo->LCDResInfo == Panel_1600x1200) {
--				if (!(pVBInfo->LCDInfo & XGI_LCDVESATiming)) {
--					if (yres == 1024)
--						yres = 1056;
--				}
-+	if (!(pVBInfo->VBInfo & SetCRT2ToLCD))
-+		goto exit;
-+
-+	if (pVBInfo->IF_DEF_LVDS == 0) {
-+		if (pVBInfo->LCDResInfo == Panel_1600x1200) {
-+			if (!(pVBInfo->LCDInfo & XGI_LCDVESATiming)) {
-+				if (yres == 1024)
-+					yres = 1056;
- 			}
-+		}
- 
--			if (pVBInfo->LCDResInfo == Panel_1280x1024) {
--				if (yres == 400)
--					yres = 405;
--				else if (yres == 350)
--					yres = 360;
-+		if (pVBInfo->LCDResInfo == Panel_1280x1024) {
-+			if (yres == 400)
-+				yres = 405;
-+			else if (yres == 350)
-+				yres = 360;
- 
--				if (pVBInfo->LCDInfo & XGI_LCDVESATiming) {
--					if (yres == 360)
--						yres = 375;
--				}
-+			if (pVBInfo->LCDInfo & XGI_LCDVESATiming) {
-+				if (yres == 360)
-+					yres = 375;
- 			}
-+		}
- 
--			if (pVBInfo->LCDResInfo == Panel_1024x768) {
--				if (!(pVBInfo->LCDInfo & XGI_LCDVESATiming)) {
--					if (!(pVBInfo->LCDInfo
--							& LCDNonExpanding)) {
--						if (yres == 350)
--							yres = 357;
--						else if (yres == 400)
--							yres = 420;
--						else if (yres == 480)
--							yres = 525;
--					}
-+		if (pVBInfo->LCDResInfo == Panel_1024x768) {
-+			if (!(pVBInfo->LCDInfo & XGI_LCDVESATiming)) {
-+				if (!(pVBInfo->LCDInfo & LCDNonExpanding)) {
-+					if (yres == 350)
-+						yres = 357;
-+					else if (yres == 400)
-+						yres = 420;
-+					else if (yres == 480)
-+						yres = 525;
- 				}
- 			}
+ 	if (vesamode == 0)
+ 		goto invalid;
+@@ -310,15 +310,13 @@ static void XGIfb_search_vesamode(struct xgifb_video_info *xgifb_info,
+ 		if ((XGIbios_mode[i].vesa_mode_no_1 == vesamode) ||
+ 		    (XGIbios_mode[i].vesa_mode_no_2 == vesamode)) {
+ 			xgifb_info->mode_idx = i;
+-			j = 1;
+-			break;
++			return;
  		}
--
--		if (xres == 720)
--			xres = 640;
+ 		i++;
  	}
  
-+	if (xres == 720)
-+		xres = 640;
-+
-+exit:
- 	pVBInfo->VGAHDE = xres;
- 	pVBInfo->HDE = xres;
- 	pVBInfo->VGAVDE = yres;
+ invalid:
+-	if (!j)
+-		pr_info("Invalid VESA mode 0x%x'\n", vesamode);
++	pr_info("Invalid VESA mode 0x%x'\n", vesamode);
+ }
+ 
+ static int XGIfb_validate_mode(struct xgifb_video_info *xgifb_info, int myindex)
 -- 
 1.7.9.5
 
