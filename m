@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751213Ab2GEFAc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 01:00:32 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:43635 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab2GEFA3 (ORCPT
+	id S1751259Ab2GEFUO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 01:20:14 -0400
+Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:41574 "EHLO
+	na3sys009aog133.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750869Ab2GEFUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 01:00:29 -0400
-Date: Thu, 5 Jul 2012 15:00:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: linux-next: manual merge of the tip tree with the vfs tree
-Message-Id: <20120705150012.63b7d7be0a0f549cfe650515@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__5_Jul_2012_15_00_12_+1000_YnM/5neaDbvMchVN"
+	Thu, 5 Jul 2012 01:20:10 -0400
+MIME-Version: 1.0
+Date: Thu, 5 Jul 2012 10:50:07 +0530
+Message-ID: <CADysL2ZD0yCpCodeuwDpiaiD=uYuDfv4MDXN=YWa-LfY1-8pjA@mail.gmail.com>
+Subject: [PATCH v4 0/2] add new cache maintenance api
+From: "Gupta, Ramesh" <grgupta@ti.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, tony@atomide.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Jul_2012_15_00_12_+1000_YnM/5neaDbvMchVN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>From 393c4effbbec74ff9b969d53ce4d36fde56b71df Mon Sep 17 00:00:00 2001
+From: Ramesh Gupta G <grgupta@ti.com>
+Date: Wed, 4 Jul 2012 16:43:41 +0530
+Subject: [PATCH v4 0/2] add new cache maintenance api
 
-Hi all,
+This patch series is the next version to
+- add a new cache maintenance api to support non-coherent iommu drivers.
+- flush both L1 and L2 caches from OMAP iommu whenever the page table
+  memory is updated.
 
-Today's linux-next merge of the tip tree got a conflict in kernel/fork.c
-between commit 7ab538da1f8a ("trim task_work: get rid of hlist") from the
-vfs tree and commit 0ea86208345b ("sched, mm: Rework sched_{fork,exec}
-node assignment") from the tip tree.
+Changes since the previous patch set (v3)
+- Minor cleanup for fixing checkpatch warnings.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The implementation of the new api is based on
+the approach[1] discussed.
 
-diff --cc kernel/fork.c
-index bebabad,1a69745..0000000
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@@ -1414,8 -1415,7 +1415,7 @@@ static struct task_struct *copy_process
-  	 * We dont wake it up yet.
-  	 */
-  	p->group_leader =3D p;
-- 	INIT_LIST_HEAD(&p->thread_group);
- -	INIT_HLIST_HEAD(&p->task_works);
- +	p->task_works =3D NULL;
- =20
-  	/* Now that the task is set up, run cgroup callbacks if
-  	 * necessary. We need to run them before the task is visible
+[1]http://marc.info/?l=linux-kernel&m=131316512713815&w=2
 
---Signature=_Thu__5_Jul_2012_15_00_12_+1000_YnM/5neaDbvMchVN
-Content-Type: application/pgp-signature
+Signed-off-by: Ramesh Gupta G <grgupta@ti.com>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Ramesh Gupta G (2):
+  ARM: new cache maintenance api for iommu
+  OMAP:IOMMU:flush L1 and L2 caches
 
-iQIcBAEBCAAGBQJP9R9cAAoJEECxmPOUX5FEwmwQAJariZxQ3Ns7OP6K4rhzHPdH
-6UVYciiZBozMS1Jk+uMeI8sdgFmAVDEvAjXU5bd5LoNTq4jq9xWDyuGwXIk+oU6d
-HmxhT6al/GzZuJFKqRAA8dMgm54AisDigZMl5EEO7ps2VUslnablu9pJUdcQ+Vwj
-Whr/G05jVtm7dZqPRght9eVgjdWWKM8vN4pVdToCN24gcuUnKdfyd7O5EnZkMR7M
-f1DSmp1sc5lAUfJUUJxHS9wKA5c4mKtHrwJ13wCqtSZymAJk3Jhp4+HyHYVGFJuI
-MsQr7kwbS/UP++wzAXEskirDqRTskgfUKew3YVvdML6XkjdVi+Jbulrfq4FapPmt
-g+dVkBIm+mpyyWmpMTti62X4ittzd0AdN7MdRSW7nx12TcYK1olU5GArhhZlYgtq
-NprbaPNMd7XBGVtTFnYPYnvjqx8AkLEsCBMChWxWk2Hn84rY+dkmctyev2miz3ue
-SCRuyF7awugYP5xVu71cXrgKNWbV0jJE0GiJ0SuU78N0o9HisE1V/szSFWZtrHA8
-GGGciacrCdV90zjLtIUt9MvQ/0/hw89OpuBDX1LY2o29GPx8ejHVkXwn/hpkgefE
-KBeOOWczX53ba6WmmubGuAeZggPhAb4Bjy2b7PIZQiQMxyfLd8rw8bpJ6EgEe3mY
-RhpBaM1E1yZjg6jkCyxi
-=U0pl
------END PGP SIGNATURE-----
+ arch/arm/include/asm/cacheflush.h |   26 ++++++++++++++++++++++++++
+ arch/arm/include/asm/glue-cache.h |    1 +
+ arch/arm/mm/cache-fa.S            |   15 +++++++++++++++
+ arch/arm/mm/cache-v3.S            |   14 +++++++++++++-
+ arch/arm/mm/cache-v4.S            |   15 +++++++++++++++
+ arch/arm/mm/cache-v4wb.S          |   21 +++++++++++++++++++++
+ arch/arm/mm/cache-v4wt.S          |   17 +++++++++++++++++
+ arch/arm/mm/cache-v6.S            |   20 ++++++++++++++++++++
+ arch/arm/mm/cache-v7.S            |   21 +++++++++++++++++++++
+ arch/arm/mm/proc-arm1020.S        |   22 ++++++++++++++++++++++
+ arch/arm/mm/proc-arm1020e.S       |   20 ++++++++++++++++++++
+ arch/arm/mm/proc-arm1022.S        |   20 ++++++++++++++++++++
+ arch/arm/mm/proc-arm1026.S        |   20 ++++++++++++++++++++
+ arch/arm/mm/proc-arm920.S         |   17 +++++++++++++++++
+ arch/arm/mm/proc-arm922.S         |   17 +++++++++++++++++
+ arch/arm/mm/proc-arm925.S         |   22 ++++++++++++++++++++++
+ arch/arm/mm/proc-arm926.S         |   22 ++++++++++++++++++++++
+ arch/arm/mm/proc-arm940.S         |   25 +++++++++++++++++++++++++
+ arch/arm/mm/proc-arm946.S         |   24 ++++++++++++++++++++++++
+ arch/arm/mm/proc-feroceon.S       |   30 ++++++++++++++++++++++++++++++
+ arch/arm/mm/proc-macros.S         |    1 +
+ arch/arm/mm/proc-mohawk.S         |   18 ++++++++++++++++++
+ arch/arm/mm/proc-xsc3.S           |   17 +++++++++++++++++
+ arch/arm/mm/proc-xscale.S         |   19 +++++++++++++++++++
+ drivers/iommu/omap-iommu.c        |   26 +++++++++-----------------
+ 25 files changed, 452 insertions(+), 18 deletions(-)
 
---Signature=_Thu__5_Jul_2012_15_00_12_+1000_YnM/5neaDbvMchVN--
+
+-- 
+regards
+Ramesh Gupta G
