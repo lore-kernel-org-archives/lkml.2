@@ -1,132 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536Ab2GEJgr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 05:36:47 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43065 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437Ab2GEJgp (ORCPT
+	id S1755379Ab2GEJkj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 05:40:39 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:32852 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753016Ab2GEJkh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 05:36:45 -0400
-Message-ID: <4FF56029.2060007@linaro.org>
-Date: Thu, 05 Jul 2012 10:36:41 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Thu, 5 Jul 2012 05:40:37 -0400
+X-IronPort-AV: E=Sophos;i="4.77,530,1336320000"; 
+   d="scan'208";a="5335344"
+Message-ID: <4FF559F6.1040007@cn.fujitsu.com>
+Date: Thu, 05 Jul 2012 17:10:14 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Gabriel FERNANDEZ <gabriel.fernandez@stericsson.com>,
-        Loic Pallardy <loic.pallardy@stericsson.com>,
-        Patrice CHOTARD <patrice.chotard@stericsson.com>
-Subject: Re: [PATCH] ARM: ux500: Register pinctrl from platform code until
- it's been DT:ed
-References: <1341412452-3808-1-git-send-email-lee.jones@linaro.org> <CACRpkdb1rZQWpuUxQoxqg2eYanf4tnm0SmFkQQBwvSuyYV00Gw@mail.gmail.com>
-In-Reply-To: <CACRpkdb1rZQWpuUxQoxqg2eYanf4tnm0SmFkQQBwvSuyYV00Gw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nhorman@tuxdriver.com, tj@kernel.org, lizefan@huawei.com
+Subject: Re: [PATCH] cgroup: fix panic in netprio_cgroup
+References: <1341477102-16988-1-git-send-email-gaofeng@cn.fujitsu.com> <1341477809.2583.3437.camel@edumazet-glaptop>
+In-Reply-To: <1341477809.2583.3437.camel@edumazet-glaptop>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/05 17:09:51,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/05 17:10:35
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/12 09:55, Linus Walleij wrote:
-> On Wed, Jul 4, 2012 at 4:34 PM, Lee Jones <lee.jones@linaro.org> wrote:
->
->> There are some inconsistencies with the way pinctrl devices are named
->> when registered from platform code to the ones registered by Device
->> Tree. Platform devices look like 'pinctrl-db8500', whereas the ones
->> registered from Device Tree look more like 'pinctrl.2'. This leads to
->> failure when carrying out name-based searches for known devices.
+于 2012年07月05日 16:43, Eric Dumazet 写道:
+> On Thu, 2012-07-05 at 16:31 +0800, Gao feng wrote:
+>> we set max_prioidx to the first zero bit index of prioidx_map in
+>> function get_prioidx.
 >>
->> Until the correct DT bindings have been applied to the pinctrl driver
->> it will fail to function correctly. For instance, during a Device
->> Tree boot on Snowball no bootlog is visible due to a UART port probe
->> failure. Regulators fail in a similar way.
->
-> The problem is *NOT* any missing device tree bindings. The place
-> where the problem appear is in the pin control mapping table, which
-> uses the string "pinctrl-db8500"
->
-> The bindings to pass in the pinctrl mapping from the devcie tree
-> is generic and already exist:
-> Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-
-Yes I saw these, but that still doesn't help our situation. A way to 
-link the mapping tables registered with a platform device to the driver 
-started with Device Tree is missing. This can be over-come by several 
-methods:
-
-a) Create a binding which takes a device name to tag onto a mapping. 
-This can be used in the name based searches currently employed by 
-pinctrl. This is the binding I was talking about in the commit log. In 
-retrospect, I can see that this is not the correct solution.
-
-b) Continue using Device Tree and force the 'pinctrl-db8500' device name 
-which any string based searches will be expecting with AUXDATA(). We do 
-similar things for clock-names already. However, this must be seen as a 
-hacky work-around and it to be removed after full enablement has been 
-taken place.
-
-c) Prevent the pinctrl driver from being started by Device Tree and 
-allow platform code to register the device until we can populate the 
-device tree with all of the mappings. This is the way you advised me to 
-do it [see below] and it's what this patch tries to achieve.
-
-Linus said:
-> In my eyes the problem is introduced by that commit ["pinctrl-nomadik:
-> Allow Device Tree driver probing"]. So I'll revert it and go for a
-> complete approach for v3.6
-
-Hopefully now you can see where I'm coming from.
-
-> The stuff in the file:
-> arch/arm/mach-ux500/board-mop500-pins.c
->
-> Need to be moved over to the device tree.
-
-Agreed, but this patch aims to fix an -rc bug. The full Device Tree 
-implementation isn't likely to reach Mainline until at least v3.6, as 
-you already mentioned.
-
- > There are plenty of
-> examples of how to do this in for example:
-> arch/arm/boot/dts/tegra-seaboard.dts
-
-I don't see this file anywhere?
-
-> So what is needed is that someone augment the device tree
-> with the pinctrl data and disable the registration of the static
-> maps from the above file if the node exists.
-
-Right, future work.
-
->> This patch prevents Device Tree from probing the pinctrl driver and
->> ensures registration is completed from platform code instead.
+>> So when we delete the low index netprio cgroup and adding a new
+>> netprio cgroup again,the max_prioidx will be set to the low index.
 >>
->> Signed-off-by: Lee Jones <lee.jones@linaro.org>
->
-> Is the DT machinery really incapable of specifying
-> the device name to anything else than the bus name?
-> Can't you do this with AUX_DATA()? I've seen that done in the
-> past. For example you do:
->
-> OF_DEV_AUXDATA("st,nomadik-gpio", 0x8012e000, "gpio.0", NULL),
->
-> Can't you just:
-> OF_DEV_AUXDATA("stericsson,nmk_pinctrl", 0, "pinctrl-db8500", NULL),
->
-> And it will happily assign the "pinctrl-db8500" name to it's instantiated
-> device?
+>> when we set the high index cgroup's net_prio.ifpriomap,the function
+>> write_priomap will call update_netdev_tables to alloc memory which
+>> size is sizeof(struct netprio_map) + sizeof(u32) * (max_prioidx + 1),
+>> so the size of array that map->priomap point to is max_prioidx +1,
+>> which is low than what we actually need.
+>>
+>> fix this by adding check in get_prioidx,only set max_prioidx when
+>> max_prioidx low than the new prioidx.
+>>
+>> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+>> ---
+>>  net/core/netprio_cgroup.c |    3 ++-
+>>  1 files changed, 2 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+>> index 5b8aa2f..586f7d9 100644
+>> --- a/net/core/netprio_cgroup.c
+>> +++ b/net/core/netprio_cgroup.c
+>> @@ -50,7 +50,8 @@ static int get_prioidx(u32 *prio)
+>>  	}
+>>  	set_bit(prioidx, prioidx_map);
+>>  	spin_unlock_irqrestore(&prioidx_map_lock, flags);
+>> -	atomic_set(&max_prioidx, prioidx);
+>> +	if (atomic_read(&max_prioidx) < prioidx)
+>> +		atomic_set(&max_prioidx, prioidx);
+>>  	*prio = prioidx;
+>>  	return 0;
+>>  }
+> 
+> This is still racy.
+> 
+> Please do this before the 
+> spin_unlock_irqrestore(&prioidx_map_lock, flags);
+> 
 
-Yes, this will work, see option 'b' above.
-
-I'll submit another patch.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
-
-
+Thanks Eric,you are right
+I will fix and resent it.
