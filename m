@@ -1,36 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902Ab2GENHX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 09:07:23 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:52515 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932524Ab2GENHU (ORCPT
+	id S932919Ab2GENHt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 09:07:49 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48465 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755513Ab2GENGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 09:07:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <1340202832-16850-1-git-send-email-stigge@antcom.de>
-References: <1340202832-16850-1-git-send-email-stigge@antcom.de>
-Date: Thu, 5 Jul 2012 15:07:19 +0200
-Message-ID: <CACRpkdaJy_M32OidaLwC+uFUEx525knwKP+xysLyh0tXx_9N0Q@mail.gmail.com>
-Subject: Re: [PATCH] gpio: gpio-lpc32xx: Add gpio_to_irq mapping
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Roland Stigge <stigge@antcom.de>
-Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        linux-arm-kernel@lists.infradead.org, aletes.xgr@gmail.com,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 5 Jul 2012 09:06:47 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 6/9] ARM: ux500: Remove PMU platform registration when booting with DT
+Date: Thu,  5 Jul 2012 14:06:09 +0100
+Message-Id: <1341493572-29735-7-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1341493572-29735-1-git-send-email-lee.jones@linaro.org>
+References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 20, 2012 at 4:33 PM, Roland Stigge <stigge@antcom.de> wrote:
+PMU registration is successfully completed by Device Tree now, so
+there is no longer a requirement to register it from platform code.
+This patch removes platform registration during a DT boot.
 
-> This patch helps mapping with gpio_to_irq for the GPIOs that are irq enabled.
->
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/mach-ux500/cpu-db8500.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Applied with Alexandre's Tested-by.
+diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
+index a12bd9e..c8dd94f 100644
+--- a/arch/arm/mach-ux500/cpu-db8500.c
++++ b/arch/arm/mach-ux500/cpu-db8500.c
+@@ -139,7 +139,6 @@ static struct platform_device *platform_devs[] __initdata = {
+ 
+ static struct platform_device *of_platform_devs[] __initdata = {
+ 	&u8500_dma40_device,
+-	&db8500_pmu_device,
+ };
+ 
+ static resource_size_t __initdata db8500_gpio_base[] = {
+@@ -248,7 +247,7 @@ struct device * __init u8500_of_init_devices(void)
+ 	/*
+ 	 * Devices to be DT:ed:
+ 	 *   u8500_dma40_device  = todo
+-	 *   db8500_pmu_device   = todo
++	 *   db8500_pmu_device   = done
+ 	 *   db8500_prcmu_device = done
+ 	 */
+ 	platform_add_devices(of_platform_devs, ARRAY_SIZE(of_platform_devs));
+-- 
+1.7.9.5
 
-Thanks,
-Linus Walleij
