@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757175Ab2GETJf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 15:09:35 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35397 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628Ab2GETJd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 15:09:33 -0400
-Message-ID: <4FF5E66A.6010108@wwwdotorg.org>
-Date: Thu, 05 Jul 2012 13:09:30 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, lrg@ti.com, swarren@nvidia.com,
-        sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] regulator: tps65910: add support for input supply
-References: <1341497004-23537-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1341497004-23537-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757197Ab2GETKU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 15:10:20 -0400
+Received: from waste.org ([173.11.57.241]:55022 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757133Ab2GETKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 15:10:19 -0400
+Message-ID: <1341515412.4020.1230.camel@calx>
+Subject: Re: [PATCH 02/10] random: use lockless techniques when mixing
+ entropy pools
+From: Matt Mackall <mpm@selenic.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        torvalds@linux-foundation.org, w@1wt.eu, ewust@umich.edu,
+        zakir@umich.edu, greg@kroah.com, nadiah@cs.ucsd.edu,
+        jhalderm@umich.edu, tglx@linutronix.de, davem@davemloft.net
+Date: Thu, 05 Jul 2012 14:10:12 -0500
+In-Reply-To: <1341511933-11169-3-git-send-email-tytso@mit.edu>
+References: <1341511933-11169-1-git-send-email-tytso@mit.edu>
+	 <1341511933-11169-3-git-send-email-tytso@mit.edu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2012 08:03 AM, Laxman Dewangan wrote:
-> There is multiple voltage input pins on device which
-> takes the voltage input for different voltage regulator.
-> Support to configure the voltage input supplied by
-> different regulator for each regulators.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+On Thu, 2012-07-05 at 14:12 -0400, Theodore Ts'o wrote:
+> The real-time Linux folks didn't like add_interrupt_randomness()
+> taking a spinlock since it is called in the low-level interrupt
+> routine.  Using atomic_t's and cmpxchg is also too expensive on some
+> of the older architectures.  So we'll bite the bullet and use
+> ACCESS_ONCE() and smp_rmb()/smp_wmb() to minimize the race windows
+> when mixing in the entropy pool.
 
-A couple nit-picky comments below:
+I don't think this will work correctly. It's important that simultaneous
+_readers_ of the state get different results. Otherwise, you can get
+things like duplicate UUIDs generated on different cores, something
+that's been observed in the field(!). I thought I added a comment to
+that effect some years back, but I guess not.
 
-> diff --git a/Documentation/devicetree/bindings/mfd/tps65910.txt b/Documentation/devicetree/bindings/mfd/tps65910.txt
+This means at a bare minimum, you need an atomic operation like a
+cmpxchg on some component like input_rotate. Per-cpu mix pointers also
+won't work as they can accidentally align. Per-cpu secret pads will
+probably work, however, though it creates an interesting initialization
+problem.
 
-> +- vin-xxx-supply: Input voltage supply regulator.
+On the other hand, you don't care about any of this when not extracting
+and you can be as fast and loose as you'd like.
 
-It'd be nice to name these simply xxx-supply; the "vin-" seems redundant.
+> +	input_rotate = ACCESS_ONCE(r->input_rotate);
+> +	i = ACCESS_ONCE(r->add_ptr);
+>  
+>  	/* mix one byte at a time to simplify size handling and churn faster */
+>  	while (nbytes--) {
+> @@ -514,19 +514,19 @@ static void mix_pool_bytes_extract(struct entropy_store *r, const void *in,
+>  		input_rotate += i ? 7 : 14;
+>  	}
+>  
+> -	r->input_rotate = input_rotate;
+> -	r->add_ptr = i;
+> +	ACCESS_ONCE(r->input_rotate) = input_rotate;
+> +	ACCESS_ONCE(r->add_ptr) = i;
+> +	local_irq_restore(flags);
+> +	smp_wmb();
+>  
+>  	if (out)
+>  		for (j = 0; j < 16; j++)
+>  			((__u32 *)out)[j] = r->pool[(i - j) & wordmask];
 
-> +  Missing of these properties will be assume as there is no parent regulator
-> +  for that input pins and always powered on.
-> +  The valid input supply properties are:
-> +  tps65910:
-> +	vin-vcc7-supply: VRTC input.
-> +	vin-vccio-supply: VIO input.
-> +	vin-vcc1-supply: VDD1 input.
-> +	vin-vcc2-supply: VDD2 input.
-> +	vin-vcc6-supply: VDIG1 and VDIG2 input.
-> +	vin-vcc5-supply: VPLL and VDAC input.
-> +	vin-vcc4-supply: VAUX1 and VAUX2 input.
-> +	vin-vcc3-supply: VAUX33 and VMMC input.
-> +  tps65911:
-> +	vin-vcc7-supply: VRTC input.
-> +	vin-vcc1-supply: VDD1 input.
-> +	vin-vcc2-supply: VDD2 input.
-> +	vin-vccio-supply: VIO input.
-> +	vin-vcc6-supply: LDO1 and LDO2 input.
-> +	vin-vcc5-supply: LDO3 and LDO4 input.
-> +	vin-vcc4-supply: LDO5 input.
-> +	vin-vcc3-supply: LDO6, LDO7 and LDO8 input.
+-- 
+Mathematics is the supreme nostalgia of our time.
 
-It'd be nice to sort these lists of names so they appear in some
-discernible order.
+
