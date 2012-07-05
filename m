@@ -1,51 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062Ab2GEGXy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 02:23:54 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:15900 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab2GEGXw (ORCPT
+	id S1752100Ab2GEGZr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 02:25:47 -0400
+Received: from cluster-d.mailcontrol.com ([85.115.60.190]:33686 "EHLO
+	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab2GEGZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 02:23:52 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 04 Jul 2012 23:23:51 -0700
-Message-ID: <4FF53368.6090805@nvidia.com>
-Date: Thu, 5 Jul 2012 15:25:44 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0.1
+	Thu, 5 Jul 2012 02:25:46 -0400
+From: Barry Song <Barry.Song@csr.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+CC: <mina86@mina86.com>, <workgroup.linux@csr.com>,
+        Barry Song <Baohua.Song@csr.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v4 RESEND] mm: cma: add a simple kernel module as the helper to test CMA
+Date: Thu, 5 Jul 2012 14:24:19 +0800
+Message-ID: <1341469459-29558-1-git-send-email-Barry.Song@csr.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH] pwm-backlight: add regulator and GPIO support
-References: <1340976167-27298-1-git-send-email-acourbot@nvidia.com> <20120704104840.GJ24458@pengutronix.de> <4FF43692.2040805@nvidia.com> <20120704130056.GC30009@pengutronix.de> <4FF45DDF.9000306@nvidia.com> <20120704152451.GA7333@sirena.org.uk> <4FF4FDC0.8020405@nvidia.com> <20120705062011.GI30009@pengutronix.de>
-In-Reply-To: <20120705062011.GI30009@pengutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.125.36.195]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2012 03:20 PM, Sascha Hauer wrote:
->> Oh, that is a mistake of mine then. Driver probe should continue if
->> no regulator is declared (but should fail if some other error
->> occured). I want to maintain backward compatibility with current
->> users of the driver, so regulator/gpio specification should be
->> optional.
->
-> I think the only way doing this is to add a flag to platform_data. I
-> don't know if that's accepted though.
+From: Barry Song <Baohua.Song@csr.com>
 
-I thought about just checking if devm_get_regulator returned -ENODEV and 
-happily continue if that was the case, assuming no regulator was declared.
+Any write request to /dev/cma_test will let the module to allocate memory from
+CMA, for example:
 
-But anyway with the power sequences specification this problem becomes 
-null, since regulators will have to be explicitly declared anyway. I 
-might be flamed for putting a parser and interpreter into a backlight 
-driver, but I'll take my chances. :)
+1st time
+$ echo 1024 > /dev/cma_test
+will require cma_test to request 1MB(1024KB)
+2nd time
+$ echo 2048 > /dev/cma_test
+will require cma_test to request 2MB(2048KB)
 
-Alex.
+Any read request to /dev/cma_test will let the module to free the 1st valid
+memory from CMA, for example:
+
+1st time
+$ cat /dev/cma_test
+will require cma_test to free the 1MB allocated in the first write request
+2nd time
+$ cat /dev/cma_test
+will require cma_test to free the 2MB allocated in the second write request
+
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
+Reviewed-by: Michal Nazarewicz <mina86@mina86.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ resend to Greg KH so that he can decide whether it should be placed at tools
+ or drivers/misc;
+ See the discussion thread:
+ [1] https://lkml.org/lkml/2012/7/3/80
+ [2] https://lkml.org/lkml/2012/7/3/224
+ [3] https://lkml.org/lkml/2012/7/4/87
+
+ tools/cma/Makefile   |   13 +++++
+ tools/cma/cma_test.c |  140 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 153 insertions(+), 0 deletions(-)
+ create mode 100644 tools/cma/Makefile
+ create mode 100644 tools/cma/cma_test.c
+
+diff --git a/tools/cma/Makefile b/tools/cma/Makefile
+new file mode 100644
+index 0000000..d15c2c0
+--- /dev/null
++++ b/tools/cma/Makefile
+@@ -0,0 +1,13 @@
++# Kernel modules
++#
++# To compile for ARM:
++# make ARCH=arm CC=arm-none-linux-gnueabi-gcc
++#
++obj-m	+= cma_test.o
++
++build: kernel_modules
++
++kernel_modules:
++	${MAKE} -C $(CURDIR)/../.. M=$(CURDIR)
++clean:
++	${MAKE} -C $(CURDIR)/../.. M=$(CURDIR) clean
+diff --git a/tools/cma/cma_test.c b/tools/cma/cma_test.c
+new file mode 100644
+index 0000000..7eb96db
+--- /dev/null
++++ b/tools/cma/cma_test.c
+@@ -0,0 +1,140 @@
++/*
++ * kernel module helper for testing CMA
++ *
++ * Copyright (c) 2012 Cambridge Silicon Radio Limited, a CSR plc group company.
++ *
++ * Licensed under GPLv2 or later.
++ */
++
++#include <linux/device.h>
++#include <linux/dma-mapping.h>
++#include <linux/fs.h>
++#include <linux/miscdevice.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++
++struct cma_allocation {
++	struct list_head list;
++	size_t size;
++	dma_addr_t dma;
++	void *virt;
++};
++
++static struct device *cma_dev;
++static LIST_HEAD(cma_allocations);
++static DEFINE_SPINLOCK(cma_lock);
++
++/*
++ * any read request will free the 1st allocated coherent memory, eg.
++ * cat /dev/cma_test
++ */
++static ssize_t
++cma_test_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
++{
++	struct cma_allocation *alloc = NULL;
++
++	spin_lock(&cma_lock);
++	if (!list_empty(&cma_allocations)) {
++		alloc = list_first_entry(&cma_allocations,
++			struct cma_allocation, list);
++		list_del(&alloc->list);
++	}
++	spin_unlock(&cma_lock);
++
++	if (!alloc)
++		return -EIDRM;
++
++	dma_free_coherent(cma_dev, alloc->size, alloc->virt,
++		alloc->dma);
++
++	_dev_info(cma_dev, "free: CM virt: %p dma: %p size:%zuK\n",
++		alloc->virt, (void *)alloc->dma, alloc->size / SZ_1K);
++	kfree(alloc);
++
++	return 0;
++}
++
++/*
++ * any write request will alloc a new coherent memory, eg.
++ * echo 1024 > /dev/cma_test
++ * will request 1024KiB by CMA
++ */
++static ssize_t
++cma_test_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
++{
++	struct cma_allocation *alloc;
++	unsigned long size;
++	int ret;
++
++	ret = kstrtoul_from_user(buf, count, 0, &size);
++	if (ret)
++		return ret;
++
++	if (!size)
++		return -EINVAL;
++
++	if (size > ~(size_t)0 / SZ_1K)
++		return -EOVERFLOW;
++
++	alloc = kmalloc(sizeof *alloc, GFP_KERNEL);
++	if (!alloc)
++		return -ENOMEM;
++
++	alloc->size = size * SZ_1K;
++	alloc->virt = dma_alloc_coherent(cma_dev, alloc->size,
++		&alloc->dma, GFP_KERNEL);
++
++	if (alloc->virt) {
++		_dev_info(cma_dev, "alloc: virt: %p dma: %p size: %zuK\n",
++			alloc->virt, (void *)alloc->dma, alloc->size / SZ_1K);
++
++		spin_lock(&cma_lock);
++		list_add_tail(&alloc->list, &cma_allocations);
++		spin_unlock(&cma_lock);
++
++		return count;
++	} else {
++		dev_err(cma_dev, "no mem in CMA area\n");
++		kfree(alloc);
++		return -ENOSPC;
++	}
++}
++
++static const struct file_operations cma_test_fops = {
++	.owner =    THIS_MODULE,
++	.read  =    cma_test_read,
++	.write =    cma_test_write,
++};
++
++static struct miscdevice cma_test_misc = {
++	.name = "cma_test",
++	.fops = &cma_test_fops,
++};
++
++static int __init cma_test_init(void)
++{
++	int ret = misc_register(&cma_test_misc);
++
++	if (unlikely(ret)) {
++		pr_err("failed to register cma test misc device!\n");
++		return ret;
++	}
++	cma_dev = cma_test_misc.this_device;
++	cma_dev->coherent_dma_mask = ~0;
++	_dev_info(cma_dev, "registered.\n");
++
++	return 0;
++}
++module_init(cma_test_init);
++
++static void __exit cma_test_exit(void)
++{
++	misc_deregister(&cma_test_misc);
++}
++module_exit(cma_test_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Barry Song <Baohua.Song@csr.com>");
++MODULE_DESCRIPTION("kernel module to help the test of CMA");
++MODULE_ALIAS("cma_test");
+-- 
+1.7.1
+
+
+
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
