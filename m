@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab2GEIdM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 04:33:12 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:14259 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754507Ab2GEIdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 04:33:08 -0400
-X-IronPort-AV: E=Sophos;i="4.77,530,1336320000"; 
-   d="scan'208";a="5334298"
-From: Gao feng <gaofeng@cn.fujitsu.com>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nhorman@tuxdriver.com, tj@kernel.org, lizefan@huawei.com,
-        Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH] cgroup: fix panic in netprio_cgroup
-Date: Thu, 5 Jul 2012 16:31:42 +0800
-Message-Id: <1341477102-16988-1-git-send-email-gaofeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.7.6
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/05 16:33:06,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/05 16:33:08,
-	Serialize complete at 2012/07/05 16:33:08
+	id S932111Ab2GEId2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 04:33:28 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:43409 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755245Ab2GEIdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 04:33:19 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: "Finnbarr P. Murphy" <fpm@fpmurphy.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>
+Subject: Re: UEFI Secure Boot
+Thread-Topic: UEFI Secure Boot
+Thread-Index: AQHNWgWUgCEURf5RdUChyaGvNxEu3Jca0vIA
+Date: Thu, 5 Jul 2012 08:33:17 +0000
+Message-ID: <1341477196.3121.11.camel@dabdike>
+References: <4FF474E4.2030402@fpmurphy.com>
+In-Reply-To: <4FF474E4.2030402@fpmurphy.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [195.214.232.10]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <E6138F78EEF3BF409C45A2D08866C989@sw.swsoft.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q658XZMB027302
 
-we set max_prioidx to the first zero bit index of prioidx_map in
-function get_prioidx.
+[added mailing list cc's since this is probably going to be a common question]
 
-So when we delete the low index netprio cgroup and adding a new
-netprio cgroup again,the max_prioidx will be set to the low index.
+On Wed, 2012-07-04 at 12:52 -0400, Finnbarr P. Murphy wrote:
+> Hi James,
+> 
+> Nice work on your UEFI Secure Boot demo code!
+> 
+> Have you experimented with either of the following scenarios?
+> 
+>     - Removing current PK via a utility
+>     - Replacing current PK with a new PK via a utility
+> 
+> assuming you know existing PK keys.
 
-when we set the high index cgroup's net_prio.ifpriomap,the function
-write_priomap will call update_netdev_tables to alloc memory which
-size is sizeof(struct netprio_map) + sizeof(u32) * (max_prioidx + 1),
-so the size of array that map->priomap point to is max_prioidx +1,
-which is low than what we actually need.
+Not yet ... I'm still working on writing the code that constructs the
+time based authentication bundle for the variables.  When I have it, it
+will appear in my git repository (and I'll probably send a note to the
+linux-efi list):
 
-fix this by adding check in get_prioidx,only set max_prioidx when
-max_prioidx low than the new prioidx.
+http://git.kernel.org/?p=linux/kernel/git/jejb/efitools.git;a=summary
 
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
----
- net/core/netprio_cgroup.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+>  From Chapter 27 of the UEFI Specification, this should be possible but 
+> I cannot get either scenarios to work (due to error 26 - Security 
+> Violation)   Perhaps it is the OVMF implementation (latest from trunk) 
+> but I suspect it is just my old age!
 
-diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-index 5b8aa2f..586f7d9 100644
---- a/net/core/netprio_cgroup.c
-+++ b/net/core/netprio_cgroup.c
-@@ -50,7 +50,8 @@ static int get_prioidx(u32 *prio)
- 	}
- 	set_bit(prioidx, prioidx_map);
- 	spin_unlock_irqrestore(&prioidx_map_lock, flags);
--	atomic_set(&max_prioidx, prioidx);
-+	if (atomic_read(&max_prioidx) < prioidx)
-+		atomic_set(&max_prioidx, prioidx);
- 	*prio = prioidx;
- 	return 0;
- }
--- 
-1.7.7.6
+Constructing time based authentication bundles is complex ... are you
+sure you have the code right?  error 26 means the platform doesn't think
+the authentication is correct.
 
+James
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
