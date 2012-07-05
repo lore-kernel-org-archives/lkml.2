@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933353Ab2GEXIt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 19:08:49 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:36892 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933289Ab2GEXIr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 19:08:47 -0400
-Date: Thu, 5 Jul 2012 16:08:42 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
-Cc: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "Balasubramanian, Senthil Kumar" <senthilb@qca.qualcomm.com>,
-        "Manoharan, Rajkumar" <rmanohar@qca.qualcomm.com>,
-        qca-linux-team <qca-linux-team@qualcomm.com>,
-        Imran Ansari <imran@qca.qualcomm.com>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sfr@canb.auug.org.au,
-        mcgrof@frijolero.org, hauke@hauke-m.de, ozancag@gmail.com,
-        pstew@google.com, warthog9@kernel.org, jrnieder@gmail.com,
-        ben@decadent.org.uk, akpm@linux-foundation.org, linville@tuxdriver.com
-Subject: Re: 3.5 stable compat-wireless
-Message-ID: <20120705230842.GA26510@kroah.com>
-References: <20468.35601.132955.802881@gargle.gargle.HOWL>
- <7A9ADFFA56024346AAE90B6BABC3BD15DD6DEB@NASANEXD02B.na.qualcomm.com>
- <20469.13787.767293.602337@gargle.gargle.HOWL>
- <20120705190801.GB11228@tux>
+	id S933365Ab2GEXKG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 19:10:06 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:37167 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933237Ab2GEXKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 19:10:05 -0400
+Date: Thu, 5 Jul 2012 19:09:49 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Greg KH <greg@kroah.com>
+Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        torvalds@linux-foundation.org, w@1wt.eu, ewust@umich.edu,
+        zakir@umich.edu, mpm@selenic.com, nadiah@cs.ucsd.edu,
+        jhalderm@umich.edu, tglx@linutronix.de, davem@davemloft.net
+Subject: Re: [PATCH 02/10] random: use lockless techniques when mixing
+ entropy pools
+Message-ID: <20120705230949.GC15685@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Greg KH <greg@kroah.com>,
+	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+	torvalds@linux-foundation.org, w@1wt.eu, ewust@umich.edu,
+	zakir@umich.edu, mpm@selenic.com, nadiah@cs.ucsd.edu,
+	jhalderm@umich.edu, tglx@linutronix.de, davem@davemloft.net
+References: <1341511933-11169-1-git-send-email-tytso@mit.edu>
+ <1341511933-11169-3-git-send-email-tytso@mit.edu>
+ <20120705181956.GA16846@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120705190801.GB11228@tux>
+In-Reply-To: <20120705181956.GA16846@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 12:08:01PM -0700, Luis R. Rodriguez wrote:
->   * linux-crap.git: based on linux-next-pending.git and allows
->     contributors to send pull requests of crap that is not *ready*
->     to be sent properly upstream. Examples would be code we know
->     we simply already know that is not dealing with proper architecture
->     or style / etc. The drivers/staging/ allows vendors to post full
->     crap drivers, this would enable us to merge crap patches but that
->     some vendors might need / want.
+On Thu, Jul 05, 2012 at 11:19:56AM -0700, Greg KH wrote:
+> Any reason you don't want this backported to the -stable series?
 
-I really doubt this will work, look at the patches in some distros for
-examples of why.  I'm having a hard enough time with the LTSI project in
-conveying that "Yes, you can send patches to me for merging into the
-LSTI kernel, you still have to justify it, and work to get the patches
-then upstream, I'm not going to do your work for you."
+That was an oversight; I just missed marking this for -stable.  Thanks
+for pointing it out!
 
-Having a random tree where these patches show up help no one except the
-original developer so that they can fire-and-forget, which is not what
-you want, unless you wish to take on the "get it cleaned up and merged
-upstream" task yourself, which you really don't want to.
-
-good luck,
-
-greg k-h
+					- Ted
