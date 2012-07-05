@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757004Ab2GER45 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 13:56:57 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:55603 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752814Ab2GER4z (ORCPT
+	id S932676Ab2GESAn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 14:00:43 -0400
+Received: from emh03.mail.saunalahti.fi ([62.142.5.109]:44538 "EHLO
+	emh03.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752827Ab2GESAm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 13:56:55 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AilUAMrU9U9V5qg+PGdsb2JhbABFihqtFRkBAQEBHgMWDSeCGAEBBTocIxAIAxguFCUKGhOID7lfFIslhV5gA5U2hWaMfw
-X-IronPort-AV: E=Sophos;i="4.77,532,1336341600"; 
-   d="scan'208";a="372100225"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 5 Jul 2012 19:57:23 +0200
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Daniel Kurtz <djkurtz@chromium.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: linux-next: manual merge of the input-mt tree with the
- input-current tree
-Message-ID: <20120705175723.GA3286@polaris.bitmath.org>
-References: <20120705135220.9f8f95082833a0d6fadeb136@canb.auug.org.au>
- <CAGS+omDab9mOOf6pCryRTyLvYA66h0XjqmFPc-vrAo4hkfGN0A@mail.gmail.com>
- <20120705171904.GA31383@core.coreip.homeip.net>
+	Thu, 5 Jul 2012 14:00:42 -0400
+Date: Thu, 5 Jul 2012 21:00:34 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Miguel =?iso-8859-1?Q?G=F3mez?= <magomez@igalia.com>
+Cc: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
+        dan.carpenter@oracle.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 15/19] Staging: xgifb: Rework conditions in
+ XGI_SetLockRegs().
+Message-ID: <20120705180034.GC4519@blackmetal.musicnaut.iki.fi>
+References: <cover.1341498465.git.magomez@igalia.com>
+ <59ae53c03975f8e81587077aa8b0221b356896b9.1341498466.git.magomez@igalia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120705171904.GA31383@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <59ae53c03975f8e81587077aa8b0221b356896b9.1341498466.git.magomez@igalia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Antivirus: VAMS
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 10:19:05AM -0700, Dmitry Torokhov wrote:
-> Hi Henrik,
-> 
-> On Thu, Jul 05, 2012 at 11:57:14AM +0800, Daniel Kurtz wrote:
-> > On Thu, Jul 5, 2012 at 11:52 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > > Hi Henrik,
-> > >
-> > > Today's linux-next merge of the input-mt tree got a conflict in
-> > > drivers/input/touchscreen/atmel_mxt_ts.c between commit 9b7e31bbf4bb
-> > > ("Input: request threaded-only IRQs with IRQF_ONESHOT") from the
-> > > input-current tree and commit c2ef9a1a248b ("Input: atmel_mxt_ts - use
-> > > client name for irq") from the input-mt tree.
-> > >
-> > > I fixed it up (see below) and can carry the fix as necessary.
-> > 
-> > Looks good to me. Don't know if you need it for a merge, but:
-> > 
-> > Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
-> > 
-> 
-> Hmm, maybe it is time I pull your tree?
+Hi,
 
-By all means, I have nothing further planned for the merge window. I
-wanted to wait until Linus pulls your current tree, then pull in the
-merge conflict, then eventual reverts, then send you a pull
-request. IOW, something like tomorrow. Sounds good?
+On Thu, Jul 05, 2012 at 04:45:58PM +0200, Miguel Gómez wrote:
+> +		if ((pVBInfo->VBType & VB_SIS301LV) &&
+> +		    !(pVBInfo->TVInfo & TVSetHiVision)) {
+> +			if ((pVBInfo->TVInfo & TVSimuMode) &&
+> +			    (pVBInfo->TVInfo & TVSetPAL)) {
+> +				if (pVBInfo->VBType & VB_SIS301LV) {
+> +					if (!(pVBInfo->TVInfo &
+> +					      (TVSetYPbPr525p |
+> +					       TVSetYPbPr750p |
+> +					       TVSetHiVision)))
+> +						tempbx += 40;
+> +				} else {
+> +					tempbx += 40;
 
-Henrik
+I think this could be simplified even more - both branches end up doing
+the same?!
+
+A.
