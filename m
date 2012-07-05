@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751741Ab2GEFti (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 01:49:38 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:52393 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098Ab2GEFth (ORCPT
+	id S1751955Ab2GEF4B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 01:56:01 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:57913 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138Ab2GEFz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 01:49:37 -0400
-Date: Thu, 5 Jul 2012 15:49:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alexander Graf <agraf@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stuart Yoder <stuart.yoder@freescale.com>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: linux-next: build failure after merge of the kvm-ppc tree
-Message-Id: <20120705154929.219789032ef59f9243d0b8a5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__5_Jul_2012_15_49_29_+1000_=prvsJydXyRidabc"
+	Thu, 5 Jul 2012 01:55:59 -0400
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: peterz@infradead.org, mingo@elte.hu, avi@redhat.com,
+        raghukt@linux.vnet.ibm.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org, jeremy@goop.org,
+        vatsa@linux.vnet.ibm.com, hpa@zytor.com
+Subject: Re: [PATCH v2 3/7] KVM: Add paravirt kvm_flush_tlb_others
+In-Reply-To: <20120705020910.GB3652@amt.cnet>
+References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com> <20120604050629.4560.85284.stgit@abhimanyu.in.ibm.com> <20120703075535.GA13291@amt.cnet> <87txxpcl3u.fsf@linux.vnet.ibm.com> <20120705020910.GB3652@amt.cnet>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-unknown-linux-gnu)
+Date: Thu, 05 Jul 2012 11:25:23 +0530
+Message-ID: <87mx3eah10.fsf@abhimanyu.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+x-cbid: 12070505-8256-0000-0000-0000033101E2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Jul_2012_15_49_29_+1000_=prvsJydXyRidabc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 4 Jul 2012 23:09:10 -0300, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> On Tue, Jul 03, 2012 at 01:49:49PM +0530, Nikunj A Dadhania wrote:
+> > On Tue, 3 Jul 2012 04:55:35 -0300, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> > > > 
+> > > >    if (!zero_mask)
+> > > > 	   goto again;
+> > > 
+> > > Can you please measure increased vmentry/vmexit overhead? x86/vmexit.c 
+> > > of git://git.kernel.org/pub/scm/virt/kvm/kvm-unit-tests.git should 
+> > > help.
+> > >
+> > Sure will get back with the result.
+> > 
+> > > > +	/* 
+> > > > +	 * Guest might have seen us offline and would have set
+> > > > +	 * flush_on_enter. 
+> > > > +	 */
+> > > > +	kvm_read_guest_cached(vcpu->kvm, ghc, vs, 2*sizeof(__u32));
+> > > > +	if (vs->flush_on_enter) 
+> > > > +		kvm_x86_ops->tlb_flush(vcpu);
+> > > 
+> > > 
+> > > So flush_tlb_page which was an invlpg now flushes the entire TLB. Did
+> > > you take that into account?
+> > > 
+> > When the vcpu is sleeping/pre-empted out, multiple request for flush_tlb
+> > could have happened. And now when we are here, it is cleaning up all the
+> > TLB.
+> 
+> Yes, cases where there are sufficient exits transforming one TLB entry
+> invalidation into full TLB invalidation should go unnoticed.
+> 
+> > One other approach would be to queue the addresses, that brings us with
+> > the question: how many request to queue? This would require us adding
+> > more syncronization between guest and host for updating the area where
+> > these addresses is shared.
+> 
+> Sounds unnecessarily complicated.
+> 
+Yes, I did give this a try earlier, but did not see much improvement
+with the amount of complexity that it was bringing in.
 
-Hi Alexander,
+Regards
+Nikunj
 
-After merging the kvm-ppc tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
-
-arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
-arch/powerpc/kernel/exceptions-64s.S:479: Error: wrong number of operands
-arch/powerpc/kernel/exceptions-64s.S:486: Error: wrong number of operands
-arch/powerpc/kernel/exceptions-64s.S:486: Error: wrong number of operands
-arch/powerpc/kernel/exceptions-64s.S:487: Error: wrong number of operands
-arch/powerpc/kernel/exceptions-64s.S:487: Error: wrong number of operands
-arch/powerpc/kernel/exceptions-64s.S:494: Error: wrong number of operands
-arch/powerpc/kernel/exceptions-64s.S:494: Error: wrong number of operands
-
-Caused by commit bc8cc4993e19 ("PPC: use CURRENT_THREAD_INFO instead of
-open coded assembly").  The fact that this patch has problems was already
-pointed out on the linuxppc-dev mailing list and it clearly hasn't been
-build tested.
-
-I have used the version of the kvm-ppc tree from next-20120703 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__5_Jul_2012_15_49_29_+1000_=prvsJydXyRidabc
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP9SrpAAoJEECxmPOUX5FEZZkQAJxNa1Um+xGuhziscd5TI0N5
-NU2ZYiyMZcI0uh7fS2WaOrwop4i70mltOp2fV+z9pamFS8K46Bf/Uxr1jrr265cy
-4M9oXUhbYo7/z8O5BiUzBc+cCtA4BbjGoaux5apuHMHpUFamE1Fty86LtaF9Dauj
-g3DOn0cJMZ+y1Uf0Q1tK72GNt3nmPeU01effqgFLvi+bC//q/OHfBoWwAQcRjEqK
-ncp5ZES5ef4VfQfPal24anUTqxgqTvIWW2kc4JcwgnmkkUxJa4MCVD1vQljJkNWD
-r9SOv2DxW+ZTNZIQrF8nlW6azVgvS/l6Albiyngfr8T7e0Yg7xpyPDlJ4IiKSjst
-1eqC3nyB1A++w/YwEtgRR1An3QGpo3JhduWtxQnabQE5is0EgT93MtfmiQVb+1md
-W7W/MGhkLAb/sHfET1wnpLXJBBx9ua+0TY00bQ66ZgWv44t7mcCkP8nE7FKYom2c
-2vTFc6iCM/J7eCVqEv4I270p/3Gw+D+EekYbEtOmW9UnWfUksRyXrjIaA2XT4fhX
-+U8etlZZDtfK9eh6+7MrFHhe+gzj+dcwBRzS70MdbbGndR7lX3SJYBwVtVttfdMy
-Bj9d5w3aZScZeU9BS0XsTfBASw9ImQ8x1HGx6sb1W+qNk2PeD3cW0S4HLQtLJ1EV
-3nq7i8aHGa2f6lP3AKdO
-=95m6
------END PGP SIGNATURE-----
-
---Signature=_Thu__5_Jul_2012_15_49_29_+1000_=prvsJydXyRidabc--
