@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756468Ab2GEOco (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 10:32:44 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:47601 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093Ab2GEOcn (ORCPT
+	id S932913Ab2GEOfS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 10:35:18 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:44905 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab2GEOfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 10:32:43 -0400
+	Thu, 5 Jul 2012 10:35:14 -0400
+Message-ID: <4FF5A61F.2050400@linaro.org>
+Date: Thu, 05 Jul 2012 15:35:11 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] of: address: Don't fail a lookup just because a node has no reg property
-Date: Thu,  5 Jul 2012 15:32:34 +0100
-Message-Id: <1341498754-30445-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
+        sameo@linux.intel.com
+Subject: Re: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device
+ registration
+References: <20120703132447.GN29030@opensource.wolfsonmicro.com> <4FF58B68.5000703@linaro.org> <20120705124549.GD4111@opensource.wolfsonmicro.com> <201207051357.07195.arnd@arndb.de> <4FF59F5C.8050002@linaro.org> <20120705141329.GN4111@opensource.wolfsonmicro.com>
+In-Reply-To: <20120705141329.GN4111@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes it doesn't make any sense for a node to have an address.
-In this case device lookup will always be unsuccessful because we
-currently assume every node will have a reg property. This patch
-changes the semantics so that the resource address and the lookup
-address will only be compared if one exists.
+On 05/07/12 15:13, Mark Brown wrote:
+> On Thu, Jul 05, 2012 at 03:06:20PM +0100, Lee Jones wrote:
+>> On 05/07/12 14:57, Arnd Bergmann wrote:
+>
+>>> The non-DT path for this is a huge mess, I'd rather focus on making
+>>> it obsolete than trying to fix it. Other than that, I agree that
+>>> we should be registering the ab8500 from the prcmu from both the
+>>> DT and the non-DT case.
+>
+>> Ah, is that what you were saying Mark?
+>
+>> If so, I apologise. I thought you meant register both from platform
+>> code. I'm happy to register the AB8500 from the DB8500 for _both_ DT
+>> and !DT.
+>
+> Yes, that's what I was trying to say - sorry that I wasn't clear!
 
-Things like AUXDATA() rely on of_dev_lookup to return the lookup
-entry of a particular device in order to do things like apply
-platform_data to a device. However, this is currently broken for
-nodes which do not have a reg property, meaning that platform_data
-can not be passed in those cases.
+Well it seems silly of me just to copy Arnd's work. Do you want to 
+author and submit the patch to do this Arnd?
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/of/platform.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 343ad29..9600480 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -317,10 +317,9 @@ static const struct of_dev_auxdata *of_dev_lookup(const struct of_dev_auxdata *l
- 	for(; lookup->compatible != NULL; lookup++) {
- 		if (!of_device_is_compatible(np, lookup->compatible))
- 			continue;
--		if (of_address_to_resource(np, 0, &res))
--			continue;
--		if (res.start != lookup->phys_addr)
--			continue;
-+		if (!of_address_to_resource(np, 0, &res))
-+			if (res.start != lookup->phys_addr)
-+				continue;
- 		pr_debug("%s: devname=%s\n", np->full_name, lookup->name);
- 		return lookup;
- 	}
 -- 
-1.7.9.5
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
+
 
