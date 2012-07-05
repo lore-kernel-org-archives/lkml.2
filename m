@@ -1,111 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996Ab2GEICq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 04:02:46 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56429 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755699Ab2GEICj (ORCPT
+	id S1755312Ab2GEIJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 04:09:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:50736 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754047Ab2GEIJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 04:02:39 -0400
-Date: Thu, 5 Jul 2012 10:02:34 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH] pwm-backlight: add regulator and GPIO support
-Message-ID: <20120705080234.GQ30009@pengutronix.de>
-References: <20120704104840.GJ24458@pengutronix.de>
- <4FF43692.2040805@nvidia.com>
- <20120704130056.GC30009@pengutronix.de>
- <4FF45DDF.9000306@nvidia.com>
- <20120704152451.GA7333@sirena.org.uk>
- <4FF4FDC0.8020405@nvidia.com>
- <20120705062011.GI30009@pengutronix.de>
- <4FF53368.6090805@nvidia.com>
- <20120705064742.GL30009@pengutronix.de>
- <4FF5459F.5090201@nvidia.com>
+	Thu, 5 Jul 2012 04:09:21 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 RESEND] mm: cma: add a simple kernel module as the helper to test CMA
+Date: Thu, 5 Jul 2012 08:09:15 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Barry Song <Barry.Song@csr.com>, linux-kernel@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, workgroup.linux@csr.com,
+        mina86@mina86.com, Barry Song <Baohua.Song@csr.com>
+References: <1341469459-29558-1-git-send-email-Barry.Song@csr.com>
+In-Reply-To: <1341469459-29558-1-git-send-email-Barry.Song@csr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF5459F.5090201@nvidia.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:54:34 up 11 days, 23:06, 32 users,  load average: 0.22, 0.60,
- 1.03
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207050809.15834.arnd@arndb.de>
+X-Provags-ID: V02:K0:5cjBqW5MlHp4pzizg1IeEor5OgR7tul6U0znm1Y3VK6
+ 1cFg2rhO15Se7H8ru1ltMLvSVbnIcMK0wBVJgJUbAJj93Yp/vc
+ dw9fznTPgmzG0pixw0HsQu5GOqi5J+eJueqAYU9F5zdFuTi06M
+ pPT3ab+zdg2pzgBEywmjINtUhgG96RUCDJ6IukTrr9hRiCQ+M1
+ sHzJl+ghA19k882w29ZJb8jRsgV4+g7WaSl0VouWlwPVDTyFPi
+ tYoNX1vqYI6I2KMMznjO+CcZtXdnluGjGnrC1Eda1HMtrFjKDR
+ z9TvAQGCxfKwGPuuotQVBQiL8rm9sjBlLR6skxfta99fB8ss6k
+ TFH9iNLdvt01qzOS8UBQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 04:43:27PM +0900, Alex Courbot wrote:
-> On 07/05/2012 03:47 PM, Sascha Hauer wrote:
-> >>I thought about just checking if devm_get_regulator returned -ENODEV
-> >>and happily continue if that was the case, assuming no regulator was
-> >>declared.
-> >
-> >And that's the problem. The get_regulator won't return -ENODEV. It will
-> >return -EPROBE_DEFER which tells you nothing about whether a regulator
-> >will ever be available or not.
-> >
-> >Having a flag in platform data would be fine with me, but I know other
-> >people think differently.
-> >
-> >BTW in devicetree this flag implicitely exists with the power-supply
-> >property.
+On Thursday 05 July 2012, Barry Song wrote:
+> From: Barry Song <Baohua.Song@csr.com>
 > 
-> One could actually question whether the whole regulator/gpio thing
-> should be supported at all with platform data. The platform
-> interface can use the function hooks in order to implement whatever
-> behavior it wants when the light needs to be powered on and off. The
-> reason for introducing optional regulator/gpio parameters is because
-> the DT cannot use these. Since I have no plan to remove these
-> function hooks, making the regulator/gpio option available in
-> platform data might be redundant. Any thought about this?
-
-sounds good.
-
+> Any write request to /dev/cma_test will let the module to allocate memory from
+> CMA, for example:
 > 
-> >Right now the regulator core will just return -EPROBE_DEFER in both
-> >cases. This could easily be changed in the regulator core.
+> 1st time
+> $ echo 1024 > /dev/cma_test
+> will require cma_test to request 1MB(1024KB)
+> 2nd time
+> $ echo 2048 > /dev/cma_test
+> will require cma_test to request 2MB(2048KB)
 > 
-> Could this be because the regulator core cannot make the difference
-> between a not-yet-available regulator and a missing one?
+> Any read request to /dev/cma_test will let the module to free the 1st valid
+> memory from CMA, for example:
+> 
+> 1st time
+> $ cat /dev/cma_test
+> will require cma_test to free the 1MB allocated in the first write request
+> 2nd time
+> $ cat /dev/cma_test
+> will require cma_test to free the 2MB allocated in the second write request
 
-It could. In regulator_dev_lookup we have:
+I missed the earlier times this was posted and read up on it now.
 
-		if (node) {
-			...
-		} else {
-			/*
-			 * If we couldn't even get the node then it's
-			 * not just that the device didn't register
-			 * yet, there's no node and we'll never
-			 * succeed.
-			 */
-			*ret = -ENODEV;
-		}
+> Signed-off-by: Barry Song <Baohua.Song@csr.com>
+> Reviewed-by: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+>  resend to Greg KH so that he can decide whether it should be placed at tools
+>  or drivers/misc;
+>  See the discussion thread:
+>  [1] https://lkml.org/lkml/2012/7/3/80
+>  [2] https://lkml.org/lkml/2012/7/3/224
+>  [3] https://lkml.org/lkml/2012/7/4/87
 
-So here the regulator core knows that there is no regulator and never
-will be. All that needs to be done is to make _regulator_get look at
-that value.
-There may be some side effects if we just return ERR_PTR(-ENODEV) when
-regulator_dev_lookup returns -ENODEV. Maybe Mark has some comments to
-this.
+I think it should be in mm/cma-test.c, along with kmemleak-test.c. It would be nice
+if you could add some code that just runs at boot time (or when the module is
+loaded) and allocates and frees memory using CMA.
 
-Sascha
+> +static struct device *cma_dev;
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Do you actually need this device? It's not connected to hardware so
+it doesn't actually do DMA and we might as well pass a NULL pointer
+into dma_alloc_*().
+
+> +static const struct file_operations cma_test_fops = {
+> +	.owner =    THIS_MODULE,
+> +	.read  =    cma_test_read,
+> +	.write =    cma_test_write,
+> +};
+> +
+> +static struct miscdevice cma_test_misc = {
+> +	.name = "cma_test",
+> +	.fops = &cma_test_fops,
+> +};
+> +
+> +static int __init cma_test_init(void)
+> +{
+> +	int ret = misc_register(&cma_test_misc);
+
+A better place for this is really debugfs. The driver is not meant as a stable
+kernel interface that applications can rely on, it's purely a debugging help.
+
+Just make this
+
+	ret = debugfs_create_file("cma-test", 0600, NULL, NULL, &cma_test_fops);
+
+
+
+	Arnd
