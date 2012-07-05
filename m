@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041Ab2GEHfr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 03:35:47 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44334 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581Ab2GEHfq (ORCPT
+	id S1754570Ab2GEHgt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 03:36:49 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64055 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753713Ab2GEHgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 03:35:46 -0400
-Date: Thu, 5 Jul 2012 17:35:26 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the signal tree with the arm-current
- tree
-Message-Id: <20120705173526.bf8772adb18edfc91adddea8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__5_Jul_2012_17_35_26_+1000_/=+Hn5Nt1x+sjv1d"
+	Thu, 5 Jul 2012 03:36:44 -0400
+Message-ID: <4FF54406.3000307@linaro.org>
+Date: Thu, 05 Jul 2012 08:36:38 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de, sameo@linux.intel.com
+Subject: Re: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device
+ registration
+References: <1341316788-12730-1-git-send-email-lee.jones@linaro.org> <20120703123552.GC25995@sirena.org.uk> <4FF2EEA1.6080204@linaro.org> <20120703132447.GN29030@opensource.wolfsonmicro.com> <4FF2F82D.9080507@linaro.org> <20120703142123.GQ29030@opensource.wolfsonmicro.com>
+In-Reply-To: <20120703142123.GQ29030@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Jul_2012_17_35_26_+1000_/=+Hn5Nt1x+sjv1d
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 03/07/12 15:21, Mark Brown wrote:
+> On Tue, Jul 03, 2012 at 02:48:29PM +0100, Lee Jones wrote:
+>> On 03/07/12 14:24, Mark Brown wrote:
+>
+>>> I'm really unconvinced that instnatiating the MFD cells from device tree
+>>> is in general a good idea.
+>
+>> Well it just doesn't work the other way.
+>
+> In what way does it not work?
+>
+>>>> See c5395e7ed8f16cc7bb72a783de68659db5aed515 for a short description
+>>>> of the troubles we faced.
+>
+>>> $ git show c5395e7ed8f16cc7bb72a783de68659db5aed515
+>>> fatal: bad object c5395e7ed8f16cc7bb72a783de68659db5aed515
+>
+>> Sorry, looks live I've rebased since.
+>
+>> 5f3fc8adeec9bb12742fbfa777fa1947deda21a2
+>
+> This doesn't explain any of the issues, it just says that they exist.
+> My best guess would be that at least some of the issue is due to
+> instantiating the MFD cells from the device tree but it's hard to say
+> clearly.
 
-Hi Al,
+I'm guessing Arnd's email answered some of the questions you had. Let me 
+know of you would like me to explain it in any greater detail.
 
-Today's linux-next merge of the signal tree got a conflict in
-arch/arm/kernel/signal.c between commit f73e2ca64281 ("ARM: 7443/1:
-Revert "new way of handling ERESTART_RESTARTBLOCK"") from the arm-current
-tree and commits 9c802c169f96 ("arm: deal with handlerless restarts
-without leaving the kernel") and 76c3f4da3ee4 ("arm: get rid of
-TIF_SYSCALL_RESTARTSYS") from the signal tree.
+By the way, this patch has nothing to do with registering these devices 
+when DT is enabled. The code already does that. This is a bug fix, to 
+stop multiple registration of the ab8500 when DT is _not_ enabled.
 
-I have no idea how to cope with this.  So I have effectively reverted
-commit f73e2ca64281 ("ARM: 7443/1: Revert "new way of handling
-ERESTART_RESTARTBLOCK"") for today (though parts of that commit are also
-implemented by the above signal tree commits).
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Thu__5_Jul_2012_17_35_26_+1000_/=+Hn5Nt1x+sjv1d
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP9UO+AAoJEECxmPOUX5FEuKQP/RAjzQcnV49SDLCaXk3YPne7
-lrdJGj1qg/VcjUyfSZCMZo7WUUkhkK/YCSWEUOJM0B8vyA8zFOwhxZYbQDvWgt59
-T7Ulac4fftaI5RTqsDmN/A10M8lPUq/UxCxPuhiViIyxvzjgDS4X+f0/u0VMReAn
-ETFn3N0E65X453dY4m21ywygF8ukW7TCTd5WNAzOWmD4Rj82Qmn88R1T4x2BmVab
-tiYGnahJPa4XiXhOMqETTiJy0KZu7QIFtyJoTeTaWd/YNjzrZjRejpw2KwdIpuYG
-QCaQd/yp+VCODvtj5Y9Os5kzXBqt5VtaR2lyBhVq/ikt4WPW5lib2J3J0Qdt7A64
-PhK34AestcCVWTkn74+EcpBfwL8f8o8NubnG78ZT3NiMWP+1wbvBTTai+ybho/nV
-sJ2FUpVwJruo1U6ORQIctMGIZZ8lCv0FICa6EiYEGKfAtl3L6BgWhDqvXqlifFm0
-D7Z5CfLfV8i+cPDQKDj8GS2AGa4GdxNFgFumxXntSjs6opX/14QMBwTmY8dLpSeZ
-t1HY1IXF9/U6b+tZ30kycaFVlYdwmaFalxJCbPGl2GbANMkVCq1pcJhRwB8ooA1W
-IOGFXsaIZHmhO3QaNqB6A09RX5Zxq/JkxHFBgxXEhP/hVwv7suXt6ldWZcM18rJB
-MF9w8+slq6wkpwqJccT3
-=dxst
------END PGP SIGNATURE-----
-
---Signature=_Thu__5_Jul_2012_17_35_26_+1000_/=+Hn5Nt1x+sjv1d--
