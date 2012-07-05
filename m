@@ -1,44 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933177Ab2GEQns (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 12:43:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64183 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751925Ab2GEQnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 12:43:47 -0400
-Date: Thu, 5 Jul 2012 13:43:05 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        mingo@elte.hu, paulus@samba.org, cjashfor@linux.vnet.ibm.com,
-        fweisbec@gmail.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        andi@firstfloor.org, drepper@gmail.com
-Subject: Re: [PATCH 2/3] perf, tool: Enable grouping logic for parsed events
-Message-ID: <20120705164305.GD7533@infradead.org>
-References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
- <1340960907-3725-3-git-send-email-jolsa@redhat.com>
- <87bojync4b.fsf@sejong.aot.lge.com>
- <20120702101010.GB967@krava.redhat.com>
- <873959mzi3.fsf@sejong.aot.lge.com>
- <20120704173407.GA2880@krava.redhat.com>
- <1341504351.7709.6.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341504351.7709.6.camel@twins>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1756963Ab2GEQpU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 12:45:20 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:32179 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751925Ab2GEQpT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 12:45:19 -0400
+Message-ID: <1341506716.2605.8.camel@lorien2>
+Subject: Re: [PATCH 22/25] leds: convert GPIO LED trigger driver to
+ devm_kzalloc() and cleanup error exit path
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: shuahkhan@gmail.com, linux-leds@vger.kernel.org, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org
+Date: Thu, 05 Jul 2012 10:45:16 -0600
+In-Reply-To: <1341378617-10386-23-git-send-email-bryan.wu@canonical.com>
+References: <1341378617-10386-1-git-send-email-bryan.wu@canonical.com>
+	 <1341378617-10386-23-git-send-email-bryan.wu@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jul 05, 2012 at 06:05:51PM +0200, Peter Zijlstra escreveu:
-> On Wed, 2012-07-04 at 19:34 +0200, Jiri Olsa wrote:
-> > or any other way.. ;) thoughts?
+On Wed, 2012-07-04 at 13:10 +0800, Bryan Wu wrote:
+> Cc: Felipe Balbi <me@felipebalbi.com>
+> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+> ---
+>  drivers/leds/ledtrig-gpio.c |    8 ++------
+>  1 file changed, 2 insertions(+), 6 deletions(-)
 > 
-> What again was the downside if always doing additive (instead of
-> overriding) attributes?
+> diff --git a/drivers/leds/ledtrig-gpio.c b/drivers/leds/ledtrig-gpio.c
+> index ba215dc..39bd8e4 100644
+> --- a/drivers/leds/ledtrig-gpio.c
+> +++ b/drivers/leds/ledtrig-gpio.c
+> @@ -181,13 +181,13 @@ static void gpio_trig_activate(struct led_classdev *led)
+>  	struct gpio_trig_data *gpio_data;
+>  	int ret;
+>  
+> -	gpio_data = kzalloc(sizeof(*gpio_data), GFP_KERNEL);
+> +	gpio_data = devm_kzalloc(led->dev, sizeof(*gpio_data), GFP_KERNEL);
+>  	if (!gpio_data)
+>  		return;
+>  
+>  	ret = device_create_file(led->dev, &dev_attr_gpio);
+>  	if (ret)
+> -		goto err_gpio;
+> +		return;
+>  
+>  	ret = device_create_file(led->dev, &dev_attr_inverted);
+>  	if (ret)
+> @@ -209,9 +209,6 @@ err_brightness:
+>  
+>  err_inverted:
+>  	device_remove_file(led->dev, &dev_attr_gpio);
+> -
+> -err_gpio:
+> -	kfree(gpio_data);
+>  }
+>  
+>  static void gpio_trig_deactivate(struct led_classdev *led)
+> @@ -225,7 +222,6 @@ static void gpio_trig_deactivate(struct led_classdev *led)
+>  		flush_work(&gpio_data->work);
+>  		if (gpio_data->gpio != 0)
+>  			free_irq(gpio_to_irq(gpio_data->gpio), led);
+> -		kfree(gpio_data);
+>  		led->activated = false;
+>  	}
+>  }
 
-Yeah, I think this is the sanest way: additive. Overriding is confusing.
+Bryan,
 
-- Arnaldo
+I don't believe memory triggers allocate in their activate routine
+should be converted to devm_kzalloc(). Based on my understanding, the
+memory allocated using devm_kzalloc() us free'ed when driver is
+detached. In the case of led triggers, driver stays registered while the
+triggers it supports can be activated and deactivated many times. By
+converting these allocations into devm_kzalloc()s could lead to memory
+leaks. Please correct me if my understanding is incorrect.
+
+If what I am saying makes sense, please take this as comment that is
+applicable to all led triggers, not just this one.
+
+Thanks,
+-- Shuah
+
+
+
