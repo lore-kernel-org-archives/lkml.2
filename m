@@ -1,53 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756889Ab2GEQku (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 12:40:50 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:34959 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751000Ab2GEQkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 12:40:49 -0400
-Message-ID: <4FF5C064.3040107@us.ibm.com>
-Date: Thu, 05 Jul 2012 09:27:16 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux@openhuawei.org
-Subject: Re: [PATCH 0/3][RFC] Fix for leapsecond caused futex issue (v4)
-References: <1341382890-42324-1-git-send-email-johnstul@us.ibm.com> <4FF3E178.7000806@us.ibm.com> <4FF5A79E.9030703@redhat.com>
-In-Reply-To: <4FF5A79E.9030703@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756935Ab2GEQmz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 12:42:55 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:30328 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751785Ab2GEQmx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 12:42:53 -0400
+Message-ID: <1341506570.2605.6.camel@lorien2>
+Subject: Re: [PATCH 21/25] leds: convert transient LED trigger driver to
+ devm_kzalloc()
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: shuahkhan@gmail.com, linux-leds@vger.kernel.org, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org
+Date: Thu, 05 Jul 2012 10:42:50 -0600
+In-Reply-To: <1341378617-10386-22-git-send-email-bryan.wu@canonical.com>
+References: <1341378617-10386-1-git-send-email-bryan.wu@canonical.com>
+	 <1341378617-10386-22-git-send-email-bryan.wu@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12070516-5806-0000-0000-000017018434
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2012 07:41 AM, Prarit Bhargava wrote:
-> I tested this patchset for ~22 hours without any issues using my own leap second
-> test code, John's previous leaptest.c and this new leap-a-day test with and
-> without the -s option.
->
-> In all x86 systems' cases (both AMD and Intel, large cpu count[1] and small cpu
-> count) I also ran Firefox in the background and monitored it using top and
-> occasionally breaking in to check the status of the futexes.  I haven't seen
-> anything wrong with any of the systems.
->
-> John, my apologies for not getting to exactly 24 hours.  I've usurped these
-> systems long enough and other people need them :/.  I'm going to continue to run
-> two systems (one AMD and one Intel) for a longer stretch but I don't anticipate
-> any issues at this point.
->
-> So ...
->
-> Acked-by: Prarit Bhargava <prarit@redhat.com>
->
-> For the entire patchset.
-Thanks so much! I greatly appreciate the extra testing and review you've 
-provided!
+On Wed, 2012-07-04 at 13:10 +0800, Bryan Wu wrote:
+> Cc: Shuah Khan <shuahkhan@gmail.com>
+> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+> ---
+>  drivers/leds/ledtrig-transient.c |    5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/leds/ledtrig-transient.c b/drivers/leds/ledtrig-transient.c
+> index 398f104..8e30b0df 100644
+> --- a/drivers/leds/ledtrig-transient.c
+> +++ b/drivers/leds/ledtrig-transient.c
+> @@ -161,7 +161,8 @@ static void transient_trig_activate(struct led_classdev *led_cdev)
+>  	int rc;
+>  	struct transient_trig_data *tdata;
+>  
+> -	tdata = kzalloc(sizeof(struct transient_trig_data), GFP_KERNEL);
+> +	tdata = devm_kzalloc(led_cdev->dev,
+> +		sizeof(struct transient_trig_data), GFP_KERNEL);
+>  	if (!tdata) {
+>  		dev_err(led_cdev->dev,
+>  			"unable to allocate transient trigger\n");
+> @@ -194,7 +195,6 @@ err_out_duration:
+>  err_out:
+>  	dev_err(led_cdev->dev, "unable to register transient trigger\n");
+>  	led_cdev->trigger_data = NULL;
+> -	kfree(tdata);
+>  }
+>  
+>  static void transient_trig_deactivate(struct led_classdev *led_cdev)
+> @@ -209,7 +209,6 @@ static void transient_trig_deactivate(struct led_classdev *led_cdev)
+>  		device_remove_file(led_cdev->dev, &dev_attr_state);
+>  		led_cdev->trigger_data = NULL;
+>  		led_cdev->activated = false;
+> -		kfree(transient_data);
+>  	}
+>  }
+>  
 
--john
+Bryan,
+
+I don't believe memory triggers allocate in their activate routine
+should be converted to devm_kzalloc(). Based on my understanding, the
+memory allocated using devm_kzalloc() us free'ed when driver is
+detached. In the case of led triggers, driver stays registered while the
+triggers it supports can be activated and deactivated many times. By
+converting these allocations into devm_kzalloc()s could lead to memory
+leaks. Please correct me if my understanding is incorrect.
+
+If what I am saying makes sense, please take this as comment that is
+appicable to all led triggers, not just this one.
+
+Thanks,
+-- Shuah
+
+
 
 
