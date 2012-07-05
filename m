@@ -1,126 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933291Ab2GEPkr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 11:40:47 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35853 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933164Ab2GEPkI (ORCPT
+	id S1756757Ab2GEPmA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 11:42:00 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:54215 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179Ab2GEPl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 11:40:08 -0400
+	Thu, 5 Jul 2012 11:41:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device registration
+Date: Thu, 5 Jul 2012 15:41:51 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, sameo@linux.intel.com
+References: <20120703132447.GN29030@opensource.wolfsonmicro.com> <20120705141329.GN4111@opensource.wolfsonmicro.com> <4FF5A61F.2050400@linaro.org>
+In-Reply-To: <4FF5A61F.2050400@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1207050813520.18685@cobra.newdream.net>
-References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>
-	<1340881423-5703-1-git-send-email-handai.szj@taobao.com>
-	<Pine.LNX.4.64.1206282218260.18049@cobra.newdream.net>
-	<4FF15782.5090807@gmail.com>
-	<Pine.LNX.4.64.1207020745180.23342@cobra.newdream.net>
-	<4FF3FAC4.1000005@gmail.com>
-	<Pine.LNX.4.64.1207050813520.18685@cobra.newdream.net>
-Date: Thu, 5 Jul 2012 23:40:07 +0800
-Message-ID: <CAFj3OHUeMv_eQDVT3nOeY8t87VBRwcj7i9xsgO_6v9v7mu33HQ@mail.gmail.com>
-Subject: Re: [PATCH 4/7] Use vfs __set_page_dirty interface instead of doing
- it inside filesystem
-From: Sha Zhengju <handai.szj@gmail.com>
-To: Sage Weil <sage@inktank.com>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, gthelen@google.com, yinghan@google.com,
-        akpm@linux-foundation.org, mhocko@suse.cz,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        sage@newdream.net, ceph-devel@vger.kernel.org,
-        Sha Zhengju <handai.szj@taobao.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207051541.52261.arnd@arndb.de>
+X-Provags-ID: V02:K0:ZfTtEQj7+E6MhoEix4ywJaL1VNTBfc7yGr+zSapxKdO
+ 5I0LfFvg/h3yNixyAiA3Oimzna9YuWIUmxt6KluA58x50g8/wk
+ uIJIbFOymLGRhaEOIQuUU5D+6jqkCgyiYL5ItEiUjBBOc3LhbS
+ C+0DLsbygH59zyj/besKOH7CeIO3meHgyhQXZRO3hMlzODQJbv
+ iV2t4+iWj0DYrAA6QezdbbBJYjwvbqChnjVssSXB+mcz6ohXJB
+ +Au8H/1yF32WiV4xod21HCAcPzQwrpyCOdR3uQH9oJTcrvr3gy
+ vbnHqlpRoiXP3y0vhP6UinqgLGCrzhaCmUEshvKxM9UNycVk3S
+ A2HOSKAK1SNaPMg5I4DM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 5, 2012 at 11:20 PM, Sage Weil <sage@inktank.com> wrote:
-> On Wed, 4 Jul 2012, Sha Zhengju wrote:
->> On 07/02/2012 10:49 PM, Sage Weil wrote:
->> > On Mon, 2 Jul 2012, Sha Zhengju wrote:
->> > > On 06/29/2012 01:21 PM, Sage Weil wrote:
->> > > > On Thu, 28 Jun 2012, Sha Zhengju wrote:
->> > > >
->> > > > > From: Sha Zhengju<handai.szj@taobao.com>
->> > > > >
->> > > > > Following we will treat SetPageDirty and dirty page accounting as an
->> > > > > integrated
->> > > > > operation. Filesystems had better use vfs interface directly to avoid
->> > > > > those details.
->> > > > >
->> > > > > Signed-off-by: Sha Zhengju<handai.szj@taobao.com>
->> > > > > ---
->> > > > >    fs/buffer.c                 |    2 +-
->> > > > >    fs/ceph/addr.c              |   20 ++------------------
->> > > > >    include/linux/buffer_head.h |    2 ++
->> > > > >    3 files changed, 5 insertions(+), 19 deletions(-)
->> > > > >
->> > > > > diff --git a/fs/buffer.c b/fs/buffer.c
->> > > > > index e8d96b8..55522dd 100644
->> > > > > --- a/fs/buffer.c
->> > > > > +++ b/fs/buffer.c
->> > > > > @@ -610,7 +610,7 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
->> > > > >     * If warn is true, then emit a warning if the page is not uptodate
->> > > > > and
->> > > > > has
->> > > > >     * not been truncated.
->> > > > >     */
->> > > > > -static int __set_page_dirty(struct page *page,
->> > > > > +int __set_page_dirty(struct page *page,
->> > > > >               struct address_space *mapping, int warn)
->> > > > >    {
->> > > > >       if (unlikely(!mapping))
->> > > > This also needs an EXPORT_SYMBOL(__set_page_dirty) to allow ceph to
->> > > > continue to build as a module.
->> > > >
->> > > > With that fixed, the ceph bits are a welcome cleanup!
->> > > >
->> > > > Acked-by: Sage Weil<sage@inktank.com>
->> > > Further, I check the path again and may it be reworked as follows to avoid
->> > > undo?
->> > >
->> > > __set_page_dirty();
->> > > __set_page_dirty();
->> > > ceph operations;                ==>                     if (page->mapping)
->> > > if (page->mapping)                                            ceph
->> > > operations;
->> > >      ;
->> > > else
->> > >      undo = 1;
->> > > if (undo)
->> > >      xxx;
->> > Yep.  Taking another look at the original code, though, I'm worried that
->> > one reason the __set_page_dirty() actions were spread out the way they are
->> > is because we wanted to ensure that the ceph operations were always
->> > performed when PagePrivate was set.
->> >
->>
->> Sorry, I've lost something:
->>
->> __set_page_dirty();                        __set_page_dirty();
->> ceph operations;
->> if(page->mapping)         ==>      if(page->mapping) {
->>        SetPagePrivate;                            SetPagePrivate;
->> else                                                      ceph operations;
->>     undo = 1;                                  }
->>
->> if (undo)
->>     XXX;
->>
->> I think this can ensure that ceph operations are performed together with
->> SetPagePrivate.
->
-> Yeah, that looks right, as long as the ceph accounting operations happen
-> before SetPagePrivate.  I think it's no more or less racy than before, at
-> least.
->
-> The patch doesn't apply without the previous ones in the series, it looks
-> like.  Do you want to prepare a new version or should I?
->
+On Thursday 05 July 2012, Lee Jones wrote:
+> 
+> On 05/07/12 15:13, Mark Brown wrote:
+> > On Thu, Jul 05, 2012 at 03:06:20PM +0100, Lee Jones wrote:
+> >> On 05/07/12 14:57, Arnd Bergmann wrote:
+> >
+> >>> The non-DT path for this is a huge mess, I'd rather focus on making
+> >>> it obsolete than trying to fix it. Other than that, I agree that
+> >>> we should be registering the ab8500 from the prcmu from both the
+> >>> DT and the non-DT case.
+> >
+> >> Ah, is that what you were saying Mark?
+> >
+> >> If so, I apologise. I thought you meant register both from platform
+> >> code. I'm happy to register the AB8500 from the DB8500 for both DT
+> >> and !DT.
+> >
+> > Yes, that's what I was trying to say - sorry that I wasn't clear!
+> 
+> Well it seems silly of me just to copy Arnd's work. Do you want to 
+> author and submit the patch to do this Arnd?
 
-Good. I'm doing some test then I'll send out a new version patchset, please
-wait a bit. : )
+No, just assume ownership of it. I haven't tried building the
+patch, so I assume you will have to change it some more. Just
+list me as Suggested-by:.
 
-
-Thanks,
-Sha
+	Arnd
