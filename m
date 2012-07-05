@@ -1,27 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab2GEPqH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 11:46:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60781 "EHLO
+	id S933336Ab2GEPqM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 11:46:12 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:32987 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933277Ab2GEPpo (ORCPT
+	with ESMTP id S1756674Ab2GEPqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 11:45:44 -0400
+	Thu, 5 Jul 2012 11:46:09 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>,
+Cc: linux-kernel@vger.kernel.org,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Namhyung Kim <namhyung@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Huewe <peterhuewe@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
         Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 14/20] tools lib traceevent: Check return value of arg_to_str()
-Date: Thu,  5 Jul 2012 12:45:12 -0300
-Message-Id: <1341503118-13198-15-git-send-email-acme@infradead.org>
+        Ulrich Drepper <drepper@gmail.com>,
+        Wolfgang Mauerer <wolfgang.mauerer@siemens.com>,
+        arnaldo.melo@gmail.com, Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 00/20] perf/core improvements and fixes
+Date: Thu,  5 Jul 2012 12:44:58 -0300
+Message-Id: <1341503118-13198-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1341503118-13198-1-git-send-email-acme@infradead.org>
-References: <1341503118-13198-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -29,82 +36,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hi Ingo,
 
-The arg_to_str() can fail so we should handle that case properly.
+	Please consider pulling, this one contains my first merge, a pull
+request by Namhyung, please check if everything is OK,
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1335157118-14658-12-git-send-email-namhyung.kim@lge.com
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/lib/traceevent/parse-filter.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+Thanks,
 
-diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index d54c2b4..f020ac6 100644
---- a/tools/lib/traceevent/parse-filter.c
-+++ b/tools/lib/traceevent/parse-filter.c
-@@ -2026,11 +2026,13 @@ static char *exp_to_str(struct event_filter *filter, struct filter_arg *arg)
- 	char *lstr;
- 	char *rstr;
- 	char *op;
--	char *str;
-+	char *str = NULL;
- 	int len;
- 
- 	lstr = arg_to_str(filter, arg->exp.left);
- 	rstr = arg_to_str(filter, arg->exp.right);
-+	if (!lstr || !rstr)
-+		goto out;
- 
- 	switch (arg->exp.type) {
- 	case FILTER_EXP_ADD:
-@@ -2070,6 +2072,7 @@ static char *exp_to_str(struct event_filter *filter, struct filter_arg *arg)
- 	len = strlen(op) + strlen(lstr) + strlen(rstr) + 4;
- 	str = malloc_or_die(len);
- 	snprintf(str, len, "%s %s %s", lstr, op, rstr);
-+out:
- 	free(lstr);
- 	free(rstr);
- 
-@@ -2086,6 +2089,8 @@ static char *num_to_str(struct event_filter *filter, struct filter_arg *arg)
- 
- 	lstr = arg_to_str(filter, arg->num.left);
- 	rstr = arg_to_str(filter, arg->num.right);
-+	if (!lstr || !rstr)
-+		goto out;
- 
- 	switch (arg->num.type) {
- 	case FILTER_CMP_EQ:
-@@ -2122,6 +2127,7 @@ static char *num_to_str(struct event_filter *filter, struct filter_arg *arg)
- 		break;
- 	}
- 
-+out:
- 	free(lstr);
- 	free(rstr);
- 	return str;
-@@ -2272,7 +2278,12 @@ int pevent_filter_compare(struct event_filter *filter1, struct event_filter *fil
- 		/* The best way to compare complex filters is with strings */
- 		str1 = arg_to_str(filter1, filter_type1->filter);
- 		str2 = arg_to_str(filter2, filter_type2->filter);
--		result = strcmp(str1, str2) != 0;
-+		if (str1 && str2)
-+			result = strcmp(str1, str2) != 0;
-+		else
-+			/* bail out if allocation fails */
-+			result = 1;
-+
- 		free(str1);
- 		free(str2);
- 		if (result)
--- 
-1.7.9.2.358.g22243
+- Arnaldo
 
+The following changes since commit 17d7a1123f0f6d532830152564cc812cc73db2f3:
+
+  perf bench: Fix confused variable namings and descriptions in mem subsystem (2012-07-02 14:35:45 -0300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+
+for you to fetch changes up to 81e9b994bb20716d1f6c47e048e4ae4a43de2f83:
+
+  Merge tag 'libtraceevent-core-for-acme' of git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf into perf/core (2012-07-05 12:16:32 -0300)
+
+----------------------------------------------------------------
+
+perf/core improvements and fixes:
+
+. Preparatory patches to use hw events in PMU syntax, from Jiri Olsa
+
+. Remaining backport of trace-cmd's libparseevent, from Namhyung Kim
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (1):
+      Merge tag 'libtraceevent-core-for-acme' of git://git.kernel.org/.../namhyung/linux-perf into perf/core
+
+Jiri Olsa (4):
+      perf test: Use ARRAY_SIZE in parse events tests
+      perf tools: Add empty rule for new line in event syntax parsing
+      perf tools: Split out PE_VALUE_SYM parsing token to SW and HW tokens
+      perf tools: Split event symbols arrays to hw and sw parts
+
+Namhyung Kim (10):
+      tools lib traceevent: Fix printk_cmp()
+      tools lib traceevent: Introduce extend_token()
+      tools lib traceevent: Handle strdup failure cases
+      tools lib traceevent: Handle realloc() failure path
+      tools lib traceevent: Pass string type argument to args
+      tools lib traceevent: Do not call add_event() again if allocation failed
+      tools lib traceevent: Fix some comments
+      tools lib traceevent: Check result of malloc() during reading token
+      tools lib traceevent: Check return value of arg_to_str()
+      tools lib traceevent: Cleanup realloc use
+
+Peter Huewe (1):
+      tools lib traceevent: Add missing break in make_bprint_args
+
+Steven Rostedt (4):
+      tools lib traceevent: Let filtering numbers by string use function names
+      tools lib traceevent: Add support for "%.*s" in bprintk events
+      tools lib traceevent: Add support to show migrate disable counter
+      tools lib traceevent: Fix %pM print format arg handling
+
+Wolfgang Mauerer (1):
+      tools lib traceevent: Fix trace_printk for long integers
+
+ tools/lib/traceevent/event-parse.c  |  287 +++++++++++++++++++++++------------
+ tools/lib/traceevent/parse-filter.c |   86 +++++++----
+ tools/perf/util/parse-events-test.c |   29 ++--
+ tools/perf/util/parse-events.c      |  174 ++++++++++++++-------
+ tools/perf/util/parse-events.l      |    3 +-
+ tools/perf/util/parse-events.y      |   15 +-
+ 6 files changed, 391 insertions(+), 203 deletions(-)
