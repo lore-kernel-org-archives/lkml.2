@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933439Ab2GEXVy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 19:21:54 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:37179 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933323Ab2GEXVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 19:21:53 -0400
-Date: Thu, 5 Jul 2012 19:21:36 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Matt Mackall <mpm@selenic.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>, w@1wt.eu,
-        ewust@umich.edu, zakir@umich.edu, greg@kroah.com, nadiah@cs.ucsd.edu,
-        jhalderm@umich.edu, tglx@linutronix.de, davem@davemloft.net,
-        stable@kernel.org
-Subject: Re: [PATCH 01/10] random: make 'add_interrupt_randomness()' do
- something sane
-Message-ID: <20120705232136.GD15685@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Matt Mackall <mpm@selenic.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-	w@1wt.eu, ewust@umich.edu, zakir@umich.edu, greg@kroah.com,
-	nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
-	davem@davemloft.net, stable@kernel.org
-References: <1341511933-11169-1-git-send-email-tytso@mit.edu>
- <1341511933-11169-2-git-send-email-tytso@mit.edu>
- <1341514078.4020.1213.camel@calx>
- <CA+55aFyMYVLCW0OYTVttkjjOwyu9VgDM9haNC=BeoRCEiWWNPQ@mail.gmail.com>
- <1341524367.4020.1324.camel@calx>
- <CA+55aFxAe1pRN+jvdLveHQ+nNRNC6HDZ+S4Y9P202rxgNLN8pg@mail.gmail.com>
- <20120705220040.GA15685@thunk.org>
- <CA+55aFzFMZpiDMJO9UxoXSjOCzvxn7tgvmAHLM36OmaiMasQhw@mail.gmail.com>
- <1341527482.4020.1355.camel@calx>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341527482.4020.1355.camel@calx>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1030198Ab2GEX21 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 19:28:27 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:38034 "EHLO smtp.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753476Ab2GEX20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 19:28:26 -0400
+X-Greylist: delayed 1107 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Jul 2012 19:28:26 EDT
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Neil Zhang <zhangwm@marvell.com>, Felipe Balbi <balbi@ti.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@ispras.ru
+Subject: [PATCH] usb: gadget: mv_udc: use GFP_ATOMIC in build_dtd()
+Date: Fri,  6 Jul 2012 01:09:48 +0200
+Message-Id: <1341529788-10232-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 05:31:22PM -0500, Matt Mackall wrote:
-> On systems with a timer interrupt and a sched_clock() that's
-> asynchronous to it, this actually loses a great source of entropy for
-> headless systems. Also: extra branch in fast path.
-> 
-> It's better to mix and not credit than to not mix at all. Instead just
-> check the fast count against HZ before the credit.
+build_dtd() is called either from interrupt handler mv_udc_irq()
+or with spinlock held (from mv_ep_queue()). So we should 
+alloc memory with GFP_ATOMIC, not GFP_KERNEL.
 
-I'm not sure what you mean by this?
+Found by Linux Driver Verification project (linuxtesting.org).
 
-					- Ted
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/usb/gadget/mv_udc_core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/usb/gadget/mv_udc_core.c b/drivers/usb/gadget/mv_udc_core.c
+index 117a4bb..693e1e4 100644
+--- a/drivers/usb/gadget/mv_udc_core.c
++++ b/drivers/usb/gadget/mv_udc_core.c
+@@ -374,7 +374,7 @@ static struct mv_dtd *build_dtd(struct mv_req *req, unsigned *length,
+ 	 * Be careful that no _GFP_HIGHMEM is set,
+ 	 * or we can not use dma_to_virt
+ 	 */
+-	dtd = dma_pool_alloc(udc->dtd_pool, GFP_KERNEL, dma);
++	dtd = dma_pool_alloc(udc->dtd_pool, GFP_ATOMIC, dma);
+ 	if (dtd == NULL)
+ 		return dtd;
+ 
+-- 
+1.7.9.5
+
