@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933311Ab2GEXCZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 19:02:25 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:57439 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933237Ab2GEXCY (ORCPT
+	id S933353Ab2GEXIt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 19:08:49 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:36892 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933289Ab2GEXIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 19:02:24 -0400
-X-Originating-IP: 217.70.178.145
-X-Originating-IP: 50.43.46.74
-Date: Thu, 5 Jul 2012 16:02:08 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu] Make RCU_FAST_NO_HZ respect nohz= boot
- parameter
-Message-ID: <20120705230208.GB26150@leaf>
-References: <20120705223731.GA27608@linux.vnet.ibm.com>
+	Thu, 5 Jul 2012 19:08:47 -0400
+Date: Thu, 5 Jul 2012 16:08:42 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+Cc: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "Balasubramanian, Senthil Kumar" <senthilb@qca.qualcomm.com>,
+        "Manoharan, Rajkumar" <rmanohar@qca.qualcomm.com>,
+        qca-linux-team <qca-linux-team@qualcomm.com>,
+        Imran Ansari <imran@qca.qualcomm.com>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sfr@canb.auug.org.au,
+        mcgrof@frijolero.org, hauke@hauke-m.de, ozancag@gmail.com,
+        pstew@google.com, warthog9@kernel.org, jrnieder@gmail.com,
+        ben@decadent.org.uk, akpm@linux-foundation.org, linville@tuxdriver.com
+Subject: Re: 3.5 stable compat-wireless
+Message-ID: <20120705230842.GA26510@kroah.com>
+References: <20468.35601.132955.802881@gargle.gargle.HOWL>
+ <7A9ADFFA56024346AAE90B6BABC3BD15DD6DEB@NASANEXD02B.na.qualcomm.com>
+ <20469.13787.767293.602337@gargle.gargle.HOWL>
+ <20120705190801.GB11228@tux>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120705223731.GA27608@linux.vnet.ibm.com>
+In-Reply-To: <20120705190801.GB11228@tux>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 03:37:31PM -0700, Paul E. McKenney wrote:
-> If the nohz= boot parameter disables nohz, then RCU_FAST_NO_HZ needs to
-> also disable itself.  This commit therefore checks for tick_nohz_enabled
-> being zero, disabling rcu_prepare_for_idle() if so.  This patch assumes
-> that tick_nohz_enabled can change at runtime: If this is not the case,
-> then a simpler approach suffices.
+On Thu, Jul 05, 2012 at 12:08:01PM -0700, Luis R. Rodriguez wrote:
+>   * linux-crap.git: based on linux-next-pending.git and allows
+>     contributors to send pull requests of crap that is not *ready*
+>     to be sent properly upstream. Examples would be code we know
+>     we simply already know that is not dealing with proper architecture
+>     or style / etc. The drivers/staging/ allows vendors to post full
+>     crap drivers, this would enable us to merge crap patches but that
+>     some vendors might need / want.
 
-Allowing nohz to change at runtime seems like an entirely unnecessary
-bit of added complexity.  (So does having a boot parameter for it, but
-that one at least seems easier to handle.)
+I really doubt this will work, look at the patches in some distros for
+examples of why.  I'm having a hard enough time with the LTSI project in
+conveying that "Yes, you can send patches to me for merging into the
+LSTI kernel, you still have to justify it, and work to get the patches
+then upstream, I'm not going to do your work for you."
 
-What would the patch look like if you can assume nohz will never change
-at runtime?  And does anyone have a use case for changing nohz at
-runtime, rather than at boot time?
+Having a random tree where these patches show up help no one except the
+original developer so that they can fire-and-forget, which is not what
+you want, unless you wish to take on the "get it cleaned up and merged
+upstream" task yourself, which you really don't want to.
 
-- Josh Triplett
+good luck,
+
+greg k-h
