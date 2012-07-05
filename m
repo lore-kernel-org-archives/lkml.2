@@ -1,41 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933043Ab2GFCsd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 22:48:33 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58840 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932454Ab2GFCsc (ORCPT
+	id S933402Ab2GFCsy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 22:48:54 -0400
+Received: from exprod8ob120.obsmtp.com ([64.18.3.39]:48863 "HELO
+	exprod8ob120.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932454Ab2GFCsw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 22:48:32 -0400
+	Thu, 5 Jul 2012 22:48:52 -0400
+Date: Thu, 05 Jul 2012 19:13:49 -0400 (EDT)
+From: Lauren Buckheit <lbuckheit@brynmawr.edu>
+Reply-To: Office <nokiadp77@yahoo.cn>
+Subject: Claim requirements
+Message-ID: <dee376d2-0cb9-480e-840f-283ab96b0db2@ganesh.brynmawr.edu>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CA+fU7qehx6Jjb0ZWNrh+bh6SYCKLVWZDd7iLnsC=hDVqqFd74Q@mail.gmail.com>
-References: <CA+fU7qen=cwc1vMY1bv21_0GuNKXPQZXsQLVszYG1WG_r1XUGA@mail.gmail.com>
- <20120524123116.GA4048@alberich.amd.com> <CA+fU7qfPznJpRABC4Z=xmRZW6p5Mw3dFLBySk9HuPnaCYMMnEg@mail.gmail.com>
- <20120529140940.GA10421@alberich.amd.com> <CA+fU7qdKYA3KJr3xET_evO_1ztSKh0K0csn5Coro7Mkv_my+eg@mail.gmail.com>
- <20120530124333.GA3008@alberich.amd.com> <CA+fU7qehx6Jjb0ZWNrh+bh6SYCKLVWZDd7iLnsC=hDVqqFd74Q@mail.gmail.com>
-From: Comrade DOS <suloevdmitry@gmail.com>
-Date: Fri, 6 Jul 2012 09:47:51 +0700
-Message-ID: <CA+fU7qcNe7d1BPWQ9jYYL7erByXAEgYzyFX1+R_ceXEjHxC3ew@mail.gmail.com>
-Subject: Fwd: PROBLEM: Performance drop
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [41.203.64.131]
+X-Mailer: Zimbra 7.1.2_GA_3268 (zclient/7.1.2_GA_3268)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----------- Forwarded message ----------
-From: Comrade DOS <suloevdmitry@gmail.com>
-Date: 2012/6/2
-Subject: Re: PROBLEM: Performance drop
-To: Andreas Herrmann <herrmann.der.user@googlemail.com>,
-linux-kernel@vger.kernel.org
+You are receiving this message because you are a Winner of 300,000 Pounds from Nokia Online Lottery game 2012.
+ 
+Claim requirements are as follows:
+(1) Your full names 
+(2) Contact Address 
+(3) Age 
+(4) Occupation 
+(5) Telephone 
+(6) Sex 
+(7) Nationality
 
-
-Sorry for delay.
-
-> If reverting the patch helps we have to take a closer look at your
-> ACPI tables.  So can you please do a
-
-It really helps! After reverting of this commit all problem go away.
-
-All files what you need in attachment.
+Contact Mr. Thomas Hillary on (nokiadp77@yahoo.cn) Tel: +447024081232
+ 
+Copyright ©2012 Nokia. All rights reserved.
