@@ -1,91 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab2GETV4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 15:21:56 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:44568 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755193Ab2GETVy (ORCPT
+	id S1757305Ab2GETfh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 15:35:37 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:56515 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755773Ab2GETff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 15:21:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120705104520.GA6773@latitude>
-References: <4FAC200D.2080306@codeaurora.org>
-	<02fc01cd2f50$5d77e4c0$1867ae40$%szyprowski@samsung.com>
-	<4FAD89DC.2090307@codeaurora.org>
-	<CAH+eYFBhO9P7V7Nf+yi+vFPveBks7SFKRHfkz3JOQMBKqnkkUQ@mail.gmail.com>
-	<015f01cd5a95$c1525dc0$43f71940$%szyprowski@samsung.com>
-	<20120705104520.GA6773@latitude>
-Date: Thu, 5 Jul 2012 21:21:53 +0200
-X-Google-Sender-Auth: 8jcxjQglcKAG5YvWGoOAR8-BPEg
-Message-ID: <CA+pa1O2veiMaNJ5M0qeion5kquCyoa2gW79G2zNqb+nbWLs_Qw@mail.gmail.com>
-Subject: Re: Bad use of highmem with buffer_migrate_page?
-From: =?UTF-8?Q?Micha=C5=82_Nazarewicz?= <mina86@mina86.com>
-To: Rabin Vincent <rabin@rab.in>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Laura Abbott <lauraa@codeaurora.org>, linaro-mm-sig@lists.linaro.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 5 Jul 2012 15:35:35 -0400
+Message-ID: <1341516932.4164.10.camel@piranha.localdomain>
+Subject: Re: Logitech HD Webcam C525 does not work when connected to USB 2
+ port, works on USB 3
+From: Frederik Himpe <fhimpe@telenet.be>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Kernel development list <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Date: Thu, 05 Jul 2012 21:35:32 +0200
+In-Reply-To: <Pine.LNX.4.44L0.1207041714280.18768-100000@netrider.rowland.org>
+References: <Pine.LNX.4.44L0.1207041714280.18768-100000@netrider.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/5 Rabin Vincent <rabin@rab.in>:
-> From 8a94126eb3aa2824866405fb78bb0b8316f8fd00 Mon Sep 17 00:00:00 2001
-> From: Rabin Vincent <rabin@rab.in>
-> Date: Thu, 5 Jul 2012 15:52:23 +0530
-> Subject: [PATCH] mm: cma: don't replace lowmem pages with highmem
->
-> The filesystem layer expects pages in the block device's mapping to not
-> be in highmem (the mapping's gfp mask is set in bdget()), but CMA can
-> currently replace lowmem pages with highmem pages, leading to crashes in
-> filesystem code such as the one below:
->
->   Unable to handle kernel NULL pointer dereference at virtual address 00000400
->   pgd = c0c98000
->   [00000400] *pgd=00c91831, *pte=00000000, *ppte=00000000
->   Internal error: Oops: 817 [#1] PREEMPT SMP ARM
->   CPU: 0    Not tainted  (3.5.0-rc5+ #80)
->   PC is at __memzero+0x24/0x80
->   ...
->   Process fsstress (pid: 323, stack limit = 0xc0cbc2f0)
->   Backtrace:
->   [<c010e3f0>] (ext4_getblk+0x0/0x180) from [<c010e58c>] (ext4_bread+0x1c/0x98)
->   [<c010e570>] (ext4_bread+0x0/0x98) from [<c0117944>] (ext4_mkdir+0x160/0x3bc)
->    r4:c15337f0
->   [<c01177e4>] (ext4_mkdir+0x0/0x3bc) from [<c00c29e0>] (vfs_mkdir+0x8c/0x98)
->   [<c00c2954>] (vfs_mkdir+0x0/0x98) from [<c00c2a60>] (sys_mkdirat+0x74/0xac)
->    r6:00000000 r5:c152eb40 r4:000001ff r3:c14b43f0
->   [<c00c29ec>] (sys_mkdirat+0x0/0xac) from [<c00c2ab8>] (sys_mkdir+0x20/0x24)
->    r6:beccdcf0 r5:00074000 r4:beccdbbc
->   [<c00c2a98>] (sys_mkdir+0x0/0x24) from [<c000e3c0>] (ret_fast_syscall+0x0/0x30)
->
-> Fix this by replacing only highmem pages with highmem.
->
-> Reported-by: Laura Abbott <lauraa@codeaurora.org>
-> Signed-off-by: Rabin Vincent <rabin@rab.in>
+On Wed, 2012-07-04 at 21:20 -0400, Alan Stern wrote:
+> On Wed, 4 Jul 2012, Frederik Himpe wrote:
+> 
+> > > That doesn't disable autosuspend.  The proper way is:
+> > > 
+> > > 	echo on >/sys/bus/usb/devices/.../power/control
+> > > 
+> > > where you fill in the "..." with the directory name for the webcam.
+> > 
+> > usb trace from trying mplayer a few times after disabling autosuspend:
+> > 
+> > ffff880415761ec0 897158138 S Ii:1:081:7 -115:128 16 <
+> > ffff8803c49ec800 897158252 S Co:1:081:0 s 21 01 0100 0003 001a 26 = 01000101 15160500 00000000 00000000 00000000 00000000 0000
+> > ffff8803c49ec800 897162252 C Co:1:081:0 -71 0
+> 
+> This is already too late.  The -71 error code indicates that the webcam 
+> has crashed.  We need to see what happens before the crash, in order to 
+> determine what causes it.
+> 
+> Did you use the right path for the webcam device?  According to your
+> logs, it should be 1-1.2 -- assuming you plug the webcam into the same
+> port as before.
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+OK, new attempt.
 
-> ---
->  mm/page_alloc.c |    7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
->
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 4403009..4a4f921 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5635,7 +5635,12 @@ static struct page *
->  __alloc_contig_migrate_alloc(struct page *page, unsigned long private,
->                              int **resultp)
->  {
-> -       return alloc_page(GFP_HIGHUSER_MOVABLE);
-> +       gfp_t gfp_mask = GFP_USER | __GFP_MOVABLE;
-> +
-> +       if (PageHighMem(page))
-> +               gfp_mask |= __GFP_HIGHMEM;
-> +
-> +       return alloc_page(gfp_mask);
->  }
->
->  /* [start, end) must belong to a single zone. */
+I plug in webcam:
+
+Jul  5 21:19:02 piranha kernel: [ 9611.555849] usb 1-1.2: new high-speed USB device number 5 using ehci_hcd
+Jul  5 21:19:03 piranha kernel: [ 9611.913815] usb 1-1.2: New USB device found, idVendor=046d, idProduct=0826
+Jul  5 21:19:03 piranha kernel: [ 9611.913827] usb 1-1.2: New USB device strings: Mfr=0, Product=2, SerialNumber=1
+Jul  5 21:19:03 piranha kernel: [ 9611.913832] usb 1-1.2: Product: HD Webcam C525
+Jul  5 21:19:03 piranha kernel: [ 9611.913835] usb 1-1.2: SerialNumber: 1E83E9D0
+Jul  5 21:19:03 piranha kernel: [ 9612.180813] uvcvideo: Found UVC 1.00 device HD Webcam C525 (046d:0826)
+Jul  5 21:19:03 piranha kernel: [ 9612.193342] input: HD Webcam C525 as /devices/pci0000:00/0000:00:1a.0/usb1/1-1/1-1.2/1-1.2:1.2/input/input27
+
+I run:
+# cat /sys/bus/usb/devices/1-1.2/power/control
+auto
+# echo on > /sys/bus/usb/devices/1-1.2/power/control
+
+At this moment, the device disconnects and reconnects, according to the
+logs:
+Jul  5 21:20:40 piranha kernel: [ 9709.169304] usb 1-1.2: USB disconnect, device number 5
+Jul  5 21:20:40 piranha kernel: [ 9709.416109] usb 1-1.2: new high-speed USB device number 6 using ehci_hcd
+Jul  5 21:20:41 piranha kernel: [ 9709.774203] usb 1-1.2: New USB device found, idVendor=046d, idProduct=0826
+Jul  5 21:20:41 piranha kernel: [ 9709.774215] usb 1-1.2: New USB device strings: Mfr=0, Product=2, SerialNumber=1
+Jul  5 21:20:41 piranha kernel: [ 9709.774219] usb 1-1.2: Product: HD Webcam C525
+Jul  5 21:20:41 piranha kernel: [ 9709.774222] usb 1-1.2: SerialNumber: 1E83E9D0
+Jul  5 21:20:41 piranha kernel: [ 9710.040969] uvcvideo: Found UVC 1.00 device HD Webcam C525 (046d:0826)
+Jul  5 21:20:41 piranha kernel: [ 9710.053472] input: HD Webcam C525 as /devices/pci0000:00/0000:00:1a.0/usb1/1-1/1-1.2/1-1.2:1.2/input/input28
+
+And it's back to auto:
+# cat /sys/bus/usb/devices/1-1.2/power/control
+auto
+
+I tried setting to on again, and then this appears in the logs:
+Jul  5 21:21:59 piranha kernel: [ 9788.223118] usb 1-1.2: USB disconnect, device number 6
+Jul  5 21:22:00 piranha kernel: [ 9788.330415] usb 1-1.2: new full-speed USB device number 7 using ehci_hcd
+Jul  5 21:22:00 piranha kernel: [ 9788.402207] usb 1-1.2: device descriptor read/64, error -32
+Jul  5 21:22:00 piranha kernel: [ 9788.577706] usb 1-1.2: device descriptor read/64, error -32
+Jul  5 21:22:00 piranha kernel: [ 9788.753203] usb 1-1.2: new full-speed USB device number 8 using ehci_hcd
+Jul  5 21:22:00 piranha kernel: [ 9788.824996] usb 1-1.2: device descriptor read/64, error -32
+Jul  5 21:22:00 piranha kernel: [ 9789.000493] usb 1-1.2: device descriptor read/64, error -32
+Jul  5 21:22:00 piranha kernel: [ 9789.175991] usb 1-1.2: new full-speed USB device number 9 using ehci_hcd
+Jul  5 21:22:01 piranha kernel: [ 9789.582701] usb 1-1.2: device not accepting address 9, error -32
+Jul  5 21:22:01 piranha kernel: [ 9789.654621] usb 1-1.2: new full-speed USB device number 10 using ehci_hcd
+Jul  5 21:22:01 piranha kernel: [ 9790.061329] usb 1-1.2: device not accepting address 10, error -32
+Jul  5 21:22:01 piranha kernel: [ 9790.061467] hub 1-1:1.0: unable to enumerate USB device on port 2
+
+I reproduced this with usbmon running:
+http://artipc10.vub.ac.be/~frederik/webcam/usbmon.1u
+
+# cat /sys/kernel/debug/usb/usbmon/1u > /tmp/usbmon.1u
+Plug in webcam
+# cat /sys/bus/usb/devices/1-1.2/power/control
+auto
+# echo on > /sys/bus/usb/devices/1-1.2/power/control
+[device disconnects and reconnects, according to log]
+# echo on > /sys/bus/usb/devices/1-1.2/power/control
+[this time the device disconnects and reconnects again]
+
+-- 
+Frederik Himpe <fhimpe@telenet.be>
+
