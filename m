@@ -1,74 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933214Ab2GEOqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 10:46:55 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:44523 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933143Ab2GEOqZ (ORCPT
+	id S933230Ab2GEOq7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 10:46:59 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:23297 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933143Ab2GEOq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 10:46:25 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av4EANqn9U9bdWOb/2dsb2JhbABFhV+xR4EHghkBBSMECwFGECUCJgICVwcSiA+mepJWgSCPRYESA5U3iSaGXYJh
-X-IronPort-AV: E=Sophos;i="4.77,531,1336341600"; 
-   d="scan'208";a="926562645"
-From: =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
-To: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
-        aaro.koskinen@iki.fi, dan.carpenter@oracle.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
-Subject: [PATCH 10/19] Staging: xgifb: Rework conditions in XGI_SetATTRegs().
-Date: Thu,  5 Jul 2012 16:45:53 +0200
-Message-Id: <4d7f549c19ccf6bad194f189ed3a902795ffdba2.1341498466.git.magomez@igalia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1341498465.git.magomez@igalia.com>
-References: <cover.1341498465.git.magomez@igalia.com>
-In-Reply-To: <cover.1341498465.git.magomez@igalia.com>
-References: <cover.1341498465.git.magomez@igalia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 5 Jul 2012 10:46:57 -0400
+Date: Thu, 5 Jul 2012 16:46:32 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        Seth Heasley <seth.heasley@intel.com>, Olof Johansson <olof@lixom.net>,
+        Benson Leung <bleung@chromium.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/8 v3] i2c: i801: enable irq for byte_by_byte
+ transactions
+Message-ID: <20120705164632.04f53a73@endymion.delvare>
+In-Reply-To: <1340805255-8041-9-git-send-email-djkurtz@chromium.org>
+References: <1340805255-8041-1-git-send-email-djkurtz@chromium.org>
+	<1340805255-8041-9-git-send-email-djkurtz@chromium.org>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rework some conditions to reduce indentation and fix style warnings.
+Hi Daniel,
 
-Signed-off-by: Miguel Gómez <magomez@igalia.com>
----
- drivers/staging/xgifb/vb_setmode.c |   19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+On Wed, 27 Jun 2012 21:54:15 +0800, Daniel Kurtz wrote:
+> Byte-by-byte transactions are used primarily for accessing I2C devices
+> with an SMBus controller.  For these transactions, for each byte that is
+> read or written, the SMBus controller generates a BYTE_DONE irq.  The isr
+> reads/writes the next byte, and clears the irq flag to start the next byte.
+> On the penultimate irq, the isr also sets the LAST_BYTE flag.
+> 
+> There is no locking around the cmd/len/count/data variables, since the
+> I2C adapter lock ensures there is never multiple simultaneous transactions
+> for the same device, and the driver thread never accesses these variables
+> while interrupts might be occurring.
+> 
+> The end result is faster I2C block read and write transactions.
+> 
+> Note: This patch has only been tested and verified by doing I2C read and
+> write block transfers on Cougar Point 6 Series PCH.
 
-diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
-index 3ba3c48..4b49705 100644
---- a/drivers/staging/xgifb/vb_setmode.c
-+++ b/drivers/staging/xgifb/vb_setmode.c
-@@ -161,18 +161,15 @@ static void XGI_SetATTRegs(unsigned short ModeNo,
- 
- 	for (i = 0; i <= 0x13; i++) {
- 		ARdata = pVBInfo->StandTable->ATTR[i];
--		if (modeflag & Charx8Dot) { /* ifndef Dot9 */
--			if (i == 0x13) {
--				if (pVBInfo->VBInfo & XGI_SetCRT2ToLCDA) {
-+
-+		if ((modeflag & Charx8Dot) && i == 0x13) { /* ifndef Dot9 */
-+			if (pVBInfo->VBInfo & XGI_SetCRT2ToLCDA) {
-+				ARdata = 0;
-+			} else {
-+				if ((pVBInfo->VBInfo &
-+				     (SetCRT2ToTV | SetCRT2ToLCD)) &&
-+				    (pVBInfo->VBInfo & SetInSlaveMode))
- 					ARdata = 0;
--				} else {
--					if (pVBInfo->VBInfo & (SetCRT2ToTV
--							| SetCRT2ToLCD)) {
--						if (pVBInfo->VBInfo &
--						    SetInSlaveMode)
--							ARdata = 0;
--					}
--				}
- 			}
- 		}
- 
+Two issues remaining:
+
+> +static void i801_isr_byte_done(struct i801_priv *priv)
+> +{
+> +	/* For SMBus block reads, length is first byte read */
+> +	if (priv->is_read && ((priv->cmd & 0x1c) == I801_BLOCK_DATA) &&
+> +	    (priv->count == 0)) {
+> +		priv->len = inb_p(SMBHSTDAT0(priv));
+> +		if (priv->len < 1 || priv->len > I2C_SMBUS_BLOCK_MAX) {
+> +			dev_err(&priv->pci_dev->dev,
+> +				"Illegal SMBus block read size %d\n",
+> +				priv->len);
+> +			/* FIXME: Recover */
+> +			priv->len = I2C_SMBUS_BLOCK_MAX;
+> +		} else {
+> +			dev_dbg(&priv->pci_dev->dev,
+> +				"SMBus block read size is %d\n",
+> +				priv->len);
+> +		}
+> +		priv->data[-1] = priv->len;
+> +	} else if (priv->is_read) {
+
+The "else" is wrong. When count == 0, you receive two bytes from the
+controller: the block length in SMBHSTDAT0 and the first data byte in
+SMBBLKDAT. So the code flow must fall through.
+
+> +		priv->data[priv->count++] = inb(SMBBLKDAT(priv));
+
+This is lacking a boundary check. As I reported in an earlier review,
+you shouldn't assume that the hardware will only emit the number of
+interrupts you are expecting. If for any reason (crazy hardware or
+driver bug) you get more interrupts than expected, you don't want to
+overflow priv->data[].
+
+> +		/* Set LAST_BYTE for last byte of read transaction */
+> +		if (priv->count == priv->len - 1)
+> +			priv->cmd |= SMBHSTCNT_LAST_BYTE;
+> +		outb_p(priv->cmd, SMBHSTCNT(priv));
+> +	} else if (priv->count < priv->len - 1) {
+> +		/* Write next byte, except for IRQ after last byte */
+> +		outb_p(priv->data[++priv->count], SMBBLKDAT(priv));
+> +		outb_p(priv->cmd, SMBHSTCNT(priv));
+> +	}
+> +
+> +	/* Clear BYTE_DONE to start next transaction. */
+> +	outb_p(SMBHSTSTS_BYTE_DONE, SMBHSTSTS(priv));
+> +}
+
+The rest looks OK.
+
 -- 
-1.7.9.5
-
+Jean Delvare
