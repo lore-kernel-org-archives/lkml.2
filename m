@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897Ab2GEI3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 04:29:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52004 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754557Ab2GEI3N convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 04:29:13 -0400
-Message-ID: <1341476945.7709.1.camel@twins>
-Subject: Re: [PATCH -rt] perf: make swevent hrtimer run in irq instead of
- softirq
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Date: Thu, 05 Jul 2012 10:29:05 +0200
-In-Reply-To: <1341476476-5666-1-git-send-email-yong.zhang0@gmail.com>
-References: <1341476476-5666-1-git-send-email-yong.zhang0@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1755931Ab2GEIdM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 04:33:12 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:14259 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754507Ab2GEIdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 04:33:08 -0400
+X-IronPort-AV: E=Sophos;i="4.77,530,1336320000"; 
+   d="scan'208";a="5334298"
+From: Gao feng <gaofeng@cn.fujitsu.com>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nhorman@tuxdriver.com, tj@kernel.org, lizefan@huawei.com,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Subject: [PATCH] cgroup: fix panic in netprio_cgroup
+Date: Thu, 5 Jul 2012 16:31:42 +0800
+Message-Id: <1341477102-16988-1-git-send-email-gaofeng@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.7.6
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/05 16:33:06,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/05 16:33:08,
+	Serialize complete at 2012/07/05 16:33:08
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-05 at 16:21 +0800, Yong Zhang wrote:
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index fd126f8..451d452 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -5403,6 +5403,7 @@ static void perf_swevent_init_hrtimer(struct perf_event *event)
->  
->         hrtimer_init(&hwc->hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
->         hwc->hrtimer.function = perf_swevent_hrtimer;
-> +       hwc->hrtimer.irqsafe = 1;
->  
->         /*
->          * Since hrtimers have a fixed rate, we can do a static freq->period 
+we set max_prioidx to the first zero bit index of prioidx_map in
+function get_prioidx.
 
-Yes this is correct.. curious we lost that. I'm sure I've done this
-before.
+So when we delete the low index netprio cgroup and adding a new
+netprio cgroup again,the max_prioidx will be set to the low index.
+
+when we set the high index cgroup's net_prio.ifpriomap,the function
+write_priomap will call update_netdev_tables to alloc memory which
+size is sizeof(struct netprio_map) + sizeof(u32) * (max_prioidx + 1),
+so the size of array that map->priomap point to is max_prioidx +1,
+which is low than what we actually need.
+
+fix this by adding check in get_prioidx,only set max_prioidx when
+max_prioidx low than the new prioidx.
+
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+---
+ net/core/netprio_cgroup.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index 5b8aa2f..586f7d9 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -50,7 +50,8 @@ static int get_prioidx(u32 *prio)
+ 	}
+ 	set_bit(prioidx, prioidx_map);
+ 	spin_unlock_irqrestore(&prioidx_map_lock, flags);
+-	atomic_set(&max_prioidx, prioidx);
++	if (atomic_read(&max_prioidx) < prioidx)
++		atomic_set(&max_prioidx, prioidx);
+ 	*prio = prioidx;
+ 	return 0;
+ }
+-- 
+1.7.7.6
+
