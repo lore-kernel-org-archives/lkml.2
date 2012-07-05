@@ -1,81 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899Ab2GEQSy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 12:18:54 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:44989 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812Ab2GEQSw (ORCPT
+	id S1756913Ab2GEQi6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 12:38:58 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:56043 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab2GEQi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 12:18:52 -0400
-Date: Thu, 5 Jul 2012 09:16:44 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, levinsasha928@gmail.com
-Subject: [GIT RFC PULL rcu/urgent] Revert to fix RCU-related
- deadlock/softlockup
-Message-ID: <20120705161644.GA10670@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	Thu, 5 Jul 2012 12:38:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12070516-5518-0000-0000-000005CB66BA
+In-Reply-To: <20469.7733.613739.886141@gargle.gargle.HOWL>
+References: <20469.7733.613739.886141@gargle.gargle.HOWL>
+From: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
+Date: Thu, 5 Jul 2012 09:38:35 -0700
+X-Google-Sender-Auth: U5FKQV0d0dZvRXqydw2_UZjCBlo
+Message-ID: <CAB=NE6XP0cVhPL2FqVhsSeaQ7BV4QndhmZNbto9P3=9ko6YGFg@mail.gmail.com>
+Subject: Re: Stable compat-wireless updates
+To: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alex Mendoza <wargod@suneco.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo,
+On Wed, Jul 4, 2012 at 9:55 PM, Sujith Manoharan
+<c_manoha@qca.qualcomm.com> wrote:
+> Hi,
+>
+> A pull request for the 3.5.y branch.
+>
+> Sujith
+>
+> The following changes since commit a1959d00333104cd58bd07741ef0c40766836a77:
+>
+>   compat-wireless: skip forcing refresh on gen-stable-release.sh (2012-06-19 15:24:07 -0700)
+>
+> are available in the git repository at:
+>
+>   https://github.com/sujith/compat-wireless.git linux-3.5.y
+>
+> for you to fetch changes up to 73df80f65d3ab2a83275e2ffcb54b64484cf3821:
+>
+>   compat-wireless: Update offsets of the new patches (2012-07-04 23:06:29 +0530)
+>
+> ----------------------------------------------------------------
+> Sujith Manoharan (6):
+>       compat-wireless: Remove patches from linux-next-pending
+>       compat-wireless: Add pending stable patches (v3.5-rc5)
+>       compat-wireless: Remove a patch
+>       compat-wireless: Update patch offsets
+>       compat-wireless: Add cherry picked patches
+>       compat-wireless: Update offsets of the new patches
 
-This series has a single revert from the ill-starred attempt to inline
-__rcu_read_lock() for preemptible RCU.  Without this revert, on mainline
-kernels using CONFIG_RCU_BOOST there is a low-probability deadlock on the
-runqueue locks, but one that actually appeared in Sasha Levin's testing.
-With the revert, and with an diagnostic patch that increased probability
-of the deadlock to a MTBF of roughly 10 seconds, Sasha's tests ran for
-two days with no failure.
+Thanks! Just a reminder to other vendors that if they wish to include
+their own set of deltas for stable compat-wireless releases but still
+prioritize and respect the upstream process the additional patches to
+compat-wireless allows for this, and this is exactly what Sujith is
+using here.
 
-The sequence of events leading to the deadlock is as follows:
+Kicked out 3 new releases, all test compiled across 21 kernels:
 
-1.	A task enters an RCU read-side critical section, and is both
-	preempted and subjected to RCU priority boosting.
-2.	The task starts to exit its RCU read-side critical section,
-	but is preempted in __rcu_read_unlock() just after the assignment
-	setting t->rcu_read_lock_nesting to INT_MIN.  (The diagnostic
-	patch mentioned above expands this window by ten microseconds,
-	and is available in -rcu as a debug option queued for 3.7.)
-3.	The task enters the scheduler, where it acquires the corresponding
-	runqueue lock, then invokes rcu_switch_from() which in turn
-	invokes rcu_preempt_note_context_switch(), which in turn invokes
-	rcu_read_unlock_special(), which attempts to deboost the task.
-4.	The attempt to deboost the task recursively enters the scheduler
-	with a runqueue lock held, which can result in deadlock.
+http://wireless.kernel.org/en/users/Download/stable/
+http://wireless.kernel.org/en/users/Download/stable/#Additional_patches_to_stable_releases
 
-The revert moves the point at which rcu_preempt_note_context_switch() is
-called to a point in the scheduler code before the runqueue lock is
-acquired, avoiding the deadlock.
+http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.5/ChangeLog-3.5-rc5
 
-This pull is marked "RFC" because CONFIG_RCU_BOOST=y is not used much
-outside of the real-time community.  I will be sending another pull
-request later today (Pacific Time) for 3.6 RCU commits, which will
-include this commit as well.  Your choice.  ;-)
+http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.5/compat-wireless-3.5-rc5-1.tar.bz2
+http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.5/compat-wireless-3.5-rc5-1-sn.tar.bz2
+http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.5/compat-wireless-3.5-rc5-1-snpc.tar.bz2
 
-This change is available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/urgent
+http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.5/ckmake-3.5-rc5-1.log.bz2
+http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.5/ckmake-3.5-rc3-1-sn.log.bz2
+http://www.orbit-lab.org/kernel/compat-wireless-3-stable/v3.5/ckmake-3.5-rc5-1-snpc.log.bz2
 
-							Thanx, Paul
+If someone has access to a fast box I can use or set of boxes it would
+really help with speeding up releases. Test compiling each releases
+takes 120 minutes right now as it cross compiles across 21 kernels.
+Just this test compilation for all 3 releases took 6 hours. If we
+could test compile one kernel per server that would shave down
+compilation time considerably.
 
------------------->
-Paul E. McKenney (1):
-      Revert "rcu: Move PREEMPT_RCU preemption to switch_to() invocation"
+mcgrof@flash ~/tmp $ for i in compat-wireless-3.5-rc5-1
+compat-wireless-3.5-rc5-1-sn compat-wireless-3.5-rc5-1-snpc ; do cd
+$i; ckmake ; cd .. ; done
+Trying kernel                  3.4.0-030400rc4-generic  [OK]
+Trying kernel                     3.3.3-030303-generic  [OK]
+Trying kernel                     3.2.2-030202-generic  [OK]
+Trying kernel                    3.1.10-030110-generic  [OK]
+Trying kernel                    3.0.18-030018-generic  [OK]
+Trying kernel                  2.6.39-02063904-generic  [OK]
+Trying kernel                  2.6.38-02063808-generic  [OK]
+Trying kernel                  2.6.37-02063706-generic  [OK]
+Trying kernel                  2.6.36-02063604-generic  [OK]
+Trying kernel                  2.6.35-02063512-generic  [OK]
+Trying kernel                  2.6.34-02063410-generic  [OK]
+Trying kernel                  2.6.33-02063305-generic  [OK]
+Trying kernel                  2.6.32-02063255-generic  [OK]
+Trying kernel                  2.6.31-02063113-generic  [OK]
+Trying kernel                  2.6.30-02063010-generic  [OK]
+Trying kernel                  2.6.29-02062906-generic  [OK]
+Trying kernel                  2.6.28-02062810-generic  [OK]
+Trying kernel                    2.6.27-020627-generic  [OK]
+Trying kernel                    2.6.26-020626-generic  [OK]
+Trying kernel                    2.6.25-020625-generic  [OK]
+Trying kernel                    2.6.24-020624-generic  [OK]
+Trying kernel                  3.4.0-030400rc4-generic  [OK]
+Trying kernel                     3.3.3-030303-generic  [OK]
+Trying kernel                     3.2.2-030202-generic  [OK]
+Trying kernel                    3.1.10-030110-generic  [OK]
+Trying kernel                    3.0.18-030018-generic  [OK]
+Trying kernel                  2.6.39-02063904-generic  [OK]
+Trying kernel                  2.6.38-02063808-generic  [OK]
+Trying kernel                  2.6.37-02063706-generic  [OK]
+Trying kernel                  2.6.36-02063604-generic  [OK]
+Trying kernel                  2.6.35-02063512-generic  [OK]
+Trying kernel                  2.6.34-02063410-generic  [OK]
+Trying kernel                  2.6.33-02063305-generic  [OK]
+Trying kernel                  2.6.32-02063255-generic  [OK]
+Trying kernel                  2.6.31-02063113-generic  [OK]
+Trying kernel                  2.6.30-02063010-generic  [OK]
+Trying kernel                  2.6.29-02062906-generic  [OK]
+Trying kernel                  2.6.28-02062810-generic  [OK]
+Trying kernel                    2.6.27-020627-generic  [OK]
+Trying kernel                    2.6.26-020626-generic  [OK]
+Trying kernel                    2.6.25-020625-generic  [OK]
+Trying kernel                    2.6.24-020624-generic  [OK]
+Trying kernel                  3.4.0-030400rc4-generic  [OK]
+Trying kernel                     3.3.3-030303-generic  [OK]
+Trying kernel                     3.2.2-030202-generic  [OK]
+Trying kernel                    3.1.10-030110-generic  [OK]
+Trying kernel                    3.0.18-030018-generic  [OK]
+Trying kernel                  2.6.39-02063904-generic  [OK]
+Trying kernel                  2.6.38-02063808-generic  [OK]
+Trying kernel                  2.6.37-02063706-generic  [OK]
+Trying kernel                  2.6.36-02063604-generic  [OK]
+Trying kernel                  2.6.35-02063512-generic  [OK]
+Trying kernel                  2.6.34-02063410-generic  [OK]
+Trying kernel                  2.6.33-02063305-generic  [OK]
+Trying kernel                  2.6.32-02063255-generic  [OK]
+Trying kernel                  2.6.31-02063113-generic  [OK]
+Trying kernel                  2.6.30-02063010-generic  [OK]
+Trying kernel                  2.6.29-02062906-generic  [OK]
+Trying kernel                  2.6.28-02062810-generic  [OK]
+Trying kernel                    2.6.27-020627-generic  [OK]
+Trying kernel                    2.6.26-020626-generic  [OK]
+Trying kernel                    2.6.25-020625-generic  [OK]
+Trying kernel                    2.6.24-020624-generic  [OK]
 
- arch/um/drivers/mconsole_kern.c |    1 -
- include/linux/rcupdate.h        |    1 -
- include/linux/rcutiny.h         |    6 ++++++
- include/linux/sched.h           |   10 ----------
- kernel/rcutree.c                |    1 +
- kernel/rcutree.h                |    1 +
- kernel/rcutree_plugin.h         |   14 +++++++++++---
- kernel/sched/core.c             |    1 -
- 8 files changed, 19 insertions(+), 16 deletions(-)
-
+  Luis
