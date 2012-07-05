@@ -1,728 +1,502 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037Ab2GEHAc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 03:00:32 -0400
-Received: from mga01.intel.com ([192.55.52.88]:58686 "EHLO mga01.intel.com"
+	id S1753310Ab2GEHAq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 03:00:46 -0400
+Received: from smtp1.it.da.ut.ee ([193.40.5.66]:57170 "EHLO smtp1.it.da.ut.ee"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750931Ab2GEHA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 03:00:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="173573819"
-Message-ID: <1341471717.1682.125.camel@rui.sh.intel.com>
-Subject: Re: Fwd: Hid over I2C and ACPI interaction
-From: Zhang Rui <rui.zhang@intel.com>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
-        lenb@kernel.org, linux-acpi@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jkosina@suse.cz, chatty@enac.fr,
-        jj_ding@emc.com.tw
-Date: Thu, 05 Jul 2012 15:01:57 +0800
-In-Reply-To: <4FF52C70.9010601@intel.com>
-References: <CAN+gG=GnMX8Gu6w9za2QrjoVrmORncFgq-+hhmHvxtOPEB=nDw@mail.gmail.com>
-	 <4FF52C70.9010601@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1752827Ab2GEHAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 03:00:41 -0400
+Date: Thu, 5 Jul 2012 10:00:37 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: 3.5-rc5: radeon acceleration regression on Transmeta system
+Message-ID: <alpine.SOC.1.00.1207050956300.515@math.ut.ee>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In 2.6.32, radeon worked fine.
 
-> -------- Original Message --------
-> Subject: Hid over I2C and ACPI interaction
-> Date: Wed, 4 Jul 2012 15:46:35 +0200
-> From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>, Wolfram 
-> Sang <w.sang@pengutronix.de>, Len Brown <lenb@kernel.org>, 
-> <linux-acpi@vger.kernel.org>, <linux-i2c@vger.kernel.org>, 
-> <linux-kernel@vger.kernel.org>
-> CC: Jiri Kosina <jkosina@suse.cz>, Stéphane Chatty <chatty@enac.fr>, JJ Ding 
-> <jj_ding@emc.com.tw>
-> 
-> Hi Guys,
-> 
-> I'm the co-author and the maintainer of the hid-multitouch driver. To
-> support even more devices, I started the implementation of the HID
-> over I2C protocol specification which is introduced by Win8. I'm quite
-> comfortable with the hid and the I2C part, but I'm blocked with the
-> interaction with the ACPI for the pnp part.
-> 
-> I wanted to have your advice/help on this problem. I've add in the
-> recipients list the maintainers of i2c and ACPI, sorry for the noise
-> if you don't feel concerned about this.
-> 
-> So, let's go deeper in the problem ;-)
-> Microsoft's spec asks the OEM to fill the ACPI DSDT to provide the
-> following scope in the ASL layout:
-> 
-> >>>>>>>>> begin of ASL
-> Scope (\_SB) {
-> //--------------------
-> //  General Purpose I/O, ports 0...127
-> //--------------------
-> 
-> Device(HIDI2C_DEVICE1) {
->      Name(_ADR,0)
->      Name (_HID, "MSFT1234”)
->      Name (_CID, "PNP0C50")
->      Name (_UID, 3)
-> 
->      Method(_CRS, 0x0, NotSerialized)
->      {
->          Name (RBUF, ResourceTemplate ()
->          {
->          // Address 0x07 on I2C-X (OEM selects this address)
->         //IHV SPECIFIC I2C3 = I2C Controller; TGD0 = GPIO Controller;
->          I2CSerialBus (0x07, ControllerInitiated,
-> 100000,AddressingMode7Bit, "\\_SB.I2C3",,,,)
->          GpioInt(Level, ActiveLow, Exclusive, PullUp, 0, "\\_SB. TGD0",
-> 0 , ResourceConsumer, , ) {40}
->          })
->       Return(RBUF)
->       }
-> 
->       Method(_DSM, 0x4, NotSerialized)
->       {
->          // BreakPoint
->          Store ("Method _DSM begin", Debug)
-> 
->          // DSM UUID
->          switch(ToBuffer(Arg0))
->          {		
->              // ACPI DSM UUID for HIDI2C
->              case(ToUUID("3CDFF6F7-4267-4555-AD05-B30A3D8938DE"))
->              {
->                   // DSM function which returns the HID Descriptor
-> Address (skipped)
->              }
-> 
->              default
->              {
->                  // No other GUIDs supported
->                  Return(Buffer(One) { 0x00 })
->              }
->          }
->      }
-> }
-> <<<<<<<<< end of ASL
-> 
-yep, this is an ACPI enumerated I2C controller.
+In 3.4, radeon worked with a glitch - window titles were see-throug (not 
+drawn). In 3.5-rc5, radeon driver seems to be more careful and disables 
+acceleration on this system at all. Full dmesg below.
 
-> Summary:
-> - a HID over I2C device has to present the Compatibility ID "PNP0C50"
-> - in the _CRS block, the address, the adapter and the gpioInt are
-> defined (or referenced)
-> - it presents a Device Specific Method (_DSM) which returns the HID
-> Descriptor register address. This register is our entry point for
-> retrieving the information about our hid device (so it's mandatory to
-> obtain it).
-> 
-> Where am I:
-> - I've written a first layer on top of i2c that retrieves the hid
-> register (currently the address 0x0001 is hardcoded), then get the
-> report desccriptors and the input events, and forward all this stuff
-> to the hid layer.
-> - It's working with a custom emulated HID over i2c touchpad, while
-> waiting for the one a manufacturer should send to me.
-> - The detection and the addition to the adapter is done by adding the
-> address in the lists and the name through the i2c "->detect" callback
-> (which is not very good, because I don't have the interrupt line
-> there).
-> - I've written a first acpi implementation that rely on the
-> DEVICE_ACPI_HANDLE macro to get the ACPI handle of the device (if
-> available).
-> - I'm not able to do some tests with the ACPI, as I don't know how to
-> implement this DSDT on my computer (I'm missing the I2C part), and the
-> manufacturer returned the mainboard with the right DSDT to the OEM.
-> 
-> My questions:
-> - will the current acpi implementation handle I2C devices?
+Fujitsu Lifebook P series, 256M RAM, 239 usable.
 
-you still need to write your own device driver for the device.
+[    0.000000] Initializing cgroup subsys cpu
+[    0.000000] Linux version 3.5.0-rc5-00098-g9e85a6f (mroos@raamat) (gcc version 4.4.5 (Debian 4.4.5-8) ) #61 Thu Jul 5 04:17:43 EEST 2012
+[    0.000000] e820: BIOS-provided physical RAM map:
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009bfff] usable
+[    0.000000] BIOS-e820: [mem 0x000000000009c000-0x000000000009ffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000000e8000-0x00000000000fffff] reserved
+[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000000efdffff] usable
+[    0.000000] BIOS-e820: [mem 0x000000000efe0000-0x000000000efefbff] ACPI data
+[    0.000000] BIOS-e820: [mem 0x000000000efefc00-0x000000000efeffff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x000000000eff0000-0x000000000f0fffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000fff00000-0x00000000ffffffff] reserved
+[    0.000000] Notice: NX (Execute Disable) protection missing in CPU!
+[    0.000000] DMI 2.3 present.
+[    0.000000] DMI: FUJITSU LifeBook P Series/FJNB164, BIOS Version 1.08  02/24/2005
+[    0.000000] e820: update [mem 0x00000000-0x0000ffff] usable ==> reserved
+[    0.000000] e820: remove [mem 0x000a0000-0x000fffff] usable
+[    0.000000] e820: last_pfn = 0xefe0 max_arch_pfn = 0x100000
+[    0.000000] initial memory mapped: [mem 0x00000000-0x017fffff]
+[    0.000000] Base memory trampoline at [c0098000] 98000 size 16384
+[    0.000000] init_memory_mapping: [mem 0x00000000-0x0efdffff]
+[    0.000000]  [mem 0x00000000-0x003fffff] page 4k
+[    0.000000]  [mem 0x00400000-0x0ebfffff] page 2M
+[    0.000000]  [mem 0x0ec00000-0x0efdffff] page 4k
+[    0.000000] kernel direct mapping tables up to 0xefdffff @ [mem 0x017fa000-0x017fffff]
+[    0.000000] ACPI: RSDP 000f70a0 00014 (v00 FUJ   )
+[    0.000000] ACPI: RSDT 0efedad0 0002C (v01 FUJ    MOMUS3   01080000 FUJ  00001000)
+[    0.000000] ACPI: FACP 0efefa92 00074 (v01 FUJ    MOMUS3   01080000 FUJ  00001000)
+[    0.000000] ACPI: DSDT 0efedafc 01F96 (v01 FUJ    MOMUS3   01080000 MSFT 01000007)
+[    0.000000] ACPI: FACS 0efeffc0 00040
+[    0.000000] ACPI: SSDT 0efefb06 000FA (v01 PTLTD  ACPIPST1 00000001 PTL  00000001)
+[    0.000000] 239MB LOWMEM available.
+[    0.000000]   mapped low ram: 0 - 0efe0000
+[    0.000000]   low ram: 0 - 0efe0000
+[    0.000000] Zone ranges:
+[    0.000000]   DMA      [mem 0x00010000-0x00ffffff]
+[    0.000000]   Normal   [mem 0x01000000-0x0efdffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x00010000-0x0009bfff]
+[    0.000000]   node   0: [mem 0x00100000-0x0efdffff]
+[    0.000000] On node 0 totalpages: 61292
+[    0.000000] free_area_init_node: node 0, pgdat c12ff888, node_mem_map cee00200
+[    0.000000]   DMA zone: 32 pages used for memmap
+[    0.000000]   DMA zone: 0 pages reserved
+[    0.000000]   DMA zone: 3948 pages, LIFO batch:0
+[    0.000000]   Normal zone: 448 pages used for memmap
+[    0.000000]   Normal zone: 56864 pages, LIFO batch:15
+[    0.000000] ACPI: PM-Timer IO Port: 0xff08
+[    0.000000] PM: Registered nosave memory: 000000000009c000 - 00000000000a0000
+[    0.000000] PM: Registered nosave memory: 00000000000a0000 - 00000000000e8000
+[    0.000000] PM: Registered nosave memory: 00000000000e8000 - 0000000000100000
+[    0.000000] e820: [mem 0x0f100000-0xffefffff] available for PCI devices
+[    0.000000] pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
+[    0.000000] pcpu-alloc: [0] 0 
+[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 60812
+[    0.000000] Kernel command line: BOOT_IMAGE=/boot/vmlinuz-3.5.0-rc5-00098-g9e85a6f root=/dev/sda1 ro debug radeon.modeset=1
+[    0.000000] PID hash table entries: 1024 (order: 0, 4096 bytes)
+[    0.000000] Dentry cache hash table entries: 32768 (order: 5, 131072 bytes)
+[    0.000000] Inode-cache hash table entries: 16384 (order: 4, 65536 bytes)
+[    0.000000] __ex_table already sorted, skipping sort
+[    0.000000] Initializing CPU#0
+[    0.000000] Memory: 239300k/245632k available (2103k kernel code, 5868k reserved, 984k data, 284k init, 0k highmem)
+[    0.000000] virtual kernel memory layout:
+[    0.000000]     fixmap  : 0xfffe4000 - 0xfffff000   ( 108 kB)
+[    0.000000]     vmalloc : 0xcf7e0000 - 0xfffe2000   ( 776 MB)
+[    0.000000]     lowmem  : 0xc0000000 - 0xcefe0000   ( 239 MB)
+[    0.000000]       .init : 0xc1305000 - 0xc134c000   ( 284 kB)
+[    0.000000]       .data : 0xc120de7e - 0xc13040c0   ( 984 kB)
+[    0.000000]       .text : 0xc1000000 - 0xc120de7e   (2103 kB)
+[    0.000000] Checking if this processor honours the WP bit even in supervisor mode...Ok.
+[    0.000000] NR_IRQS:16 nr_irqs:16 16
+[    0.000000] CPU 0 irqstacks, hard=ce806000 soft=ce808000
+[    0.000000] Console: colour VGA+ 80x25
+[    0.000000] console [tty0] enabled
+[    0.000000] Fast TSC calibration using PIT
+[    0.000000] Detected 793.245 MHz processor.
+[    0.020034] Calibrating delay loop (skipped), value calculated using timer frequency.. 1586.49 BogoMIPS (lpj=7932450)
+[    0.020283] pid_max: default: 32768 minimum: 301
+[    0.021593] Security Framework initialized
+[    0.021900] Mount-cache hash table entries: 512
+[    0.038591] Initializing cgroup subsys blkio
+[    0.042141] CPU: Processor revision 1.4.1.0, 800 MHz
+[    0.042290] CPU: Code Morphing Software revision 4.3.2-9-566
+[    0.042399] CPU: 20030108 13:03 official release 28.0.3-4.3.2#1
+[    0.042734] CPU: Transmeta(tm) Crusoe(tm) Processor TM5800 stepping 03
+[    0.044291] ACPI: Core revision 20120320
+[    0.093271] ACPI: setting ELCR to 0200 (from 0c00)
+[    0.101539] Performance Events: 
+[    0.115702] PM: Registering ACPI NVS region [mem 0x0efefc00-0x0efeffff] (1024 bytes)
+[    0.121209] NET: Registered protocol family 16
+[    0.145615] ACPI: bus type pci registered
+[    0.171379] PCI: PCI BIOS revision 2.10 entry at 0xfd8ae, last bus=1
+[    0.171513] PCI: Using configuration type 1 for base access
+[    0.295302] bio: create slab <bio-0> at 0
+[    0.297567] ACPI: Added _OSI(Module Device)
+[    0.297986] ACPI: Added _OSI(Processor Device)
+[    0.298098] ACPI: Added _OSI(3.0 _SCP Extensions)
+[    0.298192] ACPI: Added _OSI(Processor Aggregator Device)
+[    0.303575] ACPI: EC: Look up EC in DSDT
+[    0.347351] ACPI: Interpreter enabled
+[    0.347521] ACPI: (supports S0 S3 S4 S5)
+[    0.348070] ACPI: Using PIC for interrupt routing
+[    0.411673] ACPI: Power Resource [USBP] (on)
+[    0.430747] ACPI: EC: GPE = 0x0, I/O: command/status = 0x66, data = 0x62
+[    0.432793] ACPI: No dock devices found.
+[    0.432985] PCI: Ignoring host bridge windows from ACPI; if necessary, use "pci=use_crs" and report a bug
+[    0.441759] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+[    0.453184] pci_root PNP0A03:00: host bridge window [io  0x0000-0x0cf7] (ignored)
+[    0.453409] pci_root PNP0A03:00: host bridge window [io  0x0d00-0xffff] (ignored)
+[    0.453581] pci_root PNP0A03:00: host bridge window [mem 0x000a0000-0x000bffff] (ignored)
+[    0.453745] pci_root PNP0A03:00: host bridge window [mem 0x000d0000-0x000e7fff] (ignored)
+[    0.453917] pci_root PNP0A03:00: host bridge window [mem 0x0f100000-0xffefffff] (ignored)
+[    0.454044] PCI: root bus 00: using default resources
+[    0.455496] PCI host bridge to bus 0000:00
+[    0.455828] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.455982] pci_bus 0000:00: root bus resource [mem 0x00000000-0xffffffff]
+[    0.456188] pci 0000:00:00.0: [1279:0395] type 00 class 0x060000
+[    0.456734] pci 0000:00:00.0: reg 10: [mem 0xe8100000-0xe81fffff]
+[    0.457639] pci 0000:00:00.1: [1279:0396] type 00 class 0x050000
+[    0.459685] pci 0000:00:00.2: [1279:0397] type 00 class 0x050000
+[    0.461085] pci 0000:00:02.0: [10b9:5237] type 00 class 0x0c0310
+[    0.461656] pci 0000:00:02.0: reg 10: [mem 0xe8010000-0xe8010fff]
+[    0.463397] pci 0000:00:04.0: [10b9:5451] type 00 class 0x040100
+[    0.464555] pci 0000:00:04.0: reg 10: [io  0x1000-0x10ff]
+[    0.464754] pci 0000:00:04.0: reg 14: [mem 0xe8011000-0xe8011fff]
+[    0.465523] pci 0000:00:04.0: supports D1 D2
+[    0.465759] pci 0000:00:04.0: PME# supported from D2 D3hot D3cold
+[    0.466565] pci 0000:00:06.0: [10b9:7101] type 00 class 0x068000
+[    0.466857] pci 0000:00:06.0: quirk: [io  0xff00-0xff3f] claimed by ali7101 ACPI
+[    0.467025] pci 0000:00:06.0: quirk: [io  0xff80-0xff9f] claimed by ali7101 SMB
+[    0.467263] pci 0000:00:07.0: [10b9:1533] type 00 class 0x060100
+[    0.468090] pci 0000:00:0c.0: [104c:ac50] type 02 class 0x060700
+[    0.468256] pci 0000:00:0c.0: reg 10: [mem 0x00000000-0x00000fff]
+[    0.469312] pci 0000:00:0c.0: supports D1 D2
+[    0.469505] pci 0000:00:0c.0: PME# supported from D0 D1 D2 D3hot D3cold
+[    0.470204] pci 0000:00:0f.0: [10b9:5229] type 00 class 0x0101ee
+[    0.470377] pci 0000:00:0f.0: reg 18: [io  0x0170-0x0177]
+[    0.470638] pci 0000:00:0f.0: reg 1c: [io  0x0374-0x0377]
+[    0.470804] pci 0000:00:0f.0: reg 20: [io  0x1800-0x180f]
+[    0.471123] pci 0000:00:10.0: [10ec:8139] type 00 class 0x020000
+[    0.471266] pci 0000:00:10.0: reg 10: [io  0x8000-0x80ff]
+[    0.471381] pci 0000:00:10.0: reg 14: [mem 0xe8012000-0xe80120ff]
+[    0.471542] pci 0000:00:10.0: supports D1 D2
+[    0.471795] pci 0000:00:10.0: PME# supported from D1 D2 D3hot D3cold
+[    0.472663] pci 0000:00:12.0: [1260:3873] type 00 class 0x028000
+[    0.472815] pci 0000:00:12.0: reg 10: [mem 0xe8013000-0xe8013fff pref]
+[    0.473131] pci 0000:00:12.0: supports D1 D2
+[    0.473352] pci 0000:00:12.0: PME# supported from D0 D1 D2 D3hot
+[    0.473713] pci 0000:00:14.0: [1002:4c59] type 00 class 0x030000
+[    0.473849] pci 0000:00:14.0: reg 10: [mem 0xf0000000-0xf7ffffff pref]
+[    0.474002] pci 0000:00:14.0: reg 14: [io  0x1400-0x14ff]
+[    0.474505] pci 0000:00:14.0: reg 18: [mem 0xe8000000-0xe800ffff]
+[    0.475176] pci 0000:00:14.0: reg 30: [mem 0x00000000-0x0001ffff pref]
+[    0.475315] pci 0000:00:14.0: supports D1 D2
+[    0.476190] pci_bus 0000:00: on NUMA node 0
+[    0.476310] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0._PRT]
+[    0.477639]  pci0000:00: Unable to request _OSC control (_OSC support mask: 0x08)
+[    0.490894] ACPI: PCI Interrupt Link [LNKA] (IRQs 3 4 5 7 *10 11)
+[    0.493250] ACPI: PCI Interrupt Link [LNKB] (IRQs 3 4 5 7 *10 11)
+[    0.496402] ACPI: PCI Interrupt Link [LNKC] (IRQs 3 4 5 7 10 11) *0, disabled.
+[    0.498552] ACPI: PCI Interrupt Link [LNKD] (IRQs 3 4 5 7 *10 11)
+[    0.501014] ACPI: PCI Interrupt Link [LNKE] (IRQs 3 4 5 7 *10 11)
+[    0.504631] ACPI: PCI Interrupt Link [LNKF] (IRQs 3 4 5 7 10 11) *0, disabled.
+[    0.506908] ACPI: PCI Interrupt Link [LNKG] (IRQs 3 4 5 7 10 11) *0, disabled.
+[    0.508373] ACPI: PCI Interrupt Link [LNKH] (IRQs 3 4 5 7 *10 11)
+[    0.511603] ACPI: PCI Interrupt Link [LNKU] (IRQs 3 4 5 7 10 *11)
+[    0.514308] vgaarb: device added: PCI:0000:00:14.0,decodes=io+mem,owns=io+mem,locks=none
+[    0.514815] vgaarb: loaded
+[    0.514892] vgaarb: bridge control possible 0000:00:14.0
+[    0.517519] SCSI subsystem initialized
+[    0.518727] libata version 3.00 loaded.
+[    0.520365] PCI: Using ACPI for IRQ routing
+[    0.520707] PCI: pci_cache_line_size set to 32 bytes
+[    0.523404] e820: reserve RAM buffer [mem 0x0009c000-0x0009ffff]
+[    0.523504] e820: reserve RAM buffer [mem 0x0efe0000-0x0fffffff]
+[    0.527307] Switching to clocksource pit
+[    0.529513] pnp: PnP ACPI init
+[    0.529694] ACPI: bus type pnp registered
+[    0.529694] pnp 00:00: [bus 00-ff]
+[    0.529694] pnp 00:00: [io  0x0cf8-0x0cff]
+[    0.529694] pnp 00:00: [io  0x0000-0x0cf7 window]
+[    0.529694] pnp 00:00: [io  0x0d00-0xffff window]
+[    0.529694] pnp 00:00: [mem 0x000a0000-0x000bffff window]
+[    0.529694] pnp 00:00: [mem 0x000d0000-0x000e7fff window]
+[    0.529694] pnp 00:00: [mem 0x0f100000-0xffefffff window]
+[    0.529694] pnp 00:00: Plug and Play ACPI device, IDs PNP0a03 (active)
+[    0.529694] pnp 00:01: [io  0x0072-0x0073]
+[    0.529694] pnp 00:01: [io  0x0080]
+[    0.529703] pnp 00:01: [io  0x0092]
+[    0.529784] pnp 00:01: [io  0x00b0-0x00b3]
+[    0.529863] pnp 00:01: [io  0x00ea-0x00eb]
+[    0.529942] pnp 00:01: [io  0x040b]
+[    0.530023] pnp 00:01: [io  0x0480-0x048f]
+[    0.530101] pnp 00:01: [io  0x04d0-0x04d1]
+[    0.530179] pnp 00:01: [io  0x04d6]
+[    0.530258] pnp 00:01: [io  0xf800-0xf87f]
+[    0.530338] pnp 00:01: [io  0xf880-0xf8ff]
+[    0.530419] pnp 00:01: [io  0xfd60-0xfd67]
+[    0.530499] pnp 00:01: [io  0xfe00]
+[    0.530580] pnp 00:01: [io  0xff00-0xff3f]
+[    0.530660] pnp 00:01: [io  0xff80-0xff9f]
+[    0.532304] system 00:01: [io  0x040b] has been reserved
+[    0.532853] system 00:01: [io  0x0480-0x048f] has been reserved
+[    0.533213] system 00:01: [io  0x04d0-0x04d1] has been reserved
+[    0.540130] system 00:01: [io  0x04d6] has been reserved
+[    0.540225] system 00:01: [io  0xf800-0xf87f] has been reserved
+[    0.540312] system 00:01: [io  0xf880-0xf8ff] has been reserved
+[    0.540597] system 00:01: [io  0xfd60-0xfd67] has been reserved
+[    0.540805] system 00:01: [io  0xfe00] has been reserved
+[    0.540901] system 00:01: [io  0xff00-0xff3f] has been reserved
+[    0.540994] system 00:01: [io  0xff80-0xff9f] has been reserved
+[    0.541107] system 00:01: Plug and Play ACPI device, IDs PNP0c02 (active)
+[    0.541603] pnp 00:02: [io  0x0000-0x000f]
+[    0.541769] pnp 00:02: [io  0x0081-0x008f]
+[    0.542033] pnp 00:02: [io  0x00c0-0x00df]
+[    0.542122] pnp 00:02: [dma 4]
+[    0.542928] pnp 00:02: Plug and Play ACPI device, IDs PNP0200 (active)
+[    0.543271] pnp 00:03: [io  0x00f0-0x00fe]
+[    0.543374] pnp 00:03: [irq 13]
+[    0.543794] pnp 00:03: Plug and Play ACPI device, IDs PNP0c04 (active)
+[    0.544304] pnp 00:04: [io  0x0070-0x0071]
+[    0.544409] pnp 00:04: [irq 8]
+[    0.545001] pnp 00:04: Plug and Play ACPI device, IDs PNP0b00 (active)
+[    0.545390] pnp 00:05: [io  0x0061]
+[    0.546014] pnp 00:05: Plug and Play ACPI device, IDs PNP0800 (active)
+[    0.546554] pnp 00:06: [irq 12]
+[    0.547001] pnp 00:06: Plug and Play ACPI device, IDs PNP0f13 (active)
+[    0.547615] pnp 00:07: [io  0x0060]
+[    0.547784] pnp 00:07: [io  0x0064]
+[    0.547876] pnp 00:07: [irq 1]
+[    0.548318] pnp 00:07: Plug and Play ACPI device, IDs PNP0303 (active)
+[    0.550850] pnp: PnP ACPI: found 8 devices
+[    0.550953] ACPI: ACPI bus type pnp unregistered
+[    0.614042] Switching to clocksource acpi_pm
+[    0.614647] pci 0000:00:0c.0: res[9]=[mem 0x04000000-0x03ffffff pref] get_res_add_size add_size 4000000
+[    0.614782] pci 0000:00:0c.0: res[10]=[mem 0x04000000-0x03ffffff] get_res_add_size add_size 4000000
+[    0.614889] pci 0000:00:0c.0: res[7]=[io  0x0100-0x00ff] get_res_add_size add_size 100
+[    0.614991] pci 0000:00:0c.0: res[8]=[io  0x0100-0x00ff] get_res_add_size add_size 100
+[    0.615186] pci 0000:00:0c.0: BAR 0: assigned [mem 0x10000000-0x10000fff]
+[    0.615504] pci 0000:00:0c.0: BAR 9: assigned [mem 0x14000000-0x17ffffff pref]
+[    0.616052] pci 0000:00:0c.0: BAR 10: assigned [mem 0x18000000-0x1bffffff]
+[    0.616193] pci 0000:00:14.0: BAR 6: assigned [mem 0x10020000-0x1003ffff pref]
+[    0.617156] pci 0000:00:0c.0: BAR 7: assigned [io  0x1c00-0x1cff]
+[    0.617397] pci 0000:00:0c.0: BAR 8: assigned [io  0x2000-0x20ff]
+[    0.617519] pci 0000:00:0c.0: CardBus bridge to [bus 01-04]
+[    0.617599] pci 0000:00:0c.0:   bridge window [io  0x1c00-0x1cff]
+[    0.617686] pci 0000:00:0c.0:   bridge window [io  0x2000-0x20ff]
+[    0.617778] pci 0000:00:0c.0:   bridge window [mem 0x14000000-0x17ffffff pref]
+[    0.617890] pci 0000:00:0c.0:   bridge window [mem 0x18000000-0x1bffffff]
+[    0.619203] ACPI: PCI Interrupt Link [LNKA] enabled at IRQ 10
+[    0.619311] PCI: setting IRQ 10 as level-triggered
+[    0.619442] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.619523] pci_bus 0000:00: resource 5 [mem 0x00000000-0xffffffff]
+[    0.619607] pci_bus 0000:01: resource 0 [io  0x1c00-0x1cff]
+[    0.619680] pci_bus 0000:01: resource 1 [io  0x2000-0x20ff]
+[    0.619760] pci_bus 0000:01: resource 2 [mem 0x14000000-0x17ffffff pref]
+[    0.619838] pci_bus 0000:01: resource 3 [mem 0x18000000-0x1bffffff]
+[    0.620322] NET: Registered protocol family 2
+[    0.623647] IP route cache hash table entries: 2048 (order: 1, 8192 bytes)
+[    0.627144] TCP established hash table entries: 8192 (order: 4, 65536 bytes)
+[    0.627600] TCP bind hash table entries: 8192 (order: 3, 32768 bytes)
+[    0.627936] TCP: Hash tables configured (established 8192 bind 8192)
+[    0.628027] TCP: reno registered
+[    0.628124] UDP hash table entries: 256 (order: 0, 4096 bytes)
+[    0.628495] UDP-Lite hash table entries: 256 (order: 0, 4096 bytes)
+[    0.630596] NET: Registered protocol family 1
+[    0.631124] pci 0000:00:02.0: power state changed by ACPI to D0
+[    0.631231] pci 0000:00:02.0: power state changed by ACPI to D0
+[    0.632229] ACPI: PCI Interrupt Link [LNKU] enabled at IRQ 11
+[    0.632330] PCI: setting IRQ 11 as level-triggered
+[    0.690897] pci 0000:00:07.0: Activating ISA DMA hang workarounds
+[    0.691080] pci 0000:00:14.0: Boot video device
+[    0.691172] PCI: CLS 32 bytes, default 32
+[    0.698723] HugeTLB registered 4 MB page size, pre-allocated 0 pages
+[    0.703380] msgmni has been set to 467
+[    0.705277] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 252)
+[    0.705417] io scheduler noop registered
+[    0.705551] io scheduler cfq registered (default)
+[    0.707289] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+[    0.713311] pata_ali 0000:00:0f.0: can't derive routing for PCI INT A
+[    0.713424] pata_ali 0000:00:0f.0: PCI INT A: no GSI
+[    0.713493] 
+[    0.718390] scsi0 : pata_ali
+[    0.720305] scsi1 : pata_ali
+[    0.721375] ata1: PATA max UDMA/66 cmd 0x1f0 ctl 0x3f6 bmdma 0x1800 irq 14
+[    0.721484] ata2: PATA max UDMA/66 cmd 0x170 ctl 0x374 bmdma 0x1808 irq 15
+[    0.724647] i8042: PNP: PS/2 Controller [PNP0303:KBC,PNP0f13:PS2M] at 0x60,0x64 irq 1,12
+[    0.727897] serio: i8042 KBD port at 0x60,0x64 irq 1
+[    0.728034] serio: i8042 AUX port at 0x60,0x64 irq 12
+[    0.730046] mousedev: PS/2 mouse device common for all mice
+[    0.731241] rtc_cmos 00:04: RTC can wake from S4
+[    0.733019] rtc_cmos 00:04: rtc core: registered rtc_cmos as rtc0
+[    0.733225] rtc0: alarms up to one month, y3k, 114 bytes nvram
+[    0.733527] cpuidle: using governor ladder
+[    0.733614] cpuidle: using governor menu
+[    0.742895] TCP: cubic registered
+[    0.743008] NET: Registered protocol family 17
+[    0.743606] Key type dns_resolver registered
+[    0.752037] rtc_cmos 00:04: setting system clock to 2012-07-05 05:32:14 UTC (1341466334)
+[    0.772265] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input0
+[    1.384194] ata1.00: ATA-4: TOSHIBA MK6014MAP, N2.14 G, max UDMA/66
+[    1.384377] ata1.00: 11733120 sectors, multi 16: LBA 
+[    1.402773] ata1.00: configured for UDMA/66
+[    1.408845] scsi 0:0:0:0: Direct-Access     ATA      TOSHIBA MK6014MA N2.1 PQ: 0 ANSI: 5
+[    1.412622] sd 0:0:0:0: [sda] 11733120 512-byte logical blocks: (6.00 GB/5.59 GiB)
+[    1.416328] sd 0:0:0:0: [sda] Write Protect is off
+[    1.416449] sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 00
+[    1.418440] sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+[    1.690446] Refined TSC clocksource calibration: 793.226 MHz.
+[    1.690788] Switching to clocksource tsc
+[    1.922803]  sda: sda1 sda2 < sda5 >
+[    1.971289] sd 0:0:0:0: [sda] Attached SCSI disk
+[    2.025718] kjournald starting.  Commit interval 5 seconds
+[    2.027704] EXT3-fs (sda1): mounted filesystem with writeback data mode
+[    2.028168] VFS: Mounted root (ext3 filesystem) readonly on device 8:1.
+[    2.033706] Freeing unused kernel memory: 284k freed
+[    2.037306] Write protecting the kernel text: 2104k
+[    2.037528] Write protecting the kernel read-only data: 804k
+[    9.470599] ACPI: Deprecated procfs I/F for AC is loaded, please retry with CONFIG_ACPI_PROCFS_POWER cleared
+[    9.479199] Linux agpgart interface v0.103
+[    9.508425] ACPI: AC Adapter [AC] (on-line)
+[    9.515317] ACPI: Deprecated procfs I/F for battery is loaded, please retry with CONFIG_ACPI_PROCFS_POWER cleared
+[    9.515499] ACPI: Battery Slot [CMB1] (battery present)
+[    9.518358] input: Power Button as /devices/LNXSYSTM:00/device:00/PNP0C0C:00/input/input1
+[    9.518729] ACPI: Power Button [PWRB]
+[    9.519442] input: Lid Switch as /devices/LNXSYSTM:00/device:00/PNP0C0D:00/input/input2
+[    9.519955] ACPI: Lid Switch [LID]
+[    9.521240] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input3
+[    9.521421] ACPI: Power Button [PWRF]
+[   10.425726] Marking TSC unstable due to TSC halts in idle
+[   10.426177] ACPI: acpi_idle registered with cpuidle
+[   10.433737] Switching to clocksource acpi_pm
+[   10.526655] input: Fujitsu FUJ02B1 as /devices/LNXSYSTM:00/device:00/PNP0A03:00/device:02/FUJ02B1:00/input/input4
+[   10.526968] fujitsu_laptop: ACPI: Fujitsu FUJ02B1 [FJEX] (on)
+[   10.535226] fujitsu_laptop: driver 0.6.0 successfully loaded
+[   10.634201] input: PC Speaker as /devices/platform/pcspkr/input/input5
+[   10.765315] 8139cp: 8139cp: 10/100 PCI Ethernet driver v1.3 (Mar 22, 2004)
+[   10.765597] 8139cp 0000:00:10.0: This (id 10ec:8139 rev 10) is not an 8139C+ compatible chip, use 8139too
+[   11.177717] 8139too: 8139too Fast Ethernet driver 0.9.28
+[   11.189874] ACPI: PCI Interrupt Link [LNKB] enabled at IRQ 10
+[   11.195012] 8139too 0000:00:10.0: eth0: RealTek RTL8139 at 0xcf7fc000, 00:0b:5d:48:63:fb, IRQ 10
+[   11.296360] ali1535_smbus 0000:00:06.0: enabling device (0000 -> 0001)
+[   11.331111] ACPI: bus type usb registered
+[   11.331822] usbcore: registered new interface driver usbfs
+[   11.332200] usbcore: registered new interface driver hub
+[   11.378908] usbcore: registered new device driver usb
+[   11.636828] psmouse serio1: trackpoint: IBM TrackPoint firmware: 0x0e, buttons: 3/3
+[   11.654296] input: TPPS/2 IBM TrackPoint as /devices/platform/i8042/serio1/input/input6
+[   11.690237] yenta_cardbus 0000:00:0c.0: CardBus bridge found [10cf:10c6]
+[   11.690462] yenta_cardbus 0000:00:0c.0: adjusting diagnostic: 41 -> 61
+[   11.690576] yenta_cardbus 0000:00:0c.0: Using CSCINT to route CSC interrupts to PCI
+[   11.690682] yenta_cardbus 0000:00:0c.0: Routing CardBus interrupts to PCI
+[   11.690782] yenta_cardbus 0000:00:0c.0: TI: mfunc 0x00c61d22, devctl 0x46
+[   11.791867] apanel: unknown device 11 found
+[   11.943919] yenta_cardbus 0000:00:0c.0: ISA IRQ mask 0x08f8, PCI irq 10
+[   11.950948] yenta_cardbus 0000:00:0c.0: Socket status: 30000006
+[   12.093912] cfg80211: Calling CRDA to update world regulatory domain
+[   12.322813] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+[   12.323361] ohci_hcd 0000:00:02.0: power state changed by ACPI to D0
+[   12.323546] ohci_hcd 0000:00:02.0: power state changed by ACPI to D0
+[   12.324551] ohci_hcd 0000:00:02.0: OHCI Host Controller
+[   12.324880] ohci_hcd 0000:00:02.0: new USB bus registered, assigned bus number 1
+[   12.325380] ohci_hcd 0000:00:02.0: irq 11, io mem 0xe8010000
+[   12.385161] usb usb1: New USB device found, idVendor=1d6b, idProduct=0001
+[   12.385375] usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+[   12.385524] usb usb1: Product: OHCI Host Controller
+[   12.385631] usb usb1: Manufacturer: Linux 3.5.0-rc5-00098-g9e85a6f ohci_hcd
+[   12.385740] usb usb1: SerialNumber: 0000:00:02.0
+[   12.387147] hub 1-0:1.0: USB hub found
+[   12.387465] hub 1-0:1.0: 3 ports detected
+[   12.731337] usb 1-3: new low-speed USB device number 2 using ohci_hcd
+[   12.781008] orinoco 0.15 (David Gibson <hermes@gibson.dropbear.id.au>, Pavel Roskin <proski@gnu.org>, et al)
+[   12.830261] Error: Driver 'pcspkr' is already registered, aborting...
+[   12.913309] usb 1-3: New USB device found, idVendor=0430, idProduct=0508
+[   12.913431] usb 1-3: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+[   12.913520] usb 1-3: Product: USB Touch Panel
+[   12.913594] usb 1-3: Manufacturer: Fujitsu Takamisawa
+[   12.929992] [drm] Initialized drm 1.1.0 20060810
+[   13.131830] orinoco_pci 0.15 (Pavel Roskin <proski@gnu.org>, David Gibson <hermes@gibson.dropbear.id.au> & Jean Tourrilhes <jt@hpl.hp.com>)
+[   13.139002] ACPI: PCI Interrupt Link [LNKE] enabled at IRQ 10
+[   14.090815] orinoco_pci 0000:00:12.0: Hardware identity 8013:0000:0001:0000
+[   14.091063] orinoco_pci 0000:00:12.0: Station identity  001f:0001:0001:0004
+[   14.091151] orinoco_pci 0000:00:12.0: Firmware determined as Intersil 1.4.1
+[   14.091227] orinoco_pci 0000:00:12.0: Ad-hoc demo mode supported
+[   14.091299] orinoco_pci 0000:00:12.0: IEEE standard IBSS ad-hoc mode supported
+[   14.091398] orinoco_pci 0000:00:12.0: WEP supported, 104-bit key
+[   14.444900] pcmcia_socket pcmcia_socket0: cs: memory probe 0x0c0000-0x0fffff:
+[   14.445939]  excluding 0xc0000-0xcffff 0xe8000-0xfffff
+[   14.450332] pcmcia_socket pcmcia_socket0: cs: memory probe 0xa0000000-0xa0ffffff:
+[   14.451528]  clean.
+[   14.454732] pcmcia_socket pcmcia_socket0: cs: memory probe 0x60000000-0x60ffffff:
+[   14.454937]  clean.
+[   14.520360] lib80211: common routines for IEEE802.11 drivers
+[   14.520523] lib80211_crypt: registered algorithm 'NULL'
+[   14.970756] usbcore: registered new interface driver usbhid
+[   14.970908] usbhid: USB HID core driver
+[   15.164302] ACPI: PCI Interrupt Link [LNKH] enabled at IRQ 10
+[   15.301057] input: Fujitsu Takamisawa USB Touch Panel as /devices/pci0000:00/0000:00:02.0/usb1/1-3/1-3:1.0/input/input7
+[   15.302309] hid-generic 0003:0430:0508.0001: input,hidraw0: USB HID v1.00 Mouse [Fujitsu Takamisawa USB Touch Panel] on usb-0000:00:02.0-3/input0
+[   15.881213] [drm] radeon kernel modesetting enabled.
+[   20.188866] ACPI: PCI Interrupt Link [LNKD] enabled at IRQ 10
+[   20.196126] [drm] initializing kernel modesetting (RV100 0x1002:0x4C59 0x10CF:0x11C8).
+[   20.197349] [drm] register mmio base: 0xE8000000
+[   20.197442] [drm] register mmio size: 65536
+[   20.200966] radeon 0000:00:14.0: VRAM: 128M 0x00000000F0000000 - 0x00000000F7FFFFFF (8M used)
+[   20.201124] radeon 0000:00:14.0: GTT: 512M 0x00000000D0000000 - 0x00000000EFFFFFFF
+[   20.201386] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+[   20.201471] [drm] Driver supports precise vblank timestamp query.
+[   20.201712] [drm] radeon: irq initialized.
+[   20.201803] [drm] Detected VRAM RAM=128M, BAR=128M
+[   20.201879] [drm] RAM width 32bits DDR
+[   20.305506] [TTM] Zone  kernel: Available graphics memory: 119792 kiB
+[   20.305610] [TTM] Initializing pool allocator
+[   20.306407] [drm] radeon: 8M of VRAM memory ready
+[   20.306512] [drm] radeon: 512M of GTT memory ready.
+[   20.307206] [drm] GART: num cpu pages 131072, num gpu pages 131072
+[   20.343886] [drm] PCI GART of 512M enabled (table at 0x000000000D480000).
+[   20.345063] radeon 0000:00:14.0: WB disabled
+[   20.345207] radeon 0000:00:14.0: fence driver on ring 0 use gpu addr 0x00000000d0000000 and cpu addr 0xceaca000
+[   20.345709] [drm] Loading R100 Microcode
+[   20.542930] [drm] radeon: ring at 0x00000000D0001000
+[   20.710779] [drm:r100_ring_test] *ERROR* radeon: ring test failed (scratch(0x15E4)=0xCAFEDEAD)
+[   20.711162] [drm:r100_cp_init] *ERROR* radeon: cp isn't working (-22).
+[   20.711261] radeon 0000:00:14.0: failed initializing CP (-22).
+[   20.711339] radeon 0000:00:14.0: Disabling GPU acceleration
+[   20.876370] [drm:r100_cp_fini] *ERROR* Wait for CP idle timeout, shutting down CP.
+[   20.884008] [drm] radeon: cp finalized
+[   20.885280] radeon 0000:00:14.0: cd968c00 unpin not necessary
+[   20.892713] [drm] Panel ID String: Toshiba LTM07C382  XSGA 
+[   20.892827] [drm] Panel Size 1024x600
+[   20.905158] [drm] radeon legacy LVDS backlight initialized
+[   20.905272] [drm] Radeon Display Connectors
+[   20.905342] [drm] Connector 0:
+[   20.905410] [drm]   VGA-1
+[   20.905480] [drm]   DDC: 0x60 0x60 0x60 0x60 0x60 0x60 0x60 0x60
+[   20.905548] [drm]   Encoders:
+[   20.905613] [drm]     CRT1: INTERNAL_DAC1
+[   20.905681] [drm] Connector 1:
+[   20.905746] [drm]   LVDS-1
+[   20.905805] [drm]   Encoders:
+[   20.905872] [drm]     LCD1: INTERNAL_LVDS
+[   21.053621] [drm] fb mappable at 0xF0040000
+[   21.053720] [drm] vram apper at 0xF0000000
+[   21.053780] [drm] size 614400
+[   21.053838] [drm] fb depth is 8
+[   21.053895] [drm]    pitch is 1024
+[   21.054308] fbcon: radeondrmfb (fb0) is primary device
+[   21.141202] Console: switching to colour frame buffer device 128x37
+[   21.148690] fb0: radeondrmfb frame buffer device
+[   21.148842] drm: registered panic notifier
+[   21.149053] [drm] Initialized radeon 2.17.0 20080528 for 0000:00:14.0 on minor 0
+[   24.053066] Adding 305196k swap on /dev/sda5.  Priority:-1 extents:1 across:305196k 
+[   24.635020] EXT3-fs (sda1): using internal journal
+[   25.283203] loop: module loaded
+[   29.418184] 8139too 0000:00:10.0: eth0: link up, 100Mbps, full-duplex, lpa 0xC5E1
+[   40.521817] input: ACPI Virtual Keyboard Device as /devices/virtual/input/input8
+[   45.384034] Bluetooth: Core ver 2.16
+[   45.387260] NET: Registered protocol family 31
+[   45.390291] Bluetooth: HCI device and connection manager initialized
+[   45.393200] Bluetooth: HCI socket layer initialized
+[   45.396075] Bluetooth: L2CAP socket layer initialized
+[   45.398988] Bluetooth: SCO socket layer initialized
+[   45.530408] Bluetooth: RFCOMM TTY layer initialized
+[   45.533374] Bluetooth: RFCOMM socket layer initialized
+[   45.536185] Bluetooth: RFCOMM ver 1.11
+[   46.475693] Bluetooth: BNEP (Ethernet Emulation) ver 1.3
+[   46.479178] Bluetooth: BNEP filters: protocol multicast
+[   47.510590] NET: Registered protocol family 10
+[   47.792722] Bridge firewalling registered
+[   59.527042] sshd (1391): /proc/1391/oom_adj is deprecated, please use /proc/1391/oom_score_adj instead.
 
-> - it seems to me that the .archdata field is left blank during the i2c
-> device initialization in all paths I've seen. Is that true?
-> - who puts the name int the struct i2c_board_info? (for hot-plugged
-> i2c devices).
-> 
-> - finally, what is the best way of handling ACPI for those I2C devices:
->    1) everything is fine, I should have the ACPI handle in .archdata.
->    2) someone has to implement the handling of I2C in the pnpACPI layer
-> (by adding I2CSerialBus handling and creating there the i2c slave).
->    3) I should create an acpi driver which handles "PNP0C50" and which
-> creates the i2c slaves.
-> 
-exactly.
-
-As this I2C controller uses the GPIO interrupt, we need an ACPI GPIO
-controller driver for interrupts first.
-I already have such a patch in hand, but have not release it for some
-reason.
-Second, you need to write your own PNP I2C controller driver, to
-enumerate the I2C controller via ACPI, AND enumerate the I2C slave
-devices under this controller to I2C bus. I also have a similar driver
-for SPI controller and SD/MMC controller.
-Third, you need a I2C slave device driver to handle the I2C slave device
-in I2C bus.
-
-here is a BKM I wrote, hope it helps.
-
-And also any comments are welcome. :)
-
->From 0a0fa4ff7b4b06c6560de94a78b15c6adfd86e34 Mon Sep 17 00:00:00 2001
-From: Zhang Rui <rui.zhang@intel.com>
-Date: Mon, 26 Dec 2011 10:42:04 +0800
-
- As many SoC IP blocks are not hardware self-enumerable, the
- firmware, aka, ACPI tables, is responsible for
- enumerating/reserving/assigning system resources to these
- devices. This tutorial talks about how to enumerate these
- devices via ACPI namespace.
-
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
----
- Documentation/acpi/acpi-device-probing.txt |  466
-++++++++++++++++++++++++++++
- 1 file changed, 466 insertions(+)
- create mode 100644 Documentation/acpi/acpi-device-probing.txt
-
-diff --git a/Documentation/acpi/acpi-device-probing.txt
-b/Documentation/acpi/acpi-device-probing.txt
-new file mode 100644
-index 0000000..82efbf3
---- /dev/null
-+++ b/Documentation/acpi/acpi-device-probing.txt
-@@ -0,0 +1,466 @@
-+
-+HOWTO enumerate devices via ACPI
-+
-+Copyright (c) 2011-2012 Intel Corporation
-+
-+Contrast to hardware self-enumerable devices(e.g. USB, PCI) on PC
-platform,
-+many SoC IP blocks can not be self enumerated.
-+We used to introduce platform specific code for these devices.
-+But now, with ACPI 5.0, there is no requirement for the hardware to be
-+self-discoverable, enumerable or re-locatable, as the firmware is
-responsible
-+for enumerating/reserving/assigning system resources (such as address
-ranges or
-+interrupts) to the device.
-+
-+This document will show how to enumerate and configure a device via
-ACPI.
-+If you want to get more details about why and when we need this,
-+please refer to ACPI spec 5.0 and
-+Intel Architecture Platform Compatibility Definition.
-+
-+Note that although these are ACPI devices, we prefer to use PnP drivers
-for them,
-+this is because:
-+1. all the non-ACPI-predefined Devices are exported as PnP devices as
-well
-+2. PnP bus is a well designed bus. Probing via PnP layer saves a lot of
-work
-+   for the device driver, e.g. getting & parsing ACPI resources.
-+
-+=============================================================================
-+1. Understand device definition in ACPI namespace
-+   [Case study 1] SD/MMC controller
-+2. Driver for a leaf device
-+   2.1 Make a list of supported PnP ids
-+   2.2 Implement .probe/.remove callbacks for the PnP driver
-+   2.3 Fill in the pnp_driver structure
-+   2.4 Register the PnP driver
-+3. Driver for a master device on a non-self-enumerable bus
-+   [Case Study 2] SPI controller and its slave device
-+   3.1 Probe the master device
-+   3.2 Walk ACPI namesapce to get the child devices of the master
-device
-+   3.3 Register these child devices as slave devices
-+   3.4 Write slave device driver
-+4. Misc
-+=============================================================================
-+
-+-----------------------------------------------------------------------------
-+1. Understand device definition in ACPI namespace
-+-----------------------------------------------------------------------------
-+
-+To enumerate a device in ACPI namespace, we need to find out and
-understand
-+HOW the device is defined in ACPI namespace first.
-+
-+[Case study 1 ] SD/MMC Controller
-+
-+Here is an ASL example code for SD/MMC controller definition in ACPI
-namespace.
-+
-+        Device (EMMC)
-+        {
-+            Name (_ADR, Zero)
-+            /* I use PNPXXXX, an arbitrary string, here, as PnP id is
-device specific */
-+            Name (_HID, "PNPXXXX")
-+            Name (_CID, "PNPXXXX")
-+            Name (_UID, 4)
-+
-+            Method (_CRS, 0, NotSerialized)
-+            {
-+                Name (RBUF, ResourceTemplate ()
-+                {
-+                    Memory32Fixed (ReadWrite,
-+                        0xFFA50000,         // Address Base
-+                        0x00000100,         // Address Length
-+                        )
-+                    Interrupt (ResourceConsumer, Level, ActiveLow,
-Exclusive, ,, )
-+                    {
-+                        0x0000001b,
-+                    }
-+                })
-+                Return (RBUF)
-+            }
-+
-+            Method (_STA, 0, NotSerialized)
-+            {
-+                Return (0x0F)
-+            }
-+        }
-+
-+_ADR : the address of this device on its parent bus. Useless in this
-case.
-+_HID : the PnP id for this device.
-+_CID : the compatible PnP id. use this as the PnP id if _HID doesn't
-exist.
-+_CRS : the system resources currently allocated to this device.
-+       the Memory32Fixed part shows an Mem space for the device,
-+       and the Interrupt part shows the device interrupt.
-+_STA : the current status of the device, e.g. it's
-enabled/disabled/removed.
-+
-+By reading this example ASL code, we should know that there is a SD/MMC
-controller
-+on this platform, it's mem space base address is 0xFFA50000, length is
-0x00000100,
-+and the irq for this device is 0x1b.
-+
-+In Chapter 2, we will use this piece of ASL code as an example to
-+show how to probe the SD/MMC controller via ACPI namespace.
-+
-+-----------------------------------------------------------------------------
-+2 Driver for a leaf device
-+-----------------------------------------------------------------------------
-+
-+2.1 Make a list of supported pnp ids.
-+
-+Use the string in _HID or _CID objects as the PnP ids so that the
-device can
-+be attached to the driver successfully.
-+
-+In this case,
-+struct pnp_device_id sdhci_pnp_ids[] = {
-+        { .id = "PNPXXXX",
-+          .driver_data = (unsigned long)&sdhci_mfd_pdata },
-+        { },
-+};
-+
-+2.2 Implement the .probe and .remove callback of PnP driver.
-+
-+If you're not clear about what should be done in the driver, you can
-consult
-+some similar driver, for example, drivers/mmc/host/sdhci-pci.c shows
-how
-+to probe a PCI SD/MMC controller, this helps us understand what should
-be done
-+in the .probe/.remove callback.
-+
-+By reading the sdhci-pci .probe function, we know that the .probe
-callback
-+needs to
-+a) alloc a sdhci host.
-+b) fill the sdhci host structure with necessary resources got from
-+   PCI configure space, including irq and mem space for the sdhci host.
-+c) register the sdhci host.
-+And then, driver/mmc/host/sdhci.c, the SDHCI interface driver will
-handle
-+everything for us.
-+
-+So, basically, we need to do the same work in sdhci_pnp_probe callback,
-+except that we need to get the information from ACPI namesapce instead.
-+
-+To get the resources in _CRS, we do not need Linux ACPICA APIs as PnP
-layer
-+has done this for us already.
-+
-+pnp_irq() returns the device irq, which equals the "Interrupt" part in
-_CRS method.
-+pnp_get_resource(, IORESOURCE_MEM, 0) returns the first Mem space base
-address
-+and length of this device, which equals the "Memory32Fixed" Part of the
-_CRS.
-+
-+the code below shows how to use the PnP APIs to get ACPI resources and
-+register a sdhci host in the .probe callback.
-+
-+static int __devinit
-+sdhci_pnp_probe(struct pnp_dev *pdev, const struct pnp_device_id
-*dev_id)
-+{
-+...
-+	pnp_disable_dev(pdev);
-+	ret = pnp_activate_dev(pdev);
-+...
-+	iomem = pnp_get_resource(pdev, IORESOURCE_MEM, 0);
-+...
-+	host = sdhci_alloc_host(&pdev->dev, sizeof(struct sdhci_pnp_dev));
-+...
-+	host->irq = pnp_irq(pdev, 0);
-+...
-+        if (!request_mem_region(iomem->start, resource_size(iomem),
-+                        mmc_hostname(host->mmc))) {
-+...
-+        host->ioaddr = ioremap_nocache(iomem->start,
-resource_size(iomem));
-+...
-+	ret = sdhci_add_host(host);
-+...
-+	pnp_set_drvdata(pdev, sdhci);
-+...
-+}
-+
-+Once the .probe callback is done, we just need to release the resources
-and
-+unregister the host in the .remove callback.
-+
-+static void sdhci_pnp_remove(struct pnp_dev * pdev)
-+{
-+	struct sdhci_pnp_dev *sdhci = pnp_get_drvdata(pdev);
-+	struct resources *iomem = pnp_get_resource(pdev, IORESOURCE_MEM, 0);
-+...
-+	sdhci_remove_host(sdhci->host, dead);
-+	sdhci_free_host(sdhci->host);
-+	iounmap(sdhci->host->ioaddr);
-+	release_mem_region(iomem->start, resource_size(iomem));
-+	pnp_set_drvdata(pdev, NULL);
-+	pnp_disable_dev(pdev);
-+}
-+
-+2.3 Fill in the pnp_driver structure
-+
-+Next step is to fill in the pnp_driver structure with PnP ids and
-+.probe/.remove callbacks finished in section 2.1 and 2.2
-+
-+static struct pnp_driver sdhci_pnp_driver = {
-+        .name =         DRIVER_NAME,
-+        .id_table =     sdhci_pnp_ids,
-+        .probe =        sdhci_pnp_probe,
-+        .remove =       __devexit_p(sdhci_pnp_remove),
-+};
-+
-+Note that .name and .id_table cannot be NULL.
-+
-+2.4 Register the PnP driver
-+
-+Now we can register this PnP driver to the driver model.
-+
-+static int __init sdhci_pnp_init(void)
-+{
-+	return pnp_register_driver(&sdhci_pnp_driver);
-+}
-+
-+module_init(sdhci_pnp_init);
-+
-+
-+-----------------------------------------------------------------------------
-+3 Driver for a master device on a non-self-enumerable bus
-+-----------------------------------------------------------------------------
-+In some cases, enumerating via ACPI brings new requirements in the
-driver.
-+For example, the driver for a master device on a non-self-enumerable
-bus is
-+responsible for enumerating the slave devices on this bus as well,
-which are
-+described as child devices of this master device in ACPI namespace.
-+
-+Taking SPI bus for example,
-+
-+-------------------------------------------------------------------
-+PNP/ACPI layer
-+
-+   spi-acpi driver
-+         |
-+         |-----------------|
-+         |                 |
-+         |                 |
-+         V                 V
-+   register itself    register its children
-+   as a master        as slave devices
-+   device                  |
-+         |                 |
-+---------|-----------------|---------------------------------------
-+         |                 |
-+         |                 |
-+         |                 |
-+         V                 V
-+     --------------      -----------
-+     |   SPI      |      |  SPI    |
-+     |   master   |      |  slave  |
-+     --------------      -----------
-+                           ^
-+                           |
-+                           |
-+                           V
-+                         -----------------------------
-+                         |  SPI slave driver driver  |
-+                         -----------------------------
-+SPI Bus layer
-+-------------------------------------------------------------------
-+
-+The figure above shows the components needed to make a SPI slave device
-work
-+a) an PNP/ACPI driver to probe the SPI master and its slaves.
-+b) a SPI slave device driver for the SPI slave device.
-+
-+[Case Study 2] SPI controller and its slave device
-+
-+This piece of ASL code shows the definition of a SPI controller and its
-slave device,
-+MAX3110, in ACPI namespace.
-+
-+Device (SPI1) {
-+	Name (_ADR, 0)
-+	Name (_HID, "PNPYYYY")
-+	Name (_CID, "PNPYYYY")
-+	Name (_UID, 1)
-+
-+	Method (_CRS, 0x0, NotSerialized) {
-+		Name (RBUF, ResourceTemplate ()
-+		{
-+			Memory32Fixed (ReadWrite, 0xff128400, 0x00000400)
-+			Interrupt(ResourceConsumer, Level, ActiveHigh, Exclusive, , , )
-{0x09}
-+		})
-+		Return (RBUF)
-+	}
-+
-+	Method (_STA, 0x0, NotSerialized) {
-+		Return(0xf)
-+	}
-+
-+	Device(MAX0)
-+	{
-+		Name(_HID, "PNPZZZZ")          // Max3110 serial port
-+		Name(_DDN, "Max3110 serial port")
-+		Method(_CRS, 0x0, NotSerialized)
-+		{
-+			// SpiSerial Bus Connection Descriptor
-+			Name(UBUF, ResourceTemplate () {
-+				SPISerialBus(
-+				1,                 // Device selection
-+				PolarityHigh,                       // Device selection polarity
-+				ThreeWireMode,                       // wiremode
-+				8,                   // databit len
-+				ControllerInitiated,                       // slave mode
-+				1000,                       // Connection speed
-+				ClockPolarityHigh,                       // Clock polarity
-+				ClockPhaseFirst,                     // clock phase
-+				"\\_SB.SPI1",           // ResourceSource: SPI bus controller name
-+				0,                      // ResourceSourceIndex
-+				ResourceConsumer,                       // Resource usage
-+				,                       // DescriptorName: creates name for offset
-of resource descriptor
-+				)                      // Vendor Data
-+				// OUT pin, BT_EN pin Core GPIO 74
-+				GpioIo(Exclusive, PullDefault, 0, 0, IoRestrictionOutputOnly, "\
-\_SB.GPIS", ) {0x4A}
-+			})
-+
-+			Return (UBUF)
-+		}
-+	}
-+}
-+
-+By reading the ASL code, we can see that
-+a) There is a SPI controller on this platform.
-+   with IRQ 0x09, and a 0x400 bytes Memory space started from
-0xff128400.
-+b) a MAX3110 device is connect to a SPI controller.
-+   all the information required for probing a SPI slave device is
-described
-+   in the "SPISerailBus" part of the MAX0._CRS method.
-+
-+We will talk about how to probe these two devices in this chapter.
-+
-+3.1 Probe the master device
-+
-+Please follow the Chapter 2 to probe the SPI master device.
-+
-+static int __devinit
-+dw_spi_pnp_probe(struct pnp_dev *pdev, const struct pnp_device_id
-*dev_id)
-+{
-+...
-+	dws->paddr = pnp_mem_start(pdev, 0);
-+	dws->iolen = pnp_mem_len(pdev, 0);
-+	dws->irq = pnp_irq(pdev, 0);
-+	dws->parent_dev = &pdev->dev;
-+	dws->bus_num = index++;
-+	dws->num_cs = 4;
-+	dws->regs = ioremap_nocache((unsigned long)dws->paddr,
-+				dws->iolen);
-+...
-+	ret = dw_spi_mid_init(dws);
-+...
-+	ret = dw_spi_add_host(dws);
-+...
-+}
-+
-+3.2 Walk ACPI namespace to probe all its child devices.
-+
-+As MAX3110 can not be enumerated automatically, we introduce
-+dw_spi_pnp_slaves_register() to find the MAX3110 device in ACPI
-namespace
-+
-+static int __devinit dw_spi_pnp_slaves_register(struct dw_spi_pnp*
-dwpnp)
-+{
-+	...
-+	struct acpi_device *adev;
-+	adev = dwpnp->pdev->data;
-+
-+	/*
-+	 * find spi child devices given in ACPI namespace, one lower level
-only
-+	 */
-+	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, adev->handle, 1,
-+				     spi_slave_register, NULL,
-+				     spi_slave_info, NULL);
-+	...
-+}
-+
-+3.3 Register its child devices as slave devices
-+
-+As spi_slave_register is invoked for each SPI1 child device,
-+we introduce spi_slave_fill_resourcetry and try to register
-+SPI slave devices in spi_slave_register.
-+
-+acpi_status __init spi_slave_register(acpi_handle spi_slave_handle, u32
-level,
-+				      void* data, void** return_value)
-+{
-+	...
-+	struct spi_board_info *spi_slave_info;
-+	...
-+	status = acpi_walk_resources(spi_slave_handle, METHOD_NAME__CRS,
-+				     spi_slave_fill_resource, data);
-+	...
-+	/* register SPI slave device */
-+	ret = spi_register_board_info(spi_slave_info, 1);
-+	...
-+}
-+
-+acpi_status __devinit spi_slave_fill_resource(struct acpi_resource
-*resource, void* data)
-+{
-+	struct spi_board_info *spi_slave_info;
-+	struct acpi_resource_spi_serialbus *spi_resource;
-+	...
-+	  	spi_resource = &resource->data.spi_serial_bus;
-+	  	spi_slave_info->chip_select = spi_resource->device_selection;
-+	  	spi_slave_info->max_speed_hz = spi_resource->connection_speed;
-+	  	spi_slave_info->mode = (spi_resource->clock_phase ? SPI_CPHA : 0) |
-+	  		(spi_resource->clock_polarity ? SPI_CPOL : 0) |
-+	  		(spi_resource->device_polarity ? SPI_CS_HIGH : 0) |
-+	  		(spi_resource->wire_mode ? SPI_3WIRE : 0);
-+	...
-+}
-+
-+3.4 Write the slave device driver
-+
-+After 3.3 is done, the MAX3110 device is an slave device in the SPI
-bus,
-+but to make it work properly, we still need a SPI slave device driver.
-+
-+Note that this is a general SPI drivers independent of ACPI.
-+
-+We will not go into details of the slave device driver here as
-+this piece of code is bus/device specific.
-+
-+-----------------------------------------------------------------------------
-+4 Misc
-+-----------------------------------------------------------------------------
-+
-+4.1 Note
-+
-+As ACPI 5.0 is still in heavily developing, if you are unable to find
-out all the
-+required information for probing a device in ACPI namespace, it is
-possible
-+that the ASL code is not well written.
-+Please contact Zhang Rui <rui.zhang@intel.com> with the acpidump output
-of your
-+platform attached if you suspect it's an BIOS problem.
-+
-+4.2 Some important ACPICA APIs for device driver implementation:
-+
-+-- acpi_status
-+   acpi_walk_namespace(acpi_object_type type,
-+		       acpi_handle start_object,
-+		       u32 max_depth,
-+		       acpi_walk_callback pre_order_visit,
-+		       acpi_walk_callback post_order_visit,
-+		       void *context, void **return_value);
-+Traverse ACPI namespace subtree rooted at start_object, go down
-max_depth level
-+at most. Call pre_order_visit when the proper node with type is found
-the first
-+time, call post_order_visit is the node is previously visited. Context
-and
-+return_value is passed down during the traverse.
-+
-+And the prototype of acpi_walk_callback:
-+typedef
-+acpi_status(*acpi_walk_callback) (acpi_handle object,
-+				  u32 nesting_level,
-+				  void *context, void **return_value);
-+
-+-- acpi_status
-+   acpi_get_handle(acpi_handle parent,
-+   		   acpi_string pathname, acpi_handle * ret_handle);
-+Try to get handle with specified pathname under node parent. Usually
-used to
-+check whether a particular node is available or not.
-+
-+-- acpi_status
-+   acpi_get_object_info(acpi_handle object,
-+		        struct acpi_device_info **return_buffer);
-+Get acpi_device_info from object handle. Useful for retrieving ACPI
-object
-+name, type, and status etc.
-+
-+-- acpi_status
-+   acpi_walk_resources(acpi_handle device,
-+		       char *name,
-+	    	       acpi_walk_resource_callback user_function, void *context);
-+Traverse resource node specified by name(e.g. METHOD_NAME__CRS) in ACPI
-+namespace subtree rooted at device. Call user_function for each entry
-in
-+acpi_resource list. The list may containe acpi_resource entries with
-various
-+types. So it is important to handle the interested resource type
-properly.
-+The acpi_resource with ACPI_RESOURCE_TYPE_END_TAG indicates
-end-of-list.
-+
-+And the prototype of acpi_walk_resource_callback:
-+typedef
-+acpi_status(*acpi_walk_resource_callback) (struct acpi_resource *
-resource,
-+					   void *context);
-+
-+More ACPICA external interfaces available in include/acpi/acpixf.h
 -- 
-1.7.10
-
-
-
+Meelis Roos (mroos@linux.ee)
