@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab2GEUpz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 16:45:55 -0400
-Received: from waste.org ([173.11.57.241]:60233 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751025Ab2GEUpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 16:45:53 -0400
-Message-ID: <1341521150.4020.1298.camel@calx>
-Subject: Re: [PATCH 02/10] random: use lockless techniques when mixing
- entropy pools
-From: Matt Mackall <mpm@selenic.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        torvalds@linux-foundation.org, w@1wt.eu, ewust@umich.edu,
-        zakir@umich.edu, greg@kroah.com, nadiah@cs.ucsd.edu,
-        jhalderm@umich.edu, tglx@linutronix.de, davem@davemloft.net
-Date: Thu, 05 Jul 2012 15:45:50 -0500
-In-Reply-To: <20120705194742.GG31225@thunk.org>
-References: <1341511933-11169-1-git-send-email-tytso@mit.edu>
-	 <1341511933-11169-3-git-send-email-tytso@mit.edu>
-	 <1341515412.4020.1230.camel@calx> <20120705194742.GG31225@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751355Ab2GEU6T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 16:58:19 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:45192 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab2GEU6S convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 16:58:18 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Don Zickus <dzickus@redhat.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "mikew@google.com" <mikew@google.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [RFC][PATCH 2/2] write callback: Check if existing entry is
+ erasable
+Thread-Topic: [RFC][PATCH 2/2] write callback: Check if existing entry is
+ erasable
+Thread-Index: Ac1ZdICAdYwUKctERYa3qDPOlfZeVABX5VeAAAHWqnAADJMpgAAIPF3Q
+Date: Thu, 5 Jul 2012 20:58:02 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D401C31F@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D401AAED@USINDEM103.corp.hds.com>
+ <20120705133201.GG5637@redhat.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D401C288@USINDEM103.corp.hds.com>
+ <20120705202443.GQ5637@redhat.com>
+In-Reply-To: <20120705202443.GQ5637@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
+ definitions=2012-07-05_05:2012-07-05,2012-07-05,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1207050237
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-05 at 15:47 -0400, Theodore Ts'o wrote:
-> On Thu, Jul 05, 2012 at 02:10:12PM -0500, Matt Mackall wrote:
-> > 
-> > I don't think this will work correctly. It's important that simultaneous
-> > _readers_ of the state get different results. Otherwise, you can get
-> > things like duplicate UUIDs generated on different cores, something
-> > that's been observed in the field(!). I thought I added a comment to
-> > that effect some years back, but I guess not.
+> I understand the above scenario and was the one of was thinking of when I replied.  My counter argument is if the NVRAM isn't big
+> enough to hold more than two panics, then the logs are too big.
 > 
-> That's easy to fix; we just need to take a spinlock on the extract
-> side.  The main issue is that Thomas very much doesn't want us to take
-> a spinlock in the interrupt handler codepath.  But if we take a
-> spinlock while extracting, that should take care of this concern.
+> This stuff should be designed to easily accomodate multiple logs (like say 6 or so), then the above situation doesn't matter.
+> 
+> I just feel this is adding complexity to something that shouldn't need it.
+> 
 
-Yup. This is why there's a separate _extract function to start with,
-though this particular optimization hadn't been made yet. You do need to
-continue to be sure to do the mix and extract in one operation though.
+I see. I understand your argument right  now.
 
--- 
-Mathematics is the supreme nostalgia of our time.
+My patch is on assumption that efi_pstore can handle just one log.
+But if it can handle multiple logs, we can solve my concern simply.
 
+Default value of pstore.kmsg_byte is 10KB.
+I think efi_pstore can log 60KB(= 10KB X 6)...
 
+Original code is developed by Matthew and he is EFI expert.
+So, I have to ask Matthew why current write callback simply erases old entries.
+
+Matthew,
+
+Do you think efI_pstore should handle just one log?  Or do you think latest message is most important?
