@@ -1,74 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756856Ab2GEPqi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 11:46:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:13225 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756674Ab2GEPqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 11:46:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="161744511"
-Message-ID: <4FF5B6D9.3070507@intel.com>
-Date: Thu, 05 Jul 2012 23:46:33 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@google.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 5/5] perf/x86: Add Intel Nehalem-EX uncore support
-References: <1341381616-12229-1-git-send-email-zheng.z.yan@intel.com> <1341381616-12229-6-git-send-email-zheng.z.yan@intel.com> <1341396293.2507.77.camel@laptop> <4FF534F1.3030307@intel.com> <20120705145124.GS11413@one.firstfloor.org>
-In-Reply-To: <20120705145124.GS11413@one.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S933363Ab2GEPq4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 11:46:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60756 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756801Ab2GEPpo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 11:45:44 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCH 08/20] tools lib traceevent: Handle strdup failure cases
+Date: Thu,  5 Jul 2012 12:45:06 -0300
+Message-Id: <1341503118-13198-9-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1341503118-13198-1-git-send-email-acme@infradead.org>
+References: <1341503118-13198-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2012 10:51 PM, Andi Kleen wrote:
-> On Thu, Jul 05, 2012 at 02:32:17PM +0800, Yan, Zheng wrote:
->> The uncore subsystem in Nehalem-EX consists of 7 components
->> (U-Box, C-Box, B-Box, S-Box, R-Box, M-Box and W-Box). This
->> patch is large because the way to program these boxes is
->> diverse.
-> 
-> Thanks for doing the driver. Lots of work.
-> 
-> May be worth adding a CONFIG for the uncore code now?
-> Maybe even a module, so that not every distro kernel has it always
-> in memory. I don't think perf has support for tracking
-> module counts, but I guess it would be ok to have the module be not
-> unloadable once loaded by setting the count to -1.
-Yes, I think it's good to compile the uncore driver as a module. 
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-> 
-> Also did you do some random testing by putting randomized values into
-> all the exported registers and see if anything is crashable for 
-> unpriv. userspace?
-No, I just did functional tests for these registers. unpriv? I think perf
-is only available to root by default. 
+There were some places didn't check return value of the strdup and had
+unneeded/duplicated checks.  Fix it.
 
-> 
->> +		 * events are functional identical, but use different
->> +		 * extra registers. If we failed to take an extra
->> +		 * register, try the alternative.
->> +		 */
->> +		if (idx % 2)
->> +			idx--;
->> +		else
->> +			idx++;
->> +		if (idx != reg1->idx % 6) {
->> +			if (idx == 2)
->> +				config1 >>= 8;
->> +			else if (idx == 3)
->> +				config1 <<= 8;
->> +			goto again;
-> 
-> Does this limit the retries?
-Yes, the (idx != reg1->idx % 6) check does that.
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1333940074-19052-5-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/lib/traceevent/event-parse.c |   29 +++++++++++++++++++++++++++--
+ 1 file changed, 27 insertions(+), 2 deletions(-)
 
-Regards
-Yan, Zheng
-
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 768fab5..cd334d5 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -467,8 +467,10 @@ int pevent_register_function(struct pevent *pevent, char *func,
+ 		item->mod = NULL;
+ 	item->addr = addr;
+ 
+-	pevent->funclist = item;
++	if (!item->func || (mod && !item->mod))
++		die("malloc func");
+ 
++	pevent->funclist = item;
+ 	pevent->func_count++;
+ 
+ 	return 0;
+@@ -583,10 +585,13 @@ int pevent_register_print_string(struct pevent *pevent, char *fmt,
+ 	item = malloc_or_die(sizeof(*item));
+ 
+ 	item->next = pevent->printklist;
+-	pevent->printklist = item;
+ 	item->printk = strdup(fmt);
+ 	item->addr = addr;
+ 
++	if (!item->printk)
++		die("malloc fmt");
++
++	pevent->printklist = item;
+ 	pevent->printk_count++;
+ 
+ 	return 0;
+@@ -2150,6 +2155,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+ 		if (value == NULL)
+ 			goto out_free;
+ 		field->value = strdup(value);
++		if (field->value == NULL)
++			goto out_free;
+ 
+ 		free_arg(arg);
+ 		arg = alloc_arg();
+@@ -2163,6 +2170,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+ 		if (value == NULL)
+ 			goto out_free;
+ 		field->str = strdup(value);
++		if (field->str == NULL)
++			goto out_free;
+ 		free_arg(arg);
+ 		arg = NULL;
+ 
+@@ -3433,6 +3442,9 @@ process_defined_func(struct trace_seq *s, void *data, int size,
+ 			string = malloc_or_die(sizeof(*string));
+ 			string->next = strings;
+ 			string->str = strdup(str.buffer);
++			if (!string->str)
++				die("malloc str");
++
+ 			strings = string;
+ 			trace_seq_destroy(&str);
+ 			break;
+@@ -3571,6 +3583,8 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
+ 				arg->next = NULL;
+ 				arg->type = PRINT_BSTRING;
+ 				arg->string.string = strdup(bptr);
++				if (!arg->string.string)
++					break;
+ 				bptr += strlen(bptr) + 1;
+ 				*next = arg;
+ 				next = &arg->next;
+@@ -4666,6 +4680,8 @@ int pevent_parse_event(struct pevent *pevent,
+ 		die("failed to read event id");
+ 
+ 	event->system = strdup(sys);
++	if (!event->system)
++		die("failed to allocate system");
+ 
+ 	/* Add pevent to event so that it can be referenced */
+ 	event->pevent = pevent;
+@@ -4707,6 +4723,10 @@ int pevent_parse_event(struct pevent *pevent,
+ 			list = &arg->next;
+ 			arg->type = PRINT_FIELD;
+ 			arg->field.name = strdup(field->name);
++			if (!arg->field.name) {
++				do_warning("failed to allocate field name");
++				goto event_failed;
++			}
+ 			arg->field.field = field;
+ 		}
+ 		return 0;
+@@ -5050,6 +5070,11 @@ int pevent_register_event_handler(struct pevent *pevent,
+ 	if (sys_name)
+ 		handle->sys_name = strdup(sys_name);
+ 
++	if ((event_name && !handle->event_name) ||
++	    (sys_name && !handle->sys_name)) {
++		die("Failed to allocate event/sys name");
++	}
++
+ 	handle->func = func;
+ 	handle->next = pevent->handlers;
+ 	pevent->handlers = handle;
+-- 
+1.7.9.2.358.g22243
 
