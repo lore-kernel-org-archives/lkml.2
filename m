@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932719Ab2GEMpY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 08:45:24 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:42930 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932483Ab2GEMpS (ORCPT
+	id S932594Ab2GEMov (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 08:44:51 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:58058
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932492Ab2GEMhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 08:45:18 -0400
+	Thu, 5 Jul 2012 08:37:02 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah)
+X-WSS-ID: 0M6OTPH-02-6NK-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <iommu@lists.linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 18/28] iommu/amd: Make sure IOMMU is not considered to translate itself
+Date: Thu, 5 Jul 2012 14:36:38 +0200
+Message-ID: <1341491808-23083-19-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
+References: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <1339211276-31626-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1339211276-31626-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Date: Thu, 5 Jul 2012 14:45:17 +0200
-Message-ID: <CACRpkdZKZX15Z98w6zXqKN4=OozqjXskf0ycC2=PLQ_BskVH9w@mail.gmail.com>
-Subject: Re: [PATCH] gpiolib: wm8994: Pay attention to the value set when
- enabling as output
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 9, 2012 at 5:07 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
+The IVRS table usually includes the IOMMU device. But the
+IOMMU does never translate itself, so make sure the IOMMU
+driver knows this.
 
-> Not paying attention to the value being set is a bad thing because it
-> means that we'll not set the hardware up to reflect what was requested.
-> Not setting the hardware up to reflect what was requested means that the
-> caller won't get the results they wanted.
-> `
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ drivers/iommu/amd_iommu_init.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-I removed this "`"
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index 453f80a..c487822 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -1023,6 +1023,13 @@ static int __init init_iommu_one(struct amd_iommu *iommu, struct ivhd_header *h)
+ 	ret = init_iommu_from_acpi(iommu, h);
+ 	if (ret)
+ 		return ret;
++
++	/*
++	 * Make sure IOMMU is not considered to translate itself. The IVRS
++	 * table tells us so, but this is a lie!
++	 */
++	amd_iommu_rlookup_table[iommu->devid] = NULL;
++
+ 	init_iommu_devices(iommu);
+ 
+ 	return 0;
+-- 
+1.7.9.5
 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: stable@vger.kernel.org
 
-Applied.
-
-Yours,
-Linus Walleij
