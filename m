@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab2GEId2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 04:33:28 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:43409 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755245Ab2GEIdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 04:33:19 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: "Finnbarr P. Murphy" <fpm@fpmurphy.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>
-Subject: Re: UEFI Secure Boot
-Thread-Topic: UEFI Secure Boot
-Thread-Index: AQHNWgWUgCEURf5RdUChyaGvNxEu3Jca0vIA
-Date: Thu, 5 Jul 2012 08:33:17 +0000
-Message-ID: <1341477196.3121.11.camel@dabdike>
-References: <4FF474E4.2030402@fpmurphy.com>
-In-Reply-To: <4FF474E4.2030402@fpmurphy.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [195.214.232.10]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <E6138F78EEF3BF409C45A2D08866C989@sw.swsoft.com>
+	id S1756085Ab2GEIdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 04:33:46 -0400
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:54757 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754507Ab2GEIdn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 04:33:43 -0400
+X-SENDER-IP: [85.230.168.62]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoxMAPpQ9U9V5qg+PGdsb2JhbABFihqtCRkBAQEBHgMWDSeCGAEBBTocEwEPEAgDGC4UJQoaExuHdLoSFIslhV5gA5U2hWaMf4FUIg
+X-IronPort-AV: E=Sophos;i="4.77,530,1336341600"; 
+   d="scan'208";a="74998643"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Thu, 5 Jul 2012 10:34:10 +0200
+To: Ben Skeggs <skeggsb@gmail.com>
+Cc: Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [REGRESSION] nouveau: Memory corruption using nva3 engine for
+ 0xaf
+Message-ID: <20120705083410.GA395@polaris.bitmath.org>
+References: <1341469873-1582-1-git-send-email-rydberg@euromail.se>
+ <20120705064049.GA8693@nisroch.bne.redhat.com>
+ <20120705065446.GA1849@polaris.bitmath.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120705065446.GA1849@polaris.bitmath.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q658XZMB027302
 
-[added mailing list cc's since this is probably going to be a common question]
-
-On Wed, 2012-07-04 at 12:52 -0400, Finnbarr P. Murphy wrote:
-> Hi James,
+On Thu, Jul 05, 2012 at 08:54:46AM +0200, Henrik Rydberg wrote:
+> > Thanks for tracking down the source of this corruption.  I don't have
+> > any such hardware, so until someone can figure it out, I think we
+> > should apply this patch.
 > 
-> Nice work on your UEFI Secure Boot demo code!
-> 
-> Have you experimented with either of the following scenarios?
-> 
->     - Removing current PK via a utility
->     - Replacing current PK with a new PK via a utility
-> 
-> assuming you know existing PK keys.
+> In that case, I would have to massage the patch a bit first; it
+> creates a problem with suspend/resume. Might be something with
+> nva3_pm.c, who knows. I am really stabbing in the dark here. :-)
 
-Not yet ... I'm still working on writing the code that constructs the
-time based authentication bundle for the variables.  When I have it, it
-will appear in my git repository (and I'll probably send a note to the
-linux-efi list):
+It seems the suspend/resume problem is unrelated (bad systemd update),
+so I am fine with applying this as is. Obviously not the best
+solution, and if I have time I will continue to look for problems in
+the nva3 copy code, but for now,
 
-http://git.kernel.org/?p=linux/kernel/git/jejb/efitools.git;a=summary
+    Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 
->  From Chapter 27 of the UEFI Specification, this should be possible but 
-> I cannot get either scenarios to work (due to error 26 - Security 
-> Violation)   Perhaps it is the OVMF implementation (latest from trunk) 
-> but I suspect it is just my old age!
-
-Constructing time based authentication bundles is complex ... are you
-sure you have the code right?  error 26 means the platform doesn't think
-the authentication is correct.
-
-James
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks,
+Henrik
