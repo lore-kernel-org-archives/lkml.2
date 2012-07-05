@@ -1,119 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196Ab2GEKO2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 06:14:28 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42557 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755103Ab2GEKOQ (ORCPT
+	id S1755699Ab2GEKYU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 06:24:20 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:36293
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753476Ab2GEKYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 06:14:16 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-Cc: Chris Ball <cjb@laptop.org>, Anton Vorontsov <cbouatmailru@gmail.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Viresh Kumar <viresh.kumar@st.com>,
-        Manuel Lauss <manuel.lauss@googlemail.com>, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v1 2/2] mmc: sdhci-dove: Prepare for common clock framework
-Date: Thu,  5 Jul 2012 12:14:01 +0200
-Message-Id: <1341483241-18300-2-git-send-email-sebastian.hesselbarth@googlemail.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1341483241-18300-1-git-send-email-sebastian.hesselbarth@googlemail.com>
-References: <1341483241-18300-1-git-send-email-sebastian.hesselbarth@googlemail.com>
+	Thu, 5 Jul 2012 06:24:18 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1202hzzz2dh2a8h668h839h944hd25hf0ah107ah)
+Date: Thu, 5 Jul 2012 18:25:29 +0800
+From: Zhao Chenhui <chenhui.zhao@freescale.com>
+To: Tabi Timur-B04825 <B04825@freescale.com>
+CC: Zhao Chenhui-B35336 <B35336@freescale.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Yang-R58472 <r58472@freescale.com>, <leoli@freescale.com>
+Subject: Re: [PATCH v7 1/5] powerpc/85xx: implement hardware timebase sync
+Message-ID: <20120705102529.GA7982@localhost.localdomain>
+References: <1341310879-5468-1-git-send-email-chenhui.zhao@freescale.com>
+ <CAOZdJXUeY-_mmBLoA25_g4eLqwHxYX4c_ECbU+KYqfM307THNQ@mail.gmail.com>
+ <20120704031426.GA6133@localhost.localdomain>
+ <4FF3B5B6.8090400@freescale.com>
+ <20120704034545.GA6196@localhost.localdomain>
+ <4FF45F19.2080607@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4FF45F19.2080607@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As mach-dove is moving towards common clock framework prepare
-the sdhci driver to grab it's clock.
+On Wed, Jul 04, 2012 at 10:19:54AM -0500, Tabi Timur-B04825 wrote:
+> Zhao Chenhui wrote:
+> > On Tue, Jul 03, 2012 at 10:17:12PM -0500, Tabi Timur-B04825 wrote:
+> >> Zhao Chenhui wrote:
+> >>> If the guts variable is NULL, it indicates there is error in dts or kernel.
+> >>> We should fix the error, rather than ignore it.
+> >>
+> >> And that's why there's a warning message.  Crashing the kernel is not
+> >> going to fix anything.
+> >>
+> >
+> > This error likely crashes the kenel somewhere.
+> 
+> Can you test this, please?
+> 
+> The point I'm trying to make is that it's wrong to intentionally halt the 
+> kernel unless you're sure that it's the best option.  A missing device 
+> tree node is supposed to only disable a given feature, not break everything.
+> 
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-Cc: Chris Ball <cjb@laptop.org>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Viresh Kumar <viresh.kumar@st.com>
-Cc: Manuel Lauss <manuel.lauss@googlemail.com>
-Cc: linux-mmc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/mmc/host/sdhci-dove.c |   48 ++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 47 insertions(+), 1 deletion(-)
+I think there is some misunderstanding here.
 
-diff --git a/drivers/mmc/host/sdhci-dove.c b/drivers/mmc/host/sdhci-dove.c
-index 9c85368..a6e53a1 100644
---- a/drivers/mmc/host/sdhci-dove.c
-+++ b/drivers/mmc/host/sdhci-dove.c
-@@ -20,11 +20,17 @@
-  */
- 
- #include <linux/io.h>
-+#include <linux/clk.h>
-+#include <linux/err.h>
- #include <linux/module.h>
- #include <linux/mmc/host.h>
- 
- #include "sdhci-pltfm.h"
- 
-+struct sdhci_dove_priv {
-+	struct clk *clk;
-+};
-+
- static u16 sdhci_dove_readw(struct sdhci_host *host, int reg)
- {
- 	u16 ret;
-@@ -72,11 +78,51 @@ static struct sdhci_pltfm_data sdhci_dove_pdata = {
- 
- static int __devinit sdhci_dove_probe(struct platform_device *pdev)
- {
--	return sdhci_pltfm_register(pdev, &sdhci_dove_pdata);
-+	struct sdhci_host *host;
-+	struct sdhci_pltfm_host *pltfm_host;
-+	struct sdhci_dove_priv *priv;
-+	int ret;
-+
-+	ret = sdhci_pltfm_register(pdev, &sdhci_dove_pdata);
-+	if (ret)
-+		goto sdhci_dove_register_fail;
-+
-+	priv = devm_kzalloc(&pdev->dev, sizeof(struct sdhci_dove_priv),
-+			    GFP_KERNEL);
-+	if (!priv) {
-+		dev_err(&pdev->dev, "unable to allocate private data");
-+		ret = -ENOMEM;
-+		goto sdhci_dove_allocate_fail;
-+	}
-+
-+	host = platform_get_drvdata(pdev);
-+	pltfm_host = sdhci_priv(host);
-+	pltfm_host->priv = priv;
-+
-+	priv->clk = clk_get(&pdev->dev, NULL);
-+	if (!IS_ERR(priv->clk))
-+		clk_prepare_enable(priv->clk);
-+	return 0;
-+
-+sdhci_dove_allocate_fail:
-+	sdhci_pltfm_unregister(pdev);
-+sdhci_dove_register_fail:
-+	return ret;
- }
- 
- static int __devexit sdhci_dove_remove(struct platform_device *pdev)
- {
-+	struct sdhci_host *host = platform_get_drvdata(pdev);
-+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-+	struct sdhci_dove_priv *priv = pltfm_host->priv;
-+
-+	if (priv->clk) {
-+		if (!IS_ERR(priv->clk)) {
-+			clk_disable_unprepare(priv->clk);
-+			clk_put(priv->clk);
-+		}
-+		devm_kfree(&pdev->dev, priv->clk);
-+	}
- 	return sdhci_pltfm_unregister(pdev);
- }
- 
--- 
-1.7.10
+	np = of_find_matching_node(NULL, mpc85xx_smp_guts_ids);
+	if (np) {
+		guts = of_iomap(np, 0);
+		of_node_put(np);
+		if (!guts) {
+			pr_err("%s: Could not map guts node address\n",
+								__func__);
+			return;
+		}
+		smp_85xx_ops.give_timebase = mpc85xx_give_timebase;
+		smp_85xx_ops.take_timebase = mpc85xx_take_timebase;
+	}
+
+If the guts node is missing, this code snippet will be skipped. If the guts node is existed,
+the return value of of_iomap(), namely guts, will be tested. If it is NULL, it shows
+that there is error in dts, or the ioremap() in of_iomap() failed. I think
+these errors are fatal errors, so I print an error info and return.
+
+-Chenhui
+																													
 
