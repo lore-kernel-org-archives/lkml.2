@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab2GETS5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 15:18:57 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:33401 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757213Ab2GETSz (ORCPT
+	id S1757293Ab2GETV4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 15:21:56 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:44568 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755193Ab2GETVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 15:18:55 -0400
+	Thu, 5 Jul 2012 15:21:54 -0400
 MIME-Version: 1.0
-In-Reply-To: <4FF4E679.10909@nvidia.com>
-References: <1341313938-17861-1-git-send-email-rnayak@ti.com> <4FF4E679.10909@nvidia.com>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Thu, 5 Jul 2012 12:18:30 -0700
-Message-ID: <CAJOA=zMZwOBq7TKoigiGqDHh9kXAxsy-uH5koSOtH+r7p1=SJw@mail.gmail.com>
-Subject: Re: [PATCH] clk: fix parent validation in __clk_set_parent()
-To: Prashant Gaikwad <pgaikwad@nvidia.com>
-Cc: Rajendra Nayak <rnayak@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mkl@pengutronix.de" <mkl@pengutronix.de>, swarren@nvidia.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20120705104520.GA6773@latitude>
+References: <4FAC200D.2080306@codeaurora.org>
+	<02fc01cd2f50$5d77e4c0$1867ae40$%szyprowski@samsung.com>
+	<4FAD89DC.2090307@codeaurora.org>
+	<CAH+eYFBhO9P7V7Nf+yi+vFPveBks7SFKRHfkz3JOQMBKqnkkUQ@mail.gmail.com>
+	<015f01cd5a95$c1525dc0$43f71940$%szyprowski@samsung.com>
+	<20120705104520.GA6773@latitude>
+Date: Thu, 5 Jul 2012 21:21:53 +0200
+X-Google-Sender-Auth: 8jcxjQglcKAG5YvWGoOAR8-BPEg
+Message-ID: <CA+pa1O2veiMaNJ5M0qeion5kquCyoa2gW79G2zNqb+nbWLs_Qw@mail.gmail.com>
+Subject: Re: Bad use of highmem with buffer_migrate_page?
+From: =?UTF-8?Q?Micha=C5=82_Nazarewicz?= <mina86@mina86.com>
+To: Rabin Vincent <rabin@rab.in>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Laura Abbott <lauraa@codeaurora.org>, linaro-mm-sig@lists.linaro.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 4, 2012 at 5:57 PM, Prashant Gaikwad <pgaikwad@nvidia.com> wrote:
-> On Tuesday 03 July 2012 04:42 PM, Rajendra Nayak wrote:
->>
->> The below commit introduced a bug in __clk_set_parent()
->> which could cause it to *skip* the parent validation
->> which makes sure the parent passed to the api is a valid
->> one.
+2012/7/5 Rabin Vincent <rabin@rab.in>:
+> From 8a94126eb3aa2824866405fb78bb0b8316f8fd00 Mon Sep 17 00:00:00 2001
+> From: Rabin Vincent <rabin@rab.in>
+> Date: Thu, 5 Jul 2012 15:52:23 +0530
+> Subject: [PATCH] mm: cma: don't replace lowmem pages with highmem
 >
+> The filesystem layer expects pages in the block device's mapping to not
+> be in highmem (the mapping's gfp mask is set in bdget()), but CMA can
+> currently replace lowmem pages with highmem pages, leading to crashes in
+> filesystem code such as the one below:
 >
-> Need this fix for Tegra too.
+>   Unable to handle kernel NULL pointer dereference at virtual address 00000400
+>   pgd = c0c98000
+>   [00000400] *pgd=00c91831, *pte=00000000, *ppte=00000000
+>   Internal error: Oops: 817 [#1] PREEMPT SMP ARM
+>   CPU: 0    Not tainted  (3.5.0-rc5+ #80)
+>   PC is at __memzero+0x24/0x80
+>   ...
+>   Process fsstress (pid: 323, stack limit = 0xc0cbc2f0)
+>   Backtrace:
+>   [<c010e3f0>] (ext4_getblk+0x0/0x180) from [<c010e58c>] (ext4_bread+0x1c/0x98)
+>   [<c010e570>] (ext4_bread+0x0/0x98) from [<c0117944>] (ext4_mkdir+0x160/0x3bc)
+>    r4:c15337f0
+>   [<c01177e4>] (ext4_mkdir+0x0/0x3bc) from [<c00c29e0>] (vfs_mkdir+0x8c/0x98)
+>   [<c00c2954>] (vfs_mkdir+0x0/0x98) from [<c00c2a60>] (sys_mkdirat+0x74/0xac)
+>    r6:00000000 r5:c152eb40 r4:000001ff r3:c14b43f0
+>   [<c00c29ec>] (sys_mkdirat+0x0/0xac) from [<c00c2ab8>] (sys_mkdir+0x20/0x24)
+>    r6:beccdcf0 r5:00074000 r4:beccdbbc
+>   [<c00c2a98>] (sys_mkdir+0x0/0x24) from [<c000e3c0>] (ret_fast_syscall+0x0/0x30)
 >
+> Fix this by replacing only highmem pages with highmem.
+>
+> Reported-by: Laura Abbott <lauraa@codeaurora.org>
+> Signed-off-by: Rabin Vincent <rabin@rab.in>
 
-Hi Prashant,
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
-You'll find it if you pull the latest clk-next.
-
-Regards,
-Mike
-
+> ---
+>  mm/page_alloc.c |    7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
 >
->>      commit 7975059db572eb47f0fb272a62afeae272a4b209
->>      Author: Rajendra Nayak<rnayak@ti.com>
->>      Date:   Wed Jun 6 14:41:31 2012 +0530
->>
->>          clk: Allow late cache allocation for clk->parents
->>
->> This was identified by the following compiler warning..
->>
->>      drivers/clk/clk.c: In function '__clk_set_parent':
->>      drivers/clk/clk.c:1083:5: warning: 'i' may be used uninitialized in
->> this function [-Wuninitialized]
->>
->> .. as reported by Marc Kleine-Budde.
->>
->> There were various options discussed on how to fix this, one
->> being initing 'i' to clk->num_parents, but the below approach
->> was found to be more appropriate as it also makes the 'parent
->> validation' code simpler to read.
->>
->> Reported-by: Marc Kleine-Budde<mkl@pengutronix.de>
->> Signed-off-by: Rajendra Nayak<rnayak@ti.com>
->>
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 4403009..4a4f921 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -5635,7 +5635,12 @@ static struct page *
+>  __alloc_contig_migrate_alloc(struct page *page, unsigned long private,
+>                              int **resultp)
+>  {
+> -       return alloc_page(GFP_HIGHUSER_MOVABLE);
+> +       gfp_t gfp_mask = GFP_USER | __GFP_MOVABLE;
+> +
+> +       if (PageHighMem(page))
+> +               gfp_mask |= __GFP_HIGHMEM;
+> +
+> +       return alloc_page(gfp_mask);
+>  }
 >
+>  /* [start, end) must belong to a single zone. */
