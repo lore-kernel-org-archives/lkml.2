@@ -1,69 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933090Ab2GEPMc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 11:12:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:40485 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752900Ab2GEPMa convert rfc822-to-8bit (ORCPT
+	id S1756671Ab2GEPM4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 11:12:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42449 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753895Ab2GEPMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 11:12:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="167371329"
-From: "Love, Robert W" <robert.w.love@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Scan Subscription <scan-subscription@coverity.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Chris Mason <chris.mason@fusionio.com>, Bing Zhao <bzhao@marvell.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Mattia Dongili <malattia@linux.it>, Matthew Garrett <mjg@redhat.com>
-Subject: Re: New Defects based on recent changes in Kernel code found by
- Coverity Scan
-Thread-Topic: New Defects based on recent changes in Kernel code found by
- Coverity Scan
-Thread-Index: AQHNWWsPQcyMPfs+9EWQg4pkx5SuCZcbQ5sA
-Date: Thu, 5 Jul 2012 15:12:21 +0000
-Message-ID: <4FF5AECA.40801@intel.com>
-References: <829BE905228AE14A9AE1A46E6F2E371605538D039D@VA3DIAXVS891.RED001.local>
- <20120703152739.ea7df9e6.akpm@linux-foundation.org>
-In-Reply-To: <20120703152739.ea7df9e6.akpm@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614
- Thunderbird/13.0.1
-x-originating-ip: [10.3.86.135]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <DBF9902A13537C42BD177ECCD98407C3@intel.com>
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Thu, 5 Jul 2012 11:12:54 -0400
+Message-ID: <1341501169.14503.4.camel@phoenix>
+Subject: [RFC/RFT][PATCH 2/2] regulator: s5m8767: Properly handle
+ gpio_request failure
+From: Axel Lin <axel.lin@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 05 Jul 2012 23:12:49 +0800
+In-Reply-To: <1341500817.14503.1.camel@phoenix>
+References: <1341500817.14503.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/3/2012 3:27 PM, Andrew Morton wrote:
-> On Thu, 28 Jun 2012 11:32:09 -0700
-> Scan Subscription <scan-subscription@coverity.com> wrote:
->
-> ____________________________________________________________________________________________________________
-> CID 703581 -  NO_EFFECT Unsigned compared against 0 - This less-than-zero comparison of an unsigned value is never true. "*val < 0UL".
->
-> drivers/scsi/fcoe/fcoe_sysfs.c:105
-> 100 static int fcoe_str_to_dev_loss(const char *buf, unsigned long *val)
-> 101 {
-> 102        int ret;
-> 103
-> 104        ret = kstrtoul(buf, 0, val);
->>>>> CID 703581: Unsigned compared against 0 (NO_EFFECT) This less-than-zero comparison of an unsigned value is never true. "*val < 0UL".
->> 105        if (ret || *val < 0)
->> 106                return -EINVAL;
->> 107        /*
->> 108         * Check for overflow; dev_loss_tmo is u32
->>
-Patch posted to linux-scsi.
+Convert to devm_gpio_request to save a few error handling code.
 
-Thanks, //Rob
+This patch properly handle the gpio_request failure, we should return error
+when gpio_request fails rather than just show warning.
+
+I think one of the reason we got -EBUSY is because current code does not free
+gpios in s5m8767_pmic_remove(). So it got -EBUSY when reload the module.
+
+Yest another reason is in current code if gpio_request() returns error,
+the rest of the code still calls gpio_direction_output to config buck_gpios
+and buck_ds gpios. This looks wrong to me.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/s5m8767.c |   49 +++++++++++++++++++++----------------------
+ 1 file changed, 24 insertions(+), 25 deletions(-)
+
+diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
+index 5df3358..297f696 100644
+--- a/drivers/regulator/s5m8767.c
++++ b/drivers/regulator/s5m8767.c
+@@ -559,20 +559,21 @@ static __devinit int s5m8767_pmic_probe(struct platform_device *pdev)
+ 	if (gpio_is_valid(pdata->buck_gpios[0]) &&
+ 		gpio_is_valid(pdata->buck_gpios[1]) &&
+ 		gpio_is_valid(pdata->buck_gpios[2])) {
+-		ret = gpio_request(pdata->buck_gpios[0], "S5M8767 SET1");
+-		if (ret == -EBUSY)
+-			dev_warn(&pdev->dev, "Duplicated gpio request"
+-				" for SET1\n");
+-
+-		ret = gpio_request(pdata->buck_gpios[1], "S5M8767 SET2");
+-		if (ret == -EBUSY)
+-			dev_warn(&pdev->dev, "Duplicated gpio request"
+-				" for SET2\n");
+-
+-		ret = gpio_request(pdata->buck_gpios[2], "S5M8767 SET3");
+-		if (ret == -EBUSY)
+-			dev_warn(&pdev->dev, "Duplicated gpio request"
+-					" for SET3\n");
++		ret = devm_gpio_request(&pdev->dev, pdata->buck_gpios[0],
++					"S5M8767 SET1");
++		if (ret)
++			return ret;
++
++		ret = devm_gpio_request(&pdev->dev, pdata->buck_gpios[1],
++					"S5M8767 SET2");
++		if (ret)
++			return ret;
++
++		ret = devm_gpio_request(&pdev->dev, pdata->buck_gpios[2],
++					"S5M8767 SET3");
++		if (ret)
++			return ret;
++
+ 		/* SET1 GPIO */
+ 		gpio_direction_output(pdata->buck_gpios[0],
+ 				(s5m8767->buck_gpioindex >> 2) & 0x1);
+@@ -582,25 +583,23 @@ static __devinit int s5m8767_pmic_probe(struct platform_device *pdev)
+ 		/* SET3 GPIO */
+ 		gpio_direction_output(pdata->buck_gpios[2],
+ 				(s5m8767->buck_gpioindex >> 0) & 0x1);
+-		ret = 0;
+-
+ 	} else {
+ 		dev_err(&pdev->dev, "GPIO NOT VALID\n");
+ 		ret = -EINVAL;
+ 		return ret;
+ 	}
+ 
+-	ret = gpio_request(pdata->buck_ds[0], "S5M8767 DS2");
+-	if (ret == -EBUSY)
+-		dev_warn(&pdev->dev, "Duplicated gpio request for DS2\n");
++	ret = devm_gpio_request(&pdev->dev, pdata->buck_ds[0], "S5M8767 DS2");
++	if (ret)
++		return ret;
+ 
+-	ret = gpio_request(pdata->buck_ds[1], "S5M8767 DS3");
+-	if (ret == -EBUSY)
+-		dev_warn(&pdev->dev, "Duplicated gpio request for DS3\n");
++	ret = devm_gpio_request(&pdev->dev, pdata->buck_ds[1], "S5M8767 DS3");
++	if (ret)
++		return ret;
+ 
+-	ret = gpio_request(pdata->buck_ds[2], "S5M8767 DS4");
+-	if (ret == -EBUSY)
+-		dev_warn(&pdev->dev, "Duplicated gpio request for DS4\n");
++	ret = devm_gpio_request(&pdev->dev, pdata->buck_ds[2], "S5M8767 DS4");
++	if (ret)
++		return ret;
+ 
+ 	/* DS2 GPIO */
+ 	gpio_direction_output(pdata->buck_ds[0], 0x0);
+-- 
+1.7.9.5
+
+
+
