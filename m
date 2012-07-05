@@ -1,151 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334Ab2GEQCU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 12:02:20 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51859 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754928Ab2GEQCS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754810Ab2GEQCS (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 5 Jul 2012 12:02:18 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: snitzer@redhat.com, david@fromorbit.com, dm-devel@redhat.com,
-        xfs@oss.sgi.com, hch@lst.de, martin.petersen@oracle.com,
-        axboe@kernel.dk, vgoyal@redhat.com
-Subject: [PATCH v3 2/2] block: split discard into aligned requests
-Date: Thu,  5 Jul 2012 18:01:44 +0200
-Message-Id: <1341504104-1674-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1341504104-1674-1-git-send-email-pbonzini@redhat.com>
-References: <1341504104-1674-1-git-send-email-pbonzini@redhat.com>
+Received: from fifo99.com ([67.223.236.141]:37962 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750890Ab2GEQCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 12:02:12 -0400
+Date: Thu, 5 Jul 2012 09:01:54 -0700
+From: Daniel Walker <dwalker@fifo99.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Vincent Sanders <vincent.sanders@collabora.co.uk>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Subject: Re: AF_BUS socket address family
+Message-ID: <20120705160153.GA29175@fifo99.com>
+References: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk>
+ <CAKnu2Mr_TWvBXmL+ORfddpEgPdPxPXFpJdCtvPe+imj6o6Y+1w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKnu2Mr_TWvBXmL+ORfddpEgPdPxPXFpJdCtvPe+imj6o6Y+1w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a disk has large discard_granularity and small max_discard_sectors,
-discards are not split with optimal alignment.  In the limit case of
-discard_granularity == max_discard_sectors, no request could be aligned
-correctly, so in fact you might end up with no discarded logical blocks
-at all.
+On Thu, Jul 05, 2012 at 09:59:53AM +0200, Linus Walleij wrote:
+> 2012/6/29 Vincent Sanders <vincent.sanders@collabora.co.uk>:
+> 
+> > AF_BUS is a message oriented inter process communication system.
+> 
+> We have a very huge and important in-kernel IPC message passer
+> in drivers/staging/android/binder.c
+> 
+> It's deployed in some 400 million devices according to latest reports.
+> John Stultz & Anton Vorontsov are trying to look after these Android
+> drivers a bit...
+> 
+> I and others discussed this in the past with the Android folks. Dianne
+> makes an excellent summary of how it works here:
+> https://lkml.org/lkml/2009/6/25/3
+> 
+> If we could all be convinced that this thing also fulfills the needs
+> of what binder does, this is a pretty solid case for it too. I can
+> sure see that some of the shortcuts that Android is taking with
+> binder try to address the same issue of high-speed IPC loopholes
+> through the kernel and some kind of security model.
+> 
+> Whether Android would actually use it (or wrap it) is a totally
+> different question, but what I think we need to know is whether it
+> *could*. And staging code has to move forward, maybe this
+> is the direction it should move?
 
-Another example that helps showing the condition in the patch is with
-discard_granularity == 64, max_discard_sectors == 128.  A request that is
-submitted for 256 sectors 2..257 will be split in two: 2..129, 130..257.
-However, only 2 aligned blocks out of 3 are included in the request;
-128..191 may be left intact and not discarded.  With this patch, the
-first request will be truncated to ensure good alignment of what's left,
-and the split will be 2..127, 128..255, 256..257.  The patch will also
-take into account the discard_alignment.
+I'm all for alternatives.. I haven't read this thread at all, but I read an LWN
+article comparing Binder and other implementations .. So there are for sure
+alternatives. It would be nice if things were included that did whatever binder
+needs .. Since I did the logger performance analysis the big questions to me is
+if Binder is actually fast (or faster than the alternatives). Whatever this
+AF_BUS things is reviewing the performance of the major alternative(s) is probably a
+good idea.
 
-At most one extra request will be introduced, because the first request
-will be reduced by at most granularity-1 sectors, and granularity
-must be less than max_discard_sectors.  Subsequent requests will run
-on round_down(max_discard_sectors, granularity) sectors, as in the
-current code.
+In terms of Android using anything we produce or incorporate, don't get
+your hopes up .. They will always just use Binder .. (John is good cop, I'm bad
+cop)
 
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
-        v2->v3: take into account partition alignment (Vivek)
-
- block/blk-lib.c        |   34 ++++++++++++++++++++++++----------
- include/linux/blkdev.h |   10 ++++++++++
- 2 files changed, 34 insertions(+), 10 deletions(-)
-
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index 16b06f6..19cc761 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -44,7 +44,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 	struct request_queue *q = bdev_get_queue(bdev);
- 	int type = REQ_WRITE | REQ_DISCARD;
- 	unsigned int max_discard_sectors;
--	unsigned int granularity;
-+	unsigned int granularity, alignment, mask;
- 	struct bio_batch bb;
- 	struct bio *bio;
- 	int ret = 0;
-@@ -57,10 +57,12 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 
- 	/* Zero-sector (unknown) and one-sector granularities are the same.  */
- 	granularity = max(q->limits.discard_granularity >> 9, 1U);
-+	mask = granularity - 1;
-+	alignment = (bdev_discard_alignment(bdev) >> 9) & mask;
- 
- 	/*
- 	 * Ensure that max_discard_sectors is of the proper
--	 * granularity
-+	 * granularity, so that requests stay aligned after a split.
- 	 */
- 	max_discard_sectors = min(q->limits.max_discard_sectors, UINT_MAX >> 9);
- 	max_discard_sectors = round_down(max_discard_sectors, granularity);
-@@ -80,25 +82,37 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 	bb.wait = &wait;
- 
- 	while (nr_sects) {
-+		unsigned int req_sects;
-+		sector_t end_sect;
-+
- 		bio = bio_alloc(gfp_mask, 1);
- 		if (!bio) {
- 			ret = -ENOMEM;
- 			break;
- 		}
- 
-+		req_sects = min_t(sector_t, nr_sects, max_discard_sectors);
-+
-+		/*
-+		 * If splitting a request, and the next starting sector would be
-+		 * misaligned, stop the discard at the previous aligned sector.
-+		 */
-+		end_sect = sector + req_sects;
-+		if (req_sects < nr_sects && (end_sect & mask) != alignment) {
-+			end_sect =
-+				round_down(end_sect - alignment, granularity)
-+				+ alignment;
-+			req_sects = end_sect - sector;
-+		}
-+
- 		bio->bi_sector = sector;
- 		bio->bi_end_io = bio_batch_end_io;
- 		bio->bi_bdev = bdev;
- 		bio->bi_private = &bb;
- 
--		if (nr_sects > max_discard_sectors) {
--			bio->bi_size = max_discard_sectors << 9;
--			nr_sects -= max_discard_sectors;
--			sector += max_discard_sectors;
--		} else {
--			bio->bi_size = nr_sects << 9;
--			nr_sects = 0;
--		}
-+		bio->bi_size = req_sects << 9;
-+		nr_sects -= req_sects;
-+		sector = end_sect;
- 
- 		atomic_inc(&bb.done);
- 		submit_bio(type, bio);
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index ba43f40..218de98 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1125,6 +1125,16 @@ static inline int queue_limit_discard_alignment(struct queue_limits *lim, sector
- 		& (lim->discard_granularity - 1);
- }
- 
-+static inline int bdev_discard_alignment(struct block_device *bdev)
-+{
-+	struct request_queue *q = bdev_get_queue(bdev);
-+
-+	if (bdev != bdev->bd_contains)
-+		return bdev->bd_part->discard_alignment;
-+
-+	return q->limits.discard_alignment;
-+}
-+
- static inline unsigned int queue_discard_zeroes_data(struct request_queue *q)
- {
- 	if (q->limits.max_discard_sectors && q->limits.discard_zeroes_data == 1)
--- 
-1.7.1
-
+Daniel
