@@ -1,69 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932717Ab2GEO0y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 10:26:54 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:42561 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756046Ab2GEO0x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 10:26:53 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: FPDeTZ0VM1miSxz5eWlTK1OrN7rEsgeuXFvLnFE53rmsXNT
- OOu68C_n0LrVoJ9Z8MgLVE_LLbEmhPyGEm5P6UszcLPkAXCiz8xVSDL3zQA0
- 1tx3y4vdxjzrI1rPx4mK72uMv4qW93WzTH0wriIZRIx_kb5RC71nUyoYl4my
- KTtRV7AZ9k0.2m7x4DcsAa8VI_TyFk.OCU9J9cmlhOBipLHY0z0cxTTGbe7f
- gYtLT5qeG24iRXUtHDgzXP8aE.UiaxH28X4fetDxk_RwGISZ_Nw4hpjf3GYp
- 1Y9FEGuCiRHJq_q3Im1UpG_VVpyvpsgGr5dPwYyHq5TWymTUyja2fKLAipdA
- Qe9T1sn3BtsIzixudtAC1pIr6mwWC74eYYM9Wbh_..BSV0U_if1pcBYB8L79
- h3YCxLnC0YeeMfNUUo2RRrBJh2bh6ffhtI9uX
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 5 Jul 2012 09:26:50 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Joonsoo Kim <js1304@gmail.com>
-cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] slub: release a lock if freeing object with a lock
- is failed in __slab_free()
-In-Reply-To: <1340389359-2407-3-git-send-email-js1304@gmail.com>
-Message-ID: <alpine.DEB.2.00.1207050924330.4138@router.home>
-References: <yes> <1340389359-2407-1-git-send-email-js1304@gmail.com> <1340389359-2407-3-git-send-email-js1304@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S932792Ab2GEO3W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 10:29:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15249 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932423Ab2GEO3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 10:29:21 -0400
+Message-ID: <4FF5A4B3.3020709@redhat.com>
+Date: Thu, 05 Jul 2012 10:29:07 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: John Stultz <johnstul@us.ibm.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux@openhuawei.org
+Subject: Re: [PATCH 1/3] [RFC] hrtimer: Fix clock_was_set so it is safe to
+ call from irq context
+References: <1341382890-42324-1-git-send-email-johnstul@us.ibm.com> <1341382890-42324-2-git-send-email-johnstul@us.ibm.com>
+In-Reply-To: <1341382890-42324-2-git-send-email-johnstul@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Jun 2012, Joonsoo Kim wrote:
 
-> In some case of __slab_free(), we need a lock for manipulating partial list.
-> If freeing object with a lock is failed, a lock doesn't needed anymore
-> for some reasons.
->
-> Case 1. prior is NULL, kmem_cache_debug(s) is true
->
-> In this case, another free is occured before our free is succeed.
-> When slab is full(prior is NULL), only possible operation is slab_free().
-> So in this case, we guess another free is occured.
-> It may make a slab frozen, so lock is not needed anymore.
 
-A free cannot freeze the slab without taking the lock. The taken lock
-makes sure that the thread that first enters slab_free() will be able to
-hold back the thread that wants to freeze the slab.
+On 07/04/2012 02:21 AM, John Stultz wrote:
+> NOTE:This is a prerequisite patch that's required to
+> address the widely observed leap-second related futex/hrtimer
+> issues.
+> 
+> Currently clock_was_set() is unsafe to be called from irq
+> context, as it calls on_each_cpu(). This causes problems when
+> we need to adjust the time from update_wall_time().
+> 
+> To fix this, if clock_was_set is called when irqs are
+> disabled, we schedule a timer to fire for immedately after
+> we're out of interrupt context to then notify the hrtimer
+> subsystem.
+> 
+> CC: Prarit Bhargava <prarit@redhat.com>
+> CC: stable@vger.kernel.org
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: linux@openhuawei.org
+> Reported-by: Jan Engelhardt <jengelh@inai.de>
+> Signed-off-by: John Stultz <johnstul@us.ibm.com>
+> ---
+>  kernel/hrtimer.c |   17 ++++++++++++++++-
+>  1 file changed, 16 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+> index ae34bf5..d730678 100644
+> --- a/kernel/hrtimer.c
+> +++ b/kernel/hrtimer.c
+> @@ -746,7 +746,7 @@ static inline void retrigger_next_event(void *arg) { }
+>   * resolution timer interrupts. On UP we just disable interrupts and
+>   * call the high resolution interrupt code.
+>   */
+> -void clock_was_set(void)
+> +static void do_clock_was_set(unsigned long data)
+>  {
+>  #ifdef CONFIG_HIGH_RES_TIMERS
+>  	/* Retrigger the CPU local events everywhere */
+> @@ -755,6 +755,21 @@ void clock_was_set(void)
+>  	timerfd_clock_was_set();
+>  }
+>  
+> +static DEFINE_TIMER(clock_was_set_timer, do_clock_was_set , 0, 0);
+> +
+> +void clock_was_set(void)
+> +{
+> +	/*
+> +	 * We can't call on_each_cpu() from irq context,
+> +	 * so if irqs are disabled , schedule the clock_was_set
+> +	 * via a timer_list timer for right after.
+> +	 */
+> +	if (irqs_disabled())
 
-> Case 2. inuse is NULL
->
-> In this case, acquire_slab() is occured before out free is succeed.
-> We have a last object for slab, so other operation for this slab is
-> not possible except acquire_slab().
-> Acquire_slab() makes a slab frozen, so lock is not needed anymore.
+I was wondering about this in earlier versions of the patchset.  I thought it
+was supposed to be irqs_disabled.  Thanks for changing this.
 
-acquire_slab() also requires lock acquisition and would be held of by
-slab_free holding the lock.
+Acked-by: Prarit Bhargava <prarit@redhat.com>
 
-> This also make logic somehow simple that 'was_frozen with a lock' case
-> is never occured. Remove it.
-
-That is actually interesting and would be a good optimization.
-
+P.
