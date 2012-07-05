@@ -1,37 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab2GEMbW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 08:31:22 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:46169 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754236Ab2GEMbV (ORCPT
+	id S932335Ab2GEMbd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 08:31:33 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:44057 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756108Ab2GEMbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 08:31:21 -0400
+	Thu, 5 Jul 2012 08:31:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <1338557791-6588-1-git-send-email-dbaryshkov@gmail.com>
-References: <1338557791-6588-1-git-send-email-dbaryshkov@gmail.com>
-Date: Thu, 5 Jul 2012 14:31:20 +0200
-Message-ID: <CACRpkdb5VeEoCR_BOrNCM14FNMFQXP6abTsgd7imUjQhNLEG+A@mail.gmail.com>
-Subject: Re: [PATCH][V3] gpio: add a driver for GPIO pins found on AMD-8111
- south bridge chips
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Thu, 5 Jul 2012 20:31:30 +0800
+Message-ID: <CAJd=RBDx7Hwd1fjnGEdFny2XNHmvjRGQkCJySYK5+vfSfRFbrg@mail.gmail.com>
+Subject: [patch] BFS 421-1: fix selecting CPU for migrating nohz timer
+From: Hillf Danton <dhillf@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 1, 2012 at 3:36 PM, Dmitry Eremin-Solenikov
-<dbaryshkov@gmail.com> wrote:
+Bail out walking the hierarchy of schedule domain only if a busy CPU
+is discovered.
 
-> Add a driver to use GPIO pins available on several AMD south bridges
-> (currently only AMD 8111 is supported).
->
-> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+SOB: Hillf Danton <dhillf@gmail.com>
+---
 
-Patch applied.
-
-Yours,
-Linus Walleij
+--- a/kernel/sched/bfs.c	Thu Jul  5 20:12:06 2012
++++ b/kernel/sched/bfs.c	Thu Jul  5 20:12:50 2012
+@@ -4937,9 +4937,10 @@ int get_nohz_timer_target(void)
+ 	rcu_read_lock();
+ 	for_each_domain(cpu, sd) {
+ 		for_each_cpu(i, sched_domain_span(sd)) {
+-			if (!idle_cpu(i))
++			if (!idle_cpu(i)) {
+ 				cpu = i;
+-			goto unlock;
++				goto unlock;
++			}
+ 		}
+ 	}
+ unlock:
+--
