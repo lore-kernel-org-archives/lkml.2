@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932669Ab2GEORJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 10:17:09 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62720 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932299Ab2GEORI (ORCPT
+	id S1756427Ab2GEOUJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 10:20:09 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:35963 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751206Ab2GEOUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 10:17:08 -0400
-Date: Thu, 5 Jul 2012 15:17:00 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mhocko@suse.cz" <mhocko@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
- page to userspace
-Message-ID: <20120705141700.GI3399@mudshark.cambridge.arm.com>
-References: <1341412376-6272-1-git-send-email-will.deacon@arm.com>
- <CAJd=RBAmF3dtb8wtEbS-A7BNT=RLsb5emQQWVU8ioeQOO8D7NA@mail.gmail.com>
+	Thu, 5 Jul 2012 10:20:07 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: VzU17toVM1lloB12C5VzAyfc04.lB32M9mm0vmYM2LoCEV7
+ xkoZjp_oYDYqY5v3wTSgKccFJ5BJmA35fbT4lF_vsXKZqJUtFF89ahF9cjye
+ 61Er6UNRO60B3e_EEf2_OKUgzpn4iHlKI6lPbtUifw9wYij8odAwboR8WKBg
+ rN__3RKJVq5pHRVQH6W821XIQNO7mDheDXJTK1M6OB_9A6JHrgekXfK5q22l
+ _DqDVzdD36wJAAdOa3peiouv4Nn2Ew35QCbtiXknrjyqeWhl4BZoIGwK45pv
+ MpBdLU6ASAONZh1nFTKFs0nZv6bSaeLwZ_Orn.hGzEj_cGh6b04FTUMPD.Lf
+ Zi9jRjlfCI.U4AMxBCMD3EcOpk8.s9bBEzJ70UES7.CvDOrdrh_BYx5GUIAH
+ _7kl8UW7LqlXBNSMxXiVcehPBgTkGclIfDUcE
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 5 Jul 2012 09:20:04 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@kernel.org>
+cc: Joonsoo Kim <js1304@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 2/3] slub: reduce failure of this_cpu_cmpxchg in
+ put_cpu_partial() after unfreezing
+In-Reply-To: <CAOJsxLEy++a5R6-7bFaHNG4XqmvJoUTEMMJhpVD5nnxLkAafsw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1207050918290.4138@router.home>
+References: <1340389359-2407-1-git-send-email-js1304@gmail.com> <1340389359-2407-2-git-send-email-js1304@gmail.com> <CAOJsxLEy++a5R6-7bFaHNG4XqmvJoUTEMMJhpVD5nnxLkAafsw@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBAmF3dtb8wtEbS-A7BNT=RLsb5emQQWVU8ioeQOO8D7NA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 01:37:46PM +0100, Hillf Danton wrote:
-> On Wed, Jul 4, 2012 at 10:32 PM, Will Deacon <will.deacon@arm.com> wrote:
-> > When allocating and returning clear huge pages to userspace as a
-> > response to a fault, we may zero and return a mapping to a previously
-> > dirtied physical region (for example, it may have been written by
-> > a private mapping which was freed as a result of an ftruncate on the
-> > backing file). On architectures with Harvard caches, this can lead to
-> > I/D inconsistency since the zeroed view may not be visible to the
-> > instruction stream.
-> >
-> > This patch solves the problem by flushing the region after allocating
-> > and clearing a new huge page. Note that PowerPC avoids this issue by
-> > performing the flushing in their clear_user_page implementation to keep
-> > the loader happy, however this is closely tied to the semantics of the
-> > PG_arch_1 page flag which is architecture-specific.
-> >
-> > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> > ---
-> 
-> Thanks:)
-> 
-> Acked-by: Hillf Danton <dhillf@gmail.com>
+On Wed, 4 Jul 2012, Pekka Enberg wrote:
 
-Thanks Hillf. Which tree does this stuff usually go through?
+> On Fri, Jun 22, 2012 at 9:22 PM, Joonsoo Kim <js1304@gmail.com> wrote:
+> > In current implementation, after unfreezing, we doesn't touch oldpage,
+> > so it remain 'NOT NULL'. When we call this_cpu_cmpxchg()
+> > with this old oldpage, this_cpu_cmpxchg() is mostly be failed.
+> >
+> > We can change value of oldpage to NULL after unfreezing,
+> > because unfreeze_partial() ensure that all the cpu partial slabs is removed
+> > from cpu partial list. In this time, we could expect that
+> > this_cpu_cmpxchg is mostly succeed.
+> >
+> > Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> >
+> > diff --git a/mm/slub.c b/mm/slub.c
+> > index 92f1c0e..531d8ed 100644
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> > @@ -1968,6 +1968,7 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+> >                                 local_irq_save(flags);
+> >                                 unfreeze_partials(s);
+> >                                 local_irq_restore(flags);
+> > +                               oldpage = NULL;
+> >                                 pobjects = 0;
+> >                                 pages = 0;
+> >                                 stat(s, CPU_PARTIAL_DRAIN);
+>
+> Makes sense. Christoph, David?
 
-Will
+Acked-by: Christoph Lameter <cl@linux.com>
+
