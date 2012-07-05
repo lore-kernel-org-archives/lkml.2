@@ -1,143 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab2GEKpe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 06:45:34 -0400
-Received: from mailxx.hitachi.co.jp ([133.145.228.50]:49861 "EHLO
-	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754245Ab2GEKpc (ORCPT
+	id S932379Ab2GEKph (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 06:45:37 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33818 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932158Ab2GEKpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 06:45:32 -0400
-X-AuditID: b753bd60-9aaf3ba000000f6c-ab-4ff56fc7a1a4
-X-AuditID: b753bd60-9aaf3ba000000f6c-ab-4ff56fc7a1a4
-From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Subject: [RFC PATCH 0/5] fuse: make maximum read/write request size tunable
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Date: Thu, 05 Jul 2012 19:50:17 +0900
-Message-ID: <20120705105017.17812.95542.stgit@ltc137.sdl.hitachi.co.jp>
-User-Agent: StGIT/0.14.3
+	Thu, 5 Jul 2012 06:45:35 -0400
+Date: Thu, 5 Jul 2012 16:15:20 +0530
+From: Rabin Vincent <rabin@rab.in>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Laura Abbott'" <lauraa@codeaurora.org>,
+        linaro-mm-sig@lists.linaro.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Subject: Re: Bad use of highmem with buffer_migrate_page?
+Message-ID: <20120705104520.GA6773@latitude>
+References: <4FAC200D.2080306@codeaurora.org>
+ <02fc01cd2f50$5d77e4c0$1867ae40$%szyprowski@samsung.com>
+ <4FAD89DC.2090307@codeaurora.org>
+ <CAH+eYFBhO9P7V7Nf+yi+vFPveBks7SFKRHfkz3JOQMBKqnkkUQ@mail.gmail.com>
+ <015f01cd5a95$c1525dc0$43f71940$%szyprowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <015f01cd5a95$c1525dc0$43f71940$%szyprowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jul 05, 2012 at 12:05:45PM +0200, Marek Szyprowski wrote:
+> On Thursday, July 05, 2012 11:28 AM Rabin Vincent wrote:
+> > The problem is still present on latest mainline.  The filesystem layer
+> > expects that the pages in the block device's mapping are not in highmem
+> > (the mapping's gfp mask is set in bdget()), but CMA replaces lowmem
+> > pages with highmem pages leading to the crashes.
+> > 
+> > The above fix should work, but perhaps the following is preferable since
+> > it should allow moving highmem pages to other highmem pages?
+> 
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 4403009..4a4f921 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -5635,7 +5635,12 @@ static struct page *
+> >  __alloc_contig_migrate_alloc(struct page *page, unsigned long private,
+> >  			     int **resultp)
+> >  {
+> > -	return alloc_page(GFP_HIGHUSER_MOVABLE);
+> > +	gfp_t gfp_mask = GFP_USER | __GFP_MOVABLE;
+> > +
+> > +	if (PageHighMem(page))
+> > +		gfp_mask |= __GFP_HIGHMEM;
+> > +
+> > +	return alloc_page(gfp_mask);
+> >  }
+> > 
+> >  /* [start, end) must belong to a single zone. */
+> 
+> 
+> The patch looks fine and does it job well. Could you resend it as a complete 
+> patch with commit message and signed-off-by/reported-by lines? I will handle
+> merging it to mainline then.
 
-This patch series make maximum read/write request size tunable in FUSE.
-Currently, it is limited to FUSE_MAX_PAGES_PER_REQ which is equal
-to 32 pages. It is required to change it in order to improve the
-throughput since optimized value depends on various factors such
-as type and version of local filesystems used and HW specs, etc.
+Thanks, here it is:
 
-In addition, recently FUSE is widely used as a gateway to connect
-cloud storage services and distributed filesystems. Larger data
-might be stored in them over networking via FUSE and the overhead
-might affect the throughput.
+8<----
+>From 8a94126eb3aa2824866405fb78bb0b8316f8fd00 Mon Sep 17 00:00:00 2001
+From: Rabin Vincent <rabin@rab.in>
+Date: Thu, 5 Jul 2012 15:52:23 +0530
+Subject: [PATCH] mm: cma: don't replace lowmem pages with highmem
 
-It seems there were many requests to increase FUSE_MAX_PAGES_PER_REQ
-to improve the throughput, as follows.
+The filesystem layer expects pages in the block device's mapping to not
+be in highmem (the mapping's gfp mask is set in bdget()), but CMA can
+currently replace lowmem pages with highmem pages, leading to crashes in
+filesystem code such as the one below:
 
-http://sourceforge.net/mailarchive/forum.php?thread_name=4FC2F7A1.4010609%40gmail.com&forum_name=fuse-devel
+  Unable to handle kernel NULL pointer dereference at virtual address 00000400
+  pgd = c0c98000
+  [00000400] *pgd=00c91831, *pte=00000000, *ppte=00000000
+  Internal error: Oops: 817 [#1] PREEMPT SMP ARM
+  CPU: 0    Not tainted  (3.5.0-rc5+ #80)
+  PC is at __memzero+0x24/0x80
+  ...
+  Process fsstress (pid: 323, stack limit = 0xc0cbc2f0)
+  Backtrace:
+  [<c010e3f0>] (ext4_getblk+0x0/0x180) from [<c010e58c>] (ext4_bread+0x1c/0x98)
+  [<c010e570>] (ext4_bread+0x0/0x98) from [<c0117944>] (ext4_mkdir+0x160/0x3bc)
+   r4:c15337f0
+  [<c01177e4>] (ext4_mkdir+0x0/0x3bc) from [<c00c29e0>] (vfs_mkdir+0x8c/0x98)
+  [<c00c2954>] (vfs_mkdir+0x0/0x98) from [<c00c2a60>] (sys_mkdirat+0x74/0xac)
+   r6:00000000 r5:c152eb40 r4:000001ff r3:c14b43f0
+  [<c00c29ec>] (sys_mkdirat+0x0/0xac) from [<c00c2ab8>] (sys_mkdir+0x20/0x24)
+   r6:beccdcf0 r5:00074000 r4:beccdbbc
+  [<c00c2a98>] (sys_mkdir+0x0/0x24) from [<c000e3c0>] (ret_fast_syscall+0x0/0x30)
 
-http://old.nabble.com/-Fuse-2.8--big_write-option---%3E-128kb-write-syscall-...-howto-set-higher-value-td22292589.html
+Fix this by replacing only highmem pages with highmem.
 
-http://old.nabble.com/Block-size-%3E128k-td18675772.html
-
-These discussions mention how to change both FUSE kernel and libfuse
-sources such as FUSE_MAX_PAGES_PER_REQ and MIN_BUFSIZE, but the
-changed and increased values have not been default yet. We guess this
-is because it will be applied to the FUSE filesystems that do not need
-the increased value.
-
-One of the ways to solve this is to make them tunable.
-In this series, the new sysfs parameter max_pages_per_req is introduced.
-It limits the maximum read/write size in fuse request and it can be
-changed from 32 to 256 pages in current implementations. When the
-max_read/max_write mount option is specified, FUSE request size is set
-per mount. (The size is rounded-up to page size and limited up to
-max_pages_per_req.)
-
-We think the sysfs parameter control is required, as follows.
-
-- The libfuse should change the current MIN_BUFSIZE limitation according
-  to this value. If not, The libfuse must always set it to the maximum
-  request limit (= [256 pages * 4KB + 0x1000] in current implementation),
-  which leads to waste of memory.
-
-The 32 pages are set by default. Here, we use 256 pages as the hardlimit
-in order to make maximum size of struct fuse_req within a page size (4KB).
-However, we don't think it is the best value. Any comments are appreciated.
-
-Also, the patch set for libfuse to change current MIN_BUFSIZE limitation
-according to the sysfs parameter will be sent soon.
-
-
-* Performance example
-
-We evaluated the performance improvement due to this patch series.
-FUSE filesystems are mounted on tmpfs and we measured the read/write
-throughput using 512MB random data.
-
-The results of average read/write throughtput are shown as follows.
- - we measured 10 times throughput for read and write operations,
-   and calculated their average.
-
-** write
-
-For without direct_io option,
-# of pages   |original(32)|tuning(32)|(64)  |(128) |(256)
----------------------------------------------------------
-thruput(MB/s)|402.43      | 398.23   |441.86|485.41|525.78
-
-
-For with direct_io option,
-# of pages   |original(32)|tuning(32)|(64)  |(128) |(256)
----------------------------------------------------------
-thruput(MB/s)|556.48      | 562.90   |611.74|722.18|743.43
-
-
-** read
-
-For without direct_io option, there is no deference between
-original 32 pages and tuning patches since the read request size
-does not changed even if changing the sysfs parameter.
-
-
-For with direct_io option,
-# of pages   |original(32)|tuning(32)|(64)  |(128) |(256)
----------------------------------------------------------
-thruput(MB/s)|509.58      | 509.46   |592.43|640.04|677.26
-
-
- From these evaluations, this patch series can improve the
-performance with an increase of the sysfs parameter. In
-particular, the read/write throughput with direct_io achieves
-a high improvement. These are just an exmaple and the results
-may be changed in different systems. Therefore, we think
-a tunable functionality of read/write request size is useful.
-
-Thanks,
-
+Reported-by: Laura Abbott <lauraa@codeaurora.org>
+Signed-off-by: Rabin Vincent <rabin@rab.in>
 ---
+ mm/page_alloc.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-Mitsuo Hayasaka (5):
-      fuse: add documentation of sysfs parameter to limit maximum fuse request size
-      fuse: add a sysfs parameter to control maximum request size
-      fuse: make default global limit minimum value
-      fuse: do not create cache for fuse request allocation
-      fuse: make maximum read/write request size tunable
-
-
- Documentation/filesystems/fuse.txt |   17 ++++++-
- fs/fuse/dev.c                      |   48 ++++++-------------
- fs/fuse/file.c                     |   32 +++++++------
- fs/fuse/fuse_i.h                   |   34 +++++++++----
- fs/fuse/inode.c                    |   91 +++++++++++++++++++++++++++++++++---
- 5 files changed, 155 insertions(+), 67 deletions(-)
-
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 4403009..4a4f921 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5635,7 +5635,12 @@ static struct page *
+ __alloc_contig_migrate_alloc(struct page *page, unsigned long private,
+ 			     int **resultp)
+ {
+-	return alloc_page(GFP_HIGHUSER_MOVABLE);
++	gfp_t gfp_mask = GFP_USER | __GFP_MOVABLE;
++
++	if (PageHighMem(page))
++		gfp_mask |= __GFP_HIGHMEM;
++
++	return alloc_page(gfp_mask);
+ }
+ 
+ /* [start, end) must belong to a single zone. */
 -- 
-Mitsuo Hayasaka (mitsuo.hayasaka.hu@hitachi.com)
+1.7.9.5
+
