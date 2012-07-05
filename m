@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757261Ab2GETPO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 15:15:14 -0400
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:54443 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755971Ab2GETPK (ORCPT
+	id S1757243Ab2GETQY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 15:16:24 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60249 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755971Ab2GETQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 15:15:10 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AilUAG/m9U9V5qg+PGdsb2JhbABFihqtFRkBAQEBHgMWDSeCGAEBBToNDyMQCAMYLhQlChqIIqpijwUUiyWFXmADlTaFZoNBiT4
-X-IronPort-AV: E=Sophos;i="4.77,532,1336341600"; 
-   d="scan'208";a="148783350"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 5 Jul 2012 21:15:39 +0200
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Daniel Kurtz <djkurtz@chromium.org>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Nick Dyer <nick.dyer@itdev.co.uk>, Yufeng Shen <miletus@chromium.org>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Benson Leung <bleung@chromium.org>
-Subject: Re: [PATCH 04/23 v6] Input: atmel_mxt_ts - warn if sysfs could not
- be created
-Message-ID: <20120705191539.GA14454@polaris.bitmath.org>
-References: <1340888904-15620-1-git-send-email-djkurtz@chromium.org>
- <1340888904-15620-5-git-send-email-djkurtz@chromium.org>
- <20120705172230.GB31383@core.coreip.homeip.net>
+	Thu, 5 Jul 2012 15:16:22 -0400
+Message-ID: <4FF5E803.7000304@wwwdotorg.org>
+Date: Thu, 05 Jul 2012 13:16:19 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120705172230.GB31383@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: swarren@nvidia.com, olof@lixom.net, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH] ARM: tegra: cardhu: add dt entry for PMIC TPS65911.
+References: <1341414479-6446-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1341414479-6446-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 10:22:30AM -0700, Dmitry Torokhov wrote:
-> Hi Daniel, Henrik,
+On 07/04/2012 09:07 AM, Laxman Dewangan wrote:
+> Tegra30 based platform "cardhu" have the power management
+> IC TPS65911 for the regulator.
+> Adding DT entry for this device.
 > 
-> On Thu, Jun 28, 2012 at 09:08:05PM +0800, Daniel Kurtz wrote:
-> > If sysfs entry creation fails, the driver is still usable, so don't
-> > just abort probe.  Just warn and continue.
-> > 
-> 
-> I understand that I am a bit late to the party :) but I do not agree
-> with this change. Failure to create attributes is not sometihng that
-> user could cause (at least not easily) and thus would not be a setup
-> issue but something more severe. I believe we should fail loading the
-> driver so sysfs attribute breakage will be noticed as soon as possible,
-> instead of discovering it much much later in the process.
-> 
-> So I think we should revert this one.
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-Ok, I agree. Applied and pushed.
+I recall there were some differences between Cardhu A02 and A04. Does
+this patch apply equally to both?
 
-Daniel, I should probably have asked this before: what was the reason
-for this patch in the first place?
+Please have a look at the recent threads re: various Tegra20 boards'
+regulator .dts files, and see the results at:
 
-Thanks,
-Henrik
+git://nv-tegra.nvidia.com/user/swarren/linux-2.6 linux-next_common
+
+Most of these comments are driven by comments made in the review of
+those patches.
+
+In the patch description, can you please specify where you got all the
+values from, and any discrepancies.
+
+> diff --git a/arch/arm/boot/dts/tegra30-cardhu.dts b/arch/arm/boot/dts/tegra30-cardhu.dts
+
+> +				vdd1_reg: regulator@0 {
+> +					reg = <0>;
+> +					regulator-compatible = "vdd1";
+> +					regulator-name = "vdd_1v2_gen";
+
+It'd be good to list all the signals that these regulators drive
+directly; the schematics "rename" the signals quite a lot.
+
+> +					regulator-min-microvolt = < 600000>;
+> +					regulator-max-microvolt = <1500000>;
+
+Similarly, the contraints should list the exact voltage that's required
+of the regulators, not a range. Right now, there is no DVFS in the
+mainline kernel, so even for rails where DVFS could be used in the
+future, we should specify the single voltage we want these rails to run
+at without DVFS for now.
+
+> +					regulator-always-on;
+> +					regulator-boot-on;
+
+These properties aren't in the same order in all the nodes. It'd be nice
+to have them ordered the same way everywhere.
+
+I'm not sure if it really makes sense to specify regulator-boot-on,
+since there's no way to know what SW has run before the kernel which
+might have turned off the regulator; regulator-always-on seems to cover
+all necessary use-cases.
