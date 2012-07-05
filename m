@@ -1,79 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450Ab2GENDL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 09:03:11 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48240 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753487Ab2GENDJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 09:03:09 -0400
-Date: Thu, 5 Jul 2012 14:03:07 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de, sameo@linux.intel.com
-Subject: Re: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device
- registration
-Message-ID: <20120705130306.GI4111@opensource.wolfsonmicro.com>
-References: <20120703142123.GQ29030@opensource.wolfsonmicro.com>
- <4FF54406.3000307@linaro.org>
- <20120705094541.GK4111@opensource.wolfsonmicro.com>
- <4FF57EA9.7060107@linaro.org>
- <20120705120600.GT4111@opensource.wolfsonmicro.com>
- <4FF58571.2090807@linaro.org>
- <20120705122947.GY4111@opensource.wolfsonmicro.com>
- <4FF58B68.5000703@linaro.org>
- <20120705124549.GD4111@opensource.wolfsonmicro.com>
- <4FF58ED6.40106@linaro.org>
+	id S932504Ab2GENEO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 09:04:14 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:54279 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756053Ab2GENEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 09:04:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Lin Ming <ming.m.lin@intel.com>
+Subject: Re: [PATCH v4 1/4] block: add a flag to identify PM request
+Date: Thu, 5 Jul 2012 15:09:42 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
+        Shaohua Li <shli@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org
+References: <1341473199-3837-1-git-send-email-ming.m.lin@intel.com> <1341473199-3837-2-git-send-email-ming.m.lin@intel.com>
+In-Reply-To: <1341473199-3837-2-git-send-email-ming.m.lin@intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="D+MycPccvPlP5/X+"
-Content-Disposition: inline
-In-Reply-To: <4FF58ED6.40106@linaro.org>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207051509.42979.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday, July 05, 2012, Lin Ming wrote:
+> Add a flag REQ_PM to identify the request is PM related.
+> As an example, modify scsi code to use this flag.
+> 
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  drivers/scsi/scsi_lib.c    |   25 ++++++++++++++++++++++---
+>  drivers/scsi/sd.c          |    9 +++++----
+>  include/linux/blk_types.h  |    2 ++
+>  include/scsi/scsi_device.h |    4 ++++
+>  4 files changed, 33 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index 6dfb978..45538e5 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -256,10 +256,10 @@ int scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
+>  EXPORT_SYMBOL(scsi_execute);
+>  
+>  
+> -int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+> +static int __scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+>  		     int data_direction, void *buffer, unsigned bufflen,
+>  		     struct scsi_sense_hdr *sshdr, int timeout, int retries,
+> -		     int *resid)
+> +		     int *resid, int flags)
+>  {
+>  	char *sense = NULL;
+>  	int result;
+> @@ -270,15 +270,34 @@ int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+>  			return DRIVER_ERROR << 24;
+>  	}
+>  	result = scsi_execute(sdev, cmd, data_direction, buffer, bufflen,
+> -			      sense, timeout, retries, 0, resid);
+> +			      sense, timeout, retries, flags, resid);
+>  	if (sshdr)
+>  		scsi_normalize_sense(sense, SCSI_SENSE_BUFFERSIZE, sshdr);
+>  
+>  	kfree(sense);
+>  	return result;
+>  }
+> +
+> +int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+> +		     int data_direction, void *buffer, unsigned bufflen,
+> +		     struct scsi_sense_hdr *sshdr, int timeout, int retries,
+> +		     int *resid)
+> +{
+> +	return __scsi_execute_req(sdev, cmd, data_direction, buffer, bufflen,
+> +			      sshdr, timeout, retries, resid, 0);
+> +}
+>  EXPORT_SYMBOL(scsi_execute_req);
+>  
+> +int scsi_execute_req_flag(struct scsi_device *sdev, const unsigned char *cmd,
+> +		     int data_direction, void *buffer, unsigned bufflen,
+> +		     struct scsi_sense_hdr *sshdr, int timeout, int retries,
+> +		     int *resid, int flags)
+> +{
+> +	return __scsi_execute_req(sdev, cmd, data_direction, buffer, bufflen,
+> +			      sshdr, timeout, retries, resid, flags);
+> +}
+> +EXPORT_SYMBOL(scsi_execute_req_flag);
 
---D+MycPccvPlP5/X+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hmm.  You're only adding one item to the call chain this way and with many
+arguments.  I think it would be better to export __scsi_execute_req()
+directly and define the wrappers as static inlines in a header.
 
-On Thu, Jul 05, 2012 at 01:55:50PM +0100, Lee Jones wrote:
-> On 05/07/12 13:45, Mark Brown wrote:
+In which case you won't need the second wrapper even.  So perhaps it would be
+a good idea to call the function scsi_execute_req_flags() and add a static
+inline wrapper called scsi_execute_req() around it that will pass 0 as flags?
 
-> >Right, so what I'm saying is that what I'd expect unless there's
-> >something unusual going on is that you wouldn't be doing the separate
-> >registration of the AB8500 here and would instead be passing the
-> >platform data for the AB8500 through in the same way you pass the DT
-> >data through.
+Rafael
 
-> Then were would you register it, if not here?
 
-Same place as for DT.
+> +
+>  /*
+>   * Function:    scsi_init_cmd_errh()
+>   *
+> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+> index 6f72b80..bf8413a 100644
+> --- a/drivers/scsi/sd.c
+> +++ b/drivers/scsi/sd.c
+> @@ -1270,8 +1270,9 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
+>  		 * Leave the rest of the command zero to indicate
+>  		 * flush everything.
+>  		 */
+> -		res = scsi_execute_req(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
+> -				       SD_FLUSH_TIMEOUT, SD_MAX_RETRIES, NULL);
+> +		res = scsi_execute_req_flag(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
+> +				       SD_FLUSH_TIMEOUT, SD_MAX_RETRIES, NULL,
+> +				       REQ_PM);
+>  		if (res == 0)
+>  			break;
+>  	}
+> @@ -2815,8 +2816,8 @@ static int sd_start_stop_device(struct scsi_disk *sdkp, int start)
+>  	if (!scsi_device_online(sdp))
+>  		return -ENODEV;
+>  
+> -	res = scsi_execute_req(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
+> -			       SD_TIMEOUT, SD_MAX_RETRIES, NULL);
+> +	res = scsi_execute_req_flag(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
+> +			       SD_TIMEOUT, SD_MAX_RETRIES, NULL, REQ_PM);
+>  	if (res) {
+>  		sd_printk(KERN_WARNING, sdkp, "START_STOP FAILED\n");
+>  		sd_print_result(sdkp, res);
+> diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+> index 0edb65d..ed53dca 100644
+> --- a/include/linux/blk_types.h
+> +++ b/include/linux/blk_types.h
+> @@ -160,6 +160,7 @@ enum rq_flag_bits {
+>  	__REQ_FLUSH_SEQ,	/* request for flush sequence */
+>  	__REQ_IO_STAT,		/* account I/O stat */
+>  	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
+> +	__REQ_PM,		/* runtime pm request */
+>  	__REQ_NR_BITS,		/* stops here */
+>  };
+>  
+> @@ -201,5 +202,6 @@ enum rq_flag_bits {
+>  #define REQ_IO_STAT		(1 << __REQ_IO_STAT)
+>  #define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
+>  #define REQ_SECURE		(1 << __REQ_SECURE)
+> +#define REQ_PM			(1 << __REQ_PM)
+>  
+>  #endif /* __LINUX_BLK_TYPES_H */
+> diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+> index ba96988..e7fdff5 100644
+> --- a/include/scsi/scsi_device.h
+> +++ b/include/scsi/scsi_device.h
+> @@ -388,6 +388,10 @@ extern int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+>  			    int data_direction, void *buffer, unsigned bufflen,
+>  			    struct scsi_sense_hdr *, int timeout, int retries,
+>  			    int *resid);
+> +extern int scsi_execute_req_flag(struct scsi_device *sdev, const unsigned char *cmd,
+> +			    int data_direction, void *buffer, unsigned bufflen,
+> +			    struct scsi_sense_hdr *, int timeout, int retries,
+> +			    int *resid, int flags);
+>  
+>  #ifdef CONFIG_PM_RUNTIME
+>  extern int scsi_autopm_get_device(struct scsi_device *);
+> 
 
---D+MycPccvPlP5/X+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP9ZCBAAoJEBus8iNuMP3dXaMP+gLu2HNmjCDK/aKfdx/Z/2g4
-0znJ/UBBrSgg9m6xztT8ZeTYGZ96VY97cdI86ulTy46L7fKj9D8lx2EjlkhaLRzw
-/Do9D0zHTdfNP9jDRWWXI7QGQxpNJAOJshURzisAQFXhZHYtwJWVvHMvPKpPsSUo
-3VHJSdC+5MfvISuu8nCWkEqaJ3JSg0IXAGPoRkKOzulbTRdRB3z2royZLXTbvctS
-4yu7XneqDV7D5rzw9X4R32sZHHKjeGKMjFpS2Nz7tKHlSGqZ855V0VIbUApADOWE
-7rVo7NTB4tL1wbEExopAbshpmxgzNfYN+ByEmo5HBsbOvsMkrxe4dYHvU83Iqv0E
-aUTvaOZ70iHHQXI/5X8Fos4+suuZKzUTBPJRUBg/crJa+2ufJN6r3V0atVz4UwYf
-hzEXYwwe/tp8mFpF6V7BqPY9inC+4BN2C4q/ZM3eT/0HRrn9L8sTIIImMj8GZbk9
-19VrhCNG++6lY09awV8s61tfBvaBtsCYqoRzCC/BGA+/dL3g7xQ0RjxBEXPkqWSh
-80QZzaGRb4bVKhDnhbxtcI77Pu5UDRQ8Tvl+6ZhPUH1YCHZAl9JudlopXBYTmGEI
-bVst3vcmaGfNvKSZr/pT66igwiSGDK3DjNVjXnSRvUnCRI55f+SnDvmBvDYdaLsF
-GcjuZaaQNxaCbpXbrYwu
-=4v5v
------END PGP SIGNATURE-----
-
---D+MycPccvPlP5/X+--
