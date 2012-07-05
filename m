@@ -1,55 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779Ab2GETum (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 15:50:42 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:37104 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750739Ab2GETul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 15:50:41 -0400
-Date: Thu, 5 Jul 2012 15:50:25 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>, w@1wt.eu,
-        ewust@umich.edu, zakir@umich.edu, greg@kroah.com, mpm@selenic.com,
-        nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
-        davem@davemloft.net, stable@kernel.org
-Subject: Re: [PATCH 07/10] random: add new get_random_bytes_arch() function
-Message-ID: <20120705195025.GH31225@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	id S1752062Ab2GETzT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 15:55:19 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:33818 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751357Ab2GETzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 15:55:16 -0400
+X-ASG-Debug-ID: 1341518115-0421b505a80a810001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Thu, 5 Jul 2012 15:55:13 -0400
+From: Chris Mason <chris.mason@fusionio.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Btrfs mailing list <linux-btrfs@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Btrfs updates
+Message-ID: <20120705195513.GD7159@shiny>
+X-ASG-Orig-Subj: [GIT PULL] Btrfs updates
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
 	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-	w@1wt.eu, ewust@umich.edu, zakir@umich.edu, greg@kroah.com,
-	mpm@selenic.com, nadiah@cs.ucsd.edu, jhalderm@umich.edu,
-	tglx@linutronix.de, davem@davemloft.net, stable@kernel.org
-References: <1341511933-11169-1-git-send-email-tytso@mit.edu>
- <1341511933-11169-8-git-send-email-tytso@mit.edu>
- <CA+55aFxk3eViz1-CuuHf8xxTgLth376K_cOKAtAj0waXAz+GWg@mail.gmail.com>
+	Btrfs mailing list <linux-btrfs@vger.kernel.org>,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxk3eViz1-CuuHf8xxTgLth376K_cOKAtAj0waXAz+GWg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1341518115
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.101844
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 11:35:12AM -0700, Linus Torvalds wrote:
-> 
-> If "get_random_bytes()" doesn't use the hw rng when it exists, it is
-> broken. It's that simple.
-> 
+Hi Linus
 
-It is using the HW RNG when it exists; it will ultimately call
-xfer_secondary_pool, which will mix in inputs from the hw rng.  So we
-do get all of the security of the HW RNG.  Currently all of the
-callers of the get_random_bytes() have to accomodate the fact that the
-HW RNG might not be there (on non-Intel architectures if nothing
-else), so get_random_bytes() can't be used in any hot paths as it is.
+I held off on my rc5 pull because I hit an oops during log recovery
+after a crash.  I wanted to make sure it wasn't a regression because
+we have some logging fixes in here.
 
-So we *are* using the hw rng; we're just not using it to the exclusion
-of anything else.
+It turns out that a commit during the merge window just made it much
+more likely to trigger directory logging instead of full commits, which
+exposed an old bug.
 
-						- Ted
+Please grab my for-linus branch:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+
+The new backref walking code got some additional fixes.  This should
+be the final set of them.
+
+Josef fixed up a corner where our O_DIRECT writes and buffered reads
+could expose old file contents (not stale, just not the most recent).
+He and Liu Bo fixed crashes during tree log recover as well.
+
+Ilya fixed errors while we resume disk balancing operations on readonly
+mounts.
+
+Jan Schmidt (7) commits (+50/-36):
+    Btrfs: leave critical region in btrfs_find_all_roots as soon as possible (+1/-2)
+    Btrfs: always put insert_ptr modifications into the tree mod log (+7/-7)
+    Btrfs: resolve tree mod log locking issue in btrfs_next_leaf (+12/-0)
+    Btrfs: fix tree mod log for root replacements at leaf level (+15/-13)
+    Btrfs: support root level changes in __resolve_indirect_ref (+8/-4)
+    Btrfs: avoid waiting for delayed refs when we must not (+6/-5)
+    Btrfs: fix tree mod log rewind of ADD operations (+1/-5)
+
+Josef Bacik (3) commits (+116/-111):
+    Btrfs: hold a ref on the inode during writepages (+14/-0)
+    Btrfs: fix tree log remove space corner case (+52/-93)
+    Btrfs: fix dio write vs buffered read race (+50/-18)
+
+Ilya Dryomov (2) commits (+73/-43):
+    Btrfs: resume balance on rw (re)mounts properly (+47/-18)
+    Btrfs: restore restriper state on all mounts (+26/-25)
+
+Stefan Behrens (1) commits (+12/-10):
+    Btrfs: don't count I/O statistic read errors for missing devices
+
+Liu Bo (1) commits (+1/-1):
+    Btrfs: fix wrong check during log recovery
+
+Alexander Block (1) commits (+1/-1):
+    Btrfs: use _IOR for BTRFS_IOC_SUBVOL_GETFLAGS
+
+Chris Mason (1) commits (+6/-0):
+    Btrfs: run delayed directory updates during log replay
+
+Total: (16) commits (+259/-202)
+
+ fs/btrfs/backref.c          |  15 +++--
+ fs/btrfs/ctree.c            |  60 ++++++++++--------
+ fs/btrfs/disk-io.c          |  34 +++++++----
+ fs/btrfs/extent-tree.c      |  11 ++--
+ fs/btrfs/extent_io.c        |  14 +++++
+ fs/btrfs/file.c             |  13 ----
+ fs/btrfs/free-space-cache.c | 145 ++++++++++++++++----------------------------
+ fs/btrfs/inode.c            |  57 +++++++++++++++--
+ fs/btrfs/ioctl.h            |   2 +-
+ fs/btrfs/super.c            |   4 ++
+ fs/btrfs/tree-log.c         |   6 ++
+ fs/btrfs/volumes.c          |  95 +++++++++++++++++------------
+ fs/btrfs/volumes.h          |   3 +-
+ 13 files changed, 258 insertions(+), 201 deletions(-)
