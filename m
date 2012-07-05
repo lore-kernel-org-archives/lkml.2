@@ -1,47 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab2GETgG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 15:36:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41977 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757311Ab2GETfh (ORCPT
-	<rfc822;linux-kernel@Vger.kernel.org>);
-	Thu, 5 Jul 2012 15:35:37 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 3/6] mfd: arizona: Treat register read errors as non-fatal during resume
-Date: Thu,  5 Jul 2012 20:35:30 +0100
-Message-Id: <1341516933-16474-3-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1341516933-16474-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1341516933-16474-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1757329Ab2GETjk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 15:39:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37604 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755772Ab2GETji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 15:39:38 -0400
+Message-ID: <4FF5ED2A.1070209@RedHat.com>
+Date: Thu, 05 Jul 2012 15:38:18 -0400
+From: Steve Dickson <SteveD@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
+MIME-Version: 1.0
+To: Namjae Jeon <linkinjeon@gmail.com>
+CC: bfields@fieldses.org, Trond.Myklebust@netapp.com,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: Re: [PATCH] nfs-util: Update exportfs flush option list in usage
+ message.
+References: <1341037381-24218-1-git-send-email-linkinjeon@gmail.com>
+In-Reply-To: <1341037381-24218-1-git-send-email-linkinjeon@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're testing for a specific value and while SPI does not detect I/O
-errors I2C can.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/arizona-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 2ca43a0..3a4ced2 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -197,7 +197,7 @@ static int arizona_wait_for_boot(struct arizona *arizona)
- 		if (ret != 0) {
- 			dev_err(arizona->dev, "Failed to read boot state: %d\n",
- 				ret);
--			return ret;
-+			continue;
- 		}
- 
- 		if (reg & ARIZONA_BOOT_DONE_STS)
--- 
-1.7.10
+On 06/30/2012 02:23 AM, Namjae Jeon wrote:
+> Update exportfs flush option list in usage message.
+> And I sort these cases in alphabetical order.
+> 
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+Committed...
 
+steved.
+
+> ---
+>  utils/exportfs/exportfs.c |   21 ++++++++++++---------
+>  1 file changed, 12 insertions(+), 9 deletions(-)
+> 
+> diff --git a/utils/exportfs/exportfs.c b/utils/exportfs/exportfs.c
+> index a3323d7..9f79541 100644
+> --- a/utils/exportfs/exportfs.c
+> +++ b/utils/exportfs/exportfs.c
+> @@ -40,7 +40,7 @@ static void	unexportfs(char *arg, int verbose);
+>  static void	exports_update(int verbose);
+>  static void	dump(int verbose);
+>  static void	error(nfs_export *exp, int err);
+> -static void	usage(const char *progname);
+> +static void	usage(const char *progname, int n);
+>  static void	validate_export(nfs_export *exp);
+>  static int	matchhostname(const char *hostname1, const char *hostname2);
+>  static void	export_d_read(const char *dname);
+> @@ -105,11 +105,17 @@ main(int argc, char **argv)
+>  
+>  	export_errno = 0;
+>  
+> -	while ((c = getopt(argc, argv, "aio:ruvf")) != EOF) {
+> +	while ((c = getopt(argc, argv, "afhio:ruv")) != EOF) {
+>  		switch(c) {
+>  		case 'a':
+>  			f_all = 1;
+>  			break;
+> +		case 'f':
+> +			force_flush = 1;
+> +			break;
+> +		case 'h':
+> +			usage(progname, 0);
+> +			break;
+>  		case 'i':
+>  			f_ignore = 1;
+>  			break;
+> @@ -126,11 +132,8 @@ main(int argc, char **argv)
+>  		case 'v':
+>  			f_verbose = 1;
+>  			break;
+> -		case 'f':
+> -			force_flush = 1;
+> -			break;
+>  		default:
+> -			usage(progname);
+> +			usage(progname, 1);
+>  			break;
+>  		}
+>  	}
+> @@ -723,8 +726,8 @@ error(nfs_export *exp, int err)
+>  }
+>  
+>  static void
+> -usage(const char *progname)
+> +usage(const char *progname, int n)
+>  {
+> -	fprintf(stderr, "usage: %s [-aruv] [host:/path]\n", progname);
+> -	exit(1);
+> +	fprintf(stderr, "usage: %s [-afhioruv] [host:/path]\n", progname);
+> +	exit(n);
+>  }
