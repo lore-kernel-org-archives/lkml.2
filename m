@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933400Ab2GEXNE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 19:13:04 -0400
-Received: from mga01.intel.com ([192.55.52.88]:63156 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933237Ab2GEXNC convert rfc822-to-8bit (ORCPT
+	id S933422Ab2GEXPG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 19:15:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56057 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933406Ab2GEXPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 19:13:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="188954895"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>, Don Zickus <dzickus@redhat.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [RFC][PATCH 2/2] write callback: Check if existing entry is
- erasable
-Thread-Topic: [RFC][PATCH 2/2] write callback: Check if existing entry is
- erasable
-Thread-Index: Ac1ZdICAdYwUKctERYa3qDPOlfZeVABeLqqAAA26cAAAAK9jgAABKeAAAApRWjA=
-Date: Thu, 5 Jul 2012 23:12:42 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F1934764C@ORSMSX104.amr.corp.intel.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D401AAED@USINDEM103.corp.hds.com>
- <20120705133201.GG5637@redhat.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D401C288@USINDEM103.corp.hds.com>
- <20120705202443.GQ5637@redhat.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D401C31F@USINDEM103.corp.hds.com>
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D401C31F@USINDEM103.corp.hds.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 5 Jul 2012 19:15:04 -0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>,
+        Jason Wessel <jason.wessel@windriver.com>
+Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Colin Cross <ccross@android.com>, John Stultz <john.stultz@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        kernel-team@android.com, kgdb-bugreport@lists.sourceforge.net
+Subject: [PATCH 1/6] kernel/debug: Make use of KGDB_REASON_NMI
+Date: Thu,  5 Jul 2012 16:12:35 -0700
+Message-Id: <1341529960-18370-1-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20120705231034.GA16931@lizard>
+References: <20120705231034.GA16931@lizard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Default value of pstore.kmsg_byte is 10KB.
-> I think efi_pstore can log 60KB(= 10KB X 6)...
+Currently kernel never set KGDB_REASON_NMI. We do now, when we enter
+KGDB/KDB from an NMI.
 
-10K is almost certainly more than we need for 99.9% of problems ... I set the
-default there to test out that pstore would correctly break a dump into more
-than one back-end ERST record (about 7K) and never changed it back. So
-don't treat 10K with any magic reverence. It's easy to argue that a smaller
-number is good enough.
+This is not to be confused with kgdb_nmicallback(), NMI callback is
+an entry for the slave CPUs during CPUs roundup, but REASON_NMI is the
+entry for the master CPU.
 
-There are certainly less over-write worries if you can handle a few
-(4, 5, 6) simultaneously logged errors of sufficient size to be useful
-(must capture all of the panic strings, backtrace and register dump
-plus "enough" lines before the panic to see any obvious issues).
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+ kernel/debug/kdb/kdb_debugger.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-If you only get to store two errors, then perhaps one non-over writable
-panic type entry, and one other "most recent" type entry?
-
-With just one, like current EFI, then there are certainly hard choices
-that might not be the best for certain pathological situations.
-
--Tony
-
+diff --git a/kernel/debug/kdb/kdb_debugger.c b/kernel/debug/kdb/kdb_debugger.c
+index 8b68ce7..be7b33b 100644
+--- a/kernel/debug/kdb/kdb_debugger.c
++++ b/kernel/debug/kdb/kdb_debugger.c
+@@ -12,6 +12,7 @@
+ #include <linux/kdb.h>
+ #include <linux/kdebug.h>
+ #include <linux/export.h>
++#include <linux/hardirq.h>
+ #include "kdb_private.h"
+ #include "../debug_core.h"
+ 
+@@ -52,6 +53,9 @@ int kdb_stub(struct kgdb_state *ks)
+ 	if (atomic_read(&kgdb_setting_breakpoint))
+ 		reason = KDB_REASON_KEYBOARD;
+ 
++	if (in_nmi())
++		reason = KDB_REASON_NMI;
++
+ 	for (i = 0, bp = kdb_breakpoints; i < KDB_MAXBPT; i++, bp++) {
+ 		if ((bp->bp_enabled) && (bp->bp_addr == addr)) {
+ 			reason = KDB_REASON_BREAK;
+-- 
+1.7.10.4
 
