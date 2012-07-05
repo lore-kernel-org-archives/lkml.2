@@ -1,131 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab2GEAqI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 20:46:08 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:53407 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756140Ab2GEApo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 20:45:44 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 06/11] mm: memcg: move swapin charge functions above callsites
-Date: Thu,  5 Jul 2012 02:44:58 +0200
-Message-Id: <1341449103-1986-7-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
-References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
+	id S932452Ab2GEAtL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 20:49:11 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63371 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103Ab2GEAtI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 20:49:08 -0400
+X-AuditID: 9c930197-b7b49ae0000027b8-37-4ff4e4815565
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org,
+        drepper@gmail.com
+Subject: Re: [PATCH 2/3] perf, tool: Enable grouping logic for parsed events
+References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
+	<1340960907-3725-3-git-send-email-jolsa@redhat.com>
+	<87bojync4b.fsf@sejong.aot.lge.com>
+	<20120702101010.GB967@krava.redhat.com>
+	<873959mzi3.fsf@sejong.aot.lge.com>
+	<20120704173407.GA2880@krava.redhat.com>
+Date: Thu, 05 Jul 2012 09:45:05 +0900
+In-Reply-To: <20120704173407.GA2880@krava.redhat.com> (Jiri Olsa's message of
+	"Wed, 4 Jul 2012 19:34:07 +0200")
+Message-ID: <87y5mzkpda.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Charging cache pages may require swapin in the shmem case.  Save the
-forward declaration and just move the swapin functions above the cache
-charging functions.
+On Wed, 4 Jul 2012 19:34:07 +0200, Jiri Olsa wrote:
+> On Tue, Jul 03, 2012 at 09:58:44AM +0900, Namhyung Kim wrote:
+>> On Mon, 2 Jul 2012 12:10:10 +0200, Jiri Olsa wrote:
+>> > On Mon, Jul 02, 2012 at 11:13:56AM +0900, Namhyung Kim wrote:
+>> >> On Fri, 29 Jun 2012 11:08:26 +0200, Jiri Olsa wrote:
+>> >> > It's possible to use standard event modifier for a group, which spans
+>> >> > over all events in the group and overrides any event modifier settings,
+>> >> > for example:
+>> >> >
+>> >> >   # perf record -r '{faults:k,cache-references}:u'
+>> >> >
+>> >> > resulting in ':u' modifier being used for both 'faults' and 'cache-references'
+>> >> > events, regardless of their modifier setup (':k' for faults event).
+>> >> >
+>> >> 
+>> >> So the faults event would get only 'u' for the modifier not 'uk', right?
+>> >
+>> > right
+>> >
+>> 
+>> I was thinking about the combining the modifiers - i.e. make it 'uk'
+>> above. Not sure it's useful in general, but something like "adding 'p'
+>> to the leader (only)" looks good to have IMHO.
+>
+> just hit the issue with leader 'p' during tests ;) but still not sure which
+> way is more usefull thought.. probably better to have both ways available
+>
+> how about uppercase group modifier overwrites, lowercase means combining
+>
+> or any other way.. ;) thoughts?
+>
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c |   68 +++++++++++++++++++++++++-----------------------------
- 1 files changed, 32 insertions(+), 36 deletions(-)
+How about using like '{...}+u' for combining?
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 3d56b4e..4a41b55 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2729,37 +2729,6 @@ int mem_cgroup_newpage_charge(struct page *page,
- 					MEM_CGROUP_CHARGE_TYPE_ANON);
- }
- 
--static void
--__mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
--					enum charge_type ctype);
--
--int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
--				gfp_t gfp_mask)
--{
--	struct mem_cgroup *memcg = NULL;
--	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
--	int ret;
--
--	if (mem_cgroup_disabled())
--		return 0;
--	if (PageCompound(page))
--		return 0;
--
--	if (unlikely(!mm))
--		mm = &init_mm;
--	if (!page_is_file_cache(page))
--		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
--
--	if (!PageSwapCache(page))
--		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
--	else { /* page is swapcache/shmem */
--		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &memcg);
--		if (!ret)
--			__mem_cgroup_commit_charge_swapin(page, memcg, type);
--	}
--	return ret;
--}
--
- /*
-  * While swap-in, try_charge -> commit or cancel, the page is locked.
-  * And when try_charge() successfully returns, one refcnt to memcg without
-@@ -2806,6 +2775,15 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
- 	return ret;
- }
- 
-+void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *memcg)
-+{
-+	if (mem_cgroup_disabled())
-+		return;
-+	if (!memcg)
-+		return;
-+	__mem_cgroup_cancel_charge(memcg, 1);
-+}
-+
- static void
- __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *memcg,
- 					enum charge_type ctype)
-@@ -2843,13 +2821,31 @@ void mem_cgroup_commit_charge_swapin(struct page *page,
- 					  MEM_CGROUP_CHARGE_TYPE_ANON);
- }
- 
--void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *memcg)
-+int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
-+				gfp_t gfp_mask)
- {
-+	struct mem_cgroup *memcg = NULL;
-+	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
-+	int ret;
-+
- 	if (mem_cgroup_disabled())
--		return;
--	if (!memcg)
--		return;
--	__mem_cgroup_cancel_charge(memcg, 1);
-+		return 0;
-+	if (PageCompound(page))
-+		return 0;
-+
-+	if (unlikely(!mm))
-+		mm = &init_mm;
-+	if (!page_is_file_cache(page))
-+		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-+
-+	if (!PageSwapCache(page))
-+		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
-+	else { /* page is swapcache/shmem */
-+		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &memcg);
-+		if (!ret)
-+			__mem_cgroup_commit_charge_swapin(page, memcg, type);
-+	}
-+	return ret;
- }
- 
- static void mem_cgroup_do_uncharge(struct mem_cgroup *memcg,
--- 
-1.7.7.6
-
+Thanks,
+Namhyung
