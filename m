@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756517Ab2GEOA5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 10:00:57 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47448 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751151Ab2GEOA4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 10:00:56 -0400
-Date: Thu, 5 Jul 2012 15:00:53 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Vinod Koul <vinod.koul@intel.com>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7 v2] ASoC: siu: don't use DMA device for channel
- filtering
-Message-ID: <20120705140053.GL4111@opensource.wolfsonmicro.com>
-References: <1341484183-10757-1-git-send-email-g.liakhovetski@gmx.de>
- <1341484183-10757-3-git-send-email-g.liakhovetski@gmx.de>
- <20120705120826.GU4111@opensource.wolfsonmicro.com>
- <Pine.LNX.4.64.1207051549010.30191@axis700.grange>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gphVtybrzJJtG9bX"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1207051549010.30191@axis700.grange>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756548Ab2GEOCy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 10:02:54 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:47392 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751460Ab2GEOCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 10:02:53 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <netdev@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH] force dentry revalidation after namespace change
+Date: Thu,  5 Jul 2012 18:00:05 +0400
+Message-Id: <1341496805-26394-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When we change the namespace tag of a sysfs entry, the associated dentry
+is still kept around. readdir() will work correctly and not display the
+old entries, but open() will still succeed, so will reads and writes.
 
---gphVtybrzJJtG9bX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This will no longer happen if sysfs is remounted, hinting that this is a
+cache-related problem.
 
-On Thu, Jul 05, 2012 at 03:54:30PM +0200, Guennadi Liakhovetski wrote:
-> On Thu, 5 Jul 2012, Mark Brown wrote:
+I am using the following sequence to demonstrate that:
 
-> > This doesn't apply, please regenerate against current code.
+shell1:
+ip link add type veth
+unshare -nm
 
-> Sure, as I mentioned in my description mail: "This patch series goes on=
-=20
-> top of my earlier patches to split shdma.c." And that patch series, also=
-=20
-> available at
+shell2:
+ip link set veth1 <pid_of_shell_1>
+cat /sys/devices/virtual/net/veth1/ifindex
 
-Ah, right.  You didn't send me your cover mail, you only CCed me on the
-individual patch, so I hadn't seen this.
+Before that patch, this will succeed (fail to fail). After it, it will
+correctly return an error. Differently from a normal rename, which we
+handle fine, changing the object namespace will keep it's path intact.
+So this check seems necessary as well.
 
---gphVtybrzJJtG9bX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Tejun Heo <tj@kernel.org>
+CC: Eric W. Biederman <ebiederm@xmission.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ fs/sysfs/dir.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index e6bb9b2..c24bdd9 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -307,6 +307,7 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
+ {
+ 	struct sysfs_dirent *sd;
+ 	int is_dir;
++	int type;
+ 
+ 	if (nd->flags & LOOKUP_RCU)
+ 		return -ECHILD;
+@@ -314,6 +315,10 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
+ 	sd = dentry->d_fsdata;
+ 	mutex_lock(&sysfs_mutex);
+ 
++	type = sysfs_ns_type(sd);
++	if (sd->s_ns && (sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns))
++		goto out_bad;
++
+ 	/* The sysfs dirent has been deleted */
+ 	if (sd->s_flags & SYSFS_FLAG_REMOVED)
+ 		goto out_bad;
+-- 
+1.7.10.4
 
-iQIcBAEBAgAGBQJP9Z22AAoJEBus8iNuMP3dACMQAICxFxX/kxjlIMOANkmNywBx
-Eari9Bxtu4RSK1+XeKM4qYtYTeC9nifv+3owtj3h95kCHXVy2C6Dul6rDboCDCaw
-c6kxEUmpHwcMmlzYN21dkTVca07u7bznLRpqsfGKnfz2TxF9fB/M3vSY1zZX1ECj
-tbdmFOSHggZl3d7XT+qOTnb/0hzKkKEnhmwl0OEdVEZYpP8xfQCE9DiVhzwnQwrn
-SodGEQMOcZguvlpxd0Nh6kuifZmqbI3/BEd5ZisF54SeOrvchUSigZynLFIJtg0g
-FsZLMNU7GKGliD8l5alBiNOZmtauzsbROrdOrdVq8hdGwd4nmrhtCY7/5M7v2ew6
-OHKVUjVJHwQnMcZ2/uLaasRmsCXe1Rq5r3zFq9IXrNNmjfzijcjR53PlJcXoHL94
-Y6JGbHsHe5xYIguNXqA3UQm5cNV3bDghvTwuK5HA0SQ7YU/9VNM1mj5b4bSMoZ0t
-pEdC/ng6peYDDKGaEhy75+YP1KcOe39q4b1/7qKLjkPo554jg94xg+wuOtkrR3AV
-4lu1yrITUkOj/QTgYD5qO8jGRgFGhDWeCZN3lCA5R02dBIXUFBPwwXJzGQC8c6iv
-4o1iSug0C6VF/a+WNO4G9rLOadlYcQoigBWvU1Pb7nDfXOl/sS/JB4WT6/vxbNbb
-In64jWuQ0OlR5HINqVnd
-=3az+
------END PGP SIGNATURE-----
-
---gphVtybrzJJtG9bX--
