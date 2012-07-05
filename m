@@ -1,66 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932725Ab2GEMhw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 08:37:52 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:45764 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932699Ab2GEMhr (ORCPT
+	id S932651Ab2GEMhT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 08:37:19 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:42043
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932580Ab2GEMhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 08:37:47 -0400
+	Thu, 5 Jul 2012 08:37:08 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah)
+X-WSS-ID: 0M6OTPO-02-6O1-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <iommu@lists.linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 24/28] iommu/amd: Add initialization routines for AMD interrupt remapping
+Date: Thu, 5 Jul 2012 14:36:44 +0200
+Message-ID: <1341491808-23083-25-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
+References: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <1341412376-6272-1-git-send-email-will.deacon@arm.com>
-References: <1341412376-6272-1-git-send-email-will.deacon@arm.com>
-Date: Thu, 5 Jul 2012 20:37:46 +0800
-Message-ID: <CAJd=RBAmF3dtb8wtEbS-A7BNT=RLsb5emQQWVU8ioeQOO8D7NA@mail.gmail.com>
-Subject: Re: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
- page to userspace
-From: Hillf Danton <dhillf@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, mhocko@suse.cz,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 4, 2012 at 10:32 PM, Will Deacon <will.deacon@arm.com> wrote:
-> When allocating and returning clear huge pages to userspace as a
-> response to a fault, we may zero and return a mapping to a previously
-> dirtied physical region (for example, it may have been written by
-> a private mapping which was freed as a result of an ftruncate on the
-> backing file). On architectures with Harvard caches, this can lead to
-> I/D inconsistency since the zeroed view may not be visible to the
-> instruction stream.
->
-> This patch solves the problem by flushing the region after allocating
-> and clearing a new huge page. Note that PowerPC avoids this issue by
-> performing the flushing in their clear_user_page implementation to keep
-> the loader happy, however this is closely tied to the semantics of the
-> PG_arch_1 page flag which is architecture-specific.
->
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> ---
+Add the six routines required to setup interrupt remapping
+with the AMD IOMMU. Also put it all together into the AMD
+specific irq_remap_ops.
 
-Thanks:)
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ drivers/iommu/amd_iommu.c       |   18 +++++++++++++++++
+ drivers/iommu/amd_iommu_init.c  |   42 +++++++++++++++++++++++++++++++++++++++
+ drivers/iommu/amd_iommu_proto.h |    8 ++++++++
+ 3 files changed, 68 insertions(+)
 
-Acked-by: Hillf Danton <dhillf@gmail.com>
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index fed1395..41fe178 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -45,6 +45,7 @@
+ 
+ #include "amd_iommu_proto.h"
+ #include "amd_iommu_types.h"
++#include "irq_remapping.h"
+ 
+ #define CMD_SET_TYPE(cmd, t) ((cmd)->data[1] |= ((t) << 28))
+ 
+@@ -4154,4 +4155,21 @@ static int setup_hpet_msi(unsigned int irq, unsigned int id)
+ 	return 0;
+ }
+ 
++struct irq_remap_ops amd_iommu_irq_ops = {
++	.supported		= amd_iommu_supported,
++	.prepare		= amd_iommu_prepare,
++	.enable			= amd_iommu_enable,
++	.disable		= amd_iommu_disable,
++	.reenable		= amd_iommu_reenable,
++	.enable_faulting	= amd_iommu_enable_faulting,
++	.setup_ioapic_entry	= setup_ioapic_entry,
++#ifdef CONFIG_SMP
++	.set_affinity		= set_affinity,
++#endif
++	.free_irq		= free_irq,
++	.compose_msi_msg	= compose_msi_msg,
++	.msi_alloc_irq		= msi_alloc_irq,
++	.msi_setup_irq		= msi_setup_irq,
++	.setup_hpet_msi		= setup_hpet_msi,
++};
+ #endif
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index c487822..204dfea 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -33,6 +33,7 @@
+ #include <asm/gart.h>
+ #include <asm/x86_init.h>
+ #include <asm/iommu_table.h>
++#include <asm/irq_remapping.h>
+ 
+ #include "amd_iommu_proto.h"
+ #include "amd_iommu_types.h"
+@@ -1896,7 +1897,48 @@ static int __init iommu_go_to_state(enum iommu_init_state state)
+ 	return ret;
+ }
+ 
++#ifdef CONFIG_IRQ_REMAP
++int __init amd_iommu_prepare(void)
++{
++	return iommu_go_to_state(IOMMU_ACPI_FINISHED);
++}
++
++int __init amd_iommu_supported(void)
++{
++	return amd_iommu_irq_remap ? 1 : 0;
++}
++
++int __init amd_iommu_enable(void)
++{
++	int ret;
++
++	ret = iommu_go_to_state(IOMMU_ENABLED);
++	if (ret)
++		return ret;
+ 
++	irq_remapping_enabled = 1;
++
++	return 0;
++}
++
++void amd_iommu_disable(void)
++{
++	amd_iommu_suspend();
++}
++
++int amd_iommu_reenable(int mode)
++{
++	amd_iommu_resume();
++
++	return 0;
++}
++
++int __init amd_iommu_enable_faulting(void)
++{
++	/* We enable MSI later when PCI is initialized */
++	return 0;
++}
++#endif
+ 
+ /*
+  * This is the core init function for AMD IOMMU hardware in the system.
+diff --git a/drivers/iommu/amd_iommu_proto.h b/drivers/iommu/amd_iommu_proto.h
+index 1a7f41c..c294961 100644
+--- a/drivers/iommu/amd_iommu_proto.h
++++ b/drivers/iommu/amd_iommu_proto.h
+@@ -32,6 +32,14 @@ extern void amd_iommu_uninit_devices(void);
+ extern void amd_iommu_init_notifier(void);
+ extern void amd_iommu_init_api(void);
+ 
++/* Needed for interrupt remapping */
++extern int amd_iommu_supported(void);
++extern int amd_iommu_prepare(void);
++extern int amd_iommu_enable(void);
++extern void amd_iommu_disable(void);
++extern int amd_iommu_reenable(int);
++extern int amd_iommu_enable_faulting(void);
++
+ /* IOMMUv2 specific functions */
+ struct iommu_domain;
+ 
+-- 
+1.7.9.5
 
->  mm/hugetlb.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index e198831..b83d026 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -2646,6 +2646,7 @@ retry:
->                         goto out;
->                 }
->                 clear_huge_page(page, address, pages_per_huge_page(h));
-> +               flush_dcache_page(page);
->                 __SetPageUptodate(page);
->
->                 if (vma->vm_flags & VM_MAYSHARE) {
-> --
-> 1.7.4.1
->
+
