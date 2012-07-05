@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932360Ab2GEK3x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 06:29:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:61000 "EHLO
+	id S932436Ab2GEK3z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 06:29:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:59990 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755240Ab2GEK3t (ORCPT
+	with ESMTP id S1755716Ab2GEK3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 06:29:49 -0400
+	Thu, 5 Jul 2012 06:29:54 -0400
 From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 To: Vinod Koul <vinod.koul@intel.com>
 Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/7 v2] dma: sh: stop using .private
-Date: Thu,  5 Jul 2012 12:29:36 +0200
-Message-Id: <1341484183-10757-1-git-send-email-g.liakhovetski@gmx.de>
+        linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
+Subject: [PATCH 3/7 v2] sh: remove unused DMA device pointer from SIU platform data
+Date: Thu,  5 Jul 2012 12:29:39 +0200
+Message-Id: <1341484183-10757-4-git-send-email-g.liakhovetski@gmx.de>
 X-Mailer: git-send-email 1.7.2.5
-X-Provags-ID: V02:K0:+X+ATXhrYM3VIdmTeVIF+eKRusn0TOtRfB9xWfjyeWj
- HOFxZiBNXXXovTtImJZ4A3Ho4qH8dXfHdjxEl+A442BJUabYx+
- 5Fjwpmf5waKyLCyd8tm88YC63WRt+ixDDzhZn8QVjzCZG1Ycs8
- JDBRxNka5GKEINeLXaAnmBBG7ZgXbSyPjH9bBk7ff3AxzKRodB
- 70e7wTHgjnMF9MCIojeMZf+VrY2AStNaMn3thRda/rxaaV3z/e
- pHdoPCbVCH/fxEL6VjfRty+U4owVwu58LHP1t8J/Sr7ejaLqC3
- 2P14hbf/bwqjfLbMPIRNHMJIwyR3F3mglRJRnsBPdxrplnQ+uW
- bMyd8HZvYJUMKGZhjMHAwSXe1dE8/lmqDEv4vd4r5cbhhuGBmk
- heUHF0Ahjz/4A==
+In-Reply-To: <1341484183-10757-1-git-send-email-g.liakhovetski@gmx.de>
+References: <1341484183-10757-1-git-send-email-g.liakhovetski@gmx.de>
+X-Provags-ID: V02:K0:epv4LjwCh4uKy0Kgi8SWDIqsq/EViq5PaDz/FR93Ofa
+ RU9DDmxC6YWr9qpera3QbKIuTsit6Mm9BUpKVFoblWrub6kXT+
+ Kvl+285b7FvOXfi4gZljsUQNmtFat31H5s+PpQLU4I0DtbDyTz
+ exJBVLf/p+W89k13zwmx5WzLEC45JSfQLwYlauNU4qo1OZI41+
+ +CJr34ao8OKGUpC7/lziSE1CFE58KjUy8sBN8cDUOtYG6LX9Dj
+ huO2yRbOhCDeCiKYbxmR1LnP7LpFzLtrKYx/e3eIMCTPIXpJFf
+ qb3ZuRvzEXEICCI9U9JMlmhcrXPMDhdJSTlnZZMrDyk6RG8GUC
+ 25WWB2pi1jTaXPQLjawxvniWOjDianMF31aPi1wKWXeQF7dGuQ
+ AeWnsZXWTq2sg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series supersedes the one from yesterday with the same title. 
-The 4 patches from v1 are all unchanged, v2 just prepends them with 3 more 
-preparatory patches. From the original series description:
+The SIU ALSA driver is not using the DMA device pointer for DMA channel
+filtering any more, it can be now removed.
 
-Here's an attempt to convert the shdma driver to a new method, whereby a 
-centrally provided filter function is used and the DMA_SLAVE_CONFIG command 
-is enabled for slave operation. The last patch is an illustration of how 
-this new method shall be used. If this approach is acceptable, I'll also 
-convert the remaining shdma user drivers. This patch series goes on top of 
-my earlier patches to split shdma.c.
-
-As suggested yesterday, I've pushed both my current shdma patch series to 
-github in branches:
-
-git://github.com/lyakh/linux.git shdma-base
-git://github.com/lyakh/linux.git shdma-config
-
-for the preceding base shdma-split series and for this one respectively.
-
-As before, the last patch in the series is FYI only for now.
-
-Guennadi Liakhovetski (7):
-  dmaengine: shdma: (cosmetic) simplify a static function
-  ASoC: siu: don't use DMA device for channel filtering
-  sh: remove unused DMA device pointer from SIU platform data
-  dmaengine: shdma: prepare to stop using struct dma_chan::private
-  dma: sh: use an integer slave ID to improve API compatibility
-  dma: sh: provide a migration path for slave drivers to stop using
-    .private
-  mmc: sh_mmcif: switch to the new DMA channel allocation and
-    configuration
-
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Paul Mundt <lethal@linux-sh.org>
+---
  arch/sh/include/asm/siu.h              |    1 -
  arch/sh/kernel/cpu/sh4a/setup-sh7722.c |    1 -
- drivers/dma/sh/shdma-base.c            |  130 ++++++++++++++++++++++++--------
- drivers/dma/sh/shdma.c                 |   39 +++++-----
- drivers/dma/sh/shdma.h                 |    2 +
- drivers/mmc/host/sh_mmcif.c            |   90 +++++++++++++----------
- include/linux/sh_dma.h                 |   12 ++--
- include/linux/shdma-base.h             |    7 +-
- sound/soc/sh/siu_pcm.c                 |    4 -
- 9 files changed, 179 insertions(+), 107 deletions(-)
+ 2 files changed, 0 insertions(+), 2 deletions(-)
 
+diff --git a/arch/sh/include/asm/siu.h b/arch/sh/include/asm/siu.h
+index 1d95c78..580b7ac 100644
+--- a/arch/sh/include/asm/siu.h
++++ b/arch/sh/include/asm/siu.h
+@@ -14,7 +14,6 @@
+ struct device;
+ 
+ struct siu_platform {
+-	struct device *dma_dev;
+ 	unsigned int dma_slave_tx_a;
+ 	unsigned int dma_slave_rx_a;
+ 	unsigned int dma_slave_tx_b;
+diff --git a/arch/sh/kernel/cpu/sh4a/setup-sh7722.c b/arch/sh/kernel/cpu/sh4a/setup-sh7722.c
+index 0f5a219..65786c7 100644
+--- a/arch/sh/kernel/cpu/sh4a/setup-sh7722.c
++++ b/arch/sh/kernel/cpu/sh4a/setup-sh7722.c
+@@ -512,7 +512,6 @@ static struct platform_device tmu2_device = {
+ };
+ 
+ static struct siu_platform siu_platform_data = {
+-	.dma_dev	= &dma_device.dev,
+ 	.dma_slave_tx_a	= SHDMA_SLAVE_SIUA_TX,
+ 	.dma_slave_rx_a	= SHDMA_SLAVE_SIUA_RX,
+ 	.dma_slave_tx_b	= SHDMA_SLAVE_SIUB_TX,
 -- 
 1.7.2.5
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
