@@ -1,265 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab2GEJT1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 05:19:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36857 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751076Ab2GEJT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 05:19:26 -0400
-Message-ID: <4FF55C0C.4040309@redhat.com>
-Date: Thu, 05 Jul 2012 11:19:08 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1754401Ab2GEJWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 05:22:12 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36071 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab2GEJWK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 05:22:10 -0400
+Date: Thu, 5 Jul 2012 02:22:01 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: ocfs2-devel@oss.oracle.com, linux-aio@kvack.org, mfasheh@suse.com,
+        joe.jin@oracle.com, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [Ocfs2-devel] [PATCH v4 2/2] ocfs2: clear unaligned io flag
+ when dio fails
+Message-ID: <20120705092201.GI14743@dhcp-172-17-9-228.mtv.corp.google.com>
+Mail-Followup-To: Junxiao Bi <junxiao.bi@oracle.com>,
+	ocfs2-devel@oss.oracle.com, linux-aio@kvack.org, mfasheh@suse.com,
+	joe.jin@oracle.com, linux-kernel@vger.kernel.org,
+	stable@vger.kernel.org, akpm@linux-foundation.org
+References: <1340788195-20623-1-git-send-email-junxiao.bi@oracle.com>
+ <1340788195-20623-3-git-send-email-junxiao.bi@oracle.com>
+ <20120704073415.GF9863@dhcp-172-17-9-228.mtv.corp.google.com>
+ <4FF3F61D.2030204@oracle.com>
 MIME-Version: 1.0
-To: Cong Meng <mc@linux.vnet.ibm.com>
-CC: stefanha@linux.vnet.ibm.com, linuxram@us.ibm.com,
-        senwang@linux.vnet.ibm.com, zwanp@cn.ibm.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH v4] virtio-scsi: hotplug support for virtio-scsi
-References: <1341479203-12058-1-git-send-email-mc@linux.vnet.ibm.com>
-In-Reply-To: <1341479203-12058-1-git-send-email-mc@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF3F61D.2030204@oracle.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 05/07/2012 11:06, Cong Meng ha scritto:
-> This patch implements the hotplug support for virtio-scsi.
-> When there is a device attached/detached, the virtio-scsi driver will be
-> signaled via event virtual queue and it will add/remove the scsi device 
-> in question automatically.
-> 
-> v2: handle no_event event
-> v3: add handle event dropped, and typo fix
-> v4: Cancel event works when exit. Coding type fix.
-> 
-> Signed-off-by: Sen Wang <senwang@linux.vnet.ibm.com>
-> Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
+On Wed, Jul 04, 2012 at 03:51:57PM +0800, Junxiao Bi wrote:
+> On 07/04/2012 03:34 PM, Joel Becker wrote:
+> > On Wed, Jun 27, 2012 at 05:09:55PM +0800, Junxiao Bi wrote:
+> >> The unaligned io flag is set in the kiocb when an unaligned
+> >> dio is issued, it should be cleared even when the dio fails,
+> >> or it may affect the following io which are using the same
+> >> kiocb.
+> >>
+> >> Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+> >> Cc: stable@vger.kernel.org
+> > This patch is now part of the 'fixes' branch of ocfs2.git.
+> Thank you. Are you going to merge my first patch "[PATCH v4 1/2] aio:
+> make kiocb->private NUll in init_sync_kiocb()"? Though Andrew's cleanup
+> patch covered this fix, but it can't tell how this fix a ocfs2 hang bug.
+> Also merging it will make it into stable branch.
 
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+Pushed that too.
 
-> ---
->  drivers/scsi/virtio_scsi.c  |  127 ++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/virtio_scsi.h |    9 +++
->  2 files changed, 135 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> index 9fc5e67..173cb39 100644
-> --- a/drivers/scsi/virtio_scsi.c
-> +++ b/drivers/scsi/virtio_scsi.c
-> @@ -25,6 +25,7 @@
->  #include <scsi/scsi_cmnd.h>
->  
->  #define VIRTIO_SCSI_MEMPOOL_SZ 64
-> +#define VIRTIO_SCSI_EVENT_LEN 8
->  
->  /* Command queue element */
->  struct virtio_scsi_cmd {
-> @@ -43,6 +44,12 @@ struct virtio_scsi_cmd {
->  	} resp;
->  } ____cacheline_aligned_in_smp;
->  
-> +struct virtio_scsi_event_node {
-> +	struct virtio_scsi *vscsi;
-> +	struct virtio_scsi_event event;
-> +	struct work_struct work;
-> +};
-> +
->  struct virtio_scsi_vq {
->  	/* Protects vq */
->  	spinlock_t vq_lock;
-> @@ -67,6 +74,9 @@ struct virtio_scsi {
->  	struct virtio_scsi_vq event_vq;
->  	struct virtio_scsi_vq req_vq;
->  
-> +	/* Get some buffers ready for event vq */
-> +	struct virtio_scsi_event_node event_list[VIRTIO_SCSI_EVENT_LEN];
-> +
->  	struct virtio_scsi_target_state *tgt[];
->  };
->  
-> @@ -202,6 +212,106 @@ static void virtscsi_ctrl_done(struct virtqueue *vq)
->  	spin_unlock_irqrestore(&vscsi->ctrl_vq.vq_lock, flags);
->  };
->  
-> +static int virtscsi_kick_event(struct virtio_scsi *vscsi,
-> +			       struct virtio_scsi_event_node *event_node)
-> +{
-> +	int ret;
-> +	struct scatterlist sg;
-> +	unsigned long flags;
-> +
-> +	sg_set_buf(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
-> +
-> +	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
-> +
-> +	ret = virtqueue_add_buf(vscsi->event_vq.vq, &sg, 0, 1, event_node, GFP_ATOMIC);
-> +	if (ret >= 0)
-> +		virtqueue_kick(vscsi->event_vq.vq);
-> +
-> +	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
-> +
-> +	return ret;
-> +}
-> +
-> +static int virtscsi_kick_event_all(struct virtio_scsi *vscsi)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < VIRTIO_SCSI_EVENT_LEN; i++) {
-> +		vscsi->event_list[i].vscsi = vscsi;
-> +		virtscsi_kick_event(vscsi, &vscsi->event_list[i]);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static void virtscsi_cancel_event_work(struct virtio_scsi *vscsi)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < VIRTIO_SCSI_EVENT_LEN; i++) {
-> +		cancel_work_sync(&vscsi->event_list[i].work);
-> +	}
-> +}
-> +
-> +static void virtscsi_handle_transport_reset(struct virtio_scsi *vscsi,
-> +						struct virtio_scsi_event *event)
-> +{
-> +	struct scsi_device *sdev;
-> +	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
-> +	unsigned int target = event->lun[1];
-> +	unsigned int lun = (event->lun[2] << 8) | event->lun[3];
-> +
-> +	switch (event->reason) {
-> +	case VIRTIO_SCSI_EVT_RESET_RESCAN:
-> +		scsi_add_device(shost, 0, target, lun);
-> +		break;
-> +	case VIRTIO_SCSI_EVT_RESET_REMOVED:
-> +		sdev = scsi_device_lookup(shost, 0, target, lun);
-> +		if (sdev) {
-> +			scsi_remove_device(sdev);
-> +			scsi_device_put(sdev);
-> +		} else {
-> +			pr_err("SCSI device %d 0 %d %d not found\n",
-> +				shost->host_no, target, lun);
-> +		}
-> +		break;
-> +	default:
-> +		pr_info("Unsupport virtio scsi event reason %x\n", event->reason);
-> +	}
-> +}
-> +
-> +static void virtscsi_handle_event(struct work_struct *work)
-> +{
-> +	struct virtio_scsi_event_node *event_node =
-> +		container_of(work, struct virtio_scsi_event_node, work);
-> +	struct virtio_scsi *vscsi = event_node->vscsi;
-> +	struct virtio_scsi_event *event = &event_node->event;
-> +
-> +	if (event->event & VIRTIO_SCSI_T_EVENTS_MISSED) {
-> +		event->event &= ~VIRTIO_SCSI_T_EVENTS_MISSED;
-> +		scsi_scan_host(virtio_scsi_host(vscsi->vdev));
-> +	}
-> +
-> +	switch (event->event) {
-> +	case VIRTIO_SCSI_T_NO_EVENT:
-> +		break;
-> +	case VIRTIO_SCSI_T_TRANSPORT_RESET:
-> +		virtscsi_handle_transport_reset(vscsi, event);
-> +		break;
-> +	default:
-> +		pr_err("Unsupport virtio scsi event %x\n", event->event);
-> +	}
-> +	virtscsi_kick_event(vscsi, event_node);
-> +}
-> +
-> +static void virtscsi_complete_event(void *buf)
-> +{
-> +	struct virtio_scsi_event_node *event_node = buf;
-> +
-> +	INIT_WORK(&event_node->work, virtscsi_handle_event);
-> +	schedule_work(&event_node->work);
-> +}
-> +
->  static void virtscsi_event_done(struct virtqueue *vq)
->  {
->  	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
-> @@ -209,7 +319,7 @@ static void virtscsi_event_done(struct virtqueue *vq)
->  	unsigned long flags;
->  
->  	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
-> -	virtscsi_vq_done(vq, virtscsi_complete_free);
-> +	virtscsi_vq_done(vq, virtscsi_complete_event);
->  	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
->  };
->  
-> @@ -510,6 +620,10 @@ static int virtscsi_init(struct virtio_device *vdev,
->  	virtscsi_config_set(vdev, cdb_size, VIRTIO_SCSI_CDB_SIZE);
->  	virtscsi_config_set(vdev, sense_size, VIRTIO_SCSI_SENSE_SIZE);
->  
-> +	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG)) {
-> +		virtscsi_kick_event_all(vscsi);
-> +	}
-> +
->  	/* We need to know how many segments before we allocate.  */
->  	sg_elems = virtscsi_config_get(vdev, seg_max) ?: 1;
->  
-> @@ -580,6 +694,11 @@ virtscsi_init_failed:
->  static void __devexit virtscsi_remove(struct virtio_device *vdev)
->  {
->  	struct Scsi_Host *shost = virtio_scsi_host(vdev);
-> +	struct virtio_scsi *vscsi = shost_priv(shost);
-> +
-> +	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG)) {
-> +		virtscsi_cancel_event_work(vscsi);
-> +	}
->  
->  	scsi_remove_host(shost);
->  
-> @@ -608,7 +727,13 @@ static struct virtio_device_id id_table[] = {
->  	{ 0 },
->  };
->  
-> +static unsigned int features[] = {
-> +	VIRTIO_SCSI_F_HOTPLUG
-> +};
-> +
->  static struct virtio_driver virtio_scsi_driver = {
-> +	.feature_table = features,
-> +	.feature_table_size = ARRAY_SIZE(features),
->  	.driver.name = KBUILD_MODNAME,
->  	.driver.owner = THIS_MODULE,
->  	.id_table = id_table,
-> diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
-> index 8ddeafd..dc8d305 100644
-> --- a/include/linux/virtio_scsi.h
-> +++ b/include/linux/virtio_scsi.h
-> @@ -69,6 +69,10 @@ struct virtio_scsi_config {
->  	u32 max_lun;
->  } __packed;
->  
-> +/* Feature Bits */
-> +#define VIRTIO_SCSI_F_INOUT                    0
-> +#define VIRTIO_SCSI_F_HOTPLUG                  1
-> +
->  /* Response codes */
->  #define VIRTIO_SCSI_S_OK                       0
->  #define VIRTIO_SCSI_S_OVERRUN                  1
-> @@ -105,6 +109,11 @@ struct virtio_scsi_config {
->  #define VIRTIO_SCSI_T_TRANSPORT_RESET          1
->  #define VIRTIO_SCSI_T_ASYNC_NOTIFY             2
->  
-> +/* Reasons of transport reset event */
-> +#define VIRTIO_SCSI_EVT_RESET_HARD             0
-> +#define VIRTIO_SCSI_EVT_RESET_RESCAN           1
-> +#define VIRTIO_SCSI_EVT_RESET_REMOVED          2
-> +
->  #define VIRTIO_SCSI_S_SIMPLE                   0
->  #define VIRTIO_SCSI_S_ORDERED                  1
->  #define VIRTIO_SCSI_S_HEAD                     2
+Joel
+
+> >
+> > Joel
+> >
+> >> ---
+> >>  fs/ocfs2/file.c |    4 +++-
+> >>  1 file changed, 3 insertions(+), 1 deletion(-)
+> >>
+> >> diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+> >> index 061591a..98513c8 100644
+> >> --- a/fs/ocfs2/file.c
+> >> +++ b/fs/ocfs2/file.c
+> >> @@ -2422,8 +2422,10 @@ out_dio:
+> >>  		unaligned_dio = 0;
+> >>  	}
+> >>  
+> >> -	if (unaligned_dio)
+> >> +	if (unaligned_dio) {
+> >> +		ocfs2_iocb_clear_unaligned_aio(iocb);
+> >>  		atomic_dec(&OCFS2_I(inode)->ip_unaligned_aio);
+> >> +	}
+> >>  
+> >>  out:
+> >>  	if (rw_level != -1)
+> >> -- 
+> >> 1.7.9.5
+> >>
+> >>
+> >> _______________________________________________
+> >> Ocfs2-devel mailing list
+> >> Ocfs2-devel@oss.oracle.com
+> >> https://oss.oracle.com/mailman/listinfo/ocfs2-devel
 > 
 
+-- 
 
+A good programming language should have features that make the
+kind of people who use the phrase "software engineering" shake
+their heads disapprovingly.
+	- Paul Graham
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
