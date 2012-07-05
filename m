@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755713Ab2GEVks (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 17:40:48 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:50082 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754906Ab2GEVkq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 17:40:46 -0400
-Date: Thu, 5 Jul 2012 17:40:45 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Matthew Wilcox <matthew@wil.cx>
-cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [ 38/48] SCSI & usb-storage: add try_rc_10_first flag
-In-Reply-To: <20120703203512.GE28804@parisc-linux.org>
-Message-ID: <Pine.LNX.4.44L0.1207051736550.13212-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756332Ab2GEVpQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 17:45:16 -0400
+Received: from waste.org ([173.11.57.241]:35521 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755536Ab2GEVpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 17:45:15 -0400
+Message-ID: <1341524712.4020.1330.camel@calx>
+Subject: Re: [PATCH 07/10] random: add new get_random_bytes_arch() function
+From: Matt Mackall <mpm@selenic.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>, w@1wt.eu,
+        ewust@umich.edu, zakir@umich.edu, greg@kroah.com, nadiah@cs.ucsd.edu,
+        jhalderm@umich.edu, tglx@linutronix.de, davem@davemloft.net,
+        stable@kernel.org
+Date: Thu, 05 Jul 2012 16:45:12 -0500
+In-Reply-To: <CA+55aFxk3eViz1-CuuHf8xxTgLth376K_cOKAtAj0waXAz+GWg@mail.gmail.com>
+References: <1341511933-11169-1-git-send-email-tytso@mit.edu>
+	 <1341511933-11169-8-git-send-email-tytso@mit.edu>
+	 <CA+55aFxk3eViz1-CuuHf8xxTgLth376K_cOKAtAj0waXAz+GWg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Jul 2012, Matthew Wilcox wrote:
+On Thu, 2012-07-05 at 11:35 -0700, Linus Torvalds wrote:
+> If Intel's rng really isn't trustworthy, they'll get a *huge* black
+> eye for it. It would be a total PR disaster for Intel, so they have
+> huge incentives to be trustworthy.
 
-> I think the necessary algorithm is simpler than that:
-> 
-> Send RC10 (unless the device supports PI, in which case it's probably
-> 	enterprisey and well-tested)
-> Send RC16
-> If RC10 capacity agrees with RC16 capacity, use extra RC16 data.
-> (for values of "agrees with" that include the "-1 to use RC16" indicator)
-> 
-> Sure, it's one extra command, but really, who cares?
+Just like the huge black eye that _every major US telecom company_ got
+when they got caught colluding with the NSA to spy on Americans in
+obvious violation of US law? You'll recall that it was such a *huge* PR
+disaster... that they're all still doing it today(!), that Congress
+retroactively changed the law(!), and that the whistleblower was
+indicted for espionage(!).
 
-Well, some USB devices might care.  Right now we don't send RC16 to 
-them at all because they get RC10 first and it indicates a capacity 
-below 2 TB.
+I agree that Intel's hardware is very probably not backdoored, but
+that's simply not a standard by which threats should be measured in this
+field. Treating a backdoor scenario as outside the realm of possibility
+based on appeals to reputation given such obvious, massive, and recent
+precedent to the contrary is... not a typical security mindset, to put
+it mildly.
 
-In the end, usb-storage may be forced to use the NO_READ_CAPACITY_16 
-flag with all devices except those we can positively identify as a 
-USB-(S)ATA bridge.
+Lastly, note that it would take a single well-placed engineer to insert
+the backdoor, by just masking out some parts of the AES data path. No
+collusion by Intel at a corporate level is actually even necessary.
 
-Alan Stern
+Generating random bytes is not so performance critical that you should
+trade all protection from potential threats for Gbps of throughput. 
+By all means, USE the HWRNG's output, but not raw. Mix it with other
+entropy sources first.
+
+-- 
+Mathematics is the supreme nostalgia of our time.
+
 
