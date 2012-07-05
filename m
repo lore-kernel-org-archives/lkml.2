@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932453Ab2GERyo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 13:54:44 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55883 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885Ab2GERym convert rfc822-to-8bit (ORCPT
+	id S1757004Ab2GER45 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 13:56:57 -0400
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:55603 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752814Ab2GER4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 13:54:42 -0400
+	Thu, 5 Jul 2012 13:56:55 -0400
+X-SENDER-IP: [85.230.168.62]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AilUAMrU9U9V5qg+PGdsb2JhbABFihqtFRkBAQEBHgMWDSeCGAEBBTocIxAIAxguFCUKGhOID7lfFIslhV5gA5U2hWaMfw
+X-IronPort-AV: E=Sophos;i="4.77,532,1336341600"; 
+   d="scan'208";a="372100225"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Thu, 5 Jul 2012 19:57:23 +0200
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Daniel Kurtz <djkurtz@chromium.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: linux-next: manual merge of the input-mt tree with the
+ input-current tree
+Message-ID: <20120705175723.GA3286@polaris.bitmath.org>
+References: <20120705135220.9f8f95082833a0d6fadeb136@canb.auug.org.au>
+ <CAGS+omDab9mOOf6pCryRTyLvYA66h0XjqmFPc-vrAo4hkfGN0A@mail.gmail.com>
+ <20120705171904.GA31383@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <20120704173047.GA8864@1984>
-References: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk>
- <1340988354-26981-14-git-send-email-vincent.sanders@collabora.co.uk>
- <20120629171108.GA6287@1984> <4FF1C1AF.9080104@collabora.co.uk> <20120704173047.GA8864@1984>
-From: Javier Martinez Canillas <martinez.javier@gmail.com>
-Date: Thu, 5 Jul 2012 19:54:21 +0200
-Message-ID: <CAAwP0s3b0JjT9BvrGvynNJm5Pq0eQuHem352T3tDyxvVosbA+g@mail.gmail.com>
-Subject: Re: [PATCH net-next 13/15] netfilter: nfdbus: Add D-bus message parsing
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Vincent Sanders <vincent.sanders@collabora.co.uk>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alban Crequy <alban.crequy@collabora.co.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120705171904.GA31383@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 4, 2012 at 7:30 PM, Pablo Neira Ayuso <pablo@netfilter.org> wrote:
-> On Mon, Jul 02, 2012 at 05:43:43PM +0200, Javier Martinez Canillas wrote:
->> On 06/29/2012 07:11 PM, Pablo Neira Ayuso wrote:
->> > On Fri, Jun 29, 2012 at 05:45:52PM +0100, Vincent Sanders wrote:
->> >> From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->> >>
->> >> The netfilter D-Bus module needs to parse D-bus messages sent by
->> >> applications to decide whether a peer can receive or not a D-Bus
->> >> message. Add D-bus message parsing logic to be able to analyze.
->> >
->> > Not talking about the entire patchset, only about the part I'm
->> > responsible for.
->> >
->> > I don't see why you think this belong to netfilter at all.
->> >
->> > This doesn't integrate into the existing filtering infrastructure,
->> > neither it extends it in any way.
->> >
->>
->> Hello Pablo,
->>
->> Thanks a lot for your feedback.
->>
->> This is the first of a set of patches that adds a netfilter module to parse
->> D-Bus messages, the complete patch-set is:
->>
->> [PATCH 13/15] netfilter: nfdbus: Add D-bus message parsing
->> [PATCH 14/15] netfilter: nfdbus: Add D-bus match rule implementation
->> [PATCH 15/15] netfilter: add netfilter D-Bus module
->>
->> patches 13 and 14 just include D-Bus helper code to be used by the netfilter
->> module (added on patch 15) and specially the dbus_filter netfilter hook function.
->
-> I see, the use of the netfilter hooks seems to be the only reason why
-> you consider these chunks belong to netfilter.
->
->> For the next post version we will reorganize the patches so first the D-Bus
->> netfilter module is added with an empty dbus_filter function and then added the
->> D-Bus helper code.
->>
->> Also, we will move the nfdbus netfilter module to net/bus so is not inside the
->> netfilter core code.
->
-> Yes, please, remove this stuff from my directory tree, I believe this
-> filtering infrastructure has not much to do with Netfilter itself.
->
-> It uses the connector to communicate kernel <-> userspace instead of
-> nfnetlink and, as said, it does neither integrate into existing
-> filtering kernel/userspace infrastructure nor integrates into it.
->
-> So, please, if you plan to give another try to this patchset, move
-> this to your net/bus directory as you propose and find a different
-> (better) name for the filtering part (just to avoid confusion in the
-> future).
->
-> Thanks.
+On Thu, Jul 05, 2012 at 10:19:05AM -0700, Dmitry Torokhov wrote:
+> Hi Henrik,
+> 
+> On Thu, Jul 05, 2012 at 11:57:14AM +0800, Daniel Kurtz wrote:
+> > On Thu, Jul 5, 2012 at 11:52 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > > Hi Henrik,
+> > >
+> > > Today's linux-next merge of the input-mt tree got a conflict in
+> > > drivers/input/touchscreen/atmel_mxt_ts.c between commit 9b7e31bbf4bb
+> > > ("Input: request threaded-only IRQs with IRQF_ONESHOT") from the
+> > > input-current tree and commit c2ef9a1a248b ("Input: atmel_mxt_ts - use
+> > > client name for irq") from the input-mt tree.
+> > >
+> > > I fixed it up (see below) and can carry the fix as necessary.
+> > 
+> > Looks good to me. Don't know if you need it for a merge, but:
+> > 
+> > Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
+> > 
+> 
+> Hmm, maybe it is time I pull your tree?
 
-Hi Pablo,
+By all means, I have nothing further planned for the merge window. I
+wanted to wait until Linus pulls your current tree, then pull in the
+merge conflict, then eventual reverts, then send you a pull
+request. IOW, something like tomorrow. Sounds good?
 
-Thanks a lot for your feedback and comments.
-
-On a next patch-set post I'll move to net/bus and change the name as
-you suggest.
-
-Best regards,
-
--- 
-Javier Martínez Canillas
-(+34) 682 39 81 69
-Barcelona, Spain
+Henrik
