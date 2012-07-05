@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932485Ab2GEKa0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 06:30:26 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:48878 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932449Ab2GEKaU (ORCPT
+	id S932314Ab2GEK3v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 06:29:51 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57307 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753476Ab2GEK3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 06:30:20 -0400
-Date: Thu, 5 Jul 2012 12:29:53 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        Seth Heasley <seth.heasley@intel.com>, Olof Johansson <olof@lixom.net>,
-        Benson Leung <bleung@chromium.org>, linux-i2c@vger.kernel.org,
+	Thu, 5 Jul 2012 06:29:48 -0400
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/8 v3] i2c: i801: enable irq for i801 smbus 
- transactions
-Message-ID: <20120705122953.3e458a30@endymion.delvare>
-In-Reply-To: <20120705101015.1e3a3afc@endymion.delvare>
-References: <1340805255-8041-1-git-send-email-djkurtz@chromium.org>
-	<1340805255-8041-8-git-send-email-djkurtz@chromium.org>
-	<20120704221600.416d4475@endymion.delvare>
-	<CAGS+omAwkwd17MVe3uWoPNCL3y0BvKDvbFGWwjhJ5CpTqncsXA@mail.gmail.com>
-	<20120705101015.1e3a3afc@endymion.delvare>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH 1/7 v2] dmaengine: shdma: (cosmetic) simplify a static function
+Date: Thu,  5 Jul 2012 12:29:37 +0200
+Message-Id: <1341484183-10757-2-git-send-email-g.liakhovetski@gmx.de>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1341484183-10757-1-git-send-email-g.liakhovetski@gmx.de>
+References: <1341484183-10757-1-git-send-email-g.liakhovetski@gmx.de>
+X-Provags-ID: V02:K0:Hi7dh7V5hoTBZq1DkIUuqVpoEbO9p02vZm9eHa3YcKW
+ wzmiC2C1GboRWd2sl1xoZl8aPOucoDYGj3f8O/85z6eWJ/dByP
+ 0AapffwmIB68/NsNh7esPY8UDnLActvP7TVMuIcfSWlkmYo7fO
+ 7veUeHhc9hLMDVUEil1bfjEUWaZ4ywYBzWMxQmguv26q2PRhKW
+ +GMslvUThLCh5Gx9REniYuLGBsjb93jqUX+I7BdTmovRyXCsND
+ Wpa6vNcY+Jt0t5OCutH1q7Ew3xvq/a36lEqmlxaecxGu6MGuRI
+ SD/0JuROx/akOuUaO4JGw9+nOtGlT/lrm4k/Vx+KhCmP6/PcVf
+ Un48sEQ2duAOT9AuOIeBQlKKq/GqPoLXvtJ02yteSDIrS495Fs
+ Q1+3orAr/5qjQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Jul 2012 10:10:15 +0200, Jean Delvare wrote:
-> On Thu, 5 Jul 2012 12:31:11 +0800, Daniel Kurtz wrote:
-> > On Thu, Jul 5, 2012 at 4:16 AM, Jean Delvare <khali@linux-fr.org> wrote:
-> > > Implementing 1* has the drawback of limiting interrupt support to ICH5
-> > > and later chips, but I suspect it is the easiest and safest way, so I
-> > > have no objection if you want to do that.
-> > 
-> > Let's do this first, and then refactor later to add support for
-> > pre-ICH5 parts, if needed.
-> 
-> OK, fine with me. The only downside is that it excludes my
-> heavily-shared IRQ test machine, so testing that the shared IRQ case is
-> properly covered will be a little harder.
+dmae_find_slave() needs only the slave_id field from the slave object, no
+need to pass the pointer to the object, pass the slave_id directly.
 
-Actually, no problem there: I can reproduce the issue just fine on my
-ICH5 system, which shares an IRQ between the sound chip and the SMBus
-controller. So I can use that system to test the updated code too.
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+---
+ drivers/dma/sh/shdma.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
+diff --git a/drivers/dma/sh/shdma.c b/drivers/dma/sh/shdma.c
+index c393b35..f06906f 100644
+--- a/drivers/dma/sh/shdma.c
++++ b/drivers/dma/sh/shdma.c
+@@ -304,18 +304,18 @@ static void sh_dmae_setup_xfer(struct shdma_chan *schan,
+ }
+ 
+ static const struct sh_dmae_slave_config *dmae_find_slave(
+-	struct sh_dmae_chan *sh_chan, struct sh_dmae_slave *slave)
++	struct sh_dmae_chan *sh_chan, unsigned int slave_id)
+ {
+ 	struct sh_dmae_device *shdev = to_sh_dev(sh_chan);
+ 	struct sh_dmae_pdata *pdata = shdev->pdata;
+ 	const struct sh_dmae_slave_config *cfg;
+ 	int i;
+ 
+-	if (slave->shdma_slave.slave_id >= SH_DMA_SLAVE_NUMBER)
++	if (slave_id >= SH_DMA_SLAVE_NUMBER)
+ 		return NULL;
+ 
+ 	for (i = 0, cfg = pdata->slave; i < pdata->slave_num; i++, cfg++)
+-		if (cfg->slave_id == slave->shdma_slave.slave_id)
++		if (cfg->slave_id == slave_id)
+ 			return cfg;
+ 
+ 	return NULL;
+@@ -328,7 +328,7 @@ static int sh_dmae_set_slave(struct shdma_chan *schan,
+ 						    shdma_chan);
+ 	struct sh_dmae_slave *slave = container_of(sslave, struct sh_dmae_slave,
+ 						   shdma_slave);
+-	const struct sh_dmae_slave_config *cfg = dmae_find_slave(sh_chan, slave);
++	const struct sh_dmae_slave_config *cfg = dmae_find_slave(sh_chan, sslave->slave_id);
+ 	if (!cfg)
+ 		return -ENODEV;
+ 
 -- 
-Jean Delvare
+1.7.2.5
+
