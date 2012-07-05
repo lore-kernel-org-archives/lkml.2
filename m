@@ -1,141 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab2GEHHM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 03:07:12 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19082 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751110Ab2GEHHJ (ORCPT
+	id S1753442Ab2GEHKz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 03:10:55 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:59866 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734Ab2GEHKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 03:07:09 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 05 Jul 2012 00:07:04 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <broonie@opensource.wolfsonmicro.com>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>
-CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <swarren@nvidia.com>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V3] regulator: fixed: dt: support for input supply
-Date: Thu, 5 Jul 2012 12:31:48 +0530
-Message-ID: <1341471708-1225-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 5 Jul 2012 03:10:53 -0400
+From: Cong Meng <mc@linux.vnet.ibm.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: stefanha@linux.vnet.ibm.com, linuxram@us.ibm.com,
+        senwang@linux.vnet.ibm.com, zwanp@cn.ibm.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Cong Meng <mc@linux.vnet.ibm.com>
+Subject: [PATCH v3] virtio-scsi: hotplug support for virtio-scsi
+Date: Thu,  5 Jul 2012 15:09:01 +0800
+Message-Id: <1341472141-19508-1-git-send-email-mc@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.7.6
+x-cbid: 12070507-0542-0000-0000-0000025D8E78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for input supply in DT parsing of node.
-The input supply will be provided by the property
-"vin-supply" in the regulator node.
+This patch implements the hotplug support for virtio-scsi.
+When there is a device attached/detached, the virtio-scsi driver will be
+signaled via event virtual queue and it will add/remove the scsi device 
+in question automatically.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+v2: handle no_event event
+v3: add handle event dropped, and typo fix
+
+Signed-off-by: Sen Wang <senwang@linux.vnet.ibm.com>
+Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
 ---
-Changes from V1:
-Based on discussion on patch
-[PATCH 2/2] regulator: fixed: dt: support for input supply
-that the supply name should be passed through desc->supply_name
-in both DT and non-DT case.
-Making the change to have this.
+ drivers/scsi/virtio_scsi.c  |  113 ++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/virtio_scsi.h |    9 ++++
+ 2 files changed, 121 insertions(+), 1 deletions(-)
 
-Changes from V2:
-Add input_supply in the platform data and initialzing it with
-"vin" in dt case. In non-dt case, this will be set through platform 
-data. Then making copy of this to the desc->supply_name to
-pass the input supply regulator.
-
- .../bindings/regulator/fixed-regulator.txt         |    2 ++
- drivers/regulator/fixed.c                          |   18 +++++++++++++++++-
- include/linux/regulator/fixed.h                    |    2 ++
- 3 files changed, 21 insertions(+), 1 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/regulator/fixed-regulator.txt b/Documentation/devicetree/bindings/regulator/fixed-regulator.txt
-index 2f5b6b1..4fae41d 100644
---- a/Documentation/devicetree/bindings/regulator/fixed-regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/fixed-regulator.txt
-@@ -10,6 +10,7 @@ Optional properties:
- If this property is missing, the default assumed is Active low.
- - gpio-open-drain: GPIO is open drain type.
-   If this property is missing then default assumption is false.
-+-vin-supply: Input supply name.
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 9fc5e67..d87446b 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -25,6 +25,7 @@
+ #include <scsi/scsi_cmnd.h>
  
- Any property defined as part of the core regulator
- binding, defined in regulator.txt, can also be used.
-@@ -29,4 +30,5 @@ Example:
- 		enable-active-high;
- 		regulator-boot-on;
- 		gpio-open-drain;
-+		vin-supply = <&parent_reg>;
- 	};
-diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
-index b8c3a91..b98f0b0 100644
---- a/drivers/regulator/fixed.c
-+++ b/drivers/regulator/fixed.c
-@@ -106,6 +106,9 @@ of_get_fixed_voltage_config(struct device *dev)
- 	if (of_find_property(np, "gpio-open-drain", NULL))
- 		config->gpio_is_open_drain = true;
+ #define VIRTIO_SCSI_MEMPOOL_SZ 64
++#define VIRTIO_SCSI_EVENT_LEN 8
  
-+	if (of_find_property(np, "vin-supply", NULL))
-+		config->input_supply = "vin";
+ /* Command queue element */
+ struct virtio_scsi_cmd {
+@@ -43,6 +44,12 @@ struct virtio_scsi_cmd {
+ 	} resp;
+ } ____cacheline_aligned_in_smp;
+ 
++struct virtio_scsi_event_node {
++	struct virtio_scsi *vscsi;
++	struct virtio_scsi_event event;
++	struct work_struct work;
++};
 +
- 	return config;
- }
+ struct virtio_scsi_vq {
+ 	/* Protects vq */
+ 	spinlock_t vq_lock;
+@@ -67,6 +74,9 @@ struct virtio_scsi {
+ 	struct virtio_scsi_vq event_vq;
+ 	struct virtio_scsi_vq req_vq;
  
-@@ -213,6 +216,17 @@ static int __devinit reg_fixed_voltage_probe(struct platform_device *pdev)
- 	drvdata->desc.type = REGULATOR_VOLTAGE;
- 	drvdata->desc.owner = THIS_MODULE;
++	/* Get some buffers ready for event vq */
++	struct virtio_scsi_event_node event_list[VIRTIO_SCSI_EVENT_LEN];
++
+ 	struct virtio_scsi_target_state *tgt[];
+ };
  
-+	if (config->input_supply) {
-+		drvdata->desc.supply_name = kstrdup(config->input_supply,
-+							GFP_KERNEL);
-+		if (!drvdata->desc.supply_name) {
-+			dev_err(&pdev->dev,
-+				"Failed to allocate input supply\n");
-+			ret = -ENOMEM;
-+			goto err_name;
-+		}
+@@ -202,6 +212,97 @@ static void virtscsi_ctrl_done(struct virtqueue *vq)
+ 	spin_unlock_irqrestore(&vscsi->ctrl_vq.vq_lock, flags);
+ };
+ 
++static int virtscsi_kick_event(struct virtio_scsi *vscsi,
++			       struct virtio_scsi_event_node *event_node)
++{
++	int ret;
++	struct scatterlist sg;
++	unsigned long flags;
++
++	sg_set_buf(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
++
++	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
++
++	ret = virtqueue_add_buf(vscsi->event_vq.vq, &sg, 0, 1, event_node, GFP_ATOMIC);
++	if (ret >= 0)
++		virtqueue_kick(vscsi->event_vq.vq);
++
++	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
++
++	return ret;
++}
++
++static int virtscsi_kick_event_all(struct virtio_scsi *vscsi)
++{
++	int i;
++
++	for (i = 0; i < VIRTIO_SCSI_EVENT_LEN; i++) {
++		vscsi->event_list[i].vscsi = vscsi;
++		virtscsi_kick_event(vscsi, &vscsi->event_list[i]);
 +	}
 +
- 	if (config->microvolts)
- 		drvdata->desc.n_voltages = 1;
++	return 0;
++}
++
++static void virtscsi_handle_transport_reset(struct virtio_scsi *vscsi,
++						struct virtio_scsi_event *event)
++{
++	struct scsi_device *sdev;
++	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
++	unsigned int target = event->lun[1];
++	unsigned int lun = (event->lun[2] << 8) | event->lun[3];
++
++	switch (event->reason) {
++	case VIRTIO_SCSI_EVT_RESET_RESCAN:
++		scsi_add_device(shost, 0, target, lun);
++		break;
++	case VIRTIO_SCSI_EVT_RESET_REMOVED:
++		sdev = scsi_device_lookup(shost, 0, target, lun);
++		if (sdev) {
++			scsi_remove_device(sdev);
++			scsi_device_put(sdev);
++		} else {
++			pr_err("SCSI device %d 0 %d %d not found\n",
++				shost->host_no, target, lun);
++		}
++		break;
++	default:
++		pr_info("Unsupport virtio scsi event reason %x\n", event->reason);
++	}
++}
++
++static void virtscsi_handle_event(struct work_struct *work)
++{
++	struct virtio_scsi_event_node *event_node =
++		container_of(work, struct virtio_scsi_event_node, work);
++	struct virtio_scsi *vscsi = event_node->vscsi;
++	struct virtio_scsi_event *event = &event_node->event;
++
++	if (event->event & VIRTIO_SCSI_T_EVENTS_MISSED) {
++		event->event &= (~VIRTIO_SCSI_T_EVENTS_MISSED);
++		scsi_scan_host(virtio_scsi_host(vscsi->vdev));
++	}
++
++	switch (event->event) {
++	case VIRTIO_SCSI_T_NO_EVENT:
++		break;
++	case VIRTIO_SCSI_T_TRANSPORT_RESET:
++		virtscsi_handle_transport_reset(vscsi, event);
++		break;
++	default:
++		pr_err("Unsupport virtio scsi event %x\n", event->event);
++	}
++	virtscsi_kick_event(vscsi, event_node);
++}
++
++static void virtscsi_complete_event(void *buf)
++{
++	struct virtio_scsi_event_node *event_node = buf;
++
++	INIT_WORK(&event_node->work, virtscsi_handle_event);
++	schedule_work(&event_node->work);
++}
++
+ static void virtscsi_event_done(struct virtqueue *vq)
+ {
+ 	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
+@@ -209,7 +310,7 @@ static void virtscsi_event_done(struct virtqueue *vq)
+ 	unsigned long flags;
  
-@@ -257,7 +271,7 @@ static int __devinit reg_fixed_voltage_probe(struct platform_device *pdev)
- 			dev_err(&pdev->dev,
- 			   "Could not obtain regulator enable GPIO %d: %d\n",
- 							config->gpio, ret);
--			goto err_name;
-+			goto err_input;
- 		}
+ 	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
+-	virtscsi_vq_done(vq, virtscsi_complete_free);
++	virtscsi_vq_done(vq, virtscsi_complete_event);
+ 	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
+ };
  
- 		drvdata->desc.ops = &fixed_voltage_gpio_ops;
-@@ -288,6 +302,8 @@ static int __devinit reg_fixed_voltage_probe(struct platform_device *pdev)
- err_gpio:
- 	if (gpio_is_valid(config->gpio))
- 		gpio_free(config->gpio);
-+err_input:
-+	kfree(drvdata->desc.supply_name);
- err_name:
- 	kfree(drvdata->desc.name);
- err:
-diff --git a/include/linux/regulator/fixed.h b/include/linux/regulator/fixed.h
-index 680f24e..48918be 100644
---- a/include/linux/regulator/fixed.h
-+++ b/include/linux/regulator/fixed.h
-@@ -22,6 +22,7 @@ struct regulator_init_data;
- /**
-  * struct fixed_voltage_config - fixed_voltage_config structure
-  * @supply_name:	Name of the regulator supply
-+ * @input_supply:	Name of the input regulator supply
-  * @microvolts:		Output voltage of regulator
-  * @gpio:		GPIO to use for enable control
-  * 			set to -EINVAL if not used
-@@ -46,6 +47,7 @@ struct regulator_init_data;
-  */
- struct fixed_voltage_config {
- 	const char *supply_name;
-+	const char *input_supply;
- 	int microvolts;
- 	int gpio;
- 	unsigned startup_delay;
+@@ -510,6 +611,10 @@ static int virtscsi_init(struct virtio_device *vdev,
+ 	virtscsi_config_set(vdev, cdb_size, VIRTIO_SCSI_CDB_SIZE);
+ 	virtscsi_config_set(vdev, sense_size, VIRTIO_SCSI_SENSE_SIZE);
+ 
++	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG)) {
++		virtscsi_kick_event_all(vscsi);
++	}
++
+ 	/* We need to know how many segments before we allocate.  */
+ 	sg_elems = virtscsi_config_get(vdev, seg_max) ?: 1;
+ 
+@@ -608,7 +713,13 @@ static struct virtio_device_id id_table[] = {
+ 	{ 0 },
+ };
+ 
++static unsigned int features[] = {
++	VIRTIO_SCSI_F_HOTPLUG
++};
++
+ static struct virtio_driver virtio_scsi_driver = {
++	.feature_table = features,
++	.feature_table_size = ARRAY_SIZE(features),
+ 	.driver.name = KBUILD_MODNAME,
+ 	.driver.owner = THIS_MODULE,
+ 	.id_table = id_table,
+diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
+index 8ddeafd..dc8d305 100644
+--- a/include/linux/virtio_scsi.h
++++ b/include/linux/virtio_scsi.h
+@@ -69,6 +69,10 @@ struct virtio_scsi_config {
+ 	u32 max_lun;
+ } __packed;
+ 
++/* Feature Bits */
++#define VIRTIO_SCSI_F_INOUT                    0
++#define VIRTIO_SCSI_F_HOTPLUG                  1
++
+ /* Response codes */
+ #define VIRTIO_SCSI_S_OK                       0
+ #define VIRTIO_SCSI_S_OVERRUN                  1
+@@ -105,6 +109,11 @@ struct virtio_scsi_config {
+ #define VIRTIO_SCSI_T_TRANSPORT_RESET          1
+ #define VIRTIO_SCSI_T_ASYNC_NOTIFY             2
+ 
++/* Reasons of transport reset event */
++#define VIRTIO_SCSI_EVT_RESET_HARD             0
++#define VIRTIO_SCSI_EVT_RESET_RESCAN           1
++#define VIRTIO_SCSI_EVT_RESET_REMOVED          2
++
+ #define VIRTIO_SCSI_S_SIMPLE                   0
+ #define VIRTIO_SCSI_S_ORDERED                  1
+ #define VIRTIO_SCSI_S_HEAD                     2
 -- 
-1.7.1.1
+1.7.7.6
 
