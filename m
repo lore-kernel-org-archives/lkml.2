@@ -1,121 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933089Ab2GETsb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 15:48:31 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:37512 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab2GETs3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 15:48:29 -0400
-Date: Thu, 5 Jul 2012 21:48:28 +0200
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: Bryan Wu <bryan.wu@canonical.com>, linux-leds@vger.kernel.org,
-        rpurdie@rpsys.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 25/25] leds: convert One-shot LED trigger driver to
- devm_kzalloc() and cleanup error exit path
-Message-ID: <20120705194828.GA1563@gmail.com>
-References: <1341378617-10386-1-git-send-email-bryan.wu@canonical.com>
- <1341378617-10386-26-git-send-email-bryan.wu@canonical.com>
- <1341506839.2605.11.camel@lorien2>
+	id S1751779Ab2GETum (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 15:50:42 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:37104 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750739Ab2GETul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 15:50:41 -0400
+Date: Thu, 5 Jul 2012 15:50:25 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>, w@1wt.eu,
+        ewust@umich.edu, zakir@umich.edu, greg@kroah.com, mpm@selenic.com,
+        nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
+        davem@davemloft.net, stable@kernel.org
+Subject: Re: [PATCH 07/10] random: add new get_random_bytes_arch() function
+Message-ID: <20120705195025.GH31225@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+	w@1wt.eu, ewust@umich.edu, zakir@umich.edu, greg@kroah.com,
+	mpm@selenic.com, nadiah@cs.ucsd.edu, jhalderm@umich.edu,
+	tglx@linutronix.de, davem@davemloft.net, stable@kernel.org
+References: <1341511933-11169-1-git-send-email-tytso@mit.edu>
+ <1341511933-11169-8-git-send-email-tytso@mit.edu>
+ <CA+55aFxk3eViz1-CuuHf8xxTgLth376K_cOKAtAj0waXAz+GWg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1341506839.2605.11.camel@lorien2>
-X-Operating-System: Linux balto-eee 3.5.0-rc2-balto-eee-00070-g4eb43e3
- GNU/Linux
+In-Reply-To: <CA+55aFxk3eViz1-CuuHf8xxTgLth376K_cOKAtAj0waXAz+GWg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 10:47:19AM -0600, Shuah Khan wrote:
-> On Wed, 2012-07-04 at 13:10 +0800, Bryan Wu wrote:
-> > Cc: Fabio Baltieri <fabio.baltieri@gmail.com>
-> > Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
-> > ---
-> >  drivers/leds/ledtrig-oneshot.c |    8 +++-----
-> >  1 file changed, 3 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/drivers/leds/ledtrig-oneshot.c b/drivers/leds/ledtrig-oneshot.c
-> > index 2c029aa..6395a38 100644
-> > --- a/drivers/leds/ledtrig-oneshot.c
-> > +++ b/drivers/leds/ledtrig-oneshot.c
-> > @@ -127,7 +127,8 @@ static void oneshot_trig_activate(struct led_classdev *led_cdev)
-> >  	struct oneshot_trig_data *oneshot_data;
-> >  	int rc;
-> >  
-> > -	oneshot_data = kzalloc(sizeof(*oneshot_data), GFP_KERNEL);
-> > +	oneshot_data = devm_kzalloc(led_cdev->dev, sizeof(*oneshot_data),
-> > +				GFP_KERNEL);
-> >  	if (!oneshot_data)
-> >  		return;
-> >  
-> > @@ -135,7 +136,7 @@ static void oneshot_trig_activate(struct led_classdev *led_cdev)
-> >  
-> >  	rc = device_create_file(led_cdev->dev, &dev_attr_delay_on);
-> >  	if (rc)
-> > -		goto err_out_trig_data;
-> > +		return;
-> >  	rc = device_create_file(led_cdev->dev, &dev_attr_delay_off);
-> >  	if (rc)
-> >  		goto err_out_delayon;
-> > @@ -159,8 +160,6 @@ err_out_delayoff:
-> >  	device_remove_file(led_cdev->dev, &dev_attr_delay_off);
-> >  err_out_delayon:
-> >  	device_remove_file(led_cdev->dev, &dev_attr_delay_on);
-> > -err_out_trig_data:
-> > -	kfree(led_cdev->trigger_data);
-> >  }
-> >  
-> >  static void oneshot_trig_deactivate(struct led_classdev *led_cdev)
-> > @@ -172,7 +171,6 @@ static void oneshot_trig_deactivate(struct led_classdev *led_cdev)
-> >  		device_remove_file(led_cdev->dev, &dev_attr_delay_off);
-> >  		device_remove_file(led_cdev->dev, &dev_attr_invert);
-> >  		device_remove_file(led_cdev->dev, &dev_attr_shot);
-> > -		kfree(oneshot_data);
-> >  		led_cdev->activated = false;
-> >  	}
-> >  
-> Bryan,
+On Thu, Jul 05, 2012 at 11:35:12AM -0700, Linus Torvalds wrote:
 > 
-> I don't believe memory triggers allocate in their activate routine
-> should be converted to devm_kzalloc(). Based on my understanding, the
-> memory allocated using devm_kzalloc() us free'ed when driver is
-> detached. In the case of led triggers, driver stays registered while the
-> triggers it supports can be activated and deactivated many times. By
-> converting these allocations into devm_kzalloc()s could lead to memory
-> leaks. Please correct me if my understanding is incorrect.
-
-Shuah,
-
-I'm as the same opinion - as triggers are not really "driver", in the
-sense that they are not using the driver structures, using devm_
-functions doesn't seems to be really appropriate.
-
-Specifically:
-
-> > +	oneshot_data = devm_kzalloc(led_cdev->dev, sizeof(*oneshot_data),
-> > +				GFP_KERNEL);
-
-this one is registering the data on the relative LED's resources, so
-that they are not freed until you unload the LED's driver itself.
-I also think that this leads to memory leak if you keep activating
-triggers, as the deactivate function is not actually freeing the
-resources, so in that case the correct procedure should be the usual
-kalloc/kfree.
-
-Is this consistent with what your conclusions, Shuah?
-
-Fabio
-
-> If what I am saying makes sense, please take this as comment that is
-> applicable to all led triggers, not just this one.
+> If "get_random_bytes()" doesn't use the hw rng when it exists, it is
+> broken. It's that simple.
 > 
-> Thanks,
-> -- Shuah
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-leds" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+It is using the HW RNG when it exists; it will ultimately call
+xfer_secondary_pool, which will mix in inputs from the hw rng.  So we
+do get all of the security of the HW RNG.  Currently all of the
+callers of the get_random_bytes() have to accomodate the fact that the
+HW RNG might not be there (on non-Intel architectures if nothing
+else), so get_random_bytes() can't be used in any hot paths as it is.
+
+So we *are* using the hw rng; we're just not using it to the exclusion
+of anything else.
+
+						- Ted
