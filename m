@@ -1,89 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab2GEGrs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 02:47:48 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41322 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539Ab2GEGrr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 02:47:47 -0400
-Date: Thu, 5 Jul 2012 08:47:42 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Alex Courbot <acourbot@nvidia.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH] pwm-backlight: add regulator and GPIO support
-Message-ID: <20120705064742.GL30009@pengutronix.de>
-References: <1340976167-27298-1-git-send-email-acourbot@nvidia.com>
- <20120704104840.GJ24458@pengutronix.de>
- <4FF43692.2040805@nvidia.com>
- <20120704130056.GC30009@pengutronix.de>
- <4FF45DDF.9000306@nvidia.com>
- <20120704152451.GA7333@sirena.org.uk>
- <4FF4FDC0.8020405@nvidia.com>
- <20120705062011.GI30009@pengutronix.de>
- <4FF53368.6090805@nvidia.com>
+	id S1752947Ab2GEGrw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 02:47:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43807 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752539Ab2GEGru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 02:47:50 -0400
+Message-ID: <4FF5388C.5010306@redhat.com>
+Date: Thu, 05 Jul 2012 08:47:40 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF53368.6090805@nvidia.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:26:09 up 11 days, 21:37, 35 users,  load average: 0.10, 0.09,
- 0.16
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, kvm@vger.kernel.org
+Subject: Re: [PATCH] virtio-blk: allow toggling host cache between writeback
+ and writethrough
+References: <1341321577-24435-1-git-send-email-pbonzini@redhat.com>  <1341419217.18786.3.camel@lappy> <4FF47023.7080206@redhat.com> <1341436285.18786.6.camel@lappy>
+In-Reply-To: <1341436285.18786.6.camel@lappy>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 03:25:44PM +0900, Alex Courbot wrote:
-> On 07/05/2012 03:20 PM, Sascha Hauer wrote:
-> >>Oh, that is a mistake of mine then. Driver probe should continue if
-> >>no regulator is declared (but should fail if some other error
-> >>occured). I want to maintain backward compatibility with current
-> >>users of the driver, so regulator/gpio specification should be
-> >>optional.
-> >
-> >I think the only way doing this is to add a flag to platform_data. I
-> >don't know if that's accepted though.
+Il 04/07/2012 23:11, Sasha Levin ha scritto:
+> There are two things going on here:
+>  1. Rename VIRTIO_BLK_F_FLUSH to VIRTIO_BLK_F_WCE
+>  2. Add a new VIRTIO_BLK_F_CONFIG_WCE
 > 
-> I thought about just checking if devm_get_regulator returned -ENODEV
-> and happily continue if that was the case, assuming no regulator was
-> declared.
+> I'm concerned that the first change is going to break compilation for
+> any code that included linux/virtio-blk.h and used VIRTIO_BLK_F_FLUSH.
 
-And that's the problem. The get_regulator won't return -ENODEV. It will
-return -EPROBE_DEFER which tells you nothing about whether a regulator
-will ever be available or not.
+That would be nlkt, right? :)
 
-Having a flag in platform data would be fine with me, but I know other
-people think differently.
+We can add back VIRTIO_BLK_F_FLUSH as a synonym then.
 
-BTW in devicetree this flag implicitely exists with the power-supply
-property. The regulator core could look if a power-supply property
-is given and
-
-- if it is given, a regulator is mandatory and the core either
-  returns the regulator or -EPROBE_DEFER if it cannot find one.
-- If it is not given, there is no regulator and the core could either
-  return a special error code or a dummy regulator.
-
-Right now the regulator core will just return -EPROBE_DEFER in both
-cases. This could easily be changed in the regulator core.
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Paolo
