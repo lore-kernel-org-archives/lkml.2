@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab2GEJk6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 05:40:58 -0400
+	id S932139Ab2GEJlB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 05:41:01 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:47074 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755415Ab2GEJkz (ORCPT
+	with ESMTP id S932086Ab2GEJk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 05:40:55 -0400
+	Thu, 5 Jul 2012 05:40:58 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
 Cc: Sergei Shtylyov <sshtylyov@mvista.com>, Jeff Garzik <jgarzik@pobox.com>
-Subject: [PATCH v2 1/2] ata: support MODE SENSE request for changeable and default parameters
-Date: Thu,  5 Jul 2012 11:40:34 +0200
-Message-Id: <1341481235-12708-2-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH v2 2/2] ata: implement MODE SELECT command
+Date: Thu,  5 Jul 2012 11:40:35 +0200
+Message-Id: <1341481235-12708-3-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1341481235-12708-1-git-send-email-pbonzini@redhat.com>
 References: <1341481235-12708-1-git-send-email-pbonzini@redhat.com>
@@ -20,156 +20,239 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the next patch will introduce support for MODE SELECT, it
-makes sense to start advertising which bits are actually changeable.
-For now, the answer is none.
+The cache_type file in sysfs lets users configure the disk cache in
+write-through or write-back modes.  However, ata disks do not support
+writing to the file because they do not implement the MODE SELECT
+command.
 
-Default parameters can also be reported, they are simply the same
-as the current parameters.
+This patch adds a translation from MODE SELECT (for the caching page
+only) to the ATA SET FEATURES command.  The set of changeable parameters
+answered by MODE SENSE is also adjusted accordingly.
 
 Cc: Sergei Shtylyov <sshtylyov@mvista.com>
 Cc: Jeff Garzik <jgarzik@pobox.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- drivers/ata/libata-scsi.c |   59 ++++++++++++++++++++++++++++++++------------
- 1 files changed, 43 insertions(+), 16 deletions(-)
+ drivers/ata/libata-scsi.c |  185 +++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 179 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 41cde45..d5aeb26 100644
+index d5aeb26..1cb88df 100644
 --- a/drivers/ata/libata-scsi.c
 +++ b/drivers/ata/libata-scsi.c
-@@ -2206,9 +2206,33 @@ static unsigned int ata_scsiop_noop(struct ata_scsi_args *args, u8 *rbuf)
+@@ -2244,7 +2244,7 @@ static void modecpy(u8 *dest, const u8 *src, int n, bool changeable)
+ static unsigned int ata_msense_caching(u16 *id, u8 *buf, bool changeable)
+ {
+ 	modecpy(buf, def_cache_mpage, sizeof(def_cache_mpage), changeable);
+-	if (!changeable && ata_id_wcache_enabled(id))
++	if (changeable || ata_id_wcache_enabled(id))
+ 		buf[2] |= (1 << 2);	/* write cache enable */
+ 	if (!changeable && !ata_id_rahead_enabled(id))
+ 		buf[12] |= (1 << 5);	/* disable read ahead */
+@@ -3108,6 +3108,179 @@ static unsigned int ata_scsi_write_same_xlat(struct ata_queued_cmd *qc)
  }
  
  /**
-+ *	modecpy - Prepare response for MODE SENSE
-+ *	@dest: output buffer
-+ *	@src: data being copied
-+ *	@n: length of mode page
-+ *	@changeable: whether changeable parameters are requested
++ *	ata_mselect_caching - Simulate MODE SELECT for caching info page
++ *	@qc: Storage for translated ATA taskfile
++ *	@buf: input buffer
++ *	@len: number of valid bytes in the input buffer
 + *
-+ *	Generate a generic MODE SENSE page for either current or changeable
-+ *	parameters.
++ *	Prepare a taskfile to modify caching information for the device.
 + *
 + *	LOCKING:
 + *	None.
 + */
-+static void modecpy(u8 *dest, const u8 *src, int n, bool changeable)
++static int ata_mselect_caching(struct ata_queued_cmd *qc,
++			       const u8 *buf, int len)
 +{
-+	if (changeable) {
-+		memcpy(dest, src, 2);
-+		memset(dest + 2, 0, n - 2);
-+	} else {
-+		memcpy(dest, src, n);
-+	}
++	struct ata_taskfile *tf = &qc->tf;
++	struct ata_device *dev = qc->dev;
++	char mpage[CACHE_MPAGE_LEN];
++	u8 wce;
++
++	/*
++	 * The first two bytes of def_cache_mpage are a header, so offsets
++	 * in mpage are off by 2 compared to buf.  Same for len.
++	 */
++
++	if (len != CACHE_MPAGE_LEN - 2)
++		return -EINVAL;
++
++	wce = buf[0] & (1 << 2);
++
++	/*
++	 * Check that read-only bits are not modified.
++	 */
++	ata_msense_caching(dev->id, mpage, false);
++	mpage[2] &= ~(1 << 2);
++	mpage[2] |= wce;
++	if (memcmp(mpage + 2, buf, CACHE_MPAGE_LEN - 2) != 0)
++		return -EINVAL;
++
++	tf->flags |= ATA_TFLAG_DEVICE | ATA_TFLAG_ISADDR;
++	tf->protocol = ATA_PROT_NODATA;
++	tf->nsect = 0;
++	tf->command = ATA_CMD_SET_FEATURES;
++	tf->feature = wce ? SETFEATURES_WC_ON : SETFEATURES_WC_OFF;
++	return 0;
 +}
 +
 +/**
-  *	ata_msense_caching - Simulate MODE SENSE caching info page
-  *	@id: device IDENTIFY data
-  *	@buf: output buffer
-+ *	@changeable: whether changeable parameters are requested
-  *
-  *	Generate a caching info page, which conditionally indicates
-  *	write caching to the SCSI layer, depending on device
-@@ -2217,12 +2241,12 @@ static unsigned int ata_scsiop_noop(struct ata_scsi_args *args, u8 *rbuf)
-  *	LOCKING:
-  *	None.
-  */
--static unsigned int ata_msense_caching(u16 *id, u8 *buf)
-+static unsigned int ata_msense_caching(u16 *id, u8 *buf, bool changeable)
- {
--	memcpy(buf, def_cache_mpage, sizeof(def_cache_mpage));
--	if (ata_id_wcache_enabled(id))
-+	modecpy(buf, def_cache_mpage, sizeof(def_cache_mpage), changeable);
-+	if (!changeable && ata_id_wcache_enabled(id))
- 		buf[2] |= (1 << 2);	/* write cache enable */
--	if (!ata_id_rahead_enabled(id))
-+	if (!changeable && !ata_id_rahead_enabled(id))
- 		buf[12] |= (1 << 5);	/* disable read ahead */
- 	return sizeof(def_cache_mpage);
- }
-@@ -2230,30 +2254,33 @@ static unsigned int ata_msense_caching(u16 *id, u8 *buf)
- /**
-  *	ata_msense_ctl_mode - Simulate MODE SENSE control mode page
-  *	@buf: output buffer
-+ *	@changeable: whether changeable parameters are requested
-  *
-  *	Generate a generic MODE SENSE control mode page.
-  *
-  *	LOCKING:
-  *	None.
-  */
--static unsigned int ata_msense_ctl_mode(u8 *buf)
-+static unsigned int ata_msense_ctl_mode(u8 *buf, bool changeable)
- {
--	memcpy(buf, def_control_mpage, sizeof(def_control_mpage));
-+	modecpy(buf, def_control_mpage, sizeof(def_control_mpage), changeable);
- 	return sizeof(def_control_mpage);
- }
++ *	ata_scsiop_mode_select - Simulate MODE SELECT 6, 10 commands
++ *	@qc: Storage for translated ATA taskfile
++ *
++ *	Converts a MODE SELECT command to an ATA SET FEATURES taskfile.
++ *	Assume this is invoked for direct access devices (e.g. disks) only.
++ *	There should be no block descriptor for other device types.
++ *
++ *	LOCKING:
++ *	spin_lock_irqsave(host lock)
++ */
++static unsigned int ata_scsi_mode_select_xlat(struct ata_queued_cmd *qc)
++{
++	struct scsi_cmnd *scmd = qc->scsicmd;
++	const u8 *cdb = scmd->cmnd;
++	const u8 *p;
++	u8 pg, spg;
++	unsigned six_byte, pg_len, hdr_len;
++	int len;
++
++	VPRINTK("ENTER\n");
++
++	six_byte = (cdb[0] == MODE_SELECT);
++	if (six_byte) {
++		if (scmd->cmd_len < 5)
++			goto invalid_fld;
++
++		len = cdb[4];
++	} else {
++		if (scmd->cmd_len < 9)
++			goto invalid_fld;
++
++		len = (cdb[7] << 8) + cdb[8];
++	}
++
++	/* We only support PF=1, SP=0.  */
++	if ((cdb[1] & 0x11) != 0x10)
++		goto invalid_fld;
++
++	/* Test early for possible overrun.  */
++	if (!scsi_sg_count(scmd) || scsi_sglist(scmd)->length < len)
++		goto invalid_param_len;
++
++	p = page_address(sg_page(scsi_sglist(scmd)));
++
++	/* Move past header and block descriptors.  */
++	if (six_byte)
++		hdr_len = p[3] + 4;
++	else
++		hdr_len = (p[6] << 8) + p[7] + 8;
++
++	if (len < hdr_len)
++		goto invalid_param_len;
++
++	len -= hdr_len;
++	p += hdr_len;
++	if (len == 0)
++		goto skip;
++
++	/* Parse both possible formats for the mode page headers.  */
++	pg = p[0] & 0x3f;
++	if (p[0] & 0x40) {
++		if (len < 4)
++			goto invalid_param_len;
++
++		spg = p[1];
++		pg_len = (p[2] << 8) | p[3];
++		p += 4;
++		len -= 4;
++	} else {
++		if (len < 2)
++			goto invalid_param_len;
++
++		spg = 0;
++		pg_len = p[1];
++		p += 2;
++		len -= 2;
++	}
++
++	/*
++	 * Only one page has changeable data, so we only support setting one
++	 * page at a time.
++	 */
++	if (len < pg_len)
++		goto invalid_param;
++
++	/*
++	 * No mode subpages supported (yet) but asking for _all_
++	 * subpages may be valid
++	 */
++	if (spg && (spg != ALL_SUB_MPAGES))
++		goto invalid_param;
++	if (pg_len > len)
++		goto invalid_param_len;
++
++	switch (pg) {
++	case CACHE_MPAGE:
++		if (ata_mselect_caching(qc, p, pg_len) < 0)
++			goto invalid_param;
++		break;
++
++	default:		/* invalid page code */
++		goto invalid_param;
++	}
++
++	return 0;
++
++ invalid_fld:
++	/* "Invalid field in CDB" */
++	ata_scsi_set_sense(scmd, ILLEGAL_REQUEST, 0x24, 0x0);
++	return 1;
++
++ invalid_param:
++	/* "Invalid field in parameter list" */
++	ata_scsi_set_sense(scmd, ILLEGAL_REQUEST, 0x26, 0x0);
++	return 1;
++
++ invalid_param_len:
++	/* "Parameter list length error" */
++	ata_scsi_set_sense(scmd, ILLEGAL_REQUEST, 0x1a, 0x0);
++	return 1;
++
++ skip:
++	scmd->result = SAM_STAT_GOOD;
++	return 1;
++}
++
++/**
+  *	ata_get_xlat_func - check if SCSI to ATA translation is possible
+  *	@dev: ATA device
+  *	@cmd: SCSI command opcode to consider
+@@ -3147,6 +3320,11 @@ static inline ata_xlat_func_t ata_get_xlat_func(struct ata_device *dev, u8 cmd)
+ 	case ATA_16:
+ 		return ata_scsi_pass_thru;
  
- /**
-  *	ata_msense_rw_recovery - Simulate MODE SENSE r/w error recovery page
-  *	@buf: output buffer
-+ *	@changeable: whether changeable parameters are requested
-  *
-  *	Generate a generic MODE SENSE r/w error recovery page.
-  *
-  *	LOCKING:
-  *	None.
-  */
--static unsigned int ata_msense_rw_recovery(u8 *buf)
-+static unsigned int ata_msense_rw_recovery(u8 *buf, bool changeable)
- {
--	memcpy(buf, def_rw_recovery_mpage, sizeof(def_rw_recovery_mpage));
-+	modecpy(buf, def_rw_recovery_mpage, sizeof(def_rw_recovery_mpage),
-+		changeable);
- 	return sizeof(def_rw_recovery_mpage);
- }
- 
-@@ -2317,11 +2344,11 @@ static unsigned int ata_scsiop_mode_sense(struct ata_scsi_args *args, u8 *rbuf)
- 	page_control = scsicmd[2] >> 6;
- 	switch (page_control) {
- 	case 0: /* current */
-+	case 1: /* changeable */
-+	case 2: /* defaults */
- 		break;  /* supported */
- 	case 3: /* saved */
- 		goto saving_not_supp;
--	case 1: /* changeable */
--	case 2: /* defaults */
- 	default:
- 		goto invalid_fld;
++	case MODE_SELECT:
++	case MODE_SELECT_10:
++		return ata_scsi_mode_select_xlat;
++		break;
++
+ 	case START_STOP:
+ 		return ata_scsi_start_stop_xlat;
  	}
-@@ -2342,21 +2369,21 @@ static unsigned int ata_scsiop_mode_sense(struct ata_scsi_args *args, u8 *rbuf)
- 
- 	switch(pg) {
- 	case RW_RECOVERY_MPAGE:
--		p += ata_msense_rw_recovery(p);
-+		p += ata_msense_rw_recovery(p, page_control == 1);
+@@ -3339,11 +3517,6 @@ void ata_scsi_simulate(struct ata_device *dev, struct scsi_cmnd *cmd)
+ 		ata_scsi_rbuf_fill(&args, ata_scsiop_mode_sense);
  		break;
  
- 	case CACHE_MPAGE:
--		p += ata_msense_caching(args->id, p);
-+		p += ata_msense_caching(args->id, p, page_control == 1);
+-	case MODE_SELECT:	/* unconditionally return */
+-	case MODE_SELECT_10:	/* bad-field-in-cdb */
+-		ata_scsi_invalid_field(cmd);
+-		break;
+-
+ 	case READ_CAPACITY:
+ 		ata_scsi_rbuf_fill(&args, ata_scsiop_read_cap);
  		break;
- 
- 	case CONTROL_MPAGE:
--		p += ata_msense_ctl_mode(p);
-+		p += ata_msense_ctl_mode(p, page_control == 1);
- 		break;
- 
- 	case ALL_MPAGES:
--		p += ata_msense_rw_recovery(p);
--		p += ata_msense_caching(args->id, p);
--		p += ata_msense_ctl_mode(p);
-+		p += ata_msense_rw_recovery(p, page_control == 1);
-+		p += ata_msense_caching(args->id, p, page_control == 1);
-+		p += ata_msense_ctl_mode(p, page_control == 1);
- 		break;
- 
- 	default:		/* invalid page code */
 -- 
 1.7.1
-
 
