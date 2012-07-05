@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab2GEUJY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 16:09:24 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35357 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240Ab2GEUJX (ORCPT
+	id S1755899Ab2GEUMH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 16:12:07 -0400
+Received: from mail.digidescorp.com ([50.73.98.161]:21283 "EHLO
+	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752698Ab2GEUMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 16:09:23 -0400
-Date: Thu, 5 Jul 2012 22:09:17 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Robert Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        spi-devel-general-request@lists.sourceforge.net,
-        devicetree-discuss <devicetree-discuss@ozlabs.org>
-Subject: Re: SPI, GPIO, and DT maintainer ship (cry for help)
-Message-ID: <20120705200917.GA15639@pengutronix.de>
-References: <CACxGe6tyO5u7eiq1OiPX-u439YAcQDFz3eOOGZ4bNPtwmYwNkg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
-Content-Disposition: inline
-In-Reply-To: <CACxGe6tyO5u7eiq1OiPX-u439YAcQDFz3eOOGZ4bNPtwmYwNkg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 5 Jul 2012 16:12:05 -0400
+X-Greylist: delayed 496 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Jul 2012 16:12:05 EDT
+DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
+	c=simple; q=dns; h=message-id:from;
+	b=hnpKoNAfD3enxWE1cxpYxYD9V6pJzpH2ndgUf7AgUK3FxRWvSd6JoAUT6KHn
+	/LSh/KxoNZLcb7KuvqAhXcq3gBoiGx/svi0d1SgsLzUnapGIACp40lxAE
+	KxiKcIcXwnhEGpfWucnAnPaMOzdAltumw9p7tNKhICofKT/SMPhvuY=;
+X-Spam-Processed: mail.digidescorp.com, Thu, 05 Jul 2012 15:03:47 -0500
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=1533b6ee34=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Message-ID: <1341518624.2012.19.camel@iscandar.digidescorp.com>
+Subject: Re: [PATCH 2/2] fat (exportfs): reconnect file handles to evicted
+ inodes/dentries
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 05 Jul 2012 15:03:44 -0500
+In-Reply-To: <87a9zeeu4a.fsf@devron.myhome.or.jp>
+References: <1341342576-15394-1-git-send-email-steve@digidescorp.com>
+	 <1341342576-15394-3-git-send-email-steve@digidescorp.com>
+	 <87pq8bokcp.fsf@devron.myhome.or.jp>
+	 <WC20120704180312.82023C@digidescorp.com>
+	 <87a9zeeu4a.fsf@devron.myhome.or.jp>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-07-05 at 12:59 +0900, OGAWA Hirofumi wrote: 
+> "Steve Magnani" <steve@digidescorp.com> writes:
+> > I may yet rip out the get_name code. The testing I did before posting the 
+> > patch seemed to indicate that it was needed - I saw ESTALE errors without 
+> > get_name support that I did not see with it present. But I've been 
+> > digging into this some more and I think that was just a coincidence; 
+> > probably I just generated more extreme memory pressure when testing 
+> > without get_name. I should know more tomorrow.
 
---uAKRQypu60I7Lcqm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The get_name code can go away.
 
-Hi Grant,
+It turns out that it is much harder to generate severe memory pressure
+in my virtual 3.5 kernel than in my embedded 2.6.35 kernel.
+fat_reconstitute_inode() was not being exercised in 3.5 as much as I
+thought.
 
-> I believe all three of you know that I'm in the process of moving to
-> Scotland. The house is on the market and we have flights booked for
-> the end of July.
+And, there was a change made in 3.5
+(b0b0382bb4904965a9e9fca77ad87514dfda0d1c) that causes the parent
+i_logstart field not to be populated when building NFS file handles for
+shares marked 'no_subtree_check'. That causes fat_reconstitute_inode()
+to fail, because it interprets the parent of such objects as 'root'
+rather than as 'unknown'.
 
-That's news to me. Good luck!
+I'm reworking the patch to cope with the 'unknown' case, and to address
+your other comments. Still need to look into lock_super() vs.
+inode->i_mutex.
 
->=20
-> settled in their new school (mid August).  I need help to prepare for
-> the next merge window, and quite possibly the next window.  Since you
-> three have agreed to co-maintain those subsystems with me, can you
-> please take a look at the patches that have been posted, pick up the
-> ones that look ready to go to you, and get them into linux-next?  I
+Steve
+------------------------------------------------------------------------
+Steven J. Magnani               "I claim this network for MARS!
+www.digidescorp.com              Earthling, return my space modulator!"
 
-Though I'd like to help out, I need to pass on this time. My resources
-simply won't allow to do the job (with the quality I envision, that is).
-I hope somebody else can jump in? If not, I can collect urgent patches,
-at least.
+#include <standard.disclaimer>
 
-Regards,
 
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---uAKRQypu60I7Lcqm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk/19G0ACgkQD27XaX1/VRtl1gCgszMnvSuU4+7tmexsF0N2KR9Y
-T7sAnj75I1MvnFay4PaB9EQUKqo5QmCp
-=lu+T
------END PGP SIGNATURE-----
-
---uAKRQypu60I7Lcqm--
