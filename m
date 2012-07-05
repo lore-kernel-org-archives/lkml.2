@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932874Ab2GEO3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 10:29:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38069 "EHLO mx1.redhat.com"
+	id S933063Ab2GEO3r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 10:29:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6414 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751191Ab2GEO3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 10:29:41 -0400
-Message-ID: <4FF5A4CC.3050302@redhat.com>
-Date: Thu, 05 Jul 2012 10:29:32 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S932903Ab2GEO3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 10:29:44 -0400
+Date: Thu, 5 Jul 2012 11:28:37 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/10] perf, tool: Fix pmu object initialization
+Message-ID: <20120705142836.GC7533@infradead.org>
+References: <1341352848-11833-1-git-send-email-jolsa@redhat.com>
+ <1341352848-11833-3-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-To: John Stultz <johnstul@us.ibm.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux@openhuawei.org
-Subject: Re: [PATCH 2/3] [RFC] time: Fix leapsecond triggered hrtimer/futex
- load spike issue
-References: <1341382890-42324-1-git-send-email-johnstul@us.ibm.com> <1341382890-42324-3-git-send-email-johnstul@us.ibm.com>
-In-Reply-To: <1341382890-42324-3-git-send-email-johnstul@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341352848-11833-3-git-send-email-jolsa@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Wed, Jul 04, 2012 at 12:00:40AM +0200, Jiri Olsa escreveu:
+> The internal pmu list was never used. With each perf_pmu__find() call
+> the pmu structure was created new by parsing sysfs. Beside this it
+> caused memory leaks. We now keep all pmus by adding them to the list.
+> 
+> Also, pmu_lookup() should return pmus that do not expose the format
+> specifier in sysfs.
+> 
+> We need a valid internal pmu list in a later patch to iterate over all
+> pmus that exist in the system.
+> 
+> Signed-off-by: Robert Richter <robert.richter@amd.com>
+> [ added same treatment for 'event' sysfs group attribute ]
 
+The original patch from Robert is already in my perf/core branch, please
+resubmit with just your additional code.
 
-On 07/04/2012 02:21 AM, John Stultz wrote:
-> As widely reported on the internet, some Linux systems after
-> the leapsecond was inserted are experiencing futex related load
-> spikes (usually connected to MySQL, Firefox, Thunderbird, Java, etc).
-> 
-> An apparent for this issue workaround is running:
-> $ date -s "`date`"
-> 
-> Credit: http://www.sheeri.com/content/mysql-and-leap-second-high-cpu-and-fix
-> 
-> I this issue is due to the leapsecond being added without
-> calling clock_was_set() to notify the hrtimer subsystem of the
-> change.
-> 
-> The workaround functions as it forces a clock_was_set()
-> call from settimeofday().
-> 
-> This fix adds the required clock_was_set() calls to where
-> we adjust for leapseconds.
-> 
-> NOTE: This fix *depends* on the previous fix, which allows
-> clock_was_set to be called from atomic context. Do not try
-> to apply just this patch.
-> 
-> CC: Prarit Bhargava <prarit@redhat.com>
-> CC: stable@vger.kernel.org
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> CC: linux@openhuawei.org
-> Reported-by: Jan Engelhardt <jengelh@inai.de>
-> Signed-off-by: John Stultz <johnstul@us.ibm.com>
+- Arnaldo
 
-
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-
-P.
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  tools/perf/util/pmu.c |   10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+> index 74d0948e..f1f83e6 100644
+> --- a/tools/perf/util/pmu.c
+> +++ b/tools/perf/util/pmu.c
+> @@ -72,7 +72,7 @@ static int pmu_format(char *name, struct list_head *format)
+>  		 "%s/bus/event_source/devices/%s/format", sysfs, name);
+>  
+>  	if (stat(path, &st) < 0)
+> -		return -1;
+> +		return 0;	/* no error if 'format' does not exist */
+>  
+>  	if (pmu_format_parse(path, format))
+>  		return -1;
+> @@ -161,7 +161,7 @@ static int pmu_aliases(char *name, struct list_head *head)
+>  		 "%s/bus/event_source/devices/%s/events", sysfs, name);
+>  
+>  	if (stat(path, &st) < 0)
+> -		return -1;
+> +		return 0;	/* no error if 'events' does not exist */
+>  
+>  	if (pmu_aliases_parse(path, head))
+>  		return -1;
+> @@ -237,6 +237,9 @@ static struct perf_pmu *pmu_lookup(char *name)
+>  	if (pmu_format(name, &format))
+>  		return NULL;
+>  
+> +	if (pmu_aliases(name, &aliases))
+> +		return NULL;
+> +
+>  	if (pmu_type(name, &type))
+>  		return NULL;
+>  
+> @@ -244,14 +247,13 @@ static struct perf_pmu *pmu_lookup(char *name)
+>  	if (!pmu)
+>  		return NULL;
+>  
+> -	pmu_aliases(name, &aliases);
+> -
+>  	INIT_LIST_HEAD(&pmu->format);
+>  	INIT_LIST_HEAD(&pmu->aliases);
+>  	list_splice(&format, &pmu->format);
+>  	list_splice(&aliases, &pmu->aliases);
+>  	pmu->name = strdup(name);
+>  	pmu->type = type;
+> +	list_add_tail(&pmu->list, &pmus);
+>  	return pmu;
+>  }
+>  
+> -- 
+> 1.7.10.4
