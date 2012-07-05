@@ -1,49 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911Ab2GEQCK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 12:02:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49372 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890Ab2GEQCI (ORCPT
+	id S1755334Ab2GEQCU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 12:02:20 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51859 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754928Ab2GEQCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 12:02:08 -0400
+	Thu, 5 Jul 2012 12:02:18 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: snitzer@redhat.com, david@fromorbit.com, dm-devel@redhat.com,
         xfs@oss.sgi.com, hch@lst.de, martin.petersen@oracle.com,
         axboe@kernel.dk, vgoyal@redhat.com
-Subject: [PATCH v3 0/2] block: improvements for discard alignment
-Date: Thu,  5 Jul 2012 18:01:42 +0200
-Message-Id: <1341504104-1674-1-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH v3 2/2] block: split discard into aligned requests
+Date: Thu,  5 Jul 2012 18:01:44 +0200
+Message-Id: <1341504104-1674-3-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.7.10.2
+In-Reply-To: <1341504104-1674-1-git-send-email-pbonzini@redhat.com>
+References: <1341504104-1674-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a disk has a large discard_granularity, discards are not split with
-optimal alignment; the pessimization gets bigger as discard_granularity
-and max_discard_sectors become closer.
+When a disk has large discard_granularity and small max_discard_sectors,
+discards are not split with optimal alignment.  In the limit case of
+discard_granularity == max_discard_sectors, no request could be aligned
+correctly, so in fact you might end up with no discarded logical blocks
+at all.
 
-Take the limit case of discard_granularity == max_discard_sectors == 64.
-Then, if a request is submitted for 256 sectors 2..257 it will be split
-like this: 2..65, 66..129, 130..193, 194..257.  None of these requests
-is aligned, so in fact you might end up with no discarded logical blocks
-at all.  With this patch, the split will be 2..63, 64..127, 128..191,
-192..255, 256..257.  The patches also take the discard_alignment into
-consideration.
+Another example that helps showing the condition in the patch is with
+discard_granularity == 64, max_discard_sectors == 128.  A request that is
+submitted for 256 sectors 2..257 will be split in two: 2..129, 130..257.
+However, only 2 aligned blocks out of 3 are included in the request;
+128..191 may be left intact and not discarded.  With this patch, the
+first request will be truncated to ensure good alignment of what's left,
+and the split will be 2..127, 128..255, 256..257.  The patch will also
+take into account the discard_alignment.
 
-Patch 1 adjusts the computation of the granularity-adjusted
-max_discard_sectors so that it prepares for the new code in patch 2,
-which actually adjusts the split.
+At most one extra request will be introduced, because the first request
+will be reduced by at most granularity-1 sectors, and granularity
+must be less than max_discard_sectors.  Subsequent requests will run
+on round_down(max_discard_sectors, granularity) sectors, as in the
+current code.
 
-v2->v3: drop addition of queue/discard_alignment to sysfs, use
-  correct alignment for partitions
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+        v2->v3: take into account partition alignment (Vivek)
 
-Paolo Bonzini (2):
-  block: reorganize rounding of max_discard_sectors
-  block: split discard into aligned requests
-
- block/blk-lib.c        |   41 ++++++++++++++++++++++++++++-------------
+ block/blk-lib.c        |   34 ++++++++++++++++++++++++----------
  include/linux/blkdev.h |   10 ++++++++++
- 2 files changed, 38 insertions(+), 13 deletions(-)
+ 2 files changed, 34 insertions(+), 10 deletions(-)
+
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index 16b06f6..19cc761 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -44,7 +44,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 	struct request_queue *q = bdev_get_queue(bdev);
+ 	int type = REQ_WRITE | REQ_DISCARD;
+ 	unsigned int max_discard_sectors;
+-	unsigned int granularity;
++	unsigned int granularity, alignment, mask;
+ 	struct bio_batch bb;
+ 	struct bio *bio;
+ 	int ret = 0;
+@@ -57,10 +57,12 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 
+ 	/* Zero-sector (unknown) and one-sector granularities are the same.  */
+ 	granularity = max(q->limits.discard_granularity >> 9, 1U);
++	mask = granularity - 1;
++	alignment = (bdev_discard_alignment(bdev) >> 9) & mask;
+ 
+ 	/*
+ 	 * Ensure that max_discard_sectors is of the proper
+-	 * granularity
++	 * granularity, so that requests stay aligned after a split.
+ 	 */
+ 	max_discard_sectors = min(q->limits.max_discard_sectors, UINT_MAX >> 9);
+ 	max_discard_sectors = round_down(max_discard_sectors, granularity);
+@@ -80,25 +82,37 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 	bb.wait = &wait;
+ 
+ 	while (nr_sects) {
++		unsigned int req_sects;
++		sector_t end_sect;
++
+ 		bio = bio_alloc(gfp_mask, 1);
+ 		if (!bio) {
+ 			ret = -ENOMEM;
+ 			break;
+ 		}
+ 
++		req_sects = min_t(sector_t, nr_sects, max_discard_sectors);
++
++		/*
++		 * If splitting a request, and the next starting sector would be
++		 * misaligned, stop the discard at the previous aligned sector.
++		 */
++		end_sect = sector + req_sects;
++		if (req_sects < nr_sects && (end_sect & mask) != alignment) {
++			end_sect =
++				round_down(end_sect - alignment, granularity)
++				+ alignment;
++			req_sects = end_sect - sector;
++		}
++
+ 		bio->bi_sector = sector;
+ 		bio->bi_end_io = bio_batch_end_io;
+ 		bio->bi_bdev = bdev;
+ 		bio->bi_private = &bb;
+ 
+-		if (nr_sects > max_discard_sectors) {
+-			bio->bi_size = max_discard_sectors << 9;
+-			nr_sects -= max_discard_sectors;
+-			sector += max_discard_sectors;
+-		} else {
+-			bio->bi_size = nr_sects << 9;
+-			nr_sects = 0;
+-		}
++		bio->bi_size = req_sects << 9;
++		nr_sects -= req_sects;
++		sector = end_sect;
+ 
+ 		atomic_inc(&bb.done);
+ 		submit_bio(type, bio);
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index ba43f40..218de98 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1125,6 +1125,16 @@ static inline int queue_limit_discard_alignment(struct queue_limits *lim, sector
+ 		& (lim->discard_granularity - 1);
+ }
+ 
++static inline int bdev_discard_alignment(struct block_device *bdev)
++{
++	struct request_queue *q = bdev_get_queue(bdev);
++
++	if (bdev != bdev->bd_contains)
++		return bdev->bd_part->discard_alignment;
++
++	return q->limits.discard_alignment;
++}
++
+ static inline unsigned int queue_discard_zeroes_data(struct request_queue *q)
+ {
+ 	if (q->limits.max_discard_sectors && q->limits.discard_zeroes_data == 1)
+-- 
+1.7.1
 
