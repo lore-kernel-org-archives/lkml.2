@@ -1,82 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011Ab2GEXfg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 19:35:36 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:52017 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab2GEXfe (ORCPT
+	id S1756192Ab2GEXiP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 19:38:15 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36149 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab2GEXiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 19:35:34 -0400
-X-AuditID: cbfee61b-b7f566d000005c8a-cb-4ff624c52117
-Message-id: <4FF624C4.8070102@samsung.com>
-Date: Fri, 06 Jul 2012 08:35:32 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: gregkh@linuxfoundation.org, thomas.abraham@linaro.org,
-        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH 0/2] mfd: MAX8997: Support irq domain for Maxim
- MAX8997
-References: <1341187362-16298-1-git-send-email-cw00.choi@samsung.com>
- <20120705142046.GC18200@sortiz-mobl>
-In-reply-to: <20120705142046.GC18200@sortiz-mobl>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGLMWRmVeSWpSXmKPExsVy+t9jQd2jKt/8Db7cFrW4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZ/69dZSo4z1Wx7tYC1gbG8xxdjBwcEgImEruWmXUxcgKZYhIX
-	7q1n62Lk4hASmM4ocejcdyini0ni9NupjCBVvAJaEseWn2YGaWYRUJU4fdIOJMwGFN7/4gYb
-	SFhUIELiVz8HRLWgxI/J91hAwiICGhJ7e2pAJjILXGKUeDjvGxNIXFggRGLO3nKQciGBHIm+
-	tS9ZQWxOAUOJ72chljIL6Ejsb53GBmHLS2xe85Z5AqPALCQbZiEpm4WkbAEj8ypG0dSC5ILi
-	pPRcI73ixNzi0rx0veT83E2M4NB7Jr2DcVWDxSFGAQ5GJR7eCuVv/kKsiWXFlbmHGCU4mJVE
-	eHszvvoL8aYkVlalFuXHF5XmpBYfYpTmYFES5zXxBkoJpCeWpGanphakFsFkmTg4pRoYQ87x
-	fMo1ED2zlqdCeHea7vYJ7p1Ps4R8P+yo6/i37KL/z4KcMDYhp9lbv/602LlUMXdb1q+yNmaO
-	K54pj5e5HPjj5f2lODGOfZn5H6uS7nnX15xsPWIs79AQ/U3DZI2LdIFvRvDV2vyTqwMvut37
-	k5f16/muhPKF2xu1zVtn312+u3aJxvtmJZbijERDLeai4kQA/WuUqDkCAAA=
-X-TM-AS-MML: No
+	Thu, 5 Jul 2012 19:38:13 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FF6254C.1000607@jp.fujitsu.com>
+Date: Fri, 6 Jul 2012 08:37:48 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>
+CC: <lenb@kernel.org>, <linux-acpi@vger.kernel.org>, <bhelgaas@google.com>,
+        <shuahkhan@gmail.com>, <liuj97@gmail.com>, <andi@firstfloor.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 2/6] ACPI: Add _OST support for sysfs eject
+References: <1340743374-18535-1-git-send-email-toshi.kani@hp.com>  <1340743374-18535-3-git-send-email-toshi.kani@hp.com>  <4FF57787.1010308@jp.fujitsu.com> <1341499417.16730.595.camel@misato.fc.hp.com>
+In-Reply-To: <1341499417.16730.595.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+Hi Toshi,
 
-On 07/05/2012 11:20 PM, Samuel Ortiz wrote:
+2012/07/05 23:43, Toshi Kani wrote:
+> On Thu, 2012-07-05 at 20:16 +0900, Yasuaki Ishimatsu wrote:
+>> Hi Toshi,
+>>
+>> 2012/06/27 5:42, Toshi Kani wrote:
+>>> Changed acpi_bus_hot_remove_device() to support _OST. This function is
+>>> also changed to global so that it can be called from hotplug notify
+>>> handlers to perform hot-remove operation.
+>>>
+>>> Changed acpi_eject_store(), which is the sysfs eject handler. It checks
+>>> eject_pending to see if the request was originated from ACPI eject
+>>> notification. If not, it calls _OST(0x103,84,) per Figure 6-37 in ACPI
+>>> 5.0 spec.
+>>>
+>>> Added eject_pending bit to acpi_device_flags. This bit is set when the
+>>> kernel has received an ACPI eject notification, but does not initiate
+>>> its hot-remove operation by itself.
+>>>
+>>> Added struct acpi_eject_event. This structure is used to pass extended
+>>> information to acpi_bus_hot_remove_device(), which has a single argument
+>>> to support asynchronous call
+>>>
+>>> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+>>> ---
+>>>    drivers/acpi/scan.c     |   57 +++++++++++++++++++++++++++++++++++++++-------
+>>>    include/acpi/acpi_bus.h |    9 ++++++-
+>>>    2 files changed, 56 insertions(+), 10 deletions(-)
+>>>
+>>> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+>>> index c8a1f3b..dbdb9fc 100644
+>>> --- a/drivers/acpi/scan.c
+>>> +++ b/drivers/acpi/scan.c
+>>> @@ -83,19 +83,29 @@ acpi_device_modalias_show(struct device *dev, struct device_attribute *attr, cha
+>>>    }
+>>>    static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
+>>>
+>>> -static void acpi_bus_hot_remove_device(void *context)
+>>> +/**
+>>> + * acpi_bus_hot_remove_device: hot-remove a device and its children
+>>> + * @context: struct acpi_eject_event pointer (freed in this func)
+>>> + *
+>>> + * Hot-remove a device and its children. This function frees up the
+>>> + * memory space passed by arg context, so that the caller may call
+>>> + * this function asynchronously through acpi_os_hotplug_execute().
+>>> + */
+>>> +void acpi_bus_hot_remove_device(void *context)
+>>>    {
+>>> +	struct acpi_eject_event *ej_event = (struct acpi_eject_event *) context;
+>>>    	struct acpi_device *device;
+>>> -	acpi_handle handle = context;
+>>> +	acpi_handle handle = ej_event->handle;
+>>>    	struct acpi_object_list arg_list;
+>>>    	union acpi_object arg;
+>>>    	acpi_status status = AE_OK;
+>>> +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+>>>
+>>>    	if (acpi_bus_get_device(handle, &device))
+>>> -		return;
+>>> +		goto err_out;
+>>>
+>>>    	if (!device)
+>>> -		return;
+>>> +		goto err_out;
+>>>
+>>>    	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+>>>    		"Hot-removing device %s...\n", dev_name(&device->dev)));
+>>> @@ -103,7 +113,7 @@ static void acpi_bus_hot_remove_device(void *context)
+>>>    	if (acpi_bus_trim(device, 1)) {
+>>>    		printk(KERN_ERR PREFIX
+>>>    				"Removing device failed\n");
+>>> -		return;
+>>> +		goto err_out;
+>>>    	}
+>>>
+>>>    	/* power off device */
+>>> @@ -129,10 +139,20 @@ static void acpi_bus_hot_remove_device(void *context)
+>>>    	 * TBD: _EJD support.
+>>>    	 */
+>>>    	status = acpi_evaluate_object(handle, "_EJ0", &arg_list, NULL);
+>>> -	if (ACPI_FAILURE(status))
+>>> -		printk(KERN_WARNING PREFIX
+>>> -				"Eject device failed\n");
+>>> +	if (ACPI_FAILURE(status)) {
+>>> +		if (status != AE_NOT_FOUND)
+>>> +			pr_warn(PREFIX "Eject device failed\n");
+>>> +		goto err_out;
+>>> +	}
+>>> +
+>>> +	kfree(context);
+>>> +	return;
+>>>
+>>> +err_out:
+>>> +	/* Inform firmware the hot-remove operation has completed w/ error */
+>>> +	(void) acpi_evaluate_hotplug_ost(handle,
+>>> +				ej_event->event, ost_code, NULL);
+>>> +	kfree(context);
+>>>    	return;
+>>>    }
+>>
+>> When I read your patch named [PATCH] ACPI: Add ACPI CPU hot-remove support,
+>> a question about this patch appeared.
+>>
+>> The question is :
+>> Why does not acpi_bus_hot_remove_device() inform firmware of
+>> ACPI_OST_SC_SUCCESS, when it succeeded? Are thre any reasons?
+>>
+>> If you have already discussed my question, please let me know the log.
+>
+> Hi Yasuaki,
+>
+> Please refer Figure 2, page 14, of the following document.  _EJ0
+> substitutes _OST as it indicates to the firmware that the OS was
+> successful in offlining.
+>
+>    DIG64 Hot-Plug & Partitioning Flow (HPPF) Specification R1.0
+>    http://www.dig64.org/home/DIG64_HPPF_R1_0.pdf
+>
+> Figure 6-37 of ACPI 5.0 spec also has a similar example flow.
 
-> Hi Chanwoo,
-> 
-> On Mon, Jul 02, 2012 at 09:02:42AM +0900, Chanwoo Choi wrote:
->> This patchset add support irq domain for Maxim MAX8997 interrupts.
->>
->> I have discussed about this patchset with Greg KH and received below reply.
->> So, I resend this patchset.
->> - https://lkml.org/lkml/2012/5/20/142
->>
->> This first patch is based on patch written by Thomas Abraham
->> (https://lkml.org/lkml/2012/4/18/145) but this patch had occurred
->> build break, it was reported by Stephen Rothwell and this patch was
->> reverted by Mark Brown. You can check reverted patch on below patch.
->> - http://git.kernel.org/?p=linux/kernel/git/broonie/regulator.git;a=commit;h=82b719b11fd750188c125078ad6a6c0d23219dfb
->> So I fix two bug which set max88997->irq_domain instead
->> of NULL pointer and correct wrong parameter.
->>
->> The second patch use irq domain for muic interrupt of extcon-max8997
->> instead of irq_base in platform data of MAX8997 driver.
->>
->> Chanwoo Choi (1):
->>   Extcon: MAX8997: Add support irq domain for MAX8997 muic
->>
->> Thomas Abraham (1):
->>   mfd: add irq domain support for max8997 interrupts
-> Both patches applied to my for-next branch, thanks.
-> 
-> Cheers,
-> Samuel.
-> 
+My question was solved by the document.
 
-Thank you for your reply and applied it
+Thanks,
+Yasuaki Ishimatsu
 
-Best Regards,
-Chanwoo Choi
+>
+> Thanks,
+> -Toshi
+>
+>
+>> Thanks,
+>> Yasuaki Ishimatsu
+>>
+>>
+>>>
+>>> @@ -144,6 +164,7 @@ acpi_eject_store(struct device *d, struct device_attribute *attr,
+>>>    	acpi_status status;
+>>>    	acpi_object_type type = 0;
+>>>    	struct acpi_device *acpi_device = to_acpi_device(d);
+>>> +	struct acpi_eject_event *ej_event;
+>>>
+>>>    	if ((!count) || (buf[0] != '1')) {
+>>>    		return -EINVAL;
+>>> @@ -160,7 +181,25 @@ acpi_eject_store(struct device *d, struct device_attribute *attr,
+>>>    		goto err;
+>>>    	}
+>>>
+>>> -	acpi_os_hotplug_execute(acpi_bus_hot_remove_device, acpi_device->handle);
+>>> +	ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
+>>> +	if (!ej_event) {
+>>> +		ret = -ENOMEM;
+>>> +		goto err;
+>>> +	}
+>>> +
+>>> +	ej_event->handle = acpi_device->handle;
+>>> +	if (acpi_device->flags.eject_pending) {
+>>> +		/* event originated from ACPI eject notification */
+>>> +		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
+>>> +		acpi_device->flags.eject_pending = 0;
+>>> +	} else {
+>>> +		/* event originated from user */
+>>> +		ej_event->event = ACPI_OST_EC_OSPM_EJECT;
+>>> +		(void) acpi_evaluate_hotplug_ost(ej_event->handle,
+>>> +			ej_event->event, ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+>>> +	}
+>>> +
+>>> +	acpi_os_hotplug_execute(acpi_bus_hot_remove_device, (void *)ej_event);
+>>>    err:
+>>>    	return ret;
+>>>    }
+>>> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+>>> index 1d9e432..b22b774 100644
+>>> --- a/include/acpi/acpi_bus.h
+>>> +++ b/include/acpi/acpi_bus.h
+>>> @@ -182,7 +182,8 @@ struct acpi_device_flags {
+>>>    	u32 suprise_removal_ok:1;
+>>>    	u32 power_manageable:1;
+>>>    	u32 performance_manageable:1;
+>>> -	u32 reserved:24;
+>>> +	u32 eject_pending:1;
+>>> +	u32 reserved:23;
+>>>    };
+>>>
+>>>    /* File System */
+>>> @@ -334,6 +335,11 @@ struct acpi_bus_event {
+>>>    	u32 data;
+>>>    };
+>>>
+>>> +struct acpi_eject_event {
+>>> +	acpi_handle	handle;
+>>> +	u32		event;
+>>> +};
+>>> +
+>>>    extern struct kobject *acpi_kobj;
+>>>    extern int acpi_bus_generate_netlink_event(const char*, const char*, u8, int);
+>>>    void acpi_bus_private_data_handler(acpi_handle, void *);
+>>> @@ -371,6 +377,7 @@ int acpi_bus_register_driver(struct acpi_driver *driver);
+>>>    void acpi_bus_unregister_driver(struct acpi_driver *driver);
+>>>    int acpi_bus_add(struct acpi_device **child, struct acpi_device *parent,
+>>>    		 acpi_handle handle, int type);
+>>> +void acpi_bus_hot_remove_device(void *context);
+>>>    int acpi_bus_trim(struct acpi_device *start, int rmdevice);
+>>>    int acpi_bus_start(struct acpi_device *device);
+>>>    acpi_status acpi_bus_get_ejd(acpi_handle handle, acpi_handle * ejd);
+>>>
+>>
+>>
+>>
+>
+>
+
+
+
