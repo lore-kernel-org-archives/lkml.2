@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756992Ab2GEQpq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 12:45:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4757 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756880Ab2GEQpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 12:45:45 -0400
-Date: Thu, 5 Jul 2012 13:44:47 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org,
-        drepper@gmail.com
-Subject: Re: [PATCHv3 0/3] perf tool: Add new event group management
-Message-ID: <20120705164447.GE7533@infradead.org>
-References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
- <87fw9blyhj.fsf@sejong.aot.lge.com>
- <20120702101518.GC967@krava.redhat.com>
- <1341234662.1476.13.camel@leonhard>
- <20120702133341.GD967@krava.redhat.com>
- <CABPqkBTKNuwJXY7jRa+Zt8rmFftZUeJiYKEsKJeRiLdoHN3KWQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBTKNuwJXY7jRa+Zt8rmFftZUeJiYKEsKJeRiLdoHN3KWQ@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S933280Ab2GEQqY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 12:46:24 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:32670 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756882Ab2GEQqW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 12:46:22 -0400
+Message-ID: <1341506780.2605.9.camel@lorien2>
+Subject: Re: [PATCH 23/25] leds: convert Backlight emulation LED trigger
+ driver to devm_kzalloc() and cleanup error exit path
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: shuahkhan@gmail.com, linux-leds@vger.kernel.org, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org
+Date: Thu, 05 Jul 2012 10:46:20 -0600
+In-Reply-To: <1341378617-10386-24-git-send-email-bryan.wu@canonical.com>
+References: <1341378617-10386-1-git-send-email-bryan.wu@canonical.com>
+	 <1341378617-10386-24-git-send-email-bryan.wu@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jul 05, 2012 at 06:15:20PM +0200, Stephane Eranian escreveu:
-> On Mon, Jul 2, 2012 at 3:33 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> > perf, tool: Enable sampling on specified event group leader
-> >
-> > Adding the functionality to the group modifier event syntax.
-> > Allowing user to select leader event inside the group using
-> > event index (command line event position in the group).
-> >
-> > Following example selects e2 as leader:
-> >   -e '{e1,e2,e3,e4}:2'
-> >
-> I don't understand why you actually need the :2 suffix. There can
-> only be one leader. So assume it is the first one. Users have to
-> know the first one is the leader which seems like a natural thing
-> to do for me. It would make you syntax less ugly than it already
-> is.
-
-Agreed, looks like creeping featurism.
- 
-> I would have thought you could enable this with a simple
-> cmdline option which changes the way you interpret the
-> multiple -e options:
+On Wed, 2012-07-04 at 13:10 +0800, Bryan Wu wrote:
+> Cc: Rodolfo Giometti <giometti@linux.it>
+> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+> ---
+>  drivers/leds/ledtrig-backlight.c |   10 +++-------
+>  1 file changed, 3 insertions(+), 7 deletions(-)
 > 
-> perf record --group-reads -e e1,e2,e3 -e e4,e5,e6 .....
-> 
-> Would setup the group leaders (e1, e4) for 2 groups.
-> NO curly braces, no : needed.
+> diff --git a/drivers/leds/ledtrig-backlight.c b/drivers/leds/ledtrig-backlight.c
+> index b941685..3fa20a9 100644
+> --- a/drivers/leds/ledtrig-backlight.c
+> +++ b/drivers/leds/ledtrig-backlight.c
+> @@ -101,7 +101,8 @@ static void bl_trig_activate(struct led_classdev *led)
+>  
+>  	struct bl_trig_notifier *n;
+>  
+> -	n = kzalloc(sizeof(struct bl_trig_notifier), GFP_KERNEL);
+> +	n = devm_kzalloc(led->dev, sizeof(struct bl_trig_notifier),
+> +			GFP_KERNEL);
+>  	led->trigger_data = n;
+>  	if (!n) {
+>  		dev_err(led->dev, "unable to allocate backlight trigger\n");
+> @@ -110,7 +111,7 @@ static void bl_trig_activate(struct led_classdev *led)
+>  
+>  	ret = device_create_file(led->dev, &dev_attr_inverted);
+>  	if (ret)
+> -		goto err_invert;
+> +		led->trigger_data = NULL;
+>  
+>  	n->led = led;
+>  	n->brightness = led->brightness;
+> @@ -123,10 +124,6 @@ static void bl_trig_activate(struct led_classdev *led)
+>  	led->activated = true;
+>  
+>  	return;
+> -
+> -err_invert:
+> -	led->trigger_data = NULL;
+> -	kfree(n);
+>  }
+>  
+>  static void bl_trig_deactivate(struct led_classdev *led)
+> @@ -137,7 +134,6 @@ static void bl_trig_deactivate(struct led_classdev *led)
+>  	if (led->activated) {
+>  		device_remove_file(led->dev, &dev_attr_inverted);
+>  		fb_unregister_client(&n->notifier);
+> -		kfree(n);
+>  		led->activated = false;
+>  	}
+>  }
 
-Yeah, curly braces needed just when one wants to add group wide
-modifiers.
- 
-- Arnaldo
+Bryan,
+
+I don't believe memory triggers allocate in their activate routine
+should be converted to devm_kzalloc(). Based on my understanding, the
+memory allocated using devm_kzalloc() us free'ed when driver is
+detached. In the case of led triggers, driver stays registered while the
+triggers it supports can be activated and deactivated many times. By
+converting these allocations into devm_kzalloc()s could lead to memory
+leaks. Please correct me if my understanding is incorrect.
+
+If what I am saying makes sense, please take this as comment that is
+applicable to all led triggers, not just this one.
+
+Thanks,
+-- Shuah
+
