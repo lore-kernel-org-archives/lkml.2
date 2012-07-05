@@ -1,188 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab2GEJuq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 05:50:46 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:13589 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755415Ab2GEJuo (ORCPT
+	id S932142Ab2GEJwH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 05:52:07 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61412 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752950Ab2GEJwF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 05:50:44 -0400
-From: Jiang Liu <jiang.liu@huawei.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>, Minchan Kim <minchan@kernel.org>
-CC: Jiang Liu <jiang.liu@huawei.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Yinghai Lu <yinghai@kernel.org>, Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Keping Chen <chenkeping@huawei.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>,
-        Xishi Qiu <qiuxishi@huawei.com>
-Subject: [PATCH 1/4] mm/hotplug: correctly setup fallback zonelists when creating new pgdat
-Date: Thu, 5 Jul 2012 17:45:29 +0800
-Message-ID: <1341481532-1700-1-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.8.msysgit.0
+	Thu, 5 Jul 2012 05:52:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
+In-Reply-To: <alpine.LFD.2.00.1207041926290.29222@localhost>
+References: <1339638836-19990-1-git-send-email-ashish.sangwan2@gmail.com>
+	<CAKYAXd_g_vgAmyD4jyUqz0u=vaSTAKFqZz0sqhM+2+hy1Z85ug@mail.gmail.com>
+	<CAOiN93=BKyGKtpLng-ddX0RFUOdHCaxHi2O26GFokdT19xad2g@mail.gmail.com>
+	<alpine.LFD.2.00.1207021110530.24050@dhcp-1-248.brq.redhat.com>
+	<CAOiN93kzvKVDzSJ13HJZDh9ANt3UaBy0o_QHNKCSHHTizjtY0w@mail.gmail.com>
+	<alpine.LFD.2.00.1207041926290.29222@localhost>
+Date: Thu, 5 Jul 2012 15:22:04 +0530
+Message-ID: <CAOiN93mJO6=dV4U=Qyw7myz34EF_doaoLsFHksmu4-n8pOzXBA@mail.gmail.com>
+Subject: Re: [PATCH v2] ext4: fix hole punch failure when depth is greater
+ than 0
+From: Ashish Sangwan <ashishsangwan2@gmail.com>
+To: =?ISO-8859-2?Q?Luk=E1=B9_Czerner?= <lczerner@redhat.com>
+Cc: sandeen@redhat.com, Ted Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When hotadd_new_pgdat() is called to create new pgdat for a new node,
-a fallback zonelist should be created for the new node. There's code
-to try to achieve that in hotadd_new_pgdat() as below:
-	/*
-	 * The node we allocated has no zone fallback lists. For avoiding
-	 * to access not-initialized zonelist, build here.
-	 */
-	mutex_lock(&zonelists_mutex);
-	build_all_zonelists(pgdat, NULL);
-	mutex_unlock(&zonelists_mutex);
+On Wed, Jul 4, 2012 at 11:03 PM, Lukáš Czerner <lczerner@redhat.com> wrote:
+> So I've finally has some time to look at the patch and reproduce the
+> problem. Thanks for noticing the problem, the patch seems good,
+> though I have one question. Is the p_block setting really necessary
+> ? I do not think so, but I might be missing something. Here is
+> updated patch I've tested, bellow.
+AFAICS, p_block setting is necessary. As mentioned in the patch description,
+whether to continue removing extents or not is decided by the return value
+of function ext4_ext_more_to_rm() which checks 2 conditions:
+a) if there are no more indexes to process.
+b) if the number of entries are decreased in the header of "depth -1".
+The p_block setting is important for condition b).
 
-But it doesn't work as expected. When hotadd_new_pgdat() is called, the
-new node is still in offline state because node_set_online(nid) hasn't
-been called yet. And build_all_zonelists() only builds zonelists for
-online nodes as:
-        for_each_online_node(nid) {
-                pg_data_t *pgdat = NODE_DATA(nid);
+In function ext4_ext_more_to_rm, there is this second check:
+if (le16_to_cpu(path->p_hdr->eh_entries) == path->p_block)
+    return 0;
+If the value of p_block would not be correct, the above mentioned
+condition could become
+true while there are still blocks left to be removed.
+>
+> Note: there are some indent problems in your patch, like for example
+> this:
+>
+> +                       path[k].p_block =
+> +                       le16_to_cpu(path[k].p_hdr->eh_entries)+1;
+>
+>
+Before submitting the patch, I run checkpatch.pl with --strict option.
+It did'nt show any error or warning. Should I re-submit
+the patch with an extra tab before the second line? The call is yours.
 
-                build_zonelists(pgdat);
-                build_zonelist_cache(pgdat);
-        }
+> Anyway, what do you think about the modification ?
+>
+Also there is 1 modification missing from your patch.
+    ext4_ext_drop_refs(path);
+        kfree(path);
++       path = NULL;
+        if (err == -EAGAIN)
+                goto again;
+If path is not set to NULL, it will crash in xfstest #13. Ted has
+already reported it.
 
-Though we hope to create zonelist for the new pgdat, but it doesn't.
-So add a new parameter "pgdat" the build_all_zonelists() to build pgdat
-for the new pgdat too.
+Thanks,
+Ashish
 
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
----
- include/linux/mmzone.h |    2 +-
- init/main.c            |    2 +-
- kernel/cpu.c           |    2 +-
- mm/memory_hotplug.c    |    4 ++--
- mm/page_alloc.c        |   17 ++++++++++++-----
- 5 files changed, 17 insertions(+), 10 deletions(-)
-
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 2427706..8ddbfb4 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -718,7 +718,7 @@ typedef struct pglist_data {
- #include <linux/memory_hotplug.h>
- 
- extern struct mutex zonelists_mutex;
--void build_all_zonelists(void *data);
-+void build_all_zonelists(pg_data_t *pgdat, struct zone *zone);
- void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx);
- bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
- 		int classzone_idx, int alloc_flags);
-diff --git a/init/main.c b/init/main.c
-index b5cc0a7..622364d 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -501,7 +501,7 @@ asmlinkage void __init start_kernel(void)
- 	setup_per_cpu_areas();
- 	smp_prepare_boot_cpu();	/* arch-specific boot-cpu hooks */
- 
--	build_all_zonelists(NULL);
-+	build_all_zonelists(NULL, NULL);
- 	page_alloc_init();
- 
- 	printk(KERN_NOTICE "Kernel command line: %s\n", boot_command_line);
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index a4eb522..14d3258 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -416,7 +416,7 @@ int __cpuinit cpu_up(unsigned int cpu)
- 
- 	if (pgdat->node_zonelists->_zonerefs->zone == NULL) {
- 		mutex_lock(&zonelists_mutex);
--		build_all_zonelists(NULL);
-+		build_all_zonelists(NULL, NULL);
- 		mutex_unlock(&zonelists_mutex);
- 	}
- #endif
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 0d7e3ec..f93c5b5 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -513,7 +513,7 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages)
- 	zone->present_pages += onlined_pages;
- 	zone->zone_pgdat->node_present_pages += onlined_pages;
- 	if (need_zonelists_rebuild)
--		build_all_zonelists(zone);
-+		build_all_zonelists(NULL, zone);
- 	else
- 		zone_pcp_update(zone);
- 
-@@ -562,7 +562,7 @@ static pg_data_t __ref *hotadd_new_pgdat(int nid, u64 start)
- 	 * to access not-initialized zonelist, build here.
- 	 */
- 	mutex_lock(&zonelists_mutex);
--	build_all_zonelists(NULL);
-+	build_all_zonelists(pgdat, NULL);
- 	mutex_unlock(&zonelists_mutex);
- 
- 	return pgdat;
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4403009..ebf319d 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3030,7 +3030,7 @@ int numa_zonelist_order_handler(ctl_table *table, int write,
- 			user_zonelist_order = oldval;
- 		} else if (oldval != user_zonelist_order) {
- 			mutex_lock(&zonelists_mutex);
--			build_all_zonelists(NULL);
-+			build_all_zonelists(NULL, NULL);
- 			mutex_unlock(&zonelists_mutex);
- 		}
- 	}
-@@ -3413,10 +3413,17 @@ static __init_refok int __build_all_zonelists(void *data)
- {
- 	int nid;
- 	int cpu;
-+	pg_data_t *self = data;
- 
- #ifdef CONFIG_NUMA
- 	memset(node_load, 0, sizeof(node_load));
- #endif
-+
-+	if (self && !node_online(self->node_id)) {
-+		build_zonelists(self);
-+		build_zonelist_cache(self);
-+	}
-+
- 	for_each_online_node(nid) {
- 		pg_data_t *pgdat = NODE_DATA(nid);
- 
-@@ -3461,7 +3468,7 @@ static __init_refok int __build_all_zonelists(void *data)
-  * Called with zonelists_mutex held always
-  * unless system_state == SYSTEM_BOOTING.
-  */
--void __ref build_all_zonelists(void *data)
-+void __ref build_all_zonelists(pg_data_t *pgdat, struct zone *zone)
- {
- 	set_zonelist_order();
- 
-@@ -3473,10 +3480,10 @@ void __ref build_all_zonelists(void *data)
- 		/* we have to stop all cpus to guarantee there is no user
- 		   of zonelist */
- #ifdef CONFIG_MEMORY_HOTPLUG
--		if (data)
--			setup_zone_pageset((struct zone *)data);
-+		if (zone)
-+			setup_zone_pageset(zone);
- #endif
--		stop_machine(__build_all_zonelists, NULL, NULL);
-+		stop_machine(__build_all_zonelists, pgdat, NULL);
- 		/* cpuset refresh routine should be here */
- 	}
- 	vm_total_pages = nr_free_pagecache_pages();
--- 
-1.7.1
-
-
+> Thanks!
+> -Lukas
+>
+>
+> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+> index b3300eb..94bc1bd 100644
+> --- a/fs/ext4/extents.c
+> +++ b/fs/ext4/extents.c
+> @@ -2570,7 +2570,7 @@ static int ext4_ext_remove_space(struct inode *inode, ext4_lblk_t start,
+>  {
+>         struct super_block *sb = inode->i_sb;
+>         int depth = ext_depth(inode);
+> -       struct ext4_ext_path *path;
+> +       struct ext4_ext_path *path = NULL;
+>         ext4_fsblk_t partial_cluster = 0;
+>         handle_t *handle;
+>         int i, err;
+> @@ -2606,8 +2606,12 @@ again:
+>                 }
+>                 depth = ext_depth(inode);
+>                 ex = path[depth].p_ext;
+> -               if (!ex)
+> +               if (!ex) {
+> +                       ext4_ext_drop_refs(path);
+> +                       kfree(path);
+> +                       path = NULL;
+>                         goto cont;
+> +               }
+>
+>                 ee_block = le32_to_cpu(ex->ee_block);
+>
+> @@ -2637,8 +2641,6 @@ again:
+>                         if (err < 0)
+>                                 goto out;
+>                 }
+> -               ext4_ext_drop_refs(path);
+> -               kfree(path);
+>         }
+>  cont:
+>
+> @@ -2646,20 +2648,26 @@ cont:
+>          * We start scanning from right side, freeing all the blocks
+>          * after i_size and walking into the tree depth-wise.
+>          */
+> -       depth = ext_depth(inode);
+> -       path = kzalloc(sizeof(struct ext4_ext_path) * (depth + 1), GFP_NOFS);
+> -       if (path == NULL) {
+> -               ext4_journal_stop(handle);
+> -               return -ENOMEM;
+> -       }
+> -       path[0].p_depth = depth;
+> -       path[0].p_hdr = ext_inode_hdr(inode);
+> +       if (path)
+> +               i = depth;
+> +       else {
+> +               depth = ext_depth(inode);
+> +               path = kzalloc(sizeof(struct ext4_ext_path) * (depth + 1),
+> +                              GFP_NOFS);
+> +               if (path == NULL) {
+> +                       ext4_journal_stop(handle);
+> +                       return -ENOMEM;
+> +               }
+> +               path[0].p_depth = depth;
+> +               path[0].p_hdr = ext_inode_hdr(inode);
+>
+> -       if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
+> -               err = -EIO;
+> -               goto out;
+> +               if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
+> +                       err = -EIO;
+> +                       goto out;
+> +               }
+> +               i = 0;
+>         }
+> -       i = err = 0;
+> +       err = 0;
+>
+>         while (i >= 0 && err == 0) {
+>                 if (i == depth) {
+>
+> On Mon, 2 Jul 2012, Ashish Sangwan wrote:
+>
