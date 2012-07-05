@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab2GESff (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 14:35:35 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40710 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753669Ab2GESfe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 14:35:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <1341511933-11169-8-git-send-email-tytso@mit.edu>
-References: <1341511933-11169-1-git-send-email-tytso@mit.edu> <1341511933-11169-8-git-send-email-tytso@mit.edu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 5 Jul 2012 11:35:12 -0700
-X-Google-Sender-Auth: 4IRbqid-QEyIt9k8VB8D5Wgp-bI
-Message-ID: <CA+55aFxk3eViz1-CuuHf8xxTgLth376K_cOKAtAj0waXAz+GWg@mail.gmail.com>
-Subject: Re: [PATCH 07/10] random: add new get_random_bytes_arch() function
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>, w@1wt.eu,
-        ewust@umich.edu, zakir@umich.edu, greg@kroah.com, mpm@selenic.com,
-        nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
-        davem@davemloft.net, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756923Ab2GESg0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 14:36:26 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:48391 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753792Ab2GESgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 14:36:25 -0400
+Subject: Re: [PATCH] virtio-blk: allow toggling host cache between
+	writeback and writethrough
+From: Badari Pulavarty <pbadari@gmail.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, kvm@vger.kernel.org
+In-Reply-To: <1341321577-24435-1-git-send-email-pbonzini@redhat.com>
+References: <1341321577-24435-1-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain
+Date: Thu, 05 Jul 2012 11:39:10 -0700
+Message-Id: <1341513550.5508.7.camel@badari-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12070518-7182-0000-0000-000001ECA85D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 5, 2012 at 11:12 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> Create a new function, get_random_bytes_arch() which will use the
-> architecture-specific hardware random number generator if it is
-> present.  Change get_random_bytes() to not use the HW RNG, even if it
-> is avaiable.
+On Tue, 2012-07-03 at 15:19 +0200, Paolo Bonzini wrote:
+> This patch adds support for the new VIRTIO_BLK_F_CONFIG_WCE feature,
+> which exposes the cache mode in the configuration space and lets the
+> driver modify it.  The cache mode is exposed via sysfs.
+> 
+> Even if the host does not support the new feature, the cache mode is
+> visible (thanks to the existing VIRTIO_BLK_F_WCE), but not modifiable.
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
 
-This is horrible, I think. NAK NAK NAK.
+Hi Paolo,
 
-If Intel's rng really isn't trustworthy, they'll get a *huge* black
-eye for it. It would be a total PR disaster for Intel, so they have
-huge incentives to be trustworthy.
+Curious - What is the host side change to support this ? QEMU would
+close and re-open the device/file with the corresponding flags
+(O_SYNC) ?
 
-And in the meantime, your patch now slows things down for no obvious
-reason, and gives randomness that is *pracitcally* worse because you
-have some theoretical concerns that seem really unlikely to begin
-with.
+And also, is there a way to expose cache=none (O_DIRECT) to the guest ?
+Our cluster filesystem folks need a way to verify/guarantee that
+virtio-blk device has cache=none selected at host. Otherwise, they
+can not support a cluster filesystem running inside a VM (on
+virtio-blk).
 
-Christ, we *know* that our nonblocking pool isn't perfect either.
-That's why all the changes in the first place. It's *more* likely that
-somebody cracks our nonblocking pool on embedded devices where
-interrupts may be pretty predictable than that Intel's RNG is not
-trustworthy - and crackable.
+Thoughts ?
 
-So don't do this. It's stupid.
+Thanks,
+Badari
 
-If you really don't trust the intel rng, and have some *reason* not to
-trust it, there's a perfectly fine solution to that:
-
- - add a flag (that is *off* by default, so that it doesn't hurt
-normal people) to go to "extra scary mode"
-
- - in extra scary mode, you *still* use the hwrng, but you never give
-the data as-is, you mix it into the nonblocking pool *first*, and then
-extract.
-
-In absolutely *no* case is it acceptable to say "we don't trust the hw
-rng, so we won't use it at all, and instead use our known nonblocking
-pool that we can't guarantee is random either".
-
-Really.
-
-I absolutely *detest* patches like this that make *practical* security
-worse, in the name of some idiotic theoretical worry that nobody has
-any reason to believe is real.
-
-If "get_random_bytes()" doesn't use the hw rng when it exists, it is
-broken. It's that simple.
-
-              Linus
