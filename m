@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947Ab2GETzy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 15:55:54 -0400
-Received: from mail.snarked.org ([67.43.172.250]:60298 "EHLO mail.snarked.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752213Ab2GETzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 15:55:32 -0400
-X-Envelope-From: <newsserv> (mail.snarked.org)
-To: linux-kernel@vger.kernel.org
-From: "D. Stussy" <spam+newsgroups@bde-arc.ampr.org>
-Newsgroups: linux.kernel
-Subject: Re: Intel e1000 ethernet device, change in kernel v3.4, and jumbo  frames setting DENIED.
-Date: Thu, 5 Jul 2012 12:55:31 -0700
-Message-ID: <jt4rfk$enl$1@snarked.org>
-References: <jjE3E-5PM-29@gated-at.bofh.it> <jjGoO-7l0-19@gated-at.bofh.it>
-Reply-To: "D. Stussy" <replies+newsgroups@kd6lvw.ampr.org>
-Mime-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-No-Archive: Yes
-X-MimeOLE: Produced By Microsoft MimeOLE V15.4.3555.308
-In-Reply-To: <jjGoO-7l0-19@gated-at.bofh.it>
-X-Newsreader: Microsoft Windows Live Mail 15.4.3555.308
-Importance: Normal
-X-Priority: 3
-X-MSMail-Priority: Normal
+	id S1752533Ab2GET5R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 15:57:17 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48743 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab2GET5P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 15:57:15 -0400
+Date: Thu, 5 Jul 2012 21:57:05 +0200 (CEST)
+From: Eldad Zack <eldad@fogrefinery.com>
+X-X-Sender: eldad@debianer
+To: "J. Bruce Fields" <bfields@fieldses.org>
+cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] sunrpc/cache.h: replace simple_strtoul
+In-Reply-To: <20120705191323.GA3051@fieldses.org>
+Message-ID: <alpine.DEB.2.02.1207052122001.10395@debianer>
+References: <1341442827-21339-1-git-send-email-eldad@fogrefinery.com> <1341442827-21339-2-git-send-email-eldad@fogrefinery.com> <20120704235921.GA26797@fieldses.org> <alpine.DEB.2.02.1207052030500.6309@debianer> <20120705191323.GA3051@fieldses.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Henrique de Moraes Holschuh"  wrote in message 
-news:jjGoO-7l0-19@gated-at.bofh.it...
 
-On Wed, 04 Jul 2012, D. Stussy wrote:
-> There has been some changes to the driver such that things like
-> checksum verification is offloaded from the CPU.  However, this
-> blocks the ability to set a jumbo frame.  The kernel does record an
-> error indicating that checksum offloading need be disabled fro jumbo
-> frame MTU sizes to be used.  My e1000 interfaces use the 82574L
-> chipset.
->
-> 1)  Was this an intentional change?
 
-Yes, but I understand Intel is trying to come up with a way not to need it.
+On Thu, 5 Jul 2012, J. Bruce Fields wrote:
 
-> 2)  How do I disable that function so I can set jumbo frames with
-> "ifconfig" or "ip"?  I simply don't know what setting I need to
-> pass.
+> On Thu, Jul 05, 2012 at 09:04:03PM +0200, Eldad Zack wrote:
+> > 
+> > On Wed, 4 Jul 2012, J. Bruce Fields wrote:
+> > > On Thu, Jul 05, 2012 at 01:00:26AM +0200, Eldad Zack wrote:
+> > > > This patch replaces the usage of simple_strtoul with kstrtoint in
+> > > > get_int().
+> > > 
+> > > Why?
+> > 
+> > Since the simple_str* family don't account for overflow and AFAIK
+> > deprecated. Also, in this specific case, the long from strtol is 
+> > silently converted to an int by the caller.
+> 
+> OK, thanks.  Please use that as the changelog when you resend.  ("This
+> patch replaces..." tells me nothing I couldn't figure out from looking
+> at the patch.)
 
-ethtool can do it.  Check its manpage, it can manipulate the various NIC
-offload engines, as well as other parameters such as dma ring buffer size,
-etc.
-=====================
-I'll look into it.  Thanks. 
+Will do, sorry about that.
 
+Eldad
