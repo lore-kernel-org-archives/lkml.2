@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932792Ab2GEO3W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 10:29:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15249 "EHLO mx1.redhat.com"
+	id S932874Ab2GEO3n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 10:29:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38069 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932423Ab2GEO3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 10:29:21 -0400
-Message-ID: <4FF5A4B3.3020709@redhat.com>
-Date: Thu, 05 Jul 2012 10:29:07 -0400
+	id S1751191Ab2GEO3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 10:29:41 -0400
+Message-ID: <4FF5A4CC.3050302@redhat.com>
+Date: Thu, 05 Jul 2012 10:29:32 -0400
 From: Prarit Bhargava <prarit@redhat.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
 To: John Stultz <johnstul@us.ibm.com>
 CC: Linux Kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
         Thomas Gleixner <tglx@linutronix.de>, linux@openhuawei.org
-Subject: Re: [PATCH 1/3] [RFC] hrtimer: Fix clock_was_set so it is safe to
- call from irq context
-References: <1341382890-42324-1-git-send-email-johnstul@us.ibm.com> <1341382890-42324-2-git-send-email-johnstul@us.ibm.com>
-In-Reply-To: <1341382890-42324-2-git-send-email-johnstul@us.ibm.com>
+Subject: Re: [PATCH 2/3] [RFC] time: Fix leapsecond triggered hrtimer/futex
+ load spike issue
+References: <1341382890-42324-1-git-send-email-johnstul@us.ibm.com> <1341382890-42324-3-git-send-email-johnstul@us.ibm.com>
+In-Reply-To: <1341382890-42324-3-git-send-email-johnstul@us.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,18 +27,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 On 07/04/2012 02:21 AM, John Stultz wrote:
-> NOTE:This is a prerequisite patch that's required to
-> address the widely observed leap-second related futex/hrtimer
-> issues.
+> As widely reported on the internet, some Linux systems after
+> the leapsecond was inserted are experiencing futex related load
+> spikes (usually connected to MySQL, Firefox, Thunderbird, Java, etc).
 > 
-> Currently clock_was_set() is unsafe to be called from irq
-> context, as it calls on_each_cpu(). This causes problems when
-> we need to adjust the time from update_wall_time().
+> An apparent for this issue workaround is running:
+> $ date -s "`date`"
 > 
-> To fix this, if clock_was_set is called when irqs are
-> disabled, we schedule a timer to fire for immedately after
-> we're out of interrupt context to then notify the hrtimer
-> subsystem.
+> Credit: http://www.sheeri.com/content/mysql-and-leap-second-high-cpu-and-fix
+> 
+> I this issue is due to the leapsecond being added without
+> calling clock_was_set() to notify the hrtimer subsystem of the
+> change.
+> 
+> The workaround functions as it forces a clock_was_set()
+> call from settimeofday().
+> 
+> This fix adds the required clock_was_set() calls to where
+> we adjust for leapseconds.
+> 
+> NOTE: This fix *depends* on the previous fix, which allows
+> clock_was_set to be called from atomic context. Do not try
+> to apply just this patch.
 > 
 > CC: Prarit Bhargava <prarit@redhat.com>
 > CC: stable@vger.kernel.org
@@ -46,40 +56,7 @@ On 07/04/2012 02:21 AM, John Stultz wrote:
 > CC: linux@openhuawei.org
 > Reported-by: Jan Engelhardt <jengelh@inai.de>
 > Signed-off-by: John Stultz <johnstul@us.ibm.com>
-> ---
->  kernel/hrtimer.c |   17 ++++++++++++++++-
->  1 file changed, 16 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-> index ae34bf5..d730678 100644
-> --- a/kernel/hrtimer.c
-> +++ b/kernel/hrtimer.c
-> @@ -746,7 +746,7 @@ static inline void retrigger_next_event(void *arg) { }
->   * resolution timer interrupts. On UP we just disable interrupts and
->   * call the high resolution interrupt code.
->   */
-> -void clock_was_set(void)
-> +static void do_clock_was_set(unsigned long data)
->  {
->  #ifdef CONFIG_HIGH_RES_TIMERS
->  	/* Retrigger the CPU local events everywhere */
-> @@ -755,6 +755,21 @@ void clock_was_set(void)
->  	timerfd_clock_was_set();
->  }
->  
-> +static DEFINE_TIMER(clock_was_set_timer, do_clock_was_set , 0, 0);
-> +
-> +void clock_was_set(void)
-> +{
-> +	/*
-> +	 * We can't call on_each_cpu() from irq context,
-> +	 * so if irqs are disabled , schedule the clock_was_set
-> +	 * via a timer_list timer for right after.
-> +	 */
-> +	if (irqs_disabled())
 
-I was wondering about this in earlier versions of the patchset.  I thought it
-was supposed to be irqs_disabled.  Thanks for changing this.
 
 Acked-by: Prarit Bhargava <prarit@redhat.com>
 
