@@ -1,65 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765Ab2GEPUt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 11:20:49 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:55657 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933263Ab2GEPUo (ORCPT
+	id S933288Ab2GEPUy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 11:20:54 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:32828 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756760Ab2GEPUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 11:20:44 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av4EAJGv9U9bdWOb/2dsb2JhbABFhV+xSIEHghkBBSMPAUYQJQImAgJXBxKID6Z1klKBII9FgRIDlTeJJoZdgmE
-X-IronPort-AV: E=Sophos;i="4.77,531,1336341600"; 
-   d="scan'208";a="939596352"
-From: =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
-To: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
-        aaro.koskinen@iki.fi, dan.carpenter@oracle.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
-Subject: [PATCH 04/19] Staging: xgifb: Remove unused struct _chswtable.
-Date: Thu,  5 Jul 2012 16:45:47 +0200
-Message-Id: <104a4d1258e94379fc4d661e5a5c8bec3b3b89b2.1341498465.git.magomez@igalia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1341498465.git.magomez@igalia.com>
-References: <cover.1341498465.git.magomez@igalia.com>
-In-Reply-To: <cover.1341498465.git.magomez@igalia.com>
-References: <cover.1341498465.git.magomez@igalia.com>
+	Thu, 5 Jul 2012 11:20:48 -0400
+Date: Thu, 5 Jul 2012 08:20:45 -0700 (PDT)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: Sha Zhengju <handai.szj@gmail.com>
+cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, gthelen@google.com, yinghan@google.com,
+        akpm@linux-foundation.org, mhocko@suse.cz,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        sage@newdream.net, ceph-devel@vger.kernel.org,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH 4/7] Use vfs __set_page_dirty interface instead of doing
+ it inside filesystem
+In-Reply-To: <4FF3FAC4.1000005@gmail.com>
+Message-ID: <Pine.LNX.4.64.1207050813520.18685@cobra.newdream.net>
+References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>
+ <1340881423-5703-1-git-send-email-handai.szj@taobao.com>
+ <Pine.LNX.4.64.1206282218260.18049@cobra.newdream.net> <4FF15782.5090807@gmail.com>
+ <Pine.LNX.4.64.1207020745180.23342@cobra.newdream.net> <4FF3FAC4.1000005@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Struct _chswtable and the variable mychswtable are not used anywhere, so remove
-them.
+On Wed, 4 Jul 2012, Sha Zhengju wrote:
+> On 07/02/2012 10:49 PM, Sage Weil wrote:
+> > On Mon, 2 Jul 2012, Sha Zhengju wrote:
+> > > On 06/29/2012 01:21 PM, Sage Weil wrote:
+> > > > On Thu, 28 Jun 2012, Sha Zhengju wrote:
+> > > > 
+> > > > > From: Sha Zhengju<handai.szj@taobao.com>
+> > > > > 
+> > > > > Following we will treat SetPageDirty and dirty page accounting as an
+> > > > > integrated
+> > > > > operation. Filesystems had better use vfs interface directly to avoid
+> > > > > those details.
+> > > > > 
+> > > > > Signed-off-by: Sha Zhengju<handai.szj@taobao.com>
+> > > > > ---
+> > > > >    fs/buffer.c                 |    2 +-
+> > > > >    fs/ceph/addr.c              |   20 ++------------------
+> > > > >    include/linux/buffer_head.h |    2 ++
+> > > > >    3 files changed, 5 insertions(+), 19 deletions(-)
+> > > > > 
+> > > > > diff --git a/fs/buffer.c b/fs/buffer.c
+> > > > > index e8d96b8..55522dd 100644
+> > > > > --- a/fs/buffer.c
+> > > > > +++ b/fs/buffer.c
+> > > > > @@ -610,7 +610,7 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
+> > > > >     * If warn is true, then emit a warning if the page is not uptodate
+> > > > > and
+> > > > > has
+> > > > >     * not been truncated.
+> > > > >     */
+> > > > > -static int __set_page_dirty(struct page *page,
+> > > > > +int __set_page_dirty(struct page *page,
+> > > > >    		struct address_space *mapping, int warn)
+> > > > >    {
+> > > > >    	if (unlikely(!mapping))
+> > > > This also needs an EXPORT_SYMBOL(__set_page_dirty) to allow ceph to
+> > > > continue to build as a module.
+> > > > 
+> > > > With that fixed, the ceph bits are a welcome cleanup!
+> > > > 
+> > > > Acked-by: Sage Weil<sage@inktank.com>
+> > > Further, I check the path again and may it be reworked as follows to avoid
+> > > undo?
+> > > 
+> > > __set_page_dirty();
+> > > __set_page_dirty();
+> > > ceph operations;                ==>                     if (page->mapping)
+> > > if (page->mapping)                                            ceph
+> > > operations;
+> > >      ;
+> > > else
+> > >      undo = 1;
+> > > if (undo)
+> > >      xxx;
+> > Yep.  Taking another look at the original code, though, I'm worried that
+> > one reason the __set_page_dirty() actions were spread out the way they are
+> > is because we wanted to ensure that the ceph operations were always
+> > performed when PagePrivate was set.
+> > 
+> 
+> Sorry, I've lost something:
+> 
+> __set_page_dirty();                        __set_page_dirty();
+> ceph operations;
+> if(page->mapping)         ==>      if(page->mapping) {
+>        SetPagePrivate;                            SetPagePrivate;
+> else                                                      ceph operations;
+>     undo = 1;                                  }
+> 
+> if (undo)
+>     XXX;
+> 
+> I think this can ensure that ceph operations are performed together with
+> SetPagePrivate.
 
-Signed-off-by: Miguel Gómez <magomez@igalia.com>
----
- drivers/staging/xgifb/XGI_main.h |   10 ----------
- 1 file changed, 10 deletions(-)
+Yeah, that looks right, as long as the ceph accounting operations happen 
+before SetPagePrivate.  I think it's no more or less racy than before, at 
+least. 
 
-diff --git a/drivers/staging/xgifb/XGI_main.h b/drivers/staging/xgifb/XGI_main.h
-index 1686c5a..c033da4 100644
---- a/drivers/staging/xgifb/XGI_main.h
-+++ b/drivers/staging/xgifb/XGI_main.h
-@@ -227,16 +227,6 @@ static const struct _XGI_vrate {
- 	{0, 0, 0, 0}
- };
+The patch doesn't apply without the previous ones in the series, it looks 
+like.  Do you want to prepare a new version or should I?
+
+Thanks!
+sage
+
  
--static const struct _chswtable {
--	int subsysVendor;
--	int subsysCard;
--	char *vendorName;
--	char *cardName;
--} mychswtable[] = {
--	{ 0x1631, 0x1002, "Mitachi", "0x1002" },
--	{ 0,      0,      ""       , ""       }
--};
--
- static const struct _XGI_TV_filter {
- 	u8 filter[9][4];
- } XGI_TV_filter[] = {
--- 
-1.7.9.5
-
+> > It looks like invalidatepage won't get called if private isn't set, and
+> > presumably it handles the truncate race with __set_page_dirty() properly
+> > (right?).  What about writeback?  Do we need to worry about writepage[s]
+> > getting called with a NULL page->private?
+> 
+> __set_page_dirty does handle racing conditions with truncate and
+> writeback writepage[s] also take page->private into consideration
+> which is done inside specific filesystems. I notice that ceph has handled
+> this in ceph_writepage().
+> Sorry, not vfs expert and maybe I've not caught your point...
+>
+> 
+> 
+> Thanks,
+> Sha
+> 
+> > Thanks!
+> > sage
+> > 
+> > 
+> > 
+> > > 
+> > > 
+> > > Thanks,
+> > > Sha
+> > > 
+> > > > > diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+> > > > > index 8b67304..d028fbe 100644
+> > > > > --- a/fs/ceph/addr.c
+> > > > > +++ b/fs/ceph/addr.c
+> > > > > @@ -5,6 +5,7 @@
+> > > > >    #include<linux/mm.h>
+> > > > >    #include<linux/pagemap.h>
+> > > > >    #include<linux/writeback.h>	/* generic_writepages */
+> > > > > +#include<linux/buffer_head.h>
+> > > > >    #include<linux/slab.h>
+> > > > >    #include<linux/pagevec.h>
+> > > > >    #include<linux/task_io_accounting_ops.h>
+> > > > > @@ -73,14 +74,8 @@ static int ceph_set_page_dirty(struct page *page)
+> > > > >    	int undo = 0;
+> > > > >    	struct ceph_snap_context *snapc;
+> > > > > 
+> > > > > -	if (unlikely(!mapping))
+> > > > > -		return !TestSetPageDirty(page);
+> > > > > -
+> > > > > -	if (TestSetPageDirty(page)) {
+> > > > > -		dout("%p set_page_dirty %p idx %lu -- already
+> > > > > dirty\n",
+> > > > > -		     mapping->host, page, page->index);
+> > > > > +	if (!__set_page_dirty(page, mapping, 1))
+> > > > >    		return 0;
+> > > > > -	}
+> > > > > 
+> > > > >    	inode = mapping->host;
+> > > > >    	ci = ceph_inode(inode);
+> > > > > @@ -107,14 +102,7 @@ static int ceph_set_page_dirty(struct page *page)
+> > > > >    	     snapc, snapc->seq, snapc->num_snaps);
+> > > > >    	spin_unlock(&ci->i_ceph_lock);
+> > > > > 
+> > > > > -	/* now adjust page */
+> > > > > -	spin_lock_irq(&mapping->tree_lock);
+> > > > >    	if (page->mapping) {	/* Race with truncate? */
+> > > > > -		WARN_ON_ONCE(!PageUptodate(page));
+> > > > > -		account_page_dirtied(page, page->mapping);
+> > > > > -		radix_tree_tag_set(&mapping->page_tree,
+> > > > > -				page_index(page),
+> > > > > PAGECACHE_TAG_DIRTY);
+> > > > > -
+> > > > >    		/*
+> > > > >    		 * Reference snap context in page->private.  Also set
+> > > > >    		 * PagePrivate so that we get invalidatepage callback.
+> > > > > @@ -126,14 +114,10 @@ static int ceph_set_page_dirty(struct page
+> > > > > *page)
+> > > > >    		undo = 1;
+> > > > >    	}
+> > > > > 
+> > > > > -	spin_unlock_irq(&mapping->tree_lock);
+> > > > > -
+> > > > >    	if (undo)
+> > > > >    		/* whoops, we failed to dirty the page */
+> > > > >    		ceph_put_wrbuffer_cap_refs(ci, 1, snapc);
+> > > > > 
+> > > > > -	__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
+> > > > > -
+> > > > >    	BUG_ON(!PageDirty(page));
+> > > > >    	return 1;
+> > > > >    }
+> > > > > diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
+> > > > > index 458f497..0a331a8 100644
+> > > > > --- a/include/linux/buffer_head.h
+> > > > > +++ b/include/linux/buffer_head.h
+> > > > > @@ -336,6 +336,8 @@ static inline void lock_buffer(struct buffer_head
+> > > > > *bh)
+> > > > >    }
+> > > > > 
+> > > > >    extern int __set_page_dirty_buffers(struct page *page);
+> > > > > +extern int __set_page_dirty(struct page *page,
+> > > > > +		struct address_space *mapping, int warn);
+> > > > > 
+> > > > >    #else /* CONFIG_BLOCK */
+> > > > > 
+> > > > > -- 
+> > > > > 1.7.1
+> > > > > 
+> > > > > --
+> > > > > To unsubscribe from this list: send the line "unsubscribe
+> > > > > linux-fsdevel"
+> > > > > in
+> > > > > the body of a message to majordomo@vger.kernel.org
+> > > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > > > 
+> > > > > 
+> > > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
