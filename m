@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757369Ab2GETlX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 15:41:23 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:54955 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755772Ab2GETlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 15:41:22 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 0/2] PM / Domains: Allow drivers to attach PM domain callbacks to devices at any time
-Date: Thu, 5 Jul 2012 21:46:55 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>
-References: <201207031227.45383.rjw@sisk.pl>
-In-Reply-To: <201207031227.45383.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1757380Ab2GETmk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 15:42:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60546 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755772Ab2GETmi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 15:42:38 -0400
+Date: Thu, 5 Jul 2012 12:44:26 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Chris Mason <chris.mason@fusionio.com>
+Cc: Scan Subscription <scan-subscription@coverity.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "Chris L. Mason" <clmason@fusionio.com>, Bing Zhao <bzhao@marvell.com>,
+        Robert Love <robert.w.love@intel.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Mattia Dongili <malattia@linux.it>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: New Defects based on recent changes in Kernel code found by
+ Coverity Scan
+Message-Id: <20120705124426.c4a2f347.akpm@linux-foundation.org>
+In-Reply-To: <20120705153316.GN14928@shiny>
+References: <829BE905228AE14A9AE1A46E6F2E371605538D039D@VA3DIAXVS891.RED001.local>
+	<20120703152739.ea7df9e6.akpm@linux-foundation.org>
+	<20120705153316.GN14928@shiny>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207052146.55355.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 03, 2012, Rafael J. Wysocki wrote:
-> Hi,
-> 
-> This is a follow-up of the discussion I had with Arnd and Magnus during
-> the LCJ last month.
-> 
-> Namely, one of the limitations of the current generic PM domains code is that
-> pm_genpd_add_callbacks() has to be executed after the device in question has
-> been added to a PM domain.  This means that, if a driver wants to run this
-> routine from its .probe() callback, it cannot be registered before adding
-> the device to the PM domain, which potentially may be a problem when device
-> trees get involved into the system initialization.
-> 
-> For this reason, it is desirable to allow pm_genpd_add_callbacks() to be called
-> for devices that haven't been added to any generic PM domains yet and the
-> following patches attempt to make that happen.
-> 
-> [1/2] Add reference counter for objects used to store PM domains data related
->       to devices.
-> [2/2] Make it possible to call pm_genpd_add_callbacks() before the device is
->       added to a PM domain.
+On Thu, 5 Jul 2012 11:33:16 -0400 Chris Mason <chris.mason@fusionio.com> wrote:
 
-Well, I'm taking the lack of comments as the lack of objections. :-)
+> > > * CID 709112: Dereference after null check - fs/btrfs/ioctl.c, line: 1309 Comparing "device->fs_devices" to null implies that "device->fs_devices" might be null, and then it is deference
+> > > fs/btrfs/ioctl.c:1309
+> > 
+> > Chris.
+> 
+> Thanks for forwarding this.  But I'm a little confused, our line 1309 is
+> this:
+> 
+>         if (device->fs_devices && device->fs_devices->seeding) {
+> 
+> Is coverity telling me that I'm using fs_devices later on in the
+> function without extra checks?  Some functions we call do assume it
+> isn't null, but the seeding devices are special snowflakes. 
 
-Thanks,
-Rafael
+There were more details further down in the email:
+
+> ____________________________________________________________________________________________________________
+> CID 709112: Dereference after null check 
+> 
+> fs/btrfs/ioctl.c:1309
+> 1256 static noinline int btrfs_ioctl_resize(struct btrfs_root *root,
+> 1257                                        void __user *arg)
+> 1258 {
+> ...
+> >>> At conditional (1): "device->fs_devices" taking the false branch.
+> >>> CID 709112: Dereference after null check (FORWARD_NULL) Comparing "device->fs_devices" to null implies that "device->fs_devices" might be null.
+> 1309        if (device->fs_devices && device->fs_devices->seeding) {
+> 1310                printk(KERN_INFO "btrfs: resizer unable to apply on "
+> 1311                       "seeding device %llu\n", devid);
+> 1312                ret = -EINVAL;
+> 1313                goto out_free;
+> 1314        }
+> ...
+> >>> Passing null variable "device->fs_devices" to function "btrfs_grow_device", which dereferences it. 
+> 1367                ret = btrfs_grow_device(trans, device, new_size);
+> 1368                btrfs_commit_transaction(trans, root);
+> 1369        } else if (new_size < old_size) {
+> >>> Passing null variable "device->fs_devices" to function "btrfs_shrink_device", which dereferences it. 
+> 1370                ret = btrfs_shrink_device(device, new_size);
+> 1371        }
+> 1378 }
