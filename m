@@ -1,291 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513Ab2GEBf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 21:35:58 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:25954 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751038Ab2GEBfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 21:35:50 -0400
-X-IronPort-AV: E=Sophos;i="4.77,527,1336320000"; 
-   d="scan'208";a="5330847"
-Message-ID: <4FF4EF8E.4080706@cn.fujitsu.com>
-Date: Thu, 05 Jul 2012 09:36:14 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Mel Gorman <mel@csn.ul.ie>
-CC: Chris Metcalf <cmetcalf@tilera.com>, Len Brown <lenb@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Julia Lawall <julia@diku.dk>,
-        David Howells <dhowells@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, Ingo Molnar <mingo@elte.hu>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Daniel Kiper <dkiper@net-space.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Rik van Riel <riel@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC PATCH 1/3 V1] mm, page_alloc: use __rmqueue_smallest when
- borrow memory from MIGRATE_CMA
-References: <1341386778-8002-1-git-send-email-laijs@cn.fujitsu.com> <1341386778-8002-2-git-send-email-laijs@cn.fujitsu.com> <20120704101737.GL13141@csn.ul.ie> <4FF41E63.4020303@cn.fujitsu.com> <20120704111935.GN13141@csn.ul.ie>
-In-Reply-To: <20120704111935.GN13141@csn.ul.ie>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/05 09:35:40,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/05 09:35:49,
-	Serialize complete at 2012/07/05 09:35:49
+	id S1751536Ab2GEBi1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 21:38:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57386 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841Ab2GEBiY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 21:38:24 -0400
+Message-ID: <1341452295.5435.1.camel@phoenix>
+Subject: [PATCH] regulator: ab3100: Use rdev_get_drvdata() rather than use
+ reg->reg_data driectly
+From: Axel Lin <axel.lin@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Date: Thu, 05 Jul 2012 09:38:15 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2012 07:19 PM, Mel Gorman wrote:
-> On Wed, Jul 04, 2012 at 06:43:47PM +0800, Lai Jiangshan wrote:
->> On 07/04/2012 06:17 PM, Mel Gorman wrote:
->>> On Wed, Jul 04, 2012 at 03:26:16PM +0800, Lai Jiangshan wrote:
->>>> The pages of MIGRATE_CMA can't not be changed to the other type,
->>>> nor be moved to the other free list. 
->>>>
->>>> ==>
->>>> So when we use __rmqueue_fallback() to borrow memory from MIGRATE_CMA,
->>>> one of the highest order page is borrowed and it is split.
->>>> But the free pages resulted by splitting can NOT
->>>> be moved to MIGRATE_MOVABLE.
->>>>
->>>> ==>
->>>> So in the next time of allocation, we NEED to borrow again,
->>>> another one of the highest order page is borrowed from CMA and it is split.
->>>> and results some other new split free pages.
->>>>
->>>
->>> Then special case __rmqueue_fallback() to move pages stolen from
->>> MIGRATE_CMA to the MIGRATE_MOVABLE lists but do not change the pageblock
->>> type.
->>
->> Because unmovable-page-requirement can allocate page from
->> MIGRATE_MOVABLE free list. So We can not move MIGRATE_CMA pages
->> to the MIGRATE_MOVABLE free list.
->>
-> 
-> Ok, good point.
-> 
->> See here:
->>
->> MOVABLE list is empty
->> UNMOVABLE list is empty
->> movable-page-requirement
->> 	borrow from CMA list
->> 	split it, others are put into UNMOVABLE list
->> unmovable-page-requiremnt
->> 	borrow from UNMOVABLE list
->> 	NOW, it is BUG, we use CMA pages for unmovable usage.
->>
-> 
-> The patch still looks unnecessarily complex for what you are trying to
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/ab3100.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-Which is complex in my code? __rmqueue_smallest()? __rmqueue_fallback()?
-
-__rmqueue_smallest() ? I think it is required.
-
-__rmqueue_fallback()?
-It is just a cleanup for __rmqueue_fallback(), CMA is removed out from
-__rmqueue_fallback(), so we can cleanup fallback(). I will remove/split
-the cleanup part of the patch in next round.
-
-> achieve and as a result I'm not reviewing it as carefully as I should.
-> It looks like the entire patch boiled down to this hunk here
-> 
-> +#ifdef CONFIG_CMA
-> +	if (unlikely(!page) && migratetype == MIGRATE_MOVABLE)
-> +		page = __rmqueue_smallest(zone, order, MIGRATE_CMA);
-> +#endif
-> +
-> 
-> With that in place, this would would need to change from
-> 
-> [MIGRATE_MOVABLE]     = { MIGRATE_CMA, MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
-> 
-> to
-> 
-> [MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
-> 
-> because the fallback is already being handled as a special case. Leave
-> the other fallback logic as it is.
-> 
-> This is not tested at all and is only meant to illustrate why I think
-> your patch looks excessively complex for what you are trying to
-> achieve.
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 4beb7ae..0063e93 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -895,11 +895,9 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
->  static int fallbacks[MIGRATE_TYPES][4] = {
->  	[MIGRATE_UNMOVABLE]   = { MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,     MIGRATE_RESERVE },
->  	[MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,     MIGRATE_RESERVE },
-> +	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE,   MIGRATE_RESERVE },
->  #ifdef CONFIG_CMA
-> -	[MIGRATE_MOVABLE]     = { MIGRATE_CMA,         MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
->  	[MIGRATE_CMA]         = { MIGRATE_RESERVE }, /* Never used */
-> -#else
-> -	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE,   MIGRATE_RESERVE },
->  #endif
->  	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE }, /* Never used */
->  	[MIGRATE_ISOLATE]     = { MIGRATE_RESERVE }, /* Never used */
-> @@ -1076,6 +1074,20 @@ static struct page *__rmqueue(struct zone *zone, unsigned int order,
->  
->  retry_reserve:
->  	page = __rmqueue_smallest(zone, order, migratetype);
-> +#ifdef CONFIG_CMA
-> +	if (!unlikely(!page) && migratetype == MIGRATE_MOVABLE) {
-> +
-> +		/*
-> +		 * CMA is a special case where we want to use
-> +		 * the smallest available page instead of splitting
-> +		 * the largest chunks. We still must avoid the pages
-> +		 * moving to MIGRATE_MOVABLE where they might be
-> +		 * used for UNRECLAIMABLE or UNMOVABLE allocations
-> +		 */
-> +		migratetype = MIGRATE_CMA;
-> +		goto retry_reserve;
-> +	}
-> +#endif /* CONFIG_CMA */
->  
->  	if (unlikely(!page) && migratetype != MIGRATE_RESERVE) {
+diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
+index 5f771a8..182b553 100644
+--- a/drivers/regulator/ab3100.c
++++ b/drivers/regulator/ab3100.c
+@@ -155,7 +155,7 @@ ab3100_regulators[AB3100_NUM_REGULATORS] = {
+  */
+ static int ab3100_enable_regulator(struct regulator_dev *reg)
+ {
+-	struct ab3100_regulator *abreg = reg->reg_data;
++	struct ab3100_regulator *abreg = rdev_get_drvdata(reg);
+ 	int err;
+ 	u8 regval;
+ 
+@@ -186,7 +186,7 @@ static int ab3100_enable_regulator(struct regulator_dev *reg)
+ 
+ static int ab3100_disable_regulator(struct regulator_dev *reg)
+ {
+-	struct ab3100_regulator *abreg = reg->reg_data;
++	struct ab3100_regulator *abreg = rdev_get_drvdata(reg);
+ 	int err;
+ 	u8 regval;
+ 
+@@ -219,7 +219,7 @@ static int ab3100_disable_regulator(struct regulator_dev *reg)
+ 
+ static int ab3100_is_enabled_regulator(struct regulator_dev *reg)
+ {
+-	struct ab3100_regulator *abreg = reg->reg_data;
++	struct ab3100_regulator *abreg = rdev_get_drvdata(reg);
+ 	u8 regval;
+ 	int err;
+ 
+@@ -236,7 +236,7 @@ static int ab3100_is_enabled_regulator(struct regulator_dev *reg)
+ 
+ static int ab3100_get_voltage_regulator(struct regulator_dev *reg)
+ {
+-	struct ab3100_regulator *abreg = reg->reg_data;
++	struct ab3100_regulator *abreg = rdev_get_drvdata(reg);
+ 	u8 regval;
+ 	int err;
+ 
+@@ -270,7 +270,7 @@ static int ab3100_get_voltage_regulator(struct regulator_dev *reg)
+ static int ab3100_set_voltage_regulator_sel(struct regulator_dev *reg,
+ 					    unsigned selector)
+ {
+-	struct ab3100_regulator *abreg = reg->reg_data;
++	struct ab3100_regulator *abreg = rdev_get_drvdata(reg);
+ 	u8 regval;
+ 	int err;
+ 
+@@ -299,7 +299,7 @@ static int ab3100_set_voltage_regulator_sel(struct regulator_dev *reg,
+ static int ab3100_set_suspend_voltage_regulator(struct regulator_dev *reg,
+ 						int uV)
+ {
+-	struct ab3100_regulator *abreg = reg->reg_data;
++	struct ab3100_regulator *abreg = rdev_get_drvdata(reg);
+ 	u8 regval;
+ 	int err;
+ 	int bestindex;
+@@ -342,7 +342,7 @@ static int ab3100_set_suspend_voltage_regulator(struct regulator_dev *reg,
+  */
+ static int ab3100_get_voltage_regulator_external(struct regulator_dev *reg)
+ {
+-	struct ab3100_regulator *abreg = reg->reg_data;
++	struct ab3100_regulator *abreg = rdev_get_drvdata(reg);
+ 
+ 	return abreg->plfdata->external_voltage;
+ }
+-- 
+1.7.9.5
 
 
-need to add
-
-+		if (migratetype == MIGRATE_CMA)
-+			migratetype = MIGRATE_MOVABLE;
-
-to restore the migratetype for fallback.
-
-And your code are the same as mine in the view of CPU:
-__rmqueue_smallest(MIGRATE_MOVABLE)
-if failed: __rmqueue_smallest(MIGRATE_CMA)
-if failed: __rmqueue_fallback()
-if failed: __rmqueue_smallest(MIGRATE_RESERVE)
-
-The differences are:
-you just use "goto" instead "if" for instruction control.
-your code are longer.
-the number of branch in your code = mine + 1
-
-My code have better readability:
-Mine:
-
-========================================================================
-	page = __rmqueue_smallest(zone, order, migratetype);
-
-#ifdef CONFIG_CMA
-	if (unlikely(!page) && migratetype == MIGRATE_MOVABLE)
-		page = __rmqueue_smallest(zone, order, MIGRATE_CMA);
-#endif
-
-	if (unlikely(!page))
-		page = __rmqueue_fallback(zone, order, migratetype);
-
-	if (unlikely(!page))
-		page = __rmqueue_smallest(zone, order, MIGRATE_RESERVE);
-
-	trace_mm_page_alloc_zone_locked(page, order, migratetype);
-	return page;
-=====================================================================
-
-Yours:
-
-==================================================================
-retry_reserve:
-	page = __rmqueue_smallest(zone, order, migratetype);
-
-#ifdef CONFIG_CMA
-	if (!unlikely(!page) && migratetype == MIGRATE_MOVABLE) {
-
-		/*
-		 * CMA is a special case where we want to use
-		 * the smallest available page instead of splitting
-		 * the largest chunks. We still must avoid the pages
-		 * moving to MIGRATE_MOVABLE where they might be
-		 * used for UNRECLAIMABLE or UNMOVABLE allocations
-		 */
-		migratetype = MIGRATE_CMA;
-		goto retry_reserve;
-	}
-#endif /* CONFIG_CMA */
-
-
-	if (unlikely(!page) && migratetype != MIGRATE_RESERVE) {
-		if (migratetype == MIGRATE_CMA)
-			migratetype = MIGRATE_MOVABLE;
-
-		page = __rmqueue_fallback(zone, order, migratetype);
-
-		/*
-		 * Use MIGRATE_RESERVE rather than fail an allocation. goto
-		 * is used because __rmqueue_smallest is an inline function
-		 * and we want just one call site
-		 */
-		if (!page) {
-			migratetype = MIGRATE_RESERVE;
-			goto retry_reserve;
-		}
-	}
-
-	trace_mm_page_alloc_zone_locked(page, order, migratetype);
-	return page;
-==========================================================================
-
-How about this one? (just type it in the email client)
-
-#define RMQUEUE_FALLBACK 1024
-int rmqueue_list[3][4] = {
-	[MIGRATE_UNMOVABLE] = { MIGRATE_UNMOVABLE, RMQUEUE_FALLBACK, MIGRATE_RESERVE},
-	[MIGRATE_RECLAIMABLE] = { MIGRATE_RECLAIMABLE, RMQUEUE_FALLBACK, MIGRATE_RESERVE},
-	[MIGRATE_MOVABLE] = {MIGRATE_MOVABLE, MIGRATE_CMA, RMQUEUE_FALLBACK, MIGRATE_RESERVE},
-}
-
-static struct page *__rmqueue(struct zone *zone, unsigned int order,
-						int migratetype)
-{
-	struct page *page;
-	int i, mt;
-
-	for (i = 0; ; i++) {
-		mt = rmqueue_list[migratetype][i];
-		if (likely(mt != RMQUEUE_FALLBACK)
-			page = __rmqueue_smallest(zone, order, mt);
-		else
-			page = __rmqueue_fallback(zone, order, migratetype);
-
-		/* MIGRATE_RESERVE is always the last one */
-		if (likely(page) || (mt == MIGRATE_RESERVE))
-			break;
-	}
-
-	trace_mm_page_alloc_zone_locked(page, order, migratetype);
-	return page;
-}
-
-Thanks,
-Lai
-
-
->  		page = __rmqueue_fallback(zone, order, migratetype);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
 
