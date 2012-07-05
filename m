@@ -1,50 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933114Ab2GENzk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 09:55:40 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40900 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694Ab2GENzh (ORCPT
+	id S1756537Ab2GEN5Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 09:57:24 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47427 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751645Ab2GEN5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 09:55:37 -0400
-Message-ID: <4FF59CD5.3030007@linaro.org>
-Date: Thu, 05 Jul 2012 14:55:33 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Thu, 5 Jul 2012 09:57:23 -0400
+Date: Thu, 5 Jul 2012 14:57:20 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de, sameo@linux.intel.com
+Subject: Re: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device
+ registration
+Message-ID: <20120705135719.GK4111@opensource.wolfsonmicro.com>
+References: <20120705120600.GT4111@opensource.wolfsonmicro.com>
+ <4FF58571.2090807@linaro.org>
+ <20120705122947.GY4111@opensource.wolfsonmicro.com>
+ <4FF58B68.5000703@linaro.org>
+ <20120705124549.GD4111@opensource.wolfsonmicro.com>
+ <4FF58ED6.40106@linaro.org>
+ <20120705130306.GI4111@opensource.wolfsonmicro.com>
+ <4FF592A9.5050706@linaro.org>
+ <20120705132021.GJ4111@opensource.wolfsonmicro.com>
+ <4FF59C7C.5020406@linaro.org>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Subject: Re: [PATCH 3/9] ARM: ux500: Remove AB8500 regulator register initialisation
- information
-References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org> <1341493572-29735-4-git-send-email-lee.jones@linaro.org> <201207051351.03115.arnd@arndb.de>
-In-Reply-To: <201207051351.03115.arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="m699nQIRt8EJjqXo"
+Content-Disposition: inline
+In-Reply-To: <4FF59C7C.5020406@linaro.org>
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/12 14:51, Arnd Bergmann wrote:
-> On Thursday 05 July 2012, Lee Jones wrote:
->> There is no need to initialise the AB8500's regulator registers, as
->> most of this work is already carried out by framework features, so
->> we can safely remove all traces from platform code.
->>
->> Signed-off-by: Lee Jones <lee.jones@linaro.org>
->
-> It makes sense, but this patch is basically a revert of dfa3a824d
-> "mach-ux500: provide ab8500 init vector" from Bengt Jonsson, so
-> it would be nice to get an Ack from him.
 
-Good idea.
+--m699nQIRt8EJjqXo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+On Thu, Jul 05, 2012 at 02:54:04PM +0100, Lee Jones wrote:
+> On 05/07/12 14:20, Mark Brown wrote:
 
+[Moving registration to the MFD]
+> >But surely this would, if anything, remove code?  You already have the
+> >code to do the registration in the MFD so all you're going to be doing
+> >here is removing the code from
 
+> No, it will add platform code if we were to register the ab8500 from
+> the platform area.
+
+Why would this be the case?  You've already got registration code in
+there for use in DT...
+
+> >Hrm, the usual pattern for this stuff is that the DT is parsed into
+> >platform data so the DT code is isolated to the parser.  It sounds like
+> >you've got a very different structure here?
+
+> Yes we do. Ref that commit ID I sent you you a few days ago:
+
+> 5f3fc8adeec9bb12742fbfa777fa1947deda21a2
+
+This doesn't appear to reference the platform data?
+
+> >Well, it also introduces code into mainline which is likely to be used
+> >as a template by other people - I'd be especially worried about the next
+> >ST platform ending up repeating the same mistakes.
+
+> There are no mistakes. It would work for other platforms. :)
+
+Working and good idea aren't the same thing!
+
+--m699nQIRt8EJjqXo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP9Z05AAoJEBus8iNuMP3do6QP+gIxSki4ElN2hS/GZdCDHv+t
+F+jqjZjuJhianWek10dFwJywbWSOxQbUbWCbwLlyMzCk2vfloBYH17c4b3ivi3/7
+W6MklO8aIof/mRsxFtp2GkaMPRWsaPNVyamAKy/kKSqqMgg49kC3nVVl946Lnzyp
+EPPoMozirEttf9V4uowga7MxUYHpD5ARhgrJjjCmHHuCOdmkukRfSpA63isQmWLb
+HvcNTivVESqv/BJG8McYpYPEvg7UJSg5tV/SULqPTAQgz7GGqvPqlVlarFRODlh8
+OlfGX6NXUdwaQBtsSb7/0jZXjxSVkAZahowSG9oCtBrw6qVGNjIdbShHyNiPjIdQ
+RV0dVSc2fAtiHmP7zRrdmJcvRcW/V0sXzOEa5Q9qPDOA4DjbdAvJ2Ps3BdLpqz8/
+yQuxYC9zGiFC5fbwvv0S7tqZ+phcbZYUv5x+3Lxa7YGcY8W7snlaGTtjEpEWCaQd
+YypbfzGHww93OaDiWRsuOdozCG26ZdSYW1qnmCBiK9vIgV/N2abC4YcEbwyhCXZ8
+Bj8eyb5uULRUzvgiunL06rwiNgUYGmJHkElLLuT1y5ff6+xlcI5N1k8kOG9fO85u
+XhKzPCoKb9HHzqI1b19bLOJsuNx34XcraRxYnFcg72zuwQYwEr2Q0f4sYdU+Sk5T
++RhD+TgKdKWwV1TVM3TQ
+=0OEa
+-----END PGP SIGNATURE-----
+
+--m699nQIRt8EJjqXo--
