@@ -1,106 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab2GEVwO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 17:52:14 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:55179 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756214Ab2GEVwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 17:52:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH] PCI / PM: Restore the original behavior of pci_set_power_state()
-Date: Thu, 5 Jul 2012 23:57:44 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linux-pci" <linux-pci@vger.kernel.org>,
-        Huang Ying <ying.huang@intel.com>
-References: <201206281201.02414.rjw@sisk.pl> <CAErSpo7yM3p7+pGuvhBMMsffGTVKF77=MCgfiN1OYr2sB259JA@mail.gmail.com>
-In-Reply-To: <CAErSpo7yM3p7+pGuvhBMMsffGTVKF77=MCgfiN1OYr2sB259JA@mail.gmail.com>
+	id S1756768Ab2GEWBF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 18:01:05 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:37137 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755616Ab2GEWBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 18:01:03 -0400
+Date: Thu, 5 Jul 2012 18:00:40 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matt Mackall <mpm@selenic.com>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>, w@1wt.eu,
+        ewust@umich.edu, zakir@umich.edu, greg@kroah.com, nadiah@cs.ucsd.edu,
+        jhalderm@umich.edu, tglx@linutronix.de, davem@davemloft.net,
+        stable@kernel.org
+Subject: Re: [PATCH 01/10] random: make 'add_interrupt_randomness()' do
+ something sane
+Message-ID: <20120705220040.GA15685@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Matt Mackall <mpm@selenic.com>,
+	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+	w@1wt.eu, ewust@umich.edu, zakir@umich.edu, greg@kroah.com,
+	nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
+	davem@davemloft.net, stable@kernel.org
+References: <1341511933-11169-1-git-send-email-tytso@mit.edu>
+ <1341511933-11169-2-git-send-email-tytso@mit.edu>
+ <1341514078.4020.1213.camel@calx>
+ <CA+55aFyMYVLCW0OYTVttkjjOwyu9VgDM9haNC=BeoRCEiWWNPQ@mail.gmail.com>
+ <1341524367.4020.1324.camel@calx>
+ <CA+55aFxAe1pRN+jvdLveHQ+nNRNC6HDZ+S4Y9P202rxgNLN8pg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207052357.44494.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxAe1pRN+jvdLveHQ+nNRNC6HDZ+S4Y9P202rxgNLN8pg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 05, 2012, Bjorn Helgaas wrote:
-> On Thu, Jun 28, 2012 at 4:01 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
+On Thu, Jul 05, 2012 at 02:47:52PM -0700, Linus Torvalds wrote:
+> On Thu, Jul 5, 2012 at 2:39 PM, Matt Mackall <mpm@selenic.com> wrote:
 > >
-> > Commit cc2893b6 (PCI: Ensure we re-enable devices on resume)
-> > addressed the problem with USB not being powered after resume on
-> > recent Lenovo machines, but it did that in a suboptimal way.
-> > Namely, it should have changed the relevant code paths only,
-> > which are pci_pm_resume_noirq() and pci_pm_restore_noirq() supposed
-> > to restore the device's power and standard configuration registers
-> > after system resume from suspend or hibernation.  Instead, however,
-> > it modified pci_set_power_state() which is executed in several
-> > other situations too.  That resulted in some undesirable effects,
-> > like attempting to change a device's power state in the same way
-> > multiple times in a row (up to as many as 4 times in a row in the
-> > snd_hda_intel driver).
-> >
-> > Fix the bug addressed by commit cc2893b6 in an alternative way,
-> > by forcibly powering up all devices in pci_pm_default_resume_early(),
-> > which is called by pci_pm_resume_noirq() and pci_pm_restore_noirq()
-> > to restore the device's power and standard configuration registers,
-> > and modifying pci_pm_runtime_resume() to avoid the forcible power-up
-> > if not necessary.  Then, revert the changes made by commit cc2893b6
-> > to make the confusion introduced by it go away.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > ---
-> >  drivers/pci/pci-driver.c |   14 ++++++++------
-> >  drivers/pci/pci.c        |   19 ++++++++++++++++++-
-> >  drivers/pci/pci.h        |    1 +
-> >  3 files changed, 27 insertions(+), 7 deletions(-)
-> >
-> > Index: linux/drivers/pci/pci.c
-> > ===================================================================
-> > --- linux.orig/drivers/pci/pci.c
-> > +++ linux/drivers/pci/pci.c
-> > @@ -662,6 +662,19 @@ void pci_update_current_state(struct pci
-> >  }
-> >
-> >  /**
-> > + * pci_power_up - Put the given device into D0 forcibly
-> > + * @dev: PCI device to power up
-> > + */
-> > +void pci_power_up(struct pci_dev *dev)
-> > +{
-> > +       if (platform_pci_power_manageable(dev))
-> > +               platform_pci_set_power_state(dev, PCI_D0);
-> > +
-> > +       pci_raw_set_power_state(dev, PCI_D0);
-> > +       pci_update_current_state(dev, PCI_D0);
-> > +}
-> > +
-> > +/**
-> >   * pci_platform_power_transition - Use platform to change device power state
-> >   * @dev: PCI device to handle.
-> >   * @state: State to put the device into.
-> > @@ -707,7 +720,7 @@ static void __pci_start_power_transition
-> >   */
-> >  int __pci_complete_power_transition(struct pci_dev *dev, pci_power_t state)
-> >  {
-> > -       return state >= PCI_D0 ?
-> > +       return state > PCI_D0 ?
-> >                         pci_platform_power_transition(dev, state) : -EINVAL;
+> > From my read, this code path gets called on timer interrupts too.
 > 
-> This hunk conflicted with Huang's D3_COLD patches.  I fixed it up; can
-> you check and make sure I did it correctly?
+> That's hopefully never true for any normal cases (timers are *very*
+> special - they tend to go through their own architecture-specific
+> stuff). On modern PC's, for example, the timers happen through the
+> local apic timers directly.
 > 
-> I pushed the resolution to here:
-> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git on the
-> pci/rafael-pci_set_power_state-rebase branch.
+> In fact, with SMP, it's a really bad idea to use a normal irq for
+> timer interrupts, since you really really want per-CPU-core timers.
+> 
+> But yes, we should probably make sure that *if* the architecture uses
+> regular interrupts for timers we don't count them. The problematic
+> embedded platforms are often pretty crap hardware: even when they are
+> SMP, they might use an external timer irq (and then we broadcast the
+> thing). I think we have the IRQF_TIMER flag for that, so we could add
+> a check for that.
 
-Yes, it looks good.  The point is to make __pci_complete_power_transition()
-return the error code for PCI_DO too.
+Like this?
 
-Thanks,
-Rafael
+						- Ted
+
+diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
+index 8270db0..0ce4863 100644
+--- a/kernel/irq/handle.c
++++ b/kernel/irq/handle.c
+@@ -133,7 +133,7 @@ irqreturn_t
+ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
+ {
+ 	irqreturn_t retval = IRQ_NONE;
+-	unsigned int random = 0, irq = desc->irq_data.irq;
++	unsigned int random = 1, irq = desc->irq_data.irq;
+ 
+ 	do {
+ 		irqreturn_t res;
+@@ -161,7 +161,8 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
+ 
+ 			/* Fall through to add to randomness */
+ 		case IRQ_HANDLED:
+-			random |= action->flags;
++			if (action->flags & __IRQF_TIMER)
++				random = 0;
+ 			break;
+ 
+ 		default:
+@@ -172,7 +173,8 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
+ 		action = action->next;
+ 	} while (action);
+ 
+-	add_interrupt_randomness(irq);
++	if (random)
++		add_interrupt_randomness(irq);
+ 
+ 	if (!noirqdebug)
+ 		note_interrupt(irq, desc, retval);
