@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab2GEMfc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 08:35:32 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35656 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753630Ab2GEMfb (ORCPT
+	id S1756270Ab2GEMgV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 08:36:21 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:56067 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182Ab2GEMgU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 08:35:31 -0400
-Date: Thu, 5 Jul 2012 13:35:24 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: ab3100: Use rdev_get_drvdata() rather than
- use reg->reg_data driectly
-Message-ID: <20120705123524.GA4111@opensource.wolfsonmicro.com>
-References: <1341452295.5435.1.camel@phoenix>
+	Thu, 5 Jul 2012 08:36:20 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fIj/D6Y6BN1okdX1"
-Content-Disposition: inline
-In-Reply-To: <1341452295.5435.1.camel@phoenix>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120531111247.GA9089@faui49q.informatik.uni-erlangen.de>
+References: <20120531111247.GA9089@faui49q.informatik.uni-erlangen.de>
+Date: Thu, 5 Jul 2012 14:36:19 +0200
+Message-ID: <CACRpkdZQrwihHFK3nhoBfbMy_L+mAH+XxtYiAE-r_Mc3Dq6L7A@mail.gmail.com>
+Subject: Re: [PATCH] gpio/msm_v1: CONFIG_GPIO_MSM_V1 is only available on
+ three SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, vamos-dev@lists.cs.fau.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 31, 2012 at 1:12 PM, Christian Dietrich
+<christian.dietrich@informatik.uni-erlangen.de> wrote:
 
---fIj/D6Y6BN1okdX1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> The feature GPIO_MSM_V1 is only available on three SoCs. On all other MSM SoCs
+> the INT_GPIO_GROUP{1,2} is undeclared, but Kconfig does allow such
+> configurations. Therefore the produced configuration is valid, but does not
+> compile. The problem is fixed by adding the missing Kconfig constraints.
+>
+> drivers/gpio/gpio-msm-v1.c: In function â  msm_init_gpioâ  :
+> drivers/gpio/gpio-msm-v1.c:629:26: error: 'INT_GPIO_GROUP1' undeclared
+> drivers/gpio/gpio-msm-v1.c:630:26: error: 'INT_GPIO_GROUP2' undeclared
+>
+> Signed-off-by: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
 
-On Thu, Jul 05, 2012 at 09:38:15AM +0800, Axel Lin wrote:
+Applied.
 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-
-Applied, thanks.
-
---fIj/D6Y6BN1okdX1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP9YnvAAoJEBus8iNuMP3dEhUP/1epLn7c5p3+kxolR2qA5yxT
-4fhxgeSuDKbU38ws2OVV5H8uZm68uInv2ohta3g6JJYGtY8egWe0gcT61CeSQjlK
-JOil/wAyJ66ZyJUtjqI1BoJsGC9pCr647mHxid5ZdviO32zLCRalsWiPJvAbTklz
-buIJ9AT7zWfCR2Ig8K3bVauNmB/y4395A+dW+CObW/lYxNnnMNXx7Vtz0j5EfGkQ
-/plH8rrE3x1N95YfUvcqxxF3R33BFY2H9/srX9X5FeTI/Xki/7ia3ah0wBqJC+z3
-w4D6yBdYxLil9CSCKPN621dFs2A3NmkFoQrThLXkQKaQAhhoZ0Fox7H1NzHbCuAp
-jIbT1TZKJAQgkINsxWxtC9OXkm5xNAaP24Y6WQRfto8Y+6i+RzQU/DT2RLISasAL
-fh0lylRPn2gw2IxzUSEx+MGVS4p0kujOaefUL8kToGV79gUSsdTsLWtIxifINHt2
-dKPpYl6yyYca0WatF6nWi/wde3N9JtVYryNi5+tnhJUkAOBx4wNmcD9fo506bXX9
-ovQ7TOHXnf5R7He993WGuzISXQNhrbSuFmFQRoQ/1Hc8EpwH6Yeh4ko5dljlTvRF
-MKMQI6DFMrvU3hMVm91MLHMt9nd1zNo3ebm/WbJCJcrmjoCkFgp03HbePc25+80T
-n5QDJxkEfQhUV9EKRg+o
-=hXhJ
------END PGP SIGNATURE-----
-
---fIj/D6Y6BN1okdX1--
+Thanks,
+Linus Walleij
