@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab2GEDJN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 23:09:13 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50672 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab2GEDJM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 23:09:12 -0400
-X-AuditID: 9c93016f-b7c7eae0000025c5-c3-4ff505558392
-From: Namhyung Kim <namhyung@kernel.org>
-Newsgroups: gmane.linux.kernel
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [Question] sched: Is nsecs_to_cputime valid?
-Date: Thu, 05 Jul 2012 12:05:01 +0900
-Message-ID: <87txxmlxgi.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
-Cancel-Lock: sha1:Gd8w0aFr/v1nYr3dPPt+4OVP+S4=
-MIME-Version: 1.0
-Content-Type: text/plain
-Posted-To: gmane.linux.kernel
-X-Brightmail-Tracker: AAAAAA==
+	id S1752709Ab2GEDMr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 23:12:47 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:44356 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751403Ab2GEDMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 23:12:44 -0400
+Message-ID: <1341457963.2058.13.camel@joe2Laptop>
+Subject: Re: [PATCH 4 2/4] NET ethernet introduce mac_platform helper
+From: Joe Perches <joe@perches.com>
+To: Andy Green <andy.green@linaro.org>
+Cc: linux-omap@vger.kernel.org, s-jan@ti.com, arnd@arndb.de,
+        patches@linaro.org, tony@atomide.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Wed, 04 Jul 2012 20:12:43 -0700
+In-Reply-To: <20120705024446.26317.49693.stgit@build.warmcat.com>
+References: <20120705024259.26317.16000.stgit@build.warmcat.com>
+	 <20120705024446.26317.49693.stgit@build.warmcat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following message is a courtesy copy of an article
-that has been posted to gmane.linux.kernel as well.
+On Thu, 2012-07-05 at 10:44 +0800, Andy Green wrote:
+> From: Andy Green <andy@warmcat.com>
+> 
+> This introduces a small helper in net/ethernet, which registers a network
+> notifier at core_initcall time, and accepts registrations mapping expected
+> asynchronously-probed network device paths (like, "usb1/1-1/1-1.1/1-1.1:1.0")
+> and the MAC that is needed to be assigned to the device when it appears.
 
-Hi,
+The mac prefix is poor.  I think eth_mac is better.
 
-When I look at kernel/sched/core.c, I found a dubious bit on the 
-nsecs_to_cputime macro. It's defined as:
+[]
 
-#ifndef nsecs_to_cputime
-# define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
-#endif
+> diff --git a/net/ethernet/mac-platform.c b/net/ethernet/mac-platform.c
+[]
+> +static int mac_platform_netdev_event(struct notifier_block *this,
+> +						unsigned long event, void *ptr)
 
-While default implementation of jiffies_to_cputime (in
-include/asm-generic/cputime.h) returns just the same vaule (w/
-casting), some arch's (ia64, ppc and s390) define their own ones.
-So nsecs_to_cputime on those arch's will end up returning time in
-jiffies rather than cputime.
+alignment to parenthesis please.
 
-I see it depends on CONFIG_VIRT_CPU_ACCOUTING and ia64 and ppc use
-the default j_to_ct when not defined. But it seems it's not obvious for
-s390. Anyway I think converting the return value to cputime again is
-need for self-containedness.
+[]
 
-Am I missing something?
+> +int mac_platform_register_device_macs(const struct mac_platform *macs)
+> +{
+[]
+> +		next = kmalloc(sizeof(struct mac_platform), GFP_KERNEL);
+> +		if (!next) {
+> +			ret = -ENOMEM;
+> +			goto bail;
+> +		}
+> +
+> +		next->device_path = kmalloc(strlen(macs->device_path) + 1,
+> +								   GFP_KERNEL);
+> +		if (!next->device_path) {
+> +			ret = -ENOMEM;
+> +			goto bail;
+> +		}
+> +
+> +		strcpy(next->device_path, macs->device_path);
+> +		memcpy(next->mac, macs->mac, sizeof macs->mac);
 
-Thanks,
-Namhyung
+kmemdup and kstrdup()
+
+> +		list_add(&next->list, &mac_platform_list);
+> +
+> +		macs++;
+> +	}
+> +
+> +bail:
+> +	mutex_unlock(&mac_platform_mutex);
+> +
+> +	return ret;
+> +}
+
+leaking memory on failures.
+
+
