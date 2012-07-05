@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab2GEDAB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 23:00:01 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44015 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977Ab2GEDAA (ORCPT
+	id S1752646Ab2GEDJN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 23:09:13 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50672 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550Ab2GEDJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 23:00:00 -0400
+	Wed, 4 Jul 2012 23:09:12 -0400
+X-AuditID: 9c93016f-b7c7eae0000025c5-c3-4ff505558392
+From: Namhyung Kim <namhyung@kernel.org>
+Newsgroups: gmane.linux.kernel
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [Question] sched: Is nsecs_to_cputime valid?
+Date: Thu, 05 Jul 2012 12:05:01 +0900
+Message-ID: <87txxmlxgi.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+Cancel-Lock: sha1:Gd8w0aFr/v1nYr3dPPt+4OVP+S4=
 MIME-Version: 1.0
-In-Reply-To: <1341372710-14648-1-git-send-email-amwang@redhat.com>
-References: <20120703152739.ea7df9e6.akpm@linux-foundation.org>
-	<1341372710-14648-1-git-send-email-amwang@redhat.com>
-Date: Wed, 4 Jul 2012 19:59:58 -0700
-X-Google-Sender-Auth: SX-rsn8kY4Dr97lDmfM4COG-zBI
-Message-ID: <CAGXu5jKjTcOdZLFa=weSNne8dn5s3xC3cy1DixFzC6Wmm1aHZA@mail.gmail.com>
-Subject: Re: [Patch] kernel/sys.c: fix an incorrect error branch in orderly_poweroff()
-From: Kees Cook <keescook@chromium.org>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain
+Posted-To: gmane.linux.kernel
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 3, 2012 at 8:31 PM, Cong Wang <amwang@redhat.com> wrote:
-> From: WANG Cong <xiyou.wangcong@gmail.com>
->
-> When argv_split() fails, argv is NULL, thus we should avoid calling
-> agrv_free(argv), and should jump after it.
->
-> Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
-> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+The following message is a courtesy copy of an article
+that has been posted to gmane.linux.kernel as well.
 
-Good catch!
+Hi,
 
-Acked-by: Kees Cook <keescook@chromium.org>
+When I look at kernel/sched/core.c, I found a dubious bit on the 
+nsecs_to_cputime macro. It's defined as:
 
--- 
-Kees Cook
-Chrome OS Security
+#ifndef nsecs_to_cputime
+# define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
+#endif
+
+While default implementation of jiffies_to_cputime (in
+include/asm-generic/cputime.h) returns just the same vaule (w/
+casting), some arch's (ia64, ppc and s390) define their own ones.
+So nsecs_to_cputime on those arch's will end up returning time in
+jiffies rather than cputime.
+
+I see it depends on CONFIG_VIRT_CPU_ACCOUTING and ia64 and ppc use
+the default j_to_ct when not defined. But it seems it's not obvious for
+s390. Anyway I think converting the return value to cputime again is
+need for self-containedness.
+
+Am I missing something?
+
+Thanks,
+Namhyung
