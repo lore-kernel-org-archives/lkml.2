@@ -1,82 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203Ab2GEKlZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 06:41:25 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43300 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755613Ab2GEKlX (ORCPT
+	id S932216Ab2GEKpe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 06:45:34 -0400
+Received: from mailxx.hitachi.co.jp ([133.145.228.50]:49861 "EHLO
+	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754245Ab2GEKpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 06:41:23 -0400
-Date: Thu, 5 Jul 2012 11:41:21 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Alex Courbot <acourbot@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH] pwm-backlight: add regulator and GPIO support
-Message-ID: <20120705104120.GP4111@opensource.wolfsonmicro.com>
-References: <4FF43692.2040805@nvidia.com>
- <20120704130056.GC30009@pengutronix.de>
- <4FF45DDF.9000306@nvidia.com>
- <20120704152451.GA7333@sirena.org.uk>
- <4FF4FDC0.8020405@nvidia.com>
- <20120705062011.GI30009@pengutronix.de>
- <4FF53368.6090805@nvidia.com>
- <20120705064742.GL30009@pengutronix.de>
- <4FF5459F.5090201@nvidia.com>
- <20120705080234.GQ30009@pengutronix.de>
+	Thu, 5 Jul 2012 06:45:32 -0400
+X-AuditID: b753bd60-9aaf3ba000000f6c-ab-4ff56fc7a1a4
+X-AuditID: b753bd60-9aaf3ba000000f6c-ab-4ff56fc7a1a4
+From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Subject: [RFC PATCH 0/5] fuse: make maximum read/write request size tunable
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
+Date: Thu, 05 Jul 2012 19:50:17 +0900
+Message-ID: <20120705105017.17812.95542.stgit@ltc137.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TJXgsAvz6ds/es3G"
-Content-Disposition: inline
-In-Reply-To: <20120705080234.GQ30009@pengutronix.de>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---TJXgsAvz6ds/es3G
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This patch series make maximum read/write request size tunable in FUSE.
+Currently, it is limited to FUSE_MAX_PAGES_PER_REQ which is equal
+to 32 pages. It is required to change it in order to improve the
+throughput since optimized value depends on various factors such
+as type and version of local filesystems used and HW specs, etc.
 
-On Thu, Jul 05, 2012 at 10:02:34AM +0200, Sascha Hauer wrote:
+In addition, recently FUSE is widely used as a gateway to connect
+cloud storage services and distributed filesystems. Larger data
+might be stored in them over networking via FUSE and the overhead
+might affect the throughput.
 
-> So here the regulator core knows that there is no regulator and never
-> will be. All that needs to be done is to make _regulator_get look at
-> that value.
+It seems there were many requests to increase FUSE_MAX_PAGES_PER_REQ
+to improve the throughput, as follows.
 
-> There may be some side effects if we just return ERR_PTR(-ENODEV) when
-> regulator_dev_lookup returns -ENODEV. Maybe Mark has some comments to
-> this.
+http://sourceforge.net/mailarchive/forum.php?thread_name=4FC2F7A1.4010609%40gmail.com&forum_name=fuse-devel
 
-I'm concerned about how this is going to interact with all the plans
-people have for dynamically loading device tree fragments during
-enumeration.
+http://old.nabble.com/-Fuse-2.8--big_write-option---%3E-128kb-write-syscall-...-howto-set-higher-value-td22292589.html
 
---TJXgsAvz6ds/es3G
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+http://old.nabble.com/Block-size-%3E128k-td18675772.html
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+These discussions mention how to change both FUSE kernel and libfuse
+sources such as FUSE_MAX_PAGES_PER_REQ and MIN_BUFSIZE, but the
+changed and increased values have not been default yet. We guess this
+is because it will be applied to the FUSE filesystems that do not need
+the increased value.
 
-iQIcBAEBAgAGBQJP9W9KAAoJEBus8iNuMP3dUY4P/j5wq6gybou5u54WfhT9wwao
-4rDLwZfWtNTQCUTpCZpL774gDIG6H4xnGGEt5pVzC3Xun4VI7wao4+OPzfmViNSC
-kc3d9Ei6Yy8TAc/ixb4vl96C3swBLZt3M4/FRHQthxzqzWixzIIrNZPrJYQWYWj+
-4AC6d5F/quSeUPcrmZM45mJbCNjbDZEBImiLmUnKvSpf9mCTTGtG0Nish0uj6XI3
-uHcGwRzYM1yIx4n44sKaO5bfM85WonxRfXspzLJ7cdt/J0llcHFfIJLmDpo4xkJb
-6CQSngYa8PvKuX2okmyWnP9HwHydBSRij+254MrfPWEQK2UTFRspfDJuYcwWJ9e6
-WZoM8A0iEFIDtyCppeOGYxHbdC+1LSOZUX2DwkmALy5IvPx1gcV/Wx/qblZE3g3N
-a9VbgV4BW8NWYca7LtKgZ90ts5fDb4Hx8YjZ/vGp0kczRl2AWaAOKVDqRGzXagFc
-ALLIDW041ZB7zRipMlZHZIng1GrHz0eK263tof8CrDf7ZA0z56+3hVqKm52nTasB
-SadR5xlAerSo9DqZzNydlP5zoHQt+DTNh42b0OrJ97aTwFRGmZH+pzoiV3iriwZV
-ec1cS6Avsd9vlH0K5z8pmbQ7sb1rS9xrYiVOg66zv+fTnnjlHlX0kbn99JfwBlqf
-ADyZyGINt8kCSVzXrdtL
-=PCGP
------END PGP SIGNATURE-----
+One of the ways to solve this is to make them tunable.
+In this series, the new sysfs parameter max_pages_per_req is introduced.
+It limits the maximum read/write size in fuse request and it can be
+changed from 32 to 256 pages in current implementations. When the
+max_read/max_write mount option is specified, FUSE request size is set
+per mount. (The size is rounded-up to page size and limited up to
+max_pages_per_req.)
 
---TJXgsAvz6ds/es3G--
+We think the sysfs parameter control is required, as follows.
+
+- The libfuse should change the current MIN_BUFSIZE limitation according
+  to this value. If not, The libfuse must always set it to the maximum
+  request limit (= [256 pages * 4KB + 0x1000] in current implementation),
+  which leads to waste of memory.
+
+The 32 pages are set by default. Here, we use 256 pages as the hardlimit
+in order to make maximum size of struct fuse_req within a page size (4KB).
+However, we don't think it is the best value. Any comments are appreciated.
+
+Also, the patch set for libfuse to change current MIN_BUFSIZE limitation
+according to the sysfs parameter will be sent soon.
+
+
+* Performance example
+
+We evaluated the performance improvement due to this patch series.
+FUSE filesystems are mounted on tmpfs and we measured the read/write
+throughput using 512MB random data.
+
+The results of average read/write throughtput are shown as follows.
+ - we measured 10 times throughput for read and write operations,
+   and calculated their average.
+
+** write
+
+For without direct_io option,
+# of pages   |original(32)|tuning(32)|(64)  |(128) |(256)
+---------------------------------------------------------
+thruput(MB/s)|402.43      | 398.23   |441.86|485.41|525.78
+
+
+For with direct_io option,
+# of pages   |original(32)|tuning(32)|(64)  |(128) |(256)
+---------------------------------------------------------
+thruput(MB/s)|556.48      | 562.90   |611.74|722.18|743.43
+
+
+** read
+
+For without direct_io option, there is no deference between
+original 32 pages and tuning patches since the read request size
+does not changed even if changing the sysfs parameter.
+
+
+For with direct_io option,
+# of pages   |original(32)|tuning(32)|(64)  |(128) |(256)
+---------------------------------------------------------
+thruput(MB/s)|509.58      | 509.46   |592.43|640.04|677.26
+
+
+ From these evaluations, this patch series can improve the
+performance with an increase of the sysfs parameter. In
+particular, the read/write throughput with direct_io achieves
+a high improvement. These are just an exmaple and the results
+may be changed in different systems. Therefore, we think
+a tunable functionality of read/write request size is useful.
+
+Thanks,
+
+---
+
+Mitsuo Hayasaka (5):
+      fuse: add documentation of sysfs parameter to limit maximum fuse request size
+      fuse: add a sysfs parameter to control maximum request size
+      fuse: make default global limit minimum value
+      fuse: do not create cache for fuse request allocation
+      fuse: make maximum read/write request size tunable
+
+
+ Documentation/filesystems/fuse.txt |   17 ++++++-
+ fs/fuse/dev.c                      |   48 ++++++-------------
+ fs/fuse/file.c                     |   32 +++++++------
+ fs/fuse/fuse_i.h                   |   34 +++++++++----
+ fs/fuse/inode.c                    |   91 +++++++++++++++++++++++++++++++++---
+ 5 files changed, 155 insertions(+), 67 deletions(-)
+
+-- 
+Mitsuo Hayasaka (mitsuo.hayasaka.hu@hitachi.com)
