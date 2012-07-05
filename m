@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab2GEQCQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 12:02:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49372 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103Ab2GEQCN (ORCPT
+	id S1752709Ab2GEQDZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 12:03:25 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10898 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab2GEQDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 12:02:13 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: snitzer@redhat.com, david@fromorbit.com, dm-devel@redhat.com,
-        xfs@oss.sgi.com, hch@lst.de, martin.petersen@oracle.com,
-        axboe@kernel.dk, vgoyal@redhat.com
-Subject: [PATCH v3 1/2] block: reorganize rounding of max_discard_sectors
-Date: Thu,  5 Jul 2012 18:01:43 +0200
-Message-Id: <1341504104-1674-2-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1341504104-1674-1-git-send-email-pbonzini@redhat.com>
-References: <1341504104-1674-1-git-send-email-pbonzini@redhat.com>
+	Thu, 5 Jul 2012 12:03:23 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 05 Jul 2012 09:03:13 -0700
+Message-ID: <4FF5BAB2.40007@nvidia.com>
+Date: Thu, 5 Jul 2012 21:32:58 +0530
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "mturquette@ti.com" <mturquette@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Subject: Re: [PATCH v2 0/6] Port Tegra to generic clk framework
+References: <1341313761-22118-1-git-send-email-pgaikwad@nvidia.com> <4FF31DFC.8030708@wwwdotorg.org> <4FF3D6BD.1000509@nvidia.com> <4FF5B378.6030305@wwwdotorg.org>
+In-Reply-To: <4FF5B378.6030305@wwwdotorg.org>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mostly a preparation for the next patch.
-
-In principle this fixes an infinite loop if max_discard_sectors < granularity,
-but that really shouldn't happen.
-
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- block/blk-lib.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index 2b461b4..16b06f6 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -44,6 +44,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 	struct request_queue *q = bdev_get_queue(bdev);
- 	int type = REQ_WRITE | REQ_DISCARD;
- 	unsigned int max_discard_sectors;
-+	unsigned int granularity;
- 	struct bio_batch bb;
- 	struct bio *bio;
- 	int ret = 0;
-@@ -54,18 +55,18 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
- 	if (!blk_queue_discard(q))
- 		return -EOPNOTSUPP;
- 
-+	/* Zero-sector (unknown) and one-sector granularities are the same.  */
-+	granularity = max(q->limits.discard_granularity >> 9, 1U);
-+
- 	/*
- 	 * Ensure that max_discard_sectors is of the proper
- 	 * granularity
- 	 */
- 	max_discard_sectors = min(q->limits.max_discard_sectors, UINT_MAX >> 9);
-+	max_discard_sectors = round_down(max_discard_sectors, granularity);
- 	if (unlikely(!max_discard_sectors)) {
- 		/* Avoid infinite loop below. Being cautious never hurts. */
- 		return -EOPNOTSUPP;
--	} else if (q->limits.discard_granularity) {
--		unsigned int disc_sects = q->limits.discard_granularity >> 9;
--
--		max_discard_sectors &= ~(disc_sects - 1);
- 	}
- 
- 	if (flags & BLKDEV_DISCARD_SECURE) {
--- 
-1.7.1
-
-
+On Thursday 05 July 2012 09:02 PM, Stephen Warren wrote:
+> On 07/03/2012 11:38 PM, Prashant Gaikwad wrote:
+>> On Tuesday 03 July 2012 09:59 PM, Stephen Warren wrote:
+>>> On 07/03/2012 05:09 AM, Prashant Gaikwad wrote:
+>>>> This patch set ports Tegra clock code to generic clock framework.
+>>>>
+>>>> Depends on
+>>>> [PATCH v3 0/9] Add clk_prepare/clk_unprepare series
+>>>> [PATCH] ARM: tegra: Remove second instance of uart clk
+>>>> [PATCH] dma: tegra: add clk_prepare/clk_unprepare
+>>>> [PATCH] ARM: tegra: dma: rename driver name for clock to "tegra-apbdma"
+>>>>
+>>>> Tested on Ventana and Cardhu
+>>>>
+>>>> v2:
+>>>>    - Rebased on Tegra's for-3.6/common-clk
+>>> OK, this applies to for-3.6/common-clk without issue now. However, there
+>>> are still runtime problems:
+>>>
+>>> On Tegra20(Ventana), running Tegra's for-next branch with these patches
+>>> merged in, if I play audio, the sound is much too low a pitch; the I2S
+>>> clock must be being set too low. Also, if I play the same file twice,
+>>> once encoded as 48KHz once encoded as 44.1KHz, the pitch is different.
+>>>
+>>> On Tegra20(Ventana), running next-20120703 plus a few local patches for
+>>> regulators plus these common clock patches, then I see the same
+>>> segfaults during boot that I mentioned before. It seems something in
+>>> linux-next not in Tegra's for-next branch is breaking the common clock
+>>> code for us.
+>> Does these local patches include any changes in clock init table? Is it
+>> possible to share the changes?
+> My local dev branch is usually available at:
+> git://nv-tegra.nvidia.com/user/swarren/linux-2.6 linux-next_common
+>
+> The local patches are mostly regulator support work-in-progress at the
+> moment, so nothing to do with clocks, except one minor warning fix.
+>
+> I see you've posted v3; I assume that means you've found/fixed the
+> issues - I'll go test.
+I have fixed audio issue in v3. Another issue related to Tegra20 boot 
+depends on the fix posted by Rajendra.
+I have mentioned the dependency on the fix in v3.
