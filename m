@@ -1,58 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab2GEIKk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 04:10:40 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3826 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754174Ab2GEIKg (ORCPT
+	id S1755899Ab2GEIKu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 04:10:50 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:4248 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755582Ab2GEIKm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 04:10:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 05 Jul 2012 01:10:36 -0700
-Message-ID: <4FF54C6C.1060700@nvidia.com>
-Date: Thu, 5 Jul 2012 17:12:28 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Sascha Hauer <s.hauer@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH] pwm-backlight: add regulator and GPIO support
-References: <20120704104840.GJ24458@pengutronix.de> <4FF43692.2040805@nvidia.com> <20120704130056.GC30009@pengutronix.de> <4FF45DDF.9000306@nvidia.com> <20120704152451.GA7333@sirena.org.uk> <4FF4FDC0.8020405@nvidia.com> <20120705062011.GI30009@pengutronix.de> <4FF53368.6090805@nvidia.com> <20120705064742.GL30009@pengutronix.de> <4FF5459F.5090201@nvidia.com> <20120705075714.GA26428@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20120705075714.GA26428@avionic-0098.mockup.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Thu, 5 Jul 2012 04:10:42 -0400
+Date: Thu, 5 Jul 2012 10:10:15 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        Seth Heasley <seth.heasley@intel.com>, Olof Johansson <olof@lixom.net>,
+        Benson Leung <bleung@chromium.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/8 v3] i2c: i801: enable irq for i801 smbus
+ transactions
+Message-ID: <20120705101015.1e3a3afc@endymion.delvare>
+In-Reply-To: <CAGS+omAwkwd17MVe3uWoPNCL3y0BvKDvbFGWwjhJ5CpTqncsXA@mail.gmail.com>
+References: <1340805255-8041-1-git-send-email-djkurtz@chromium.org>
+	<1340805255-8041-8-git-send-email-djkurtz@chromium.org>
+	<20120704221600.416d4475@endymion.delvare>
+	<CAGS+omAwkwd17MVe3uWoPNCL3y0BvKDvbFGWwjhJ5CpTqncsXA@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2012 04:57 PM, Thierry Reding wrote:
-> I agree. Non-DT platforms have always used the callbacks to execute this
-> kind of code. As you've said before there are situations where it isn't
-> just about setting a GPIO or enabling a regulator but it also requires a
-> specific timing. Representing this in the platform data would become
-> tedious.
+Hi Daniel,
 
-That will settle the whole issue then.
+On Thu, 5 Jul 2012 12:31:11 +0800, Daniel Kurtz wrote:
+> On Thu, Jul 5, 2012 at 4:16 AM, Jean Delvare <khali@linux-fr.org> wrote:
+> > You should be able to reproduce this bug by loading i2c-i801 with
+> > option disable_features=0x0002, assuming your SMBus IRQ is shared.
+> >
+> > This leads me to several thoughts (feel free to correct me if I'm
+> > wrong, I am getting very tired):
+> >
+> > 1* This must be the reason why a bit was added to the PCI status
+> >    register starting with the ICH5, telling you if an interrupt has been
+> >    delivered to you. Checking for it as you originally did was a good idea
+> >    after all.
+> 
+> Reducing scope to get accepted patches in sooner sounds like a good plan to me.
 
-> So I think for the DT case you can parse the power-on and power-off
-> sequences directly and execute code based on it, while in non-DT cases
-> the init and exit callbacks should be used instead. I think it even
-> makes sense to reuse the platform data's init and exit functions in the
-> DT case and implement the parser/interpreter within those.
+Agreed.
 
-It totally makes sense indeed.
+> > 2* Is there any reason why you decided to clear the status bits in
+> >    i801_isr(), rather than after wait_event()? I am no expert in
+> >    interrupt handling, I admit, but letting the "caller" clear the status
+> >    bits would ensure we don't clear status bits when nobody is actually
+> >    waiting to catch them.
+> 
+> BYTE_DONE is cleared to kick off the next byte, and it doesn't
+> generate a wait_event, thus it is cleared right in the irq.
 
-> I case where the regulator comes from a DT it should assume that it will
-> become available at some point, so -EPROBE_DEFER is correct. However if
-> the DT doesn't even contain the power-supply property, then EPROBE_DEFER
-> will never work because there's no regulator to become available.
+No problem with BYTE_DONE.
 
-Indeed. And as Sascha mentionned this could easily be fixed. Guess I can 
-also submit a patch for that while I am at it.
+> The logic for clearing the STATUS_FLAGS was simply that they all
+> indicate the end of a transaction, so there won't be any further
+> interrupts.  Thus, it is safe to clear it in the irq, since the irq
+> will be followed by exactly one wait_event, which can read and process
+> saved status.
 
-Alex.
+It is safe if and only if someone is actually listening to the event.
+This was not the case for me yesterday. Even if we don't mix interrupts
+and polling, i801_isr() might still get called when we aren't
+listening. Not only because the IRQ may be shared, but also for events
+we don't yet handle, such as an SMBus Alert. Not sure about slave
+mode.
+
+> > 3* Applying this patch (7/8) without the one adding interrupt support
+> >    to i801_block_transaction_byte_by_byte (8/8) is not OK: mixing
+> >    interrupts and polling isn't safe. So unless we implement 1* or 2*,
+> >    both patches would have to be merged before being pushed upstream.
+> >
+> > 4* Even then, we have to keep in mind that i801_isr() may be called
+> >    before the transaction is finished (if IRQ is shared.) My testing
+> >    has shown that error flags may be raised before the BUSY flag is
+> >    cleared, so we should use in i801_isr() the same strict conditions
+> >    we are now using in the polling code. In other words, if we get an
+> >    interrupt but the BUSY flag is still set, then it's not our
+> >    interrupt and we should ignore it. This applies even if 2* or 3*
+> >    above are implemented, but no longer if 1* is implemented.
+> >
+> > 5* Your claim that no locking is needed might have to be revisited when
+> >    interrupts are shared.
+> >
+> > Implementing 1* has the drawback of limiting interrupt support to ICH5
+> > and later chips, but I suspect it is the easiest and safest way, so I
+> > have no objection if you want to do that.
+> 
+> Let's do this first, and then refactor later to add support for
+> pre-ICH5 parts, if needed.
+
+OK, fine with me. The only downside is that it excludes my
+heavily-shared IRQ test machine, so testing that the shared IRQ case is
+properly covered will be a little harder.
+
+> It sounds like supporting the pre-ICH5 parts w/ shared IRQ is not very
+> pretty, since we are no longer guaranteed that we get a single
+> transaction terminating interrupt.
+
+Indeed. In that case, using interrupts will be much like using polling,
+except that status check happens whenever we receive an interrupt,
+rather than at fixed time interval.
+
+> Do you still maintain a public git repository?
+
+I never did.
+
+> Have you updated it with the accepted version of the previous cleanup patches?
+> I see this one, but it doesn't look updated:
+>   http://git.kernel.org/?p=linux/kernel/git/jdelvare/staging.git;a=summary
+
+This tree is only for sending patches to Linus. It doesn't reflect the
+current status of my working tree.
+
+I am maintaining quilt series for that, which you can find at:
+http://khali.linux-fr.org/devel/linux-3/
+
+> I'd like to fix up the interrupt patches per your feedback, but I'm
+> not quite sure what the current status is of all the cleanup patches.
+> 
+> In other words, if you push up the complete set of cleanup patches, I
+> can then rebase the new consolidated irq patch onto it, and send them
+> here for review.
+
+I updated the i2c series this morning, so it's up-to-date.
+
+-- 
+Jean Delvare
