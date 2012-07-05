@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296Ab2GEUfh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 16:35:37 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:44151 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299Ab2GEUff (ORCPT
+	id S1755551Ab2GEUf7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 16:35:59 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:41870 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175Ab2GEUf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 16:35:35 -0400
-Message-ID: <1341520528.3076.3.camel@lorien2>
-Subject: Re: [PATCH 25/25] leds: convert One-shot LED trigger driver to
- devm_kzalloc() and cleanup error exit path
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: Fabio Baltieri <fabio.baltieri@gmail.com>
-Cc: shuahkhan@gmail.com, Bryan Wu <bryan.wu@canonical.com>,
-        linux-leds@vger.kernel.org, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org
-Date: Thu, 05 Jul 2012 14:35:28 -0600
-In-Reply-To: <20120705194828.GA1563@gmail.com>
-References: <1341378617-10386-1-git-send-email-bryan.wu@canonical.com>
-	 <1341378617-10386-26-git-send-email-bryan.wu@canonical.com>
-	 <1341506839.2605.11.camel@lorien2> <20120705194828.GA1563@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Thu, 5 Jul 2012 16:35:57 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6763"; a="205422637"
+Message-ID: <4FF5FA9B.4070003@codeaurora.org>
+Date: Thu, 05 Jul 2012 13:35:39 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>
+Subject: Re: [PATCH 1/2] remoteproc: maintain a generic child device for each
+ rproc
+References: <1338017791-9442-1-git-send-email-ohad@wizery.com> <4FC5DBFA.2030300@codeaurora.org> <CAK=WgbZJJJPuNWVv8WgL=KKm6Hrx2krDD9gBOTP7sA8p7mh_rA@mail.gmail.com> <CAK=WgbbREXV8nkF4vh9iLUp1WQj2ZLYW6VG8Urmw9=roy63meQ@mail.gmail.com> <4FF1F145.2050408@codeaurora.org> <CAK=WgbZ+=MGU5juuOP+_vtUe4d_46j=Rd0cqYi7q2i-9T35R5w@mail.gmail.com>
+In-Reply-To: <CAK=WgbZ+=MGU5juuOP+_vtUe4d_46j=Rd0cqYi7q2i-9T35R5w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-05 at 21:48 +0200, Fabio Baltieri wrote:
+On 07/02/12 12:54, Ohad Ben-Cohen wrote:
+> On Mon, Jul 2, 2012 at 10:06 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>> Great! It looks like device_type doesn't have any list iteration support
+>> though. Is that requirement gone?
+> Pretty much, yeah. I'll soon post a separate patch which removes the
+> get_by_name functionality (together with its related klist).
+>
+>> Will you resend this as part of a series? It will be easier to review then.
+> Not sure. There's a collection of discrete patches that I've been
+> posting, but they really aren't an organic series: as long as the
+> dependencies are met, each and every one of them is applicable even if
+> applied alone.
+>
+> So I'd prefer (when possible) to treat patches in a discrete fashion
+> so we can start applying them and unblock others who depend on them
+> (e.g. Fernando's runtime PM work depends on this one).
+>
+> But if you prefer me to send this one patch differently to make it
+> easier to review, let me know!
+>
 
-> > >  
-> > Bryan,
-> > 
-> > I don't believe memory triggers allocate in their activate routine
-> > should be converted to devm_kzalloc(). Based on my understanding, the
-> > memory allocated using devm_kzalloc() us free'ed when driver is
-> > detached. In the case of led triggers, driver stays registered while the
-> > triggers it supports can be activated and deactivated many times. By
-> > converting these allocations into devm_kzalloc()s could lead to memory
-> > leaks. Please correct me if my understanding is incorrect.
-> 
-> Shuah,
-> 
-> I'm as the same opinion - as triggers are not really "driver", in the
-> sense that they are not using the driver structures, using devm_
-> functions doesn't seems to be really appropriate.
-> 
+Ok then. Please add
 
-Correct. Each driver could support multiple triggers and triggers are
-not at the same level as the device.
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
 
-> Specifically:
-> 
-> > > +	oneshot_data = devm_kzalloc(led_cdev->dev, sizeof(*oneshot_data),
-> > > +				GFP_KERNEL);
-> 
-> this one is registering the data on the relative LED's resources, so
-> that they are not freed until you unload the LED's driver itself.
-> I also think that this leads to memory leak if you keep activating
-> triggers, as the deactivate function is not actually freeing the
-> resources, so in that case the correct procedure should be the usual
-> kalloc/kfree.
-> 
-> Is this consistent with what your conclusions, Shuah?
+It would be nice if you got an ack from Greg or Kay on the device_type
+usage too.
 
-Correct. Using devm_ in triggers is not the correct and there is no need
-to change from using kalloc()/kfree().
-
--- Shuah
-> 
-> Fabio
-> 
-> > If what I am saying makes sense, please take this as comment that is
-> > applicable to all led triggers, not just this one.
-> > 
-> > Thanks,
-> > -- Shuah
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-leds" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
