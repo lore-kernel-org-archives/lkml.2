@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab2GEQCS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 12:02:18 -0400
-Received: from fifo99.com ([67.223.236.141]:37962 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750890Ab2GEQCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 12:02:12 -0400
-Date: Thu, 5 Jul 2012 09:01:54 -0700
-From: Daniel Walker <dwalker@fifo99.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Vincent Sanders <vincent.sanders@collabora.co.uk>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: Re: AF_BUS socket address family
-Message-ID: <20120705160153.GA29175@fifo99.com>
-References: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk>
- <CAKnu2Mr_TWvBXmL+ORfddpEgPdPxPXFpJdCtvPe+imj6o6Y+1w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKnu2Mr_TWvBXmL+ORfddpEgPdPxPXFpJdCtvPe+imj6o6Y+1w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753632Ab2GEQCQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 12:02:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49372 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752103Ab2GEQCN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 12:02:13 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: snitzer@redhat.com, david@fromorbit.com, dm-devel@redhat.com,
+        xfs@oss.sgi.com, hch@lst.de, martin.petersen@oracle.com,
+        axboe@kernel.dk, vgoyal@redhat.com
+Subject: [PATCH v3 1/2] block: reorganize rounding of max_discard_sectors
+Date: Thu,  5 Jul 2012 18:01:43 +0200
+Message-Id: <1341504104-1674-2-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.7.10.2
+In-Reply-To: <1341504104-1674-1-git-send-email-pbonzini@redhat.com>
+References: <1341504104-1674-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 09:59:53AM +0200, Linus Walleij wrote:
-> 2012/6/29 Vincent Sanders <vincent.sanders@collabora.co.uk>:
-> 
-> > AF_BUS is a message oriented inter process communication system.
-> 
-> We have a very huge and important in-kernel IPC message passer
-> in drivers/staging/android/binder.c
-> 
-> It's deployed in some 400 million devices according to latest reports.
-> John Stultz & Anton Vorontsov are trying to look after these Android
-> drivers a bit...
-> 
-> I and others discussed this in the past with the Android folks. Dianne
-> makes an excellent summary of how it works here:
-> https://lkml.org/lkml/2009/6/25/3
-> 
-> If we could all be convinced that this thing also fulfills the needs
-> of what binder does, this is a pretty solid case for it too. I can
-> sure see that some of the shortcuts that Android is taking with
-> binder try to address the same issue of high-speed IPC loopholes
-> through the kernel and some kind of security model.
-> 
-> Whether Android would actually use it (or wrap it) is a totally
-> different question, but what I think we need to know is whether it
-> *could*. And staging code has to move forward, maybe this
-> is the direction it should move?
+Mostly a preparation for the next patch.
 
-I'm all for alternatives.. I haven't read this thread at all, but I read an LWN
-article comparing Binder and other implementations .. So there are for sure
-alternatives. It would be nice if things were included that did whatever binder
-needs .. Since I did the logger performance analysis the big questions to me is
-if Binder is actually fast (or faster than the alternatives). Whatever this
-AF_BUS things is reviewing the performance of the major alternative(s) is probably a
-good idea.
+In principle this fixes an infinite loop if max_discard_sectors < granularity,
+but that really shouldn't happen.
 
-In terms of Android using anything we produce or incorporate, don't get
-your hopes up .. They will always just use Binder .. (John is good cop, I'm bad
-cop)
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ block/blk-lib.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-Daniel
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index 2b461b4..16b06f6 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -44,6 +44,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 	struct request_queue *q = bdev_get_queue(bdev);
+ 	int type = REQ_WRITE | REQ_DISCARD;
+ 	unsigned int max_discard_sectors;
++	unsigned int granularity;
+ 	struct bio_batch bb;
+ 	struct bio *bio;
+ 	int ret = 0;
+@@ -54,18 +55,18 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 	if (!blk_queue_discard(q))
+ 		return -EOPNOTSUPP;
+ 
++	/* Zero-sector (unknown) and one-sector granularities are the same.  */
++	granularity = max(q->limits.discard_granularity >> 9, 1U);
++
+ 	/*
+ 	 * Ensure that max_discard_sectors is of the proper
+ 	 * granularity
+ 	 */
+ 	max_discard_sectors = min(q->limits.max_discard_sectors, UINT_MAX >> 9);
++	max_discard_sectors = round_down(max_discard_sectors, granularity);
+ 	if (unlikely(!max_discard_sectors)) {
+ 		/* Avoid infinite loop below. Being cautious never hurts. */
+ 		return -EOPNOTSUPP;
+-	} else if (q->limits.discard_granularity) {
+-		unsigned int disc_sects = q->limits.discard_granularity >> 9;
+-
+-		max_discard_sectors &= ~(disc_sects - 1);
+ 	}
+ 
+ 	if (flags & BLKDEV_DISCARD_SECURE) {
+-- 
+1.7.1
+
+
