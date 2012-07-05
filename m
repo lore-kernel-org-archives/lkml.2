@@ -1,33 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757433Ab2GEUUK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 16:20:10 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38371 "EHLO
+	id S1757278Ab2GEUXZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 16:23:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45763 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755551Ab2GEUUH (ORCPT
+	by vger.kernel.org with ESMTP id S1754030Ab2GEUXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 16:20:07 -0400
+	Thu, 5 Jul 2012 16:23:24 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>
+To: "Theodore Ts'o" <tytso@mit.edu>, Samuel Ortiz <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        rtc-linux@googlegroups.com,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] rtc: wm831x: Feed the write counter into device_add_randomness()
-Date: Thu,  5 Jul 2012 21:19:17 +0100
-Message-Id: <1341519557-5115-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: wm831x: Feed the device UUID into device_add_randomness()
+Date: Thu,  5 Jul 2012 21:23:21 +0100
+Message-Id: <1341519801-5904-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tamper evident features of the RTC include the "write counter" which
-is a pseudo-random number regenerated whenever we set the RTC. Since this
-value is unpredictable it should provide some useful seeding to the random
-number generator.
-
-Only do this on boot since the goal is to seed the pool rather than add
-useful entropy.
+wm831x devices contain a unique ID value. Feed this into the newly added
+device_add_randomness() to add some per device seed data to the pool.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
@@ -36,58 +29,42 @@ add_device_randomness() has only just been added in -next, this will
 need to either wait until after the merge window or be merged along with
 the patch adding it.
 
- drivers/rtc/rtc-wm831x.c |   24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
+ drivers/mfd/wm831x-otp.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/rtc/rtc-wm831x.c b/drivers/rtc/rtc-wm831x.c
-index 59c6245..ea5c6f8 100644
---- a/drivers/rtc/rtc-wm831x.c
-+++ b/drivers/rtc/rtc-wm831x.c
-@@ -24,7 +24,7 @@
- #include <linux/mfd/wm831x/core.h>
+diff --git a/drivers/mfd/wm831x-otp.c b/drivers/mfd/wm831x-otp.c
+index f742745..b90f3e0 100644
+--- a/drivers/mfd/wm831x-otp.c
++++ b/drivers/mfd/wm831x-otp.c
+@@ -18,6 +18,7 @@
+ #include <linux/bcd.h>
  #include <linux/delay.h>
- #include <linux/platform_device.h>
--
+ #include <linux/mfd/core.h>
 +#include <linux/random.h>
  
- /*
-  * R16416 (0x4020) - RTC Write Counter
-@@ -96,6 +96,26 @@ struct wm831x_rtc {
- 	unsigned int alarm_enabled:1;
- };
+ #include <linux/mfd/wm831x/core.h>
+ #include <linux/mfd/wm831x/otp.h>
+@@ -66,6 +67,7 @@ static DEVICE_ATTR(unique_id, 0444, wm831x_unique_id_show, NULL);
  
-+static void wm831x_rtc_add_randomness(struct wm831x *wm831x)
-+{
-+	int ret;
-+	u16 reg;
-+
-+	/*
-+	 * The write counter contains a pseudo-random number which is
-+	 * regenerated every time we set the RTC so it should be a
-+	 * useful per-system source of entropy.
-+	 */
-+	ret = wm831x_reg_read(wm831x, WM831X_RTC_WRITE_COUNTER);
-+	if (ret >= 0) {
-+		reg = ret;
-+		add_device_randomness(&reg, sizeof(reg));
-+	} else {
-+		dev_warn(wm831x->dev, "Failed to read RTC write counter: %d\n",
-+			 ret);
-+	}
-+}
-+
- /*
-  * Read current time and date in RTC
-  */
-@@ -431,6 +451,8 @@ static int wm831x_rtc_probe(struct platform_device *pdev)
- 			alm_irq, ret);
- 	}
+ int wm831x_otp_init(struct wm831x *wm831x)
+ {
++	char uuid[WM831X_UNIQUE_ID_LEN];
+ 	int ret;
  
-+	wm831x_rtc_add_randomness(wm831x);
-+
- 	return 0;
+ 	ret = device_create_file(wm831x->dev, &dev_attr_unique_id);
+@@ -73,6 +75,12 @@ int wm831x_otp_init(struct wm831x *wm831x)
+ 		dev_err(wm831x->dev, "Unique ID attribute not created: %d\n",
+ 			ret);
  
- err:
++	ret = wm831x_unique_id_read(wm831x, uuid);
++	if (ret == 0)
++		add_device_randomness(uuid, sizeof(uuid));
++	else
++		dev_err(wm831x->dev, "Failed to read UUID: %d\n", ret);
++
+ 	return ret;
+ }
+ 
 -- 
 1.7.10
 
