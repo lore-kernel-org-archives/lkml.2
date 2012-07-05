@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab2GET5R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 15:57:17 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:48743 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab2GET5P (ORCPT
+	id S1753328Ab2GET7R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 15:59:17 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58434 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357Ab2GET7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 15:57:15 -0400
-Date: Thu, 5 Jul 2012 21:57:05 +0200 (CEST)
-From: Eldad Zack <eldad@fogrefinery.com>
-X-X-Sender: eldad@debianer
-To: "J. Bruce Fields" <bfields@fieldses.org>
-cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] sunrpc/cache.h: replace simple_strtoul
-In-Reply-To: <20120705191323.GA3051@fieldses.org>
-Message-ID: <alpine.DEB.2.02.1207052122001.10395@debianer>
-References: <1341442827-21339-1-git-send-email-eldad@fogrefinery.com> <1341442827-21339-2-git-send-email-eldad@fogrefinery.com> <20120704235921.GA26797@fieldses.org> <alpine.DEB.2.02.1207052030500.6309@debianer> <20120705191323.GA3051@fieldses.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 5 Jul 2012 15:59:15 -0400
+Message-ID: <4FF5F20F.2050005@wwwdotorg.org>
+Date: Thu, 05 Jul 2012 13:59:11 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Wei Ni <wni@nvidia.com>
+CC: swarren@nvidia.com, olof@lixom.net, ccross@android.com,
+        linux@arm.linux.org.uk, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        ldewangan@nvidia.com, arnd@arndb.de, grant.likely@secretlab.ca,
+        cjb@laptop.org
+Subject: Re: [PATCH 5/5] ARM: tegra: enable wireless in defconfig
+References: <1341394488-13169-1-git-send-email-wni@nvidia.com> <1341394488-13169-6-git-send-email-wni@nvidia.com>
+In-Reply-To: <1341394488-13169-6-git-send-email-wni@nvidia.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/04/2012 03:34 AM, Wei Ni wrote:
+> New options enabled:
+> * WIRELESS: (dependency)
+> * CFG80211: (dependency)
+> * WLAN: (dependency)
+> * BRCMFMAC: wlan driver, enable as module.
 
+> diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
 
-On Thu, 5 Jul 2012, J. Bruce Fields wrote:
+> +CONFIG_BRCMFMAC=m
 
-> On Thu, Jul 05, 2012 at 09:04:03PM +0200, Eldad Zack wrote:
-> > 
-> > On Wed, 4 Jul 2012, J. Bruce Fields wrote:
-> > > On Thu, Jul 05, 2012 at 01:00:26AM +0200, Eldad Zack wrote:
-> > > > This patch replaces the usage of simple_strtoul with kstrtoint in
-> > > > get_int().
-> > > 
-> > > Why?
-> > 
-> > Since the simple_str* family don't account for overflow and AFAIK
-> > deprecated. Also, in this specific case, the long from strtol is 
-> > silently converted to an int by the caller.
-> 
-> OK, thanks.  Please use that as the changelog when you resend.  ("This
-> patch replaces..." tells me nothing I couldn't figure out from looking
-> at the patch.)
+Why does this need to be a module? Everything else in tegra_defconfig is
+built-in, and it'd be nice to be consistent here. Built-in makes
+net-booting new kernels from U-Boot much easier, since there aren't any
+modules to copy.
 
-Will do, sorry about that.
+When I built a kernel with this series, I observed the following:
 
-Eldad
+CONFIG_BRCMFMAC=m
+
+* Neither Cardhu nor Ventana auto-load the module. When the module is
+manually modprobe'd, I still see no wireless device being created.
+
+CONFIG_BRCMFMAC=y
+
+* Cardhu: No wireless device created. I do see some kernel spew such as
+"mmc1: queuing unknown CIS tuple 0x80" which I believe is the SDIO
+device being probed, but I don't see any Linux device being created.
+
+* Ventana: There's a 60s hang during boot, I believe related to the BRCM
+driver, since the hang doesn't occur without the series.
+
+In summary, this series doesn't work at all for me. Can you please
+explain what you tested and how? Are there any differences between the
+various Cardhu and Ventana board revisions and/or the 2 different
+wireless cards possible on Cardhu that'd explain this?
+
+Thanks.
