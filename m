@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050Ab2GESoD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 14:44:03 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:64582 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753986Ab2GESoA (ORCPT
+	id S932819Ab2GESoJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 14:44:09 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51736 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757043Ab2GESoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 14:44:00 -0400
-Date: Thu, 5 Jul 2012 20:43:58 +0200
-From: Johannes Goetzfried 
-	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: [PATCH] crypto: twofish-avx - remove useless instruction
-Message-ID: <20120705184358.GE2091@kronos.redsun>
+	Thu, 5 Jul 2012 14:44:05 -0400
+Message-ID: <4FF5E071.3090106@wwwdotorg.org>
+Date: Thu, 05 Jul 2012 12:44:01 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Provags-ID: V02:K0:hFhhfbld1dFuIxEt2YJp0lvqch1P5LybvQ27oSBfBWo
- SgvsrO5hWWWXCiFGqvd7aaOk9no84SpC3I1XRJBklT/P1aG5By
- STyx9p59vcvkMmDl4SfPpK1ejVzq/OwHQFHIrYuQYPD4+5gUIY
- CHmmM5ZOnlXxxH8B4g2pAvcJqS3lreNDbYny48z6S+0gNCkpQk
- cODczI84kb6DNenUgDaAK2FQf8Rsqvodd1P3lf5H5sZXGfYI0U
- 1Nw9FmY0fr/EqH5/89c57NqX/onj3UBYZO7nA/Y17m172u7aB8
- TMHPjJpuXJrWmqccR+fuyuFOWb+R+s7yFUwvPHao/91NPjtubi
- vWU2Yek1bR+VmGW/vxxU=
+To: Prashant Gaikwad <pgaikwad@nvidia.com>
+CC: "mturquette@ti.com" <mturquette@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: Fix cached parent ptrs allocation
+References: <1341407737-1016-1-git-send-email-pgaikwad@nvidia.com> <4FF5BBD3.6080704@wwwdotorg.org> <4FF5CD0D.7030902@nvidia.com>
+In-Reply-To: <4FF5CD0D.7030902@nvidia.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The register %rdx is written, but never read till the end of the encryption
-routine. Therefore let's delete the useless instruction.
+On 07/05/2012 11:21 AM, Prashant Gaikwad wrote:
+> On Thursday 05 July 2012 09:37 PM, Stephen Warren wrote:
+>> On 07/04/2012 07:15 AM, Prashant Gaikwad wrote:
+>>> Compiler optimizes code someway that even if clk->parents
+>>> is not NULL it tries to allocate parents array. Change the
+>>> condition so that compiler does not optimize it in wrong
+>>> way.
+>> If simply inverting the if test and swapping the if/else blocks solves
+>> some problem, that sounds like a compiler bug that we need to track down
+>> and file/fix.
+>>
+>>> Also, initialize i to num_parents to make sure parent
+>>> is searched using parent name if parents is NULL.
+>> Are you sure the change to initialize i wasn't all that was required to
+>> solve the problem though? Mike has applied a patch for this that'll be
+>> applied to 3.5-rcX and hence trickle into 3.6.
+>
+> Just initializing i does not fix problem. The patch Mike has applied
+> does two things
+> 1. remove warning for uninitialized i
+> 2. invert the if test
 
-Signed-off-by: Johannes Goetzfried <Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
----
- arch/x86/crypto/twofish-avx-x86_64-asm_64.S |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/crypto/twofish-avx-x86_64-asm_64.S b/arch/x86/crypto/twofish-avx-x86_64-asm_64.S
-index fc31b89..35f4557 100644
---- a/arch/x86/crypto/twofish-avx-x86_64-asm_64.S
-+++ b/arch/x86/crypto/twofish-avx-x86_64-asm_64.S
-@@ -243,7 +243,6 @@ __twofish_enc_blk_8way:
- 	popq %rbx;
- 
- 	leaq (4*4*4)(%rsi), %rax;
--	leaq (4*4*4)(%rax), %rdx;
- 
- 	testb %cl, %cl;
- 	jnz __enc_xor8;
--- 
-1.7.2.5
-
+Yes, but Mike's patch is very different to yours. Your patch description
+says that you need to invert the if test to work around the compiler
+optimizer so that it doesn't "optimize it in wrong way", whereas the
+patch Mike applied was for a legitimate bug in the code; those are two
+entirely different things.
