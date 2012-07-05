@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab2GEHdv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 03:33:51 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:44110 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab2GEHdu (ORCPT
+	id S1754114Ab2GEHfA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 03:35:00 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:35846 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752581Ab2GEHe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 03:33:50 -0400
-Message-ID: <4FF5435A.1000909@linaro.org>
-Date: Thu, 05 Jul 2012 08:33:46 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
-        arnd@arndb.de, sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device
- registration
-References: <1341316788-12730-1-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1341316788-12730-1-git-send-email-lee.jones@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 5 Jul 2012 03:34:59 -0400
+From: Dong Hao <haodong@linux.vnet.ibm.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Hao Dong <haodong@linux.vnet.ibm.com>
+Subject: [PATCH] lib/kobject: restore old name when rename failure
+Date: Thu,  5 Jul 2012 15:34:49 +0800
+Message-Id: <1341473689-2987-1-git-send-email-haodong@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.2.5
+x-cbid: 12070507-0342-0000-0000-00000232914C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sam,
+From: Hao Dong <haodong@linux.vnet.ibm.com>
 
-On 03/07/12 12:59, Lee Jones wrote:
-> We register the ab8500 as an MFD device from db8500 code during Device Tree
-> boot in order to solve some limitations of DT. However, when Device Tree is
-> not enabled, we still want to allow platform code to register the ab8500 in
-> the normal way. Here we force MFD device registration of the ab8500 only
-> when booting with Device Tree enabled.
->
-> Solves this issue:
-> WARNING: at fs/sysfs/dir.c:526 sysfs_add_one+0x88/0xb0()
-> sysfs: cannot create duplicate filename '/bus/platform/devices/ab8500-core.0'
->
-> Reported-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Function kobject_set_name_vargs() was implemented to rename the
+existing kobject. That depends on kvasprintf(), which might return
+NULL. So it's possible the kobject name becomes NULL and in that case we
+would lose the old name.
 
-Are you planning on taking this in any time soon? I'd really like to fix 
-this bug for Linus in -next.
+The patch restores the old name when kvasprintf() returns NULL.
 
-Kind regards,
-Lee
+Signed-off-by: Dong Hao<haodong@linux.vnet.ibm.com>
+---
+ lib/kobject.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
+diff --git a/lib/kobject.c b/lib/kobject.c
+index e07ee1f..c6e201a 100644
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -220,8 +220,10 @@ int kobject_set_name_vargs(struct kobject *kobj, const char *fmt,
+ 		return 0;
+ 
+ 	kobj->name = kvasprintf(GFP_KERNEL, fmt, vargs);
+-	if (!kobj->name)
++	if (!kobj->name) {
++		kobj->name = old_name;
+ 		return -ENOMEM;
++	}
+ 
+ 	/* ewww... some of these buggers have '/' in the name ... */
+ 	while ((s = strchr(kobj->name, '/')))
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
-
+1.7.9.5
 
