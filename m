@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab2GEPMM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 11:12:12 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60406 "EHLO mga11.intel.com"
+	id S933090Ab2GEPMc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 11:12:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40485 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751882Ab2GEPML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 11:12:11 -0400
+	id S1752900Ab2GEPMa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 11:12:30 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="188772082"
-Date: Thu, 5 Jul 2012 17:23:34 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] mfd: tps65910: add support for enabling external
- 32-kHz oscillator
-Message-ID: <20120705152334.GH18200@sortiz-mobl>
-References: <1340878822-28444-1-git-send-email-jhovold@gmail.com>
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="167371329"
+From: "Love, Robert W" <robert.w.love@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Scan Subscription <scan-subscription@coverity.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>, Bing Zhao <bzhao@marvell.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Mattia Dongili <malattia@linux.it>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: New Defects based on recent changes in Kernel code found by
+ Coverity Scan
+Thread-Topic: New Defects based on recent changes in Kernel code found by
+ Coverity Scan
+Thread-Index: AQHNWWsPQcyMPfs+9EWQg4pkx5SuCZcbQ5sA
+Date: Thu, 5 Jul 2012 15:12:21 +0000
+Message-ID: <4FF5AECA.40801@intel.com>
+References: <829BE905228AE14A9AE1A46E6F2E371605538D039D@VA3DIAXVS891.RED001.local>
+ <20120703152739.ea7df9e6.akpm@linux-foundation.org>
+In-Reply-To: <20120703152739.ea7df9e6.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614
+ Thunderbird/13.0.1
+x-originating-ip: [10.3.86.135]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <DBF9902A13537C42BD177ECCD98407C3@intel.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1340878822-28444-1-git-send-email-jhovold@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johan,
+On 7/3/2012 3:27 PM, Andrew Morton wrote:
+> On Thu, 28 Jun 2012 11:32:09 -0700
+> Scan Subscription <scan-subscription@coverity.com> wrote:
+>
+> ____________________________________________________________________________________________________________
+> CID 703581 -  NO_EFFECT Unsigned compared against 0 - This less-than-zero comparison of an unsigned value is never true. "*val < 0UL".
+>
+> drivers/scsi/fcoe/fcoe_sysfs.c:105
+> 100 static int fcoe_str_to_dev_loss(const char *buf, unsigned long *val)
+> 101 {
+> 102        int ret;
+> 103
+> 104        ret = kstrtoul(buf, 0, val);
+>>>>> CID 703581: Unsigned compared against 0 (NO_EFFECT) This less-than-zero comparison of an unsigned value is never true. "*val < 0UL".
+>> 105        if (ret || *val < 0)
+>> 106                return -EINVAL;
+>> 107        /*
+>> 108         * Check for overflow; dev_loss_tmo is u32
+>>
+Patch posted to linux-scsi.
 
-On Thu, Jun 28, 2012 at 12:20:20PM +0200, Johan Hovold wrote:
-> These patches (against v3.5-rc4) add support for enabling the external 32-kHz
-> oscillator input in tps6591x devices. Depending on boot-mode, the internal
-> RC-oscillator may be used by default and the external crystal-oscillator input
-> must be enabled by clearing a flag in the device-control register.
-> 
-> These patches are needed in order to get an accurate system clock on boards
-> such as the Craneboard.
-> 
-> Thanks,
-> Johan
-> 
-> Johan Hovold (2):
->   mfd: tps65910: add support for enabling external 32-kHz oscillator
->   mfd: tps65910: add device-tree entry to enable external 32-kHz
->     oscillator
-Both patches applied, although the misc_init() naming is quite vague. If you
-can come up with a follow up patch for a better name, I'll take it.
-
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Thanks, //Rob
