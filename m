@@ -1,158 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab2GEJwH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 05:52:07 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61412 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752950Ab2GEJwF convert rfc822-to-8bit (ORCPT
+	id S932173Ab2GEJwi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 05:52:38 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:4927 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752950Ab2GEJwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 05:52:05 -0400
+	Thu, 5 Jul 2012 05:52:37 -0400
+From: Jiang Liu <jiang.liu@huawei.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, Minchan Kim <minchan@kernel.org>
+CC: Jiang Liu <jiang.liu@huawei.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Yinghai Lu <yinghai@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Keping Chen <chenkeping@huawei.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>
+Subject: [PATCH 2/4] mm/hotplug: correctly add new zone to all other nodes' zone lists
+Date: Thu, 5 Jul 2012 17:45:30 +0800
+Message-ID: <1341481532-1700-2-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.8.msysgit.0
+In-Reply-To: <1341481532-1700-1-git-send-email-jiang.liu@huawei.com>
+References: <1341481532-1700-1-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1207041926290.29222@localhost>
-References: <1339638836-19990-1-git-send-email-ashish.sangwan2@gmail.com>
-	<CAKYAXd_g_vgAmyD4jyUqz0u=vaSTAKFqZz0sqhM+2+hy1Z85ug@mail.gmail.com>
-	<CAOiN93=BKyGKtpLng-ddX0RFUOdHCaxHi2O26GFokdT19xad2g@mail.gmail.com>
-	<alpine.LFD.2.00.1207021110530.24050@dhcp-1-248.brq.redhat.com>
-	<CAOiN93kzvKVDzSJ13HJZDh9ANt3UaBy0o_QHNKCSHHTizjtY0w@mail.gmail.com>
-	<alpine.LFD.2.00.1207041926290.29222@localhost>
-Date: Thu, 5 Jul 2012 15:22:04 +0530
-Message-ID: <CAOiN93mJO6=dV4U=Qyw7myz34EF_doaoLsFHksmu4-n8pOzXBA@mail.gmail.com>
-Subject: Re: [PATCH v2] ext4: fix hole punch failure when depth is greater
- than 0
-From: Ashish Sangwan <ashishsangwan2@gmail.com>
-To: =?ISO-8859-2?Q?Luk=E1=B9_Czerner?= <lczerner@redhat.com>
-Cc: sandeen@redhat.com, Ted Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-Originating-IP: [10.108.108.229]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 4, 2012 at 11:03 PM, Lukáš Czerner <lczerner@redhat.com> wrote:
-> So I've finally has some time to look at the patch and reproduce the
-> problem. Thanks for noticing the problem, the patch seems good,
-> though I have one question. Is the p_block setting really necessary
-> ? I do not think so, but I might be missing something. Here is
-> updated patch I've tested, bellow.
-AFAICS, p_block setting is necessary. As mentioned in the patch description,
-whether to continue removing extents or not is decided by the return value
-of function ext4_ext_more_to_rm() which checks 2 conditions:
-a) if there are no more indexes to process.
-b) if the number of entries are decreased in the header of "depth -1".
-The p_block setting is important for condition b).
+When online_pages() is called to add new memory to an empty zone,
+it rebuilds all zone lists by calling build_all_zonelists().
+But there's a bug which prevents the new zone to be added to other
+nodes' zone lists.
 
-In function ext4_ext_more_to_rm, there is this second check:
-if (le16_to_cpu(path->p_hdr->eh_entries) == path->p_block)
-    return 0;
-If the value of p_block would not be correct, the above mentioned
-condition could become
-true while there are still blocks left to be removed.
->
-> Note: there are some indent problems in your patch, like for example
-> this:
->
-> +                       path[k].p_block =
-> +                       le16_to_cpu(path[k].p_hdr->eh_entries)+1;
->
->
-Before submitting the patch, I run checkpatch.pl with --strict option.
-It did'nt show any error or warning. Should I re-submit
-the patch with an extra tab before the second line? The call is yours.
+online_pages() {
+	build_all_zonelists()
+	.....
+	node_set_state(zone_to_nid(zone), N_HIGH_MEMORY)
+}
 
-> Anyway, what do you think about the modification ?
->
-Also there is 1 modification missing from your patch.
-    ext4_ext_drop_refs(path);
-        kfree(path);
-+       path = NULL;
-        if (err == -EAGAIN)
-                goto again;
-If path is not set to NULL, it will crash in xfstest #13. Ted has
-already reported it.
+Here the node of the zone is put into N_HIGH_MEMORY state after calling
+build_all_zonelists(), but build_all_zonelists() only adds zones from
+nodes in N_HIGH_MEMORY state to the fallback zone lists.
+build_all_zonelists()
+    ->__build_all_zonelists()
+	->build_zonelists()
+	    ->find_next_best_node()
+		->for_each_node_state(n, N_HIGH_MEMORY)
 
-Thanks,
-Ashish
+So memory in the new zone will never be used by other nodes, and it may
+cause strange behavor when system is under memory pressure.  So put node
+into N_HIGH_MEMORY state before calling build_all_zonelists().
 
-> Thanks!
-> -Lukas
->
->
-> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-> index b3300eb..94bc1bd 100644
-> --- a/fs/ext4/extents.c
-> +++ b/fs/ext4/extents.c
-> @@ -2570,7 +2570,7 @@ static int ext4_ext_remove_space(struct inode *inode, ext4_lblk_t start,
->  {
->         struct super_block *sb = inode->i_sb;
->         int depth = ext_depth(inode);
-> -       struct ext4_ext_path *path;
-> +       struct ext4_ext_path *path = NULL;
->         ext4_fsblk_t partial_cluster = 0;
->         handle_t *handle;
->         int i, err;
-> @@ -2606,8 +2606,12 @@ again:
->                 }
->                 depth = ext_depth(inode);
->                 ex = path[depth].p_ext;
-> -               if (!ex)
-> +               if (!ex) {
-> +                       ext4_ext_drop_refs(path);
-> +                       kfree(path);
-> +                       path = NULL;
->                         goto cont;
-> +               }
->
->                 ee_block = le32_to_cpu(ex->ee_block);
->
-> @@ -2637,8 +2641,6 @@ again:
->                         if (err < 0)
->                                 goto out;
->                 }
-> -               ext4_ext_drop_refs(path);
-> -               kfree(path);
->         }
->  cont:
->
-> @@ -2646,20 +2648,26 @@ cont:
->          * We start scanning from right side, freeing all the blocks
->          * after i_size and walking into the tree depth-wise.
->          */
-> -       depth = ext_depth(inode);
-> -       path = kzalloc(sizeof(struct ext4_ext_path) * (depth + 1), GFP_NOFS);
-> -       if (path == NULL) {
-> -               ext4_journal_stop(handle);
-> -               return -ENOMEM;
-> -       }
-> -       path[0].p_depth = depth;
-> -       path[0].p_hdr = ext_inode_hdr(inode);
-> +       if (path)
-> +               i = depth;
-> +       else {
-> +               depth = ext_depth(inode);
-> +               path = kzalloc(sizeof(struct ext4_ext_path) * (depth + 1),
-> +                              GFP_NOFS);
-> +               if (path == NULL) {
-> +                       ext4_journal_stop(handle);
-> +                       return -ENOMEM;
-> +               }
-> +               path[0].p_depth = depth;
-> +               path[0].p_hdr = ext_inode_hdr(inode);
->
-> -       if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
-> -               err = -EIO;
-> -               goto out;
-> +               if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
-> +                       err = -EIO;
-> +                       goto out;
-> +               }
-> +               i = 0;
->         }
-> -       i = err = 0;
-> +       err = 0;
->
->         while (i >= 0 && err == 0) {
->                 if (i == depth) {
->
-> On Mon, 2 Jul 2012, Ashish Sangwan wrote:
->
+Signed-Off: Jianguo Wu <wujianguo@huawei.com>
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
+---
+ mm/memory_hotplug.c |   15 ++++++++-------
+ 1 files changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index f93c5b5..bce80c7 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -512,19 +512,20 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages)
+ 
+ 	zone->present_pages += onlined_pages;
+ 	zone->zone_pgdat->node_present_pages += onlined_pages;
+-	if (need_zonelists_rebuild)
+-		build_all_zonelists(NULL, zone);
+-	else
+-		zone_pcp_update(zone);
++	if (onlined_pages) {
++		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
++		if (need_zonelists_rebuild)
++			build_all_zonelists(NULL, zone);
++		else
++			zone_pcp_update(zone);
++	}
+ 
+ 	mutex_unlock(&zonelists_mutex);
+ 
+ 	init_per_zone_wmark_min();
+ 
+-	if (onlined_pages) {
++	if (onlined_pages)
+ 		kswapd_run(zone_to_nid(zone));
+-		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
+-	}
+ 
+ 	vm_total_pages = nr_free_pagecache_pages();
+ 
+-- 
+1.7.1
+
+
