@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab2GEP6P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 11:58:15 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:60548 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351Ab2GEP6N (ORCPT
+	id S1751911Ab2GEQCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 12:02:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49372 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890Ab2GEQCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 11:58:13 -0400
-Message-ID: <4FF5B991.9070807@linaro.org>
-Date: Thu, 05 Jul 2012 16:58:09 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de,
-        Gabriel FERNANDEZ <gabriel.fernandez@stericsson.com>,
-        Loic Pallardy <loic.pallardy@stericsson.com>,
-        Patrice CHOTARD <patrice.chotard@stericsson.com>
-Subject: Re: [PATCH] ARM: ux500: Register pinctrl from platform code until
- it's been DT:ed
-References: <1341412452-3808-1-git-send-email-lee.jones@linaro.org> <CACRpkdb1rZQWpuUxQoxqg2eYanf4tnm0SmFkQQBwvSuyYV00Gw@mail.gmail.com> <4FF56029.2060007@linaro.org> <4FF5B8B9.8030200@wwwdotorg.org>
-In-Reply-To: <4FF5B8B9.8030200@wwwdotorg.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 5 Jul 2012 12:02:08 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: snitzer@redhat.com, david@fromorbit.com, dm-devel@redhat.com,
+        xfs@oss.sgi.com, hch@lst.de, martin.petersen@oracle.com,
+        axboe@kernel.dk, vgoyal@redhat.com
+Subject: [PATCH v3 0/2] block: improvements for discard alignment
+Date: Thu,  5 Jul 2012 18:01:42 +0200
+Message-Id: <1341504104-1674-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.7.10.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/12 16:54, Stephen Warren wrote:
-> On 07/05/2012 03:36 AM, Lee Jones wrote:
->> On 05/07/12 09:55, Linus Walleij wrote:
-> ...
->>> There are plenty of
->>> examples of how to do this in for example:
->>> arch/arm/boot/dts/tegra-seaboard.dts
->>
->> I don't see this file anywhere?
->
-> It was recently renamed to tegra20-seaboard.dts.
->
-> While Tegra doesn't need any AUXDATA for the pinctrl driver specifically
-> (since we're purely initializing pinctrl from DT now when booting with
-> DT), we do need AUXDATA for other devices mainly for clocks. You can
-> find the AUXDATA setup in:
->
-> arch/arch/mach-tegra/board-dt-tegra*.c
+When a disk has a large discard_granularity, discards are not split with
+optimal alignment; the pessimization gets bigger as discard_granularity
+and max_discard_sectors become closer.
 
-That's okay.
+Take the limit case of discard_granularity == max_discard_sectors == 64.
+Then, if a request is submitted for 256 sectors 2..257 it will be split
+like this: 2..65, 66..129, 130..193, 194..257.  None of these requests
+is aligned, so in fact you might end up with no discarded logical blocks
+at all.  With this patch, the split will be 2..63, 64..127, 128..191,
+192..255, 256..257.  The patches also take the discard_alignment into
+consideration.
 
-We use it quite a lot in arch/arch/mach-ux500/board-mop500.c already 
-(also for things like clocks, dma and call-backs).
+Patch 1 adjusts the computation of the granularity-adjusted
+max_discard_sectors so that it prepares for the new code in patch 2,
+which actually adjusts the split.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+v2->v3: drop addition of queue/discard_alignment to sysfs, use
+  correct alignment for partitions
 
+Paolo Bonzini (2):
+  block: reorganize rounding of max_discard_sectors
+  block: split discard into aligned requests
+
+ block/blk-lib.c        |   41 ++++++++++++++++++++++++++++-------------
+ include/linux/blkdev.h |   10 ++++++++++
+ 2 files changed, 38 insertions(+), 13 deletions(-)
 
