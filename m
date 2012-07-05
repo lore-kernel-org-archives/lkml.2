@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933140Ab2GEP1U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 11:27:20 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:57752 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754123Ab2GEP1S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 11:27:18 -0400
-Date: Thu, 5 Jul 2012 12:27:12 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Huewe <peterhuewe@gmx.de>,
-        Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
-Subject: Re: [GIT PULL 00/16] tools lib traceevent: Pending backports of
- libparseevent
-Message-ID: <20120705152712.GB17035@infradead.org>
-References: <1341380068-23806-1-git-send-email-namhyung@kernel.org>
+	id S1756724Ab2GEPan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 11:30:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:8117 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754123Ab2GEPal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 11:30:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="167380757"
+Date: Thu, 5 Jul 2012 17:42:02 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, lauro.venancio@openbossa.org,
+        aloisio.almeida@openbossa.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFC: Prevent NULL deref when getting socket name
+Message-ID: <20120705154202.GI18200@sortiz-mobl>
+References: <1341050207-13145-1-git-send-email-levinsasha928@gmail.com>
+ <20120702182438.GB2010@tuxdriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1341380068-23806-1-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <20120702182438.GB2010@tuxdriver.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jul 04, 2012 at 02:34:28PM +0900, Namhyung Kim escreveu:
-> Please pull pending libparseevent improvements from my tree. All
-> patches in the tree got acked or signed-off by Steven. They were
-> originally in the trace-cmd tree, and format-patched + path name
-> adjusted and re-applied.
-> 
-> I've fixed the committer note and Link positions as you requested.  
-> (I put the Links right before Steven's s-o-b as he's the original
-> committer.) Also changelogs are reflowed (to fit to 70 column width
-> that is the default value of emacs fill-paragraph function).
-> 
-> The following changes since commit 17d7a1123f0f6d532830152564cc812cc73db2f3:
-> 
->   perf bench: Fix confused variable namings and descriptions in mem subsystem (2012-07-02 14:35:45 -0300)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git 
+Hi John,
 
-I think you need to wait a bit more till git request-pull can find the
-tags/libtraceevent-core-for-acme in git.k.o, so that the above line
-would become:
+On Mon, Jul 02, 2012 at 02:24:38PM -0400, John W. Linville wrote:
+> On Sat, Jun 30, 2012 at 11:56:47AM +0200, Sasha Levin wrote:
+> > llcp_sock_getname can be called without a device attached to the nfc_llcp_sock.
+> > 
+> > This would lead to the following BUG:
+> > 
+> > [  362.341807] BUG: unable to handle kernel NULL pointer dereference at           (null)
+> > [  362.341815] IP: [<ffffffff836258e5>] llcp_sock_getname+0x75/0xc0
+> > [  362.341818] PGD 31b35067 PUD 30631067 PMD 0
+> > [  362.341821] Oops: 0000 [#627] PREEMPT SMP DEBUG_PAGEALLOC
+> > [  362.341826] CPU 3
+> > [  362.341827] Pid: 7816, comm: trinity-child55 Tainted: G      D W    3.5.0-rc4-next-20120628-sasha-00005-g9f23eb7 #479
+> > [  362.341831] RIP: 0010:[<ffffffff836258e5>]  [<ffffffff836258e5>] llcp_sock_getname+0x75/0xc0
+> > [  362.341832] RSP: 0018:ffff8800304fde88  EFLAGS: 00010286
+> > [  362.341834] RAX: 0000000000000000 RBX: ffff880033cb8000 RCX: 0000000000000001
+> > [  362.341835] RDX: ffff8800304fdec4 RSI: ffff8800304fdec8 RDI: ffff8800304fdeda
+> > [  362.341836] RBP: ffff8800304fdea8 R08: 7ebcebcb772b7ffb R09: 5fbfcb9c35bdfd53
+> > [  362.341838] R10: 4220020c54326244 R11: 0000000000000246 R12: ffff8800304fdec8
+> > [  362.341839] R13: ffff8800304fdec4 R14: ffff8800304fdec8 R15: 0000000000000044
+> > [  362.341841] FS:  00007effa376e700(0000) GS:ffff880035a00000(0000) knlGS:0000000000000000
+> > [  362.341843] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > [  362.341844] CR2: 0000000000000000 CR3: 0000000030438000 CR4: 00000000000406e0
+> > [  362.341851] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> > [  362.341856] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> > [  362.341858] Process trinity-child55 (pid: 7816, threadinfo ffff8800304fc000, task ffff880031270000)
+> > [  362.341858] Stack:
+> > [  362.341862]  ffff8800304fdea8 ffff880035156780 0000000000000000 0000000000001000
+> > [  362.341865]  ffff8800304fdf78 ffffffff83183b40 00000000304fdec8 0000006000000000
+> > [  362.341868]  ffff8800304f0027 ffffffff83729649 ffff8800304fdee8 ffff8800304fdf48
+> > [  362.341869] Call Trace:
+> > [  362.341874]  [<ffffffff83183b40>] sys_getpeername+0xa0/0x110
+> > [  362.341877]  [<ffffffff83729649>] ? _raw_spin_unlock_irq+0x59/0x80
+> > [  362.341882]  [<ffffffff810f342b>] ? do_setitimer+0x23b/0x290
+> > [  362.341886]  [<ffffffff81985ede>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> > [  362.341889]  [<ffffffff8372a539>] system_call_fastpath+0x16/0x1b
+> > [  362.341921] Code: 84 00 00 00 00 00 b8 b3 ff ff ff 48 85 db 74 54 66 41 c7 04 24 27 00 49 8d 7c 24 12 41 c7 45 00 60 00 00 00 48 8b 83 28 05 00 00 <8b> 00 41 89 44 24 04 0f b6 83 41 05 00 00 41 88 44 24 10 0f b6
+> > [  362.341924] RIP  [<ffffffff836258e5>] llcp_sock_getname+0x75/0xc0
+> > [  362.341925]  RSP <ffff8800304fde88>
+> > [  362.341926] CR2: 0000000000000000
+> > [  362.341928] ---[ end trace 6d450e935ee18bf3 ]---
+> > 
+> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> 
+> Samuel, I'm taking this one directly.
+Thanks. It was already on my for-wireless branch.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git tags/libtraceevent-core-for-acme
+Cheers,
+Samuel.
 
-I did merge this branch, signature checked, all is well, it seems, lets
-see when Ingo pulls from my perf/core branch if everything is OK.
-
-Thanks!
-
-- Arnaldo
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
