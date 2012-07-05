@@ -1,87 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589Ab2GEJpp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 05:45:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57512 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754227Ab2GEJpn (ORCPT
+	id S1755595Ab2GEJuF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 05:50:05 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:2636 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754047Ab2GEJuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 05:45:43 -0400
-Date: Thu, 5 Jul 2012 10:45:41 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de, sameo@linux.intel.com
-Subject: Re: [PATCH 1/1] mfd: Fix runtime warning caused by duplicate device
- registration
-Message-ID: <20120705094541.GK4111@opensource.wolfsonmicro.com>
-References: <1341316788-12730-1-git-send-email-lee.jones@linaro.org>
- <20120703123552.GC25995@sirena.org.uk>
- <4FF2EEA1.6080204@linaro.org>
- <20120703132447.GN29030@opensource.wolfsonmicro.com>
- <4FF2F82D.9080507@linaro.org>
- <20120703142123.GQ29030@opensource.wolfsonmicro.com>
- <4FF54406.3000307@linaro.org>
+	Thu, 5 Jul 2012 05:50:03 -0400
+From: Jiang Liu <jiang.liu@huawei.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, Minchan Kim <minchan@kernel.org>
+CC: Jiang Liu <jiang.liu@huawei.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Yinghai Lu <yinghai@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Keping Chen <chenkeping@huawei.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        Wei Wang <Bessel.Wang@huawei.com>
+Subject: [PATCH 3/4] mm/hotplug: free zone->pageset when a zone becomes empty
+Date: Thu, 5 Jul 2012 17:45:31 +0800
+Message-ID: <1341481532-1700-3-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.8.msysgit.0
+In-Reply-To: <1341481532-1700-1-git-send-email-jiang.liu@huawei.com>
+References: <1341481532-1700-1-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tez2gqrut5pn4jhH"
-Content-Disposition: inline
-In-Reply-To: <4FF54406.3000307@linaro.org>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.108.108.229]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When a zone becomes empty after memory offlining, free zone->pageset.
+Otherwise it will cause memory leak when adding memory to the empty
+zone again because build_all_zonelists() will allocate zone->pageset
+for an empty zone.
 
---tez2gqrut5pn4jhH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
+Signed-off-by: Wei Wang <Bessel.Wang@huawei.com>
+---
+ include/linux/mm.h  |    1 +
+ mm/memory_hotplug.c |    3 +++
+ mm/page_alloc.c     |   13 +++++++++++++
+ 3 files changed, 17 insertions(+), 0 deletions(-)
 
-On Thu, Jul 05, 2012 at 08:36:38AM +0100, Lee Jones wrote:
-> On 03/07/12 15:21, Mark Brown wrote:
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index b36d08c..f8b62f2 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1331,6 +1331,7 @@ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...);
+ extern void setup_per_cpu_pageset(void);
+ 
+ extern void zone_pcp_update(struct zone *zone);
++extern void zone_pcp_reset(struct zone *zone);
+ 
+ /* nommu.c */
+ extern atomic_long_t mmap_pages_allocated;
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index bce80c7..998b792 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -966,6 +966,9 @@ repeat:
+ 
+ 	init_per_zone_wmark_min();
+ 
++	if (!populated_zone(zone))
++		zone_pcp_reset(zone);
++
+ 	if (!node_present_pages(node)) {
+ 		node_clear_state(node, N_HIGH_MEMORY);
+ 		kswapd_stop(node);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index ebf319d..5964b7a 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5872,6 +5872,19 @@ void free_contig_range(unsigned long pfn, unsigned nr_pages)
+ #endif
+ 
+ #ifdef CONFIG_MEMORY_HOTREMOVE
++void zone_pcp_reset(struct zone *zone)
++{
++	unsigned long flags;
++
++	/* avoid races with drain_pages()  */
++	local_irq_save(flags);
++	if (zone->pageset != &boot_pageset) {
++		free_percpu(zone->pageset);
++		zone->pageset = &boot_pageset;
++	}
++	local_irq_restore(flags);
++}
++
+ /*
+  * All pages in the range must be isolated before calling this.
+  */
+-- 
+1.7.1
 
-> >This doesn't explain any of the issues, it just says that they exist.
-> >My best guess would be that at least some of the issue is due to
-> >instantiating the MFD cells from the device tree but it's hard to say
-> >clearly.
 
-> I'm guessing Arnd's email answered some of the questions you had.
-> Let me know of you would like me to explain it in any greater
-> detail.
-
-No, frankly.  It was just a general "why might we put things in DT"
-answer which (especially given what you say below) isn't related to the
-issue at all.
-
-> By the way, this patch has nothing to do with registering these
-> devices when DT is enabled. The code already does that. This is a
-> bug fix, to stop multiple registration of the ab8500 when DT is
-> _not_ enabled.
-
-Really?  It seems really surprising that adding more DT support to the
-MFD core would have any bearing on something like this...
-
---tez2gqrut5pn4jhH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP9WI+AAoJEBus8iNuMP3dgeYP+gJSvQ82I/KFX4NPcox9sdhL
-tihOkE/Hl60vlRx9m7vSV52k5HBvt5ugYuQynkDtqR0H1JQGKgZoduGhCUocKZRS
-6M4gopgq64RVyhbgqZyyB99jxKE6kzZvxOBKF5fQXQijnCYCMrDpfO5zwxIZ5X/k
-oiG9m738d4JtcFiCQA8DVmy+MZnv7Px3Iay9Nysx2Onrew+SWFRzG4dEB9BNj60b
-T0zqWkSJWSEsdJztOHPuFpVE9ae656oAZ3HssF71oYQwo7xEIvhDYKpoGZsPbMxh
-i40g9PRsHiklXlArPAA0Nva8sOC6XFUvIM8PoVFmLqeBTE3DGD3EKjYCD0yUaycH
-yq6JvrqqSZwz4PEPFrgUPZJot+1r+7rMQBl+Omeh+k528d2nN+R2iqcZLL5P4PrL
-xb5uMImjJXzSnF/TqZld7Hr6WLJaXWOwfoGRkYKUwbQIn4469ZLOxsOMwYLo+PDh
-eXwosHcO3L+NkXtjQ6BorV1fsqz2Wa6GwSiG3gezODdW8BvTGi/7MFxqvS7UvTm1
-2xvhWEZulyC8pkob70lh/zxVhRsz6+LVhnlmSb0BOMCinQbObGBOL35x31e1aGUa
-ti5kTUEY/wfYXa3t0rOHrxj/S3rxmuOGY97KF9DMv6kCwpB1iQERmfuUnAMJxjJv
-IkOnobKsDwFeldHg+Ag4
-=4cij
------END PGP SIGNATURE-----
-
---tez2gqrut5pn4jhH--
