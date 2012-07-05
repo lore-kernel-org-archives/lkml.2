@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932622Ab2GEWMD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 18:12:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61670 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932134Ab2GEWMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 18:12:00 -0400
-Date: Thu, 5 Jul 2012 17:43:06 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, snitzer@redhat.com, david@fromorbit.com,
-        dm-devel@redhat.com, xfs@oss.sgi.com, hch@lst.de,
-        martin.petersen@oracle.com, axboe@kernel.dk
-Subject: Re: [PATCH v3 0/2] block: improvements for discard alignment
-Message-ID: <20120705214306.GA18063@redhat.com>
-References: <1341504104-1674-1-git-send-email-pbonzini@redhat.com>
+	id S1757467Ab2GEWQB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 18:16:01 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:54855 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755708Ab2GEWP7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 18:15:59 -0400
+Date: Thu, 5 Jul 2012 22:17:01 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] force dentry revalidation after namespace change
+Message-ID: <20120705221701.GC11255@mail.hallyn.com>
+References: <1341496805-26394-1-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1341504104-1674-1-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1341496805-26394-1-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 06:01:42PM +0200, Paolo Bonzini wrote:
-> When a disk has a large discard_granularity, discards are not split with
-> optimal alignment; the pessimization gets bigger as discard_granularity
-> and max_discard_sectors become closer.
+Quoting Glauber Costa (glommer@parallels.com):
+> When we change the namespace tag of a sysfs entry, the associated dentry
+> is still kept around. readdir() will work correctly and not display the
+> old entries, but open() will still succeed, so will reads and writes.
 > 
-> Take the limit case of discard_granularity == max_discard_sectors == 64.
-> Then, if a request is submitted for 256 sectors 2..257 it will be split
-> like this: 2..65, 66..129, 130..193, 194..257.  None of these requests
-> is aligned, so in fact you might end up with no discarded logical blocks
-> at all.  With this patch, the split will be 2..63, 64..127, 128..191,
-> 192..255, 256..257.  The patches also take the discard_alignment into
-> consideration.
+> This will no longer happen if sysfs is remounted, hinting that this is a
+> cache-related problem.
 > 
-> Patch 1 adjusts the computation of the granularity-adjusted
-> max_discard_sectors so that it prepares for the new code in patch 2,
-> which actually adjusts the split.
+> I am using the following sequence to demonstrate that:
 > 
-> v2->v3: drop addition of queue/discard_alignment to sysfs, use
->   correct alignment for partitions
+> shell1:
+> ip link add type veth
+> unshare -nm
 > 
-> Paolo Bonzini (2):
->   block: reorganize rounding of max_discard_sectors
->   block: split discard into aligned requests
+> shell2:
+> ip link set veth1 <pid_of_shell_1>
+> cat /sys/devices/virtual/net/veth1/ifindex
+> 
+> Before that patch, this will succeed (fail to fail). After it, it will
 
-Looks good to me. Did little testing with scsi_debug with discard_alignment=0
-and discard_alignment=7 (sectors). We seem to be aligning requests better now.
+Confirmed that it currently fails to fail :)
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> correctly return an error. Differently from a normal rename, which we
+> handle fine, changing the object namespace will keep it's path intact.
+> So this check seems necessary as well.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
 
-Thanks
-Vivek
+Haven't run it, but the patch looks good.  Thanks, Glauber.
+
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+
+> CC: Tejun Heo <tj@kernel.org>
+> CC: Eric W. Biederman <ebiederm@xmission.com>
+> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+>  fs/sysfs/dir.c |    5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+> index e6bb9b2..c24bdd9 100644
+> --- a/fs/sysfs/dir.c
+> +++ b/fs/sysfs/dir.c
+> @@ -307,6 +307,7 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
+>  {
+>  	struct sysfs_dirent *sd;
+>  	int is_dir;
+> +	int type;
+>  
+>  	if (nd->flags & LOOKUP_RCU)
+>  		return -ECHILD;
+> @@ -314,6 +315,10 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
+>  	sd = dentry->d_fsdata;
+>  	mutex_lock(&sysfs_mutex);
+>  
+> +	type = sysfs_ns_type(sd);
+> +	if (sd->s_ns && (sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns))
+> +		goto out_bad;
+> +
+>  	/* The sysfs dirent has been deleted */
+>  	if (sd->s_flags & SYSFS_FLAG_REMOVED)
+>  		goto out_bad;
+> -- 
+> 1.7.10.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
