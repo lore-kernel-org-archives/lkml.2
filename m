@@ -1,168 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224Ab2GEJwk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 05:52:40 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:4937 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755477Ab2GEJwj (ORCPT
+	id S1755663Ab2GEJzj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 05:55:39 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13422 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755112Ab2GEJzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 05:52:39 -0400
-From: Jiang Liu <jiang.liu@huawei.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>, Minchan Kim <minchan@kernel.org>
-CC: Jiang Liu <jiang.liu@huawei.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Yinghai Lu <yinghai@kernel.org>, Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Keping Chen <chenkeping@huawei.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH 4/4] mm/hotplug: mark memory hotplug code in page_alloc.c as __meminit
-Date: Thu, 5 Jul 2012 17:45:32 +0800
-Message-ID: <1341481532-1700-4-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.8.msysgit.0
-In-Reply-To: <1341481532-1700-1-git-send-email-jiang.liu@huawei.com>
-References: <1341481532-1700-1-git-send-email-jiang.liu@huawei.com>
+	Thu, 5 Jul 2012 05:55:37 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 05 Jul 2012 02:55:31 -0700
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+To: <swarren@wwwdotorg.org>, <mturquette@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux@arm.linux.org.uk>,
+        <ccross@android.com>, <olof@lixom.net>, <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>
+Subject: [PATCH v3 0/6] Port Tegra to generic clk framework
+Date: Thu, 5 Jul 2012 15:25:14 +0530
+Message-ID: <1341482120-3317-1-git-send-email-pgaikwad@nvidia.com>
+X-Mailer: git-send-email 1.7.4.1
+X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions used by both boot and memory hotplug as __meminit to reduce
-memory footprint when memory hotplug is disabled.
+This patch set ports Tegra clock code to generic clock framework.
 
-Alos guard zone_pcp_update() with CONFIG_MEMORY_HOTPLUG because it's only
-used by memory hotplug code.
+Depends on
+[PATCH v3 0/9] Add clk_prepare/clk_unprepare series
+[PATCH] ARM: tegra: Remove second instance of uart clk
+[PATCH] dma: tegra: add clk_prepare/clk_unprepare
+[PATCH] ARM: tegra: dma: rename driver name for clock to "tegra-apbdma"
 
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
----
- mm/page_alloc.c |   66 ++++++++++++++++++++++++++++--------------------------
- 1 files changed, 34 insertions(+), 32 deletions(-)
+Depends on following fix currently in clk-fixes for 3.5-rc6
+http://git.linaro.org/gitweb?p=people/mturquette/linux.git;a=commit;h=863b13271f1608ab3af6f7a371047d9a66693e38
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5964b7a..da08449 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3409,7 +3409,7 @@ static void setup_zone_pageset(struct zone *zone);
- DEFINE_MUTEX(zonelists_mutex);
- 
- /* return values int ....just for stop_machine() */
--static __init_refok int __build_all_zonelists(void *data)
-+static int __build_all_zonelists(void *data)
- {
- 	int nid;
- 	int cpu;
-@@ -3753,7 +3753,7 @@ static void __meminit zone_init_free_lists(struct zone *zone)
- 	memmap_init_zone((size), (nid), (zone), (start_pfn), MEMMAP_EARLY)
- #endif
- 
--static int zone_batchsize(struct zone *zone)
-+static int __meminit zone_batchsize(struct zone *zone)
- {
- #ifdef CONFIG_MMU
- 	int batch;
-@@ -3835,7 +3835,7 @@ static void setup_pagelist_highmark(struct per_cpu_pageset *p,
- 		pcp->batch = PAGE_SHIFT * 8;
- }
- 
--static void setup_zone_pageset(struct zone *zone)
-+static void __meminit setup_zone_pageset(struct zone *zone)
- {
- 	int cpu;
- 
-@@ -3908,33 +3908,7 @@ int zone_wait_table_init(struct zone *zone, unsigned long zone_size_pages)
- 	return 0;
- }
- 
--static int __zone_pcp_update(void *data)
--{
--	struct zone *zone = data;
--	int cpu;
--	unsigned long batch = zone_batchsize(zone), flags;
--
--	for_each_possible_cpu(cpu) {
--		struct per_cpu_pageset *pset;
--		struct per_cpu_pages *pcp;
--
--		pset = per_cpu_ptr(zone->pageset, cpu);
--		pcp = &pset->pcp;
--
--		local_irq_save(flags);
--		free_pcppages_bulk(zone, pcp->count, pcp);
--		setup_pageset(pset, batch);
--		local_irq_restore(flags);
--	}
--	return 0;
--}
--
--void zone_pcp_update(struct zone *zone)
--{
--	stop_machine(__zone_pcp_update, zone, NULL);
--}
--
--static __meminit void zone_pcp_init(struct zone *zone)
-+static void __meminit zone_pcp_init(struct zone *zone)
- {
- 	/*
- 	 * per cpu subsystem is not up at this point. The following code
-@@ -3949,7 +3923,7 @@ static __meminit void zone_pcp_init(struct zone *zone)
- 					 zone_batchsize(zone));
- }
- 
--__meminit int init_currently_empty_zone(struct zone *zone,
-+int __meminit init_currently_empty_zone(struct zone *zone,
- 					unsigned long zone_start_pfn,
- 					unsigned long size,
- 					enum memmap_context context)
-@@ -4757,7 +4731,7 @@ out:
- }
- 
- /* Any regular memory on that node ? */
--static void check_for_regular_memory(pg_data_t *pgdat)
-+static void __init check_for_regular_memory(pg_data_t *pgdat)
- {
- #ifdef CONFIG_HIGHMEM
- 	enum zone_type zone_type;
-@@ -5871,6 +5845,34 @@ void free_contig_range(unsigned long pfn, unsigned nr_pages)
- }
- #endif
- 
-+#ifdef	CONFIG_MEMORY_HOTPLUG
-+static int __meminit __zone_pcp_update(void *data)
-+{
-+	struct zone *zone = data;
-+	int cpu;
-+	unsigned long batch = zone_batchsize(zone), flags;
-+
-+	for_each_possible_cpu(cpu) {
-+		struct per_cpu_pageset *pset;
-+		struct per_cpu_pages *pcp;
-+
-+		pset = per_cpu_ptr(zone->pageset, cpu);
-+		pcp = &pset->pcp;
-+
-+		local_irq_save(flags);
-+		free_pcppages_bulk(zone, pcp->count, pcp);
-+		setup_pageset(pset, batch);
-+		local_irq_restore(flags);
-+	}
-+	return 0;
-+}
-+
-+void __meminit zone_pcp_update(struct zone *zone)
-+{
-+	stop_machine(__zone_pcp_update, zone, NULL);
-+}
-+#endif
-+
- #ifdef CONFIG_MEMORY_HOTREMOVE
- void zone_pcp_reset(struct zone *zone)
- {
+Tested on Ventana and Cardhu.
+
+v3:
+ - Fix Tegra20 pll clk round rate.
+ - Fix Tegra30 periph clk ref count check.
+
+v2:
+ - Rebased on Tegra's for-3.6/common-clk.
+
+Prashant Gaikwad (6):
+  ARM: tegra30: Separate out clk ops and clk data
+  ARM: tegra20: Separate out clk ops and clk data
+  ARM: tegra: Rename tegra20 clock file
+  ARM: tegra: Add clk_tegra structure and helper functions
+  ARM: tegra: Port tegra to generic clock framework
+  ARM: tegra: Remove duplicate code
+
+ arch/arm/Kconfig                          |    1 +
+ arch/arm/mach-tegra/Makefile              |    4 +-
+ arch/arm/mach-tegra/clock.c               |  570 +------
+ arch/arm/mach-tegra/clock.h               |   40 +-
+ arch/arm/mach-tegra/common.c              |    1 -
+ arch/arm/mach-tegra/include/mach/clk.h    |    3 +
+ arch/arm/mach-tegra/tegra20_clocks.c      | 1526 +++++++++++++++++
+ arch/arm/mach-tegra/tegra20_clocks.h      |   41 +
+ arch/arm/mach-tegra/tegra20_clocks_data.c | 1113 +++++++++++++
+ arch/arm/mach-tegra/tegra2_clocks.c       | 2484 ----------------------------
+ arch/arm/mach-tegra/tegra30_clocks.c      | 2559 ++++++++++-------------------
+ arch/arm/mach-tegra/tegra30_clocks.h      |   53 +
+ arch/arm/mach-tegra/tegra30_clocks_data.c | 1370 +++++++++++++++
+ 13 files changed, 4991 insertions(+), 4774 deletions(-)
+ create mode 100644 arch/arm/mach-tegra/tegra20_clocks.c
+ create mode 100644 arch/arm/mach-tegra/tegra20_clocks.h
+ create mode 100644 arch/arm/mach-tegra/tegra20_clocks_data.c
+ delete mode 100644 arch/arm/mach-tegra/tegra2_clocks.c
+ create mode 100644 arch/arm/mach-tegra/tegra30_clocks.h
+ create mode 100644 arch/arm/mach-tegra/tegra30_clocks_data.c
+
 -- 
-1.7.1
-
+1.7.4.1
 
