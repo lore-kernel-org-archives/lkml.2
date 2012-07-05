@@ -1,45 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756270Ab2GEMgV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 08:36:21 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:56067 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182Ab2GEMgU convert rfc822-to-8bit (ORCPT
+	id S932555Ab2GEMhE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 08:37:04 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:46710
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932356Ab2GEMhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 08:36:20 -0400
+	Thu, 5 Jul 2012 08:37:00 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zz146fIzz1202hzz8275bhz2dh668h839hd24he5bhf0ah107ah)
+X-WSS-ID: 0M6OTPI-01-2UT-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <iommu@lists.linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 09/28] iommu/amd: Move unmap_flush message to amd_iommu_init_dma_ops()
+Date: Thu, 5 Jul 2012 14:36:29 +0200
+Message-ID: <1341491808-23083-10-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
+References: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <20120531111247.GA9089@faui49q.informatik.uni-erlangen.de>
-References: <20120531111247.GA9089@faui49q.informatik.uni-erlangen.de>
-Date: Thu, 5 Jul 2012 14:36:19 +0200
-Message-ID: <CACRpkdZQrwihHFK3nhoBfbMy_L+mAH+XxtYiAE-r_Mc3Dq6L7A@mail.gmail.com>
-Subject: Re: [PATCH] gpio/msm_v1: CONFIG_GPIO_MSM_V1 is only available on
- three SoCs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, vamos-dev@lists.cs.fau.de
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 1:12 PM, Christian Dietrich
-<christian.dietrich@informatik.uni-erlangen.de> wrote:
+The message belongs there anyway, so move it to that
+function.
 
-> The feature GPIO_MSM_V1 is only available on three SoCs. On all other MSM SoCs
-> the INT_GPIO_GROUP{1,2} is undeclared, but Kconfig does allow such
-> configurations. Therefore the produced configuration is valid, but does not
-> compile. The problem is fixed by adding the missing Kconfig constraints.
->
-> drivers/gpio/gpio-msm-v1.c: In function â  msm_init_gpioâ  :
-> drivers/gpio/gpio-msm-v1.c:629:26: error: 'INT_GPIO_GROUP1' undeclared
-> drivers/gpio/gpio-msm-v1.c:630:26: error: 'INT_GPIO_GROUP2' undeclared
->
-> Signed-off-by: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ drivers/iommu/amd_iommu.c      |    5 +++++
+ drivers/iommu/amd_iommu_init.c |    8 --------
+ 2 files changed, 5 insertions(+), 8 deletions(-)
 
-Applied.
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index cfa01c4..569800f 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -2962,6 +2962,11 @@ int __init amd_iommu_init_dma_ops(void)
+ 
+ 	amd_iommu_stats_init();
+ 
++	if (amd_iommu_unmap_flush)
++		pr_info("AMD-Vi: IO/TLB flush on unmap enabled\n");
++	else
++		pr_info("AMD-Vi: Lazy IO/TLB flushing enabled\n");
++
+ 	return 0;
+ 
+ free_domains:
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index 2324f9b..ab3bc19 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -1706,14 +1706,6 @@ static int __init amd_iommu_init(void)
+ 
+ 	amd_iommu_init_api();
+ 
+-	if (iommu_pass_through)
+-		goto out;
+-
+-	if (amd_iommu_unmap_flush)
+-		printk(KERN_INFO "AMD-Vi: IO/TLB flush on unmap enabled\n");
+-	else
+-		printk(KERN_INFO "AMD-Vi: Lazy IO/TLB flushing enabled\n");
+-
+ out:
+ 	return ret;
+ 
+-- 
+1.7.9.5
 
-Thanks,
-Linus Walleij
+
