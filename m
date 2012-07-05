@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751259Ab2GEFUO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 01:20:14 -0400
-Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:41574 "EHLO
+	id S1751953Ab2GEFVQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 01:21:16 -0400
+Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:41267 "EHLO
 	na3sys009aog133.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750869Ab2GEFUK (ORCPT
+	by vger.kernel.org with ESMTP id S1751393Ab2GEFU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 01:20:10 -0400
+	Thu, 5 Jul 2012 01:20:27 -0400
 MIME-Version: 1.0
-Date: Thu, 5 Jul 2012 10:50:07 +0530
-Message-ID: <CADysL2ZD0yCpCodeuwDpiaiD=uYuDfv4MDXN=YWa-LfY1-8pjA@mail.gmail.com>
-Subject: [PATCH v4 0/2] add new cache maintenance api
+Date: Thu, 5 Jul 2012 10:50:24 +0530
+Message-ID: <CADysL2YwpyuhgzwF6djObZQTpgdHCsLp=K7NsCJth6wAXuFV=A@mail.gmail.com>
+Subject: [PATCH v4 2/2] OMAP:IOMMU:flush L1 and L2 caches
 From: "Gupta, Ramesh" <grgupta@ti.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-omap@vger.kernel.org
@@ -22,54 +22,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 >From 393c4effbbec74ff9b969d53ce4d36fde56b71df Mon Sep 17 00:00:00 2001
 From: Ramesh Gupta G <grgupta@ti.com>
-Date: Wed, 4 Jul 2012 16:43:41 +0530
-Subject: [PATCH v4 0/2] add new cache maintenance api
+Date: Fri, 15 Jun 2012 16:46:46 +0530
+Subject: [PATCH v4 2/2] OMAP:IOMMU:flush L1 and L2 caches
 
-This patch series is the next version to
-- add a new cache maintenance api to support non-coherent iommu drivers.
-- flush both L1 and L2 caches from OMAP iommu whenever the page table
-  memory is updated.
-
-Changes since the previous patch set (v3)
-- Minor cleanup for fixing checkpatch warnings.
-
-The implementation of the new api is based on
-the approach[1] discussed.
-
-[1]http://marc.info/?l=linux-kernel&m=131316512713815&w=2
+OMAP IOMMU need to make sure that data in the L1 and L2
+caches is visible to the MMU hardware whenever the
+pagetables are updated. The current code only takes
+care of L1 cache using assembly code. Added code to
+handle this using a new L1 cache maintenance function
+and the outer cache function.
 
 Signed-off-by: Ramesh Gupta G <grgupta@ti.com>
+---
+ drivers/iommu/omap-iommu.c |   26 +++++++++-----------------
+ 1 files changed, 9 insertions(+), 17 deletions(-)
 
-Ramesh Gupta G (2):
-  ARM: new cache maintenance api for iommu
-  OMAP:IOMMU:flush L1 and L2 caches
+diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
+index 6899dcd..f909019 100644
+--- a/drivers/iommu/omap-iommu.c
++++ b/drivers/iommu/omap-iommu.c
+@@ -469,22 +469,14 @@ EXPORT_SYMBOL_GPL(omap_foreach_iommu_device);
+  */
+ static void flush_iopgd_range(u32 *first, u32 *last)
+ {
+-	/* FIXME: L2 cache should be taken care of if it exists */
+-	do {
+-		asm("mcr	p15, 0, %0, c7, c10, 1 @ flush_pgd"
+-		    : : "r" (first));
+-		first += L1_CACHE_BYTES / sizeof(*first);
+-	} while (first <= last);
++	flush_iommu_mem(first, last);
++	outer_flush_range(virt_to_phys(first), virt_to_phys(last));
+ }
 
- arch/arm/include/asm/cacheflush.h |   26 ++++++++++++++++++++++++++
- arch/arm/include/asm/glue-cache.h |    1 +
- arch/arm/mm/cache-fa.S            |   15 +++++++++++++++
- arch/arm/mm/cache-v3.S            |   14 +++++++++++++-
- arch/arm/mm/cache-v4.S            |   15 +++++++++++++++
- arch/arm/mm/cache-v4wb.S          |   21 +++++++++++++++++++++
- arch/arm/mm/cache-v4wt.S          |   17 +++++++++++++++++
- arch/arm/mm/cache-v6.S            |   20 ++++++++++++++++++++
- arch/arm/mm/cache-v7.S            |   21 +++++++++++++++++++++
- arch/arm/mm/proc-arm1020.S        |   22 ++++++++++++++++++++++
- arch/arm/mm/proc-arm1020e.S       |   20 ++++++++++++++++++++
- arch/arm/mm/proc-arm1022.S        |   20 ++++++++++++++++++++
- arch/arm/mm/proc-arm1026.S        |   20 ++++++++++++++++++++
- arch/arm/mm/proc-arm920.S         |   17 +++++++++++++++++
- arch/arm/mm/proc-arm922.S         |   17 +++++++++++++++++
- arch/arm/mm/proc-arm925.S         |   22 ++++++++++++++++++++++
- arch/arm/mm/proc-arm926.S         |   22 ++++++++++++++++++++++
- arch/arm/mm/proc-arm940.S         |   25 +++++++++++++++++++++++++
- arch/arm/mm/proc-arm946.S         |   24 ++++++++++++++++++++++++
- arch/arm/mm/proc-feroceon.S       |   30 ++++++++++++++++++++++++++++++
- arch/arm/mm/proc-macros.S         |    1 +
- arch/arm/mm/proc-mohawk.S         |   18 ++++++++++++++++++
- arch/arm/mm/proc-xsc3.S           |   17 +++++++++++++++++
- arch/arm/mm/proc-xscale.S         |   19 +++++++++++++++++++
- drivers/iommu/omap-iommu.c        |   26 +++++++++-----------------
- 25 files changed, 452 insertions(+), 18 deletions(-)
+ static void flush_iopte_range(u32 *first, u32 *last)
+ {
+-	/* FIXME: L2 cache should be taken care of if it exists */
+-	do {
+-		asm("mcr	p15, 0, %0, c7, c10, 1 @ flush_pte"
+-		    : : "r" (first));
+-		first += L1_CACHE_BYTES / sizeof(*first);
+-	} while (first <= last);
++	flush_iommu_mem(first, last);
++	outer_flush_range(virt_to_phys(first), virt_to_phys(last));
+ }
+
+ static void iopte_free(u32 *iopte)
+@@ -513,7 +505,7 @@ static u32 *iopte_alloc(struct omap_iommu *obj,
+u32 *iopgd, u32 da)
+ 			return ERR_PTR(-ENOMEM);
+
+ 		*iopgd = virt_to_phys(iopte) | IOPGD_TABLE;
+-		flush_iopgd_range(iopgd, iopgd);
++		flush_iopgd_range(iopgd, iopgd + 1);
+
+ 		dev_vdbg(obj->dev, "%s: a new pte:%p\n", __func__, iopte);
+ 	} else {
+@@ -542,7 +534,7 @@ static int iopgd_alloc_section(struct omap_iommu
+*obj, u32 da, u32 pa, u32 prot)
+ 	}
+
+ 	*iopgd = (pa & IOSECTION_MASK) | prot | IOPGD_SECTION;
+-	flush_iopgd_range(iopgd, iopgd);
++	flush_iopgd_range(iopgd, iopgd + 1);
+ 	return 0;
+ }
+
+@@ -559,7 +551,7 @@ static int iopgd_alloc_super(struct omap_iommu
+*obj, u32 da, u32 pa, u32 prot)
+
+ 	for (i = 0; i < 16; i++)
+ 		*(iopgd + i) = (pa & IOSUPER_MASK) | prot | IOPGD_SUPER;
+-	flush_iopgd_range(iopgd, iopgd + 15);
++	flush_iopgd_range(iopgd, iopgd + 16);
+ 	return 0;
+ }
+
+@@ -700,7 +692,7 @@ static size_t iopgtable_clear_entry_core(struct
+omap_iommu *obj, u32 da)
+ 		}
+ 		bytes *= nent;
+ 		memset(iopte, 0, nent * sizeof(*iopte));
+-		flush_iopte_range(iopte, iopte + (nent - 1) * sizeof(*iopte));
++		flush_iopte_range(iopte, iopte + nent * sizeof(*iopte));
+
+ 		/*
+ 		 * do table walk to check if this table is necessary or not
+@@ -722,7 +714,7 @@ static size_t iopgtable_clear_entry_core(struct
+omap_iommu *obj, u32 da)
+ 		bytes *= nent;
+ 	}
+ 	memset(iopgd, 0, nent * sizeof(*iopgd));
+-	flush_iopgd_range(iopgd, iopgd + (nent - 1) * sizeof(*iopgd));
++	flush_iopgd_range(iopgd, iopgd + nent * sizeof(*iopgd));
+ out:
+ 	return bytes;
+ }
+-- 
+1.7.0.4
 
 
 -- 
