@@ -1,78 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab2GEJ34 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 05:29:56 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:46486 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754798Ab2GEJ3x (ORCPT
+	id S1754536Ab2GEJgr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 05:36:47 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:43065 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab2GEJgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 05:29:53 -0400
-Message-ID: <1341480578.23916.7.camel@ThinkPad-T420>
-Subject: Re: [PATCH powerpc 2/2] kfree the cache name  of pgtable cache if
- SLUB is used
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm <linux-mm@kvack.org>,
-        PowerPC email list <linuxppc-dev@lists.ozlabs.org>
-Date: Thu, 05 Jul 2012 17:29:38 +0800
-In-Reply-To: <4FF54F18.50300@parallels.com>
-References: <1340617984.13778.37.camel@ThinkPad-T420>
-	 <1340618099.13778.39.camel@ThinkPad-T420>
-	 <alpine.DEB.2.00.1207031344240.14703@router.home>
-	 <alpine.DEB.2.00.1207031535330.14703@router.home>
-	 <1341392420.18505.41.camel@ThinkPad-T420> <4FF439D0.1000603@parallels.com>
-	 <1341452486.18505.49.camel@ThinkPad-T420> <4FF54F18.50300@parallels.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12070509-8256-0000-0000-00000331BA9B
+	Thu, 5 Jul 2012 05:36:45 -0400
+Message-ID: <4FF56029.2060007@linaro.org>
+Date: Thu, 05 Jul 2012 10:36:41 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Gabriel FERNANDEZ <gabriel.fernandez@stericsson.com>,
+        Loic Pallardy <loic.pallardy@stericsson.com>,
+        Patrice CHOTARD <patrice.chotard@stericsson.com>
+Subject: Re: [PATCH] ARM: ux500: Register pinctrl from platform code until
+ it's been DT:ed
+References: <1341412452-3808-1-git-send-email-lee.jones@linaro.org> <CACRpkdb1rZQWpuUxQoxqg2eYanf4tnm0SmFkQQBwvSuyYV00Gw@mail.gmail.com>
+In-Reply-To: <CACRpkdb1rZQWpuUxQoxqg2eYanf4tnm0SmFkQQBwvSuyYV00Gw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-05 at 12:23 +0400, Glauber Costa wrote:
-> On 07/05/2012 05:41 AM, Li Zhong wrote:
-> > On Wed, 2012-07-04 at 16:40 +0400, Glauber Costa wrote:
-> >> On 07/04/2012 01:00 PM, Li Zhong wrote:
-> >>> On Tue, 2012-07-03 at 15:36 -0500, Christoph Lameter wrote:
-> >>>>> Looking through the emails it seems that there is an issue with alias
-> >>>>> strings. 
-> >>> To be more precise, there seems no big issue currently. I just wanted to
-> >>> make following usage of kmem_cache_create (SLUB) possible:
-> >>>
-> >>> 	name = some string kmalloced
-> >>> 	kmem_cache_create(name, ...)
-> >>> 	kfree(name);
-> >>
-> >> Out of curiosity: Why?
-> >> This is not (currently) possible with the other allocators (may change
-> >> with christoph's unification patches), so you would be making your code
-> >> slub-dependent.
-> >>
-> > 
-> > For slub itself, I think it's not good that: in some cases, the name
-> > string could be kfreed ( if it was kmalloced ) immediately after calling
-> > the cache create; in some other case, the name string needs to be kept
-> > valid until some init calls finished. 
-> > 
-> > I agree with you that it would make the code slub-dependent, so I'm now
-> > working on the consistency of the other allocators regarding this name
-> > string duplicating thing. 
-> 
-> If you really need to kfree the string, or even if it is easier for you
-> this way, it can be done. As a matter of fact, this is the case for me.
-> Just that your patch is not enough. Christoph has a patch that makes
-> this behavior consistent over all allocators.
+On 05/07/12 09:55, Linus Walleij wrote:
+> On Wed, Jul 4, 2012 at 4:34 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>
+>> There are some inconsistencies with the way pinctrl devices are named
+>> when registered from platform code to the ones registered by Device
+>> Tree. Platform devices look like 'pinctrl-db8500', whereas the ones
+>> registered from Device Tree look more like 'pinctrl.2'. This leads to
+>> failure when carrying out name-based searches for known devices.
+>>
+>> Until the correct DT bindings have been applied to the pinctrl driver
+>> it will fail to function correctly. For instance, during a Device
+>> Tree boot on Snowball no bootlog is visible due to a UART port probe
+>> failure. Regulators fail in a similar way.
+>
+> The problem is *NOT* any missing device tree bindings. The place
+> where the problem appear is in the pin control mapping table, which
+> uses the string "pinctrl-db8500"
+>
+> The bindings to pass in the pinctrl mapping from the devcie tree
+> is generic and already exist:
+> Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
 
-Sorry, I didn't know that. Seems I don't need to continue the half-done
-work in slab. If possible, would you please give me a link of the patch?
-Thank you. 
+Yes I saw these, but that still doesn't help our situation. A way to 
+link the mapping tables registered with a platform device to the driver 
+started with Device Tree is missing. This can be over-come by several 
+methods:
 
-> This just needs to be pushed again to the tree.
-> 
+a) Create a binding which takes a device name to tag onto a mapping. 
+This can be used in the name based searches currently employed by 
+pinctrl. This is the binding I was talking about in the commit log. In 
+retrospect, I can see that this is not the correct solution.
+
+b) Continue using Device Tree and force the 'pinctrl-db8500' device name 
+which any string based searches will be expecting with AUXDATA(). We do 
+similar things for clock-names already. However, this must be seen as a 
+hacky work-around and it to be removed after full enablement has been 
+taken place.
+
+c) Prevent the pinctrl driver from being started by Device Tree and 
+allow platform code to register the device until we can populate the 
+device tree with all of the mappings. This is the way you advised me to 
+do it [see below] and it's what this patch tries to achieve.
+
+Linus said:
+> In my eyes the problem is introduced by that commit ["pinctrl-nomadik:
+> Allow Device Tree driver probing"]. So I'll revert it and go for a
+> complete approach for v3.6
+
+Hopefully now you can see where I'm coming from.
+
+> The stuff in the file:
+> arch/arm/mach-ux500/board-mop500-pins.c
+>
+> Need to be moved over to the device tree.
+
+Agreed, but this patch aims to fix an -rc bug. The full Device Tree 
+implementation isn't likely to reach Mainline until at least v3.6, as 
+you already mentioned.
+
+ > There are plenty of
+> examples of how to do this in for example:
+> arch/arm/boot/dts/tegra-seaboard.dts
+
+I don't see this file anywhere?
+
+> So what is needed is that someone augment the device tree
+> with the pinctrl data and disable the registration of the static
+> maps from the above file if the node exists.
+
+Right, future work.
+
+>> This patch prevents Device Tree from probing the pinctrl driver and
+>> ensures registration is completed from platform code instead.
+>>
+>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>
+> Is the DT machinery really incapable of specifying
+> the device name to anything else than the bus name?
+> Can't you do this with AUX_DATA()? I've seen that done in the
+> past. For example you do:
+>
+> OF_DEV_AUXDATA("st,nomadik-gpio", 0x8012e000, "gpio.0", NULL),
+>
+> Can't you just:
+> OF_DEV_AUXDATA("stericsson,nmk_pinctrl", 0, "pinctrl-db8500", NULL),
+>
+> And it will happily assign the "pinctrl-db8500" name to it's instantiated
+> device?
+
+Yes, this will work, see option 'b' above.
+
+I'll submit another patch.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
 
 
