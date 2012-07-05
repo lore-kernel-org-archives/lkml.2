@@ -1,173 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab2GEH2G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 03:28:06 -0400
-Received: from mga11.intel.com ([192.55.52.93]:34943 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753661Ab2GEH04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 03:26:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="173583261"
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
-        Shaohua Li <shli@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH v4 2/4] block: add runtime pm helpers
-Date: Thu,  5 Jul 2012 15:26:37 +0800
-Message-Id: <1341473199-3837-3-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1341473199-3837-1-git-send-email-ming.m.lin@intel.com>
-References: <1341473199-3837-1-git-send-email-ming.m.lin@intel.com>
+	id S1754487Ab2GEH2M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 03:28:12 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18832 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938Ab2GEH2H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 03:28:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 05 Jul 2012 00:27:55 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>,
+        <rob.herring@calxeda.com>, <grant.likely@secretlab.ca>,
+        <arnd@arndb.de>, <linus.walleij@linaro.org>, <lee.jones@linaro.org>,
+        <swarren@wwwdotorg.org>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V4] regulator: dt: add policy to have property "regulator-compatible"
+Date: Thu, 5 Jul 2012 12:53:04 +0530
+Message-ID: <1341472984-1503-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add runtime pm helper functions:
+Add the policy for regulator DT such that if device have multiple
+regulator and its binding contains a child node that describes each
+regulator then each regulator child node must have the property
+"regulator-compatible" which matches with regulator name of their
+hardware counterparts.
+Modify the DT documentation of regulator devices to reflect this
+policy.
 
-blk_pm_runtime_init()
-blk_pre_runtime_suspend()
-blk_post_runtime_suspend()
-blk_pre_runtime_resume()
-blk_post_runtime_suspend()
-
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
+Changes from V3:
+Original patch:
+[PATCH V3 3/3] regulator: dt: add policy to have property "regulator-compatible"
+There is issue on applying the patch for error was around tps6586x.txt file.
 
-v4:
-- Adds CONFIG_PM_RUNTIME check
+I also able to saw the issue when tried to apply locally.
+Creating new patch with same old changes and after rebase.
+I applied this patch in new branch and it applied successfully.
 
- block/blk-core.c       |   63 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/blkdev.h |   27 +++++++++++++++++++++
- 2 files changed, 90 insertions(+)
+ Documentation/devicetree/bindings/mfd/tps65910.txt |   54 +++++++++++++----
+ .../devicetree/bindings/regulator/regulator.txt    |    4 +
+ .../devicetree/bindings/regulator/tps6586x.txt     |   60 +++++++++++++++-----
+ 3 files changed, 90 insertions(+), 28 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 3c923a7..b94ec5f 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -30,6 +30,7 @@
- #include <linux/list_sort.h>
- #include <linux/delay.h>
- #include <linux/ratelimit.h>
-+#include <linux/pm_runtime.h>
+diff --git a/Documentation/devicetree/bindings/mfd/tps65910.txt b/Documentation/devicetree/bindings/mfd/tps65910.txt
+index 645f5ea..b51d206 100644
+--- a/Documentation/devicetree/bindings/mfd/tps65910.txt
++++ b/Documentation/devicetree/bindings/mfd/tps65910.txt
+@@ -17,8 +17,9 @@ Required properties:
+   device need to be present. The definition for each of these nodes is defined
+   using the standard binding for regulators found at
+   Documentation/devicetree/bindings/regulator/regulator.txt.
++  The regulator is matched with the regulator-compatible.
  
- #define CREATE_TRACE_POINTS
- #include <trace/events/block.h>
-@@ -2982,6 +2983,68 @@ void blk_finish_plug(struct blk_plug *plug)
- }
- EXPORT_SYMBOL(blk_finish_plug);
+-  The valid names for regulators are:
++  The valid regulator-compatible values are:
+   tps65910: vrtc, vio, vdd1, vdd2, vdd3, vdig1, vdig2, vpll, vdac, vaux1,
+             vaux2, vaux33, vmmc
+   tps65911: vrtc, vio, vdd1, vdd3, vddctrl, ldo1, ldo2, ldo3, ldo4, ldo5,
+@@ -57,73 +58,100 @@ Example:
+ 		ti,en-gpio-sleep = <0 0 1 0 0 0 0 0 0>;
  
-+#ifdef CONFIG_PM_RUNTIME
-+void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
-+{
-+	q->dev = dev;
-+	q->rpm_status = RPM_ACTIVE;
+ 		regulators {
+-			vdd1_reg: vdd1 {
++			#address-cells = <1>;
++			#size-cells = <0>;
 +
-+	pm_runtime_use_autosuspend(q->dev);
-+	pm_runtime_mark_last_busy(q->dev);
-+	pm_runtime_autosuspend(q->dev);
-+}
-+EXPORT_SYMBOL(blk_pm_runtime_init);
-+
-+int blk_pre_runtime_suspend(struct request_queue *q)
-+{
-+	int ret = 0;
-+
-+	spin_lock_irq(q->queue_lock);
-+	if (q->nr_pending)
-+		ret = -EBUSY;
-+	else
-+		q->rpm_status = RPM_SUSPENDING;
-+	spin_unlock_irq(q->queue_lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL(blk_pre_runtime_suspend);
-+
-+void blk_post_runtime_suspend(struct request_queue *q, int err)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	if (!err)
-+		q->rpm_status = RPM_SUSPENDED;
-+	else {
-+		q->rpm_status = RPM_ACTIVE;
-+		pm_runtime_mark_last_busy(q->dev);
-+	}
-+	spin_unlock_irq(q->queue_lock);
-+}
-+EXPORT_SYMBOL(blk_post_runtime_suspend);
-+
-+void blk_pre_runtime_resume(struct request_queue *q)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	q->rpm_status = RPM_RESUMING;
-+	spin_unlock_irq(q->queue_lock);
-+}
-+EXPORT_SYMBOL(blk_pre_runtime_resume);
-+
-+void blk_post_runtime_resume(struct request_queue *q, int err)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	if (!err) {
-+		q->rpm_status = RPM_ACTIVE;
-+		__blk_run_queue(q);
-+		pm_runtime_mark_last_busy(q->dev);
-+		pm_request_autosuspend(q->dev);
-+	} else
-+		q->rpm_status = RPM_SUSPENDED;
-+	spin_unlock_irq(q->queue_lock);
-+}
-+EXPORT_SYMBOL(blk_post_runtime_resume);
-+#endif
-+
- int __init blk_dev_init(void)
- {
- 	BUILD_BUG_ON(__REQ_NR_BITS > 8 *
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index ba43f40..a5b255e 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -346,6 +346,12 @@ struct request_queue {
- 	 */
- 	struct kobject kobj;
++			vdd1_reg: regulator@0 {
++				regulator-compatible = "vdd1";
++				reg = <0>;
+ 				regulator-min-microvolt = < 600000>;
+ 				regulator-max-microvolt = <1500000>;
+ 				regulator-always-on;
+ 				regulator-boot-on;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			vdd2_reg: vdd2 {
++			vdd2_reg: regulator@1 {
++				regulator-compatible = "vdd2";
++				reg = <1>;
+ 				regulator-min-microvolt = < 600000>;
+ 				regulator-max-microvolt = <1500000>;
+ 				regulator-always-on;
+ 				regulator-boot-on;
+ 				ti,regulator-ext-sleep-control = <4>;
+ 			};
+-			vddctrl_reg: vddctrl {
++			vddctrl_reg: regulator@2 {
++				regulator-compatible = "vddctrl";
++				reg = <2>;
+ 				regulator-min-microvolt = < 600000>;
+ 				regulator-max-microvolt = <1400000>;
+ 				regulator-always-on;
+ 				regulator-boot-on;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			vio_reg: vio {
++			vio_reg: regulator@3 {
++				regulator-compatible = "vio";
++				reg = <3>;
+ 				regulator-min-microvolt = <1500000>;
+ 				regulator-max-microvolt = <1800000>;
+ 				regulator-always-on;
+ 				regulator-boot-on;
+ 				ti,regulator-ext-sleep-control = <1>;
+ 			};
+-			ldo1_reg: ldo1 {
++			ldo1_reg: regulator@4 {
++				regulator-compatible = "ldo1";
++				reg = <4>;
+ 				regulator-min-microvolt = <1000000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo2_reg: ldo2 {
++			ldo2_reg: regulator@5 {
++				regulator-compatible = "ldo2";
++				reg = <5>;
+ 				regulator-min-microvolt = <1050000>;
+ 				regulator-max-microvolt = <1050000>;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo3_reg: ldo3 {
++			ldo3_reg: regulator@6 {
++				regulator-compatible = "ldo3";
++				reg = <6>;
+ 				regulator-min-microvolt = <1000000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo4_reg: ldo4 {
++			ldo4_reg: regulator@7 {
++				regulator-compatible = "ldo4";
++				reg = <7>;
+ 				regulator-min-microvolt = <1000000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				regulator-always-on;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo5_reg: ldo5 {
++			ldo5_reg: regulator@8 {
++				regulator-compatible = "ldo5";
++				reg = <8>;
+ 				regulator-min-microvolt = <1000000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo6_reg: ldo6 {
++			ldo6_reg: regulator@9 {
++				regulator-compatible = "ldo6";
++				reg = <9>;
+ 				regulator-min-microvolt = <1200000>;
+ 				regulator-max-microvolt = <1200000>;
+ 				ti,regulator-ext-sleep-control = <0>;
+ 			};
+-			ldo7_reg: ldo7 {
++			ldo7_reg: regulator@10 {
++				regulator-compatible = "ldo7";
++				reg = <10>;
+ 				regulator-min-microvolt = <1200000>;
+ 				regulator-max-microvolt = <1200000>;
+ 				regulator-always-on;
+ 				regulator-boot-on;
+ 				ti,regulator-ext-sleep-control = <1>;
+ 			};
+-			ldo8_reg: ldo8 {
++			ldo8_reg: regulator@11 {
++				regulator-compatible = "ldo8";
++				reg = <11>;
+ 				regulator-min-microvolt = <1000000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				regulator-always-on;
+diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
+index bec5d57..66ece3f 100644
+--- a/Documentation/devicetree/bindings/regulator/regulator.txt
++++ b/Documentation/devicetree/bindings/regulator/regulator.txt
+@@ -11,6 +11,10 @@ Optional properties:
+ - regulator-boot-on: bootloader/firmware enabled regulator
+ - <name>-supply: phandle to the parent supply/regulator node
+ - regulator-ramp-delay: ramp delay for regulator(in uV/uS)
++- regulator-compatible: If a regulator chip contains multiple
++  regulators, and if the chip's binding contains a child node that
++  describes each regulator, then this property indicates which regulator
++  this child node is intended to configure.
  
-+#ifdef CONFIG_PM_RUNTIME
-+	struct device		*dev;
-+	int			rpm_status;
-+	unsigned int		nr_pending;
-+#endif
-+
- 	/*
- 	 * queue settings
- 	 */
-@@ -893,6 +899,27 @@ struct request_queue *blk_alloc_queue_node(gfp_t, int);
- extern void blk_put_queue(struct request_queue *);
+ Example:
  
- /*
-+ * block layer runtime pm functions
-+ */
-+#ifdef CONFIG_PM_RUNTIME
-+extern void blk_pm_runtime_init(struct request_queue *q, struct device *dev);
-+extern int blk_pre_runtime_suspend(struct request_queue *q);
-+extern void blk_post_runtime_suspend(struct request_queue *q, int err);
-+extern void blk_pre_runtime_resume(struct request_queue *q);
-+extern void blk_post_runtime_resume(struct request_queue *q, int err);
-+#else
-+static inline void blk_pm_runtime_init(struct request_queue *q,
-+	struct device *dev) {}
-+static inline int blk_pre_runtime_suspend(struct request_queue *q)
-+{
-+	return -ENOSYS;
-+}
-+static inline void blk_post_runtime_suspend(struct request_queue *q, int err) {}
-+static inline void blk_pre_runtime_resume(struct request_queue *q) {}
-+static inline void blk_post_runtime_resume(struct request_queue *q, int err) {}
-+#endif
+diff --git a/Documentation/devicetree/bindings/regulator/tps6586x.txt b/Documentation/devicetree/bindings/regulator/tps6586x.txt
+index 0fcabaa..ab17ef6 100644
+--- a/Documentation/devicetree/bindings/regulator/tps6586x.txt
++++ b/Documentation/devicetree/bindings/regulator/tps6586x.txt
+@@ -6,8 +6,9 @@ Required properties:
+ - interrupts: the interrupt outputs of the controller
+ - #gpio-cells: number of cells to describe a GPIO
+ - gpio-controller: mark the device as a GPIO controller
+-- regulators: list of regulators provided by this controller, must be named
+-  after their hardware counterparts: sm[0-2], ldo[0-9] and ldo_rtc
++- regulators: list of regulators provided by this controller, must have
++  property "regulator-compatible" to match their hardware counterparts:
++  sm[0-2], ldo[0-9] and ldo_rtc
+ 
+ Each regulator is defined using the standard binding for regulators.
+ 
+@@ -22,74 +23,103 @@ Example:
+ 		gpio-controller;
+ 
+ 		regulators {
+-			sm0_reg: sm0 {
++			#address-cells = <1>;
++			#size-cells = <0>;
 +
-+/*
-  * blk_plug permits building a queue of related requests by holding the I/O
-  * fragments for a short period. This allows merging of sequential requests
-  * into single larger request. As the requests are moved from a per-task list to
++			sm0_reg: regulator@0 {
++				reg = <0>;
++				regulator-compatible = "sm0";
+ 				regulator-min-microvolt = < 725000>;
+ 				regulator-max-microvolt = <1500000>;
+ 				regulator-boot-on;
+ 				regulator-always-on;
+ 			};
+ 
+-			sm1_reg: sm1 {
++			sm1_reg: regulator@1 {
++				reg = <1>;
++				regulator-compatible = "sm1";
+ 				regulator-min-microvolt = < 725000>;
+ 				regulator-max-microvolt = <1500000>;
+ 				regulator-boot-on;
+ 				regulator-always-on;
+ 			};
+ 
+-			sm2_reg: sm2 {
++			sm2_reg: regulator@2 {
++				reg = <2>;
++				regulator-compatible = "sm2";
+ 				regulator-min-microvolt = <3000000>;
+ 				regulator-max-microvolt = <4550000>;
+ 				regulator-boot-on;
+ 				regulator-always-on;
+ 			};
+ 
+-			ldo0_reg: ldo0 {
++			ldo0_reg: regulator@3 {
++				reg = <3>;
++				regulator-compatible = "ldo0";
+ 				regulator-name = "PCIE CLK";
+ 				regulator-min-microvolt = <3300000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo1_reg: ldo1 {
++			ldo1_reg: regulator@4 {
++				reg = <4>;
++				regulator-compatible = "ldo1";
+ 				regulator-min-microvolt = < 725000>;
+ 				regulator-max-microvolt = <1500000>;
+ 			};
+ 
+-			ldo2_reg: ldo2 {
++			ldo2_reg: regulator@5 {
++				reg = <5>;
++				regulator-compatible = "ldo2";
+ 				regulator-min-microvolt = < 725000>;
+ 				regulator-max-microvolt = <1500000>;
+ 			};
+ 
+-			ldo3_reg: ldo3 {
++			ldo3_reg: regulator@6 {
++				reg = <6>;
++				regulator-compatible = "ldo3";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo4_reg: ldo4 {
++			ldo4_reg: regulator@7 {
++				reg = <7>;
++				regulator-compatible = "ldo4";
+ 				regulator-min-microvolt = <1700000>;
+ 				regulator-max-microvolt = <2475000>;
+ 			};
+ 
+-			ldo5_reg: ldo5 {
++			ldo5_reg: regulator@8 {
++				reg = <8>;
++				regulator-compatible = "ldo5";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo6_reg: ldo6 {
++			ldo6_reg: regulator@9 {
++				reg = <9>;
++				regulator-compatible = "ldo6";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo7_reg: ldo7 {
++			ldo7_reg: regulator@10 {
++				reg = <10>;
++				regulator-compatible = "ldo7";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo8_reg: ldo8 {
++			ldo8_reg: regulator@11 {
++				reg = <11>;
++				regulator-compatible = "ldo8";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
+ 
+-			ldo9_reg: ldo9 {
++			ldo9_reg: regulator@12 {
++				reg = <12>;
++				regulator-compatible = "ldo9";
+ 				regulator-min-microvolt = <1250000>;
+ 				regulator-max-microvolt = <3300000>;
+ 			};
 -- 
-1.7.10
+1.7.1.1
 
