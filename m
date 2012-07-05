@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835Ab2GED5j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 23:57:39 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49514 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956Ab2GED5g (ORCPT
+	id S1753140Ab2GED7I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 23:59:08 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:41567 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab2GED7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 23:57:36 -0400
+	Wed, 4 Jul 2012 23:59:04 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: "Steve Magnani" <steve@digidescorp.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] fat (exportfs): reconnect file handles to evicted inodes/dentries
+References: <1341342576-15394-1-git-send-email-steve@digidescorp.com>
+	<1341342576-15394-3-git-send-email-steve@digidescorp.com>
+	<87pq8bokcp.fsf@devron.myhome.or.jp>
+	<WC20120704180312.82023C@digidescorp.com>
+Date: Thu, 05 Jul 2012 12:59:01 +0900
+In-Reply-To: <WC20120704180312.82023C@digidescorp.com> (Steve Magnani's
+	message of "Wed, 04 Jul 2012 13:03:12 -0500")
+Message-ID: <87a9zeeu4a.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20120705135220.9f8f95082833a0d6fadeb136@canb.auug.org.au>
-References: <20120705135220.9f8f95082833a0d6fadeb136@canb.auug.org.au>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Thu, 5 Jul 2012 11:57:14 +0800
-X-Google-Sender-Auth: _pITLEkx6Slbscyy_Ih6_fqE6jA
-Message-ID: <CAGS+omDab9mOOf6pCryRTyLvYA66h0XjqmFPc-vrAo4hkfGN0A@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the input-mt tree with the
- input-current tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Henrik Rydberg <rydberg@euromail.se>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 5, 2012 at 11:52 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Henrik,
->
-> Today's linux-next merge of the input-mt tree got a conflict in
-> drivers/input/touchscreen/atmel_mxt_ts.c between commit 9b7e31bbf4bb
-> ("Input: request threaded-only IRQs with IRQF_ONESHOT") from the
-> input-current tree and commit c2ef9a1a248b ("Input: atmel_mxt_ts - use
-> client name for irq") from the input-mt tree.
->
-> I fixed it up (see below) and can carry the fix as necessary.
+"Steve Magnani" <steve@digidescorp.com> writes:
 
-Looks good to me. Don't know if you need it for a merge, but:
-
-Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
-
-
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+>> And can you add explanation the test of this? What were tested?
 >
-> diff --cc drivers/input/touchscreen/atmel_mxt_ts.c
-> index 25fd056,37190ab..0000000
-> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
-> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-> @@@ -1144,13 -1167,8 +1167,9 @@@ static int __devinit mxt_probe(struct i
->         input_set_drvdata(input_dev, data);
->         i2c_set_clientdata(client, data);
+> I set up a memory-limited virtual machine with a 2 GB FAT partition 
+> containing a kernel tree (~770 MB, ~40000 files, 9 levels) and did some 
+> 'cp -r' and 'ls -lR' operations on it, some overlapping, some not.
+
+Sounds good. It would be useful to add to changelog.
+
+>> Please don't add new lock_super() usage if it is not necessary. Almost
+>> all of lock_super() just replaced lock_kernel() usage. It rather should
+>> be removed in future.  Probably, this should use inode->i_mutex
+>> instead.
 >
-> -       error = mxt_initialize(data);
-> -       if (error)
-> -               goto err_free_object;
-> -
->         error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
->  -                      pdata->irqflags, client->name, data);
->  +                                   pdata->irqflags | IRQF_ONESHOT,
-> -                                    client->dev.driver->name, data);
-> ++                                   client->name, data);
->         if (error) {
->                 dev_err(&client->dev, "Failed to register interrupt\n");
->                 goto err_free_object;
+> I will look into this. My concern was freezing the filesystem while we 
+> walk the on-disk structures. Also I developed this patch against 2.6.35 
+> (the Bad Old BKL days) and ported it forward to 3.5.
+
+I see.
+
+>> BTW, the above issue is same with all of directory read.
+>> 
+>> And although this is using i_pos, is there no possibility to be passed
+>> the detached inode (i.e. open but unlinked inode, i_pos == 0)?
+>
+> It is possible, that's why I added code to fall back to using logstart.
+>
+> I may yet rip out the get_name code. The testing I did before posting the 
+> patch seemed to indicate that it was needed - I saw ESTALE errors without 
+> get_name support that I did not see with it present. But I've been 
+> digging into this some more and I think that was just a coincidence; 
+> probably I just generated more extreme memory pressure when testing 
+> without get_name. I should know more tomorrow.
+
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
