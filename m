@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab2GEAvv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 20:51:51 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44262 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751359Ab2GEAvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 20:51:48 -0400
-Message-ID: <1341449507.2058.6.camel@joe2Laptop>
-Subject: Re: [PATCH v2 net-next 2/2] r8169: support RTL8168G
-From: Joe Perches <joe@perches.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Hayes Wang <hayeswang@realtek.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 04 Jul 2012 17:51:47 -0700
-In-Reply-To: <20120704220458.GA1621@electric-eye.fr.zoreil.com>
-References: <1340966060-2749-1-git-send-email-hayeswang@realtek.com>
-	 <1341221002-1522-1-git-send-email-hayeswang@realtek.com>
-	 <1341221002-1522-2-git-send-email-hayeswang@realtek.com>
-	 <20120704220458.GA1621@electric-eye.fr.zoreil.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1756179Ab2GEA54 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 20:57:56 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14797 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116Ab2GEA5w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 20:57:52 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 04 Jul 2012 17:57:38 -0700
+Message-ID: <4FF4E679.10909@nvidia.com>
+Date: Thu, 5 Jul 2012 06:27:29 +0530
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Rajendra Nayak <rnayak@ti.com>
+CC: "mturquette@ti.com" <mturquette@ti.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mkl@pengutronix.de" <mkl@pengutronix.de>, <swarren@nvidia.com>
+Subject: Re: [PATCH] clk: fix parent validation in __clk_set_parent()
+References: <1341313938-17861-1-git-send-email-rnayak@ti.com>
+In-Reply-To: <1341313938-17861-1-git-send-email-rnayak@ti.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-05 at 00:04 +0200, Francois Romieu wrote:
-> Hayes Wang <hayeswang@realtek.com> :
-> > Support the new chip RTL8168G.
+On Tuesday 03 July 2012 04:42 PM, Rajendra Nayak wrote:
+> The below commit introduced a bug in __clk_set_parent()
+> which could cause it to *skip* the parent validation
+> which makes sure the parent passed to the api is a valid
+> one.
 
-> - save Joe P. some work
+Need this fix for Tegra too.
 
-Thanks.  Just a trivial thing below:
-
-[]
-
-> diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-[]
-> +#define	RTL_LOOP_MAX	10000
-> +
-> +static void rtl_mcu_wait_list_ready(void __iomem *ioaddr)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < RTL_LOOP_MAX; i++) {
-> +		if (RTL_R8(MCU) & LINK_LIST_RDY)
-> +			return;
-> +		udelay(100);
-> +	}
-> +}
-
-This pattern is used a couple more times.
-There's no failure handling either.
-
-Maybe use a macro with RTL_R8/32, register and test?
-Maybe the delays could be tuned out a bit better.
-Maybe a continuous read or a less frequent read
-might be better.
-
->  static void __devinit rtl_hw_init_8168g(struct rtl8169_private *tp)
->  {
-[]
-> +	for (i = 0; i < RTL_LOOP_MAX; i++) {
-> +		if (RTL_R32(TxConfig) & TXCFG_EMPTY)
-> +			break;
->  		udelay(100);
-> +	}
-
-pattern
-
-> +	for (i = 0; i < RTL_LOOP_MAX; i++) {
-> +		if ((RTL_R8(MCU) & RXTX_EMPTY) == RXTX_EMPTY)
-> +			break;
->  		udelay(100);
-> +	}
-
-pattern
-
+>      commit 7975059db572eb47f0fb272a62afeae272a4b209
+>      Author: Rajendra Nayak<rnayak@ti.com>
+>      Date:   Wed Jun 6 14:41:31 2012 +0530
+>
+>          clk: Allow late cache allocation for clk->parents
+>
+> This was identified by the following compiler warning..
+>
+>      drivers/clk/clk.c: In function '__clk_set_parent':
+>      drivers/clk/clk.c:1083:5: warning: 'i' may be used uninitialized in this function [-Wuninitialized]
+>
+> .. as reported by Marc Kleine-Budde.
+>
+> There were various options discussed on how to fix this, one
+> being initing 'i' to clk->num_parents, but the below approach
+> was found to be more appropriate as it also makes the 'parent
+> validation' code simpler to read.
+>
+> Reported-by: Marc Kleine-Budde<mkl@pengutronix.de>
+> Signed-off-by: Rajendra Nayak<rnayak@ti.com>
+>
 
