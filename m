@@ -1,136 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab2GEIKu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 04:10:50 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:4248 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755582Ab2GEIKm (ORCPT
+	id S1754862Ab2GEIVd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 04:21:33 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34826 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755Ab2GEIVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 04:10:42 -0400
-Date: Thu, 5 Jul 2012 10:10:15 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        Seth Heasley <seth.heasley@intel.com>, Olof Johansson <olof@lixom.net>,
-        Benson Leung <bleung@chromium.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/8 v3] i2c: i801: enable irq for i801 smbus
- transactions
-Message-ID: <20120705101015.1e3a3afc@endymion.delvare>
-In-Reply-To: <CAGS+omAwkwd17MVe3uWoPNCL3y0BvKDvbFGWwjhJ5CpTqncsXA@mail.gmail.com>
-References: <1340805255-8041-1-git-send-email-djkurtz@chromium.org>
-	<1340805255-8041-8-git-send-email-djkurtz@chromium.org>
-	<20120704221600.416d4475@endymion.delvare>
-	<CAGS+omAwkwd17MVe3uWoPNCL3y0BvKDvbFGWwjhJ5CpTqncsXA@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Jul 2012 04:21:30 -0400
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH -rt] perf: make swevent hrtimer run in irq instead of softirq
+Date: Thu,  5 Jul 2012 16:21:16 +0800
+Message-Id: <1341476476-5666-1-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+From: Yong Zhang <yong.zhang@windriver.com>
 
-On Thu, 5 Jul 2012 12:31:11 +0800, Daniel Kurtz wrote:
-> On Thu, Jul 5, 2012 at 4:16 AM, Jean Delvare <khali@linux-fr.org> wrote:
-> > You should be able to reproduce this bug by loading i2c-i801 with
-> > option disable_features=0x0002, assuming your SMBus IRQ is shared.
-> >
-> > This leads me to several thoughts (feel free to correct me if I'm
-> > wrong, I am getting very tired):
-> >
-> > 1* This must be the reason why a bit was added to the PCI status
-> >    register starting with the ICH5, telling you if an interrupt has been
-> >    delivered to you. Checking for it as you originally did was a good idea
-> >    after all.
-> 
-> Reducing scope to get accepted patches in sooner sounds like a good plan to me.
+Otherwise we get a deadlock like below:
 
-Agreed.
+[ 1044.042749] BUG: scheduling while atomic: ksoftirqd/21/141/0x00010003
+[ 1044.042752] INFO: lockdep is turned off.
+[ 1044.042754] Modules linked in:
+[ 1044.042757] Pid: 141, comm: ksoftirqd/21 Tainted: G        W    3.4.0-rc2-rt3-23676-ga723175-dirty #29
+[ 1044.042759] Call Trace:
+[ 1044.042761]  <IRQ>  [<ffffffff8107d8e5>] __schedule_bug+0x65/0x80
+[ 1044.042770]  [<ffffffff8168978c>] __schedule+0x83c/0xa70
+[ 1044.042775]  [<ffffffff8106bdd2>] ? prepare_to_wait+0x32/0xb0
+[ 1044.042779]  [<ffffffff81689a5e>] schedule+0x2e/0xa0
+[ 1044.042782]  [<ffffffff81071ebd>] hrtimer_wait_for_timer+0x6d/0xb0
+[ 1044.042786]  [<ffffffff8106bb30>] ? wake_up_bit+0x40/0x40
+[ 1044.042790]  [<ffffffff81071f20>] hrtimer_cancel+0x20/0x40
+[ 1044.042794]  [<ffffffff8111da0c>] perf_swevent_cancel_hrtimer+0x3c/0x50
+[ 1044.042798]  [<ffffffff8111da31>] task_clock_event_stop+0x11/0x40
+[ 1044.042802]  [<ffffffff8111da6e>] task_clock_event_del+0xe/0x10
+[ 1044.042805]  [<ffffffff8111c568>] event_sched_out+0x118/0x1d0
+[ 1044.042809]  [<ffffffff8111c649>] group_sched_out+0x29/0x90
+[ 1044.042813]  [<ffffffff8111ed7e>] __perf_event_disable+0x18e/0x200
+[ 1044.042817]  [<ffffffff8111c343>] remote_function+0x63/0x70
+[ 1044.042821]  [<ffffffff810b0aae>] generic_smp_call_function_single_interrupt+0xce/0x120
+[ 1044.042826]  [<ffffffff81022bc7>] smp_call_function_single_interrupt+0x27/0x40
+[ 1044.042831]  [<ffffffff8168d50c>] call_function_single_interrupt+0x6c/0x80
+[ 1044.042833]  <EOI>  [<ffffffff811275b0>] ? perf_event_overflow+0x20/0x20
+[ 1044.042840]  [<ffffffff8168b970>] ? _raw_spin_unlock_irq+0x30/0x70
+[ 1044.042844]  [<ffffffff8168b976>] ? _raw_spin_unlock_irq+0x36/0x70
+[ 1044.042848]  [<ffffffff810702e2>] run_hrtimer_softirq+0xc2/0x200
+[ 1044.042853]  [<ffffffff811275b0>] ? perf_event_overflow+0x20/0x20
+[ 1044.042857]  [<ffffffff81045265>] __do_softirq_common+0xf5/0x3a0
+[ 1044.042862]  [<ffffffff81045c3d>] __thread_do_softirq+0x15d/0x200
+[ 1044.042865]  [<ffffffff81045dda>] run_ksoftirqd+0xfa/0x210
+[ 1044.042869]  [<ffffffff81045ce0>] ? __thread_do_softirq+0x200/0x200
+[ 1044.042873]  [<ffffffff81045ce0>] ? __thread_do_softirq+0x200/0x200
+[ 1044.042877]  [<ffffffff8106b596>] kthread+0xb6/0xc0
+[ 1044.042881]  [<ffffffff8168b97b>] ? _raw_spin_unlock_irq+0x3b/0x70
+[ 1044.042886]  [<ffffffff8168d994>] kernel_thread_helper+0x4/0x10
+[ 1044.042889]  [<ffffffff8107d98c>] ? finish_task_switch+0x8c/0x110
+[ 1044.042894]  [<ffffffff8168b97b>] ? _raw_spin_unlock_irq+0x3b/0x70
+[ 1044.042897]  [<ffffffff8168bd5d>] ? retint_restore_args+0xe/0xe
+[ 1044.042900]  [<ffffffff8106b4e0>] ? kthreadd+0x1e0/0x1e0
+[ 1044.042902]  [<ffffffff8168d990>] ? gs_change+0xb/0xb
 
-> > 2* Is there any reason why you decided to clear the status bits in
-> >    i801_isr(), rather than after wait_event()? I am no expert in
-> >    interrupt handling, I admit, but letting the "caller" clear the status
-> >    bits would ensure we don't clear status bits when nobody is actually
-> >    waiting to catch them.
-> 
-> BYTE_DONE is cleared to kick off the next byte, and it doesn't
-> generate a wait_event, thus it is cleared right in the irq.
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/events/core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-No problem with BYTE_DONE.
-
-> The logic for clearing the STATUS_FLAGS was simply that they all
-> indicate the end of a transaction, so there won't be any further
-> interrupts.  Thus, it is safe to clear it in the irq, since the irq
-> will be followed by exactly one wait_event, which can read and process
-> saved status.
-
-It is safe if and only if someone is actually listening to the event.
-This was not the case for me yesterday. Even if we don't mix interrupts
-and polling, i801_isr() might still get called when we aren't
-listening. Not only because the IRQ may be shared, but also for events
-we don't yet handle, such as an SMBus Alert. Not sure about slave
-mode.
-
-> > 3* Applying this patch (7/8) without the one adding interrupt support
-> >    to i801_block_transaction_byte_by_byte (8/8) is not OK: mixing
-> >    interrupts and polling isn't safe. So unless we implement 1* or 2*,
-> >    both patches would have to be merged before being pushed upstream.
-> >
-> > 4* Even then, we have to keep in mind that i801_isr() may be called
-> >    before the transaction is finished (if IRQ is shared.) My testing
-> >    has shown that error flags may be raised before the BUSY flag is
-> >    cleared, so we should use in i801_isr() the same strict conditions
-> >    we are now using in the polling code. In other words, if we get an
-> >    interrupt but the BUSY flag is still set, then it's not our
-> >    interrupt and we should ignore it. This applies even if 2* or 3*
-> >    above are implemented, but no longer if 1* is implemented.
-> >
-> > 5* Your claim that no locking is needed might have to be revisited when
-> >    interrupts are shared.
-> >
-> > Implementing 1* has the drawback of limiting interrupt support to ICH5
-> > and later chips, but I suspect it is the easiest and safest way, so I
-> > have no objection if you want to do that.
-> 
-> Let's do this first, and then refactor later to add support for
-> pre-ICH5 parts, if needed.
-
-OK, fine with me. The only downside is that it excludes my
-heavily-shared IRQ test machine, so testing that the shared IRQ case is
-properly covered will be a little harder.
-
-> It sounds like supporting the pre-ICH5 parts w/ shared IRQ is not very
-> pretty, since we are no longer guaranteed that we get a single
-> transaction terminating interrupt.
-
-Indeed. In that case, using interrupts will be much like using polling,
-except that status check happens whenever we receive an interrupt,
-rather than at fixed time interval.
-
-> Do you still maintain a public git repository?
-
-I never did.
-
-> Have you updated it with the accepted version of the previous cleanup patches?
-> I see this one, but it doesn't look updated:
->   http://git.kernel.org/?p=linux/kernel/git/jdelvare/staging.git;a=summary
-
-This tree is only for sending patches to Linus. It doesn't reflect the
-current status of my working tree.
-
-I am maintaining quilt series for that, which you can find at:
-http://khali.linux-fr.org/devel/linux-3/
-
-> I'd like to fix up the interrupt patches per your feedback, but I'm
-> not quite sure what the current status is of all the cleanup patches.
-> 
-> In other words, if you push up the complete set of cleanup patches, I
-> can then rebase the new consolidated irq patch onto it, and send them
-> here for review.
-
-I updated the i2c series this morning, so it's up-to-date.
-
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index fd126f8..451d452 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5403,6 +5403,7 @@ static void perf_swevent_init_hrtimer(struct perf_event *event)
+ 
+ 	hrtimer_init(&hwc->hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	hwc->hrtimer.function = perf_swevent_hrtimer;
++	hwc->hrtimer.irqsafe = 1;
+ 
+ 	/*
+ 	 * Since hrtimers have a fixed rate, we can do a static freq->period
 -- 
-Jean Delvare
+1.7.9.5
+
