@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab2GEWGt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 18:06:49 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:39923 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753738Ab2GEWGr (ORCPT
+	id S1756822Ab2GEWIh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 18:08:37 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:3706 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753738Ab2GEWIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 18:06:47 -0400
-Date: Thu, 5 Jul 2012 22:07:49 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Dilip Daya <dilip.daya@hp.com>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: Network namespace and bonding WARNING at fs/proc/generic.c
- remove_proc_entry
-Message-ID: <20120705220749.GA11255@mail.hallyn.com>
-References: <1340900320.3441.88.camel@pro6455b.example.com>
+	Thu, 5 Jul 2012 18:08:36 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlkLAMgP9k95Lbce/2dsb2JhbABFpiqPXQOBJoEIghgBAQU6HCMQCAMYIwsUJQMJGBOHfQMKuhUUij9mCQyBCQgEhRQDlTaJJ4FdhQCCcYFEAQ
+Date: Fri, 6 Jul 2012 08:08:32 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Brad Arrington <bradla8@yahoo.com>
+Cc: Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>, xfs@oss.sgi.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ACL: increase the #define XFS_ACL_MAX_ENTRIES to 128
+ The xfsprogs xfs_repair will have to be increased also if this is okay.
+Message-ID: <20120705220832.GQ19223@dastard>
+References: <1341520391-9704-1-git-send-email-bradla8@yahoo.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340900320.3441.88.camel@pro6455b.example.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1341520391-9704-1-git-send-email-bradla8@yahoo.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Dilip Daya (dilip.daya@hp.com):
-> Hi,
+On Thu, Jul 05, 2012 at 01:33:11PM -0700, Brad Arrington wrote:
 > 
-> I'd discussed the following with Serge Hallyn.
+> Signed-off-by: Brad Arrington <bradla8@yahoo.com>
+> ---
+>  fs/xfs/xfs_acl.h |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> => Environment based on 3.2.18 / x86_64 kernel.
-> => WARNING: at fs/proc/generic.c:808 remove_proc_entry+0xdb/0x21f()
-> => WARNING: at fs/proc/generic.c:849 remove_proc_entry+0x208/0x21f()
+> diff --git a/fs/xfs/xfs_acl.h b/fs/xfs/xfs_acl.h
+> index 39632d9..716d4d2 100644
+> --- a/fs/xfs/xfs_acl.h
+> +++ b/fs/xfs/xfs_acl.h
+> @@ -22,7 +22,7 @@ struct inode;
+>  struct posix_acl;
+>  struct xfs_inode;
+>  
+> -#define XFS_ACL_MAX_ENTRIES 25
+> +#define XFS_ACL_MAX_ENTRIES 128
 
-Hi,
+That's an on disk format change - you can't just increase it like
+that without some kind of superblock feature bit to indicate that
+the limit is 128 rather than 25 on that filesystem.
 
-thanks much for sending this.  I'm still getting this error on
-3.5.0-2-generic (today's ubuntu quantal kernel)
+As it is, if we are going to change it, it will get changed to allow
+the maximum number of ACLs an attribute can hold, not another
+arbitrary number like 128....
 
-> network namespace and bonding
-> -----------------------------
-> 
-> * Migrate two phy nics from host to netns (netns0).
->   - ip link set ethX netns netns0
-> 
-> * In host environment:
->   - load bonding module, /sbin/modprobe -v bonding mode=1 miimon=100
->   - /sys/class/net/bond0 exists.
->   - /proc/net/bonding/bond0 exists.
->   - /sys/class/net/bonding_masters has bond0.
-> 
-> * Migrate bond0 to netns (netns0):
->   - ip link set bond0 netns netns0.
-> 
-> * Within netns (netns0):
->   - /sys/class/net/bonding_masters is empty.
->   - /sys/class/net/bond0 exist.
->   - configure bond0 and ifenslave with two phy nics.
->   - /proc/net/bonding/bond0 does not exist within netns0, but does
->     exist in the host environment.
->   - /sys/class/net/bonding_masters is empty.
+Cheers,
 
-mine is not empty, fwiw.  However
-
->   - ping to remote end of bond0 works.
-> 
-> * Within netns (netns0), flushing ethX and bondY:
->   - down bond0 and its phy nic interfaces:
->   - ip link set ... down
->   - ip addr flush dev [bond0 | eth#]
->   - deleting bond0, /sbin/ip link del dev bond0
-
-Yup I still get a remove_proc_entry WARNING at fs/proc/generic.c:808,
-which is the warning when (!de)
-
--serge
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
