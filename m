@@ -1,73 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007Ab2GENUx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 09:20:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63189 "EHLO mx1.redhat.com"
+	id S932881Ab2GENWB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 09:22:01 -0400
+Received: from mga11.intel.com ([192.55.52.93]:13048 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932339Ab2GENUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 09:20:51 -0400
-Date: Thu, 5 Jul 2012 09:20:36 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "mikew@google.com" <mikew@google.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [RFC][PATCH 0/2]efi_pstore: Avoid missing panic message in NVRAM
-Message-ID: <20120705132036.GF5637@redhat.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D401AAC3@USINDEM103.corp.hds.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D401AAC3@USINDEM103.corp.hds.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756094Ab2GENWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 09:22:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="188728466"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, proski@gnu.org,
+        Andrei Emeltchenko <andrei.emeltchenko@intel.com>,
+        linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>, joe@perches.com
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv3.6] lib: printf: append support of '%*ph[CDN]'
+Date: Thu,  5 Jul 2012 16:21:38 +0300
+Message-Id: <1341494498-22770-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1341414588.3627.42.camel@joe2Laptop>
+References: <1341414588.3627.42.camel@joe2Laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 03, 2012 at 11:33:57PM +0000, Seiji Aguchi wrote:
-> [Problem]
-> Current efi_pstore simply overwrites existing entries in NVRAM.
-> So, if 2nd panic happens before a user checks 1st panic message, 1st panic message will be lost.
+There are many places in the kernel where the drivers print small buffers as a
+hex string. This patch adds a support of the variable width buffer to print it
+as a hex string with a delimiter. The idea came from Pavel Roskin here:
+http://www.digipedia.pl/usenet/thread/18835/17449/
 
-I thought the rule was entries do not get overwritten until they are
-deleted first.  Perhaps that is just an APEI thing, but it seems like that
-should be a good rule for EFI too.
+Sample output of
+	pr_info("buf[%d:%d] %*phC\n", from, len, len, &buf[from]);
+could be look like this:
+	[ 0.726130] buf[51:8] e8:16:b6:ef:e3:74:45:6e
+	[ 0.750736] buf[59:15] 31:81:b8:3f:35:49:06:ae:df:32:06:05:4a:af:55
+	[ 0.757602] buf[17:5] ac:16:d5:2c:ef
 
-Mainly because there is very little userspace apps that actually clear the
-old error records.  So this could become a common problem.
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ Documentation/printk-formats.txt |   10 +++++++
+ lib/vsprintf.c                   |   55 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 65 insertions(+)
 
-Unless we are implementing a flight recorder option which explicitly
-states overwrite older entries?
+diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+index 90ff4d7..8ffb274 100644
+--- a/Documentation/printk-formats.txt
++++ b/Documentation/printk-formats.txt
+@@ -53,6 +53,16 @@ Struct Resources:
+ 	For printing struct resources. The 'R' and 'r' specifiers result in a
+ 	printed resource with ('R') or without ('r') a decoded flags member.
+ 
++Raw buffer as a hex string:
++	%*ph	00 01 02  ...  3f
++	%*phC	00:01:02: ... :3f
++	%*phD	00-01-02- ... -3f
++	%*phN	000102 ... 3f
++
++	For printing a small buffers (up to 64 bytes long) as a hex string with
++	certain separator. For the larger buffers consider to use
++	print_hex_dump().
++
+ MAC/FDDI addresses:
+ 
+ 	%pM	00:01:02:03:04:05
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index e500158..8afa954 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -655,6 +655,50 @@ char *resource_string(char *buf, char *end, struct resource *res,
+ }
+ 
+ static noinline_for_stack
++char *hex_string(char *buf, char *end, u8 *addr, struct printf_spec spec,
++		 const char *fmt)
++{
++	int i, len = 1;		/* if we pass '%ph[CDN]', field witdh remains
++				   negative value, fallback to the default */
++	char separator;
++
++	if (spec.field_width == 0)
++		/* nothing to print */
++		return buf;
++
++	if (ZERO_OR_NULL_PTR(addr))
++		/* NULL pointer */
++		return string(buf, end, NULL, spec);
++
++	switch (fmt[1]) {
++	case 'C':
++		separator = ':';
++		break;
++	case 'D':
++		separator = '-';
++		break;
++	case 'N':
++		separator = 0;
++		break;
++	default:
++		separator = ' ';
++		break;
++	}
++
++	if (spec.field_width > 0)
++		len = min_t(int, spec.field_width, 64);
++
++	for (i = 0; i < len && buf < end - 1; i++) {
++		buf = hex_byte_pack(buf, addr[i]);
++
++		if (buf < end && separator && i != len - 1)
++			*buf++ = separator;
++	}
++
++	return buf;
++}
++
++static noinline_for_stack
+ char *mac_address_string(char *buf, char *end, u8 *addr,
+ 			 struct printf_spec spec, const char *fmt)
+ {
+@@ -974,6 +1018,13 @@ int kptr_restrict __read_mostly;
+  *       correctness of the format string and va_list arguments.
+  * - 'K' For a kernel pointer that should be hidden from unprivileged users
+  * - 'NF' For a netdev_features_t
++ * - 'h[CDN]' For a variable-length buffer, it prints it as a hex string with
++ *            a certain separator (' ' by default):
++ *              C colon
++ *              D dash
++ *              N no separator
++ *            The maximum supported length is 64 bytes of the input. Consider
++ *            to use print_hex_dump() for the larger input.
+  *
+  * Note: The difference between 'S' and 'F' is that on ia64 and ppc64
+  * function pointers are really function descriptors, which contain a
+@@ -1007,6 +1058,8 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+ 	case 'R':
+ 	case 'r':
+ 		return resource_string(buf, end, ptr, spec, fmt);
++	case 'h':
++		return hex_string(buf, end, ptr, spec, fmt);
+ 	case 'M':			/* Colon separated: 00:01:02:03:04:05 */
+ 	case 'm':			/* Contiguous: 000102030405 */
+ 					/* [mM]F (FDDI) */
+@@ -1298,6 +1351,8 @@ qualifier:
+  * %pI6c print an IPv6 address as specified by RFC 5952
+  * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
+  *   case.
++ * %*ph[CDN] a variable-length hex string with a separator (supports up to 64
++ *           bytes of the input)
+  * %n is ignored
+  *
+  * ** Please update Documentation/printk-formats.txt when making changes **
+-- 
+1.7.10
 
-Cheers,
-Don
-
-> 
-> [Solution]
-> To avoid missing 1st panic message, this patch introduce a rule checking if existing entries in NRAM are erasable to efi_pstore.
->  
-> [Patch Descriptions]
->  
->  [PATCH 1/2] Duplicate a shared code between write and erase callbacks  
->  
->   Currently, efi_pstore driver shares a code erasing existing entries in NVRAM with write and erase callbacks.
->   But there some cases we should avoid erasing existing entries in write callback. (Please see PATCH 2/2).
->   This patch duplicates the code so that write and erase callbacks work independently. 
->  
->  
->  [PATCH 2/2] write callback: Check if existing entry is erasable
->  
->   this patch introduce a rule checking if existing entries in NRAM are erasable to efi_pstore.
->   With this patch, if previous event is panic, efi_pstore never overwrite it.
-> 
->  
->   drivers/firmware/efivars.c |   94 +++++++++++++++++++++++++++++++++++++++++++-
->   fs/pstore/platform.c       |    4 +-
->   include/linux/pstore.h     |    5 ++
->   3 files changed, 99 insertions(+), 4 deletions(-)
->  
->  Seiji
