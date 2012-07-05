@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751727Ab2GEBlg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 21:41:36 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:47988 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab2GEBlf (ORCPT
+	id S1752103Ab2GECfq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 22:35:46 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1072 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab2GECe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 21:41:35 -0400
-Message-ID: <1341452486.18505.49.camel@ThinkPad-T420>
-Subject: Re: [PATCH powerpc 2/2] kfree the cache name  of pgtable cache if
- SLUB is used
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm <linux-mm@kvack.org>,
-        PowerPC email list <linuxppc-dev@lists.ozlabs.org>
-Date: Thu, 05 Jul 2012 09:41:26 +0800
-In-Reply-To: <4FF439D0.1000603@parallels.com>
-References: <1340617984.13778.37.camel@ThinkPad-T420>
-	 <1340618099.13778.39.camel@ThinkPad-T420>
-	 <alpine.DEB.2.00.1207031344240.14703@router.home>
-	 <alpine.DEB.2.00.1207031535330.14703@router.home>
-	 <1341392420.18505.41.camel@ThinkPad-T420> <4FF439D0.1000603@parallels.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Wed, 4 Jul 2012 22:34:56 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 04 Jul 2012 19:34:56 -0700
+Message-ID: <4FF4FDC0.8020405@nvidia.com>
+Date: Thu, 5 Jul 2012 11:36:48 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Sascha Hauer <s.hauer@pengutronix.de>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCH] pwm-backlight: add regulator and GPIO support
+References: <1340976167-27298-1-git-send-email-acourbot@nvidia.com> <20120704104840.GJ24458@pengutronix.de> <4FF43692.2040805@nvidia.com> <20120704130056.GC30009@pengutronix.de> <4FF45DDF.9000306@nvidia.com> <20120704152451.GA7333@sirena.org.uk>
+In-Reply-To: <20120704152451.GA7333@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12070501-3864-0000-0000-000003A28957
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-04 at 16:40 +0400, Glauber Costa wrote:
-> On 07/04/2012 01:00 PM, Li Zhong wrote:
-> > On Tue, 2012-07-03 at 15:36 -0500, Christoph Lameter wrote:
-> >> > Looking through the emails it seems that there is an issue with alias
-> >> > strings. 
-> > To be more precise, there seems no big issue currently. I just wanted to
-> > make following usage of kmem_cache_create (SLUB) possible:
-> > 
-> > 	name = some string kmalloced
-> > 	kmem_cache_create(name, ...)
-> > 	kfree(name);
-> 
-> Out of curiosity: Why?
-> This is not (currently) possible with the other allocators (may change
-> with christoph's unification patches), so you would be making your code
-> slub-dependent.
-> 
+On 07/05/2012 12:24 AM, Mark Brown wrote:
+> On Thu, Jul 05, 2012 at 12:14:39AM +0900, Alex Courbot wrote:
+>> On Wed 04 Jul 2012 10:00:56 PM JST, Sascha Hauer wrote:
+>
+>>> Also please be aware that using a regulator in the pwm backlight will
+>>> instantly break all existing users. That's hardly your fault though.
+>
+>> Sorry, I don't see why. Could you elaborate on this?
+>
+> All existing machines will start failing during probe as they won't be
+> able to find the regulator - you should ideally make sure everyone in
+> mainline gets an appropriate regulator set up.
 
-For slub itself, I think it's not good that: in some cases, the name
-string could be kfreed ( if it was kmalloced ) immediately after calling
-the cache create; in some other case, the name string needs to be kept
-valid until some init calls finished. 
+Oh, that is a mistake of mine then. Driver probe should continue if no 
+regulator is declared (but should fail if some other error occured). I 
+want to maintain backward compatibility with current users of the 
+driver, so regulator/gpio specification should be optional.
 
-I agree with you that it would make the code slub-dependent, so I'm now
-working on the consistency of the other allocators regarding this name
-string duplicating thing. 
+Thanks for all the feedback people - I will come back with a new version 
+that addresses the points highlighted and also allows power on/off 
+sequences to be specified in the device tree.
 
-
+Alex.
