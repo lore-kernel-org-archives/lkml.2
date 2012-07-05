@@ -1,127 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953Ab2GEFVQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 01:21:16 -0400
-Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:41267 "EHLO
-	na3sys009aog133.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751393Ab2GEFU1 (ORCPT
+	id S1752020Ab2GEFVY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 01:21:24 -0400
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:56625 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751440Ab2GEFVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 01:20:27 -0400
+	Thu, 5 Jul 2012 01:21:15 -0400
+X-SENDER-IP: [85.230.168.62]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApFYAJwj9U9V5qg+PGdsb2JhbABFihqtDhkBAQEBHgMWDSeCGAEBBTocEwEPEAgDGC4UJQoaE4gPuggUiyWFXmADlTaFZox/
+X-IronPort-AV: E=Sophos;i="4.77,528,1336341600"; 
+   d="scan'208";a="368483477"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Thu, 5 Jul 2012 07:21:41 +0200
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: Henrik Rydberg <rydberg@bitmath.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, chatty@enac.fr,
+        benjamin.tissoires@gmail.com, peter.hutterer@who-t.net,
+        chasedouglas@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: MT - Include win8 support
+Message-ID: <20120705052141.GA977@polaris.bitmath.org>
+References: <1340785690-13652-1-git-send-email-rydberg@euromail.se>
+ <20120703175842.GA472@polaris.bitmath.org>
+ <4FF3956C.7020608@canonical.com>
 MIME-Version: 1.0
-Date: Thu, 5 Jul 2012 10:50:24 +0530
-Message-ID: <CADysL2YwpyuhgzwF6djObZQTpgdHCsLp=K7NsCJth6wAXuFV=A@mail.gmail.com>
-Subject: [PATCH v4 2/2] OMAP:IOMMU:flush L1 and L2 caches
-From: "Gupta, Ramesh" <grgupta@ti.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, tony@atomide.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF3956C.7020608@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 393c4effbbec74ff9b969d53ce4d36fde56b71df Mon Sep 17 00:00:00 2001
-From: Ramesh Gupta G <grgupta@ti.com>
-Date: Fri, 15 Jun 2012 16:46:46 +0530
-Subject: [PATCH v4 2/2] OMAP:IOMMU:flush L1 and L2 caches
+On Tue, Jul 03, 2012 at 05:59:24PM -0700, Chase Douglas wrote:
+> On 07/03/2012 10:58 AM, Henrik Rydberg wrote:
+> >On Wed, Jun 27, 2012 at 10:28:10AM +0200, Henrik Rydberg wrote:
+> >>The newly released HID protocol for win8 multitouch devices is capable
+> >>of transmitting more information about each touch. In particular, it
+> >>includes details useful for touch alignment. This patch completes the
+> >>MT protocol with the ABS_MT_TOOL_X/Y events, and documents how to map
+> >>win8 devices.
+> >>
+> >>Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> >>---
+> >>Hi all,
+> >>
+> >>Here is the patch following the RFC on win8 MT support. An ascii-art
+> >>version of the figure has been included, Peter's orientation text is
+> >>there, and the usage section has been extended with more semantics and
+> >>mappings. Hopefully the similarities and differences between the
+> >>models are clearer now. Also, the usage of azimuth has been left out,
+> >>awaiting an actual device using it.
+> >
+> >I would like to have a couple of ACK's on this patch, if
+> >possible. Please? :-)
+> 
+> I read it through and let it sit a bit to try to figure out if there
+> were any issues I could see. I don't see any, so:
+> 
+> Acked-by: Chase Douglas <chase.douglas@canonical.com>
 
-OMAP IOMMU need to make sure that data in the L1 and L2
-caches is visible to the MMU hardware whenever the
-pagetables are updated. The current code only takes
-care of L1 cache using assembly code. Added code to
-handle this using a new L1 cache maintenance function
-and the outer cache function.
+Applied and pushed. Thank you, Chase.
 
-Signed-off-by: Ramesh Gupta G <grgupta@ti.com>
----
- drivers/iommu/omap-iommu.c |   26 +++++++++-----------------
- 1 files changed, 9 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
-index 6899dcd..f909019 100644
---- a/drivers/iommu/omap-iommu.c
-+++ b/drivers/iommu/omap-iommu.c
-@@ -469,22 +469,14 @@ EXPORT_SYMBOL_GPL(omap_foreach_iommu_device);
-  */
- static void flush_iopgd_range(u32 *first, u32 *last)
- {
--	/* FIXME: L2 cache should be taken care of if it exists */
--	do {
--		asm("mcr	p15, 0, %0, c7, c10, 1 @ flush_pgd"
--		    : : "r" (first));
--		first += L1_CACHE_BYTES / sizeof(*first);
--	} while (first <= last);
-+	flush_iommu_mem(first, last);
-+	outer_flush_range(virt_to_phys(first), virt_to_phys(last));
- }
-
- static void flush_iopte_range(u32 *first, u32 *last)
- {
--	/* FIXME: L2 cache should be taken care of if it exists */
--	do {
--		asm("mcr	p15, 0, %0, c7, c10, 1 @ flush_pte"
--		    : : "r" (first));
--		first += L1_CACHE_BYTES / sizeof(*first);
--	} while (first <= last);
-+	flush_iommu_mem(first, last);
-+	outer_flush_range(virt_to_phys(first), virt_to_phys(last));
- }
-
- static void iopte_free(u32 *iopte)
-@@ -513,7 +505,7 @@ static u32 *iopte_alloc(struct omap_iommu *obj,
-u32 *iopgd, u32 da)
- 			return ERR_PTR(-ENOMEM);
-
- 		*iopgd = virt_to_phys(iopte) | IOPGD_TABLE;
--		flush_iopgd_range(iopgd, iopgd);
-+		flush_iopgd_range(iopgd, iopgd + 1);
-
- 		dev_vdbg(obj->dev, "%s: a new pte:%p\n", __func__, iopte);
- 	} else {
-@@ -542,7 +534,7 @@ static int iopgd_alloc_section(struct omap_iommu
-*obj, u32 da, u32 pa, u32 prot)
- 	}
-
- 	*iopgd = (pa & IOSECTION_MASK) | prot | IOPGD_SECTION;
--	flush_iopgd_range(iopgd, iopgd);
-+	flush_iopgd_range(iopgd, iopgd + 1);
- 	return 0;
- }
-
-@@ -559,7 +551,7 @@ static int iopgd_alloc_super(struct omap_iommu
-*obj, u32 da, u32 pa, u32 prot)
-
- 	for (i = 0; i < 16; i++)
- 		*(iopgd + i) = (pa & IOSUPER_MASK) | prot | IOPGD_SUPER;
--	flush_iopgd_range(iopgd, iopgd + 15);
-+	flush_iopgd_range(iopgd, iopgd + 16);
- 	return 0;
- }
-
-@@ -700,7 +692,7 @@ static size_t iopgtable_clear_entry_core(struct
-omap_iommu *obj, u32 da)
- 		}
- 		bytes *= nent;
- 		memset(iopte, 0, nent * sizeof(*iopte));
--		flush_iopte_range(iopte, iopte + (nent - 1) * sizeof(*iopte));
-+		flush_iopte_range(iopte, iopte + nent * sizeof(*iopte));
-
- 		/*
- 		 * do table walk to check if this table is necessary or not
-@@ -722,7 +714,7 @@ static size_t iopgtable_clear_entry_core(struct
-omap_iommu *obj, u32 da)
- 		bytes *= nent;
- 	}
- 	memset(iopgd, 0, nent * sizeof(*iopgd));
--	flush_iopgd_range(iopgd, iopgd + (nent - 1) * sizeof(*iopgd));
-+	flush_iopgd_range(iopgd, iopgd + nent * sizeof(*iopgd));
- out:
- 	return bytes;
- }
--- 
-1.7.0.4
-
-
--- 
-regards
-Ramesh Gupta G
+Henrik
