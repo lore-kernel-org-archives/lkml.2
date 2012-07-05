@@ -1,376 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756686Ab2GEPUj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 11:20:39 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:55657 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751974Ab2GEPUi (ORCPT
+	id S933140Ab2GEP1U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 11:27:20 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57752 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754123Ab2GEP1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 11:20:38 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av4EAJGv9U9bdWOb/2dsb2JhbABFhV+xSIEHghkBBSMECwFGECUCJgICVwcSiA+mdZJSgSCPRYESA5U3iSaGXYJh
-X-IronPort-AV: E=Sophos;i="4.77,531,1336341600"; 
-   d="scan'208";a="939596320"
-From: =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
-To: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
-        aaro.koskinen@iki.fi, dan.carpenter@oracle.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
-Subject: [PATCH 13/19] Staging: xgifb: Rework conditions in XGI_GetVBInfo().
-Date: Thu,  5 Jul 2012 16:45:56 +0200
-Message-Id: <f7bda1a75b1a411b2b63c72e7302aee1b33897c5.1341498466.git.magomez@igalia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1341498465.git.magomez@igalia.com>
-References: <cover.1341498465.git.magomez@igalia.com>
-In-Reply-To: <cover.1341498465.git.magomez@igalia.com>
-References: <cover.1341498465.git.magomez@igalia.com>
+	Thu, 5 Jul 2012 11:27:18 -0400
+Date: Thu, 5 Jul 2012 12:27:12 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Huewe <peterhuewe@gmx.de>,
+        Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
+Subject: Re: [GIT PULL 00/16] tools lib traceevent: Pending backports of
+ libparseevent
+Message-ID: <20120705152712.GB17035@infradead.org>
+References: <1341380068-23806-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341380068-23806-1-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rework some conditions to reduce indentation and fix style warnings.
+Em Wed, Jul 04, 2012 at 02:34:28PM +0900, Namhyung Kim escreveu:
+> Please pull pending libparseevent improvements from my tree. All
+> patches in the tree got acked or signed-off by Steven. They were
+> originally in the trace-cmd tree, and format-patched + path name
+> adjusted and re-applied.
+> 
+> I've fixed the committer note and Link positions as you requested.  
+> (I put the Links right before Steven's s-o-b as he's the original
+> committer.) Also changelogs are reflowed (to fit to 70 column width
+> that is the default value of emacs fill-paragraph function).
+> 
+> The following changes since commit 17d7a1123f0f6d532830152564cc812cc73db2f3:
+> 
+>   perf bench: Fix confused variable namings and descriptions in mem subsystem (2012-07-02 14:35:45 -0300)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git 
 
-Signed-off-by: Miguel Gómez <magomez@igalia.com>
----
- drivers/staging/xgifb/vb_setmode.c |  287 ++++++++++++++++++------------------
- 1 file changed, 142 insertions(+), 145 deletions(-)
+I think you need to wait a bit more till git request-pull can find the
+tags/libtraceevent-core-for-acme in git.k.o, so that the above line
+would become:
 
-diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
-index 251145e..9dfc2de 100644
---- a/drivers/staging/xgifb/vb_setmode.c
-+++ b/drivers/staging/xgifb/vb_setmode.c
-@@ -2611,186 +2611,183 @@ static void XGI_GetVBInfo(unsigned short ModeNo, unsigned short ModeIdIndex,
- 	pVBInfo->ModeType = modeflag & ModeTypeMask;
- 	tempbx = 0;
- 
--	if (pVBInfo->VBType & 0xFFFF) {
--		/* Check Display Device */
--		temp = xgifb_reg_get(pVBInfo->P3d4, 0x30);
--		tempbx = tempbx | temp;
--		temp = xgifb_reg_get(pVBInfo->P3d4, 0x31);
--		push = temp;
--		push = push << 8;
--		tempax = temp << 8;
--		tempbx = tempbx | tempax;
--		temp = (SetCRT2ToDualEdge | SetCRT2ToYPbPr525750 | XGI_SetCRT2ToLCDA
--				| SetInSlaveMode | DisableCRT2Display);
--		temp = 0xFFFF ^ temp;
--		tempbx &= temp;
--
--		temp = xgifb_reg_get(pVBInfo->P3d4, 0x38);
-+	if (!(pVBInfo->VBType & 0xFFFF))
-+		return;
- 
--		if (pVBInfo->IF_DEF_LCDA == 1) {
--
--			if ((HwDeviceExtension->jChipType >= XG20) ||
--			    (HwDeviceExtension->jChipType >= XG40)) {
--				if (pVBInfo->IF_DEF_LVDS == 0) {
--					if (pVBInfo->VBType &
--					    (VB_SIS302B |
--					     VB_SIS301LV |
--					     VB_SIS302LV |
--					     VB_XGI301C)) {
--						if (temp & EnableDualEdge) {
--							tempbx |=
--							    SetCRT2ToDualEdge;
--
--							if (temp & SetToLCDA)
--								tempbx |=
--								  XGI_SetCRT2ToLCDA;
--						}
--					}
-+	/* Check Display Device */
-+	temp = xgifb_reg_get(pVBInfo->P3d4, 0x30);
-+	tempbx = tempbx | temp;
-+	temp = xgifb_reg_get(pVBInfo->P3d4, 0x31);
-+	push = temp;
-+	push = push << 8;
-+	tempax = temp << 8;
-+	tempbx = tempbx | tempax;
-+	temp = (SetCRT2ToDualEdge | SetCRT2ToYPbPr525750 | XGI_SetCRT2ToLCDA
-+		| SetInSlaveMode | DisableCRT2Display);
-+	temp = 0xFFFF ^ temp;
-+	tempbx &= temp;
-+
-+	temp = xgifb_reg_get(pVBInfo->P3d4, 0x38);
-+
-+	if (pVBInfo->IF_DEF_LCDA == 1) {
-+
-+		if (((HwDeviceExtension->jChipType >= XG20) ||
-+		     (HwDeviceExtension->jChipType >= XG40)) &&
-+		    (pVBInfo->IF_DEF_LVDS == 0)) {
-+			if (pVBInfo->VBType &
-+			    (VB_SIS302B |
-+			     VB_SIS301LV |
-+			     VB_SIS302LV |
-+			     VB_XGI301C)) {
-+				if (temp & EnableDualEdge) {
-+					tempbx |= SetCRT2ToDualEdge;
-+					if (temp & SetToLCDA)
-+						tempbx |= XGI_SetCRT2ToLCDA;
- 				}
- 			}
- 		}
-+	}
- 
--		if (pVBInfo->IF_DEF_YPbPr == 1) {
--			if (((pVBInfo->IF_DEF_LVDS == 0) &&
--			    ((pVBInfo->VBType & VB_SIS301LV) ||
--			    (pVBInfo->VBType & VB_SIS302LV) ||
--			    (pVBInfo->VBType & VB_XGI301C)))) {
--				if (temp & SetYPbPr) {
--					if (pVBInfo->IF_DEF_HiVision == 1) {
--						/* shampoo add for new
--						 * scratch */
--						temp = xgifb_reg_get(
--								pVBInfo->P3d4,
--								0x35);
--						temp &= YPbPrMode;
--						tempbx |= SetCRT2ToHiVision;
--
--						if (temp != YPbPrMode1080i) {
--							tempbx &=
--							 (~SetCRT2ToHiVision);
--							tempbx |=
--							 SetCRT2ToYPbPr525750;
--						}
-+	if (pVBInfo->IF_DEF_YPbPr == 1) {
-+		if (((pVBInfo->IF_DEF_LVDS == 0) &&
-+		     ((pVBInfo->VBType & VB_SIS301LV) ||
-+		      (pVBInfo->VBType & VB_SIS302LV) ||
-+		      (pVBInfo->VBType & VB_XGI301C)))) {
-+			if (temp & SetYPbPr) {
-+				if (pVBInfo->IF_DEF_HiVision == 1) {
-+					/* shampoo add for new
-+					 * scratch */
-+					temp = xgifb_reg_get(
-+						pVBInfo->P3d4,
-+						0x35);
-+					temp &= YPbPrMode;
-+					tempbx |= SetCRT2ToHiVision;
-+
-+					if (temp != YPbPrMode1080i) {
-+						tempbx &=
-+							(~SetCRT2ToHiVision);
-+						tempbx |=
-+							SetCRT2ToYPbPr525750;
- 					}
- 				}
- 			}
- 		}
-+	}
- 
--		tempax = push; /* restore CR31 */
-+	tempax = push; /* restore CR31 */
- 
--		if (pVBInfo->IF_DEF_LVDS == 0) {
--			if (pVBInfo->IF_DEF_YPbPr == 1) {
--				if (pVBInfo->IF_DEF_HiVision == 1)
--					temp = 0x09FC;
--				else
--					temp = 0x097C;
--			} else {
--				if (pVBInfo->IF_DEF_HiVision == 1)
--					temp = 0x01FC;
--				else
--					temp = 0x017C;
--			}
--		} else { /* 3nd party chip */
--			temp = SetCRT2ToLCD;
--		}
--
--		if (!(tempbx & temp)) {
--			tempax |= DisableCRT2Display;
--			tempbx = 0;
--		}
--
--		if (pVBInfo->IF_DEF_LCDA == 1) { /* Select Display Device */
--			if (!(pVBInfo->VBType & VB_NoLCD)) {
--				if (tempbx & XGI_SetCRT2ToLCDA) {
--					if (tempbx & SetSimuScanMode)
--						tempbx &= (~(SetCRT2ToLCD |
--							   SetCRT2ToRAMDAC |
--							   SwitchCRT2));
--					else
--						tempbx &= (~(SetCRT2ToLCD |
--							     SetCRT2ToRAMDAC |
--							     SetCRT2ToTV |
--							     SwitchCRT2));
--				}
--			}
-+	if (pVBInfo->IF_DEF_LVDS == 0) {
-+		if (pVBInfo->IF_DEF_YPbPr == 1) {
-+			if (pVBInfo->IF_DEF_HiVision == 1)
-+				temp = 0x09FC;
-+			else
-+				temp = 0x097C;
-+		} else {
-+			if (pVBInfo->IF_DEF_HiVision == 1)
-+				temp = 0x01FC;
-+			else
-+				temp = 0x017C;
- 		}
-+	} else { /* 3nd party chip */
-+		temp = SetCRT2ToLCD;
-+	}
- 
--		/* shampoo add */
--		/* for driver abnormal */
--		if (!(tempbx & (SwitchCRT2 | SetSimuScanMode))) {
--			if (pVBInfo->IF_DEF_CRT2Monitor == 1) {
--				if (tempbx & SetCRT2ToRAMDAC) {
--					tempbx &= (0xFF00 |
--						   SetCRT2ToRAMDAC |
--						   SwitchCRT2 |
--						   SetSimuScanMode);
--					tempbx &= (0x00FF | (~SetCRT2ToYPbPr525750));
--				}
--			} else {
--				tempbx &= (~(SetCRT2ToRAMDAC |
--					   SetCRT2ToLCD |
--					   SetCRT2ToTV));
-+	if (!(tempbx & temp)) {
-+		tempax |= DisableCRT2Display;
-+		tempbx = 0;
-+	}
-+
-+	if (pVBInfo->IF_DEF_LCDA == 1) { /* Select Display Device */
-+		if (!(pVBInfo->VBType & VB_NoLCD)) {
-+			if (tempbx & XGI_SetCRT2ToLCDA) {
-+				if (tempbx & SetSimuScanMode)
-+					tempbx &= (~(SetCRT2ToLCD |
-+						     SetCRT2ToRAMDAC |
-+						     SwitchCRT2));
-+				else
-+					tempbx &= (~(SetCRT2ToLCD |
-+						     SetCRT2ToRAMDAC |
-+						     SetCRT2ToTV |
-+						     SwitchCRT2));
- 			}
- 		}
-+	}
- 
--		if (!(pVBInfo->VBType & VB_NoLCD)) {
--			if (tempbx & SetCRT2ToLCD) {
-+	/* shampoo add */
-+	/* for driver abnormal */
-+	if (!(tempbx & (SwitchCRT2 | SetSimuScanMode))) {
-+		if (pVBInfo->IF_DEF_CRT2Monitor == 1) {
-+			if (tempbx & SetCRT2ToRAMDAC) {
- 				tempbx &= (0xFF00 |
--					   SetCRT2ToLCD |
-+					   SetCRT2ToRAMDAC |
- 					   SwitchCRT2 |
- 					   SetSimuScanMode);
- 				tempbx &= (0x00FF | (~SetCRT2ToYPbPr525750));
- 			}
-+		} else {
-+			tempbx &= (~(SetCRT2ToRAMDAC |
-+				     SetCRT2ToLCD |
-+				     SetCRT2ToTV));
- 		}
-+	}
- 
--		if (tempbx & SetCRT2ToSCART) {
-+	if (!(pVBInfo->VBType & VB_NoLCD)) {
-+		if (tempbx & SetCRT2ToLCD) {
- 			tempbx &= (0xFF00 |
--				   SetCRT2ToSCART |
-+				   SetCRT2ToLCD |
- 				   SwitchCRT2 |
- 				   SetSimuScanMode);
- 			tempbx &= (0x00FF | (~SetCRT2ToYPbPr525750));
- 		}
-+	}
- 
--		if (pVBInfo->IF_DEF_YPbPr == 1) {
--			if (tempbx & SetCRT2ToYPbPr525750)
--				tempbx &= (0xFF00 |
--					   SwitchCRT2 |
--					   SetSimuScanMode);
--		}
-+	if (tempbx & SetCRT2ToSCART) {
-+		tempbx &= (0xFF00 |
-+			   SetCRT2ToSCART |
-+			   SwitchCRT2 |
-+			   SetSimuScanMode);
-+		tempbx &= (0x00FF | (~SetCRT2ToYPbPr525750));
-+	}
- 
--		if (pVBInfo->IF_DEF_HiVision == 1) {
--			if (tempbx & SetCRT2ToHiVision)
--				tempbx &= (0xFF00 |
--					   SetCRT2ToHiVision |
--					   SwitchCRT2 |
--					   SetSimuScanMode);
--		}
-+	if (pVBInfo->IF_DEF_YPbPr == 1) {
-+		if (tempbx & SetCRT2ToYPbPr525750)
-+			tempbx &= (0xFF00 |
-+				   SwitchCRT2 |
-+				   SetSimuScanMode);
-+	}
- 
--		if (tempax & DisableCRT2Display) { /* Set Display Device Info */
--			if (!(tempbx & (SwitchCRT2 | SetSimuScanMode)))
--				tempbx = DisableCRT2Display;
--		}
-+	if (pVBInfo->IF_DEF_HiVision == 1) {
-+		if (tempbx & SetCRT2ToHiVision)
-+			tempbx &= (0xFF00 |
-+				   SetCRT2ToHiVision |
-+				   SwitchCRT2 |
-+				   SetSimuScanMode);
-+	}
- 
--		if (!(tempbx & DisableCRT2Display)) {
--			if ((!(tempbx & DriverMode)) ||
--			    (!(modeflag & CRT2Mode))) {
--				if (pVBInfo->IF_DEF_LCDA == 1) {
--					if (!(tempbx & XGI_SetCRT2ToLCDA))
--						tempbx |= (SetInSlaveMode |
--							   SetSimuScanMode);
--				}
--			}
-+	if (tempax & DisableCRT2Display) { /* Set Display Device Info */
-+		if (!(tempbx & (SwitchCRT2 | SetSimuScanMode)))
-+			tempbx = DisableCRT2Display;
-+	}
- 
--			/* LCD+TV can't support in slave mode
--			 * (Force LCDA+TV->LCDB) */
--			if ((tempbx & SetInSlaveMode) &&
--			    (tempbx & XGI_SetCRT2ToLCDA)) {
--				tempbx ^= (SetCRT2ToLCD |
--					  XGI_SetCRT2ToLCDA |
--					  SetCRT2ToDualEdge);
--				pVBInfo->SetFlag |= ReserveTVOption;
-+	if (!(tempbx & DisableCRT2Display)) {
-+		if ((!(tempbx & DriverMode)) ||
-+		    (!(modeflag & CRT2Mode))) {
-+			if (pVBInfo->IF_DEF_LCDA == 1) {
-+				if (!(tempbx & XGI_SetCRT2ToLCDA))
-+					tempbx |= (SetInSlaveMode |
-+						   SetSimuScanMode);
- 			}
- 		}
-+
-+		/* LCD+TV can't support in slave mode
-+		 * (Force LCDA+TV->LCDB) */
-+		if ((tempbx & SetInSlaveMode) &&
-+		    (tempbx & XGI_SetCRT2ToLCDA)) {
-+			tempbx ^= (SetCRT2ToLCD |
-+				   XGI_SetCRT2ToLCDA |
-+				   SetCRT2ToDualEdge);
-+			pVBInfo->SetFlag |= ReserveTVOption;
-+		}
- 	}
- 
- 	pVBInfo->VBInfo = tempbx;
--- 
-1.7.9.5
+    git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git tags/libtraceevent-core-for-acme
 
+I did merge this branch, signature checked, all is well, it seems, lets
+see when Ingo pulls from my perf/core branch if everything is OK.
+
+Thanks!
+
+- Arnaldo
