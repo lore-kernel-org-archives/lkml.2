@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab2GEJ3S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 05:29:18 -0400
-Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:34644 "EHLO
-	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755258Ab2GEJ3O (ORCPT
+	id S1755555Ab2GEJ34 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 05:29:56 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:46486 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754798Ab2GEJ3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 05:29:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <1341480207-5651-1-git-send-email-shubhrajyoti@ti.com>
-References: <1341480207-5651-1-git-send-email-shubhrajyoti@ti.com>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Thu, 5 Jul 2012 14:58:20 +0530
-Message-ID: <CAMQu2gzJgkGk5VCkUc1o7oxRhzSY1=Qp0HNR5jt0YFKzwsB10w@mail.gmail.com>
-Subject: Re: [PATCH RFC] spi: omap2-mcspi: Fix the dma_unmap warning
-To: Shubhrajyoti D <shubhrajyoti@ti.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 5 Jul 2012 05:29:53 -0400
+Message-ID: <1341480578.23916.7.camel@ThinkPad-T420>
+Subject: Re: [PATCH powerpc 2/2] kfree the cache name  of pgtable cache if
+ SLUB is used
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-mm <linux-mm@kvack.org>,
+        PowerPC email list <linuxppc-dev@lists.ozlabs.org>
+Date: Thu, 05 Jul 2012 17:29:38 +0800
+In-Reply-To: <4FF54F18.50300@parallels.com>
+References: <1340617984.13778.37.camel@ThinkPad-T420>
+	 <1340618099.13778.39.camel@ThinkPad-T420>
+	 <alpine.DEB.2.00.1207031344240.14703@router.home>
+	 <alpine.DEB.2.00.1207031535330.14703@router.home>
+	 <1341392420.18505.41.camel@ThinkPad-T420> <4FF439D0.1000603@parallels.com>
+	 <1341452486.18505.49.camel@ThinkPad-T420> <4FF54F18.50300@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12070509-8256-0000-0000-00000331BA9B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 5, 2012 at 2:53 PM, Shubhrajyoti D <shubhrajyoti@ti.com> wrote:
-> The dma_map and dma_unmap should have same parameter
-> passed otherwise we get the below warn.
->
-> ks8851 spi1.0: DMA-API: device driver tries to free DMA memory it has not allocated [device address=0x000000009f22]
->
-> [    2.066925] Modules linked in:
-> [    2.070312]
-> [    2.071929] [<c001c250>] (unwind_backtrace+0x0/0x130) from [<c0043d84>] (warn_slowpath_common+0x4c/0x64)
-> [    2.081909] [<c0043d84>] (warn_slowpath_common+0x4c/0x64) from [<c0043e30>] (warn_slowpath_fmt+0x30/0x40)
-> [    2.091949] [<c0043e30>] (warn_slowpath_fmt+0x30/0x40) from [<c0293824>] (check_unmap+0x6d0/0x7b0)
-> [    2.101348] [<c0293824>] (check_unmap+0x6d0/0x7b0) from [<c02939cc>] (debug_dma_unmap_page+0x64/0x70)
-> [    2.111053] [<c02939cc>] (debug_dma_unmap_page+0x64/0x70) from [<c03519a4>] (omap2_mcspi_txrx_dma+0x2d8/0x4fc)
-> [    2.121582] [<c03519a4>] (omap2_mcspi_txrx_dma+0x2d8/0x4fc) from [<c03524d8>] (omap2_mcspi_work.clone.4+0xf0/0x290)
-> [    2.132537] [<c03524d8>] (omap2_mcspi_work.clone.4+0xf0/0x290) from [<c0352900>] (omap2_mcspi_transfer_one_message+0x288/0x438)
-> [    2.144592] [<c0352900>] (omap2_mcspi_transfer_one_message+0x288/0x438) from [<c03503bc>] (spi_pump_messages+0x100/0x160)
-> [    2.156127] [<c03503bc>] (spi_pump_messages+0x100/0x160) from [<c006635c>] (kthread_worker_fn+0xac/0x180)
-> [    2.166168] [<c006635c>] (kthread_worker_fn+0xac/0x180) from [<c0066578>] (kthread+0x90/0x9c)
-> [    2.175140] [<c0066578>] (kthread+0x90/0x9c) from [<c00157fc>] (kernel_thread_exit+0x0/0x8)
-> [    2.183898] ---[ end trace d1830ce6e44292f2 ]---
->
-> Fix the warn by changing the unmap parameter to the one used while doing
-> dma_map.
->
-> Reported-by: Russell King <linux@arm.linux.org.uk>
-> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-> ---
-Looks fine to me.
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+On Thu, 2012-07-05 at 12:23 +0400, Glauber Costa wrote:
+> On 07/05/2012 05:41 AM, Li Zhong wrote:
+> > On Wed, 2012-07-04 at 16:40 +0400, Glauber Costa wrote:
+> >> On 07/04/2012 01:00 PM, Li Zhong wrote:
+> >>> On Tue, 2012-07-03 at 15:36 -0500, Christoph Lameter wrote:
+> >>>>> Looking through the emails it seems that there is an issue with alias
+> >>>>> strings. 
+> >>> To be more precise, there seems no big issue currently. I just wanted to
+> >>> make following usage of kmem_cache_create (SLUB) possible:
+> >>>
+> >>> 	name = some string kmalloced
+> >>> 	kmem_cache_create(name, ...)
+> >>> 	kfree(name);
+> >>
+> >> Out of curiosity: Why?
+> >> This is not (currently) possible with the other allocators (may change
+> >> with christoph's unification patches), so you would be making your code
+> >> slub-dependent.
+> >>
+> > 
+> > For slub itself, I think it's not good that: in some cases, the name
+> > string could be kfreed ( if it was kmalloced ) immediately after calling
+> > the cache create; in some other case, the name string needs to be kept
+> > valid until some init calls finished. 
+> > 
+> > I agree with you that it would make the code slub-dependent, so I'm now
+> > working on the consistency of the other allocators regarding this name
+> > string duplicating thing. 
+> 
+> If you really need to kfree the string, or even if it is easier for you
+> this way, it can be done. As a matter of fact, this is the case for me.
+> Just that your patch is not enough. Christoph has a patch that makes
+> this behavior consistent over all allocators.
+
+Sorry, I didn't know that. Seems I don't need to continue the half-done
+work in slab. If possible, would you please give me a link of the patch?
+Thank you. 
+
+> This just needs to be pushed again to the tree.
+> 
+
+
