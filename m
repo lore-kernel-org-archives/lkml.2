@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932452Ab2GEAtL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 20:49:11 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63371 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103Ab2GEAtI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 20:49:08 -0400
-X-AuditID: 9c930197-b7b49ae0000027b8-37-4ff4e4815565
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org,
-        drepper@gmail.com
-Subject: Re: [PATCH 2/3] perf, tool: Enable grouping logic for parsed events
-References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
-	<1340960907-3725-3-git-send-email-jolsa@redhat.com>
-	<87bojync4b.fsf@sejong.aot.lge.com>
-	<20120702101010.GB967@krava.redhat.com>
-	<873959mzi3.fsf@sejong.aot.lge.com>
-	<20120704173407.GA2880@krava.redhat.com>
-Date: Thu, 05 Jul 2012 09:45:05 +0900
-In-Reply-To: <20120704173407.GA2880@krava.redhat.com> (Jiri Olsa's message of
-	"Wed, 4 Jul 2012 19:34:07 +0200")
-Message-ID: <87y5mzkpda.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S1756191Ab2GEAvv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 20:51:51 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:44262 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751359Ab2GEAvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 20:51:48 -0400
+Message-ID: <1341449507.2058.6.camel@joe2Laptop>
+Subject: Re: [PATCH v2 net-next 2/2] r8169: support RTL8168G
+From: Joe Perches <joe@perches.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Hayes Wang <hayeswang@realtek.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 04 Jul 2012 17:51:47 -0700
+In-Reply-To: <20120704220458.GA1621@electric-eye.fr.zoreil.com>
+References: <1340966060-2749-1-git-send-email-hayeswang@realtek.com>
+	 <1341221002-1522-1-git-send-email-hayeswang@realtek.com>
+	 <1341221002-1522-2-git-send-email-hayeswang@realtek.com>
+	 <20120704220458.GA1621@electric-eye.fr.zoreil.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Jul 2012 19:34:07 +0200, Jiri Olsa wrote:
-> On Tue, Jul 03, 2012 at 09:58:44AM +0900, Namhyung Kim wrote:
->> On Mon, 2 Jul 2012 12:10:10 +0200, Jiri Olsa wrote:
->> > On Mon, Jul 02, 2012 at 11:13:56AM +0900, Namhyung Kim wrote:
->> >> On Fri, 29 Jun 2012 11:08:26 +0200, Jiri Olsa wrote:
->> >> > It's possible to use standard event modifier for a group, which spans
->> >> > over all events in the group and overrides any event modifier settings,
->> >> > for example:
->> >> >
->> >> >   # perf record -r '{faults:k,cache-references}:u'
->> >> >
->> >> > resulting in ':u' modifier being used for both 'faults' and 'cache-references'
->> >> > events, regardless of their modifier setup (':k' for faults event).
->> >> >
->> >> 
->> >> So the faults event would get only 'u' for the modifier not 'uk', right?
->> >
->> > right
->> >
->> 
->> I was thinking about the combining the modifiers - i.e. make it 'uk'
->> above. Not sure it's useful in general, but something like "adding 'p'
->> to the leader (only)" looks good to have IMHO.
->
-> just hit the issue with leader 'p' during tests ;) but still not sure which
-> way is more usefull thought.. probably better to have both ways available
->
-> how about uppercase group modifier overwrites, lowercase means combining
->
-> or any other way.. ;) thoughts?
->
+On Thu, 2012-07-05 at 00:04 +0200, Francois Romieu wrote:
+> Hayes Wang <hayeswang@realtek.com> :
+> > Support the new chip RTL8168G.
 
-How about using like '{...}+u' for combining?
+> - save Joe P. some work
 
-Thanks,
-Namhyung
+Thanks.  Just a trivial thing below:
+
+[]
+
+> diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+[]
+> +#define	RTL_LOOP_MAX	10000
+> +
+> +static void rtl_mcu_wait_list_ready(void __iomem *ioaddr)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < RTL_LOOP_MAX; i++) {
+> +		if (RTL_R8(MCU) & LINK_LIST_RDY)
+> +			return;
+> +		udelay(100);
+> +	}
+> +}
+
+This pattern is used a couple more times.
+There's no failure handling either.
+
+Maybe use a macro with RTL_R8/32, register and test?
+Maybe the delays could be tuned out a bit better.
+Maybe a continuous read or a less frequent read
+might be better.
+
+>  static void __devinit rtl_hw_init_8168g(struct rtl8169_private *tp)
+>  {
+[]
+> +	for (i = 0; i < RTL_LOOP_MAX; i++) {
+> +		if (RTL_R32(TxConfig) & TXCFG_EMPTY)
+> +			break;
+>  		udelay(100);
+> +	}
+
+pattern
+
+> +	for (i = 0; i < RTL_LOOP_MAX; i++) {
+> +		if ((RTL_R8(MCU) & RXTX_EMPTY) == RXTX_EMPTY)
+> +			break;
+>  		udelay(100);
+> +	}
+
+pattern
+
+
