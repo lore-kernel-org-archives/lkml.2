@@ -1,111 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757Ab2GEBZJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jul 2012 21:25:09 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:36013 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751102Ab2GEBZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jul 2012 21:25:06 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: size_t/ssize_t warnings (was: Re: Build regressions/improvements in v3.5-rc5)
-Date: Wed, 4 Jul 2012 21:25:13 -0400
-User-Agent: KMail/1.13.7 (Linux/3.4.4; KDE/4.6.5; x86_64; ; )
-Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
-        "Linux-Arch" <linux-arch@vger.kernel.org>, linux-cris-kernel@axis.com
-References: <CAMuHMdVJTUF3r=MKzpkvj6y_xdVdw=zEgAy2_wm_hG94jdrhBA@mail.gmail.com>
-In-Reply-To: <CAMuHMdVJTUF3r=MKzpkvj6y_xdVdw=zEgAy2_wm_hG94jdrhBA@mail.gmail.com>
+	id S1751513Ab2GEBf6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jul 2012 21:35:58 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:25954 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751038Ab2GEBfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jul 2012 21:35:50 -0400
+X-IronPort-AV: E=Sophos;i="4.77,527,1336320000"; 
+   d="scan'208";a="5330847"
+Message-ID: <4FF4EF8E.4080706@cn.fujitsu.com>
+Date: Thu, 05 Jul 2012 09:36:14 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2082783.vk3JZMNMW3";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Mel Gorman <mel@csn.ul.ie>
+CC: Chris Metcalf <cmetcalf@tilera.com>, Len Brown <lenb@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Julia Lawall <julia@diku.dk>,
+        David Howells <dhowells@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, Ingo Molnar <mingo@elte.hu>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Daniel Kiper <dkiper@net-space.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Rik van Riel <riel@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC PATCH 1/3 V1] mm, page_alloc: use __rmqueue_smallest when
+ borrow memory from MIGRATE_CMA
+References: <1341386778-8002-1-git-send-email-laijs@cn.fujitsu.com> <1341386778-8002-2-git-send-email-laijs@cn.fujitsu.com> <20120704101737.GL13141@csn.ul.ie> <4FF41E63.4020303@cn.fujitsu.com> <20120704111935.GN13141@csn.ul.ie>
+In-Reply-To: <20120704111935.GN13141@csn.ul.ie>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/05 09:35:40,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/05 09:35:49,
+	Serialize complete at 2012/07/05 09:35:49
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207042125.14680.vapier@gentoo.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2082783.vk3JZMNMW3
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On 07/04/2012 07:19 PM, Mel Gorman wrote:
+> On Wed, Jul 04, 2012 at 06:43:47PM +0800, Lai Jiangshan wrote:
+>> On 07/04/2012 06:17 PM, Mel Gorman wrote:
+>>> On Wed, Jul 04, 2012 at 03:26:16PM +0800, Lai Jiangshan wrote:
+>>>> The pages of MIGRATE_CMA can't not be changed to the other type,
+>>>> nor be moved to the other free list. 
+>>>>
+>>>> ==>
+>>>> So when we use __rmqueue_fallback() to borrow memory from MIGRATE_CMA,
+>>>> one of the highest order page is borrowed and it is split.
+>>>> But the free pages resulted by splitting can NOT
+>>>> be moved to MIGRATE_MOVABLE.
+>>>>
+>>>> ==>
+>>>> So in the next time of allocation, we NEED to borrow again,
+>>>> another one of the highest order page is borrowed from CMA and it is split.
+>>>> and results some other new split free pages.
+>>>>
+>>>
+>>> Then special case __rmqueue_fallback() to move pages stolen from
+>>> MIGRATE_CMA to the MIGRATE_MOVABLE lists but do not change the pageblock
+>>> type.
+>>
+>> Because unmovable-page-requirement can allocate page from
+>> MIGRATE_MOVABLE free list. So We can not move MIGRATE_CMA pages
+>> to the MIGRATE_MOVABLE free list.
+>>
+> 
+> Ok, good point.
+> 
+>> See here:
+>>
+>> MOVABLE list is empty
+>> UNMOVABLE list is empty
+>> movable-page-requirement
+>> 	borrow from CMA list
+>> 	split it, others are put into UNMOVABLE list
+>> unmovable-page-requiremnt
+>> 	borrow from UNMOVABLE list
+>> 	NOW, it is BUG, we use CMA pages for unmovable usage.
+>>
+> 
+> The patch still looks unnecessarily complex for what you are trying to
 
-On Wednesday 04 July 2012 16:17:28 Geert Uytterhoeven wrote:
-> On Wed, Jul 4, 2012 at 3:34 PM, Jan Kara <jack@suse.cz> wrote:
-> >>   + fs/quota/quota_tree.c: warning: format '%zd' expects argument of
-> >>   type 'signed size_t', but argument 4 has type 'ssize_t' [-Wformat]:=
-=20
-> >>   =3D> 372:4 + fs/quota/quota_v2.c: warning: format '%zd' expects
-> >>   argument of type 'signed size_t', but argument 5 has type 'ssize_t'
-> >>   [-Wformat]:  =3D> 66:92
-> >  =20
-> >   These really look like false positives (there are quite a few of this
-> >=20
-> > kind). Can we possibly silence them?
->=20
-> These 2 warnings happen on cris only, because size_t is unsigned int and
-> ssize_t is (signed) long. They go away if I make ssize_t int.
->=20
-> I had a look at the various definitions of size_t and ssize_t:
->=20
->                         __kernel_size_t                       =20
-> __kernel_ssize_t ---------------                         ----------------
->=20
-> generic 32-bit:         unsigned int                            int
-> generic 64-bit:         __kernel_ulong_t (unsigned long)
-> __kernel_long_t (long)
->=20
-> Exceptions:
->=20
-> avr32:                  unsigned long                           long
-> blackfin:               unsigned long                           long
-> cris:                   __SIZE_TYPE__ (unsigned int)            long
-> mn10300/__GNUC__ =3D=3D 4:  unsigned int                            signe=
-d int
-> mn10300/__GNUC__ !=3D 4:  unsigned long                           signed =
-long
-> s390 (32-bit):          unsigned long                           int
-> x32:                    __kernel_ulong_t (unsigned long long)
-> __kernel_long_t (long long)
->=20
-> On cris, I get the warning if ssize_t !=3D int.
-> Whether size_t is unsigned int or unsigned long doesn't matter.
-> So it's not just a mismatch between int and long.
->=20
-> I also tried blackfin, which has matching unsigned long/long, and it
-> doesn't give the warning. Presumably the toolchain has size_t hardcoded to
-> long for printf-style format checking?
+Which is complex in my code? __rmqueue_smallest()? __rmqueue_fallback()?
 
-well, every gcc arch has to declare a type for size_t.  on Blackfin, we pic=
-ked:
-gcc/config/bfin/bfin.h:/* what is the 'type' of size_t */
-gcc/config/bfin/bfin.h-#define SIZE_TYPE "long unsigned int"
+__rmqueue_smallest() ? I think it is required.
 
-grep shows that many other arches do the same
-=2Dmike
+__rmqueue_fallback()?
+It is just a cleanup for __rmqueue_fallback(), CMA is removed out from
+__rmqueue_fallback(), so we can cleanup fallback(). I will remove/split
+the cleanup part of the patch in next round.
 
---nextPart2082783.vk3JZMNMW3
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+> achieve and as a result I'm not reviewing it as carefully as I should.
+> It looks like the entire patch boiled down to this hunk here
+> 
+> +#ifdef CONFIG_CMA
+> +	if (unlikely(!page) && migratetype == MIGRATE_MOVABLE)
+> +		page = __rmqueue_smallest(zone, order, MIGRATE_CMA);
+> +#endif
+> +
+> 
+> With that in place, this would would need to change from
+> 
+> [MIGRATE_MOVABLE]     = { MIGRATE_CMA, MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
+> 
+> to
+> 
+> [MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
+> 
+> because the fallback is already being handled as a special case. Leave
+> the other fallback logic as it is.
+> 
+> This is not tested at all and is only meant to illustrate why I think
+> your patch looks excessively complex for what you are trying to
+> achieve.
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 4beb7ae..0063e93 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -895,11 +895,9 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
+>  static int fallbacks[MIGRATE_TYPES][4] = {
+>  	[MIGRATE_UNMOVABLE]   = { MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,     MIGRATE_RESERVE },
+>  	[MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,     MIGRATE_RESERVE },
+> +	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE,   MIGRATE_RESERVE },
+>  #ifdef CONFIG_CMA
+> -	[MIGRATE_MOVABLE]     = { MIGRATE_CMA,         MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
+>  	[MIGRATE_CMA]         = { MIGRATE_RESERVE }, /* Never used */
+> -#else
+> -	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE,   MIGRATE_RESERVE },
+>  #endif
+>  	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE }, /* Never used */
+>  	[MIGRATE_ISOLATE]     = { MIGRATE_RESERVE }, /* Never used */
+> @@ -1076,6 +1074,20 @@ static struct page *__rmqueue(struct zone *zone, unsigned int order,
+>  
+>  retry_reserve:
+>  	page = __rmqueue_smallest(zone, order, migratetype);
+> +#ifdef CONFIG_CMA
+> +	if (!unlikely(!page) && migratetype == MIGRATE_MOVABLE) {
+> +
+> +		/*
+> +		 * CMA is a special case where we want to use
+> +		 * the smallest available page instead of splitting
+> +		 * the largest chunks. We still must avoid the pages
+> +		 * moving to MIGRATE_MOVABLE where they might be
+> +		 * used for UNRECLAIMABLE or UNMOVABLE allocations
+> +		 */
+> +		migratetype = MIGRATE_CMA;
+> +		goto retry_reserve;
+> +	}
+> +#endif /* CONFIG_CMA */
+>  
+>  	if (unlikely(!page) && migratetype != MIGRATE_RESERVE) {
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
 
-iQIcBAABAgAGBQJP9Oz6AAoJEEFjO5/oN/WBkXsP/j8vqhTROh4Pagcdk9vKLhiH
-SVm2fT0nzTmSRdxN2ehRydAmAyK6fooSPkSj6/hk9wCdPCbJAhj/D9wIXu2LaqHT
-bxGSNaLXAKwVvx0eHfp/0XBtV3H1/X9TpBrtYYQ2UBSvWxQS/01hR7bL5USjwKZB
-BO/s4IkuhKYe2K+2YR6T4LFe8OuDxzkwl68pUuQ8nbkM/FyW6BLyOuDiQqjkRyOu
-GkBGE2HAZW2LmSd0oGYCboVvCO8E8r3LB96d1BHML03CzWbnyy6RyGrALF3Lg6Yb
-DFEKlSLK6YOYWP5R0Z3i4Bxn55KGBuczYOE0uezW5G/iPiw++OIb6wogeqNcGKql
-niRsbTIKKVPUXPHGmP5tHyHNCaDERctLHGXeVZUlYazBMwKX69FLiCD7uazBkBT2
-nYP8KR4cQ5f8njTFKk18dgUOa8ETTBR781Ak4qHRtmBBKH3B3l/1JXS+EBR3vNv3
-VHX6WQuJk66i1omYBmo7wZMUf9Sp1efZ34Qq1D2ZjYVaBz3Q+w6KsxMMfkXpEGhS
-zFN2r2dbnEVKHNYXbGsxn/me86OhzpBKkthJ3oAuXi1rn3aUAN8TcSqFGUUE0de7
-juKzvk7VJzX2doMfkXWJbaxltqWIhAAigOL4u33v+QunJWkN/e14HaAj68ooeX8S
-wGWOIuncc+xVb0JXmFQR
-=ALSI
------END PGP SIGNATURE-----
+need to add
 
---nextPart2082783.vk3JZMNMW3--
++		if (migratetype == MIGRATE_CMA)
++			migratetype = MIGRATE_MOVABLE;
+
+to restore the migratetype for fallback.
+
+And your code are the same as mine in the view of CPU:
+__rmqueue_smallest(MIGRATE_MOVABLE)
+if failed: __rmqueue_smallest(MIGRATE_CMA)
+if failed: __rmqueue_fallback()
+if failed: __rmqueue_smallest(MIGRATE_RESERVE)
+
+The differences are:
+you just use "goto" instead "if" for instruction control.
+your code are longer.
+the number of branch in your code = mine + 1
+
+My code have better readability:
+Mine:
+
+========================================================================
+	page = __rmqueue_smallest(zone, order, migratetype);
+
+#ifdef CONFIG_CMA
+	if (unlikely(!page) && migratetype == MIGRATE_MOVABLE)
+		page = __rmqueue_smallest(zone, order, MIGRATE_CMA);
+#endif
+
+	if (unlikely(!page))
+		page = __rmqueue_fallback(zone, order, migratetype);
+
+	if (unlikely(!page))
+		page = __rmqueue_smallest(zone, order, MIGRATE_RESERVE);
+
+	trace_mm_page_alloc_zone_locked(page, order, migratetype);
+	return page;
+=====================================================================
+
+Yours:
+
+==================================================================
+retry_reserve:
+	page = __rmqueue_smallest(zone, order, migratetype);
+
+#ifdef CONFIG_CMA
+	if (!unlikely(!page) && migratetype == MIGRATE_MOVABLE) {
+
+		/*
+		 * CMA is a special case where we want to use
+		 * the smallest available page instead of splitting
+		 * the largest chunks. We still must avoid the pages
+		 * moving to MIGRATE_MOVABLE where they might be
+		 * used for UNRECLAIMABLE or UNMOVABLE allocations
+		 */
+		migratetype = MIGRATE_CMA;
+		goto retry_reserve;
+	}
+#endif /* CONFIG_CMA */
+
+
+	if (unlikely(!page) && migratetype != MIGRATE_RESERVE) {
+		if (migratetype == MIGRATE_CMA)
+			migratetype = MIGRATE_MOVABLE;
+
+		page = __rmqueue_fallback(zone, order, migratetype);
+
+		/*
+		 * Use MIGRATE_RESERVE rather than fail an allocation. goto
+		 * is used because __rmqueue_smallest is an inline function
+		 * and we want just one call site
+		 */
+		if (!page) {
+			migratetype = MIGRATE_RESERVE;
+			goto retry_reserve;
+		}
+	}
+
+	trace_mm_page_alloc_zone_locked(page, order, migratetype);
+	return page;
+==========================================================================
+
+How about this one? (just type it in the email client)
+
+#define RMQUEUE_FALLBACK 1024
+int rmqueue_list[3][4] = {
+	[MIGRATE_UNMOVABLE] = { MIGRATE_UNMOVABLE, RMQUEUE_FALLBACK, MIGRATE_RESERVE},
+	[MIGRATE_RECLAIMABLE] = { MIGRATE_RECLAIMABLE, RMQUEUE_FALLBACK, MIGRATE_RESERVE},
+	[MIGRATE_MOVABLE] = {MIGRATE_MOVABLE, MIGRATE_CMA, RMQUEUE_FALLBACK, MIGRATE_RESERVE},
+}
+
+static struct page *__rmqueue(struct zone *zone, unsigned int order,
+						int migratetype)
+{
+	struct page *page;
+	int i, mt;
+
+	for (i = 0; ; i++) {
+		mt = rmqueue_list[migratetype][i];
+		if (likely(mt != RMQUEUE_FALLBACK)
+			page = __rmqueue_smallest(zone, order, mt);
+		else
+			page = __rmqueue_fallback(zone, order, migratetype);
+
+		/* MIGRATE_RESERVE is always the last one */
+		if (likely(page) || (mt == MIGRATE_RESERVE))
+			break;
+	}
+
+	trace_mm_page_alloc_zone_locked(page, order, migratetype);
+	return page;
+}
+
+Thanks,
+Lai
+
+
+>  		page = __rmqueue_fallback(zone, order, migratetype);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
