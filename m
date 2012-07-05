@@ -1,103 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933243Ab2GEWpt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 18:45:49 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:56840 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932498Ab2GEWps (ORCPT
+	id S933274Ab2GEWzl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 18:55:41 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:56710 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932163Ab2GEWzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 18:45:48 -0400
-Date: Fri, 6 Jul 2012 08:45:46 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rob Herring <robherring2@gmail.com>
-Cc: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: add DT tree to linux-next
-Message-Id: <20120706084546.c93b3767c4d58ccf48b12b9c@canb.auug.org.au>
-In-Reply-To: <4FF5BD9B.2030902@gmail.com>
-References: <4FF5BD9B.2030902@gmail.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__6_Jul_2012_08_45_46_+1000_e=SMTv/aypZyDMQT"
+	Thu, 5 Jul 2012 18:55:40 -0400
+X-Originating-IP: 217.70.178.130
+X-Originating-IP: 50.43.46.74
+Date: Thu, 5 Jul 2012 15:55:25 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu] Introduce check for callback list/count
+ mismatch
+Message-ID: <20120705225525.GA26150@leaf>
+References: <20120705223319.GA27331@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120705223319.GA27331@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__6_Jul_2012_08_45_46_+1000_e=SMTv/aypZyDMQT
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jul 05, 2012 at 03:33:19PM -0700, Paul E. McKenney wrote:
+> The recent bug that introduced the RCU callback list/count mismatch
+> showed the need for a diagnostic to check for this, which this patch
+> adds.
+> 
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Hi Rob,
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-On Thu, 05 Jul 2012 11:15:23 -0500 Rob Herring <robherring2@gmail.com> wrot=
-e:
->
-> Can you please add this tree to linux-next. Normally, DT has gone thru
-> Grant, but he is mostly offline for next few months.
->=20
-> git://sources.calxeda.com/kernel/linux.git for-next
-
-I have added this tree from today.  I called it dt-rh and have you listed
-as the contact.
-
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Fri__6_Jul_2012_08_45_46_+1000_e=SMTv/aypZyDMQT
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP9hkaAAoJEECxmPOUX5FEy6gQAJjh7b6bPkMXeQ8BDR2N2RiJ
-GXosLo3RKwgbvEsaz8MkmJg1B39pJeQbSq+h2ht3X6Ng6mEJdlFxpvXJjxjvmkX9
-oFgt9jrON4EdTqRxLZVgM7zt/3HFvg8lp528IdwbM3SnV9B8eCdgbBNPqwXFDmpO
-Hg17vUPQ197x0sFOpqqmBBZzMaf8M5ErKUGNaXHVt/HXPny+rlp9TpS2W+KAPOPr
-TYve2LnivcUxvI6uBlCOfWD8VSsNV3ZdYvJ8o2tEUMeLAxcCkfp4wvOEz5JyIlwK
-TZWCBDCki4ir2gyMjigmWtmfGHzIsqBci3vOj4DypXiftmJloUQszbBo2AP7MNjr
-LjnkXEunaB4RISRHf7kbF7u+mzc8T0tUbF4epGI7xHLgk1QeoXHYZQIDuRagNOUS
-YFIZfKXVLER8tx+sHKnXKFm5YoeCsYOR+ZVCoblW9VCsJNv5aPnmAZZwkUkRkt6/
-6RzU7aCzzMAzwKDQgTNZ2jbF0/HHFBs8ioX6lEWRYxAcNOqGushOvlsfgwY05vzX
-fw/+rLdZQncmKc5shaSezUhnIoUujpu8bg+uTjyvuWQkPLSTZvw8b3gm/I6ioB4b
-ILtTj16vaQ3h7r4o1EJkug5U24tWR9rVR0KvXWQv/EGt2ff9ZLtrZ58wH7U3/lJF
-XDTwNw+wkFIGmUG0F4gP
-=4DA5
------END PGP SIGNATURE-----
-
---Signature=_Fri__6_Jul_2012_08_45_46_+1000_e=SMTv/aypZyDMQT--
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 95c7b61..4154c95 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1612,6 +1612,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+>  		rdp->n_force_qs_snap = rsp->n_force_qs;
+>  	} else if (rdp->qlen < rdp->qlen_last_fqs_check - qhimark)
+>  		rdp->qlen_last_fqs_check = rdp->qlen;
+> +	WARN_ON_ONCE((rdp->nxtlist == NULL) != (rdp->qlen == 0));
+>  
+>  	local_irq_restore(flags);
+>  
+> 
