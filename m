@@ -1,46 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207Ab2GETN1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 15:13:27 -0400
-Received: from fieldses.org ([174.143.236.118]:36523 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755138Ab2GETN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 15:13:26 -0400
-Date: Thu, 5 Jul 2012 15:13:24 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Eldad Zack <eldad@fogrefinery.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] sunrpc/cache.h: replace simple_strtoul
-Message-ID: <20120705191323.GA3051@fieldses.org>
-References: <1341442827-21339-1-git-send-email-eldad@fogrefinery.com>
- <1341442827-21339-2-git-send-email-eldad@fogrefinery.com>
- <20120704235921.GA26797@fieldses.org>
- <alpine.DEB.2.02.1207052030500.6309@debianer>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1207052030500.6309@debianer>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757237Ab2GETNo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 15:13:44 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:58651 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757215Ab2GETNm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 15:13:42 -0400
+From: John Stultz <johnstul@us.ibm.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: John Stultz <johnstul@us.ibm.com>, Prarit Bhargava <prarit@redhat.com>,
+        stable@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 0/3] Fix for leapsecond caused hrtimer/futex issue
+Date: Thu,  5 Jul 2012 15:12:15 -0400
+Message-Id: <1341515538-5100-1-git-send-email-johnstul@us.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12070519-2356-0000-0000-000000329E6E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 09:04:03PM +0200, Eldad Zack wrote:
-> 
-> On Wed, 4 Jul 2012, J. Bruce Fields wrote:
-> > On Thu, Jul 05, 2012 at 01:00:26AM +0200, Eldad Zack wrote:
-> > > This patch replaces the usage of simple_strtoul with kstrtoint in
-> > > get_int().
-> > 
-> > Why?
-> 
-> Since the simple_str* family don't account for overflow and AFAIK
-> deprecated. Also, in this specific case, the long from strtol is 
-> silently converted to an int by the caller.
+Thomas:
+	So Prarit and my testing over the last few days have gone fine,
+and its been quiet otherwise, so I wanted to go ahead and submit this
+for inclusion.
 
-OK, thanks.  Please use that as the changelog when you resend.  ("This
-patch replaces..." tells me nothing I couldn't figure out from looking
-at the patch.)
+As widely reported on the internet, many Linux systems after
+the leapsecond was inserted experienced futex related load
+spikes (usually connected to MySQL, Firefox, Thunderbird, Java, etc).
 
---b.
+An apparent  workaround for this issue is running:
+$ date -s "`date`"
+
+Credit: http://www.sheeri.com/content/mysql-and-leap-second-high-cpu-and-fix
+
+
+This issue stemmed from the timekeeping subsystem not notifying
+the hrtimer subsystem that the leapsecond occurred, causing
+CLOCK_REALTIME hritmers to be fired one second early, and 
+sub-second CLOCK_REALTIME hrtimer timeouts to fire immediately
+(causing the load spikes).
+
+
+To address this issue I'm proposing we do three things:
+1) Fix the clock_was_set() call to remove the limitation that kept
+us from calling it from update_wall_time().
+
+2) Call clock_was_set() when we add/remove a leapsecond.
+
+3) Change hrtimer_interrupt to update the hrtimer base offset values.
+This third item provides additional robustness should the
+clock_was_set() notification (done via a timer if we're in_atomic)
+be delayed significantly.
+
+
+NOTE: Some reports have been of a hard hang right at or before
+the leapsecond. I've not been able to reproduce or diagnose
+this, so this fix does not likely address the reported hard
+hangs (unless they end up being connected to the futex/hrtimer
+issue). Please email lkml and me if you experienced this.
+
+Big thanks to Prarit for shaking out a few issues in the earlier
+version of this patch set, as well as the extra effort testing over
+the Holiday!
+
+Also, I've already got backports generated for -stable, that I'm
+testing and I'll submitting them once I have upstream commit ids for
+these patches.
+
+thanks
+-john
+
+CC: Prarit Bhargava <prarit@redhat.com>
+CC: stable@vger.kernel.org
+CC: Thomas Gleixner <tglx@linutronix.de>
+
+
+John Stultz (3):
+  hrtimer: Fix clock_was_set so it is safe to call from irq context
+  time: Fix leapsecond triggered hrtimer/futex load spike issue
+  hrtimer: Update hrtimer base offsets each hrtimer_interrupt
+
+ include/linux/hrtimer.h   |    3 +++
+ kernel/hrtimer.c          |   31 +++++++++++++++++++++++++++----
+ kernel/time/timekeeping.c |   38 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 68 insertions(+), 4 deletions(-)
+
+-- 
+1.7.9.5
+
