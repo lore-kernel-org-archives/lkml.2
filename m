@@ -1,127 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab2GEJGI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 05:06:08 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:36255 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751283Ab2GEJGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 05:06:04 -0400
-Date: Thu, 5 Jul 2012 10:05:54 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>, Len Brown <lenb@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Julia Lawall <julia@diku.dk>,
-        David Howells <dhowells@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, Ingo Molnar <mingo@elte.hu>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Daniel Kiper <dkiper@net-space.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Rik van Riel <riel@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC PATCH 0/3 V1] mm: add new migrate type and online_movable
- for hotplug
-Message-ID: <20120705090554.GR13141@csn.ul.ie>
-References: <1341386778-8002-1-git-send-email-laijs@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1341386778-8002-1-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754745Ab2GEJIV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 05:08:21 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:46760 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751932Ab2GEJIT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 05:08:19 -0400
+From: Cong Meng <mc@linux.vnet.ibm.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: stefanha@linux.vnet.ibm.com, linuxram@us.ibm.com,
+        senwang@linux.vnet.ibm.com, zwanp@cn.ibm.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Cong Meng <mc@linux.vnet.ibm.com>
+Subject: [PATCH v4] virtio-scsi: hotplug support for virtio-scsi
+Date: Thu,  5 Jul 2012 17:06:43 +0800
+Message-Id: <1341479203-12058-1-git-send-email-mc@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.7.6
+x-cbid: 12070509-1948-0000-0000-0000024DB2E1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 04, 2012 at 03:26:15PM +0800, Lai Jiangshan wrote:
-> > <SNIP>
-> 
-> Different from ZONE_MOVABLE: it can be used for any given memroyblock.
-> 
-> Lai Jiangshan (3):
->   use __rmqueue_smallest when borrow memory from MIGRATE_CMA
->   add MIGRATE_HOTREMOVE type
->   add online_movable
-> 
->  arch/tile/mm/init.c            |    2 +-
->  drivers/acpi/acpi_memhotplug.c |    3 +-
->  drivers/base/memory.c          |   24 +++++++----
->  include/linux/memory.h         |    1 +
->  include/linux/memory_hotplug.h |    4 +-
->  include/linux/mmzone.h         |   37 +++++++++++++++++
->  include/linux/page-isolation.h |    2 +-
->  mm/compaction.c                |    6 +-
->  mm/memory-failure.c            |    8 +++-
->  mm/memory_hotplug.c            |   36 +++++++++++++---
->  mm/page_alloc.c                |   86 ++++++++++++++++-----------------------
->  mm/vmstat.c                    |    3 +
->  12 files changed, 136 insertions(+), 76 deletions(-)
-> 
+This patch implements the hotplug support for virtio-scsi.
+When there is a device attached/detached, the virtio-scsi driver will be
+signaled via event virtual queue and it will add/remove the scsi device 
+in question automatically.
 
-I apologise for my crap review of the first patch to date. It was atrociously
-bad form and one of the reasons my review was so superficial was because I
-was aware of the problem below. It's pretty severe, we've encountered it on
-other occasions and it led me to dismiss the series quickly without adequate
-explanation or close review when I should have taken the time to explain it.
+v2: handle no_event event
+v3: add handle event dropped, and typo fix
+v4: Cancel event works when exit. Coding type fix.
 
-The reason ZONE_MOVABLE exists is because of page reclaim. MIGRATE_CMA
-or any migrate type that is MIGRATE_CMA-like is not understood by reclaim
-currently and is not addressed by this series just from looking the diffstat
-(no changes to vmscan.c). In low memory situations, it's actually fine
-and the system appears to work well. The problem is either when the
-MIGRATE_CMA-like area is large and is either completely free or is the
-only source of pages that can be reclaimed.
+Signed-off-by: Sen Wang <senwang@linux.vnet.ibm.com>
+Signed-off-by: Cong Meng <mc@linux.vnet.ibm.com>
+---
+ drivers/scsi/virtio_scsi.c  |  127 ++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/virtio_scsi.h |    9 +++
+ 2 files changed, 135 insertions(+), 1 deletions(-)
 
-In these cases, MIGRATE_UNMOVABLE and MIGRATE_RECLAIMABLE allocations fail
-because their lists and fallback lists are empty. However, if it enters
-direct reclaim or wakes kswapd the watermarks are fine and reclaim does
-nothing. Depending on implementation details this causes either a loop
-or OOM.
-
-Minimally the watermark checks need to take the MIGRATE_CMA area into account
-but even then it is still fragile. If kswapd and direct reclaim are forced
-to reclaim pages, there is no guarantee they will reclaim pages that are
-usable by MIGRATE_UNMOVABLE or MIGRATE_RECLAIMABLE. To handle this you must
-either keep reclaiming pages until it works (easy to implement but disruptive
-to the system) or scan the LRU lists searching for suitable pages (higher
-CPU usage, LRU age disruption, will require the entire zone to be scanned
-in the OOM case which will be slow and subject to races and possible false
-OOMs). When these situations occur, it is very difficult to debug because it
-just looks like a hang and the exact triggering situations will be different.
-
-If the allocation then fails due to insufficient usable memory, the
-resulting OOM message will be harder to read because it'll show OOM when
-there are plenty of pages free. This can be addressed by clear accounting and
-informative messages of course but to be very clear it might be necessary
-to walk all the buddy lists to identify how many of the free pages were
-MIGRATE_CMA. You could use separate accounting of course but then you have
-accounting and memory overhead instead.
-
-In the case of CMA, this issue is less of a problem but it was discussed
-before CMA was merged. CMAs use case means that it is not likely to suffer
-severely because of the expected size of the region, how its used and how
-many slab allocations are expected on the systems it targets. It's far worse
-for memory hotplug because if the bulk of your memory is memory hotplugged,
-you may not be able to use it for metadata-intensive workloads for example
-which will result in bug reports. You could have 90% free memory and
-be unable to use any of it because you cannot increase the size of slab
-leading to odd corner cases.
-
-ZONE_MOVABLE is not great, but it handles the reclaim issues in a
-straight-forward manner, OOM is handled quickly because the whole system
-does not have to be scanned to detect the situation and the OOM messages
-are easy to read. If you want to replace it with MIGRATE_CMA or
-something MIGRATE_CMA-like, you need to take these issues into account
-or at the very least explain in detail why it is not an issue.
-
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 9fc5e67..173cb39 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -25,6 +25,7 @@
+ #include <scsi/scsi_cmnd.h>
+ 
+ #define VIRTIO_SCSI_MEMPOOL_SZ 64
++#define VIRTIO_SCSI_EVENT_LEN 8
+ 
+ /* Command queue element */
+ struct virtio_scsi_cmd {
+@@ -43,6 +44,12 @@ struct virtio_scsi_cmd {
+ 	} resp;
+ } ____cacheline_aligned_in_smp;
+ 
++struct virtio_scsi_event_node {
++	struct virtio_scsi *vscsi;
++	struct virtio_scsi_event event;
++	struct work_struct work;
++};
++
+ struct virtio_scsi_vq {
+ 	/* Protects vq */
+ 	spinlock_t vq_lock;
+@@ -67,6 +74,9 @@ struct virtio_scsi {
+ 	struct virtio_scsi_vq event_vq;
+ 	struct virtio_scsi_vq req_vq;
+ 
++	/* Get some buffers ready for event vq */
++	struct virtio_scsi_event_node event_list[VIRTIO_SCSI_EVENT_LEN];
++
+ 	struct virtio_scsi_target_state *tgt[];
+ };
+ 
+@@ -202,6 +212,106 @@ static void virtscsi_ctrl_done(struct virtqueue *vq)
+ 	spin_unlock_irqrestore(&vscsi->ctrl_vq.vq_lock, flags);
+ };
+ 
++static int virtscsi_kick_event(struct virtio_scsi *vscsi,
++			       struct virtio_scsi_event_node *event_node)
++{
++	int ret;
++	struct scatterlist sg;
++	unsigned long flags;
++
++	sg_set_buf(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
++
++	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
++
++	ret = virtqueue_add_buf(vscsi->event_vq.vq, &sg, 0, 1, event_node, GFP_ATOMIC);
++	if (ret >= 0)
++		virtqueue_kick(vscsi->event_vq.vq);
++
++	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
++
++	return ret;
++}
++
++static int virtscsi_kick_event_all(struct virtio_scsi *vscsi)
++{
++	int i;
++
++	for (i = 0; i < VIRTIO_SCSI_EVENT_LEN; i++) {
++		vscsi->event_list[i].vscsi = vscsi;
++		virtscsi_kick_event(vscsi, &vscsi->event_list[i]);
++	}
++
++	return 0;
++}
++
++static void virtscsi_cancel_event_work(struct virtio_scsi *vscsi)
++{
++	int i;
++
++	for (i = 0; i < VIRTIO_SCSI_EVENT_LEN; i++) {
++		cancel_work_sync(&vscsi->event_list[i].work);
++	}
++}
++
++static void virtscsi_handle_transport_reset(struct virtio_scsi *vscsi,
++						struct virtio_scsi_event *event)
++{
++	struct scsi_device *sdev;
++	struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
++	unsigned int target = event->lun[1];
++	unsigned int lun = (event->lun[2] << 8) | event->lun[3];
++
++	switch (event->reason) {
++	case VIRTIO_SCSI_EVT_RESET_RESCAN:
++		scsi_add_device(shost, 0, target, lun);
++		break;
++	case VIRTIO_SCSI_EVT_RESET_REMOVED:
++		sdev = scsi_device_lookup(shost, 0, target, lun);
++		if (sdev) {
++			scsi_remove_device(sdev);
++			scsi_device_put(sdev);
++		} else {
++			pr_err("SCSI device %d 0 %d %d not found\n",
++				shost->host_no, target, lun);
++		}
++		break;
++	default:
++		pr_info("Unsupport virtio scsi event reason %x\n", event->reason);
++	}
++}
++
++static void virtscsi_handle_event(struct work_struct *work)
++{
++	struct virtio_scsi_event_node *event_node =
++		container_of(work, struct virtio_scsi_event_node, work);
++	struct virtio_scsi *vscsi = event_node->vscsi;
++	struct virtio_scsi_event *event = &event_node->event;
++
++	if (event->event & VIRTIO_SCSI_T_EVENTS_MISSED) {
++		event->event &= ~VIRTIO_SCSI_T_EVENTS_MISSED;
++		scsi_scan_host(virtio_scsi_host(vscsi->vdev));
++	}
++
++	switch (event->event) {
++	case VIRTIO_SCSI_T_NO_EVENT:
++		break;
++	case VIRTIO_SCSI_T_TRANSPORT_RESET:
++		virtscsi_handle_transport_reset(vscsi, event);
++		break;
++	default:
++		pr_err("Unsupport virtio scsi event %x\n", event->event);
++	}
++	virtscsi_kick_event(vscsi, event_node);
++}
++
++static void virtscsi_complete_event(void *buf)
++{
++	struct virtio_scsi_event_node *event_node = buf;
++
++	INIT_WORK(&event_node->work, virtscsi_handle_event);
++	schedule_work(&event_node->work);
++}
++
+ static void virtscsi_event_done(struct virtqueue *vq)
+ {
+ 	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
+@@ -209,7 +319,7 @@ static void virtscsi_event_done(struct virtqueue *vq)
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
+-	virtscsi_vq_done(vq, virtscsi_complete_free);
++	virtscsi_vq_done(vq, virtscsi_complete_event);
+ 	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
+ };
+ 
+@@ -510,6 +620,10 @@ static int virtscsi_init(struct virtio_device *vdev,
+ 	virtscsi_config_set(vdev, cdb_size, VIRTIO_SCSI_CDB_SIZE);
+ 	virtscsi_config_set(vdev, sense_size, VIRTIO_SCSI_SENSE_SIZE);
+ 
++	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG)) {
++		virtscsi_kick_event_all(vscsi);
++	}
++
+ 	/* We need to know how many segments before we allocate.  */
+ 	sg_elems = virtscsi_config_get(vdev, seg_max) ?: 1;
+ 
+@@ -580,6 +694,11 @@ virtscsi_init_failed:
+ static void __devexit virtscsi_remove(struct virtio_device *vdev)
+ {
+ 	struct Scsi_Host *shost = virtio_scsi_host(vdev);
++	struct virtio_scsi *vscsi = shost_priv(shost);
++
++	if (virtio_has_feature(vdev, VIRTIO_SCSI_F_HOTPLUG)) {
++		virtscsi_cancel_event_work(vscsi);
++	}
+ 
+ 	scsi_remove_host(shost);
+ 
+@@ -608,7 +727,13 @@ static struct virtio_device_id id_table[] = {
+ 	{ 0 },
+ };
+ 
++static unsigned int features[] = {
++	VIRTIO_SCSI_F_HOTPLUG
++};
++
+ static struct virtio_driver virtio_scsi_driver = {
++	.feature_table = features,
++	.feature_table_size = ARRAY_SIZE(features),
+ 	.driver.name = KBUILD_MODNAME,
+ 	.driver.owner = THIS_MODULE,
+ 	.id_table = id_table,
+diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
+index 8ddeafd..dc8d305 100644
+--- a/include/linux/virtio_scsi.h
++++ b/include/linux/virtio_scsi.h
+@@ -69,6 +69,10 @@ struct virtio_scsi_config {
+ 	u32 max_lun;
+ } __packed;
+ 
++/* Feature Bits */
++#define VIRTIO_SCSI_F_INOUT                    0
++#define VIRTIO_SCSI_F_HOTPLUG                  1
++
+ /* Response codes */
+ #define VIRTIO_SCSI_S_OK                       0
+ #define VIRTIO_SCSI_S_OVERRUN                  1
+@@ -105,6 +109,11 @@ struct virtio_scsi_config {
+ #define VIRTIO_SCSI_T_TRANSPORT_RESET          1
+ #define VIRTIO_SCSI_T_ASYNC_NOTIFY             2
+ 
++/* Reasons of transport reset event */
++#define VIRTIO_SCSI_EVT_RESET_HARD             0
++#define VIRTIO_SCSI_EVT_RESET_RESCAN           1
++#define VIRTIO_SCSI_EVT_RESET_REMOVED          2
++
+ #define VIRTIO_SCSI_S_SIMPLE                   0
+ #define VIRTIO_SCSI_S_ORDERED                  1
+ #define VIRTIO_SCSI_S_HEAD                     2
 -- 
-Mel Gorman
-SUSE Labs
+1.7.7.6
+
