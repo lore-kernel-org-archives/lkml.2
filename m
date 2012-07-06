@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758490Ab2GFVHx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 17:07:53 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:42509 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030298Ab2GFVHq (ORCPT
+	id S1758538Ab2GFVH7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 17:07:59 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:42181 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758507Ab2GFVH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 17:07:46 -0400
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 36/36] AArch64: MAINTAINERS update
-Date: Fri,  6 Jul 2012 22:06:17 +0100
-Message-Id: <1341608777-12982-37-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.9.111.gf3fb0
-In-Reply-To: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 06 Jul 2012 21:07:42.0026 (UTC) FILETIME=[61BADAA0:01CD5BBB]
-X-MC-Unique: 112070622064706001
-Content-Type: text/plain; charset=WINDOWS-1252
+	Fri, 6 Jul 2012 17:07:56 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: "Steven J. Magnani" <steve@digidescorp.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] fat (exportfs): reconnect file handles to evicted inodes/dentries
+References: <1341342576-15394-1-git-send-email-steve@digidescorp.com>
+	<1341342576-15394-3-git-send-email-steve@digidescorp.com>
+	<87pq8bokcp.fsf@devron.myhome.or.jp>
+	<1341606824.2214.14.camel@iscandar.digidescorp.com>
+Date: Sat, 07 Jul 2012 06:07:50 +0900
+In-Reply-To: <1341606824.2214.14.camel@iscandar.digidescorp.com> (Steven
+	J. Magnani's message of "Fri, 06 Jul 2012 15:33:44 -0500")
+Message-ID: <871ukobntl.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66L7xCA005339
 
-This patch updates the MAINTAINERS file for the AArch64 Linux kernel
-port.
+"Steven J. Magnani" <steve@digidescorp.com> writes:
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
- MAINTAINERS |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+> On Wed, 2012-07-04 at 20:07 +0900, OGAWA Hirofumi wrote: 
+>> Please don't add new lock_super() usage if it is not necessary. Almost
+>> all of lock_super() just replaced lock_kernel() usage. It rather should
+>> be removed in future.  Probably, this should use inode->i_mutex instead.
+>> 
+>> BTW, the above issue is same with all of directory read.
+>
+> I don't think there's really an alternative here. The cases addressed by
+> this patch all involve walking on-disk structures via
+> unofficial/temporary inodes created from information in the NFS handle
+> (i.e., outside the normal inode creation paths). When this process is
+> successful we end up with "official" connected inodes/dentries, but
+> getting there is really a "bottom up" strategy instead of the usual "top
+> down" approach.
+>
+> Because the "bottom up" method is lacking guarantees that "top down"
+> takes for granted - i.e., that a cluster on disk that's supposed to be a
+> directory actually *is* a directory -  I am adding some defensive code
+> in the next spin of the patch.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index eb22272..50699f5 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -192,6 +192,12 @@ S:	Supported
- F:	Documentation/scsi/aacraid.txt
- F:	drivers/scsi/aacraid/
- 
-+AARCH64 ARCHITECTURE
-+M:	Catalin Marinas <catalin.marinas@arm.com>
-+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-+S:	Maintained
-+F:	arch/aarch64/
-+
- ABIT UGURU 1,2 HARDWARE MONITOR DRIVER
- M:	Hans de Goede <hdegoede@redhat.com>
- L:	lm-sensors@lm-sensors.org
+I'm not sure what you meant. Where is the problem? ->get_name()? If so,
+it has parent dentry parameter. What is the wrong if we take
+mutex_lock(parent->d_inode)?
 
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
