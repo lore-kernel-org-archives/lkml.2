@@ -1,97 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757249Ab2GFLbM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 07:31:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52444 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132Ab2GFLbJ (ORCPT
+	id S933520Ab2GFLbR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 07:31:17 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:42833 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757234Ab2GFLbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 07:31:09 -0400
-Date: Fri, 6 Jul 2012 04:30:52 -0700
-From: tip-bot for Steven Rostedt <srostedt@redhat.com>
-Message-ID: <tip-01c4359c155e2613cb29363865804c2b11092d6f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rostedt@goodmis.org, dhsharp@google.com, srostedt@redhat.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, srostedt@redhat.com, dhsharp@google.com,
-        tglx@linutronix.de
-In-Reply-To: <1340060577-9112-1-git-send-email-dhsharp@google.com>
-References: <1340060577-9112-1-git-send-email-dhsharp@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] ring-buffer: Fix uninitialized read_stamp
-Git-Commit-ID: 01c4359c155e2613cb29363865804c2b11092d6f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 6 Jul 2012 07:31:12 -0400
+Subject: [PATCH] PPC Hardware Breakpoints: Fix incorrect pointer access
+To: fweisbec@gmail.com, benh@kernel.crashing.org, paulus@samba.org,
+        prasad.krishnan@gmail.com
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+        emachado@linux.vnet.ibm.com
+Date: Fri, 06 Jul 2012 17:00:58 +0530
+Message-ID: <20120706113058.8600.30142.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 04:31:00 -0700 (PDT)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12070611-5816-0000-0000-000003798CB9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  01c4359c155e2613cb29363865804c2b11092d6f
-Gitweb:     http://git.kernel.org/tip/01c4359c155e2613cb29363865804c2b11092d6f
-Author:     Steven Rostedt <srostedt@redhat.com>
-AuthorDate: Thu, 28 Jun 2012 13:35:04 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 6 Jul 2012 11:13:22 +0200
+If arch_validate_hwbkpt_settings() fails, bp->ctx won't be valid and the
+kernel panics. Add a check to fix this.
 
-ring-buffer: Fix uninitialized read_stamp
-
-The ring buffer reader page is used to swap a page from the writable
-ring buffer. If the writer happens to be on that page, it ends up on the
-reader page, but will simply move off of it, back into the writable ring
-buffer as writes are added.
-
-The time stamp passed back to the readers is stored in the cpu_buffer per
-CPU descriptor. This stamp is updated when a swap of the reader page takes
-place, and it reads the current stamp from the page taken from the writable
-ring buffer. Everytime a writer goes to a new page, it updates the time stamp
-of that page.
-
-The problem happens if a reader reads a page from an empty per CPU ring buffer.
-If the buffer is empty, the swap still takes place, placing the writer at the
-start of the reader page. If at a later time, a write happens, it updates the
-page's time stamp and continues. But the problem is that the read_stamp does
-not get updated, because the page was already swapped.
-
-The solution to this was to not swap the page if the ring buffer happens to
-be empty. This also removes the side effect that the writes on the reader
-page will not get updated because the writer never gets back on the reader
-page without a swap. That is, if a read happens on an empty buffer, but then
-no reads happen for a while. If a swap took place, and the writer were to start
-writing a lot of data (function tracer), it will start overflowing the ring buffer
-and overwrite the older data. But because the writer never goes back onto the
-reader page, the data left on the reader page never gets overwritten. This
-causes the reader to see really old data, followed by a jump to newer data.
-
-Link: http://lkml.kernel.org/r/1340060577-9112-1-git-send-email-dhsharp@google.com
-Google-Bug-Id: 6410455
-Reported-by: David Sharp <dhsharp@google.com>
-tested-by: David Sharp <dhsharp@google.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-by: Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>
+Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
 ---
- kernel/trace/ring_buffer.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ arch/powerpc/kernel/hw_breakpoint.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 1d0f6a8..82a3e0c 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -3239,6 +3239,10 @@ rb_get_reader_page(struct ring_buffer_per_cpu *cpu_buffer)
- 	if (cpu_buffer->commit_page == cpu_buffer->reader_page)
- 		goto out;
- 
-+	/* Don't bother swapping if the ring buffer is empty */
-+	if (rb_num_of_entries(cpu_buffer) == 0)
-+		goto out;
-+
- 	/*
- 	 * Reset the reader page to size zero.
+diff --git a/arch/powerpc/kernel/hw_breakpoint.c b/arch/powerpc/kernel/hw_breakpoint.c
+index 2bc0584..f3a82dd 100644
+--- a/arch/powerpc/kernel/hw_breakpoint.c
++++ b/arch/powerpc/kernel/hw_breakpoint.c
+@@ -111,7 +111,7 @@ void arch_unregister_hw_breakpoint(struct perf_event *bp)
+ 	 * and the single_step_dabr_instruction(), then cleanup the breakpoint
+ 	 * restoration variables to prevent dangling pointers.
  	 */
+-	if (bp->ctx->task)
++	if (bp->ctx && bp->ctx->task)
+ 		bp->ctx->task->thread.last_hit_ubp = NULL;
+ }
+ 
+
