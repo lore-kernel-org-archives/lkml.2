@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758252Ab2GFU7x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 16:59:53 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44032 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757473Ab2GFU7u (ORCPT
+	id S1758263Ab2GFVDg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 17:03:36 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:37811 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753561Ab2GFVDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 16:59:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <1341607713.7709.68.camel@twins>
-References: <tip-xxrt0a1zronm1sm36obwc2vy@git.kernel.org> <CA+55aFxY7SqwSQWuRXSg+W=ftp9FtCT1MMEqMiCi1H279Fis-A@mail.gmail.com>
- <1341598329.7709.57.camel@twins> <CA+55aFzqoz7dcUCQfSrXxX2T8=2wgWdb1H2vaBhk7V-r0uaogw@mail.gmail.com>
- <CA+55aFw+vE4zMe1bJohLuoMDaFpqGCz6sBNRE8gkV7JOvtro0g@mail.gmail.com> <1341607713.7709.68.camel@twins>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 6 Jul 2012 13:59:29 -0700
-X-Google-Sender-Auth: Y8--WplLv6VtRIEUu-whlaEe0rE
-Message-ID: <CA+55aFwbji562dZ0X0B6aDvO_JkvsCpJmVa_S56PDiapoL0agA@mail.gmail.com>
-Subject: Re: [tip:perf/core] perf/x86: Fix USER/KERNEL tagging of samples
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        akpm@linux-foundation.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org,
-        Robert Richter <robert.richter@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 6 Jul 2012 17:03:34 -0400
+Message-ID: <1341608402.16730.730.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI: Add ACPI CPU hot-remove support
+From: Toshi Kani <toshi.kani@hp.com>
+To: Khalid Aziz <khalid.aziz@hp.com>
+Cc: Jiang Liu <liuj97@gmail.com>, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 06 Jul 2012 15:00:02 -0600
+In-Reply-To: <4FF745F1.9030103@hp.com>
+References: <1340981479-6521-1-git-send-email-toshi.kani@hp.com>
+	  <4FF711DE.1030108@gmail.com> <1341602020.16730.695.camel@misato.fc.hp.com>
+	 <4FF745F1.9030103@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 6, 2012 at 1:48 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Fri, 2012-07-06 at 11:34 -0700, Linus Torvalds wrote:
->> Also, somebody should check. Is the PEBS information *actually* the
->> instruction pointer (address within the code segment), or is it the
->> "linear address" (segment base + rip)? I hope it is the latter,
->> because in the absense of CS, the segment-based address is very
->> unclear indeed.
->
-> I _think_ it is just the RIP since its part of a more general register
-> dump (which does not include the segment registers).
+On Fri, 2012-07-06 at 14:09 -0600, Khalid Aziz wrote:
+> On 07/06/2012 01:13 PM, Toshi Kani wrote:
+> 
+> >
+> > For step 2) and 4), I am wondering if they are relevant to CPU hotplug
+> > these days.  In ACPI namespace, a processor object represents a logical
+> > processor (or a core when hyper-threading is disabled).  A physical
+> > processor (i.e. a socket) usually has multiple cores, and memory
+> > controller and bus interface are part of the socket functionality.
+> > Hence, I think step 2) and 4) belong to socket-level hot-removal
+> > operation, which can be implemented as container hot-remove when a
+> > socket is represented with a container object.
+> 
+> What does it mean to eject just a core in that case? If there are seven
+> other cores in the physical processor and you get a request to eject
+> one core, what would you expect kernel to do - simply move all processes
+> and interrupts off of that core, take it out of scheduling consideration
+> and simply idle the core? If yes, how is that any different from simply
+> offlining a core? 
 
-Ugh. That would be really sad if true (and I would not be at all
-surprised if it *is* true). Sure, flat segments are standard, and once
-you get into 64-bit mode I don't think you can even do any CS base,
-but afaik the code there is supposed to work on x86-32 too, no?
+Yes, offlining and eject are similar operations to a core as it alone
+cannot be removed physically.  Ejecting a core is a logical eject
+operation, which updates the status (_STA) of the object in ACPI after
+offlining.  The difference from the offlining is that the ejected core
+is no longer assigned to the partition.  Here is one example.  Say, a
+core is assigned to a guest partition as a dedicated resource (ex. 100%
+of its CPU time is bound to the partition).  Offlining this core saves
+the power-consumption, but this core is still bound to the partition.
+Ejecting the core removes it from the partition (logically), and allows
+it to be assigned to other partition as a dedicated resource with
+hot-add.
 
-> Supposing the worst case and Intel simply provides the RIP as is, what
-> should we do then?
 
-Well, if the RIP is all you have, the RIP is all you can use, and you
-have to just assume flat segments. That will be true in practice, and
-if it means that you can't sanely profile vm86 mode etc on x86-32,
-that's sad but you have to blame the hardware for that.
+> If you are ejecting individual cores at a time, do you
+> keep track of how many you have ejected and then eject the entire physical
+> CPU along with memory and IOH associated with the socket when the last
+> core is ejected?
 
-And I don't have any huge problems with assuming flat segments and
-just "work in the simple cases".
+It depends on the firmware implementation, but typically the answer is
+no.  _EJ0 of a core object only removes the associated core object.  It
+will require a separate socket hot-remove request to eject the
+socket-level resources.  That is, the OS may not call _EJ0 of a socket
+object from the core hot-remove operation just because all children
+cores are removed. 
 
-What I reacted negatively to is literally that
+Thanks,
+-Toshi
 
-    kernel_ip(regs->ip)
 
-test, because once you have "regs", that's absolutely the wrong thing
-to do. That kind of test just shows that somebody filled in "regs"
-incorrectly. So if you have a pt_regs pointer, that kind of test is
-simply crap, and indicates a bug somewhere.
 
-             Linus
