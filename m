@@ -1,96 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab2GFITi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 04:19:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44122 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab2GFITa (ORCPT
+	id S932117Ab2GFIWQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 04:22:16 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:37175 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148Ab2GFIWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 04:19:30 -0400
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Subject: [PATCH 1/2] pch_uart: Fix rx error interrupt setting issue
-Date: Fri,  6 Jul 2012 17:19:42 +0900
-Message-Id: <1341562783-5571-1-git-send-email-tomoya.rohm@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Fri, 6 Jul 2012 04:22:12 -0400
+Date: Fri, 6 Jul 2012 11:21:16 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Miguel =?iso-8859-1?Q?G=F3mez?= <magomez@igalia.com>
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, arnaud.patard@rtp-net.org,
+        aaro.koskinen@iki.fi
+Subject: Re: [PATCH 17/19] Staging: xgifb: Rework some conditions in
+ XGI_SetCRT2ModeRegs().
+Message-ID: <20120706082116.GH4462@mwanda>
+References: <20120706065618.GA29479@mwanda>
+ <4FF69EE4.3080707@igalia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4FF69EE4.3080707@igalia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rx Error interrupt(E.G. parity error) is not enabled.
-So, when parity error occurs, error interrupt is not occurred.
-As a result, the received data is not dropped.
+On Fri, Jul 06, 2012 at 10:16:36AM +0200, Miguel Gómez wrote:
+> >On Thu, Jul 05, 2012 at 04:46:00PM +0200, Miguel Gómez wrote:
+> >>Rework some conditions to reduce indentation and fix style warnings.
+> >>
+> >
+> >Instead of a do { } while(0); it would be better to just use gotos.
+> 
+> Point taken. I used the do-while because I didn't want to abuse
+> gotos, but if there's no problem with them I'll change the patch.
+> 
 
-This patch adds enable/disable rx error interrupt code.
+That style of goto is fine/standard in the kernel.
 
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
----
- drivers/tty/serial/pch_uart.c |   18 ++++++++++++------
- 1 files changed, 12 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index 4fdec6a..4d84ad0 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -754,7 +754,8 @@ static void pch_dma_rx_complete(void *arg)
- 		tty_flip_buffer_push(tty);
- 	tty_kref_put(tty);
- 	async_tx_ack(priv->desc_rx);
--	pch_uart_hal_enable_interrupt(priv, PCH_UART_HAL_RX_INT);
-+	pch_uart_hal_enable_interrupt(priv, PCH_UART_HAL_RX_INT |
-+					    PCH_UART_HAL_RX_ERR_INT);
- }
- 
- static void pch_dma_tx_complete(void *arg)
-@@ -809,7 +810,8 @@ static int handle_rx_to(struct eg20t_port *priv)
- 	int rx_size;
- 	int ret;
- 	if (!priv->start_rx) {
--		pch_uart_hal_disable_interrupt(priv, PCH_UART_HAL_RX_INT);
-+		pch_uart_hal_disable_interrupt(priv, PCH_UART_HAL_RX_INT |
-+						     PCH_UART_HAL_RX_ERR_INT);
- 		return 0;
- 	}
- 	buf = &priv->rxbuf;
-@@ -1078,11 +1080,13 @@ static irqreturn_t pch_uart_interrupt(int irq, void *dev_id)
- 		case PCH_UART_IID_RDR:	/* Received Data Ready */
- 			if (priv->use_dma) {
- 				pch_uart_hal_disable_interrupt(priv,
--							PCH_UART_HAL_RX_INT);
-+						PCH_UART_HAL_RX_INT |
-+						PCH_UART_HAL_RX_ERR_INT);
- 				ret = dma_handle_rx(priv);
- 				if (!ret)
- 					pch_uart_hal_enable_interrupt(priv,
--							PCH_UART_HAL_RX_INT);
-+						PCH_UART_HAL_RX_INT |
-+						PCH_UART_HAL_RX_ERR_INT);
- 			} else {
- 				ret = handle_rx(priv);
- 			}
-@@ -1208,7 +1212,8 @@ static void pch_uart_stop_rx(struct uart_port *port)
- 	struct eg20t_port *priv;
- 	priv = container_of(port, struct eg20t_port, port);
- 	priv->start_rx = 0;
--	pch_uart_hal_disable_interrupt(priv, PCH_UART_HAL_RX_INT);
-+	pch_uart_hal_disable_interrupt(priv, PCH_UART_HAL_RX_INT |
-+					     PCH_UART_HAL_RX_ERR_INT);
- }
- 
- /* Enable the modem status interrupts. */
-@@ -1300,7 +1305,8 @@ static int pch_uart_startup(struct uart_port *port)
- 		pch_request_dma(port);
- 
- 	priv->start_rx = 1;
--	pch_uart_hal_enable_interrupt(priv, PCH_UART_HAL_RX_INT);
-+	pch_uart_hal_enable_interrupt(priv, PCH_UART_HAL_RX_INT |
-+					    PCH_UART_HAL_RX_ERR_INT);
- 	uart_update_timeout(port, CS8, default_baud);
- 
- 	return 0;
--- 
-1.7.4.4
-
+regards,
+dan carpenter
