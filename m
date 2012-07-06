@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757599Ab2GFSk6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 14:40:58 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:39953 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754946Ab2GFSk4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 14:40:56 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: dilip.daya@hp.com
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, netdev@vger.kernel.org
-References: <1340900320.3441.88.camel@pro6455b.example.com>
-	<20120705220749.GA11255@mail.hallyn.com> <87ehopu3e5.fsf@xmission.com>
-	<1341597680.2829.22.camel@pro6455b.example.com>
-Date: Fri, 06 Jul 2012 11:40:45 -0700
-In-Reply-To: <1341597680.2829.22.camel@pro6455b.example.com> (Dilip Daya's
-	message of "Fri, 06 Jul 2012 14:01:20 -0400")
-Message-ID: <87pq88g2c2.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1757682Ab2GFSlZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 14:41:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45791 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756051Ab2GFSlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 14:41:23 -0400
+Message-ID: <4FF73106.3090802@redhat.com>
+Date: Fri, 06 Jul 2012 14:40:06 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX191s2yWfs0a/4h1cW8tSaqj4UjxglByb+U=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1995]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;dilip.daya@hp.com
-X-Spam-Relay-Country: 
-Subject: Re: Network namespace and bonding WARNING at fs/proc/generic.c remove_proc_entry
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 04/26] mm, mpol: add MPOL_MF_NOOP
+References: <20120316144028.036474157@chello.nl> <20120316144240.368911012@chello.nl>
+In-Reply-To: <20120316144240.368911012@chello.nl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dilip Daya <dilip.daya@hp.com> writes:
+On 03/16/2012 10:40 AM, Peter Zijlstra wrote:
 
-> Hi Eric,
+Reasonable idea, but we need something else than a blind
+unmap and add to swap space, which requires people to run
+with gigantic amounts of swap space they will likely never
+use.
 
-> We do need to move bonds between namespaces - because we require
-> physical interfaces in each namespace -- we don't want the overheads of
-> virtual interfaces, don't have the management infrastructure, and don't
-> want to manufacture fake mac addresses that would be required for
-> macvlan interfaces.   Since the bonds are implicitly created in the host
-> namespace, the only way we know to get bonds directly into the
-> namespaces is to move them.
+I suspect that Andrea's _PAGE_NUMA stuff could be implemented
+using _PAGE_PROTNONE, and then we can simply call the NUMA
+faulting/migration handler whenever we run into a _PAGE_PROTNONE
+page in handle_mm_fault / handle_pte_fault.
 
-There about 3 ways to create bonding devices.  One of those ways
-is to create bonding devices when loading the module.  Another
-way is to create a bond device with "echo '+bond35 > /sys/class/net/bonding_masters".
-them when loading the module, and my favorite is the standard way
-"ip link add type bond".  All but loading the bonding device work in the
-network namespace you are in at the type.
+This overloading of _PAGE_PROTNONE should work fine, because
+do_page_fault will never call handle_mm_fault if the fault is
+happening on a PROT_NONE VMA. Only if we have the correct VMA
+permission will handle_mm_fault be called, at which point we
+can fix the pte (and maybe migrate the page).
 
-> Would "NETDEV_UNREGISTER and NETDEV_REGISTER events to remove/add the
-> per device proc files at the appropriate time." help in the case?
+The same trick can be done at the pmd level for transparent
+hugepages, allowing the entire THP to be migrated in one shot,
+with just one fault.
 
-Yes.  But since you can create the bonding device in the network
-namespace you need it in, I don't see the point, of adding a code
-path no one will test for 3 years at a time.
+Is there any reason why _PAGE_PROTNONE could not work instead
+of _PAGE_NUMA or the swap cache thing?
 
-It seems easier to me to just not allow migration of bonding devices
-and set peoples expectations a little lower.  Especially given
-the very complex user space interfaces.
-
-On ther other hand if you want to write and test and generally own the
-patch I will review it.
-
-Eric
-
+-- 
+All rights reversed
