@@ -1,119 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574Ab2GFEJa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 00:09:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52281 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906Ab2GFEJ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 00:09:29 -0400
-From: David Ahern <dsahern@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH] perf tool: save cmdline from user in file header vs what is passed to record
-Date: Thu,  5 Jul 2012 22:09:22 -0600
-Message-Id: <1341547762-17430-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	id S1751992Ab2GFEJt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 00:09:49 -0400
+Received: from warmcat.com ([87.106.134.80]:42654 "EHLO warmcat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750911Ab2GFEJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 00:09:47 -0400
+Subject: [PATCH 5 1/2] NET ethernet introduce eth-mac-platform helper
+To: linux-omap@vger.kernel.org
+From: Andy Green <andy.green@linaro.org>
+Cc: s-jan@ti.com, arnd@arndb.de, patches@linaro.org, tony@atomide.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, linux-arm-kernel@lists.infradead.org
+Date: Fri, 06 Jul 2012 12:09:41 +0800
+Message-ID: <20120706040938.6669.77083.stgit@build.warmcat.com>
+User-Agent: StGit/0.16-2-g0d85
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A number of builtin commands process some user args and then pass the rest
-to cmd_record. cmd_record then saves argc/argv that it receives into the
-header of the perf data file. But this loses the arguments handled by the
-first command -- ie., the real command line from the user. This patch saves
-the command line as typed by the user rather than what was passed to
-cmd_record.
+From: Andy Green <andy@warmcat.com>
 
-As an example consider the command:
-$ perf kvm --guest --host --guestmount=/tmp/guest-mount record
-    -fo /tmp/perf.data -ag -- sleep 10
+This introduces a small helper in net/ethernet, which registers a network
+notifier at core_initcall time, and accepts registrations mapping expected
+asynchronously-probed network device paths (like, "usb1/1-1/1-1.1/1-1.1:1.0")
+and the MAC that is needed to be assigned to the device when it appears.
 
-Currently the command saved to the header is:
-cmdline : /tmp/p3.5/perf record -o perf.data.kvm -fo /tmp/perf.data -ag -- sleep 1
+This allows platform code to enforce valid, consistent MAC addresses on to
+devices that have not been probed at boot-time, but due to being wired on the
+board are always present at the same interface.  It has been tested with USB
+and SDIO probed devices.
 
-(ignore the duplicated -o -- the first would be yet another bug with perf-kvm).
+Other parts of this series provide an OMAP API that computes a valid
+locally administered MAC address from CPU ID bits that are unique for each
+physical SoC, and register those against devices wired to the board.
 
-With this patch the command line saved to the header is:
-cmdline : /tmp/p3.5/perf kvm --guest --host --guestmount=/tmp/guest-mount
-    record -fo /tmp/perf.data -ag -- sleep 1
+This solves a longstanding problem in at least Panda case that there are no
+reserved MACs for either onboard Ethernet nor onboard WLAN module, and without
+this patch a randomized MAC is assigned to Ethernet and 00:00:00:00:00:00 or
+0xdeadbeef is assigned as the WLAN MAC address.  The series provides sane,
+constant locally-administered MAC addresses that have a high probability of
+differing between boards.
 
-v2: simplified to saving the command in parse_options per Stephane's suggestion
+To make use of this safely you also need to make sure that any drivers that
+may compete for the bus ordinal you are using (eg, mUSB and ehci in Panda
+case) are loaded in a deterministic order.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
+At registration it makes a copy of the incoming data, so the data may be
+__initdata or otherwise transitory.  Registration can be called multiple times
+so registrations from Device Tree and platform may be mixed.
+
+Since it needs to be called quite early in boot and there is no lifecycle for
+what it does, it could not be modular and is not a driver.
+
+Via suggestions from Arnd Bergmann and Tony Lindgren (and Alan Cox for the
+network notifier concept).
+
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Andy Green <andy.green@linaro.org>
 ---
- tools/perf/builtin-record.c     |    2 --
- tools/perf/util/header.c        |    9 +++++++++
- tools/perf/util/parse-options.c |    3 +++
- 3 files changed, 12 insertions(+), 2 deletions(-)
+ include/net/eth-mac-platform.h  |   40 ++++++++++
+ net/Kconfig                     |    5 +
+ net/ethernet/Makefile           |    3 +
+ net/ethernet/eth-mac-platform.c |  150 +++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 197 insertions(+), 1 deletion(-)
+ create mode 100644 include/net/eth-mac-platform.h
+ create mode 100644 net/ethernet/eth-mac-platform.c
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index f5a6452..77adcd8 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -844,8 +844,6 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 	struct perf_record *rec = &record;
- 	char errbuf[BUFSIZ];
+diff --git a/include/net/eth-mac-platform.h b/include/net/eth-mac-platform.h
+new file mode 100644
+index 0000000..752f1de
+--- /dev/null
++++ b/include/net/eth-mac-platform.h
+@@ -0,0 +1,40 @@
++/*
++ * eth-mac-platform.h:  Enforces platform-defined MAC for Async probed devices
++ */
++
++#ifndef __ETH_NET_MAC_PLATFORM_H__
++#define __ETH_NET_MAC_PLATFORM_H__
++
++#include <linux/if_ether.h>
++
++/**
++ * struct eth_mac_platform - associates asynchronously probed device path with
++ *			     MAC address to be assigned to the device when it
++ *			     is created
++ *
++ * @device_path: device path name of network device
++ * @mac: MAC address to assign to network device matching device path
++ * @list: can be left uninitialized when passing from platform
++ */
++
++struct eth_mac_platform {
++	char *device_path;
++	u8 mac[ETH_ALEN];
++	struct list_head list; /* unused in platform data usage */
++};
++
++#ifdef CONFIG_NET
++/**
++ * eth_mac_platform_register_device_macs - add an array of device path to
++ *                                  monitor and MAC to apply when the network
++ *                                  device at the device path appears
++ * @macs: array of struct eth_mac_platform terminated by entry with
++ *	  NULL device_path
++ */
++int eth_mac_platform_register_device_macs(const struct eth_mac_platform *macs);
++#else
++static inline int eth_mac_platform_register_device_macs(
++			     const struct eth_mac_platform *macs) { return 0; }
++#endif /* !CONFIG_NET */
++
++#endif /* __ETH_NET_MAC_PLATFORM_H__ */
+diff --git a/net/Kconfig b/net/Kconfig
+index 245831b..dd8ab96 100644
+--- a/net/Kconfig
++++ b/net/Kconfig
+@@ -335,9 +335,12 @@ source "net/caif/Kconfig"
+ source "net/ceph/Kconfig"
+ source "net/nfc/Kconfig"
  
--	perf_header__set_cmdline(argc, argv);
 -
- 	evsel_list = perf_evlist__new(NULL, NULL);
- 	if (evsel_list == NULL)
- 		return -ENOMEM;
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 5a47aba..99e410c 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -174,6 +174,15 @@ perf_header__set_cmdline(int argc, const char **argv)
- {
- 	int i;
+ endif   # if NET
  
-+	/* 
-+	 * If header_argv has already been set, do not override it.
-+	 * This allows a command to set the cmdline, parse args and
-+	 * then call another builtin function that implements a
-+	 * command -- e.g, cmd_kvm calling cmd_record.
-+	 */
-+	if (header_argv)
-+		return 0;
++# used by board / dt platform to enforce Ethernet MACs for Async-probed devices
++config ETH_MAC_PLATFORM
++	bool
 +
- 	header_argc = (u32)argc;
- 
- 	/* do not include NULL termination */
-diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
-index 99d02aa..594f8fa 100644
---- a/tools/perf/util/parse-options.c
-+++ b/tools/perf/util/parse-options.c
-@@ -1,6 +1,7 @@
- #include "util.h"
- #include "parse-options.h"
- #include "cache.h"
-+#include "header.h"
- 
- #define OPT_SHORT 1
- #define OPT_UNSET 2
-@@ -413,6 +414,8 @@ int parse_options(int argc, const char **argv, const struct option *options,
- {
- 	struct parse_opt_ctx_t ctx;
- 
-+	perf_header__set_cmdline(argc, argv);
+ # Used by archs to tell that they support BPF_JIT
+ config HAVE_BPF_JIT
+ 	bool
+diff --git a/net/ethernet/Makefile b/net/ethernet/Makefile
+index 7cef1d8..7362f46 100644
+--- a/net/ethernet/Makefile
++++ b/net/ethernet/Makefile
+@@ -5,3 +5,6 @@
+ obj-y					+= eth.o
+ obj-$(subst m,y,$(CONFIG_IPX))		+= pe2.o
+ obj-$(subst m,y,$(CONFIG_ATALK))	+= pe2.o
++ifneq ($(CONFIG_NET),)
++obj-$(CONFIG_ETH_MAC_PLATFORM)		+= eth-mac-platform.o
++endif
+diff --git a/net/ethernet/eth-mac-platform.c b/net/ethernet/eth-mac-platform.c
+new file mode 100644
+index 0000000..9b2ad69
+--- /dev/null
++++ b/net/ethernet/eth-mac-platform.c
+@@ -0,0 +1,150 @@
++/*
++ * Helper to allow platform code to enforce association of a locally-
++ * administered MAC address automatically on asynchronously probed devices,
++ * such as SDIO and USB based devices.
++ *
++ * Because the "device path" is used for matching, this is only useful for
++ * network assets physcally wired on the board, and also requires any
++ * different drivers that can compete for bus ordinals (eg mUSB vs ehci) to
++ * have fixed initialization ordering, eg, by having ehci in monolithic
++ * kernel
++ *
++ * Neither a driver nor a module as needs to be callable from machine file
++ * before the network devices are registered.
++ *
++ * (c) 2012 Andy Green <andy.green@linaro.org>
++ */
 +
- 	parse_options_start(&ctx, argc, argv, flags);
- 	switch (parse_options_step(&ctx, options, usagestr)) {
- 	case PARSE_OPT_HELP:
--- 
-1.7.10.1
++#include <linux/netdevice.h>
++#include <net/eth-mac-platform.h>
++
++static LIST_HEAD(eth_mac_platform_list);
++static DEFINE_MUTEX(eth_mac_platform_mutex);
++
++static struct eth_mac_platform *__eth_mac_platform_check(struct device *dev)
++{
++	const char *path;
++	const char *p;
++	const char *try;
++	int len;
++	struct device *devn;
++	struct eth_mac_platform *tmp;
++	struct list_head *pos;
++
++	list_for_each(pos, &eth_mac_platform_list) {
++
++		tmp = list_entry(pos, struct eth_mac_platform, list);
++
++		try = tmp->device_path;
++
++		p = try + strlen(try);
++		devn = dev;
++
++		while (devn) {
++
++			path = dev_name(devn);
++			len = strlen(path);
++
++			if ((p - try) < len) {
++				devn = NULL;
++				continue;
++			}
++
++			p -= len;
++
++			if (strncmp(path, p, len)) {
++				devn = NULL;
++				continue;
++			}
++
++			devn = devn->parent;
++			if (p == try)
++				return tmp;
++
++			if (devn != NULL && (p - try) < 2)
++				devn = NULL;
++
++			p--;
++			if (devn != NULL && *p != '/')
++				devn = NULL;
++		}
++	}
++
++	return NULL;
++}
++
++static int eth_mac_platform_netdev_event(struct notifier_block *this,
++					 unsigned long event, void *ptr)
++{
++	struct net_device *dev = ptr;
++	struct sockaddr sa;
++	struct eth_mac_platform *match;
++
++	if (event != NETDEV_REGISTER)
++		return NOTIFY_DONE;
++
++	mutex_lock(&eth_mac_platform_mutex);
++
++	match = __eth_mac_platform_check(dev->dev.parent);
++	if (match == NULL)
++		goto bail;
++
++	sa.sa_family = dev->type;
++	memcpy(sa.sa_data, match->mac, sizeof match->mac);
++	dev->netdev_ops->ndo_set_mac_address(dev, &sa);
++
++bail:
++	mutex_unlock(&eth_mac_platform_mutex);
++
++	return NOTIFY_DONE;
++}
++
++int eth_mac_platform_register_device_macs(const struct eth_mac_platform *macs)
++{
++	struct eth_mac_platform *next;
++	int ret = 0;
++
++	mutex_lock(&eth_mac_platform_mutex);
++
++	while (macs->device_path) {
++
++		next = kmemdup(macs, sizeof(*macs), GFP_KERNEL);
++		if (!next) {
++			ret = -ENOMEM;
++			goto bail;
++		}
++
++		next->device_path = kstrdup(macs->device_path, GFP_KERNEL);
++		if (!next->device_path) {
++			kfree(next);
++			ret = -ENOMEM;
++			goto bail;
++		}
++
++		list_add(&next->list, &eth_mac_platform_list);
++
++		macs++;
++	}
++bail:
++	mutex_unlock(&eth_mac_platform_mutex);
++
++	return ret;
++}
++
++static struct notifier_block eth_mac_platform_netdev_notifier = {
++	.notifier_call = eth_mac_platform_netdev_event,
++	.priority = 1,
++};
++
++static int __init eth_mac_platform_init(void)
++{
++	int ret;
++
++	ret = register_netdevice_notifier(&eth_mac_platform_netdev_notifier);
++	if (ret)
++		pr_err("eth_mac_platform_init: Notifier registration failed\n");
++
++	return ret;
++}
++
++core_initcall(eth_mac_platform_init);
 
