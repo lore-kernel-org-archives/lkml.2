@@ -1,254 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758019Ab2GFRR7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 13:17:59 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:56644 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757669Ab2GFRR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 13:17:56 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: preeti <preeti@linux.vnet.ibm.com>
-Subject: Re: [PATCH V2] Suspend,cpuidle:resume_hang fix with cpuidle
-Date: Fri, 6 Jul 2012 19:23:29 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        linux-acpi@vger.kernel.org,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>
-References: <4FEC20D2.2070501@linux.vnet.ibm.com> <4FF6566B.8020409@linux.vnet.ibm.com> <4FF696D4.4040905@linux.vnet.ibm.com>
-In-Reply-To: <4FF696D4.4040905@linux.vnet.ibm.com>
+	id S1757839Ab2GFRRq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 13:17:46 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56655 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab2GFRRo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 13:17:44 -0400
+Message-ID: <4FF71DB5.5050104@gmail.com>
+Date: Fri, 06 Jul 2012 11:17:41 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] perf lock: fix segfault with info subcommand following
+ move to libtraceevent
+References: <1341590538-19523-1-git-send-email-dsahern@gmail.com> <20120706171431.GF7533@infradead.org>
+In-Reply-To: <20120706171431.GF7533@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207061923.29748.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 06, 2012, preeti wrote:
-> 
-> From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-> 
-> On certain bios,resume hangs if cpus are allowed to enter idle states
-> during suspend[1]
-> 
-> This was fixed in apci idle driver[2].But intel_idle driver does not
-> have this fix.Thus instead of replicating the fix in both the idle
-> drivers,or in more platform specific idle drivers if needed,the
-> more general cpuidle infrastructure could handle this.
-> 
-> A suspend callback in cpuidle_driver could handle this fix.But
-> a cpuidle_driver provides only basic functionalities like platform idle
-> state detection capability and mechanisms to support entry and exit
-> into CPU idle states.All other cpuidle functions are found in the
-> cpuidle generic infrastructure for good reason that all cpuidle
-> drivers,irrepective of their platforms will support these functions.
-> 
-> One option therefore would be to register a suspend callback in cpuidle
-> which handles this fix.This could be called through a PM_SUSPEND_PREPARE
-> notifier.But this is too generic a notfier for a driver to handle.
-> 
-> Also,ideally the job of cpuidle is not to handle side effects of suspend.
-> It should expose the interfaces which "handle cpuidle 'during' suspend"
-> or any other operation,which the subsystems call during that respective
-> operation.
-> 
-> The fix demands that during suspend,no cpus should be allowed to enter
-> deep C-states.The interface cpuidle_uninstall_idle_handler() in cpuidle
-> ensures that.Not just that it also kicks all the cpus which are already
-> in idle out of their idle states which was being done during cpu hotplug
-> through a CPU_DYING_FROZEN callbacks.
-> 
-> Now the question arises about when during suspend should
-> cpuidle_uninstall_idle_handler() be called.Since we are dealing with
-> drivers it seems best to call this function during dpm_suspend().
-> Delaying the call till dpm_suspend_noirq() does no harm,as long as it is
-> before cpu_hotplug_begin() to avoid race conditions with cpu hotpulg
-> operations.In dpm_suspend_noirq(),it would be wise to place this call
-> before suspend_device_irqs() to avoid ugly interactions with the same.
-> 
-> Ananlogously,during resume.
-> 
-> References:
-> 1.https://bugs.launchpad.net/ubuntu/+source/linux/+bug/674075.
-> 2.http://marc.info/?l=linux-pm&m=133958534231884&w=2
-> 
-> Reported-by: Dave Hansen <dave@linux.vnet.ibm.com>
-> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+On 7/6/12 11:14 AM, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Jul 06, 2012 at 10:02:18AM -0600, David Ahern escreveu:
+>> +++ b/tools/perf/builtin-lock.c
+>> @@ -877,6 +877,9 @@ static int read_events(void)
+>>   	if (!session)
+>>   		die("Initializing perf session failed\n");
+>>
+>> +	if (!perf_session__has_traces(session, "lock record"))
+>> +		exit(1);
+>> +
+>>   	return perf_session__process_events(session, &eops);
+>>   }
+>
+> This is getting out of hand, first a die(), then an exit(1) and finally
+> this function returns a value, ouch.
+>
+> I'd rather use return to signal that something went wrong and as well
+> print some helpful warning to the user.
+>
+> Eventually we should fix all the other offenders, but lets try not to
+> add even more.
 
-OK, this looks good to me.  Queuing up in the linux-next branch of the
-linux-pm.git tree.  If no problems with it are reported, I'll move it to the
-pm-cpuidle branch in a couple of days.
+Agree. But....
 
-Thanks,
-Rafael
+>
+> Can you please resend with a pr_warning + return failure?
 
 
-> ---
-> 
->  drivers/acpi/processor_idle.c |   30 +-----------------------------
->  drivers/base/power/main.c     |    4 +++-
->  drivers/cpuidle/cpuidle.c     |   16 ++++++++++++++++
->  include/linux/cpuidle.h       |    2 ++
->  4 files changed, 22 insertions(+), 30 deletions(-)
-> 
-> diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-> index 6d9ec3e..b894627 100644
-> --- a/drivers/acpi/processor_idle.c
-> +++ b/drivers/acpi/processor_idle.c
-> @@ -221,10 +221,6 @@ static void lapic_timer_state_broadcast(struct acpi_processor *pr,
->  
->  #endif
->  
-> -/*
-> - * Suspend / resume control
-> - */
-> -static int acpi_idle_suspend;
->  static u32 saved_bm_rld;
->  
->  static void acpi_idle_bm_rld_save(void)
-> @@ -243,21 +239,13 @@ static void acpi_idle_bm_rld_restore(void)
->  
->  int acpi_processor_suspend(struct device *dev)
->  {
-> -	if (acpi_idle_suspend == 1)
-> -		return 0;
-> -
->  	acpi_idle_bm_rld_save();
-> -	acpi_idle_suspend = 1;
->  	return 0;
->  }
->  
->  int acpi_processor_resume(struct device *dev)
->  {
-> -	if (acpi_idle_suspend == 0)
-> -		return 0;
-> -
->  	acpi_idle_bm_rld_restore();
-> -	acpi_idle_suspend = 0;
->  	return 0;
->  }
->  
-> @@ -763,11 +751,6 @@ static int acpi_idle_enter_c1(struct cpuidle_device *dev,
->  
->  	local_irq_disable();
->  
-> -	if (acpi_idle_suspend) {
-> -		local_irq_enable();
-> -		cpu_relax();
-> -		return -EBUSY;
-> -	}
->  
->  	lapic_timer_state_broadcast(pr, cx, 1);
->  	kt1 = ktime_get_real();
-> @@ -838,11 +821,6 @@ static int acpi_idle_enter_simple(struct cpuidle_device *dev,
->  
->  	local_irq_disable();
->  
-> -	if (acpi_idle_suspend) {
-> -		local_irq_enable();
-> -		cpu_relax();
-> -		return -EBUSY;
-> -	}
->  
->  	if (cx->entry_method != ACPI_CSTATE_FFH) {
->  		current_thread_info()->status &= ~TS_POLLING;
-> @@ -928,8 +906,7 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
->  						drv, drv->safe_state_index);
->  		} else {
->  			local_irq_disable();
-> -			if (!acpi_idle_suspend)
-> -				acpi_safe_halt();
-> +			acpi_safe_halt();
->  			local_irq_enable();
->  			return -EBUSY;
->  		}
-> @@ -937,11 +914,6 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
->  
->  	local_irq_disable();
->  
-> -	if (acpi_idle_suspend) {
-> -		local_irq_enable();
-> -		cpu_relax();
-> -		return -EBUSY;
-> -	}
->  
->  	if (cx->entry_method != ACPI_CSTATE_FFH) {
->  		current_thread_info()->status &= ~TS_POLLING;
-> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> index df5f41d..d791950 100644
-> --- a/drivers/base/power/main.c
-> +++ b/drivers/base/power/main.c
-> @@ -28,7 +28,7 @@
->  #include <linux/sched.h>
->  #include <linux/async.h>
->  #include <linux/suspend.h>
-> -
-> +#include <linux/cpuidle.h>
->  #include "../base.h"
->  #include "power.h"
->  
-> @@ -467,6 +467,7 @@ static void dpm_resume_noirq(pm_message_t state)
->  	mutex_unlock(&dpm_list_mtx);
->  	dpm_show_time(starttime, state, "noirq");
->  	resume_device_irqs();
-> +	cpuidle_resume();
->  }
->  
->  /**
-> @@ -867,6 +868,7 @@ static int dpm_suspend_noirq(pm_message_t state)
->  	ktime_t starttime = ktime_get();
->  	int error = 0;
->  
-> +	cpuidle_pause();
->  	suspend_device_irqs();
->  	mutex_lock(&dpm_list_mtx);
->  	while (!list_empty(&dpm_late_early_list)) {
-> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-> index 0132706..d6a533e 100644
-> --- a/drivers/cpuidle/cpuidle.c
-> +++ b/drivers/cpuidle/cpuidle.c
-> @@ -201,6 +201,22 @@ void cpuidle_resume_and_unlock(void)
->  
->  EXPORT_SYMBOL_GPL(cpuidle_resume_and_unlock);
->  
-> +/* Currently used in suspend/resume path to suspend cpuidle */
-> +void cpuidle_pause(void)
-> +{
-> +	mutex_lock(&cpuidle_lock);
-> +	cpuidle_uninstall_idle_handler();
-> +	mutex_unlock(&cpuidle_lock);
-> +}
-> +
-> +/* Currently used in suspend/resume path to resume cpuidle */
-> +void cpuidle_resume(void)
-> +{
-> +	mutex_lock(&cpuidle_lock);
-> +	cpuidle_install_idle_handler();
-> +	mutex_unlock(&cpuidle_lock);
-> +}
-> +
->  /**
->   * cpuidle_wrap_enter - performs timekeeping and irqen around enter function
->   * @dev: pointer to a valid cpuidle_device object
-> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-> index 8684a0d..d83b27e 100644
-> --- a/include/linux/cpuidle.h
-> +++ b/include/linux/cpuidle.h
-> @@ -146,6 +146,8 @@ extern void cpuidle_unregister_device(struct cpuidle_device *dev);
->  
->  extern void cpuidle_pause_and_lock(void);
->  extern void cpuidle_resume_and_unlock(void);
-> +extern void cpuidle_pause(void);
-> +extern void cpuidle_resume(void);
->  extern int cpuidle_enable_device(struct cpuidle_device *dev);
->  extern void cpuidle_disable_device(struct cpuidle_device *dev);
->  extern int cpuidle_wrap_enter(struct cpuidle_device *dev,
-> 
-> 
-> 
-> 
+This command needs some love. The rc is not checked and requires some 
+rework. e.g., the report path:
 
+     setup_pager();
+     select_key();
+     read_events();    <---- the function I changed
+     sort_result();
+     print_result();
+
+and the info path:
+         setup_pager();
+         read_events();
+         dump_info();
+
+I figured for 3.5 at least not segfault; clean up for 3.6 or later.
+
+David
