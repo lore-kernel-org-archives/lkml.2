@@ -1,122 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758568Ab2GFWCa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 18:02:30 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:35456 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756687Ab2GFWC3 (ORCPT
+	id S933348Ab2GFWFY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 18:05:24 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:49513 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756687Ab2GFWFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 18:02:29 -0400
+	Fri, 6 Jul 2012 18:05:22 -0400
 MIME-Version: 1.0
-In-Reply-To: <4FF70FDB020000780008E199@nat28.tlf.novell.com>
-References: <4FF70FDB020000780008E199@nat28.tlf.novell.com>
-Date: Fri, 6 Jul 2012 15:02:28 -0700
-X-Google-Sender-Auth: gkb5w7oTDRd-2HzCGkAF2QbWn7U
-Message-ID: <CAE9FiQUkt7s_zfbn+iZcKXaRpvOHm9CWjxvqpNsLsnSywdHoug@mail.gmail.com>
-Subject: Re: [PATCH] x86: simplify mtrr_bp_init()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20120706203825.20ce3e47@pyramind.ukuu.org.uk>
+References: <CAGoecWyMKF4gC7FaoBCrBs+rD=u6oJRHS5Q2qVkkwoZZ1_4RCg@mail.gmail.com>
+	<20120706203825.20ce3e47@pyramind.ukuu.org.uk>
+Date: Sat, 7 Jul 2012 01:05:21 +0300
+Message-ID: <CAGoecWxymi-jrTO5AdeYRMkbqdrk6je9xaUKmBry=LGqNC-D0w@mail.gmail.com>
+Subject: Re: Regression - /proc/kmsg does not (always) block for 1-byte reads
+From: Jukka Ollila <jiiksteri@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, kay@vrfy.org, jbeulich@novell.com,
+        greg@kroah.com, torvalds@linux-foundation.org, joey@debian.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 6, 2012 at 7:18 AM, Jan Beulich <JBeulich@suse.com> wrote:
-> Now that the x86_phys_bits cpuinfo field is uniformly available on
-> 32- and 64-bit, the function no longer needs to determine this anew.
->
-> Additionally, both size_or_mask and size_and_mask can be set once at
-> the end of the function instead of individually in each special case,
-> as their value solely depends on the physical address size determined
-> to be used here.
->
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
->
-> ---
->  arch/x86/kernel/cpu/mtrr/main.c |   47 ++++++++++------------------------------
->  1 file changed, 12 insertions(+), 35 deletions(-)
->
-> --- 3.5-rc5/arch/x86/kernel/cpu/mtrr/main.c
-> +++ 3.5-rc5-x86-mtrr-init-simplify/arch/x86/kernel/cpu/mtrr/main.c
-> @@ -592,67 +592,41 @@ int __initdata changed_by_mtrr_cleanup;
->   */
->  void __init mtrr_bp_init(void)
->  {
-> -       u32 phys_addr;
-> +       unsigned int phys_addr = boot_cpu_data.x86_phys_bits;
->
->         init_ifs();
->
-> -       phys_addr = 32;
-> -
->         if (cpu_has_mtrr) {
->                 mtrr_if = &generic_mtrr_ops;
-> -               size_or_mask = 0xff000000;                      /* 36 bits */
-> -               size_and_mask = 0x00f00000;
-> -               phys_addr = 36;
-> -
-> -               /*
-> -                * This is an AMD specific MSR, but we assume(hope?) that
-> -                * Intel will implement it to when they extend the address
-> -                * bus of the Xeon.
-> -                */
-> -               if (cpuid_eax(0x80000000) >= 0x80000008) {
-> -                       phys_addr = cpuid_eax(0x80000008) & 0xff;
-> -                       /* CPUID workaround for Intel 0F33/0F34 CPU */
-> -                       if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL &&
-> -                           boot_cpu_data.x86 == 0xF &&
-> -                           boot_cpu_data.x86_model == 0x3 &&
-> -                           (boot_cpu_data.x86_mask == 0x3 ||
-> -                            boot_cpu_data.x86_mask == 0x4))
-> -                               phys_addr = 36;
-> -
-> -                       size_or_mask = ~((1ULL << (phys_addr - PAGE_SHIFT)) - 1);
-> -                       size_and_mask = ~size_or_mask & 0xfffff00000ULL;
-> -               } else if (boot_cpu_data.x86_vendor == X86_VENDOR_CENTAUR &&
-> -                          boot_cpu_data.x86 == 6) {
-> +
-> +               if (boot_cpu_data.x86_vendor == X86_VENDOR_CENTAUR &&
-> +                   boot_cpu_data.x86 == 6) {
->                         /*
->                          * VIA C* family have Intel style MTRRs,
->                          * but don't support PAE
->                          */
-> -                       size_or_mask = 0xfff00000;              /* 32 bits */
-> -                       size_and_mask = 0;
->                         phys_addr = 32;
-> -               }
-> +               } else if (phys_addr < 36)
-> +                       phys_addr = 36;
->         } else {
->                 switch (boot_cpu_data.x86_vendor) {
->                 case X86_VENDOR_AMD:
->                         if (cpu_has_k6_mtrr) {
->                                 /* Pre-Athlon (K6) AMD CPU MTRRs */
->                                 mtrr_if = mtrr_ops[X86_VENDOR_AMD];
-> -                               size_or_mask = 0xfff00000;      /* 32 bits */
-> -                               size_and_mask = 0;
-> +                               phys_addr = 32;
->                         }
->                         break;
->                 case X86_VENDOR_CENTAUR:
->                         if (cpu_has_centaur_mcr) {
->                                 mtrr_if = mtrr_ops[X86_VENDOR_CENTAUR];
-> -                               size_or_mask = 0xfff00000;      /* 32 bits */
-> -                               size_and_mask = 0;
-> +                               phys_addr = 32;
->                         }
->                         break;
->                 case X86_VENDOR_CYRIX:
->                         if (cpu_has_cyrix_arr) {
->                                 mtrr_if = mtrr_ops[X86_VENDOR_CYRIX];
-> -                               size_or_mask = 0xfff00000;      /* 32 bits */
-> -                               size_and_mask = 0;
-> +                               phys_addr = 32;
+On Fri, Jul 6, 2012 at 10:38 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> On Fri, 6 Jul 2012 20:45:44 +0300
+> Jukka Ollila <jiiksteri@gmail.com> wrote:
+>> A few days ago I filed a kernel regression report concerning a change
+>> in /proc/kmsg behaviour with short reads:
+>>
+>> https://bugzilla.kernel.org/show_bug.cgi?id=44211
 
-should drop all phys_addr assignment in this function.
+>> I don't know what other distros do. Is it just Debian being the odd one out?
+>
+> If this is observed on an actual standard distro userspace and breaks it
+> then its a regression and it needs fixing or reverting.
 
-x86_phys_bits should have all correct value?
+Now this got me wondering if Debian _unstable_ actually qualifies as a
+standard distro userspace.
 
-Yinghai
+And I did a little digging. According to the Debian package tracking
+system[1] it would seem that the _stable_ distro carries a version
+that doesn't do the dd shuffling at all and probably runs its klogd as
+root, reading /proc/kmsg directly. That may or may not work with
+3.5-rc kernels, depending on how big its reads are. I'm CCing the
+listed maintainer just in case.
+
+The unstable version does the problematic dd bs=1 trick. Also the
+Ubuntu diff in the PTS has the dd. But I have no idea how Ubuntu does
+it's release management. Not to mention other derivatives.
+
+So it might not be too late to fix this in userspace, in case the
+kernel wants to move on. Some real distro people might want to chime
+in.
+
+Thanks,
+
+-J
+
+[1] http://packages.debian.org/search?keywords=sysklogd
