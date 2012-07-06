@@ -1,131 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932595Ab2GFGWu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 02:22:50 -0400
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:9169
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932257Ab2GFGWr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 02:22:47 -0400
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jul 2012 02:22:47 EDT
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VS-9(zzbb2dI98dI9371I1521I542M1432Izz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ahbe9i)
-From: Jia Hongtao-B38951 <B38951@freescale.com>
-To: Greg KH <greg@kroah.com>
-CC: Rob Herring <robherring2@gmail.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Yang-R58472 <r58472@freescale.com>
-Subject: RE: [PATCH V3 5/6] Avoid duplicate probe for of platform devices
-Thread-Topic: [PATCH V3 5/6] Avoid duplicate probe for of platform devices
-Thread-Index: AQHNRV2d07XgG54zbUKKBQTDlvBob5b1mBOAgCYUJaCAAHvPgP//w6JA
-Date: Fri, 6 Jul 2012 06:07:43 +0000
-Message-ID: <412C8208B4A0464FA894C5F0C278CD5D01A168F2@039-SN1MPN1-002.039d.mgd.msft.net>
-References: <1339148585-16947-1-git-send-email-B38951@freescale.com>
- <4FD60FB1.7050106@gmail.com>
- <412C8208B4A0464FA894C5F0C278CD5D01A16829@039-SN1MPN1-002.039d.mgd.msft.net>
- <20120706042611.GA1841@kroah.com>
-In-Reply-To: <20120706042611.GA1841@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.193.20.48]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932532Ab2GFGXi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 02:23:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49015 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308Ab2GFGXg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 02:23:36 -0400
+Date: Thu, 5 Jul 2012 23:23:20 -0700
+From: tip-bot for Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Message-ID: <tip-9b523ea8f7dcfebd954200d276cbdc203913ba30@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        prashanth@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, vatsa@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, prashanth@linux.vnet.ibm.com
+In-Reply-To: <4FE06CDB.2060605@linux.vnet.ibm.com>
+References: <4FE06CDB.2060605@linux.vnet.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Improve balance_cpu()
+  to consider other cpus in its group as target of (pinned) task
+Git-Commit-ID: 9b523ea8f7dcfebd954200d276cbdc203913ba30
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 05 Jul 2012 23:23:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  9b523ea8f7dcfebd954200d276cbdc203913ba30
+Gitweb:     http://git.kernel.org/tip/9b523ea8f7dcfebd954200d276cbdc203913ba30
+Author:     Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+AuthorDate: Tue, 19 Jun 2012 17:43:15 +0530
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 5 Jul 2012 21:09:11 +0200
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Friday, July 06, 2012 12:26 PM
-> To: Jia Hongtao-B38951
-> Cc: Rob Herring; devicetree-discuss@lists.ozlabs.org; linux-
-> kernel@vger.kernel.org; Li Yang-R58472
-> Subject: Re: [PATCH V3 5/6] Avoid duplicate probe for of platform devices
-> 
-> On Fri, Jul 06, 2012 at 02:05:05AM +0000, Jia Hongtao-B38951 wrote:
-> > Hi Rob and Greg KH,
-> >
-> > Do you have any better idea to avoid duplication probe warning?
-> 
-> I have no idea what the problem is that you are trying to solve.
-> 
-> > > On 06/08/2012 04:43 AM, Jia Hongtao wrote:
-> > > > We changed the pcie controller driver to platform driver so that
-> the
-> > > PCI
-> > > > of platform devices need to be created earlier in the arch_initcall
-> > > stage
-> > > > according to the original timing of calling fsl_add_bridge(). So we
-> do
-> > > PCI
-> > > > probing separately from other devices. But probing more than once
-> could
-> > > > cause duplication warning. We add check if the devices have already
-> > > probed
-> > > > before probing any devices to avoid duplication warning.
-> 
-> Ick, something else is going wrong here, how could you ever have the
-> same device probed more than once?
-> 
-> > > > Signed-off-by: Jia Hongtao <B38951@freescale.com>
-> > > > Signed-off-by: Li Yang <leoli@freescale.com>
-> > > > ---
-> > >
-> > > Where's v1 and v2 history?
-> > >
-> > > >  drivers/of/platform.c |   18 ++++++++++++------
-> > > >  1 files changed, 12 insertions(+), 6 deletions(-)
-> > > >
-> > > > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> > > > index a37330e..3aab01f 100644
-> > > > --- a/drivers/of/platform.c
-> > > > +++ b/drivers/of/platform.c
-> > > > @@ -139,6 +139,18 @@ struct platform_device *of_device_alloc(struct
-> > > device_node *np,
-> > > >  	if (!dev)
-> > > >  		return NULL;
-> > > >
-> > > > +	dev->dev.of_node = of_node_get(np);
-> > > > +	if (bus_id)
-> > > > +		dev_set_name(&dev->dev, "%s", bus_id);
-> > > > +	else
-> > > > +		of_device_make_bus_id(&dev->dev);
-> > > > +
-> > > > +	if (kset_find_obj(dev->dev.kobj.kset, kobject_name(&dev-
-> >dev.kobj)))
-> 
-> Whatever you are trying to do here, odds are, it's wrong :)
-> 
-> What is happening that is causing the problem?  What is causing the
-> platform core to be calling probe on a device more than once?
-> 
-> greg k-h
+sched: Improve balance_cpu() to consider other cpus in its group as target of (pinned) task
 
-This is why in some cases we may probe twice:
-Firstly, we need to probe pci controller separately. But in KVM different
-topology of device tree is used in which pci nodes are not under root node
-but under "simple bus". Unfortunately, of_platform_bus_probe() will probe
-all the first level nodes under "simple bus" so pci nodes will probe again.
+Current load balance scheme requires only one cpu in a
+sched_group (balance_cpu) to look at other peer sched_groups for
+imbalance and pull tasks towards itself from a busy cpu. Tasks
+thus pulled by balance_cpu could later get picked up by cpus
+that are in the same sched_group as that of balance_cpu.
 
-Two ways to solve this problem:
-1. All the nodes that need to be probed should just under root.
-2. Avoid duplication probe at runtime like this patch did.
+This scheme however fails to pull tasks that are not allowed to
+run on balance_cpu (but are allowed to run on other cpus in its
+sched_group). That can affect fairness and in some worst case
+scenarios cause starvation.
 
-I do like the first one but it's hard to changing the traditional way that
-exist for a long time.
+Consider a two core (2 threads/core) system running tasks as
+below:
 
-Also, I think this patch as a workaround is not a perfect way to solve this
-problem. So I wonder if you or others have any better solutions.
+          Core0            Core1
+         /     \          /     \
+	C0     C1	 C2     C3
+        |      |         |      |
+        v      v         v      v
+	F0     T1        F1     [idle]
+			 T2
 
-Thanks.
--Jia Hongtao. 
+ F0 = SCHED_FIFO task (pinned to C0)
+ F1 = SCHED_FIFO task (pinned to C2)
+ T1 = SCHED_OTHER task (pinned to C1)
+ T2 = SCHED_OTHER task (pinned to C1 and C2)
 
+F1 could become a cpu hog, which will starve T2 unless C1 pulls
+it. Between C0 and C1 however, C0 is required to look for
+imbalance between cores, which will fail to pull T2 towards
+Core0. T2 will starve eternally in this case. The same scenario
+can arise in presence of non-rt tasks as well (say we replace F1
+with high irq load).
 
+We tackle this problem by having balance_cpu move pinned tasks
+to one of its sibling cpus (where they can run). We first check
+if load balance goal can be met by ignoring pinned tasks,
+failing which we retry move_tasks() with a new env->dst_cpu.
+
+This patch modifies load balance semantics on who can move load
+towards a given cpu in a given sched_domain.
+
+Before this patch, a given_cpu or a ilb_cpu acting on behalf of
+an idle given_cpu is responsible for moving load to given_cpu.
+
+With this patch applied, balance_cpu can in addition decide on
+moving some load to a given_cpu.
+
+There is a remote possibility that excess load could get moved
+as a result of this (balance_cpu and given_cpu/ilb_cpu deciding
+*independently* and at *same* time to move some load to a
+given_cpu). However we should see less of such conflicting
+decisions in practice and moreover subsequent load balance
+cycles should correct the excess load moved to given_cpu.
+
+Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/4FE06CDB.2060605@linux.vnet.ibm.com
+[ minor edits ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/fair.c |   78 ++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 74 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 3f94840..77f1ed7 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3084,6 +3084,7 @@ static unsigned long __read_mostly max_load_balance_interval = HZ/10;
+ 
+ #define LBF_ALL_PINNED	0x01
+ #define LBF_NEED_BREAK	0x02
++#define LBF_SOME_PINNED 0x04
+ 
+ struct lb_env {
+ 	struct sched_domain	*sd;
+@@ -3094,6 +3095,8 @@ struct lb_env {
+ 	int			dst_cpu;
+ 	struct rq		*dst_rq;
+ 
++	struct cpumask		*dst_grpmask;
++	int			new_dst_cpu;
+ 	enum cpu_idle_type	idle;
+ 	long			imbalance;
+ 
+@@ -3184,9 +3187,31 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+ 	 * 3) are cache-hot on their current CPU.
+ 	 */
+ 	if (!cpumask_test_cpu(env->dst_cpu, tsk_cpus_allowed(p))) {
++		int new_dst_cpu;
++
+ 		schedstat_inc(p, se.statistics.nr_failed_migrations_affine);
++
++		/*
++		 * Remember if this task can be migrated to any other cpu in
++		 * our sched_group. We may want to revisit it if we couldn't
++		 * meet load balance goals by pulling other tasks on src_cpu.
++		 *
++		 * Also avoid computing new_dst_cpu if we have already computed
++		 * one in current iteration.
++		 */
++		if (!env->dst_grpmask || (env->flags & LBF_SOME_PINNED))
++			return 0;
++
++		new_dst_cpu = cpumask_first_and(env->dst_grpmask,
++						tsk_cpus_allowed(p));
++		if (new_dst_cpu < nr_cpu_ids) {
++			env->flags |= LBF_SOME_PINNED;
++			env->new_dst_cpu = new_dst_cpu;
++		}
+ 		return 0;
+ 	}
++
++	/* Record that we found atleast one task that could run on dst_cpu */
+ 	env->flags &= ~LBF_ALL_PINNED;
+ 
+ 	if (task_running(env->src_rq, p)) {
+@@ -4417,7 +4442,8 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 			struct sched_domain *sd, enum cpu_idle_type idle,
+ 			int *balance)
+ {
+-	int ld_moved, active_balance = 0;
++	int ld_moved, cur_ld_moved, active_balance = 0;
++	int lb_iterations, max_lb_iterations;
+ 	struct sched_group *group;
+ 	struct rq *busiest;
+ 	unsigned long flags;
+@@ -4427,12 +4453,14 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 		.sd		    = sd,
+ 		.dst_cpu	    = this_cpu,
+ 		.dst_rq		    = this_rq,
++		.dst_grpmask	    = sched_group_cpus(sd->groups),
+ 		.idle		    = idle,
+ 		.loop_break	    = sched_nr_migrate_break,
+ 		.find_busiest_queue = find_busiest_queue,
+ 	};
+ 
+ 	cpumask_copy(cpus, cpu_active_mask);
++	max_lb_iterations = cpumask_weight(env.dst_grpmask);
+ 
+ 	schedstat_inc(sd, lb_count[idle]);
+ 
+@@ -4460,6 +4488,7 @@ redo:
+ 	schedstat_add(sd, lb_imbalance[idle], env.imbalance);
+ 
+ 	ld_moved = 0;
++	lb_iterations = 1;
+ 	if (busiest->nr_running > 1) {
+ 		/*
+ 		 * Attempt to move tasks. If find_busiest_group has found
+@@ -4479,7 +4508,13 @@ more_balance:
+ 		double_rq_lock(this_rq, busiest);
+ 		if (!env.loop)
+ 			update_h_load(env.src_cpu);
+-		ld_moved += move_tasks(&env);
++
++		/*
++		 * cur_ld_moved - load moved in current iteration
++		 * ld_moved     - cumulative load moved across iterations
++		 */
++		cur_ld_moved = move_tasks(&env);
++		ld_moved += cur_ld_moved;
+ 		double_rq_unlock(this_rq, busiest);
+ 		local_irq_restore(flags);
+ 
+@@ -4491,8 +4526,43 @@ more_balance:
+ 		/*
+ 		 * some other cpu did the load balance for us.
+ 		 */
+-		if (ld_moved && this_cpu != smp_processor_id())
+-			resched_cpu(this_cpu);
++		if (cur_ld_moved && env.dst_cpu != smp_processor_id())
++			resched_cpu(env.dst_cpu);
++
++		/*
++		 * Revisit (affine) tasks on src_cpu that couldn't be moved to
++		 * us and move them to an alternate dst_cpu in our sched_group
++		 * where they can run. The upper limit on how many times we
++		 * iterate on same src_cpu is dependent on number of cpus in our
++		 * sched_group.
++		 *
++		 * This changes load balance semantics a bit on who can move
++		 * load to a given_cpu. In addition to the given_cpu itself
++		 * (or a ilb_cpu acting on its behalf where given_cpu is
++		 * nohz-idle), we now have balance_cpu in a position to move
++		 * load to given_cpu. In rare situations, this may cause
++		 * conflicts (balance_cpu and given_cpu/ilb_cpu deciding
++		 * _independently_ and at _same_ time to move some load to
++		 * given_cpu) causing exceess load to be moved to given_cpu.
++		 * This however should not happen so much in practice and
++		 * moreover subsequent load balance cycles should correct the
++		 * excess load moved.
++		 */
++		if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0 &&
++				lb_iterations++ < max_lb_iterations) {
++
++			this_rq		 = cpu_rq(env.new_dst_cpu);
++			env.dst_rq	 = this_rq;
++			env.dst_cpu	 = env.new_dst_cpu;
++			env.flags	&= ~LBF_SOME_PINNED;
++			env.loop	 = 0;
++			env.loop_break	 = sched_nr_migrate_break;
++			/*
++			 * Go back to "more_balance" rather than "redo" since we
++			 * need to continue with same src_cpu.
++			 */
++			goto more_balance;
++		}
+ 
+ 		/* All tasks on this runqueue were pinned by CPU affinity */
+ 		if (unlikely(env.flags & LBF_ALL_PINNED)) {
