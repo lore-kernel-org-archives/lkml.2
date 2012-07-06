@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933Ab2GFKc5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 06:32:57 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:48719 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756599Ab2GFKc4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 06:32:56 -0400
-X-AuditID: b753bd60-9b4f4ba000000f6c-df-4ff6bed5e951
-X-AuditID: b753bd60-9b4f4ba000000f6c-df-4ff6bed5e951
-Message-ID: <4FF6BEDC.8040207@hitachi.com>
-Date: Fri, 06 Jul 2012 19:33:00 +0900
-From: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S933051Ab2GFKda (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 06:33:30 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53519 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932546Ab2GFKd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 06:33:29 -0400
+Date: Fri, 6 Jul 2012 12:32:55 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 02/26] mm, mpol: Remove NUMA_INTERLEAVE_HIT
+Message-ID: <20120706103255.GA23680@cmpxchg.org>
+References: <20120316144028.036474157@chello.nl>
+ <20120316144240.234456258@chello.nl>
 MIME-Version: 1.0
-To: avi@redhat.com
-Cc: jan.kiszka@siemens.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH 00/18] KVM: x86: CPU isolation and direct interrupts
- handling by guests
-References: <20120628060719.19298.43879.stgit@localhost.localdomain> <4FEC8D31.3070406@redhat.com> <4FEC93BD.2070809@siemens.com> <4FEC95BC.200@redhat.com> <4FED7495.30707@hitachi.com> <4FEDC22F.9070406@redhat.com>
-In-Reply-To: <4FEDC22F.9070406@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120316144240.234456258@chello.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Peter,
 
-On 2012/06/29 23:56, Avi Kivity wrote:
->> On 2012/06/29 2:34, Avi Kivity wrote:
->>> On 06/28/2012 08:26 PM, Jan Kiszka wrote:
->>>>> This is both impressive and scary.  What is the target scenario here?
->>>>> Partitioning?  I don't see this working for generic consolidation.
->>>>
->>>> From my POV, partitioning - including hard realtime partitions - would
->>>> provide some use cases.
->>
->> Exactly this is for partitioning that requires bare-metal performance
->> with low latency and realtime.
->
-> It's hard for me to evaluate how large that segment is.  Since the
-> patchset is so intrusive, it needs a large potential user set to
-> justify, or a large reduction in complexity, or both.
-
-Low latency or realtime is often required on high-end systems
-like trading, automated control, HPC and so on, or for multimedias.
-Those who want to run MRG as a guest, or to fully utilize high-speed
-NIC are also worth using this. And not all of such applications does
-not use up every CPU, so partitioning is becoming reasonable as a
-number of cores in a server is increasing.
-Anyway, I will try to make the patch as simple as possible.
-
->>  I think it is also useful for workload
->> like HPC with MPI, that is CPU intensive and that needs low latency.
+On Fri, Mar 16, 2012 at 03:40:30PM +0100, Peter Zijlstra wrote:
+> Since the NUMA_INTERLEAVE_HIT statistic is useless on its own; it wants
+> to be compared to either a total of interleave allocations or to a miss
+> count, remove it.
 > 
-> I keep hearing about people virtualizing these types of workloads, but I
-> haven't yet understood why.
+> Fixing it would be possible, but since we've gone years without these
+> statistics I figure we can continue that way.
+> 
+> This cleans up some of the weird MPOL_INTERLEAVE allocation exceptions.
+> 
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
 
-One reason is ease of deployment of applications to nodes.
-Especially in IaaS environment like Amazon EC2 Cluster Compute Instances,
-virtualization is often introduced as a simple way to move applications
-around flexibly among nodes shared by many users.
+> @@ -111,7 +111,6 @@ enum zone_stat_item {
+>  	NUMA_HIT,		/* allocated in intended node */
+>  	NUMA_MISS,		/* allocated in non intended node */
+>  	NUMA_FOREIGN,		/* was intended here, hit elsewhere */
+> -	NUMA_INTERLEAVE_HIT,	/* interleaver preferred this zone */
+>  	NUMA_LOCAL,		/* allocation from local node */
+>  	NUMA_OTHER,		/* allocation from other node */
+>  #endif
 
-Thanks,
+Can you guys include/fold this?
+
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] mm: fix vmstat names-values off-by-one
+
+"mm/mpol: Remove NUMA_INTERLEAVE_HIT" removed the NUMA_INTERLEAVE_HIT
+item from the zone_stat_item enum, but left the corresponding name
+string for it in the vmstat_text array.  As a result, all counters
+that follow it have their name offset by one from their value.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/vmstat.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 1bbbbd9..e4db312 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -717,7 +717,6 @@ const char * const vmstat_text[] = {
+ 	"numa_hit",
+ 	"numa_miss",
+ 	"numa_foreign",
+-	"numa_interleave",
+ 	"numa_local",
+ 	"numa_other",
+ #endif
 -- 
-Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
-Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-
+1.7.7.6
