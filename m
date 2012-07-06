@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755890Ab2GFBSq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 21:18:46 -0400
-Received: from anubis.se.axis.com ([195.60.68.12]:42898 "EHLO
-	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752050Ab2GFBSn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 21:18:43 -0400
-X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Jul 2012 21:18:43 EDT
-Date: Fri, 6 Jul 2012 03:12:36 +0200
-Message-Id: <201207060112.q661CaG4002389@ignucius.se.axis.com>
-From: Hans-Peter Nilsson <hans-peter.nilsson@axis.com>
-To: geert@linux-m68k.org
-CC: jack@suse.cz, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-cris-kernel@axis.com
-In-reply-to: <CAMuHMdVJTUF3r=MKzpkvj6y_xdVdw=zEgAy2_wm_hG94jdrhBA@mail.gmail.com>
-	(message from Geert Uytterhoeven on Wed, 4 Jul 2012 22:17:28 +0200)
-Subject: Re: size_t/ssize_t warnings (was: Re: Build regressions/improvements in
-	v3.5-rc5)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1756082Ab2GFBZF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 21:25:05 -0400
+Received: from gate.crashing.org ([63.228.1.57]:42533 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752050Ab2GFBZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 21:25:03 -0400
+Message-ID: <1341537867.6330.46.camel@pasglop>
+Subject: Re: [PATCH] mm: setup pageblock_order before it's used by sparse
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>, Jiang Liu <jiang.liu@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Xishi Qiu <qiuxishi@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>
+Date: Fri, 06 Jul 2012 11:24:27 +1000
+In-Reply-To: <CAE9FiQXAuqj5V_ZrZPs3qr93XQS1tCO=qOBP7mCsDCqXQQ5PoQ@mail.gmail.com>
+References: <1341047274-5616-1-git-send-email-jiang.liu@huawei.com>
+	 <20120703140705.af23d4d3.akpm@linux-foundation.org>
+	 <4FF39F0E.4070300@huawei.com> <20120704092006.GH14154@suse.de>
+	 <CAE9FiQXAuqj5V_ZrZPs3qr93XQS1tCO=qOBP7mCsDCqXQQ5PoQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Geert Uytterhoeven <geert@linux-m68k.org>
-> Date: Wed, 4 Jul 2012 22:17:28 +0200
-
-> On Wed, Jul 4, 2012 at 3:34 PM, Jan Kara <jack@suse.cz> wrote:
-> >>   + fs/quota/quota_tree.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 4 has type 'ssize_t' [-Wformat]:  => 372:4
-> >>   + fs/quota/quota_v2.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 5 has type 'ssize_t' [-Wformat]:  => 66:92
-> >   These really look like false positives (there are quite a few of this
-> > kind). Can we possibly silence them?
+On Thu, 2012-07-05 at 18:00 -0700, Yinghai Lu wrote:
+> cma, dma_continugous_reserve is referring pageblock_order very early
+> too.
+> just after init_memory_mapping() for x86's setup_arch.
 > 
-> These 2 warnings happen on cris only, because size_t is unsigned int and
-> ssize_t is (signed) long.
+> so set pageblock_order early looks like my -v2 patch is right way.
+> 
+> current question: need to powerpc guys to check who to set that early.
 
-Um, no, ssize_t isn't long.  Do you mean __kernel_ssize_t?
-(Or are you looking at cris-axis-elf?  ...no, that can't be it,
-as you see __SIZE_TYPE__ being unsigned int.)
+I missed the beginning of that discussion, I'll try to dig a bit,
+might take me til next week though as I'm about to be off for
+the week-end.
 
-> They go away if I make ssize_t int.
+Cheers,
+Ben.
 
-But ssize_t already is int...
 
-N.B. size_t is different between cris-axis-elf and
-cris-axis-linux-gnu.  The former uses the default definition in
-gcc/defaults.h (long unsigned int) and the latter sets it
-specifically to "unsigned int", in gcc/config/cris/linux.h (or
-before 2010-12-09, from config/svr4.h).  The ssize_t definition
-comes from glibc, where it is "int".
-
->                         __kernel_size_t                         __kernel_ssize_t
->                         ---------------                         ----------------
-
-> cris:                   __SIZE_TYPE__ (unsigned int)            long
-
-A bit odd; __kernel_ssize_t should probably change to int, to
-match ssize_t.
-
-> Cris-people: __SIZE_TYPE__ turned out to be hardcoded in my compiler (gcc
-> 4.6.3 from Tony's collection) to unsigned int. Is that correct?
-
-Correct, for cris-axis-linux-gnu.
-
-> And why do some 32-bit architectures use unsigned long/long?
-
-I'd guess from the gcc default.
-
-brgds, H-P
