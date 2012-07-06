@@ -1,61 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755695Ab2GFOxo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 10:53:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38764 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753607Ab2GFOxn convert rfc822-to-8bit (ORCPT
+	id S1756610Ab2GFOyt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 10:54:49 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:45203 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753808Ab2GFOym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 10:53:43 -0400
-Message-ID: <1341586388.7709.51.camel@twins>
-Subject: Re: [PATCH 03/16] sched: aggregate load contributed by task
- entities on parenting cfs_rq
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+	Fri, 6 Jul 2012 10:54:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120316144240.234456258@chello.nl>
+References: <20120316144028.036474157@chello.nl>
+	<20120316144240.234456258@chello.nl>
+Date: Fri, 6 Jul 2012 23:54:41 +0900
+X-Google-Sender-Auth: m9jKZdFDQmDCnrMbKb4BQWMjde8
+Message-ID: <CAH9JG2U-_RzDQ9TgjXWSBFjscCKn0oKp1mhvOsRVoxR7hsSxHA@mail.gmail.com>
+Subject: Re: [RFC][PATCH 02/26] mm, mpol: Remove NUMA_INTERLEAVE_HIT
+From: Kyungmin Park <kmpark@infradead.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
         Mike Galbraith <efault@gmx.de>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Date: Fri, 06 Jul 2012 16:53:08 +0200
-In-Reply-To: <1341415726.19870.0.camel@laptop>
-References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
-	 <20120628022414.30496.73426.stgit@kitami.mtv.corp.google.com>
-	 <1341415726.19870.0.camel@laptop>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-04 at 17:28 +0200, Peter Zijlstra wrote:
-> On Wed, 2012-06-27 at 19:24 -0700, Paul Turner wrote:
-> > For a given task t, we can compute its contribution to load as:
-> >   task_load(t) = runnable_avg(t) * weight(t)
-> > 
-> > On a parenting cfs_rq we can then aggregate
-> >   runnable_load(cfs_rq) = \Sum task_load(t), for all runnable children t
-> > 
-> > Maintain this bottom up, with task entities adding their contributed load to
-> > the parenting cfs_rq sum.  When a task entities load changes we add the same
-> > delta to the maintained sum.
-> > 
-> > Signed-off-by: Paul Turner <pjt@google.com>
-> > Signed-off-by: Ben Segall <bsegall@google.com> 
-> 
-> A lot of patches have this funny sob trail.. Ben never send me these
-> patches, so uhm. ?
-> 
-> Should that be Reviewed-by, or what is the deal with those?
+On Fri, Mar 16, 2012 at 11:40 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> Since the NUMA_INTERLEAVE_HIT statistic is useless on its own; it wants
+> to be compared to either a total of interleave allocations or to a miss
+> count, remove it.
+>
+> Fixing it would be possible, but since we've gone years without these
+> statistics I figure we can continue that way.
+>
+> This cleans up some of the weird MPOL_INTERLEAVE allocation exceptions.
+>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  drivers/base/node.c    |    2 +-
+>  include/linux/mmzone.h |    1 -
+>  mm/mempolicy.c         |   66 +++++++++++++++--------------------------------
+>  3 files changed, 22 insertions(+), 47 deletions(-)
+>
+> diff --git a/drivers/base/node.c b/drivers/base/node.c
+> index 5693ece..942cdbc 100644
+> --- a/drivers/base/node.c
+> +++ b/drivers/base/node.c
+> @@ -172,7 +172,7 @@ static ssize_t node_read_numastat(struct sys_device * dev,
+>                        node_page_state(dev->id, NUMA_HIT),
+>                        node_page_state(dev->id, NUMA_MISS),
+>                        node_page_state(dev->id, NUMA_FOREIGN),
+> -                      node_page_state(dev->id, NUMA_INTERLEAVE_HIT),
+> +                      0UL,
+>                        node_page_state(dev->id, NUMA_LOCAL),
+>                        node_page_state(dev->id, NUMA_OTHER));
+>  }
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index 3ac040f..3a3be81 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -111,7 +111,6 @@ enum zone_stat_item {
+>         NUMA_HIT,               /* allocated in intended node */
+>         NUMA_MISS,              /* allocated in non intended node */
+>         NUMA_FOREIGN,           /* was intended here, hit elsewhere */
+> -       NUMA_INTERLEAVE_HIT,    /* interleaver preferred this zone */
+>         NUMA_LOCAL,             /* allocation from local node */
+>         NUMA_OTHER,             /* allocation from other node */
+>  #endif
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index c3fdbcb..2c48c45 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -1530,11 +1530,29 @@ static nodemask_t *policy_nodemask(gfp_t gfp, struct mempolicy *policy)
+>         return NULL;
+>  }
+>
+> +/* Do dynamic interleaving for a process */
+> +static unsigned interleave_nodes(struct mempolicy *policy)
+> +{
+> +       unsigned nid, next;
+> +       struct task_struct *me = current;
+> +
+> +       nid = me->il_next;
+> +       next = next_node(nid, policy->v.nodes);
+> +       if (next >= MAX_NUMNODES)
+> +               next = first_node(policy->v.nodes);
+> +       if (next < MAX_NUMNODES)
+> +               me->il_next = next;
+> +       return nid;
+> +}
+> +
+>  /* Return a zonelist indicated by gfp for node representing a mempolicy */
+>  static struct zonelist *policy_zonelist(gfp_t gfp, struct mempolicy *policy,
+>         int nd)
+>  {
+>         switch (policy->mode) {
+> +       case MPOL_INTERLEAVE:
+> +               nd = interleave_nodes(policy);
+Jut nitpick,
+Original code also uses the 'unsigned nid' but now it assigned
+'unsigned nid' to 'int nd' at here. does it right?
 
-Ben could you clarify what your exact contribution was?
-
-Ingo, supposing Ben is co-author and wrote a significant part of the
-patch, what are we supposed to do with these tags?
+Thank you,
+Kyungmin Park
+> +               break;
+>         case MPOL_PREFERRED:
+>                 if (!(policy->flags & MPOL_F_LOCAL))
+>                         nd = policy->v.preferred_node;
+> @@ -1556,21 +1574,6 @@ static struct zonelist *policy_zonelist(gfp_t gfp, struct mempolicy *policy,
+>         return node_zonelist(nd, gfp);
+>  }
+>
+> -/* Do dynamic interleaving for a process */
+> -static unsigned interleave_nodes(struct mempolicy *policy)
+> -{
+> -       unsigned nid, next;
+> -       struct task_struct *me = current;
+> -
+> -       nid = me->il_next;
+> -       next = next_node(nid, policy->v.nodes);
+> -       if (next >= MAX_NUMNODES)
+> -               next = first_node(policy->v.nodes);
+> -       if (next < MAX_NUMNODES)
+> -               me->il_next = next;
+> -       return nid;
+> -}
+> -
+>  /*
+>   * Depending on the memory policy provide a node from which to allocate the
+>   * next slab entry.
+> @@ -1801,21 +1804,6 @@ out:
+>         return ret;
+>  }
+>
+> -/* Allocate a page in interleaved policy.
+> -   Own path because it needs to do special accounting. */
+> -static struct page *alloc_page_interleave(gfp_t gfp, unsigned order,
+> -                                       unsigned nid)
+> -{
+> -       struct zonelist *zl;
+> -       struct page *page;
+> -
+> -       zl = node_zonelist(nid, gfp);
+> -       page = __alloc_pages(gfp, order, zl);
+> -       if (page && page_zone(page) == zonelist_zone(&zl->_zonerefs[0]))
+> -               inc_zone_page_state(page, NUMA_INTERLEAVE_HIT);
+> -       return page;
+> -}
+> -
+>  /**
+>   *     alloc_pages_vma - Allocate a page for a VMA.
+>   *
+> @@ -1848,15 +1836,6 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
+>         struct page *page;
+>
+>         get_mems_allowed();
+> -       if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
+> -               unsigned nid;
+> -
+> -               nid = interleave_nid(pol, vma, addr, PAGE_SHIFT + order);
+> -               mpol_cond_put(pol);
+> -               page = alloc_page_interleave(gfp, order, nid);
+> -               put_mems_allowed();
+> -               return page;
+> -       }
+>         zl = policy_zonelist(gfp, pol, node);
+>         if (unlikely(mpol_needs_cond_ref(pol))) {
+>                 /*
+> @@ -1909,12 +1888,9 @@ struct page *alloc_pages_current(gfp_t gfp, unsigned order)
+>          * No reference counting needed for current->mempolicy
+>          * nor system default_policy
+>          */
+> -       if (pol->mode == MPOL_INTERLEAVE)
+> -               page = alloc_page_interleave(gfp, order, interleave_nodes(pol));
+> -       else
+> -               page = __alloc_pages_nodemask(gfp, order,
+> -                               policy_zonelist(gfp, pol, numa_node_id()),
+> -                               policy_nodemask(gfp, pol));
+> +       page = __alloc_pages_nodemask(gfp, order,
+> +                       policy_zonelist(gfp, pol, numa_node_id()),
+> +                       policy_nodemask(gfp, pol));
+>         put_mems_allowed();
+>         return page;
+>  }
+>
+>
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
