@@ -1,144 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075Ab2GFOKH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 10:10:07 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:48147 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab2GFOKF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 10:10:05 -0400
-Date: Fri, 6 Jul 2012 07:01:16 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, josh@joshtriplett.org,
-        heiko.carstens@de.ibm.com, pascal.chapperon@wanadoo.fr,
-        wfg@linux.intel.com, C.Emde@osadl.org, mathieu.desnoyers@efficios.com,
-        dhowells@redhat.com, efault@gmx.de, levinsasha928@gmail.com
-Subject: [GIT PULL rcu/next] RCU commits for 3.6
-Message-ID: <20120706140116.GA17758@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	id S1757291Ab2GFOKy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 10:10:54 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22458 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751720Ab2GFOKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 10:10:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="119531406"
+Message-ID: <4FF6F1E9.7050709@intel.com>
+Date: Fri, 06 Jul 2012 22:10:49 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12070614-7282-0000-0000-00000AA4704E
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Subject: Fwd: Re: [linux-next-20120706] x86/mm: incompatible pointer type
+ warning.
+References: <4FF6F14C.3070104@intel.com>
+In-Reply-To: <4FF6F14C.3070104@intel.com>
+X-Forwarded-Message-Id: <4FF6F14C.3070104@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo,
+Forward to LKML
 
-The major features of this series are:
+-------- Original Message --------
+Subject: Re: [linux-next-20120706] x86/mm: incompatible pointer type
+warning.
+Date: Fri, 06 Jul 2012 22:08:12 +0800
+From: Alex Shi <alex.shi@intel.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+CC: yongjie.ren@intel.com, hpa@zytor.com,  "Wu, Fengguang"
+<fengguang.wu@intel.com>
 
-1.	Preventing latency spikes of more than 200 microseconds for
-	kernels built with NR_CPUS=4096, which is reportedly becoming
-	the default for some distros.  This is a first step, as it does
-	not help with systems that actually -have- 4096 CPUs (work on
-	this case is in progress, but is not yet ready for mainline).
-	This category also includes improving concurrency of rcu_barrier(),
-	placed here due to conflicts.  Posted to LKML at:
-	https://lkml.org/lkml/2012/6/22/381.  Note that patches 18-22
-	of that series have been defered to 3.7, as they have not yet
-	proven themselves to be mainline-ready (and yes, these are the
-	ones intended to get rid of RCU's latency spikes for systems
-	that actually have 4096 CPUs).
-2.	Updates to documentation and rcutorture fixes, the latter category
-	including improvements to rcu_barrier() testing.  Posted to LKML at:
-	http://lkml.indiana.edu/hypermail/linux/kernel/1206.1/04094.html.
-3.	Miscellaneous fixes posted to LKML at:
-	https://lkml.org/lkml/2012/6/22/500, with the exception of the
-	last commit, which was posted here:
-	http://www.gossamer-threads.com/lists/linux/kernel/1561830
-4.	RCU_FAST_NO_HZ fixes and improvements.  Posted to LKML at:
-	http://lkml.indiana.edu/hypermail/linux/kernel/1206.1/00006.html
-	and http://www.gossamer-threads.com/lists/linux/kernel/1561833.
-	The first four patches of the first series went into 3.5 to fix
-	a regression.
-5.	Code-style fixes.  These were posted to LKML at
-	http://lkml.indiana.edu/hypermail/linux/kernel/1205.2/01180.html and
-	http://lkml.indiana.edu/hypermail/linux/kernel/1205.2/01181.html.
+On 07/06/2012 08:13 PM, Tetsuo Handa wrote:
 
-All of this code has been exposed to -next testing.
+> Hello.
+> 
+> Commit 611ae8e3 "x86/tlb: enable tlb flush range support for x86" causes
+> below warning on allnoconfig.
+> 
+>   mm/memory.c: In function 'tlb_flush_mmu':
+>   mm/memory.c:231: warning: passing argument 1 of 'flush_tlb_mm_range' from incompatible pointer type
+>   /usr/src/linux-next/arch/x86/include/asm/tlbflush.h:108: note: expected 'struct vm_area_struct *' but argument is of type 'struct mm_struct *'
+>   mm/memory.c:231: warning: passing argument 1 of 'flush_tlb_mm_range' from incompatible pointer type
+>   /usr/src/linux-next/arch/x86/include/asm/tlbflush.h:108: note: expected 'struct vm_area_struct *' but argument is of type 'struct mm_struct *'
+> 
+> Did tlb->mm in tlb_flush() mean tlb->mm->mmap or tlb->mm->mmap_cache?
 
-These changes are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
 
-								Thanx, Paul
+Thanks for your report, mm should means mm_struct. no vma. My fault.
+Could you like try this patch.
 
--------------------->
-Carsten Emde (1):
-      rcu: Prevent uninitialized string in RCU CPU stall info
+Fengguang, I remember you build system also collect the warning message
+before. Do you stop this? :)
 
-Paul E. McKenney (48):
-      rcu: Control RCU_FANOUT_LEAF from boot-time parameter
-      rcu: Four-level hierarchy is no longer experimental
-      rcu: Size rcu_node tree from nr_cpu_ids rather than NR_CPUS
-      rcu: Prevent excessive line length in RCU_STATE_INITIALIZER()
-      rcu: Place pointer to call_rcu() in rcu_data structure
-      rcu: Move _rcu_barrier()'s rcu_head structures to rcu_data structures
-      rcu: Move rcu_barrier_cpu_count to rcu_state structure
-      rcu: Move rcu_barrier_completion to rcu_state structure
-      rcu: Move rcu_barrier_mutex to rcu_state structure
-      rcu: Remove needless initialization
-      rcu: Increase rcu_barrier() concurrency
-      rcu: Add tracing for _rcu_barrier()
-      rcu: Add rcu_barrier() statistics to debugfs tracing
-      rcu: Remove unneeded __rcu_process_callbacks() argument
-      rcu: Introduce for_each_rcu_flavor() and use it
-      rcu: Use for_each_rcu_flavor() in TREE_RCU tracing
-      rcu: RCU_SAVE_DYNTICK code no longer ever dead
-      rcu: Update documentation to cover call_srcu() and srcu_barrier().
-      rcu: Rationalize ordering of torture_ops list
-      rcu: Test srcu_barrier() from rcutorture test suite
-      rcu: Fix bug in rcu_barrier() torture test
-      rcu: Fix diagnostic-printk typo in rcutorture
-      rcu: Make rcutorture fakewriters invoke rcu_barrier()
-      rcu: Fix detection of abruptly-ending stall
-      rcu: Consolidate duplicate callback-list initialization
-      rcu: Add ACCESS_ONCE() to ->qlen accesses
-      rcu: Add a gcc-style structure initializer for RCU pointers
-      rcu: Use new RCU_POINTER_INITIALIZER for gcc-style initializations
-      rcu: Remove return value from RCU_INIT_POINTER()
-      key: Remove extraneous parentheses from rcu_assign_keypointer()
-      rcu: Remove return value from rcu_assign_pointer()
-      rcu: Consolidate tree/tiny __rcu_read_{,un}lock() implementations
-      rcu: Remove function versions of __kfree_rcu and __is_kfree_rcu_offset
-      rcu: Make __call_rcu() handle invocation from idle
-      rcu: Prevent __call_rcu() from invoking RCU core on offline CPUs
-      rcu: Split RCU core processing out of __call_rcu()
-      rcu: Fix rcu_is_cpu_idle() #ifdef in TINY_RCU
-      rcu: Disable preemption in rcu_blocking_is_gp()
-      rcu: Add check for CPUs going offline with callbacks queued
-      rcu: Dump only the current CPU's buffers for idle-entry/exit warnings
-      rcu: The rcu_needs_cpu() function is not a quiescent state
-      rcu: Round FAST_NO_HZ lazy timeout to nearest second
-      rcu: Fix qlen_lazy breakage
-      rcu: Make RCU_FAST_NO_HZ respect nohz= boot parameter
-      rcu: Introduce check for callback list/count mismatch
-      Merge branches 'bigrtm.2012.07.04a', 'doctorture.2012.07.02a', 'fixes.2012.07.06a' and 'fnh.2012.07.02a' into HEAD
-      rcu: Fix code-style issues involving "else"
-      rcu: Fix broken strings in RCU's source code.
+---
 
- Documentation/RCU/checklist.txt     |   39 ++--
- Documentation/RCU/rcubarrier.txt    |   15 +-
- Documentation/RCU/torture.txt       |    9 +
- Documentation/RCU/whatisRCU.txt     |    6 +-
- Documentation/kernel-parameters.txt |    5 +
- include/linux/init_task.h           |    4 +-
- include/linux/key.h                 |    4 +-
- include/linux/rcupdate.h            |   53 ++---
- include/trace/events/rcu.h          |   45 ++++
- kernel/rcupdate.c                   |   44 ++++
- kernel/rcutiny.c                    |    4 +-
- kernel/rcutiny_plugin.h             |   56 +----
- kernel/rcutorture.c                 |   72 ++++--
- kernel/rcutree.c                    |  478 ++++++++++++++++++++++------------
- kernel/rcutree.h                    |   46 ++--
- kernel/rcutree_plugin.h             |  223 ++++-------------
- kernel/rcutree_trace.c              |  148 ++++++-----
- kernel/time/tick-sched.c            |    2 +-
- lib/list_debug.c                    |    6 +-
- 19 files changed, 669 insertions(+), 590 deletions(-)
+>From 97781231b130e7f7fced12244653ed9b9946c944 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Fri, 6 Jul 2012 20:49:25 +0800
+Subject: [PATCH] x86/tlb: fix allnoconfig building warning
+
+The incompatible parameter of flush_tlb_mm_range cause build warning.
+Fix it by correct parameter.
+
+Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ arch/x86/include/asm/tlbflush.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/tlbflush.h
+b/arch/x86/include/asm/tlbflush.h
+index b5a27bd..74a4433 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -105,10 +105,10 @@ static inline void flush_tlb_range(struct
+vm_area_struct *vma,
+ 		__flush_tlb();
+ }
+
+-static inline void flush_tlb_mm_range(struct vm_area_struct *vma,
++static inline void flush_tlb_mm_range(struct mm_struct *mm,
+ 	   unsigned long start, unsigned long end, unsigned long vmflag)
+ {
+-	if (vma->vm_mm == current->active_mm)
++	if (mm == current->active_mm)
+ 		__flush_tlb();
+ }
+
+-- 
+1.7.5.4
 
