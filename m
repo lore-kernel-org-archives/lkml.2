@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab2GFGXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 02:23:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49015 "EHLO
+	id S1756406Ab2GFGYq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 02:24:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49030 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751308Ab2GFGXg (ORCPT
+	with ESMTP id S1751143Ab2GFGYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 02:23:36 -0400
-Date: Thu, 5 Jul 2012 23:23:20 -0700
-From: tip-bot for Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Message-ID: <tip-9b523ea8f7dcfebd954200d276cbdc203913ba30@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        prashanth@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, vatsa@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, prashanth@linux.vnet.ibm.com
-In-Reply-To: <4FE06CDB.2060605@linux.vnet.ibm.com>
-References: <4FE06CDB.2060605@linux.vnet.ibm.com>
+	Fri, 6 Jul 2012 02:24:44 -0400
+Date: Thu, 5 Jul 2012 23:24:14 -0700
+From: tip-bot for Peter Zijlstra <peterz@infradead.org>
+Message-ID: <tip-7fac251a97f36c9aef31b08ce7ad6ef8f06e54d1@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de,
+        stefan.bader@canonical.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de,
+        stefan.bader@canonical.com
+In-Reply-To: <1340364965.18025.71.camel@twins>
+References: <1340364965.18025.71.camel@twins>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Improve balance_cpu()
-  to consider other cpus in its group as target of (pinned) task
-Git-Commit-ID: 9b523ea8f7dcfebd954200d276cbdc203913ba30
+Subject: [tip:sched/core] sched: Fix race in task_group()
+Git-Commit-ID: 7fac251a97f36c9aef31b08ce7ad6ef8f06e54d1
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,229 +29,166 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 05 Jul 2012 23:23:26 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 05 Jul 2012 23:24:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9b523ea8f7dcfebd954200d276cbdc203913ba30
-Gitweb:     http://git.kernel.org/tip/9b523ea8f7dcfebd954200d276cbdc203913ba30
-Author:     Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-AuthorDate: Tue, 19 Jun 2012 17:43:15 +0530
+Commit-ID:  7fac251a97f36c9aef31b08ce7ad6ef8f06e54d1
+Gitweb:     http://git.kernel.org/tip/7fac251a97f36c9aef31b08ce7ad6ef8f06e54d1
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Fri, 22 Jun 2012 13:36:05 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Thu, 5 Jul 2012 21:09:11 +0200
 
-sched: Improve balance_cpu() to consider other cpus in its group as target of (pinned) task
+sched: Fix race in task_group()
 
-Current load balance scheme requires only one cpu in a
-sched_group (balance_cpu) to look at other peer sched_groups for
-imbalance and pull tasks towards itself from a busy cpu. Tasks
-thus pulled by balance_cpu could later get picked up by cpus
-that are in the same sched_group as that of balance_cpu.
+Stefan reported a crash on a kernel before a3e5d1091c1 ("sched:
+Don't call task_group() too many times in set_task_rq()"), he
+found the reason to be that the multiple task_group()
+invocations in set_task_rq() returned different values.
 
-This scheme however fails to pull tasks that are not allowed to
-run on balance_cpu (but are allowed to run on other cpus in its
-sched_group). That can affect fairness and in some worst case
-scenarios cause starvation.
+Looking at all that I found a lack of serialization and plain
+wrong comments.
 
-Consider a two core (2 threads/core) system running tasks as
-below:
+The below tries to fix it using an extra pointer which is
+updated under the appropriate scheduler locks. Its not pretty,
+but I can't really see another way given how all the cgroup
+stuff works.
 
-          Core0            Core1
-         /     \          /     \
-	C0     C1	 C2     C3
-        |      |         |      |
-        v      v         v      v
-	F0     T1        F1     [idle]
-			 T2
-
- F0 = SCHED_FIFO task (pinned to C0)
- F1 = SCHED_FIFO task (pinned to C2)
- T1 = SCHED_OTHER task (pinned to C1)
- T2 = SCHED_OTHER task (pinned to C1 and C2)
-
-F1 could become a cpu hog, which will starve T2 unless C1 pulls
-it. Between C0 and C1 however, C0 is required to look for
-imbalance between cores, which will fail to pull T2 towards
-Core0. T2 will starve eternally in this case. The same scenario
-can arise in presence of non-rt tasks as well (say we replace F1
-with high irq load).
-
-We tackle this problem by having balance_cpu move pinned tasks
-to one of its sibling cpus (where they can run). We first check
-if load balance goal can be met by ignoring pinned tasks,
-failing which we retry move_tasks() with a new env->dst_cpu.
-
-This patch modifies load balance semantics on who can move load
-towards a given cpu in a given sched_domain.
-
-Before this patch, a given_cpu or a ilb_cpu acting on behalf of
-an idle given_cpu is responsible for moving load to given_cpu.
-
-With this patch applied, balance_cpu can in addition decide on
-moving some load to a given_cpu.
-
-There is a remote possibility that excess load could get moved
-as a result of this (balance_cpu and given_cpu/ilb_cpu deciding
-*independently* and at *same* time to move some load to a
-given_cpu). However we should see less of such conflicting
-decisions in practice and moreover subsequent load balance
-cycles should correct the excess load moved to given_cpu.
-
-Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+Reported-and-tested-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/4FE06CDB.2060605@linux.vnet.ibm.com
-[ minor edits ]
+Link: http://lkml.kernel.org/r/1340364965.18025.71.camel@twins
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c |   78 ++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 74 insertions(+), 4 deletions(-)
+ include/linux/init_task.h |   12 +++++++++++-
+ include/linux/sched.h     |    5 ++++-
+ kernel/sched/core.c       |    9 ++++++++-
+ kernel/sched/sched.h      |   23 ++++++++++-------------
+ 4 files changed, 33 insertions(+), 16 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 3f94840..77f1ed7 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3084,6 +3084,7 @@ static unsigned long __read_mostly max_load_balance_interval = HZ/10;
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 4e4bc1a..53be033 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -123,8 +123,17 @@ extern struct group_info init_groups;
  
- #define LBF_ALL_PINNED	0x01
- #define LBF_NEED_BREAK	0x02
-+#define LBF_SOME_PINNED 0x04
+ extern struct cred init_cred;
  
- struct lb_env {
- 	struct sched_domain	*sd;
-@@ -3094,6 +3095,8 @@ struct lb_env {
- 	int			dst_cpu;
- 	struct rq		*dst_rq;
- 
-+	struct cpumask		*dst_grpmask;
-+	int			new_dst_cpu;
- 	enum cpu_idle_type	idle;
- 	long			imbalance;
- 
-@@ -3184,9 +3187,31 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
- 	 * 3) are cache-hot on their current CPU.
- 	 */
- 	if (!cpumask_test_cpu(env->dst_cpu, tsk_cpus_allowed(p))) {
-+		int new_dst_cpu;
++extern struct task_group root_task_group;
 +
- 		schedstat_inc(p, se.statistics.nr_failed_migrations_affine);
++#ifdef CONFIG_CGROUP_SCHED
++# define INIT_CGROUP_SCHED(tsk)						\
++	.sched_task_group = &root_task_group,
++#else
++# define INIT_CGROUP_SCHED(tsk)
++#endif
 +
-+		/*
-+		 * Remember if this task can be migrated to any other cpu in
-+		 * our sched_group. We may want to revisit it if we couldn't
-+		 * meet load balance goals by pulling other tasks on src_cpu.
-+		 *
-+		 * Also avoid computing new_dst_cpu if we have already computed
-+		 * one in current iteration.
-+		 */
-+		if (!env->dst_grpmask || (env->flags & LBF_SOME_PINNED))
-+			return 0;
-+
-+		new_dst_cpu = cpumask_first_and(env->dst_grpmask,
-+						tsk_cpus_allowed(p));
-+		if (new_dst_cpu < nr_cpu_ids) {
-+			env->flags |= LBF_SOME_PINNED;
-+			env->new_dst_cpu = new_dst_cpu;
-+		}
- 		return 0;
- 	}
-+
-+	/* Record that we found atleast one task that could run on dst_cpu */
- 	env->flags &= ~LBF_ALL_PINNED;
+ #ifdef CONFIG_PERF_EVENTS
+-# define INIT_PERF_EVENTS(tsk)					\
++# define INIT_PERF_EVENTS(tsk)						\
+ 	.perf_event_mutex = 						\
+ 		 __MUTEX_INITIALIZER(tsk.perf_event_mutex),		\
+ 	.perf_event_list = LIST_HEAD_INIT(tsk.perf_event_list),
+@@ -168,6 +177,7 @@ extern struct cred init_cred;
+ 	},								\
+ 	.tasks		= LIST_HEAD_INIT(tsk.tasks),			\
+ 	INIT_PUSHABLE_TASKS(tsk)					\
++	INIT_CGROUP_SCHED(tsk)						\
+ 	.ptraced	= LIST_HEAD_INIT(tsk.ptraced),			\
+ 	.ptrace_entry	= LIST_HEAD_INIT(tsk.ptrace_entry),		\
+ 	.real_parent	= &tsk,						\
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 7b0d08e..2434581 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1246,6 +1246,9 @@ struct task_struct {
+ 	const struct sched_class *sched_class;
+ 	struct sched_entity se;
+ 	struct sched_rt_entity rt;
++#ifdef CONFIG_CGROUP_SCHED
++	struct task_group *sched_task_group;
++#endif
  
- 	if (task_running(env->src_rq, p)) {
-@@ -4417,7 +4442,8 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 			struct sched_domain *sd, enum cpu_idle_type idle,
- 			int *balance)
+ #ifdef CONFIG_NUMA
+ 	unsigned long	 numa_contrib;
+@@ -2750,7 +2753,7 @@ extern int sched_group_set_rt_period(struct task_group *tg,
+ extern long sched_group_rt_period(struct task_group *tg);
+ extern int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk);
+ #endif
+-#endif
++#endif /* CONFIG_CGROUP_SCHED */
+ 
+ extern int task_can_switch_user(struct user_struct *up,
+ 					struct task_struct *tsk);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index dd19207..04bca9b 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1096,7 +1096,7 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
+ 	 * a task's CPU. ->pi_lock for waking tasks, rq->lock for runnable tasks.
+ 	 *
+ 	 * sched_move_task() holds both and thus holding either pins the cgroup,
+-	 * see set_task_rq().
++	 * see task_group().
+ 	 *
+ 	 * Furthermore, all task_rq users should acquire both locks, see
+ 	 * task_rq_lock().
+@@ -7712,6 +7712,7 @@ void sched_destroy_group(struct task_group *tg)
+  */
+ void sched_move_task(struct task_struct *tsk)
  {
--	int ld_moved, active_balance = 0;
-+	int ld_moved, cur_ld_moved, active_balance = 0;
-+	int lb_iterations, max_lb_iterations;
- 	struct sched_group *group;
- 	struct rq *busiest;
++	struct task_group *tg;
+ 	int on_rq, running;
  	unsigned long flags;
-@@ -4427,12 +4453,14 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 		.sd		    = sd,
- 		.dst_cpu	    = this_cpu,
- 		.dst_rq		    = this_rq,
-+		.dst_grpmask	    = sched_group_cpus(sd->groups),
- 		.idle		    = idle,
- 		.loop_break	    = sched_nr_migrate_break,
- 		.find_busiest_queue = find_busiest_queue,
- 	};
+ 	struct rq *rq;
+@@ -7726,6 +7727,12 @@ void sched_move_task(struct task_struct *tsk)
+ 	if (unlikely(running))
+ 		tsk->sched_class->put_prev_task(rq, tsk);
  
- 	cpumask_copy(cpus, cpu_active_mask);
-+	max_lb_iterations = cpumask_weight(env.dst_grpmask);
- 
- 	schedstat_inc(sd, lb_count[idle]);
- 
-@@ -4460,6 +4488,7 @@ redo:
- 	schedstat_add(sd, lb_imbalance[idle], env.imbalance);
- 
- 	ld_moved = 0;
-+	lb_iterations = 1;
- 	if (busiest->nr_running > 1) {
- 		/*
- 		 * Attempt to move tasks. If find_busiest_group has found
-@@ -4479,7 +4508,13 @@ more_balance:
- 		double_rq_lock(this_rq, busiest);
- 		if (!env.loop)
- 			update_h_load(env.src_cpu);
--		ld_moved += move_tasks(&env);
++	tg = container_of(task_subsys_state_check(tsk, cpu_cgroup_subsys_id,
++				lockdep_is_held(&tsk->sighand->siglock)),
++			  struct task_group, css);
++	tg = autogroup_task_group(tsk, tg);
++	tsk->sched_task_group = tg;
 +
-+		/*
-+		 * cur_ld_moved - load moved in current iteration
-+		 * ld_moved     - cumulative load moved across iterations
-+		 */
-+		cur_ld_moved = move_tasks(&env);
-+		ld_moved += cur_ld_moved;
- 		double_rq_unlock(this_rq, busiest);
- 		local_irq_restore(flags);
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	if (tsk->sched_class->task_move_group)
+ 		tsk->sched_class->task_move_group(tsk, on_rq);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 27a1db0..6b2170c 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -554,22 +554,19 @@ extern int group_balance_cpu(struct sched_group *sg);
+ /*
+  * Return the group to which this tasks belongs.
+  *
+- * We use task_subsys_state_check() and extend the RCU verification with
+- * pi->lock and rq->lock because cpu_cgroup_attach() holds those locks for each
+- * task it moves into the cgroup. Therefore by holding either of those locks,
+- * we pin the task to the current cgroup.
++ * We cannot use task_subsys_state() and friends because the cgroup
++ * subsystem changes that value before the cgroup_subsys::attach() method
++ * is called, therefore we cannot pin it and might observe the wrong value.
++ *
++ * The same is true for autogroup's p->signal->autogroup->tg, the autogroup
++ * core changes this before calling sched_move_task().
++ *
++ * Instead we use a 'copy' which is updated from sched_move_task() while
++ * holding both task_struct::pi_lock and rq::lock.
+  */
+ static inline struct task_group *task_group(struct task_struct *p)
+ {
+-	struct task_group *tg;
+-	struct cgroup_subsys_state *css;
+-
+-	css = task_subsys_state_check(p, cpu_cgroup_subsys_id,
+-			lockdep_is_held(&p->pi_lock) ||
+-			lockdep_is_held(&task_rq(p)->lock));
+-	tg = container_of(css, struct task_group, css);
+-
+-	return autogroup_task_group(p, tg);
++	return p->sched_task_group;
+ }
  
-@@ -4491,8 +4526,43 @@ more_balance:
- 		/*
- 		 * some other cpu did the load balance for us.
- 		 */
--		if (ld_moved && this_cpu != smp_processor_id())
--			resched_cpu(this_cpu);
-+		if (cur_ld_moved && env.dst_cpu != smp_processor_id())
-+			resched_cpu(env.dst_cpu);
-+
-+		/*
-+		 * Revisit (affine) tasks on src_cpu that couldn't be moved to
-+		 * us and move them to an alternate dst_cpu in our sched_group
-+		 * where they can run. The upper limit on how many times we
-+		 * iterate on same src_cpu is dependent on number of cpus in our
-+		 * sched_group.
-+		 *
-+		 * This changes load balance semantics a bit on who can move
-+		 * load to a given_cpu. In addition to the given_cpu itself
-+		 * (or a ilb_cpu acting on its behalf where given_cpu is
-+		 * nohz-idle), we now have balance_cpu in a position to move
-+		 * load to given_cpu. In rare situations, this may cause
-+		 * conflicts (balance_cpu and given_cpu/ilb_cpu deciding
-+		 * _independently_ and at _same_ time to move some load to
-+		 * given_cpu) causing exceess load to be moved to given_cpu.
-+		 * This however should not happen so much in practice and
-+		 * moreover subsequent load balance cycles should correct the
-+		 * excess load moved.
-+		 */
-+		if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0 &&
-+				lb_iterations++ < max_lb_iterations) {
-+
-+			this_rq		 = cpu_rq(env.new_dst_cpu);
-+			env.dst_rq	 = this_rq;
-+			env.dst_cpu	 = env.new_dst_cpu;
-+			env.flags	&= ~LBF_SOME_PINNED;
-+			env.loop	 = 0;
-+			env.loop_break	 = sched_nr_migrate_break;
-+			/*
-+			 * Go back to "more_balance" rather than "redo" since we
-+			 * need to continue with same src_cpu.
-+			 */
-+			goto more_balance;
-+		}
- 
- 		/* All tasks on this runqueue were pinned by CPU affinity */
- 		if (unlikely(env.flags & LBF_ALL_PINNED)) {
+ /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
