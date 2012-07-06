@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980Ab2GFFiF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 01:38:05 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:54625 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753329Ab2GFFiD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 01:38:03 -0400
-Date: Fri, 6 Jul 2012 13:37:31 +0800
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: Gavin Shan <shangw@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/memcg: add BUG() to mem_cgroup_reset
-Message-ID: <20120706053731.GD5929@kernel>
-Reply-To: Wanpeng Li <liwp.linux@gmail.com>
-References: <1341546297-6223-1-git-send-email-liwp.linux@gmail.com>
- <20120706051916.GB29829@shangw>
+	id S1755595Ab2GFFui (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 01:50:38 -0400
+Received: from mga14.intel.com ([143.182.124.37]:60910 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753982Ab2GFFug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 01:50:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="119414190"
+Date: Fri, 6 Jul 2012 08:52:34 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Lan Tianyu <tianyu.lan@intel.com>, khali@linux-fr.org, ben-linux@fluff.org,
+        w.sang@pengutronix.de, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jkosina@suse.cz, chatty@enac.fr, jj_ding@emc.com.tw
+Subject: Re: Fwd: Hid over I2C and ACPI interaction
+Message-ID: <20120706055234.GC2237@intel.com>
+References: <CAN+gG=GnMX8Gu6w9za2QrjoVrmORncFgq-+hhmHvxtOPEB=nDw@mail.gmail.com>
+ <4FF52C70.9010601@intel.com>
+ <1341471717.1682.125.camel@rui.sh.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120706051916.GB29829@shangw>
+In-Reply-To: <1341471717.1682.125.camel@rui.sh.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, 2012 at 01:19:16PM +0800, Gavin Shan wrote:
->On Fri, Jul 06, 2012 at 11:44:57AM +0800, Wanpeng Li wrote:
->>From: Wanpeng Li <liwp@linux.vnet.ibm.com>
->>
->>Branch in mem_cgroup_reset only can be RES_MAX_USAGE, RES_FAILCNT.
->>
->>Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
->>---
->> mm/memcontrol.c |    2 ++
->> 1 files changed, 2 insertions(+), 0 deletions(-)
->>
->>diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->>index a501660..5e4d1ab 100644
->>--- a/mm/memcontrol.c
->>+++ b/mm/memcontrol.c
->>@@ -3976,6 +3976,8 @@ static int mem_cgroup_reset(struct cgroup *cont, unsigned int event)
->> 		else
->> 			res_counter_reset_failcnt(&memcg->memsw);
->> 		break;
->>+	default:
->>+		BUG();
->
->It might be not convinced to have "BUG()" here. You might add
->something for debugging purpose. For example,
->	default:
->		printk(KERN_WARNING "%s: Unrecognized name %d\n",
->			__func__, name);
+On Thu, Jul 05, 2012 at 03:01:57PM +0800, Zhang Rui wrote:
+> +Note that although these are ACPI devices, we prefer to use PnP drivers
+> for them,
+> +this is because:
+> +1. all the non-ACPI-predefined Devices are exported as PnP devices as
+> well
+> +2. PnP bus is a well designed bus. Probing via PnP layer saves a lot of
+> work
+> +   for the device driver, e.g. getting & parsing ACPI resources.
 
-But many funtions in mm/memcontrol.c use BUG(), if the branch is not
-present. 
+(Nice BKM, thanks for sharing)
 
-Regards,
-Wanpeng Li
+I have few questions about using PnP drivers instead of pure ACPI drivers.
 
->
->Thanks,
->Gavin
-> 
->> 	}
->>
->> 	return 0;
->>-- 
->>1.7.5.4
->>
->>--
->>To unsubscribe, send a message with 'unsubscribe linux-mm' in
->>the body to majordomo@kvack.org.  For more info on Linux MM,
->>see: http://www.linux-mm.org/ .
->>Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->>
->
->--
->To unsubscribe, send a message with 'unsubscribe linux-mm' in
->the body to majordomo@kvack.org.  For more info on Linux MM,
->see: http://www.linux-mm.org/ .
->Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+ACPI 5.0 defined some new resources, for example "Fixed DMA descriptor"
+that has information about the request line + channel for the device to
+use. Hovewer, PnP drivers pass resources as 'struct resource', which
+basically only has start and end - how do you represent all this new stuff
+using 'struct resource'?
+
+Or should we use acpi_walk_resources() where 'struct resource' is not
+suitable?
