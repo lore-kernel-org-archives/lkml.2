@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab2GFISr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 04:18:47 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:23392 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab2GFISn (ORCPT
+	id S1755628Ab2GFITl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 04:19:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53891 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753785Ab2GFITb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 04:18:43 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18MaSEQaH32Bwmxspzi+jz5
-Date: Fri, 6 Jul 2012 01:18:40 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, "Cousson, Benoit" <b-cousson@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, Kevin Hilman <khilman@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH v2 REPOST 4/4] ARM: OMAP2+: dmtimer: cleanup fclk usage
-Message-ID: <20120706081840.GM1122@atomide.com>
-References: <1341492059-5544-1-git-send-email-tarun.kanti@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341492059-5544-1-git-send-email-tarun.kanti@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 6 Jul 2012 04:19:31 -0400
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: [PATCH 2/2] pch_uart: Fix parity setting issue
+Date: Fri,  6 Jul 2012 17:19:43 +0900
+Message-Id: <1341562783-5571-2-git-send-email-tomoya.rohm@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1341562783-5571-1-git-send-email-tomoya.rohm@gmail.com>
+References: <1341562783-5571-1-git-send-email-tomoya.rohm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tarun Kanti DebBarma <tarun.kanti@ti.com> [120705 05:45]:
-> With omap_hwmod_get_main_clk() now available, this can be passed to
-> clk_get() to extract the fclk and thus avoid construction of fclk name.
-> Corrected the timer fck name mis-match between clock44xx_data.c and
-> omap_hwmod_44xx_data.c. For other platforms this is already taken care.
+Parity Setting value is reverse.
+E.G. In case of setting ODD parity, EVEN value is set.
+This patch inverts "if" condition.
 
-Thanks applying into cleanup-part2 branch.
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+---
+ drivers/tty/serial/pch_uart.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Tony
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index 4d84ad0..2911866 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -1364,7 +1364,7 @@ static void pch_uart_set_termios(struct uart_port *port,
+ 		stb = PCH_UART_HAL_STB1;
+ 
+ 	if (termios->c_cflag & PARENB) {
+-		if (!(termios->c_cflag & PARODD))
++		if (termios->c_cflag & PARODD)
+ 			parity = PCH_UART_HAL_PARITY_ODD;
+ 		else
+ 			parity = PCH_UART_HAL_PARITY_EVEN;
+-- 
+1.7.4.4
+
