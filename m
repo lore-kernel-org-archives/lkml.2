@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757682Ab2GFR3k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 13:29:40 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39183 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757521Ab2GFR3i (ORCPT
+	id S1757758Ab2GFRd3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 13:33:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53235 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757357Ab2GFRd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 13:29:38 -0400
-Message-ID: <4FF7202B.7090206@mvista.com>
-Date: Fri, 06 Jul 2012 21:28:11 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
+	Fri, 6 Jul 2012 13:33:27 -0400
+Date: Fri, 6 Jul 2012 10:33:23 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
 To: gaosen <gaosen.zhang@mediatek.com>
-CC: smurf@smurf.noris.de, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: smurf@smurf.noris.de, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Subject: Re: USB: option: Add MEDIATEK product ids
+Message-ID: <20120706173323.GA2373@kroah.com>
 References: <CAAwpLmyd2SMR0EKGowDqo54mPUuPmKkziGVTsuRZcrd7i2r2jA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 In-Reply-To: <CAAwpLmyd2SMR0EKGowDqo54mPUuPmKkziGVTsuRZcrd7i2r2jA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/2012 05:50 PM, gaosen wrote:
-
-> From 86fcd5bb701bd927d588386c480c37784d10040a Mon Sep 17 00:00:00 2001
+On Fri, Jul 06, 2012 at 09:50:50PM +0800, gaosen wrote:
+> >From 86fcd5bb701bd927d588386c480c37784d10040a Mon Sep 17 00:00:00 2001
 > From: Gaosen Zhang <gaosen.zhang@mediatek.com>
 > Date: Fri, 6 Jul 2012 21:44:10 +0800
 > Subject: [PATCH 1/1] USB: option: Add MEDIATEK product ids
-
+> 
+> 
 > Signed-off-by: Gaosen Zhang <gaosen.zhang@mediatek.com>
 > ---
 >  drivers/usb/serial/option.c |   20 ++++++++++++++++++++
 >  1 file changed, 20 insertions(+)
 
-> diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-> index e668a24..f342a2c 100644
-> --- a/drivers/usb/serial/option.c
-> +++ b/drivers/usb/serial/option.c
-[...]
->  	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff,
-> 0x02, 0x01) },
->  	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff,
-> 0x00, 0x00) },
->  	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff,
-> 0x02, 0x01) },        /* MediaTek MT6276M modem & app port */
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_FP_1COM,
-> 0x0a, 0x00, 0x00) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_FP_2COM,
-> 0x0a, 0x00, 0x00) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_FPDC_1COM,
-> 0x0a, 0x00, 0x00) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_FPDC_2COM,
-> 0x0a, 0x00, 0x00) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_DC_1COM,
-> 0x0a, 0x00, 0x00) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_DC_5COM,
-> 0xff, 0x02, 0x01) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_DC_5COM,
-> 0xff, 0x00, 0x00) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_DC_4COM,
-> 0xff, 0x02, 0x01) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_DC_4COM,
-> 0xff, 0x00, 0x00) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_7208_1COM,
-> 0x02, 0x00, 0x00) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_7208_2COM,
-> 0x02, 0x02, 0x01) },
->  	{ } /* Terminating entry */
->  };
->  MODULE_DEVICE_TABLE(usb, option_ids);
+This conflicts with the patch that you sent me a few days ago which I've
+already applied.  What is the difference and why did you rename some of
+the #defines?
 
-   Still line wrapped.
+Can you please send me an incremental patch on top of the other patch
+that you previous sent me, so that I can properly include this one, as
+it looks like it does add support for a few more devices?
 
-WBR, Sergei
+thanks,
+
+greg k-h
