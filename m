@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933014Ab2GFSMW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 14:12:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21375 "EHLO mx1.redhat.com"
+	id S1758195Ab2GFSNe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 14:13:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27074 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932813Ab2GFSMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 14:12:16 -0400
-Message-ID: <1341597173.5347.5.camel@localhost>
-Subject: Re: [PATCH 2/3] audit: fix refcounting in audit-tree
+	id S933002Ab2GFSMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 14:12:22 -0400
+Message-ID: <1341596629.5347.0.camel@localhost>
+Subject: Re: [PATCH 1/3] audit: don't free_chunk() after fsnotify_add_mark()
 From: Eric Paris <eparis@redhat.com>
 To: Miklos Szeredi <miklos@szeredi.hu>
 Cc: viro@ZenIV.linux.org.uk, linux-kernel@vger.kernel.org, mszeredi@suse.cz,
         stable@vger.kernel.org
-Date: Fri, 06 Jul 2012 13:52:53 -0400
-In-Reply-To: <1340646378-5169-3-git-send-email-miklos@szeredi.hu>
+Date: Fri, 06 Jul 2012 13:43:49 -0400
+In-Reply-To: <1340646378-5169-2-git-send-email-miklos@szeredi.hu>
 References: <1340646378-5169-1-git-send-email-miklos@szeredi.hu>
-	 <1340646378-5169-3-git-send-email-miklos@szeredi.hu>
+	 <1340646378-5169-2-git-send-email-miklos@szeredi.hu>
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -26,114 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Mon, 2012-06-25 at 19:46 +0200, Miklos Szeredi wrote:
 > From: Miklos Szeredi <mszeredi@suse.cz>
 > 
-> Refcounting of fsnotify_mark in audit tree is broken.  E.g:
-> 
->                               refcount
-> create_chunk
->   alloc_chunk                 1
->   fsnotify_add_mark           2
-> 
-> untag_chunk
->   fsnotify_get_mark           3
->   fsnotify_destroy_mark
->     audit_tree_freeing_mark   2
->   fsnotify_put_mark           1
->   fsnotify_put_mark           0
->   via destroy_list
->     fsnotify_mark_destroy    -1
-> 
-> This was reported by various people as triggering Oops when stopping auditd.
-> 
-> We could just remove the put_mark from audit_tree_freeing_mark() but that would
-> break freeing via inode destruction.  So this patch simply omits a put_mark
-> after calling destroy_mark (or adds a get_mark before).
-> 
-> Next patch will clean up the remaining mess.
+> Don't do free_chunk() after fsnotify_add_mark().  That one does a delayed unref
+> via the destroy list and this results in use-after-free.
 > 
 > Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 > CC: stable@vger.kernel.org
 
-Agreed this is needed.  My changelog was:
+Al, can you send these along?  I am not going to see a computer again
+for a month.  Hurray!
 
-    audit: fix ref count problems in audit trees
-    
-    Before the switch from in kernel inotify to fsnotify for audit trees the
-    code regularly did:
-        inotify_evict_watch(&chunk->watch);
-        put_inotify_watch(&chunk->watch);
-    
-    I translated this in fsnotify_speak into:
-        fsnotify_destroy_mark_by_entry(chunk_entry);
-        fsnotify_put_mark(chunk_entry);
-    
-    The problem is that the inotify_evict_watch function actually took a
-    reference on chunk->watch, which is what was being dropped by
-    put_inotify_watch().  The fsnotify code does not take such a reference
-    during fsnotify_destroy_mark_by_entry().  Thus we are dropping reference
-    counts prematurely and eventually we hit a use after free!  Whoops!
-    
-    Fix these call sites to not drop the extra reference.
-    
-    Reported-by: Valentin Avram <aval13@gmail.com>
-    Reported-by: Peter Moody <pmoody@google.com>
-    Partial-patch-by: Marcelo Cerri <mhcerri@linux.vnet.ibm.com>
-    Signed-off-by: Eric Paris <eparis@redhat.com>
-
-Maybe you can use some of that changelog in your next post?  (If you do
-one?)  The only reason you would repost is because I don't understand
-why you took a ref in some places instead of just not dropping it
-everywhere...
+Acked-by: Eric Paris <eparis@redhat.com>
 
 > ---
->  kernel/audit_tree.c |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
+>  kernel/audit_tree.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
 > 
 > diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
-> index d52d247..31fdc48 100644
+> index 5bf0790..d52d247 100644
 > --- a/kernel/audit_tree.c
 > +++ b/kernel/audit_tree.c
-> @@ -250,7 +250,6 @@ static void untag_chunk(struct node *p)
->  		spin_unlock(&hash_lock);
->  		spin_unlock(&entry->lock);
->  		fsnotify_destroy_mark(entry);
-> -		fsnotify_put_mark(entry);
->  		goto out;
+> @@ -259,7 +259,7 @@ static void untag_chunk(struct node *p)
+>  
+>  	fsnotify_duplicate_mark(&new->mark, entry);
+>  	if (fsnotify_add_mark(&new->mark, new->mark.group, new->mark.i.inode, NULL, 1)) {
+> -		free_chunk(new);
+> +		fsnotify_put_mark(&new->mark);
+>  		goto Fallback;
 >  	}
 >  
-> @@ -293,7 +292,6 @@ static void untag_chunk(struct node *p)
->  	spin_unlock(&hash_lock);
->  	spin_unlock(&entry->lock);
->  	fsnotify_destroy_mark(entry);
-> -	fsnotify_put_mark(entry);
->  	goto out;
+> @@ -322,7 +322,7 @@ static int create_chunk(struct inode *inode, struct audit_tree *tree)
 >  
->  Fallback:
-> @@ -332,6 +330,7 @@ static int create_chunk(struct inode *inode, struct audit_tree *tree)
->  		spin_unlock(&hash_lock);
->  		chunk->dead = 1;
->  		spin_unlock(&entry->lock);
-> +		fsnotify_get_mark(entry);
->  		fsnotify_destroy_mark(entry);
->  		fsnotify_put_mark(entry);
->  		return 0;
-
-Like here?  Why not just avoid the atomic op altogether?
-
-> @@ -412,6 +411,7 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
->  		spin_unlock(&chunk_entry->lock);
+>  	entry = &chunk->mark;
+>  	if (fsnotify_add_mark(entry, audit_tree_group, inode, NULL, 0)) {
+> -		free_chunk(chunk);
+> +		fsnotify_put_mark(entry);
+>  		return -ENOSPC;
+>  	}
+>  
+> @@ -396,7 +396,7 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
+>  	fsnotify_duplicate_mark(chunk_entry, old_entry);
+>  	if (fsnotify_add_mark(chunk_entry, chunk_entry->group, chunk_entry->i.inode, NULL, 1)) {
 >  		spin_unlock(&old_entry->lock);
->  
-> +		fsnotify_get_mark(chunk_entry);
->  		fsnotify_destroy_mark(chunk_entry);
->  
->  		fsnotify_put_mark(chunk_entry);
-> @@ -445,7 +445,6 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
->  	spin_unlock(&old_entry->lock);
->  	fsnotify_destroy_mark(old_entry);
->  	fsnotify_put_mark(old_entry); /* pair to fsnotify_find mark_entry */
-> -	fsnotify_put_mark(old_entry); /* and kill it */
->  	return 0;
->  }
->  
+> -		free_chunk(chunk);
+> +		fsnotify_put_mark(chunk_entry);
+>  		fsnotify_put_mark(old_entry);
+>  		return -ENOSPC;
+>  	}
 
 
