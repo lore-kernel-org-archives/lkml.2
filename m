@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757763Ab2GFPh7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 11:37:59 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:37375 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757650Ab2GFPh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 11:37:58 -0400
-Message-ID: <1341589077.3661.3.camel@joe2Laptop>
-Subject: Re: [PATCH v2 net-next 2/2] r8169: support RTL8168G
-From: Joe Perches <joe@perches.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Hayes Wang <hayeswang@realtek.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 06 Jul 2012 08:37:57 -0700
-In-Reply-To: <20120706152046.GB6981@electric-eye.fr.zoreil.com>
-References: <1340966060-2749-1-git-send-email-hayeswang@realtek.com>
-	 <1341221002-1522-1-git-send-email-hayeswang@realtek.com>
-	 <1341221002-1522-2-git-send-email-hayeswang@realtek.com>
-	 <20120704220458.GA1621@electric-eye.fr.zoreil.com>
-	 <1341449507.2058.6.camel@joe2Laptop>
-	 <20120706152046.GB6981@electric-eye.fr.zoreil.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757774Ab2GFPkK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 11:40:10 -0400
+Received: from mga11.intel.com ([192.55.52.93]:39923 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757594Ab2GFPkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 11:40:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="189253007"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Subject: [Patch v2] staging: ccg: print MAC addresses via %pM
+Date: Fri,  6 Jul 2012 18:39:47 +0300
+Message-Id: <1341589187-24009-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <CAH9JG2XzWS_PF8E4V2bHjq=PtTMEtdDcm1Q03GxK8h4E28Rpjw@mail.gmail.com>
+References: <CAH9JG2XzWS_PF8E4V2bHjq=PtTMEtdDcm1Q03GxK8h4E28Rpjw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-06 at 17:20 +0200, Francois Romieu wrote:
-> Joe Perches <joe@perches.com> :
-> [...]
-> > This pattern is used a couple more times.
-> > There's no failure handling either.
-> 
-> I can do something for the initialize path. Other than that it's mostly
-> deeply burried hardware failure so I'd rather concentrate a bit on 
-> current problem reports.
-> 
-> This series already took me a bit further than expected (see below).
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+---
+ drivers/staging/ccg/ccg.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-Allez Francois.
-
-When you take up a suggestion, you really go with it.
-
+diff --git a/drivers/staging/ccg/ccg.c b/drivers/staging/ccg/ccg.c
+index a5b36a9..c77c465 100644
+--- a/drivers/staging/ccg/ccg.c
++++ b/drivers/staging/ccg/ccg.c
+@@ -564,9 +564,7 @@ static int rndis_function_bind_config(struct ccg_usb_function *f,
+ 		return -1;
+ 	}
+ 
+-	pr_info("%s MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", __func__,
+-		rndis->ethaddr[0], rndis->ethaddr[1], rndis->ethaddr[2],
+-		rndis->ethaddr[3], rndis->ethaddr[4], rndis->ethaddr[5]);
++	pr_info("%s MAC: %pM\n", __func__, rndis->ethaddr);
+ 
+ 	ret = gether_setup_name(c->cdev->gadget, rndis->ethaddr, "rndis");
+ 	if (ret) {
+@@ -654,9 +652,7 @@ static ssize_t rndis_ethaddr_show(struct device *dev,
+ {
+ 	struct ccg_usb_function *f = dev_get_drvdata(dev);
+ 	struct rndis_function_config *rndis = f->config;
+-	return sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x\n",
+-		rndis->ethaddr[0], rndis->ethaddr[1], rndis->ethaddr[2],
+-		rndis->ethaddr[3], rndis->ethaddr[4], rndis->ethaddr[5]);
++	return sprintf(buf, "%pM\n", rndis->ethaddr);
+ }
+ 
+ static ssize_t rndis_ethaddr_store(struct device *dev,
+-- 
+1.7.10.4
 
