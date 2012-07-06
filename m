@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757450Ab2GFU2g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 16:28:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29286 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754172Ab2GFU2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 16:28:34 -0400
-Message-ID: <4FF74A3B.80701@redhat.com>
-Date: Fri, 06 Jul 2012 16:27:39 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1757791Ab2GFUaY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 16:30:24 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49140 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753458Ab2GFUaX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 16:30:23 -0400
 MIME-Version: 1.0
-To: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-CC: Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 03/26] mm, mpol: add MPOL_MF_LAZY ...
-References: <20120316144028.036474157@chello.nl>  <20120316144240.307470041@chello.nl> <20120323115025.GE16573@suse.de>  <4FF7147B.1050001@redhat.com> <1341605099.14051.23.camel@zaphod.localdomain>
-In-Reply-To: <1341605099.14051.23.camel@zaphod.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120706203825.20ce3e47@pyramind.ukuu.org.uk>
+References: <CAGoecWyMKF4gC7FaoBCrBs+rD=u6oJRHS5Q2qVkkwoZZ1_4RCg@mail.gmail.com>
+ <20120706203825.20ce3e47@pyramind.ukuu.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 6 Jul 2012 13:30:01 -0700
+X-Google-Sender-Auth: vJCMw-b934ffUDcUQ1N8ejOpruE
+Message-ID: <CA+55aFy7RncR_z9M+DRzSXJY7cWxY9zG0ioLdiefhxkH__Z7Yw@mail.gmail.com>
+Subject: Re: Regression - /proc/kmsg does not (always) block for 1-byte reads
+To: Kay Sievers <kay@vrfy.org>, Greg Kroah-Hartman <greg@kroah.com>
+Cc: Jukka Ollila <jiiksteri@gmail.com>, linux-kernel@vger.kernel.org,
+        jbeulich@novell.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/2012 04:04 PM, Lee Schermerhorn wrote:
-> On Fri, 2012-07-06 at 12:38 -0400, Rik van Riel wrote:
+Kay, this needs to be fixed.
 
->> 4. Putting a lot of pages in the swap cache ends up allocating
->>      swap space. This means this NUMA migration scheme will only
->>      work on systems that have a substantial amount of memory
->>      represented by swap space. This is highly unlikely on systems
->>      with memory in the TB range. On smaller systems, it could drive
->>      the system out of memory (to the OOM killer), by "filling up"
->>      the overflow swap with migration pages instead.
->> 5. In the long run, we want the ability to migrate transparent
->>      huge pages as one unit.  The reason is simple, the performance
->>      penalty for running on the wrong NUMA node (10-20%) is on the
->>      same order of magnitude as the performance penalty for running
->>      with 4kB pages instead of 2MB pages (5-15%).
+Suggested fix: just use the 'seq_printf()' interfaces, which do the
+proper buffering, and allow any size reads of various packetized data.
+
+Of course, I'd also suggest that whoever was the genius who thought it
+was a good idea to read things ONE F*CKING BYTE AT A TIME with system
+calls for each byte should be retroactively aborted. Who the f*ck does
+idiotic things like that? How did they noty die as babies, considering
+that they were likely too stupid to find a tit to suck on?
+
+                 Linus
+
+On Fri, Jul 6, 2012 at 12:38 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> On Fri, 6 Jul 2012 20:45:44 +0300
+> Jukka Ollila <jiiksteri@gmail.com> wrote:
+>
+>> Hello,
 >>
->>      Breaking up large pages into small ones, and having khugepaged
->>      reconstitute them on a random NUMA node later on, will negate
->>      the performance benefits of both NUMA placement and THP.
-
-> When I originally posted the "migrate on fault" series, I posted a
-> separate series with a "migration cache" to avoid the use of swap space
-> for lazy migration: http://markmail.org/message/xgvvrnn2nk4nsn2e.
+>> A few days ago I filed a kernel regression report concerning a change
+>> in /proc/kmsg behaviour with short reads:
+>>
+>> https://bugzilla.kernel.org/show_bug.cgi?id=44211
+>>
+>> The comments suggest that this is probably intentional, but that it
+>> would be best make sure that the current semantics wrt short reads are
+>> as intended.
+>>
+>> The problem appears on a Debian (unstable) system that drains
+>> /proc/kmsg into a separate fifo read by klogd(8):
+>>
+>> /bin/dd bs=1 if=/proc/kmsg  of=/var/run/klogd/kmsg
+>>
+>> With the recent kernel logging changes this /bin/dd exits immediately,
+>> as 1-byte reads are shorter than any log message could possibly be and
+>> read() returns 0. No dd feeding the fifo results in no logging and a
+>> rather unhappy klogd on the reading end of /var/run/klogd/kmsg.
+>>
+>> I suppose a safe solution is to only do reads that are big enough for
+>> any single kernel message, but this is still a change that affects
+>> user space being shipped, so some might find it surprising.
+>>
+>> I don't know what other distros do. Is it just Debian being the odd one out?
 >
-> The migration cache was originally implemented by Marcello Tosatti for
-> the old memory hotplug project:
-> http://marc.info/?l=linux-mm&m=109779128211239&w=4.
+> If this is observed on an actual standard distro userspace and breaks it
+> then its a regression and it needs fixing or reverting.
 >
-> The idea is that you don't need swap space for lazy migration, just an
-> "address_space" where you can park an anon VMA's pte's while they're
-> "unmapped" to cause migration faults.  Based on a suggestion from
-> Christoph Lameter, I had tried to hide the migration cache behind the
-> swap cache interface to minimize changes mainly in do_swap_page and
-> vmscan/reclaim.  It seemed to work, but the difference in reference
-> count semantics for the mig cache -- entry removed when last pte
-> migrated/mapped -- makes coordination with exit teardown, uh, tricky.
-
-That fixes one of the two problems, but using _PTE_NUMA
-or _PAGE_PROTNONE looks like it would be both easier,
-and solve both.
-
--- 
-All rights reversed
+> Cc'ing Linus
