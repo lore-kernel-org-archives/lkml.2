@@ -1,84 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933469Ab2GFLMN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 07:12:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51941 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756895Ab2GFLML (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 07:12:11 -0400
-Date: Fri, 6 Jul 2012 04:11:49 -0700
-From: tip-bot for Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
-Message-ID: <tip-c5b35b731965d16fa8c966e288489857097e0b25@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rostedt@goodmis.org, wolfgang.mauerer@siemens.com, tglx@linutronix.de,
-        namhyung@kernel.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, wolfgang.mauerer@siemens.com, tglx@linutronix.de,
-        namhyung@kernel.org
-In-Reply-To: <1332411501-8059-3-git-send-email-wolfgang.mauerer@siemens.com>
-References: <1332411501-8059-3-git-send-email-wolfgang.mauerer@siemens.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib traceevent:
-  Fix trace_printk for long integers
-Git-Commit-ID: c5b35b731965d16fa8c966e288489857097e0b25
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S933498Ab2GFLMW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 07:12:22 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:25963 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756951Ab2GFLMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 07:12:21 -0400
+Message-ID: <4FF6C803.5030502@siemens.com>
+Date: Fri, 06 Jul 2012 13:12:03 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 04:12:01 -0700 (PDT)
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH 6/7 v6] deal with guest panicked event accoring to -onpanic
+ parameter
+References: <4FF6B188.2060607@cn.fujitsu.com> <4FF6B2C9.10302@cn.fujitsu.com>
+In-Reply-To: <4FF6B2C9.10302@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c5b35b731965d16fa8c966e288489857097e0b25
-Gitweb:     http://git.kernel.org/tip/c5b35b731965d16fa8c966e288489857097e0b25
-Author:     Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
-AuthorDate: Thu, 22 Mar 2012 11:18:21 +0100
-Committer:  Namhyung Kim <namhyung@kernel.org>
-CommitDate: Wed, 4 Jul 2012 13:40:30 +0900
+On 2012-07-06 11:41, Wen Congyang wrote:
+> The onpanic parameter can have the following value:
+> 1. none
+> 2. pause
+> 3. poweroff
+> 4. reset
+> 
+> The action for each value when the guest is panicked:
+> 1. none: emit QEVENT_GUEST_PANICKED only
+> 2. pause: emit QEVENT_GUEST_PANICKED and pause the guest
+> 3. poweroff: emit QEVENT_GUEST_PANICKED and poweroff the guest
+> 4. reset: emit QEVENT_GUEST_PANICKED and reset the guest
 
-tools lib traceevent: Fix trace_printk for long integers
+This is redundant to patch 7 and the preferred device property approach.
 
-On 32 bit systems, a conversion of the trace_printk format string
-"%lu" -> "%llu" is intended (similar for %lx etc.) when a trace was
-taken on a machine with 64 bit long integers. However, the current
-code computes the bogus transformation "%lu" -> "%u".  Fix this.
+Jan
 
-Besides that, the transformation is only required on systems that don't
-use 64 bits for long integers natively.
+> 
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>  hw/kvm/pv_event.c |   17 +++++++++++++++++
+>  qemu-options.hx   |   15 +++++++++++++++
+>  vl.c              |    6 ++++++
+>  3 files changed, 38 insertions(+), 0 deletions(-)
+> 
+> diff --git a/hw/kvm/pv_event.c b/hw/kvm/pv_event.c
+> index d7ded37..890abcd 100644
+> --- a/hw/kvm/pv_event.c
+> +++ b/hw/kvm/pv_event.c
+> @@ -59,6 +59,23 @@ static void panicked_perform_action(uint32_t panicked_action)
+>      }
+>  }
+>  
+> +int select_panicked_action(const char *p)
+> +{
+> +    if (strcasecmp(p, "none") == 0) {
+> +        panicked_action = PANICKED_REPORT;
+> +    } else if (strcasecmp(p, "pause") == 0) {
+> +        panicked_action = PANICKED_PAUSE;
+> +    } else if (strcasecmp(p, "poweroff") == 0) {
+> +        panicked_action = PANICKED_POWEROFF;
+> +    } else if (strcasecmp(p, "reset") == 0) {
+> +        panicked_action = PANICKED_RESET;
+> +    } else {
+> +        return -1;
+> +    }
+> +
+> +    return 0;
+> +}
+> +
+>  #if defined(KVM_PV_PORT)
+>  #include "pv_ioport.c"
+>  
+> diff --git a/qemu-options.hx b/qemu-options.hx
+> index 8b66264..4a061bf 100644
+> --- a/qemu-options.hx
+> +++ b/qemu-options.hx
+> @@ -2743,6 +2743,21 @@ DEF("qtest-log", HAS_ARG, QEMU_OPTION_qtest_log,
+>      "-qtest-log LOG  specify tracing options\n",
+>      QEMU_ARCH_ALL)
+>  
+> +DEF("onpanic", HAS_ARG, QEMU_OPTION_onpanic, \
+> +    "-onpanic none|pause|poweroff|reset\n" \
+> +    "                action when the guest is panicked [default=none]",
+> +    QEMU_ARCH_ALL)
+> +STEXI
+> +@item -onpanic @var{action}
+> +
+> +The @var{action} controls what QEmu will do when the guest is panicked.
+> +The default is @code{none} (emit QEVENT_GUEST_PANICKED only).
+> +Other possible actions are:
+> +@code{pause} (emit QEVENT_GUEST_PANICKED and pause the guest),
+> +@code{poweroff} (emit QEVENT_GUEST_PANICKED and forcefully poweroff the guest),
+> +@code{reset} (emit QEVENT_GUEST_PANICKED and forcefully reset the guest).
+> +ETEXI
+> +
+>  HXCOMM This is the last statement. Insert new options before this line!
+>  STEXI
+>  @end table
+> diff --git a/vl.c b/vl.c
+> index f5cd28d..1a68257 100644
+> --- a/vl.c
+> +++ b/vl.c
+> @@ -3205,6 +3205,12 @@ int main(int argc, char **argv, char **envp)
+>              case QEMU_OPTION_qtest_log:
+>                  qtest_log = optarg;
+>                  break;
+> +            case QEMU_OPTION_onpanic:
+> +                if (select_panicked_action(optarg) == -1) {
+> +                    fprintf(stderr, "Unknown -onpanic parameter\n");
+> +                    exit(1);
+> +                }
+> +                break;
+>              default:
+>                  os_parse_cmd_args(popt->index, optarg);
+>              }
+> 
 
-Signed-off-by: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1332411501-8059-3-git-send-email-wolfgang.mauerer@siemens.com
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/lib/traceevent/event-parse.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index da06c33..ddee5a8 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -3895,14 +3895,15 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 						break;
- 					}
- 				}
--				if (pevent->long_size == 8 && ls) {
-+				if (pevent->long_size == 8 && ls &&
-+				    sizeof(long) != 8) {
- 					char *p;
- 
- 					ls = 2;
- 					/* make %l into %ll */
- 					p = strchr(format, 'l');
- 					if (p)
--						memmove(p, p+1, strlen(p)+1);
-+						memmove(p+1, p, strlen(p)+1);
- 					else if (strcmp(format, "%p") == 0)
- 						strcpy(format, "0x%llx");
- 				}
+
