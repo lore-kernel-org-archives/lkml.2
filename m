@@ -1,110 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab2GFJxb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 05:53:31 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:54943 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753982Ab2GFJx3 (ORCPT
+	id S1756440Ab2GFJy6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 05:54:58 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:46732 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab2GFJy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 05:53:29 -0400
-Subject: [PATCH v2] Hardware breakpoints: Invoke __perf_event_disable() if
- interrupts are already disabled
-To: fweisbec@gmail.com, paulus@samba.org, a.p.zijlstra@chello.nl
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: emachado@linux.vnet.ibm.com, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, acme@ghostprotocols.net,
-        prasad.krishnan@gmail.com
-Date: Fri, 06 Jul 2012 15:22:33 +0530
-Message-ID: <20120706095233.7082.83395.stgit@localhost.localdomain>
-In-Reply-To: <1339492335.31548.50.camel@twins>
-References: <1339492335.31548.50.camel@twins>
-User-Agent: StGit/0.16
+	Fri, 6 Jul 2012 05:54:57 -0400
+Date: Fri, 6 Jul 2012 11:54:52 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Jonathan Corbet <corbet@lwn.net>,
+        ksummit-2012-discuss@lists.linux-foundation.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2012-discuss] [ATTEND or not ATTEND] That's the
+ question!
+Message-ID: <20120706095450.GB7728@somewhere.redhat.com>
+References: <alpine.LFD.2.02.1206152313310.3086@ionos>
+ <20120615233413.GB8894@kroah.com>
+ <alpine.LFD.2.02.1206161103320.3086@ionos>
+ <20120616072906.7469ec24@tpl.lwn.net>
+ <20120620195121.GA1719@fieldses.org>
+ <4FF6B32A.7070006@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12070609-2000-0000-0000-0000082CE4DF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF6B32A.7070006@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please find v2 of the patch from Prasad, based on Peter Zijlstra's
-feedback. This applies on top of v3.5-rc5. This has been tested and
-found to work fine by Edjunior.
+On Fri, Jul 06, 2012 at 01:43:06PM +0400, Glauber Costa wrote:
+> On 06/20/2012 11:51 PM, J. Bruce Fields wrote:
+> > On Sat, Jun 16, 2012 at 07:29:06AM -0600, Jonathan Corbet wrote:
+> >> On Sat, 16 Jun 2012 12:50:05 +0200 (CEST)
+> >> Thomas Gleixner <tglx@linutronix.de> wrote:
+> >>
+> >>> A good start would be if you could convert your kernel statistics into
+> >>> accounting the consolidation effects of contributions instead of
+> >>> fostering the idiocy that corporates have started to measure themself
+> >>> and the performance of their employees (I'm not kidding, it's the sad
+> >>> reality) with line and commit count statistics.
+> >>
+> >> I would dearly love to come up with a way to measure "real work" in
+> >> some fashion; I've just not, yet, figured out how to do that.  I do
+> >> fear that the simple numbers we're able to generate end up creating the
+> >> wrong kinds of incentives.
+> > 
+> > I can't see any alternative to explaining what somebody did and why it
+> > was important.
+> > 
+> > To that end, the best resource for understanding the value of somebody's
+> > work is the lwn.net kernel page--if their work has been discussed there.
+> > 
+> > So, all you need to do is to hire a dozen more of you, and we're
+> > covered!
+> > 
+> > --b.
+> > 
+> >>
+> >> Any thoughts on how to measure "consolidation effects"?  I toss out
+> >> numbers on code removal sometimes, but that turns out to not be a whole
+> >> lot more useful than anything else on its own.
+> >>
+> >> Thanks,
+> >>
+> 
+> Resurrecting this one.
+> 
+> So something just came across my mind: When I first read this thread, my
+> inner reaction was: "People will find ways to bypass and ill-optimize
+> their workflow for whatever measure we come up with".
+> 
+> That's is pure human nature. Whenever we set up a metric, that becomes a
+> goal and a bunch of people - not all - will deviate from their expected
+> workflow to maximize that number. This happens with paper count in the
+> scientific community, for the Higgs Boson's sake! Why wouldn't it happen
+> with *any* metric we set for ourselves?
+> 
+> So per-se, the fact that we have a lot of people trying to find out what
+> our metrics are, and look good in the face of it, is just a testament to
+> the success of Linux - but we know that already.
+> 
+> The summary here, is that I don't think patch count *per se* is a bad
+> metric. Maybe we should just tweak the way we measure a bit to steer
+> people towards doing more useful work, and that would aid our review.
+> 
+> The same way we have checkpatch, we can have something automated that
+> will attempt to rule out some trivial patches in the counting process.
+> We can scan a patch, and easily determine if each part of it is:
+> 
+> * pure whitespace
+> * pure Documentation change
+> * comment fix
+> 
+> And if a patch is 100 % comprised by those, we simply don't count it.
+> People that just want to increase their numbers - they will always
+> exist, will tend to stop doing that. Simply because doing it will not
+> help them at all.
 
-Regards,
-Naveen
+OTOH, documentation changes or comment fixes, and even sometimes pure whitespace
+fixes, can be very valuable contributions. This can be a useful and ungrateful
+work and that deserve credit.
 
----
-While debugging a warning message on PowerPC while using hardware
-breakpoints, it was discovered that when perf_event_disable is invoked
-through hw_breakpoint_handler function with interrupts disabled, a
-subsequent IPI in the code path would trigger a WARN_ON_ONCE message in
-smp_call_function_single function.
-
-This patch calls __perf_event_disable() when interrupts are already
-disabled, instead of perf_event_disable().
-
-Reported-by: Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>
-Signed-off-by: K.Prasad <Prasad.Krishnan@gmail.com>
-Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
----
- include/linux/perf_event.h    |    2 ++
- kernel/events/core.c          |    2 +-
- kernel/events/hw_breakpoint.c |   10 +++++++++-
- 3 files changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 45db49f..c289ba0 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -1292,6 +1292,7 @@ extern int perf_swevent_get_recursion_context(void);
- extern void perf_swevent_put_recursion_context(int rctx);
- extern void perf_event_enable(struct perf_event *event);
- extern void perf_event_disable(struct perf_event *event);
-+extern int __perf_event_disable(void *info);
- extern void perf_event_task_tick(void);
- #else
- static inline void
-@@ -1330,6 +1331,7 @@ static inline int  perf_swevent_get_recursion_context(void)		{ return -1; }
- static inline void perf_swevent_put_recursion_context(int rctx)		{ }
- static inline void perf_event_enable(struct perf_event *event)		{ }
- static inline void perf_event_disable(struct perf_event *event)		{ }
-+static inline int __perf_event_disable(void *info)			{ }
- static inline void perf_event_task_tick(void)				{ }
- #endif
- 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index d7d71d6..0ad0fc9 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1253,7 +1253,7 @@ retry:
- /*
-  * Cross CPU call to disable a performance event
-  */
--static int __perf_event_disable(void *info)
-+int __perf_event_disable(void *info)
- {
- 	struct perf_event *event = info;
- 	struct perf_event_context *ctx = event->ctx;
-diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-index bb38c4d..483f14a 100644
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -453,7 +453,15 @@ int modify_user_hw_breakpoint(struct perf_event *bp, struct perf_event_attr *att
- 	int old_type = bp->attr.bp_type;
- 	int err = 0;
- 
--	perf_event_disable(bp);
-+	/*
-+	 * modify_user_hw_breakpoint can be invoked with IRQs disabled and hence it
-+	 * will not be possible to raise IPIs that invoke __perf_event_disable.
-+	 * So call the function directly.
-+	 */
-+	if (irqs_disabled())
-+		__perf_event_disable(bp);
-+	else
-+		perf_event_disable(bp);
- 
- 	bp->attr.bp_addr = attr->bp_addr;
- 	bp->attr.bp_type = attr->bp_type;
-
+We just can't find an automated and right way to evaluate a contribution.
