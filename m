@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542Ab2GFJUf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 05:20:35 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:6202 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab2GFJUc (ORCPT
+	id S1755870Ab2GFJU6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 05:20:58 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50664 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932072Ab2GFJUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 05:20:32 -0400
-Message-ID: <4FF6A21C.9010509@huawei.com>
-Date: Fri, 6 Jul 2012 16:30:20 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Fri, 6 Jul 2012 05:20:55 -0400
+Date: Fri, 6 Jul 2012 10:50:36 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH 03/28] x86/irq: Use irq_remap specific print_IO_APIC
+ paths only on Intel
+Message-ID: <20120706085036.GB24449@gmail.com>
+References: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
+ <1341491808-23083-4-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Jiang Liu <liuj97@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, Mel Gorman <mgorman@suse.de>,
-        Yinghai Lu <yinghai@kernel.org>, Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 2/4] mm: make consistent use of PG_slab flag
-References: <1341287837-7904-1-git-send-email-jiang.liu@huawei.com> <1341287837-7904-2-git-send-email-jiang.liu@huawei.com> <alpine.DEB.2.00.1207050945310.4984@router.home> <4FF5BD9D.9040101@gmail.com> <alpine.DEB.2.00.1207051236310.8670@router.home>
-In-Reply-To: <alpine.DEB.2.00.1207051236310.8670@router.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341491808-23083-4-git-send-email-joerg.roedel@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-7-6 1:37, Christoph Lameter wrote:
->> Hi Chris,
->> 	I think there's a little difference with SLUB and SLOB for compound page.
->> For SLOB, it relies on the page allocator to allocate compound page to fulfill
->> request bigger than one page. For SLUB, it relies on the page allocator if the
->> request is bigger than two pages. So SLUB may allocate a 2-pages compound page
->> to host SLUB managed objects.
->> 	My proposal may be summarized as below:
->> 	1) PG_slab flag marks a memory object is allocated from slab allocator.
->> 	2) PG_slabobject marks a (compound) page hosts SLUB/SLOB managed objects.
->> 	3) Only set PG_slab/PG_slabobject on the head page of compound pages.
->> 	4) For SLAB, PG_slabobject is redundant and so not used.
->>
->> 	A summary of proposed usage of PG_slab(S) and PG_slabobject(O) with
->> SLAB/SLUB/SLOB allocators as below:
->> pagesize	SLAB			SLUB			SLOB
->> 1page		S			S,O			S,O
->> 2page		S			S,O			S
->>> =4page		S			S			S
+
+* Joerg Roedel <joerg.roedel@amd.com> wrote:
+
+> The VT-d IOMMU requires a special setup of the IO-APIC to
+> remap its interrupts. Therefore the print_IO_APIC routine
+> has seperate code paths to accout for that and print out the
+> special setup. This is not required on AMD IOMMU systems, so
+> make these path really Intel specific.
 > 
-> There is no point of recognizing such objects because those will be
-> kmalloc objects and they can only be freed in a subsystem specific way.
-> There is no standard way to even figure out which subsystem allocated
-> them. So for all practical purposes those are unrecoverable.
+> Cc: x86@kernel.org
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> ---
+>  arch/x86/include/asm/irq_remapping.h |    2 ++
+>  arch/x86/kernel/apic/io_apic.c       |    4 ++--
+>  drivers/iommu/intel_irq_remapping.c  |    2 ++
+>  drivers/iommu/irq_remapping.c        |    1 +
+>  4 files changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+> index 5fb9bbb..228d5e5 100644
+> --- a/arch/x86/include/asm/irq_remapping.h
+> +++ b/arch/x86/include/asm/irq_remapping.h
+> @@ -27,6 +27,7 @@
+>  #ifdef CONFIG_IRQ_REMAP
+>  
+>  extern int irq_remapping_enabled;
+> +extern int intel_irq_remap_debug;
 
-Hi Chris,
-	This patch is not for hotplug, but is to fix some issues in current
-kernel, such as:
-	1) make show_mem() on ARM and unicore32 report consistent information
-no matter which slab allocator is used.
-	2) make /proc/kpagecount and /proc/kpageflags return accurate information.
-	3) Get rid of risks in mm/memory_failure.c and arch/ia64/kernel/mca_drv.c
-	Thanks!
+Sigh.
 
+Instead of yet another set of global flags thrown around the 
+kernel please properly factor out this code, its data structures 
+and methods: introduce a single descriptor structure that 
+describes this piece of hardware, with debugging flags part of 
+this structure - with operations function pointer structure and 
+such.
+
+This code came from the "we have a single, known type of system 
+global IOMMU" world - and we now want to transform this into 
+something that is properly abstracted out and made flexible, as 
+we extend its capabilities .
+
+Thanks,
+
+	Ingo
