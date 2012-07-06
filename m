@@ -1,174 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932759Ab2GFSBx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 14:01:53 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:13805 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932456Ab2GFSBv (ORCPT
+	id S932913Ab2GFSCD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 14:02:03 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33279 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932799Ab2GFSB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 14:01:51 -0400
-Subject: Re: Network namespace and bonding WARNING at fs/proc/generic.c
- remove_proc_entry
-From: Dilip Daya <dilip.daya@hp.com>
-Reply-To: dilip.daya@hp.com
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, netdev@vger.kernel.org
-In-Reply-To: <20120706170538.GA31679@mail.hallyn.com>
-References: <1340900320.3441.88.camel@pro6455b.example.com>
-	 <20120705220749.GA11255@mail.hallyn.com> <87ehopu3e5.fsf@xmission.com>
-	 <20120706170538.GA31679@mail.hallyn.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Hewlett-Packard Company
-Date: Fri, 06 Jul 2012 14:01:47 -0400
-Message-ID: <1341597707.2829.23.camel@pro6455b.example.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Jul 2012 14:01:58 -0400
+Date: Fri, 6 Jul 2012 19:01:52 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Robert Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        spi-devel-general-request@lists.sourceforge.net,
+        devicetree-discuss <devicetree-discuss@ozlabs.org>
+Subject: Re: SPI, GPIO, and DT maintainer ship (cry for help)
+Message-ID: <20120706180152.GA30152@sirena.org.uk>
+References: <CACxGe6tyO5u7eiq1OiPX-u439YAcQDFz3eOOGZ4bNPtwmYwNkg@mail.gmail.com>
+ <20120705200917.GA15639@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120705200917.GA15639@pengutronix.de>
+X-Cookie: Time and tide wait for no man.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Serge,
+On Thu, Jul 05, 2012 at 10:09:17PM +0200, Wolfram Sang wrote:
+> Hi Grant,
 
-On Fri, 2012-07-06 at 17:05 +0000, Serge E. Hallyn wrote:
-> Quoting Eric W. Biederman (ebiederm@xmission.com):
-> > "Serge E. Hallyn" <serge@hallyn.com> writes:
-> > 
-> > > Quoting Dilip Daya (dilip.daya@hp.com):
-> > >> Hi,
-> > >> 
-> > >> I'd discussed the following with Serge Hallyn.
-> > >> 
-> > >> => Environment based on 3.2.18 / x86_64 kernel.
-> > >> => WARNING: at fs/proc/generic.c:808 remove_proc_entry+0xdb/0x21f()
-> > >> => WARNING: at fs/proc/generic.c:849 remove_proc_entry+0x208/0x21f()
-> > >
-> > > Hi,
-> > >
-> > > thanks much for sending this.  I'm still getting this error on
-> > > 3.5.0-2-generic (today's ubuntu quantal kernel)
-> > >
-> > >> network namespace and bonding
-> > >> -----------------------------
-> > >> 
-> > >> * Migrate two phy nics from host to netns (netns0).
-> > >>   - ip link set ethX netns netns0
-> > >> 
-> > >> * In host environment:
-> > >>   - load bonding module, /sbin/modprobe -v bonding mode=1 miimon=100
-> > >>   - /sys/class/net/bond0 exists.
-> > >>   - /proc/net/bonding/bond0 exists.
-> > >>   - /sys/class/net/bonding_masters has bond0.
-> > >> 
-> > >> * Migrate bond0 to netns (netns0):
-> > >>   - ip link set bond0 netns netns0.
-> > >> 
-> > >> * Within netns (netns0):
-> > >>   - /sys/class/net/bonding_masters is empty.
-> > >>   - /sys/class/net/bond0 exist.
-> > >>   - configure bond0 and ifenslave with two phy nics.
-> > >>   - /proc/net/bonding/bond0 does not exist within netns0, but does
-> > >>     exist in the host environment.
-> > >>   - /sys/class/net/bonding_masters is empty.
-> > >
-> > > mine is not empty, fwiw.  However
-> > >
-> > >>   - ping to remote end of bond0 works.
-> > >> 
-> > >> * Within netns (netns0), flushing ethX and bondY:
-> > >>   - down bond0 and its phy nic interfaces:
-> > >>   - ip link set ... down
-> > >>   - ip addr flush dev [bond0 | eth#]
-> > >>   - deleting bond0, /sbin/ip link del dev bond0
-> > >
-> > > Yup I still get a remove_proc_entry WARNING at fs/proc/generic.c:808,
-> > > which is the warning when (!de)
-> > 
-> > It looks like Dilip is running an old kernel.  There should have been
-> > some version of /sys/class/net/bonding_masters in every network
-> > namespace since sometime in 2009.
-> > 
-> > >From the warning it looks like the proc files are being added/removed
-> > to the wrong network namespace.  So in one namespace we get an error
-> > when we delete the moved device and in the other network namespace
-> > we get an error when we remove the /proc/directory.
-> > 
-> > An old kernel without proper network namespace support is the only
-> > reason I can imagine someone would be moving an existing bond device
-> > between network namespaces.
-> > 
-> > If there are other reasons for wanting to move a bonding device between
-> > network namespaces it is possible to catch the NETDEV_UNREGISTER and
-> > NETDEV_REGISTER events to remove/add the per device proc files at the
-> > appropriate time.
-> > 
-> > However since moving bonding devices appears to be an unneded operation
-> > let's just do things simply and forbid moving bonding devices between
-> > network namespaces.  Serge, Dilip can you two test the patch below
-> > and see if it fixes the warnings.
-> > 
-> > Eric
-> > 
-> > 
-> > diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-> > index 2ee8cf9..818ed64 100644
-> > --- a/drivers/net/bonding/bond_main.c
-> > +++ b/drivers/net/bonding/bond_main.c
-> > @@ -4345,6 +4345,9 @@ static void bond_setup(struct net_device *bond_dev)
-> >         bond_dev->priv_flags |= IFF_BONDING;
-> >         bond_dev->priv_flags &= ~(IFF_XMIT_DST_RELEASE | IFF_TX_SKB_SHARING);
-> >  
-> > +       /* Don't allow bond devices to change network namespaces. */
-> > +       bond_dev->features |= NETIF_F_LOCAL;
-> 
-> I believe this needs to be NETIF_F_NETNS_LOCAL.  Test build still going with
-> that change.
+> > the next merge window, and quite possibly the next window.  Since you
+> > three have agreed to co-maintain those subsystems with me, can you
+> > please take a look at the patches that have been posted, pick up the
+> > ones that look ready to go to you, and get them into linux-next?  I
 
+> Though I'd like to help out, I need to pass on this time. My resources
+> simply won't allow to do the job (with the quality I envision, that is).
+> I hope somebody else can jump in? If not, I can collect urgent patches,
+> at least.
 
-Correct, I made that change and rebuilt bonding driver:
-
-# modinfo bonding | head
-filename:       /lib/modules/3.2.18-clim-3-amd64/kernel/drivers/net/bonding/bonding.ko
-alias:          rtnl-link-bond
-author:         Thomas Davis, tadavis@lbl.gov and many others
-description:    Ethernet Channel Bonding Driver, v3.7.1-netns
-version:        3.7.1-netns
-...
-
-
-My results with the above bonding driver:
-
-(1) Migrating bond0 from host to netns:
-
-  # ip link set bond0 netns netns0
-  RTNETLINK answers: Invalid argument
-
-  => cannot migrate bond0 from host to netns.
-  => No warnings.
-
-
-(2) Loading bonding module in host environment and unloading bonding
-    module from within netns:
-
-  # modprobe -v -r bonding
-  #
-rmmod /lib/modules/3.2.18-clim-3-amd64/kernel/drivers/net/bonding/bonding.ko
-
-	# lsmod | grep bond
-	<<< bonding module does not exist >>>
-
-	# ll /sys/class/net/
-total 0
-lrwxrwxrwx 1 root root 0 Jul  6 11:00 lo
--> ../../devices/virtual/net/lo/
-lrwxrwxrwx 1 root root 0 Jul  6 11:00 eth7
--> ../../devices/pci0000:00/0000:00:05.0/0000:14:00.1/net/eth7/
-lrwxrwxrwx 1 root root 0 Jul  6 11:00 eth6
--> ../../devices/pci0000:00/0000:00:05.0/0000:14:00.0/net/eth6/
-
-	=> No warnings.
-
-
--DilipD.
-
+I could probably help out with SPI if that's useful (GPIO seems already
+covered by Linus W)?
