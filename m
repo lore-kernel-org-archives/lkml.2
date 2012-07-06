@@ -1,116 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138Ab2GFH5V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 03:57:21 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:45883 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab2GFH5T (ORCPT
+	id S1753999Ab2GFH54 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 03:57:56 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:36489 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213Ab2GFH5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 03:57:19 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q667vAUZ001656, This message is released by code: ctlocs8528
-From: hayeswang <hayeswang@realtek.com>
-To: "'Francois Romieu'" <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <1340966060-2749-1-git-send-email-hayeswang@realtek.com> <1341221002-1522-1-git-send-email-hayeswang@realtek.com> <1341221002-1522-2-git-send-email-hayeswang@realtek.com> <20120704220458.GA1621@electric-eye.fr.zoreil.com>
-Subject: RE: [PATCH v2 net-next 2/2] r8169: support RTL8168G
-Date: Fri, 6 Jul 2012 15:57:09 +0800
-Message-ID: <43E32504589B47B9846C4E9DAF98BF60@realtek.com.tw>
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0007_01CD5B90.000B6F20"
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Ac1aMqdaCpv/7kF6SP6NFZYJIgI4oQBGev8g
-In-Reply-To: <20120704220458.GA1621@electric-eye.fr.zoreil.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+	Fri, 6 Jul 2012 03:57:54 -0400
+Message-ID: <1341561460.24895.12.camel@ThinkPad-T420>
+Subject: [PATCH powerpc 2/2 v3] kfree the cache name of pgtable cache
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-mm <linux-mm@kvack.org>,
+        PowerPC email list <linuxppc-dev@lists.ozlabs.org>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Glauber Costa <glommer@parallels.com>
+Date: Fri, 06 Jul 2012 15:57:40 +0800
+In-Reply-To: <1341561286.24895.9.camel@ThinkPad-T420>
+References: <1341561286.24895.9.camel@ThinkPad-T420>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12070521-5490-0000-0000-000001BC56C4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------=_NextPart_000_0007_01CD5B90.000B6F20
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+This patch tries to kfree the cache name of pgtables cache. It depends
+on patch 1/2 -- ([PATCH SLAB 1/2 v3] duplicate the cache name in SLUB's
+saved_alias list, SLAB, and SLOB) in this mail thread. 
 
-Francois Romieu [romieu@fr.zoreil.com]
-[...]
-> 
-> Any objection against merging it with the patch below ?
-> 
-> - more BUG() avoidance
-> - save Joe P. some work
-> - remove useless parenthesis
-> - fix r8168g_mdio_write (if (reg_addr == 0x1f) { if (reg_addr == 0) snafu)
->   -> Please check this one.
+For SLUB, as the pgtables cache might be mergeable to other caches.
+During early boot, the name string is saved in the save_alias list. In
+this case, the name could be safely kfreed after calling
+kmem_cache_create() with patch 1.
 
-That is fine.
+For SLAB/SLOB, we need the changes in patch 1, which duplicates the name
+strings in cache create.
 
-> - long declarations before short ones
-> - avoid unbounded loops
-> - use a descriptive name for the 0xe8de value in rtl_hw_init_8168g.
->   -> Please suggest something better than "PLOP"
+v3: with patch 1/2 updated to make slab/slob consistent, #ifdef
+CONFIG_SLUB is no longer needed. 
 
-I have no idea about naming 0xe8de. Our hardware engineers don't release any
-datasheet about it. It seems to be related with oob settings. 
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+---
+ arch/powerpc/mm/init_64.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-------=_NextPart_000_0007_01CD5B90.000B6F20
-Content-Type: application/octet-stream; name="fix.patch"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment; filename="fix.patch"
+diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
+index 620b7ac..bc7f462 100644
+--- a/arch/powerpc/mm/init_64.c
++++ b/arch/powerpc/mm/init_64.c
+@@ -130,6 +130,7 @@ void pgtable_cache_add(unsigned shift, void
+(*ctor)(void *))
+ 	align = max_t(unsigned long, align, minalign);
+ 	name = kasprintf(GFP_KERNEL, "pgtable-2^%d", shift);
+ 	new = kmem_cache_create(name, table_size, align, 0, ctor);
++	kfree(name);
+ 	PGT_CACHE(shift) = new;
+ 
+ 	pr_debug("Allocated pgtable cache for order %d\n", shift);
+-- 
+1.7.1
 
-=0A=
-Fix some code.=0A=
- =0A=
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>=0A=
----=0A=
- drivers/net/ethernet/realtek/r8169.c |   11 ++++++-----=0A=
- 1 file changed, 6 insertions(+), 5 deletions(-)=0A=
-=0A=
-diff --git a/drivers/net/ethernet/realtek/r8169.c =
-b/drivers/net/ethernet/realtek/r8169.c=0A=
-index c37aed9..1d7d6f0 100644=0A=
---- a/drivers/net/ethernet/realtek/r8169.c=0A=
-+++ b/drivers/net/ethernet/realtek/r8169.c=0A=
-@@ -3392,7 +3392,7 @@ static void rtl8168g_1_hw_phy_config(struct =
-rtl8169_private *tp)=0A=
- 	};=0A=
- =0A=
- 	/* patch code for GPHY reset */=0A=
--	for (i =3D 0; ARRAY_SIZE(mac_ocp_patch); i++)=0A=
-+	for (i =3D 0; i < ARRAY_SIZE(mac_ocp_patch); i++)=0A=
- 		r8168_mac_ocp_write(tp, 0xf800 + 2*i, mac_ocp_patch[i]);=0A=
- 	r8168_mac_ocp_write(tp, 0xfc26, 0x8000);=0A=
- 	r8168_mac_ocp_write(tp, 0xfc28, 0x0075);=0A=
-@@ -6764,6 +6764,7 @@ static void __devinit rtl_hw_init_8168g(struct =
-rtl8169_private *tp)=0A=
- 	u32 data;=0A=
- 	int i;=0A=
- =0A=
-+	tp->ocp_base =3D OCP_STD_PHY_BASE;=0A=
- 	RTL_W32(MISC, RTL_R32(MISC) | RXDV_GATED_EN);=0A=
- =0A=
- 	for (i =3D 0; i < RTL_LOOP_MAX; i++) {=0A=
-@@ -6782,15 +6783,15 @@ static void __devinit rtl_hw_init_8168g(struct =
-rtl8169_private *tp)=0A=
- 	msleep(1);=0A=
- 	RTL_W8(MCU, RTL_R8(MCU) & ~NOW_IS_OOB);=0A=
- =0A=
--	data =3D r8168_mac_ocp_read(ioaddr, PLOP);=0A=
-+	data =3D r8168_mac_ocp_read(tp, PLOP);=0A=
- 	data &=3D ~(1 << 14);=0A=
--	r8168_mac_ocp_write(ioaddr, PLOP, data);=0A=
-+	r8168_mac_ocp_write(tp, PLOP, data);=0A=
- =0A=
- 	rtl_mcu_wait_list_ready(ioaddr);=0A=
- =0A=
--	data =3D r8168_mac_ocp_read(ioaddr, PLOP);=0A=
-+	data =3D r8168_mac_ocp_read(tp, PLOP);=0A=
- 	data |=3D (1 << 15);=0A=
--	r8168_mac_ocp_write(ioaddr, PLOP, data);=0A=
-+	r8168_mac_ocp_write(tp, PLOP, data);=0A=
- =0A=
- 	rtl_mcu_wait_list_ready(ioaddr);=0A=
- }=0A=
--- =0A=
-1.7.10.2=0A=
-=0A=
 
-------=_NextPart_000_0007_01CD5B90.000B6F20--
+
