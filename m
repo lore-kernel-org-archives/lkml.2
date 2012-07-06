@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802Ab2GFKJk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 06:09:40 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:37851 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756664Ab2GFKJi (ORCPT
+	id S1756850Ab2GFKMD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 06:12:03 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36610 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802Ab2GFKL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 06:09:38 -0400
-X-Greylist: delayed 84376 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jul 2012 06:09:38 EDT
-X-AuditID: b753bd60-9a0f2ba000000f6c-87-4ff6b9609fc3
-X-AuditID: b753bd60-9a0f2ba000000f6c-87-4ff6b9609fc3
-Message-ID: <4FF6B94B.60204@hitachi.com>
-Date: Fri, 06 Jul 2012 19:09:15 +0900
-From: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Fri, 6 Jul 2012 06:11:59 -0400
+Date: Fri, 6 Jul 2012 12:11:49 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Glauber Costa <glommer@parallels.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        ksummit-2012-discuss@lists.linux-foundation.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2012-discuss] [ATTEND or not ATTEND] That's the
+ question!
+Message-ID: <20120706101149.GA26028@localhost.localdomain>
+References: <alpine.LFD.2.02.1206152313310.3086@ionos>
+ <20120615233413.GB8894@kroah.com>
+ <alpine.LFD.2.02.1206161103320.3086@ionos>
+ <20120616072906.7469ec24@tpl.lwn.net>
+ <20120620195121.GA1719@fieldses.org>
+ <4FF6B32A.7070006@parallels.com>
+ <20120706095450.GB7728@somewhere.redhat.com>
 MIME-Version: 1.0
-To: Nikolaus Rath <Nikolaus@rath.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH 0/5] fuse: make maximum read/write request size tunable
-References: <20120705105017.17812.95542.stgit@ltc137.sdl.hitachi.co.jp> <87vci2gxzr.fsf@inspiron.ap.columbia.edu>
-In-Reply-To: <87vci2gxzr.fsf@inspiron.ap.columbia.edu>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120706095450.GB7728@somewhere.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nikolaus,
+On Fri, Jul 06, 2012 at 11:54:52AM +0200, Frederic Weisbecker wrote:
+> On Fri, Jul 06, 2012 at 01:43:06PM +0400, Glauber Costa wrote:
+> > The same way we have checkpatch, we can have something automated that
+> > will attempt to rule out some trivial patches in the counting process.
+> > We can scan a patch, and easily determine if each part of it is:
+> > 
+> > * pure whitespace
+> > * pure Documentation change
+> > * comment fix
+> > 
+> > And if a patch is 100 % comprised by those, we simply don't count it.
+> > People that just want to increase their numbers - they will always
+> > exist, will tend to stop doing that. Simply because doing it will not
+> > help them at all.
+> 
+> OTOH, documentation changes or comment fixes, and even sometimes pure whitespace
+> fixes, can be very valuable contributions. This can be a useful and ungrateful
+> work and that deserve credit.
+> 
+> We just can't find an automated and right way to evaluate a contribution.
 
-Thank you for your comments.
+Well what about submitters and maintainers labeling patches below the
+SOB with tags like the following?
 
-(2012/07/05 22:04), Nikolaus Rath wrote:
-> Mitsuo Hayasaka<mitsuo.hayasaka.hu@hitachi.com>  writes:
->> Hi,
->>
->> This patch series make maximum read/write request size tunable in FUSE.
->> Currently, it is limited to FUSE_MAX_PAGES_PER_REQ which is equal
->> to 32 pages. It is required to change it in order to improve the
->> throughput since optimized value depends on various factors such
->> as type and version of local filesystems used and HW specs, etc.
->
-> This truly is a joyful week for FUSE :-).
->
-> Are these patches compatible with the fuse write-back patch series
-> posted by Pavel a few days ago?
+   Signed-off-by: Richard Cochran <richardcochran@gmail.com>
+   Tags: docu whitespace trivial
 
-
-I applied this patch series to the latest upstream kernel and measured
-the read/write throughput using it. So, I have not try Pavel's patch yet.
-
-However, I think it is compatible with his write-back patch series
-since it just makes maximum limit of fuse request size tunable.
-And my patch will be effective even for direct I/O.
+Part of the review would be making sure the labels fit.
 
 Thanks,
-
->
->
-> Thanks,
->
->     -Nikolaus
->
-
+Richard
