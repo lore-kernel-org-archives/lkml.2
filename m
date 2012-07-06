@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964787Ab2GFVHi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 17:07:38 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:34079 "EHLO
+	id S1758560Ab2GFVJQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 17:09:16 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33644 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758403Ab2GFVHd (ORCPT
+	with ESMTP id S1758463Ab2GFVHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 17:07:33 -0400
+	Fri, 6 Jul 2012 17:07:03 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <marc.zyngier@arm.com>,
         Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 31/36] AArch64: Miscellaneous library functions
-Date: Fri,  6 Jul 2012 22:06:12 +0100
-Message-Id: <1341608777-12982-32-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH 33/36] AArch64: Generic timers support
+Date: Fri,  6 Jul 2012 22:06:14 +0100
+Message-Id: <1341608777-12982-34-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
 References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 06 Jul 2012 21:07:40.0152 (UTC) FILETIME=[609CE780:01CD5BBB]
-X-MC-Unique: 112070622064501401
+X-OriginalArrivalTime: 06 Jul 2012 21:07:41.0042 (UTC) FILETIME=[6124B520:01CD5BBB]
+X-MC-Unique: 112070622064600901
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66L8kYp005360
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66L9MM7005364
 
 From: Marc Zyngier <marc.zyngier@arm.com>
 
-This patch adds udelay, memory and bit operations together with the
-ksyms exports.
+This patch adds support for the ARM generic timers with A64 instructions
+for accessing the timer registers. It uses the physical counter as the
+clock source and the virtual counter as sched_clock.
+
+The timer frequency can be specified via DT or read from the CNTFRQ_EL0
+register. The physical counter is also accessible from user space
+allowing fast gettimeofday() implementation.
 
 Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/aarch64/include/asm/bitops.h  |   75 ++++++++++++++++++++++++++
- arch/aarch64/include/asm/syscall.h |  102 ++++++++++++++++++++++++++++++++++++
- arch/aarch64/kernel/aarch64ksyms.c |   56 ++++++++++++++++++++
- arch/aarch64/lib/Makefile          |    5 ++
- arch/aarch64/lib/bitops.c          |   27 ++++++++++
- arch/aarch64/lib/clear_page.S      |   40 ++++++++++++++
- arch/aarch64/lib/copy_page.S       |   47 ++++++++++++++++
- arch/aarch64/lib/delay.c           |   56 ++++++++++++++++++++
- 8 files changed, 408 insertions(+), 0 deletions(-)
- create mode 100644 arch/aarch64/include/asm/bitops.h
- create mode 100644 arch/aarch64/include/asm/syscall.h
- create mode 100644 arch/aarch64/kernel/aarch64ksyms.c
- create mode 100644 arch/aarch64/lib/Makefile
- create mode 100644 arch/aarch64/lib/bitops.c
- create mode 100644 arch/aarch64/lib/clear_page.S
- create mode 100644 arch/aarch64/lib/copy_page.S
- create mode 100644 arch/aarch64/lib/delay.c
+ arch/aarch64/include/asm/timex.h  |   33 ++++
+ arch/aarch64/kernel/time.c        |   66 ++++++++
+ drivers/clocksource/Kconfig       |    5 +
+ drivers/clocksource/Makefile      |    3 +-
+ drivers/clocksource/arm_generic.c |  310 +++++++++++++++++++++++++++++++++++++
+ include/clocksource/arm_generic.h |   22 +++
+ 6 files changed, 438 insertions(+), 1 deletions(-)
+ create mode 100644 arch/aarch64/include/asm/timex.h
+ create mode 100644 arch/aarch64/kernel/time.c
+ create mode 100644 drivers/clocksource/arm_generic.c
+ create mode 100644 include/clocksource/arm_generic.h
 
-diff --git a/arch/aarch64/include/asm/bitops.h b/arch/aarch64/include/asm/bitops.h
+diff --git a/arch/aarch64/include/asm/timex.h b/arch/aarch64/include/asm/timex.h
 new file mode 100644
-index 0000000..e91e23b
+index 0000000..c4e3139
 --- /dev/null
-+++ b/arch/aarch64/include/asm/bitops.h
-@@ -0,0 +1,75 @@
++++ b/arch/aarch64/include/asm/timex.h
+@@ -0,0 +1,33 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
 + *
@@ -75,183 +74,34 @@ index 0000000..e91e23b
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
-+#ifndef __ASM_BITOPS_H
-+#define __ASM_BITOPS_H
-+
-+#include <linux/compiler.h>
-+
-+#include <asm/barrier.h>
++#ifndef __ASM_TIMEX_H
++#define __ASM_TIMEX_H
 +
 +/*
-+ * clear_bit may not imply a memory barrier
++ * Use the current timer as a cycle counter since this is what we use for
++ * the delay loop.
 + */
-+#ifndef smp_mb__before_clear_bit
-+#define smp_mb__before_clear_bit()	smp_mb()
-+#define smp_mb__after_clear_bit()	smp_mb()
++#define get_cycles()	({ cycles_t c; read_current_timer(&c); c; })
++
++#include <asm-generic/timex.h>
++
++#define ARCH_HAS_READ_CURRENT_TIMER
++
++/* This isn't really used any more */
++#define CLOCK_TICK_RATE 1000
++
 +#endif
-+
-+/*
-+ * Use compiler builtins for simple inline operations.
-+ */
-+static inline unsigned long __ffs(unsigned long word)
-+{
-+	return __builtin_ffsl(word) - 1;
-+}
-+
-+static inline int ffs(int x)
-+{
-+	return __builtin_ffs(x);
-+}
-+
-+static inline unsigned long __fls(unsigned long word)
-+{
-+	return BITS_PER_LONG - 1 - __builtin_clzl(word);
-+}
-+
-+static inline int fls(int x)
-+{
-+	return x ? sizeof(x) * BITS_PER_BYTE - __builtin_clz(x) : 0;
-+}
-+
-+/*
-+ * Mainly use the generic routines for now.
-+ */
-+#ifndef _LINUX_BITOPS_H
-+#error only <linux/bitops.h> can be included directly
-+#endif
-+
-+#include <asm-generic/bitops/ffz.h>
-+#include <asm-generic/bitops/fls64.h>
-+#include <asm-generic/bitops/find.h>
-+
-+#include <asm-generic/bitops/sched.h>
-+#include <asm-generic/bitops/hweight.h>
-+#include <asm-generic/bitops/lock.h>
-+
-+#include <asm-generic/bitops/atomic.h>
-+#include <asm-generic/bitops/non-atomic.h>
-+#include <asm-generic/bitops/le.h>
-+#include <asm-generic/bitops/ext2-atomic.h>
-+
-+#endif /* __ASM_BITOPS_H */
-diff --git a/arch/aarch64/include/asm/syscall.h b/arch/aarch64/include/asm/syscall.h
+diff --git a/arch/aarch64/kernel/time.c b/arch/aarch64/kernel/time.c
 new file mode 100644
-index 0000000..0f4bfcc
+index 0000000..08ba3d8
 --- /dev/null
-+++ b/arch/aarch64/include/asm/syscall.h
-@@ -0,0 +1,102 @@
++++ b/arch/aarch64/kernel/time.c
+@@ -0,0 +1,66 @@
 +/*
-+ * Copyright (C) 2012 ARM Ltd.
++ * Based on arch/arm/kernel/time.c
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+#ifndef __ASM_SYSCALL_H
-+#define __ASM_SYSCALL_H
-+
-+#include <linux/err.h>
-+
-+
-+static inline int syscall_get_nr(struct task_struct *task,
-+				 struct pt_regs *regs)
-+{
-+	return regs->syscallno;
-+}
-+
-+static inline void syscall_rollback(struct task_struct *task,
-+				    struct pt_regs *regs)
-+{
-+	regs->regs[0] = regs->orig_x0;
-+}
-+
-+
-+static inline long syscall_get_error(struct task_struct *task,
-+				     struct pt_regs *regs)
-+{
-+	unsigned long error = regs->regs[0];
-+	return IS_ERR_VALUE(error) ? error : 0;
-+}
-+
-+static inline long syscall_get_return_value(struct task_struct *task,
-+					    struct pt_regs *regs)
-+{
-+	return regs->regs[0];
-+}
-+
-+static inline void syscall_set_return_value(struct task_struct *task,
-+					    struct pt_regs *regs,
-+					    int error, long val)
-+{
-+	regs->regs[0] = (long) error ? error : val;
-+}
-+
-+#define SYSCALL_MAX_ARGS 6
-+
-+static inline void syscall_get_arguments(struct task_struct *task,
-+					 struct pt_regs *regs,
-+					 unsigned int i, unsigned int n,
-+					 unsigned long *args)
-+{
-+	if (i + n > SYSCALL_MAX_ARGS) {
-+		unsigned long *args_bad = args + SYSCALL_MAX_ARGS - i;
-+		unsigned int n_bad = n + i - SYSCALL_MAX_ARGS;
-+		pr_warning("%s called with max args %d, handling only %d\n",
-+			   __func__, i + n, SYSCALL_MAX_ARGS);
-+		memset(args_bad, 0, n_bad * sizeof(args[0]));
-+	}
-+
-+	if (i == 0) {
-+		args[0] = regs->orig_x0;
-+		args++;
-+		i++;
-+		n--;
-+	}
-+
-+	memcpy(args, &regs->regs[i], n * sizeof(args[0]));
-+}
-+
-+static inline void syscall_set_arguments(struct task_struct *task,
-+					 struct pt_regs *regs,
-+					 unsigned int i, unsigned int n,
-+					 const unsigned long *args)
-+{
-+	if (i + n > SYSCALL_MAX_ARGS) {
-+		pr_warning("%s called with max args %d, handling only %d\n",
-+			   __func__, i + n, SYSCALL_MAX_ARGS);
-+		n = SYSCALL_MAX_ARGS - i;
-+	}
-+
-+	if (i == 0) {
-+		regs->orig_x0 = args[0];
-+		args++;
-+		i++;
-+		n--;
-+	}
-+
-+	memcpy(&regs->regs[i], args, n * sizeof(args[0]));
-+}
-+
-+#endif	/* __ASM_SYSCALL_H */
-diff --git a/arch/aarch64/kernel/aarch64ksyms.c b/arch/aarch64/kernel/aarch64ksyms.c
-new file mode 100644
-index 0000000..52191ec
---- /dev/null
-+++ b/arch/aarch64/kernel/aarch64ksyms.c
-@@ -0,0 +1,56 @@
-+/*
-+ * Based on arch/arm/kernel/armksyms.c
-+ *
-+ * Copyright (C) 2000 Russell King
++ * Copyright (C) 1991, 1992, 1995  Linus Torvalds
++ * Modifications for ARM (C) 1994-2001 Russell King
 + * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -269,93 +119,86 @@ index 0000000..52191ec
 + */
 +
 +#include <linux/export.h>
-+#include <linux/sched.h>
-+#include <linux/string.h>
-+#include <linux/cryptohash.h>
-+#include <linux/delay.h>
-+#include <linux/in6.h>
-+#include <linux/syscalls.h>
-+#include <linux/uaccess.h>
-+#include <linux/io.h>
-+
-+#include <asm/checksum.h>
-+
-+	/* user mem (segment) */
-+EXPORT_SYMBOL(__strnlen_user);
-+EXPORT_SYMBOL(__strncpy_from_user);
-+
-+EXPORT_SYMBOL(copy_page);
-+
-+EXPORT_SYMBOL(__copy_from_user);
-+EXPORT_SYMBOL(__copy_to_user);
-+EXPORT_SYMBOL(__clear_user);
-+
-+EXPORT_SYMBOL(__get_user_1);
-+EXPORT_SYMBOL(__get_user_2);
-+EXPORT_SYMBOL(__get_user_4);
-+
-+EXPORT_SYMBOL(__put_user_1);
-+EXPORT_SYMBOL(__put_user_2);
-+EXPORT_SYMBOL(__put_user_4);
-+EXPORT_SYMBOL(__put_user_8);
-+
-+	/* bitops */
-+EXPORT_SYMBOL(__atomic_hash);
-+
-+	/* physical memory */
-+EXPORT_SYMBOL(memstart_addr);
-diff --git a/arch/aarch64/lib/Makefile b/arch/aarch64/lib/Makefile
-new file mode 100644
-index 0000000..ae71bae
---- /dev/null
-+++ b/arch/aarch64/lib/Makefile
-@@ -0,0 +1,5 @@
-+lib-y		:= bitops.o delay.o					\
-+		   strncpy_from_user.o strnlen_user.o			\
-+		   clear_user.o getuser.o putuser.o			\
-+		   copy_from_user.o copy_to_user.o copy_in_user.o	\
-+		   copy_page.o clear_page.o
-diff --git a/arch/aarch64/lib/bitops.c b/arch/aarch64/lib/bitops.c
-new file mode 100644
-index 0000000..27a2e17
---- /dev/null
-+++ b/arch/aarch64/lib/bitops.c
-@@ -0,0 +1,27 @@
-+/*
-+ * Copyright (C) 2012 ARM Limited
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ *
-+ */
-+
 +#include <linux/kernel.h>
-+#include <linux/spinlock.h>
-+#include <linux/atomic.h>
++#include <linux/interrupt.h>
++#include <linux/time.h>
++#include <linux/init.h>
++#include <linux/sched.h>
++#include <linux/smp.h>
++#include <linux/timex.h>
++#include <linux/errno.h>
++#include <linux/profile.h>
++#include <linux/syscore_ops.h>
++#include <linux/timer.h>
++#include <linux/irq.h>
++
++#include <clocksource/arm_generic.h>
++
++#include <asm/thread_info.h>
++#include <asm/stacktrace.h>
 +
 +#ifdef CONFIG_SMP
-+arch_spinlock_t __atomic_hash[ATOMIC_HASH_SIZE] __lock_aligned = {
-+       [0 ... (ATOMIC_HASH_SIZE-1)]  = __ARCH_SPIN_LOCK_UNLOCKED
-+};
++unsigned long profile_pc(struct pt_regs *regs)
++{
++	struct stackframe frame;
++
++	if (!in_lock_functions(regs->pc))
++		return regs->pc;
++
++	frame.fp = regs->regs[29];
++	frame.sp = regs->sp;
++	frame.pc = regs->pc;
++	do {
++		int ret = unwind_frame(&frame);
++		if (ret < 0)
++			return 0;
++	} while (in_lock_functions(frame.pc));
++
++	return frame.pc;
++}
++EXPORT_SYMBOL(profile_pc);
 +#endif
-diff --git a/arch/aarch64/lib/clear_page.S b/arch/aarch64/lib/clear_page.S
++
++void __init time_init(void)
++{
++	arm_generic_timer_init();
++}
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index 99c6b20..2a11ddf 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -29,3 +29,8 @@ config CLKSRC_DBX500_PRCMU_SCHED_CLOCK
+ 	default y
+ 	help
+ 	  Use the always on PRCMU Timer as sched_clock
++
++config CLKSRC_ARM_GENERIC
++	def_bool y if AARCH64
++	help
++	  This option enables support for the ARM generic timer.
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index dd3e661..2795fde 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -10,4 +10,5 @@ obj-$(CONFIG_EM_TIMER_STI)	+= em_sti.o
+ obj-$(CONFIG_CLKBLD_I8253)	+= i8253.o
+ obj-$(CONFIG_CLKSRC_MMIO)	+= mmio.o
+ obj-$(CONFIG_DW_APB_TIMER)	+= dw_apb_timer.o
+-obj-$(CONFIG_CLKSRC_DBX500_PRCMU)	+= clksrc-dbx500-prcmu.o
+\ No newline at end of file
++obj-$(CONFIG_CLKSRC_DBX500_PRCMU)	+= clksrc-dbx500-prcmu.o
++obj-$(CONFIG_CLKSRC_ARM_GENERIC)	+= arm_generic.o
+diff --git a/drivers/clocksource/arm_generic.c b/drivers/clocksource/arm_generic.c
 new file mode 100644
-index 0000000..4965db2
+index 0000000..d0d18f4
 --- /dev/null
-+++ b/arch/aarch64/lib/clear_page.S
-@@ -0,0 +1,40 @@
++++ b/drivers/clocksource/arm_generic.c
+@@ -0,0 +1,310 @@
 +/*
++ * Generic timers support
++ *
 + * Copyright (C) 2012 ARM Ltd.
++ * Author: Marc Zyngier <marc.zyngier@arm.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -371,142 +214,322 @@ index 0000000..4965db2
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
 +
-+#include <linux/linkage.h>
-+#include <linux/const.h>
-+#include <asm/assembler.h>
-+#include <asm/page.h>
-+
-+/*
-+ * Clear page @dest
-+ *
-+ * Parameters:
-+ *	x0 - dest
-+ */
-+ENTRY(clear_page)
-+	mrs	x1, dczid_el0
-+	and	w1, w1, #0xf
-+	mov	x2, #4
-+	lsl	x1, x2, x1
-+
-+1:	dc	zva, x0
-+	add	x0, x0, x1
-+	tst	x0, #(PAGE_SIZE - 1)
-+	b.ne	1b
-+	ret
-+ENDPROC(clear_page)
-diff --git a/arch/aarch64/lib/copy_page.S b/arch/aarch64/lib/copy_page.S
-new file mode 100644
-index 0000000..7269290
---- /dev/null
-+++ b/arch/aarch64/lib/copy_page.S
-@@ -0,0 +1,47 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+
-+#include <linux/linkage.h>
-+#include <linux/const.h>
-+#include <asm/assembler.h>
-+#include <asm/page.h>
-+
-+/*
-+ * Copy a page from src to dest (both are page aligned)
-+ *
-+ * Parameters:
-+ *	x0 - dest
-+ *	x1 - src
-+ */
-+ENTRY(copy_page)
-+	/* Assume cache line size is 64 bytes. */
-+	prfm	pldl1strm, [x1, #64]
-+1:	ldp	x2, x3, [x1]
-+	ldp	x4, x5, [x1, #16]
-+	ldp	x6, x7, [x1, #32]
-+	ldp	x8, x9, [x1, #48]
-+	add	x1, x1, #64
-+	prfm	pldl1strm, [x1, #64]
-+	stnp	x2, x3, [x0]
-+	stnp	x4, x5, [x0, #16]
-+	stnp	x6, x7, [x0, #32]
-+	stnp	x8, x9, [x0, #48]
-+	add	x0, x0, #64
-+	tst	x1, #(PAGE_SIZE - 1)
-+	b.ne	1b
-+	ret
-+ENDPROC(copy_page)
-diff --git a/arch/aarch64/lib/delay.c b/arch/aarch64/lib/delay.c
-new file mode 100644
-index 0000000..dabe81e
---- /dev/null
-+++ b/arch/aarch64/lib/delay.c
-@@ -0,0 +1,56 @@
-+/*
-+ * Delay loops based on the OpenRISC implementation.
-+ *
-+ * Copyright (C) 2012 ARM Limited
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
-+ */
-+
-+#include <linux/delay.h>
 +#include <linux/init.h>
 +#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/timex.h>
++#include <linux/delay.h>
++#include <linux/device.h>
++#include <linux/smp.h>
++#include <linux/cpu.h>
++#include <linux/jiffies.h>
++#include <linux/interrupt.h>
++#include <linux/clockchips.h>
++#include <linux/of_irq.h>
++#include <linux/io.h>
 +
-+void __delay(unsigned long cycles)
++#include <clocksource/arm_generic.h>
++
++static u32 arch_timer_rate;
++static u64 sched_clock_mult __read_mostly;
++static DEFINE_PER_CPU(struct clock_event_device, arch_timer_evt);
++static int arch_timer_ppi;
++
++/*
++ * Architected system timer support.
++ */
++
++#define ARCH_TIMER_CTRL_ENABLE		(1 << 0)
++#define ARCH_TIMER_CTRL_IT_MASK		(1 << 1)
++
++#define ARCH_TIMER_REG_CTRL		0
++#define ARCH_TIMER_REG_FREQ		1
++#define ARCH_TIMER_REG_TVAL		2
++
++static void arch_timer_reg_write(int reg, u32 val)
 +{
-+	cycles_t start = get_cycles();
++	switch (reg) {
++	case ARCH_TIMER_REG_CTRL:
++		asm volatile("msr cntp_ctl_el0,  %0" : : "r" (val));
++		break;
++	case ARCH_TIMER_REG_TVAL:
++		asm volatile("msr cntp_tval_el0, %0" : : "r" (val));
++		break;
++	default:
++		BUG();
++	}
 +
-+	while ((get_cycles() - start) < cycles)
-+		cpu_relax();
++	isb();
 +}
-+EXPORT_SYMBOL(__delay);
 +
-+inline void __const_udelay(unsigned long xloops)
++static u32 arch_timer_reg_read(int reg)
 +{
-+	unsigned long loops;
++	u32 val;
 +
-+	loops = xloops * loops_per_jiffy * HZ;
-+	__delay(loops >> 32);
++	switch (reg) {
++	case ARCH_TIMER_REG_CTRL:
++		asm volatile("mrs %0,  cntp_ctl_el0" : "=r" (val));
++		break;
++	case ARCH_TIMER_REG_FREQ:
++		asm volatile("mrs %0,   cntfrq_el0" : "=r" (val));
++		break;
++	case ARCH_TIMER_REG_TVAL:
++		asm volatile("mrs %0, cntp_tval_el0" : "=r" (val));
++		break;
++	default:
++		BUG();
++	}
++
++	return val;
 +}
-+EXPORT_SYMBOL(__const_udelay);
 +
-+void __udelay(unsigned long usecs)
++static irqreturn_t arch_timer_handle_irq(int irq, void *dev_id)
 +{
-+	__const_udelay(usecs * 0x10C7UL); /* 2**32 / 1000000 (rounded up) */
-+}
-+EXPORT_SYMBOL(__udelay);
++	struct clock_event_device *evt = dev_id;
++	unsigned long ctrl;
 +
-+void __ndelay(unsigned long nsecs)
-+{
-+	__const_udelay(nsecs * 0x5UL); /* 2**32 / 1000000000 (rounded up) */
++	ctrl = arch_timer_reg_read(ARCH_TIMER_REG_CTRL);
++	if (ctrl & 0x4) {
++		ctrl |= ARCH_TIMER_CTRL_IT_MASK;
++		arch_timer_reg_write(ARCH_TIMER_REG_CTRL, ctrl);
++		evt->event_handler(evt);
++		return IRQ_HANDLED;
++	}
++
++	return IRQ_NONE;
 +}
-+EXPORT_SYMBOL(__ndelay);
++
++static void arch_timer_stop(void)
++{
++	unsigned long ctrl;
++
++	ctrl = arch_timer_reg_read(ARCH_TIMER_REG_CTRL);
++	ctrl &= ~ARCH_TIMER_CTRL_ENABLE;
++	arch_timer_reg_write(ARCH_TIMER_REG_CTRL, ctrl);
++}
++
++static void arch_timer_set_mode(enum clock_event_mode mode,
++				struct clock_event_device *clk)
++{
++	switch (mode) {
++	case CLOCK_EVT_MODE_UNUSED:
++	case CLOCK_EVT_MODE_SHUTDOWN:
++		arch_timer_stop();
++		break;
++	default:
++		break;
++	}
++}
++
++static int arch_timer_set_next_event(unsigned long evt,
++				     struct clock_event_device *unused)
++{
++	unsigned long ctrl;
++
++	ctrl = arch_timer_reg_read(ARCH_TIMER_REG_CTRL);
++	ctrl |= ARCH_TIMER_CTRL_ENABLE;
++	ctrl &= ~ARCH_TIMER_CTRL_IT_MASK;
++
++	arch_timer_reg_write(ARCH_TIMER_REG_TVAL, evt);
++	arch_timer_reg_write(ARCH_TIMER_REG_CTRL, ctrl);
++
++	return 0;
++}
++
++static void __cpuinit arch_counter_enable_user_access(void)
++{
++	u32 cntkctl;
++
++	/* Disable user access to the timers and the virtual counter. */
++	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
++	cntkctl &= ~((3 << 8) | (1 << 1));
++
++	/* Enable user access to the physical counter and frequency. */
++	cntkctl |= 1;
++	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
++}
++
++static void __cpuinit arch_timer_setup(struct clock_event_device *clk)
++{
++	/* Let's make sure the timer is off before doing anything else */
++	arch_timer_stop();
++
++	clk->features = CLOCK_EVT_FEAT_ONESHOT;
++	clk->name = "arch_sys_timer";
++	clk->rating = 400;
++	clk->set_mode = arch_timer_set_mode;
++	clk->set_next_event = arch_timer_set_next_event;
++	clk->irq = arch_timer_ppi;
++	clk->cpumask = cpumask_of(smp_processor_id());
++
++	clockevents_config_and_register(clk, arch_timer_rate,
++					0xf, 0x7fffffff);
++
++	enable_percpu_irq(clk->irq, 0);
++
++	/* Ensure the physical counter is visible to userspace for the vDSO. */
++	arch_counter_enable_user_access();
++}
++
++static void __init arch_timer_calibrate(void)
++{
++	if (arch_timer_rate == 0) {
++		arch_timer_reg_write(ARCH_TIMER_REG_CTRL, 0);
++		arch_timer_rate = arch_timer_reg_read(ARCH_TIMER_REG_FREQ);
++
++		/* Check the timer frequency. */
++		if (arch_timer_rate == 0)
++			panic("Architected timer frequency is set to zero.\n"
++			      "You must set this in your .dts file\n");
++	}
++
++	/* Cache the sched_clock multiplier to save a divide in the hot path. */
++
++	sched_clock_mult = NSEC_PER_SEC / arch_timer_rate;
++
++	pr_info("Architected local timer running at %u.%02uMHz.\n",
++		 arch_timer_rate / 1000000, (arch_timer_rate / 10000) % 100);
++}
++
++static inline cycle_t arch_counter_get_cntpct(void)
++{
++	cycle_t cval;
++
++	asm volatile("mrs %0, cntpct_el0" : "=r" (cval));
++
++	return cval;
++}
++
++static inline cycle_t arch_counter_get_cntvct(void)
++{
++	cycle_t cval;
++
++	asm volatile("mrs %0, cntvct_el0" : "=r" (cval));
++
++	return cval;
++}
++
++static cycle_t arch_counter_read(struct clocksource *cs)
++{
++	return arch_counter_get_cntpct();
++}
++
++static struct clocksource clocksource_counter = {
++	.name	= "arch_sys_counter",
++	.rating	= 400,
++	.read	= arch_counter_read,
++	.mask	= CLOCKSOURCE_MASK(56),
++	.flags	= (CLOCK_SOURCE_IS_CONTINUOUS | CLOCK_SOURCE_VALID_FOR_HRES),
++};
++
++int read_current_timer(unsigned long *timer_value)
++{
++	*timer_value = arch_counter_get_cntpct();
++	return 0;
++}
++
++unsigned long long notrace sched_clock(void)
++{
++	return arch_counter_get_cntvct() * sched_clock_mult;
++}
++
++static int __cpuinit arch_timer_cpu_notify(struct notifier_block *self,
++					   unsigned long action, void *hcpu)
++{
++	int cpu = (long)hcpu;
++	struct clock_event_device *clk = per_cpu_ptr(&arch_timer_evt, cpu);
++
++	switch(action) {
++	case CPU_STARTING:
++	case CPU_STARTING_FROZEN:
++		arch_timer_setup(clk);
++		break;
++
++	case CPU_DYING:
++	case CPU_DYING_FROZEN:
++		pr_debug("arch_timer_teardown disable IRQ%d cpu #%d\n",
++			 clk->irq, cpu);
++		disable_percpu_irq(clk->irq);
++		arch_timer_set_mode(CLOCK_EVT_MODE_UNUSED, clk);
++		break;
++	}
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block __cpuinitdata arch_timer_cpu_nb = {
++	.notifier_call = arch_timer_cpu_notify,
++};
++
++static const struct of_device_id arch_timer_of_match[] __initconst = {
++	{ .compatible = "arm,armv8-timer" },
++	{},
++};
++
++int __init arm_generic_timer_init(void)
++{
++	struct device_node *np;
++	int err;
++	u32 freq;
++
++	np = of_find_matching_node(NULL, arch_timer_of_match);
++	if (!np) {
++		pr_err("arch_timer: can't find DT node\n");
++		return -ENODEV;
++	}
++
++	/* Try to determine the frequency from the device tree or CNTFRQ */
++	if (!of_property_read_u32(np, "clock-frequency", &freq))
++		arch_timer_rate = freq;
++	arch_timer_calibrate();
++
++	arch_timer_ppi = irq_of_parse_and_map(np, 0);
++	pr_info("arch_timer: found %s irq %d\n", np->name, arch_timer_ppi);
++
++	err = request_percpu_irq(arch_timer_ppi, arch_timer_handle_irq,
++				 np->name, &arch_timer_evt);
++	if (err) {
++		pr_err("arch_timer: can't register interrupt %d (%d)\n",
++		       arch_timer_ppi, err);
++		return err;
++	}
++
++	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
++
++	/* Calibrate the delay loop directly */
++	lpj_fine = arch_timer_rate / HZ;
++
++	/* Immediately configure the timer on the boot CPU */
++	arch_timer_setup(per_cpu_ptr(&arch_timer_evt, smp_processor_id()));
++
++	register_cpu_notifier(&arch_timer_cpu_nb);
++
++	return 0;
++}
+diff --git a/include/clocksource/arm_generic.h b/include/clocksource/arm_generic.h
+new file mode 100644
+index 0000000..6933f8e
+--- /dev/null
++++ b/include/clocksource/arm_generic.h
+@@ -0,0 +1,22 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++#ifndef __ASM_ARCH_TIMER_H
++#define __ASM_ARCH_TIMER_H
++
++extern int arm_generic_timer_init(void);
++
++#endif
 
