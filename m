@@ -1,121 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301Ab2GFEJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 00:09:56 -0400
-Received: from warmcat.com ([87.106.134.80]:42661 "EHLO warmcat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750911Ab2GFEJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 00:09:53 -0400
-Subject: [PATCH 5 2/2] OMAP4 PANDA register ethernet and wlan for automatic
- mac allocation
-To: linux-omap@vger.kernel.org
-From: Andy Green <andy.green@linaro.org>
-Cc: s-jan@ti.com, arnd@arndb.de, patches@linaro.org, tony@atomide.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, linux-arm-kernel@lists.infradead.org
-Date: Fri, 06 Jul 2012 12:09:48 +0800
-Message-ID: <20120706040946.6669.1040.stgit@build.warmcat.com>
-In-Reply-To: <20120706040938.6669.77083.stgit@build.warmcat.com>
-References: <20120706040938.6669.77083.stgit@build.warmcat.com>
-User-Agent: StGit/0.16-2-g0d85
+	id S1752118Ab2GFE0O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 00:26:14 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43699 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751715Ab2GFE0N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 00:26:13 -0400
+X-Sasl-enc: P4RU6DmoQ6I19vPkWGS5CMkmkfPESPFqNEVPQhmxlds9 1341548772
+Date: Thu, 5 Jul 2012 21:26:11 -0700
+From: Greg KH <greg@kroah.com>
+To: Jia Hongtao-B38951 <B38951@freescale.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Yang-R58472 <r58472@freescale.com>
+Subject: Re: [PATCH V3 5/6] Avoid duplicate probe for of platform devices
+Message-ID: <20120706042611.GA1841@kroah.com>
+References: <1339148585-16947-1-git-send-email-B38951@freescale.com>
+ <4FD60FB1.7050106@gmail.com>
+ <412C8208B4A0464FA894C5F0C278CD5D01A16829@039-SN1MPN1-002.039d.mgd.msft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <412C8208B4A0464FA894C5F0C278CD5D01A16829@039-SN1MPN1-002.039d.mgd.msft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Green <andy@warmcat.com>
+On Fri, Jul 06, 2012 at 02:05:05AM +0000, Jia Hongtao-B38951 wrote:
+> Hi Rob and Greg KH,
+> 
+> Do you have any better idea to avoid duplication probe warning?
 
-This provides the board-specific device paths needed to get
-the panda boardfile working with the eth-mac-platform api.
+I have no idea what the problem is that you are trying to solve.
 
-On Pandaboard / ES, neither the onboard Ethernet or onboard WLAN
-module have onboard arrangements for MAC storage, without this
-series yielding randomized MAC per-boot and consequent DHCP problems,
-or in the case of wlan0 a MAC set by a firmware file in the rootfs
-which unless customized yields a MAC of 00:00:00:00:00:00.  No
-official MAC is reserved for either network device even if you do
-take the approach to customize the firmware file.
+> > On 06/08/2012 04:43 AM, Jia Hongtao wrote:
+> > > We changed the pcie controller driver to platform driver so that the
+> > PCI
+> > > of platform devices need to be created earlier in the arch_initcall
+> > stage
+> > > according to the original timing of calling fsl_add_bridge(). So we do
+> > PCI
+> > > probing separately from other devices. But probing more than once could
+> > > cause duplication warning. We add check if the devices have already
+> > probed
+> > > before probing any devices to avoid duplication warning.
 
-This gets sane, consistent MAC addresses on both devices which
-should stand a good probability of differing between PandaBoards.
+Ick, something else is going wrong here, how could you ever have the
+same device probed more than once?
 
-Signed-off-by: Andy Green <andy.green@linaro.org>
----
- arch/arm/mach-omap2/Kconfig            |    1 +
- arch/arm/mach-omap2/board-omap4panda.c |   30 ++++++++++++++++++++++++++++++
- 2 files changed, 31 insertions(+)
+> > > Signed-off-by: Jia Hongtao <B38951@freescale.com>
+> > > Signed-off-by: Li Yang <leoli@freescale.com>
+> > > ---
+> > 
+> > Where's v1 and v2 history?
+> > 
+> > >  drivers/of/platform.c |   18 ++++++++++++------
+> > >  1 files changed, 12 insertions(+), 6 deletions(-)
+> > >
+> > > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> > > index a37330e..3aab01f 100644
+> > > --- a/drivers/of/platform.c
+> > > +++ b/drivers/of/platform.c
+> > > @@ -139,6 +139,18 @@ struct platform_device *of_device_alloc(struct
+> > device_node *np,
+> > >  	if (!dev)
+> > >  		return NULL;
+> > >
+> > > +	dev->dev.of_node = of_node_get(np);
+> > > +	if (bus_id)
+> > > +		dev_set_name(&dev->dev, "%s", bus_id);
+> > > +	else
+> > > +		of_device_make_bus_id(&dev->dev);
+> > > +
+> > > +	if (kset_find_obj(dev->dev.kobj.kset, kobject_name(&dev->dev.kobj)))
 
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index 83fb31c..61c6a3d 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -358,6 +358,7 @@ config MACH_OMAP4_PANDA
- 	select OMAP_PACKAGE_CBL
- 	select OMAP_PACKAGE_CBS
- 	select REGULATOR_FIXED_VOLTAGE if REGULATOR
-+	select ETH_MAC_PLATFORM
- 
- config MACH_PCM049
- 	bool "OMAP4 based phyCORE OMAP4"
-diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
-index 982fb26..75d93cc 100644
---- a/arch/arm/mach-omap2/board-omap4panda.c
-+++ b/arch/arm/mach-omap2/board-omap4panda.c
-@@ -32,7 +32,10 @@
- #include <linux/wl12xx.h>
- #include <linux/platform_data/omap-abe-twl6040.h>
- 
-+#include <net/eth-mac-platform.h>
-+
- #include <mach/hardware.h>
-+#include <mach/id.h>
- #include <asm/hardware/gic.h>
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -486,16 +489,43 @@ static void omap4_panda_init_rev(void)
- 	}
- }
- 
-+/*
-+ * These device paths represent onboard network devices which have
-+ * no MAC address set at boot, and need synthetic ones assigning
-+ */
-+static __initdata struct eth_mac_platform panda_eth_mac_platform[] = {
-+
-+	{ /* smsc USB <-> Ethernet bridge */
-+		.device_path = "usb1/1-1/1-1.1/1-1.1:1.0",
-+	},
-+	{ /* wlan0 module */
-+		.device_path = "wl12xx",
-+	},
-+	{ /* terminator */
-+	}
-+};
-+
- static void __init omap4_panda_init(void)
- {
- 	int package = OMAP_PACKAGE_CBS;
- 	int ret;
-+	int n;
- 
- 	if (omap_rev() == OMAP4430_REV_ES1_0)
- 		package = OMAP_PACKAGE_CBL;
- 	omap4_mux_init(board_mux, NULL, package);
- 
- 	omap_panda_wlan_data.irq = gpio_to_irq(GPIO_WIFI_IRQ);
-+
-+	/*
-+	 * provide MAC addresses computed from device ID for network
-+	 * devices that have no MAC address otherwise on Panda
-+	 */
-+	for (n = 0; n < ARRAY_SIZE(panda_eth_mac_platform) - 1; n++)
-+		omap_die_id_to_ethernet_mac(panda_eth_mac_platform[n].mac, n);
-+	if (eth_mac_platform_register_device_macs(panda_eth_mac_platform))
-+		pr_err("Unable to register eth_mac_platform devices\n");
-+
- 	ret = wl12xx_set_platform_data(&omap_panda_wlan_data);
- 	if (ret)
- 		pr_err("error setting wl12xx data: %d\n", ret);
+Whatever you are trying to do here, odds are, it's wrong :)
 
+What is happening that is causing the problem?  What is causing the
+platform core to be calling probe on a device more than once?
+
+greg k-h
