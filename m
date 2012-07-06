@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870Ab2GFJU6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 05:20:58 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:50664 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932072Ab2GFJUz (ORCPT
+	id S932188Ab2GFJVS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 05:21:18 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:6311
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754577Ab2GFJVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 05:20:55 -0400
-Date: Fri, 6 Jul 2012 10:50:36 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH 03/28] x86/irq: Use irq_remap specific print_IO_APIC
- paths only on Intel
-Message-ID: <20120706085036.GB24449@gmail.com>
-References: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
- <1341491808-23083-4-git-send-email-joerg.roedel@amd.com>
+	Fri, 6 Jul 2012 05:21:13 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(zzbb2dI98dI9371I1432Izz1202h1082kzz8275bh8275dhz2dh2a8h668h839h944hd25hf0ah107ah)
+Date: Fri, 6 Jul 2012 17:13:36 +0800
+From: Dong Aisheng <b29396@freescale.com>
+To: Rob Herring <robherring2@gmail.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH v2 1/1] of: reform prom_update_property function
+Message-ID: <20120706091335.GB28264@shlinux2.ap.freescale.net>
+References: <1340605714-25206-1-git-send-email-b29396@freescale.com>
+ <4FE8F6DA.8070109@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1341491808-23083-4-git-send-email-joerg.roedel@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FE8F6DA.8070109@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Joerg Roedel <joerg.roedel@amd.com> wrote:
-
-> The VT-d IOMMU requires a special setup of the IO-APIC to
-> remap its interrupts. Therefore the print_IO_APIC routine
-> has seperate code paths to accout for that and print out the
-> special setup. This is not required on AMD IOMMU systems, so
-> make these path really Intel specific.
+On Tue, Jun 26, 2012 at 07:40:10AM +0800, Rob Herring wrote:
+> On 06/25/2012 01:28 AM, Dong Aisheng wrote:
+> > From: Dong Aisheng <dong.aisheng@linaro.org>
+> > 
+> > prom_update_property() currently fails if the property doesn't
+> > actually exist yet which isn't what we want. Change to add-or-update
+> > instead of update-only, then we can remove a lot duplicated lines.
+> > 
+> > Suggested-by: Grant Likely <grant.likely@secretlab.ca>
+> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
 > 
-> Cc: x86@kernel.org
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-> ---
->  arch/x86/include/asm/irq_remapping.h |    2 ++
->  arch/x86/kernel/apic/io_apic.c       |    4 ++--
->  drivers/iommu/intel_irq_remapping.c  |    2 ++
->  drivers/iommu/irq_remapping.c        |    1 +
->  4 files changed, 7 insertions(+), 2 deletions(-)
+> Acked-by: Rob Herring <rob.herring@calxeda.com>
 > 
-> diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
-> index 5fb9bbb..228d5e5 100644
-> --- a/arch/x86/include/asm/irq_remapping.h
-> +++ b/arch/x86/include/asm/irq_remapping.h
-> @@ -27,6 +27,7 @@
->  #ifdef CONFIG_IRQ_REMAP
->  
->  extern int irq_remapping_enabled;
-> +extern int intel_irq_remap_debug;
+> Ben, you can merge this via powerpc.
+> 
+> Rob
+> 
+Ping...
 
-Sigh.
+Regards
+Dong Aisheng
 
-Instead of yet another set of global flags thrown around the 
-kernel please properly factor out this code, its data structures 
-and methods: introduce a single descriptor structure that 
-describes this piece of hardware, with debugging flags part of 
-this structure - with operations function pointer structure and 
-such.
-
-This code came from the "we have a single, known type of system 
-global IOMMU" world - and we now want to transform this into 
-something that is properly abstracted out and made flexible, as 
-we extend its capabilities .
-
-Thanks,
-
-	Ingo
