@@ -1,27 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932465Ab2GFDV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 23:21:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61431 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752109Ab2GFDV1 (ORCPT
+	id S1752594Ab2GFDYn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 23:24:43 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:56926 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab2GFDYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 23:21:27 -0400
+	Thu, 5 Jul 2012 23:24:42 -0400
 From: Wanpeng Li <liwp.linux@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         cgroups@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Wanpeng Li <liwp.linux@gmail.com>
-Subject: [PATCH] mm/memcg: mem_cgroup_relize_xxx_limit can guarantee memcg->res.limit <= memcg->memsw.limit
-Date: Fri,  6 Jul 2012 11:21:00 +0800
-Message-Id: <1341544860-5634-1-git-send-email-liwp.linux@gmail.com>
+Subject: [PATCH v2] mm/memcg: mem_cgroup_resize_xxx_limit can guarantee memcg->res.limit <= memcg->memsw.limit
+Date: Fri,  6 Jul 2012 11:24:15 +0800
+Message-Id: <1341545055-5830-1-git-send-email-liwp.linux@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+
+Changlog:
+
+V2:
+* correct title 
 
 Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
 ---
