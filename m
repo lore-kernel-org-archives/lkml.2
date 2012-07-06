@@ -1,118 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab2GFLXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 07:23:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52272 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753487Ab2GFLXQ (ORCPT
+	id S933608Ab2GFLXZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 07:23:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58818 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933021Ab2GFLXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 07:23:16 -0400
-Date: Fri, 6 Jul 2012 04:22:44 -0700
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-ebf124ffab59e9e1c6179347fe95fe5baf32dcd7@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
-        a.p.zijlstra@chello.nl, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1341352848-11833-10-git-send-email-jolsa@redhat.com>
-References: <1341352848-11833-10-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf test: Use ARRAY_SIZE in parse events tests
-Git-Commit-ID: ebf124ffab59e9e1c6179347fe95fe5baf32dcd7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 6 Jul 2012 07:23:19 -0400
+Date: Fri, 6 Jul 2012 12:23:17 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, Mattias WALLIN <mattias.wallin@stericsson.com>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Daniel WILLERUD <daniel.willerud@stericsson.com>
+Subject: Re: [PATCH 3/9] ARM: ux500: Remove AB8500 regulator register
+ initialisation information
+Message-ID: <20120706112317.GD4017@opensource.wolfsonmicro.com>
+References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org>
+ <1341493572-29735-4-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbRtFX8_++rndCpsH7R1uhwPrkTE_GKgNTM6r1PSuwY0A@mail.gmail.com>
+ <4FF6979F.2000904@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NKoe5XOeduwbEQHU"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 04:22:53 -0700 (PDT)
+In-Reply-To: <4FF6979F.2000904@linaro.org>
+X-Cookie: Are you a turtle?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ebf124ffab59e9e1c6179347fe95fe5baf32dcd7
-Gitweb:     http://git.kernel.org/tip/ebf124ffab59e9e1c6179347fe95fe5baf32dcd7
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Wed, 4 Jul 2012 00:00:47 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 4 Jul 2012 11:31:26 -0300
 
-perf test: Use ARRAY_SIZE in parse events tests
+--NKoe5XOeduwbEQHU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Use ARRAY_SIZE instead of defining the sizes separately for each test
-arrays.
+On Fri, Jul 06, 2012 at 08:45:35AM +0100, Lee Jones wrote:
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1341352848-11833-10-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/parse-events-test.c |   29 ++++++++++-------------------
- 1 files changed, 10 insertions(+), 19 deletions(-)
+> Please take a note of this and also do not apply the regulator
+> driver counterpart of the patch-set (it was one of the ones you
+> Reviewed-by in the previous batch).
 
-diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
-index dd0c306..1b997d2 100644
---- a/tools/perf/util/parse-events-test.c
-+++ b/tools/perf/util/parse-events-test.c
-@@ -634,8 +634,6 @@ static struct test__event_st test__events[] = {
- 	},
- };
- 
--#define TEST__EVENTS_CNT (sizeof(test__events) / sizeof(struct test__event_st))
--
- static struct test__event_st test__events_pmu[] = {
- 	[0] = {
- 		.name  = "cpu/config=10,config1,config2=3,period=1000/u",
-@@ -647,9 +645,6 @@ static struct test__event_st test__events_pmu[] = {
- 	},
- };
- 
--#define TEST__EVENTS_PMU_CNT (sizeof(test__events_pmu) / \
--			      sizeof(struct test__event_st))
--
- struct test__term {
- 	const char *str;
- 	__u32 type;
-@@ -765,21 +760,17 @@ int parse_events__test(void)
- {
- 	int ret;
- 
--	do {
--		ret = test_events(test__events, TEST__EVENTS_CNT);
--		if (ret)
--			break;
--
--		if (test_pmu()) {
--			ret = test_events(test__events_pmu,
--					  TEST__EVENTS_PMU_CNT);
--			if (ret)
--				break;
--		}
-+#define TEST_EVENTS(tests)				\
-+do {							\
-+	ret = test_events(tests, ARRAY_SIZE(tests));	\
-+	if (ret)					\
-+		return ret;				\
-+} while (0)
- 
--		ret = test_terms(test__terms, TEST__TERMS_CNT);
-+	TEST_EVENTS(test__events);
- 
--	} while (0);
-+	if (test_pmu())
-+		TEST_EVENTS(test__events_pmu);
- 
--	return ret;
-+	return test_terms(test__terms, ARRAY_SIZE(test__terms));
- }
+I've no idea what patches you're talking about, sorry.
+
+--NKoe5XOeduwbEQHU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP9sp+AAoJEBus8iNuMP3dn54P/2m/+x/iDd8ZQ0gxfh98mluO
+909AG8URNB6ToZgHwayTRiGot3Mhb8eq4ax4Eun8HHbSrTW9nr2//sGXHhTC7Vhz
+J3Os1M5B9SMGtEoplLIvzMzfIaTqaSiiwkzfPMMVmQ8T3kuR0yKPYOEmmiP+yenn
+/h0bI9kRVoSd8t2kZp47fMabNyOHTdbWPxwhv5WFm4iUc8aFQ4a0hBIcBXbUfs+K
+CiOFTPMTs7eQwjKuUOC/e6+H3SgMva3oeLrquQX+4yHrESRNj6UwtpCSX0VZTkYV
+FtOSDK/T+aAmCf2ou74prUJgKSuXZOd4ts6Jh7p/h7zQpri/vk8YNxDcBB3QgqN+
+eAQVFF8LULpXP4OmogbZ/NGQhqOjFTvOuBN48fFrLBMVHxFhPwQgYgMRci9oKYHi
+o68cipmsYgp2jCJIFyqCcdFdyQ0v0AAyDe0e+/Dck1tEd3v7lmgr2919r98SW5f2
+YWv70Hkut+V9YuM++aR7mpFSJS3KqR32OMZFwi/kfJN1GBQ4/tH2SIFVNIpXxa9p
+CCv6bFtkgjjBtIARJwjXO1VQ82lKRM8NPYuGemtdO+U7lnXzSoDBu/6Oy4NbnT0V
+S5xlREJv1oa6K5GbyOL6kDc9Z1gAux8nqD2LNYlIn2ilo4/l1F3/Yg3bkRb49EN2
+5LoR0T8ctmNfeWeTDNfV
+=/4VO
+-----END PGP SIGNATURE-----
+
+--NKoe5XOeduwbEQHU--
