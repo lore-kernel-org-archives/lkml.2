@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933436Ab2GFLLK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 07:11:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51908 "EHLO
+	id S933469Ab2GFLMN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 07:12:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51941 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754928Ab2GFLLH (ORCPT
+	with ESMTP id S1756895Ab2GFLML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 07:11:07 -0400
-Date: Fri, 6 Jul 2012 04:10:54 -0700
-From: tip-bot for Steven Rostedt <srostedt@redhat.com>
-Message-ID: <tip-q3g0n1espikynsdkpbi6ue6t@git.kernel.org>
+	Fri, 6 Jul 2012 07:12:11 -0400
+Date: Fri, 6 Jul 2012 04:11:49 -0700
+From: tip-bot for Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
+Message-ID: <tip-c5b35b731965d16fa8c966e288489857097e0b25@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rostedt@goodmis.org, srostedt@redhat.com, johannes.berg@intel.com,
-        tglx@linutronix.de, namhyung@kernel.org
+        rostedt@goodmis.org, wolfgang.mauerer@siemens.com, tglx@linutronix.de,
+        namhyung@kernel.org
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, srostedt@redhat.com, johannes.berg@intel.com,
-        tglx@linutronix.de, namhyung@kernel.org
+        rostedt@goodmis.org, wolfgang.mauerer@siemens.com, tglx@linutronix.de,
+        namhyung@kernel.org
+In-Reply-To: <1332411501-8059-3-git-send-email-wolfgang.mauerer@siemens.com>
+References: <1332411501-8059-3-git-send-email-wolfgang.mauerer@siemens.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] tools lib traceevent:
-  Fix %pM print format arg handling
-Git-Commit-ID: aaf05c725bed1c7a8c940d9215662c78bea05dfd
+  Fix trace_printk for long integers
+Git-Commit-ID: c5b35b731965d16fa8c966e288489857097e0b25
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,43 +30,55 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 04:11:00 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 04:12:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  aaf05c725bed1c7a8c940d9215662c78bea05dfd
-Gitweb:     http://git.kernel.org/tip/aaf05c725bed1c7a8c940d9215662c78bea05dfd
-Author:     Steven Rostedt <srostedt@redhat.com>
-AuthorDate: Mon, 9 Jan 2012 15:58:09 -0500
+Commit-ID:  c5b35b731965d16fa8c966e288489857097e0b25
+Gitweb:     http://git.kernel.org/tip/c5b35b731965d16fa8c966e288489857097e0b25
+Author:     Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
+AuthorDate: Thu, 22 Mar 2012 11:18:21 +0100
 Committer:  Namhyung Kim <namhyung@kernel.org>
 CommitDate: Wed, 4 Jul 2012 13:40:30 +0900
 
-tools lib traceevent: Fix %pM print format arg handling
+tools lib traceevent: Fix trace_printk for long integers
 
-When %pM is used, the arg value must be a 6 byte character that will
-be printed as a 6 byte MAC address. But the code does a break over the
-main code which updates the current processing arg to point to the
-next arg. If there are other print arguments after a %pM, they will be
-off by one. The next arg will still be processing the %pM arg.
+On 32 bit systems, a conversion of the trace_printk format string
+"%lu" -> "%llu" is intended (similar for %lx etc.) when a trace was
+taken on a machine with 64 bit long integers. However, the current
+code computes the bogus transformation "%lu" -> "%u".  Fix this.
 
-Reported-by: Johannes Berg <johannes.berg@intel.com>
+Besides that, the transformation is only required on systems that don't
+use 64 bits for long integers natively.
+
+Signed-off-by: Wolfgang Mauerer <wolfgang.mauerer@siemens.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/n/tip-q3g0n1espikynsdkpbi6ue6t@git.kernel.org
+Link: http://lkml.kernel.org/r/1332411501-8059-3-git-send-email-wolfgang.mauerer@siemens.com
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/lib/traceevent/event-parse.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ tools/lib/traceevent/event-parse.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 872dd35..da06c33 100644
+index da06c33..ddee5a8 100644
 --- a/tools/lib/traceevent/event-parse.c
 +++ b/tools/lib/traceevent/event-parse.c
-@@ -3858,6 +3858,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 				} else if (*(ptr+1) == 'M' || *(ptr+1) == 'm') {
- 					print_mac_arg(s, *(ptr+1), data, size, event, arg);
- 					ptr++;
-+					arg = arg->next;
- 					break;
+@@ -3895,14 +3895,15 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
+ 						break;
+ 					}
  				}
+-				if (pevent->long_size == 8 && ls) {
++				if (pevent->long_size == 8 && ls &&
++				    sizeof(long) != 8) {
+ 					char *p;
  
+ 					ls = 2;
+ 					/* make %l into %ll */
+ 					p = strchr(format, 'l');
+ 					if (p)
+-						memmove(p, p+1, strlen(p)+1);
++						memmove(p+1, p, strlen(p)+1);
+ 					else if (strcmp(format, "%p") == 0)
+ 						strcpy(format, "0x%llx");
+ 				}
