@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751326Ab2GFMYF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 08:24:05 -0400
-Received: from mail-db3.bigfish.com ([94.245.120.74]:16169 "EHLO
-	DB3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750786Ab2GFMYD (ORCPT
+	id S1751955Ab2GFMYy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 08:24:54 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40237 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab2GFMYU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 08:24:03 -0400
-X-Greylist: delayed 905 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jul 2012 08:24:03 EDT
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -14
-X-BigFish: VPS-14(zz98dI936eI1432I4015Izz1202hzz15d4Rz2dh668h839h944hd25he5bhf0ah)
-X-WSS-ID: 0M6QN24-01-ETE-02
-X-M-MSG: 
-Date: Fri, 6 Jul 2012 14:08:24 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Joe Perches <joe@perches.com>
-CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/28] iommu/amd: Move informational prinks out of
- iommu_enable
-Message-ID: <20120706120824.GA2639@amd.com>
-References: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
- <1341491808-23083-7-git-send-email-joerg.roedel@amd.com>
- <1341547718.27760.5.camel@joe2Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1341547718.27760.5.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Fri, 6 Jul 2012 08:24:20 -0400
+Message-ID: <1341577439.7709.49.camel@twins>
+Subject: Re: [PATCH 09/16] sched: normalize tg load contributions against
+ runnable time
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Date: Fri, 06 Jul 2012 14:23:59 +0200
+In-Reply-To: <20120628022414.30496.11931.stgit@kitami.mtv.corp.google.com>
+References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
+	 <20120628022414.30496.11931.stgit@kitami.mtv.corp.google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+On Wed, 2012-06-27 at 19:24 -0700, Paul Turner wrote:
 
-On Thu, Jul 05, 2012 at 09:08:38PM -0700, Joe Perches wrote:
-> On Thu, 2012-07-05 at 14:36 +0200, Joerg Roedel wrote:
-> > +	static const char * const feat_str[] = {
-> > +		"PreF", "PPR", "X2APIC", "NX", "GT", "[5]",
-> > +		"IA", "GA", "HE", "PC", NULL
-> > +	};
-> > +	struct amd_iommu *iommu;
-> > +
-> > +	for_each_iommu(iommu) {
-> > +		int i;
-> > +		pr_info("AMD-Vi: Found IOMMU at %s cap 0x%hx\n",
-> > +			dev_name(&iommu->dev->dev), iommu->cap_ptr);
-> > +		if (iommu->cap & (1 << IOMMU_CAP_EFR)) {
-> > +			pr_info("AMD-Vi:  Extended features: ");
-> > +			for (i = 0; feat_str[i]; ++i)
-> > +				if (iommu_feature(iommu, (1ULL << i)))
-> > +					pr_cont(" %s", feat_str[i]);
-> 
-> I think this should use {} around the for loop
-> and this would be better as:
-> 
-> 	static const char * const feat_str[] = {
-> 		"PreF", "PPR", "X2APIC", "NX", "GT", "[5]",
-> 		"IA", "GA", "HE", "PC"
-> 	};
-> []
-> 			for (i = 0; ARRAY_SIZE(feat_str); i++) {
-> 				if (iommu_feature(iommu, (1ULL << i)))
-> 					pr_cont(" %s", feat_str[i]);
->  			}
+> +       contrib = div_u64(sa->runnable_avg_sum << 12,
+> +                         sa->runnable_avg_period + 1);
 
-Changed that, thanks.
+> +
+> +       /*
+> +        * Unlike a task-entity, a group entity may be using >=1 cpu globally.
+> +        * However, in the case that it's using <1 cpu we need to form a
+> +        * correction term so that we contribute the same load as a task of
+> +        * equal weight. (Global runnable time is taken as a fraction over
+> +        * 2^12.)
+> +        */
+> +       runnable_avg = atomic_read(&tg->runnable_avg);
+> +       if (runnable_avg < (1<<12)) {
+> +               se->avg.load_avg_contrib *= runnable_avg;
+> +               se->avg.load_avg_contrib /= (1<<12);
+> +       }
 
-> I don't see the utility of the separate function and
-> this could just be inlined in the calling function.
 
-Well, the benefit is that the function call can be easily moved to
-another place if necessary. So I left the printks in the seperate
-function. The compiler will inline them anyway.
+Did we really have to open-code a 4096 fixed point here? Couldn't we
+re-use some of the existing _SCALE things.. if not why 12?
 
-Thanks,
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
