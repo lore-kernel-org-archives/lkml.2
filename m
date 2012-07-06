@@ -1,91 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573Ab2GFPMj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 11:12:39 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:53937 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757447Ab2GFPMd (ORCPT
+	id S1757564Ab2GFPQm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 11:16:42 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:26712 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750906Ab2GFPQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 11:12:33 -0400
+	Fri, 6 Jul 2012 11:16:41 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: hscMIOAVM1la4VRyWHutoKin7jj2BM4v76pQd4jGLNWutzV
+ YkWwTPkfexL7V1nGPKkNYArZ.x.NIYBoKDgbIw7PoUxKxJYYYFdJeOF47cCl
+ Or4jsYO3HOjYeS3KsBKWH.Ry1ZZS1xeL5Mf_ZcgBaNP7PBcxfsPdb5Itfbuc
+ MIiiwhNYQQ.okadcOeFNrsw2zjrfbUg6RXJy2orbxA9haM7LjcBmdyBwHdy7
+ V.A5rOFvVecDRcsMAWpxBWDpRshYNgUPeZkh3FuSE3z0n5A0jcWsc4Bk7v4J
+ sxhuxR4cEO4OC.qEF61X.WJJ4tf3XqUnapxgt5L1uKbGQ6Br6Egwefo09nno
+ Oxt4DTGiX5CORd9RnxkPSm5fvYRYd7pVSD.acwrD74lBzgUS1ea8pmkJD.VI
+ 3IsWiEpZo_dmzcpw0f4L_YsaKB9mpyEpVEJba
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 6 Jul 2012 10:16:36 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, cgroups@vger.kernel.org,
+        devel@openvz.org, kamezawa.hiroyu@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v4 24/25] memcg/slub: shrink dead caches
+In-Reply-To: <1340015298-14133-25-git-send-email-glommer@parallels.com>
+Message-ID: <alpine.DEB.2.00.1207061015030.28648@router.home>
+References: <1340015298-14133-1-git-send-email-glommer@parallels.com> <1340015298-14133-25-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAPXgP13_cQUQLE4RSjACTzj28Pn6r3ZaPhjch2U+uwgi7YKcWA@mail.gmail.com>
-References: <1340651142.7037.2.camel@gandalf.stny.rr.com> <20120625150722.8cd4f45d.akpm@linux-foundation.org>
- <20120625235531.GB3652@kroah.com> <CA+55aFwczZTA=JUahoj_Sw1fQssDwoM2LGJ6g5nPvehTLxnSpg@mail.gmail.com>
- <20120626002307.GA4389@kroah.com> <CA+55aFxhYRqcU2EUmcsuLrhgo4FEO6-b+mB57wB3JRiXEp3ZrA@mail.gmail.com>
- <CAPXgP10cPFSmZ5yr6Z4wVtDa+x2J1yQDF57NJXtxjUuxMHm=Lw@mail.gmail.com>
- <CA+55aFzkX=jCC1O6+2oz8meswOqZQ+Q8Ao60q8eAS1G3AuEStQ@mail.gmail.com>
- <1340726856.977.6.camel@mop> <22482.1341471787@neuling.org>
- <CAPXgP11=o5WB4WejaQCSCL-+5e4sL7tfVz_r3Khyrq3SyrMvsA@mail.gmail.com>
- <CAPXgP13u769nSvUdS1iqiVCsxG5nsQd7bNT1=-eNw156U-kPkQ@mail.gmail.com>
- <16043.1341483625@neuling.org> <CAPXgP11+j+fDexHHmAZbBBidtrydrpWeh3DGWOhkuoybNj9skA@mail.gmail.com>
- <1341492628.834.3.camel@mop> <30233.1341535279@neuling.org>
- <CAPXgP12_F_H2XPpo2wFmb-u3jBdV__=h67R-LVYbqHuLh7tqLg@mail.gmail.com>
- <29711.1341545979@neuling.org> <30343.1341546469@neuling.org> <CAPXgP13_cQUQLE4RSjACTzj28Pn6r3ZaPhjch2U+uwgi7YKcWA@mail.gmail.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Fri, 6 Jul 2012 17:12:12 +0200
-Message-ID: <CAPXgP10JthGjZyqD6gqn2n1rPu1uP+=mem_T-iOritXAQMstRQ@mail.gmail.com>
-Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
-To: Michael Neuling <mikey@neuling.org>
-Cc: linuxppc-dev@ozlabs.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Wu Fengguang <fengguang.wu@intel.com>, Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 6, 2012 at 12:46 PM, Kay Sievers <kay@vrfy.org> wrote:
-> On Fri, Jul 6, 2012 at 5:47 AM, Michael Neuling <mikey@neuling.org> wrote:
->
->>> 4,89,24561;NIP: c000000000048164 LR: c000000000048160 CTR: 0000000000000000
->>> 4,90,24576;REGS: c00000007e59fb50 TRAP: 0700   Tainted: G        W     (3.5.0-rc4-mikey)
->>> 4,91,24583;MSR: 9000000000021032
->>> 4,92,24586;<
->>> 4,93,24591;SF
->>> 4,94,24596;,HV
->>> 4,95,24601;,ME
->>> 4,96,24606;,IR
->>> 4,97,24611;,DR
->>> 4,98,24616;,RI
->>> 4,99,24619;>
->>> 4,100,24628;  CR: 28000042  XER: 22000000
->>
->> FWIW, compiling with the parent commit gives this:
->>
->> 4,89,1712;NIP: c000000000048164 LR: c000000000048160 CTR: 0000000000000000
->> 4,90,1713;REGS: c00000007e59fb50 TRAP: 0700   Tainted: G        W     (3.5.0-rc4-mikey)
->> 4,91,1716;MSR: 9000000000021032 <SF,HV,ME,IR,DR,RI>  CR: 22000082  XER: 02000000
->
-> Hmm, I don't understand, which parent commit do you mean? You maybe
-> mean without 084681d?
->
-> I think it's a race of the two CPUs printing continuation lines, and
-> the continuation buffer is still occupied with data from one CPU and
-> not available to the other one at the same time.
->
-> What you see is likely not the direct output to the console (that
-> would work) but the replay of the stored buffer when the console is
-> registered. Because the cont buffer was still busy with one CPU, the
-> other thread needs to store the continuation line prints in individual
-> records, which leads to the (unwanted) printed newlines when
-> replaying.
->
-> The data we store looks all fine, it just looks needlessly separated
-> when we replay fromt he buffer on a newly registered boot console. We
-> need to merge the lines in the output, so they *look* like they are
-> all in one line. I'll work on a fix for that now.
+On Mon, 18 Jun 2012, Glauber Costa wrote:
 
-It could be that the console semaphore is still help by the other CPU,
-for whatever reason, when your box runs into this situation.
+> In the slub allocator, when the last object of a page goes away, we
+> don't necessarily free it - there is not necessarily a test for empty
+> page in any slab_free path.
 
-Mind pasting more context (/dev/kmsg) of the log when this happens,
-not only the one line that get split-up?
+This is the same btw in SLAB which keeps objects in per cpu caches and
+keeps empty slab pages on special queues.
 
-Is this possibly during an oops or backtrace going on when you see
-this? Which code calls show_regs() here?
+> This patch marks all memcg caches as dead. kmem_cache_shrink is called
+> for the ones who are not yet dead - this will force internal cache
+> reorganization, and then all references to empty pages will be removed.
 
-Kay
+You need to call this also for slab to drain the caches and free the pages
+on the empty list.
+
