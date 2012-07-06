@@ -1,66 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab2GFNx2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 09:53:28 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:36053 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750770Ab2GFNx0 (ORCPT
+	id S1754954Ab2GFNzW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 09:55:22 -0400
+Received: from 11.mo3.mail-out.ovh.net ([87.98.184.158]:45293 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751357Ab2GFNzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 09:53:26 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: XdKRvtAVM1nl_FTM4HvCu3kGYEIXwfQZHKRDDX4q6PMLHB2
- R9siMeqsQ0RdeYE7yh_p2d9poGw7vimg0ArNybRebaR9qAgo84rC8UDJvs5Z
- wHXeBnvyF5CJUN2OJ9PKO_o9phKPReHN5dbTMcl0aE4Wiguesjq1Hx9dzue3
- q5ZOv6lcwQZEqiPw0JLtG5s_JqKPDoJAsGt07RAjI_TzL8O5sp_yGtwpLNTG
- A.WNywKL7uGt5dAuTe6UbpN.sLb_f02QByoPCWl8yC_Ra5rYjBBoipCAciPj
- Srxt7GMAsDXnbm.OrAPbv15M_GtOBH6uNHFLRzpG5plzhYAX8QVdRBGsD09n
- 6y5c0Kte8nhbUA6pnasiHPMsrKFDHnAU8HMQVw8uG1Lw0QUzAvPTtuGD5PPw
- wllkF_kgyMSjxhMXHkv6fAUsPV.2QgIKnimcd
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 6 Jul 2012 08:53:19 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Jiang Liu <jiang.liu@huawei.com>
-cc: Jiang Liu <liuj97@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, Mel Gorman <mgorman@suse.de>,
-        Yinghai Lu <yinghai@kernel.org>, Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/4] mm: make consistent use of PG_slab flag
-In-Reply-To: <4FF6A21C.9010509@huawei.com>
-Message-ID: <alpine.DEB.2.00.1207060851310.26441@router.home>
-References: <1341287837-7904-1-git-send-email-jiang.liu@huawei.com> <1341287837-7904-2-git-send-email-jiang.liu@huawei.com> <alpine.DEB.2.00.1207050945310.4984@router.home> <4FF5BD9D.9040101@gmail.com> <alpine.DEB.2.00.1207051236310.8670@router.home>
- <4FF6A21C.9010509@huawei.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 6 Jul 2012 09:55:21 -0400
+X-Greylist: delayed 7226 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jul 2012 09:55:20 EDT
+Date: Fri, 6 Jul 2012 13:28:34 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: jgq516@gmail.com
+Cc: linux@arm.linux.org.uk, tony@atomide.com, nicolas.ferre@atmel.com,
+        arnd@arndb.de, swarren@nvidia.com, olof@lixom.net,
+        ldewangan@nvidia.com, hdoyu@nvidia.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH 1/1] ARM: add PROC_DEVICETREE support in Kconfig
+Message-ID: <20120706112834.GA4450@game.jcrosoft.org>
+References: <1341571127-14461-1-git-send-email-jgq516@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341571127-14461-1-git-send-email-jgq516@gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 14682579211847117622
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: 0
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegkedrieelucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: 0
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegkedrieelucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Jul 2012, Jiang Liu wrote:
+On 18:38 Fri 06 Jul     , jgq516@gmail.com wrote:
+> From: Xiao Jiang <jgq516@gmail.com>
+> 
+> Since more and more arm chips support device tree, it'd be better add PROC_DEVICETREE
+> in arch/arm/Kconfig to avoid duplicate code.
+> 
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-> 	This patch is not for hotplug, but is to fix some issues in current
-> kernel, such as:
-> 	1) make show_mem() on ARM and unicore32 report consistent information
-> no matter which slab allocator is used.
-
-The information is only different because allocations do not go through
-the slab allocators for SLUB/SLOB.
-
-> 	2) make /proc/kpagecount and /proc/kpageflags return accurate information.
-
-Fix the compound handling in those and the numbers will be correct. This
-is also good for other issues that may arise because the flags in the
-compound head are not considered.
-
-> 	3) Get rid of risks in mm/memory_failure.c and arch/ia64/kernel/mca_drv.c
-
-Assuming that a slab allocation fits into a page is a dangerous
-assumption. There are arches with much large page sizes. Please fix the
-code.
-
-
+Best Regards,
+J.
+> Signed-off-by: Xiao Jiang <jgq516@gmail.com>
+> ---
+>  arch/arm/Kconfig                   |    1 +
+>  arch/arm/configs/at91_dt_defconfig |    1 -
+>  arch/arm/configs/tegra_defconfig   |    1 -
+>  arch/arm/plat-omap/Kconfig         |    1 -
+>  4 files changed, 1 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index a91009c..f68896e 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -1864,6 +1864,7 @@ config USE_OF
+>  	select OF
+>  	select OF_EARLY_FLATTREE
+>  	select IRQ_DOMAIN
+> +	select PROC_DEVICETREE if PROC_FS
+>  	help
+>  	  Include support for flattened device tree machine descriptions.
+>  
+> diff --git a/arch/arm/configs/at91_dt_defconfig b/arch/arm/configs/at91_dt_defconfig
+> index 67bc571..b856cb6 100644
+> --- a/arch/arm/configs/at91_dt_defconfig
+> +++ b/arch/arm/configs/at91_dt_defconfig
+> @@ -64,7 +64,6 @@ CONFIG_MTD_NAND=y
+>  CONFIG_MTD_NAND_ATMEL=y
+>  CONFIG_MTD_UBI=y
+>  CONFIG_MTD_UBI_GLUEBI=y
+> -CONFIG_PROC_DEVICETREE=y
+>  CONFIG_BLK_DEV_LOOP=y
+>  CONFIG_BLK_DEV_RAM=y
+>  CONFIG_BLK_DEV_RAM_COUNT=4
+> diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+> index 1198dd6..43e7b65 100644
+> --- a/arch/arm/configs/tegra_defconfig
+> +++ b/arch/arm/configs/tegra_defconfig
+> @@ -72,7 +72,6 @@ CONFIG_IPV6_TUNNEL=y
+>  CONFIG_IPV6_MULTIPLE_TABLES=y
+>  # CONFIG_WIRELESS is not set
+>  # CONFIG_FIRMWARE_IN_KERNEL is not set
+> -CONFIG_PROC_DEVICETREE=y
+>  CONFIG_BLK_DEV_LOOP=y
+>  CONFIG_AD525X_DPOT=y
+>  CONFIG_AD525X_DPOT_I2C=y
+> diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
+> index ad95c7a..4e2cb17 100644
+> --- a/arch/arm/plat-omap/Kconfig
+> +++ b/arch/arm/plat-omap/Kconfig
+> @@ -27,7 +27,6 @@ config ARCH_OMAP2PLUS
+>  	select GENERIC_IRQ_CHIP
+>  	select OMAP_DM_TIMER
+>  	select USE_OF
+> -	select PROC_DEVICETREE if PROC_FS
+>  	help
+>  	  "Systems based on OMAP2, OMAP3 or OMAP4"
+>  
+> -- 
+> 1.7.3
+> 
