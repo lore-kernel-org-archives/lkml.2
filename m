@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932876Ab2GFG1y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 02:27:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35196 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139Ab2GFG1v (ORCPT
+	id S932940Ab2GFG2I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 02:28:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49081 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932307Ab2GFG2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 02:27:51 -0400
-Message-ID: <4FF68560.7040102@gmail.com>
-Date: Fri, 06 Jul 2012 14:27:44 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Fri, 6 Jul 2012 02:28:03 -0400
+Date: Thu, 5 Jul 2012 23:27:46 -0700
+From: tip-bot for Robert Richter <robert.richter@amd.com>
+Message-ID: <tip-f285f92f7e4c9af20149130c8fd5027131b39b0e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de
+In-Reply-To: <1340217996-2254-5-git-send-email-robert.richter@amd.com>
+References: <1340217996-2254-5-git-send-email-robert.richter@amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86: Improve debug output in check_hw_exists(
+ )
+Git-Commit-ID: f285f92f7e4c9af20149130c8fd5027131b39b0e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ext4: make extents.c/ext4_ext_try_to_merge return 1 on
- merged
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 05 Jul 2012 23:27:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the old version, ext4_ext_try_to_merge would return 0 if
-merge left or no merge, and return 1 if merge right.
-Here make ext4_ext_try_to_merge return 1 on merged, and return
-0 if no merge.
+Commit-ID:  f285f92f7e4c9af20149130c8fd5027131b39b0e
+Gitweb:     http://git.kernel.org/tip/f285f92f7e4c9af20149130c8fd5027131b39b0e
+Author:     Robert Richter <robert.richter@amd.com>
+AuthorDate: Wed, 20 Jun 2012 20:46:36 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 5 Jul 2012 21:19:42 +0200
 
-Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+perf/x86: Improve debug output in check_hw_exists()
+
+It might be of interest which perfctr msr failed.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+[ added hunk to avoid GCC warn ]
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1340217996-2254-5-git-send-email-robert.richter@amd.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- fs/ext4/extents.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 6c2a37d..7f6fb48 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -1657,7 +1657,7 @@ static int ext4_ext_try_to_merge_right(struct inode *inode,
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 7b4f1e8..3eb88eb 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -178,7 +178,7 @@ static void release_pmc_hardware(void) {}
  
- /*
-  * This function tries to merge the @ex extent to neighbours in the tree.
-- * return 1 if merge left else 0.
-+ * return 1 if merged else 0.
-  */
- static int ext4_ext_try_to_merge(struct inode *inode,
- 				  struct ext4_ext_path *path,
-@@ -1665,7 +1665,6 @@ static int ext4_ext_try_to_merge(struct inode *inode,
- 	struct ext4_extent_header *eh;
- 	unsigned int depth;
- 	int merge_done = 0;
--	int ret = 0;
+ static bool check_hw_exists(void)
+ {
+-	u64 val, val_new = 0;
++	u64 val, val_new = ~0;
+ 	int i, reg, ret = 0;
  
- 	depth = ext_depth(inode);
- 	BUG_ON(path[depth].p_hdr == NULL);
-@@ -1675,9 +1674,9 @@ static int ext4_ext_try_to_merge(struct inode *inode,
- 		merge_done = ext4_ext_try_to_merge_right(inode, path, ex - 1);
+ 	/*
+@@ -211,8 +211,9 @@ static bool check_hw_exists(void)
+ 	 * that don't trap on the MSR access and always return 0s.
+ 	 */
+ 	val = 0xabcdUL;
+-	ret = wrmsrl_safe(x86_pmu_event_addr(0), val);
+-	ret |= rdmsrl_safe(x86_pmu_event_addr(0), &val_new);
++	reg = x86_pmu_event_addr(0);
++	ret = wrmsrl_safe(reg, val);
++	ret |= rdmsrl_safe(reg, &val_new);
+ 	if (ret || val != val_new)
+ 		goto msr_fail;
  
- 	if (!merge_done)
--		ret = ext4_ext_try_to_merge_right(inode, path, ex);
-+		merge_done = ext4_ext_try_to_merge_right(inode, path, ex);
+@@ -229,6 +230,7 @@ bios_fail:
  
--	return ret;
-+	return merge_done;
+ msr_fail:
+ 	printk(KERN_CONT "Broken PMU hardware detected, using software events only.\n");
++	printk(KERN_ERR "Failed to access perfctr msr (MSR %x is %Lx)\n", reg, val_new);
+ 
+ 	return false;
  }
- 
- /*
--- 
-1.7.1
