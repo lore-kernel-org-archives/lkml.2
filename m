@@ -1,123 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab2GFDvx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 23:51:53 -0400
-Received: from trent.utfs.org ([94.185.90.103]:54890 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753056Ab2GFDvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 23:51:52 -0400
-Date: Thu, 5 Jul 2012 20:51:48 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-cc: LKML <linux-kernel@vger.kernel.org>, arjan@linux.intel.com,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] Fix a dead loop in async_synchronize_full()
-In-Reply-To: <1341209044.5102.20.camel@ThinkPad-T420>
-Message-ID: <alpine.DEB.2.01.1207052049540.5568@trent.utfs.org>
-References: <1341209044.5102.20.camel@ThinkPad-T420>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1755632Ab2GFD5Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 23:57:25 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:12164 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753422Ab2GFD5X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 23:57:23 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 05 Jul 2012 20:57:18 -0700
+Message-ID: <4FF66212.6080507@nvidia.com>
+Date: Fri, 6 Jul 2012 09:27:06 +0530
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "mturquette@ti.com" <mturquette@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Subject: Re: [PATCH v3 0/6] Port Tegra to generic clk framework
+References: <1341482120-3317-1-git-send-email-pgaikwad@nvidia.com> <4FF5E1C3.6070309@wwwdotorg.org>
+In-Reply-To: <4FF5E1C3.6070309@wwwdotorg.org>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Jul 2012 at 14:04, Li Zhong wrote:
-> This patch tries to fix a dead loop in  async_synchronize_full(), which
-> could be seen when preemption is disabled on a single cpu machine. 
+On Friday 06 July 2012 12:19 AM, Stephen Warren wrote:
+> On 07/05/2012 03:55 AM, Prashant Gaikwad wrote:
+>> This patch set ports Tegra clock code to generic clock framework.
+> Unfortunately, this series causes some regressions, so I can't apply it
+> now. Given that, it won't make 3.6 since I won't be around to apply it.
 
-This helps in my case[0], will this patch be included in -rc6?
+Ok.
 
-Thanks,
-Christian.
+> I tested both Tegra's for-next, and next-20120705, both plus this
+> series, next-20120705 plus the fix for the common clock code
+> __clk_set_parent() issue.
+>
+> The following all appeared to work OK:
+>
+> Cardhu DT
+> Ventana DT
+> Seaboard DT
+> Springbank DT
+> Harmony DT
+> Harmony non-DT
+>
+> However, the following failed, all(?) in ways that prevented the system
+> getting to the login prompt:
+>
+> Whistler DT
+> AC100 DT
+> AC100 non-DT
+> Trimslice DT
+> Trimslice non-DT
+>
+> (The one slight difference between the 2 branches I tested is that AC100
+> and Trimslice booted using DT passed in next-20120705 but failed only in
+> Tegra's for-next. Otherwise, all results were identical)
+>
+> I'll try to investigate what the issues are since I imagine you don't
+> have access to these boards. But, I probably won't be able to fix this
+> until I return from vacation.
 
-[0] https://lists.ozlabs.org/pipermail/linuxppc-dev/2012-July/098922.html
+I am not sure how DT/non-DT should make difference to this series.
+I don't have access to those boards but if you can share the failure log 
+I can try to pinpoint the fix.
 
-
-> void async_synchronize_full(void)
-> {
->         do {
->                 async_synchronize_cookie(next_cookie);
->         } while (!list_empty(&async_running) || !
-> list_empty(&async_pending));
-> }
-> 
-> async_synchronize_cookie() calls async_synchronize_cookie_domain() with
-> &async_running as the default domain to synchronize. 
-> 
-> However, there might be some works in the async_pending list from other
-> domains. On a single cpu system, without preemption, there is no chance
-> for the other works to finish, so async_synchronize_full() enters a dead
-> loop. 
-> 
-> It seems async_synchronize_full() wants to synchronize all entries in
-> all running lists(domains), so maybe we could just check the entry_count
-> to know whether all works are finished. 
-> 
-> Currently, async_synchronize_cookie_domain() expects a non-NULL running
-> list ( if NULL, there would be NULL pointer dereference ), so maybe a
-> NULL pointer could be used as an indication for the functions to
-> synchronize all works in all domains. 
-> 
-> Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-> Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> ---
->  kernel/async.c |   13 +++++++++----
->  1 file changed, 9 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/async.c b/kernel/async.c
-> index bd0c168..32d8dc9 100644
-> --- a/kernel/async.c
-> +++ b/kernel/async.c
-> @@ -86,6 +86,13 @@ static async_cookie_t  __lowest_in_progress(struct
-> list_head *running)
->  {
->  	struct async_entry *entry;
->  
-> +	if (!running) { /* just check the entry count */
-> +		if (atomic_read(&entry_count))
-> +			return 0; /* smaller than any cookie */
-> +		else
-> +			return next_cookie;
-> +	}
-> +
->  	if (!list_empty(running)) {
->  		entry = list_first_entry(running,
->  			struct async_entry, list);
-> @@ -236,9 +243,7 @@ EXPORT_SYMBOL_GPL(async_schedule_domain);
->   */
->  void async_synchronize_full(void)
->  {
-> -	do {
-> -		async_synchronize_cookie(next_cookie);
-> -	} while (!list_empty(&async_running) || !list_empty(&async_pending));
-> +	async_synchronize_cookie_domain(next_cookie, NULL);
->  }
->  EXPORT_SYMBOL_GPL(async_synchronize_full);
->  
-> @@ -258,7 +263,7 @@ EXPORT_SYMBOL_GPL(async_synchronize_full_domain);
->  /**
->   * async_synchronize_cookie_domain - synchronize asynchronous function
-> calls within a certain domain with cookie checkpointing
->   * @cookie: async_cookie_t to use as checkpoint
-> - * @running: running list to synchronize on
-> + * @running: running list to synchronize on, NULL indicates all lists
->   *
->   * This function waits until all asynchronous function calls for the
->   * synchronization domain specified by the running list @list submitted
-> -- 
-> 1.7.9.5
-> 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
 
--- 
-BOFH excuse #192:
-
-runaway cat on system.
