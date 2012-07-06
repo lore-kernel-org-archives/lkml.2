@@ -1,71 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab2GFPdB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 11:33:01 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:44673 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757624Ab2GFPc7 (ORCPT
+	id S1757734Ab2GFPgi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 11:36:38 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34305 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757644Ab2GFPgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 11:32:59 -0400
+	Fri, 6 Jul 2012 11:36:36 -0400
+Message-ID: <4FF705F1.1060208@gmail.com>
+Date: Fri, 06 Jul 2012 23:36:17 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <1341588498-21689-6-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1341588498-21689-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1341588498-21689-6-git-send-email-andriy.shevchenko@linux.intel.com>
-Date: Sat, 7 Jul 2012 00:32:58 +0900
-X-Google-Sender-Auth: E34JmNYTtFEPE1n_SWWrx5qc4Jg
-Message-ID: <CAH9JG2XzWS_PF8E4V2bHjq=PtTMEtdDcm1Q03GxK8h4E28Rpjw@mail.gmail.com>
-Subject: Re: [PATCH 6/6] staging: ccg: print MAC addresses via %pM
-From: Kyungmin Park <kmpark@infradead.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+To: Christoph Lameter <cl@linux.com>
+CC: Jiang Liu <jiang.liu@huawei.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, Mel Gorman <mgorman@suse.de>,
+        Yinghai Lu <yinghai@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/4] mm: introduce a safer interface to check whether
+ a page is managed by SLxB
+References: <1341287837-7904-1-git-send-email-jiang.liu@huawei.com> <alpine.DEB.2.00.1207050942540.4984@router.home> <4FF5B909.30409@gmail.com> <alpine.DEB.2.00.1207051229490.8670@router.home> <4FF693F6.8070505@huawei.com> <alpine.DEB.2.00.1207060841001.26441@router.home>
+In-Reply-To: <alpine.DEB.2.00.1207060841001.26441@router.home>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Hi Chris,
+	Really appreciate your suggestions and I will work out a new version to
+fix callers of PageSlab() instead of changing the slab allocator.
+	Thanks!
+	Gerry
 
-On Sat, Jul 7, 2012 at 12:28 AM, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/staging/ccg/ccg.c |    8 ++------
->  1 file changed, 2 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/staging/ccg/ccg.c b/drivers/staging/ccg/ccg.c
-> index a5b36a9..62f5d92 100644
-> --- a/drivers/staging/ccg/ccg.c
-> +++ b/drivers/staging/ccg/ccg.c
-> @@ -564,9 +564,7 @@ static int rndis_function_bind_config(struct ccg_usb_function *f,
->                 return -1;
->         }
->
-> -       pr_info("%s MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", __func__,
-> -               rndis->ethaddr[0], rndis->ethaddr[1], rndis->ethaddr[2],
-> -               rndis->ethaddr[3], rndis->ethaddr[4], rndis->ethaddr[5]);
-> +       pr_info("%s MAC: pM\n", __func__, rndis->ethaddr);
->
->         ret = gether_setup_name(c->cdev->gadget, rndis->ethaddr, "rndis");
->         if (ret) {
-> @@ -654,9 +652,7 @@ static ssize_t rndis_ethaddr_show(struct device *dev,
->  {
->         struct ccg_usb_function *f = dev_get_drvdata(dev);
->         struct rndis_function_config *rndis = f->config;
-> -       return sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x\n",
-> -               rndis->ethaddr[0], rndis->ethaddr[1], rndis->ethaddr[2],
-> -               rndis->ethaddr[3], rndis->ethaddr[4], rndis->ethaddr[5]);
-> +       return sprintf(buf, "%pM\n", rndis->ethaddr);
->  }
->
->  static ssize_t rndis_ethaddr_store(struct device *dev,
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On 07/06/2012 09:50 PM, Christoph Lameter wrote:
+> On Fri, 6 Jul 2012, Jiang Liu wrote:
+> 
+>> 	Originally the patch is aimed to fix an issue encountered when
+>> hot-removing a hot-added memory device. Currently memory hotplug is only
+>> supported with SPARSE memory model. After offlining all pages of a memory
+>> section, we need to free resources used by "struct mem_section" itself.
+>> That is to free section_mem_map and pageblock_flags. For memory section
+>> created at boot time, section_mem_map and pageblock_flags are allocated
+>> from bootmem. For memory section created at runtime, section_mem_map
+>> and pageblock_flags are allocated from slab. So when freeing these
+>> resources, we use PageSlab() to tell whether there are allocated from slab.
+>> So free_section_usemap() has following code snippet.
+>> {
+>>         usemap_page = virt_to_page(usemap);
+>>         /*
+>>          * Check to see if allocation came from hot-plug-add
+>>          */
+>>         if (PageSlab(usemap_page)) {
+> 
+> Change this to PageSlab(usemap_page) || PageCompound(usemap_page) and then
+> the code segment will work. Fallback to the page allocator always implied
+> the use of compound pages. It would be cleaner if memory hotplug had an
+> indicator which allocation mechanism was used and would use the
+> corresponding free action. Slab allocators could put multiple objects into
+> the slab page (if the structures are sufficiently small). So this is not
+> that good of a solution.
+> 
+> 
+>> 	And when fixing this issue, we found some other usages of PageSlab() may
+>> have the same issue. For example:
+>> 	1) /proc/kpageflags and /proc/kpagecount may return incorrect result for
+>> pages allocated by slab.
+> 
+> Ok then the compound page handling is broken in those.
+> 
+>> 	2) DRBD has following comments. At first glance, it seems that it's
+>> 	dangerous if PageSlab() to return false for pages allocated by slab.
+> 
+> Again the pages that do not have PageSlab set were not allocated using a
+> slab allocator. They were allocated by calls to the page allocator.
+> 
+>> 	(With more thinking, the comments is a little out of date because now
+>> 	put_page/get_page already correctly handle compound pages, so it should
+>> 	be OK to send pages allocated from slab.)
+> 
+> AFAICT they always handled compound pages correctly.
+> 
+>> 	3) show_mem() on ARM and unicore32 reports much less pages used by slab
+>> 	if SLUB/SLOB is used instead of SLAB because SLUB/SLOB doesn't mark big
+>> 	compound pages with PG_slab flag.
+> 
+> Right. That is because SLUB/SLOB lets the page allocator directly
+> allocator large structures where it would not make sense to use the slab
+> allocators. The main purpose of the slab allocators is to allocate
+> objects in fractions of pages. This does not seem to be a use case for
+> slab objects. Maybe it would be better to directly call the page allocator
+> for your large structures?
+> 
+>> 	For example, if the memory backing a "struct resource" structure is
+>> allocated from bootmem, __release_region() shouldn't free the memory into
+>> slab allocator, otherwise it will trigger panic as below. This issue is
+>> reproducible when hot-removing a memory device present at boot time on x86
+>> platforms. On x86 platforms, e820_reserve_resources() allocates bootmem for
+>> all physical memory resources present at boot time. Later when those memory
+>> devices are hot-removed, __release_region() will try to free  memory from
+>> bootmem into slab, so trigger the panic. And a proposed fix is:
+> 
+> Working out how a certain memory structure was allocated could be most
+> easily done by setting a flag somewhere instead of checking the page flags
+> of a page that may potentially include multiple slab objects.
+> 
+
+
