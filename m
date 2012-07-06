@@ -1,44 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932425Ab2GFFxw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 01:53:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38585 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932072Ab2GFFxv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 01:53:51 -0400
-Message-ID: <4FF67D6A.8060707@gmail.com>
-Date: Fri, 06 Jul 2012 13:53:46 +0800
-From: Liu Yuan <namei.unix@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-CC: Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH 0/5] fuse: make maximum read/write request size tunable
-References: <20120705105017.17812.95542.stgit@ltc137.sdl.hitachi.co.jp>
-In-Reply-To: <20120705105017.17812.95542.stgit@ltc137.sdl.hitachi.co.jp>
-Content-Type: text/plain; charset=UTF-8
+	id S1755903Ab2GFGH4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 02:07:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:49186 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751309Ab2GFGHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 02:07:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="174026976"
+Subject: Re: [PATCH v5 3/4] block: implement runtime pm strategy
+From: Lin Ming <ming.m.lin@intel.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Shaohua Li <shli@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+In-Reply-To: <1341550812.3023.3.camel@dabdike.hilton.com>
+References: <1341547472-6863-1-git-send-email-ming.m.lin@intel.com>
+	 <1341547472-6863-4-git-send-email-ming.m.lin@intel.com>
+	 <1341550812.3023.3.camel@dabdike.hilton.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 Jul 2012 14:07:52 +0800
+Message-ID: <1341554872.3628.30.camel@minggr>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2012 06:50 PM, Mitsuo Hayasaka wrote:
-> One of the ways to solve this is to make them tunable.
-> In this series, the new sysfs parameter max_pages_per_req is introduced.
-> It limits the maximum read/write size in fuse request and it can be
-> changed from 32 to 256 pages in current implementations. When the
-> max_read/max_write mount option is specified, FUSE request size is set
-> per mount. (The size is rounded-up to page size and limited up to
-> max_pages_per_req.)
+On Fri, 2012-07-06 at 09:00 +0400, James Bottomley wrote:
+> On Fri, 2012-07-06 at 12:04 +0800, Lin Ming wrote:
+> > When a request is added:
+> >     If device is suspended or is suspending and the request is not a
+> >     PM request, resume the device.
+> > 
+> > When a request finishes:
+> >     Call pm_runtime_mark_last_busy().
+> > 
+> > When pick a request:
+> >     If device is resuming/suspending, then only PM request is allowed to go.
+> >     Return NULL for other cases.
+> 
+> This is a complete reinvention of the quiesce state, just with new names
+> and moved up to block in part ... why do we have to have two separate
+> systems for stopping a device and sending special commands when the
+> device is suspended, why not just one?
 
-Why maxim 256 pages? If we are here, we can go further: most of object
-storage system has object size of multiple to dozens of megabytes. So I
-think probably 1M is too small. Our distribution storage system has 4M
-per object, so I think at least maxim size could be bigger than 4M.
+Yes, there are some duplicates with scsi layer quiesce state.
+I'd like to do the cleanup.
+
+Add runtime pm support to block layer, so other block device drivers may
+also add runtime pm support easily in future.
+
+Some helper functions are provided on block layer which can be called by
+block device drivers.
+
+void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
+int blk_pre_runtime_suspend(struct request_queue *q)
+void blk_post_runtime_suspend(struct request_queue *q, int err)
+void blk_pre_runtime_resume(struct request_queue *q)
+void blk_post_runtime_resume(struct request_queue *q, int err)
 
 Thanks,
-Yuan
+Lin Ming
+
+> 
+> James
+> 
+> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> > ---
+> >  block/blk-core.c       |    7 +++++++
+> >  block/elevator.c       |    4 ++++
+> >  include/linux/blkdev.h |   37 +++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 48 insertions(+)
+> > 
+> > diff --git a/block/blk-core.c b/block/blk-core.c
+> > index 1cc80ae..cb93501 100644
+> > --- a/block/blk-core.c
+> > +++ b/block/blk-core.c
+> > @@ -1224,6 +1224,8 @@ void __blk_put_request(struct request_queue *q, struct request *req)
+> >  	if (unlikely(--req->ref_count))
+> >  		return;
+> >  
+> > +	blk_pm_put_request(q);
+> > +
+> >  	elv_completed_request(q, req);
+> >  
+> >  	/* this is a bio leak */
+> > @@ -2012,6 +2014,11 @@ struct request *blk_peek_request(struct request_queue *q)
+> >  	int ret;
+> >  
+> >  	while ((rq = __elv_next_request(q)) != NULL) {
+> > +
+> > +		rq = blk_pm_peek_request(q, rq);
+> > +		if (!rq)
+> > +			break;
+> > +
+> >  		if (!(rq->cmd_flags & REQ_STARTED)) {
+> >  			/*
+> >  			 * This is the first time the device driver
+> > diff --git a/block/elevator.c b/block/elevator.c
+> > index 6a55d41..37c1a2b 100644
+> > --- a/block/elevator.c
+> > +++ b/block/elevator.c
+> > @@ -536,6 +536,8 @@ void elv_requeue_request(struct request_queue *q, struct request *rq)
+> >  
+> >  	rq->cmd_flags &= ~REQ_STARTED;
+> >  
+> > +	blk_pm_requeue_request(q);
+> > +
+> >  	__elv_add_request(q, rq, ELEVATOR_INSERT_REQUEUE);
+> >  }
+> >  
+> > @@ -558,6 +560,8 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
+> >  {
+> >  	trace_block_rq_insert(q, rq);
+> >  
+> > +	blk_pm_add_request(q, rq);
+> > +
+> >  	rq->q = q;
+> >  
+> >  	if (rq->cmd_flags & REQ_SOFTBARRIER) {
+> > diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> > index 9395d39..c8c5951 100644
+> > --- a/include/linux/blkdev.h
+> > +++ b/include/linux/blkdev.h
+> > @@ -908,6 +908,36 @@ extern int blk_pre_runtime_suspend(struct request_queue *q);
+> >  extern void blk_post_runtime_suspend(struct request_queue *q, int err);
+> >  extern void blk_pre_runtime_resume(struct request_queue *q);
+> >  extern void blk_post_runtime_resume(struct request_queue *q, int err);
+> > +
+> > +static inline void blk_pm_put_request(struct request_queue *q)
+> > +{
+> > +	if (!(--q->nr_pending) && q->dev)
+> > +		 pm_runtime_mark_last_busy(q->dev);
+> > +}
+> > +
+> > +static inline struct request *blk_pm_peek_request(
+> > +	struct request_queue *q, struct request *rq)
+> > +{
+> > +	if (q->rpm_status == RPM_SUSPENDED ||
+> > +		  (q->rpm_status != RPM_ACTIVE && !(rq->cmd_flags & REQ_PM)))
+> > +		return NULL;
+> > +	else
+> > +		return rq;
+> > +}
+> > +
+> > +static inline void blk_pm_requeue_request(struct request_queue *q)
+> > +{
+> > +	q->nr_pending--;
+> > +}
+> > +
+> > +static inline void blk_pm_add_request(struct request_queue *q,
+> > +	struct request *rq)
+> > +{
+> > +	if (q->nr_pending++ == 0 && !(rq->cmd_flags & REQ_PM) &&
+> > +		    (q->rpm_status == RPM_SUSPENDED ||
+> > +		     q->rpm_status == RPM_SUSPENDING) && q->dev)
+> > +		pm_request_resume(q->dev);
+> > +}
+> >  #else
+> >  static inline void blk_pm_runtime_init(struct request_queue *q,
+> >  	struct device *dev) {}
+> > @@ -918,6 +948,13 @@ static inline int blk_pre_runtime_suspend(struct request_queue *q)
+> >  static inline void blk_post_runtime_suspend(struct request_queue *q, int err) {}
+> >  static inline void blk_pre_runtime_resume(struct request_queue *q) {}
+> >  static inline void blk_post_runtime_resume(struct request_queue *q, int err) {}
+> > +
+> > +static inline void blk_pm_put_request(struct request_queue *q) {}
+> > +static inline struct request *blk_pm_peek_request(
+> > +	struct request_queue *q, struct request *rq) { return rq; }
+> > +static inline void blk_pm_requeue_request(struct request_queue *q) {}
+> > +static inline void blk_pm_add_request(struct request_queue *q,
+> > +	struct request *req) {}
+> >  #endif
+> >  
+> >  /*
+> 
+> 
+
 
