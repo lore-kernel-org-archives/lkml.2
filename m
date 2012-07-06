@@ -1,86 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab2GFE0O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 00:26:14 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43699 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751715Ab2GFE0N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 00:26:13 -0400
-X-Sasl-enc: P4RU6DmoQ6I19vPkWGS5CMkmkfPESPFqNEVPQhmxlds9 1341548772
-Date: Thu, 5 Jul 2012 21:26:11 -0700
-From: Greg KH <greg@kroah.com>
-To: Jia Hongtao-B38951 <B38951@freescale.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Yang-R58472 <r58472@freescale.com>
-Subject: Re: [PATCH V3 5/6] Avoid duplicate probe for of platform devices
-Message-ID: <20120706042611.GA1841@kroah.com>
-References: <1339148585-16947-1-git-send-email-B38951@freescale.com>
- <4FD60FB1.7050106@gmail.com>
- <412C8208B4A0464FA894C5F0C278CD5D01A16829@039-SN1MPN1-002.039d.mgd.msft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <412C8208B4A0464FA894C5F0C278CD5D01A16829@039-SN1MPN1-002.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752066Ab2GFEm1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 00:42:27 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44656 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750765Ab2GFEmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 00:42:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="161978221"
+From: Saranya Gopal <saranya.gopal@intel.com>
+To: lars@metafoo.de, cbou@mail.ru, dwmw2@infradead.org
+Cc: linux-kernel@vger.kernel.org, Saranya Gopal <saranya.gopal@intel.com>
+Subject: [PATCHv4] bq27x00_battery: Add support for BQ27425 chip
+Date: Fri,  6 Jul 2012 10:06:32 +0530
+Message-Id: <1341549392-22170-1-git-send-email-saranya.gopal@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, 2012 at 02:05:05AM +0000, Jia Hongtao-B38951 wrote:
-> Hi Rob and Greg KH,
-> 
-> Do you have any better idea to avoid duplication probe warning?
+This patch adds support for BQ27425 (TI) chip. This chip is same as
+BQ27500 with few registers removed and register address map changed.
+The data sheet for this chip is publicly available at
+ http://www.ti.com/product/bq27425-g1
 
-I have no idea what the problem is that you are trying to solve.
+Changes since v3:
+	Add bq27xxx as prefix for the newly added function.
+	Define SOC register address plus offset for bq27425 instead
+	   of register address alone to align with other register reads.
 
-> > On 06/08/2012 04:43 AM, Jia Hongtao wrote:
-> > > We changed the pcie controller driver to platform driver so that the
-> > PCI
-> > > of platform devices need to be created earlier in the arch_initcall
-> > stage
-> > > according to the original timing of calling fsl_add_bridge(). So we do
-> > PCI
-> > > probing separately from other devices. But probing more than once could
-> > > cause duplication warning. We add check if the devices have already
-> > probed
-> > > before probing any devices to avoid duplication warning.
+Signed-off-by: Saranya Gopal <saranya.gopal@intel.com>
+---
+ drivers/power/bq27x00_battery.c |   85 +++++++++++++++++++++++++++++++-------
+ 1 files changed, 69 insertions(+), 16 deletions(-)
 
-Ick, something else is going wrong here, how could you ever have the
-same device probed more than once?
+diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
+index f5d6d37..43f86c7 100644
+--- a/drivers/power/bq27x00_battery.c
++++ b/drivers/power/bq27x00_battery.c
+@@ -22,6 +22,7 @@
+  * Datasheets:
+  * http://focus.ti.com/docs/prod/folders/print/bq27000.html
+  * http://focus.ti.com/docs/prod/folders/print/bq27500.html
++ * http://www.ti.com/product/bq27425-g1
+  */
+ 
+ #include <linux/module.h>
+@@ -67,6 +68,10 @@
+ #define BQ27500_FLAG_SOC1		BIT(2) /* State-of-Charge threshold 1 */
+ #define BQ27500_FLAG_FC			BIT(9)
+ 
++/* bq27425 register addresses are same as bq27x00 addresses minus 4 */
++#define BQ27425_REG_OFFSET		0x04
++#define BQ27425_REG_SOC			0x18 /* Register address plus offset */
++
+ #define BQ27000_RS			20 /* Resistor sense */
+ 
+ struct bq27x00_device_info;
+@@ -74,7 +79,7 @@ struct bq27x00_access_methods {
+ 	int (*read)(struct bq27x00_device_info *di, u8 reg, bool single);
+ };
+ 
+-enum bq27x00_chip { BQ27000, BQ27500 };
++enum bq27x00_chip { BQ27000, BQ27500, BQ27425};
+ 
+ struct bq27x00_reg_cache {
+ 	int temperature;
+@@ -125,6 +130,20 @@ static enum power_supply_property bq27x00_battery_props[] = {
+ 	POWER_SUPPLY_PROP_ENERGY_NOW,
+ };
+ 
++static enum power_supply_property bq27425_battery_props[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_CURRENT_NOW,
++	POWER_SUPPLY_PROP_CAPACITY,
++	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
++	POWER_SUPPLY_PROP_TEMP,
++	POWER_SUPPLY_PROP_TECHNOLOGY,
++	POWER_SUPPLY_PROP_CHARGE_FULL,
++	POWER_SUPPLY_PROP_CHARGE_NOW,
++	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
++};
++
+ static unsigned int poll_interval = 360;
+ module_param(poll_interval, uint, 0644);
+ MODULE_PARM_DESC(poll_interval, "battery poll interval in seconds - " \
+@@ -137,10 +156,24 @@ MODULE_PARM_DESC(poll_interval, "battery poll interval in seconds - " \
+ static inline int bq27x00_read(struct bq27x00_device_info *di, u8 reg,
+ 		bool single)
+ {
++	if (di->chip == BQ27425)
++		return di->bus.read(di, reg - BQ27425_REG_OFFSET, single);
+ 	return di->bus.read(di, reg, single);
+ }
+ 
+ /*
++ * Higher versions of the chip like BQ27425 and BQ27500
++ * differ from BQ27000 and BQ27200 in calculation of certain
++ * parameters. Hence we need to check for the chip type.
++ */
++static bool bq27xxx_is_chip_version_higher(struct bq27x00_device_info *di)
++{
++	if (di->chip == BQ27425 || di->chip == BQ27500)
++		return true;
++	return false;
++}
++
++/*
+  * Return the battery Relative State-of-Charge
+  * Or < 0 if something fails.
+  */
+@@ -150,6 +183,8 @@ static int bq27x00_battery_read_rsoc(struct bq27x00_device_info *di)
+ 
+ 	if (di->chip == BQ27500)
+ 		rsoc = bq27x00_read(di, BQ27500_REG_SOC, false);
++	else if (di->chip == BQ27425)
++		rsoc = bq27x00_read(di, BQ27425_REG_SOC, false);
+ 	else
+ 		rsoc = bq27x00_read(di, BQ27000_REG_RSOC, true);
+ 
+@@ -174,7 +209,7 @@ static int bq27x00_battery_read_charge(struct bq27x00_device_info *di, u8 reg)
+ 		return charge;
+ 	}
+ 
+-	if (di->chip == BQ27500)
++	if (bq27xxx_is_chip_version_higher(di))
+ 		charge *= 1000;
+ 	else
+ 		charge = charge * 3570 / BQ27000_RS;
+@@ -208,7 +243,7 @@ static int bq27x00_battery_read_ilmd(struct bq27x00_device_info *di)
+ {
+ 	int ilmd;
+ 
+-	if (di->chip == BQ27500)
++	if (bq27xxx_is_chip_version_higher(di))
+ 		ilmd = bq27x00_read(di, BQ27500_REG_DCAP, false);
+ 	else
+ 		ilmd = bq27x00_read(di, BQ27000_REG_ILMD, true);
+@@ -218,7 +253,7 @@ static int bq27x00_battery_read_ilmd(struct bq27x00_device_info *di)
+ 		return ilmd;
+ 	}
+ 
+-	if (di->chip == BQ27500)
++	if (bq27xxx_is_chip_version_higher(di))
+ 		ilmd *= 1000;
+ 	else
+ 		ilmd = ilmd * 256 * 3570 / BQ27000_RS;
+@@ -262,7 +297,7 @@ static int bq27x00_battery_read_temperature(struct bq27x00_device_info *di)
+ 		return temp;
+ 	}
+ 
+-	if (di->chip == BQ27500)
++	if (bq27xxx_is_chip_version_higher(di))
+ 		temp -= 2731;
+ 	else
+ 		temp = ((temp * 5) - 5463) / 2;
+@@ -310,10 +345,12 @@ static void bq27x00_update(struct bq27x00_device_info *di)
+ {
+ 	struct bq27x00_reg_cache cache = {0, };
+ 	bool is_bq27500 = di->chip == BQ27500;
++	bool is_bq27425 = di->chip == BQ27425;
+ 
+ 	cache.flags = bq27x00_read(di, BQ27x00_REG_FLAGS, !is_bq27500);
+ 	if (cache.flags >= 0) {
+-		if (!is_bq27500 && (cache.flags & BQ27000_FLAG_CI)) {
++		if (!is_bq27500 && !is_bq27425
++				&& (cache.flags & BQ27000_FLAG_CI)) {
+ 			dev_info(di->dev, "battery is not calibrated! ignoring capacity values\n");
+ 			cache.capacity = -ENODATA;
+ 			cache.energy = -ENODATA;
+@@ -323,14 +360,23 @@ static void bq27x00_update(struct bq27x00_device_info *di)
+ 			cache.charge_full = -ENODATA;
+ 		} else {
+ 			cache.capacity = bq27x00_battery_read_rsoc(di);
+-			cache.energy = bq27x00_battery_read_energy(di);
+-			cache.time_to_empty = bq27x00_battery_read_time(di, BQ27x00_REG_TTE);
+-			cache.time_to_empty_avg = bq27x00_battery_read_time(di, BQ27x00_REG_TTECP);
+-			cache.time_to_full = bq27x00_battery_read_time(di, BQ27x00_REG_TTF);
++			if (!is_bq27425) {
++				cache.energy = bq27x00_battery_read_energy(di);
++				cache.time_to_empty =
++					bq27x00_battery_read_time(di,
++							BQ27x00_REG_TTE);
++				cache.time_to_empty_avg =
++					bq27x00_battery_read_time(di,
++							BQ27x00_REG_TTECP);
++				cache.time_to_full =
++					bq27x00_battery_read_time(di,
++							BQ27x00_REG_TTF);
++			}
+ 			cache.charge_full = bq27x00_battery_read_lmd(di);
+ 		}
+ 		cache.temperature = bq27x00_battery_read_temperature(di);
+-		cache.cycle_count = bq27x00_battery_read_cyct(di);
++		if (!is_bq27425)
++			cache.cycle_count = bq27x00_battery_read_cyct(di);
+ 
+ 		/* We only have to read charge design full once */
+ 		if (di->charge_design_full <= 0)
+@@ -376,7 +422,7 @@ static int bq27x00_battery_current(struct bq27x00_device_info *di,
+ 		return curr;
+ 	}
+ 
+-	if (di->chip == BQ27500) {
++	if (bq27xxx_is_chip_version_higher(di)) {
+ 		/* bq27500 returns signed value */
+ 		val->intval = (int)((s16)curr) * 1000;
+ 	} else {
+@@ -397,7 +443,7 @@ static int bq27x00_battery_status(struct bq27x00_device_info *di,
+ {
+ 	int status;
+ 
+-	if (di->chip == BQ27500) {
++	if (bq27xxx_is_chip_version_higher(di)) {
+ 		if (di->cache.flags & BQ27500_FLAG_FC)
+ 			status = POWER_SUPPLY_STATUS_FULL;
+ 		else if (di->cache.flags & BQ27500_FLAG_DSC)
+@@ -425,7 +471,7 @@ static int bq27x00_battery_capacity_level(struct bq27x00_device_info *di,
+ {
+ 	int level;
+ 
+-	if (di->chip == BQ27500) {
++	if (bq27xxx_is_chip_version_higher(di)) {
+ 		if (di->cache.flags & BQ27500_FLAG_FC)
+ 			level = POWER_SUPPLY_CAPACITY_LEVEL_FULL;
+ 		else if (di->cache.flags & BQ27500_FLAG_SOC1)
+@@ -570,8 +616,14 @@ static int bq27x00_powersupply_init(struct bq27x00_device_info *di)
+ 	int ret;
+ 
+ 	di->bat.type = POWER_SUPPLY_TYPE_BATTERY;
+-	di->bat.properties = bq27x00_battery_props;
+-	di->bat.num_properties = ARRAY_SIZE(bq27x00_battery_props);
++	di->chip = BQ27425;
++	if (di->chip == BQ27425) {
++		di->bat.properties = bq27425_battery_props;
++		di->bat.num_properties = ARRAY_SIZE(bq27425_battery_props);
++	} else {
++		di->bat.properties = bq27x00_battery_props;
++		di->bat.num_properties = ARRAY_SIZE(bq27x00_battery_props);
++	}
+ 	di->bat.get_property = bq27x00_battery_get_property;
+ 	di->bat.external_power_changed = bq27x00_external_power_changed;
+ 
+@@ -729,6 +781,7 @@ static int bq27x00_battery_remove(struct i2c_client *client)
+ static const struct i2c_device_id bq27x00_id[] = {
+ 	{ "bq27200", BQ27000 },	/* bq27200 is same as bq27000, but with i2c */
+ 	{ "bq27500", BQ27500 },
++	{ "bq27425", BQ27425 },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(i2c, bq27x00_id);
+-- 
+1.7.1
 
-> > > Signed-off-by: Jia Hongtao <B38951@freescale.com>
-> > > Signed-off-by: Li Yang <leoli@freescale.com>
-> > > ---
-> > 
-> > Where's v1 and v2 history?
-> > 
-> > >  drivers/of/platform.c |   18 ++++++++++++------
-> > >  1 files changed, 12 insertions(+), 6 deletions(-)
-> > >
-> > > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> > > index a37330e..3aab01f 100644
-> > > --- a/drivers/of/platform.c
-> > > +++ b/drivers/of/platform.c
-> > > @@ -139,6 +139,18 @@ struct platform_device *of_device_alloc(struct
-> > device_node *np,
-> > >  	if (!dev)
-> > >  		return NULL;
-> > >
-> > > +	dev->dev.of_node = of_node_get(np);
-> > > +	if (bus_id)
-> > > +		dev_set_name(&dev->dev, "%s", bus_id);
-> > > +	else
-> > > +		of_device_make_bus_id(&dev->dev);
-> > > +
-> > > +	if (kset_find_obj(dev->dev.kobj.kset, kobject_name(&dev->dev.kobj)))
-
-Whatever you are trying to do here, odds are, it's wrong :)
-
-What is happening that is causing the problem?  What is causing the
-platform core to be calling probe on a device more than once?
-
-greg k-h
