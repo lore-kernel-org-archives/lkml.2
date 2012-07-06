@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933294Ab2GFLNW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 07:13:22 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:37195 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756283Ab2GFLNT (ORCPT
+	id S933490Ab2GFLN1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 07:13:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51983 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756856Ab2GFLNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 07:13:19 -0400
-Date: Fri, 6 Jul 2012 13:13:14 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, mtosatti@redhat.com,
-        x86@kernel.org, kvm@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] apic: fix kvm build on UP without IOAPIC
-Message-ID: <20120706111314.GG19552@gmail.com>
-References: <20120701150506.GA31304@redhat.com>
- <4FF0849D.5080406@zytor.com>
+	Fri, 6 Jul 2012 07:13:24 -0400
+Date: Fri, 6 Jul 2012 04:12:44 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-0fc45ef5202a34b5862ca246740e6ab50bc3e3e1@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        namhyung.kim@lge.com, namhyung@kernel.org, bp@alien8.de,
+        fweisbec@gmail.com, rostedt@goodmis.org, acme@infradead.org,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        namhyung.kim@lge.com, bp@alien8.de, namhyung@kernel.org,
+        fweisbec@gmail.com, rostedt@goodmis.org, acme@infradead.org,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1333940074-19052-3-git-send-email-namhyung.kim@lge.com>
+References: <1333940074-19052-3-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tools lib traceevent: Fix printk_cmp()
+Git-Commit-ID: 0fc45ef5202a34b5862ca246740e6ab50bc3e3e1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <4FF0849D.5080406@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 04:12:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  0fc45ef5202a34b5862ca246740e6ab50bc3e3e1
+Gitweb:     http://git.kernel.org/tip/0fc45ef5202a34b5862ca246740e6ab50bc3e3e1
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Mon, 9 Apr 2012 11:54:29 +0900
+Committer:  Namhyung Kim <namhyung@kernel.org>
+CommitDate: Wed, 4 Jul 2012 13:40:30 +0900
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+tools lib traceevent: Fix printk_cmp()
 
-> On 07/01/2012 08:05 AM, Michael S. Tsirkin wrote:
-> >On UP i386, when APIC is disabled
-> ># CONFIG_X86_UP_APIC is not set
-> ># CONFIG_PCI_IOAPIC is not set
-> >
-> >code looking at apicdrivers never has any effect but it
-> >still gets compiled in. In particular, this causes
-> >build failures with kvm, but it generally bloats the kernel
-> >unnecessarily.
-> >
-> >Fix by defining both __apicdrivers and __apicdrivers_end
-> >to be NULL when CONFIG_X86_LOCAL_APIC is unset: I verified
-> >that as the result any loop scanning __apicdrivers gets optimized out by
-> >the compiler.
-> >
-> >Warning: a .config with apic disabled doesn't seem to boot
-> >for me (even without this patch). Still verifying why,
-> >meanwhile this patch is compile-tested only.
-> >
-> >Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> >---
-> >
-> >Note: if this patch makes sense, can x86 maintainers
-> >please ACK applying it through the kvm tree, since that is
-> >where we see the issue that it addresses?
-> >Avi, Marcelo, maybe you can carry this in kvm/linux-next as a temporary
-> >measure so that linux-next builds?
-> >
-> 
-> I'm not happy about that as a workflow, but since you guys have an
-> immediate problem I guess we can do that.
+The printk_cmp function should use printk_map instead of func_map.
+Also rename the variables for consistency.
 
-I'm rather unhappy about this workflow - we've got quite a few 
-apic bits in the x86 tree this cycle as well and need extra 
-external interaction, not.
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1333940074-19052-3-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/lib/traceevent/event-parse.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Which KVM tree commit caused this, could someone please give a 
-lkml link or quote it here? It's not referenced in the fix patch 
-either.
-
-Thanks,
-
-	Ingo
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index ddee5a8..7815b8d 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -511,12 +511,12 @@ struct printk_list {
+ 
+ static int printk_cmp(const void *a, const void *b)
+ {
+-	const struct func_map *fa = a;
+-	const struct func_map *fb = b;
++	const struct printk_map *pa = a;
++	const struct printk_map *pb = b;
+ 
+-	if (fa->addr < fb->addr)
++	if (pa->addr < pb->addr)
+ 		return -1;
+-	if (fa->addr > fb->addr)
++	if (pa->addr > pb->addr)
+ 		return 1;
+ 
+ 	return 0;
