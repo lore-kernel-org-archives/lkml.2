@@ -1,107 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440Ab2GFJy6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 05:54:58 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:46732 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab2GFJy5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 05:54:57 -0400
-Date: Fri, 6 Jul 2012 11:54:52 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, Jonathan Corbet <corbet@lwn.net>,
-        ksummit-2012-discuss@lists.linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2012-discuss] [ATTEND or not ATTEND] That's the
- question!
-Message-ID: <20120706095450.GB7728@somewhere.redhat.com>
-References: <alpine.LFD.2.02.1206152313310.3086@ionos>
- <20120615233413.GB8894@kroah.com>
- <alpine.LFD.2.02.1206161103320.3086@ionos>
- <20120616072906.7469ec24@tpl.lwn.net>
- <20120620195121.GA1719@fieldses.org>
- <4FF6B32A.7070006@parallels.com>
+	id S1756559Ab2GFJ4J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 05:56:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:21963 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750808Ab2GFJ4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 05:56:06 -0400
+X-IronPort-AV: E=Sophos;i="4.77,537,1336320000"; 
+   d="scan'208";a="5344263"
+Message-ID: <4FF6B2E7.2060405@cn.fujitsu.com>
+Date: Fri, 06 Jul 2012 17:41:59 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF6B32A.7070006@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: [PATCH 7/7 v6] deal with panicked event accoring to '-machine panic_action=action'
+References: <4FF6B188.2060607@cn.fujitsu.com>
+In-Reply-To: <4FF6B188.2060607@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/06 17:37:30,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/06 17:37:37,
+	Serialize complete at 2012/07/06 17:37:37
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, 2012 at 01:43:06PM +0400, Glauber Costa wrote:
-> On 06/20/2012 11:51 PM, J. Bruce Fields wrote:
-> > On Sat, Jun 16, 2012 at 07:29:06AM -0600, Jonathan Corbet wrote:
-> >> On Sat, 16 Jun 2012 12:50:05 +0200 (CEST)
-> >> Thomas Gleixner <tglx@linutronix.de> wrote:
-> >>
-> >>> A good start would be if you could convert your kernel statistics into
-> >>> accounting the consolidation effects of contributions instead of
-> >>> fostering the idiocy that corporates have started to measure themself
-> >>> and the performance of their employees (I'm not kidding, it's the sad
-> >>> reality) with line and commit count statistics.
-> >>
-> >> I would dearly love to come up with a way to measure "real work" in
-> >> some fashion; I've just not, yet, figured out how to do that.  I do
-> >> fear that the simple numbers we're able to generate end up creating the
-> >> wrong kinds of incentives.
-> > 
-> > I can't see any alternative to explaining what somebody did and why it
-> > was important.
-> > 
-> > To that end, the best resource for understanding the value of somebody's
-> > work is the lwn.net kernel page--if their work has been discussed there.
-> > 
-> > So, all you need to do is to hire a dozen more of you, and we're
-> > covered!
-> > 
-> > --b.
-> > 
-> >>
-> >> Any thoughts on how to measure "consolidation effects"?  I toss out
-> >> numbers on code removal sometimes, but that turns out to not be a whole
-> >> lot more useful than anything else on its own.
-> >>
-> >> Thanks,
-> >>
-> 
-> Resurrecting this one.
-> 
-> So something just came across my mind: When I first read this thread, my
-> inner reaction was: "People will find ways to bypass and ill-optimize
-> their workflow for whatever measure we come up with".
-> 
-> That's is pure human nature. Whenever we set up a metric, that becomes a
-> goal and a bunch of people - not all - will deviate from their expected
-> workflow to maximize that number. This happens with paper count in the
-> scientific community, for the Higgs Boson's sake! Why wouldn't it happen
-> with *any* metric we set for ourselves?
-> 
-> So per-se, the fact that we have a lot of people trying to find out what
-> our metrics are, and look good in the face of it, is just a testament to
-> the success of Linux - but we know that already.
-> 
-> The summary here, is that I don't think patch count *per se* is a bad
-> metric. Maybe we should just tweak the way we measure a bit to steer
-> people towards doing more useful work, and that would aid our review.
-> 
-> The same way we have checkpatch, we can have something automated that
-> will attempt to rule out some trivial patches in the counting process.
-> We can scan a patch, and easily determine if each part of it is:
-> 
-> * pure whitespace
-> * pure Documentation change
-> * comment fix
-> 
-> And if a patch is 100 % comprised by those, we simply don't count it.
-> People that just want to increase their numbers - they will always
-> exist, will tend to stop doing that. Simply because doing it will not
-> help them at all.
+The action is the same as -onpanic parameter.
 
-OTOH, documentation changes or comment fixes, and even sometimes pure whitespace
-fixes, can be very valuable contributions. This can be a useful and ungrateful
-work and that deserve credit.
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ qemu-config.c   |    4 ++++
+ qemu-options.hx |    4 +++-
+ vl.c            |    7 +++++++
+ 3 files changed, 14 insertions(+), 1 deletions(-)
 
-We just can't find an automated and right way to evaluate a contribution.
+diff --git a/qemu-config.c b/qemu-config.c
+index 5c3296b..805e7c4 100644
+--- a/qemu-config.c
++++ b/qemu-config.c
+@@ -595,6 +595,10 @@ static QemuOptsList qemu_machine_opts = {
+             .name = "dt_compatible",
+             .type = QEMU_OPT_STRING,
+             .help = "Overrides the \"compatible\" property of the dt root node",
++        }, {
++            .name = "panic_action",
++            .type = QEMU_OPT_STRING,
++            .help = "The action what QEMU will do when the guest is panicked",
+         },
+         { /* End of list */ }
+     },
+diff --git a/qemu-options.hx b/qemu-options.hx
+index 4a061bf..083a21d 100644
+--- a/qemu-options.hx
++++ b/qemu-options.hx
+@@ -33,7 +33,9 @@ DEF("machine", HAS_ARG, QEMU_OPTION_machine, \
+     "                property accel=accel1[:accel2[:...]] selects accelerator\n"
+     "                supported accelerators are kvm, xen, tcg (default: tcg)\n"
+     "                kernel_irqchip=on|off controls accelerated irqchip support\n"
+-    "                kvm_shadow_mem=size of KVM shadow MMU\n",
++    "                kvm_shadow_mem=size of KVM shadow MMU\n"
++    "                panic_action=none|pause|poweroff|reset controls what QEmu\n"
++    "                will do when the guest is panicked",
+     QEMU_ARCH_ALL)
+ STEXI
+ @item -machine [type=]@var{name}[,prop=@var{value}[,...]]
+diff --git a/vl.c b/vl.c
+index 1a68257..091c43b 100644
+--- a/vl.c
++++ b/vl.c
+@@ -2301,6 +2301,7 @@ int main(int argc, char **argv, char **envp)
+     };
+     const char *trace_events = NULL;
+     const char *trace_file = NULL;
++    const char *panic_action = NULL;
+ 
+     atexit(qemu_run_exit_notifiers);
+     error_set_progname(argv[0]);
+@@ -3372,10 +3373,16 @@ int main(int argc, char **argv, char **envp)
+         kernel_filename = qemu_opt_get(machine_opts, "kernel");
+         initrd_filename = qemu_opt_get(machine_opts, "initrd");
+         kernel_cmdline = qemu_opt_get(machine_opts, "append");
++        panic_action = qemu_opt_get(machine_opts, "panic_action");
+     } else {
+         kernel_filename = initrd_filename = kernel_cmdline = NULL;
+     }
+ 
++    if (panic_action && select_panicked_action(panic_action) == -1) {
++        fprintf(stderr, "Unknown -panic_action parameter\n");
++        exit(1);
++    }
++
+     if (!kernel_cmdline) {
+         kernel_cmdline = "";
+     }
+-- 
+1.7.1
+
