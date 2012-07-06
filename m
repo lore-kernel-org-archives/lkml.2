@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab2GFNux (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 09:50:53 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:36923 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab2GFNuv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 09:50:51 -0400
-MIME-Version: 1.0
-Date: Fri, 6 Jul 2012 21:50:50 +0800
-X-Google-Sender-Auth: PMqnFVP6RXBTQSXwiyilTG_y0es
-Message-ID: <CAAwpLmyd2SMR0EKGowDqo54mPUuPmKkziGVTsuRZcrd7i2r2jA@mail.gmail.com>
-Subject: USB: option: Add MEDIATEK product ids
-From: gaosen <gaosen.zhang@mediatek.com>
-To: smurf@smurf.noris.de, gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754036Ab2GFNwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 09:52:51 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:53466 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143Ab2GFNwt convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Fri, 6 Jul 2012 09:52:49 -0400
+Message-Id: <4FF70A09020000780008E155@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 06 Jul 2012 14:53:45 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Olaf Hering" <olaf@aepfle.de>
+Cc: <kexec@lists.infradead.org>, <xen-devel@lists.xensource.com>,
+        "Daniel Kiper" <dkiper@net-space.pl>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] incorrect layout of globals from head_64.S
+ during kexec boot
+References: <20120705210607.GA26908@aepfle.de>
+ <20120706084120.GA31219@router-fw-old.local.net-space.pl>
+ <20120706120750.GA8970@aepfle.de>
+ <4FF6FCA9020000780008E0BB@nat28.tlf.novell.com>
+ <20120706133105.GA20600@aepfle.de>
+In-Reply-To: <20120706133105.GA20600@aepfle.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 86fcd5bb701bd927d588386c480c37784d10040a Mon Sep 17 00:00:00 2001
-From: Gaosen Zhang <gaosen.zhang@mediatek.com>
-Date: Fri, 6 Jul 2012 21:44:10 +0800
-Subject: [PATCH 1/1] USB: option: Add MEDIATEK product ids
+>>> On 06.07.12 at 15:31, Olaf Hering <olaf@aepfle.de> wrote:
+> On Fri, Jul 06, Jan Beulich wrote:
+> 
+>> >>> On 06.07.12 at 14:07, Olaf Hering <olaf@aepfle.de> wrote:
+>> > But adding some debug to inspect
+>> > *output in parse_elf() shows that the second entry in program headers is
+>> > already shifted by 44 bytes in my testing, the others are shifted by the
+>> > same amount.
+>> 
+>> Unfortunately it's not clear what is shifted - the printout below
+>> looks just fine. Also, from your first mail I understood that the shift
+>> there was by an amount not divisible by 4 - does that amount vary?
+> 
+> The memory location of the second LOAD entry (the .data section) is wrong.
+> It should be at 0x1c00000, but in fact its content starts at 0x1c0002c.
+> I looked at the x86 boot code, the vmlinux is gzipped and placed as
+> binary blob, which is then extracted by decompress().
 
+Are the virtual addresses then offset as well?
 
-Signed-off-by: Gaosen Zhang <gaosen.zhang@mediatek.com>
----
- drivers/usb/serial/option.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+Is phdr->p_offset sane?
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index e668a24..f342a2c 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -496,6 +496,15 @@ static void option_instat_callback(struct urb *urb);
+And you didn't clarify whether the offset was always the same.
 
- /* MediaTek products */
- #define MEDIATEK_VENDOR_ID			0x0e8d
-+#define MTK_FP_1COM				0x0003
-+#define MTK_FP_2COM				0x0023
-+#define MTK_FPDC_2COM				0x0033
-+#define MTK_FPDC_1COM				0x0043
-+#define MTK_DC_1COM				0x00a0
-+#define MTK_DC_5COM				0x00a4
-+#define MTK_DC_4COM				0x00a5
-+#define MTK_7208_1COM				0x7101
-+#define MTK_7208_2COM				0x7102
+Jan
 
- /* some devices interfaces need special handling due to a number of reasons */
- enum option_blacklist_reason {
-@@ -1233,6 +1242,17 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff,
-0x02, 0x01) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff,
-0x00, 0x00) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff,
-0x02, 0x01) },        /* MediaTek MT6276M modem & app port */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_FP_1COM,
-0x0a, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_FP_2COM,
-0x0a, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_FPDC_1COM,
-0x0a, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_FPDC_2COM,
-0x0a, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_DC_1COM,
-0x0a, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_DC_5COM,
-0xff, 0x02, 0x01) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_DC_5COM,
-0xff, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_DC_4COM,
-0xff, 0x02, 0x01) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_DC_4COM,
-0xff, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_7208_1COM,
-0x02, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_7208_2COM,
-0x02, 0x02, 0x01) },
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
--- 
-1.7.9.5
