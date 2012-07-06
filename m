@@ -1,64 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932610Ab2GFS5T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 14:57:19 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:48759 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757610Ab2GFS5R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 14:57:17 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Dilip Daya <dilip.daya@hp.com>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, netdev@vger.kernel.org
-References: <1340900320.3441.88.camel@pro6455b.example.com>
-	<20120705220749.GA11255@mail.hallyn.com> <87ehopu3e5.fsf@xmission.com>
-	<20120706170538.GA31679@mail.hallyn.com>
-Date: Fri, 06 Jul 2012 11:57:09 -0700
-In-Reply-To: <20120706170538.GA31679@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Fri, 6 Jul 2012 17:05:38 +0000")
-Message-ID: <87fw94g1kq.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1757973Ab2GFTNn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 15:13:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21938 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757823Ab2GFTNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 15:13:42 -0400
+Message-ID: <4FF7147B.1050001@redhat.com>
+Date: Fri, 06 Jul 2012 12:38:19 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+kI64lGztvK2dJJ066IufNTjtqOkF1454=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0311]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: Network namespace and bonding WARNING at fs/proc/generic.c remove_proc_entry
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Mel Gorman <mgorman@suse.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 03/26] mm, mpol: add MPOL_MF_LAZY ...
+References: <20120316144028.036474157@chello.nl> <20120316144240.307470041@chello.nl> <20120323115025.GE16573@suse.de>
+In-Reply-To: <20120323115025.GE16573@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
-
->> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
->> index 2ee8cf9..818ed64 100644
->> --- a/drivers/net/bonding/bond_main.c
->> +++ b/drivers/net/bonding/bond_main.c
->> @@ -4345,6 +4345,9 @@ static void bond_setup(struct net_device *bond_dev)
->>         bond_dev->priv_flags |= IFF_BONDING;
->>         bond_dev->priv_flags &= ~(IFF_XMIT_DST_RELEASE | IFF_TX_SKB_SHARING);
->>  
->> +       /* Don't allow bond devices to change network namespaces. */
->> +       bond_dev->features |= NETIF_F_LOCAL;
+On 03/23/2012 07:50 AM, Mel Gorman wrote:
+> On Fri, Mar 16, 2012 at 03:40:31PM +0100, Peter Zijlstra wrote:
+>> From: Lee Schermerhorn<Lee.Schermerhorn@hp.com>
+>>
+>> This patch adds another mbind() flag to request "lazy migration".
+>> The flag, MPOL_MF_LAZY, modifies MPOL_MF_MOVE* such that the selected
+>> pages are simply unmapped from the calling task's page table ['_MOVE]
+>> or from all referencing page tables [_MOVE_ALL].  Anon pages will first
+>> be added to the swap [or migration?] cache, if necessary.  The pages
+>> will be migrated in the fault path on "first touch", if the policy
+>> dictates at that time.
+>>
+>> <SNIP>
+>>
+>> @@ -950,6 +950,98 @@ static int unmap_and_move_huge_page(new_
+>>   }
+>>
+>>   /*
+>> + * Lazy migration:  just unmap pages, moving anon pages to swap cache, if
+>> + * necessary.  Migration will occur, if policy dictates, when a task faults
+>> + * an unmapped page back into its page table--i.e., on "first touch" after
+>> + * unmapping.  Note that migrate-on-fault only migrates pages whose mapping
+>> + * [e.g., file system] supplies a migratepage op, so we skip pages that
+>> + * wouldn't migrate on fault.
+>> + *
+>> + * Pages are placed back on the lru whether or not they were successfully
+>> + * unmapped.  Like migrate_pages().
+>> + *
+>> + * Unline migrate_pages(), this function is only called in the context of
+>> + * a task that is unmapping it's own pages while holding its map semaphore
+>> + * for write.
+>> + */
+>> +int migrate_pages_unmap_only(struct list_head *pagelist)
 >
-> I believe this needs to be NETIF_F_NETNS_LOCAL.  Test build still going with
-> that change.
+> I'm not properly reviewing these patches at the moment but am taking a
+> quick look as I play some catch up on linux-mm.
+>
+> I think it's worth pointing out that this potentially will confuse
+> reclaim. Lets say a process is being migrated to another node and it
+> gets unmapped like this then some heuristics will change.
+>
+> 1. If the page was referenced prior to the unmapping then it should be
+>     activated if the page reached the end of the LRU due to the checks
+>     in page_check_references(). If the process has been unmapped for
+>     migrate-on-fault, the pages will instead be reclaimed.
+>
+> 2. The heuristic that applies pressure to slab pages if pages are mapped
+>     is changed. Prior to migrate-on-fault sc->nr_scanned is incremented
+>     for mapped pages to increase the number of slab pages scanned to
+>     avoid swapping. During migrate-on-fault, this pressure is relieved
+>
+> 3. zone_reclaim_mode in default mode will reclaim pages it would
+>     previously have skipped over. It potentially will call shrink_zone more
+>     for the local node than falling back to other nodes because it thinks
+>     most pages are unmapped. This could lead to some trashing.
+>
+> It may not even be a major problem but it's worth thinking about. If it
+> is a problem, it will be necessary to account for migrate-on-fault pages
+> similar to mapped pages during reclaim.
 
-Yes that is what I mean.
+I can see other serious issues with this approach:
 
-Eric
+4. Putting a lot of pages in the swap cache ends up allocating
+    swap space. This means this NUMA migration scheme will only
+    work on systems that have a substantial amount of memory
+    represented by swap space. This is highly unlikely on systems
+    with memory in the TB range. On smaller systems, it could drive
+    the system out of memory (to the OOM killer), by "filling up"
+    the overflow swap with migration pages instead.
+
+5. In the long run, we want the ability to migrate transparent
+    huge pages as one unit.  The reason is simple, the performance
+    penalty for running on the wrong NUMA node (10-20%) is on the
+    same order of magnitude as the performance penalty for running
+    with 4kB pages instead of 2MB pages (5-15%).
+
+    Breaking up large pages into small ones, and having khugepaged
+    reconstitute them on a random NUMA node later on, will negate
+    the performance benefits of both NUMA placement and THP.
+
+In short, while this approach made sense when Lee first proposed
+it several years ago (with smaller memory systems, and before Linux
+had transparent huge pages), I do not believe it is an acceptable
+approach to NUMA migration any more.
+
+We really want something like PROT_NONE or PTE_NUMA page table
+(and page directory) entries, so we can avoid filling up swap
+space with migration pages and have the possibility of migrating
+transparent huge pages in one piece at some point.
+
+In other words, NAK to this patch
+
+-- 
+All rights reversed
