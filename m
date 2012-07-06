@@ -1,36 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700Ab2GFOrm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 10:47:42 -0400
-Received: from corporat201-245170169.sta.etb.net.co ([201.245.170.169]:57980
-	"EHLO mail1.herasmomeoz.gov.co" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1750696Ab2GFOrk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 10:47:40 -0400
-X-Greylist: delayed 1137 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jul 2012 10:47:40 EDT
-Date: Fri, 6 Jul 2012 09:17:40 -0500 (COT)
-From: webmail sistema de =?utf-8?Q?administra=C3=A7=C3=A3o?= 
-	<nubia.rodriguez@herasmomeoz.gov.co>
-Message-ID: <1886339917.12680.1341584260911.JavaMail.root@herasmomeoz.gov.co>
-Subject: Sua caixa de correio excedeu o limite de armazenamento de 2.GB
+	id S1753468Ab2GFOsc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 10:48:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63598 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab2GFOsa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 10:48:30 -0400
+Date: Fri, 6 Jul 2012 23:48:20 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 02/26] mm, mpol: Remove NUMA_INTERLEAVE_HIT
+Message-ID: <20120706144820.GC2328@barrios>
+References: <20120316144028.036474157@chello.nl>
+ <20120316144240.234456258@chello.nl>
+ <20120706103255.GA23680@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [41.138.178.35]
-X-Mailer: Zimbra 7.2.0_GA_2669 (zclient/7.2.0_GA_2669)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120706103255.GA23680@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sua caixa de correio excedeu o limite de armazenamento de 2.GB que é
-definido pelo administrador, funcionando atualmente 2.30GB,
-pode não ser capaz de enviar ou receber novas mensagens até que você
-validar a sua caixa de correio.
+Hi Hannes,
 
-Para revalidar sua caixa postal. clique no link abaixo:
+I alreay sent a patch about that but didn't have a reply from
+Peter/Ingo.
 
-https://docs.google.com/spreadsheet/viewform?formkey=dGlha1JQR2NSZVZTZ2c3Tklyb19TaWc6MQ
+https://lkml.org/lkml/2012/7/3/477
 
-obrigado
-administrador de sistema
+On Fri, Jul 06, 2012 at 12:32:55PM +0200, Johannes Weiner wrote:
+> Hi Peter,
+> 
+> On Fri, Mar 16, 2012 at 03:40:30PM +0100, Peter Zijlstra wrote:
+> > Since the NUMA_INTERLEAVE_HIT statistic is useless on its own; it wants
+> > to be compared to either a total of interleave allocations or to a miss
+> > count, remove it.
+> > 
+> > Fixing it would be possible, but since we've gone years without these
+> > statistics I figure we can continue that way.
+> > 
+> > This cleans up some of the weird MPOL_INTERLEAVE allocation exceptions.
+> > 
+> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > ---
+> 
+> > @@ -111,7 +111,6 @@ enum zone_stat_item {
+> >  	NUMA_HIT,		/* allocated in intended node */
+> >  	NUMA_MISS,		/* allocated in non intended node */
+> >  	NUMA_FOREIGN,		/* was intended here, hit elsewhere */
+> > -	NUMA_INTERLEAVE_HIT,	/* interleaver preferred this zone */
+> >  	NUMA_LOCAL,		/* allocation from local node */
+> >  	NUMA_OTHER,		/* allocation from other node */
+> >  #endif
+> 
+> Can you guys include/fold this?
+> 
+> ---
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Subject: [patch] mm: fix vmstat names-values off-by-one
+> 
+> "mm/mpol: Remove NUMA_INTERLEAVE_HIT" removed the NUMA_INTERLEAVE_HIT
+> item from the zone_stat_item enum, but left the corresponding name
+> string for it in the vmstat_text array.  As a result, all counters
+> that follow it have their name offset by one from their value.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  mm/vmstat.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/vmstat.c b/mm/vmstat.c
+> index 1bbbbd9..e4db312 100644
+> --- a/mm/vmstat.c
+> +++ b/mm/vmstat.c
+> @@ -717,7 +717,6 @@ const char * const vmstat_text[] = {
+>  	"numa_hit",
+>  	"numa_miss",
+>  	"numa_foreign",
+> -	"numa_interleave",
+>  	"numa_local",
+>  	"numa_other",
+>  #endif
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
