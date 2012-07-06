@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab2GFBBh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 21:01:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38475 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752157Ab2GFBBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 21:01:35 -0400
-Message-ID: <4FF63954.5040408@redhat.com>
-Date: Fri, 06 Jul 2012 09:03:16 +0800
-From: Asias He <asias@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1754095Ab2GFBEd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 21:04:33 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45417 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752798Ab2GFBEb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 21:04:31 -0400
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Sasha Levin <levinsasha928@gmail.com>, dlaor@redhat.com,
-        kvm@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH 3/3] virtio-blk: Add bio-based IO path for virtio-blk
-References: <1340002390-3950-1-git-send-email-asias@redhat.com>  <1340002390-3950-4-git-send-email-asias@redhat.com>  <87hau9yse7.fsf@rustcorp.com.au> <4FDEE0CB.1030505@redhat.com>  <87zk81x7dp.fsf@rustcorp.com.au> <4FDF0DA7.40604@redhat.com> <1340019575.22848.2.camel@lappy> <4FDFE926.7030309@redhat.com> <87r4svxcjw.fsf@rustcorp.com.au> <4FF10B31.60609@redhat.com> <8762a6y89v.fsf@rustcorp.com.au> <4FF23F4B.2040803@redhat.com> <87lij0w8np.fsf@rustcorp.com.au>
-In-Reply-To: <87lij0w8np.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120705172654.GG32640@tassilo.jf.intel.com>
+References: <1341254598-1379-3-git-send-email-andi@firstfloor.org>
+	<1341256733.23484.11.camel@twins>
+	<20120702195744.GG11413@one.firstfloor.org>
+	<1341260540.23484.25.camel@twins>
+	<20120702210008.GB14479@tassilo.jf.intel.com>
+	<1341265014.23484.47.camel@twins>
+	<20120702215722.GC14479@tassilo.jf.intel.com>
+	<CABPqkBSdtV6FTqVestcmy_skyK5AFTeShoT6vDFk34A0XaXWDA@mail.gmail.com>
+	<20120703040446.GJ11413@one.firstfloor.org>
+	<CABPqkBT4Dgte73hM+im0VP-Px1rXXURcyHhsSA2RYXCTZSdOxg@mail.gmail.com>
+	<20120705172654.GG32640@tassilo.jf.intel.com>
+Date: Fri, 6 Jul 2012 03:04:29 +0200
+Message-ID: <CABPqkBQS5gs7F41-Q4gUoURujst0RpJmn5iwUeUYjFUsFkhPBw@mail.gmail.com>
+Subject: Re: [PATCH 2/5] perf, x86: Enable PDIR precise instruction profiling
+ on IvyBridge
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Olsa <jolsa@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2012 10:40 AM, Rusty Russell wrote:
-> On Tue, 03 Jul 2012 08:39:39 +0800, Asias He <asias@redhat.com> wrote:
->> On 07/02/2012 02:41 PM, Rusty Russell wrote:
->>> Sure, our guest merging might save us 100x as many exits as no merging.
->>> But since we're not doing many requests, does it matter?
->>
->> We can still have many requests with slow devices. The number of
->> requests depends on the workload in guest. E.g. 512 IO threads in guest
->> keeping doing IO.
+On Thu, Jul 5, 2012 at 7:26 PM, Andi Kleen <ak@linux.intel.com> wrote:
+> On Thu, Jul 05, 2012 at 05:45:16PM +0200, Stephane Eranian wrote:
+>> On Tue, Jul 3, 2012 at 6:04 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>> >> Well, the only way I can think of would be to request that the
+>> >> event be programmed with exclusive mode ALWAYS. That
+>> >> should not be to hard to add.
+>> >
+>> > I suspect it would need some special callbacks from the events core,
+>> > that's why I only tried on IvyBridge.
+>> >x
+>> You could simply add a check in the x86 init code like what is done
+>> with the pebs events and precise mode.
 >
-> You can have many requests outstanding.  But if the device is slow, the
-> rate of requests being serviced must be low.
+> Ah requiring the user to set exclusive? Maybe. Right now perf does not even
+> have an option to set it. Would seem user unfriendly to me though.
 
-Yes.
+Yes, that's what I meant since the beginning. Require exclusive mode
+on the event is all we need to enforce the restriction. The scheduling
+would still only work on counter 1.
 
-> Am I misunderstanding something?  I thought if you could have a high
-> rate of requests, it's not a slow device.
-
-Sure.
-
--- 
-Asias
-
-
+I know that perf record/stat do not support this but given the new event
+parser it should not too hard to add an excl term to the syntax. I have
+that in libpfm4 now as an option on events. That's clearly a perf_event
+option like period or freq and not a HW option like inv, edge.
