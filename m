@@ -1,61 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932967Ab2GFKRV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 06:17:21 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:45818 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932831Ab2GFKRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 06:17:20 -0400
-Message-ID: <4FF6BA8D.6080107@parallels.com>
-Date: Fri, 6 Jul 2012 14:14:37 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1756857Ab2GFKTK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 06:19:10 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:37284 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756540Ab2GFKTH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 06:19:07 -0400
+Subject: [PATCH v2] Hardware breakpoints: Invoke __perf_event_disable() if
+ interrupts are already disabled
+To: fweisbec@gmail.com, paulus@samba.org, a.p.zijlstra@chello.nl
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: emachado@linux.vnet.ibm.com, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, acme@ghostprotocols.net,
+        prasad.krishnan@gmail.com
+Date: Fri, 06 Jul 2012 15:48:50 +0530
+Message-ID: <20120706101653.7515.23309.stgit@localhost.localdomain>
+In-Reply-To: <20120706095233.7082.83395.stgit@localhost.localdomain>
+References: <20120706095233.7082.83395.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        <ksummit-2012-discuss@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2012-discuss] [ATTEND or not ATTEND] That's the question!
-References: <alpine.LFD.2.02.1206152313310.3086@ionos> <20120615233413.GB8894@kroah.com> <alpine.LFD.2.02.1206161103320.3086@ionos> <20120616072906.7469ec24@tpl.lwn.net> <20120620195121.GA1719@fieldses.org> <4FF6B32A.7070006@parallels.com> <20120706095450.GB7728@somewhere.redhat.com> <20120706101149.GA26028@localhost.localdomain>
-In-Reply-To: <20120706101149.GA26028@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+x-cbid: 12070600-1618-0000-0000-00000203B321
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/2012 02:11 PM, Richard Cochran wrote:
-> On Fri, Jul 06, 2012 at 11:54:52AM +0200, Frederic Weisbecker wrote:
->> On Fri, Jul 06, 2012 at 01:43:06PM +0400, Glauber Costa wrote:
->>> The same way we have checkpatch, we can have something automated that
->>> will attempt to rule out some trivial patches in the counting process.
->>> We can scan a patch, and easily determine if each part of it is:
->>>
->>> * pure whitespace
->>> * pure Documentation change
->>> * comment fix
->>>
->>> And if a patch is 100 % comprised by those, we simply don't count it.
->>> People that just want to increase their numbers - they will always
->>> exist, will tend to stop doing that. Simply because doing it will not
->>> help them at all.
->>
->> OTOH, documentation changes or comment fixes, and even sometimes pure whitespace
->> fixes, can be very valuable contributions. This can be a useful and ungrateful
->> work and that deserve credit.
->>
->> We just can't find an automated and right way to evaluate a contribution.
-> 
-> Well what about submitters and maintainers labeling patches below the
-> SOB with tags like the following?
-> 
->    Signed-off-by: Richard Cochran <richardcochran@gmail.com>
->    Tags: docu whitespace trivial
-> 
-> Part of the review would be making sure the labels fit.
-> 
+From: K.Prasad <Prasad.Krishnan@gmail.com>
 
-Problem 1: What do you do with the commits already in the tree that
-lacks any tagging ?
+My apologies. I missed the From header in my previous mail.
+
+---
+Please find v2 of the patch from Prasad, based on Peter Zijlstra's
+feedback. This applies on top of v3.5-rc5. This has been tested and
+found to work fine by Edjunior.
+
+Regards,
+Naveen
+
+---
+While debugging a warning message on PowerPC while using hardware
+breakpoints, it was discovered that when perf_event_disable is invoked
+through hw_breakpoint_handler function with interrupts disabled, a
+subsequent IPI in the code path would trigger a WARN_ON_ONCE message in
+smp_call_function_single function.
+
+This patch calls __perf_event_disable() when interrupts are already
+disabled, instead of perf_event_disable().
+
+Reported-by: Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>
+Signed-off-by: K.Prasad <Prasad.Krishnan@gmail.com>
+Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+---
+ include/linux/perf_event.h    |    2 ++
+ kernel/events/core.c          |    2 +-
+ kernel/events/hw_breakpoint.c |   10 +++++++++-
+ 3 files changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 45db49f..c289ba0 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1292,6 +1292,7 @@ extern int perf_swevent_get_recursion_context(void);
+ extern void perf_swevent_put_recursion_context(int rctx);
+ extern void perf_event_enable(struct perf_event *event);
+ extern void perf_event_disable(struct perf_event *event);
++extern int __perf_event_disable(void *info);
+ extern void perf_event_task_tick(void);
+ #else
+ static inline void
+@@ -1330,6 +1331,7 @@ static inline int  perf_swevent_get_recursion_context(void)		{ return -1; }
+ static inline void perf_swevent_put_recursion_context(int rctx)		{ }
+ static inline void perf_event_enable(struct perf_event *event)		{ }
+ static inline void perf_event_disable(struct perf_event *event)		{ }
++static inline int __perf_event_disable(void *info)			{ }
+ static inline void perf_event_task_tick(void)				{ }
+ #endif
+ 
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index d7d71d6..0ad0fc9 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1253,7 +1253,7 @@ retry:
+ /*
+  * Cross CPU call to disable a performance event
+  */
+-static int __perf_event_disable(void *info)
++int __perf_event_disable(void *info)
+ {
+ 	struct perf_event *event = info;
+ 	struct perf_event_context *ctx = event->ctx;
+diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+index bb38c4d..483f14a 100644
+--- a/kernel/events/hw_breakpoint.c
++++ b/kernel/events/hw_breakpoint.c
+@@ -453,7 +453,15 @@ int modify_user_hw_breakpoint(struct perf_event *bp, struct perf_event_attr *att
+ 	int old_type = bp->attr.bp_type;
+ 	int err = 0;
+ 
+-	perf_event_disable(bp);
++	/*
++	 * modify_user_hw_breakpoint can be invoked with IRQs disabled and hence it
++	 * will not be possible to raise IPIs that invoke __perf_event_disable.
++	 * So call the function directly.
++	 */
++	if (irqs_disabled())
++		__perf_event_disable(bp);
++	else
++		perf_event_disable(bp);
+ 
+ 	bp->attr.bp_addr = attr->bp_addr;
+ 	bp->attr.bp_type = attr->bp_type;
+
