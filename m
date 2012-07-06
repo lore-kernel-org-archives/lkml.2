@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932976Ab2GFAY4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 20:24:56 -0400
-Received: from usindpps03.hds.com ([207.126.252.16]:59948 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932149Ab2GFAYy convert rfc822-to-8bit (ORCPT
+	id S933007Ab2GFA3z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 20:29:55 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:43570 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932795Ab2GFA3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 20:24:54 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "Luck, Tony" <tony.luck@intel.com>, Don Zickus <dzickus@redhat.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [RFC][PATCH 2/2] write callback: Check if existing entry is
- erasable
-Thread-Topic: [RFC][PATCH 2/2] write callback: Check if existing entry is
- erasable
-Thread-Index: Ac1ZdICAdYwUKctERYa3qDPOlfZeVABX5VeAAAHWqnAADJMpgAAIPF3Q///tDACAADRAgA==
-Date: Fri, 6 Jul 2012 00:24:42 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D401C48C@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D401AAED@USINDEM103.corp.hds.com>
- <20120705133201.GG5637@redhat.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D401C288@USINDEM103.corp.hds.com>
- <20120705202443.GQ5637@redhat.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D401C31F@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1934764C@ORSMSX104.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1934764C@ORSMSX104.amr.corp.intel.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 5 Jul 2012 20:29:54 -0400
+Date: Thu, 5 Jul 2012 17:29:44 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu] Make RCU_FAST_NO_HZ respect nohz= boot
+ parameter
+Message-ID: <20120706002944.GL2522@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120705223731.GA27608@linux.vnet.ibm.com>
+ <20120705230208.GB26150@leaf>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.260,0.0.0000
- definitions=2012-07-05_05:2012-07-05,2012-07-05,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1207050292
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120705230208.GB26150@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12070600-1780-0000-0000-00000725E424
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000284; HX=3.00000191; KW=3.00000007;
+ PH=3.00000001; SC=3.00000004; SDB=6.00154114; UDB=6.00034779; UTC=2012-07-06
+ 00:29:53
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 10K is almost certainly more than we need for 99.9% of problems ... I set the default there to test out that pstore would correctly
-> break a dump into more than one back-end ERST record (about 7K) and never changed it back. So don't treat 10K with any magic
-> reverence. It's easy to argue that a smaller number is good enough.
-
-OK.
-
-> There are certainly less over-write worries if you can handle a few (4, 5, 6) simultaneously logged errors of sufficient size to be useful
-> (must capture all of the panic strings, backtrace and register dump plus "enough" lines before the panic to see any obvious issues).
->
-
-To handle multiple logs, I will probably introduce a new kernel parameter, like efi_pstore_max_log_num.
-Users can calculate  overall consumption of NVRAM for kmsg logging with it.
- 
-> If you only get to store two errors, then perhaps one non-over writable panic type entry, and one other "most recent" type entry?
+On Thu, Jul 05, 2012 at 04:02:08PM -0700, Josh Triplett wrote:
+> On Thu, Jul 05, 2012 at 03:37:31PM -0700, Paul E. McKenney wrote:
+> > If the nohz= boot parameter disables nohz, then RCU_FAST_NO_HZ needs to
+> > also disable itself.  This commit therefore checks for tick_nohz_enabled
+> > being zero, disabling rcu_prepare_for_idle() if so.  This patch assumes
+> > that tick_nohz_enabled can change at runtime: If this is not the case,
+> > then a simpler approach suffices.
 > 
-> With just one, like current EFI, then there are certainly hard choices that might not be the best for certain pathological situations.
+> Allowing nohz to change at runtime seems like an entirely unnecessary
+> bit of added complexity.  (So does having a boot parameter for it, but
+> that one at least seems easier to handle.)
 
-I will consider a policy for multiple logging from now.
-(In case where oops happens multiple times and kernel hangs, oldest oops may be informative.... I can't decide the policy at this time.)
+I will let representatives from the various distros expound to you on
+their one-binary-only strategy for kernel builds.  ;-)
 
-Seiji
+> What would the patch look like if you can assume nohz will never change
+> at runtime?  And does anyone have a use case for changing nohz at
+> runtime, rather than at boot time?
 
+It would be a little bit simpler, but would break in very odd and
+difficult-to-debug ways if anyone ever did allow it to change at runtime,
+for example, to accommodate systems subject to varying workloads.
+
+							Thanx, Paul
 
