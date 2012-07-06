@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab2GFLaN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 07:30:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52429 "EHLO
+	id S1757249Ab2GFLbM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 07:31:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52444 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710Ab2GFLaL (ORCPT
+	with ESMTP id S1754132Ab2GFLbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 07:30:11 -0400
-Date: Fri, 6 Jul 2012 04:29:57 -0700
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Message-ID: <tip-d872818dbbeed1bccf58c7f8c7db432154c802f9@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, agordeev@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, gorcunov@openvz.org, yinghai@kernel.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, agordeev@redhat.com,
-        linux-kernel@vger.kernel.org, yinghai@kernel.org, gorcunov@openvz.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de
-In-Reply-To: <1340656709-11423-4-git-send-email-suresh.b.siddha@intel.com>
-References: <1340656709-11423-4-git-send-email-suresh.b.siddha@intel.com>
+	Fri, 6 Jul 2012 07:31:09 -0400
+Date: Fri, 6 Jul 2012 04:30:52 -0700
+From: tip-bot for Steven Rostedt <srostedt@redhat.com>
+Message-ID: <tip-01c4359c155e2613cb29363865804c2b11092d6f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        rostedt@goodmis.org, dhsharp@google.com, srostedt@redhat.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, srostedt@redhat.com, dhsharp@google.com,
+        tglx@linutronix.de
+In-Reply-To: <1340060577-9112-1-git-send-email-dhsharp@google.com>
+References: <1340060577-9112-1-git-send-email-dhsharp@google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86/apic/x2apic:
-  Use multiple cluster members for the irq destination only with the explicit affinity
-Git-Commit-ID: d872818dbbeed1bccf58c7f8c7db432154c802f9
+Subject: [tip:perf/urgent] ring-buffer: Fix uninitialized read_stamp
+Git-Commit-ID: 01c4359c155e2613cb29363865804c2b11092d6f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,91 +29,69 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 04:30:03 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 04:31:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d872818dbbeed1bccf58c7f8c7db432154c802f9
-Gitweb:     http://git.kernel.org/tip/d872818dbbeed1bccf58c7f8c7db432154c802f9
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Mon, 25 Jun 2012 13:38:29 -0700
+Commit-ID:  01c4359c155e2613cb29363865804c2b11092d6f
+Gitweb:     http://git.kernel.org/tip/01c4359c155e2613cb29363865804c2b11092d6f
+Author:     Steven Rostedt <srostedt@redhat.com>
+AuthorDate: Thu, 28 Jun 2012 13:35:04 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 6 Jul 2012 11:00:23 +0200
+CommitDate: Fri, 6 Jul 2012 11:13:22 +0200
 
-x86/apic/x2apic: Use multiple cluster members for the irq destination only with the explicit affinity
+ring-buffer: Fix uninitialized read_stamp
 
-During boot or driver load etc, interrupt destination is setup
-using default target cpu's. Later the user (irqbalance etc) or
-the driver (irq_set_affinity/ irq_set_affinity_hint) can request
-the interrupt to be migrated to some specific set of cpu's.
+The ring buffer reader page is used to swap a page from the writable
+ring buffer. If the writer happens to be on that page, it ends up on the
+reader page, but will simply move off of it, back into the writable ring
+buffer as writes are added.
 
-In the x2apic cluster routing, for the default scenario use
-single cpu as the interrupt destination and when there is an
-explicit interrupt affinity request, route the interrupt to
-multiple members of a x2apic cluster specified in the cpumask of
-the migration request.
+The time stamp passed back to the readers is stored in the cpu_buffer per
+CPU descriptor. This stamp is updated when a swap of the reader page takes
+place, and it reads the current stamp from the page taken from the writable
+ring buffer. Everytime a writer goes to a new page, it updates the time stamp
+of that page.
 
-This will minmize the vector pressure when there are lot of
-interrupt sources and relatively few x2apic clusters (for
-example a single socket server). This will allow the performance
-critical interrupts to be routed to multiple cpu's in the x2apic
-cluster (irqbalance for example uses the cache siblings etc
-while specifying the interrupt destination) and allow
-non-critical interrupts to be serviced by a single logical cpu.
+The problem happens if a reader reads a page from an empty per CPU ring buffer.
+If the buffer is empty, the swap still takes place, placing the writer at the
+start of the reader page. If at a later time, a write happens, it updates the
+page's time stamp and continues. But the problem is that the read_stamp does
+not get updated, because the page was already swapped.
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: Alexander Gordeev <agordeev@redhat.com>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Link: http://lkml.kernel.org/r/1340656709-11423-4-git-send-email-suresh.b.siddha@intel.com
+The solution to this was to not swap the page if the ring buffer happens to
+be empty. This also removes the side effect that the writes on the reader
+page will not get updated because the writer never gets back on the reader
+page without a swap. That is, if a read happens on an empty buffer, but then
+no reads happen for a while. If a swap took place, and the writer were to start
+writing a lot of data (function tracer), it will start overflowing the ring buffer
+and overwrite the older data. But because the writer never goes back onto the
+reader page, the data left on the reader page never gets overwritten. This
+causes the reader to see really old data, followed by a jump to newer data.
+
+Link: http://lkml.kernel.org/r/1340060577-9112-1-git-send-email-dhsharp@google.com
+Google-Bug-Id: 6410455
+Reported-by: David Sharp <dhsharp@google.com>
+tested-by: David Sharp <dhsharp@google.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/apic/x2apic_cluster.c |   21 +++++++++++++++++++--
- 1 files changed, 19 insertions(+), 2 deletions(-)
+ kernel/trace/ring_buffer.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-index bde78d0..c88baa4 100644
---- a/arch/x86/kernel/apic/x2apic_cluster.c
-+++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -209,13 +209,30 @@ static int x2apic_cluster_probe(void)
- 		return 0;
- }
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 1d0f6a8..82a3e0c 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -3239,6 +3239,10 @@ rb_get_reader_page(struct ring_buffer_per_cpu *cpu_buffer)
+ 	if (cpu_buffer->commit_page == cpu_buffer->reader_page)
+ 		goto out;
  
-+static const struct cpumask *x2apic_cluster_target_cpus(void)
-+{
-+	return cpu_all_mask;
-+}
++	/* Don't bother swapping if the ring buffer is empty */
++	if (rb_num_of_entries(cpu_buffer) == 0)
++		goto out;
 +
- /*
-  * Each x2apic cluster is an allocation domain.
-  */
- static void cluster_vector_allocation_domain(int cpu, struct cpumask *retmask,
- 					     const struct cpumask *mask)
- {
--	cpumask_and(retmask, mask, per_cpu(cpus_in_cluster, cpu));
-+	/*
-+	 * To minimize vector pressure, default case of boot, device bringup
-+	 * etc will use a single cpu for the interrupt destination.
-+	 *
-+	 * On explicit migration requests coming from irqbalance etc,
-+	 * interrupts will be routed to the x2apic cluster (cluster-id
-+	 * derived from the first cpu in the mask) members specified
-+	 * in the mask.
-+	 */
-+	if (mask == x2apic_cluster_target_cpus())
-+		cpumask_copy(retmask, cpumask_of(cpu));
-+	else
-+		cpumask_and(retmask, mask, per_cpu(cpus_in_cluster, cpu));
- }
- 
- static struct apic apic_x2apic_cluster = {
-@@ -229,7 +246,7 @@ static struct apic apic_x2apic_cluster = {
- 	.irq_delivery_mode		= dest_LowestPrio,
- 	.irq_dest_mode			= 1, /* logical */
- 
--	.target_cpus			= online_target_cpus,
-+	.target_cpus			= x2apic_cluster_target_cpus,
- 	.disable_esr			= 0,
- 	.dest_logical			= APIC_DEST_LOGICAL,
- 	.check_apicid_used		= NULL,
+ 	/*
+ 	 * Reset the reader page to size zero.
+ 	 */
