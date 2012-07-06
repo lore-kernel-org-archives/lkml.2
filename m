@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757299Ab2GFPMc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 11:12:32 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:60215 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906Ab2GFPMa (ORCPT
+	id S1757573Ab2GFPMj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 11:12:39 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:53937 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757447Ab2GFPMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 11:12:30 -0400
-Message-ID: <4FF6FF1F.5090701@linux.vnet.ibm.com>
-Date: Fri, 06 Jul 2012 10:07:11 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Fri, 6 Jul 2012 11:12:33 -0400
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+In-Reply-To: <CAPXgP13_cQUQLE4RSjACTzj28Pn6r3ZaPhjch2U+uwgi7YKcWA@mail.gmail.com>
+References: <1340651142.7037.2.camel@gandalf.stny.rr.com> <20120625150722.8cd4f45d.akpm@linux-foundation.org>
+ <20120625235531.GB3652@kroah.com> <CA+55aFwczZTA=JUahoj_Sw1fQssDwoM2LGJ6g5nPvehTLxnSpg@mail.gmail.com>
+ <20120626002307.GA4389@kroah.com> <CA+55aFxhYRqcU2EUmcsuLrhgo4FEO6-b+mB57wB3JRiXEp3ZrA@mail.gmail.com>
+ <CAPXgP10cPFSmZ5yr6Z4wVtDa+x2J1yQDF57NJXtxjUuxMHm=Lw@mail.gmail.com>
+ <CA+55aFzkX=jCC1O6+2oz8meswOqZQ+Q8Ao60q8eAS1G3AuEStQ@mail.gmail.com>
+ <1340726856.977.6.camel@mop> <22482.1341471787@neuling.org>
+ <CAPXgP11=o5WB4WejaQCSCL-+5e4sL7tfVz_r3Khyrq3SyrMvsA@mail.gmail.com>
+ <CAPXgP13u769nSvUdS1iqiVCsxG5nsQd7bNT1=-eNw156U-kPkQ@mail.gmail.com>
+ <16043.1341483625@neuling.org> <CAPXgP11+j+fDexHHmAZbBBidtrydrpWeh3DGWOhkuoybNj9skA@mail.gmail.com>
+ <1341492628.834.3.camel@mop> <30233.1341535279@neuling.org>
+ <CAPXgP12_F_H2XPpo2wFmb-u3jBdV__=h67R-LVYbqHuLh7tqLg@mail.gmail.com>
+ <29711.1341545979@neuling.org> <30343.1341546469@neuling.org> <CAPXgP13_cQUQLE4RSjACTzj28Pn6r3ZaPhjch2U+uwgi7YKcWA@mail.gmail.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Fri, 6 Jul 2012 17:12:12 +0200
+Message-ID: <CAPXgP10JthGjZyqD6gqn2n1rPu1uP+=mem_T-iOritXAQMstRQ@mail.gmail.com>
+Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
+To: Michael Neuling <mikey@neuling.org>
+Cc: linuxppc-dev@ozlabs.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] zsmalloc improvements
-References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com> <20120704204325.GB2924@localhost.localdomain>
-In-Reply-To: <20120704204325.GB2924@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12070615-1780-0000-0000-0000072980D7
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000284; HX=3.00000191; KW=3.00000007;
- PH=3.00000001; SC=3.00000004; SDB=6.00154288; UDB=6.00034809; UTC=2012-07-06
- 15:12:28
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Wu Fengguang <fengguang.wu@intel.com>, Joe Perches <joe@perches.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2012 03:43 PM, Konrad Rzeszutek Wilk wrote:
-> On Mon, Jul 02, 2012 at 04:15:48PM -0500, Seth Jennings wrote:
->> This exposed an interesting and unexpected result: in all
->> cases that I tried, copying the objects that span pages instead
->> of using the page table to map them, was _always_ faster.  I could
->> not find a case in which the page table mapping method was faster.
-> 
-> Which architecture was this under? It sounds x86-ish? Is this on
-> Westmere and more modern machines? What about Core2 architecture?
-> 
-> Oh how did it work on AMD Phenom boxes?
+On Fri, Jul 6, 2012 at 12:46 PM, Kay Sievers <kay@vrfy.org> wrote:
+> On Fri, Jul 6, 2012 at 5:47 AM, Michael Neuling <mikey@neuling.org> wrote:
+>
+>>> 4,89,24561;NIP: c000000000048164 LR: c000000000048160 CTR: 0000000000000000
+>>> 4,90,24576;REGS: c00000007e59fb50 TRAP: 0700   Tainted: G        W     (3.5.0-rc4-mikey)
+>>> 4,91,24583;MSR: 9000000000021032
+>>> 4,92,24586;<
+>>> 4,93,24591;SF
+>>> 4,94,24596;,HV
+>>> 4,95,24601;,ME
+>>> 4,96,24606;,IR
+>>> 4,97,24611;,DR
+>>> 4,98,24616;,RI
+>>> 4,99,24619;>
+>>> 4,100,24628;  CR: 28000042  XER: 22000000
+>>
+>> FWIW, compiling with the parent commit gives this:
+>>
+>> 4,89,1712;NIP: c000000000048164 LR: c000000000048160 CTR: 0000000000000000
+>> 4,90,1713;REGS: c00000007e59fb50 TRAP: 0700   Tainted: G        W     (3.5.0-rc4-mikey)
+>> 4,91,1716;MSR: 9000000000021032 <SF,HV,ME,IR,DR,RI>  CR: 22000082  XER: 02000000
+>
+> Hmm, I don't understand, which parent commit do you mean? You maybe
+> mean without 084681d?
+>
+> I think it's a race of the two CPUs printing continuation lines, and
+> the continuation buffer is still occupied with data from one CPU and
+> not available to the other one at the same time.
+>
+> What you see is likely not the direct output to the console (that
+> would work) but the replay of the stored buffer when the console is
+> registered. Because the cont buffer was still busy with one CPU, the
+> other thread needs to store the continuation line prints in individual
+> records, which leads to the (unwanted) printed newlines when
+> replaying.
+>
+> The data we store looks all fine, it just looks needlessly separated
+> when we replay fromt he buffer on a newly registered boot console. We
+> need to merge the lines in the output, so they *look* like they are
+> all in one line. I'll work on a fix for that now.
 
-I don't have a Phenom box but I have an Athlon X2 I can try out.
-I'll get this information next Monday.
+It could be that the console semaphore is still help by the other CPU,
+for whatever reason, when your box runs into this situation.
 
---
-Seth
+Mind pasting more context (/dev/kmsg) of the log when this happens,
+not only the one line that get split-up?
 
+Is this possibly during an oops or backtrace going on when you see
+this? Which code calls show_regs() here?
+
+Kay
