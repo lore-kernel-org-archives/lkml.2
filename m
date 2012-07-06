@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab2GFICm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 04:02:42 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:29884 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750889Ab2GFICi (ORCPT
+	id S1753315Ab2GFIFK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 04:05:10 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59187 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab2GFIE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 04:02:38 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArwNAHGa9k9bdWOb/2dsb2JhbABFhWSpFyKIG4EHghgBAQQBIw8BBR0jAQULCxoCBRYLAgIJAwIBAgFFBg0BBwEBiAIJpy+TEYEgjy2BEgOVN5ADgmE
-X-IronPort-AV: E=Sophos;i="4.77,537,1336341600"; 
-   d="scan'208";a="926705032"
-Message-ID: <4FF69B9B.3060307@igalia.com>
-Date: Fri, 06 Jul 2012 10:02:35 +0200
-From: =?UTF-8?B?TWlndWVsIEfDs21leg==?= <magomez@igalia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
-        aaro.koskinen@iki.fi, dan.carpenter@oracle.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/19] Staging: xgifb: Comment cleaning.
-References: <cover.1341498465.git.magomez@igalia.com>  <c43dc4d9658a520bc62592d51ec9b7b2a3d81fd7.1341498465.git.magomez@igalia.com> <1341509701.21263.7.camel@joe2Laptop>
-In-Reply-To: <1341509701.21263.7.camel@joe2Laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Fri, 6 Jul 2012 04:04:58 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Date: Fri, 06 Jul 2012 17:04:10 +0900 (JST)
+Message-Id: <20120706.170410.119097767.d.hatayama@jp.fujitsu.com>
+To: zhangyanfei@cn.fujitsu.com
+Cc: avi@redhat.com, mtosatti@redhat.com, dzickus@redhat.com, luto@mit.edu,
+        kvm@vger.kernel.org, joerg.roedel@amd.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
+        ludwig.nussel@suse.de, ebiederm@xmission.com,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH v4 2/3] KVM-INTEL: Add new module vmcsinfo-intel to
+ fill VMCSINFO
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+In-Reply-To: <4FF4155F.6070508@cn.fujitsu.com>
+References: <4FF413D2.4030006@cn.fujitsu.com>
+	<4FF4155F.6070508@cn.fujitsu.com>
+X-Mailer: Mew version 6.3 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
+Subject: [PATCH v4 2/3] KVM-INTEL: Add new module vmcsinfo-intel to fill VMCSINFO
+Date: Wed, 4 Jul 2012 18:05:19 +0800
 
->> diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-> []
->> @@ -1,9 +1,3 @@
->> -/*
->> - * XG20, XG21, XG40, XG42 frame buffer device
->> - * for Linux kernels  2.5.x, 2.6.x
->> - * Base on TW's sis fbdev code.
->> - */
->
-> Maybe the comment removal is a bit aggressive.
-> Perhaps two of these are relevant comments.
->
->> diff --git a/drivers/staging/xgifb/vgatypes.h b/drivers/staging/xgifb/vgatypes.h
-> []
->> @@ -79,7 +79,4 @@ struct xgi_hw_device_info {
->>   	unsigned long ulCRT2LCDType; /* defined in the data structure type */
->>   };
->>
->> -/* Additional IOCTL for communication xgifb <> X driver        */
->> -/* If changing this, xgifb.h must also be changed (for xgifb) */
->>   #endif
->> -
->
-> Maybe this too.
+> Besides, this patch also exports vmcs revision identifier via
+> /sys/devices/system/cpu/vmcs_id and offsets of fields via
+> /sys/devices/system/cpu/vmcs/.
+> Individual offsets are contained in subfiles named by the filed's
+> encoding, e.g.: /sys/devices/cpu/vmcs/0800
 
-Yes, true, Point taken :)
+According to the discussion starting from
 
->  From a quick glance, the rest of the patches look like
-> nice cleanups.
->
-> btw: most kernel code uses logical line continuations
-> at the end of the line not at the beginning of the next
-> line.
->
-> ie:
-> 	if (foo &&
-> 	    bar)
-> not
-> 	if (foo
-> 	    && bar)
+http://lkml.indiana.edu/hypermail/linux/kernel/1105.3/00749.html
 
-Thanks for the tip! I wasn't really sure about the preferred way to do it.
+system can be composed of CPUs with different steppings or differnet
+microcode revisions. Becase of the nature that it's hided in the
+specification, I suspect layout of vmcs could change across different
+steppings or microcode revisions. Then, the interface needs to be
+changed as per-cpu like
 
-Regards!
+   /sys/devices/cpu/cpu0/vmcs/0800
+   /sys/devices/cpu/cpu1/vmcs/0800
+   ...
+   /sys/devices/cpu/cpuN/vmcs/0800
 
--- 
-Miguel Gómez
-Igalia - http://www.igalia.com
+Also, processing of vmcsinfo initialization needs to be done per cpu,
+and can be triggered when cpu is added not when kvm module is loaded.
 
+Thanks.
+HATAYAMA, Daisuke
 
