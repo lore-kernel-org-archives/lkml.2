@@ -1,115 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857Ab2GFKTK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 06:19:10 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:37284 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756540Ab2GFKTH (ORCPT
+	id S932908Ab2GFKTI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 06:19:08 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:52348 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755012Ab2GFKTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 06:19:07 -0400
-Subject: [PATCH v2] Hardware breakpoints: Invoke __perf_event_disable() if
- interrupts are already disabled
-To: fweisbec@gmail.com, paulus@samba.org, a.p.zijlstra@chello.nl
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: emachado@linux.vnet.ibm.com, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, acme@ghostprotocols.net,
-        prasad.krishnan@gmail.com
-Date: Fri, 06 Jul 2012 15:48:50 +0530
-Message-ID: <20120706101653.7515.23309.stgit@localhost.localdomain>
-In-Reply-To: <20120706095233.7082.83395.stgit@localhost.localdomain>
-References: <20120706095233.7082.83395.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Fri, 6 Jul 2012 06:19:06 -0400
+Date: Fri, 6 Jul 2012 11:22:36 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] pch_uart: Fix parity setting issue
+Message-ID: <20120706112236.5245ac66@pyramind.ukuu.org.uk>
+In-Reply-To: <1341562783-5571-2-git-send-email-tomoya.rohm@gmail.com>
+References: <1341562783-5571-1-git-send-email-tomoya.rohm@gmail.com>
+	<1341562783-5571-2-git-send-email-tomoya.rohm@gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-x-cbid: 12070600-1618-0000-0000-00000203B321
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: K.Prasad <Prasad.Krishnan@gmail.com>
+On Fri,  6 Jul 2012 17:19:43 +0900
+Tomoya MORINAGA <tomoya.rohm@gmail.com> wrote:
 
-My apologies. I missed the From header in my previous mail.
+> Parity Setting value is reverse.
+> E.G. In case of setting ODD parity, EVEN value is set.
+> This patch inverts "if" condition.
+> 
+> Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
----
-Please find v2 of the patch from Prasad, based on Peter Zijlstra's
-feedback. This applies on top of v3.5-rc5. This has been tested and
-found to work fine by Edjunior.
-
-Regards,
-Naveen
-
----
-While debugging a warning message on PowerPC while using hardware
-breakpoints, it was discovered that when perf_event_disable is invoked
-through hw_breakpoint_handler function with interrupts disabled, a
-subsequent IPI in the code path would trigger a WARN_ON_ONCE message in
-smp_call_function_single function.
-
-This patch calls __perf_event_disable() when interrupts are already
-disabled, instead of perf_event_disable().
-
-Reported-by: Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>
-Signed-off-by: K.Prasad <Prasad.Krishnan@gmail.com>
-Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
----
- include/linux/perf_event.h    |    2 ++
- kernel/events/core.c          |    2 +-
- kernel/events/hw_breakpoint.c |   10 +++++++++-
- 3 files changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 45db49f..c289ba0 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -1292,6 +1292,7 @@ extern int perf_swevent_get_recursion_context(void);
- extern void perf_swevent_put_recursion_context(int rctx);
- extern void perf_event_enable(struct perf_event *event);
- extern void perf_event_disable(struct perf_event *event);
-+extern int __perf_event_disable(void *info);
- extern void perf_event_task_tick(void);
- #else
- static inline void
-@@ -1330,6 +1331,7 @@ static inline int  perf_swevent_get_recursion_context(void)		{ return -1; }
- static inline void perf_swevent_put_recursion_context(int rctx)		{ }
- static inline void perf_event_enable(struct perf_event *event)		{ }
- static inline void perf_event_disable(struct perf_event *event)		{ }
-+static inline int __perf_event_disable(void *info)			{ }
- static inline void perf_event_task_tick(void)				{ }
- #endif
- 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index d7d71d6..0ad0fc9 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1253,7 +1253,7 @@ retry:
- /*
-  * Cross CPU call to disable a performance event
-  */
--static int __perf_event_disable(void *info)
-+int __perf_event_disable(void *info)
- {
- 	struct perf_event *event = info;
- 	struct perf_event_context *ctx = event->ctx;
-diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-index bb38c4d..483f14a 100644
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -453,7 +453,15 @@ int modify_user_hw_breakpoint(struct perf_event *bp, struct perf_event_attr *att
- 	int old_type = bp->attr.bp_type;
- 	int err = 0;
- 
--	perf_event_disable(bp);
-+	/*
-+	 * modify_user_hw_breakpoint can be invoked with IRQs disabled and hence it
-+	 * will not be possible to raise IPIs that invoke __perf_event_disable.
-+	 * So call the function directly.
-+	 */
-+	if (irqs_disabled())
-+		__perf_event_disable(bp);
-+	else
-+		perf_event_disable(bp);
- 
- 	bp->attr.bp_addr = attr->bp_addr;
- 	bp->attr.bp_type = attr->bp_type;
-
+Acked-by: Alan Cox <alan@linux.intel.com>
