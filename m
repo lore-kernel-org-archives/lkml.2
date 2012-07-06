@@ -1,660 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964776Ab2GFVKt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 17:10:49 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33100 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758392Ab2GFVGo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 17:06:44 -0400
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 25/36] AArch64: Signal handling support
-Date: Fri,  6 Jul 2012 22:06:06 +0100
-Message-Id: <1341608777-12982-26-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.9.111.gf3fb0
-In-Reply-To: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 06 Jul 2012 21:07:37.0746 (UTC) FILETIME=[5F2DC720:01CD5BBB]
-X-MC-Unique: 112070622064212101
-Content-Type: text/plain; charset=WINDOWS-1252
+	id S933145Ab2GFVLt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 17:11:49 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:44935
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1758417Ab2GFVLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 17:11:44 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [PATCH net,1/1] hyperv: Add support for setting MAC from within guests
+Date: Fri,  6 Jul 2012 14:25:32 -0700
+Message-Id: <1341609932-18971-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66LBglh005409
 
-This patch adds support for signal handling. The sigreturn is done via
-VDSO, introduced by a previous patch. The SA_RESTORER is still defined
-as it is required for 32-bit (compat) support but it is not to be used
-for 64-bit applications.
+This adds support for setting synthetic NIC MAC address from within Linux
+guests. Before using this feature, the option "spoofing of MAC address"
+should be enabled at the Hyper-V manager / Settings of the synthetic
+NIC.
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Thanks to Kin Cho <kcho@infoblox.com> for the initial implementation and
+tests. And, thanks to Long Li <longli@microsoft.com> for the debugging
+works.
+
+Reported-and-tested-by: Kin Cho <kcho@infoblox.com>
+Reported-by: Long Li <longli@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- arch/aarch64/include/asm/sigcontext.h |   70 ++++++
- arch/aarch64/include/asm/siginfo.h    |   24 ++
- arch/aarch64/include/asm/signal.h     |   25 ++
- arch/aarch64/include/asm/ucontext.h   |   31 +++
- arch/aarch64/kernel/signal.c          |  432 +++++++++++++++++++++++++++++++++
- 5 files changed, 582 insertions(+), 0 deletions(-)
- create mode 100644 arch/aarch64/include/asm/sigcontext.h
- create mode 100644 arch/aarch64/include/asm/siginfo.h
- create mode 100644 arch/aarch64/include/asm/signal.h
- create mode 100644 arch/aarch64/include/asm/ucontext.h
- create mode 100644 arch/aarch64/kernel/signal.c
+ drivers/net/hyperv/hyperv_net.h   |    1 +
+ drivers/net/hyperv/netvsc_drv.c   |   30 +++++++++++++-
+ drivers/net/hyperv/rndis_filter.c |   79 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 109 insertions(+), 1 deletions(-)
 
-diff --git a/arch/aarch64/include/asm/sigcontext.h b/arch/aarch64/include/asm/sigcontext.h
-new file mode 100644
-index 0000000..b89cf97
---- /dev/null
-+++ b/arch/aarch64/include/asm/sigcontext.h
-@@ -0,0 +1,70 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+#ifndef __ASM_SIGCONTEXT_H
-+#define __ASM_SIGCONTEXT_H
+diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
+index 2857ab0..95ceb35 100644
+--- a/drivers/net/hyperv/hyperv_net.h
++++ b/drivers/net/hyperv/hyperv_net.h
+@@ -131,6 +131,7 @@ int rndis_filter_send(struct hv_device *dev,
+ 			struct hv_netvsc_packet *pkt);
+ 
+ int rndis_filter_set_packet_filter(struct rndis_device *dev, u32 new_filter);
++int rndis_filter_set_device_mac(struct hv_device *hdev, char *mac);
+ 
+ 
+ #define NVSP_INVALID_PROTOCOL_VERSION	((u32)0xFFFFFFFF)
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index 8f8ed33..8e23c08 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -341,6 +341,34 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
+ 	return 0;
+ }
+ 
 +
-+#include <linux/types.h>
-+
-+/*
-+ * Signal context structure - contains all info to do with the state
-+ * before the signal handler was invoked.
-+ */
-+struct sigcontext {
-+	__u64 fault_address;
-+	/* AArch64 registers */
-+	__u64 regs[31];
-+	__u64 sp;
-+	__u64 pc;
-+	__u64 pstate;
-+	/* 4K reserved for FP/SIMD state and future expansion */
-+	__u8 __reserved[4096] __attribute__((__aligned__(16)));
-+};
-+
-+/*
-+ * Header to be used at the beginning of structures extending the user
-+ * context. Such structures must be placed after the rt_sigframe on the stack
-+ * and be 16-byte aligned. The last structure must be a dummy one with the
-+ * magic and size set to 0.
-+ */
-+struct _aarch64_ctx {
-+	__u32 magic;
-+	__u32 size;
-+};
-+
-+#define FPSIMD_MAGIC	0x46508001
-+
-+struct fpsimd_context {
-+	struct _aarch64_ctx head;
-+	__u32 fpsr;
-+	__u32 fpcr;
-+	__uint128_t vregs[32];
-+};
-+
-+#ifdef __KERNEL__
-+/*
-+ * Auxiliary context saved in the sigcontext.__reserved array. Not exported to
-+ * user space as it will change with the addition of new context. User space
-+ * should check the magic/size information.
-+ */
-+struct aux_context {
-+	struct fpsimd_context fpsimd;
-+	/* additional context to be added before "end" */
-+	struct _aarch64_ctx end;
-+};
-+#endif
-+
-+#endif
-diff --git a/arch/aarch64/include/asm/siginfo.h b/arch/aarch64/include/asm/siginfo.h
-new file mode 100644
-index 0000000..1f74ea9
---- /dev/null
-+++ b/arch/aarch64/include/asm/siginfo.h
-@@ -0,0 +1,24 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+#ifndef __ASM_SIGINFO_H
-+#define __ASM_SIGINFO_H
-+
-+#define __ARCH_SI_PREAMBLE_SIZE	(4 * sizeof(int))
-+
-+#include <asm-generic/siginfo.h>
-+
-+#endif
-diff --git a/arch/aarch64/include/asm/signal.h b/arch/aarch64/include/asm/signal.h
-new file mode 100644
-index 0000000..83d8f2a
---- /dev/null
-+++ b/arch/aarch64/include/asm/signal.h
-@@ -0,0 +1,25 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+#ifndef __ASM_SIGNAL_H
-+#define __ASM_SIGNAL_H
-+
-+/* Required for AArch32 compatibility. */
-+#define SA_RESTORER	0x04000000
-+
-+#include <asm-generic/signal.h>
-+
-+#endif
-diff --git a/arch/aarch64/include/asm/ucontext.h b/arch/aarch64/include/asm/ucontext.h
-new file mode 100644
-index 0000000..29cbbc3
---- /dev/null
-+++ b/arch/aarch64/include/asm/ucontext.h
-@@ -0,0 +1,31 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+#ifndef __ASM_UCONTEXT_H
-+#define __ASM_UCONTEXT_H
-+
-+struct ucontext {
-+	unsigned long	  uc_flags;
-+	struct ucontext	 *uc_link;
-+	stack_t		  uc_stack;
-+	sigset_t	  uc_sigmask;
-+	/* glibc uses a 1024-bit sigset_t */
-+	__u8		  __unused[(1024 - sizeof(sigset_t)) / 8];
-+	/* last for future expansion */
-+	struct sigcontext uc_mcontext;
-+};
-+
-+#endif /* __ASM_UCONTEXT_H */
-diff --git a/arch/aarch64/kernel/signal.c b/arch/aarch64/kernel/signal.c
-new file mode 100644
-index 0000000..8011c8d
---- /dev/null
-+++ b/arch/aarch64/kernel/signal.c
-@@ -0,0 +1,432 @@
-+/*
-+ * Based on arch/arm/kernel/signal.c
-+ *
-+ * Copyright (C) 1995-2009 Russell King
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+
-+#include <linux/errno.h>
-+#include <linux/signal.h>
-+#include <linux/personality.h>
-+#include <linux/freezer.h>
-+#include <linux/uaccess.h>
-+#include <linux/tracehook.h>
-+
-+#include <asm/debug-monitors.h>
-+#include <asm/elf.h>
-+#include <asm/cacheflush.h>
-+#include <asm/ucontext.h>
-+#include <asm/unistd.h>
-+#include <asm/fpsimd.h>
-+#include <asm/signal32.h>
-+#include <asm/vdso.h>
-+
-+/*
-+ * Do a signal return; undo the signal stack. These are aligned to 128-bit.
-+ */
-+struct rt_sigframe {
-+	struct siginfo info;
-+	struct ucontext uc;
-+};
-+
-+static int preserve_fpsimd_context(struct fpsimd_context __user *ctx)
++static int netvsc_set_mac_addr(struct net_device *ndev, void *p)
 +{
-+	struct fpsimd_state *fpsimd = &current->thread.fpsimd_state;
++	struct net_device_context *ndevctx = netdev_priv(ndev);
++	struct hv_device *hdev =  ndevctx->device_ctx;
++	struct sockaddr *addr = p;
++	char save_adr[14];
++	unsigned char save_aatype;
 +	int err;
 +
-+	/* dump the hardware registers to the fpsimd_state structure */
-+	fpsimd_save_state(fpsimd);
++	memcpy(save_adr, ndev->dev_addr, ETH_ALEN);
++	save_aatype = ndev->addr_assign_type;
 +
-+	/* copy the FP and status/control registers */
-+	err = __copy_to_user(ctx->vregs, fpsimd->vregs, sizeof(fpsimd->vregs));
-+	__put_user_error(fpsimd->fpsr, &ctx->fpsr, err);
-+	__put_user_error(fpsimd->fpcr, &ctx->fpcr, err);
++	err = eth_mac_addr(ndev, p);
++	if (err != 0)
++		return err;
 +
-+	/* copy the magic/size information */
-+	__put_user_error(FPSIMD_MAGIC, &ctx->head.magic, err);
-+	__put_user_error(sizeof(struct fpsimd_context), &ctx->head.size, err);
-+
-+	return err ? -EFAULT : 0;
-+}
-+
-+static int restore_fpsimd_context(struct fpsimd_context __user *ctx)
-+{
-+	struct fpsimd_state fpsimd;
-+	__u32 magic, size;
-+	int err = 0;
-+
-+	/* check the magic/size information */
-+	__get_user_error(magic, &ctx->head.magic, err);
-+	__get_user_error(size, &ctx->head.size, err);
-+	if (err)
-+		return -EFAULT;
-+	if (magic != FPSIMD_MAGIC || size != sizeof(struct fpsimd_context))
-+		return -EINVAL;
-+
-+	/* copy the FP and status/control registers */
-+	err = __copy_from_user(fpsimd.vregs, ctx->vregs,
-+			       sizeof(fpsimd.vregs));
-+	__get_user_error(fpsimd.fpsr, &ctx->fpsr, err);
-+	__get_user_error(fpsimd.fpcr, &ctx->fpcr, err);
-+
-+	/* load the hardware registers from the fpsimd_state structure */
-+	if (!err) {
-+		preempt_disable();
-+		fpsimd_load_state(&fpsimd);
-+		preempt_enable();
-+	}
-+
-+	return err ? -EFAULT : 0;
-+}
-+
-+static int restore_sigframe(struct pt_regs *regs,
-+			    struct rt_sigframe __user *sf)
-+{
-+	sigset_t set;
-+	int i, err;
-+	struct aux_context __user *aux =
-+		(struct aux_context __user *)sf->uc.uc_mcontext.__reserved;
-+
-+	err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
-+	if (err == 0)
-+		set_current_blocked(&set);
-+
-+	for (i = 0; i < 31; i++)
-+		__get_user_error(regs->regs[i], &sf->uc.uc_mcontext.regs[i],
-+				 err);
-+	__get_user_error(regs->sp, &sf->uc.uc_mcontext.sp, err);
-+	__get_user_error(regs->pc, &sf->uc.uc_mcontext.pc, err);
-+	__get_user_error(regs->pstate, &sf->uc.uc_mcontext.pstate, err);
-+
-+	/*
-+	 * Avoid sys_rt_sigreturn() restarting.
-+	 */
-+	regs->syscallno = ~0UL;
-+
-+	err |= !valid_user_regs(&regs->user_regs);
-+
-+	if (err == 0)
-+		err |= restore_fpsimd_context(&aux->fpsimd);
-+
-+	return err;
-+}
-+
-+asmlinkage long sys_rt_sigreturn(struct pt_regs *regs)
-+{
-+	struct rt_sigframe __user *frame;
-+
-+	/* Always make any pending restarted system calls return -EINTR */
-+	current_thread_info()->restart_block.fn = do_no_restart_syscall;
-+
-+	/*
-+	 * Since we stacked the signal on a 128-bit boundary, then 'sp' should
-+	 * be word aligned here.
-+	 */
-+	if (regs->sp & 15)
-+		goto badframe;
-+
-+	frame = (struct rt_sigframe __user *)regs->sp;
-+
-+	if (!access_ok(VERIFY_READ, frame, sizeof (*frame)))
-+		goto badframe;
-+
-+	if (restore_sigframe(regs, frame))
-+		goto badframe;
-+
-+	if (do_sigaltstack(&frame->uc.uc_stack,
-+			   NULL, regs->sp) == -EFAULT)
-+		goto badframe;
-+
-+	return regs->regs[0];
-+
-+badframe:
-+	force_sig(SIGSEGV, current);
-+	return 0;
-+}
-+
-+asmlinkage long sys_sigaltstack(const stack_t __user *uss, stack_t __user *uoss,
-+				unsigned long sp)
-+{
-+	return do_sigaltstack(uss, uoss, sp);
-+}
-+
-+static int setup_sigframe(struct rt_sigframe __user *sf,
-+			  struct pt_regs *regs, sigset_t *set)
-+{
-+	int i, err = 0;
-+	struct aux_context __user *aux =
-+		(struct aux_context __user *)sf->uc.uc_mcontext.__reserved;
-+
-+	for (i = 0; i < 31; i++)
-+		__put_user_error(regs->regs[i], &sf->uc.uc_mcontext.regs[i],
-+				 err);
-+	__put_user_error(regs->sp, &sf->uc.uc_mcontext.sp, err);
-+	__put_user_error(regs->pc, &sf->uc.uc_mcontext.pc, err);
-+	__put_user_error(regs->pstate, &sf->uc.uc_mcontext.pstate, err);
-+
-+	__put_user_error(current->thread.fault_address, &sf->uc.uc_mcontext.fault_address, err);
-+
-+	err |= __copy_to_user(&sf->uc.uc_sigmask, set, sizeof(*set));
-+
-+	if (err == 0)
-+		err |= preserve_fpsimd_context(&aux->fpsimd);
-+
-+	/* set the "end" magic */
-+	__put_user_error(0, &aux->end.magic, err);
-+	__put_user_error(0, &aux->end.size, err);
-+
-+	return err;
-+}
-+
-+static void __user *get_sigframe(struct k_sigaction *ka, struct pt_regs *regs,
-+				 int framesize)
-+{
-+	unsigned long sp, sp_top;
-+	void __user *frame;
-+
-+	sp = sp_top = regs->sp;
-+
-+	/*
-+	 * This is the X/Open sanctioned signal stack switching.
-+	 */
-+	if ((ka->sa.sa_flags & SA_ONSTACK) && !sas_ss_flags(sp))
-+		sp = sp_top = current->sas_ss_sp + current->sas_ss_size;
-+
-+	/* room for stack frame (FP, LR) */
-+	sp -= 16;
-+
-+	sp = (sp - framesize) & ~15;
-+	frame = (void __user *)sp;
-+
-+	/*
-+	 * Check that we can actually write to the signal frame.
-+	 */
-+	if (!access_ok(VERIFY_WRITE, frame, sp_top - sp))
-+		frame = NULL;
-+
-+	return frame;
-+}
-+
-+static int setup_return(struct pt_regs *regs, struct k_sigaction *ka,
-+			void __user *frame, int usig)
-+{
-+	int err = 0;
-+	__sigrestore_t sigtramp;
-+	unsigned long __user *sp = (unsigned long __user *)regs->sp;
-+
-+	/* set up the stack frame */
-+	__put_user_error(regs->regs[29], sp - 2, err);
-+	__put_user_error(regs->regs[30], sp - 1, err);
-+
-+	regs->regs[0] = usig;
-+	regs->regs[29] = regs->sp - 16;
-+	regs->sp = (unsigned long)frame;
-+	regs->pc = (unsigned long)ka->sa.sa_handler;
-+
-+	if (ka->sa.sa_flags & SA_RESTORER)
-+		sigtramp = ka->sa.sa_restorer;
-+	else
-+		sigtramp = VDSO_SYMBOL(current->mm->context.vdso, sigtramp);
-+
-+	regs->regs[30] = (unsigned long)sigtramp;
-+
-+	return err;
-+}
-+
-+static int setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
-+			  sigset_t *set, struct pt_regs *regs)
-+{
-+	struct rt_sigframe __user *frame;
-+	stack_t stack;
-+	int err = 0;
-+
-+	frame = get_sigframe(ka, regs, sizeof(*frame));
-+	if (!frame)
-+		return 1;
-+
-+	__put_user_error(0, &frame->uc.uc_flags, err);
-+	__put_user_error(NULL, &frame->uc.uc_link, err);
-+
-+	memset(&stack, 0, sizeof(stack));
-+	stack.ss_sp = (void __user *)current->sas_ss_sp;
-+	stack.ss_flags = sas_ss_flags(regs->sp);
-+	stack.ss_size = current->sas_ss_size;
-+	err |= __copy_to_user(&frame->uc.uc_stack, &stack, sizeof(stack));
-+
-+	err |= setup_sigframe(frame, regs, set);
-+	if (err == 0)
-+		err = setup_return(regs, ka, frame, usig);
-+
-+	if (err == 0 && ka->sa.sa_flags & SA_SIGINFO) {
-+		err |= copy_siginfo_to_user(&frame->info, info);
-+		regs->regs[1] = (unsigned long)&frame->info;
-+		regs->regs[2] = (unsigned long)&frame->uc;
++	err = rndis_filter_set_device_mac(hdev, addr->sa_data);
++	if (err != 0) {
++		/* roll back to saved MAC */
++		memcpy(ndev->dev_addr, save_adr, ETH_ALEN);
++		ndev->addr_assign_type = save_aatype;
 +	}
 +
 +	return err;
 +}
 +
-+static void setup_restart_syscall(struct pt_regs *regs)
++
+ static const struct ethtool_ops ethtool_ops = {
+ 	.get_drvinfo	= netvsc_get_drvinfo,
+ 	.get_link	= ethtool_op_get_link,
+@@ -353,7 +381,7 @@ static const struct net_device_ops device_ops = {
+ 	.ndo_set_rx_mode =		netvsc_set_multicast_list,
+ 	.ndo_change_mtu =		netvsc_change_mtu,
+ 	.ndo_validate_addr =		eth_validate_addr,
+-	.ndo_set_mac_address =		eth_mac_addr,
++	.ndo_set_mac_address =		netvsc_set_mac_addr,
+ };
+ 
+ /*
+diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
+index 981ebb1..fbf5394 100644
+--- a/drivers/net/hyperv/rndis_filter.c
++++ b/drivers/net/hyperv/rndis_filter.c
+@@ -27,6 +27,7 @@
+ #include <linux/if_ether.h>
+ #include <linux/netdevice.h>
+ #include <linux/if_vlan.h>
++#include <linux/nls.h>
+ 
+ #include "hyperv_net.h"
+ 
+@@ -47,6 +48,7 @@ struct rndis_request {
+ 	struct hv_page_buffer buf;
+ 	/* FIXME: We assumed a fixed size request here. */
+ 	struct rndis_message request_msg;
++	u8 ext[100];
+ };
+ 
+ static void rndis_filter_send_completion(void *ctx);
+@@ -511,6 +513,83 @@ static int rndis_filter_query_device_mac(struct rndis_device *dev)
+ 				      dev->hw_mac_adr, &size);
+ }
+ 
++#define NWADR_STR "NetworkAddress"
++#define NWADR_STRLEN 14
++
++int rndis_filter_set_device_mac(struct hv_device *hdev, char *mac)
 +{
-+	if (test_thread_flag(TIF_32BIT))
-+		compat_setup_restart_syscall(regs);
-+	else
-+		regs->regs[8] = __NR_restart_syscall;
-+}
++	struct netvsc_device *nvdev = hv_get_drvdata(hdev);
++	struct rndis_device *rdev = nvdev->extension;
++	struct net_device *ndev = nvdev->ndev;
++	struct rndis_request *request;
++	struct rndis_set_request *set;
++	struct rndis_config_parameter_info *cpi;
++	wchar_t *cfg_nwadr, *cfg_mac;
++	struct rndis_set_complete *set_complete;
++	char macstr[2*ETH_ALEN+1];
++	u32 extlen = sizeof(struct rndis_config_parameter_info) +
++		2*NWADR_STRLEN + 4*ETH_ALEN;
++	int ret, t;
 +
-+/*
-+ * OK, we're invoking a handler
-+ */
-+static void handle_signal(unsigned long sig, struct k_sigaction *ka,
-+			  siginfo_t *info, struct pt_regs *regs)
-+{
-+	struct thread_info *thread = current_thread_info();
-+	struct task_struct *tsk = current;
-+	sigset_t *oldset = sigmask_to_save();
-+	int usig = sig;
-+	int ret;
++	request = get_rndis_request(rdev, RNDIS_MSG_SET,
++		RNDIS_MESSAGE_SIZE(struct rndis_set_request) + extlen);
++	if (!request)
++		return -ENOMEM;
 +
-+	/*
-+	 * translate the signal
-+	 */
-+	if (usig < 32 && thread->exec_domain && thread->exec_domain->signal_invmap)
-+		usig = thread->exec_domain->signal_invmap[usig];
++	set = &request->request_msg.msg.set_req;
++	set->oid = RNDIS_OID_GEN_RNDIS_CONFIG_PARAMETER;
++	set->info_buflen = extlen;
++	set->info_buf_offset = sizeof(struct rndis_set_request);
++	set->dev_vc_handle = 0;
 +
-+	/*
-+	 * Set up the stack frame
-+	 */
-+	if (test_thread_flag(TIF_32BIT)) {
-+		if (ka->sa.sa_flags & SA_SIGINFO)
-+			ret = compat_setup_rt_frame(usig, ka, info, oldset,
-+						    regs);
-+		else
-+			ret = compat_setup_frame(usig, ka, oldset, regs);
++	cpi = (struct rndis_config_parameter_info *)((ulong)set +
++		set->info_buf_offset);
++	cpi->parameter_name_offset =
++		sizeof(struct rndis_config_parameter_info);
++	/* Multiply by 2 because host needs 2 bytes (utf16) for each char */
++	cpi->parameter_name_length = 2*NWADR_STRLEN;
++	cpi->parameter_type = RNDIS_CONFIG_PARAM_TYPE_STRING;
++	cpi->parameter_value_offset =
++		cpi->parameter_name_offset + cpi->parameter_name_length;
++	/* Multiply by 4 because each MAC byte displayed as 2 utf16 chars */
++	cpi->parameter_value_length = 4*ETH_ALEN;
++
++	cfg_nwadr = (wchar_t *)((ulong)cpi + cpi->parameter_name_offset);
++	cfg_mac = (wchar_t *)((ulong)cpi + cpi->parameter_value_offset);
++	ret = utf8s_to_utf16s(NWADR_STR, NWADR_STRLEN, UTF16_HOST_ENDIAN,
++			      cfg_nwadr, NWADR_STRLEN);
++	if (ret < 0)
++		goto cleanup;
++	snprintf(macstr, 2*ETH_ALEN+1, "%pm", mac);
++	ret = utf8s_to_utf16s(macstr, 2*ETH_ALEN, UTF16_HOST_ENDIAN,
++			      cfg_mac, 2*ETH_ALEN);
++	if (ret < 0)
++		goto cleanup;
++
++	ret = rndis_filter_send_request(rdev, request);
++	if (ret != 0)
++		goto cleanup;
++
++	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
++	if (t == 0) {
++		netdev_err(ndev, "timeout before we got a set response...\n");
++		/*
++		 * can't put_rndis_request, since we may still receive a
++		 * send-completion.
++		 */
++		return -EBUSY;
 +	} else {
-+		ret = setup_rt_frame(usig, ka, info, oldset, regs);
++		set_complete = &request->response_msg.msg.set_complete;
++		if (set_complete->status != RNDIS_STATUS_SUCCESS)
++			ret = -EINVAL;
 +	}
 +
-+	/*
-+	 * Check that the resulting registers are actually sane.
-+	 */
-+	ret |= !valid_user_regs(&regs->user_regs);
-+
-+	if (ret != 0) {
-+		force_sigsegv(sig, tsk);
-+		return;
-+	}
-+
-+	/*
-+	 * Fast forward the stepping logic so we step into the signal
-+	 * handler.
-+	 */
-+	user_fastforward_single_step(tsk);
-+
-+	signal_delivered(sig, info, ka, regs, 0);
++cleanup:
++	put_rndis_request(rdev, request);
++	return ret;
 +}
 +
-+/*
-+ * Note that 'init' is a special process: it doesn't get signals it doesn't
-+ * want to handle. Thus you cannot kill init even with a SIGKILL even by
-+ * mistake.
-+ *
-+ * Note that we go through the signals twice: once to check the signals that
-+ * the kernel can handle, and then we build all the user-level signal handling
-+ * stack-frames in one go after that.
-+ */
-+static void do_signal(struct pt_regs *regs)
-+{
-+	unsigned long continue_addr = 0, restart_addr = 0;
-+	struct k_sigaction ka;
-+	siginfo_t info;
-+	int signr, retval = 0;
-+	int syscall = (int)regs->syscallno;
 +
-+	/*
-+	 * If we were from a system call, check for system call restarting...
-+	 */
-+	if (syscall >= 0) {
-+		continue_addr = regs->pc;
-+		restart_addr = continue_addr - (compat_thumb_mode(regs) ? 2 : 4);
-+		retval = regs->regs[0];
-+
-+		/*
-+		 * Avoid additional syscall restarting via ret_to_user.
-+		 */
-+		regs->syscallno = ~0UL;
-+
-+		/*
-+		 * Prepare for system call restart. We do this here so that a
-+		 * debugger will see the already changed PC.
-+		 */
-+		switch (retval) {
-+		case -ERESTARTNOHAND:
-+		case -ERESTARTSYS:
-+		case -ERESTARTNOINTR:
-+		case -ERESTART_RESTARTBLOCK:
-+			regs->regs[0] = regs->orig_x0;
-+			regs->pc = restart_addr;
-+			break;
-+		}
-+	}
-+
-+	/*
-+	 * Get the signal to deliver. When running under ptrace, at this point
-+	 * the debugger may change all of our registers.
-+	 */
-+	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
-+	if (signr > 0) {
-+		/*
-+		 * Depending on the signal settings, we may need to revert the
-+		 * decision to restart the system call, but skip this if a
-+		 * debugger has chosen to restart at a different PC.
-+		 */
-+		if (regs->pc == restart_addr &&
-+		    (retval == -ERESTARTNOHAND ||
-+		     retval == -ERESTART_RESTARTBLOCK ||
-+		     (retval == -ERESTARTSYS &&
-+		      !(ka.sa.sa_flags & SA_RESTART)))) {
-+			regs->regs[0] = -EINTR;
-+			regs->pc = continue_addr;
-+		}
-+
-+		handle_signal(signr, &ka, &info, regs);
-+		return;
-+	}
-+
-+	/*
-+	 * Handle restarting a different system call. As above, if a debugger
-+	 * has chosen to restart at a different PC, ignore the restart.
-+	 */
-+	if (syscall >= 0 && regs->pc == restart_addr) {
-+		if (retval == -ERESTART_RESTARTBLOCK)
-+			setup_restart_syscall(regs);
-+		user_rewind_single_step(current);
-+	}
-+
-+	restore_saved_sigmask();
-+}
-+
-+asmlinkage void do_notify_resume(struct pt_regs *regs,
-+				 unsigned int thread_flags)
-+{
-+	if (thread_flags & _TIF_SIGPENDING)
-+		do_signal(regs);
-+
-+	if (thread_flags & _TIF_NOTIFY_RESUME) {
-+		clear_thread_flag(TIF_NOTIFY_RESUME);
-+		tracehook_notify_resume(regs);
-+	}
-+}
+ static int rndis_filter_query_device_link_status(struct rndis_device *dev)
+ {
+ 	u32 size = sizeof(u32);
+-- 
+1.7.4.1
 
