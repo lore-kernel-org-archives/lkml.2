@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933030Ab2GFGbd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 02:31:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49149 "EHLO
+	id S932948Ab2GFGcl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 02:32:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49163 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932307Ab2GFGbc (ORCPT
+	with ESMTP id S932307Ab2GFGcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 02:31:32 -0400
-Date: Thu, 5 Jul 2012 23:31:21 -0700
+	Fri, 6 Jul 2012 02:32:39 -0400
+Date: Thu, 5 Jul 2012 23:32:15 -0700
 From: "tip-bot for Yan, Zheng" <zheng.z.yan@intel.com>
-Message-ID: <tip-3b19e4c98c035c9ab218fc64ef26f4f7a30eafb9@git.kernel.org>
+Message-ID: <tip-42089697244ba8e64fa43fb5e6d50d47a8e4cb00@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de
+        a.p.zijlstra@chello.nl, acooks@gmail.com, zheng.z.yan@intel.com,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de
-In-Reply-To: <1340866596-22502-2-git-send-email-zheng.z.yan@intel.com>
-References: <1340866596-22502-2-git-send-email-zheng.z.yan@intel.com>
+        acooks@gmail.com, a.p.zijlstra@chello.nl, zheng.z.yan@intel.com,
+        tglx@linutronix.de
+In-Reply-To: <1341381616-12229-4-git-send-email-zheng.z.yan@intel.com>
+References: <1341381616-12229-4-git-send-email-zheng.z.yan@intel.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf/x86:
-  Fix event constraint for SandyBridge-EP C-Box
-Git-Commit-ID: 3b19e4c98c035c9ab218fc64ef26f4f7a30eafb9
+  Detect number of instances of uncore CBox
+Git-Commit-ID: 42089697244ba8e64fa43fb5e6d50d47a8e4cb00
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,40 +30,58 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 05 Jul 2012 23:31:26 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 05 Jul 2012 23:32:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3b19e4c98c035c9ab218fc64ef26f4f7a30eafb9
-Gitweb:     http://git.kernel.org/tip/3b19e4c98c035c9ab218fc64ef26f4f7a30eafb9
+Commit-ID:  42089697244ba8e64fa43fb5e6d50d47a8e4cb00
+Gitweb:     http://git.kernel.org/tip/42089697244ba8e64fa43fb5e6d50d47a8e4cb00
 Author:     Yan, Zheng <zheng.z.yan@intel.com>
-AuthorDate: Thu, 28 Jun 2012 14:56:36 +0800
+AuthorDate: Wed, 4 Jul 2012 14:00:14 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 5 Jul 2012 21:55:59 +0200
+CommitDate: Thu, 5 Jul 2012 21:56:00 +0200
 
-perf/x86: Fix event constraint for SandyBridge-EP C-Box
+perf/x86: Detect number of instances of uncore CBox
 
-The constraint for C-Box event 0x1f should have overlap flag set.
+The CBox manages the interface between the core and the LLC, so
+the instances of uncore CBox is equal to number of cores.
 
+Reported-by: Andrew Cooks <acooks@gmail.com>
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1340866596-22502-2-git-send-email-zheng.z.yan@intel.com
+Link: http://lkml.kernel.org/r/1341381616-12229-4-git-send-email-zheng.z.yan@intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index c42a3f7..7d755d2 100644
+index 7d755d2..4fecbd0 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -239,7 +239,7 @@ static struct event_constraint snbep_uncore_cbox_constraints[] = {
- 	UNCORE_EVENT_CONSTRAINT(0x1c, 0xc),
- 	UNCORE_EVENT_CONSTRAINT(0x1d, 0xc),
- 	UNCORE_EVENT_CONSTRAINT(0x1e, 0xc),
--	UNCORE_EVENT_CONSTRAINT(0x1f, 0xe),
-+	EVENT_CONSTRAINT_OVERLAP(0x1f, 0xe, 0xff),
- 	UNCORE_EVENT_CONSTRAINT(0x21, 0x3),
- 	UNCORE_EVENT_CONSTRAINT(0x23, 0x3),
- 	UNCORE_EVENT_CONSTRAINT(0x31, 0x3),
+@@ -1605,8 +1605,9 @@ static void __init uncore_cpu_setup(void *dummy)
+ 
+ static int __init uncore_cpu_init(void)
+ {
+-	int ret, cpu;
++	int ret, cpu, max_cores;
+ 
++	max_cores = boot_cpu_data.x86_max_cores;
+ 	switch (boot_cpu_data.x86_model) {
+ 	case 26: /* Nehalem */
+ 	case 30:
+@@ -1615,9 +1616,13 @@ static int __init uncore_cpu_init(void)
+ 		msr_uncores = nhm_msr_uncores;
+ 		break;
+ 	case 42: /* Sandy Bridge */
++		if (snb_uncore_cbox.num_boxes > max_cores)
++			snb_uncore_cbox.num_boxes = max_cores;
+ 		msr_uncores = snb_msr_uncores;
+ 		break;
+ 	case 45: /* Sandy Birdge-EP */
++		if (snbep_uncore_cbox.num_boxes > max_cores)
++			snbep_uncore_cbox.num_boxes = max_cores;
+ 		msr_uncores = snbep_msr_uncores;
+ 		break;
+ 	default:
