@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab2GFQCa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 12:02:30 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:64560 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694Ab2GFQC3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 12:02:29 -0400
-From: David Ahern <dsahern@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH] perf lock: fix segfault with info subcommand following move to libtraceevent
-Date: Fri,  6 Jul 2012 10:02:18 -0600
-Message-Id: <1341590538-19523-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	id S1757057Ab2GFQKA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 12:10:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755712Ab2GFQJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 12:09:58 -0400
+Date: Fri, 6 Jul 2012 18:07:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/5] uprobes: write_opcode() cleanups
+Message-ID: <20120706160704.GA8499@redhat.com>
+References: <20120624145936.GA23269@redhat.com> <20120706105425.GA31587@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120706105425.GA31587@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running 'perf lock info' on a "random" perf.data file crashes:
+On 07/06, Ingo Molnar wrote:
+>
+> * Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > Hello,
+> >
+> > write_opcode() cleanups resend + new minor fix.
+> >
+> > Changes:
+> >
+> > 	- document the new argument in 2/5.
+> >
+> > 	- drop the buggy 5/5, thanks Anton for your quick nack.
+> > 	  Probably I'll return to this later, I have another reason
+> > 	  for this change.
+> >
+> > 	- so this 5/5 is new.
+> >
+> > Srikar, please add your acks unless you have some objections.
+>
+> Just wondering what's the review status of patches #1-#4?
 
-0  0x00000000004a5618 in __parse_common (pevent=0x0, data=0x0, size=0xa0, offset=0x9c, name=
-    0x556e02 "common_type") at /opt/sw/ahern/kernels/kernel.git/tools/lib/traceevent/event-parse.c:2851
-1  0x00000000004a56a7 in trace_parse_common_type (pevent=0x0, data=0x0)
-    at /opt/sw/ahern/kernels/kernel.git/tools/lib/traceevent/event-parse.c:2861
-2  0x00000000004a7e42 in pevent_data_type (pevent=0x0, rec=0x7fffffffddf0)
-    at /opt/sw/ahern/kernels/kernel.git/tools/lib/traceevent/event-parse.c:3952
-3  0x0000000000473f37 in trace_parse_common_type (data=0x0) at util/trace-event-parse.c:158
-4  0x00000000004376cd in process_raw_event (data=0x0, cpu=-1, timestamp=533548521126805, thread=
-    0x918450) at builtin-lock.c:727
-5  0x0000000000437df4 in process_sample_event (tool=0x7ab300, event=0x7ffff7ff9dd8, sample=
-    0x7fffffffdf60, evsel=0x917d90, machine=0x9161c0) at builtin-lock.c:863
-6  0x0000000000470d04 in perf_session_deliver_event (session=0x916160, event=0x7ffff7ff9dd8, sample=
-    0x7fffffffdf60, tool=0x7ab300, file_offset=11736) at util/session.c:977
-7  0x000000000047024a in flush_sample_queue (s=0x916160, tool=0x7ab300) at util/session.c:679
-8  0x0000000000471ba9 in __perf_session__process_events (session=0x916160, data_offset=400, data_size=
-    11576, file_size=11976, tool=0x7ab300) at util/session.c:1363
-9  0x0000000000471c5e in perf_session__process_events (self=0x916160, tool=0x7ab300)
-    at util/session.c:1379
-10 0x0000000000437e80 in read_events () at builtin-lock.c:880
-11 0x0000000000438275 in cmd_lock (argc=0, argv=0x7fffffffe420, prefix=0x0) at builtin-lock.c:10
+I hope Srikar will ack 1-4 soon.
 
-In this case the data file has cycles events, not traces and hence nothing
-to do with lock tracepoints. Nonetheless, perf-lock should not crash. The
-crash started with commit aaf045f72335653b24784d6042be8e4aee114403 - ie.,
-the move to libtraceevent.
+He observed the testing failures, but it turns out this series
+is innocent.
 
-With this patch you get the more user friendly:
-$ perf lock info
-  Fatal: Unknown type of information
+I'll send more fixes soon.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- tools/perf/builtin-lock.c |    3 +++
- 1 file changed, 3 insertions(+)
+> I'll skip #5 based on Oleg's request,
 
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index fd53319..55f7961 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -877,6 +877,9 @@ static int read_events(void)
- 	if (!session)
- 		die("Initializing perf session failed\n");
- 
-+	if (!perf_session__has_traces(session, "lock record"))
-+		exit(1);
-+
- 	return perf_session__process_events(session, &eops);
- }
- 
--- 
-1.7.10.1
+Yes, thanks. I still think 5/5 makes sense, but we need to do
+something with uprobe.s:vma_address() first.
+
+Oleg.
 
