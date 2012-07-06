@@ -1,207 +1,990 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933145Ab2GFVLt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 17:11:49 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:44935
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1758417Ab2GFVLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 17:11:44 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [PATCH net,1/1] hyperv: Add support for setting MAC from within guests
-Date: Fri,  6 Jul 2012 14:25:32 -0700
-Message-Id: <1341609932-18971-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1758642Ab2GFVKp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 17:10:45 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33101 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758393Ab2GFVGo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 17:06:44 -0400
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: [PATCH 26/36] AArch64: User access library functions
+Date: Fri,  6 Jul 2012 22:06:07 +0100
+Message-Id: <1341608777-12982-27-git-send-email-catalin.marinas@arm.com>
+X-Mailer: git-send-email 1.7.9.111.gf3fb0
+In-Reply-To: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+X-OriginalArrivalTime: 06 Jul 2012 21:07:38.0137 (UTC) FILETIME=[5F697090:01CD5BBB]
+X-MC-Unique: 112070622064300101
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66LCAgd005421
 
-This adds support for setting synthetic NIC MAC address from within Linux
-guests. Before using this feature, the option "spoofing of MAC address"
-should be enabled at the Hyper-V manager / Settings of the synthetic
-NIC.
+This patch add support for various user access functions. These
+functions use the standard LDR/STR instructions and not the LDRT/STRT
+variants in order to allow kernel addresses (after set_fs(KERNEL_DS)).
 
-Thanks to Kin Cho <kcho@infoblox.com> for the initial implementation and
-tests. And, thanks to Long Li <longli@microsoft.com> for the debugging
-works.
-
-Reported-and-tested-by: Kin Cho <kcho@infoblox.com>
-Reported-by: Long Li <longli@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- drivers/net/hyperv/hyperv_net.h   |    1 +
- drivers/net/hyperv/netvsc_drv.c   |   30 +++++++++++++-
- drivers/net/hyperv/rndis_filter.c |   79 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 109 insertions(+), 1 deletions(-)
+ arch/aarch64/include/asm/uaccess.h   |  378 ++++++++++++++++++++++++++++++++++
+ arch/aarch64/lib/clear_user.S        |   59 ++++++
+ arch/aarch64/lib/copy_from_user.S    |   67 ++++++
+ arch/aarch64/lib/copy_in_user.S      |   64 ++++++
+ arch/aarch64/lib/copy_to_user.S      |   62 ++++++
+ arch/aarch64/lib/getuser.S           |   76 +++++++
+ arch/aarch64/lib/putuser.S           |   74 +++++++
+ arch/aarch64/lib/strncpy_from_user.S |   51 +++++
+ arch/aarch64/lib/strnlen_user.S      |   48 +++++
+ 9 files changed, 879 insertions(+), 0 deletions(-)
+ create mode 100644 arch/aarch64/include/asm/uaccess.h
+ create mode 100644 arch/aarch64/lib/clear_user.S
+ create mode 100644 arch/aarch64/lib/copy_from_user.S
+ create mode 100644 arch/aarch64/lib/copy_in_user.S
+ create mode 100644 arch/aarch64/lib/copy_to_user.S
+ create mode 100644 arch/aarch64/lib/getuser.S
+ create mode 100644 arch/aarch64/lib/putuser.S
+ create mode 100644 arch/aarch64/lib/strncpy_from_user.S
+ create mode 100644 arch/aarch64/lib/strnlen_user.S
 
-diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-index 2857ab0..95ceb35 100644
---- a/drivers/net/hyperv/hyperv_net.h
-+++ b/drivers/net/hyperv/hyperv_net.h
-@@ -131,6 +131,7 @@ int rndis_filter_send(struct hv_device *dev,
- 			struct hv_netvsc_packet *pkt);
- 
- int rndis_filter_set_packet_filter(struct rndis_device *dev, u32 new_filter);
-+int rndis_filter_set_device_mac(struct hv_device *hdev, char *mac);
- 
- 
- #define NVSP_INVALID_PROTOCOL_VERSION	((u32)0xFFFFFFFF)
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 8f8ed33..8e23c08 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -341,6 +341,34 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
- 	return 0;
- }
- 
+diff --git a/arch/aarch64/include/asm/uaccess.h b/arch/aarch64/include/asm/uaccess.h
+new file mode 100644
+index 0000000..e6dbf11
+--- /dev/null
++++ b/arch/aarch64/include/asm/uaccess.h
+@@ -0,0 +1,378 @@
++/*
++ * Based on arch/arm/include/asm/uaccess.h
++ *
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++#ifndef __ASM_UACCESS_H
++#define __ASM_UACCESS_H
 +
-+static int netvsc_set_mac_addr(struct net_device *ndev, void *p)
++/*
++ * User space memory access functions
++ */
++#include <linux/string.h>
++#include <linux/thread_info.h>
++
++#include <asm/ptrace.h>
++#include <asm/errno.h>
++#include <asm/memory.h>
++#include <asm/compiler.h>
++
++#define VERIFY_READ 0
++#define VERIFY_WRITE 1
++
++/*
++ * The exception table consists of pairs of addresses: the first is the
++ * address of an instruction that is allowed to fault, and the second is
++ * the address at which the program should continue.  No registers are
++ * modified, so it is entirely up to the continuation code to figure out
++ * what to do.
++ *
++ * All the routines below use bits of fixup code that are out of line
++ * with the main instruction path.  This means when everything is well,
++ * we don't even have to jump over them.  Further, they do not intrude
++ * on our cache or tlb entries.
++ */
++
++struct exception_table_entry
 +{
-+	struct net_device_context *ndevctx = netdev_priv(ndev);
-+	struct hv_device *hdev =  ndevctx->device_ctx;
-+	struct sockaddr *addr = p;
-+	char save_adr[14];
-+	unsigned char save_aatype;
-+	int err;
++	unsigned long insn, fixup;
++};
 +
-+	memcpy(save_adr, ndev->dev_addr, ETH_ALEN);
-+	save_aatype = ndev->addr_assign_type;
++extern int fixup_exception(struct pt_regs *regs);
 +
-+	err = eth_mac_addr(ndev, p);
-+	if (err != 0)
-+		return err;
++/*
++ * These two are intentionally not defined anywhere - if the kernel
++ * code generates any references to them, that's a bug.
++ */
++extern long __get_user_bad(void);
++extern long __put_user_bad(void);
 +
-+	err = rndis_filter_set_device_mac(hdev, addr->sa_data);
-+	if (err != 0) {
-+		/* roll back to saved MAC */
-+		memcpy(ndev->dev_addr, save_adr, ETH_ALEN);
-+		ndev->addr_assign_type = save_aatype;
-+	}
++#define KERNEL_DS	(-1UL)
++#define get_ds()	(KERNEL_DS)
 +
-+	return err;
++#define USER_DS		TASK_SIZE_64
++#define get_fs()	(current_thread_info()->addr_limit)
++
++static inline void set_fs(mm_segment_t fs)
++{
++	current_thread_info()->addr_limit = fs;
 +}
 +
++#define segment_eq(a,b)	((a) == (b))
 +
- static const struct ethtool_ops ethtool_ops = {
- 	.get_drvinfo	= netvsc_get_drvinfo,
- 	.get_link	= ethtool_op_get_link,
-@@ -353,7 +381,7 @@ static const struct net_device_ops device_ops = {
- 	.ndo_set_rx_mode =		netvsc_set_multicast_list,
- 	.ndo_change_mtu =		netvsc_change_mtu,
- 	.ndo_validate_addr =		eth_validate_addr,
--	.ndo_set_mac_address =		eth_mac_addr,
-+	.ndo_set_mac_address =		netvsc_set_mac_addr,
- };
- 
- /*
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index 981ebb1..fbf5394 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -27,6 +27,7 @@
- #include <linux/if_ether.h>
- #include <linux/netdevice.h>
- #include <linux/if_vlan.h>
-+#include <linux/nls.h>
- 
- #include "hyperv_net.h"
- 
-@@ -47,6 +48,7 @@ struct rndis_request {
- 	struct hv_page_buffer buf;
- 	/* FIXME: We assumed a fixed size request here. */
- 	struct rndis_message request_msg;
-+	u8 ext[100];
- };
- 
- static void rndis_filter_send_completion(void *ctx);
-@@ -511,6 +513,83 @@ static int rndis_filter_query_device_mac(struct rndis_device *dev)
- 				      dev->hw_mac_adr, &size);
- }
- 
-+#define NWADR_STR "NetworkAddress"
-+#define NWADR_STRLEN 14
++/*
++ * Return 1 if addr < current->addr_limit, 0 otherwise.
++ */
++#define __addr_ok(addr)							\
++({									\
++	unsigned long flag;						\
++	asm("cmp %1, %0; cset %0, lo"				\
++		: "=&r" (flag)						\
++		: "r" (addr), "0" (current_thread_info()->addr_limit)	\
++		: "cc");						\
++	flag;								\
++})
 +
-+int rndis_filter_set_device_mac(struct hv_device *hdev, char *mac)
++/*
++ * Test whether a block of memory is a valid user space address.
++ * Returns 1 if the range is valid, 0 otherwise.
++ *
++ * This is equivalent to the following test:
++ * (u65)addr + (u65)size < (u65)current->addr_limit
++ *
++ * This needs 65-bit arithmetic.
++ */
++#define __range_ok(addr,size)						\
++({									\
++	unsigned long flag, roksum;					\
++	__chk_user_ptr(addr);						\
++	asm("adds %1, %1, %3; ccmp %1, %4, #2, cc; cset %0, cc"	\
++		: "=&r" (flag), "=&r" (roksum)				\
++		: "1" (addr), "Ir" (size),				\
++		  "r" (current_thread_info()->addr_limit)		\
++		: "cc");						\
++	flag;								\
++})
++
++/*
++ * Single-value transfer routines.  They automatically use the right
++ * size if we just have the right pointer type.  Note that the functions
++ * which read from user space (*get_*) need to take care not to leak
++ * kernel data even if the calling code is buggy and fails to check
++ * the return value.  This means zeroing out the destination variable
++ * or buffer on error.  Normally this is done out of line by the
++ * fixup code, but there are a few places where it intrudes on the
++ * main code path.  When we only write to user space, there is no
++ * problem.
++ */
++extern long __get_user_1(void *);
++extern long __get_user_2(void *);
++extern long __get_user_4(void *);
++extern long __get_user_8(void *);
++
++#define __get_user_x(__r2,__p,__e,__s,__i...)				\
++	   asm volatile(						\
++		__asmeq("%0", "x0") __asmeq("%1", "x2")			\
++		"bl	__get_user_" #__s				\
++		: "=&r" (__e), "=r" (__r2)				\
++		: "0" (__p)						\
++		: __i, "cc")
++
++#define get_user(x,p)							\
++	({								\
++		register const typeof(*(p)) __user *__p asm("x0") = (p);\
++		register unsigned long __r2 asm("x2");			\
++		register long __e asm("x0");				\
++		switch (sizeof(*(__p))) {				\
++		case 1:							\
++			__get_user_x(__r2, __p, __e, 1, "x30");		\
++			break;						\
++		case 2:							\
++			__get_user_x(__r2, __p, __e, 2, "x3", "x30");	\
++			break;						\
++		case 4:							\
++			__get_user_x(__r2, __p, __e, 4, "x30");		\
++			break;						\
++		case 8:							\
++			__get_user_x(__r2, __p, __e, 8, "x30");		\
++			break;						\
++		default: __e = __get_user_bad(); break;			\
++		}							\
++		x = (typeof(*(p))) __r2;				\
++		__e;							\
++	})
++
++#define __get_user_unaligned __get_user
++
++extern long __put_user_1(void *, unsigned long);
++extern long __put_user_2(void *, unsigned long);
++extern long __put_user_4(void *, unsigned long);
++extern long __put_user_8(void *, unsigned long);
++
++#define __put_user_x(__r2,__p,__e,__s)					\
++	   asm volatile(						\
++		__asmeq("%0", "x0") __asmeq("%2", "x2")			\
++		"bl	__put_user_" #__s				\
++		: "=&r" (__e)						\
++		: "0" (__p), "r" (__r2)					\
++		: "x8", "x30", "cc")
++
++#define put_user(x,p)							\
++	({								\
++		register const typeof(*(p)) __r2 asm("x2") = (x);	\
++		register const typeof(*(p)) __user *__p asm("x0") = (p);\
++		register long __e asm("x0");				\
++		switch (sizeof(*(__p))) {				\
++		case 1:							\
++			__put_user_x(__r2, __p, __e, 1);		\
++			break;						\
++		case 2:							\
++			__put_user_x(__r2, __p, __e, 2);		\
++			break;						\
++		case 4:							\
++			__put_user_x(__r2, __p, __e, 4);		\
++			break;						\
++		case 8:							\
++			__put_user_x(__r2, __p, __e, 8);		\
++			break;						\
++		default: __e = __put_user_bad(); break;			\
++		}							\
++		__e;							\
++	})
++
++#define __put_user_unaligned __put_user
++
++#define access_ok(type,addr,size)	__range_ok(addr,size)
++
++/*
++ * The "__xxx" versions of the user access functions do not verify the
++ * address space - it must have been done previously with a separate
++ * "access_ok()" call.
++ *
++ * The "xxx_error" versions set the third argument to EFAULT if an
++ * error occurs, and leave it unchanged on success.  Note that these
++ * versions are void (ie, don't return a value as such).
++ */
++#define __get_user(x,ptr)						\
++({									\
++	long __gu_err = 0;						\
++	__get_user_err((x),(ptr),__gu_err);				\
++	__gu_err;							\
++})
++
++#define __get_user_error(x,ptr,err)					\
++({									\
++	__get_user_err((x),(ptr),err);					\
++	(void) 0;							\
++})
++
++#define __get_user_err(x,ptr,err)					\
++do {									\
++	unsigned long __gu_addr = (unsigned long)(ptr);			\
++	unsigned long __gu_val;						\
++	__chk_user_ptr(ptr);						\
++	switch (sizeof(*(ptr))) {					\
++	case 1:								\
++		__get_user_asm("ldrb", "%w", __gu_val, __gu_addr, err);	\
++		break;							\
++	case 2:								\
++		__get_user_asm("ldrh", "%w", __gu_val, __gu_addr, err);	\
++		break;							\
++	case 4:								\
++		__get_user_asm("ldr", "%w", __gu_val, __gu_addr, err);	\
++		break;							\
++	case 8:								\
++		__get_user_asm("ldr", "%",  __gu_val, __gu_addr, err);	\
++		break;							\
++	default:							\
++		(__gu_val) = __get_user_bad();				\
++	}								\
++	(x) = (__typeof__(*(ptr)))__gu_val;				\
++} while (0)
++
++#define __get_user_asm(instr, reg, x, addr, err)			\
++	asm volatile(							\
++	"1:	" instr "	" reg "1, [%2]\n"			\
++	"2:\n"								\
++	"	.section .fixup, \"ax\"\n"				\
++	"	.align	2\n"						\
++	"3:	mov	%0, %3\n"					\
++	"	mov	%1, #0\n"					\
++	"	b	2b\n"						\
++	"	.previous\n"						\
++	"	.section __ex_table,\"a\"\n"				\
++	"	.align	3\n"						\
++	"	.quad	1b, 3b\n"					\
++	"	.previous"						\
++	: "+r" (err), "=&r" (x)						\
++	: "r" (addr), "i" (-EFAULT)					\
++	: "cc")
++
++#define __put_user(x,ptr)						\
++({									\
++	long __pu_err = 0;						\
++	__put_user_err((x),(ptr),__pu_err);				\
++	__pu_err;							\
++})
++
++#define __put_user_error(x,ptr,err)					\
++({									\
++	__put_user_err((x),(ptr),err);					\
++	(void) 0;							\
++})
++
++#define __put_user_err(x,ptr,err)					\
++do {									\
++	unsigned long __pu_addr = (unsigned long)(ptr);			\
++	__typeof__(*(ptr)) __pu_val = (x);				\
++	__chk_user_ptr(ptr);						\
++	switch (sizeof(*(ptr))) {					\
++	case 1:								\
++		__put_user_asm("strb", "%w", __pu_val, __pu_addr, err);	\
++		break;							\
++	case 2:								\
++		__put_user_asm("strh", "%w", __pu_val, __pu_addr, err);	\
++		break;							\
++	case 4:								\
++		__put_user_asm("str",  "%w", __pu_val, __pu_addr, err);	\
++		break;							\
++	case 8:								\
++		__put_user_asm("str",  "%",  __pu_val, __pu_addr, err);	\
++		break;							\
++	default:							\
++		__put_user_bad();					\
++	}								\
++} while (0)
++
++#define __put_user_asm(instr, reg, x, __pu_addr, err)			\
++	asm volatile(							\
++	"1:	" instr "	" reg "1, [%2]\n"			\
++	"2:\n"								\
++	"	.section .fixup,\"ax\"\n"				\
++	"	.align	2\n"						\
++	"3:	mov	%0, %3\n"					\
++	"	b	2b\n"						\
++	"	.previous\n"						\
++	"	.section __ex_table,\"a\"\n"				\
++	"	.align	3\n"						\
++	"	.quad	1b, 3b\n"					\
++	"	.previous"						\
++	: "+r" (err)							\
++	: "r" (x), "r" (__pu_addr), "i" (-EFAULT)			\
++	: "cc")
++
++extern unsigned long __must_check __copy_from_user(void *to, const void __user *from, unsigned long n);
++extern unsigned long __must_check __copy_to_user(void __user *to, const void *from, unsigned long n);
++extern unsigned long __must_check __copy_in_user(void __user *to, const void __user *from, unsigned long n);
++extern unsigned long __must_check __clear_user(void __user *addr, unsigned long n);
++
++extern unsigned long __must_check __strncpy_from_user(char *to, const char __user *from, unsigned long count);
++extern unsigned long __must_check __strnlen_user(const char __user *s, long n);
++
++static inline unsigned long __must_check copy_from_user(void *to, const void __user *from, unsigned long n)
 +{
-+	struct netvsc_device *nvdev = hv_get_drvdata(hdev);
-+	struct rndis_device *rdev = nvdev->extension;
-+	struct net_device *ndev = nvdev->ndev;
-+	struct rndis_request *request;
-+	struct rndis_set_request *set;
-+	struct rndis_config_parameter_info *cpi;
-+	wchar_t *cfg_nwadr, *cfg_mac;
-+	struct rndis_set_complete *set_complete;
-+	char macstr[2*ETH_ALEN+1];
-+	u32 extlen = sizeof(struct rndis_config_parameter_info) +
-+		2*NWADR_STRLEN + 4*ETH_ALEN;
-+	int ret, t;
-+
-+	request = get_rndis_request(rdev, RNDIS_MSG_SET,
-+		RNDIS_MESSAGE_SIZE(struct rndis_set_request) + extlen);
-+	if (!request)
-+		return -ENOMEM;
-+
-+	set = &request->request_msg.msg.set_req;
-+	set->oid = RNDIS_OID_GEN_RNDIS_CONFIG_PARAMETER;
-+	set->info_buflen = extlen;
-+	set->info_buf_offset = sizeof(struct rndis_set_request);
-+	set->dev_vc_handle = 0;
-+
-+	cpi = (struct rndis_config_parameter_info *)((ulong)set +
-+		set->info_buf_offset);
-+	cpi->parameter_name_offset =
-+		sizeof(struct rndis_config_parameter_info);
-+	/* Multiply by 2 because host needs 2 bytes (utf16) for each char */
-+	cpi->parameter_name_length = 2*NWADR_STRLEN;
-+	cpi->parameter_type = RNDIS_CONFIG_PARAM_TYPE_STRING;
-+	cpi->parameter_value_offset =
-+		cpi->parameter_name_offset + cpi->parameter_name_length;
-+	/* Multiply by 4 because each MAC byte displayed as 2 utf16 chars */
-+	cpi->parameter_value_length = 4*ETH_ALEN;
-+
-+	cfg_nwadr = (wchar_t *)((ulong)cpi + cpi->parameter_name_offset);
-+	cfg_mac = (wchar_t *)((ulong)cpi + cpi->parameter_value_offset);
-+	ret = utf8s_to_utf16s(NWADR_STR, NWADR_STRLEN, UTF16_HOST_ENDIAN,
-+			      cfg_nwadr, NWADR_STRLEN);
-+	if (ret < 0)
-+		goto cleanup;
-+	snprintf(macstr, 2*ETH_ALEN+1, "%pm", mac);
-+	ret = utf8s_to_utf16s(macstr, 2*ETH_ALEN, UTF16_HOST_ENDIAN,
-+			      cfg_mac, 2*ETH_ALEN);
-+	if (ret < 0)
-+		goto cleanup;
-+
-+	ret = rndis_filter_send_request(rdev, request);
-+	if (ret != 0)
-+		goto cleanup;
-+
-+	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
-+	if (t == 0) {
-+		netdev_err(ndev, "timeout before we got a set response...\n");
-+		/*
-+		 * can't put_rndis_request, since we may still receive a
-+		 * send-completion.
-+		 */
-+		return -EBUSY;
-+	} else {
-+		set_complete = &request->response_msg.msg.set_complete;
-+		if (set_complete->status != RNDIS_STATUS_SUCCESS)
-+			ret = -EINVAL;
-+	}
-+
-+cleanup:
-+	put_rndis_request(rdev, request);
-+	return ret;
++	if (access_ok(VERIFY_READ, from, n))
++		n = __copy_from_user(to, from, n);
++	else /* security hole - plug it */
++		memset(to, 0, n);
++	return n;
 +}
 +
++static inline unsigned long __must_check copy_to_user(void __user *to, const void *from, unsigned long n)
++{
++	if (access_ok(VERIFY_WRITE, to, n))
++		n = __copy_to_user(to, from, n);
++	return n;
++}
 +
- static int rndis_filter_query_device_link_status(struct rndis_device *dev)
- {
- 	u32 size = sizeof(u32);
--- 
-1.7.4.1
++static inline unsigned long __must_check copy_in_user(void __user *to, const void __user *from, unsigned long n)
++{
++	if (access_ok(VERIFY_READ, from, n) && access_ok(VERIFY_WRITE, to, n))
++		n = __copy_in_user(to, from, n);
++	return n;
++}
++
++#define __copy_to_user_inatomic __copy_to_user
++#define __copy_from_user_inatomic __copy_from_user
++
++static inline unsigned long __must_check clear_user(void __user *to, unsigned long n)
++{
++	if (access_ok(VERIFY_WRITE, to, n))
++		n = __clear_user(to, n);
++	return n;
++}
++
++static inline long __must_check strncpy_from_user(char *dst, const char __user *src, long count)
++{
++	long res = -EFAULT;
++	if (access_ok(VERIFY_READ, src, 1))
++		res = __strncpy_from_user(dst, src, count);
++	return res;
++}
++
++#define strlen_user(s)	strnlen_user(s, ~0UL >> 1)
++
++static inline long __must_check strnlen_user(const char __user *s, long n)
++{
++	unsigned long res = 0;
++
++	if (__addr_ok(s))
++		res = __strnlen_user(s, n);
++
++	return res;
++}
++
++#endif /* __ASM_UACCESS_H */
+diff --git a/arch/aarch64/lib/clear_user.S b/arch/aarch64/lib/clear_user.S
+new file mode 100644
+index 0000000..1654c19
+--- /dev/null
++++ b/arch/aarch64/lib/clear_user.S
+@@ -0,0 +1,59 @@
++/*
++ * Based on arch/arm/lib/clear_user.S
++ *
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++#include <linux/linkage.h>
++#include <asm/assembler.h>
++
++	.text
++
++/* Prototype: int __clear_user(void *addr, size_t sz)
++ * Purpose  : clear some user memory
++ * Params   : addr - user memory address to clear
++ *          : sz   - number of bytes to clear
++ * Returns  : number of bytes NOT cleared
++ *
++ * Alignment fixed up by hardware.
++ */
++ENTRY(__clear_user)
++	mov	x2, x1			// save the size for fixup return
++	subs	x1, x1, #8
++	b.mi	2f
++1:
++USER(	str	xzr, [x0], #8	)
++	subs	x1, x1, #8
++	b.pl	1b
++2:	adds	x1, x1, #4
++	b.mi	3f
++USER(	str	wzr, [x0], #4	)
++	sub	x1, x1, #4
++3:	adds	x1, x1, #2
++	b.mi	4f
++USER(	strh	wzr, [x0], #2	)
++	sub	x1, x1, #2
++4:	adds	x1, x1, #1
++	b.mi	5f
++	strb	wzr, [x0]
++5:	mov	x0, #0
++	ret
++ENDPROC(__clear_user)
++
++	.section .fixup,"ax"
++	.align	2
++9001:	mov	x0, x2			// return the original size
++	ret
++	.previous
+diff --git a/arch/aarch64/lib/copy_from_user.S b/arch/aarch64/lib/copy_from_user.S
+new file mode 100644
+index 0000000..d0c33b6
+--- /dev/null
++++ b/arch/aarch64/lib/copy_from_user.S
+@@ -0,0 +1,67 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++#include <linux/linkage.h>
++#include <asm/assembler.h>
++
++/*
++ * Copy from user space to a kernel buffer (alignment handled by the hardware)
++ *
++ * Parameters:
++ *	x0 - to
++ *	x1 - from
++ *	x2 - n
++ * Returns:
++ *	x0 - bytes not copied
++ */
++ENTRY(__copy_from_user)
++	add	x4, x1, x2			// upper user buffer boundary
++	subs	x2, x2, #8
++	b.mi	2f
++1:
++USER(	ldr	x3, [x1], #8	)
++	subs	x2, x2, #8
++	str	x3, [x0], #8
++	b.pl	1b
++2:	adds	x2, x2, #4
++	b.mi	3f
++USER(	ldr	w3, [x1], #4	)
++	sub	x2, x2, #4
++	str	w3, [x0], #4
++3:	adds	x2, x2, #2
++	b.mi	4f
++USER(	ldrh	w3, [x1], #2	)
++	sub	x2, x2, #2
++	strh	w3, [x0], #2
++4:	adds	x2, x2, #1
++	b.mi	5f
++USER(	ldrb	w3, [x1]	)
++	strb	w3, [x0]
++5:	mov	x0, #0
++	ret
++ENDPROC(__copy_from_user)
++
++	.section .fixup,"ax"
++	.align	2
++9001:	sub	x2, x4, x1
++	mov	x3, x2
++9002:	strb	wzr, [x0], #1			// zero remaining buffer space
++	subs	x3, x3, #1
++	b.ne	9002b
++	mov	x0, x2				// bytes not copied
++	ret
++	.previous
+diff --git a/arch/aarch64/lib/copy_in_user.S b/arch/aarch64/lib/copy_in_user.S
+new file mode 100644
+index 0000000..cc95934
+--- /dev/null
++++ b/arch/aarch64/lib/copy_in_user.S
+@@ -0,0 +1,64 @@
++/*
++ * arch/aarch64/lib/copy_in_user.S
++ *
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++#include <linux/linkage.h>
++#include <asm/assembler.h>
++
++/*
++ * Copy from user space to user space (alignment handled by the hardware)
++ *
++ * Parameters:
++ *	x0 - to
++ *	x1 - from
++ *	x2 - n
++ * Returns:
++ *	x0 - bytes not copied
++ */
++ENTRY(__copy_in_user)
++	add	x4, x0, x2			// upper user buffer boundary
++	subs	x2, x2, #8
++	b.mi	2f
++1:
++USER(	ldr	x3, [x1], #8	)
++	subs	x2, x2, #8
++USER(	str	x3, [x0], #8	)
++	b.pl	1b
++2:	adds	x2, x2, #4
++	b.mi	3f
++USER(	ldr	w3, [x1], #4	)
++	sub	x2, x2, #4
++USER(	str	w3, [x0], #4	)
++3:	adds	x2, x2, #2
++	b.mi	4f
++USER(	ldrh	w3, [x1], #2	)
++	sub	x2, x2, #2
++USER(	strh	w3, [x0], #2	)
++4:	adds	x2, x2, #1
++	b.mi	5f
++USER(	ldrb	w3, [x1]	)
++USER(	strb	w3, [x0]	)
++5:	mov	x0, #0
++	ret
++ENDPROC(__copy_in_user)
++
++	.section .fixup,"ax"
++	.align	2
++9001:	sub	x0, x4, x0			// bytes not copied
++	ret
++	.previous
+diff --git a/arch/aarch64/lib/copy_to_user.S b/arch/aarch64/lib/copy_to_user.S
+new file mode 100644
+index 0000000..506c797
+--- /dev/null
++++ b/arch/aarch64/lib/copy_to_user.S
+@@ -0,0 +1,62 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++#include <linux/linkage.h>
++#include <asm/assembler.h>
++
++/*
++ * Copy to user space from a kernel buffer (alignment handled by the hardware)
++ *
++ * Parameters:
++ *	x0 - to
++ *	x1 - from
++ *	x2 - n
++ * Returns:
++ *	x0 - bytes not copied
++ */
++ENTRY(__copy_to_user)
++	add	x4, x0, x2			// upper user buffer boundary
++	subs	x2, x2, #8
++	b.mi	2f
++1:
++	ldr	x3, [x1], #8
++	subs	x2, x2, #8
++USER(	str	x3, [x0], #8	)
++	b.pl	1b
++2:	adds	x2, x2, #4
++	b.mi	3f
++	ldr	w3, [x1], #4
++	sub	x2, x2, #4
++USER(	str	w3, [x0], #4	)
++3:	adds	x2, x2, #2
++	b.mi	4f
++	ldrh	w3, [x1], #2
++	sub	x2, x2, #2
++USER(	strh	w3, [x0], #2	)
++4:	adds	x2, x2, #1
++	b.mi	5f
++	ldrb	w3, [x1]
++USER(	strb	w3, [x0]	)
++5:	mov	x0, #0
++	ret
++ENDPROC(__copy_to_user)
++
++	.section .fixup,"ax"
++	.align	2
++9001:	sub	x0, x4, x0			// bytes not copied
++	ret
++	.previous
+diff --git a/arch/aarch64/lib/getuser.S b/arch/aarch64/lib/getuser.S
+new file mode 100644
+index 0000000..ba3c15c
+--- /dev/null
++++ b/arch/aarch64/lib/getuser.S
+@@ -0,0 +1,76 @@
++/*
++ * Based on arch/arm/lib/getuser.S
++ *
++ * Copyright (C) 2012 ARM Ltd.
++ * Idea from x86 version, (C) Copyright 1998 Linus Torvalds
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ *
++ *
++ * These functions have a non-standard call interface to make them more
++ * efficient, especially as they return an error value in addition to
++ * the "real" return value.
++ *
++ * __get_user_X
++ *
++ * Inputs:	x0 contains the address
++ * Outputs:	x0 is the error code
++ *		x2, x3 contains the zero-extended value
++ *		lr corrupted
++ *
++ * No other registers must be altered.  (see <asm/uaccess.h>
++ * for specific ASM register usage).
++ *
++ * Note also that it is intended that __get_user_bad is not global.
++ */
++
++#include <linux/linkage.h>
++#include <asm/errno.h>
++
++ENTRY(__get_user_1)
++1:	ldrb	w2, [x0]
++	mov	x0, #0
++	ret
++ENDPROC(__get_user_1)
++
++ENTRY(__get_user_2)
++2:	ldrh	w2, [x0]
++	mov	x0, #0
++	ret
++ENDPROC(__get_user_2)
++
++ENTRY(__get_user_4)
++3:	ldr	w2, [x0]
++	mov	x0, #0
++	ret
++ENDPROC(__get_user_4)
++
++ENTRY(__get_user_8)
++4:	ldr	x2, [x0]
++	mov	x0, #0
++	ret
++ENDPROC(__get_user_4)
++
++__get_user_bad:
++	mov	x2, #0
++	mov	x0, #-EFAULT
++	ret
++ENDPROC(__get_user_bad)
++
++.section __ex_table, "a"
++	.quad	1b, __get_user_bad
++	.quad	2b, __get_user_bad
++	.quad	3b, __get_user_bad
++	.quad	4b, __get_user_bad
++.previous
+diff --git a/arch/aarch64/lib/putuser.S b/arch/aarch64/lib/putuser.S
+new file mode 100644
+index 0000000..b2068ba
+--- /dev/null
++++ b/arch/aarch64/lib/putuser.S
+@@ -0,0 +1,74 @@
++/*
++ * Based on arch/arm/lib/putuser.S
++ *
++ * Copyright (C) 2012 ARM Ltd.
++ * Idea from x86 version, (C) Copyright 1998 Linus Torvalds
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ *
++ * These functions have a non-standard call interface to make
++ * them more efficient, especially as they return an error
++ * value in addition to the "real" return value.
++ *
++ * __put_user_X
++ *
++ * Inputs:	x0 contains the address
++ *		x2, x3 contains the value
++ * Outputs:	x0 is the error code
++ *		lr corrupted
++ *
++ * No other registers must be altered.  (see <asm/uaccess.h>
++ * for specific ASM register usage).
++ *
++ * Note that it is intended that __put_user_bad is not global.
++ */
++
++#include <linux/linkage.h>
++#include <asm/errno.h>
++
++ENTRY(__put_user_1)
++1:	strb	w2, [x0]
++	mov	x0, #0
++	ret
++ENDPROC(__put_user_1)
++
++ENTRY(__put_user_2)
++2:	strh	w2, [x0]
++	mov	x0, #0
++	ret
++ENDPROC(__put_user_2)
++
++ENTRY(__put_user_4)
++3:	str	w2, [x0]
++	mov	x0, #0
++	ret
++ENDPROC(__put_user_4)
++
++ENTRY(__put_user_8)
++4:	str	x2, [x0]
++	mov	x0, #0
++	ret
++ENDPROC(__put_user_8)
++
++__put_user_bad:
++	mov	x0, #-EFAULT
++	ret
++ENDPROC(__put_user_bad)
++
++.section __ex_table, "a"
++	.quad	1b, __put_user_bad
++	.quad	2b, __put_user_bad
++	.quad	3b, __put_user_bad
++	.quad	4b, __put_user_bad
++.previous
+diff --git a/arch/aarch64/lib/strncpy_from_user.S b/arch/aarch64/lib/strncpy_from_user.S
+new file mode 100644
+index 0000000..78f2e8d
+--- /dev/null
++++ b/arch/aarch64/lib/strncpy_from_user.S
+@@ -0,0 +1,51 @@
++/*
++ * Based on arch/arm/lib/strncpy_from_user.S
++ *
++ * Copyright (C) 1995-2000 Russell King
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++#include <linux/linkage.h>
++#include <asm/assembler.h>
++#include <asm/errno.h>
++
++	.text
++	.align	5
++
++/*
++ * Copy a string from user space to kernel space.
++ *  x0 = dst, x1 = src, x2 = byte length
++ * returns the number of characters copied (strlen of copied string),
++ *  -EFAULT on exception, or "len" if we fill the whole buffer
++ */
++ENTRY(__strncpy_from_user)
++	mov	x4, x1
++1:	subs	x2, x2, #1
++	bmi	2f
++USER(	ldrb	w3, [x1], #1	)
++	strb	w3, [x0], #1
++	cbnz	w3, 1b
++	sub	x1, x1, #1	// take NUL character out of count
++2:	sub	x0, x1, x4
++	ret
++ENDPROC(__strncpy_from_user)
++
++	.section .fixup,"ax"
++	.align	0
++9001:	strb	wzr, [x0]	// null terminate
++	mov	x0, #-EFAULT
++	ret
++	.previous
+diff --git a/arch/aarch64/lib/strnlen_user.S b/arch/aarch64/lib/strnlen_user.S
+new file mode 100644
+index 0000000..84bccab
+--- /dev/null
++++ b/arch/aarch64/lib/strnlen_user.S
+@@ -0,0 +1,48 @@
++/*
++ * Based on arch/arm/lib/strnlen_user.S
++ *
++ * Copyright (C) 1995-2000 Russell King
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++#include <linux/linkage.h>
++#include <asm/assembler.h>
++#include <asm/errno.h>
++
++	.text
++	.align	5
++
++/* Prototype: unsigned long __strnlen_user(const char *str, long n)
++ * Purpose  : get length of a string in user memory
++ * Params   : str - address of string in user memory
++ * Returns  : length of string *including terminator*
++ *	      or zero on exception, or n if too long
++ */
++ENTRY(__strnlen_user)
++	mov	x2, x0
++1:	subs	x1, x1, #1
++	b.mi	2f
++USER(	ldrb	w3, [x0], #1	)
++	cbnz	w3, 1b
++2:	sub	x0, x0, x2
++	ret
++ENDPROC(__strnlen_user)
++
++	.section .fixup,"ax"
++	.align	0
++9001:	mov	x0, #0
++	ret
++	.previous
 
