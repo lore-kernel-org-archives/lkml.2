@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932447Ab2GFG1q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 02:27:46 -0400
-Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:43760 "EHLO
-	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932554Ab2GFG1p convert rfc822-to-8bit (ORCPT
+	id S932876Ab2GFG1y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 02:27:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35196 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932139Ab2GFG1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 02:27:45 -0400
-Message-Id: <4FF6A17B020000A10000A5E8@gwsmtp1.uni-regensburg.de>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 06 Jul 2012 08:27:39 +0200
-From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-To: <linux-kernel@vger.kernel.org>
-Cc: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-Subject: /sys and access(2): Correctly implemented?
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Fri, 6 Jul 2012 02:27:51 -0400
+Message-ID: <4FF68560.7040102@gmail.com>
+Date: Fri, 06 Jul 2012 14:27:44 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] ext4: make extents.c/ext4_ext_try_to_merge return 1 on
+ merged
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+In the old version, ext4_ext_try_to_merge would return 0 if
+merge left or no merge, and return 1 if merge right.
+Here make ext4_ext_try_to_merge return 1 on merged, and return
+0 if no merge.
 
-Recently I found a problem with the command (kernel 3.0.34-0.7-default from SLES 11 SP2, run as root):
-test -r "$file" && cat "$file"
-emitting "Permission denied"
+Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+---
+ fs/ext4/extents.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-Investigating, I found that "test" actually uses "access()" to check for permissions. Unfortunately there are some files in /sys that have "write-only" permission bits set (e.g. /sys/devices/system/cpu/probe).
-
-~ # ll /sys/devices/system/cpu/probe
---w------- 1 root root 4096 Jun 29 12:43 /sys/devices/system/cpu/probe
-~ # F=/sys/devices/system/cpu/probe
-~ # test "$F" && cat "$F"
-cat: /sys/devices/system/cpu/probe: Permission denied
-
-In times of capabilities and ACLs, shouldn't there be a test for permissions that actually works?
-
-Regards,
-Ulrich
-P.S. Please make sure my CC: gets your replies, too -- thanks
-
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 6c2a37d..7f6fb48 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -1657,7 +1657,7 @@ static int ext4_ext_try_to_merge_right(struct inode *inode,
+ 
+ /*
+  * This function tries to merge the @ex extent to neighbours in the tree.
+- * return 1 if merge left else 0.
++ * return 1 if merged else 0.
+  */
+ static int ext4_ext_try_to_merge(struct inode *inode,
+ 				  struct ext4_ext_path *path,
+@@ -1665,7 +1665,6 @@ static int ext4_ext_try_to_merge(struct inode *inode,
+ 	struct ext4_extent_header *eh;
+ 	unsigned int depth;
+ 	int merge_done = 0;
+-	int ret = 0;
+ 
+ 	depth = ext_depth(inode);
+ 	BUG_ON(path[depth].p_hdr == NULL);
+@@ -1675,9 +1674,9 @@ static int ext4_ext_try_to_merge(struct inode *inode,
+ 		merge_done = ext4_ext_try_to_merge_right(inode, path, ex - 1);
+ 
+ 	if (!merge_done)
+-		ret = ext4_ext_try_to_merge_right(inode, path, ex);
++		merge_done = ext4_ext_try_to_merge_right(inode, path, ex);
+ 
+-	return ret;
++	return merge_done;
+ }
+ 
+ /*
+-- 
+1.7.1
