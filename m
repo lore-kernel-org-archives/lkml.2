@@ -1,140 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933005Ab2GFHlk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 03:41:40 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48043 "EHLO
+	id S933130Ab2GFHmK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 03:42:10 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57514 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755274Ab2GFHli (ORCPT
+	with ESMTP id S1751850Ab2GFHmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 03:41:38 -0400
-X-AuditID: 9c930179-b7cceae000004195-c7-4ff692eb4ec8
+	Fri, 6 Jul 2012 03:42:08 -0400
+X-AuditID: 9c930179-b7cceae000004195-f0-4ff692eed384
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCHSET 0/6] perf tools: Minimal build without libelf dependency (v3)
-Date: Fri,  6 Jul 2012 16:21:31 +0900
-Message-Id: <1341559297-25725-1-git-send-email-namhyung@kernel.org>
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 2/6] tools lib traceevent: Ignore TRACEEVENT-CFLAGS file
+Date: Fri,  6 Jul 2012 16:21:33 +0900
+Message-Id: <1341559297-25725-3-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1341559297-25725-1-git-send-email-namhyung@kernel.org>
+References: <1341559297-25725-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-This is my third version of the series. I removed RFC tag in subject
-line since I think most of you seem to agree with the change. :)
+The TRACEEVENT-CFLAGS file is used to detect any change on compiler
+flags. Just ignore it.
 
-Patch 1 and 2 are independent to the series and can be applied solely
-(and possibly merged to one).
-
-This patchset is based on Arnaldo's perf/core branch at 81e9b994bb20
-("Merge tag 'libtraceevent-core-for-acme' of
-git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf into
-perf/core") and tested on x86_64 and ARM.
-
-You can also get this set on perf/minimal-v3 branch on my tree (see
-above) if you want.
-
-Any comments are welcome.
-Namhyung
-
-
-v3:
- * drop already merged (cross-build related) patches
- * drop SYMBIND_* change (Arnaldo)
-
-v2:
- * change make option name to NO_LIBELF
- * make it default when libelf doesn't exist (Ingo)
- * get rid of elf-minimal.h and use elf.h (Jiri)
-
-The original description follows.
-
---- 
-
-Current build procedure of perf tools requires a couple of external
-libraries. Although most of them are optional, elfutils' libelf is
-mandatory for resolving symbols and build-id of the binaries being
-profiled. For some reason, it makes embedded guys' life harder who
-want to build and run perf tools on their boards.
-
-This patchset tries to fix the problem by letting the perf could
-be built without the libelf. The initial intent was just providing
-perf record command to gather performance events interested on the
-system and copies perf.data to development box to be used by (full-
-fledged) perf report for analysis.
-
-However it's changed to have most of perf commands as is because
-perf can resolve kernel symbols without libelf and many of perf
-commands deal (mostly) with kernel events - so no need to restrict
-capability of perf tools. Therefore, the end result is not so
-minimalistic actually and the only thing it cannot do is "perf probe".
-
-And there's a poor man's version of ELF parser only for parsing the
-build-id info. While it's not absolutely needed, I think it's good to
-have, just in case.
-
-In addition, I changed my mind to keep unrelated configurations -
-i.g. tui/gui and perf/python support - enabled by default so that
-it can be configured by a find-grained config method in the future.
-
-To build a minimal perf tools explicitly, pass NO_LIBELF=1 to make.
-Or, if the system doesn't provide the elfutils it'll detect that
-and converts to the minimal build mode automatically. The resulting
-perf report will not display symbol names in userland:
-
- # Samples: 3K of event 'cycles'
- # Event count (approx.): 3740267998
- #
- # Overhead  Command      Shared Object                          Symbol
- # ........  .......  .................  ..............................
- #
-     99.70%  noploop  noploop            [.] 0x000000000000066d        
-      0.10%  noploop  [kernel.kallsyms]  [k] free_pgd_range            
-      0.03%  noploop  [kernel.kallsyms]  [k] native_write_msr_safe     
-      0.03%  noploop  [kernel.kallsyms]  [k] raise_softirq             
-      0.03%  noploop  [kernel.kallsyms]  [k] rb_insert_color       
- 
-But perf buildid-list can show the build-id's:
-
- $ ./perf buildid-list --with-hits
- 5eaf1839576cc801053e63300762def90a77a305 [kernel.kallsyms]
- 43a7a2b399b6ee2ff29c6bdadbda6bff88712ed4 /home/namhyung/bin/noploop
-
-So it can be packed using perf archive command and copied and
-analized with full-fledged perf tools on a development machine.
-
-
-Namhyung Kim (6):
-  tools lib traceevent: Detect build environment changes
-  tools lib traceevent: Ignore TRACEEVENT-CFLAGS file
-  perf symbols: Introduce symbol__elf_init()
-  perf tools: Split out util/symbol-elf.c
-  perf tools: Support minimal build without libelf
-  perf symbols: Implement poor man's ELF parser
-
- tools/lib/traceevent/.gitignore     |    1 +
- tools/lib/traceevent/Makefile       |   14 +-
- tools/perf/Makefile                 |   58 ++-
- tools/perf/builtin-buildid-list.c   |    4 +-
- tools/perf/builtin-inject.c         |    5 +-
- tools/perf/command-list.txt         |    2 +-
- tools/perf/perf.c                   |    2 +
- tools/perf/util/generate-cmdlist.sh |   15 +
- tools/perf/util/map.c               |   22 +-
- tools/perf/util/map.h               |    1 +
- tools/perf/util/symbol-elf.c        |  775 +++++++++++++++++++++++++++++++++
- tools/perf/util/symbol-minimal.c    |  267 ++++++++++++
- tools/perf/util/symbol.c            |  802 +----------------------------------
- tools/perf/util/symbol.h            |   16 +
- 14 files changed, 1169 insertions(+), 815 deletions(-)
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/lib/traceevent/.gitignore |    1 +
+ 1 file changed, 1 insertion(+)
  create mode 100644 tools/lib/traceevent/.gitignore
- create mode 100644 tools/perf/util/symbol-elf.c
- create mode 100644 tools/perf/util/symbol-minimal.c
 
+diff --git a/tools/lib/traceevent/.gitignore b/tools/lib/traceevent/.gitignore
+new file mode 100644
+index 000000000000..35f56be5a4cd
+--- /dev/null
++++ b/tools/lib/traceevent/.gitignore
+@@ -0,0 +1 @@
++TRACEEVENT-CFLAGS
 -- 
 1.7.10.4
 
