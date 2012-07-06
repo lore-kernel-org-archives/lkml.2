@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933441Ab2GFSMt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 14:12:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9383 "EHLO mx1.redhat.com"
+	id S933108Ab2GFSMZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 14:12:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55001 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932610Ab2GFSMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 14:12:46 -0400
-Date: Fri, 6 Jul 2012 14:11:28 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Avi Kivity <avi@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kvm: handle last_boosted_vcpu = 0 case
-Message-ID: <20120706171128.GA8835@amt.cnet>
-References: <20120619202047.26191.40429.sendpatchset@codeblue>
- <20120619165104.2a4574f8@annuminas.surriel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120619165104.2a4574f8@annuminas.surriel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932828Ab2GFSMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 14:12:18 -0400
+Message-ID: <1341597064.5347.3.camel@localhost>
+Subject: Re: [PATCH 3/3] audit: clean up refcounting in audit-tree
+From: Eric Paris <eparis@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@ZenIV.linux.org.uk, linux-kernel@vger.kernel.org, mszeredi@suse.cz
+Date: Fri, 06 Jul 2012 13:51:04 -0400
+In-Reply-To: <1340646378-5169-4-git-send-email-miklos@szeredi.hu>
+References: <1340646378-5169-1-git-send-email-miklos@szeredi.hu>
+	 <1340646378-5169-4-git-send-email-miklos@szeredi.hu>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 19, 2012 at 04:51:04PM -0400, Rik van Riel wrote:
-> On Wed, 20 Jun 2012 01:50:50 +0530
-> Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
+On Mon, 2012-06-25 at 19:46 +0200, Miklos Szeredi wrote:
+> From: Miklos Szeredi <mszeredi@suse.cz>
 > 
-> > 
-> > In ple handler code, last_boosted_vcpu (lbv) variable is
-> > serving as reference point to start when we enter.
+> Drop the initial reference by fsnotify_init_mark early instead of
+> audit_tree_freeing_mark() at destroy time.
 > 
-> > Also statistical analysis (below) is showing lbv is not very well
-> > distributed with current approach.
+> In the cases we destroy the mark before we drop the initial reference we need to
+> get rid of the get_mark that balances the put_mark in audit_tree_freeing_mark().
 > 
-> You are the second person to spot this bug today (yes, today).
-> 
-> Due to time zones, the first person has not had a chance yet to
-> test the patch below, which might fix the issue...
-> 
-> Please let me know how it goes.
-> 
-> ====8<====
-> 
-> If last_boosted_vcpu == 0, then we fall through all test cases and
-> may end up with all VCPUs pouncing on vcpu 0.  With a large enough
-> guest, this can result in enormous runqueue lock contention, which
-> can prevent vcpu0 from running, leading to a livelock.
-> 
-> Changing < to <= makes sure we properly handle that case.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 
-Applied, thanks.
+I don't love this.  The reference from fsnotify_init_mark() should live
+until fsnotify_mark_destroy().  If we need to drop a reference in
+audit_tree_freeing_mark() we should be taking that elsewhere....
+
+> ---
+>  kernel/audit_tree.c |   12 +++++++++---
+>  1 files changed, 9 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
+> index 31fdc48..7b95706 100644
+> --- a/kernel/audit_tree.c
+> +++ b/kernel/audit_tree.c
+> @@ -292,6 +292,7 @@ static void untag_chunk(struct node *p)
+>  	spin_unlock(&hash_lock);
+>  	spin_unlock(&entry->lock);
+>  	fsnotify_destroy_mark(entry);
+> +	fsnotify_put_mark(&new->mark);	/* drop initial reference */
+>  	goto out;
+>  
+>  Fallback:
+> @@ -330,7 +331,6 @@ static int create_chunk(struct inode *inode, struct audit_tree *tree)
+>  		spin_unlock(&hash_lock);
+>  		chunk->dead = 1;
+>  		spin_unlock(&entry->lock);
+> -		fsnotify_get_mark(entry);
+>  		fsnotify_destroy_mark(entry);
+>  		fsnotify_put_mark(entry);
+>  		return 0;
+> @@ -346,6 +346,7 @@ static int create_chunk(struct inode *inode, struct audit_tree *tree)
+>  	insert_hash(chunk);
+>  	spin_unlock(&hash_lock);
+>  	spin_unlock(&entry->lock);
+> +	fsnotify_put_mark(entry);	/* drop initial reference */
+>  	return 0;
+>  }
+>  
+> @@ -411,7 +412,6 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
+>  		spin_unlock(&chunk_entry->lock);
+>  		spin_unlock(&old_entry->lock);
+>  
+> -		fsnotify_get_mark(chunk_entry);
+>  		fsnotify_destroy_mark(chunk_entry);
+>  
+>  		fsnotify_put_mark(chunk_entry);
+> @@ -444,6 +444,7 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
+>  	spin_unlock(&chunk_entry->lock);
+>  	spin_unlock(&old_entry->lock);
+>  	fsnotify_destroy_mark(old_entry);
+> +	fsnotify_put_mark(chunk_entry);	/* drop initial reference */
+>  	fsnotify_put_mark(old_entry); /* pair to fsnotify_find mark_entry */
+>  	return 0;
+>  }
+> @@ -915,7 +916,12 @@ static void audit_tree_freeing_mark(struct fsnotify_mark *entry, struct fsnotify
+>  	struct audit_chunk *chunk = container_of(entry, struct audit_chunk, mark);
+>  
+>  	evict_chunk(chunk);
+> -	fsnotify_put_mark(entry);
+> +
+> +	/*
+> +	 * We are guaranteed to have at least one reference to the mark from
+> +	 * either the inode or the caller of fsnotify_destroy_mark().
+> +	 */
+> +	BUG_ON(atomic_read(&entry->refcnt) < 1);
+>  }
+>  
+>  static bool audit_tree_send_event(struct fsnotify_group *group, struct inode *inode,
+
 
