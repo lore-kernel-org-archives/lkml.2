@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab2GFHnp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 03:43:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28060 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905Ab2GFHnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 03:43:42 -0400
-Message-ID: <4FF697A2.2000502@redhat.com>
-Date: Fri, 06 Jul 2012 15:45:38 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
+	id S1752133Ab2GFHot (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 03:44:49 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39584 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab2GFHos (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 03:44:48 -0400
+Date: Fri, 6 Jul 2012 00:44:29 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mark Fasheh <mfasheh@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
+        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ocfs2 fixes for 3.5-rc5
+Message-ID: <20120706074428.GA27550@dhcp-172-17-9-228.mtv.corp.google.com>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	Mark Fasheh <mfasheh@suse.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Amos Kong <akong@redhat.com>
-CC: mst@redhat.com, mashirle@us.ibm.com, krkumar2@in.ibm.com,
-        habanero@linux.vnet.ibm.com, rusty@rustcorp.com.au,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, edumazet@google.com,
-        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
-        kvm@vger.kernel.org, sri@us.ibm.com
-Subject: Re: [net-next RFC V5 4/5] virtio_net: multiqueue support
-References: <1341484194-8108-1-git-send-email-jasowang@redhat.com> <1341484194-8108-5-git-send-email-jasowang@redhat.com> <4FF5F2F2.9050307@redhat.com>
-In-Reply-To: <4FF5F2F2.9050307@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/2012 04:02 AM, Amos Kong wrote:
-> On 07/05/2012 06:29 PM, Jason Wang wrote:
->> This patch converts virtio_net to a multi queue device. After negotiated
->> VIRTIO_NET_F_MULTIQUEUE feature, the virtio device has many tx/rx queue pairs,
->> and driver could read the number from config space.
->>
->> The driver expects the number of rx/tx queue paris is equal to the number of
->> vcpus. To maximize the performance under this per-cpu rx/tx queue pairs, some
->> optimization were introduced:
->>
->> - Txq selection is based on the processor id in order to avoid contending a lock
->>    whose owner may exits to host.
->> - Since the txq/txq were per-cpu, affinity hint were set to the cpu that owns
->>    the queue pairs.
->>
->> Signed-off-by: Krishna Kumar<krkumar2@in.ibm.com>
->> Signed-off-by: Jason Wang<jasowang@redhat.com>
->> ---
-> ...
->
->>
->>   static int virtnet_probe(struct virtio_device *vdev)
->>   {
->> -	int err;
->> +	int i, err;
->>   	struct net_device *dev;
->>   	struct virtnet_info *vi;
->> +	u16 num_queues, num_queue_pairs;
->> +
->> +	/* Find if host supports multiqueue virtio_net device */
->> +	err = virtio_config_val(vdev, VIRTIO_NET_F_MULTIQUEUE,
->> +				offsetof(struct virtio_net_config,
->> +				num_queues),&num_queues);
->> +
->> +	/* We need atleast 2 queue's */
->
-> s/atleast/at least/
->
->
->> +	if (err || num_queues<  2)
->> +		num_queues = 2;
->> +	if (num_queues>  MAX_QUEUES * 2)
->> +		num_queues = MAX_QUEUES;
->                  num_queues = MAX_QUEUES * 2;
->
-> MAX_QUEUES is the limitation of RX or TX.
+Linus et al,
+	Here are the all of the ocfs2 fixes that have been stewing in my
+tree.  Please pull.
 
-Right, it's a typo, thanks.
->> +
->> +	num_queue_pairs = num_queues / 2;
-> ...
->
+Joel
 
+The following changes since commit 9e85a6f9dc231f3ed3c1dc1b12217505d970142a:
+
+  Merge tag 'clk-fixes-for-linus' of git://git.linaro.org/people/mturquette/linux (2012-07-03 18:06:49 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git fixes
+
+Jan Kara (1):
+      ocfs2: Fix bogus error message from ocfs2_global_read_info
+
+Jeff Liu (1):
+      ocfs2: for SEEK_DATA/SEEK_HOLE, return internal error unchanged if ocfs2_get_clusters_nocache() or ocfs2_inode_lock() call failed.
+
+Junxiao Bi (2):
+      ocfs2: clear unaligned io flag when dio fails
+      aio: make kiocb->private NUll in init_sync_kiocb()
+
+Srinivas Eeda (1):
+      ocfs2: use spinlock irqsave for downconvert lock.patch
+
+roel (1):
+      ocfs2: Misplaced parens in unlikley
+
+ fs/ocfs2/dlmglue.c      |   33 ++++++++++++++++++++-------------
+ fs/ocfs2/extent_map.c   |    2 --
+ fs/ocfs2/file.c         |    4 +++-
+ fs/ocfs2/quota_global.c |    2 --
+ include/linux/aio.h     |    1 +
+ 5 files changed, 24 insertions(+), 18 deletions(-)
