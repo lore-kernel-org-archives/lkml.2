@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab2GFQAk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 12:00:40 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:57458 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751694Ab2GFQAj (ORCPT
+	id S1756722Ab2GFQCa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 12:02:30 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:64560 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694Ab2GFQC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 12:00:39 -0400
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX1/NbKYFiI/NzBJszCfJ9kKu+niSykTuzJMwxsEed/
-	vuf7opiUeb5wQ1
-From: Sven Joachim <svenjoac@gmx.de>
-To: Ben Skeggs <bskeggs@redhat.com>, dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Suspend/resume/suspend broken in Linux 3.5-rc5
-Date: Fri, 06 Jul 2012 18:00:35 +0200
-Message-ID: <877gugzxp8.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Y-GMX-Trusted: 0
+	Fri, 6 Jul 2012 12:02:29 -0400
+From: David Ahern <dsahern@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] perf lock: fix segfault with info subcommand following move to libtraceevent
+Date: Fri,  6 Jul 2012 10:02:18 -0600
+Message-Id: <1341590538-19523-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Running 'perf lock info' on a "random" perf.data file crashes:
 
-I'm sorry having to report that I'm only able to suspend once with Linux
-3.5-rc5; any subsequent attempts fail.  This is a regression from 3.4
-where suspend/resume worked flawlessly and arbitrarily often on my
-machine.
+0  0x00000000004a5618 in __parse_common (pevent=0x0, data=0x0, size=0xa0, offset=0x9c, name=
+    0x556e02 "common_type") at /opt/sw/ahern/kernels/kernel.git/tools/lib/traceevent/event-parse.c:2851
+1  0x00000000004a56a7 in trace_parse_common_type (pevent=0x0, data=0x0)
+    at /opt/sw/ahern/kernels/kernel.git/tools/lib/traceevent/event-parse.c:2861
+2  0x00000000004a7e42 in pevent_data_type (pevent=0x0, rec=0x7fffffffddf0)
+    at /opt/sw/ahern/kernels/kernel.git/tools/lib/traceevent/event-parse.c:3952
+3  0x0000000000473f37 in trace_parse_common_type (data=0x0) at util/trace-event-parse.c:158
+4  0x00000000004376cd in process_raw_event (data=0x0, cpu=-1, timestamp=533548521126805, thread=
+    0x918450) at builtin-lock.c:727
+5  0x0000000000437df4 in process_sample_event (tool=0x7ab300, event=0x7ffff7ff9dd8, sample=
+    0x7fffffffdf60, evsel=0x917d90, machine=0x9161c0) at builtin-lock.c:863
+6  0x0000000000470d04 in perf_session_deliver_event (session=0x916160, event=0x7ffff7ff9dd8, sample=
+    0x7fffffffdf60, tool=0x7ab300, file_offset=11736) at util/session.c:977
+7  0x000000000047024a in flush_sample_queue (s=0x916160, tool=0x7ab300) at util/session.c:679
+8  0x0000000000471ba9 in __perf_session__process_events (session=0x916160, data_offset=400, data_size=
+    11576, file_size=11976, tool=0x7ab300) at util/session.c:1363
+9  0x0000000000471c5e in perf_session__process_events (self=0x916160, tool=0x7ab300)
+    at util/session.c:1379
+10 0x0000000000437e80 in read_events () at builtin-lock.c:880
+11 0x0000000000438275 in cmd_lock (argc=0, argv=0x7fffffffe420, prefix=0x0) at builtin-lock.c:10
 
-Bisection show that the problem was introduced in commit c420b2dc8dc:
+In this case the data file has cycles events, not traces and hence nothing
+to do with lock tracepoints. Nonetheless, perf-lock should not crash. The
+crash started with commit aaf045f72335653b24784d6042be8e4aee114403 - ie.,
+the move to libtraceevent.
 
-,----
-| commit c420b2dc8dc3cdd507214f4df5c5f96f08812cbe
-| Author: Ben Skeggs <bskeggs@redhat.com>
-| Date:   Tue May 1 20:48:08 2012 +1000
-| 
-|     drm/nouveau/fifo: turn all fifo modules into engine modules
-|     
-|     Been tested on each major revision that's relevant here, but I'm sure there
-|     are still bugs waiting to be ironed out.
-|     
-|     This is a *very* invasive change.
-|     
-|     There's a couple of pieces left that I don't like much (eg. other engines
-|     using fifo_priv for the channel count), but that's an artefact of there
-|     being a master channel list still.  This is changing, slowly.
-|     
-|     Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
-`----
+With this patch you get the more user friendly:
+$ perf lock info
+  Fatal: Unknown type of information
 
-My graphics cards is the following:
+Signed-off-by: David Ahern <dsahern@gmail.com>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ tools/perf/builtin-lock.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-VGA compatible controller: NVIDIA Corporation G86 [GeForce 8500 GT] (rev a1)
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index fd53319..55f7961 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -877,6 +877,9 @@ static int read_events(void)
+ 	if (!session)
+ 		die("Initializing perf session failed\n");
+ 
++	if (!perf_session__has_traces(session, "lock record"))
++		exit(1);
++
+ 	return perf_session__process_events(session, &eops);
+ }
+ 
+-- 
+1.7.10.1
 
-Any advice would be appreciated.
-
-Cheers,
-       Sven
