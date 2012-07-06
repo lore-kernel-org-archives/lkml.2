@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030348Ab2GFMAe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 08:00:34 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47279 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030335Ab2GFMAb (ORCPT
+	id S1030375Ab2GFMAn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 08:00:43 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:58467 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030314Ab2GFMAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 08:00:31 -0400
+	Fri, 6 Jul 2012 08:00:40 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -24,9 +24,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 1/6] rcu: Settle config for userspace extended quiescent state
-Date: Fri,  6 Jul 2012 14:00:13 +0200
-Message-Id: <1341576018-10721-2-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 3/6] rcu: Exit RCU extended QS on preemption in irq exit
+Date: Fri,  6 Jul 2012 14:00:15 +0200
+Message-Id: <1341576018-10721-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1341576018-10721-1-git-send-email-fweisbec@gmail.com>
 References: <1341576018-10721-1-git-send-email-fweisbec@gmail.com>
@@ -34,11 +34,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a new config option under the RCU menu that put
-CPUs under RCU extended quiescent state (as in dynticks
-idle mode) when they run in userspace. This require
-some contribution from architectures to hook into kernel
-and userspace boundaries.
+Syscalls and exceptions low level handlers must be contained
+between rcu_user_exit() and rcu_user_enter(). But irq high
+level handlers are already protected inside rcu_irq_enter/exit()
+so we don't need to call rcu_user_exit() on irq entry. But if
+we preempt the running task in the end of the interrupt, we need
+to exit the RCU userspace mode because schedule() itself and the
+next task are in the kernel and may contain RCU read side critical
+section..
+
+To solve this, call rcu_user_exit() from irq exit preemption points:
+- If we interrupted kernelspace, we call preempt_schedule_irq() and
+rcu_user_exit() is called from it.
+
+- If we interrupted userspace, we usually call schedule() directly.
+Now we will rely on a new API schedule_user() which calls rcu_user_exit()
+before calling schedule().
+
+The low level irq handler may need to call rcu_user_enter() if we
+resume userspace after the task is woken up from its preemption.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -60,90 +74,34 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/Kconfig     |   13 +++++++++++++
- init/Kconfig     |   10 ++++++++++
- kernel/rcutree.c |    4 ++++
- 3 files changed, 27 insertions(+), 0 deletions(-)
+ kernel/sched/core.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 8c3d957..c2e0ce4 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -274,4 +274,17 @@ config SECCOMP_FILTER
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index d5594a4..1630532 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3332,6 +3332,12 @@ asmlinkage void __sched schedule(void)
+ }
+ EXPORT_SYMBOL(schedule);
  
- 	  See Documentation/prctl/seccomp_filter.txt for details.
- 
-+config HAVE_RCU_USER_QS
-+	bool
-+	help
-+	  Provide kernel entry/exit hooks necessary for userspace
-+	  RCU extended quiescent state. Syscalls and exceptions
-+	  low level handlers must be wrapped with a call to rcu_user_exit()
-+	  on entry and rcu_user_enter() before resuming userspace. Irqs
-+	  entry don't need to call rcu_user_exit() because their high level
-+	  handlers are protected inside rcu_irq_enter/rcu_irq_exit() but
-+	  preemption or signal handling on irq exit still need to be protected
-+	  with a call to rcu_user_exit(). rcu_user_enter() must then be
-+	  called back on irq exit when the preempted task is back on the CPU.
++asmlinkage void __sched schedule_user(void)
++{
++	rcu_user_exit();
++	schedule();
++}
 +
- source "kernel/gcov/Kconfig"
-diff --git a/init/Kconfig b/init/Kconfig
-index d07dcf9..3a4af8f 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -441,6 +441,16 @@ config PREEMPT_RCU
- 	  This option enables preemptible-RCU code that is common between
- 	  the TREE_PREEMPT_RCU and TINY_PREEMPT_RCU implementations.
- 
-+config RCU_USER_QS
-+	bool "Consider userspace as in RCU extended quiescent state"
-+	depends on HAVE_RCU_USER_QS && SMP
-+	help
-+	  This option sets hooks on kernel / userspace boundaries and
-+	  puts RCU in extended quiescent state when the CPU runs in
-+	  userspace. It means that when a CPU runs in userspace, it is
-+	  excluded from the global RCU state machine and thus doesn't
-+	  need to keep the timer tick on for RCU.
-+
- config RCU_FANOUT
- 	int "Tree-based hierarchical RCU fanout value"
- 	range 2 64 if 64BIT
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 5541a07..64fc2cd 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -423,6 +423,7 @@ void rcu_idle_enter(void)
- }
- EXPORT_SYMBOL_GPL(rcu_idle_enter);
- 
-+#ifdef CONFIG_RCU_USER_QS
  /**
-  * rcu_user_enter - inform RCU that we are resuming userspace.
+  * schedule_preempt_disabled - called with preemption disabled
   *
-@@ -436,6 +437,7 @@ void rcu_user_enter(void)
- 	rcu_eqs_enter(1);
- }
- EXPORT_SYMBOL_GPL(rcu_user_enter);
-+#endif
+@@ -3433,6 +3439,7 @@ asmlinkage void __sched preempt_schedule_irq(void)
+ 	/* Catch callers which need to be fixed */
+ 	BUG_ON(ti->preempt_count || !irqs_disabled());
  
- 
- /**
-@@ -561,6 +563,7 @@ void rcu_idle_exit(void)
- }
- EXPORT_SYMBOL_GPL(rcu_idle_exit);
- 
-+#ifdef CONFIG_RCU_USER_QS
- /**
-  * rcu_user_exit - inform RCU that we are exiting userspace.
-  *
-@@ -572,6 +575,7 @@ void rcu_user_exit(void)
- 	rcu_eqs_exit(1);
- }
- EXPORT_SYMBOL_GPL(rcu_user_exit);
-+#endif
- 
- /**
-  * rcu_user_exit_irq - inform RCU that we won't resume to userspace
++	rcu_user_exit();
+ 	do {
+ 		add_preempt_count(PREEMPT_ACTIVE);
+ 		local_irq_enable();
 -- 
 1.7.5.4
 
