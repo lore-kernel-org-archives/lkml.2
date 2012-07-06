@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab2GFIJs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 04:09:48 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:52952 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab2GFIJX (ORCPT
+	id S1753926Ab2GFIKS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 04:10:18 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:49718 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751867Ab2GFIKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 04:09:23 -0400
-Message-ID: <1341562204.3377.5.camel@lappy>
-Subject: Re: [net-next RFC V5 5/5] virtio_net: support negotiating the
- number of queues through ctrl vq
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: mst@redhat.com, mashirle@us.ibm.com, krkumar2@in.ibm.com,
-        habanero@linux.vnet.ibm.com, rusty@rustcorp.com.au,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, edumazet@google.com,
-        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
-        akong@redhat.com, kvm@vger.kernel.org, sri@us.ibm.com
-Date: Fri, 06 Jul 2012 10:10:04 +0200
-In-Reply-To: <4FF65966.9040600@redhat.com>
-References: <1341484194-8108-1-git-send-email-jasowang@redhat.com>
-	  <1341484194-8108-6-git-send-email-jasowang@redhat.com>
-	 <1341492679.18786.18.camel@lappy> <4FF65966.9040600@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 6 Jul 2012 04:10:04 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArkNAAGd9k9bdWOb/2dsb2JhbABFrnsiiBuBB4IYAQEEAScLAQUdIwEFCwsYCRYPCQMCAQIBRQYNAQcBAYgCCbpCizmGJgOVN5ADgmE
+X-IronPort-AV: E=Sophos;i="4.77,537,1336341600"; 
+   d="scan'208";a="539371913"
+Message-ID: <4FF69D52.4010201@igalia.com>
+Date: Fri, 06 Jul 2012 10:09:54 +0200
+From: =?ISO-8859-1?Q?Miguel_G=F3mez?= <magomez@igalia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+CC: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
+        dan.carpenter@oracle.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/19] Staging: xgifb: Improve debug strings.
+References: <cover.1341498465.git.magomez@igalia.com> <8e9d31bda6a900ef71ba4a19014624939540455c.1341498465.git.magomez@igalia.com> <20120705174240.GB4519@blackmetal.musicnaut.iki.fi>
+In-Reply-To: <20120705174240.GB4519@blackmetal.musicnaut.iki.fi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-06 at 11:20 +0800, Jason Wang wrote:
-> On 07/05/2012 08:51 PM, Sasha Levin wrote:
-> > On Thu, 2012-07-05 at 18:29 +0800, Jason Wang wrote:
-> >> @@ -1387,6 +1404,10 @@ static int virtnet_probe(struct virtio_device *vdev)
-> >>          if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
-> >>                  vi->has_cvq = true;
-> >>
-> >> +       /* Use single tx/rx queue pair as default */
-> >> +       vi->num_queue_pairs = 1;
-> >> +       vi->total_queue_pairs = num_queue_pairs;
-> > The code is using this "default" even if the amount of queue pairs it
-> > wants was specified during initialization. This basically limits any
-> > device to use 1 pair when starting up.
-> >
-> 
-> Yes, currently the virtio-net driver would use 1 txq/txq by default 
-> since multiqueue may not outperform in all kinds of workload. So it's 
-> better to keep it as default and let user enable multiqueue by ethtool -L.
+Hi!
 
-I think it makes sense to set it to 1 if the amount of initial queue
-pairs wasn't specified.
+> On Thu, Jul 05, 2012 at 04:45:48PM +0200, Miguel Gómez wrote:
+>>   	if (!htotal || !vtotal) {
+>> -		pr_debug("XGIfb: Invalid 'var' information\n");
+>> +		pr_debug("Invalid 'var' information\n");
+> [...]
+>> -		pr_err("xgifb: invalid value for option: %s\n", fullopt);
+>> +		pr_err("Invalid value for option: %s\n", fullopt);
+> [...]
+>> -	pr_info("xgifb: options: %s\n", options);
+>> +	pr_info("Options: %s\n", options);
+>
+> Can you really remove the driver prefix?
 
-On the other hand, if a virtio-net driver was probed to provide
-VIRTIO_NET_F_MULTIQUEUE and has set something reasonable in
-virtio_net_config.num_queues, then that setting shouldn't be quietly
-ignored and reset back to 1.
+As the pr format is defined as
 
-What I'm basically saying is that I agree that the *default* should be 1
-- but if the user has explicitly asked for something else during
-initialization, then the default should be overridden.
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
+it will include the module name for free.
+
+>>   	if (reg1 != 0xa1) { /*I/O error */
+>> -		dev_err(&pdev->dev, "I/O error!!!");
+>> +		dev_err(&pdev->dev, "I/O error!!!\n");
+>
+> Those exclamation marks are just redundant noise.
+
+Written down for the next round ;)
+
+>> -		dev_err(&pdev->dev, "unable request memory size %x\n",
+>> +		dev_err(&pdev->dev, "Unable request memory size %x\n",
+> [...]
+>> -		dev_err(&pdev->dev, "no supported video mode found\n");
+>> +		dev_err(&pdev->dev, "No supported video mode found\n");
+> [...]
+>> -		dev_info(&pdev->dev, "added MTRR\n");
+>> +		dev_info(&pdev->dev, "Added MTRR\n");
+> [...]
+>> -		dev_err(&pdev->dev, "video BIOS not available\n");
+>> +		dev_err(&pdev->dev, "Video BIOS not available\n");
+> [...]
+>> -	dev_err(&pdev->dev, "video BIOS corrupted\n");
+>> +	dev_err(&pdev->dev, "Video BIOS corrupted\n");
+>
+> What is the improvement?
+
+Capitalizing the first letter, just to keep coherency. It's not the most 
+important change in the world, but it's nice :)
+
+Regards!
+
+-- 
+Miguel Gómez
+Igalia - http://www.igalia.com
+
 
