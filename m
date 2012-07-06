@@ -1,115 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757362Ab2GFOMb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 10:12:31 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49897 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720Ab2GFOM3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 10:12:29 -0400
-Date: Fri, 6 Jul 2012 16:12:23 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
-        kvm@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] apic: fix kvm build on UP without IOAPIC
-Message-ID: <20120706141222.GA23400@gmail.com>
-References: <20120701150506.GA31304@redhat.com>
- <4FF0849D.5080406@zytor.com>
- <20120706111314.GG19552@gmail.com>
- <20120706113209.GB18059@amt.cnet>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757372Ab2GFON5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 10:13:57 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:38695 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752839Ab2GFONz convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Fri, 6 Jul 2012 10:13:55 -0400
+Message-Id: <4FF70EFC020000780008E195@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 06 Jul 2012 15:14:52 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: adjust generic_get_mtrr() for 64-bit
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20120706113209.GB18059@amt.cnet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Needing to deal with potentially large memory configurations, the
+variables here should be "unsigned long" instead of "unsigned int".
 
-* Marcelo Tosatti <mtosatti@redhat.com> wrote:
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-> On Fri, Jul 06, 2012 at 01:13:14PM +0200, Ingo Molnar wrote:
-> > 
-> > * H. Peter Anvin <hpa@zytor.com> wrote:
-> > 
-> > > On 07/01/2012 08:05 AM, Michael S. Tsirkin wrote:
-> > > >On UP i386, when APIC is disabled
-> > > ># CONFIG_X86_UP_APIC is not set
-> > > ># CONFIG_PCI_IOAPIC is not set
-> > > >
-> > > >code looking at apicdrivers never has any effect but it
-> > > >still gets compiled in. In particular, this causes
-> > > >build failures with kvm, but it generally bloats the kernel
-> > > >unnecessarily.
-> > > >
-> > > >Fix by defining both __apicdrivers and __apicdrivers_end
-> > > >to be NULL when CONFIG_X86_LOCAL_APIC is unset: I verified
-> > > >that as the result any loop scanning __apicdrivers gets optimized out by
-> > > >the compiler.
-> > > >
-> > > >Warning: a .config with apic disabled doesn't seem to boot
-> > > >for me (even without this patch). Still verifying why,
-> > > >meanwhile this patch is compile-tested only.
-> > > >
-> > > >Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > >---
-> > > >
-> > > >Note: if this patch makes sense, can x86 maintainers
-> > > >please ACK applying it through the kvm tree, since that is
-> > > >where we see the issue that it addresses?
-> > > >Avi, Marcelo, maybe you can carry this in kvm/linux-next as a temporary
-> > > >measure so that linux-next builds?
-> > > >
-> > > 
-> > > I'm not happy about that as a workflow, but since you guys have an
-> > > immediate problem I guess we can do that.
-> > 
-> > I'm rather unhappy about this workflow - we've got quite a few 
-> > apic bits in the x86 tree this cycle as well and need extra 
-> > external interaction, not.
-> > 
-> > Which KVM tree commit caused this, could someone please give a 
-> > lkml link or quote it here? It's not referenced in the fix patch 
-> > either.
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
-> 
-> This tree (kvm.git next):
-> 
-> http://git.kernel.org/?p=virt/kvm/kvm.git;a=shortlog;h=refs/heads/next
-> 
-> Introduced by this commit:
-> 
-> http://git.kernel.org/?p=virt/kvm/kvm.git;a=commit;h=ab9cf4996bb989983e73da894b8dd0239aa2c3c2
+---
+ arch/x86/kernel/cpu/mtrr/generic.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-This bit:
+--- 3.5-rc5/arch/x86/kernel/cpu/mtrr/generic.c
++++ 3.5-rc5-x86-mtrr-generic-types/arch/x86/kernel/cpu/mtrr/generic.c
+@@ -514,8 +514,8 @@ generic_get_free_region(unsigned long ba
+ static void generic_get_mtrr(unsigned int reg, unsigned long *base,
+ 			     unsigned long *size, mtrr_type *type)
+ {
+-	unsigned int mask_lo, mask_hi, base_lo, base_hi;
+-	unsigned int tmp, hi;
++	unsigned long mask_lo, mask_hi, base_lo, base_hi, tmp;
++	unsigned int hi;
+ 
+ 	/*
+ 	 * get_mtrr doesn't need to update mtrr_state, also it could be called
+@@ -540,9 +540,9 @@ static void generic_get_mtrr(unsigned in
+ 	mask_lo = size_or_mask | tmp;
+ 
+ 	/* Expand tmp with high bits to all 1s: */
+-	hi = fls(tmp);
++	hi = fls_long(tmp);
+ 	if (hi > 0) {
+-		tmp |= ~((1<<(hi - 1)) - 1);
++		tmp |= ~((1UL<<(hi - 1)) - 1);
+ 
+ 		if (tmp != mask_lo) {
+ 			printk(KERN_WARNING "mtrr: your BIOS has configured an incorrect mask, fixing it.\n");
 
-> +	if (kvm_para_has_feature(KVM_FEATURE_PV_EOI)) {
-> +		struct apic **drv;
-> +
-> +		for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
-> +			/* Should happen once for each apic */
-> +			WARN_ON((*drv)->eoi_write == kvm_guest_apic_eoi_write);
-> +			(*drv)->eoi_write = kvm_guest_apic_eoi_write;
-> +		}
-> +	}
-> +
 
-is rather disgusting I have to say.
 
-WTH is the KVM code meddling with core x86 apic driver data 
-structures directly? At minimum factor this out and create a 
-proper apic.c function which is EXPORT_SYMBOL_GPL() exported or 
-so...
-
-Thanks,
-
-	Ingo
