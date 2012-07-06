@@ -1,99 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757735Ab2GFROc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 13:14:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37746 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757567Ab2GFROa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 13:14:30 -0400
-Date: Fri, 6 Jul 2012 12:14:22 -0500 (CDT)
-From: Manoj Iyer <manoj.iyer@canonical.com>
-X-X-Sender: manjo@lazy
-To: Gustavo Padovan <gustavo@padovan.org>
-cc: Manoj Iyer <manoj.iyer@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Chris Gagnon <chris.gagnon@canonical.com>
-Subject: Re: [PATCH] Bluetooth: btusb: Add vendor specific ID (0a5c:21f4)
- BCM20702A0
-In-Reply-To: <20120413214817.GB1680@joana>
-Message-ID: <alpine.DEB.2.02.1207061211420.2959@lazy>
-References: <1334169563-2948-1-git-send-email-manoj.iyer@canonical.com> <1334169563-2948-2-git-send-email-manoj.iyer@canonical.com> <20120413214817.GB1680@joana>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757942Ab2GFRRs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 13:17:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34367 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751701Ab2GFRRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 13:17:45 -0400
+Date: Fri, 6 Jul 2012 14:17:35 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] perf tool: save cmdline from user in file header vs what
+ is passed to record
+Message-ID: <20120706171735.GH7533@infradead.org>
+References: <1341547762-17430-1-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341547762-17430-1-git-send-email-dsahern@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Apr 2012, Gustavo Padovan wrote:
+Em Thu, Jul 05, 2012 at 10:09:22PM -0600, David Ahern escreveu:
+> A number of builtin commands process some user args and then pass the rest
+> to cmd_record. cmd_record then saves argc/argv that it receives into the
+> header of the perf data file. But this loses the arguments handled by the
+> first command -- ie., the real command line from the user. This patch saves
+> the command line as typed by the user rather than what was passed to
+> cmd_record.
 
-Gustavo,
+Can you please state for what branch, perf/urgent (i.e. current merge
+window) or perf/core (next), this is intended? I usually have been
+making the call, but having feedback from the submitter can help things
+and help meet expectations more frequently.
 
-Sorry it took a long time to locate the hardware to get this info, I got 
-this info from one our QA engg cced here. Do you want me to resubmit the 
-patch ?
+I'd say this one should be for perf/core, as it is not so critical, what
+do you think?
 
-Before the patch
-=================
-T: Bus=03 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#= 2 Spd=12 MxCh= 0
-D: Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
-P: Vendor=0a5c ProdID=21f4 Rev=01.12
-S: Manufacturer=Broadcom Corp
-S: Product=BCM20702A0
-S: SerialNumber=E4D53DF154D6
-C: #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I: If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I: If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-I: If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I: If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
-
-After the patch
-================
-T: Bus=03 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#= 2 Spd=12 MxCh= 0
-D: Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
-P: Vendor=0a5c ProdID=21f4 Rev=01.12
-S: Manufacturer=Broadcom Corp
-S: Product=BCM20702A0
-S: SerialNumber=E4D53DF154D6
-C: #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I: If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-I: If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-I: If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I: If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
-
-> Hi Manoj,
->
-> * Manoj Iyer <manoj.iyer@canonical.com> [2012-04-11 13:39:23 -0500]:
->
->> usb-devices:
->> T:  Bus=01 Lev=02 Prnt=02 Port=03 Cnt=02 Dev#=  4 Spd=12  MxCh= 0
->> D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
->> P:  Vendor=0a5c ProdID=21f4 Rev=01.12
->> S:  Manufacturer=Broadcom Corp
->> S:  Product=BCM20702A0
->> S:  SerialNumber=E4D53DF15584
->> C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
->> I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
->> I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
->> I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
->> I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
->
-> You need to give the usb-devices for the non-working case. I know it
-> works but we need to document this right in the commit message.
->
-> 	Gustavo
->
->
-
-
-
-
---
-====================
-Manoj Iyer
-Ubuntu/Canonical
-Hardware Enablement
-====================
+- Arnaldo
+ 
+> As an example consider the command:
+> $ perf kvm --guest --host --guestmount=/tmp/guest-mount record
+>     -fo /tmp/perf.data -ag -- sleep 10
+> 
+> Currently the command saved to the header is:
+> cmdline : /tmp/p3.5/perf record -o perf.data.kvm -fo /tmp/perf.data -ag -- sleep 1
+> 
+> (ignore the duplicated -o -- the first would be yet another bug with perf-kvm).
+> 
+> With this patch the command line saved to the header is:
+> cmdline : /tmp/p3.5/perf kvm --guest --host --guestmount=/tmp/guest-mount
+>     record -fo /tmp/perf.data -ag -- sleep 1
+> 
+> v2: simplified to saving the command in parse_options per Stephane's suggestion
+> 
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Namhyung Kim <namhyung@gmail.com>
+> Cc: Stephane Eranian <eranian@google.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  tools/perf/builtin-record.c     |    2 --
+>  tools/perf/util/header.c        |    9 +++++++++
+>  tools/perf/util/parse-options.c |    3 +++
+>  3 files changed, 12 insertions(+), 2 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index f5a6452..77adcd8 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -844,8 +844,6 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+>  	struct perf_record *rec = &record;
+>  	char errbuf[BUFSIZ];
+>  
+> -	perf_header__set_cmdline(argc, argv);
+> -
+>  	evsel_list = perf_evlist__new(NULL, NULL);
+>  	if (evsel_list == NULL)
+>  		return -ENOMEM;
+> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+> index 5a47aba..99e410c 100644
+> --- a/tools/perf/util/header.c
+> +++ b/tools/perf/util/header.c
+> @@ -174,6 +174,15 @@ perf_header__set_cmdline(int argc, const char **argv)
+>  {
+>  	int i;
+>  
+> +	/* 
+> +	 * If header_argv has already been set, do not override it.
+> +	 * This allows a command to set the cmdline, parse args and
+> +	 * then call another builtin function that implements a
+> +	 * command -- e.g, cmd_kvm calling cmd_record.
+> +	 */
+> +	if (header_argv)
+> +		return 0;
+> +
+>  	header_argc = (u32)argc;
+>  
+>  	/* do not include NULL termination */
+> diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
+> index 99d02aa..594f8fa 100644
+> --- a/tools/perf/util/parse-options.c
+> +++ b/tools/perf/util/parse-options.c
+> @@ -1,6 +1,7 @@
+>  #include "util.h"
+>  #include "parse-options.h"
+>  #include "cache.h"
+> +#include "header.h"
+>  
+>  #define OPT_SHORT 1
+>  #define OPT_UNSET 2
+> @@ -413,6 +414,8 @@ int parse_options(int argc, const char **argv, const struct option *options,
+>  {
+>  	struct parse_opt_ctx_t ctx;
+>  
+> +	perf_header__set_cmdline(argc, argv);
+> +
+>  	parse_options_start(&ctx, argc, argv, flags);
+>  	switch (parse_options_step(&ctx, options, usagestr)) {
+>  	case PARSE_OPT_HELP:
+> -- 
+> 1.7.10.1
