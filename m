@@ -1,96 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab2GFHt4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 03:49:56 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:38307 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab2GFHtz convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Fri, 6 Jul 2012 03:49:55 -0400
-Message-Id: <4FF6AF17020000780008DFA9@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 06 Jul 2012 08:25:43 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "Nick Bowler" <nbowler@elliptictech.com>,
-        "Arnaud Lacombe" <lacombar@gmail.com>,
-        "Sam Ravnborg" <sam@ravnborg.org>, "Michal Marek" <mmarek@suse.cz>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Subject: Re: "Inconsistent kallsyms data" error
-References: <CA+55aFyr+gexQW9Gmg=_V145SUeKOcfSNUx5h4p7bgjMp=07Og@mail.gmail.com>
-In-Reply-To: <CA+55aFyr+gexQW9Gmg=_V145SUeKOcfSNUx5h4p7bgjMp=07Og@mail.gmail.com>
+	id S1752288Ab2GFHvf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 03:51:35 -0400
+Received: from charybdis-ext.suse.de ([195.135.221.2]:45949 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab2GFHvd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 03:51:33 -0400
+Subject: Re: [PATCH 2/2] msi-laptop: Use struct dev_pm_ops for power
+ management
+From: joeyli <jlee@suse.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Frank Seidel <frank@f-seidel.de>, "Lee, Chun-Yi" <jlee@novell.com>
+In-Reply-To: <201206302357.43405.rjw@sisk.pl>
+References: <201206302356.11014.rjw@sisk.pl>
+	 <201206302357.43405.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 Jul 2012 15:24:40 +0800
+Message-ID: <1341559480.4823.176.camel@linux-s257.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 05.07.12 at 23:18, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> Anyway, after hacking the source to actually show the difference, and
-> to also *not* change the version string just becuse it's dirty, I see
-> this difference:
+於 六，2012-06-30 於 23:57 +0200，Rafael J. Wysocki 提到：
+> From: Rafael J. Wysocki <rjw@sisk.pl>
 > 
->  - System.map:
+> Make the msi-laptop driver define its PM callbacks through
+> a struct dev_pm_ops object rather than by using legacy PM hooks
+> in struct platform_driver.
 > 
->     ...
->     ffffffff8189b4d0 R kallsyms_addresses
->     ffffffff818ee910 R kallsyms_num_syms
->     ffffffff818ee918 R kallsyms_names
->     ...
->     ffffffff819fa9a0 R __stop___modver
->     ffffffff819fb000 R __end_rodata
->     ...
-> 
->  - .tmp_System.map:
-> 
->     ...
->     ffffffff8189b4d0 R kallsyms_addresses
->     ffffffff818ee850 R kallsyms_num_syms
->     ffffffff818ee858 R kallsyms_names
->     ...
->     ffffffff819fa720 R __stop___modver
->     ffffffff819fb000 R __end_rodata
-> 
-> (the diff itself is huge, because once the addresses change, they stay
-> different).
-> 
-> Notice how 'kallsyms_addresses' has the same value, but
-> 'kallsyms_num_syms' (and subsequent symbols until the page-aligned
-> __end_rodata symbol that gets them back in sync) do not. I have no
-> idea *why* this happens, but it definitely does.
-> 
-> It seems the real difference is the size of the "kallsyms_addresses"
-> data structure. No idea why, though.
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-Since it's clearly not an alignment problem, it almost certainly
-means there were symbols added in the second pass, when
-none were expected to be added.
 
-> This happens with current git (commit c4aed353b1b0), on an x86-64
-> machine running current F17 as of today, with the attached config.
-> Maybe that makes somebody else able to recreate this and figure out
-> what is so magical about the layout that the exact kernel version and
-> config (and likely compiler/binutils versions) matter.
+This patch good to me.
+
+Acked-by: Lee, Chun-Yi <jlee@suse.com>
+
+
+Thanks a lot!
+Joey Lee
+
+> ---
+>  drivers/platform/x86/msi-laptop.c |    7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
 > 
-> Any ideas? Added a fairly random set of people who get mentioned in
-> the linker script commits etc.
+> Index: linux/drivers/platform/x86/msi-laptop.c
+> ===================================================================
+> --- linux.orig/drivers/platform/x86/msi-laptop.c
+> +++ linux/drivers/platform/x86/msi-laptop.c
+> @@ -85,7 +85,8 @@
+>  #define MSI_STANDARD_EC_TOUCHPAD_ADDRESS	0xe4
+>  #define MSI_STANDARD_EC_TOUCHPAD_MASK		(1 << 4)
+>  
+> -static int msi_laptop_resume(struct platform_device *device);
+> +static int msi_laptop_resume(struct device *device);
+> +static SIMPLE_DEV_PM_OPS(msi_laptop_pm, NULL, msi_laptop_resume);
+>  
+>  #define MSI_STANDARD_EC_DEVICES_EXISTS_ADDRESS	0x2f
+>  
+> @@ -437,8 +438,8 @@ static struct platform_driver msipf_driv
+>  	.driver = {
+>  		.name = "msi-laptop-pf",
+>  		.owner = THIS_MODULE,
+> +		.pm = &msi_laptop_pm,
+>  	},
+> -	.resume = msi_laptop_resume,
+>  };
+>  
+>  static struct platform_device *msipf_device;
+> @@ -752,7 +753,7 @@ err_bluetooth:
+>  	return retval;
+>  }
+>  
+> -static int msi_laptop_resume(struct platform_device *device)
+> +static int msi_laptop_resume(struct device *device)
+>  {
+>  	u8 data;
+>  	int result;
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-I would have asked you to tar up all files in the build tree root
-(if you still have them, ideally including the ones you saved from
-deletion; quite possibly other object files in the tree might
-subsequently need looking at too, so just taking the full tree
-would probably be best), but since I'll be on vacation for two
-weeks starting this evening that would probably not be of much
-immediate help.
-
-In the unlikely event that the problem remains unsolved till then,
-I would still offer to take a look, not the least because the mere
-presence of the KALLSYMS_EXTRA_PASS workaround always
-puzzled me. (With reproduction unfortunately being so fragile, 
-I'm having not much hope to be able to recreate the issue
-myself.)
-
-Jan
 
