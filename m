@@ -1,68 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933420Ab2GFLGq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 07:06:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45519 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933199Ab2GFLGo (ORCPT
+	id S933359Ab2GFLIY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 07:08:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51809 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933199Ab2GFLIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 07:06:44 -0400
-Date: Fri, 6 Jul 2012 12:06:41 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, Liam Girdwood <lrg@ti.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: regulator: Does it make sense to set the same ops for
- [en|dis]able and set_suspend_[en|dis]able?
-Message-ID: <20120706110641.GA4017@opensource.wolfsonmicro.com>
-References: <1341542187.5303.1.camel@phoenix>
+	Fri, 6 Jul 2012 07:08:22 -0400
+Date: Fri, 6 Jul 2012 04:08:09 -0700
+From: tip-bot for Steven Rostedt <srostedt@redhat.com>
+Message-ID: <tip-oxsa1qkr2eq7u8d7r0aapedu@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        rostedt@goodmis.org, srostedt@redhat.com, tglx@linutronix.de,
+        namhyung@kernel.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, srostedt@redhat.com, tglx@linutronix.de,
+        namhyung@kernel.org
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tools lib traceevent:
+  Let filtering numbers by string use function names
+Git-Commit-ID: e84c282b40251f314c429f39b044785e323f2648
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1341542187.5303.1.camel@phoenix>
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 04:08:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  e84c282b40251f314c429f39b044785e323f2648
+Gitweb:     http://git.kernel.org/tip/e84c282b40251f314c429f39b044785e323f2648
+Author:     Steven Rostedt <srostedt@redhat.com>
+AuthorDate: Tue, 22 May 2012 14:45:21 +0900
+Committer:  Namhyung Kim <namhyung@kernel.org>
+CommitDate: Wed, 4 Jul 2012 13:40:30 +0900
 
---AqsLC8rIMeq19msA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+tools lib traceevent: Let filtering numbers by string use function names
 
-On Fri, Jul 06, 2012 at 10:36:27AM +0800, Axel Lin wrote:
-> Just wandering does it make sense to set the same ops for
-> [en|dis]able and set_suspend_[en|dis]able callbacks.
->=20
-> Or these drivers need fix?
+As a pointer can be converted into a function name, let the filters
+work with the function name as well as with the pointer number.  If
+the comparison expects a string, then convert numbers into functions,
+but only when the number is the same size as a long.
 
-These drivers needo to be fixed, using the same ops for both is actively
-broken.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/n/tip-oxsa1qkr2eq7u8d7r0aapedu@git.kernel.org
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/lib/traceevent/parse-filter.c |   45 +++++++++++++++++++++++++++-------
+ 1 files changed, 35 insertions(+), 10 deletions(-)
 
---AqsLC8rIMeq19msA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP9sZrAAoJEBus8iNuMP3dwz4P/ig4qH+42gTWkcO9/i24sGMV
-8MtIyCPw0pZHeiiSKO0NokFXXMHGgpzu+F9lu/sIgUh8uzhXxpeBDnVR3M0kIjcf
-xB3cHPWNe/EZnx5Rh51ZUon+aygpfgYmJZcHeWIo+iUoNExl53W9Ky7EtjI04R6W
-uY1F5pdsSXiOYcQsSPnZ7yDEOAi0Yn0srs/toMAlgciNVava9nTo7zMhxsQ/mtMe
-9AlFfp7Kznx7g+KLDKmQyP9b6tcTbu/iSQfTcfyYQyH44HJA5ZCQaJrXBw2sDf0H
-1T/DgrHWW8s5u5sTPD4o4dfhEcZxcBdMcSgCK75/I+N4T9/l3a0aiwi5Xsy699Co
-8zWPPkjeem8gvUZGrLplWSaqRRUvXz9xLq4uw5Ccp4qZyaVD/jtE17O1bsoigepM
-XzA6WeimcyiNvmW2leYQKdngJ9WvPJPRlG4V6+Sj4aRzYcy2sxaR9UidCfO+o6ZD
-ZKfv5KKEXe0hYPSpbgq43MnzGyxu1Amks/0aWYUWEE/tb9uPokjuUPnAbBUsKizM
-K+ZIRf8n2mItWyBeB8vOagHfhNJ0lz7cTEIjGHuuNgeyvXWYAqZgEuiplF+mlc8i
-szHEc+z2syGVrY53HpGH3J2hLriE06lIccq6sgXu8Sn3oV8OGCw/a8Eiuxxs3YMz
-u3etrZYSFAskydIYR32L
-=NU61
------END PGP SIGNATURE-----
-
---AqsLC8rIMeq19msA--
+diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
+index dfcfe2c..80d872a 100644
+--- a/tools/lib/traceevent/parse-filter.c
++++ b/tools/lib/traceevent/parse-filter.c
+@@ -1710,18 +1710,43 @@ static int test_num(struct event_format *event,
+ 
+ static const char *get_field_str(struct filter_arg *arg, struct pevent_record *record)
+ {
+-	const char *val = record->data + arg->str.field->offset;
++	struct event_format *event;
++	struct pevent *pevent;
++	unsigned long long addr;
++	const char *val = NULL;
++	char hex[64];
+ 
+-	/*
+-	 * We need to copy the data since we can't be sure the field
+-	 * is null terminated.
+-	 */
+-	if (*(val + arg->str.field->size - 1)) {
+-		/* copy it */
+-		memcpy(arg->str.buffer, val, arg->str.field->size);
+-		/* the buffer is already NULL terminated */
+-		val = arg->str.buffer;
++	/* If the field is not a string convert it */
++	if (arg->str.field->flags & FIELD_IS_STRING) {
++		val = record->data + arg->str.field->offset;
++
++		/*
++		 * We need to copy the data since we can't be sure the field
++		 * is null terminated.
++		 */
++		if (*(val + arg->str.field->size - 1)) {
++			/* copy it */
++			memcpy(arg->str.buffer, val, arg->str.field->size);
++			/* the buffer is already NULL terminated */
++			val = arg->str.buffer;
++		}
++
++	} else {
++		event = arg->str.field->event;
++		pevent = event->pevent;
++		addr = get_value(event, arg->str.field, record);
++
++		if (arg->str.field->flags & (FIELD_IS_POINTER | FIELD_IS_LONG))
++			/* convert to a kernel symbol */
++			val = pevent_find_function(pevent, addr);
++
++		if (val == NULL) {
++			/* just use the hex of the string name */
++			snprintf(hex, 64, "0x%llx", addr);
++			val = hex;
++		}
+ 	}
++
+ 	return val;
+ }
+ 
