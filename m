@@ -1,132 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751294Ab2GFIYZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 04:24:25 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52823 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750698Ab2GFIYV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 04:24:21 -0400
-Date: Fri, 6 Jul 2012 10:24:13 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Arun Sharma <asharma@fb.com>,
-        Benjamin Redelings <benjamin.redelings@nescent.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, David Ahern <dsahern@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Hitoshi Mitake <h.mitake@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Jovi Zhang <bookjovi@gmail.com>,
-        Konstantin Stepanyuk <konstantin.stepanyuk@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Tom Zanussi <tzanussi@gmail.com>,
-        Ulrich Drepper <drepper@gmail.com>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 00/13] perf/core fixes and improvements
-Message-ID: <20120706082413.GB17633@gmail.com>
-References: <1341260331-10204-1-git-send-email-acme@infradead.org>
+	id S1752605Ab2GFJLE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 05:11:04 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:60110 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751839Ab2GFJKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 05:10:50 -0400
+Message-ID: <4FF6A91D.60505@parallels.com>
+Date: Fri, 6 Jul 2012 13:00:13 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341260331-10204-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] force dentry revalidation after namespace change
+References: <1341496805-26394-1-git-send-email-glommer@parallels.com> <8762a1vl76.fsf@xmission.com>
+In-Reply-To: <8762a1vl76.fsf@xmission.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/06/2012 03:31 AM, Eric W. Biederman wrote:
+> The important difference there it is the directory that the dirent is
+> in that the type comes from.  Not the dirent itself.
+> 
+>> >  	/* The sysfs dirent has been deleted */
+>> >  	if (sd->s_flags & SYSFS_FLAG_REMOVED)
+>> >  		goto out_bad;
+> Glauber.  Do you think you can fix your patch and resubmit.
+> 
+> Eric
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+Yes. In a quick test it seems to work. I'll resubmit shortly.
 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit add79461a2a7d964a00b4a2fdaf313c4cf9cf4ec:
-> 
->   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2012-06-29 15:11:26 +0200)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to 17d7a1123f0f6d532830152564cc812cc73db2f3:
-> 
->   perf bench: Fix confused variable namings and descriptions in mem subsystem (2012-07-02 14:35:45 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes
-> 
-> . Fix libtraceevent 'clean' make target, from Namhyung Kim
-> 
-> . Teach ctags about libtraceevent error codes, from Namhyung Kim
-> 
-> . Fix libtraceevent dependency files usage, from Namhyung Kim
-> 
-> . Support hex number pretty printing in libtraceevent, fixing
->   kvm output, from Namhyung Kim
-> 
-> . Kill some die() usage in libtraceevent, from Namhyung Kim
-> 
-> . Improve support for hw breakpoints parsing/pretty printing/testing,
->   from Jiri Olsa
-> 
-> . Clarify perf bench option naming, from Hitoshi Mitake
-> 
-> . Look for ".note" ELF notes too, used in the kernel vdso, from Jiri Olsa
-> 
-> . Fix internal PMU list usage, removing leak, from Robert Richter
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Hitoshi Mitake (1):
->       perf bench: Fix confused variable namings and descriptions in mem subsystem
-> 
-> Jiri Olsa (4):
->       perf tools: Fix hw breakpoint's type modifier parsing
->       perf evsel: Handle hw breakpoints event names in perf_evsel__name()
->       perf symbols: Add '.note' check into search for NOTE section
->       perf tools: Adding round_up/round_down macros
-> 
-> Konstantin Stepanyuk (1):
->       tools lib traceevent: Fix clean target in Makefile
-> 
-> Namhyung Kim (6):
->       tools lib traceevent: Teach [ce]tags about libtraceeevent error codes
->       tools lib traceevent: Make dependency files regeneratable
->       tools lib traceevent: Check string is really printable
->       tools lib traceevent: Use local variable 'field'
->       tools lib traceevent: Add support for __print_hex()
->       tools lib traceevent: Replace malloc_or_die to plain malloc in alloc_event()
-> 
-> Robert Richter (1):
->       perf tools: Fix generation of pmu list
-> 
->  tools/lib/traceevent/Makefile                      |   14 ++-
->  tools/lib/traceevent/event-parse.c                 |  112 ++++++++++++++++++--
->  tools/lib/traceevent/event-parse.h                 |    7 ++
->  tools/perf/Documentation/perf-bench.txt            |    4 +-
->  tools/perf/bench/mem-memcpy.c                      |   80 +++++++-------
->  tools/perf/bench/mem-memset.c                      |   80 +++++++-------
->  tools/perf/util/evsel.c                            |   30 ++++++
->  tools/perf/util/include/linux/kernel.h             |   10 ++
->  tools/perf/util/parse-events-test.c                |   47 ++++++++
->  tools/perf/util/parse-events.c                     |   20 ++--
->  tools/perf/util/parse-events.l                     |    2 +-
->  tools/perf/util/pmu.c                              |    3 +-
->  .../perf/util/scripting-engines/trace-event-perl.c |    4 +
->  .../util/scripting-engines/trace-event-python.c    |    4 +
->  tools/perf/util/symbol.c                           |   29 +++--
->  15 files changed, 335 insertions(+), 111 deletions(-)
 
-Pulled, thanks Arnaldo!
-
-	Ingo
