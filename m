@@ -1,158 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758427Ab2GFVG6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 17:06:58 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:60990 "EHLO
+	id S932928Ab2GFVG4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 17:06:56 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:32788 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758347Ab2GFVGl (ORCPT
+	with ESMTP id S1758350Ab2GFVGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jul 2012 17:06:41 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 10/36] AArch64: MMU definitions
-Date: Fri,  6 Jul 2012 22:05:51 +0100
-Message-Id: <1341608777-12982-11-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH 11/36] AArch64: MMU initialisation
+Date: Fri,  6 Jul 2012 22:05:52 +0100
+Message-Id: <1341608777-12982-12-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
 References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 06 Jul 2012 21:07:32.0249 (UTC) FILETIME=[5BE70090:01CD5BBB]
-X-MC-Unique: 112070622063901201
+X-OriginalArrivalTime: 06 Jul 2012 21:07:32.0593 (UTC) FILETIME=[5C1B7E10:01CD5BBB]
+X-MC-Unique: 112070622063906901
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66LA5G6005383
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66LAOTj005387
 
-The virtual memory layout is described in
-Documentation/aarch64/memory.txt. This patch adds the MMU definitions for
-the 4KB and 64KB translation table configurations. The SECTION_SIZE is
-2MB with 4KB page and 512MB with 64KB page configuration.
+This patch contains the initialisation of the memory blocks, MMU
+attributes and the memory map. Only five memory types are defined:
+Device nGnRnE (equivalent to Strongly Ordered), Device nGnRE (classic
+Device memory), Device GRE, Normal Non-cacheable and Normal Cacheable.
+Cache policies are supported via the memory attributes register
+(MAIR_EL1) and only affect the Normal Cacheable mappings.
 
-PHYS_OFFSET is calculated at run-time and stored in a variable (no
-run-time code patching at this stage).
-
-On the current implementation, both user and kernel address spaces are
-512G (39-bit) each with a maximum of 256G for the RAM linear mapping.
-Linux uses 3 levels of translation tables with the 4K page configuration
-and 2 levels with the 64K configuration. Extending the memory space
-beyond 39-bit with the 4K pages or 42-bit with 64K pages requires an
-additional level of translation tables.
-
-The SPARSEMEM configuration is global to all AArch64 platforms and
-allows for 1GB sections with SPARSEMEM_VMEMMAP enabled by default.
+This patch also adds the SPARSEMEM_VMEMMAP initialisation.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- Documentation/aarch64/memory.txt                |   69 +++++
- arch/aarch64/include/asm/memory.h               |  145 ++++++++++
- arch/aarch64/include/asm/mmu.h                  |   28 ++
- arch/aarch64/include/asm/pgtable-2level-hwdef.h |   44 +++
- arch/aarch64/include/asm/pgtable-2level-types.h |   61 +++++
- arch/aarch64/include/asm/pgtable-3level-hwdef.h |   51 ++++
- arch/aarch64/include/asm/pgtable-3level-types.h |   67 +++++
- arch/aarch64/include/asm/pgtable-hwdef.h        |   95 +++++++
- arch/aarch64/include/asm/pgtable.h              |  329 +++++++++++++++++++++++
- arch/aarch64/include/asm/sparsemem.h            |   25 ++
- 10 files changed, 914 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/aarch64/memory.txt
- create mode 100644 arch/aarch64/include/asm/memory.h
- create mode 100644 arch/aarch64/include/asm/mmu.h
- create mode 100644 arch/aarch64/include/asm/pgtable-2level-hwdef.h
- create mode 100644 arch/aarch64/include/asm/pgtable-2level-types.h
- create mode 100644 arch/aarch64/include/asm/pgtable-3level-hwdef.h
- create mode 100644 arch/aarch64/include/asm/pgtable-3level-types.h
- create mode 100644 arch/aarch64/include/asm/pgtable-hwdef.h
- create mode 100644 arch/aarch64/include/asm/pgtable.h
- create mode 100644 arch/aarch64/include/asm/sparsemem.h
+ arch/aarch64/include/asm/memblock.h |   24 ++
+ arch/aarch64/mm/init.c              |  575 +++++++++++++++++++++++++++++++++++
+ arch/aarch64/mm/mmu.c               |  464 ++++++++++++++++++++++++++++
+ 3 files changed, 1063 insertions(+), 0 deletions(-)
+ create mode 100644 arch/aarch64/include/asm/memblock.h
+ create mode 100644 arch/aarch64/mm/init.c
+ create mode 100644 arch/aarch64/mm/mmu.c
 
-diff --git a/Documentation/aarch64/memory.txt b/Documentation/aarch64/memory.txt
+diff --git a/arch/aarch64/include/asm/memblock.h b/arch/aarch64/include/asm/memblock.h
 new file mode 100644
-index 0000000..7210af7
+index 0000000..33176ba
 --- /dev/null
-+++ b/Documentation/aarch64/memory.txt
-@@ -0,0 +1,69 @@
-+		     Memory Layout on AArch64 Linux
-+		     ==============================
-+
-+Author: Catalin Marinas <catalin.marinas@arm.com>
-+Date  : 20 February 2012
-+
-+This document describes the virtual memory layout used by the AArch64
-+Linux kernel. The architecture allows up to 4 levels of translation
-+tables with a 4KB page size and up to 3 levels with a 64KB page size.
-+
-+AArch64 Linux uses 3 levels of translation tables with the 4KB page
-+configuration, allowing 39-bit (512GB) virtual addresses for both user
-+and kernel. With 64KB pages, only 2 levels of translation tables are
-+used but the memory layout is the same.
-+
-+User addresses have bits 63:39 set to 0 while the kernel addresses have
-+the same bits set to 1. TTBRx selection is given by bit 63 of the
-+virtual address. The swapper_pg_dir contains only kernel (global)
-+mappings while the user pgd contains only user (non-global) mappings.
-+The swapper_pgd_dir address is written to TTBR1 and never written to
-+TTBR0.
-+
-+
-+AArch64 Linux memory layout:
-+
-+Start			End			Size		Use
-+-----------------------------------------------------------------------
-+0000000000000000	0000007fffffffff	 512GB		user
-+
-+ffffff8000000000	ffffffbbfffeffff	~240GB		vmalloc
-+
-+ffffffbbffff0000	ffffffbcffffffff	  64KB		[guard page]
-+
-+ffffffbc00000000	ffffffbdffffffff	   8GB		vmemmap
-+
-+ffffffbe00000000	ffffffbffbffffff	  ~8GB		[guard, future vmmemap]
-+
-+ffffffbffc000000	ffffffbfffffffff	  64MB		modules
-+
-+ffffffc000000000	ffffffffffffffff	 256GB		memory
-+
-+
-+Translation table lookup with 4KB pages:
-+
-++--------+--------+--------+--------+--------+--------+--------+--------+
-+|63    56|55    48|47    40|39    32|31    24|23    16|15     8|7      0|
-++--------+--------+--------+--------+--------+--------+--------+--------+
-+ |                 |         |         |         |         |
-+ |                 |         |         |         |         v
-+ |                 |         |         |         |   [11:0]  in-page offset
-+ |                 |         |         |         +-> [20:12] L3 index
-+ |                 |         |         +-----------> [29:21] L2 index
-+ |                 |         +---------------------> [38:30] L1 index
-+ |                 +-------------------------------> [47:39] L0 index (not used)
-+ +-------------------------------------------------> [63] TTBR0/1
-+
-+
-+Translation table lookup with 64KB pages:
-+
-++--------+--------+--------+--------+--------+--------+--------+--------+
-+|63    56|55    48|47    40|39    32|31    24|23    16|15     8|7      0|
-++--------+--------+--------+--------+--------+--------+--------+--------+
-+ |                 |    |               |              |
-+ |                 |    |               |              v
-+ |                 |    |               |            [15:0]  in-page offset
-+ |                 |    |               +----------> [28:16] L3 index
-+ |                 |    +--------------------------> [41:29] L2 index (only 38:29 used)
-+ |                 +-------------------------------> [47:42] L1 index (not used)
-+ +-------------------------------------------------> [63] TTBR0/1
-diff --git a/arch/aarch64/include/asm/memory.h b/arch/aarch64/include/asm/memory.h
-new file mode 100644
-index 0000000..af17c05
---- /dev/null
-+++ b/arch/aarch64/include/asm/memory.h
-@@ -0,0 +1,145 @@
++++ b/arch/aarch64/include/asm/memblock.h
+@@ -0,0 +1,24 @@
 +/*
-+ * Based on arch/arm/include/asm/memory.h
-+ *
-+ * Copyright (C) 2000-2002 Russell King
 + * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -167,879 +66,1064 @@ index 0000000..af17c05
 + * You should have received a copy of the GNU General Public License
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ *
-+ * Note: this file should not be included by non-asm/.h files
 + */
-+#ifndef __ASM_MEMORY_H
-+#define __ASM_MEMORY_H
++#ifndef __ASM_MEMBLOCK_H
++#define __ASM_MEMBLOCK_H
 +
-+#include <linux/compiler.h>
-+#include <linux/const.h>
-+#include <linux/types.h>
++struct meminfo;
++
++extern void aarch64_memblock_init(struct meminfo *);
++
++#endif
+diff --git a/arch/aarch64/mm/init.c b/arch/aarch64/mm/init.c
+new file mode 100644
+index 0000000..21674c1
+--- /dev/null
++++ b/arch/aarch64/mm/init.c
+@@ -0,0 +1,575 @@
++/*
++ * Based on arch/arm/mm/init.c
++ *
++ * Copyright (C) 1995-2005 Russell King
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++#include <linux/kernel.h>
++#include <linux/export.h>
++#include <linux/errno.h>
++#include <linux/swap.h>
++#include <linux/init.h>
++#include <linux/bootmem.h>
++#include <linux/mman.h>
++#include <linux/nodemask.h>
++#include <linux/initrd.h>
++#include <linux/gfp.h>
++#include <linux/memblock.h>
++#include <linux/sort.h>
++#include <linux/of_fdt.h>
++
++#include <asm/prom.h>
++#include <asm/sections.h>
++#include <asm/setup.h>
 +#include <asm/sizes.h>
++#include <asm/tlb.h>
++
++#include "mm.h"
++
++static unsigned long phys_initrd_start __initdata = 0;
++static unsigned long phys_initrd_size __initdata = 0;
++
++phys_addr_t memstart_addr __read_mostly = 0;
++
++void __init early_init_dt_setup_initrd_arch(unsigned long start,
++					    unsigned long end)
++{
++	phys_initrd_start = start;
++	phys_initrd_size = end - start;
++}
++
++static int __init early_initrd(char *p)
++{
++	unsigned long start, size;
++	char *endp;
++
++	start = memparse(p, &endp);
++	if (*endp == ',') {
++		size = memparse(endp + 1, NULL);
++
++		phys_initrd_start = start;
++		phys_initrd_size = size;
++	}
++	return 0;
++}
++early_param("initrd", early_initrd);
 +
 +/*
-+ * Allow for constants defined here to be used from assembly code
-+ * by prepending the UL suffix only with actual C code compilation.
++ * This keeps memory configuration data used by a couple memory initialization
++ * functions, as well as show_mem() for the skipping of holes in the memory
++ * map.  It is populated by arm_add_memory().
 + */
-+#define UL(x) _AC(x, UL)
++struct meminfo meminfo;
 +
-+/*
-+ * PAGE_OFFSET - the virtual address of the start of the kernel image.
-+ * VA_BITS - the maximum number of bits for virtual addresses.
-+ * TASK_SIZE - the maximum size of a user space task.
-+ * TASK_UNMAPPED_BASE - the lower boundary of the mmap VM area.
-+ * The module space lives between the addresses given by TASK_SIZE
-+ * and PAGE_OFFSET - it must be within 128MB of the kernel text.
-+ */
-+#define PAGE_OFFSET		UL(0xffffffc000000000)
-+#define MODULES_END		(PAGE_OFFSET)
-+#define MODULES_VADDR		(MODULES_END - SZ_64M)
-+#define VA_BITS			(39)
-+#define TASK_SIZE_64		(UL(1) << VA_BITS)
++void show_mem(unsigned int filter)
++{
++	int free = 0, total = 0, reserved = 0;
++	int shared = 0, cached = 0, slab = 0, i;
++	struct meminfo * mi = &meminfo;
 +
-+#ifdef CONFIG_AARCH32_EMULATION
-+#define TASK_SIZE_32		UL(0x100000000)
-+#define TASK_SIZE		(test_thread_flag(TIF_32BIT) ? \
-+				TASK_SIZE_32 : TASK_SIZE_64)
++	printk("Mem-info:\n");
++	show_free_areas(filter);
++
++	for_each_bank (i, mi) {
++		struct membank *bank = &mi->bank[i];
++		unsigned int pfn1, pfn2;
++		struct page *page, *end;
++
++		pfn1 = bank_pfn_start(bank);
++		pfn2 = bank_pfn_end(bank);
++
++		page = pfn_to_page(pfn1);
++		end  = pfn_to_page(pfn2 - 1) + 1;
++
++		do {
++			total++;
++			if (PageReserved(page))
++				reserved++;
++			else if (PageSwapCache(page))
++				cached++;
++			else if (PageSlab(page))
++				slab++;
++			else if (!page_count(page))
++				free++;
++			else
++				shared += page_count(page) - 1;
++			page++;
++		} while (page < end);
++	}
++
++	printk("%d pages of RAM\n", total);
++	printk("%d free pages\n", free);
++	printk("%d reserved pages\n", reserved);
++	printk("%d slab pages\n", slab);
++	printk("%d pages shared\n", shared);
++	printk("%d pages swap cached\n", cached);
++}
++
++static void __init find_limits(unsigned long *min, unsigned long *max)
++{
++	struct meminfo *mi = &meminfo;
++	int i;
++
++	*min = -1UL;
++	*max = 0;
++
++	for_each_bank (i, mi) {
++		struct membank *bank = &mi->bank[i];
++		unsigned long start, end;
++
++		start = bank_pfn_start(bank);
++		end = bank_pfn_end(bank);
++
++		if (*min > start)
++			*min = start;
++		if (*max < end)
++			*max = end;
++	}
++}
++
++static void __init aarch64_bootmem_init(unsigned long start_pfn,
++					unsigned long end_pfn)
++{
++	struct memblock_region *reg;
++	unsigned int boot_pages;
++	phys_addr_t bitmap;
++	pg_data_t *pgdat;
++
++	/*
++	 * Allocate the bootmem bitmap page.  This must be in a region of
++	 * memory which has already been mapped.
++	 */
++	boot_pages = bootmem_bootmap_pages(end_pfn - start_pfn);
++	bitmap = memblock_alloc_base(boot_pages << PAGE_SHIFT, L1_CACHE_BYTES,
++				__pfn_to_phys(end_pfn));
++
++	/*
++	 * Initialise the bootmem allocator, handing the memory banks over to
++	 * bootmem.
++	 */
++	node_set_online(0);
++	pgdat = NODE_DATA(0);
++	init_bootmem_node(pgdat, __phys_to_pfn(bitmap), start_pfn, end_pfn);
++
++	/* Free the memory regions from memblock into bootmem */
++	for_each_memblock(memory, reg) {
++		unsigned long start = memblock_region_memory_base_pfn(reg);
++		unsigned long end = memblock_region_memory_end_pfn(reg);
++
++		if (end >= end_pfn)
++			end = end_pfn;
++		if (start >= end)
++			break;
++
++		free_bootmem(__pfn_to_phys(start), (end - start) << PAGE_SHIFT);
++	}
++
++	/* Reserve the memblock reserved regions in bootmem */
++	for_each_memblock(reserved, reg) {
++		unsigned long start = memblock_region_reserved_base_pfn(reg);
++		unsigned long end = memblock_region_reserved_end_pfn(reg);
++
++		if (end >= end_pfn)
++			end = end_pfn;
++		if (start >= end)
++			break;
++
++		reserve_bootmem(__pfn_to_phys(start),
++			        (end - start) << PAGE_SHIFT, BOOTMEM_DEFAULT);
++	}
++}
++
++static void __init aarch64_bootmem_free(unsigned long min, unsigned long max)
++{
++	unsigned long zone_size[MAX_NR_ZONES], zhole_size[MAX_NR_ZONES];
++	struct memblock_region *reg;
++
++	/*
++	 * Initialise the zones.
++	 */
++	memset(zone_size, 0, sizeof(zone_size));
++
++	/*
++	 * The memory size has already been determined.  If we need to do
++	 * anything fancy with the allocation of this memory to the zones, now
++	 * is the time to do it.
++	 */
++	zone_size[0] = max - min;
++
++	/*
++	 * Calculate the size of the holes.
++	 *  holes = node_size - sum(bank_sizes)
++	 */
++	memcpy(zhole_size, zone_size, sizeof(zhole_size));
++	for_each_memblock(memory, reg) {
++		unsigned long start = memblock_region_memory_base_pfn(reg);
++		unsigned long end = memblock_region_memory_end_pfn(reg);
++
++		if (start < max) {
++			unsigned long low_end = min(end, max);
++			zhole_size[0] -= low_end - start;
++		}
++	}
++
++	free_area_init_node(0, zone_size, min, zhole_size);
++}
++
++#ifdef CONFIG_HAVE_ARCH_PFN_VALID
++int pfn_valid(unsigned long pfn)
++{
++	return memblock_is_memory(pfn << PAGE_SHIFT);
++}
++EXPORT_SYMBOL(pfn_valid);
++#endif
++
++#ifndef CONFIG_SPARSEMEM
++static void aarch64_memory_present(void)
++{
++}
 +#else
-+#define TASK_SIZE		TASK_SIZE_64
-+#endif /* CONFIG_AARCH32_EMULATION */
-+
-+#define TASK_UNMAPPED_BASE	(PAGE_ALIGN(TASK_SIZE / 4))
-+
-+#if TASK_SIZE_64 > MODULES_VADDR
-+#error Top of 64-bit user space clashes with start of module space
-+#endif
-+
-+/*
-+ * Physical vs virtual RAM address space conversion.  These are
-+ * private definitions which should NOT be used outside memory.h
-+ * files.  Use virt_to_phys/phys_to_virt/__pa/__va instead.
-+ */
-+#define __virt_to_phys(x)	(((phys_addr_t)(x) - PAGE_OFFSET + PHYS_OFFSET))
-+#define __phys_to_virt(x)	((unsigned long)((x) - PHYS_OFFSET + PAGE_OFFSET))
-+
-+/*
-+ * Convert a physical address to a Page Frame Number and back
-+ */
-+#define	__phys_to_pfn(paddr)	((unsigned long)((paddr) >> PAGE_SHIFT))
-+#define	__pfn_to_phys(pfn)	((phys_addr_t)(pfn) << PAGE_SHIFT)
-+
-+/*
-+ * Convert a page to/from a physical address
-+ */
-+#define page_to_phys(page)	(__pfn_to_phys(page_to_pfn(page)))
-+#define phys_to_page(phys)	(pfn_to_page(__phys_to_pfn(phys)))
-+
-+/*
-+ * Memory types available.
-+ */
-+#define MT_DEVICE_nGnRnE	0
-+#define MT_DEVICE_nGnRE		1
-+#define MT_DEVICE_GRE		2
-+#define MT_NORMAL_NC		3
-+#define MT_NORMAL		4
-+
-+#ifndef __ASSEMBLY__
-+
-+extern phys_addr_t		memstart_addr;
-+/* PHYS_OFFSET - the physical address of the start of memory. */
-+#define PHYS_OFFSET		({ memstart_addr; })
-+
-+/*
-+ * PFNs are used to describe any physical page; this means
-+ * PFN 0 == physical address 0.
-+ *
-+ * This is the PFN of the first RAM page in the kernel
-+ * direct-mapped view.  We assume this is the first page
-+ * of RAM in the mem_map as well.
-+ */
-+#define PHYS_PFN_OFFSET	(PHYS_OFFSET >> PAGE_SHIFT)
-+
-+/*
-+ * Note: Drivers should NOT use these.  They are the wrong
-+ * translation for translating DMA addresses.  Use the driver
-+ * DMA support - see dma-mapping.h.
-+ */
-+static inline phys_addr_t virt_to_phys(const volatile void *x)
++static void aarch64_memory_present(void)
 +{
-+	return __virt_to_phys((unsigned long)(x));
-+}
-+
-+static inline void *phys_to_virt(phys_addr_t x)
-+{
-+	return (void *)(__phys_to_virt(x));
-+}
-+
-+/*
-+ * Drivers should NOT use these either.
-+ */
-+#define __pa(x)			__virt_to_phys((unsigned long)(x))
-+#define __va(x)			((void *)__phys_to_virt((phys_addr_t)(x)))
-+#define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
-+
-+/*
-+ *  virt_to_page(k)	convert a _valid_ virtual address to struct page *
-+ *  virt_addr_valid(k)	indicates whether a virtual address is valid
-+ */
-+#define ARCH_PFN_OFFSET		PHYS_PFN_OFFSET
-+
-+#define virt_to_page(kaddr)	pfn_to_page(__pa(kaddr) >> PAGE_SHIFT)
-+#define	virt_addr_valid(kaddr)	(((void *)(kaddr) >= (void *)PAGE_OFFSET) && \
-+				 ((void *)(kaddr) < (void *)high_memory))
-+
-+#endif
-+
-+#include <asm-generic/memory_model.h>
-+
-+#endif
-diff --git a/arch/aarch64/include/asm/mmu.h b/arch/aarch64/include/asm/mmu.h
-new file mode 100644
-index 0000000..51ed7b5
---- /dev/null
-+++ b/arch/aarch64/include/asm/mmu.h
-@@ -0,0 +1,28 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+#ifndef __ASM_MMU_H
-+#define __ASM_MMU_H
-+
-+typedef struct {
-+	unsigned int id;
-+	spinlock_t id_lock;
-+	void *vdso;
-+} mm_context_t;
-+
-+#define ASID(mm)	((mm)->context.id & 0xffff)
-+
-+#endif
-diff --git a/arch/aarch64/include/asm/pgtable-2level-hwdef.h b/arch/aarch64/include/asm/pgtable-2level-hwdef.h
-new file mode 100644
-index 0000000..2c7d5cb
---- /dev/null
-+++ b/arch/aarch64/include/asm/pgtable-2level-hwdef.h
-@@ -0,0 +1,44 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+#ifndef __ASM_PGTABLE_2LEVEL_HWDEF_H
-+#define __ASM_PGTABLE_2LEVEL_HWDEF_H
-+
-+/*
-+ * With LPAE and 64KB pages, there are 2 levels of page tables. Each level has
-+ * 8192 entries of 8 bytes each, occupying a 64KB page. Levels 0 and 1 are not
-+ * used. The 2nd level table (PGD for Linux) can cover a range of 4TB, each
-+ * entry representing 512MB. The user and kernel address spaces are limited to
-+ * 512GB and therefore we only use 1024 entries in the PGD.
-+ */
-+#define PTRS_PER_PTE		8192
-+#define PTRS_PER_PGD		1024
-+
-+/*
-+ * PGDIR_SHIFT determines the size a top-level page table entry can map.
-+ */
-+#define PGDIR_SHIFT		29
-+#define PGDIR_SIZE		(_AC(1, UL) << PGDIR_SHIFT)
-+#define PGDIR_MASK		(~(PGDIR_SIZE-1))
-+
-+/*
-+ * section address mask and size definitions.
-+ */
-+#define SECTION_SHIFT		29
-+#define SECTION_SIZE		(_AC(1, UL) << SECTION_SHIFT)
-+#define SECTION_MASK		(~(SECTION_SIZE-1))
-+
-+#endif
-diff --git a/arch/aarch64/include/asm/pgtable-2level-types.h b/arch/aarch64/include/asm/pgtable-2level-types.h
-new file mode 100644
-index 0000000..7f3457c
---- /dev/null
-+++ b/arch/aarch64/include/asm/pgtable-2level-types.h
-@@ -0,0 +1,61 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+#ifndef __ASM_PGTABLE_2LEVEL_TYPES_H
-+#define __ASM_PGTABLE_2LEVEL_TYPES_H
-+
-+typedef u64 pteval_t;
-+typedef u64 pgdval_t;
-+typedef pgdval_t pmdval_t;
-+
-+#undef STRICT_MM_TYPECHECKS
-+
-+#ifdef STRICT_MM_TYPECHECKS
-+
-+/*
-+ * These are used to make use of C type-checking..
-+ */
-+typedef struct { pteval_t pte; } pte_t;
-+typedef struct { pgdval_t pgd; } pgd_t;
-+typedef struct { pteval_t pgprot; } pgprot_t;
-+
-+#define pte_val(x)      ((x).pte)
-+#define pgd_val(x)	((x).pgd)
-+#define pgprot_val(x)   ((x).pgprot)
-+
-+#define __pte(x)        ((pte_t) { (x) } )
-+#define __pgd(x)	((pgd_t) { (x) } )
-+#define __pgprot(x)     ((pgprot_t) { (x) } )
-+
-+#else	/* !STRICT_MM_TYPECHECKS */
-+
-+typedef pteval_t pte_t;
-+typedef pgdval_t pgd_t;
-+typedef pteval_t pgprot_t;
-+
-+#define pte_val(x)	(x)
-+#define pgd_val(x)	(x)
-+#define pgprot_val(x)	(x)
-+
-+#define __pte(x)	(x)
-+#define __pgd(x)	(x)
-+#define __pgprot(x)	(x)
-+
-+#endif	/* STRICT_MM_TYPECHECKS */
-+
-+#include <asm-generic/pgtable-nopmd.h>
-+
-+#endif	/* __ASM_PGTABLE_2LEVEL_TYPES_H */
-diff --git a/arch/aarch64/include/asm/pgtable-3level-hwdef.h b/arch/aarch64/include/asm/pgtable-3level-hwdef.h
-new file mode 100644
-index 0000000..93c5d29
---- /dev/null
-+++ b/arch/aarch64/include/asm/pgtable-3level-hwdef.h
-@@ -0,0 +1,51 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+#ifndef __ASM_PGTABLE_3LEVEL_HWDEF_H
-+#define __ASM_PGTABLE_3LEVEL_HWDEF_H
-+
-+/*
-+ * With LPAE and 4KB pages, there are 3 levels of page tables. Each level has
-+ * 512 entries of 8 bytes each, occupying a 4K page. The first level table
-+ * covers a range of 512GB, each entry representing 1GB. The user and kernel
-+ * address spaces are limited to 512GB each.
-+ */
-+#define PTRS_PER_PTE		512
-+#define PTRS_PER_PMD		512
-+#define PTRS_PER_PGD		512
-+
-+/*
-+ * PGDIR_SHIFT determines the size a top-level page table entry can map.
-+ */
-+#define PGDIR_SHIFT		30
-+#define PGDIR_SIZE		(_AC(1, UL) << PGDIR_SHIFT)
-+#define PGDIR_MASK		(~(PGDIR_SIZE-1))
-+
-+/*
-+ * PMD_SHIFT determines the size a middle-level page table entry can map.
-+ */
-+#define PMD_SHIFT		21
-+#define PMD_SIZE		(_AC(1, UL) << PMD_SHIFT)
-+#define PMD_MASK		(~(PMD_SIZE-1))
-+
-+/*
-+ * section address mask and size definitions.
-+ */
-+#define SECTION_SHIFT		21
-+#define SECTION_SIZE		(_AC(1, UL) << SECTION_SHIFT)
-+#define SECTION_MASK		(~(SECTION_SIZE-1))
-+
-+#endif
-diff --git a/arch/aarch64/include/asm/pgtable-3level-types.h b/arch/aarch64/include/asm/pgtable-3level-types.h
-new file mode 100644
-index 0000000..15657b6
---- /dev/null
-+++ b/arch/aarch64/include/asm/pgtable-3level-types.h
-@@ -0,0 +1,67 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+#ifndef __ASM_PGTABLE_3LEVEL_TYPES_H
-+#define __ASM_PGTABLE_3LEVEL_TYPES_H
-+
-+typedef u64 pteval_t;
-+typedef u64 pmdval_t;
-+typedef u64 pgdval_t;
-+
-+#undef STRICT_MM_TYPECHECKS
-+
-+#ifdef STRICT_MM_TYPECHECKS
-+
-+/*
-+ * These are used to make use of C type-checking..
-+ */
-+typedef struct { pteval_t pte; } pte_t;
-+typedef struct { pmdval_t pmd; } pmd_t;
-+typedef struct { pgdval_t pgd; } pgd_t;
-+typedef struct { pteval_t pgprot; } pgprot_t;
-+
-+#define pte_val(x)      ((x).pte)
-+#define pmd_val(x)      ((x).pmd)
-+#define pgd_val(x)	((x).pgd)
-+#define pgprot_val(x)   ((x).pgprot)
-+
-+#define __pte(x)        ((pte_t) { (x) } )
-+#define __pmd(x)        ((pmd_t) { (x) } )
-+#define __pgd(x)	((pgd_t) { (x) } )
-+#define __pgprot(x)     ((pgprot_t) { (x) } )
-+
-+#else	/* !STRICT_MM_TYPECHECKS */
-+
-+typedef pteval_t pte_t;
-+typedef pmdval_t pmd_t;
-+typedef pgdval_t pgd_t;
-+typedef pteval_t pgprot_t;
-+
-+#define pte_val(x)	(x)
-+#define pmd_val(x)	(x)
-+#define pgd_val(x)	(x)
-+#define pgprot_val(x)	(x)
-+
-+#define __pte(x)	(x)
-+#define __pmd(x)	(x)
-+#define __pgd(x)	(x)
-+#define __pgprot(x)	(x)
-+
-+#endif	/* STRICT_MM_TYPECHECKS */
-+
-+#include <asm-generic/pgtable-nopud.h>
-+
-+#endif	/* __ASM_PGTABLE_3LEVEL_TYPES_H */
-diff --git a/arch/aarch64/include/asm/pgtable-hwdef.h b/arch/aarch64/include/asm/pgtable-hwdef.h
-new file mode 100644
-index 0000000..7ed66bd
---- /dev/null
-+++ b/arch/aarch64/include/asm/pgtable-hwdef.h
-@@ -0,0 +1,95 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+#ifndef __ASM_PGTABLE_HWDEF_H
-+#define __ASM_PGTABLE_HWDEF_H
-+
-+#ifdef CONFIG_AARCH64_64K_PAGES
-+#include <asm/pgtable-2level-hwdef.h>
-+#else
-+#include <asm/pgtable-3level-hwdef.h>
-+#endif
-+
-+/*
-+ * Hardware page table definitions.
-+ *
-+ * Level 2 descriptor (PMD).
-+ */
-+#define PMD_TYPE_MASK		(_AT(pmdval_t, 3) << 0)
-+#define PMD_TYPE_FAULT		(_AT(pmdval_t, 0) << 0)
-+#define PMD_TYPE_TABLE		(_AT(pmdval_t, 3) << 0)
-+#define PMD_TYPE_SECT		(_AT(pmdval_t, 1) << 0)
-+
-+/*
-+ * Section
-+ */
-+#define PMD_SECT_S		(_AT(pmdval_t, 3) << 8)
-+#define PMD_SECT_AF		(_AT(pmdval_t, 1) << 10)
-+#define PMD_SECT_NG		(_AT(pmdval_t, 1) << 11)
-+#define PMD_SECT_XN		(_AT(pmdval_t, 1) << 54)
-+
-+/*
-+ * AttrIndx[2:0] encoding (mapping attributes defined in the MAIR* registers).
-+ */
-+#define PMD_ATTRINDX(t)		(_AT(pmdval_t, (t)) << 2)
-+#define PMD_ATTRINDX_MASK	(_AT(pmdval_t, 7) << 2)
-+
-+/*
-+ * Level 3 descriptor (PTE).
-+ */
-+#define PTE_TYPE_MASK		(_AT(pteval_t, 3) << 0)
-+#define PTE_TYPE_FAULT		(_AT(pteval_t, 0) << 0)
-+#define PTE_TYPE_PAGE		(_AT(pteval_t, 3) << 0)
-+#define PTE_USER		(_AT(pteval_t, 1) << 6)		/* AP[1] */
-+#define PTE_RDONLY		(_AT(pteval_t, 1) << 7)		/* AP[2] */
-+#define PTE_SHARED		(_AT(pteval_t, 3) << 8)		/* SH[1:0], inner shareable */
-+#define PTE_AF			(_AT(pteval_t, 1) << 10)	/* Access Flag */
-+#define PTE_NG			(_AT(pteval_t, 1) << 11)	/* nG */
-+#define PTE_XN			(_AT(pteval_t, 1) << 54)	/* XN */
-+
-+/*
-+ * AttrIndx[2:0] encoding (mapping attributes defined in the MAIR* registers).
-+ */
-+#define PTE_ATTRINDX(t)		(_AT(pteval_t, (t)) << 2)
-+#define PTE_ATTRINDX_MASK	(_AT(pteval_t, 7) << 2)
-+
-+/*
-+ * 40-bit physical address supported.
-+ */
-+#define PHYS_MASK_SHIFT		(40)
-+#define PHYS_MASK		((1UL << PHYS_MASK_SHIFT) - 1)
-+
-+/*
-+ * TCR flags.
-+ */
-+#define TCR_TxSZ(x)		(((64 - (x)) << 16) | ((64 - (x)) << 0))
-+#define TCR_IRGN_NC		((0 << 8) | (0 << 24))
-+#define TCR_IRGN_WBWA		((1 << 8) | (1 << 24))
-+#define TCR_IRGN_WT		((2 << 8) | (2 << 24))
-+#define TCR_IRGN_WBnWA		((3 << 8) | (3 << 24))
-+#define TCR_IRGN_MASK		((3 << 8) | (3 << 24))
-+#define TCR_ORGN_NC		((0 << 10) | (0 << 26))
-+#define TCR_ORGN_WBWA		((1 << 10) | (1 << 26))
-+#define TCR_ORGN_WT		((2 << 10) | (2 << 26))
-+#define TCR_ORGN_WBnWA		((3 << 10) | (3 << 26))
-+#define TCR_ORGN_MASK		((3 << 10) | (3 << 26))
-+#define TCR_SHARED		((3 << 12) | (3 << 28))
-+#define TCR_TG0_64K		(1 << 14)
-+#define TCR_TG1_64K		(1 << 30)
-+#define TCR_IPS_40BIT		(2 << 32)
-+#define TCR_ASID16		(1 << 36)
-+
-+#endif
-diff --git a/arch/aarch64/include/asm/pgtable.h b/arch/aarch64/include/asm/pgtable.h
-new file mode 100644
-index 0000000..3a303fd
---- /dev/null
-+++ b/arch/aarch64/include/asm/pgtable.h
-@@ -0,0 +1,329 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+#ifndef __ASM_PGTABLE_H
-+#define __ASM_PGTABLE_H
-+
-+#include <asm/proc-fns.h>
-+
-+#include <asm/memory.h>
-+#include <asm/pgtable-hwdef.h>
-+
-+/*
-+ * Software defined PTE bits definition.
-+ */
-+#define PTE_VALID		(_AT(pteval_t, 1) << 0)	/* pte_present() check */
-+#define PTE_FILE		(_AT(pteval_t, 1) << 2)	/* only when !pte_present() */
-+#define PTE_DIRTY		(_AT(pteval_t, 1) << 55)
-+#define PTE_SPECIAL		(_AT(pteval_t, 1) << 56)
-+
-+/*
-+ * VMALLOC and SPARSEMEM_VMEMMAP ranges.
-+ */
-+#define VMALLOC_START		UL(0xffffff8000000000)
-+#define VMALLOC_END		(PAGE_OFFSET - UL(0x400000000) - SZ_64K)
-+
-+#define vmemmap			((struct page *)(VMALLOC_END + SZ_64K))
-+
-+#define FIRST_USER_ADDRESS	0
-+
-+#ifndef __ASSEMBLY__
-+extern void __pte_error(const char *file, int line, unsigned long val);
-+extern void __pmd_error(const char *file, int line, unsigned long val);
-+extern void __pgd_error(const char *file, int line, unsigned long val);
-+
-+#define pte_ERROR(pte)		__pte_error(__FILE__, __LINE__, pte_val(pte))
-+#ifndef CONFIG_AARCH64_64K_PAGES
-+#define pmd_ERROR(pmd)		__pmd_error(__FILE__, __LINE__, pmd_val(pmd))
-+#endif
-+#define pgd_ERROR(pgd)		__pgd_error(__FILE__, __LINE__, pgd_val(pgd))
-+
-+/*
-+ * The pgprot_* and protection_map entries will be fixed up at runtime to
-+ * include the cachable and bufferable bits based on memory policy, as well as
-+ * any architecture dependent bits like global/ASID and SMP shared mapping
-+ * bits.
-+ */
-+#define _PAGE_DEFAULT		PTE_TYPE_PAGE | PTE_AF
-+
-+extern pgprot_t pgprot_default;
-+
-+#define _MOD_PROT(p, b)	__pgprot(pgprot_val(p) | (b))
-+
-+#define PAGE_NONE		_MOD_PROT(pgprot_default, PTE_NG | PTE_XN | PTE_RDONLY)
-+#define PAGE_SHARED		_MOD_PROT(pgprot_default, PTE_USER | PTE_NG | PTE_XN)
-+#define PAGE_SHARED_EXEC	_MOD_PROT(pgprot_default, PTE_USER | PTE_NG)
-+#define PAGE_COPY		_MOD_PROT(pgprot_default, PTE_USER | PTE_NG | PTE_XN | PTE_RDONLY)
-+#define PAGE_COPY_EXEC		_MOD_PROT(pgprot_default, PTE_USER | PTE_NG | PTE_RDONLY)
-+#define PAGE_READONLY		_MOD_PROT(pgprot_default, PTE_USER | PTE_NG | PTE_XN | PTE_RDONLY)
-+#define PAGE_READONLY_EXEC	_MOD_PROT(pgprot_default, PTE_USER | PTE_NG | PTE_RDONLY)
-+#define PAGE_KERNEL		_MOD_PROT(pgprot_default, PTE_XN | PTE_DIRTY)
-+#define PAGE_KERNEL_EXEC	_MOD_PROT(pgprot_default, PTE_DIRTY)
-+
-+#define __PAGE_NONE		__pgprot(_PAGE_DEFAULT | PTE_NG | PTE_XN | PTE_RDONLY)
-+#define __PAGE_SHARED		__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_XN)
-+#define __PAGE_SHARED_EXEC	__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG)
-+#define __PAGE_COPY		__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_XN | PTE_RDONLY)
-+#define __PAGE_COPY_EXEC	__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_RDONLY)
-+#define __PAGE_READONLY		__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_XN | PTE_RDONLY)
-+#define __PAGE_READONLY_EXEC	__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_NG | PTE_RDONLY)
-+
-+#endif /* __ASSEMBLY__ */
-+
-+#define __P000  __PAGE_NONE
-+#define __P001  __PAGE_READONLY
-+#define __P010  __PAGE_COPY
-+#define __P011  __PAGE_COPY
-+#define __P100  __PAGE_READONLY_EXEC
-+#define __P101  __PAGE_READONLY_EXEC
-+#define __P110  __PAGE_COPY_EXEC
-+#define __P111  __PAGE_COPY_EXEC
-+
-+#define __S000  __PAGE_NONE
-+#define __S001  __PAGE_READONLY
-+#define __S010  __PAGE_SHARED
-+#define __S011  __PAGE_SHARED
-+#define __S100  __PAGE_READONLY_EXEC
-+#define __S101  __PAGE_READONLY_EXEC
-+#define __S110  __PAGE_SHARED_EXEC
-+#define __S111  __PAGE_SHARED_EXEC
-+
-+#ifndef __ASSEMBLY__
-+/*
-+ * ZERO_PAGE is a global shared page that is always zero: used
-+ * for zero-mapped memory areas etc..
-+ */
-+extern struct page *empty_zero_page;
-+#define ZERO_PAGE(vaddr)	(empty_zero_page)
-+
-+#define pte_pfn(pte)		((pte_val(pte) & PHYS_MASK) >> PAGE_SHIFT)
-+
-+#define pfn_pte(pfn,prot)	(__pte(((phys_addr_t)(pfn) << PAGE_SHIFT) | pgprot_val(prot)))
-+
-+#define pte_none(pte)		(!pte_val(pte))
-+#define pte_clear(mm,addr,ptep)	set_pte(ptep, __pte(0))
-+#define pte_page(pte)		(pfn_to_page(pte_pfn(pte)))
-+#define pte_offset_kernel(dir,addr)	(pmd_page_vaddr(*(dir)) + __pte_index(addr))
-+
-+#define pte_offset_map(dir,addr)	pte_offset_kernel((dir), (addr))
-+#define pte_offset_map_nested(dir,addr)	pte_offset_kernel((dir), (addr))
-+#define pte_unmap(pte)			do { } while (0)
-+#define pte_unmap_nested(pte)		do { } while (0)
-+
-+/*
-+ * The following only work if pte_present(). Undefined behaviour otherwise.
-+ */
-+#define pte_present(pte)	(pte_val(pte) & PTE_VALID)
-+#define pte_dirty(pte)		(pte_val(pte) & PTE_DIRTY)
-+#define pte_young(pte)		(pte_val(pte) & PTE_AF)
-+#define pte_special(pte)	(pte_val(pte) & PTE_SPECIAL)
-+#define pte_write(pte)		(!(pte_val(pte) & PTE_RDONLY))
-+#define pte_exec(pte)		(!(pte_val(pte) & PTE_XN))
-+
-+#define pte_present_exec_user(pte) \
-+	((pte_val(pte) & (PTE_VALID | PTE_USER | PTE_XN)) == \
-+	 (PTE_VALID | PTE_USER))
-+
-+#define PTE_BIT_FUNC(fn,op) \
-+static inline pte_t pte_##fn(pte_t pte) { pte_val(pte) op; return pte; }
-+
-+PTE_BIT_FUNC(wrprotect, |= PTE_RDONLY);
-+PTE_BIT_FUNC(mkwrite,   &= ~PTE_RDONLY);
-+PTE_BIT_FUNC(mkclean,   &= ~PTE_DIRTY);
-+PTE_BIT_FUNC(mkdirty,   |= PTE_DIRTY);
-+PTE_BIT_FUNC(mkold,     &= ~PTE_AF);
-+PTE_BIT_FUNC(mkyoung,   |= PTE_AF);
-+PTE_BIT_FUNC(mkspecial, |= PTE_SPECIAL);
-+
-+static inline void set_pte(pte_t *ptep, pte_t pte)
-+{
-+	*ptep = pte;
-+}
-+
-+extern void __sync_icache_dcache(pte_t pteval);
-+
-+static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
-+			      pte_t *ptep, pte_t pte)
-+{
-+	if (pte_present_exec_user(pte))
-+		__sync_icache_dcache(pte);
-+	set_pte(ptep, pte);
-+}
-+
-+/*
-+ * Huge pte definitions.
-+ */
-+#define pte_huge(pte)		((pte_val(pte) & PTE_TYPE_MASK) == PTE_TYPE_HUGEPAGE)
-+#define pte_mkhuge(pte)		(__pte((pte_val(pte) & ~PTE_TYPE_MASK) | PTE_TYPE_HUGEPAGE))
-+
-+#define __pgprot_modify(prot,mask,bits)		\
-+	__pgprot((pgprot_val(prot) & ~(mask)) | (bits))
-+
-+#define __HAVE_ARCH_PTE_SPECIAL
-+
-+/*
-+ * Mark the prot value as uncacheable and unbufferable.
-+ */
-+#define pgprot_noncached(prot) \
-+	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_DEVICE_nGnRnE))
-+#define pgprot_writecombine(prot) \
-+	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_DEVICE_GRE))
-+#define pgprot_dmacoherent(prot) \
-+	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC))
-+#define __HAVE_PHYS_MEM_ACCESS_PROT
-+struct file;
-+extern pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
-+				     unsigned long size, pgprot_t vma_prot);
-+
-+#define pmd_none(pmd)		(!pmd_val(pmd))
-+#define pmd_present(pmd)	(pmd_val(pmd))
-+
-+#define pmd_bad(pmd)		(!(pmd_val(pmd) & 2))
-+
-+static inline void set_pmd(pmd_t *pmdp, pmd_t pmd)
-+{
-+	*pmdp = pmd;
-+	dsb();
-+}
-+
-+static inline void pmd_clear(pmd_t *pmdp)
-+{
-+	set_pmd(pmdp, __pmd(0));
-+}
-+
-+static inline pte_t *pmd_page_vaddr(pmd_t pmd)
-+{
-+	return __va(pmd_val(pmd) & PHYS_MASK & (s32)PAGE_MASK);
-+}
-+
-+#define pmd_page(pmd)		pfn_to_page(__phys_to_pfn(pmd_val(pmd) & PHYS_MASK))
-+
-+/*
-+ * Conversion functions: convert a page and protection to a page entry,
-+ * and a page entry and page directory to the page they refer to.
-+ */
-+#define mk_pte(page,prot)	pfn_pte(page_to_pfn(page),prot)
-+
-+#ifndef CONFIG_AARCH64_64K_PAGES
-+
-+#define pud_none(pud)		(!pud_val(pud))
-+#define pud_bad(pud)		(!(pud_val(pud) & 2))
-+#define pud_present(pud)	(pud_val(pud))
-+
-+static inline void set_pud(pud_t *pudp, pud_t pud)
-+{
-+	*pudp = pud;
-+	dsb();
-+}
-+
-+static inline void pud_clear(pud_t *pudp)
-+{
-+	set_pud(pudp, __pud(0));
-+}
-+
-+static inline pmd_t *pud_page_vaddr(pud_t pud)
-+{
-+	return __va(pud_val(pud) & PHYS_MASK & (s32)PAGE_MASK);
-+}
-+
-+#endif	/* CONFIG_AARCH64_64K_PAGES */
-+
-+/* to find an entry in a page-table-directory */
-+#define pgd_index(addr)		(((addr) >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1))
-+
-+#define pgd_offset(mm, addr)	((mm)->pgd+pgd_index(addr))
-+
-+/* to find an entry in a kernel page-table-directory */
-+#define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
-+
-+/* Find an entry in the second-level page table.. */
-+#ifndef CONFIG_AARCH64_64K_PAGES
-+#define pmd_index(addr)		(((addr) >> PMD_SHIFT) & (PTRS_PER_PMD - 1))
-+static inline pmd_t *pmd_offset(pud_t *pud, unsigned long addr)
-+{
-+	return (pmd_t *)pud_page_vaddr(*pud) + pmd_index(addr);
++	struct memblock_region *reg;
++
++	for_each_memblock(memory, reg)
++		memory_present(0, memblock_region_memory_base_pfn(reg),
++			       memblock_region_memory_end_pfn(reg));
 +}
 +#endif
 +
-+/* Find an entry in the third-level page table.. */
-+#define __pte_index(addr)	(((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1))
-+
-+static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
++static int __init meminfo_cmp(const void *_a, const void *_b)
 +{
-+	const pteval_t mask = PTE_USER | PTE_XN | PTE_RDONLY;
-+	pte_val(pte) = (pte_val(pte) & ~mask) | (pgprot_val(newprot) & mask);
-+	return pte;
++	const struct membank *a = _a, *b = _b;
++	long cmp = bank_pfn_start(a) - bank_pfn_start(b);
++	return cmp < 0 ? -1 : cmp > 0 ? 1 : 0;
 +}
 +
-+extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
-+extern pgd_t idmap_pg_dir[PTRS_PER_PGD];
++void __init aarch64_memblock_init(struct meminfo *mi)
++{
++	int i;
 +
-+#define SWAPPER_DIR_SIZE	(3 * PAGE_SIZE)
-+#define IDMAP_DIR_SIZE		(2 * PAGE_SIZE)
++	sort(&meminfo.bank, meminfo.nr_banks, sizeof(meminfo.bank[0]),
++	     meminfo_cmp, NULL);
++
++	for (i = 0; i < mi->nr_banks; i++)
++		memblock_add(mi->bank[i].start, mi->bank[i].size);
++
++	/* Register the kernel text, kernel data and initrd with memblock */
++	memblock_reserve(__pa(_stext), _end - _stext);
++#ifdef CONFIG_BLK_DEV_INITRD
++	if (phys_initrd_size) {
++		memblock_reserve(phys_initrd_start, phys_initrd_size);
++
++		/* Now convert initrd to virtual addresses */
++		initrd_start = __phys_to_virt(phys_initrd_start);
++		initrd_end = initrd_start + phys_initrd_size;
++	}
++#endif
++
++	aarch64_mm_memblock_reserve();
++	dt_memblock_reserve();
++
++	memblock_allow_resize();
++	memblock_dump_all();
++}
++
++void __init bootmem_init(void)
++{
++	unsigned long min, max;
++
++	find_limits(&min, &max);
++
++	aarch64_bootmem_init(min, max);
++
++	/*
++	 * Sparsemem tries to allocate bootmem in memory_present(), so must be
++	 * done after the fixed reservations.
++	 */
++	aarch64_memory_present();
++
++	/*
++	 * sparse_init() needs the bootmem allocator up and running.
++	 */
++	sparse_init();
++
++	/*
++	 * Now free the memory - free_area_init_node needs the sparse mem_map
++	 * arrays initialized by sparse_init() for memmap_init_zone(),
++	 * otherwise all PFNs are invalid.
++	 */
++	aarch64_bootmem_free(min, max);
++
++	high_memory = __va((max << PAGE_SHIFT) - 1) + 1;
++
++	/*
++	 * This doesn't seem to be used by the Linux memory manager any more,
++	 * but is used by ll_rw_block.  If we can get rid of it, we also get
++	 * rid of some of the stuff above as well.
++	 *
++	 * Note: max_low_pfn and max_pfn reflect the number of _pages_ in the
++	 * system, not the maximum PFN.
++	 */
++	max_pfn = max_low_pfn = max - PHYS_PFN_OFFSET;
++}
++
++static inline int free_area(unsigned long pfn, unsigned long end, char *s)
++{
++	unsigned int pages = 0, size = (end - pfn) << (PAGE_SHIFT - 10);
++
++	for (; pfn < end; pfn++) {
++		struct page *page = pfn_to_page(pfn);
++		ClearPageReserved(page);
++		init_page_count(page);
++		__free_page(page);
++		pages++;
++	}
++
++	if (size && s)
++		pr_info("Freeing %s memory: %dK\n", s, size);
++
++	return pages;
++}
 +
 +/*
-+ * Encode and decode a swap entry:
-+ *	bits 0-1:	present (must be zero)
-+ *	bit  2:		PTE_FILE
-+ *	bits 3-8:	swap type
-+ *	bits 9-63:	swap offset
++ * Poison init memory with an undefined instruction (0x0).
 + */
-+#define __SWP_TYPE_SHIFT	3
-+#define __SWP_TYPE_BITS		6
-+#define __SWP_TYPE_MASK		((1 << __SWP_TYPE_BITS) - 1)
-+#define __SWP_OFFSET_SHIFT	(__SWP_TYPE_BITS + __SWP_TYPE_SHIFT)
++static inline void poison_init_mem(void *s, size_t count)
++{
++	memset(s, 0, count);
++}
 +
-+#define __swp_type(x)		(((x).val >> __SWP_TYPE_SHIFT) & __SWP_TYPE_MASK)
-+#define __swp_offset(x)		((x).val >> __SWP_OFFSET_SHIFT)
-+#define __swp_entry(type,offset) ((swp_entry_t) { ((type) << __SWP_TYPE_SHIFT) | ((offset) << __SWP_OFFSET_SHIFT) })
++#ifndef CONFIG_SPARSEMEM_VMEMMAP
++static inline void free_memmap(unsigned long start_pfn, unsigned long end_pfn)
++{
++	struct page *start_pg, *end_pg;
++	unsigned long pg, pgend;
 +
-+#define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
-+#define __swp_entry_to_pte(swp)	((pte_t) { (swp).val })
++	/*
++	 * Convert start_pfn/end_pfn to a struct page pointer.
++	 */
++	start_pg = pfn_to_page(start_pfn - 1) + 1;
++	end_pg = pfn_to_page(end_pfn - 1) + 1;
++
++	/*
++	 * Convert to physical addresses, and round start upwards and end
++	 * downwards.
++	 */
++	pg = (unsigned long)PAGE_ALIGN(__pa(start_pg));
++	pgend = (unsigned long)__pa(end_pg) & PAGE_MASK;
++
++	/*
++	 * If there are free pages between these, free the section of the
++	 * memmap array.
++	 */
++	if (pg < pgend)
++		free_bootmem(pg, pgend - pg);
++}
 +
 +/*
-+ * Ensure that there are not more swap files than can be encoded in the kernel
-+ * the PTEs.
++ * The mem_map array can get very big. Free the unused area of the memory map.
 + */
-+#define MAX_SWAPFILES_CHECK() BUILD_BUG_ON(MAX_SWAPFILES_SHIFT > __SWP_TYPE_BITS)
++static void __init free_unused_memmap(struct meminfo *mi)
++{
++	unsigned long bank_start, prev_bank_end = 0;
++	unsigned int i;
 +
-+/*
-+ * Encode and decode a file entry:
-+ *	bits 0-1:	present (must be zero)
-+ *	bit  2:		PTE_FILE
-+ *	bits 3-63:	file offset / PAGE_SIZE
-+ */
-+#define pte_file(pte)		(pte_val(pte) & PTE_FILE)
-+#define pte_to_pgoff(x)		(pte_val(x) >> 3)
-+#define pgoff_to_pte(x)		__pte(((x) << 3) | PTE_FILE)
++	/*
++	 * This relies on each bank being in address order.  The banks are
++	 * sorted previously in bootmem_init().
++	 */
++	for_each_bank(i, mi) {
++		struct membank *bank = &mi->bank[i];
 +
-+#define PTE_FILE_MAX_BITS	61
-+
-+extern int kern_addr_valid(unsigned long addr);
-+
-+#include <asm-generic/pgtable.h>
-+
-+/*
-+ * remap a physical page `pfn' of size `size' with page protection `prot'
-+ * into virtual address `from'
-+ */
-+#define io_remap_pfn_range(vma,from,pfn,size,prot) \
-+		remap_pfn_range(vma, from, pfn, size, prot)
-+
-+#define pgtable_cache_init() do { } while (0)
-+
-+#endif /* !__ASSEMBLY__ */
-+
-+#endif /* __ASM_PGTABLE_H */
-diff --git a/arch/aarch64/include/asm/sparsemem.h b/arch/aarch64/include/asm/sparsemem.h
-new file mode 100644
-index 0000000..9b59619
---- /dev/null
-+++ b/arch/aarch64/include/asm/sparsemem.h
-@@ -0,0 +1,25 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+#ifndef __ASM_SPARSEMEM_H
-+#define __ASM_SPARSEMEM_H
++		bank_start = bank_pfn_start(bank);
 +
 +#ifdef CONFIG_SPARSEMEM
-+#define MAX_PHYSMEM_BITS	40
-+#define SECTION_SIZE_BITS	30
++		/*
++		 * Take care not to free memmap entries that don't exist due
++		 * to SPARSEMEM sections which aren't present.
++		 */
++		bank_start = min(bank_start,
++				 ALIGN(prev_bank_end, PAGES_PER_SECTION));
++#endif
++		/*
++		 * If we had a previous bank, and there is a space between the
++		 * current bank and the previous, free it.
++		 */
++		if (prev_bank_end && prev_bank_end < bank_start)
++			free_memmap(prev_bank_end, bank_start);
++
++		/*
++		 * Align up here since the VM subsystem insists that the
++		 * memmap entries are valid from the bank end aligned to
++		 * MAX_ORDER_NR_PAGES.
++		 */
++		prev_bank_end = ALIGN(bank_pfn_end(bank), MAX_ORDER_NR_PAGES);
++	}
++
++#ifdef CONFIG_SPARSEMEM
++	if (!IS_ALIGNED(prev_bank_end, PAGES_PER_SECTION))
++		free_memmap(prev_bank_end,
++			    ALIGN(prev_bank_end, PAGES_PER_SECTION));
++#endif
++}
++#endif	/* !CONFIG_SPARSEMEM_VMEMMAP */
++
++/*
++ * mem_init() marks the free areas in the mem_map and tells us how much memory
++ * is free.  This is done after various parts of the system have claimed their
++ * memory after the kernel image.
++ */
++void __init mem_init(void)
++{
++	unsigned long reserved_pages, free_pages;
++	struct memblock_region *reg;
++	int i;
++
++#if CONFIG_SWIOTLB
++	extern void __init aarch64_swiotlb_init(size_t max_size);
++	aarch64_swiotlb_init(max_pfn << (PAGE_SHIFT - 1));
 +#endif
 +
++	max_mapnr   = pfn_to_page(max_pfn + PHYS_PFN_OFFSET) - mem_map;
++
++#ifndef CONFIG_SPARSEMEM_VMEMMAP
++	/* this will put all unused low memory onto the freelists */
++	free_unused_memmap(&meminfo);
 +#endif
++
++	totalram_pages += free_all_bootmem();
++
++	reserved_pages = free_pages = 0;
++
++	for_each_bank(i, &meminfo) {
++		struct membank *bank = &meminfo.bank[i];
++		unsigned int pfn1, pfn2;
++		struct page *page, *end;
++
++		pfn1 = bank_pfn_start(bank);
++		pfn2 = bank_pfn_end(bank);
++
++		page = pfn_to_page(pfn1);
++		end  = pfn_to_page(pfn2 - 1) + 1;
++
++		do {
++			if (PageReserved(page))
++				reserved_pages++;
++			else if (!page_count(page))
++				free_pages++;
++			page++;
++		} while (page < end);
++	}
++
++	/*
++	 * Since our memory may not be contiguous, calculate the real number
++	 * of pages we have in this system.
++	 */
++	pr_info("Memory:");
++	num_physpages = 0;
++	for_each_memblock(memory, reg) {
++		unsigned long pages = memblock_region_memory_end_pfn(reg) -
++			memblock_region_memory_base_pfn(reg);
++		num_physpages += pages;
++		printk(" %ldMB", pages >> (20 - PAGE_SHIFT));
++	}
++	printk(" = %luMB total\n", num_physpages >> (20 - PAGE_SHIFT));
++
++	pr_notice("Memory: %luk/%luk available, %luk reserved\n",
++		  nr_free_pages() << (PAGE_SHIFT-10),
++		  free_pages << (PAGE_SHIFT-10),
++		  reserved_pages << (PAGE_SHIFT-10));
++
++#define MLK(b, t) b, t, ((t) - (b)) >> 10
++#define MLM(b, t) b, t, ((t) - (b)) >> 20
++#define MLK_ROUNDUP(b, t) b, t, DIV_ROUND_UP(((t) - (b)), SZ_1K)
++
++	pr_notice("Virtual kernel memory layout:\n"
++		  "    vmalloc : 0x%16lx - 0x%16lx   (%6ld MB)\n"
++#ifdef CONFIG_SPARSEMEM_VMEMMAP
++		  "    vmemmap : 0x%16lx - 0x%16lx   (%6ld MB)\n"
++#endif
++		  "    modules : 0x%16lx - 0x%16lx   (%6ld MB)\n"
++		  "    memory  : 0x%16lx - 0x%16lx   (%6ld MB)\n"
++		  "      .init : 0x%p" " - 0x%p" "   (%6ld kB)\n"
++		  "      .text : 0x%p" " - 0x%p" "   (%6ld kB)\n"
++		  "      .data : 0x%p" " - 0x%p" "   (%6ld kB)\n",
++		  MLM(VMALLOC_START, VMALLOC_END),
++#ifdef CONFIG_SPARSEMEM_VMEMMAP
++		  MLM((unsigned long)virt_to_page(PAGE_OFFSET),
++		      (unsigned long)virt_to_page(high_memory)),
++#endif
++		  MLM(MODULES_VADDR, MODULES_END),
++		  MLM(PAGE_OFFSET, (unsigned long)high_memory),
++
++		  MLK_ROUNDUP(__init_begin, __init_end),
++		  MLK_ROUNDUP(_text, _etext),
++		  MLK_ROUNDUP(_sdata, _edata));
++
++#undef MLK
++#undef MLM
++#undef MLK_ROUNDUP
++
++	/*
++	 * Check boundaries twice: Some fundamental inconsistencies can be
++	 * detected at build time already.
++	 */
++#ifdef CONFIG_AARCH32_EMULATION
++	BUILD_BUG_ON(TASK_SIZE_32			> TASK_SIZE_64);
++#endif
++	BUILD_BUG_ON(TASK_SIZE_64			> MODULES_VADDR);
++	BUG_ON(TASK_SIZE_64				> MODULES_VADDR);
++
++	if (PAGE_SIZE >= 16384 && num_physpages <= 128) {
++		extern int sysctl_overcommit_memory;
++		/*
++		 * On a machine this small we won't get anywhere without
++		 * overcommit, so turn it on by default.
++		 */
++		sysctl_overcommit_memory = OVERCOMMIT_ALWAYS;
++	}
++}
++
++void free_initmem(void)
++{
++	poison_init_mem(__init_begin, __init_end - __init_begin);
++	totalram_pages += free_area(__phys_to_pfn(__pa(__init_begin)),
++				    __phys_to_pfn(__pa(__init_end)),
++				    "init");
++}
++
++#ifdef CONFIG_BLK_DEV_INITRD
++
++static int keep_initrd;
++
++void free_initrd_mem(unsigned long start, unsigned long end)
++{
++	if (!keep_initrd) {
++		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
++		totalram_pages += free_area(__phys_to_pfn(__pa(start)),
++					    __phys_to_pfn(__pa(end)),
++					    "initrd");
++	}
++}
++
++static int __init keepinitrd_setup(char *__unused)
++{
++	keep_initrd = 1;
++	return 1;
++}
++
++__setup("keepinitrd", keepinitrd_setup);
++#endif
+diff --git a/arch/aarch64/mm/mmu.c b/arch/aarch64/mm/mmu.c
+new file mode 100644
+index 0000000..518bf9f
+--- /dev/null
++++ b/arch/aarch64/mm/mmu.c
+@@ -0,0 +1,464 @@
++/*
++ * Based on arch/arm/mm/mmu.c
++ *
++ * Copyright (C) 1995-2005 Russell King
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++#include <linux/export.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/init.h>
++#include <linux/mman.h>
++#include <linux/nodemask.h>
++#include <linux/memblock.h>
++#include <linux/fs.h>
++
++#include <asm/cputype.h>
++#include <asm/sections.h>
++#include <asm/setup.h>
++#include <asm/sizes.h>
++#include <asm/tlb.h>
++#include <asm/mmu_context.h>
++
++#include "mm.h"
++
++/*
++ * Empty_zero_page is a special page that is used for zero-initialized data
++ * and COW.
++ */
++struct page *empty_zero_page;
++EXPORT_SYMBOL(empty_zero_page);
++
++pgprot_t pgprot_default;
++EXPORT_SYMBOL(pgprot_default);
++
++struct map_desc {
++	unsigned long virtual;
++	unsigned long pfn;
++	unsigned long length;
++	unsigned int type;
++};
++
++struct cachepolicy {
++	const char	policy[16];
++	u64		mair;
++	u64		tcr;
++};
++
++static struct cachepolicy cache_policies[] __initdata = {
++	{
++		.policy		= "uncached",
++		.mair		= 0x44,			/* inner, outer non-cacheable */
++		.tcr		= TCR_IRGN_NC | TCR_ORGN_NC,
++	}, {
++		.policy		= "writethrough",
++		.mair		= 0xaa,			/* inner, outer write-through, read-allocate */
++		.tcr		= TCR_IRGN_WT | TCR_ORGN_WT,
++	}, {
++		.policy		= "writeback",
++		.mair		= 0xee,			/* inner, outer write-back, read-allocate */
++		.tcr		= TCR_IRGN_WBnWA | TCR_ORGN_WBnWA,
++	}
++};
++
++/*
++ * These are useful for identifying cache coherency problems by allowing the
++ * cache or the cache and writebuffer to be turned off. It changes the Normal
++ * memory caching attributes in the MAIR_EL1 register.
++ */
++static int __init early_cachepolicy(char *p)
++{
++	int i;
++	u64 tmp;
++
++	for (i = 0; i < ARRAY_SIZE(cache_policies); i++) {
++		int len = strlen(cache_policies[i].policy);
++
++		if (memcmp(p, cache_policies[i].policy, len) == 0)
++			break;
++	}
++	if (i == ARRAY_SIZE(cache_policies)) {
++		pr_err("ERROR: unknown or unsupported cache policy: %s\n", p);
++		return 0;
++	}
++
++	flush_cache_all();
++
++	/*
++	 * Modify MT_NORMAL attributes in MAIR_EL1.
++	 */
++	asm volatile(
++	"	mrs	%0, mair_el1\n"
++	"	bfi	%0, %1, #%2, #8\n"
++	"	msr	mair_el1, %0\n"
++	"	isb\n"
++	: "=&r" (tmp)
++	: "r" (cache_policies[i].mair), "i" (MT_NORMAL * 8));
++
++	/*
++	 * Modify TCR PTW cacheability attributes.
++	 */
++	asm volatile(
++	"	mrs	%0, tcr_el1\n"
++	"	bic	%0, %0, %2\n"
++	"	orr	%0, %0, %1\n"
++	"	msr	tcr_el1, %0\n"
++	"	isb\n"
++	: "=&r" (tmp)
++	: "r" (cache_policies[i].tcr), "r" (TCR_IRGN_MASK | TCR_ORGN_MASK));
++
++	flush_cache_all();
++
++	return 0;
++}
++early_param("cachepolicy", early_cachepolicy);
++
++#define PROT_PTE_DEVICE		PTE_TYPE_PAGE | PTE_AF | PTE_DIRTY | PTE_XN
++#define PROT_SECT_DEVICE	PMD_TYPE_SECT | PMD_SECT_AF | PMD_SECT_XN
++
++#define PROT_PTE_NORMAL		PTE_TYPE_PAGE | PTE_AF | PTE_DIRTY
++#define PROT_SECT_NORMAL	PMD_TYPE_SECT | PMD_SECT_AF
++
++static struct mem_type mem_types[] = {
++	[MT_DEVICE_nGnRnE] = {
++		.prot_pte	= PROT_PTE_DEVICE | PTE_ATTRINDX(MT_DEVICE_nGnRnE),
++		.prot_sect	= PROT_SECT_DEVICE | PMD_ATTRINDX(MT_DEVICE_nGnRnE),
++	},
++	[MT_DEVICE_nGnRE] = {
++		.prot_pte	= PROT_PTE_DEVICE | PTE_ATTRINDX(MT_DEVICE_nGnRE),
++		.prot_sect	= PROT_SECT_DEVICE | PMD_ATTRINDX(MT_DEVICE_nGnRE),
++	},
++	[MT_DEVICE_GRE] = {
++		.prot_pte	= PROT_PTE_DEVICE | PTE_ATTRINDX(MT_DEVICE_GRE),
++		.prot_sect	= PROT_SECT_DEVICE | PMD_ATTRINDX(MT_DEVICE_GRE),
++	},
++	[MT_NORMAL_NC] = {
++		.prot_pte	= PROT_PTE_NORMAL | PTE_ATTRINDX(MT_NORMAL_NC),
++		.prot_sect	= PROT_SECT_NORMAL | PMD_ATTRINDX(MT_NORMAL_NC),
++	},
++	[MT_NORMAL] = {
++		.prot_pte	= PROT_PTE_NORMAL | PTE_ATTRINDX(MT_NORMAL),
++		.prot_sect	= PROT_SECT_NORMAL | PMD_ATTRINDX(MT_NORMAL),
++	},
++};
++
++const struct mem_type *get_mem_type(unsigned int type)
++{
++	return type < ARRAY_SIZE(mem_types) ? &mem_types[type] : NULL;
++}
++
++/*
++ * Adjust the PMD section entries according to the CPU in use.
++ */
++static void __init build_mem_type_table(void)
++{
++	pteval_t default_pgprot;
++	int i;
++
++	default_pgprot = PTE_ATTRINDX(MT_NORMAL);
++
++#ifdef CONFIG_SMP
++	/*
++	 * Mark memory with the "shared" attribute for SMP systems
++	 */
++	default_pgprot |= PTE_SHARED;
++	mem_types[MT_NORMAL].prot_pte |= PTE_SHARED;
++	mem_types[MT_NORMAL].prot_sect |= PMD_SECT_S;
++	mem_types[MT_NORMAL_NC].prot_pte |= PTE_SHARED;
++	mem_types[MT_NORMAL_NC].prot_sect |= PMD_SECT_S;
++#endif
++
++	for (i = 0; i < 16; i++) {
++		unsigned long v = pgprot_val(protection_map[i]);
++		protection_map[i] = __pgprot(v | default_pgprot);
++	}
++
++	pgprot_default = __pgprot(PTE_TYPE_PAGE | PTE_AF | default_pgprot);
++}
++
++pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
++			      unsigned long size, pgprot_t vma_prot)
++{
++	if (!pfn_valid(pfn))
++		return pgprot_noncached(vma_prot);
++	else if (file->f_flags & O_SYNC)
++		return pgprot_writecombine(vma_prot);
++	return vma_prot;
++}
++EXPORT_SYMBOL(phys_mem_access_prot);
++
++static void __init *early_alloc(unsigned long sz)
++{
++	void *ptr = __va(memblock_alloc(sz, sz));
++	memset(ptr, 0, sz);
++	return ptr;
++}
++
++static void __init alloc_init_pte(pmd_t *pmd, unsigned long addr,
++				  unsigned long end, unsigned long pfn,
++				  const struct mem_type *type)
++{
++	pte_t *pte;
++
++	if (pmd_none(*pmd)) {
++		pte = early_alloc(PTRS_PER_PTE * sizeof(pte_t));
++		__pmd_populate(pmd, __pa(pte), PMD_TYPE_TABLE);
++	}
++	BUG_ON(pmd_bad(*pmd));
++
++	pte = pte_offset_kernel(pmd, addr);
++	do {
++		set_pte(pte, pfn_pte(pfn, __pgprot(type->prot_pte)));
++		pfn++;
++	} while (pte++, addr += PAGE_SIZE, addr != end);
++}
++
++static void __init alloc_init_pmd(pud_t *pud, unsigned long addr,
++				  unsigned long end, phys_addr_t phys,
++				  const struct mem_type *type)
++{
++	pmd_t *pmd;
++	unsigned long next;
++
++	/*
++	 * Check for initial section mappings in the pgd/pud and remove them.
++	 */
++	if (pud_none(*pud) || pud_bad(*pud)) {
++		pmd = early_alloc(PTRS_PER_PMD * sizeof(pmd_t));
++		pud_populate(&init_mm, pud, pmd);
++	}
++
++	pmd = pmd_offset(pud, addr);
++	do {
++		next = pmd_addr_end(addr, end);
++		/* try section mapping first */
++		if (((addr | next | phys) & ~SECTION_MASK) == 0)
++			set_pmd(pmd, __pmd(phys | type->prot_sect));
++		else
++			alloc_init_pte(pmd, addr, next, __phys_to_pfn(phys),
++				       type);
++		phys += next - addr;
++	} while (pmd++, addr = next, addr != end);
++}
++
++static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
++				  unsigned long end, unsigned long phys,
++				  const struct mem_type *type)
++{
++	pud_t *pud = pud_offset(pgd, addr);
++	unsigned long next;
++
++	do {
++		next = pud_addr_end(addr, end);
++		alloc_init_pmd(pud, addr, next, phys, type);
++		phys += next - addr;
++	} while (pud++, addr = next, addr != end);
++}
++
++/*
++ * Create the page directory entries and any necessary page tables for the
++ * mapping specified by 'md'.
++ */
++static void __init create_mapping(struct map_desc *md)
++{
++	unsigned long addr, length, end, next;
++	phys_addr_t phys;
++	const struct mem_type *type;
++	pgd_t *pgd;
++
++	if (md->virtual < VMALLOC_START) {
++		pr_warning("BUG: not creating mapping for 0x%016llx at 0x%016lx - outside kernel range\n",
++			   __pfn_to_phys(md->pfn), md->virtual);
++		return;
++	}
++
++	type = &mem_types[md->type];
++
++	addr = md->virtual & PAGE_MASK;
++	phys = __pfn_to_phys(md->pfn);
++	length = PAGE_ALIGN(md->length + (md->virtual & ~PAGE_MASK));
++
++	pgd = pgd_offset_k(addr);
++	end = addr + length;
++	do {
++		next = pgd_addr_end(addr, end);
++		alloc_init_pud(pgd, addr, next, phys, type);
++		phys += next - addr;
++	} while (pgd++, addr = next, addr != end);
++}
++
++/*
++ * Reserve the special regions of memory.
++ */
++void __init aarch64_mm_memblock_reserve(void)
++{
++	/*
++	 * Reserve the page tables.  These are already in use,
++	 * and can only be in node 0.
++	 */
++	memblock_reserve(__pa(swapper_pg_dir), SWAPPER_DIR_SIZE);
++	memblock_reserve(__pa(idmap_pg_dir), IDMAP_DIR_SIZE);
++}
++
++static void __init map_mem(void)
++{
++	struct memblock_region *reg;
++
++	/* map all the memory banks */
++	for_each_memblock(memory, reg) {
++		phys_addr_t start = reg->base;
++		phys_addr_t end = start + reg->size;
++		struct map_desc map;
++
++		if (start >= end)
++			break;
++
++		map.pfn = __phys_to_pfn(start);
++		map.virtual = __phys_to_virt(start);
++		map.length = end - start;
++		map.type = MT_NORMAL;
++
++		create_mapping(&map);
++	}
++}
++
++/*
++ * paging_init() sets up the page tables, initialises the zone memory
++ * maps and sets up the zero page.
++ */
++void __init paging_init(void)
++{
++	void *zero_page;
++
++	/*
++	 * Maximum PGDIR_SIZE addressable via the initial direct kernel
++	 * mapping in swapper_pg_dir.
++	 */
++	memblock_set_current_limit((PHYS_OFFSET & PGDIR_MASK) + PGDIR_SIZE);
++
++	build_mem_type_table();
++	map_mem();
++
++	/*
++	 * Finally flush the caches and tlb to ensure that we're in a
++	 * consistent state.
++	 */
++	flush_cache_all();
++	flush_tlb_all();
++
++	/* allocate the zero page. */
++	zero_page = early_alloc(PAGE_SIZE);
++
++	bootmem_init();
++
++	empty_zero_page = virt_to_page(zero_page);
++	__flush_dcache_page(NULL, empty_zero_page);
++
++	/*
++	 * TTBR0 is only used for the identity mapping at this stage. Make it
++	 * point to zero page to avoid speculatively fetching new entries.
++	 */
++	cpu_set_reserved_ttbr0();
++	flush_tlb_all();
++}
++
++/*
++ * Enable the identity mapping to allow the MMU disabling.
++ */
++void setup_mm_for_reboot(void)
++{
++	cpu_switch_mm(idmap_pg_dir, &init_mm);
++	flush_tlb_all();
++}
++
++/*
++ * Check whether a kernel address is valid (derived from arch/x86/).
++ */
++int kern_addr_valid(unsigned long addr)
++{
++	pgd_t *pgd;
++	pud_t *pud;
++	pmd_t *pmd;
++	pte_t *pte;
++
++	if ((((long)addr) >> VA_BITS) != -1UL)
++		return 0;
++
++	pgd = pgd_offset_k(addr);
++	if (pgd_none(*pgd))
++		return 0;
++
++	pud = pud_offset(pgd, addr);
++	if (pud_none(*pud))
++		return 0;
++
++	pmd = pmd_offset(pud, addr);
++	if (pmd_none(*pmd))
++		return 0;
++
++	pte = pte_offset_kernel(pmd, addr);
++	if (pte_none(*pte))
++		return 0;
++
++	return pfn_valid(pte_pfn(*pte));
++}
++#ifdef CONFIG_SPARSEMEM_VMEMMAP
++#ifdef CONFIG_AARCH64_64K_PAGES
++int __meminit vmemmap_populate(struct page *start_page,
++			       unsigned long size, int node)
++{
++	return vmemmap_populate_basepages(start_page, size, node);
++}
++#else	/* !CONFIG_AARCH64_64K_PAGES */
++int __meminit vmemmap_populate(struct page *start_page,
++			       unsigned long size, int node)
++{
++	unsigned long addr = (unsigned long)start_page;
++	unsigned long end = (unsigned long)(start_page + size);
++	unsigned long next;
++	pgd_t *pgd;
++	pud_t *pud;
++	pmd_t *pmd;
++
++	do {
++		next = pmd_addr_end(addr, end);
++
++		pgd = vmemmap_pgd_populate(addr, node);
++		if (!pgd)
++			return -ENOMEM;
++
++		pud = vmemmap_pud_populate(pgd, addr, node);
++		if (!pud)
++			return -ENOMEM;
++
++		pmd = pmd_offset(pud, addr);
++		if (pmd_none(*pmd)) {
++			void *p = NULL;
++
++			p = vmemmap_alloc_block_buf(PMD_SIZE, node);
++			if (!p)
++				return -ENOMEM;
++
++			set_pmd(pmd, __pmd(__pa(p) | mem_types[MT_NORMAL].prot_sect));
++		} else
++			vmemmap_verify((pte_t *)pmd, node, addr, next);
++	} while (addr = next, addr != end);
++
++	return 0;
++}
++#endif	/* CONFIG_AARCH64_64K_PAGES */
++#endif	/* CONFIG_SPARSEMEM_VMEMMAP */
 
