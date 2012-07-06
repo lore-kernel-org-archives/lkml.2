@@ -1,382 +1,482 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756977Ab2GFLF4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 07:05:56 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:31761 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709Ab2GFLFw (ORCPT
+	id S933401Ab2GFLGf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 07:06:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51729 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933199Ab2GFLGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 07:05:52 -0400
-Message-ID: <4FF6C67E.9060409@siemens.com>
-Date: Fri, 06 Jul 2012 13:05:34 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Fri, 6 Jul 2012 07:06:33 -0400
+Date: Fri, 6 Jul 2012 04:06:17 -0700
+From: tip-bot for Hitoshi Mitake <h.mitake@gmail.com>
+Message-ID: <tip-17d7a1123f0f6d532830152564cc812cc73db2f3@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de, namhyung@kernel.org,
+        h.mitake@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, tglx@linutronix.de, h.mitake@gmail.com,
+        namhyung@kernel.org
+In-Reply-To: <1341236777-18457-1-git-send-email-h.mitake@gmail.com>
+References: <1341236777-18457-1-git-send-email-h.mitake@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf bench:
+  Fix confused variable namings and descriptions in mem subsystem
+Git-Commit-ID: 17d7a1123f0f6d532830152564cc812cc73db2f3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 5/7 v6] introduce a new qom device to deal with panicked
- event
-References: <4FF6B188.2060607@cn.fujitsu.com> <4FF6B2AC.9010204@cn.fujitsu.com>
-In-Reply-To: <4FF6B2AC.9010204@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 04:06:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-07-06 11:41, Wen Congyang wrote:
-> If the target is x86/x86_64, the guest's kernel will write 0x01 to the
-> port KVM_PV_PORT when it is panciked. This patch introduces a new qom
-> device kvm_pv_ioport to listen this I/O port, and deal with panicked
-> event according to panicked_action's value. The possible actions are:
-> 1. emit QEVENT_GUEST_PANICKED only
-> 2. emit QEVENT_GUEST_PANICKED and pause the guest
-> 3. emit QEVENT_GUEST_PANICKED and poweroff the guest
-> 4. emit QEVENT_GUEST_PANICKED and reset the guest
-> 
-> I/O ports does not work for some targets(for example: s390). And you
-> can implement another qom device, and include it's code into pv_event.c
-> for such target.
-> 
-> Note: if we emit QEVENT_GUEST_PANICKED only, and the management
-> application does not receive this event(the management may not
-> run when the event is emitted), the management won't know the
-> guest is panicked.
-> 
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->  hw/kvm/Makefile.objs |    2 +-
->  hw/kvm/pv_event.c    |   73 +++++++++++++++++++++++++++
->  hw/kvm/pv_ioport.c   |  133 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  kvm-stub.c           |    9 +++
->  kvm.h                |    3 +
->  vl.c                 |    4 ++
->  6 files changed, 223 insertions(+), 1 deletions(-)
->  create mode 100644 hw/kvm/pv_event.c
->  create mode 100644 hw/kvm/pv_ioport.c
-> 
-> diff --git a/hw/kvm/Makefile.objs b/hw/kvm/Makefile.objs
-> index 226497a..23e3b30 100644
-> --- a/hw/kvm/Makefile.objs
-> +++ b/hw/kvm/Makefile.objs
-> @@ -1 +1 @@
-> -obj-$(CONFIG_KVM) += clock.o apic.o i8259.o ioapic.o i8254.o
-> +obj-$(CONFIG_KVM) += clock.o apic.o i8259.o ioapic.o i8254.o pv_event.o
-> diff --git a/hw/kvm/pv_event.c b/hw/kvm/pv_event.c
-> new file mode 100644
-> index 0000000..d7ded37
-> --- /dev/null
-> +++ b/hw/kvm/pv_event.c
-> @@ -0,0 +1,73 @@
-> +/*
-> + * QEMU KVM support, paravirtual event device
-> + *
-> + * Copyright Fujitsu, Corp. 2012
-> + *
-> + * Authors:
-> + *     Wen Congyang <wency@cn.fujitsu.com>
-> + *
-> + * This work is licensed under the terms of the GNU GPL, version 2 or later.
-> + * See the COPYING file in the top-level directory.
-> + *
-> + */
-> +
-> +#include <linux/kvm_para.h>
-> +#include <asm/kvm_para.h>
-> +#include <qobject.h>
-> +#include <qjson.h>
-> +#include <monitor.h>
-> +#include <sysemu.h>
-> +#include <kvm.h>
-> +
-> +/* Possible values for action parameter. */
-> +#define PANICKED_REPORT     1   /* emit QEVENT_GUEST_PANICKED only */
-> +#define PANICKED_PAUSE      2   /* emit QEVENT_GUEST_PANICKED and pause VM */
-> +#define PANICKED_POWEROFF   3   /* emit QEVENT_GUEST_PANICKED and quit VM */
-> +#define PANICKED_RESET      4   /* emit QEVENT_GUEST_PANICKED and reset VM */
-> +
-> +static int panicked_action = PANICKED_REPORT;
+Commit-ID:  17d7a1123f0f6d532830152564cc812cc73db2f3
+Gitweb:     http://git.kernel.org/tip/17d7a1123f0f6d532830152564cc812cc73db2f3
+Author:     Hitoshi Mitake <h.mitake@gmail.com>
+AuthorDate: Mon, 2 Jul 2012 22:46:17 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 2 Jul 2012 14:35:45 -0300
 
-Avoid global variables please when there are device states. This one is
-unneeded anyway (and will generate warnings when build without KVM_PV_PORT).
+perf bench: Fix confused variable namings and descriptions in mem subsystem
 
-> +
-> +static void panicked_mon_event(const char *action)
-> +{
-> +    QObject *data;
-> +
-> +    data = qobject_from_jsonf("{ 'action': %s }", action);
-> +    monitor_protocol_event(QEVENT_GUEST_PANICKED, data);
-> +    qobject_decref(data);
-> +}
-> +
-> +static void panicked_perform_action(uint32_t panicked_action)
-> +{
-> +    switch (panicked_action) {
-> +    case PANICKED_REPORT:
-> +        panicked_mon_event("report");
-> +        break;
-> +
-> +    case PANICKED_PAUSE:
-> +        panicked_mon_event("pause");
-> +        vm_stop(RUN_STATE_GUEST_PANICKED);
-> +        break;
-> +
-> +    case PANICKED_POWEROFF:
-> +        panicked_mon_event("poweroff");
-> +        exit(0);
+As Namhyung Kim pointed, there are confused namings and descriptions of words
+"cycle" and "clock" in mem-memset.c and mem-memcpy.c.
 
-We have qemu_system_shutdown_request.
+With the option "-c" (or "--clock", now renamed as "--cycle"), mem subsystem
+measures cost of memset() and memcpy() with cpu-cycles event.
 
-> +        break;
-> +    case PANICKED_RESET:
-> +        panicked_mon_event("reset");
-> +        qemu_system_reset_request();
-> +        break;
-> +    }
-> +}
-> +
-> +#if defined(KVM_PV_PORT)
-> +#include "pv_ioport.c"
-> +
-> +void kvm_pv_event_init(void)
-> +{
-> +    pv_ioport_init(panicked_action);
-> +}
-> +#else
-> +void kvm_pv_event_init(void)
-> +{
-> +}
-> +#endif
+But current mem subsystem source code contains lots of confused variable
+namings and descriptions with "clock" (e.g. the variable use_clock). This is a
+very bad style because there is another software event named "cpu-clock". This
+patch replaces wrong usage of "clock" to "cycle".
 
-Generally, the split-up of handling and transport layer is a good idea
-to allow other arch to support this interface. However, its current form
-is a bit unfortunate as it does not properly separate the logic of the
-events (so far only panic action) from the transport mechanism (PIO) and
-as it registers the transport as a configurable device, not the event
-handler. Make sure that pv_ioport only deals with registering against
-the right bus and forwarding of the PV gate accesses to the event
-handling layer. Device name and properties should be defined by the
-event layer as well (but then registered by the transport layer).
+v2: modified Documentation/perf-bench.txt for the descriptions of
+--cycle option
 
-> diff --git a/hw/kvm/pv_ioport.c b/hw/kvm/pv_ioport.c
-> new file mode 100644
-> index 0000000..e93d819
-> --- /dev/null
-> +++ b/hw/kvm/pv_ioport.c
-> @@ -0,0 +1,133 @@
-> +/*
-> + * QEMU KVM support, paravirtual I/O port device
-> + *
-> + * Copyright Fujitsu, Corp. 2012
-> + *
-> + * Authors:
-> + *     Wen Congyang <wency@cn.fujitsu.com>
-> + *
-> + * This work is licensed under the terms of the GNU GPL, version 2 or later.
-> + * See the COPYING file in the top-level directory.
-> + *
-> + */
-> +
-> +#include "hw/isa.h"
-> +
-> +typedef struct {
-> +    ISADevice dev;
-> +    MemoryRegion ioport;
-> +    uint32_t panicked_action;
+Signed-off-by: Hitoshi Mitake <h.mitake@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1341236777-18457-1-git-send-email-h.mitake@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Documentation/perf-bench.txt |    4 +-
+ tools/perf/bench/mem-memcpy.c           |   80 +++++++++++++++---------------
+ tools/perf/bench/mem-memset.c           |   80 +++++++++++++++---------------
+ 3 files changed, 82 insertions(+), 82 deletions(-)
 
-As explained above, this layer should not know about things like
-"panicked_action".
-
-> +} PVState;
-> +
-> +static PVState *pv_state;
-> +
-> +static uint64_t pv_io_read(void *opaque, target_phys_addr_t addr, unsigned size)
-> +{
-> +    return 1 << KVM_PV_FEATURE_PANICKED;
-> +}
-> +
-> +static void pv_io_write(void *opaque, target_phys_addr_t addr, uint64_t val,
-> +                        unsigned size)
-> +{
-> +    PVState *s = opaque;
-> +
-> +    if (val == KVM_PV_PANICKED) {
-> +        panicked_perform_action(s->panicked_action);
-> +    }
-> +}
-> +
-> +static const MemoryRegionOps pv_io_ops = {
-> +    .read = pv_io_read,
-> +    .write = pv_io_write,
-> +    .impl = {
-> +        .min_access_size = 4,
-> +        .max_access_size = 4,
-> +    },
-> +};
-> +
-> +static int pv_ioport_initfn(ISADevice *dev)
-> +{
-> +    PVState *s = DO_UPCAST(PVState, dev, dev);
-> +
-> +    memory_region_init_io(&s->ioport, &pv_io_ops, s, "pv_event", 1);
-> +    isa_register_ioport(dev, &s->ioport, KVM_PV_PORT);
-> +
-> +    pv_state = s;
-> +
-> +    return 0;
-> +}
-> +
-> +static const VMStateDescription pv_ioport_vmsd = {
-> +    .name = "pv_ioport",
-> +    .version_id = 1,
-> +    .minimum_version_id = 1,
-> +    .minimum_version_id_old = 1,
-> +    .fields = (VMStateField[]) {
-> +        VMSTATE_UINT32(panicked_action, PVState),
-> +        VMSTATE_END_OF_LIST()
-> +    }
-> +};
-
-Unneeded as panicked_action is a host-side property, not a
-guest-changeable state. Your device is stateless, thus has no vmstate.
-
-> +
-> +static Property pv_ioport_properties[] = {
-> +    DEFINE_PROP_UINT32("panicked_action", PVState, panicked_action, PANICKED_REPORT),
-> +    DEFINE_PROP_END_OF_LIST(),
-> +};
-> +
-> +static void pv_ioport_class_init(ObjectClass *klass, void *data)
-> +{
-> +    DeviceClass *dc = DEVICE_CLASS(klass);
-> +    ISADeviceClass *ic = ISA_DEVICE_CLASS(klass);
-> +
-> +    ic->init = pv_ioport_initfn;
-> +    dc->no_user = 1;
-> +    dc->vmsd = &pv_ioport_vmsd;
-> +    dc->props = pv_ioport_properties;
-> +}
-> +
-> +static TypeInfo pv_ioport_info = {
-> +    .name          = "kvm_pv_ioport",
-> +    .parent        = TYPE_ISA_DEVICE,
-> +    .instance_size = sizeof(PVState),
-> +    .class_init    = pv_ioport_class_init,
-> +};
-> +
-> +static void pv_ioport_register_types(void)
-> +{
-> +    type_register_static(&pv_ioport_info);
-> +}
-> +
-> +type_init(pv_ioport_register_types)
-> +
-> +static int is_isa_bus(BusState *bus, void *opaque)
-> +{
-> +    const char *bus_type_name;
-> +    ISABus **isa_bus_p = opaque;
-> +
-> +    bus_type_name = object_class_get_name(bus->obj.class);
-> +    if (!strcmp(bus_type_name, TYPE_ISA_BUS)) {
-> +        *isa_bus_p = ISA_BUS(&bus->obj);
-> +        return -1;
-> +    }
-> +
-> +    return 0;
-> +}
-> +
-> +static ISABus *get_isa_bus(void)
-> +{
-> +    ISABus *isa_bus = NULL;
-> +
-> +    qbus_walk_children(sysbus_get_default(), NULL, is_isa_bus, &isa_bus);
-> +
-> +    return isa_bus;
-> +}
-
-Unneeded if the bus is passed on creation from the pc board setup.
-That's the official way.
-
-> +
-> +static void pv_ioport_init(uint32_t panicked_action)
-> +{
-> +    ISADevice *dev;
-> +    ISABus *bus;
-> +
-> +    bus = get_isa_bus();
-> +    dev = isa_create(bus, "kvm_pv_ioport");
-> +    qdev_prop_set_uint32(&dev->qdev, "panicked_action", panicked_action);
-
-Nope, configuration should works via "-global device.property=value".
-You likely want to define a special property that translates action
-names into enum values, see e.g. the lost tick policy.
-
-> +    qdev_init_nofail(&dev->qdev);
-> +}
-> diff --git a/kvm-stub.c b/kvm-stub.c
-> index ec9a364..a28d078 100644
-> --- a/kvm-stub.c
-> +++ b/kvm-stub.c
-> @@ -151,3 +151,12 @@ int kvm_irqchip_remove_irqfd(KVMState *s, int fd, int virq)
->  {
->      return -ENOSYS;
->  }
-> +
-> +void kvm_pv_event_init(void)
-> +{
-> +}
-> +
-> +int select_panicked_action(const char *p)
-> +{
-> +    return 0;
-> +}
-
-Both will be unneeded.
-
-> diff --git a/kvm.h b/kvm.h
-> index 9c7b0ea..1f7c72b 100644
-> --- a/kvm.h
-> +++ b/kvm.h
-> @@ -218,4 +218,7 @@ void kvm_irqchip_release_virq(KVMState *s, int virq);
->  
->  int kvm_irqchip_add_irqfd(KVMState *s, int fd, int virq);
->  int kvm_irqchip_remove_irqfd(KVMState *s, int fd, int virq);
-> +
-> +void kvm_pv_event_init(void);
-> +int select_panicked_action(const char *p);
->  #endif
-> diff --git a/vl.c b/vl.c
-> index ea5ef1c..f5cd28d 100644
-> --- a/vl.c
-> +++ b/vl.c
-> @@ -3622,6 +3622,10 @@ int main(int argc, char **argv, char **envp)
->          exit(1);
->      }
->  
-> +    if (kvm_enabled()) {
-> +        kvm_pv_event_init();
-> +    }
-
-Initialization is better located in the setup code of the board that
-supports this device (here the PC). Very similar to kvm clock.
-
-> +
->      qdev_machine_creation_done();
->  
->      if (rom_load_all() != 0) {
-> 
-
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
-
-
+diff --git a/tools/perf/Documentation/perf-bench.txt b/tools/perf/Documentation/perf-bench.txt
+index f3c716a..7065cd6 100644
+--- a/tools/perf/Documentation/perf-bench.txt
++++ b/tools/perf/Documentation/perf-bench.txt
+@@ -144,7 +144,7 @@ On x86-64, x86-64-unrolled, x86-64-movsq and x86-64-movsb are supported.
+ Repeat memcpy invocation this number of times.
+ 
+ -c::
+---clock::
++--cycle::
+ Use perf's cpu-cycles event instead of gettimeofday syscall.
+ 
+ -o::
+@@ -176,7 +176,7 @@ On x86-64, x86-64-unrolled, x86-64-stosq and x86-64-stosb are supported.
+ Repeat memset invocation this number of times.
+ 
+ -c::
+---clock::
++--cycle::
+ Use perf's cpu-cycles event instead of gettimeofday syscall.
+ 
+ -o::
+diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
+index d990365..02dad5d 100644
+--- a/tools/perf/bench/mem-memcpy.c
++++ b/tools/perf/bench/mem-memcpy.c
+@@ -24,8 +24,8 @@
+ static const char	*length_str	= "1MB";
+ static const char	*routine	= "default";
+ static int		iterations	= 1;
+-static bool		use_clock;
+-static int		clock_fd;
++static bool		use_cycle;
++static int		cycle_fd;
+ static bool		only_prefault;
+ static bool		no_prefault;
+ 
+@@ -37,7 +37,7 @@ static const struct option options[] = {
+ 		    "Specify routine to copy"),
+ 	OPT_INTEGER('i', "iterations", &iterations,
+ 		    "repeat memcpy() invocation this number of times"),
+-	OPT_BOOLEAN('c', "clock", &use_clock,
++	OPT_BOOLEAN('c', "cycle", &use_cycle,
+ 		    "Use cycles event instead of gettimeofday() for measuring"),
+ 	OPT_BOOLEAN('o', "only-prefault", &only_prefault,
+ 		    "Show only the result with page faults before memcpy()"),
+@@ -76,27 +76,27 @@ static const char * const bench_mem_memcpy_usage[] = {
+ 	NULL
+ };
+ 
+-static struct perf_event_attr clock_attr = {
++static struct perf_event_attr cycle_attr = {
+ 	.type		= PERF_TYPE_HARDWARE,
+ 	.config		= PERF_COUNT_HW_CPU_CYCLES
+ };
+ 
+-static void init_clock(void)
++static void init_cycle(void)
+ {
+-	clock_fd = sys_perf_event_open(&clock_attr, getpid(), -1, -1, 0);
++	cycle_fd = sys_perf_event_open(&cycle_attr, getpid(), -1, -1, 0);
+ 
+-	if (clock_fd < 0 && errno == ENOSYS)
++	if (cycle_fd < 0 && errno == ENOSYS)
+ 		die("No CONFIG_PERF_EVENTS=y kernel support configured?\n");
+ 	else
+-		BUG_ON(clock_fd < 0);
++		BUG_ON(cycle_fd < 0);
+ }
+ 
+-static u64 get_clock(void)
++static u64 get_cycle(void)
+ {
+ 	int ret;
+ 	u64 clk;
+ 
+-	ret = read(clock_fd, &clk, sizeof(u64));
++	ret = read(cycle_fd, &clk, sizeof(u64));
+ 	BUG_ON(ret != sizeof(u64));
+ 
+ 	return clk;
+@@ -119,9 +119,9 @@ static void alloc_mem(void **dst, void **src, size_t length)
+ 		die("memory allocation failed - maybe length is too large?\n");
+ }
+ 
+-static u64 do_memcpy_clock(memcpy_t fn, size_t len, bool prefault)
++static u64 do_memcpy_cycle(memcpy_t fn, size_t len, bool prefault)
+ {
+-	u64 clock_start = 0ULL, clock_end = 0ULL;
++	u64 cycle_start = 0ULL, cycle_end = 0ULL;
+ 	void *src = NULL, *dst = NULL;
+ 	int i;
+ 
+@@ -130,14 +130,14 @@ static u64 do_memcpy_clock(memcpy_t fn, size_t len, bool prefault)
+ 	if (prefault)
+ 		fn(dst, src, len);
+ 
+-	clock_start = get_clock();
++	cycle_start = get_cycle();
+ 	for (i = 0; i < iterations; ++i)
+ 		fn(dst, src, len);
+-	clock_end = get_clock();
++	cycle_end = get_cycle();
+ 
+ 	free(src);
+ 	free(dst);
+-	return clock_end - clock_start;
++	return cycle_end - cycle_start;
+ }
+ 
+ static double do_memcpy_gettimeofday(memcpy_t fn, size_t len, bool prefault)
+@@ -182,17 +182,17 @@ int bench_mem_memcpy(int argc, const char **argv,
+ 	int i;
+ 	size_t len;
+ 	double result_bps[2];
+-	u64 result_clock[2];
++	u64 result_cycle[2];
+ 
+ 	argc = parse_options(argc, argv, options,
+ 			     bench_mem_memcpy_usage, 0);
+ 
+-	if (use_clock)
+-		init_clock();
++	if (use_cycle)
++		init_cycle();
+ 
+ 	len = (size_t)perf_atoll((char *)length_str);
+ 
+-	result_clock[0] = result_clock[1] = 0ULL;
++	result_cycle[0] = result_cycle[1] = 0ULL;
+ 	result_bps[0] = result_bps[1] = 0.0;
+ 
+ 	if ((s64)len <= 0) {
+@@ -223,11 +223,11 @@ int bench_mem_memcpy(int argc, const char **argv,
+ 
+ 	if (!only_prefault && !no_prefault) {
+ 		/* show both of results */
+-		if (use_clock) {
+-			result_clock[0] =
+-				do_memcpy_clock(routines[i].fn, len, false);
+-			result_clock[1] =
+-				do_memcpy_clock(routines[i].fn, len, true);
++		if (use_cycle) {
++			result_cycle[0] =
++				do_memcpy_cycle(routines[i].fn, len, false);
++			result_cycle[1] =
++				do_memcpy_cycle(routines[i].fn, len, true);
+ 		} else {
+ 			result_bps[0] =
+ 				do_memcpy_gettimeofday(routines[i].fn,
+@@ -237,9 +237,9 @@ int bench_mem_memcpy(int argc, const char **argv,
+ 						len, true);
+ 		}
+ 	} else {
+-		if (use_clock) {
+-			result_clock[pf] =
+-				do_memcpy_clock(routines[i].fn,
++		if (use_cycle) {
++			result_cycle[pf] =
++				do_memcpy_cycle(routines[i].fn,
+ 						len, only_prefault);
+ 		} else {
+ 			result_bps[pf] =
+@@ -251,12 +251,12 @@ int bench_mem_memcpy(int argc, const char **argv,
+ 	switch (bench_format) {
+ 	case BENCH_FORMAT_DEFAULT:
+ 		if (!only_prefault && !no_prefault) {
+-			if (use_clock) {
+-				printf(" %14lf Clock/Byte\n",
+-					(double)result_clock[0]
++			if (use_cycle) {
++				printf(" %14lf Cycle/Byte\n",
++					(double)result_cycle[0]
+ 					/ (double)len);
+-				printf(" %14lf Clock/Byte (with prefault)\n",
+-					(double)result_clock[1]
++				printf(" %14lf Cycle/Byte (with prefault)\n",
++					(double)result_cycle[1]
+ 					/ (double)len);
+ 			} else {
+ 				print_bps(result_bps[0]);
+@@ -265,9 +265,9 @@ int bench_mem_memcpy(int argc, const char **argv,
+ 				printf(" (with prefault)\n");
+ 			}
+ 		} else {
+-			if (use_clock) {
+-				printf(" %14lf Clock/Byte",
+-					(double)result_clock[pf]
++			if (use_cycle) {
++				printf(" %14lf Cycle/Byte",
++					(double)result_cycle[pf]
+ 					/ (double)len);
+ 			} else
+ 				print_bps(result_bps[pf]);
+@@ -277,17 +277,17 @@ int bench_mem_memcpy(int argc, const char **argv,
+ 		break;
+ 	case BENCH_FORMAT_SIMPLE:
+ 		if (!only_prefault && !no_prefault) {
+-			if (use_clock) {
++			if (use_cycle) {
+ 				printf("%lf %lf\n",
+-					(double)result_clock[0] / (double)len,
+-					(double)result_clock[1] / (double)len);
++					(double)result_cycle[0] / (double)len,
++					(double)result_cycle[1] / (double)len);
+ 			} else {
+ 				printf("%lf %lf\n",
+ 					result_bps[0], result_bps[1]);
+ 			}
+ 		} else {
+-			if (use_clock) {
+-				printf("%lf\n", (double)result_clock[pf]
++			if (use_cycle) {
++				printf("%lf\n", (double)result_cycle[pf]
+ 					/ (double)len);
+ 			} else
+ 				printf("%lf\n", result_bps[pf]);
+diff --git a/tools/perf/bench/mem-memset.c b/tools/perf/bench/mem-memset.c
+index bf0d5f5..350cc95 100644
+--- a/tools/perf/bench/mem-memset.c
++++ b/tools/perf/bench/mem-memset.c
+@@ -24,8 +24,8 @@
+ static const char	*length_str	= "1MB";
+ static const char	*routine	= "default";
+ static int		iterations	= 1;
+-static bool		use_clock;
+-static int		clock_fd;
++static bool		use_cycle;
++static int		cycle_fd;
+ static bool		only_prefault;
+ static bool		no_prefault;
+ 
+@@ -37,7 +37,7 @@ static const struct option options[] = {
+ 		    "Specify routine to set"),
+ 	OPT_INTEGER('i', "iterations", &iterations,
+ 		    "repeat memset() invocation this number of times"),
+-	OPT_BOOLEAN('c', "clock", &use_clock,
++	OPT_BOOLEAN('c', "cycle", &use_cycle,
+ 		    "Use cycles event instead of gettimeofday() for measuring"),
+ 	OPT_BOOLEAN('o', "only-prefault", &only_prefault,
+ 		    "Show only the result with page faults before memset()"),
+@@ -76,27 +76,27 @@ static const char * const bench_mem_memset_usage[] = {
+ 	NULL
+ };
+ 
+-static struct perf_event_attr clock_attr = {
++static struct perf_event_attr cycle_attr = {
+ 	.type		= PERF_TYPE_HARDWARE,
+ 	.config		= PERF_COUNT_HW_CPU_CYCLES
+ };
+ 
+-static void init_clock(void)
++static void init_cycle(void)
+ {
+-	clock_fd = sys_perf_event_open(&clock_attr, getpid(), -1, -1, 0);
++	cycle_fd = sys_perf_event_open(&cycle_attr, getpid(), -1, -1, 0);
+ 
+-	if (clock_fd < 0 && errno == ENOSYS)
++	if (cycle_fd < 0 && errno == ENOSYS)
+ 		die("No CONFIG_PERF_EVENTS=y kernel support configured?\n");
+ 	else
+-		BUG_ON(clock_fd < 0);
++		BUG_ON(cycle_fd < 0);
+ }
+ 
+-static u64 get_clock(void)
++static u64 get_cycle(void)
+ {
+ 	int ret;
+ 	u64 clk;
+ 
+-	ret = read(clock_fd, &clk, sizeof(u64));
++	ret = read(cycle_fd, &clk, sizeof(u64));
+ 	BUG_ON(ret != sizeof(u64));
+ 
+ 	return clk;
+@@ -115,9 +115,9 @@ static void alloc_mem(void **dst, size_t length)
+ 		die("memory allocation failed - maybe length is too large?\n");
+ }
+ 
+-static u64 do_memset_clock(memset_t fn, size_t len, bool prefault)
++static u64 do_memset_cycle(memset_t fn, size_t len, bool prefault)
+ {
+-	u64 clock_start = 0ULL, clock_end = 0ULL;
++	u64 cycle_start = 0ULL, cycle_end = 0ULL;
+ 	void *dst = NULL;
+ 	int i;
+ 
+@@ -126,13 +126,13 @@ static u64 do_memset_clock(memset_t fn, size_t len, bool prefault)
+ 	if (prefault)
+ 		fn(dst, -1, len);
+ 
+-	clock_start = get_clock();
++	cycle_start = get_cycle();
+ 	for (i = 0; i < iterations; ++i)
+ 		fn(dst, i, len);
+-	clock_end = get_clock();
++	cycle_end = get_cycle();
+ 
+ 	free(dst);
+-	return clock_end - clock_start;
++	return cycle_end - cycle_start;
+ }
+ 
+ static double do_memset_gettimeofday(memset_t fn, size_t len, bool prefault)
+@@ -176,17 +176,17 @@ int bench_mem_memset(int argc, const char **argv,
+ 	int i;
+ 	size_t len;
+ 	double result_bps[2];
+-	u64 result_clock[2];
++	u64 result_cycle[2];
+ 
+ 	argc = parse_options(argc, argv, options,
+ 			     bench_mem_memset_usage, 0);
+ 
+-	if (use_clock)
+-		init_clock();
++	if (use_cycle)
++		init_cycle();
+ 
+ 	len = (size_t)perf_atoll((char *)length_str);
+ 
+-	result_clock[0] = result_clock[1] = 0ULL;
++	result_cycle[0] = result_cycle[1] = 0ULL;
+ 	result_bps[0] = result_bps[1] = 0.0;
+ 
+ 	if ((s64)len <= 0) {
+@@ -217,11 +217,11 @@ int bench_mem_memset(int argc, const char **argv,
+ 
+ 	if (!only_prefault && !no_prefault) {
+ 		/* show both of results */
+-		if (use_clock) {
+-			result_clock[0] =
+-				do_memset_clock(routines[i].fn, len, false);
+-			result_clock[1] =
+-				do_memset_clock(routines[i].fn, len, true);
++		if (use_cycle) {
++			result_cycle[0] =
++				do_memset_cycle(routines[i].fn, len, false);
++			result_cycle[1] =
++				do_memset_cycle(routines[i].fn, len, true);
+ 		} else {
+ 			result_bps[0] =
+ 				do_memset_gettimeofday(routines[i].fn,
+@@ -231,9 +231,9 @@ int bench_mem_memset(int argc, const char **argv,
+ 						len, true);
+ 		}
+ 	} else {
+-		if (use_clock) {
+-			result_clock[pf] =
+-				do_memset_clock(routines[i].fn,
++		if (use_cycle) {
++			result_cycle[pf] =
++				do_memset_cycle(routines[i].fn,
+ 						len, only_prefault);
+ 		} else {
+ 			result_bps[pf] =
+@@ -245,12 +245,12 @@ int bench_mem_memset(int argc, const char **argv,
+ 	switch (bench_format) {
+ 	case BENCH_FORMAT_DEFAULT:
+ 		if (!only_prefault && !no_prefault) {
+-			if (use_clock) {
+-				printf(" %14lf Clock/Byte\n",
+-					(double)result_clock[0]
++			if (use_cycle) {
++				printf(" %14lf Cycle/Byte\n",
++					(double)result_cycle[0]
+ 					/ (double)len);
+-				printf(" %14lf Clock/Byte (with prefault)\n ",
+-					(double)result_clock[1]
++				printf(" %14lf Cycle/Byte (with prefault)\n ",
++					(double)result_cycle[1]
+ 					/ (double)len);
+ 			} else {
+ 				print_bps(result_bps[0]);
+@@ -259,9 +259,9 @@ int bench_mem_memset(int argc, const char **argv,
+ 				printf(" (with prefault)\n");
+ 			}
+ 		} else {
+-			if (use_clock) {
+-				printf(" %14lf Clock/Byte",
+-					(double)result_clock[pf]
++			if (use_cycle) {
++				printf(" %14lf Cycle/Byte",
++					(double)result_cycle[pf]
+ 					/ (double)len);
+ 			} else
+ 				print_bps(result_bps[pf]);
+@@ -271,17 +271,17 @@ int bench_mem_memset(int argc, const char **argv,
+ 		break;
+ 	case BENCH_FORMAT_SIMPLE:
+ 		if (!only_prefault && !no_prefault) {
+-			if (use_clock) {
++			if (use_cycle) {
+ 				printf("%lf %lf\n",
+-					(double)result_clock[0] / (double)len,
+-					(double)result_clock[1] / (double)len);
++					(double)result_cycle[0] / (double)len,
++					(double)result_cycle[1] / (double)len);
+ 			} else {
+ 				printf("%lf %lf\n",
+ 					result_bps[0], result_bps[1]);
+ 			}
+ 		} else {
+-			if (use_clock) {
+-				printf("%lf\n", (double)result_clock[pf]
++			if (use_cycle) {
++				printf("%lf\n", (double)result_cycle[pf]
+ 					/ (double)len);
+ 			} else
+ 				printf("%lf\n", result_bps[pf]);
