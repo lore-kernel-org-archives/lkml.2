@@ -1,94 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757118Ab2GFLOm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 07:14:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59503 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219Ab2GFLOl (ORCPT
+	id S1757135Ab2GFLPL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 07:15:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52061 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756283Ab2GFLPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 07:14:41 -0400
-Message-ID: <1341573272.6611.1.camel@phoenix>
-Subject: [PATCH 1/2] regulator: aat2870: Convert to
- regulator_list_voltage_table
-From: Axel Lin <axel.lin@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jin Park <jinyoungp@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 06 Jul 2012 19:14:32 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 6 Jul 2012 07:15:08 -0400
+Date: Fri, 6 Jul 2012 04:14:34 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-ca63858e9eb0ce495031c4ab5291874835cb43cf@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        namhyung.kim@lge.com, namhyung@kernel.org, bp@alien8.de,
+        fweisbec@gmail.com, rostedt@goodmis.org, acme@infradead.org,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        namhyung.kim@lge.com, bp@alien8.de, namhyung@kernel.org,
+        fweisbec@gmail.com, rostedt@goodmis.org, acme@infradead.org,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1333940074-19052-5-git-send-email-namhyung.kim@lge.com>
+References: <1333940074-19052-5-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tools lib traceevent: Handle strdup failure cases
+Git-Commit-ID: ca63858e9eb0ce495031c4ab5291874835cb43cf
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 04:14:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Commit-ID:  ca63858e9eb0ce495031c4ab5291874835cb43cf
+Gitweb:     http://git.kernel.org/tip/ca63858e9eb0ce495031c4ab5291874835cb43cf
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Mon, 9 Apr 2012 11:54:31 +0900
+Committer:  Namhyung Kim <namhyung@kernel.org>
+CommitDate: Wed, 4 Jul 2012 13:40:31 +0900
+
+tools lib traceevent: Handle strdup failure cases
+
+There were some places didn't check return value of the strdup and had
+unneeded/duplicated checks.  Fix it.
+
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1333940074-19052-5-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- drivers/regulator/aat2870-regulator.c |   16 +++-------------
- 1 file changed, 3 insertions(+), 13 deletions(-)
+ tools/lib/traceevent/event-parse.c |   29 +++++++++++++++++++++++++++--
+ 1 files changed, 27 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/regulator/aat2870-regulator.c b/drivers/regulator/aat2870-regulator.c
-index 06776ca..6644e83 100644
---- a/drivers/regulator/aat2870-regulator.c
-+++ b/drivers/regulator/aat2870-regulator.c
-@@ -33,8 +33,6 @@ struct aat2870_regulator {
- 	struct aat2870_data *aat2870;
- 	struct regulator_desc desc;
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 768fab5..cd334d5 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -467,8 +467,10 @@ int pevent_register_function(struct pevent *pevent, char *func,
+ 		item->mod = NULL;
+ 	item->addr = addr;
  
--	const int *voltages; /* uV */
--
- 	int min_uV;
- 	int max_uV;
+-	pevent->funclist = item;
++	if (!item->func || (mod && !item->mod))
++		die("malloc func");
  
-@@ -47,14 +45,6 @@ struct aat2870_regulator {
- 	u8 voltage_mask;
- };
++	pevent->funclist = item;
+ 	pevent->func_count++;
  
--static int aat2870_ldo_list_voltage(struct regulator_dev *rdev,
--				    unsigned selector)
--{
--	struct aat2870_regulator *ri = rdev_get_drvdata(rdev);
--
--	return ri->voltages[selector];
--}
--
- static int aat2870_ldo_set_voltage_sel(struct regulator_dev *rdev,
- 				       unsigned selector)
- {
-@@ -111,7 +101,7 @@ static int aat2870_ldo_is_enabled(struct regulator_dev *rdev)
- }
+ 	return 0;
+@@ -583,10 +585,13 @@ int pevent_register_print_string(struct pevent *pevent, char *fmt,
+ 	item = malloc_or_die(sizeof(*item));
  
- static struct regulator_ops aat2870_ldo_ops = {
--	.list_voltage = aat2870_ldo_list_voltage,
-+	.list_voltage = regulator_list_voltage_table,
- 	.set_voltage_sel = aat2870_ldo_set_voltage_sel,
- 	.get_voltage_sel = aat2870_ldo_get_voltage_sel,
- 	.enable = aat2870_ldo_enable,
-@@ -119,7 +109,7 @@ static struct regulator_ops aat2870_ldo_ops = {
- 	.is_enabled = aat2870_ldo_is_enabled,
- };
+ 	item->next = pevent->printklist;
+-	pevent->printklist = item;
+ 	item->printk = strdup(fmt);
+ 	item->addr = addr;
  
--static const int aat2870_ldo_voltages[] = {
-+static const unsigned int aat2870_ldo_voltages[] = {
- 	1200000, 1300000, 1500000, 1600000,
- 	1800000, 2000000, 2200000, 2500000,
- 	2600000, 2700000, 2800000, 2900000,
-@@ -132,11 +122,11 @@ static const int aat2870_ldo_voltages[] = {
- 			.name = #ids,			\
- 			.id = AAT2870_ID_##ids,		\
- 			.n_voltages = ARRAY_SIZE(aat2870_ldo_voltages),	\
-+			.volt_table = aat2870_ldo_voltages, \
- 			.ops = &aat2870_ldo_ops,	\
- 			.type = REGULATOR_VOLTAGE,	\
- 			.owner = THIS_MODULE,		\
- 		},					\
--		.voltages = aat2870_ldo_voltages,	\
- 		.min_uV = 1200000,			\
- 		.max_uV = 3300000,			\
- 	}
--- 
-1.7.9.5
-
-
-
++	if (!item->printk)
++		die("malloc fmt");
++
++	pevent->printklist = item;
+ 	pevent->printk_count++;
+ 
+ 	return 0;
+@@ -2150,6 +2155,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+ 		if (value == NULL)
+ 			goto out_free;
+ 		field->value = strdup(value);
++		if (field->value == NULL)
++			goto out_free;
+ 
+ 		free_arg(arg);
+ 		arg = alloc_arg();
+@@ -2163,6 +2170,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+ 		if (value == NULL)
+ 			goto out_free;
+ 		field->str = strdup(value);
++		if (field->str == NULL)
++			goto out_free;
+ 		free_arg(arg);
+ 		arg = NULL;
+ 
+@@ -3433,6 +3442,9 @@ process_defined_func(struct trace_seq *s, void *data, int size,
+ 			string = malloc_or_die(sizeof(*string));
+ 			string->next = strings;
+ 			string->str = strdup(str.buffer);
++			if (!string->str)
++				die("malloc str");
++
+ 			strings = string;
+ 			trace_seq_destroy(&str);
+ 			break;
+@@ -3571,6 +3583,8 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
+ 				arg->next = NULL;
+ 				arg->type = PRINT_BSTRING;
+ 				arg->string.string = strdup(bptr);
++				if (!arg->string.string)
++					break;
+ 				bptr += strlen(bptr) + 1;
+ 				*next = arg;
+ 				next = &arg->next;
+@@ -4666,6 +4680,8 @@ int pevent_parse_event(struct pevent *pevent,
+ 		die("failed to read event id");
+ 
+ 	event->system = strdup(sys);
++	if (!event->system)
++		die("failed to allocate system");
+ 
+ 	/* Add pevent to event so that it can be referenced */
+ 	event->pevent = pevent;
+@@ -4707,6 +4723,10 @@ int pevent_parse_event(struct pevent *pevent,
+ 			list = &arg->next;
+ 			arg->type = PRINT_FIELD;
+ 			arg->field.name = strdup(field->name);
++			if (!arg->field.name) {
++				do_warning("failed to allocate field name");
++				goto event_failed;
++			}
+ 			arg->field.field = field;
+ 		}
+ 		return 0;
+@@ -5050,6 +5070,11 @@ int pevent_register_event_handler(struct pevent *pevent,
+ 	if (sys_name)
+ 		handle->sys_name = strdup(sys_name);
+ 
++	if ((event_name && !handle->event_name) ||
++	    (sys_name && !handle->sys_name)) {
++		die("Failed to allocate event/sys name");
++	}
++
+ 	handle->func = func;
+ 	handle->next = pevent->handlers;
+ 	pevent->handlers = handle;
