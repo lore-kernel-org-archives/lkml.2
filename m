@@ -1,47 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933279Ab2GFV63 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 17:58:29 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:60102 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932863Ab2GFV62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 17:58:28 -0400
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] checkpatch: Add check for use of sizeof without parenthesis
-Date: Fri,  6 Jul 2012 14:58:24 -0700
-Message-Id: <62b9dc15110792a127562f38c0788c60952615c8.1341611781.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
+	id S933295Ab2GFWAD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 18:00:03 -0400
+Received: from emh02.mail.saunalahti.fi ([62.142.5.108]:33500 "EHLO
+	emh02.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932549Ab2GFWAA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 18:00:00 -0400
+Date: Sat, 7 Jul 2012 00:59:44 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        linux-doc@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH] Documentation: talk about "Cc: stable@vger.kernel.org"
+Message-ID: <20120706215944.GA6154@blackmetal.musicnaut.iki.fi>
+References: <1341610730-6277-1-git-send-email-tytso@mit.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341610730-6277-1-git-send-email-tytso@mit.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Antivirus: VAMS
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel style uses parenthesis around sizeof.
+Hi,
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+On Fri, Jul 06, 2012 at 05:38:50PM -0400, Theodore Ts'o wrote:
+> I couldn't remember whether the canonical marking is stable@kernel.org
+> or stable@vger.kernel.org, so I went looking, and discovered that it
+> wasn't mentioned in the kernel sources.  You can find mention of it in
+> Greg K-H's blog, but not everyone would necessarily find this blog
+> entry.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 7190f95..a743622 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3265,6 +3265,12 @@ sub process {
- 			     "sizeof(& should be avoided\n" . $herecurr);
- 		}
- 
-+# check for sizeof without parenthesis
-+		if ($line =~ /\bsizeof\s+($Lval)/) {
-+			WARN("SIZEOF_PARENTHESIS",
-+			     "sizeof $1 should be sizeof($1)\n" . $herecurr);
-+		}
-+
- # check for line continuations in quoted strings with odd counts of "
- 		if ($rawline =~ /\\$/ && $rawline =~ tr/"/"/ % 2) {
- 			WARN("LINE_CONTINUATIONS",
--- 
-1.7.8.111.gad25c.dirty
+It's documented in Documentation/stable_kernel_rules.txt.
 
+A.
