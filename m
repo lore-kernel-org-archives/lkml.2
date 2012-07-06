@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab2GFGwE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 02:52:04 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:41566 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab2GFGwB (ORCPT
+	id S1756483Ab2GFGzw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 02:55:52 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:64749 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab2GFGzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 02:52:01 -0400
-Date: Fri, 6 Jul 2012 09:51:13 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Miguel =?iso-8859-1?Q?G=F3mez?= <magomez@igalia.com>
-Cc: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
-        aaro.koskinen@iki.fi, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 15/19] Staging: xgifb: Rework conditions in
- XGI_SetLockRegs().
-Message-ID: <20120706065113.GG4462@mwanda>
-References: <cover.1341498465.git.magomez@igalia.com>
- <59ae53c03975f8e81587077aa8b0221b356896b9.1341498466.git.magomez@igalia.com>
+	Fri, 6 Jul 2012 02:55:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <59ae53c03975f8e81587077aa8b0221b356896b9.1341498466.git.magomez@igalia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1341493572-29735-4-git-send-email-lee.jones@linaro.org>
+References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org>
+	<1341493572-29735-4-git-send-email-lee.jones@linaro.org>
+Date: Fri, 6 Jul 2012 08:55:49 +0200
+Message-ID: <CACRpkdbRtFX8_++rndCpsH7R1uhwPrkTE_GKgNTM6r1PSuwY0A@mail.gmail.com>
+Subject: Re: [PATCH 3/9] ARM: ux500: Remove AB8500 regulator register
+ initialisation information
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, Mattias WALLIN <mattias.wallin@stericsson.com>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Daniel WILLERUD <daniel.willerud@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 04:45:58PM +0200, Miguel Gómez wrote:
-> Rework some conditions to reduce indentation and fix style warnings.
-> 
-> Signed-off-by: Miguel Gómez <magomez@igalia.com>
-> ---
->  drivers/staging/xgifb/vb_setmode.c |   29 ++++++++++++-----------------
->  1 file changed, 12 insertions(+), 17 deletions(-)
-> 
-> diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
-> index a7ba99f..b439f59 100644
-> --- a/drivers/staging/xgifb/vb_setmode.c
-> +++ b/drivers/staging/xgifb/vb_setmode.c
-> @@ -4039,23 +4039,18 @@ static void XGI_SetLockRegs(unsigned short ModeNo, unsigned short ModeIdIndex,
->  	}
->  
->  	if (pVBInfo->VBInfo & SetCRT2ToHiVision) {
-> -		if (pVBInfo->VBType & VB_SIS301LV) {
-> -			if (pVBInfo->TVInfo & TVSetHiVision) {
-> -				tempbx -= 10;
+On Thu, Jul 5, 2012 at 3:06 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-We drop this -= 10 in the final.  It seems accidental.
+> There is no need to initialise the AB8500's regulator registers, as
+> most of this work is already carried out by framework features, so
+> we can safely remove all traces from platform code.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-regards,
-dan carpenter
+NACK, sorry.
 
+These registers are used to set up sleep states for the regulators,
+e.g that some regulators will turn off when the system go to sleep.
 
+If you delete this code it's no longer possible to make the system
+powerefficient, power consumption increases so it causes a
+regression.
+
+The proper thing to do is to take the AB8500 datasheet, go in and
+read what these registers actually do, and provide the same
+features through the framework, if just poking the registers
+is deemed non-elegant (I see the point in that).
+
+This is the AB8500 datasheet:
+http://www.stericsson.com/developers/CD00291561_UM1031_AB8500_user_manual-rev5_CTDS_public.pdf
+
+So please refactor this, don't just delete, that's destroying a lot
+of useful stuff.
+
+Yours,
+Linus Walleij
