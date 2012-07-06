@@ -1,106 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894Ab2GFQWK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 12:22:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28644 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757029Ab2GFQWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 12:22:08 -0400
-Date: Fri, 6 Jul 2012 18:18:57 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/5] uprobes: __replace_page() should not use
-	page_address_in_vma()
-Message-ID: <20120706161857.GA9218@redhat.com>
-References: <20120624145936.GA23269@redhat.com> <20120624150021.GB23277@redhat.com>
+	id S1757910Ab2GFQXc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 12:23:32 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:22104 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756856Ab2GFQXa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 12:23:30 -0400
+Message-ID: <4FF710FD.2090100@hp.com>
+Date: Fri, 06 Jul 2012 09:23:25 -0700
+From: Rick Jones <rick.jones2@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120624150021.GB23277@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Jason Wang <jasowang@redhat.com>
+CC: mst@redhat.com, mashirle@us.ibm.com, krkumar2@in.ibm.com,
+        habanero@linux.vnet.ibm.com, rusty@rustcorp.com.au,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, edumazet@google.com,
+        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
+        akong@redhat.com, kvm@vger.kernel.org, sri@us.ibm.com
+Subject: Re: [net-next RFC V5 0/5] Multiqueue virtio-net
+References: <1341484194-8108-1-git-send-email-jasowang@redhat.com> <4FF5D2B7.6080602@hp.com> <4FF696C9.5070907@redhat.com>
+In-Reply-To: <4FF696C9.5070907@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24, Oleg Nesterov wrote:
+On 07/06/2012 12:42 AM, Jason Wang wrote:
+> I'm not expert of tcp, but looks like the changes are reasonable:
+> - we can do full-sized TSO check in tcp_tso_should_defer() only for
+> westwood, according to tcp westwood
+> - run tcp_tso_should_defer for tso_segs = 1 when tso is enabled.
+
+I'm sure Eric and David will weigh-in on the TCP change.  My initial 
+inclination would have been to say "well, if multiqueue is draining 
+faster, that means ACKs come-back faster, which means the "race" between 
+more data being queued by netperf and ACKs will go more to the ACKs 
+which means the segments being sent will be smaller - as TCP_NODELAY is 
+not set, the Nagle algorithm is in force, which means once there is data 
+outstanding on the connection, no more will be sent until either the 
+outstanding data is ACKed, or there is an accumulation of > MSS worth of 
+data to send.
+
+>> Also, how are you combining the concurrent netperf results?  Are you
+>> taking sums of what netperf reports, or are you gathering statistics
+>> outside of netperf?
+>>
 >
-> However, page_address_in_vma() can actually fail if page->mapping was
-> cleared by __delete_from_page_cache() after get_user_pages() returns.
-> But this means the race with page reclaim, write_opcode() should not
-> fail, it should retry and read this page again. Not sure this race is
-> really possible though, page_freeze_refs() logic should prevent it.
+> The throughput were just sumed from netperf result like what netperf
+> manual suggests. The cpu utilization were measured by mpstat.
 
-This looks a bit confusing, I'll try to to make this more clear...
-The patch itself was not changed.
+Which mechanism to address skew error?  The netperf manual describes 
+more than one:
 
-------------------------------------------------------------------------------
-Subject: [PATCH v2 2/5] uprobes: __replace_page() should not use page_address_in_vma()
+http://www.netperf.org/svn/netperf2/trunk/doc/netperf.html#Using-Netperf-to-Measure-Aggregate-Performance
 
-page_address_in_vma(old_page) in __replace_page() is ugly and wrong.
-The caller already knows the correct virtual address, this page was
-found by get_user_pages(vaddr).
+Personally, my preference these days is to use the "demo mode" method of 
+aggregate results as it can be rather faster than (ab)using the 
+confidence intervals mechanism, which I suspect may not really scale all 
+that well to large numbers of concurrent netperfs.
 
-However, page_address_in_vma() can actually fail if page->mapping was
-cleared by __delete_from_page_cache() after get_user_pages() returns.
-But this means the race with page reclaim, write_opcode() should not
-fail, it should retry and read this page again. Probably the race with
-remove_mapping() is not possible due to page_freeze_refs() logic, but
-afaics at least shmem_writepage()->shmem_delete_from_page_cache() can
-clear ->mapping.
+I also tend to use the --enable-burst configure option to allow me to 
+minimize the number of concurrent netperfs in the first place.  Set 
+TCP_NODELAY (the test-specific -D option) and then have several 
+transactions outstanding at one time (test-specific -b option with a 
+number of additional in-flight transactions).
 
-We could change __replace_page() to return -EAGAIN in this case, but
-it would be better to simply use the caller's vaddr and rely on
-page_check_address().
+This is expressed in the runemomniaggdemo.sh script:
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/events/uprobes.c |   11 ++++-------
- 1 files changed, 4 insertions(+), 7 deletions(-)
+http://www.netperf.org/svn/netperf2/trunk/doc/examples/runemomniaggdemo.sh
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index a2b32a5..6fda799 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -127,22 +127,19 @@ static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
-  * based on replace_page in mm/ksm.c
-  *
-  * @vma:      vma that holds the pte pointing to page
-+ * @addr:     address the old @page is mapped at
-  * @page:     the cowed page we are replacing by kpage
-  * @kpage:    the modified page we replace page by
-  *
-  * Returns 0 on success, -EFAULT on failure.
-  */
--static int __replace_page(struct vm_area_struct *vma, struct page *page, struct page *kpage)
-+static int __replace_page(struct vm_area_struct *vma, unsigned long addr,
-+				struct page *page, struct page *kpage)
- {
- 	struct mm_struct *mm = vma->vm_mm;
--	unsigned long addr;
- 	spinlock_t *ptl;
- 	pte_t *ptep;
- 
--	addr = page_address_in_vma(page, vma);
--	if (addr == -EFAULT)
--		return -EFAULT;
--
- 	ptep = page_check_address(page, mm, addr, &ptl, 0);
- 	if (!ptep)
- 		return -EAGAIN;
-@@ -243,7 +240,7 @@ retry:
- 		goto unlock_out;
- 
- 	lock_page(new_page);
--	ret = __replace_page(vma, old_page, new_page);
-+	ret = __replace_page(vma, vaddr, old_page, new_page);
- 	unlock_page(new_page);
- 
- unlock_out:
--- 
-1.5.5.1
+which uses the find_max_burst.sh script:
 
+http://www.netperf.org/svn/netperf2/trunk/doc/examples/find_max_burst.sh
+
+to pick the burst size to use in the concurrent netperfs, the results of 
+which can be post-processed with:
+
+http://www.netperf.org/svn/netperf2/trunk/doc/examples/post_proc.py
+
+The nice feature of using the "demo mode" mechanism is when it is 
+coupled with systems with reasonably synchronized clocks (eg NTP) it can 
+be used for many-to-many testing in addition to one-to-many testing 
+(which cannot be dealt with by the confidence interval method of dealing 
+with skew error)
+
+>> A single instance TCP_RR test would help confirm/refute any
+>> non-trivial change in (effective) path length between the two cases.
+>>
+>
+> Yes, I would test this thanks.
+
+Excellent.
+
+happy benchmarking,
+
+rick jones
 
