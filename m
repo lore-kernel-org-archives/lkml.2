@@ -1,143 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353Ab2GFIIb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 04:08:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35584 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157Ab2GFIIS (ORCPT
+	id S1754025Ab2GFIJs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 04:09:48 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:52952 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab2GFIJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 04:08:18 -0400
-From: Ike Panhc <ike.pan@canonical.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Maxim Mikityanskiy <maxtram95@gmail.com>,
-        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: [PATCH 4/4] ideapad: add Lenovo IdeaPad Z570 support (part 3)
-Date: Fri,  6 Jul 2012 16:08:11 +0800
-Message-Id: <1341562091-7089-1-git-send-email-ike.pan@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1341562023-6951-1-git-send-email-ike.pan@canonical.com>
-References: <1341562023-6951-1-git-send-email-ike.pan@canonical.com>
+	Fri, 6 Jul 2012 04:09:23 -0400
+Message-ID: <1341562204.3377.5.camel@lappy>
+Subject: Re: [net-next RFC V5 5/5] virtio_net: support negotiating the
+ number of queues through ctrl vq
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: mst@redhat.com, mashirle@us.ibm.com, krkumar2@in.ibm.com,
+        habanero@linux.vnet.ibm.com, rusty@rustcorp.com.au,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, edumazet@google.com,
+        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
+        akong@redhat.com, kvm@vger.kernel.org, sri@us.ibm.com
+Date: Fri, 06 Jul 2012 10:10:04 +0200
+In-Reply-To: <4FF65966.9040600@redhat.com>
+References: <1341484194-8108-1-git-send-email-jasowang@redhat.com>
+	  <1341484194-8108-6-git-send-email-jasowang@redhat.com>
+	 <1341492679.18786.18.camel@lappy> <4FF65966.9040600@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maxim Mikityanskiy <maxtram95@gmail.com>
+On Fri, 2012-07-06 at 11:20 +0800, Jason Wang wrote:
+> On 07/05/2012 08:51 PM, Sasha Levin wrote:
+> > On Thu, 2012-07-05 at 18:29 +0800, Jason Wang wrote:
+> >> @@ -1387,6 +1404,10 @@ static int virtnet_probe(struct virtio_device *vdev)
+> >>          if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
+> >>                  vi->has_cvq = true;
+> >>
+> >> +       /* Use single tx/rx queue pair as default */
+> >> +       vi->num_queue_pairs = 1;
+> >> +       vi->total_queue_pairs = num_queue_pairs;
+> > The code is using this "default" even if the amount of queue pairs it
+> > wants was specified during initialization. This basically limits any
+> > device to use 1 pair when starting up.
+> >
+> 
+> Yes, currently the virtio-net driver would use 1 txq/txq by default 
+> since multiqueue may not outperform in all kinds of workload. So it's 
+> better to keep it as default and let user enable multiqueue by ethtool -L.
 
-The patch adds support for Lenovo IdeaPad Z570 laptop. It makes all special
-keys working, adds possibility to control fan like Windows does, controls
-Touchpad Disabled LED, toggles touchpad state via keyboard controller and
-corrects touchpad behavior on resume from suspend. It is new, modified
-version of patch. Now it does not depend on psmouse and does not need patching
-of input subsystem.
+I think it makes sense to set it to 1 if the amount of initial queue
+pairs wasn't specified.
 
-Signed-off-by: Maxim Mikityanskiy <maxtram95@gmail.com>
+On the other hand, if a virtio-net driver was probed to provide
+VIRTIO_NET_F_MULTIQUEUE and has set something reasonable in
+virtio_net_config.num_queues, then that setting shouldn't be quietly
+ignored and reset back to 1.
 
-This is the part 3 for fan control
-
-Signed-off-by: Ike Panhc <ike.pan@canonical.com>
----
- .../ABI/testing/sysfs-platform-ideapad-laptop      |   11 +++++
- drivers/platform/x86/ideapad-laptop.c              |   43 ++++++++++++++++++--
- 2 files changed, 51 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/ABI/testing/sysfs-platform-ideapad-laptop b/Documentation/ABI/testing/sysfs-platform-ideapad-laptop
-index 814b013..b31e782 100644
---- a/Documentation/ABI/testing/sysfs-platform-ideapad-laptop
-+++ b/Documentation/ABI/testing/sysfs-platform-ideapad-laptop
-@@ -5,4 +5,15 @@ Contact:	"Ike Panhc <ike.pan@canonical.com>"
- Description:
- 		Control the power of camera module. 1 means on, 0 means off.
- 
-+What:		/sys/devices/platform/ideapad/fan_mode
-+Date:		June 2012
-+KernelVersion:	3.6
-+Contact:	"Maxim Mikityanskiy <maxtram95@gmail.com>"
-+Description:
-+		Change fan mode
-+		There are four available modes:
-+			* 0 -> Super Silent Mode
-+			* 1 -> Standard Mode
-+			* 2 -> Dust Cleaning
-+			* 4 -> Efficient Thermal Dissipation Mode
- 
-diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
-index b577766..8231edf 100644
---- a/drivers/platform/x86/ideapad-laptop.c
-+++ b/drivers/platform/x86/ideapad-laptop.c
-@@ -64,8 +64,10 @@ enum {
- 	VPCCMD_R_3G,
- 	VPCCMD_W_3G,
- 	VPCCMD_R_ODD, /* 0x21 */
--	VPCCMD_R_RF = 0x23,
-+	VPCCMD_W_FAN,
-+	VPCCMD_R_RF,
- 	VPCCMD_W_RF,
-+	VPCCMD_R_FAN = 0x2B,
- 	VPCCMD_R_SPECIAL_BUTTONS = 0x31,
- 	VPCCMD_W_BL_POWER = 0x33,
- };
-@@ -358,14 +360,46 @@ static ssize_t store_ideapad_cam(struct device *dev,
- 		return -EINVAL;
- 	ret = write_ec_cmd(ideapad_handle, VPCCMD_W_CAMERA, state);
- 	if (ret < 0)
--		return ret;
-+		return -EIO;
- 	return count;
- }
- 
- static DEVICE_ATTR(camera_power, 0644, show_ideapad_cam, store_ideapad_cam);
- 
-+static ssize_t show_ideapad_fan(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	unsigned long result;
-+
-+	if (read_ec_data(ideapad_handle, VPCCMD_R_FAN, &result))
-+		return sprintf(buf, "-1\n");
-+	return sprintf(buf, "%lu\n", result);
-+}
-+
-+static ssize_t store_ideapad_fan(struct device *dev,
-+				 struct device_attribute *attr,
-+				 const char *buf, size_t count)
-+{
-+	int ret, state;
-+
-+	if (!count)
-+		return 0;
-+	if (sscanf(buf, "%i", &state) != 1)
-+		return -EINVAL;
-+	if (state < 0 || state > 4 || state == 3)
-+		return -EINVAL;
-+	ret = write_ec_cmd(ideapad_handle, VPCCMD_W_FAN, state);
-+	if (ret < 0)
-+		return -EIO;
-+	return count;
-+}
-+
-+static DEVICE_ATTR(fan_mode, 0644, show_ideapad_fan, store_ideapad_fan);
-+
- static struct attribute *ideapad_attributes[] = {
- 	&dev_attr_camera_power.attr,
-+	&dev_attr_fan_mode.attr,
- 	NULL
- };
- 
-@@ -379,7 +413,10 @@ static umode_t ideapad_is_visible(struct kobject *kobj,
- 
- 	if (attr == &dev_attr_camera_power.attr)
- 		supported = test_bit(CFG_CAMERA_BIT, &(priv->cfg));
--	else
-+	else if (attr == &dev_attr_fan_mode.attr) {
-+		unsigned long value;
-+		supported = !read_ec_data(ideapad_handle, VPCCMD_R_FAN, &value);
-+	} else
- 		supported = true;
- 
- 	return supported ? attr->mode : 0;
--- 
-1.7.9.5
+What I'm basically saying is that I agree that the *default* should be 1
+- but if the user has explicitly asked for something else during
+initialization, then the default should be overridden.
 
