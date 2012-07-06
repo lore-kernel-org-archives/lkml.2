@@ -1,50 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758092Ab2GFRpr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 13:45:47 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64744 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757795Ab2GFRpp (ORCPT
+	id S1758095Ab2GFRqm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 13:46:42 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:40664 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757795Ab2GFRql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 13:45:45 -0400
+	Fri, 6 Jul 2012 13:46:41 -0400
+Date: Fri, 6 Jul 2012 14:46:36 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] perf lock: fix segfault with info subcommand following
+ move to libtraceevent
+Message-ID: <20120706174636.GC24429@infradead.org>
+References: <1341590538-19523-1-git-send-email-dsahern@gmail.com>
+ <20120706171431.GF7533@infradead.org>
+ <4FF71DB5.5050104@gmail.com>
 MIME-Version: 1.0
-Date: Fri, 6 Jul 2012 20:45:44 +0300
-Message-ID: <CAGoecWyMKF4gC7FaoBCrBs+rD=u6oJRHS5Q2qVkkwoZZ1_4RCg@mail.gmail.com>
-Subject: Bug 44211 - /proc/kmsg does not (always) block for 1-byte reads
-From: Jukka Ollila <jiiksteri@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: kay@vrfy.org, jbeulich@novell.com, alan@lxorguk.ukuu.org.uk,
-        greg@kroah.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF71DB5.5050104@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Em Fri, Jul 06, 2012 at 11:17:41AM -0600, David Ahern escreveu:
+> On 7/6/12 11:14 AM, Arnaldo Carvalho de Melo wrote:
+> >Em Fri, Jul 06, 2012 at 10:02:18AM -0600, David Ahern escreveu:
+> >>+++ b/tools/perf/builtin-lock.c
+> >>@@ -877,6 +877,9 @@ static int read_events(void)
+> >>  	if (!session)
+> >>  		die("Initializing perf session failed\n");
+> >>
+> >>+	if (!perf_session__has_traces(session, "lock record"))
+> >>+		exit(1);
+> >>+
+> >>  	return perf_session__process_events(session, &eops);
+> >>  }
+> >
+> >This is getting out of hand, first a die(), then an exit(1) and finally
+> >this function returns a value, ouch.
+> >
+> >I'd rather use return to signal that something went wrong and as well
+> >print some helpful warning to the user.
+> >
+> >Eventually we should fix all the other offenders, but lets try not to
+> >add even more.
+> 
+> Agree. But....
+> 
+> >
+> >Can you please resend with a pr_warning + return failure?
+> 
+> 
+> This command needs some love. The rc is not checked and requires
+> some rework. e.g., the report path:
+> 
+>     setup_pager();
+>     select_key();
+>     read_events();    <---- the function I changed
+>     sort_result();
+>     print_result();
+> 
+> and the info path:
+>         setup_pager();
+>         read_events();
+>         dump_info();
+> 
+> I figured for 3.5 at least not segfault; clean up for 3.6 or later.
 
-A few days ago I filed a kernel regression report concerning a change
-in /proc/kmsg behaviour with short reads:
+Fair enough, so answering that other question, you want this for
+perf/urgent.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=44211
+Ok, queing it up for that branch,
 
-The comments suggest that this is probably intentional, but that it
-would be best make sure that the current semantics wrt short reads are
-as intended.
-
-The problem appears on a Debian (unstable) system that drains
-/proc/kmsg into a separate fifo read by klogd(8):
-
-/bin/dd bs=1 if=/proc/kmsg  of=/var/run/klogd/kmsg
-
-With the recent kernel logging changes this /bin/dd exits immediately,
-as 1-byte reads are shorter than any log message could possibly be and
-read() returns 0. No dd feeding the fifo results in no logging and a
-rather unhappy klogd on the reading end of /var/run/klogd/kmsg.
-
-I suppose a safe solution is to only do reads that are big enough for
-any single kernel message, but this is still a change that affects
-user space being shipped, so some might find it surprising.
-
-I don't know what other distros do. Is it just Debian being the odd one out?
-
--J
+- Arnaldo
