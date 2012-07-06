@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933080Ab2GFV2b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 17:28:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21310 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932123Ab2GFV2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 17:28:30 -0400
-Message-ID: <4FF7586B.9080902@redhat.com>
-Date: Fri, 06 Jul 2012 18:28:11 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S933119Ab2GFVaW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 17:30:22 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54636 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932123Ab2GFVaV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 17:30:21 -0400
+Date: Fri, 6 Jul 2012 14:30:16 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Christian Lamparter <chunkeey@googlemail.com>
+Cc: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Dominik Brodowski <linux@dominikbrodowski.net>
+Subject: Re: [RESEND AGAIN][PATCH] pcmcia: move unbind/rebind into
+ dev_pm_ops.complete
+Message-ID: <20120706213016.GA15424@kroah.com>
+References: <201207062323.52785.chunkeey@googlemail.com>
 MIME-Version: 1.0
-To: "Du, Changbin" <changbin.du@gmail.com>
-CC: mchehab@infradead.org, anssi.hannula@iki.fi, gregkh@suse.de,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] media: gpio-ir-recv: add allowed_protos for platform
- data
-References: <4ff3b46c.06da440a.6345.ffff8730@mx.google.com>
-In-Reply-To: <4ff3b46c.06da440a.6345.ffff8730@mx.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201207062323.52785.chunkeey@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 04-07-2012 00:11, Du, Changbin escreveu:
-> Make it possible to specify allowed RC protocols through the device's
-> platform data.
+On Fri, Jul 06, 2012 at 11:23:52PM +0200, Christian Lamparter wrote:
+> The idea of moving rebind procedure into pm.complete
+> was taken from the usb-subsystem, which has similar
+> problems with reattaching devices during/after
+> resume.
 > 
-> Signed-off-by: Du, Changbin <changbin.du@gmail.com>
-
-Gah, you trapped me: you've resent it, without using the original message ID.
-
-Too late. I'll keep the version where I've fixed the merge
-conflict, as it does the same thing.
-
-Regards,
-Mauro.
-
+> Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
 > ---
-> For v2:
-> 	Keymap has already done by another patch.
-> ---
->   drivers/media/rc/gpio-ir-recv.c |    2 +-
->   include/media/gpio-ir-recv.h    |    7 ++++---
->   2 files changed, 5 insertions(+), 4 deletions(-)
+> To Greg:
 > 
-> diff --git a/drivers/media/rc/gpio-ir-recv.c
-> b/drivers/media/rc/gpio-ir-recv.c
-> index 59fe60c..38da91e 100644
-> --- a/drivers/media/rc/gpio-ir-recv.c
-> +++ b/drivers/media/rc/gpio-ir-recv.c
-> @@ -84,7 +84,7 @@ static int __devinit gpio_ir_recv_probe(struct
-> platform_device *pdev)
->   
->   	rcdev->priv = gpio_dev;
->   	rcdev->driver_type = RC_DRIVER_IR_RAW;
-> -	rcdev->allowed_protos = RC_TYPE_ALL;
-> +	rcdev->allowed_protos = pdata->allowed_protos ?: RC_TYPE_ALL;
->   	rcdev->input_name = GPIO_IR_DEVICE_NAME;
->   	rcdev->input_phys = GPIO_IR_DEVICE_NAME "/input0";
->   	rcdev->input_id.bustype = BUS_HOST;
-> diff --git a/include/media/gpio-ir-recv.h b/include/media/gpio-ir-recv.h
-> index 91546f3..0142736 100644
-> --- a/include/media/gpio-ir-recv.h
-> +++ b/include/media/gpio-ir-recv.h
-> @@ -14,9 +14,10 @@
->   #define __GPIO_IR_RECV_H__
->   
->   struct gpio_ir_recv_platform_data {
-> -	int gpio_nr;
-> -	bool active_low;
-> -	const char *map_name;
-> +	int		gpio_nr;
-> +	bool		active_low;
-> +	u64		allowed_protos;
-> +	const char	*map_name;
->   };
->   
->   #endif /* __GPIO_IR_RECV_H__ */
-> 
+> I have submitted this patch back in March and again in May.
+> As far as I can tell it was neither rejected nor was it
+> accepted into linux-pcmcia.git since. So I'm asking you,
+> if you could take the patch instead... please.
 
+There is a PCMCIA "team" who should be taking these types of patches.
+Why are they not doing so?
 
+confused,
+
+greg k-h
