@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933064Ab2GFVKy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 17:10:54 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33063 "EHLO
+	id S1758661Ab2GFVLA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 17:11:00 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33023 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758384Ab2GFVGo (ORCPT
+	with ESMTP id S1758380Ab2GFVGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 17:06:44 -0400
+	Fri, 6 Jul 2012 17:06:43 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 24/36] AArch64: VDSO support
-Date: Fri,  6 Jul 2012 22:06:05 +0100
-Message-Id: <1341608777-12982-25-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH 22/36] AArch64: ELF definitions
+Date: Fri,  6 Jul 2012 22:06:03 +0100
+Message-Id: <1341608777-12982-23-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
 References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 06 Jul 2012 21:07:37.0403 (UTC) FILETIME=[5EF970B0:01CD5BBB]
-X-MC-Unique: 112070622064208601
+X-OriginalArrivalTime: 06 Jul 2012 21:07:36.0591 (UTC) FILETIME=[5E7D89F0:01CD5BBB]
+X-MC-Unique: 112070622064201801
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66LB1e7005392
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66LBG3s005400
 
-From: Will Deacon <will.deacon@arm.com>
-
-This patch adds VDSO support for 64-bit applications. The VDSO code is
-currently used for sys_rt_sigreturn() and optimised gettimeofday()
-(using the user-accessible generic counter).
+This patch adds definitions for the ELF format, including personality
+personality setting and EXEC_PAGESIZE. The are only two hwcap
+definitions for 64-bit applications - HWCAP_FP and HWCAP_ASIMD.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/aarch64/include/asm/vdso.h              |   42 ++++
- arch/aarch64/include/asm/vdso_datapage.h     |   44 +++++
- arch/aarch64/kernel/vdso.c                   |  262 ++++++++++++++++++++++++++
- arch/aarch64/kernel/vdso/.gitignore          |    2 +
- arch/aarch64/kernel/vdso/Makefile            |   63 ++++++
- arch/aarch64/kernel/vdso/gen_vdso_offsets.sh |   15 ++
- arch/aarch64/kernel/vdso/gettimeofday.S      |  243 ++++++++++++++++++++++++
- arch/aarch64/kernel/vdso/note.S              |   29 +++
- arch/aarch64/kernel/vdso/sigreturn.S         |   38 ++++
- arch/aarch64/kernel/vdso/vdso.S              |   34 ++++
- arch/aarch64/kernel/vdso/vdso.lds.S          |  101 ++++++++++
- 11 files changed, 873 insertions(+), 0 deletions(-)
- create mode 100644 arch/aarch64/include/asm/vdso.h
- create mode 100644 arch/aarch64/include/asm/vdso_datapage.h
- create mode 100644 arch/aarch64/kernel/vdso.c
- create mode 100644 arch/aarch64/kernel/vdso/.gitignore
- create mode 100644 arch/aarch64/kernel/vdso/Makefile
- create mode 100755 arch/aarch64/kernel/vdso/gen_vdso_offsets.sh
- create mode 100644 arch/aarch64/kernel/vdso/gettimeofday.S
- create mode 100644 arch/aarch64/kernel/vdso/note.S
- create mode 100644 arch/aarch64/kernel/vdso/sigreturn.S
- create mode 100644 arch/aarch64/kernel/vdso/vdso.S
- create mode 100644 arch/aarch64/kernel/vdso/vdso.lds.S
+ arch/aarch64/include/asm/auxvec.h   |   23 +++++
+ arch/aarch64/include/asm/elf.h      |  177 +++++++++++++++++++++++++++++++++++
+ arch/aarch64/include/asm/hwcap.h    |   58 ++++++++++++
+ arch/aarch64/include/asm/param.h    |   24 +++++
+ arch/aarch64/include/asm/shmparam.h |   29 ++++++
+ arch/aarch64/kernel/elf.c           |   42 ++++++++
+ 6 files changed, 353 insertions(+), 0 deletions(-)
+ create mode 100644 arch/aarch64/include/asm/auxvec.h
+ create mode 100644 arch/aarch64/include/asm/elf.h
+ create mode 100644 arch/aarch64/include/asm/hwcap.h
+ create mode 100644 arch/aarch64/include/asm/param.h
+ create mode 100644 arch/aarch64/include/asm/shmparam.h
+ create mode 100644 arch/aarch64/kernel/elf.c
 
-diff --git a/arch/aarch64/include/asm/vdso.h b/arch/aarch64/include/asm/vdso.h
+diff --git a/arch/aarch64/include/asm/auxvec.h b/arch/aarch64/include/asm/auxvec.h
 new file mode 100644
-index 0000000..cd6ce05
+index 0000000..0fcd431
 --- /dev/null
-+++ b/arch/aarch64/include/asm/vdso.h
-@@ -0,0 +1,42 @@
++++ b/arch/aarch64/include/asm/auxvec.h
+@@ -0,0 +1,23 @@
 +/*
-+ * Copyright (C) 2012 ARM Limited
++ * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -80,40 +68,21 @@ index 0000000..cd6ce05
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
-+#ifndef __ASM_VDSO_H
-+#define __ASM_VDSO_H
++#ifndef __ASM_AUXVEC_H
++#define __ASM_AUXVEC_H
 +
-+#ifdef __KERNEL__
++/* vDSO location */
++#define AT_SYSINFO_EHDR	33
 +
-+/*
-+ * Default link address for the vDSO.
-+ * Since we randomise the VDSO mapping, there's little point in trying
-+ * to prelink this.
-+ */
-+#define VDSO_LBASE	0x0
-+
-+#ifndef __ASSEMBLY__
-+
-+#include <generated/vdso-offsets.h>
-+
-+#define VDSO_SYMBOL(base, name)						   \
-+({									   \
-+	(void *)(vdso_offset_##name - VDSO_LBASE + (unsigned long)(base)); \
-+})
-+
-+#endif /* !__ASSEMBLY__ */
-+
-+#endif /* __KERNEL__ */
-+
-+#endif /* __ASM_VDSO_H */
-diff --git a/arch/aarch64/include/asm/vdso_datapage.h b/arch/aarch64/include/asm/vdso_datapage.h
++#endif
+diff --git a/arch/aarch64/include/asm/elf.h b/arch/aarch64/include/asm/elf.h
 new file mode 100644
-index 0000000..bccbd89
+index 0000000..b10ac43
 --- /dev/null
-+++ b/arch/aarch64/include/asm/vdso_datapage.h
-@@ -0,0 +1,44 @@
++++ b/arch/aarch64/include/asm/elf.h
+@@ -0,0 +1,177 @@
 +/*
-+ * Copyright (C) 2012 ARM Limited
++ * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -128,410 +97,175 @@ index 0000000..bccbd89
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
-+#ifndef __ASM_VDSO_DATAPAGE_H
-+#define __ASM_VDSO_DATAPAGE_H
++#ifndef __ASM_ELF_H
++#define __ASM_ELF_H
 +
-+#ifdef __KERNEL__
-+
-+#ifndef __ASSEMBLY__
-+
-+struct vdso_data {
-+	__u64 cs_cycle_last;	/* Timebase at clocksource init */
-+	__u64 xtime_clock_sec;	/* Kernel time */
-+	__u64 xtime_clock_nsec;
-+	__u64 xtime_coarse_sec;	/* Coarse time */
-+	__u64 xtime_coarse_nsec;
-+	__u64 wtm_clock_sec;	/* Wall to monotonic time */
-+	__u64 wtm_clock_nsec;
-+	__u32 tb_seq_count;	/* Timebase sequence counter */
-+	__u32 cs_mult;		/* Clocksource multiplier */
-+	__u32 cs_shift;		/* Clocksource shift */
-+	__u32 tz_minuteswest;	/* Whacky timezone stuff */
-+	__u32 tz_dsttime;
-+	__u32 use_syscall;
-+};
-+
-+#endif /* !__ASSEMBLY__ */
-+
-+#endif /* __KERNEL__ */
-+
-+#endif /* __ASM_VDSO_DATAPAGE_H */
-diff --git a/arch/aarch64/kernel/vdso.c b/arch/aarch64/kernel/vdso.c
-new file mode 100644
-index 0000000..29f0b30
---- /dev/null
-+++ b/arch/aarch64/kernel/vdso.c
-@@ -0,0 +1,262 @@
-+/*
-+ * VDSO implementation for AArch64 and vector page setup for AArch32.
-+ *
-+ * Copyright (C) 2012 ARM Limited
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/clocksource.h>
-+#include <linux/elf.h>
-+#include <linux/err.h>
-+#include <linux/errno.h>
-+#include <linux/gfp.h>
-+#include <linux/mm.h>
-+#include <linux/sched.h>
-+#include <linux/signal.h>
-+#include <linux/slab.h>
-+#include <linux/vmalloc.h>
-+
-+#include <asm/cacheflush.h>
-+#include <asm/signal32.h>
-+#include <asm/vdso.h>
-+#include <asm/vdso_datapage.h>
-+
-+extern char vdso_start, vdso_end;
-+static unsigned long vdso_pages;
-+static struct page **vdso_pagelist;
++#include <asm/hwcap.h>
 +
 +/*
-+ * The vDSO data page.
++ * ELF register definitions..
 + */
-+static union {
-+	struct vdso_data	data;
-+	u8			page[PAGE_SIZE];
-+} vdso_data_store __page_aligned_data;
-+struct vdso_data *vdso_data = &vdso_data_store.data;
++#include <asm/ptrace.h>
++#include <asm/user.h>
++
++typedef unsigned long elf_greg_t;
++typedef unsigned long elf_freg_t[3];
++
++#define ELF_NGREG (sizeof (struct pt_regs) / sizeof(elf_greg_t))
++typedef elf_greg_t elf_gregset_t[ELF_NGREG];
++
++typedef struct user_fp elf_fpregset_t;
++
++#define EM_AARCH64		183
++
++/*
++ * AArch64 static relocation types.
++ */
++
++/* Miscellaneous. */
++#define R_ARM_NONE			0
++#define R_AARCH64_NONE			256
++
++/* Data. */
++#define R_AARCH64_ABS64			257
++#define R_AARCH64_ABS32			258
++#define R_AARCH64_ABS16			259
++#define R_AARCH64_PREL64		260
++#define R_AARCH64_PREL32		261
++#define R_AARCH64_PREL16		262
++
++/* Instructions. */
++#define R_AARCH64_MOVW_UABS_G0		263
++#define R_AARCH64_MOVW_UABS_G0_NC	264
++#define R_AARCH64_MOVW_UABS_G1		265
++#define R_AARCH64_MOVW_UABS_G1_NC	266
++#define R_AARCH64_MOVW_UABS_G2		267
++#define R_AARCH64_MOVW_UABS_G2_NC	268
++#define R_AARCH64_MOVW_UABS_G3		269
++
++#define R_AARCH64_MOVW_SABS_G0		270
++#define R_AARCH64_MOVW_SABS_G1		271
++#define R_AARCH64_MOVW_SABS_G2		272
++
++#define R_AARCH64_LD_PREL_LO19		273
++#define R_AARCH64_ADR_PREL_LO21		274
++#define R_AARCH64_ADR_PREL_PG_HI21	275
++#define R_AARCH64_ADR_PREL_PG_HI21_NC	276
++#define R_AARCH64_ADD_ABS_LO12_NC	277
++#define R_AARCH64_LDST8_ABS_LO12_NC	278
++
++#define R_AARCH64_TSTBR14		279
++#define R_AARCH64_CONDBR19		280
++#define R_AARCH64_JUMP26		282
++#define R_AARCH64_CALL26		283
++#define R_AARCH64_LDST16_ABS_LO12_NC	284
++#define R_AARCH64_LDST32_ABS_LO12_NC	285
++#define R_AARCH64_LDST64_ABS_LO12_NC	286
++#define R_AARCH64_LDST128_ABS_LO12_NC	299
++
++#define R_AARCH64_MOVW_PREL_G0		287
++#define R_AARCH64_MOVW_PREL_G0_NC	288
++#define R_AARCH64_MOVW_PREL_G1		289
++#define R_AARCH64_MOVW_PREL_G1_NC	290
++#define R_AARCH64_MOVW_PREL_G2		291
++#define R_AARCH64_MOVW_PREL_G2_NC	292
++#define R_AARCH64_MOVW_PREL_G3		293
++
++
++/*
++ * These are used to set parameters in the core dumps.
++ */
++#define ELF_CLASS	ELFCLASS64
++#define ELF_DATA	ELFDATA2LSB
++#define ELF_ARCH	EM_AARCH64
++
++#define ELF_PLATFORM_SIZE	16
++#define ELF_PLATFORM		("aarch64")
++
++/*
++ * This is used to ensure we don't load something for the wrong architecture.
++ */
++#define elf_check_arch(x)		((x)->e_machine == EM_AARCH64)
++
++#define elf_read_implies_exec(ex,stk)	(stk != EXSTACK_DISABLE_X)
++
++#define CORE_DUMP_USE_REGSET
++#define ELF_EXEC_PAGESIZE	PAGE_SIZE
++
++/*
++ * This is the location that an ET_DYN program is loaded if exec'ed.  Typical
++ * use of this is to invoke "./ld.so someprog" to test out a new version of
++ * the loader.  We need to make sure that it is out of the way of the program
++ * that it will "exec", and that there is sufficient room for the brk.
++ */
++extern unsigned long randomize_et_dyn(unsigned long base);
++#define ELF_ET_DYN_BASE	(randomize_et_dyn(2 * TASK_SIZE_64 / 3))
++
++/*
++ * When the program starts, a1 contains a pointer to a function to be
++ * registered with atexit, as per the SVR4 ABI.  A value of 0 means we have no
++ * such handler.
++ */
++#define ELF_PLAT_INIT(_r, load_addr)	(_r)->regs[0] = 0
++
++extern void				elf_set_personality(int personality);
++#define SET_PERSONALITY(ex)		elf_set_personality(PER_LINUX)
++
++#define ARCH_DLINFO							\
++do {									\
++	NEW_AUX_ENT(AT_SYSINFO_EHDR,					\
++		    (elf_addr_t)current->mm->context.vdso);		\
++} while (0)
++
++#define ARCH_HAS_SETUP_ADDITIONAL_PAGES
++struct linux_binprm;
++extern int arch_setup_additional_pages(struct linux_binprm *bprm,
++				       int uses_interp);
++
++/* 1GB of VA */
++#define STACK_RND_MASK			(test_thread_flag(TIF_32BIT) ? \
++						0x7ff >> (PAGE_SHIFT - 12) : \
++						0x3ffff >> (PAGE_SHIFT - 12))
++
++struct mm_struct;
++extern unsigned long arch_randomize_brk(struct mm_struct *mm);
++#define arch_randomize_brk arch_randomize_brk
 +
 +#ifdef CONFIG_AARCH32_EMULATION
-+/*
-+ * Create and map the vectors page for AArch32 tasks.
-+ */
-+static struct page *vectors_page[1];
++#define EM_ARM				40
++#define COMPAT_ELF_PLATFORM		("v8l")
 +
-+static int alloc_vectors_page(void)
-+{
-+	extern char __kuser_helper_start[], __kuser_helper_end[];
-+	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
-+	unsigned long vpage;
++#define COMPAT_ELF_ET_DYN_BASE		(randomize_et_dyn(2 * TASK_SIZE_32 / 3))
 +
-+	vpage = get_zeroed_page(GFP_ATOMIC);
++/* AArch32 registers. */
++#define COMPAT_ELF_NGREG		18
++typedef unsigned int			compat_elf_greg_t;
++typedef compat_elf_greg_t		compat_elf_gregset_t[COMPAT_ELF_NGREG];
 +
-+	if (!vpage)
-+		return -ENOMEM;
++/* AArch32 EABI. */
++#define EF_ARM_EABI_MASK		0xff000000
++#define compat_elf_check_arch(x)	(((x)->e_machine == EM_ARM) && \
++					 ((x)->e_flags & EF_ARM_EABI_MASK))
 +
-+	/* kuser helpers */
-+	memcpy((void *)vpage + 0x1000 - kuser_sz, __kuser_helper_start,
-+		kuser_sz);
++#define compat_start_thread		compat_start_thread
++#define COMPAT_SET_PERSONALITY(ex)	elf_set_personality(PER_LINUX32)
++#define COMPAT_ARCH_DLINFO
++extern int aarch32_setup_vectors_page(struct linux_binprm *bprm,
++				      int uses_interp);
++#define compat_arch_setup_additional_pages \
++					aarch32_setup_vectors_page
 +
-+	/* sigreturn code */
-+	memcpy((void *)vpage + AARCH32_KERN_SIGRET_CODE_OFFSET,
-+		aarch32_sigret_code, sizeof(aarch32_sigret_code));
-+
-+	flush_icache_range(vpage, vpage + PAGE_SIZE);
-+	vectors_page[0] = virt_to_page(vpage);
-+
-+	return 0;
-+}
-+arch_initcall(alloc_vectors_page);
-+
-+int aarch32_setup_vectors_page(struct linux_binprm *bprm, int uses_interp)
-+{
-+	struct mm_struct *mm = current->mm;
-+	unsigned long addr = AARCH32_VECTORS_BASE;
-+	int ret;
-+
-+	down_write(&mm->mmap_sem);
-+	current->mm->context.vdso = (void *)addr;
-+
-+	/* Map vectors page at the high address. */
-+	ret = install_special_mapping(mm, addr, PAGE_SIZE,
-+				      VM_READ|VM_EXEC|VM_MAYREAD|VM_MAYEXEC,
-+				      vectors_page);
-+
-+	up_write(&mm->mmap_sem);
-+
-+	return ret;
-+}
 +#endif /* CONFIG_AARCH32_EMULATION */
 +
-+static int __init vdso_init(void)
-+{
-+	struct page *pg;
-+	char *vbase;
-+	int i, ret = 0;
-+
-+	vdso_pages = (&vdso_end - &vdso_start) >> PAGE_SHIFT;
-+	pr_info("vdso: %ld pages (%ld code, %ld data) at base %p\n",
-+		vdso_pages + 1, vdso_pages, 1L, &vdso_start);
-+
-+	/* Allocate the vDSO pagelist, plus a page for the data. */
-+	vdso_pagelist = kzalloc(sizeof(struct page *) * (vdso_pages + 1),
-+				GFP_KERNEL);
-+	if (vdso_pagelist == NULL) {
-+		pr_err("Failed to allocate vDSO pagelist!\n");
-+		return -ENOMEM;
-+	}
-+
-+	/* Grab the vDSO code pages. */
-+	for (i = 0; i < vdso_pages; i++) {
-+		pg = virt_to_page(&vdso_start + i*PAGE_SIZE);
-+		ClearPageReserved(pg);
-+		get_page(pg);
-+		vdso_pagelist[i] = pg;
-+	}
-+
-+	/* Sanity check the shared object header. */
-+	vbase = vmap(vdso_pagelist, 1, 0, PAGE_KERNEL);
-+	if (vbase == NULL) {
-+		pr_err("Failed to map vDSO pagelist!\n");
-+		return -ENOMEM;
-+	} else if (memcmp(vbase, "\177ELF", 4)) {
-+		pr_err("vDSO is not a valid ELF object!\n");
-+		ret = -EINVAL;
-+		goto unmap;
-+	}
-+
-+	/* Grab the vDSO data page. */
-+	pg = virt_to_page(vdso_data);
-+	get_page(pg);
-+	vdso_pagelist[i] = pg;
-+
-+unmap:
-+	vunmap(vbase);
-+	return ret;
-+}
-+arch_initcall(vdso_init);
-+
-+int arch_setup_additional_pages(struct linux_binprm *bprm,
-+				int uses_interp)
-+{
-+	struct mm_struct *mm = current->mm;
-+	unsigned long vdso_base, vdso_mapping_len;
-+	int ret;
-+
-+	/* Be sure to map the data page */
-+	vdso_mapping_len = (vdso_pages + 1) << PAGE_SHIFT;
-+
-+	down_write(&mm->mmap_sem);
-+	vdso_base = get_unmapped_area(NULL, 0, vdso_mapping_len, 0, 0);
-+	if (IS_ERR_VALUE(vdso_base)) {
-+		ret = vdso_base;
-+		goto up_fail;
-+	}
-+	mm->context.vdso = (void *)vdso_base;
-+
-+	ret = install_special_mapping(mm, vdso_base, vdso_mapping_len,
-+				      VM_READ|VM_EXEC|
-+				      VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC,
-+				      vdso_pagelist);
-+	if (ret) {
-+		mm->context.vdso = NULL;
-+		goto up_fail;
-+	}
-+
-+up_fail:
-+	up_write(&mm->mmap_sem);
-+
-+	return ret;
-+}
-+
-+const char *arch_vma_name(struct vm_area_struct *vma)
-+{
-+	/*
-+	 * We can re-use the vdso pointer in mm_context_t for identifying
-+	 * the vectors page for compat applications. The vDSO will always
-+	 * sit above TASK_UNMAPPED_BASE and so we don't need to worry about
-+	 * it conflicting with the vectors base.
-+	 */
-+	if (vma->vm_mm && vma->vm_start == (long)vma->vm_mm->context.vdso) {
-+#ifdef CONFIG_AARCH32_EMULATION
-+		if (vma->vm_start == AARCH32_VECTORS_BASE)
-+			return "[vectors]";
 +#endif
-+		return "[vdso]";
-+	}
-+
-+	return NULL;
-+}
-+
-+/*
-+ * We define AT_SYSINFO_EHDR, so we need these function stubs to keep
-+ * Linux happy.
-+ */
-+int in_gate_area_no_mm(unsigned long addr)
-+{
-+	return 0;
-+}
-+
-+int in_gate_area(struct mm_struct *mm, unsigned long addr)
-+{
-+	return 0;
-+}
-+
-+struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
-+{
-+	return NULL;
-+}
-+
-+/*
-+ * Update the vDSO data page to keep in sync with kernel timekeeping.
-+ */
-+void update_vsyscall(struct timespec *ts, struct timespec *wtm,
-+		     struct clocksource *clock, u32 mult)
-+{
-+	struct timespec xtime_coarse;
-+	u32 use_syscall = strcmp(clock->name, "arch_sys_counter");
-+
-+	++vdso_data->tb_seq_count;
-+	smp_wmb();
-+
-+	xtime_coarse = __current_kernel_time();
-+	vdso_data->use_syscall			= use_syscall;
-+	vdso_data->xtime_coarse_sec		= xtime_coarse.tv_sec;
-+	vdso_data->xtime_coarse_nsec		= xtime_coarse.tv_nsec;
-+
-+	if (!use_syscall) {
-+		vdso_data->cs_cycle_last	= clock->cycle_last;
-+		vdso_data->xtime_clock_sec	= ts->tv_sec;
-+		vdso_data->xtime_clock_nsec	= ts->tv_nsec;
-+		vdso_data->cs_mult		= mult;
-+		vdso_data->cs_shift		= clock->shift;
-+		vdso_data->wtm_clock_sec	= wtm->tv_sec;
-+		vdso_data->wtm_clock_nsec	= wtm->tv_nsec;
-+	}
-+
-+	smp_wmb();
-+	++vdso_data->tb_seq_count;
-+}
-+
-+void update_vsyscall_tz(void)
-+{
-+	++vdso_data->tb_seq_count;
-+	smp_wmb();
-+	vdso_data->tz_minuteswest	= sys_tz.tz_minuteswest;
-+	vdso_data->tz_dsttime		= sys_tz.tz_dsttime;
-+	smp_wmb();
-+	++vdso_data->tb_seq_count;
-+}
-diff --git a/arch/aarch64/kernel/vdso/.gitignore b/arch/aarch64/kernel/vdso/.gitignore
+diff --git a/arch/aarch64/include/asm/hwcap.h b/arch/aarch64/include/asm/hwcap.h
 new file mode 100644
-index 0000000..b8cc94e
+index 0000000..d6f2eef
 --- /dev/null
-+++ b/arch/aarch64/kernel/vdso/.gitignore
-@@ -0,0 +1,2 @@
-+vdso.lds
-+vdso-offsets.h
-diff --git a/arch/aarch64/kernel/vdso/Makefile b/arch/aarch64/kernel/vdso/Makefile
-new file mode 100644
-index 0000000..d8064af
---- /dev/null
-+++ b/arch/aarch64/kernel/vdso/Makefile
-@@ -0,0 +1,63 @@
-+#
-+# Building a vDSO image for AArch64.
-+#
-+# Author: Will Deacon <will.deacon@arm.com>
-+# Heavily based on the vDSO Makefiles for other archs.
-+#
-+
-+obj-vdso := gettimeofday.o note.o sigreturn.o
-+
-+# Build rules
-+targets := $(obj-vdso) vdso.so vdso.so.dbg
-+obj-vdso := $(addprefix $(obj)/, $(obj-vdso))
-+
-+ccflags-y := -shared -fno-common -fno-builtin
-+ccflags-y += -nostdlib -Wl,-soname=linux-vdso.so.1 \
-+		$(call cc-ldoption, -Wl$(comma)--hash-style=sysv)
-+
-+obj-y += vdso.o
-+extra-y += vdso.lds vdso-offsets.h
-+CPPFLAGS_vdso.lds += -P -C -U$(ARCH)
-+
-+# Force dependency (incbin is bad)
-+$(obj)/vdso.o : $(obj)/vdso.so
-+
-+# Link rule for the .so file, .lds has to be first
-+$(obj)/vdso.so.dbg: $(src)/vdso.lds $(obj-vdso)
-+	$(call if_changed,vdsold)
-+
-+# Strip rule for the .so file
-+$(obj)/%.so: OBJCOPYFLAGS := -S
-+$(obj)/%.so: $(obj)/%.so.dbg FORCE
-+	$(call if_changed,objcopy)
-+
-+# Generate VDSO offsets using helper script
-+gen-vdsosym := $(srctree)/$(src)/gen_vdso_offsets.sh
-+quiet_cmd_vdsosym = VDSOSYM $@
-+define cmd_vdsosym
-+	$(NM) $< | $(gen-vdsosym) | LC_ALL=C sort > $@ && \
-+	cp $@ include/generated/
-+endef
-+
-+$(obj)/vdso-offsets.h: $(obj)/vdso.so.dbg FORCE
-+	$(call if_changed,vdsosym)
-+
-+# Assembly rules for the .S files
-+$(obj-vdso): %.o: %.S
-+	$(call if_changed_dep,vdsoas)
-+
-+# Actual build commands
-+quiet_cmd_vdsold = VDSOL $@
-+      cmd_vdsold = $(CC) $(c_flags) -Wl,-T $^ -o $@
-+quiet_cmd_vdsoas = VDSOA $@
-+      cmd_vdsoas = $(CC) $(a_flags) -c -o $@ $<
-+
-+# Install commands for the unstripped file
-+quiet_cmd_vdso_install = INSTALL $@
-+      cmd_vdso_install = cp $(obj)/$@.dbg $(MODLIB)/vdso/$@
-+
-+vdso.so: $(obj)/vdso.so.dbg
-+	@mkdir -p $(MODLIB)/vdso
-+	$(call cmd,vdso_install)
-+
-+vdso_install: vdso.so
-diff --git a/arch/aarch64/kernel/vdso/gen_vdso_offsets.sh b/arch/aarch64/kernel/vdso/gen_vdso_offsets.sh
-new file mode 100755
-index 0000000..01924ff
---- /dev/null
-+++ b/arch/aarch64/kernel/vdso/gen_vdso_offsets.sh
-@@ -0,0 +1,15 @@
-+#!/bin/sh
-+
-+#
-+# Match symbols in the DSO that look like VDSO_*; produce a header file
-+# of constant offsets into the shared object.
-+#
-+# Doing this inside the Makefile will break the $(filter-out) function,
-+# causing Kbuild to rebuild the vdso-offsets header file every time.
-+#
-+# Author: Will Deacon <will.deacon@arm.com
-+#
-+
-+LC_ALL=C
-+sed -n -e 's/^00*/0/' -e \
-+'s/^\([0-9a-fA-F]*\) . VDSO_\([a-zA-Z0-9_]*\)$/\#define vdso_offset_\2\t0x\1/p'
-diff --git a/arch/aarch64/kernel/vdso/gettimeofday.S b/arch/aarch64/kernel/vdso/gettimeofday.S
-new file mode 100644
-index 0000000..71601df
---- /dev/null
-+++ b/arch/aarch64/kernel/vdso/gettimeofday.S
-@@ -0,0 +1,243 @@
++++ b/arch/aarch64/include/asm/hwcap.h
+@@ -0,0 +1,58 @@
 +/*
-+ * Userspace implementations of gettimeofday() and friends.
-+ *
-+ * Copyright (C) 2012 ARM Limited
++ * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -545,240 +279,87 @@ index 0000000..71601df
 + * You should have received a copy of the GNU General Public License
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
 + */
-+
-+#include <linux/linkage.h>
-+#include <asm/asm-offsets.h>
-+#include <asm/unistd.h>
-+
-+#define NSEC_PER_SEC_LO16	0xca00
-+#define NSEC_PER_SEC_HI16	0x3b9a
-+
-+vdso_data	.req	x6
-+use_syscall	.req	w7
-+seqcnt		.req	w8
-+
-+	.macro	seqcnt_acquire
-+9999:	ldr	seqcnt, [vdso_data, #VDSO_TB_SEQ_COUNT]
-+	tbnz	seqcnt, #0, 9999b
-+	dmb	ishld
-+	ldr	use_syscall, [vdso_data, #VDSO_USE_SYSCALL]
-+	.endm
-+
-+	.macro	seqcnt_read, cnt
-+	dmb	ishld
-+	ldr	\cnt, [vdso_data, #VDSO_TB_SEQ_COUNT]
-+	.endm
-+
-+	.macro	seqcnt_check, cnt, fail
-+	cmp	\cnt, seqcnt
-+	b.ne	\fail
-+	.endm
-+
-+	.text
-+
-+/* int __kernel_gettimeofday(struct timeval *tv, struct timezone *tz); */
-+ENTRY(__kernel_gettimeofday)
-+	.cfi_startproc
-+	mov	x2, x30
-+	.cfi_register x30, x2
-+
-+	/* Acquire the sequence counter and get the timespec. */
-+	adr	vdso_data, _vdso_data
-+1:	seqcnt_acquire
-+	cbnz	use_syscall, 4f
-+
-+	/* If tv is NULL, skip to the timezone code. */
-+	cbz	x0, 2f
-+	bl	__do_get_tspec
-+	seqcnt_check w13, 1b
-+
-+	/* Convert ns to us. */
-+	mov	x11, #1000
-+	udiv	x10, x10, x11
-+	stp	x9, x10, [x0, #TVAL_TV_SEC]
-+2:
-+	/* If tz is NULL, return 0. */
-+	cbz	x1, 3f
-+	ldp	w4, w5, [vdso_data, #VDSO_TZ_MINWEST]
-+	seqcnt_read w13
-+	seqcnt_check w13, 1b
-+	stp	w4, w5, [x1, #TZ_MINWEST]
-+3:
-+	mov	x0, xzr
-+	ret	x2
-+4:
-+	/* Syscall fallback. */
-+	mov	x8, #__NR_gettimeofday
-+	svc	#0
-+	ret	x2
-+	.cfi_endproc
-+ENDPROC(__kernel_gettimeofday)
-+
-+/* int __kernel_clock_gettime(clockid_t clock_id, struct timespec *tp); */
-+ENTRY(__kernel_clock_gettime)
-+	.cfi_startproc
-+	cmp	w0, #CLOCK_REALTIME
-+	ccmp	w0, #CLOCK_MONOTONIC, #0x4, ne
-+	b.ne	2f
-+
-+	mov	x2, x30
-+	.cfi_register x30, x2
-+
-+	/* Get kernel timespec. */
-+	adr	vdso_data, _vdso_data
-+1:	seqcnt_acquire
-+	cbnz	use_syscall, 7f
-+
-+	bl	__do_get_tspec
-+	seqcnt_check w13, 1b
-+
-+	cmp	w0, #CLOCK_MONOTONIC
-+	b.ne	6f
-+
-+	/* Get wtm timespec. */
-+	ldp	x14, x15, [vdso_data, #VDSO_WTM_CLK_SEC]
-+
-+	/* Check the sequence counter. */
-+	seqcnt_read w13
-+	seqcnt_check w13, 1b
-+	b	4f
-+2:
-+	cmp	w0, #CLOCK_REALTIME_COARSE
-+	ccmp	w0, #CLOCK_MONOTONIC_COARSE, #0x4, ne
-+	b.ne	8f
-+
-+	/* Get coarse timespec. */
-+	adr	vdso_data, _vdso_data
-+3:	seqcnt_acquire
-+	ldp	x9, x10, [vdso_data, #VDSO_XTIME_CRS_SEC]
-+
-+	cmp	w0, #CLOCK_MONOTONIC_COARSE
-+	b.ne	6f
-+
-+	/* Get wtm timespec. */
-+	ldp	x14, x15, [vdso_data, #VDSO_WTM_CLK_SEC]
-+
-+	/* Check the sequence counter. */
-+	seqcnt_read w13
-+	seqcnt_check w13, 3b
-+4:
-+	/* Add on wtm timespec. */
-+	add	x9, x9, x14
-+	add	x10, x10, x15
-+
-+	/* Normalise the new timespec. */
-+	mov	x14, #NSEC_PER_SEC_LO16
-+	movk	x14, #NSEC_PER_SEC_HI16, lsl #16
-+	cmp	x10, x14
-+	b.lt	5f
-+	sub	x10, x10, x14
-+	add	x9, x9, #1
-+5:
-+	cmp	x10, #0
-+	b.ge	6f
-+	add	x10, x10, x14
-+	sub	x9, x9, #1
-+
-+6:	/* Store to the user timespec. */
-+	stp	x9, x10, [x1, #TSPEC_TV_SEC]
-+	mov	x0, xzr
-+	ret	x2
-+7:
-+	mov	x30, x2
-+8:	/* Syscall fallback. */
-+	mov	x8, #__NR_clock_gettime
-+	svc	#0
-+	ret
-+	.cfi_endproc
-+ENDPROC(__kernel_clock_gettime)
-+
-+/* int __kernel_clock_getres(clockid_t clock_id, struct timespec *res); */
-+ENTRY(__kernel_clock_getres)
-+	.cfi_startproc
-+	cbz	w1, 3f
-+
-+	cmp	w0, #CLOCK_REALTIME
-+	ccmp	w0, #CLOCK_MONOTONIC, #0x4, ne
-+	b.ne	1f
-+
-+	ldr	x2, 5f
-+	b	2f
-+1:
-+	cmp	w0, #CLOCK_REALTIME_COARSE
-+	ccmp	w0, #CLOCK_MONOTONIC_COARSE, #0x4, ne
-+	b.ne	4f
-+	ldr	x2, 6f
-+2:
-+	stp	xzr, x2, [x1]
-+
-+3:	/* res == NULL. */
-+	mov	w0, wzr
-+	ret
-+
-+4:	/* Syscall fallback. */
-+	mov	x8, #__NR_clock_getres
-+	svc	#0
-+	ret
-+5:
-+	.quad	CLOCK_REALTIME_RES
-+6:
-+	.quad	CLOCK_COARSE_RES
-+	.cfi_endproc
-+ENDPROC(__kernel_clock_getres)
++#ifndef __ASM_HWCAP_H
++#define __ASM_HWCAP_H
 +
 +/*
-+ * Read the current time from the architected counter.
-+ * Expects vdso_data to be initialised.
-+ * Clobbers the temporary registers (x9 - x15).
-+ * Returns:
-+ *  - (x9, x10) = (ts->tv_sec, ts->tv_nsec)
-+ *  - (x11, x12) = (xtime->tv_sec, xtime->tv_nsec)
-+ *  - w13 = vDSO sequence counter
++ * HWCAP flags - for elf_hwcap (in kernel) and AT_HWCAP
 + */
-+ENTRY(__do_get_tspec)
-+	.cfi_startproc
++#define HWCAP_FP		(1 << 0)
++#define HWCAP_ASIMD		(1 << 1)
 +
-+	/* Read from the vDSO data page. */
-+	ldr	x10, [vdso_data, #VDSO_CS_CYCLE_LAST]
-+	ldp	x11, x12, [vdso_data, #VDSO_XTIME_CLK_SEC]
-+	ldp	w14, w15, [vdso_data, #VDSO_CS_MULT]
-+	seqcnt_read w13
++#ifdef CONFIG_AARCH32_EMULATION
++#define COMPAT_HWCAP_HALF	(1 << 1)
++#define COMPAT_HWCAP_THUMB	(1 << 2)
++#define COMPAT_HWCAP_FAST_MULT	(1 << 4)
++#define COMPAT_HWCAP_VFP	(1 << 6)
++#define COMPAT_HWCAP_EDSP	(1 << 7)
++#define COMPAT_HWCAP_NEON	(1 << 12)
++#define COMPAT_HWCAP_VFPv3	(1 << 13)
++#define COMPAT_HWCAP_TLS	(1 << 15)
++#define COMPAT_HWCAP_VFPv4	(1 << 16)
++#define COMPAT_HWCAP_IDIVA	(1 << 17)
++#define COMPAT_HWCAP_IDIVT	(1 << 18)
++#define COMPAT_HWCAP_IDIV	(COMPAT_HWCAP_IDIVA|COMPAT_HWCAP_IDIVT)
 +
-+	/* Read the physical counter. */
-+	isb
-+	mrs	x9, cntpct_el0
++#endif /* CONFIG_AARCH32_EMULATION */
 +
-+	/* Calculate cycle delta and convert to ns. */
-+	sub	x10, x9, x10
-+	/* We can only guarantee 56 bits of precision. */
-+	movn	x9, #0xff0, lsl #48
-+	and	x10, x9, x10
-+	mul	x10, x10, x14
-+	lsr	x10, x10, x15
++#if defined(__KERNEL__) && !defined(__ASSEMBLY__)
++/*
++ * This yields a mask that user programs can use to figure out what
++ * instruction set this cpu supports.
++ */
++#define ELF_HWCAP		(elf_hwcap)
++#ifdef CONFIG_AARCH32_EMULATION
++#define COMPAT_ELF_HWCAP	(COMPAT_HWCAP_HALF|COMPAT_HWCAP_THUMB|\
++				 COMPAT_HWCAP_FAST_MULT|COMPAT_HWCAP_EDSP|\
++				 COMPAT_HWCAP_TLS|COMPAT_HWCAP_VFP|\
++				 COMPAT_HWCAP_VFPv3|COMPAT_HWCAP_VFPv4|\
++				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV)
++#endif
++extern unsigned int elf_hwcap;
++#endif
 +
-+	/* Use the kernel time to calculate the new timespec. */
-+	add	x10, x12, x10
-+	mov	x14, #NSEC_PER_SEC_LO16
-+	movk	x14, #NSEC_PER_SEC_HI16, lsl #16
-+	udiv	x15, x10, x14
-+	add	x9, x15, x11
-+	mul	x14, x14, x15
-+	sub	x10, x10, x14
-+
-+	ret
-+	.cfi_endproc
-+ENDPROC(__do_get_tspec)
-diff --git a/arch/aarch64/kernel/vdso/note.S b/arch/aarch64/kernel/vdso/note.S
++#endif
+diff --git a/arch/aarch64/include/asm/param.h b/arch/aarch64/include/asm/param.h
 new file mode 100644
-index 0000000..a6b9cbb
+index 0000000..8977c76
 --- /dev/null
-+++ b/arch/aarch64/kernel/vdso/note.S
++++ b/arch/aarch64/include/asm/param.h
+@@ -0,0 +1,24 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++#ifndef __ASM_PARAM_H
++#define __ASM_PARAM_H
++
++#define EXEC_PAGESIZE	65536
++
++#include <asm-generic/param.h>
++
++#endif
+diff --git a/arch/aarch64/include/asm/shmparam.h b/arch/aarch64/include/asm/shmparam.h
+new file mode 100644
+index 0000000..e0e2eed
+--- /dev/null
++++ b/arch/aarch64/include/asm/shmparam.h
 @@ -0,0 +1,29 @@
 +/*
-+ * Copyright (C) 2012 ARM Limited
++ * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -792,72 +373,30 @@ index 0000000..a6b9cbb
 + * You should have received a copy of the GNU General Public License
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
-+ *
-+ * This supplies .note.* sections to go into the PT_NOTE inside the vDSO text.
-+ * Here we can supply some information useful to userland.
 + */
++#ifndef __ASM_SHMPARAM_H
++#define __ASM_SHMPARAM_H
 +
-+#include <linux/uts.h>
-+#include <linux/version.h>
-+#include <linux/elfnote.h>
-+
-+ELFNOTE_START(Linux, 0, "a")
-+	.long LINUX_VERSION_CODE
-+ELFNOTE_END
-diff --git a/arch/aarch64/kernel/vdso/sigreturn.S b/arch/aarch64/kernel/vdso/sigreturn.S
-new file mode 100644
-index 0000000..41f76b4
---- /dev/null
-+++ b/arch/aarch64/kernel/vdso/sigreturn.S
-@@ -0,0 +1,38 @@
 +/*
-+ * Sigreturn trampoline for returning from a signal when the SA_RESTORER
-+ * flag is not set.
-+ *
-+ * Copyright (C) 2012 ARM Limited
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
++ * For IPC syscalls from compat tasks, we need to use the legacy 16k
++ * alignment value. Since we don't have aliasing D-caches, the rest of
++ * the time we can safely use PAGE_SIZE.
 + */
++#define COMPAT_SHMLBA	0x4000
 +
-+#include <linux/linkage.h>
-+#include <asm/unistd.h>
++#include <asm-generic/shmparam.h>
 +
-+	.text
-+
-+	nop
-+ENTRY(__kernel_rt_sigreturn)
-+	.cfi_startproc
-+	.cfi_signal_frame
-+	.cfi_def_cfa	x29, 0
-+	.cfi_offset	x29, 0 * 8
-+	.cfi_offset	x30, 1 * 8
-+	mov	x8, #__NR_rt_sigreturn
-+	svc	#0
-+	.cfi_endproc
-+ENDPROC(__kernel_rt_sigreturn)
-diff --git a/arch/aarch64/kernel/vdso/vdso.S b/arch/aarch64/kernel/vdso/vdso.S
++#endif /* __ASM_SHMPARAM_H */
+diff --git a/arch/aarch64/kernel/elf.c b/arch/aarch64/kernel/elf.c
 new file mode 100644
-index 0000000..fe79fc1
+index 0000000..7c2ff95
 --- /dev/null
-+++ b/arch/aarch64/kernel/vdso/vdso.S
-@@ -0,0 +1,34 @@
++++ b/arch/aarch64/kernel/elf.c
+@@ -0,0 +1,42 @@
 +/*
-+ * Copyright (C) 2012 ARM Limited
++ * ELF personality setting
++ *
++ * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -871,130 +410,29 @@ index 0000000..fe79fc1
 + * You should have received a copy of the GNU General Public License
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
 + */
++#include <linux/export.h>
++#include <linux/sched.h>
++#include <linux/personality.h>
++#include <linux/binfmts.h>
++#include <linux/elf.h>
 +
-+#include <linux/init.h>
-+#include <linux/linkage.h>
-+#include <linux/const.h>
-+#include <asm/page.h>
-+
-+	__PAGE_ALIGNED_DATA
-+
-+	.globl vdso_start, vdso_end
-+	.balign PAGE_SIZE
-+vdso_start:
-+	.incbin "arch/aarch64/kernel/vdso/vdso.so"
-+	.balign PAGE_SIZE
-+vdso_end:
-+
-+	.previous
-diff --git a/arch/aarch64/kernel/vdso/vdso.lds.S b/arch/aarch64/kernel/vdso/vdso.lds.S
-new file mode 100644
-index 0000000..89a74b9
---- /dev/null
-+++ b/arch/aarch64/kernel/vdso/vdso.lds.S
-@@ -0,0 +1,101 @@
-+/*
-+ * GNU linker script for the VDSO library.
-+*
-+ * Copyright (C) 2012 ARM Limited
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
-+ * Heavily based on the vDSO linker scripts for other archs.
-+ */
-+
-+#include <linux/const.h>
-+#include <asm/page.h>
-+#include <asm/vdso.h>
-+
-+OUTPUT_FORMAT("elf64-littleaarch64", "elf64-bigaarch64", "elf64-littleaarch64")
-+OUTPUT_ARCH(aarch64)
-+
-+SECTIONS
++void elf_set_personality(int personality)
 +{
-+	. = VDSO_LBASE + SIZEOF_HEADERS;
-+
-+	.hash		: { *(.hash) }			:text
-+	.gnu.hash	: { *(.gnu.hash) }
-+	.dynsym		: { *(.dynsym) }
-+	.dynstr		: { *(.dynstr) }
-+	.gnu.version	: { *(.gnu.version) }
-+	.gnu.version_d	: { *(.gnu.version_d) }
-+	.gnu.version_r	: { *(.gnu.version_r) }
-+
-+	.note		: { *(.note.*) }		:text	:note
-+
-+	. = ALIGN(16);
-+
-+	.text		: { *(.text*) }			:text	=0xd503201f
-+	PROVIDE (__etext = .);
-+	PROVIDE (_etext = .);
-+	PROVIDE (etext = .);
-+
-+	.eh_frame_hdr	: { *(.eh_frame_hdr) }		:text	:eh_frame_hdr
-+	.eh_frame	: { KEEP (*(.eh_frame)) }	:text
-+
-+	.dynamic	: { *(.dynamic) }		:text	:dynamic
-+
-+	.rodata		: { *(.rodata*) }		:text
-+
-+	_end = .;
-+	PROVIDE(end = .);
-+
-+	. = ALIGN(PAGE_SIZE);
-+	PROVIDE(_vdso_data = .);
-+
-+	/DISCARD/	: {
-+		*(.note.GNU-stack)
-+		*(.data .data.* .gnu.linkonce.d.* .sdata*)
-+		*(.bss .sbss .dynbss .dynsbss)
++	switch (personality & PER_MASK) {
++	case PER_LINUX:
++		clear_thread_flag(TIF_32BIT);
++		break;
++	case PER_LINUX32:
++		set_thread_flag(TIF_32BIT);
++		break;
++	default:
++		pr_warning("Process %s tried to assume unknown personality %d\n",
++			   current->comm, personality);
++		return;
 +	}
-+}
 +
-+/*
-+ * We must supply the ELF program headers explicitly to get just one
-+ * PT_LOAD segment, and set the flags explicitly to make segments read-only.
-+ */
-+PHDRS
-+{
-+	text		PT_LOAD		FLAGS(5) FILEHDR PHDRS; /* PF_R|PF_X */
-+	dynamic		PT_DYNAMIC	FLAGS(4);		/* PF_R */
-+	note		PT_NOTE		FLAGS(4);		/* PF_R */
-+	eh_frame_hdr	PT_GNU_EH_FRAME;
++	current->personality = personality;
 +}
-+
-+/*
-+ * This controls what symbols we export from the DSO.
-+ */
-+VERSION
-+{
-+	LINUX_2.6.39 {
-+	global:
-+		__kernel_rt_sigreturn;
-+		__kernel_gettimeofday;
-+		__kernel_clock_gettime;
-+		__kernel_clock_getres;
-+	local: *;
-+	};
-+}
-+
-+/*
-+ * Make the sigreturn code visible to the kernel.
-+ */
-+VDSO_sigtramp		= __kernel_rt_sigreturn;
++EXPORT_SYMBOL(elf_set_personality);
 
