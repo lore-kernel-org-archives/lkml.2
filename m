@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932480Ab2GFRzF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 13:55:05 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59813 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757859Ab2GFRzD (ORCPT
+	id S1758126Ab2GFR4C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 13:56:02 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:63908 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757859Ab2GFR4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 13:55:03 -0400
-X-Sasl-enc: AnbwnPT0TcbRUIzZL1oqd/kubGTRVHaCYf8i9N1NGQHw 1341597302
-Date: Fri, 6 Jul 2012 10:55:01 -0700
-From: Greg KH <greg@kroah.com>
-To: Jukka Ollila <jiiksteri@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kay@vrfy.org, jbeulich@novell.com,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: Bug 44211 - /proc/kmsg does not (always) block for 1-byte reads
-Message-ID: <20120706175501.GA11908@kroah.com>
-References: <CAGoecWyMKF4gC7FaoBCrBs+rD=u6oJRHS5Q2qVkkwoZZ1_4RCg@mail.gmail.com>
+	Fri, 6 Jul 2012 13:56:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGoecWyMKF4gC7FaoBCrBs+rD=u6oJRHS5Q2qVkkwoZZ1_4RCg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [93.172.10.162]
+In-Reply-To: <81C3A93C17462B4BBD7E272753C10579232F92EFE2@EXDCVYMBSTM005.EQ1STM.local>
+References: <1340375470-13097-1-git-send-email-sjur.brandeland@stericsson.com>
+ <1340375470-13097-5-git-send-email-sjur.brandeland@stericsson.com>
+ <CAK=WgbbG2nHH7+rm6CoR=VhiXVQT3-2VqJYLswmg9EshWu_=EA@mail.gmail.com>
+ <81C3A93C17462B4BBD7E272753C10579232F86BE52@EXDCVYMBSTM005.EQ1STM.local>
+ <CAK=Wgbb_pAx9Kfwbh23k=62vQUx5vnVpwe3q50BY=KwAkLC=ng@mail.gmail.com> <81C3A93C17462B4BBD7E272753C10579232F92EFE2@EXDCVYMBSTM005.EQ1STM.local>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Fri, 6 Jul 2012 20:55:39 +0300
+Message-ID: <CAK=Wgbbt4E7RNntRp4K2q5i2rw6ZpVfxbVrH9u4djJus0L5AJg@mail.gmail.com>
+Subject: Re: [RFC 4/4] remoteproc: Add driver for STE Modem
+To: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, 2012 at 08:45:44PM +0300, Jukka Ollila wrote:
-> Hello,
-> 
-> A few days ago I filed a kernel regression report concerning a change
-> in /proc/kmsg behaviour with short reads:
-> 
-> https://bugzilla.kernel.org/show_bug.cgi?id=44211
-> 
-> The comments suggest that this is probably intentional, but that it
-> would be best make sure that the current semantics wrt short reads are
-> as intended.
-> 
-> The problem appears on a Debian (unstable) system that drains
-> /proc/kmsg into a separate fifo read by klogd(8):
-> 
-> /bin/dd bs=1 if=/proc/kmsg  of=/var/run/klogd/kmsg
-> 
-> With the recent kernel logging changes this /bin/dd exits immediately,
-> as 1-byte reads are shorter than any log message could possibly be and
-> read() returns 0. No dd feeding the fifo results in no logging and a
-> rather unhappy klogd on the reading end of /var/run/klogd/kmsg.
-> 
-> I suppose a safe solution is to only do reads that are big enough for
-> any single kernel message, but this is still a change that affects
-> user space being shipped, so some might find it surprising.
-> 
-> I don't know what other distros do. Is it just Debian being the odd one out?
+Hi Sjur,
 
-I think we just fixed this, what kernel version are you seeing this
-problem on?
+On Fri, Jul 6, 2012 at 12:18 PM, Sjur BRENDELAND
+<sjur.brandeland@stericsson.com> wrote:
+> The simple story is that when Host writes a bit indicated with TX-mask
+> it generates an interrupt on the modem-side. And likewise when the
+> modem writes a bit indicated with RX mask the Host will receive an
+> interrupt.
 
-Kay did your other patches that I just accepted resolve this?
+Ok, thanks.
 
-thanks,
+> Yes, if you can guarantee this, I could make a very simple solution.
 
-greg k-h
+Great!
+
+> Ok, I guess a more standard way to solve this is use #ifdef's and
+> dummy inline functions in the header file instead. I'll do that
+> next time around then.
+
+I'm still puzzled a bit about this: can we just depend on some
+CONFIG_STE_MODEM_HANDLERS (totally made up name) instead, without even
+adding the #ifdefs ?
+
+Since ste_modem_rproc is anyway platform specific, I'm wondering
+whether there's any legitimate configuration where it is needed, but
+the symbols it depends on aren't around.
+
+> OK, we can do it this way as well. It feels a bit over-the-top in my case,
+> but I understand where you're coming from any why.
+
+Thanks! It should really be super simple and straight-forward to
+implement. If you see that for some reason it isn't, let me know and
+I'll help.
+
+Ohad.
