@@ -1,89 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab2GFW1V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 18:27:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:38571 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab2GFW1U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 18:27:20 -0400
-Date: Fri, 6 Jul 2012 17:27:15 -0500
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        ecryptfs@vger.kernel.org
-Subject: [GIT PULL] eCryptfs fixes for 3.5-rc6
-Message-ID: <20120706222714.GA30388@boyd>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="xHFwDpU9dbj6ez1V"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756517Ab2GFWkA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 18:40:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46760 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751278Ab2GFWj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 18:39:58 -0400
+Date: Sat, 7 Jul 2012 08:39:49 +1000
+From: NeilBrown <neilb@suse.de>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Infinite looping in omap2430.c USB driver
+Message-ID: <20120707083949.2cf91eeb@notabene.brown>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/yR=1B6Ogzk8zow3DNyGpywg"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---xHFwDpU9dbj6ez1V
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Hi Linus,
-
-The following changes since commit ff826b2b5b269ad440afa686ede879ccabfda387:
-
-  Merge tag 'sound-3.5' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound (2012-07-03 11:10:18 -0700)
-
-are available in the git repository at:
+--Sig_/yR=1B6Ogzk8zow3DNyGpywg
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tyhicks/ecryptfs.git tags/ecryptfs-3.5-rc6-fixes
+Hello `./scripts/get_maintainer.pl -f drivers/usb/musb/omap2430.c`
 
-for you to fetch changes up to 8dc6780587c99286c0d3de747a2946a76989414a:
+omap2430_musb_set_vbus in omap2430.c contains:
 
-  eCryptfs: Gracefully refuse miscdev file ops on inherited/passed files (2012-07-06 15:51:12 -0500)
+			while (musb_readb(musb->mregs, MUSB_DEVCTL) & 0x80) {
 
-----------------------------------------------------------------
-Fixes an incorrect access mode check when preparing to open a file in the lower
-filesystem. This isn't an urgent fix, but it is simple and the check was
-obviously incorrect.
+				cpu_relax();
 
-Also fixes a couple important bugs in the eCryptfs miscdev interface. These
-changes are low risk due to the small number of users that use the miscdev
-interface. I was able to keep the changes minimal and I have some cleaner, more
-complete changes queued up for the next merge window that will build on these
-patches.
+				if (time_after(jiffies, timeout)) {
+					dev_err(musb->controller,
+					"configured as A device timeout");
+					ret =3D -EINVAL;
+					break;
+				}
+			}
 
-----------------------------------------------------------------
-Tyler Hicks (3):
-      eCryptfs: Properly check for O_RDONLY flag before doing privileged open
-      eCryptfs: Fix lockdep warning in miscdev operations
-      eCryptfs: Gracefully refuse miscdev file ops on inherited/passed files
+having set
+	unsigned long timeout =3D jiffies + msecs_to_jiffies(1000);
 
- fs/ecryptfs/kthread.c |    2 +-
- fs/ecryptfs/miscdev.c |   48 +++++++++++++++++++++++++++++-------------------
- 2 files changed, 30 insertions(+), 20 deletions(-)
+so it can busy-loop for up to 1 second.  Probably not ideal, but if it works
+I wouldn't complain.
 
---xHFwDpU9dbj6ez1V
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The
+	if (int_usb & MUSB_INTR_SESSREQ) {
+branch of musb_stage0_irq() called from musb_interrupt (from
+generic_interrupt) calls this:
+
+	if (musb->int_usb)
+		retval |=3D musb_stage0_irq(musb, musb->int_usb,
+				devctl, power);
+
+so the busy loop can happen in an interrupt handler (not a threaded interru=
+pt
+handler), which is probably less ideal.
+
+However this can be called with interrupt disabled, as happens at least
+during resume when resume_irqs() calls:
+
+		raw_spin_lock_irqsave(&desc->lock, flags);
+		__enable_irq(desc, irq, true);
+		raw_spin_unlock_irqrestore(&desc->lock, flags);
+
+and an interrupt is found to be IRQS_PENDING.
+
+In this case interrupts are disabled so 'jiffies' never changes so this loop
+can continue forever.
+
+This happens on my (GTA04) phone fairly regularly - between 1 in 10 and 1 in
+30 resumes. The musb-hdrc interrupt is pending and reports
+
+[ 4957.624176] musb-hdrc musb-hdrc: ** IRQ peripheral usb0040 tx0000 rx0000
+
+'usb0040' is MUSB_INTR_SESSREQ.  I think this is triggered by detecting a
+voltage change on the USB ID pin - is that right?  A short-to-earth would be
+a request to switch to host mode, which is why it tries to enable VBUS.
+Maybe there is some electrical noise which is being picked up?
+
+In any case I get the interrupt despite nothing being plugged in, and the 0=
+x80
+bit of MUSB_DEVCTL never gets cleared.
+
+I've added a simple loop counter which aborts the loop after 1000 loops -
+this takes about 5 seconds, but includes some printks which probably slow it
+down.
+
+In 2 out of 2 cases, subsequent messages show that the hsmmc driver for the
+uSD card that holds my root filesystem is messed up.  It seems to be waiting
+for a request that is never going to complete.
+So maybe the hsmmc is causing the noise that triggers the musb issue.
+
+I can send a patch which add a loop count if you like, but I suspect you can
+come up with a much better approach.
+
+Thanks,
+NeilBrown
+
+--Sig_/yR=1B6Ogzk8zow3DNyGpywg
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-iQIcBAEBCgAGBQJP92ZCAAoJENaSAD2qAscKIpQP/RG9TMzi1muYHYQkTkicHmkv
-fn576OuE6Apaur/k2+nyna0vfL4hJ4yaehN0jIJjB2/o+Nq6QhNEtegFtJzAmPeZ
-pQDGO/QkIH2AUaksCGEheVbtILguB7xGmNrOFTTCs460JVI+U48m5P8cam0twLkr
-ECGYlWUF0UApeS3sTupZC3cxeTJRbgQ5IUXRilSmb+mnu2d2sS1ar/zJsRyDkTWV
-NcpMEEQKoquhRNbuVB7hGNOYCYYGPYVmX1yHGBIkPI0a5T2XE4FfKBRYRkXavwmN
-ObggUKzP3RroT8pBq1SjDgoXSUXfrPBotjseeI3qcMZvqBJz0al96xZKMzSRL7G7
-yLe+p8jfiZbkRmfb8mHCtMybidP707fGWEEwU2roisOWoEO3FH0fsPpNqJd/UjXl
-jMwIRRYL6Bp2csmPQD9XM1igtZb/UuPDmOFwMqOacfcbokM5btr11TPRodKMEKtQ
-9NLz8wM7AqCAUZD/cfjX0GbU7ELVCY7mU4cX3mafQShpeLp3D5RktHsjdafUXR5e
-TTz4qUdVBBQ9mDprISvaPsS9sD6LN6yL18FsEIZe736UwDqdaITC56/EtPwiMzJj
-FBly+iD+8b45d/a/CZYf1ibBmL6vcaNNDRqvxspTw1U9KnVrhEn0EG41Q5TxSYr2
-AOXIRhSnS0coP99ITJHc
-=ShJS
+iQIVAwUBT/dpNTnsnt1WYoG5AQIrPhAAlRtFq4/z2NXrHOPKZ/CP+g8M2BAgtz9D
+pND5j4NTw7DPuq3q0XV/PANfME7X+Szyv/g1wz0kVgg9iDiCgzpHydTTIv+XVPcS
+saq011IrhwV6YwEWh/faY4n6A/5sBJOj6vzDRHRTOUrWNXkd2BxROe1lsWPoS9ib
+8Bj2dZjO3uggWbb+AUj+VoRpuqZMJ1rpzwNY4bLyPebPOT2pzNeby7o+q1NKzPnP
+gHR4eZGvyToJW8w9dXix9iJM9kogQGJO7MnD7cRGyL3kVzM4/ODNmWSKQhy5Pe+2
+b9DmAbD0Vf/4mI1WpGwJNG2MQtw28kUJxT2+Jy8UgBNb16gwPR+NsbdfGp5Oxhqd
+ZIE0mlNb6FCu4jz3qEsc2hYK4xf+hyvosBV/pZISZGjSr2IFYoPf2JLin91XetjV
+WxHG5Up12quwRMZ4OBoz4r8ipA6IrX51s+3xlObncZAugEtSxGpI9f1zHbhJKALo
+Mmpzdd0/9CojZcXgcZSo+aGMC8/+yrr2qXjdhubB6TvJwkr8N4UzhuEY4/GWQj6W
+NApLO0YNkqDhSxzAvzNdugHiFMXLXpVZdzlxtZ95FgOZGvuYyeMccxTy/8OcUOBx
+B2Al6z+6bHH0AxT04zRFfzsUOUoBKCjb012vjmlIlViz1L/y7pbsQNGlFErVfxzR
+ILkXYi+Q2zk=
+=9FWw
 -----END PGP SIGNATURE-----
 
---xHFwDpU9dbj6ez1V--
+--Sig_/yR=1B6Ogzk8zow3DNyGpywg--
