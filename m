@@ -1,138 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933410Ab2GFLJU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 07:09:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51840 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933199Ab2GFLJS (ORCPT
+	id S1757011Ab2GFLKD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 07:10:03 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:23392 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533Ab2GFLKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 07:09:18 -0400
-Date: Fri, 6 Jul 2012 04:09:04 -0700
-From: tip-bot for Steven Rostedt <srostedt@redhat.com>
-Message-ID: <tip-t0ctq7t1xz3ud6wv4v886jou@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rostedt@goodmis.org, srostedt@redhat.com, johannes.berg@intel.com,
-        tglx@linutronix.de, namhyung@kernel.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, srostedt@redhat.com, johannes.berg@intel.com,
-        tglx@linutronix.de, namhyung@kernel.org
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib traceevent: Add support for "%.*s"
-  in bprintk events
-Git-Commit-ID: c2e6dc2b268cca44d522b2ee86147f0d30d7e3e4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 6 Jul 2012 07:10:00 -0400
+Message-ID: <4FF6C77B.208@siemens.com>
+Date: Fri, 06 Jul 2012 13:09:47 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 04:09:10 -0700 (PDT)
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH 7/7 v6] deal with panicked event accoring to '-machine
+ panic_action=action'
+References: <4FF6B188.2060607@cn.fujitsu.com> <4FF6B2E7.2060405@cn.fujitsu.com>
+In-Reply-To: <4FF6B2E7.2060405@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c2e6dc2b268cca44d522b2ee86147f0d30d7e3e4
-Gitweb:     http://git.kernel.org/tip/c2e6dc2b268cca44d522b2ee86147f0d30d7e3e4
-Author:     Steven Rostedt <srostedt@redhat.com>
-AuthorDate: Tue, 15 Nov 2011 18:47:48 -0500
-Committer:  Namhyung Kim <namhyung@kernel.org>
-CommitDate: Wed, 4 Jul 2012 13:40:30 +0900
+On 2012-07-06 11:41, Wen Congyang wrote:
+> The action is the same as -onpanic parameter.
 
-tools lib traceevent: Add support for "%.*s" in bprintk events
+As explained in patch 5, now that we have a related device, this no
+longer needs to be a machine property.
 
-The arg notation of '*' in bprintks is not handled by the parser.
-Implement it so that they show up properly in the output and do not
-kill the tracer from reporting events.
+Would could be a machine property is enabling/disabling this device.
+That's probably useful as it uses a fixed PIO port that might conflict
+with (non-Linux) guest expectations and/or future device models.
 
-Reported-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/n/tip-t0ctq7t1xz3ud6wv4v886jou@git.kernel.org
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/lib/traceevent/event-parse.c |   34 +++++++++++++++++++++++++---------
- 1 files changed, 25 insertions(+), 9 deletions(-)
+Jan
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 83f0a8a..0644c2a 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -3370,7 +3370,7 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 		break;
- 	}
- 	case PRINT_BSTRING:
--		trace_seq_printf(s, format, arg->string.string);
-+		print_str_to_seq(s, format, len_arg, arg->string.string);
- 		break;
- 	case PRINT_OP:
- 		/*
-@@ -3471,6 +3471,7 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 	unsigned long long ip, val;
- 	char *ptr;
- 	void *bptr;
-+	int vsize;
- 
- 	field = pevent->bprint_buf_field;
- 	ip_field = pevent->bprint_ip_field;
-@@ -3519,6 +3520,8 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 				goto process_again;
- 			case '0' ... '9':
- 				goto process_again;
-+			case '.':
-+				goto process_again;
- 			case 'p':
- 				ls = 1;
- 				/* fall through */
-@@ -3526,23 +3529,29 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 			case 'u':
- 			case 'x':
- 			case 'i':
--				/* the pointers are always 4 bytes aligned */
--				bptr = (void *)(((unsigned long)bptr + 3) &
--						~3);
- 				switch (ls) {
- 				case 0:
--					ls = 4;
-+					vsize = 4;
- 					break;
- 				case 1:
--					ls = pevent->long_size;
-+					vsize = pevent->long_size;
- 					break;
- 				case 2:
--					ls = 8;
-+					vsize = 8;
- 				default:
-+					vsize = ls; /* ? */
- 					break;
- 				}
--				val = pevent_read_number(pevent, bptr, ls);
--				bptr += ls;
-+			/* fall through */
-+			case '*':
-+				if (*ptr == '*')
-+					vsize = 4;
-+
-+				/* the pointers are always 4 bytes aligned */
-+				bptr = (void *)(((unsigned long)bptr + 3) &
-+						~3);
-+				val = pevent_read_number(pevent, bptr, vsize);
-+				bptr += vsize;
- 				arg = alloc_arg();
- 				arg->next = NULL;
- 				arg->type = PRINT_ATOM;
-@@ -3550,6 +3559,13 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 				sprintf(arg->atom.atom, "%lld", val);
- 				*next = arg;
- 				next = &arg->next;
-+				/*
-+				 * The '*' case means that an arg is used as the length.
-+				 * We need to continue to figure out for what.
-+				 */
-+				if (*ptr == '*')
-+					goto process_again;
-+
- 				break;
- 			case 's':
- 				arg = alloc_arg();
+> 
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>  qemu-config.c   |    4 ++++
+>  qemu-options.hx |    4 +++-
+>  vl.c            |    7 +++++++
+>  3 files changed, 14 insertions(+), 1 deletions(-)
+> 
+> diff --git a/qemu-config.c b/qemu-config.c
+> index 5c3296b..805e7c4 100644
+> --- a/qemu-config.c
+> +++ b/qemu-config.c
+> @@ -595,6 +595,10 @@ static QemuOptsList qemu_machine_opts = {
+>              .name = "dt_compatible",
+>              .type = QEMU_OPT_STRING,
+>              .help = "Overrides the \"compatible\" property of the dt root node",
+> +        }, {
+> +            .name = "panic_action",
+> +            .type = QEMU_OPT_STRING,
+> +            .help = "The action what QEMU will do when the guest is panicked",
+>          },
+>          { /* End of list */ }
+>      },
+> diff --git a/qemu-options.hx b/qemu-options.hx
+> index 4a061bf..083a21d 100644
+> --- a/qemu-options.hx
+> +++ b/qemu-options.hx
+> @@ -33,7 +33,9 @@ DEF("machine", HAS_ARG, QEMU_OPTION_machine, \
+>      "                property accel=accel1[:accel2[:...]] selects accelerator\n"
+>      "                supported accelerators are kvm, xen, tcg (default: tcg)\n"
+>      "                kernel_irqchip=on|off controls accelerated irqchip support\n"
+> -    "                kvm_shadow_mem=size of KVM shadow MMU\n",
+> +    "                kvm_shadow_mem=size of KVM shadow MMU\n"
+> +    "                panic_action=none|pause|poweroff|reset controls what QEmu\n"
+> +    "                will do when the guest is panicked",
+>      QEMU_ARCH_ALL)
+>  STEXI
+>  @item -machine [type=]@var{name}[,prop=@var{value}[,...]]
+> diff --git a/vl.c b/vl.c
+> index 1a68257..091c43b 100644
+> --- a/vl.c
+> +++ b/vl.c
+> @@ -2301,6 +2301,7 @@ int main(int argc, char **argv, char **envp)
+>      };
+>      const char *trace_events = NULL;
+>      const char *trace_file = NULL;
+> +    const char *panic_action = NULL;
+>  
+>      atexit(qemu_run_exit_notifiers);
+>      error_set_progname(argv[0]);
+> @@ -3372,10 +3373,16 @@ int main(int argc, char **argv, char **envp)
+>          kernel_filename = qemu_opt_get(machine_opts, "kernel");
+>          initrd_filename = qemu_opt_get(machine_opts, "initrd");
+>          kernel_cmdline = qemu_opt_get(machine_opts, "append");
+> +        panic_action = qemu_opt_get(machine_opts, "panic_action");
+>      } else {
+>          kernel_filename = initrd_filename = kernel_cmdline = NULL;
+>      }
+>  
+> +    if (panic_action && select_panicked_action(panic_action) == -1) {
+> +        fprintf(stderr, "Unknown -panic_action parameter\n");
+> +        exit(1);
+> +    }
+> +
+>      if (!kernel_cmdline) {
+>          kernel_cmdline = "";
+>      }
+> 
+
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
+
+
