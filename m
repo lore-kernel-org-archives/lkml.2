@@ -1,63 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab2GFIFK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 04:05:10 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59187 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab2GFIE6 (ORCPT
+	id S1753210Ab2GFIGL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 04:06:11 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39752 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750972Ab2GFIF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 04:04:58 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Date: Fri, 06 Jul 2012 17:04:10 +0900 (JST)
-Message-Id: <20120706.170410.119097767.d.hatayama@jp.fujitsu.com>
-To: zhangyanfei@cn.fujitsu.com
-Cc: avi@redhat.com, mtosatti@redhat.com, dzickus@redhat.com, luto@mit.edu,
-        kvm@vger.kernel.org, joerg.roedel@amd.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
-        ludwig.nussel@suse.de, ebiederm@xmission.com,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH v4 2/3] KVM-INTEL: Add new module vmcsinfo-intel to
- fill VMCSINFO
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <4FF4155F.6070508@cn.fujitsu.com>
-References: <4FF413D2.4030006@cn.fujitsu.com>
-	<4FF4155F.6070508@cn.fujitsu.com>
-X-Mailer: Mew version 6.3 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Fri, 6 Jul 2012 04:05:59 -0400
+Message-ID: <1341561953.3023.31.camel@dabdike.hilton.com>
+Subject: Re: [PATCH v5 3/4] block: implement runtime pm strategy
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Shaohua Li <shli@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Date: Fri, 06 Jul 2012 12:05:53 +0400
+In-Reply-To: <1341554872.3628.30.camel@minggr>
+References: <1341547472-6863-1-git-send-email-ming.m.lin@intel.com>
+	 <1341547472-6863-4-git-send-email-ming.m.lin@intel.com>
+	 <1341550812.3023.3.camel@dabdike.hilton.com>
+	 <1341554872.3628.30.camel@minggr>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
-Subject: [PATCH v4 2/3] KVM-INTEL: Add new module vmcsinfo-intel to fill VMCSINFO
-Date: Wed, 4 Jul 2012 18:05:19 +0800
+On Fri, 2012-07-06 at 14:07 +0800, Lin Ming wrote:
+> On Fri, 2012-07-06 at 09:00 +0400, James Bottomley wrote:
+> > On Fri, 2012-07-06 at 12:04 +0800, Lin Ming wrote:
+> > > When a request is added:
+> > >     If device is suspended or is suspending and the request is not a
+> > >     PM request, resume the device.
+> > > 
+> > > When a request finishes:
+> > >     Call pm_runtime_mark_last_busy().
+> > > 
+> > > When pick a request:
+> > >     If device is resuming/suspending, then only PM request is allowed to go.
+> > >     Return NULL for other cases.
+> > 
+> > This is a complete reinvention of the quiesce state, just with new names
+> > and moved up to block in part ... why do we have to have two separate
+> > systems for stopping a device and sending special commands when the
+> > device is suspended, why not just one?
+> 
+> Yes, there are some duplicates with scsi layer quiesce state.
+> I'd like to do the cleanup.
 
-> Besides, this patch also exports vmcs revision identifier via
-> /sys/devices/system/cpu/vmcs_id and offsets of fields via
-> /sys/devices/system/cpu/vmcs/.
-> Individual offsets are contained in subfiles named by the filed's
-> encoding, e.g.: /sys/devices/cpu/vmcs/0800
+The mechanism is pretty much identical:  For quiesce you set the sdev
+state to SDEV_QUIESCE and then send in special requests with REQ_PREEMPT
+to bypass the suspend.  In your additional scheme you set a queue flag
+RPM_SUSPENDED by a pm specific set of callbacks and you only then accept
+requests with REQ_PM.  I don't see any difference in actual effect
+(well, except that quiesce can be done on a non-empty queue, but that's
+a simple flag difference).
 
-According to the discussion starting from
+What I don't want to see is duplicated mechanisms.  If you want to make
+a general quiesce mechanism in block instead of SCSI, I'm fine with
+that, but I want to see our current quiesce mechanism moved to it first
+since that demonstrates you got it right.  If you don't want to do that,
+then just use the existing mechanism in SCSI.
 
-http://lkml.indiana.edu/hypermail/linux/kernel/1105.3/00749.html
+Now that I look at it, your q->nr_pending is an inexact duplicate of
+sdev->device_busy as well.  Again, no objection to moving this to block,
+but if you then make SCSI use it for sdev->device_busy, you'll get a
+very fast indication of whether you got this right or not, which is an
+excellent reason for unifying.
 
-system can be composed of CPUs with different steppings or differnet
-microcode revisions. Becase of the nature that it's hided in the
-specification, I suspect layout of vmcs could change across different
-steppings or microcode revisions. Then, the interface needs to be
-changed as per-cpu like
+In the new scheme, by the way, all this would be integrated directly
+into block, so no duplication of blk_xx as blk_pm_xx
 
-   /sys/devices/cpu/cpu0/vmcs/0800
-   /sys/devices/cpu/cpu1/vmcs/0800
-   ...
-   /sys/devices/cpu/cpuN/vmcs/0800
+James
 
-Also, processing of vmcsinfo initialization needs to be done per cpu,
-and can be triggered when cpu is added not when kvm module is loaded.
 
-Thanks.
-HATAYAMA, Daisuke
+> Add runtime pm support to block layer, so other block device drivers may
+> also add runtime pm support easily in future.
+> 
+> Some helper functions are provided on block layer which can be called by
+> block device drivers.
+> 
+> void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
+> int blk_pre_runtime_suspend(struct request_queue *q)
+> void blk_post_runtime_suspend(struct request_queue *q, int err)
+> void blk_pre_runtime_resume(struct request_queue *q)
+> void blk_post_runtime_resume(struct request_queue *q, int err)
+> 
+> Thanks,
+> Lin Ming
+> 
+> > 
+> > James
+> > 
+> > > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> > > ---
+> > >  block/blk-core.c       |    7 +++++++
+> > >  block/elevator.c       |    4 ++++
+> > >  include/linux/blkdev.h |   37 +++++++++++++++++++++++++++++++++++++
+> > >  3 files changed, 48 insertions(+)
+> > > 
+> > > diff --git a/block/blk-core.c b/block/blk-core.c
+> > > index 1cc80ae..cb93501 100644
+> > > --- a/block/blk-core.c
+> > > +++ b/block/blk-core.c
+> > > @@ -1224,6 +1224,8 @@ void __blk_put_request(struct request_queue *q, struct request *req)
+> > >  	if (unlikely(--req->ref_count))
+> > >  		return;
+> > >  
+> > > +	blk_pm_put_request(q);
+> > > +
+> > >  	elv_completed_request(q, req);
+> > >  
+> > >  	/* this is a bio leak */
+> > > @@ -2012,6 +2014,11 @@ struct request *blk_peek_request(struct request_queue *q)
+> > >  	int ret;
+> > >  
+> > >  	while ((rq = __elv_next_request(q)) != NULL) {
+> > > +
+> > > +		rq = blk_pm_peek_request(q, rq);
+> > > +		if (!rq)
+> > > +			break;
+> > > +
+> > >  		if (!(rq->cmd_flags & REQ_STARTED)) {
+> > >  			/*
+> > >  			 * This is the first time the device driver
+> > > diff --git a/block/elevator.c b/block/elevator.c
+> > > index 6a55d41..37c1a2b 100644
+> > > --- a/block/elevator.c
+> > > +++ b/block/elevator.c
+> > > @@ -536,6 +536,8 @@ void elv_requeue_request(struct request_queue *q, struct request *rq)
+> > >  
+> > >  	rq->cmd_flags &= ~REQ_STARTED;
+> > >  
+> > > +	blk_pm_requeue_request(q);
+> > > +
+> > >  	__elv_add_request(q, rq, ELEVATOR_INSERT_REQUEUE);
+> > >  }
+> > >  
+> > > @@ -558,6 +560,8 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
+> > >  {
+> > >  	trace_block_rq_insert(q, rq);
+> > >  
+> > > +	blk_pm_add_request(q, rq);
+> > > +
+> > >  	rq->q = q;
+> > >  
+> > >  	if (rq->cmd_flags & REQ_SOFTBARRIER) {
+> > > diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> > > index 9395d39..c8c5951 100644
+> > > --- a/include/linux/blkdev.h
+> > > +++ b/include/linux/blkdev.h
+> > > @@ -908,6 +908,36 @@ extern int blk_pre_runtime_suspend(struct request_queue *q);
+> > >  extern void blk_post_runtime_suspend(struct request_queue *q, int err);
+> > >  extern void blk_pre_runtime_resume(struct request_queue *q);
+> > >  extern void blk_post_runtime_resume(struct request_queue *q, int err);
+> > > +
+> > > +static inline void blk_pm_put_request(struct request_queue *q)
+> > > +{
+> > > +	if (!(--q->nr_pending) && q->dev)
+> > > +		 pm_runtime_mark_last_busy(q->dev);
+> > > +}
+> > > +
+> > > +static inline struct request *blk_pm_peek_request(
+> > > +	struct request_queue *q, struct request *rq)
+> > > +{
+> > > +	if (q->rpm_status == RPM_SUSPENDED ||
+> > > +		  (q->rpm_status != RPM_ACTIVE && !(rq->cmd_flags & REQ_PM)))
+> > > +		return NULL;
+> > > +	else
+> > > +		return rq;
+> > > +}
+> > > +
+> > > +static inline void blk_pm_requeue_request(struct request_queue *q)
+> > > +{
+> > > +	q->nr_pending--;
+> > > +}
+> > > +
+> > > +static inline void blk_pm_add_request(struct request_queue *q,
+> > > +	struct request *rq)
+> > > +{
+> > > +	if (q->nr_pending++ == 0 && !(rq->cmd_flags & REQ_PM) &&
+> > > +		    (q->rpm_status == RPM_SUSPENDED ||
+> > > +		     q->rpm_status == RPM_SUSPENDING) && q->dev)
+> > > +		pm_request_resume(q->dev);
+> > > +}
+> > >  #else
+> > >  static inline void blk_pm_runtime_init(struct request_queue *q,
+> > >  	struct device *dev) {}
+> > > @@ -918,6 +948,13 @@ static inline int blk_pre_runtime_suspend(struct request_queue *q)
+> > >  static inline void blk_post_runtime_suspend(struct request_queue *q, int err) {}
+> > >  static inline void blk_pre_runtime_resume(struct request_queue *q) {}
+> > >  static inline void blk_post_runtime_resume(struct request_queue *q, int err) {}
+> > > +
+> > > +static inline void blk_pm_put_request(struct request_queue *q) {}
+> > > +static inline struct request *blk_pm_peek_request(
+> > > +	struct request_queue *q, struct request *rq) { return rq; }
+> > > +static inline void blk_pm_requeue_request(struct request_queue *q) {}
+> > > +static inline void blk_pm_add_request(struct request_queue *q,
+> > > +	struct request *req) {}
+> > >  #endif
+> > >  
+> > >  /*
+> > 
+> > 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 
