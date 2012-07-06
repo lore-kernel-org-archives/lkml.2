@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab2GFJKa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 05:10:30 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:29631 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751143Ab2GFJK2 (ORCPT
+	id S1752228Ab2GFJMD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 05:12:03 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61921 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab2GFJMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 05:10:28 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArkNAESp9k9bdWOb/2dsb2JhbABFrnsiiBuBB4IYAQEEAScLAQUdIwEFCwsYCRYPCQMCAQIBRQYNAQUCAQGIAgm6PYJBiHiGJgOVN4kmhl2CYQ
-X-IronPort-AV: E=Sophos;i="4.77,537,1336341600"; 
-   d="scan'208";a="940056355"
-Message-ID: <4FF6AA0F.8090400@igalia.com>
-Date: Fri, 06 Jul 2012 11:04:15 +0200
-From: =?ISO-8859-1?Q?Miguel_G=F3mez?= <magomez@igalia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Fri, 6 Jul 2012 05:12:00 -0400
+Date: Fri, 6 Jul 2012 11:11:53 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, stable <stable@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Sharp <dhsharp@google.com>
+Subject: Re: [PATCH 4/4] ring-buffer: Fix uninitialized read_stamp
+Message-ID: <20120706091153.GD24449@gmail.com>
+References: <20120628231625.869980334@goodmis.org>
+ <20120628231807.699907647@goodmis.org>
+ <1341245784.6578.6.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
-        aaro.koskinen@iki.fi, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 15/19] Staging: xgifb: Rework conditions in XGI_SetLockRegs().
-References: <cover.1341498465.git.magomez@igalia.com> <59ae53c03975f8e81587077aa8b0221b356896b9.1341498466.git.magomez@igalia.com> <20120706065113.GG4462@mwanda>
-In-Reply-To: <20120706065113.GG4462@mwanda>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341245784.6578.6.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Jul 05, 2012 at 04:45:58PM +0200, Miguel Gómez wrote:
->> Rework some conditions to reduce indentation and fix style warnings.
->>
->> Signed-off-by: Miguel Gómez <magomez@igalia.com>
->> ---
->>   drivers/staging/xgifb/vb_setmode.c |   29 ++++++++++++-----------------
->>   1 file changed, 12 insertions(+), 17 deletions(-)
->>
->> diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
->> index a7ba99f..b439f59 100644
->> --- a/drivers/staging/xgifb/vb_setmode.c
->> +++ b/drivers/staging/xgifb/vb_setmode.c
->> @@ -4039,23 +4039,18 @@ static void XGI_SetLockRegs(unsigned short ModeNo, unsigned short ModeIdIndex,
->>   	}
->>
->>   	if (pVBInfo->VBInfo & SetCRT2ToHiVision) {
->> -		if (pVBInfo->VBType & VB_SIS301LV) {
->> -			if (pVBInfo->TVInfo & TVSetHiVision) {
->> -				tempbx -= 10;
->
-> We drop this -= 10 in the final.  It seems accidental.
 
-Nope, it's done on purpose. I've joined 2 conditions that were like this
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-if (pVBInfo->VBType & VB_SIS301LV) {
-	if (pVBInfo->TVInfo & TVSetHiVision) {
-		tempbx -= 10;
-	} else {
-		/* internal stuff */
-	}
-} else {
-	tempbx -= 10;
-}
+> On Thu, 2012-06-28 at 19:16 -0400, Steven Rostedt wrote:
+> > From: Steven Rostedt <srostedt@redhat.com>
+> > 
+> > The ring buffer reader page is used to swap a page from the writable
+> > ring buffer. If the writer happens to be on that page, it ends up on the
+> > reader page, but will simply move off of it, back into the writable ring
+> > buffer as writes are added.
+> > 
+> > The time stamp passed back to the readers is stored in the cpu_buffer per
+> > CPU descriptor. This stamp is updated when a swap of the reader page takes
+> > place, and it reads the current stamp from the page taken from the writable
+> > ring buffer. Everytime a writer goes to a new page, it updates the time stamp
+> > of that page.
+> > 
+> > The problem happens if a reader reads a page from an empty per CPU ring buffer.
+> > If the buffer is empty, the swap still takes place, placing the writer at the
+> > start of the reader page. If at a later time, a write happens, it updates the
+> > page's time stamp and continues. But the problem is that the read_stamp does
+> > not get updated, because the page was already swapped.
+> > 
+> > The solution to this was to not swap the page if the ring buffer happens to
+> > be empty. This also removes the side effect that the writes on the reader
+> > page will not get updated because the writer never gets back on the reader
+> > page without a swap. That is, if a read happens on an empty buffer, but then
+> > no reads happen for a while. If a swap took place, and the writer were to start
+> > writing a lot of data (function tracer), it will start overflowing the ring buffer
+> > and overwrite the older data. But because the writer never goes back onto the
+> > reader page, the data left on the reader page never gets overwritten. This
+> > causes the reader to see really old data, followed by a jump to newer data.
+> > 
+> > Link: http://lkml.kernel.org/r/1340060577-9112-1-git-send-email-dhsharp@google.com
+> > Google-Bug-Id: 6410455
+> > Reported-by: David Sharp <dhsharp@google.com>
+> > tested-by: David Sharp <dhsharp@google.com>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> I'm starting to consider that this patch should be in stable.
+> 
+> Ingo, should I push this to urgent?
 
-into a single one like this
+Yeah, probably makes sense to do so, especially as it's rather 
+small.
 
-if ((pVBInfo->VBType & VB_SIS301LV) &&
-     !(pVBInfo->TVInfo & TVSetHiVision)) {
-	/* internal stuff */
-} else {
-	tempbx -= 10;
-}
+Thanks,
 
-That's why one of the else branches has been removed.
-
-
--- 
-Miguel Gómez
-Igalia - http://www.igalia.com
-
-
+	Ingo
