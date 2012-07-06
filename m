@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381Ab2GFN6M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 09:58:12 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:33293 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168Ab2GFN6K (ORCPT
+	id S1756153Ab2GFOAM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 10:00:12 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:33642 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751845Ab2GFOAJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 09:58:10 -0400
+	Fri, 6 Jul 2012 10:00:09 -0400
+Date: Fri, 6 Jul 2012 10:00:08 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Matthew Wilcox <matthew@wil.cx>
+cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [ 38/48] SCSI & usb-storage: add try_rc_10_first flag
+In-Reply-To: <20120706030525.GC17681@parisc-linux.org>
+Message-ID: <Pine.LNX.4.44L0.1207060952350.28821-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Reply-To: hanwen@xs4all.nl
-In-Reply-To: <4FF67D6A.8060707@gmail.com>
-References: <20120705105017.17812.95542.stgit@ltc137.sdl.hitachi.co.jp>
-	<4FF67D6A.8060707@gmail.com>
-Date: Fri, 6 Jul 2012 10:58:07 -0300
-Message-ID: <CAOw_e7ZGdSVrNfPe8iE8BtmNWU+BrvbaMFVsUP+g+3MR0Pegqw@mail.gmail.com>
-Subject: Re: [fuse-devel] [RFC PATCH 0/5] fuse: make maximum read/write
- request size tunable
-From: Han-Wen Nienhuys <hanwenn@gmail.com>
-To: Liu Yuan <namei.unix@gmail.com>
-Cc: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
-        fuse-devel@lists.sourceforge.net, yrl.pp-manager.tt@hitachi.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Miklos Szeredi <miklos@szeredi.hu>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 6, 2012 at 2:53 AM, Liu Yuan <namei.unix@gmail.com> wrote:
-> On 07/05/2012 06:50 PM, Mitsuo Hayasaka wrote:
->> One of the ways to solve this is to make them tunable.
->> In this series, the new sysfs parameter max_pages_per_req is introduced.
->> It limits the maximum read/write size in fuse request and it can be
->> changed from 32 to 256 pages in current implementations. When the
->> max_read/max_write mount option is specified, FUSE request size is set
->> per mount. (The size is rounded-up to page size and limited up to
->> max_pages_per_req.)
->
-> Why maxim 256 pages? If we are here, we can go further: most of object
-> storage system has object size of multiple to dozens of megabytes. So I
-> think probably 1M is too small. Our distribution storage system has 4M
-> per object, so I think at least maxim size could be bigger than 4M.
+On Thu, 5 Jul 2012, Matthew Wilcox wrote:
 
-The maximum pipe size on my system is 1M, so if you go beyond that,
-splicing from the FD won't work.
+> > > Sure, it's one extra command, but really, who cares?
+> > 
+> > Well, some USB devices might care.  Right now we don't send RC16 to 
+> > them at all because they get RC10 first and it indicates a capacity 
+> > below 2 TB.
+> 
+> Mmm.  I think I forgot a step:
+> 
+> Send RC10 (unless the device supports PI, in which case it's probably
+> 	enterprisey and well-tested)
+> If the device indicates a level < SPC_2, stop here
+> Send RC16
+> If RC10 capacity agrees with RC16 capacity, use extra RC16 data.
+>  (for values of "agrees with" that include the "-1 to use RC16" indicator)
 
-Also, the userspace client must reserve a buffer this size so it can
-receive a write, which is a waste since most requests are much
-smaller.
+That might or might not work.  I don't know for certain, but it's 
+possible that some USB devices do claim a level > SPC_2 and yet can't 
+handle RC16.  Of course, we can always set the NO_READ_CAPACITY_16 
+flags for these devices as they crop up.
 
--- 
-Han-Wen Nienhuys - hanwen@xs4all.nl - http://www.xs4all.nl/~hanwen
+> > In the end, usb-storage may be forced to use the NO_READ_CAPACITY_16 
+> > flag with all devices except those we can positively identify as a 
+> > USB-(S)ATA bridge.
+> 
+> Is that really an improvement over nobbling the IDENTIFY results to
+> force SCSI_2?
+
+Yes.  There was a good reason for getting rid of that change to the
+INQUIRY result (some devices don't like it when the LUN bits are
+stuffed into the second byte of each CDB), and I don't want to go back.
+
+Alan Stern
+
