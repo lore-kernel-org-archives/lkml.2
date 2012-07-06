@@ -1,77 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502Ab2GFGWo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 02:22:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49001 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932257Ab2GFGWm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 02:22:42 -0400
-Date: Thu, 5 Jul 2012 23:22:27 -0700
-From: tip-bot for Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-Message-ID: <tip-4d44f7090f8233f6994e7397679a32c81187506d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        prashanth@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        prashanth@linux.vnet.ibm.com
-In-Reply-To: <4FE06EEF.2090709@linux.vnet.ibm.com>
-References: <4FE06EEF.2090709@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Reset loop counters if all tasks are pinned and we need to redo load balance
-Git-Commit-ID: 4d44f7090f8233f6994e7397679a32c81187506d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S932595Ab2GFGWu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 02:22:50 -0400
+Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:9169
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932257Ab2GFGWr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 02:22:47 -0400
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jul 2012 02:22:47 EDT
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -9
+X-BigFish: VS-9(zzbb2dI98dI9371I1521I542M1432Izz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ahbe9i)
+From: Jia Hongtao-B38951 <B38951@freescale.com>
+To: Greg KH <greg@kroah.com>
+CC: Rob Herring <robherring2@gmail.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Yang-R58472 <r58472@freescale.com>
+Subject: RE: [PATCH V3 5/6] Avoid duplicate probe for of platform devices
+Thread-Topic: [PATCH V3 5/6] Avoid duplicate probe for of platform devices
+Thread-Index: AQHNRV2d07XgG54zbUKKBQTDlvBob5b1mBOAgCYUJaCAAHvPgP//w6JA
+Date: Fri, 6 Jul 2012 06:07:43 +0000
+Message-ID: <412C8208B4A0464FA894C5F0C278CD5D01A168F2@039-SN1MPN1-002.039d.mgd.msft.net>
+References: <1339148585-16947-1-git-send-email-B38951@freescale.com>
+ <4FD60FB1.7050106@gmail.com>
+ <412C8208B4A0464FA894C5F0C278CD5D01A16829@039-SN1MPN1-002.039d.mgd.msft.net>
+ <20120706042611.GA1841@kroah.com>
+In-Reply-To: <20120706042611.GA1841@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.193.20.48]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 05 Jul 2012 23:22:32 -0700 (PDT)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4d44f7090f8233f6994e7397679a32c81187506d
-Gitweb:     http://git.kernel.org/tip/4d44f7090f8233f6994e7397679a32c81187506d
-Author:     Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-AuthorDate: Tue, 19 Jun 2012 17:52:07 +0530
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 5 Jul 2012 21:09:10 +0200
 
-sched: Reset loop counters if all tasks are pinned and we need to redo load balance
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Friday, July 06, 2012 12:26 PM
+> To: Jia Hongtao-B38951
+> Cc: Rob Herring; devicetree-discuss@lists.ozlabs.org; linux-
+> kernel@vger.kernel.org; Li Yang-R58472
+> Subject: Re: [PATCH V3 5/6] Avoid duplicate probe for of platform devices
+> 
+> On Fri, Jul 06, 2012 at 02:05:05AM +0000, Jia Hongtao-B38951 wrote:
+> > Hi Rob and Greg KH,
+> >
+> > Do you have any better idea to avoid duplication probe warning?
+> 
+> I have no idea what the problem is that you are trying to solve.
+> 
+> > > On 06/08/2012 04:43 AM, Jia Hongtao wrote:
+> > > > We changed the pcie controller driver to platform driver so that
+> the
+> > > PCI
+> > > > of platform devices need to be created earlier in the arch_initcall
+> > > stage
+> > > > according to the original timing of calling fsl_add_bridge(). So we
+> do
+> > > PCI
+> > > > probing separately from other devices. But probing more than once
+> could
+> > > > cause duplication warning. We add check if the devices have already
+> > > probed
+> > > > before probing any devices to avoid duplication warning.
+> 
+> Ick, something else is going wrong here, how could you ever have the
+> same device probed more than once?
+> 
+> > > > Signed-off-by: Jia Hongtao <B38951@freescale.com>
+> > > > Signed-off-by: Li Yang <leoli@freescale.com>
+> > > > ---
+> > >
+> > > Where's v1 and v2 history?
+> > >
+> > > >  drivers/of/platform.c |   18 ++++++++++++------
+> > > >  1 files changed, 12 insertions(+), 6 deletions(-)
+> > > >
+> > > > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> > > > index a37330e..3aab01f 100644
+> > > > --- a/drivers/of/platform.c
+> > > > +++ b/drivers/of/platform.c
+> > > > @@ -139,6 +139,18 @@ struct platform_device *of_device_alloc(struct
+> > > device_node *np,
+> > > >  	if (!dev)
+> > > >  		return NULL;
+> > > >
+> > > > +	dev->dev.of_node = of_node_get(np);
+> > > > +	if (bus_id)
+> > > > +		dev_set_name(&dev->dev, "%s", bus_id);
+> > > > +	else
+> > > > +		of_device_make_bus_id(&dev->dev);
+> > > > +
+> > > > +	if (kset_find_obj(dev->dev.kobj.kset, kobject_name(&dev-
+> >dev.kobj)))
+> 
+> Whatever you are trying to do here, odds are, it's wrong :)
+> 
+> What is happening that is causing the problem?  What is causing the
+> platform core to be calling probe on a device more than once?
+> 
+> greg k-h
 
-While load balancing, if all tasks on the source runqueue are pinned,
-we retry after excluding the corresponding source cpu. However, loop counters
-env.loop and env.loop_break are not reset before retrying, which can lead
-to failure in moving the tasks. In this patch we reset env.loop and
-env.loop_break to their inital values before we retry.
+This is why in some cases we may probe twice:
+Firstly, we need to probe pci controller separately. But in KVM different
+topology of device tree is used in which pci nodes are not under root node
+but under "simple bus". Unfortunately, of_platform_bus_probe() will probe
+all the first level nodes under "simple bus" so pci nodes will probe again.
 
-Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/4FE06EEF.2090709@linux.vnet.ibm.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/fair.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+Two ways to solve this problem:
+1. All the nodes that need to be probed should just under root.
+2. Avoid duplication probe at runtime like this patch did.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 39b5771..3f94840 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4497,8 +4497,11 @@ more_balance:
- 		/* All tasks on this runqueue were pinned by CPU affinity */
- 		if (unlikely(env.flags & LBF_ALL_PINNED)) {
- 			cpumask_clear_cpu(cpu_of(busiest), cpus);
--			if (!cpumask_empty(cpus))
-+			if (!cpumask_empty(cpus)) {
-+				env.loop = 0;
-+				env.loop_break = sched_nr_migrate_break;
- 				goto redo;
-+			}
- 			goto out_balanced;
- 		}
- 	}
+I do like the first one but it's hard to changing the traditional way that
+exist for a long time.
+
+Also, I think this patch as a workaround is not a perfect way to solve this
+problem. So I wonder if you or others have any better solutions.
+
+Thanks.
+-Jia Hongtao. 
+
+
