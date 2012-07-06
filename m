@@ -1,54 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932780Ab2GFJZw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 05:25:52 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:59460 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932271Ab2GFJZu (ORCPT
+	id S932689Ab2GFJZj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 05:25:39 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:25180
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932271Ab2GFJZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 05:25:50 -0400
-X-Greylist: delayed 311 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jul 2012 05:25:50 EDT
-Date: Fri, 6 Jul 2012 10:41:20 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Olaf Hering <olaf@aepfle.de>
-Cc: kexec@lists.infradead.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: incorrect layout of globals from head_64.S during kexec boot
-Message-ID: <20120706084120.GA31219@router-fw-old.local.net-space.pl>
-References: <20120705210607.GA26908@aepfle.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 6 Jul 2012 05:25:36 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zz98dI1432Izz1202h1082kzz8275dhz2dh2a8h668h839h944hd25hf0ah107ah)
+Date: Fri, 6 Jul 2012 17:18:04 +0800
+From: Dong Aisheng <b29396@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <grant.likely@secretlab.ca>,
+        <tglx@linutronix.de>, <benh@kernel.crashing.org>
+Subject: Re: [RFC PATCH 2/2] irq: add irq_desc_initialize to remove some
+ duplicated lines
+Message-ID: <20120706091803.GA12558@shlinux2.ap.freescale.net>
+References: <1340182831-10477-1-git-send-email-b29396@freescale.com>
+ <1340182831-10477-2-git-send-email-b29396@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20120705210607.GA26908@aepfle.de>
-User-Agent: Mutt/1.3.28i
+In-Reply-To: <1340182831-10477-2-git-send-email-b29396@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 11:06:07PM +0200, Olaf Hering wrote:
->
-> During kexec in a Xen PVonHVM guest the new kernel crashes most of the
-> time in secondary_startup_64 because the content of phys_base is
-> corrupted. Its not zero as expected but has some random other values.
-> While debugging that crash I came up with the change below to inspect
-> the memory around phys_base.
->
-> It turned out that the globales are not in the expected memory location.
-> An expected value such as phys_base_plus1 is shifted, but by a different
-> amount during repeated kexec attempts. Up to now I havent figured out
-> where this happens.
->
-> My question is: were to put additional debug to trace the copying of the
-> data section to its final destination? Is this a task of kexec -l or
-> does that happen during decompressing? I suspect the latter. This is the
-> console output before the crash (the crash happens in 'movq %rax, %cr3'):
+On Wed, Jun 20, 2012 at 05:00:31PM +0800, Dong Aisheng wrote:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
+> 
+> There're two copies of irq_desc initialization code, reform them into
+> an irq_desc_initialize function to call.
+> 
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> ---
+>  kernel/irq/irqdesc.c |   51 +++++++++++++++++++++++++++----------------------
+>  1 files changed, 28 insertions(+), 23 deletions(-)
+> 
+Ping...
 
-Copy is done a few times durnig kexec/kdump but the most important
-in this case, I think, is in relocate_kernel() function (look for
-rep movsl or rep movsq and code around it). But I am a bit surprised
-that kernel is decompressing itself. I always thought that it is done
-during kexec/kdump load phase but maybe I am wrong. Could you send
-me more info about your Linux Kernel version, kexec-tools version
-and exact commands which you are using to load/exececute kernel?
+Regards
+Dong Aisheng
 
-Daniel
+> diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+> index 192a302..e29db67 100644
+> --- a/kernel/irq/irqdesc.c
+> +++ b/kernel/irq/irqdesc.c
+> @@ -131,34 +131,43 @@ static void free_masks(struct irq_desc *desc)
+>  static inline void free_masks(struct irq_desc *desc) { }
+>  #endif
+>  
+> -static struct irq_desc *alloc_desc(int irq, int node, struct module *owner)
+> +static inline int irq_desc_initialize(struct irq_desc *desc,
+> +					int irq, int node, struct module *owner)
+>  {
+> -	struct irq_desc *desc;
+> -	gfp_t gfp = GFP_KERNEL;
+> -
+> -	desc = kzalloc_node(sizeof(*desc), gfp, node);
+> -	if (!desc)
+> -		return NULL;
+>  	/* allocate based on nr_cpu_ids */
+>  	desc->kstat_irqs = alloc_percpu(unsigned int);
+>  	if (!desc->kstat_irqs)
+> -		goto err_desc;
+> +		return -ENOMEM;
+>  
+> -	if (alloc_masks(desc, gfp, node))
+> -		goto err_kstat;
+> +	if (alloc_masks(desc, GFP_KERNEL, node)) {
+> +		kfree(desc->kstat_irqs);
+> +		return -ENOMEM;
+> +	}
+>  
+>  	raw_spin_lock_init(&desc->lock);
+>  	lockdep_set_class(&desc->lock, &irq_desc_lock_class);
+>  
+>  	desc_set_defaults(irq, desc, node, owner);
+>  
+> -	return desc;
+> +	return 0;
+> +}
+>  
+> -err_kstat:
+> -	free_percpu(desc->kstat_irqs);
+> -err_desc:
+> -	kfree(desc);
+> -	return NULL;
+> +static struct irq_desc *alloc_desc(int irq, int node, struct module *owner)
+> +{
+> +	struct irq_desc *desc;
+> +	int ret;
+> +
+> +	desc = kzalloc_node(sizeof(*desc), GFP_KERNEL, node);
+> +	if (!desc)
+> +		return NULL;
+> +
+> +	ret = irq_desc_initialize(desc, irq, node, owner);
+> +	if (ret) {
+> +		kfree(desc);
+> +		return NULL;
+> +	}
+> +
+> +	return desc;
+>  }
+>  
+>  static void free_desc(unsigned int irq)
+> @@ -260,13 +269,9 @@ int __init early_irq_init(void)
+>  	desc = irq_desc;
+>  	count = ARRAY_SIZE(irq_desc);
+>  
+> -	for (i = 0; i < count; i++) {
+> -		desc[i].kstat_irqs = alloc_percpu(unsigned int);
+> -		alloc_masks(&desc[i], GFP_KERNEL, node);
+> -		raw_spin_lock_init(&desc[i].lock);
+> -		lockdep_set_class(&desc[i].lock, &irq_desc_lock_class);
+> -		desc_set_defaults(i, &desc[i], node, NULL);
+> -	}
+> +	for (i = 0; i < count; i++)
+> +		irq_desc_initialize(desc, irq, node, NULL);
+> +
+>  	return arch_early_irq_init();
+>  }
+>  
+> -- 
+> 1.7.0.4
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
