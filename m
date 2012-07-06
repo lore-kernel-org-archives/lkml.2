@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab2GFJMD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 05:12:03 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61921 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab2GFJMA (ORCPT
+	id S1752366Ab2GFJOY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 05:14:24 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:36079 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab2GFJOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 05:12:00 -0400
-Date: Fri, 6 Jul 2012 11:11:53 +0200
+	Fri, 6 Jul 2012 05:14:22 -0400
+Date: Fri, 6 Jul 2012 11:14:15 +0200
 From: Ingo Molnar <mingo@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org, stable <stable@vger.kernel.org>,
@@ -15,64 +15,72 @@ Cc: linux-kernel@vger.kernel.org, stable <stable@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         David Sharp <dhsharp@google.com>
 Subject: Re: [PATCH 4/4] ring-buffer: Fix uninitialized read_stamp
-Message-ID: <20120706091153.GD24449@gmail.com>
+Message-ID: <20120706091415.GA30152@gmail.com>
 References: <20120628231625.869980334@goodmis.org>
  <20120628231807.699907647@goodmis.org>
  <1341245784.6578.6.camel@gandalf.stny.rr.com>
+ <20120706091153.GD24449@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1341245784.6578.6.camel@gandalf.stny.rr.com>
+In-Reply-To: <20120706091153.GD24449@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+* Ingo Molnar <mingo@kernel.org> wrote:
 
-> On Thu, 2012-06-28 at 19:16 -0400, Steven Rostedt wrote:
-> > From: Steven Rostedt <srostedt@redhat.com>
-> > 
-> > The ring buffer reader page is used to swap a page from the writable
-> > ring buffer. If the writer happens to be on that page, it ends up on the
-> > reader page, but will simply move off of it, back into the writable ring
-> > buffer as writes are added.
-> > 
-> > The time stamp passed back to the readers is stored in the cpu_buffer per
-> > CPU descriptor. This stamp is updated when a swap of the reader page takes
-> > place, and it reads the current stamp from the page taken from the writable
-> > ring buffer. Everytime a writer goes to a new page, it updates the time stamp
-> > of that page.
-> > 
-> > The problem happens if a reader reads a page from an empty per CPU ring buffer.
-> > If the buffer is empty, the swap still takes place, placing the writer at the
-> > start of the reader page. If at a later time, a write happens, it updates the
-> > page's time stamp and continues. But the problem is that the read_stamp does
-> > not get updated, because the page was already swapped.
-> > 
-> > The solution to this was to not swap the page if the ring buffer happens to
-> > be empty. This also removes the side effect that the writes on the reader
-> > page will not get updated because the writer never gets back on the reader
-> > page without a swap. That is, if a read happens on an empty buffer, but then
-> > no reads happen for a while. If a swap took place, and the writer were to start
-> > writing a lot of data (function tracer), it will start overflowing the ring buffer
-> > and overwrite the older data. But because the writer never goes back onto the
-> > reader page, the data left on the reader page never gets overwritten. This
-> > causes the reader to see really old data, followed by a jump to newer data.
-> > 
-> > Link: http://lkml.kernel.org/r/1340060577-9112-1-git-send-email-dhsharp@google.com
-> > Google-Bug-Id: 6410455
-> > Reported-by: David Sharp <dhsharp@google.com>
-> > tested-by: David Sharp <dhsharp@google.com>
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
-> I'm starting to consider that this patch should be in stable.
+> > On Thu, 2012-06-28 at 19:16 -0400, Steven Rostedt wrote:
+> > > From: Steven Rostedt <srostedt@redhat.com>
+> > > 
+> > > The ring buffer reader page is used to swap a page from the writable
+> > > ring buffer. If the writer happens to be on that page, it ends up on the
+> > > reader page, but will simply move off of it, back into the writable ring
+> > > buffer as writes are added.
+> > > 
+> > > The time stamp passed back to the readers is stored in the cpu_buffer per
+> > > CPU descriptor. This stamp is updated when a swap of the reader page takes
+> > > place, and it reads the current stamp from the page taken from the writable
+> > > ring buffer. Everytime a writer goes to a new page, it updates the time stamp
+> > > of that page.
+> > > 
+> > > The problem happens if a reader reads a page from an empty per CPU ring buffer.
+> > > If the buffer is empty, the swap still takes place, placing the writer at the
+> > > start of the reader page. If at a later time, a write happens, it updates the
+> > > page's time stamp and continues. But the problem is that the read_stamp does
+> > > not get updated, because the page was already swapped.
+> > > 
+> > > The solution to this was to not swap the page if the ring buffer happens to
+> > > be empty. This also removes the side effect that the writes on the reader
+> > > page will not get updated because the writer never gets back on the reader
+> > > page without a swap. That is, if a read happens on an empty buffer, but then
+> > > no reads happen for a while. If a swap took place, and the writer were to start
+> > > writing a lot of data (function tracer), it will start overflowing the ring buffer
+> > > and overwrite the older data. But because the writer never goes back onto the
+> > > reader page, the data left on the reader page never gets overwritten. This
+> > > causes the reader to see really old data, followed by a jump to newer data.
+> > > 
+> > > Link: http://lkml.kernel.org/r/1340060577-9112-1-git-send-email-dhsharp@google.com
+> > > Google-Bug-Id: 6410455
+> > > Reported-by: David Sharp <dhsharp@google.com>
+> > > tested-by: David Sharp <dhsharp@google.com>
+> > > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > 
+> > I'm starting to consider that this patch should be in stable.
+> > 
+> > Ingo, should I push this to urgent?
 > 
-> Ingo, should I push this to urgent?
+> Yeah, probably makes sense to do so, especially as it's rather 
+> small.
 
-Yeah, probably makes sense to do so, especially as it's rather 
-small.
+FYI, I have cherry picked it over into perf/urgent:
+
+01c4359c155e ring-buffer: Fix uninitialized read_stamp
+
 
 Thanks,
 
