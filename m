@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030324Ab2GFLwp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 07:52:45 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:44251 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030293Ab2GFLwm (ORCPT
+	id S1030320Ab2GFLzb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 07:55:31 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:33480 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030294Ab2GFLz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 07:52:42 -0400
-Message-ID: <4FF6D183.7040407@linaro.org>
-Date: Fri, 06 Jul 2012 12:52:35 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de, Mattias WALLIN <mattias.wallin@stericsson.com>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Daniel WILLERUD <daniel.willerud@stericsson.com>
-Subject: Re: [PATCH 3/9] ARM: ux500: Remove AB8500 regulator register initialisation
- information
-References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org> <1341493572-29735-4-git-send-email-lee.jones@linaro.org> <CACRpkdbRtFX8_++rndCpsH7R1uhwPrkTE_GKgNTM6r1PSuwY0A@mail.gmail.com> <4FF6979F.2000904@linaro.org> <20120706112317.GD4017@opensource.wolfsonmicro.com>
-In-Reply-To: <20120706112317.GD4017@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Fri, 6 Jul 2012 07:55:27 -0400
+Date: Fri, 6 Jul 2012 13:55:00 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        Seth Heasley <seth.heasley@intel.com>, Olof Johansson <olof@lixom.net>,
+        Benson Leung <bleung@chromium.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/8 v3] i2c: i801: enable irq for i801 smbus
+ transactions
+Message-ID: <20120706135500.44b17c42@endymion.delvare>
+In-Reply-To: <CAGS+omAgVLumYvOssHfdjELXixMdfRSxSj003xPzQ5v4h_D-mA@mail.gmail.com>
+References: <1340805255-8041-1-git-send-email-djkurtz@chromium.org>
+	<1340805255-8041-8-git-send-email-djkurtz@chromium.org>
+	<20120704221600.416d4475@endymion.delvare>
+	<CAGS+omAwkwd17MVe3uWoPNCL3y0BvKDvbFGWwjhJ5CpTqncsXA@mail.gmail.com>
+	<20120705101015.1e3a3afc@endymion.delvare>
+	<CAGS+omAgVLumYvOssHfdjELXixMdfRSxSj003xPzQ5v4h_D-mA@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/12 12:23, Mark Brown wrote:
-> On Fri, Jul 06, 2012 at 08:45:35AM +0100, Lee Jones wrote:
-> 
->> Please take a note of this and also do not apply the regulator
->> driver counterpart of the patch-set (it was one of the ones you
->> Reviewed-by in the previous batch).
-> 
-> I've no idea what patches you're talking about, sorry.
+Hi Daniel,
 
-Regarding patch:
-> [PATCH 08/15] regulator: Stop initialising AB8500's registers during bring-up
-
-On 20/06/12 14:19, Lee Jones wrote:> On 20/06/12 14:08, Mark Brown wrote:
->> On Wed, Jun 20, 2012 at 01:56:44PM +0100, Lee Jones wrote:
->>> There is no need to initialise the AB8500's regulator registers, as
->>> most of this work is already carried out by framework features.
->>
->> Does this have any dependency on the rest of the series?
+On Fri, 6 Jul 2012 18:28:28 +0800, Daniel Kurtz wrote:
+> On Thu, Jul 5, 2012 at 4:10 PM, Jean Delvare <khali@linux-fr.org> wrote:
+> > On Thu, 5 Jul 2012 12:31:11 +0800, Daniel Kurtz wrote:
+> >> The logic for clearing the STATUS_FLAGS was simply that they all
+> >> indicate the end of a transaction, so there won't be any further
+> >> interrupts.  Thus, it is safe to clear it in the irq, since the irq
+> >> will be followed by exactly one wait_event, which can read and process
+> >> saved status.
+> >
+> > It is safe if and only if someone is actually listening to the event.
+> > This was not the case for me yesterday. Even if we don't mix interrupts
+> > and polling, i801_isr() might still get called when we aren't
+> > listening. Not only because the IRQ may be shared, but also for events
+> > we don't yet handle, such as an SMBus Alert. Not sure about slave
+> > mode.
 > 
-> Unfortunately yes.
+> The real reason for clearing the flag in the hard irq is that
+> otherwise, we end up with an infinite irq loop.  The interrupt is
+> apparently level triggered, and must be cleared before exiting the
+> ISR.
+
+Oh, OK. If we have to do it that way, then we do.
+
+> Unfortunately, I only had time today to discover this, but not time to fix it.
+> Next week I will be away, so I won't have a chance to provide more
+> patches for the next 10 days.
 > 
-> It needs the "ARM: ux500:" stuff to go in first.
+> I think the 6 patches you have already make a complete set, however,
+> and shouldn't be waiting for the interrupt patch(es) which can follow
+> at some future date.
 
-Then you added your Reviewed-by: until the ux500 stuff goes in.
+Agreed, that's why they are already in linux-next waiting for the next
+merge window to open.
 
-However, the ux500 patch has been NACKed, so please don't take the aforementioned patch in either.
+That being said, I would hate to miss that merge window for interrupt
+support patches, as this is really a great performance improvement. So,
+if you have no objection, I propose to fix your patches myself today of
+tomorrow, test them, and if I find no problem, post them and push them
+to linux-next. You can review and test them when you return.
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515 
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
-
-
+Jean Delvare
