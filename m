@@ -1,202 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933516Ab2GFLQB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 07:16:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52088 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533Ab2GFLP7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 07:15:59 -0400
-Date: Fri, 6 Jul 2012 04:15:29 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-d286447f23cdb0337a5429e10b39761f6b1d5c18@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        namhyung.kim@lge.com, namhyung@kernel.org, bp@alien8.de,
-        fweisbec@gmail.com, rostedt@goodmis.org, acme@infradead.org,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        namhyung.kim@lge.com, bp@alien8.de, namhyung@kernel.org,
-        fweisbec@gmail.com, rostedt@goodmis.org, acme@infradead.org,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1333940074-19052-7-git-send-email-namhyung.kim@lge.com>
-References: <1333940074-19052-7-git-send-email-namhyung.kim@lge.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib traceevent: Handle realloc()
-  failure path
-Git-Commit-ID: d286447f23cdb0337a5429e10b39761f6b1d5c18
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S933525Ab2GFLQv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 07:16:51 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:20820 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757019Ab2GFLQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 07:16:49 -0400
+Message-ID: <4FF6C913.5080808@siemens.com>
+Date: Fri, 06 Jul 2012 13:16:35 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 04:15:36 -0700 (PDT)
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH 2/7 v6] update linux headers
+References: <4FF6B188.2060607@cn.fujitsu.com> <4FF6B232.4050502@cn.fujitsu.com> <4FF6BD1D.8020605@siemens.com> <4FF6C2E2.5020608@cn.fujitsu.com>
+In-Reply-To: <4FF6C2E2.5020608@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d286447f23cdb0337a5429e10b39761f6b1d5c18
-Gitweb:     http://git.kernel.org/tip/d286447f23cdb0337a5429e10b39761f6b1d5c18
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Mon, 9 Apr 2012 11:54:33 +0900
-Committer:  Namhyung Kim <namhyung@kernel.org>
-CommitDate: Wed, 4 Jul 2012 13:40:31 +0900
+On 2012-07-06 12:50, Wen Congyang wrote:
+> At 07/06/2012 06:25 PM, Jan Kiszka Wrote:
+>> On 2012-07-06 11:38, Wen Congyang wrote:
+>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>>
+>> Which kvm.git hash is this referring? Please state this to avoid that we
+>> are merging support for kernel features that are still under review.
+> 
+> The following kvm.git:
+> http://git.kernel.org/?p=virt/kvm/kvm.git;a=summary
+> 
+> I apply my kvm's patch, and use ./scripts/update-linux-headers.sh to
+> generate this patch.
 
-tools lib traceevent: Handle realloc() failure path
+OK, means the feature is not yet upstream. So this series is for
+reference and early review until the kernel interface is accepted. I
+personally push my kernel bits first before suggesting the userspace
+parts. Avoids duplicate work if the former changes again during review.
 
-The realloc can fail so that we should handle it properly.
+Jan
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1333940074-19052-7-git-send-email-namhyung.kim@lge.com
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/lib/traceevent/event-parse.c |   76 ++++++++++++++++++++++++++++--------
- 1 files changed, 60 insertions(+), 16 deletions(-)
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index cd334d5..05eb6b4 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -1264,9 +1264,15 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 					field->flags |= FIELD_IS_POINTER;
- 
- 				if (field->type) {
--					field->type = realloc(field->type,
--							      strlen(field->type) +
--							      strlen(last_token) + 2);
-+					char *new_type;
-+					new_type = realloc(field->type,
-+							   strlen(field->type) +
-+							   strlen(last_token) + 2);
-+					if (!new_type) {
-+						free(last_token);
-+						goto fail;
-+					}
-+					field->type = new_type;
- 					strcat(field->type, " ");
- 					strcat(field->type, last_token);
- 					free(last_token);
-@@ -1291,6 +1297,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 		if (strcmp(token, "[") == 0) {
- 			enum event_type last_type = type;
- 			char *brackets = token;
-+			char *new_brackets;
- 			int len;
- 
- 			field->flags |= FIELD_IS_ARRAY;
-@@ -1310,9 +1317,14 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 					len = 1;
- 				last_type = type;
- 
--				brackets = realloc(brackets,
--						   strlen(brackets) +
--						   strlen(token) + len);
-+				new_brackets = realloc(brackets,
-+						       strlen(brackets) +
-+						       strlen(token) + len);
-+				if (!new_brackets) {
-+					free(brackets);
-+					goto fail;
-+				}
-+				brackets = new_brackets;
- 				if (len == 2)
- 					strcat(brackets, " ");
- 				strcat(brackets, token);
-@@ -1328,7 +1340,12 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 
- 			free_token(token);
- 
--			brackets = realloc(brackets, strlen(brackets) + 2);
-+			new_brackets = realloc(brackets, strlen(brackets) + 2);
-+			if (!new_brackets) {
-+				free(brackets);
-+				goto fail;
-+			}
-+			brackets = new_brackets;
- 			strcat(brackets, "]");
- 
- 			/* add brackets to type */
-@@ -1339,10 +1356,16 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 			 * the format: type [] item;
- 			 */
- 			if (type == EVENT_ITEM) {
--				field->type = realloc(field->type,
--						      strlen(field->type) +
--						      strlen(field->name) +
--						      strlen(brackets) + 2);
-+				char *new_type;
-+				new_type = realloc(field->type,
-+						   strlen(field->type) +
-+						   strlen(field->name) +
-+						   strlen(brackets) + 2);
-+				if (!new_type) {
-+					free(brackets);
-+					goto fail;
-+				}
-+				field->type = new_type;
- 				strcat(field->type, " ");
- 				strcat(field->type, field->name);
- 				free_token(field->name);
-@@ -1350,9 +1373,15 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 				field->name = token;
- 				type = read_token(&token);
- 			} else {
--				field->type = realloc(field->type,
--						      strlen(field->type) +
--						      strlen(brackets) + 1);
-+				char *new_type;
-+				new_type = realloc(field->type,
-+						   strlen(field->type) +
-+						   strlen(brackets) + 1);
-+				if (!new_type) {
-+					free(brackets);
-+					goto fail;
-+				}
-+				field->type = new_type;
- 				strcat(field->type, brackets);
- 			}
- 			free(brackets);
-@@ -1735,10 +1764,16 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 		/* could just be a type pointer */
- 		if ((strcmp(arg->op.op, "*") == 0) &&
- 		    type == EVENT_DELIM && (strcmp(token, ")") == 0)) {
-+			char *new_atom;
-+
- 			if (left->type != PRINT_ATOM)
- 				die("bad pointer type");
--			left->atom.atom = realloc(left->atom.atom,
-+			new_atom = realloc(left->atom.atom,
- 					    strlen(left->atom.atom) + 3);
-+			if (!new_atom)
-+				goto out_free;
-+
-+			left->atom.atom = new_atom;
- 			strcat(left->atom.atom, " *");
- 			free(arg->op.op);
- 			*arg = *left;
-@@ -2597,7 +2632,16 @@ process_arg_token(struct event_format *event, struct print_arg *arg,
- 		}
- 		/* atoms can be more than one token long */
- 		while (type == EVENT_ITEM) {
--			atom = realloc(atom, strlen(atom) + strlen(token) + 2);
-+			char *new_atom;
-+			new_atom = realloc(atom,
-+					   strlen(atom) + strlen(token) + 2);
-+			if (!new_atom) {
-+				free(atom);
-+				*tok = NULL;
-+				free_token(token);
-+				return EVENT_ERROR;
-+			}
-+			atom = new_atom;
- 			strcat(atom, " ");
- 			strcat(atom, token);
- 			free_token(token);
+
