@@ -1,95 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452Ab2GFJa0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 05:30:26 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:62859 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108Ab2GFJaV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 05:30:21 -0400
-Message-ID: <4FF6A2DF.5030407@linaro.org>
-Date: Fri, 06 Jul 2012 09:33:35 +0100
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1753288Ab2GFJbr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 05:31:47 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:14546 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751108Ab2GFJbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 05:31:45 -0400
+X-IronPort-AV: E=Sophos;i="4.77,537,1336320000"; 
+   d="scan'208";a="5344077"
+Message-ID: <4FF6B188.2060607@cn.fujitsu.com>
+Date: Fri, 06 Jul 2012 17:36:08 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, linus.walleij@stericsson.com
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, arnd@arndb.de
-Subject: Re: [PATCH 8/9] ARM: ux500: Clean-up temporary Device Tree enablement
- helpers
-References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org> <1341493572-29735-9-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1341493572-29735-9-git-send-email-lee.jones@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: [PATCH v6] kvm: notify host when the guest is panicked
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/06 17:31:39,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/06 17:31:42,
+	Serialize complete at 2012/07/06 17:31:42
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+We can know the guest is panicked when the guest runs on xen.
+But we do not have such feature on kvm.
 
-Is this a NAK, or did you just miss it?
+Another purpose of this feature is: management app(for example:
+libvirt) can do auto dump when the guest is panicked. If management
+app does not do auto dump, the guest's user can do dump by hand if
+he sees the guest is panicked.
 
-On 05/07/12 14:06, Lee Jones wrote:
-> Here we remove some of the extra overhead we introduced to make
-> DT:ing the Snowball platform easier. Unfortunately we can't
-> remove everything. We are forced to leave cpufreq and DMA behind
-> until they have been successfully Device Tree enabled.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->   arch/arm/mach-ux500/cpu-db8500.c |   10 ++--------
->   1 file changed, 2 insertions(+), 8 deletions(-)
->
-> diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-> index c8dd94f..d7a28c0 100644
-> --- a/arch/arm/mach-ux500/cpu-db8500.c
-> +++ b/arch/arm/mach-ux500/cpu-db8500.c
-> @@ -137,10 +137,6 @@ static struct platform_device *platform_devs[] __initdata = {
->   	&db8500_prcmu_device,
->   };
->
-> -static struct platform_device *of_platform_devs[] __initdata = {
-> -	&u8500_dma40_device,
-> -};
-> -
->   static resource_size_t __initdata db8500_gpio_base[] = {
->   	U8500_GPIOBANK0_BASE,
->   	U8500_GPIOBANK1_BASE,
-> @@ -232,7 +228,6 @@ struct device * __init u8500_init_devices(void)
->   struct device * __init u8500_of_init_devices(void)
->   {
->   	struct device *parent;
-> -	int i;
->
->   	parent = db8500_soc_device_init();
->
-> @@ -241,8 +236,7 @@ struct device * __init u8500_of_init_devices(void)
->   	platform_device_register_data(parent,
->   		"cpufreq-u8500", -1, NULL, 0);
->
-> -	for (i = 0; i < ARRAY_SIZE(of_platform_devs); i++)
-> -		of_platform_devs[i]->dev.parent = parent;
-> +	u8500_dma40_device.dev.parent = parent;
->
->   	/*
->   	 * Devices to be DT:ed:
-> @@ -250,7 +244,7 @@ struct device * __init u8500_of_init_devices(void)
->   	 *   db8500_pmu_device   = done
->   	 *   db8500_prcmu_device = done
->   	 */
-> -	platform_add_devices(of_platform_devs, ARRAY_SIZE(of_platform_devs));
-> +	platform_device_register(&u8500_dma40_device);
->
->   	return parent;
->   }
->
+We have three solutions to implement this feature:
+1. use vmcall
+2. use I/O port
+3. use virtio-serial.
 
+We have decided to avoid touching hypervisor. The reason why I choose
+choose the I/O port is:
+1. it is easier to implememt
+2. it does not depend any virtual device
+3. it can work when startint the kernel
 
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ arch/ia64/include/asm/kvm_para.h    |    5 +++++
+ arch/powerpc/include/asm/kvm_para.h |    5 +++++
+ arch/s390/include/asm/kvm_para.h    |    5 +++++
+ arch/x86/include/asm/kvm_para.h     |    7 +++++++
+ arch/x86/kernel/kvm.c               |   14 ++++++++++++++
+ include/linux/kvm_para.h            |   13 +++++++++++++
+ 6 files changed, 49 insertions(+), 0 deletions(-)
+
+diff --git a/arch/ia64/include/asm/kvm_para.h b/arch/ia64/include/asm/kvm_para.h
+index 2019cb9..187c0e2 100644
+--- a/arch/ia64/include/asm/kvm_para.h
++++ b/arch/ia64/include/asm/kvm_para.h
+@@ -31,6 +31,11 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+ 	return false;
+ }
+ 
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	return 0;
++}
++
+ #endif
+ 
+ #endif
+diff --git a/arch/powerpc/include/asm/kvm_para.h b/arch/powerpc/include/asm/kvm_para.h
+index c18916b..be81aac 100644
+--- a/arch/powerpc/include/asm/kvm_para.h
++++ b/arch/powerpc/include/asm/kvm_para.h
+@@ -211,6 +211,11 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+ 	return false;
+ }
+ 
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	return 0;
++}
++
+ #endif /* __KERNEL__ */
+ 
+ #endif /* __POWERPC_KVM_PARA_H__ */
+diff --git a/arch/s390/include/asm/kvm_para.h b/arch/s390/include/asm/kvm_para.h
+index a988329..3d993b7 100644
+--- a/arch/s390/include/asm/kvm_para.h
++++ b/arch/s390/include/asm/kvm_para.h
+@@ -154,6 +154,11 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+ 	return false;
+ }
+ 
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	return 0;
++}
++
+ #endif
+ 
+ #endif /* __S390_KVM_PARA_H */
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index 63ab166..c8ad86e 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -89,6 +89,8 @@ struct kvm_vcpu_pv_apf_data {
+ 	__u32 enabled;
+ };
+ 
++#define KVM_PV_PORT	(0x505UL)
++
+ #ifdef __KERNEL__
+ #include <asm/processor.h>
+ 
+@@ -221,6 +223,11 @@ static inline void kvm_disable_steal_time(void)
+ }
+ #endif
+ 
++static inline unsigned int kvm_arch_pv_features(void)
++{
++	return inl(KVM_PV_PORT);
++}
++
+ #endif /* __KERNEL__ */
+ 
+ #endif /* _ASM_X86_KVM_PARA_H */
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index e554e5a..9a97f7e 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -328,6 +328,17 @@ static struct notifier_block kvm_pv_reboot_nb = {
+ 	.notifier_call = kvm_pv_reboot_notify,
+ };
+ 
++static int
++kvm_pv_panic_notify(struct notifier_block *nb, unsigned long code, void *unused)
++{
++	outl(KVM_PV_PANICKED, KVM_PV_PORT);
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block kvm_pv_panic_nb = {
++	.notifier_call = kvm_pv_panic_notify,
++};
++
+ static u64 kvm_steal_clock(int cpu)
+ {
+ 	u64 steal;
+@@ -414,6 +425,9 @@ void __init kvm_guest_init(void)
+ 
+ 	paravirt_ops_setup();
+ 	register_reboot_notifier(&kvm_pv_reboot_nb);
++	if (kvm_pv_has_feature(KVM_PV_FEATURE_PANICKED))
++		atomic_notifier_chain_register(&panic_notifier_list,
++			&kvm_pv_panic_nb);
+ 	for (i = 0; i < KVM_TASK_SLEEP_HASHSIZE; i++)
+ 		spin_lock_init(&async_pf_sleepers[i].lock);
+ 	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF))
+diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
+index ff476dd..e73efcf 100644
+--- a/include/linux/kvm_para.h
++++ b/include/linux/kvm_para.h
+@@ -20,6 +20,12 @@
+ #define KVM_HC_FEATURES			3
+ #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
+ 
++/* The bit of the value read from KVM_PV_PORT */
++#define KVM_PV_FEATURE_PANICKED	0
++
++/* The value writen to KVM_PV_PORT */
++#define KVM_PV_PANICKED		1
++
+ /*
+  * hypercalls use architecture specific
+  */
+@@ -33,5 +39,12 @@ static inline int kvm_para_has_feature(unsigned int feature)
+ 		return 1;
+ 	return 0;
+ }
++
++static inline int kvm_pv_has_feature(unsigned int feature)
++{
++	if (kvm_arch_pv_features() & (1UL << feature))
++		return 1;
++	return 0;
++}
+ #endif /* __KERNEL__ */
+ #endif /* __LINUX_KVM_PARA_H */
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
-
+1.7.1
 
