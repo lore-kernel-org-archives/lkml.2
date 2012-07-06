@@ -1,54 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932371Ab2GFG0i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 02:26:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51178 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab2GFG0h (ORCPT
+	id S932523Ab2GFG1Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 02:27:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49071 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143Ab2GFG1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 02:26:37 -0400
-Message-ID: <4FF68511.9050207@gmail.com>
-Date: Fri, 06 Jul 2012 14:26:25 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Fri, 6 Jul 2012 02:27:23 -0400
+Date: Thu, 5 Jul 2012 23:26:54 -0700
+From: tip-bot for Robert Richter <robert.richter@amd.com>
+Message-ID: <tip-b1dc3c4820428ac6216537416b2fcd140fdc52e5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de
+In-Reply-To: <1340217996-2254-4-git-send-email-robert.richter@amd.com>
+References: <1340217996-2254-4-git-send-email-robert.richter@amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86/amd: Unify AMD'
+ s generic and family 15h pmus
+Git-Commit-ID: b1dc3c4820428ac6216537416b2fcd140fdc52e5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] ext4: fix the comment in ext4_ext_insert_extent for ext4_ext_try_to_merge
- in extents.c
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 05 Jul 2012 23:26:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The left and right extents merge is done by
-ext4_ext_try_to_merge. No specific left/right
-fun calls any more.
+Commit-ID:  b1dc3c4820428ac6216537416b2fcd140fdc52e5
+Gitweb:     http://git.kernel.org/tip/b1dc3c4820428ac6216537416b2fcd140fdc52e5
+Author:     Robert Richter <robert.richter@amd.com>
+AuthorDate: Wed, 20 Jun 2012 20:46:35 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 5 Jul 2012 21:19:41 +0200
 
-Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+perf/x86/amd: Unify AMD's generic and family 15h pmus
+
+There is no need for keeping separate pmu structs. We can enable
+amd_{get,put}_event_constraints() functions also for family 15h event.
+
+The advantage is that there is only a single pmu struct for all AMD
+cpus. This patch introduces functions to setup the pmu to enabe core
+performance counters or counter constraints.
+
+Also, cpuid checks are used instead of family checks where
+possible. Thus, it enables the code independently of cpu families if
+the feature flag is set.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1340217996-2254-4-git-send-email-robert.richter@amd.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- fs/ext4/extents.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/perf_event.h    |    3 +-
+ arch/x86/kernel/cpu/perf_event_amd.c |  103 +++++++++++++++-------------------
+ arch/x86/oprofile/op_model_amd.c     |    4 +-
+ 3 files changed, 49 insertions(+), 61 deletions(-)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 5207b7b..6c2a37d 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -1891,12 +1891,10 @@ has_space:
- 	nearex->ee_len = newext->ee_len;
+diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+index 3b31248..ffdf5e0 100644
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -47,8 +47,7 @@
+ 	(X86_RAW_EVENT_MASK          |  \
+ 	 AMD64_EVENTSEL_EVENT)
+ #define AMD64_NUM_COUNTERS				4
+-#define AMD64_NUM_COUNTERS_F15H				6
+-#define AMD64_NUM_COUNTERS_MAX				AMD64_NUM_COUNTERS_F15H
++#define AMD64_NUM_COUNTERS_CORE				6
  
- merge:
--	/* try to merge extents to the right */
-+	/* try to merge extents to the neighbours */
- 	if (!(flag & EXT4_GET_BLOCKS_PRE_IO))
- 		ext4_ext_try_to_merge(inode, path, nearex);
+ #define ARCH_PERFMON_UNHALTED_CORE_CYCLES_SEL		0x3c
+ #define ARCH_PERFMON_UNHALTED_CORE_CYCLES_UMASK		(0x00 << 8)
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index 11a4eb9..4528ae7 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -366,7 +366,7 @@ static void amd_pmu_cpu_starting(int cpu)
  
--	/* try to merge extents to the left */
+ 	cpuc->perf_ctr_virt_mask = AMD_PERFMON_EVENTSEL_HOSTONLY;
+ 
+-	if (boot_cpu_data.x86_max_cores < 2 || boot_cpu_data.x86 == 0x15)
++	if (boot_cpu_data.x86_max_cores < 2)
+ 		return;
+ 
+ 	nb_id = amd_get_nb_id(cpu);
+@@ -422,35 +422,6 @@ static struct attribute *amd_format_attr[] = {
+ 	NULL,
+ };
+ 
+-static __initconst const struct x86_pmu amd_pmu = {
+-	.name			= "AMD",
+-	.handle_irq		= x86_pmu_handle_irq,
+-	.disable_all		= x86_pmu_disable_all,
+-	.enable_all		= x86_pmu_enable_all,
+-	.enable			= x86_pmu_enable_event,
+-	.disable		= x86_pmu_disable_event,
+-	.hw_config		= amd_pmu_hw_config,
+-	.schedule_events	= x86_schedule_events,
+-	.eventsel		= MSR_K7_EVNTSEL0,
+-	.perfctr		= MSR_K7_PERFCTR0,
+-	.event_map		= amd_pmu_event_map,
+-	.max_events		= ARRAY_SIZE(amd_perfmon_event_map),
+-	.num_counters		= AMD64_NUM_COUNTERS,
+-	.cntval_bits		= 48,
+-	.cntval_mask		= (1ULL << 48) - 1,
+-	.apic			= 1,
+-	/* use highest bit to detect overflow */
+-	.max_period		= (1ULL << 47) - 1,
+-	.get_event_constraints	= amd_get_event_constraints,
+-	.put_event_constraints	= amd_put_event_constraints,
 -
- 	/* time to correct all indexes above */
- 	err = ext4_ext_correct_indexes(handle, inode, path);
- 	if (err)
--- 
-1.7.1
-
+-	.format_attrs		= amd_format_attr,
+-
+-	.cpu_prepare		= amd_pmu_cpu_prepare,
+-	.cpu_starting		= amd_pmu_cpu_starting,
+-	.cpu_dead		= amd_pmu_cpu_dead,
+-};
+-
+ /* AMD Family 15h */
+ 
+ #define AMD_EVENT_TYPE_MASK	0x000000F0ULL
+@@ -597,8 +568,8 @@ amd_get_event_constraints_f15h(struct cpu_hw_events *cpuc, struct perf_event *ev
+ 	}
+ }
+ 
+-static __initconst const struct x86_pmu amd_pmu_f15h = {
+-	.name			= "AMD Family 15h",
++static __initconst const struct x86_pmu amd_pmu = {
++	.name			= "AMD",
+ 	.handle_irq		= x86_pmu_handle_irq,
+ 	.disable_all		= x86_pmu_disable_all,
+ 	.enable_all		= x86_pmu_enable_all,
+@@ -606,50 +577,68 @@ static __initconst const struct x86_pmu amd_pmu_f15h = {
+ 	.disable		= x86_pmu_disable_event,
+ 	.hw_config		= amd_pmu_hw_config,
+ 	.schedule_events	= x86_schedule_events,
+-	.eventsel		= MSR_F15H_PERF_CTL,
+-	.perfctr		= MSR_F15H_PERF_CTR,
++	.eventsel		= MSR_K7_EVNTSEL0,
++	.perfctr		= MSR_K7_PERFCTR0,
+ 	.event_map		= amd_pmu_event_map,
+ 	.max_events		= ARRAY_SIZE(amd_perfmon_event_map),
+-	.num_counters		= AMD64_NUM_COUNTERS_F15H,
++	.num_counters		= AMD64_NUM_COUNTERS,
+ 	.cntval_bits		= 48,
+ 	.cntval_mask		= (1ULL << 48) - 1,
+ 	.apic			= 1,
+ 	/* use highest bit to detect overflow */
+ 	.max_period		= (1ULL << 47) - 1,
+-	.get_event_constraints	= amd_get_event_constraints_f15h,
+-	/* nortbridge counters not yet implemented: */
+-#if 0
++	.get_event_constraints	= amd_get_event_constraints,
+ 	.put_event_constraints	= amd_put_event_constraints,
+ 
++	.format_attrs		= amd_format_attr,
++
+ 	.cpu_prepare		= amd_pmu_cpu_prepare,
+-	.cpu_dead		= amd_pmu_cpu_dead,
+-#endif
+ 	.cpu_starting		= amd_pmu_cpu_starting,
+-	.format_attrs		= amd_format_attr,
++	.cpu_dead		= amd_pmu_cpu_dead,
+ };
+ 
++static int setup_event_constraints(void)
++{
++	if (boot_cpu_data.x86 >= 0x15)
++		x86_pmu.get_event_constraints = amd_get_event_constraints_f15h;
++	return 0;
++}
++
++static int setup_perfctr_core(void)
++{
++	if (!cpu_has_perfctr_core) {
++		WARN(x86_pmu.get_event_constraints == amd_get_event_constraints_f15h,
++		     KERN_ERR "Odd, counter constraints enabled but no core perfctrs detected!");
++		return -ENODEV;
++	}
++
++	WARN(x86_pmu.get_event_constraints == amd_get_event_constraints,
++	     KERN_ERR "hw perf events core counters need constraints handler!");
++
++	/*
++	 * If core performance counter extensions exists, we must use
++	 * MSR_F15H_PERF_CTL/MSR_F15H_PERF_CTR msrs. See also
++	 * x86_pmu_addr_offset().
++	 */
++	x86_pmu.eventsel	= MSR_F15H_PERF_CTL;
++	x86_pmu.perfctr		= MSR_F15H_PERF_CTR;
++	x86_pmu.num_counters	= AMD64_NUM_COUNTERS_CORE;
++
++	printk(KERN_INFO "perf: AMD core performance counters detected\n");
++
++	return 0;
++}
++
+ __init int amd_pmu_init(void)
+ {
+ 	/* Performance-monitoring supported from K7 and later: */
+ 	if (boot_cpu_data.x86 < 6)
+ 		return -ENODEV;
+ 
+-	/*
+-	 * If core performance counter extensions exists, it must be
+-	 * family 15h, otherwise fail. See x86_pmu_addr_offset().
+-	 */
+-	switch (boot_cpu_data.x86) {
+-	case 0x15:
+-		if (!cpu_has_perfctr_core)
+-			return -ENODEV;
+-		x86_pmu = amd_pmu_f15h;
+-		break;
+-	default:
+-		if (cpu_has_perfctr_core)
+-			return -ENODEV;
+-		x86_pmu = amd_pmu;
+-		break;
+-	}
++	x86_pmu = amd_pmu;
++
++	setup_event_constraints();
++	setup_perfctr_core();
+ 
+ 	/* Events are common for all AMDs */
+ 	memcpy(hw_cache_event_ids, amd_hw_cache_event_ids,
+diff --git a/arch/x86/oprofile/op_model_amd.c b/arch/x86/oprofile/op_model_amd.c
+index 303f086..b2b9443 100644
+--- a/arch/x86/oprofile/op_model_amd.c
++++ b/arch/x86/oprofile/op_model_amd.c
+@@ -312,7 +312,7 @@ static int op_amd_fill_in_addresses(struct op_msrs * const msrs)
+ 			goto fail;
+ 		}
+ 		/* both registers must be reserved */
+-		if (num_counters == AMD64_NUM_COUNTERS_F15H) {
++		if (num_counters == AMD64_NUM_COUNTERS_CORE) {
+ 			msrs->counters[i].addr = MSR_F15H_PERF_CTR + (i << 1);
+ 			msrs->controls[i].addr = MSR_F15H_PERF_CTL + (i << 1);
+ 		} else {
+@@ -514,7 +514,7 @@ static int op_amd_init(struct oprofile_operations *ops)
+ 	ops->create_files = setup_ibs_files;
+ 
+ 	if (boot_cpu_data.x86 == 0x15) {
+-		num_counters = AMD64_NUM_COUNTERS_F15H;
++		num_counters = AMD64_NUM_COUNTERS_CORE;
+ 	} else {
+ 		num_counters = AMD64_NUM_COUNTERS;
+ 	}
