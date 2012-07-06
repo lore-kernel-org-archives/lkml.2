@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428Ab2GFM0z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 08:26:55 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:45031 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab2GFM0y (ORCPT
+	id S1752094Ab2GFM2a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 08:28:30 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:42000 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab2GFM23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 08:26:54 -0400
+	Fri, 6 Jul 2012 08:28:29 -0400
 MIME-Version: 1.0
-Date: Fri, 6 Jul 2012 20:26:53 +0800
-Message-ID: <CAJd=RBCe7VoW9yeV9eBfA0J-SAvdRcM=YG3ZpPybu53Ecaqyvw@mail.gmail.com>
-Subject: [patch] BFS 421-1: use cpu_of
+Date: Fri, 6 Jul 2012 20:28:28 +0800
+Message-ID: <CAJd=RBAi4_6=vnEQ2pZc2Kaykc_3P+U4jnnh1E+viMsxKUrfSg@mail.gmail.com>
+Subject: [patch] BFS 421-1: cleanup online_cpus
 From: Hillf Danton <dhillf@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
 Content-Type: text/plain; charset=UTF-8
@@ -18,20 +18,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CPU is available after runqueue determined.
+To remove cpu_online_map, lets clean up online_cpus.
 
 SOB: Hillf Danton <dhillf@gmail.com>
 ---
 
---- a/kernel/sched/bfs.c	Fri Jul  6 20:12:30 2012
-+++ b/kernel/sched/bfs.c	Fri Jul  6 20:13:00 2012
-@@ -1448,7 +1448,7 @@ static void ttwu_stat(struct task_struct
- 	struct rq *rq = this_rq();
+--- a/kernel/sched/bfs.c	Thu Jul  5 21:43:36 2012
++++ b/kernel/sched/bfs.c	Fri Jul  6 20:09:08 2012
+@@ -1365,24 +1365,6 @@ can_preempt(struct task_struct *p, int p
+ }
+
  #ifdef CONFIG_SMP
- 	if (success)
--		p->wakeup_cpu = smp_processor_id();
-+		p->wakeup_cpu = cpu_of(rq);
- #else
- 	schedstat_inc(rq, ttwu_local);
- #endif
+-#ifdef CONFIG_HOTPLUG_CPU
+-/*
+- * Check to see if there is a task that is affined only to offline CPUs but
+- * still wants runtime. This happens to kernel threads during suspend/halt and
+- * disabling of CPUs.
+- */
+-static inline bool online_cpus(struct task_struct *p)
+-{
+-	return (likely(cpus_intersects(cpu_online_map, p->cpus_allowed)));
+-}
+-#else /* CONFIG_HOTPLUG_CPU */
+-/* All available CPUs are always online without hotplug. */
+-static inline bool online_cpus(struct task_struct *p)
+-{
+-	return true;
+-}
+-#endif
+-
+ /*
+  * Check to see if p can run on cpu, and if not, whether there are any online
+  * CPUs it can run on instead.
+@@ -5063,7 +5045,8 @@ static void break_sole_affinity(int src_
+ 	struct task_struct *p, *t;
+
+ 	do_each_thread(t, p) {
+-		if (p != idle && !online_cpus(p)) {
++		if (p != idle && !cpumask_intersects(tsk_cpus_allowed(p),
++							cpu_online_mask)) {
+ 			cpumask_copy(tsk_cpus_allowed(p), cpu_possible_mask);
+ 			/*
+ 			 * Don't tell them about moving exiting tasks or
 --
