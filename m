@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758550Ab2GFVI2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 17:08:28 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:46576 "EHLO
+	id S964787Ab2GFVHi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 17:07:38 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34079 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756229Ab2GFVHu (ORCPT
+	with ESMTP id S1758403Ab2GFVHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 17:07:50 -0400
+	Fri, 6 Jul 2012 17:07:33 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 32/36] AArch64: Loadable modules
-Date: Fri,  6 Jul 2012 22:06:13 +0100
-Message-Id: <1341608777-12982-33-git-send-email-catalin.marinas@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <marc.zyngier@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 31/36] AArch64: Miscellaneous library functions
+Date: Fri,  6 Jul 2012 22:06:12 +0100
+Message-Id: <1341608777-12982-32-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
 References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 06 Jul 2012 21:07:40.0683 (UTC) FILETIME=[60EDEDB0:01CD5BBB]
-X-MC-Unique: 112070622064503901
+X-OriginalArrivalTime: 06 Jul 2012 21:07:40.0152 (UTC) FILETIME=[609CE780:01CD5BBB]
+X-MC-Unique: 112070622064501401
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66L8XWX005355
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66L8kYp005360
 
-From: Will Deacon <will.deacon@arm.com>
+From: Marc Zyngier <marc.zyngier@arm.com>
 
-This patch adds support for loadable modules. Loadable modules are
-loaded 64MB below the kernel image due to branch relocation restrictions
-(see Documentation/aarch64/memory.txt).
+This patch adds udelay, memory and bit operations together with the
+ksyms exports.
 
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/aarch64/include/asm/module.h |   24 ++
- arch/aarch64/kernel/module.c      |  457 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 481 insertions(+), 0 deletions(-)
- create mode 100644 arch/aarch64/include/asm/module.h
- create mode 100644 arch/aarch64/kernel/module.c
+ arch/aarch64/include/asm/bitops.h  |   75 ++++++++++++++++++++++++++
+ arch/aarch64/include/asm/syscall.h |  102 ++++++++++++++++++++++++++++++++++++
+ arch/aarch64/kernel/aarch64ksyms.c |   56 ++++++++++++++++++++
+ arch/aarch64/lib/Makefile          |    5 ++
+ arch/aarch64/lib/bitops.c          |   27 ++++++++++
+ arch/aarch64/lib/clear_page.S      |   40 ++++++++++++++
+ arch/aarch64/lib/copy_page.S       |   47 ++++++++++++++++
+ arch/aarch64/lib/delay.c           |   56 ++++++++++++++++++++
+ 8 files changed, 408 insertions(+), 0 deletions(-)
+ create mode 100644 arch/aarch64/include/asm/bitops.h
+ create mode 100644 arch/aarch64/include/asm/syscall.h
+ create mode 100644 arch/aarch64/kernel/aarch64ksyms.c
+ create mode 100644 arch/aarch64/lib/Makefile
+ create mode 100644 arch/aarch64/lib/bitops.c
+ create mode 100644 arch/aarch64/lib/clear_page.S
+ create mode 100644 arch/aarch64/lib/copy_page.S
+ create mode 100644 arch/aarch64/lib/delay.c
 
-diff --git a/arch/aarch64/include/asm/module.h b/arch/aarch64/include/asm/module.h
+diff --git a/arch/aarch64/include/asm/bitops.h b/arch/aarch64/include/asm/bitops.h
 new file mode 100644
-index 0000000..1d3846b
+index 0000000..e91e23b
 --- /dev/null
-+++ b/arch/aarch64/include/asm/module.h
-@@ -0,0 +1,24 @@
++++ b/arch/aarch64/include/asm/bitops.h
+@@ -0,0 +1,75 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
 + *
@@ -62,22 +75,386 @@ index 0000000..1d3846b
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
-+#ifndef __ASM_MODULE_H
-+#define __ASM_MODULE_H
++#ifndef __ASM_BITOPS_H
++#define __ASM_BITOPS_H
 +
-+#include <asm-generic/module.h>
++#include <linux/compiler.h>
 +
-+#define MODULE_ARCH_VERMAGIC	"aarch64"
++#include <asm/barrier.h>
 +
-+#endif /* __ASM_MODULE_H */
-diff --git a/arch/aarch64/kernel/module.c b/arch/aarch64/kernel/module.c
-new file mode 100644
-index 0000000..cd05848
---- /dev/null
-+++ b/arch/aarch64/kernel/module.c
-@@ -0,0 +1,457 @@
 +/*
-+ * AArch64 loadable module support.
++ * clear_bit may not imply a memory barrier
++ */
++#ifndef smp_mb__before_clear_bit
++#define smp_mb__before_clear_bit()	smp_mb()
++#define smp_mb__after_clear_bit()	smp_mb()
++#endif
++
++/*
++ * Use compiler builtins for simple inline operations.
++ */
++static inline unsigned long __ffs(unsigned long word)
++{
++	return __builtin_ffsl(word) - 1;
++}
++
++static inline int ffs(int x)
++{
++	return __builtin_ffs(x);
++}
++
++static inline unsigned long __fls(unsigned long word)
++{
++	return BITS_PER_LONG - 1 - __builtin_clzl(word);
++}
++
++static inline int fls(int x)
++{
++	return x ? sizeof(x) * BITS_PER_BYTE - __builtin_clz(x) : 0;
++}
++
++/*
++ * Mainly use the generic routines for now.
++ */
++#ifndef _LINUX_BITOPS_H
++#error only <linux/bitops.h> can be included directly
++#endif
++
++#include <asm-generic/bitops/ffz.h>
++#include <asm-generic/bitops/fls64.h>
++#include <asm-generic/bitops/find.h>
++
++#include <asm-generic/bitops/sched.h>
++#include <asm-generic/bitops/hweight.h>
++#include <asm-generic/bitops/lock.h>
++
++#include <asm-generic/bitops/atomic.h>
++#include <asm-generic/bitops/non-atomic.h>
++#include <asm-generic/bitops/le.h>
++#include <asm-generic/bitops/ext2-atomic.h>
++
++#endif /* __ASM_BITOPS_H */
+diff --git a/arch/aarch64/include/asm/syscall.h b/arch/aarch64/include/asm/syscall.h
+new file mode 100644
+index 0000000..0f4bfcc
+--- /dev/null
++++ b/arch/aarch64/include/asm/syscall.h
+@@ -0,0 +1,102 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++#ifndef __ASM_SYSCALL_H
++#define __ASM_SYSCALL_H
++
++#include <linux/err.h>
++
++
++static inline int syscall_get_nr(struct task_struct *task,
++				 struct pt_regs *regs)
++{
++	return regs->syscallno;
++}
++
++static inline void syscall_rollback(struct task_struct *task,
++				    struct pt_regs *regs)
++{
++	regs->regs[0] = regs->orig_x0;
++}
++
++
++static inline long syscall_get_error(struct task_struct *task,
++				     struct pt_regs *regs)
++{
++	unsigned long error = regs->regs[0];
++	return IS_ERR_VALUE(error) ? error : 0;
++}
++
++static inline long syscall_get_return_value(struct task_struct *task,
++					    struct pt_regs *regs)
++{
++	return regs->regs[0];
++}
++
++static inline void syscall_set_return_value(struct task_struct *task,
++					    struct pt_regs *regs,
++					    int error, long val)
++{
++	regs->regs[0] = (long) error ? error : val;
++}
++
++#define SYSCALL_MAX_ARGS 6
++
++static inline void syscall_get_arguments(struct task_struct *task,
++					 struct pt_regs *regs,
++					 unsigned int i, unsigned int n,
++					 unsigned long *args)
++{
++	if (i + n > SYSCALL_MAX_ARGS) {
++		unsigned long *args_bad = args + SYSCALL_MAX_ARGS - i;
++		unsigned int n_bad = n + i - SYSCALL_MAX_ARGS;
++		pr_warning("%s called with max args %d, handling only %d\n",
++			   __func__, i + n, SYSCALL_MAX_ARGS);
++		memset(args_bad, 0, n_bad * sizeof(args[0]));
++	}
++
++	if (i == 0) {
++		args[0] = regs->orig_x0;
++		args++;
++		i++;
++		n--;
++	}
++
++	memcpy(args, &regs->regs[i], n * sizeof(args[0]));
++}
++
++static inline void syscall_set_arguments(struct task_struct *task,
++					 struct pt_regs *regs,
++					 unsigned int i, unsigned int n,
++					 const unsigned long *args)
++{
++	if (i + n > SYSCALL_MAX_ARGS) {
++		pr_warning("%s called with max args %d, handling only %d\n",
++			   __func__, i + n, SYSCALL_MAX_ARGS);
++		n = SYSCALL_MAX_ARGS - i;
++	}
++
++	if (i == 0) {
++		regs->orig_x0 = args[0];
++		args++;
++		i++;
++		n--;
++	}
++
++	memcpy(&regs->regs[i], args, n * sizeof(args[0]));
++}
++
++#endif	/* __ASM_SYSCALL_H */
+diff --git a/arch/aarch64/kernel/aarch64ksyms.c b/arch/aarch64/kernel/aarch64ksyms.c
+new file mode 100644
+index 0000000..52191ec
+--- /dev/null
++++ b/arch/aarch64/kernel/aarch64ksyms.c
+@@ -0,0 +1,56 @@
++/*
++ * Based on arch/arm/kernel/armksyms.c
++ *
++ * Copyright (C) 2000 Russell King
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++#include <linux/export.h>
++#include <linux/sched.h>
++#include <linux/string.h>
++#include <linux/cryptohash.h>
++#include <linux/delay.h>
++#include <linux/in6.h>
++#include <linux/syscalls.h>
++#include <linux/uaccess.h>
++#include <linux/io.h>
++
++#include <asm/checksum.h>
++
++	/* user mem (segment) */
++EXPORT_SYMBOL(__strnlen_user);
++EXPORT_SYMBOL(__strncpy_from_user);
++
++EXPORT_SYMBOL(copy_page);
++
++EXPORT_SYMBOL(__copy_from_user);
++EXPORT_SYMBOL(__copy_to_user);
++EXPORT_SYMBOL(__clear_user);
++
++EXPORT_SYMBOL(__get_user_1);
++EXPORT_SYMBOL(__get_user_2);
++EXPORT_SYMBOL(__get_user_4);
++
++EXPORT_SYMBOL(__put_user_1);
++EXPORT_SYMBOL(__put_user_2);
++EXPORT_SYMBOL(__put_user_4);
++EXPORT_SYMBOL(__put_user_8);
++
++	/* bitops */
++EXPORT_SYMBOL(__atomic_hash);
++
++	/* physical memory */
++EXPORT_SYMBOL(memstart_addr);
+diff --git a/arch/aarch64/lib/Makefile b/arch/aarch64/lib/Makefile
+new file mode 100644
+index 0000000..ae71bae
+--- /dev/null
++++ b/arch/aarch64/lib/Makefile
+@@ -0,0 +1,5 @@
++lib-y		:= bitops.o delay.o					\
++		   strncpy_from_user.o strnlen_user.o			\
++		   clear_user.o getuser.o putuser.o			\
++		   copy_from_user.o copy_to_user.o copy_in_user.o	\
++		   copy_page.o clear_page.o
+diff --git a/arch/aarch64/lib/bitops.c b/arch/aarch64/lib/bitops.c
+new file mode 100644
+index 0000000..27a2e17
+--- /dev/null
++++ b/arch/aarch64/lib/bitops.c
+@@ -0,0 +1,27 @@
++/*
++ * Copyright (C) 2012 ARM Limited
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/spinlock.h>
++#include <linux/atomic.h>
++
++#ifdef CONFIG_SMP
++arch_spinlock_t __atomic_hash[ATOMIC_HASH_SIZE] __lock_aligned = {
++       [0 ... (ATOMIC_HASH_SIZE-1)]  = __ARCH_SPIN_LOCK_UNLOCKED
++};
++#endif
+diff --git a/arch/aarch64/lib/clear_page.S b/arch/aarch64/lib/clear_page.S
+new file mode 100644
+index 0000000..4965db2
+--- /dev/null
++++ b/arch/aarch64/lib/clear_page.S
+@@ -0,0 +1,40 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++#include <linux/linkage.h>
++#include <linux/const.h>
++#include <asm/assembler.h>
++#include <asm/page.h>
++
++/*
++ * Clear page @dest
++ *
++ * Parameters:
++ *	x0 - dest
++ */
++ENTRY(clear_page)
++	mrs	x1, dczid_el0
++	and	w1, w1, #0xf
++	mov	x2, #4
++	lsl	x1, x2, x1
++
++1:	dc	zva, x0
++	add	x0, x0, x1
++	tst	x0, #(PAGE_SIZE - 1)
++	b.ne	1b
++	ret
++ENDPROC(clear_page)
+diff --git a/arch/aarch64/lib/copy_page.S b/arch/aarch64/lib/copy_page.S
+new file mode 100644
+index 0000000..7269290
+--- /dev/null
++++ b/arch/aarch64/lib/copy_page.S
+@@ -0,0 +1,47 @@
++/*
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++#include <linux/linkage.h>
++#include <linux/const.h>
++#include <asm/assembler.h>
++#include <asm/page.h>
++
++/*
++ * Copy a page from src to dest (both are page aligned)
++ *
++ * Parameters:
++ *	x0 - dest
++ *	x1 - src
++ */
++ENTRY(copy_page)
++	/* Assume cache line size is 64 bytes. */
++	prfm	pldl1strm, [x1, #64]
++1:	ldp	x2, x3, [x1]
++	ldp	x4, x5, [x1, #16]
++	ldp	x6, x7, [x1, #32]
++	ldp	x8, x9, [x1, #48]
++	add	x1, x1, #64
++	prfm	pldl1strm, [x1, #64]
++	stnp	x2, x3, [x0]
++	stnp	x4, x5, [x0, #16]
++	stnp	x6, x7, [x0, #32]
++	stnp	x8, x9, [x0, #48]
++	add	x0, x0, #64
++	tst	x1, #(PAGE_SIZE - 1)
++	b.ne	1b
++	ret
++ENDPROC(copy_page)
+diff --git a/arch/aarch64/lib/delay.c b/arch/aarch64/lib/delay.c
+new file mode 100644
+index 0000000..dabe81e
+--- /dev/null
++++ b/arch/aarch64/lib/delay.c
+@@ -0,0 +1,56 @@
++/*
++ * Delay loops based on the OpenRISC implementation.
 + *
 + * Copyright (C) 2012 ARM Limited
 + *
@@ -97,440 +474,39 @@ index 0000000..cd05848
 + * Author: Will Deacon <will.deacon@arm.com>
 + */
 +
-+#include <linux/bitops.h>
-+#include <linux/elf.h>
-+#include <linux/gfp.h>
++#include <linux/delay.h>
++#include <linux/init.h>
 +#include <linux/kernel.h>
-+#include <linux/mm.h>
-+#include <linux/moduleloader.h>
-+#include <linux/vmalloc.h>
++#include <linux/module.h>
++#include <linux/timex.h>
 +
-+void *module_alloc(unsigned long size)
++void __delay(unsigned long cycles)
 +{
-+	return __vmalloc_node_range(size, 1, MODULES_VADDR, MODULES_END,
-+				    GFP_KERNEL, PAGE_KERNEL_EXEC, -1,
-+				    __builtin_return_address(0));
++	cycles_t start = get_cycles();
++
++	while ((get_cycles() - start) < cycles)
++		cpu_relax();
 +}
++EXPORT_SYMBOL(__delay);
 +
-+enum aarch64_reloc_op {
-+	RELOC_OP_NONE,
-+	RELOC_OP_ABS,
-+	RELOC_OP_PREL,
-+	RELOC_OP_PAGE,
-+};
-+
-+static u64 do_reloc(enum aarch64_reloc_op reloc_op, void *place, u64 val)
++inline void __const_udelay(unsigned long xloops)
 +{
-+	switch (reloc_op) {
-+	case RELOC_OP_ABS:
-+		return val;
-+	case RELOC_OP_PREL:
-+		return val - (u64)place;
-+	case RELOC_OP_PAGE:
-+		return (val & ~0xfff) - ((u64)place & ~0xfff);
-+	case RELOC_OP_NONE:
-+		return 0;
-+	}
++	unsigned long loops;
 +
-+	pr_err("do_reloc: unknown relocation operation %d\n", reloc_op);
-+	return 0;
++	loops = xloops * loops_per_jiffy * HZ;
++	__delay(loops >> 32);
 +}
++EXPORT_SYMBOL(__const_udelay);
 +
-+static int reloc_data(enum aarch64_reloc_op op, void *place, u64 val, int len)
++void __udelay(unsigned long usecs)
 +{
-+	u64 imm_mask = (1 << len) - 1;
-+	s64 sval = do_reloc(op, place, val);
-+
-+	switch (len) {
-+	case 16:
-+		*(s16 *)place = sval;
-+		break;
-+	case 32:
-+		*(s32 *)place = sval;
-+		break;
-+	case 64:
-+		*(s64 *)place = sval;
-+		break;
-+	default:
-+		pr_err("Invalid length (%d) for data relocation\n", len);
-+		return 0;
-+	}
-+
-+	/*
-+	 * Extract the upper value bits (including the sign bit) and
-+	 * shift them to bit 0.
-+	 */
-+	sval = (s64)(sval & ~(imm_mask >> 1)) >> (len - 1);
-+
-+	/*
-+	 * Overflow has occurred if the value is not representable in
-+	 * len bits (i.e the bottom len bits are not sign-extended and
-+	 * the top bits are not all zero).
-+	 */
-+	if ((u64)(sval + 1) > 2)
-+		return -ERANGE;
-+
-+	return 0;
++	__const_udelay(usecs * 0x10C7UL); /* 2**32 / 1000000 (rounded up) */
 +}
++EXPORT_SYMBOL(__udelay);
 +
-+enum aarch64_imm_type {
-+	INSN_IMM_MOVNZ,
-+	INSN_IMM_MOVK,
-+	INSN_IMM_ADR,
-+	INSN_IMM_26,
-+	INSN_IMM_19,
-+	INSN_IMM_16,
-+	INSN_IMM_14,
-+	INSN_IMM_12,
-+	INSN_IMM_9,
-+};
-+
-+static u32 encode_insn_immediate(enum aarch64_imm_type type, u32 insn, u64 imm)
++void __ndelay(unsigned long nsecs)
 +{
-+	u32 immlo, immhi, lomask, himask, mask;
-+	int shift;
-+
-+	switch (type) {
-+	case INSN_IMM_MOVNZ:
-+		/*
-+		 * For signed MOVW relocations, we have to manipulate the
-+		 * instruction encoding depending on whether or not the
-+		 * immediate is less than zero.
-+		 */
-+		insn &= ~(3 << 29);
-+		if ((s64)imm >= 0) {
-+			/* >=0: Set the instruction to MOVZ (opcode 10b). */
-+			insn |= 2 << 29;
-+		} else {
-+			/*
-+			 * <0: Set the instruction to MOVN (opcode 00b).
-+			 *     Since we've masked the opcode already, we
-+			 *     don't need to do anything other than
-+			 *     inverting the new immediate field.
-+			 */
-+			imm = ~imm;
-+		}
-+	case INSN_IMM_MOVK:
-+		mask = BIT(16) - 1;
-+		shift = 5;
-+		break;
-+	case INSN_IMM_ADR:
-+		lomask = 0x3;
-+		himask = 0x7ffff;
-+		immlo = imm & lomask;
-+		imm >>= 2;
-+		immhi = imm & himask;
-+		imm = (immlo << 24) | (immhi);
-+		mask = (lomask << 24) | (himask);
-+		shift = 5;
-+		break;
-+	case INSN_IMM_26:
-+		mask = BIT(26) - 1;
-+		shift = 0;
-+		break;
-+	case INSN_IMM_19:
-+		mask = BIT(19) - 1;
-+		shift = 5;
-+		break;
-+	case INSN_IMM_16:
-+		mask = BIT(16) - 1;
-+		shift = 5;
-+		break;
-+	case INSN_IMM_14:
-+		mask = BIT(14) - 1;
-+		shift = 5;
-+		break;
-+	case INSN_IMM_12:
-+		mask = BIT(12) - 1;
-+		shift = 10;
-+		break;
-+	case INSN_IMM_9:
-+		mask = BIT(9) - 1;
-+		shift = 12;
-+		break;
-+	default:
-+		pr_err("encode_insn_immediate: unknown immediate encoding %d\n",
-+			type);
-+		return 0;
-+	}
-+
-+	/* Update the immediate field. */
-+	insn &= ~(mask << shift);
-+	insn |= (imm & mask) << shift;
-+
-+	return insn;
++	__const_udelay(nsecs * 0x5UL); /* 2**32 / 1000000000 (rounded up) */
 +}
-+
-+static int reloc_insn_movw(enum aarch64_reloc_op op, void *place, u64 val,
-+			   int lsb, enum aarch64_imm_type imm_type)
-+{
-+	u64 imm, limit = 0;
-+	s64 sval;
-+	u32 insn = *(u32 *)place;
-+
-+	sval = do_reloc(op, place, val);
-+	sval >>= lsb;
-+	imm = sval & 0xffff;
-+
-+	/* Update the instruction with the new encoding. */
-+	*(u32 *)place = encode_insn_immediate(imm_type, insn, imm);
-+
-+	/* Shift out the immediate field. */
-+	sval >>= 16;
-+
-+	/*
-+	 * For unsigned immediates, the overflow check is straightforward.
-+	 * For signed immediates, the sign bit is actually the bit past the
-+	 * most significant bit of the field.
-+	 * The INSN_IMM_16 immediate type is unsigned.
-+	 */
-+	if (imm_type != INSN_IMM_16) {
-+		sval++;
-+		limit++;
-+	}
-+
-+	/* Check the upper bits depending on the sign of the immediate. */
-+	if ((u64)sval > limit)
-+		return -ERANGE;
-+
-+	return 0;
-+}
-+
-+static int reloc_insn_imm(enum aarch64_reloc_op op, void *place, u64 val,
-+			  int lsb, int len, enum aarch64_imm_type imm_type)
-+{
-+	u64 imm, imm_mask;
-+	s64 sval;
-+	u32 insn = *(u32 *)place;
-+
-+	/* Calculate the relocation value. */
-+	sval = do_reloc(op, place, val);
-+	sval >>= lsb;
-+
-+	/* Extract the value bits and shift them to bit 0. */
-+	imm_mask = (BIT(lsb + len) - 1) >> lsb;
-+	imm = sval & imm_mask;
-+
-+	/* Update the instruction's immediate field. */
-+	*(u32 *)place = encode_insn_immediate(imm_type, insn, imm);
-+
-+	/*
-+	 * Extract the upper value bits (including the sign bit) and
-+	 * shift them to bit 0.
-+	 */
-+	sval = (s64)(sval & ~(imm_mask >> 1)) >> (len - 1);
-+
-+	/*
-+	 * Overflow has occurred if the upper bits are not all equal to
-+	 * the sign bit of the value.
-+	 */
-+	if ((u64)(sval + 1) >= 2)
-+		return -ERANGE;
-+
-+	return 0;
-+}
-+
-+int apply_relocate_add(Elf64_Shdr *sechdrs,
-+		       const char *strtab,
-+		       unsigned int symindex,
-+		       unsigned int relsec,
-+		       struct module *me)
-+{
-+	unsigned int i;
-+	int ovf;
-+	bool overflow_check;
-+	Elf64_Sym *sym;
-+	void *loc;
-+	u64 val;
-+	Elf64_Rela *rel = (void *)sechdrs[relsec].sh_addr;
-+
-+	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
-+		/* loc corresponds to P in the AArch64 ELF document. */
-+		loc = (void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
-+			+ rel[i].r_offset;
-+
-+		/* sym is the ELF symbol we're referring to. */
-+		sym = (Elf64_Sym *)sechdrs[symindex].sh_addr
-+			+ ELF64_R_SYM(rel[i].r_info);
-+
-+		/* val corresponds to (S + A) in the AArch64 ELF document. */
-+		val = sym->st_value + rel[i].r_addend;
-+
-+		/* Check for overflow by default. */
-+		overflow_check = true;
-+
-+		/* Perform the static relocation. */
-+		switch (ELF64_R_TYPE(rel[i].r_info)) {
-+		/* Null relocations. */
-+		case R_ARM_NONE:
-+		case R_AARCH64_NONE:
-+			ovf = 0;
-+			break;
-+
-+		/* Data relocations. */
-+		case R_AARCH64_ABS64:
-+			overflow_check = false;
-+			ovf = reloc_data(RELOC_OP_ABS, loc, val, 64);
-+			break;
-+		case R_AARCH64_ABS32:
-+			ovf = reloc_data(RELOC_OP_ABS, loc, val, 32);
-+			break;
-+		case R_AARCH64_ABS16:
-+			ovf = reloc_data(RELOC_OP_ABS, loc, val, 16);
-+			break;
-+		case R_AARCH64_PREL64:
-+			overflow_check = false;
-+			ovf = reloc_data(RELOC_OP_PREL, loc, val, 64);
-+			break;
-+		case R_AARCH64_PREL32:
-+			ovf = reloc_data(RELOC_OP_PREL, loc, val, 32);
-+			break;
-+		case R_AARCH64_PREL16:
-+			ovf = reloc_data(RELOC_OP_PREL, loc, val, 16);
-+			break;
-+
-+		/* MOVW instruction relocations. */
-+		case R_AARCH64_MOVW_UABS_G0_NC:
-+			overflow_check = false;
-+		case R_AARCH64_MOVW_UABS_G0:
-+			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 0,
-+					      INSN_IMM_16);
-+			break;
-+		case R_AARCH64_MOVW_UABS_G1_NC:
-+			overflow_check = false;
-+		case R_AARCH64_MOVW_UABS_G1:
-+			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 16,
-+					      INSN_IMM_16);
-+			break;
-+		case R_AARCH64_MOVW_UABS_G2_NC:
-+			overflow_check = false;
-+		case R_AARCH64_MOVW_UABS_G2:
-+			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 32,
-+					      INSN_IMM_16);
-+			break;
-+		case R_AARCH64_MOVW_UABS_G3:
-+			/* We're using the top bits so we can't overflow. */
-+			overflow_check = false;
-+			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 48,
-+					      INSN_IMM_16);
-+			break;
-+		case R_AARCH64_MOVW_SABS_G0:
-+			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 0,
-+					      INSN_IMM_MOVNZ);
-+			break;
-+		case R_AARCH64_MOVW_SABS_G1:
-+			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 16,
-+					      INSN_IMM_MOVNZ);
-+			break;
-+		case R_AARCH64_MOVW_SABS_G2:
-+			ovf = reloc_insn_movw(RELOC_OP_ABS, loc, val, 32,
-+					      INSN_IMM_MOVNZ);
-+			break;
-+		case R_AARCH64_MOVW_PREL_G0_NC:
-+			overflow_check = false;
-+			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 0,
-+					      INSN_IMM_MOVK);
-+			break;
-+		case R_AARCH64_MOVW_PREL_G0:
-+			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 0,
-+					      INSN_IMM_MOVNZ);
-+			break;
-+		case R_AARCH64_MOVW_PREL_G1_NC:
-+			overflow_check = false;
-+			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 16,
-+					      INSN_IMM_MOVK);
-+			break;
-+		case R_AARCH64_MOVW_PREL_G1:
-+			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 16,
-+					      INSN_IMM_MOVNZ);
-+			break;
-+		case R_AARCH64_MOVW_PREL_G2_NC:
-+			overflow_check = false;
-+			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 32,
-+					      INSN_IMM_MOVK);
-+			break;
-+		case R_AARCH64_MOVW_PREL_G2:
-+			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 32,
-+					      INSN_IMM_MOVNZ);
-+			break;
-+		case R_AARCH64_MOVW_PREL_G3:
-+			/* We're using the top bits so we can't overflow. */
-+			overflow_check = false;
-+			ovf = reloc_insn_movw(RELOC_OP_PREL, loc, val, 48,
-+					      INSN_IMM_MOVNZ);
-+			break;
-+
-+		/* Immediate instruction relocations. */
-+		case R_AARCH64_LD_PREL_LO19:
-+			ovf = reloc_insn_imm(RELOC_OP_PREL, loc, val, 2, 19,
-+					     INSN_IMM_19);
-+			break;
-+		case R_AARCH64_ADR_PREL_LO21:
-+			ovf = reloc_insn_imm(RELOC_OP_PREL, loc, val, 0, 21,
-+					     INSN_IMM_ADR);
-+			break;
-+		case R_AARCH64_ADR_PREL_PG_HI21_NC:
-+			overflow_check = false;
-+		case R_AARCH64_ADR_PREL_PG_HI21:
-+			ovf = reloc_insn_imm(RELOC_OP_PAGE, loc, val, 12, 21,
-+					     INSN_IMM_ADR);
-+			break;
-+		case R_AARCH64_ADD_ABS_LO12_NC:
-+		case R_AARCH64_LDST8_ABS_LO12_NC:
-+			overflow_check = false;
-+			ovf = reloc_insn_imm(RELOC_OP_ABS, loc, val, 0, 12,
-+					     INSN_IMM_12);
-+			break;
-+		case R_AARCH64_LDST16_ABS_LO12_NC:
-+			overflow_check = false;
-+			ovf = reloc_insn_imm(RELOC_OP_ABS, loc, val, 1, 11,
-+					     INSN_IMM_12);
-+			break;
-+		case R_AARCH64_LDST32_ABS_LO12_NC:
-+			overflow_check = false;
-+			ovf = reloc_insn_imm(RELOC_OP_ABS, loc, val, 2, 10,
-+					     INSN_IMM_12);
-+			break;
-+		case R_AARCH64_LDST64_ABS_LO12_NC:
-+			overflow_check = false;
-+			ovf = reloc_insn_imm(RELOC_OP_ABS, loc, val, 3, 9,
-+					     INSN_IMM_12);
-+			break;
-+		case R_AARCH64_LDST128_ABS_LO12_NC:
-+			overflow_check = false;
-+			ovf = reloc_insn_imm(RELOC_OP_ABS, loc, val, 4, 8,
-+					     INSN_IMM_12);
-+			break;
-+		case R_AARCH64_TSTBR14:
-+			ovf = reloc_insn_imm(RELOC_OP_PREL, loc, val, 2, 14,
-+					     INSN_IMM_14);
-+			break;
-+		case R_AARCH64_CONDBR19:
-+			ovf = reloc_insn_imm(RELOC_OP_PREL, loc, val, 2, 19,
-+					     INSN_IMM_19);
-+			break;
-+		case R_AARCH64_JUMP26:
-+		case R_AARCH64_CALL26:
-+			ovf = reloc_insn_imm(RELOC_OP_PREL, loc, val, 2, 26,
-+					     INSN_IMM_26);
-+			break;
-+
-+		default:
-+			pr_err("module %s: unsupported RELA relocation: %llu\n",
-+			       me->name, ELF64_R_TYPE(rel[i].r_info));
-+			return -ENOEXEC;
-+		}
-+
-+		if (overflow_check && ovf == -ERANGE)
-+			goto overflow;
-+
-+	}
-+
-+	return 0;
-+
-+overflow:
-+	pr_err("module %s: overflow in relocation type %d val %Lx\n",
-+	       me->name, (int)ELF64_R_TYPE(rel[i].r_info), val);
-+	return -ENOEXEC;
-+}
++EXPORT_SYMBOL(__ndelay);
 
