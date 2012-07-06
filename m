@@ -1,149 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757470Ab2GFORx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 10:17:53 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:54016 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757339Ab2GFORl (ORCPT
+	id S1757426Ab2GFOTa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 10:19:30 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:39869 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756735Ab2GFOT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 10:17:41 -0400
-Date: Fri, 6 Jul 2012 16:17:36 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, josh@joshtriplett.org,
-        heiko.carstens@de.ibm.com, pascal.chapperon@wanadoo.fr,
-        wfg@linux.intel.com, C.Emde@osadl.org, mathieu.desnoyers@efficios.com,
-        dhowells@redhat.com, efault@gmx.de, levinsasha928@gmail.com
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.6
-Message-ID: <20120706141736.GB23400@gmail.com>
-References: <20120706140116.GA17758@linux.vnet.ibm.com>
+	Fri, 6 Jul 2012 10:19:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120706140116.GA17758@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.00.1207050924330.4138@router.home>
+References: <1340389359-2407-1-git-send-email-js1304@gmail.com>
+	<1340389359-2407-3-git-send-email-js1304@gmail.com>
+	<alpine.DEB.2.00.1207050924330.4138@router.home>
+Date: Fri, 6 Jul 2012 23:19:27 +0900
+Message-ID: <CAAmzW4NJyX9e_dMyJBA5zDiVYVmL1vbUkaRHNoSbbhDZWW7iMg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] slub: release a lock if freeing object with a lock is
+ failed in __slab_free()
+From: JoonSoo Kim <js1304@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2012/7/5 Christoph Lameter <cl@linux.com>:
+> On Sat, 23 Jun 2012, Joonsoo Kim wrote:
+>
+>> In some case of __slab_free(), we need a lock for manipulating partial list.
+>> If freeing object with a lock is failed, a lock doesn't needed anymore
+>> for some reasons.
+>>
+>> Case 1. prior is NULL, kmem_cache_debug(s) is true
+>>
+>> In this case, another free is occured before our free is succeed.
+>> When slab is full(prior is NULL), only possible operation is slab_free().
+>> So in this case, we guess another free is occured.
+>> It may make a slab frozen, so lock is not needed anymore.
+>
+> A free cannot freeze the slab without taking the lock. The taken lock
+> makes sure that the thread that first enters slab_free() will be able to
+> hold back the thread that wants to freeze the slab.
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+I don't mean we can freeze the slab without taking the lock.
+We can fail cmpxchg_double_slab with taking the lock.
+And in this case, we don't need lock anymore, so let's release lock.
 
-> Hello, Ingo,
-> 
-> The major features of this series are:
-> 
-> 1.	Preventing latency spikes of more than 200 microseconds for
-> 	kernels built with NR_CPUS=4096, which is reportedly becoming
-> 	the default for some distros.  This is a first step, as it does
-> 	not help with systems that actually -have- 4096 CPUs (work on
-> 	this case is in progress, but is not yet ready for mainline).
-> 	This category also includes improving concurrency of rcu_barrier(),
-> 	placed here due to conflicts.  Posted to LKML at:
-> 	https://lkml.org/lkml/2012/6/22/381.  Note that patches 18-22
-> 	of that series have been defered to 3.7, as they have not yet
-> 	proven themselves to be mainline-ready (and yes, these are the
-> 	ones intended to get rid of RCU's latency spikes for systems
-> 	that actually have 4096 CPUs).
-> 2.	Updates to documentation and rcutorture fixes, the latter category
-> 	including improvements to rcu_barrier() testing.  Posted to LKML at:
-> 	http://lkml.indiana.edu/hypermail/linux/kernel/1206.1/04094.html.
-> 3.	Miscellaneous fixes posted to LKML at:
-> 	https://lkml.org/lkml/2012/6/22/500, with the exception of the
-> 	last commit, which was posted here:
-> 	http://www.gossamer-threads.com/lists/linux/kernel/1561830
-> 4.	RCU_FAST_NO_HZ fixes and improvements.  Posted to LKML at:
-> 	http://lkml.indiana.edu/hypermail/linux/kernel/1206.1/00006.html
-> 	and http://www.gossamer-threads.com/lists/linux/kernel/1561833.
-> 	The first four patches of the first series went into 3.5 to fix
-> 	a regression.
-> 5.	Code-style fixes.  These were posted to LKML at
-> 	http://lkml.indiana.edu/hypermail/linux/kernel/1205.2/01180.html and
-> 	http://lkml.indiana.edu/hypermail/linux/kernel/1205.2/01181.html.
-> 
-> All of this code has been exposed to -next testing.
-> 
-> These changes are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
-> 
-> 								Thanx, Paul
-> 
-> -------------------->
-> Carsten Emde (1):
->       rcu: Prevent uninitialized string in RCU CPU stall info
-> 
-> Paul E. McKenney (48):
->       rcu: Control RCU_FANOUT_LEAF from boot-time parameter
->       rcu: Four-level hierarchy is no longer experimental
->       rcu: Size rcu_node tree from nr_cpu_ids rather than NR_CPUS
->       rcu: Prevent excessive line length in RCU_STATE_INITIALIZER()
->       rcu: Place pointer to call_rcu() in rcu_data structure
->       rcu: Move _rcu_barrier()'s rcu_head structures to rcu_data structures
->       rcu: Move rcu_barrier_cpu_count to rcu_state structure
->       rcu: Move rcu_barrier_completion to rcu_state structure
->       rcu: Move rcu_barrier_mutex to rcu_state structure
->       rcu: Remove needless initialization
->       rcu: Increase rcu_barrier() concurrency
->       rcu: Add tracing for _rcu_barrier()
->       rcu: Add rcu_barrier() statistics to debugfs tracing
->       rcu: Remove unneeded __rcu_process_callbacks() argument
->       rcu: Introduce for_each_rcu_flavor() and use it
->       rcu: Use for_each_rcu_flavor() in TREE_RCU tracing
->       rcu: RCU_SAVE_DYNTICK code no longer ever dead
->       rcu: Update documentation to cover call_srcu() and srcu_barrier().
->       rcu: Rationalize ordering of torture_ops list
->       rcu: Test srcu_barrier() from rcutorture test suite
->       rcu: Fix bug in rcu_barrier() torture test
->       rcu: Fix diagnostic-printk typo in rcutorture
->       rcu: Make rcutorture fakewriters invoke rcu_barrier()
->       rcu: Fix detection of abruptly-ending stall
->       rcu: Consolidate duplicate callback-list initialization
->       rcu: Add ACCESS_ONCE() to ->qlen accesses
->       rcu: Add a gcc-style structure initializer for RCU pointers
->       rcu: Use new RCU_POINTER_INITIALIZER for gcc-style initializations
->       rcu: Remove return value from RCU_INIT_POINTER()
->       key: Remove extraneous parentheses from rcu_assign_keypointer()
->       rcu: Remove return value from rcu_assign_pointer()
->       rcu: Consolidate tree/tiny __rcu_read_{,un}lock() implementations
->       rcu: Remove function versions of __kfree_rcu and __is_kfree_rcu_offset
->       rcu: Make __call_rcu() handle invocation from idle
->       rcu: Prevent __call_rcu() from invoking RCU core on offline CPUs
->       rcu: Split RCU core processing out of __call_rcu()
->       rcu: Fix rcu_is_cpu_idle() #ifdef in TINY_RCU
->       rcu: Disable preemption in rcu_blocking_is_gp()
->       rcu: Add check for CPUs going offline with callbacks queued
->       rcu: Dump only the current CPU's buffers for idle-entry/exit warnings
->       rcu: The rcu_needs_cpu() function is not a quiescent state
->       rcu: Round FAST_NO_HZ lazy timeout to nearest second
->       rcu: Fix qlen_lazy breakage
->       rcu: Make RCU_FAST_NO_HZ respect nohz= boot parameter
->       rcu: Introduce check for callback list/count mismatch
->       Merge branches 'bigrtm.2012.07.04a', 'doctorture.2012.07.02a', 'fixes.2012.07.06a' and 'fnh.2012.07.02a' into HEAD
->       rcu: Fix code-style issues involving "else"
->       rcu: Fix broken strings in RCU's source code.
-> 
->  Documentation/RCU/checklist.txt     |   39 ++--
->  Documentation/RCU/rcubarrier.txt    |   15 +-
->  Documentation/RCU/torture.txt       |    9 +
->  Documentation/RCU/whatisRCU.txt     |    6 +-
->  Documentation/kernel-parameters.txt |    5 +
->  include/linux/init_task.h           |    4 +-
->  include/linux/key.h                 |    4 +-
->  include/linux/rcupdate.h            |   53 ++---
->  include/trace/events/rcu.h          |   45 ++++
->  kernel/rcupdate.c                   |   44 ++++
->  kernel/rcutiny.c                    |    4 +-
->  kernel/rcutiny_plugin.h             |   56 +----
->  kernel/rcutorture.c                 |   72 ++++--
->  kernel/rcutree.c                    |  478 ++++++++++++++++++++++------------
->  kernel/rcutree.h                    |   46 ++--
->  kernel/rcutree_plugin.h             |  223 ++++-------------
->  kernel/rcutree_trace.c              |  148 ++++++-----
->  kernel/time/tick-sched.c            |    2 +-
->  lib/list_debug.c                    |    6 +-
->  19 files changed, 669 insertions(+), 590 deletions(-)
+For example,
+When we try to free object A at cpu 1, another process try to free
+object B at cpu 2 at the same time.
+object A, B is in same slab, and this slab is in full list.
 
-Pulled, thanks a lot Paul!
+CPU 1                           CPU 2
+prior = page->freelist;    prior = page->freelist
+....                                  ...
+new.inuse--;                   new.inuse--;
+taking lock                      try to take the lock, but failed, so
+spinning...
+free success                   spinning...
+add_partial
+release lock                    taking lock
+                                       fail cmpxchg_double_slab
+                                       retry
+                                       currently, we don't need lock
 
-	Ingo
+At CPU2, we don't need lock anymore, because this slab already in partial list.
+
+Case 2 is similar as case 1.
+So skip explain.
+
+Case 1, 2 in commit message explain almost retry case with taking lock.
+So, below is reasonable.
+
+@@ -2450,13 +2449,17 @@ static void __slab_free(struct kmem_cache *s,
+struct page *page,
+                return;
+
+        do {
++               if (unlikely(n)) {
++                       spin_unlock_irqrestore(&n->list_lock, flags);
++                       n = NULL;
++               }
+                prior = page->freelist;
+                counters = page->counters;
+                set_freepointer(s, object, prior);
+
+
+>> Case 2. inuse is NULL
+>>
+>> In this case, acquire_slab() is occured before out free is succeed.
+>> We have a last object for slab, so other operation for this slab is
+>> not possible except acquire_slab().
+>> Acquire_slab() makes a slab frozen, so lock is not needed anymore.
+>
+> acquire_slab() also requires lock acquisition and would be held of by
+> slab_free holding the lock.
+
+See above explain.
+
+>> This also make logic somehow simple that 'was_frozen with a lock' case
+>> is never occured. Remove it.
+>
+> That is actually interesting and would be a good optimization.
+>
+
+So, I think patch is valid.
+Thanks for comments.
