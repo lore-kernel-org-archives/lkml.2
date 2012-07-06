@@ -1,133 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933498Ab2GFLMW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 07:12:22 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:25963 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756951Ab2GFLMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 07:12:21 -0400
-Message-ID: <4FF6C803.5030502@siemens.com>
-Date: Fri, 06 Jul 2012 13:12:03 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S933294Ab2GFLNW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 07:13:22 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:37195 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756283Ab2GFLNT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 07:13:19 -0400
+Date: Fri, 6 Jul 2012 13:13:14 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, mtosatti@redhat.com,
+        x86@kernel.org, kvm@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] apic: fix kvm build on UP without IOAPIC
+Message-ID: <20120706111314.GG19552@gmail.com>
+References: <20120701150506.GA31304@redhat.com>
+ <4FF0849D.5080406@zytor.com>
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 6/7 v6] deal with guest panicked event accoring to -onpanic
- parameter
-References: <4FF6B188.2060607@cn.fujitsu.com> <4FF6B2C9.10302@cn.fujitsu.com>
-In-Reply-To: <4FF6B2C9.10302@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF0849D.5080406@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-07-06 11:41, Wen Congyang wrote:
-> The onpanic parameter can have the following value:
-> 1. none
-> 2. pause
-> 3. poweroff
-> 4. reset
+
+* H. Peter Anvin <hpa@zytor.com> wrote:
+
+> On 07/01/2012 08:05 AM, Michael S. Tsirkin wrote:
+> >On UP i386, when APIC is disabled
+> ># CONFIG_X86_UP_APIC is not set
+> ># CONFIG_PCI_IOAPIC is not set
+> >
+> >code looking at apicdrivers never has any effect but it
+> >still gets compiled in. In particular, this causes
+> >build failures with kvm, but it generally bloats the kernel
+> >unnecessarily.
+> >
+> >Fix by defining both __apicdrivers and __apicdrivers_end
+> >to be NULL when CONFIG_X86_LOCAL_APIC is unset: I verified
+> >that as the result any loop scanning __apicdrivers gets optimized out by
+> >the compiler.
+> >
+> >Warning: a .config with apic disabled doesn't seem to boot
+> >for me (even without this patch). Still verifying why,
+> >meanwhile this patch is compile-tested only.
+> >
+> >Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> >---
+> >
+> >Note: if this patch makes sense, can x86 maintainers
+> >please ACK applying it through the kvm tree, since that is
+> >where we see the issue that it addresses?
+> >Avi, Marcelo, maybe you can carry this in kvm/linux-next as a temporary
+> >measure so that linux-next builds?
+> >
 > 
-> The action for each value when the guest is panicked:
-> 1. none: emit QEVENT_GUEST_PANICKED only
-> 2. pause: emit QEVENT_GUEST_PANICKED and pause the guest
-> 3. poweroff: emit QEVENT_GUEST_PANICKED and poweroff the guest
-> 4. reset: emit QEVENT_GUEST_PANICKED and reset the guest
+> I'm not happy about that as a workflow, but since you guys have an
+> immediate problem I guess we can do that.
 
-This is redundant to patch 7 and the preferred device property approach.
+I'm rather unhappy about this workflow - we've got quite a few 
+apic bits in the x86 tree this cycle as well and need extra 
+external interaction, not.
 
-Jan
+Which KVM tree commit caused this, could someone please give a 
+lkml link or quote it here? It's not referenced in the fix patch 
+either.
 
-> 
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->  hw/kvm/pv_event.c |   17 +++++++++++++++++
->  qemu-options.hx   |   15 +++++++++++++++
->  vl.c              |    6 ++++++
->  3 files changed, 38 insertions(+), 0 deletions(-)
-> 
-> diff --git a/hw/kvm/pv_event.c b/hw/kvm/pv_event.c
-> index d7ded37..890abcd 100644
-> --- a/hw/kvm/pv_event.c
-> +++ b/hw/kvm/pv_event.c
-> @@ -59,6 +59,23 @@ static void panicked_perform_action(uint32_t panicked_action)
->      }
->  }
->  
-> +int select_panicked_action(const char *p)
-> +{
-> +    if (strcasecmp(p, "none") == 0) {
-> +        panicked_action = PANICKED_REPORT;
-> +    } else if (strcasecmp(p, "pause") == 0) {
-> +        panicked_action = PANICKED_PAUSE;
-> +    } else if (strcasecmp(p, "poweroff") == 0) {
-> +        panicked_action = PANICKED_POWEROFF;
-> +    } else if (strcasecmp(p, "reset") == 0) {
-> +        panicked_action = PANICKED_RESET;
-> +    } else {
-> +        return -1;
-> +    }
-> +
-> +    return 0;
-> +}
-> +
->  #if defined(KVM_PV_PORT)
->  #include "pv_ioport.c"
->  
-> diff --git a/qemu-options.hx b/qemu-options.hx
-> index 8b66264..4a061bf 100644
-> --- a/qemu-options.hx
-> +++ b/qemu-options.hx
-> @@ -2743,6 +2743,21 @@ DEF("qtest-log", HAS_ARG, QEMU_OPTION_qtest_log,
->      "-qtest-log LOG  specify tracing options\n",
->      QEMU_ARCH_ALL)
->  
-> +DEF("onpanic", HAS_ARG, QEMU_OPTION_onpanic, \
-> +    "-onpanic none|pause|poweroff|reset\n" \
-> +    "                action when the guest is panicked [default=none]",
-> +    QEMU_ARCH_ALL)
-> +STEXI
-> +@item -onpanic @var{action}
-> +
-> +The @var{action} controls what QEmu will do when the guest is panicked.
-> +The default is @code{none} (emit QEVENT_GUEST_PANICKED only).
-> +Other possible actions are:
-> +@code{pause} (emit QEVENT_GUEST_PANICKED and pause the guest),
-> +@code{poweroff} (emit QEVENT_GUEST_PANICKED and forcefully poweroff the guest),
-> +@code{reset} (emit QEVENT_GUEST_PANICKED and forcefully reset the guest).
-> +ETEXI
-> +
->  HXCOMM This is the last statement. Insert new options before this line!
->  STEXI
->  @end table
-> diff --git a/vl.c b/vl.c
-> index f5cd28d..1a68257 100644
-> --- a/vl.c
-> +++ b/vl.c
-> @@ -3205,6 +3205,12 @@ int main(int argc, char **argv, char **envp)
->              case QEMU_OPTION_qtest_log:
->                  qtest_log = optarg;
->                  break;
-> +            case QEMU_OPTION_onpanic:
-> +                if (select_panicked_action(optarg) == -1) {
-> +                    fprintf(stderr, "Unknown -onpanic parameter\n");
-> +                    exit(1);
-> +                }
-> +                break;
->              default:
->                  os_parse_cmd_args(popt->index, optarg);
->              }
-> 
+Thanks,
 
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
-
-
+	Ingo
