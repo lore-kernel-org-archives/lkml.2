@@ -1,99 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758325Ab2GFVX6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 17:23:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55545 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753982Ab2GFVX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 17:23:56 -0400
-Message-ID: <4FF7575C.8030808@redhat.com>
-Date: Fri, 06 Jul 2012 18:23:40 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1758626Ab2GFVYK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 17:24:10 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62121 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758418Ab2GFVYH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 17:24:07 -0400
+Subject: [RESEND AGAIN][PATCH] pcmcia: move unbind/rebind into dev_pm_ops.complete
+Cc: linux-kernel@vger.kernel.org, chunkeey@googlemail.com,
+        Dominik Brodowski <linux@dominikbrodowski.net>
+To: linux-pcmcia@lists.infradead.org, gregkh@linuxfoundation.org
+From: Christian Lamparter <chunkeey@googlemail.com>
+Date: Fri, 6 Jul 2012 23:23:52 +0200
 MIME-Version: 1.0
-To: =?UTF-8?B?QmVub8OudCBUaMOpYmF1ZGVhdQ==?= 
-	<benoit.thebaudeau@advansee.com>
-CC: Changbin Du <changbin.du@gmail.com>, tsoni@codeaurora.org,
-        dan carpenter <dan.carpenter@oracle.com>, kumarrav@codeaurora.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mchehab@infradead.org
-Subject: Re: [PATCH] media: gpio-ir-recv: add allowed_protos and map_name
- for platform data
-References: <539669167.615856.1341314356547.JavaMail.root@advansee.com>
-In-Reply-To: <539669167.615856.1341314356547.JavaMail.root@advansee.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207062323.52785.chunkeey@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 03-07-2012 08:19, Benoît Thébaudeau escreveu:
-> Hi Changbin,
-> 
-> On Tue, Jul 3, 2012 at 12:27:19PM +0200, Changbin Du wrote:
->> It's better to give platform code a chance to specify the allowed
->> protocols and which keymap to use.
-> 
-> Already half done here:
-> http://git.linuxtv.org/media_tree.git?a=commitdiff;h=2bd237b
+The idea of moving rebind procedure into pm.complete
+was taken from the usb-subsystem, which has similar
+problems with reattaching devices during/after
+resume.
 
-OK. Applied just the other half of the change.
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+---
+To Greg:
 
+I have submitted this patch back in March and again in May.
+As far as I can tell it was neither rejected nor was it
+accepted into linux-pcmcia.git since. So I'm asking you,
+if you could take the patch instead... please.
+ 
 Regards,
-Mauro
+	Christian
 
--
+PS: I'm not on the pcmcia/kernel list, so please keep the
+'CC'.
+---
+ drivers/pcmcia/cs.c |   22 ++++++++++++++++++----
+ 1 files changed, 18 insertions(+), 4 deletions(-)
 
-[media] media: gpio-ir-recv: add allowed_protos for platform data
-
-From: Du, Changbin <changbin.du@gmail.com>
-
-It's better to give platform code a chance to specify the allowed
-protocols to use.
-
-[mchehab@redhat.com: fix merge conflict with a patch that made
- half of this change]
-Signed-off-by: Du, Changbin <changbin.du@gmail.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-diff --git a/drivers/media/rc/gpio-ir-recv.c b/drivers/media/rc/gpio-ir-recv.c
-index 59fe60c..04cb272 100644
---- a/drivers/media/rc/gpio-ir-recv.c
-+++ b/drivers/media/rc/gpio-ir-recv.c
-@@ -84,7 +84,6 @@ static int __devinit gpio_ir_recv_probe(struct platform_device *pdev)
+diff --git a/drivers/pcmcia/cs.c b/drivers/pcmcia/cs.c
+index d9ea192..503596f 100644
+--- a/drivers/pcmcia/cs.c
++++ b/drivers/pcmcia/cs.c
+@@ -512,6 +512,13 @@ static int socket_late_resume(struct pcmcia_socket *skt)
+ 		return socket_insert(skt);
+ 	}
  
- 	rcdev->priv = gpio_dev;
- 	rcdev->driver_type = RC_DRIVER_IR_RAW;
--	rcdev->allowed_protos = RC_TYPE_ALL;
- 	rcdev->input_name = GPIO_IR_DEVICE_NAME;
- 	rcdev->input_phys = GPIO_IR_DEVICE_NAME "/input0";
- 	rcdev->input_id.bustype = BUS_HOST;
-@@ -93,6 +92,10 @@ static int __devinit gpio_ir_recv_probe(struct platform_device *pdev)
- 	rcdev->input_id.version = 0x0100;
- 	rcdev->dev.parent = &pdev->dev;
- 	rcdev->driver_name = GPIO_IR_DRIVER_NAME;
-+	if (pdata->allowed_protos)
-+		rcdev->allowed_protos = pdata->allowed_protos;
-+	else
-+		rcdev->allowed_protos = RC_TYPE_ALL;
- 	rcdev->map_name = pdata->map_name ?: RC_MAP_EMPTY;
++	if (!(skt->state & SOCKET_CARDBUS) && (skt->callback))
++		skt->callback->early_resume(skt);
++	return 0;
++}
++
++static int socket_complete_resume(struct pcmcia_socket *skt)
++{
+ #ifdef CONFIG_CARDBUS
+ 	if (skt->state & SOCKET_CARDBUS) {
+ 		/* We can't be sure the CardBus card is the same
+@@ -519,11 +526,8 @@ static int socket_late_resume(struct pcmcia_socket *skt)
+ 		 * and re-add... */
+ 		cb_free(skt);
+ 		cb_alloc(skt);
+-		return 0;
+ 	}
+ #endif
+-	if (!(skt->state & SOCKET_CARDBUS) && (skt->callback))
+-		skt->callback->early_resume(skt);
+ 	return 0;
+ }
  
- 	gpio_dev->rcdev = rcdev;
-diff --git a/include/media/gpio-ir-recv.h b/include/media/gpio-ir-recv.h
-index 91546f3..0142736 100644
---- a/include/media/gpio-ir-recv.h
-+++ b/include/media/gpio-ir-recv.h
-@@ -14,9 +14,10 @@
- #define __GPIO_IR_RECV_H__
+@@ -534,11 +538,15 @@ static int socket_late_resume(struct pcmcia_socket *skt)
+  */
+ static int socket_resume(struct pcmcia_socket *skt)
+ {
++	int err;
+ 	if (!(skt->state & SOCKET_SUSPEND))
+ 		return -EBUSY;
  
- struct gpio_ir_recv_platform_data {
--	int gpio_nr;
--	bool active_low;
--	const char *map_name;
-+	int		gpio_nr;
-+	bool		active_low;
-+	u64		allowed_protos;
-+	const char	*map_name;
+ 	socket_early_resume(skt);
+-	return socket_late_resume(skt);
++	err = socket_late_resume(skt);
++	if (!err)
++		socket_complete_resume(skt);
++	return err;
+ }
+ 
+ static void socket_remove(struct pcmcia_socket *skt)
+@@ -849,6 +857,11 @@ static int __used pcmcia_socket_dev_resume(struct device *dev)
+ 	return __pcmcia_pm_op(dev, socket_late_resume);
+ }
+ 
++static void __used pcmcia_socket_dev_complete(struct device *dev)
++{
++	__pcmcia_pm_op(dev, socket_complete_resume);
++}
++
+ static const struct dev_pm_ops pcmcia_socket_pm_ops = {
+ 	/* dev_resume may be called with IRQs enabled */
+ 	SET_SYSTEM_SLEEP_PM_OPS(NULL,
+@@ -863,6 +876,7 @@ static const struct dev_pm_ops pcmcia_socket_pm_ops = {
+ 	.resume_noirq = pcmcia_socket_dev_resume_noirq,
+ 	.thaw_noirq = pcmcia_socket_dev_resume_noirq,
+ 	.restore_noirq = pcmcia_socket_dev_resume_noirq,
++	.complete = pcmcia_socket_dev_complete,
  };
  
- #endif /* __GPIO_IR_RECV_H__ */
+ #define PCMCIA_SOCKET_CLASS_PM_OPS (&pcmcia_socket_pm_ops)
+-- 
+1.7.9.1
+
