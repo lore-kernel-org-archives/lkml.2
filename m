@@ -1,102 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab2GFOKy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 10:10:54 -0400
-Received: from mga14.intel.com ([143.182.124.37]:22458 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751720Ab2GFOKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 10:10:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="119531406"
-Message-ID: <4FF6F1E9.7050709@intel.com>
-Date: Fri, 06 Jul 2012 22:10:49 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1757362Ab2GFOMb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 10:12:31 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49897 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab2GFOM3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 10:12:29 -0400
+Date: Fri, 6 Jul 2012 16:12:23 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
+        kvm@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] apic: fix kvm build on UP without IOAPIC
+Message-ID: <20120706141222.GA23400@gmail.com>
+References: <20120701150506.GA31304@redhat.com>
+ <4FF0849D.5080406@zytor.com>
+ <20120706111314.GG19552@gmail.com>
+ <20120706113209.GB18059@amt.cnet>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Subject: Fwd: Re: [linux-next-20120706] x86/mm: incompatible pointer type
- warning.
-References: <4FF6F14C.3070104@intel.com>
-In-Reply-To: <4FF6F14C.3070104@intel.com>
-X-Forwarded-Message-Id: <4FF6F14C.3070104@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120706113209.GB18059@amt.cnet>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Forward to LKML
 
--------- Original Message --------
-Subject: Re: [linux-next-20120706] x86/mm: incompatible pointer type
-warning.
-Date: Fri, 06 Jul 2012 22:08:12 +0800
-From: Alex Shi <alex.shi@intel.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-CC: yongjie.ren@intel.com, hpa@zytor.com,  "Wu, Fengguang"
-<fengguang.wu@intel.com>
+* Marcelo Tosatti <mtosatti@redhat.com> wrote:
 
-On 07/06/2012 08:13 PM, Tetsuo Handa wrote:
-
-> Hello.
+> On Fri, Jul 06, 2012 at 01:13:14PM +0200, Ingo Molnar wrote:
+> > 
+> > * H. Peter Anvin <hpa@zytor.com> wrote:
+> > 
+> > > On 07/01/2012 08:05 AM, Michael S. Tsirkin wrote:
+> > > >On UP i386, when APIC is disabled
+> > > ># CONFIG_X86_UP_APIC is not set
+> > > ># CONFIG_PCI_IOAPIC is not set
+> > > >
+> > > >code looking at apicdrivers never has any effect but it
+> > > >still gets compiled in. In particular, this causes
+> > > >build failures with kvm, but it generally bloats the kernel
+> > > >unnecessarily.
+> > > >
+> > > >Fix by defining both __apicdrivers and __apicdrivers_end
+> > > >to be NULL when CONFIG_X86_LOCAL_APIC is unset: I verified
+> > > >that as the result any loop scanning __apicdrivers gets optimized out by
+> > > >the compiler.
+> > > >
+> > > >Warning: a .config with apic disabled doesn't seem to boot
+> > > >for me (even without this patch). Still verifying why,
+> > > >meanwhile this patch is compile-tested only.
+> > > >
+> > > >Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > >---
+> > > >
+> > > >Note: if this patch makes sense, can x86 maintainers
+> > > >please ACK applying it through the kvm tree, since that is
+> > > >where we see the issue that it addresses?
+> > > >Avi, Marcelo, maybe you can carry this in kvm/linux-next as a temporary
+> > > >measure so that linux-next builds?
+> > > >
+> > > 
+> > > I'm not happy about that as a workflow, but since you guys have an
+> > > immediate problem I guess we can do that.
+> > 
+> > I'm rather unhappy about this workflow - we've got quite a few 
+> > apic bits in the x86 tree this cycle as well and need extra 
+> > external interaction, not.
+> > 
+> > Which KVM tree commit caused this, could someone please give a 
+> > lkml link or quote it here? It's not referenced in the fix patch 
+> > either.
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
 > 
-> Commit 611ae8e3 "x86/tlb: enable tlb flush range support for x86" causes
-> below warning on allnoconfig.
+> This tree (kvm.git next):
 > 
->   mm/memory.c: In function 'tlb_flush_mmu':
->   mm/memory.c:231: warning: passing argument 1 of 'flush_tlb_mm_range' from incompatible pointer type
->   /usr/src/linux-next/arch/x86/include/asm/tlbflush.h:108: note: expected 'struct vm_area_struct *' but argument is of type 'struct mm_struct *'
->   mm/memory.c:231: warning: passing argument 1 of 'flush_tlb_mm_range' from incompatible pointer type
->   /usr/src/linux-next/arch/x86/include/asm/tlbflush.h:108: note: expected 'struct vm_area_struct *' but argument is of type 'struct mm_struct *'
+> http://git.kernel.org/?p=virt/kvm/kvm.git;a=shortlog;h=refs/heads/next
 > 
-> Did tlb->mm in tlb_flush() mean tlb->mm->mmap or tlb->mm->mmap_cache?
+> Introduced by this commit:
+> 
+> http://git.kernel.org/?p=virt/kvm/kvm.git;a=commit;h=ab9cf4996bb989983e73da894b8dd0239aa2c3c2
 
+This bit:
 
+> +	if (kvm_para_has_feature(KVM_FEATURE_PV_EOI)) {
+> +		struct apic **drv;
+> +
+> +		for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
+> +			/* Should happen once for each apic */
+> +			WARN_ON((*drv)->eoi_write == kvm_guest_apic_eoi_write);
+> +			(*drv)->eoi_write = kvm_guest_apic_eoi_write;
+> +		}
+> +	}
+> +
 
-Thanks for your report, mm should means mm_struct. no vma. My fault.
-Could you like try this patch.
+is rather disgusting I have to say.
 
-Fengguang, I remember you build system also collect the warning message
-before. Do you stop this? :)
+WTH is the KVM code meddling with core x86 apic driver data 
+structures directly? At minimum factor this out and create a 
+proper apic.c function which is EXPORT_SYMBOL_GPL() exported or 
+so...
 
----
+Thanks,
 
->From 97781231b130e7f7fced12244653ed9b9946c944 Mon Sep 17 00:00:00 2001
-From: Alex Shi <alex.shi@intel.com>
-Date: Fri, 6 Jul 2012 20:49:25 +0800
-Subject: [PATCH] x86/tlb: fix allnoconfig building warning
-
-The incompatible parameter of flush_tlb_mm_range cause build warning.
-Fix it by correct parameter.
-
-Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- arch/x86/include/asm/tlbflush.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/include/asm/tlbflush.h
-b/arch/x86/include/asm/tlbflush.h
-index b5a27bd..74a4433 100644
---- a/arch/x86/include/asm/tlbflush.h
-+++ b/arch/x86/include/asm/tlbflush.h
-@@ -105,10 +105,10 @@ static inline void flush_tlb_range(struct
-vm_area_struct *vma,
- 		__flush_tlb();
- }
-
--static inline void flush_tlb_mm_range(struct vm_area_struct *vma,
-+static inline void flush_tlb_mm_range(struct mm_struct *mm,
- 	   unsigned long start, unsigned long end, unsigned long vmflag)
- {
--	if (vma->vm_mm == current->active_mm)
-+	if (mm == current->active_mm)
- 		__flush_tlb();
- }
-
--- 
-1.7.5.4
-
+	Ingo
