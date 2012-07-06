@@ -1,99 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161001Ab2GFMA7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 08:00:59 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:40777 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030406Ab2GFMAz (ORCPT
+	id S1030357Ab2GFMFW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 08:05:22 -0400
+Received: from 20.mo3.mail-out.ovh.net ([178.33.47.94]:38106 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1030329Ab2GFMFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 08:00:55 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Josh Triplett <josh@joshtriplett.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 6/6] x86: Exit RCU extended QS on notify resume
-Date: Fri,  6 Jul 2012 14:00:18 +0200
-Message-Id: <1341576018-10721-7-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1341576018-10721-1-git-send-email-fweisbec@gmail.com>
-References: <1341576018-10721-1-git-send-email-fweisbec@gmail.com>
+	Fri, 6 Jul 2012 08:05:21 -0400
+X-Greylist: delayed 1799 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jul 2012 08:05:21 EDT
+Date: Fri, 6 Jul 2012 13:55:22 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, ludovic.desroches@atmel.com,
+        linux-kernel@vger.kernel.org, arnd@arndb.de, olof@lixom.net
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH 1/2] ARM: at91/defconfig: change the MCI driver to use
+ in defconfigs
+Message-ID: <20120706115522.GC4450@game.jcrosoft.org>
+References: <24f5c4b6e6f2933eb22979283db6174f378d9b36.1341243806.git.nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <24f5c4b6e6f2933eb22979283db6174f378d9b36.1341243806.git.nicolas.ferre@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 15135190973089557356
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegkedrieelucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegkedrieelucetufdoteggodetrfdofgetucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-do_notify_resume() may be called on irq exit but it won't
-be protected between rcu_irq_enter() and rcu_irq_exit()
-and we don't call rcu_user_exit() on irq entry (unlike
-syscalls/exceptions entry).
+On 17:45 Mon 02 Jul     , Nicolas Ferre wrote:
+> Since atmel-mci driver supports all atmel mci versions,
+> use it instead of the deprecated at91_mci driver.
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-Since it can use RCU read side critical section, we must call
-rcu_user_exit() before doing anything there.
+for both
 
-This complete support for RCU userspace extended quiescent state
-in x86.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Geoff Levand <geoff@infradead.org>
-Cc: Gilad Ben Yossef <gilad@benyossef.com>
-Cc: Hakan Akkan <hakanakkan@gmail.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Josh Triplett <josh@joshtriplett.org>
-Cc: Kevin Hilman <khilman@ti.com>
-Cc: Max Krasnyansky <maxk@qualcomm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/Kconfig         |    1 +
- arch/x86/kernel/signal.c |    2 ++
- 2 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index c70684f..38dfcc2 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -95,6 +95,7 @@ config X86
- 	select KTIME_SCALAR if X86_32
- 	select GENERIC_STRNCPY_FROM_USER
- 	select GENERIC_STRNLEN_USER
-+	select HAVE_RCU_USER_QS if X86_64
- 
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS || UPROBES)
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 21af737..5af078e 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -776,6 +776,8 @@ static void do_signal(struct pt_regs *regs)
- void
- do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
- {
-+	rcu_user_exit();
-+
- #ifdef CONFIG_X86_MCE
- 	/* notify userspace of pending MCEs */
- 	if (thread_info_flags & _TIF_MCE_NOTIFY)
--- 
-1.7.5.4
-
+Best Regards,
+J.
