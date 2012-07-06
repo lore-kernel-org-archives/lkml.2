@@ -1,184 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755903Ab2GFGH4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 02:07:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:49186 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751309Ab2GFGHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 02:07:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="174026976"
-Subject: Re: [PATCH v5 3/4] block: implement runtime pm strategy
-From: Lin Ming <ming.m.lin@intel.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Shaohua Li <shli@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-In-Reply-To: <1341550812.3023.3.camel@dabdike.hilton.com>
-References: <1341547472-6863-1-git-send-email-ming.m.lin@intel.com>
-	 <1341547472-6863-4-git-send-email-ming.m.lin@intel.com>
-	 <1341550812.3023.3.camel@dabdike.hilton.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 Jul 2012 14:07:52 +0800
-Message-ID: <1341554872.3628.30.camel@minggr>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756161Ab2GFGIo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 02:08:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43586 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab2GFGIm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 02:08:42 -0400
+Date: Fri, 6 Jul 2012 15:38:34 +0930
+From: Alan Modra <amodra@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tony@bakeyournoodle.com
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-ID: <20120706060834.GC5805@bubble.grove.modra.org>
+References: <20120705183345.ee84ec1048a19aa1c7129578@canb.auug.org.au>
+ <20120705094348.GA5805@bubble.grove.modra.org>
+ <20120706102151.fd4f769cf2aa3f753ad178bf@canb.auug.org.au>
+ <20120706005709.GB5805@bubble.grove.modra.org>
+ <20120706130137.6aae96c0072af1f330249c0d@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120706130137.6aae96c0072af1f330249c0d@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-06 at 09:00 +0400, James Bottomley wrote:
-> On Fri, 2012-07-06 at 12:04 +0800, Lin Ming wrote:
-> > When a request is added:
-> >     If device is suspended or is suspending and the request is not a
-> >     PM request, resume the device.
-> > 
-> > When a request finishes:
-> >     Call pm_runtime_mark_last_busy().
-> > 
-> > When pick a request:
-> >     If device is resuming/suspending, then only PM request is allowed to go.
-> >     Return NULL for other cases.
-> 
-> This is a complete reinvention of the quiesce state, just with new names
-> and moved up to block in part ... why do we have to have two separate
-> systems for stopping a device and sending special commands when the
-> device is suspended, why not just one?
+On Fri, Jul 06, 2012 at 01:01:37PM +1000, Stephen Rothwell wrote:
+> solos-pci.c:(.text+0x1ff923c): relocation truncated to fit: R_PPC64_REL24
+                     ^^^^^^^^^
 
-Yes, there are some duplicates with scsi layer quiesce state.
-I'd like to do the cleanup.
+> I assume at this point, we are just too large.
 
-Add runtime pm support to block layer, so other block device drivers may
-also add runtime pm support easily in future.
+Yeah, but not in total.  I didn't see any of these in the allyes
+kernel I built with our proof of concept hack to avoid ld -r.  I think
+you'll find that these are all from ld -r output, as I assume no one
+in kernel land writes drivers or whatever with 33M of text in a single
+file.  Branches in that monstrous section can't even reach the
+trampolines that ld inserts to extend branch reach.  Did I mention
+that ld -r is a bad idea?
 
-Some helper functions are provided on block layer which can be called by
-block device drivers.
+One workaround might be to compile with -ffunction-sections.
 
-void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
-int blk_pre_runtime_suspend(struct request_queue *q)
-void blk_post_runtime_suspend(struct request_queue *q, int err)
-void blk_pre_runtime_resume(struct request_queue *q)
-void blk_post_runtime_resume(struct request_queue *q, int err)
-
-Thanks,
-Lin Ming
-
-> 
-> James
-> 
-> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> > ---
-> >  block/blk-core.c       |    7 +++++++
-> >  block/elevator.c       |    4 ++++
-> >  include/linux/blkdev.h |   37 +++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 48 insertions(+)
-> > 
-> > diff --git a/block/blk-core.c b/block/blk-core.c
-> > index 1cc80ae..cb93501 100644
-> > --- a/block/blk-core.c
-> > +++ b/block/blk-core.c
-> > @@ -1224,6 +1224,8 @@ void __blk_put_request(struct request_queue *q, struct request *req)
-> >  	if (unlikely(--req->ref_count))
-> >  		return;
-> >  
-> > +	blk_pm_put_request(q);
-> > +
-> >  	elv_completed_request(q, req);
-> >  
-> >  	/* this is a bio leak */
-> > @@ -2012,6 +2014,11 @@ struct request *blk_peek_request(struct request_queue *q)
-> >  	int ret;
-> >  
-> >  	while ((rq = __elv_next_request(q)) != NULL) {
-> > +
-> > +		rq = blk_pm_peek_request(q, rq);
-> > +		if (!rq)
-> > +			break;
-> > +
-> >  		if (!(rq->cmd_flags & REQ_STARTED)) {
-> >  			/*
-> >  			 * This is the first time the device driver
-> > diff --git a/block/elevator.c b/block/elevator.c
-> > index 6a55d41..37c1a2b 100644
-> > --- a/block/elevator.c
-> > +++ b/block/elevator.c
-> > @@ -536,6 +536,8 @@ void elv_requeue_request(struct request_queue *q, struct request *rq)
-> >  
-> >  	rq->cmd_flags &= ~REQ_STARTED;
-> >  
-> > +	blk_pm_requeue_request(q);
-> > +
-> >  	__elv_add_request(q, rq, ELEVATOR_INSERT_REQUEUE);
-> >  }
-> >  
-> > @@ -558,6 +560,8 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
-> >  {
-> >  	trace_block_rq_insert(q, rq);
-> >  
-> > +	blk_pm_add_request(q, rq);
-> > +
-> >  	rq->q = q;
-> >  
-> >  	if (rq->cmd_flags & REQ_SOFTBARRIER) {
-> > diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> > index 9395d39..c8c5951 100644
-> > --- a/include/linux/blkdev.h
-> > +++ b/include/linux/blkdev.h
-> > @@ -908,6 +908,36 @@ extern int blk_pre_runtime_suspend(struct request_queue *q);
-> >  extern void blk_post_runtime_suspend(struct request_queue *q, int err);
-> >  extern void blk_pre_runtime_resume(struct request_queue *q);
-> >  extern void blk_post_runtime_resume(struct request_queue *q, int err);
-> > +
-> > +static inline void blk_pm_put_request(struct request_queue *q)
-> > +{
-> > +	if (!(--q->nr_pending) && q->dev)
-> > +		 pm_runtime_mark_last_busy(q->dev);
-> > +}
-> > +
-> > +static inline struct request *blk_pm_peek_request(
-> > +	struct request_queue *q, struct request *rq)
-> > +{
-> > +	if (q->rpm_status == RPM_SUSPENDED ||
-> > +		  (q->rpm_status != RPM_ACTIVE && !(rq->cmd_flags & REQ_PM)))
-> > +		return NULL;
-> > +	else
-> > +		return rq;
-> > +}
-> > +
-> > +static inline void blk_pm_requeue_request(struct request_queue *q)
-> > +{
-> > +	q->nr_pending--;
-> > +}
-> > +
-> > +static inline void blk_pm_add_request(struct request_queue *q,
-> > +	struct request *rq)
-> > +{
-> > +	if (q->nr_pending++ == 0 && !(rq->cmd_flags & REQ_PM) &&
-> > +		    (q->rpm_status == RPM_SUSPENDED ||
-> > +		     q->rpm_status == RPM_SUSPENDING) && q->dev)
-> > +		pm_request_resume(q->dev);
-> > +}
-> >  #else
-> >  static inline void blk_pm_runtime_init(struct request_queue *q,
-> >  	struct device *dev) {}
-> > @@ -918,6 +948,13 @@ static inline int blk_pre_runtime_suspend(struct request_queue *q)
-> >  static inline void blk_post_runtime_suspend(struct request_queue *q, int err) {}
-> >  static inline void blk_pre_runtime_resume(struct request_queue *q) {}
-> >  static inline void blk_post_runtime_resume(struct request_queue *q, int err) {}
-> > +
-> > +static inline void blk_pm_put_request(struct request_queue *q) {}
-> > +static inline struct request *blk_pm_peek_request(
-> > +	struct request_queue *q, struct request *rq) { return rq; }
-> > +static inline void blk_pm_requeue_request(struct request_queue *q) {}
-> > +static inline void blk_pm_add_request(struct request_queue *q,
-> > +	struct request *req) {}
-> >  #endif
-> >  
-> >  /*
-> 
-> 
-
-
+-- 
+Alan Modra
+Australia Development Lab, IBM
