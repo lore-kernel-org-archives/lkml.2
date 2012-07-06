@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758644Ab2GFVK6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 17:10:58 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33040 "EHLO
+	id S964776Ab2GFVKt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 17:10:49 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33100 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758382Ab2GFVGo (ORCPT
+	with ESMTP id S1758392Ab2GFVGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jul 2012 17:06:44 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 23/36] AArch64: System calls handling
-Date: Fri,  6 Jul 2012 22:06:04 +0100
-Message-Id: <1341608777-12982-24-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH 25/36] AArch64: Signal handling support
+Date: Fri,  6 Jul 2012 22:06:06 +0100
+Message-Id: <1341608777-12982-26-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
 References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 06 Jul 2012 21:07:36.0903 (UTC) FILETIME=[5EAD2570:01CD5BBB]
-X-MC-Unique: 112070622064207001
+X-OriginalArrivalTime: 06 Jul 2012 21:07:37.0746 (UTC) FILETIME=[5F2DC720:01CD5BBB]
+X-MC-Unique: 112070622064212101
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66LBPca005404
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66LBglh005409
 
-This patch adds support for system calls coming from 64-bit
-applications. It uses the asm-generic/unistd.h definitions with the
-canonical set of system calls. The private system calls are only used
-for 32-bit (compat) applications as 64-bit ones can set the TLS and
-flush the caches entirely from user space.
-
-The sys_call_table is just an array defined in a C file and it contains
-pointers to the syscall functions. The array is 4KB aligned to allow the
-use of the ADRP instruction (longer range ADR) in entry.S.
+This patch adds support for signal handling. The sigreturn is done via
+VDSO, introduced by a previous patch. The SA_RESTORER is still defined
+as it is required for 32-bit (compat) support but it is not to be used
+for 64-bit applications.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/aarch64/include/asm/stat.h     |   64 ++++++++++++++++
- arch/aarch64/include/asm/statfs.h   |   24 ++++++
- arch/aarch64/include/asm/syscalls.h |   41 ++++++++++
- arch/aarch64/include/asm/unistd.h   |   28 +++++++
- arch/aarch64/kernel/sys.c           |  139 +++++++++++++++++++++++++++++++++++
- 5 files changed, 296 insertions(+), 0 deletions(-)
- create mode 100644 arch/aarch64/include/asm/stat.h
- create mode 100644 arch/aarch64/include/asm/statfs.h
- create mode 100644 arch/aarch64/include/asm/syscalls.h
- create mode 100644 arch/aarch64/include/asm/unistd.h
- create mode 100644 arch/aarch64/kernel/sys.c
+ arch/aarch64/include/asm/sigcontext.h |   70 ++++++
+ arch/aarch64/include/asm/siginfo.h    |   24 ++
+ arch/aarch64/include/asm/signal.h     |   25 ++
+ arch/aarch64/include/asm/ucontext.h   |   31 +++
+ arch/aarch64/kernel/signal.c          |  432 +++++++++++++++++++++++++++++++++
+ 5 files changed, 582 insertions(+), 0 deletions(-)
+ create mode 100644 arch/aarch64/include/asm/sigcontext.h
+ create mode 100644 arch/aarch64/include/asm/siginfo.h
+ create mode 100644 arch/aarch64/include/asm/signal.h
+ create mode 100644 arch/aarch64/include/asm/ucontext.h
+ create mode 100644 arch/aarch64/kernel/signal.c
 
-diff --git a/arch/aarch64/include/asm/stat.h b/arch/aarch64/include/asm/stat.h
+diff --git a/arch/aarch64/include/asm/sigcontext.h b/arch/aarch64/include/asm/sigcontext.h
 new file mode 100644
-index 0000000..22571ac
+index 0000000..b89cf97
 --- /dev/null
-+++ b/arch/aarch64/include/asm/stat.h
-@@ -0,0 +1,64 @@
++++ b/arch/aarch64/include/asm/sigcontext.h
+@@ -0,0 +1,70 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
 + *
@@ -72,59 +67,65 @@ index 0000000..22571ac
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
-+#ifndef __ASM_STAT_H
-+#define __ASM_STAT_H
++#ifndef __ASM_SIGCONTEXT_H
++#define __ASM_SIGCONTEXT_H
 +
-+#include <asm-generic/stat.h>
++#include <linux/types.h>
 +
-+#if defined(__KERNEL__) && defined(CONFIG_AARCH32_EMULATION)
-+
-+#include <asm/compat.h>
-+
-+/* This matches struct stat64 in glibc2.1, hence the absolutely
-+ * insane amounts of padding around dev_t's.
-+ * Note: The kernel zero's the padded region because glibc might read them
-+ * in the hope that the kernel has stretched to using larger sizes.
++/*
++ * Signal context structure - contains all info to do with the state
++ * before the signal handler was invoked.
 + */
-+struct stat64 {
-+	compat_u64	st_dev;
-+	unsigned char   __pad0[4];
-+
-+#define STAT64_HAS_BROKEN_ST_INO	1
-+	compat_ulong_t	__st_ino;
-+	compat_uint_t	st_mode;
-+	compat_uint_t	st_nlink;
-+
-+	compat_ulong_t	st_uid;
-+	compat_ulong_t	st_gid;
-+
-+	compat_u64	st_rdev;
-+	unsigned char   __pad3[4];
-+
-+	compat_s64	st_size;
-+	compat_ulong_t	st_blksize;
-+	compat_u64	st_blocks;	/* Number 512-byte blocks allocated. */
-+
-+	compat_ulong_t	st_atime;
-+	compat_ulong_t	st_atime_nsec;
-+
-+	compat_ulong_t	st_mtime;
-+	compat_ulong_t	st_mtime_nsec;
-+
-+	compat_ulong_t	st_ctime;
-+	compat_ulong_t	st_ctime_nsec;
-+
-+	compat_u64	st_ino;
++struct sigcontext {
++	__u64 fault_address;
++	/* AArch64 registers */
++	__u64 regs[31];
++	__u64 sp;
++	__u64 pc;
++	__u64 pstate;
++	/* 4K reserved for FP/SIMD state and future expansion */
++	__u8 __reserved[4096] __attribute__((__aligned__(16)));
 +};
 +
++/*
++ * Header to be used at the beginning of structures extending the user
++ * context. Such structures must be placed after the rt_sigframe on the stack
++ * and be 16-byte aligned. The last structure must be a dummy one with the
++ * magic and size set to 0.
++ */
++struct _aarch64_ctx {
++	__u32 magic;
++	__u32 size;
++};
++
++#define FPSIMD_MAGIC	0x46508001
++
++struct fpsimd_context {
++	struct _aarch64_ctx head;
++	__u32 fpsr;
++	__u32 fpcr;
++	__uint128_t vregs[32];
++};
++
++#ifdef __KERNEL__
++/*
++ * Auxiliary context saved in the sigcontext.__reserved array. Not exported to
++ * user space as it will change with the addition of new context. User space
++ * should check the magic/size information.
++ */
++struct aux_context {
++	struct fpsimd_context fpsimd;
++	/* additional context to be added before "end" */
++	struct _aarch64_ctx end;
++};
 +#endif
 +
 +#endif
-diff --git a/arch/aarch64/include/asm/statfs.h b/arch/aarch64/include/asm/statfs.h
+diff --git a/arch/aarch64/include/asm/siginfo.h b/arch/aarch64/include/asm/siginfo.h
 new file mode 100644
-index 0000000..2f75b53
+index 0000000..1f74ea9
 --- /dev/null
-+++ b/arch/aarch64/include/asm/statfs.h
++++ b/arch/aarch64/include/asm/siginfo.h
 @@ -0,0 +1,24 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
@@ -142,20 +143,20 @@ index 0000000..2f75b53
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
-+#ifndef __ASM_STATFS_H
-+#define __ASM_STATFS_H
++#ifndef __ASM_SIGINFO_H
++#define __ASM_SIGINFO_H
 +
-+#define ARCH_PACK_COMPAT_STATFS64 __attribute__((packed,aligned(4)))
++#define __ARCH_SI_PREAMBLE_SIZE	(4 * sizeof(int))
 +
-+#include <asm-generic/statfs.h>
++#include <asm-generic/siginfo.h>
 +
 +#endif
-diff --git a/arch/aarch64/include/asm/syscalls.h b/arch/aarch64/include/asm/syscalls.h
+diff --git a/arch/aarch64/include/asm/signal.h b/arch/aarch64/include/asm/signal.h
 new file mode 100644
-index 0000000..c58969e
+index 0000000..83d8f2a
 --- /dev/null
-+++ b/arch/aarch64/include/asm/syscalls.h
-@@ -0,0 +1,41 @@
++++ b/arch/aarch64/include/asm/signal.h
+@@ -0,0 +1,25 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
 + *
@@ -172,37 +173,21 @@ index 0000000..c58969e
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
-+#ifndef __ASM_SYSCALLS_H
-+#define __ASM_SYSCALLS_H
++#ifndef __ASM_SIGNAL_H
++#define __ASM_SIGNAL_H
 +
-+#include <linux/linkage.h>
-+#include <linux/compiler.h>
-+#include <linux/signal.h>
++/* Required for AArch32 compatibility. */
++#define SA_RESTORER	0x04000000
 +
-+/*
-+ * System call wrappers implemented in kernel/entry.S.
-+ */
-+asmlinkage long sys_execve_wrapper(const char __user *filename,
-+				   const char __user *const __user *argv,
-+				   const char __user *const __user *envp);
-+asmlinkage long sys_clone_wrapper(unsigned long clone_flags,
-+				  unsigned long newsp,
-+				  void __user *parent_tid,
-+				  unsigned long tls_val,
-+				  void __user *child_tid);
-+asmlinkage long sys_rt_sigreturn_wrapper(void);
-+asmlinkage long sys_sigaltstack_wrapper(const stack_t __user *uss,
-+					stack_t __user *uoss);
++#include <asm-generic/signal.h>
 +
-+#include <asm-generic/syscalls.h>
-+
-+#endif	/* __ASM_SYSCALLS_H */
-diff --git a/arch/aarch64/include/asm/unistd.h b/arch/aarch64/include/asm/unistd.h
++#endif
+diff --git a/arch/aarch64/include/asm/ucontext.h b/arch/aarch64/include/asm/ucontext.h
 new file mode 100644
-index 0000000..66399a3
+index 0000000..29cbbc3
 --- /dev/null
-+++ b/arch/aarch64/include/asm/unistd.h
-@@ -0,0 +1,28 @@
++++ b/arch/aarch64/include/asm/ucontext.h
+@@ -0,0 +1,31 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
 + *
@@ -219,29 +204,32 @@ index 0000000..66399a3
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
-+#if !defined(__ASM_UNISTD_H) || defined(__SYSCALL)
-+#define __ASM_UNISTD_H
++#ifndef __ASM_UCONTEXT_H
++#define __ASM_UCONTEXT_H
 +
-+#ifndef __SYSCALL_COMPAT
-+#include <asm-generic/unistd.h>
-+#endif
++struct ucontext {
++	unsigned long	  uc_flags;
++	struct ucontext	 *uc_link;
++	stack_t		  uc_stack;
++	sigset_t	  uc_sigmask;
++	/* glibc uses a 1024-bit sigset_t */
++	__u8		  __unused[(1024 - sizeof(sigset_t)) / 8];
++	/* last for future expansion */
++	struct sigcontext uc_mcontext;
++};
 +
-+#if defined(__KERNEL__) && defined(CONFIG_AARCH32_EMULATION)
-+#include <asm/unistd32.h>
-+#endif
-+
-+#endif /* __ASM_UNISTD_H */
-diff --git a/arch/aarch64/kernel/sys.c b/arch/aarch64/kernel/sys.c
++#endif /* __ASM_UCONTEXT_H */
+diff --git a/arch/aarch64/kernel/signal.c b/arch/aarch64/kernel/signal.c
 new file mode 100644
-index 0000000..c1af95d
+index 0000000..8011c8d
 --- /dev/null
-+++ b/arch/aarch64/kernel/sys.c
-@@ -0,0 +1,139 @@
++++ b/arch/aarch64/kernel/signal.c
+@@ -0,0 +1,432 @@
 +/*
-+ * AArch64-specific system calls implementation
++ * Based on arch/arm/kernel/signal.c
 + *
++ * Copyright (C) 1995-2009 Russell King
 + * Copyright (C) 2012 ARM Ltd.
-+ * Author: Catalin Marinas <catalin.marinas@arm.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -257,123 +245,416 @@ index 0000000..c1af95d
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
 +
-+#include <linux/compiler.h>
 +#include <linux/errno.h>
-+#include <linux/fs.h>
-+#include <linux/mm.h>
-+#include <linux/export.h>
-+#include <linux/sched.h>
-+#include <linux/slab.h>
-+#include <linux/syscalls.h>
++#include <linux/signal.h>
++#include <linux/personality.h>
++#include <linux/freezer.h>
++#include <linux/uaccess.h>
++#include <linux/tracehook.h>
++
++#include <asm/debug-monitors.h>
++#include <asm/elf.h>
++#include <asm/cacheflush.h>
++#include <asm/ucontext.h>
++#include <asm/unistd.h>
++#include <asm/fpsimd.h>
++#include <asm/signal32.h>
++#include <asm/vdso.h>
 +
 +/*
-+ * Clone a task - this clones the calling program thread.
++ * Do a signal return; undo the signal stack. These are aligned to 128-bit.
 + */
-+asmlinkage long sys_clone(unsigned long clone_flags, unsigned long newsp,
-+			  int __user *parent_tidptr, unsigned long tls_val,
-+			  int __user *child_tidptr, struct pt_regs *regs)
++struct rt_sigframe {
++	struct siginfo info;
++	struct ucontext uc;
++};
++
++static int preserve_fpsimd_context(struct fpsimd_context __user *ctx)
 +{
-+	if (!newsp)
-+		newsp = regs->sp;
-+	/* 16-byte aligned stack mandatory on AArch64 */
-+	if (newsp & 15)
++	struct fpsimd_state *fpsimd = &current->thread.fpsimd_state;
++	int err;
++
++	/* dump the hardware registers to the fpsimd_state structure */
++	fpsimd_save_state(fpsimd);
++
++	/* copy the FP and status/control registers */
++	err = __copy_to_user(ctx->vregs, fpsimd->vregs, sizeof(fpsimd->vregs));
++	__put_user_error(fpsimd->fpsr, &ctx->fpsr, err);
++	__put_user_error(fpsimd->fpcr, &ctx->fpcr, err);
++
++	/* copy the magic/size information */
++	__put_user_error(FPSIMD_MAGIC, &ctx->head.magic, err);
++	__put_user_error(sizeof(struct fpsimd_context), &ctx->head.size, err);
++
++	return err ? -EFAULT : 0;
++}
++
++static int restore_fpsimd_context(struct fpsimd_context __user *ctx)
++{
++	struct fpsimd_state fpsimd;
++	__u32 magic, size;
++	int err = 0;
++
++	/* check the magic/size information */
++	__get_user_error(magic, &ctx->head.magic, err);
++	__get_user_error(size, &ctx->head.size, err);
++	if (err)
++		return -EFAULT;
++	if (magic != FPSIMD_MAGIC || size != sizeof(struct fpsimd_context))
 +		return -EINVAL;
-+	return do_fork(clone_flags, newsp, regs, 0, parent_tidptr, child_tidptr);
++
++	/* copy the FP and status/control registers */
++	err = __copy_from_user(fpsimd.vregs, ctx->vregs,
++			       sizeof(fpsimd.vregs));
++	__get_user_error(fpsimd.fpsr, &ctx->fpsr, err);
++	__get_user_error(fpsimd.fpcr, &ctx->fpcr, err);
++
++	/* load the hardware registers from the fpsimd_state structure */
++	if (!err) {
++		preempt_disable();
++		fpsimd_load_state(&fpsimd);
++		preempt_enable();
++	}
++
++	return err ? -EFAULT : 0;
++}
++
++static int restore_sigframe(struct pt_regs *regs,
++			    struct rt_sigframe __user *sf)
++{
++	sigset_t set;
++	int i, err;
++	struct aux_context __user *aux =
++		(struct aux_context __user *)sf->uc.uc_mcontext.__reserved;
++
++	err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
++	if (err == 0)
++		set_current_blocked(&set);
++
++	for (i = 0; i < 31; i++)
++		__get_user_error(regs->regs[i], &sf->uc.uc_mcontext.regs[i],
++				 err);
++	__get_user_error(regs->sp, &sf->uc.uc_mcontext.sp, err);
++	__get_user_error(regs->pc, &sf->uc.uc_mcontext.pc, err);
++	__get_user_error(regs->pstate, &sf->uc.uc_mcontext.pstate, err);
++
++	/*
++	 * Avoid sys_rt_sigreturn() restarting.
++	 */
++	regs->syscallno = ~0UL;
++
++	err |= !valid_user_regs(&regs->user_regs);
++
++	if (err == 0)
++		err |= restore_fpsimd_context(&aux->fpsimd);
++
++	return err;
++}
++
++asmlinkage long sys_rt_sigreturn(struct pt_regs *regs)
++{
++	struct rt_sigframe __user *frame;
++
++	/* Always make any pending restarted system calls return -EINTR */
++	current_thread_info()->restart_block.fn = do_no_restart_syscall;
++
++	/*
++	 * Since we stacked the signal on a 128-bit boundary, then 'sp' should
++	 * be word aligned here.
++	 */
++	if (regs->sp & 15)
++		goto badframe;
++
++	frame = (struct rt_sigframe __user *)regs->sp;
++
++	if (!access_ok(VERIFY_READ, frame, sizeof (*frame)))
++		goto badframe;
++
++	if (restore_sigframe(regs, frame))
++		goto badframe;
++
++	if (do_sigaltstack(&frame->uc.uc_stack,
++			   NULL, regs->sp) == -EFAULT)
++		goto badframe;
++
++	return regs->regs[0];
++
++badframe:
++	force_sig(SIGSEGV, current);
++	return 0;
++}
++
++asmlinkage long sys_sigaltstack(const stack_t __user *uss, stack_t __user *uoss,
++				unsigned long sp)
++{
++	return do_sigaltstack(uss, uoss, sp);
++}
++
++static int setup_sigframe(struct rt_sigframe __user *sf,
++			  struct pt_regs *regs, sigset_t *set)
++{
++	int i, err = 0;
++	struct aux_context __user *aux =
++		(struct aux_context __user *)sf->uc.uc_mcontext.__reserved;
++
++	for (i = 0; i < 31; i++)
++		__put_user_error(regs->regs[i], &sf->uc.uc_mcontext.regs[i],
++				 err);
++	__put_user_error(regs->sp, &sf->uc.uc_mcontext.sp, err);
++	__put_user_error(regs->pc, &sf->uc.uc_mcontext.pc, err);
++	__put_user_error(regs->pstate, &sf->uc.uc_mcontext.pstate, err);
++
++	__put_user_error(current->thread.fault_address, &sf->uc.uc_mcontext.fault_address, err);
++
++	err |= __copy_to_user(&sf->uc.uc_sigmask, set, sizeof(*set));
++
++	if (err == 0)
++		err |= preserve_fpsimd_context(&aux->fpsimd);
++
++	/* set the "end" magic */
++	__put_user_error(0, &aux->end.magic, err);
++	__put_user_error(0, &aux->end.size, err);
++
++	return err;
++}
++
++static void __user *get_sigframe(struct k_sigaction *ka, struct pt_regs *regs,
++				 int framesize)
++{
++	unsigned long sp, sp_top;
++	void __user *frame;
++
++	sp = sp_top = regs->sp;
++
++	/*
++	 * This is the X/Open sanctioned signal stack switching.
++	 */
++	if ((ka->sa.sa_flags & SA_ONSTACK) && !sas_ss_flags(sp))
++		sp = sp_top = current->sas_ss_sp + current->sas_ss_size;
++
++	/* room for stack frame (FP, LR) */
++	sp -= 16;
++
++	sp = (sp - framesize) & ~15;
++	frame = (void __user *)sp;
++
++	/*
++	 * Check that we can actually write to the signal frame.
++	 */
++	if (!access_ok(VERIFY_WRITE, frame, sp_top - sp))
++		frame = NULL;
++
++	return frame;
++}
++
++static int setup_return(struct pt_regs *regs, struct k_sigaction *ka,
++			void __user *frame, int usig)
++{
++	int err = 0;
++	__sigrestore_t sigtramp;
++	unsigned long __user *sp = (unsigned long __user *)regs->sp;
++
++	/* set up the stack frame */
++	__put_user_error(regs->regs[29], sp - 2, err);
++	__put_user_error(regs->regs[30], sp - 1, err);
++
++	regs->regs[0] = usig;
++	regs->regs[29] = regs->sp - 16;
++	regs->sp = (unsigned long)frame;
++	regs->pc = (unsigned long)ka->sa.sa_handler;
++
++	if (ka->sa.sa_flags & SA_RESTORER)
++		sigtramp = ka->sa.sa_restorer;
++	else
++		sigtramp = VDSO_SYMBOL(current->mm->context.vdso, sigtramp);
++
++	regs->regs[30] = (unsigned long)sigtramp;
++
++	return err;
++}
++
++static int setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
++			  sigset_t *set, struct pt_regs *regs)
++{
++	struct rt_sigframe __user *frame;
++	stack_t stack;
++	int err = 0;
++
++	frame = get_sigframe(ka, regs, sizeof(*frame));
++	if (!frame)
++		return 1;
++
++	__put_user_error(0, &frame->uc.uc_flags, err);
++	__put_user_error(NULL, &frame->uc.uc_link, err);
++
++	memset(&stack, 0, sizeof(stack));
++	stack.ss_sp = (void __user *)current->sas_ss_sp;
++	stack.ss_flags = sas_ss_flags(regs->sp);
++	stack.ss_size = current->sas_ss_size;
++	err |= __copy_to_user(&frame->uc.uc_stack, &stack, sizeof(stack));
++
++	err |= setup_sigframe(frame, regs, set);
++	if (err == 0)
++		err = setup_return(regs, ka, frame, usig);
++
++	if (err == 0 && ka->sa.sa_flags & SA_SIGINFO) {
++		err |= copy_siginfo_to_user(&frame->info, info);
++		regs->regs[1] = (unsigned long)&frame->info;
++		regs->regs[2] = (unsigned long)&frame->uc;
++	}
++
++	return err;
++}
++
++static void setup_restart_syscall(struct pt_regs *regs)
++{
++	if (test_thread_flag(TIF_32BIT))
++		compat_setup_restart_syscall(regs);
++	else
++		regs->regs[8] = __NR_restart_syscall;
 +}
 +
 +/*
-+ * sys_execve() executes a new program.
++ * OK, we're invoking a handler
 + */
-+asmlinkage long sys_execve(const char __user *filenamei,
-+			   const char __user *const __user *argv,
-+			   const char __user *const __user *envp,
-+			   struct pt_regs *regs)
++static void handle_signal(unsigned long sig, struct k_sigaction *ka,
++			  siginfo_t *info, struct pt_regs *regs)
 +{
-+	long error;
-+	char * filename;
-+
-+	filename = getname(filenamei);
-+	error = PTR_ERR(filename);
-+	if (IS_ERR(filename))
-+		goto out;
-+	error = do_execve(filename, argv, envp, regs);
-+	putname(filename);
-+out:
-+	return error;
-+}
-+
-+int kernel_execve(const char *filename,
-+		  const char *const argv[],
-+		  const char *const envp[])
-+{
-+	struct pt_regs regs;
++	struct thread_info *thread = current_thread_info();
++	struct task_struct *tsk = current;
++	sigset_t *oldset = sigmask_to_save();
++	int usig = sig;
 +	int ret;
 +
-+	memset(&regs, 0, sizeof(struct pt_regs));
-+	ret = do_execve(filename,
-+			(const char __user *const __user *)argv,
-+			(const char __user *const __user *)envp, &regs);
-+	if (ret < 0)
-+		goto out;
++	/*
++	 * translate the signal
++	 */
++	if (usig < 32 && thread->exec_domain && thread->exec_domain->signal_invmap)
++		usig = thread->exec_domain->signal_invmap[usig];
 +
 +	/*
-+	 * Save argc to the register structure for userspace.
++	 * Set up the stack frame
 +	 */
-+	regs.regs[0] = ret;
++	if (test_thread_flag(TIF_32BIT)) {
++		if (ka->sa.sa_flags & SA_SIGINFO)
++			ret = compat_setup_rt_frame(usig, ka, info, oldset,
++						    regs);
++		else
++			ret = compat_setup_frame(usig, ka, oldset, regs);
++	} else {
++		ret = setup_rt_frame(usig, ka, info, oldset, regs);
++	}
 +
 +	/*
-+	 * We were successful.  We won't be returning to our caller, but
-+	 * instead to user space by manipulating the kernel stack.
++	 * Check that the resulting registers are actually sane.
 +	 */
-+	asm(	"add	x0, %0, %1\n\t"
-+		"mov	x1, %2\n\t"
-+		"mov	x2, %3\n\t"
-+		"bl	memmove\n\t"	/* copy regs to top of stack */
-+		"mov	x27, #0\n\t"	/* not a syscall */
-+		"mov	x28, %0\n\t"	/* thread structure */
-+		"mov	sp, x0\n\t"	/* reposition stack pointer */
-+		"b	ret_to_user"
-+		:
-+		: "r" (current_thread_info()),
-+		  "Ir" (THREAD_START_SP - sizeof(regs)),
-+		  "r" (&regs),
-+		  "Ir" (sizeof(regs))
-+		: "x0", "x1", "x2", "x27", "x28", "x30", "memory");
++	ret |= !valid_user_regs(&regs->user_regs);
 +
-+ out:
-+	return ret;
++	if (ret != 0) {
++		force_sigsegv(sig, tsk);
++		return;
++	}
++
++	/*
++	 * Fast forward the stepping logic so we step into the signal
++	 * handler.
++	 */
++	user_fastforward_single_step(tsk);
++
++	signal_delivered(sig, info, ka, regs, 0);
 +}
-+EXPORT_SYMBOL(kernel_execve);
 +
-+asmlinkage long sys_mmap(unsigned long addr, unsigned long len,
-+			 unsigned long prot, unsigned long flags,
-+			 unsigned long fd, off_t off)
++/*
++ * Note that 'init' is a special process: it doesn't get signals it doesn't
++ * want to handle. Thus you cannot kill init even with a SIGKILL even by
++ * mistake.
++ *
++ * Note that we go through the signals twice: once to check the signals that
++ * the kernel can handle, and then we build all the user-level signal handling
++ * stack-frames in one go after that.
++ */
++static void do_signal(struct pt_regs *regs)
 +{
-+	if (offset_in_page(off) != 0)
-+		return -EINVAL;
++	unsigned long continue_addr = 0, restart_addr = 0;
++	struct k_sigaction ka;
++	siginfo_t info;
++	int signr, retval = 0;
++	int syscall = (int)regs->syscallno;
 +
-+	return sys_mmap_pgoff(addr, len, prot, flags, fd, off >> PAGE_SHIFT);
++	/*
++	 * If we were from a system call, check for system call restarting...
++	 */
++	if (syscall >= 0) {
++		continue_addr = regs->pc;
++		restart_addr = continue_addr - (compat_thumb_mode(regs) ? 2 : 4);
++		retval = regs->regs[0];
++
++		/*
++		 * Avoid additional syscall restarting via ret_to_user.
++		 */
++		regs->syscallno = ~0UL;
++
++		/*
++		 * Prepare for system call restart. We do this here so that a
++		 * debugger will see the already changed PC.
++		 */
++		switch (retval) {
++		case -ERESTARTNOHAND:
++		case -ERESTARTSYS:
++		case -ERESTARTNOINTR:
++		case -ERESTART_RESTARTBLOCK:
++			regs->regs[0] = regs->orig_x0;
++			regs->pc = restart_addr;
++			break;
++		}
++	}
++
++	/*
++	 * Get the signal to deliver. When running under ptrace, at this point
++	 * the debugger may change all of our registers.
++	 */
++	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
++	if (signr > 0) {
++		/*
++		 * Depending on the signal settings, we may need to revert the
++		 * decision to restart the system call, but skip this if a
++		 * debugger has chosen to restart at a different PC.
++		 */
++		if (regs->pc == restart_addr &&
++		    (retval == -ERESTARTNOHAND ||
++		     retval == -ERESTART_RESTARTBLOCK ||
++		     (retval == -ERESTARTSYS &&
++		      !(ka.sa.sa_flags & SA_RESTART)))) {
++			regs->regs[0] = -EINTR;
++			regs->pc = continue_addr;
++		}
++
++		handle_signal(signr, &ka, &info, regs);
++		return;
++	}
++
++	/*
++	 * Handle restarting a different system call. As above, if a debugger
++	 * has chosen to restart at a different PC, ignore the restart.
++	 */
++	if (syscall >= 0 && regs->pc == restart_addr) {
++		if (retval == -ERESTART_RESTARTBLOCK)
++			setup_restart_syscall(regs);
++		user_rewind_single_step(current);
++	}
++
++	restore_saved_sigmask();
 +}
 +
-+/*
-+ * Wrappers to pass the pt_regs argument.
-+ */
-+#define sys_execve		sys_execve_wrapper
-+#define sys_clone		sys_clone_wrapper
-+#define sys_rt_sigreturn	sys_rt_sigreturn_wrapper
-+#define sys_sigaltstack		sys_sigaltstack_wrapper
++asmlinkage void do_notify_resume(struct pt_regs *regs,
++				 unsigned int thread_flags)
++{
++	if (thread_flags & _TIF_SIGPENDING)
++		do_signal(regs);
 +
-+#include <asm/syscalls.h>
-+
-+#undef __SYSCALL
-+#define __SYSCALL(nr, sym)	[nr] = sym,
-+
-+/*
-+ * The sys_call_table array must be 4K aligned to be accessible from
-+ * kernel/entry.S.
-+ */
-+void *sys_call_table[__NR_syscalls] __aligned(4096) = {
-+	[0 ... __NR_syscalls - 1] = sys_ni_syscall,
-+#include <asm/unistd.h>
-+};
++	if (thread_flags & _TIF_NOTIFY_RESUME) {
++		clear_thread_flag(TIF_NOTIFY_RESUME);
++		tracehook_notify_resume(regs);
++	}
++}
 
