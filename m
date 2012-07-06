@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751104Ab2GFEHD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 00:07:03 -0400
-Received: from mga14.intel.com ([143.182.124.37]:48061 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750763Ab2GFEHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 00:07:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="119392462"
-Subject: [PATCH v2] [SCSI] scsi_pm: set device runtime state before parent
- suspended
-From: Lin Ming <ming.m.lin@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        James Bottomley <JBottomley@Parallels.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Fri, 06 Jul 2012 12:06:57 +0800
-Message-ID: <1341547617.6401.1.camel@chief-river-32>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1751509Ab2GFEIl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 00:08:41 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55679 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750916Ab2GFEIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 00:08:39 -0400
+Message-ID: <1341547718.27760.5.camel@joe2Laptop>
+Subject: Re: [PATCH 06/28] iommu/amd: Move informational prinks out of
+ iommu_enable
+From: Joe Perches <joe@perches.com>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Date: Thu, 05 Jul 2012 21:08:38 -0700
+In-Reply-To: <1341491808-23083-7-git-send-email-joerg.roedel@amd.com>
+References: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
+	 <1341491808-23083-7-git-send-email-joerg.roedel@amd.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a race in scsi_bus_resume_common when set device's runtime
-state to active after pm_runtime_put_sync(dev->parent).
+On Thu, 2012-07-05 at 14:36 +0200, Joerg Roedel wrote:
+> This function will be called before the PCI subsystem is
+> initialized. Therefore dev_name doen't work and IOMMU
+> information can't be printed to the klog as before. Move the
+> code to print that information to a later point where PCI
+> initializtion has already happened.
+[]
+> diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+[]
+> @@ -1102,6 +1085,28 @@ static int iommu_init_pci(struct amd_iommu *iommu)
+[]
+> +static void print_iommu_info(void)
+> +{
+> +	static const char * const feat_str[] = {
+> +		"PreF", "PPR", "X2APIC", "NX", "GT", "[5]",
+> +		"IA", "GA", "HE", "PC", NULL
+> +	};
+> +	struct amd_iommu *iommu;
+> +
+> +	for_each_iommu(iommu) {
+> +		int i;
+> +		pr_info("AMD-Vi: Found IOMMU at %s cap 0x%hx\n",
+> +			dev_name(&iommu->dev->dev), iommu->cap_ptr);
+> +		if (iommu->cap & (1 << IOMMU_CAP_EFR)) {
+> +			pr_info("AMD-Vi:  Extended features: ");
+> +			for (i = 0; feat_str[i]; ++i)
+> +				if (iommu_feature(iommu, (1ULL << i)))
+> +					pr_cont(" %s", feat_str[i]);
 
-Parent device may have been suspended so pm_runtime_set_active(dev) will
-fail with -EBUSY.
+I think this should use {} around the for loop
+and this would be better as:
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- drivers/scsi/scsi_pm.c |   23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+	static const char * const feat_str[] = {
+		"PreF", "PPR", "X2APIC", "NX", "GT", "[5]",
+		"IA", "GA", "HE", "PC"
+	};
+[]
+			for (i = 0; ARRAY_SIZE(feat_str); i++) {
+				if (iommu_feature(iommu, (1ULL << i)))
+					pr_cont(" %s", feat_str[i]);
+ 			}
 
-diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
-index d4201de..dc0ad85 100644
---- a/drivers/scsi/scsi_pm.c
-+++ b/drivers/scsi/scsi_pm.c
-@@ -76,23 +76,24 @@ static int scsi_bus_resume_common(struct device *dev)
- {
- 	int err = 0;
- 
--	if (scsi_is_sdev_device(dev)) {
--		/*
--		 * Parent device may have runtime suspended as soon as
--		 * it is woken up during the system resume.
--		 *
--		 * Resume it on behalf of child.
--		 */
--		pm_runtime_get_sync(dev->parent);
--		err = scsi_dev_type_resume(dev);
--		pm_runtime_put_sync(dev->parent);
--	}
-+	/*
-+	 * Parent device may have runtime suspended as soon as
-+	 * it is woken up during the system resume.
-+	 *
-+	 * Resume it on behalf of child.
-+	 */
-+	pm_runtime_get_sync(dev->parent);
- 
-+	if (scsi_is_sdev_device(dev))
-+		err = scsi_dev_type_resume(dev);
- 	if (err == 0) {
- 		pm_runtime_disable(dev);
- 		pm_runtime_set_active(dev);
- 		pm_runtime_enable(dev);
- 	}
-+
-+	pm_runtime_put_sync(dev->parent);
-+
- 	return err;
- }
- 
--- 
-1.7.10
-
-
+I don't see the utility of the separate function and
+this could just be inlined in the calling function.
 
