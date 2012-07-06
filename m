@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585Ab2GFJOw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 05:14:52 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63142 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765Ab2GFJOt (ORCPT
+	id S1753944Ab2GFJPT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 05:15:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56537 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab2GFJPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 05:14:49 -0400
-Message-ID: <4FF6AB0D.8010105@monstr.eu>
-Date: Fri, 06 Jul 2012 11:08:29 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 6 Jul 2012 05:15:16 -0400
+Date: Fri, 6 Jul 2012 16:44:15 +0800
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwp.linux@gmail.com>
+Subject: Re: [PATCH] mm/memcg: add BUG() to mem_cgroup_reset
+Message-ID: <20120706084415.GB9319@kernel>
+Reply-To: Wanpeng Li <liwp.linux@gmail.com>
+References: <1341546297-6223-1-git-send-email-liwp.linux@gmail.com>
+ <20120706082242.GA1230@cmpxchg.org>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>
-CC: John Linn <linnj@xilinx.com>, John Williams <john.williams@petalogix.com>
-Subject: arm cortex a9, smp bootup requirement
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120706082242.GA1230@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Jul 06, 2012 at 10:22:42AM +0200, Johannes Weiner wrote:
+>On Fri, Jul 06, 2012 at 11:44:57AM +0800, Wanpeng Li wrote:
+>> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>> 
+>> Branch in mem_cgroup_reset only can be RES_MAX_USAGE, RES_FAILCNT.
+>
+>And nobody is passing anything else.  Which is easy to prove as this
+>is a private function.  And there wouldn't even be any harm passing
+>something else.  Please don't add stuff like this.
 
-can someone correct me about smp boot requirement for Linux?
+Ok, thank you for your comment.
 
-We are fixing ARM zynq smp bootup code and would like to be sure
-that out bootup code is correct.
+I also have another two patches, title:
 
-I have found some requirements from standalone boot up code
-which is invalidate dcache, icache, branch predictor array
-and flush TLB.
+clarify type in memory cgroups
+return -EBUSY when oom-kill-disable modified and memcg use_hierarchy, has children
 
-I have found in secondary_start_kernel that TLB are flushed
-by local_flush_tlb_all function.
-But haven't found any cache invalidation calling.
+Hopefully, you can review. Thank you Johannes! :-)
 
-I think it is required and we could be added to platform_secondary_init.
-
-Or is it requirement which has to be fulfil by bootloader before
-secondary_startup is called?
-
-We have the option to reset specific cpu in the system and cpu
-starts from 0x0 with cache off and in non-virtual mode
-where we place simple jump trampoline to the secondary_startup
-function. If cache invalidation is required by Linux we can extend this code
-to do it.
-
-Jumping trampoline is:
-0x0: ldr r0, [8]
-0x4: mov pc, r0
-0x8: jump address
-
-Thanks,
-Michal
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Regards,
+Wanpeng Li 
