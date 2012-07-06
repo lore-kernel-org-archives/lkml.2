@@ -1,85 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab2GFJwh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 05:52:37 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:43778 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751052Ab2GFJwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 05:52:36 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <netdev@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Glauber Costa <glommer@parallels.com>, Tejun Heo <tj@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v2] fail dentry revalidation after namespace change
-Date: Fri,  6 Jul 2012 13:09:07 +0400
-Message-Id: <1341565747-15374-1-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S932560Ab2GFJw6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 05:52:58 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:50710 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932264Ab2GFJw4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 05:52:56 -0400
+Message-ID: <4FF6B537.1030703@linux.vnet.ibm.com>
+Date: Fri, 06 Jul 2012 15:21:51 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] acpi : cpu hot-remove returns error number when cpu_down()
+ fails
+References: <4FF65898.3000301@jp.fujitsu.com>
+In-Reply-To: <4FF65898.3000301@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+x-cbid: 12070523-6102-0000-0000-000001D5C187
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we change the namespace tag of a sysfs entry, the associated dentry
-is still kept around. readdir() will work correctly and not display the
-old entries, but open() will still succeed, so will reads and writes.
+On 07/06/2012 08:46 AM, Yasuaki Ishimatsu wrote:
+> Even if cpu_down() fails, acpi_processor_remove() continues to remove the cpu.
 
-This will no longer happen if sysfs is remounted, hinting that this is a
-cache-related problem.
+Ouch!
 
-I am using the following sequence to demonstrate that:
+> But in this case, it should return error number since some process may run on
+> the cpu. If the cpu has a running process and the cpu is turned the power off,
+> the system cannot work well.
+> 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 
+> ---
+>  drivers/acpi/processor_driver.c |   18 ++++++++++++------
+>  1 file changed, 12 insertions(+), 6 deletions(-)
+> 
+> Index: linux-3.5-rc4/drivers/acpi/processor_driver.c
+> ===================================================================
+> --- linux-3.5-rc4.orig/drivers/acpi/processor_driver.c	2012-06-25 04:53:04.000000000 +0900
+> +++ linux-3.5-rc4/drivers/acpi/processor_driver.c	2012-07-05 21:02:58.711285382 +0900
+> @@ -610,7 +610,7 @@ err_free_pr:
+>  static int acpi_processor_remove(struct acpi_device *device, int type)
+>  {
+>  	struct acpi_processor *pr = NULL;
+> -
+> +	int ret;
+> 
+>  	if (!device || !acpi_driver_data(device))
+>  		return -EINVAL;
+> @@ -621,8 +621,9 @@ static int acpi_processor_remove(struct
+>  		goto free;
+> 
+>  	if (type == ACPI_BUS_REMOVAL_EJECT) {
+> -		if (acpi_processor_handle_eject(pr))
+> -			return -EINVAL;
+> +		ret = acpi_processor_handle_eject(pr);
+> +		if (ret)
+> +			return ret;
+>  	}
+> 
+>  	acpi_processor_power_exit(pr, device);
+> @@ -841,12 +842,17 @@ static acpi_status acpi_processor_hotadd
+> 
+>  static int acpi_processor_handle_eject(struct acpi_processor *pr)
+>  {
+> -	if (cpu_online(pr->id))
+> -		cpu_down(pr->id);
+> +	int ret;
+> +
+> +	if (cpu_online(pr->id)) {
+> +		ret = cpu_down(pr->id);
+> +		if (ret)
+> +			return ret;
+> +	}
+>
 
-shell1:
-ip link add type veth
-unshare -nm
+Strictly speaking, this is not thorough enough. What prevents someone
+from onlining that same cpu again, at this point?
+So, IMHO, you need to wrap the contents of this function inside a
+get_online_cpus()/put_online_cpus() block, to prevent anyone else
+from messing with CPU hotplug at the same time.
 
-shell2:
-ip link set veth1 <pid_of_shell_1>
-cat /sys/devices/virtual/net/veth1/ifindex
+Regards,
+Srivatsa S. Bhat
 
-Before that patch, this will succeed (fail to fail). After it, it will
-correctly return an error. Differently from a normal rename, which we
-handle fine, changing the object namespace will keep it's path intact.
-So this check seems necessary as well.
-
-[ v2: get type from parent, as suggested by Eric Biederman ]
-
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Tejun Heo <tj@kernel.org>
-CC: Eric W. Biederman <ebiederm@xmission.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/sysfs/dir.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index e6bb9b2..c0bf38a 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -307,6 +307,7 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
- {
- 	struct sysfs_dirent *sd;
- 	int is_dir;
-+	int type;
- 
- 	if (nd->flags & LOOKUP_RCU)
- 		return -ECHILD;
-@@ -326,6 +327,13 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
- 	if (strcmp(dentry->d_name.name, sd->s_name) != 0)
- 		goto out_bad;
- 
-+	/* The sysfs dirent has been moved to a different namespace */
-+	type = KOBJ_NS_TYPE_NONE;
-+	if (sd->s_parent)
-+		type = sysfs_ns_type(sd->s_parent);
-+	if (type && (sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns))
-+		goto out_bad;
-+
- 	mutex_unlock(&sysfs_mutex);
- out_valid:
- 	return 1;
--- 
-1.7.10.4
+>  	arch_unregister_cpu(pr->id);
+>  	acpi_unmap_lsapic(pr->id);
+> -	return (0);
+> +	return ret;
+>  }
+>  #else
+>  static acpi_status acpi_processor_hotadd_init(struct acpi_processor *pr)
+> 
 
