@@ -1,129 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab2GFAlW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 20:41:22 -0400
-Received: from ozlabs.org ([203.10.76.45]:44854 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755085Ab2GFAlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 20:41:21 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Kay Sievers <kay@vrfy.org>
-cc: linuxppc-dev@ozlabs.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Wu Fengguang <fengguang.wu@intel.com>, Joe Perches <joe@perches.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
-In-reply-to: <1341492628.834.3.camel@mop>
-References: <1340651142.7037.2.camel@gandalf.stny.rr.com> <20120625150722.8cd4f45d.akpm@linux-foundation.org> <20120625235531.GB3652@kroah.com> <CA+55aFwczZTA=JUahoj_Sw1fQssDwoM2LGJ6g5nPvehTLxnSpg@mail.gmail.com> <20120626002307.GA4389@kroah.com> <CA+55aFxhYRqcU2EUmcsuLrhgo4FEO6-b+mB57wB3JRiXEp3ZrA@mail.gmail.com> <CAPXgP10cPFSmZ5yr6Z4wVtDa+x2J1yQDF57NJXtxjUuxMHm=Lw@mail.gmail.com> <CA+55aFzkX=jCC1O6+2oz8meswOqZQ+Q8Ao60q8eAS1G3AuEStQ@mail.gmail.com> <1340726856.977.6.camel@mop> <22482.1341471787@neuling.org> <CAPXgP11=o5WB4WejaQCSCL-+5e4sL7tfVz_r3Khyrq3SyrMvsA@mail.gmail.com> <CAPXgP13u769nSvUdS1iqiVCsxG5nsQd7bNT1=-eNw156U-kPkQ@mail.gmail.com> <16043.1341483625@neuling.org> <CAPXgP11+j+fDexHHmAZbBBidtrydrpWeh3DGWOhkuoybNj9skA@mail.gmail.com> <1341492628.834.3.camel@mop>
-Comments: In-reply-to Kay Sievers <kay@vrfy.org>
-   message dated "Thu, 05 Jul 2012 14:50:28 +0200."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
-Date: Fri, 06 Jul 2012 10:41:19 +1000
-Message-ID: <30233.1341535279@neuling.org>
+	id S933419Ab2GFAm0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 20:42:26 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:53840 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932161Ab2GFAmY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 20:42:24 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Dilip Daya <dilip.daya@hp.com>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, <netdev@vger.kernel.org>
+References: <1340900320.3441.88.camel@pro6455b.example.com>
+	<20120705220749.GA11255@mail.hallyn.com>
+Date: Thu, 05 Jul 2012 17:41:54 -0700
+In-Reply-To: <20120705220749.GA11255@mail.hallyn.com> (Serge E. Hallyn's
+	message of "Thu, 5 Jul 2012 22:07:49 +0000")
+Message-ID: <87ehopu3e5.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX190npRSwRHzwIjH/v5rerhRS2YSAtG9mmQ=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0008]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
+X-Spam-Relay-Country: 
+Subject: Re: Network namespace and bonding WARNING at fs/proc/generic.c remove_proc_entry
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kay Sievers <kay@vrfy.org> wrote:
+"Serge E. Hallyn" <serge@hallyn.com> writes:
 
-> On Thu, 2012-07-05 at 13:47 +0200, Kay Sievers wrote:
-> > On Thu, Jul 5, 2012 at 12:20 PM, Michael Neuling <mikey@neuling.org> wrote:
-> > 
-> > > I can only make 2) happen on SMP.  It's when the second CPU is coming up
-> > > and it's printing something.  The first CPU isn't printing anything at
-> > > this stage (there is no garbled console here) so I don't think it's a
-> > > race.  I see it consistently in show_regs().  Every printk without a
-> > > newline.  ie I get this:
-> > > ---
-> > > NIP: c000000000048164 LR: c000000000048160 CTR: 0000000000000000
-> > > REGS: c00000007e59fb50 TRAP: 0700   Tainted: G        W     (3.5.0-rc5-mikey)
-> > > MSR: 9000000000021032
-> > > <
-> > > SF
-> > > ,HV
-> > > ,ME
-> > > ,IR
-> > > ,DR
-> > > ,RI
-> > >>
-> > >   CR: 28000042  XER: 22000000
-> > > SOFTE: 0
-> > > CFAR: c0000000007402f8
-> > > TASK = c00000007e56bb40[0] 'swapper/1' THREAD: c00000007e59c000
-> > >  CPU: 1
-> > > ---
-> > >
-> > > It's consistent for printks without newlines in show_regs().  MSR
-> > > through to XER should all be on the same line.
-> > 
-> > I see. Something to fix then, I'll have a look.
-> > 
-> > Does this happen only very early during bootup, or also later when the
-> > box fully initialized?
-
-I'm seeing during boot but not later (xmon (ppc kernel debugger) doesn't
-see it if I do 'echo x > /proc/sysrq-trigger') .  I wouldn't say
-it's "very early boot".  It's a secondary CPU coming up and the primary
-is waiting for it.  We've already configured the console when this
-happens.
-
-> > 
-> > The output of 'dmesg' later looks always correct, right?
-
-No, dmesg also has the extra new lines: eg
-
-<4>NIP: c00000000004e234 LR: c00000000004e230 CTR: 0000000000000000
-<4>REGS: c00000007c3b7b50 TRAP: 0700   Tainted: G        W     (3.5.0-rc4-mikey)
-<4>MSR: 9000000000021032 
-<4><
-<4>SF
-<4>,HV
-<4>,ME
-<4>,IR
-<4>,DR
-<4>,RI
-<4>>
-<4>  CR: 28000042  XER: 22000000
-<4>SOFTE: 0
-<4>CFAR: c0000000008139b4
-<4>TASK = c00000007c3a4e00[0] 'swapper/1' THREAD: c00000007c3b4000
-<4> CPU: 1
-<4>
-
-> If it's an early printk issue like it looks like, where stuff got
-> printed before we had any console registered, this might fix the issue
-> you are seeing.
+> Quoting Dilip Daya (dilip.daya@hp.com):
+>> Hi,
+>> 
+>> I'd discussed the following with Serge Hallyn.
+>> 
+>> => Environment based on 3.2.18 / x86_64 kernel.
+>> => WARNING: at fs/proc/generic.c:808 remove_proc_entry+0xdb/0x21f()
+>> => WARNING: at fs/proc/generic.c:849 remove_proc_entry+0x208/0x21f()
 >
-> Could you possibly try this patch?
+> Hi,
+>
+> thanks much for sending this.  I'm still getting this error on
+> 3.5.0-2-generic (today's ubuntu quantal kernel)
+>
+>> network namespace and bonding
+>> -----------------------------
+>> 
+>> * Migrate two phy nics from host to netns (netns0).
+>>   - ip link set ethX netns netns0
+>> 
+>> * In host environment:
+>>   - load bonding module, /sbin/modprobe -v bonding mode=1 miimon=100
+>>   - /sys/class/net/bond0 exists.
+>>   - /proc/net/bonding/bond0 exists.
+>>   - /sys/class/net/bonding_masters has bond0.
+>> 
+>> * Migrate bond0 to netns (netns0):
+>>   - ip link set bond0 netns netns0.
+>> 
+>> * Within netns (netns0):
+>>   - /sys/class/net/bonding_masters is empty.
+>>   - /sys/class/net/bond0 exist.
+>>   - configure bond0 and ifenslave with two phy nics.
+>>   - /proc/net/bonding/bond0 does not exist within netns0, but does
+>>     exist in the host environment.
+>>   - /sys/class/net/bonding_masters is empty.
+>
+> mine is not empty, fwiw.  However
+>
+>>   - ping to remote end of bond0 works.
+>> 
+>> * Within netns (netns0), flushing ethX and bondY:
+>>   - down bond0 and its phy nic interfaces:
+>>   - ip link set ... down
+>>   - ip addr flush dev [bond0 | eth#]
+>>   - deleting bond0, /sbin/ip link del dev bond0
+>
+> Yup I still get a remove_proc_entry WARNING at fs/proc/generic.c:808,
+> which is the warning when (!de)
 
-Sorry, doesn't help.  It also reprints the entire boot log to the
-console once the console get inited.
+It looks like Dilip is running an old kernel.  There should have been
+some version of /sys/class/net/bonding_masters in every network
+namespace since sometime in 2009.
 
-FWIW HVC RTAS is the console.
+>From the warning it looks like the proc files are being added/removed
+to the wrong network namespace.  So in one namespace we get an error
+when we delete the moved device and in the other network namespace
+we get an error when we remove the /proc/directory.
 
-Mikey
+An old kernel without proper network namespace support is the only
+reason I can imagine someone would be moving an existing bond device
+between network namespaces.
 
-> 
-> Thanks,
-> Kay
-> 
-> 
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -1957,6 +1951,12 @@ skip:
->  			 */
->  			console_idx = log_next(console_idx);
->  			console_seq++;
-> +			/*
-> +			 * We will get here again when we register a new
-> +			 * CON_PRINTBUFFER console. Clear the flag so we
-> +			 * will properly dump everything later.
-> +			 */
-> +			msg->flags &= ~LOG_NOCONS;
->  			goto skip;
->  		}
->  
-> 
+If there are other reasons for wanting to move a bonding device between
+network namespaces it is possible to catch the NETDEV_UNREGISTER and
+NETDEV_REGISTER events to remove/add the per device proc files at the
+appropriate time.
+
+However since moving bonding devices appears to be an unneded operation
+let's just do things simply and forbid moving bonding devices between
+network namespaces.  Serge, Dilip can you two test the patch below
+and see if it fixes the warnings.
+
+Eric
+
+
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 2ee8cf9..818ed64 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -4345,6 +4345,9 @@ static void bond_setup(struct net_device *bond_dev)
+        bond_dev->priv_flags |= IFF_BONDING;
+        bond_dev->priv_flags &= ~(IFF_XMIT_DST_RELEASE | IFF_TX_SKB_SHARING);
+ 
++       /* Don't allow bond devices to change network namespaces. */
++       bond_dev->features |= NETIF_F_LOCAL;
++
+        /* At first, we block adding VLANs. That's the only way to
+         * prevent problems that occur when adding VLANs over an
+         * empty bond. The block will be removed once non-challenged
