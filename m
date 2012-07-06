@@ -1,113 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757734Ab2GFPgi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 11:36:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34305 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757644Ab2GFPgg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 11:36:36 -0400
-Message-ID: <4FF705F1.1060208@gmail.com>
-Date: Fri, 06 Jul 2012 23:36:17 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Jiang Liu <jiang.liu@huawei.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>, Mel Gorman <mgorman@suse.de>,
-        Yinghai Lu <yinghai@kernel.org>, Tony Luck <tony.luck@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
-        Keping Chen <chenkeping@huawei.com>, linux-mm@kvack.org,
+	id S1757763Ab2GFPh7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 11:37:59 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:37375 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757650Ab2GFPh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 11:37:58 -0400
+Message-ID: <1341589077.3661.3.camel@joe2Laptop>
+Subject: Re: [PATCH v2 net-next 2/2] r8169: support RTL8168G
+From: Joe Perches <joe@perches.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Hayes Wang <hayeswang@realtek.com>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/4] mm: introduce a safer interface to check whether
- a page is managed by SLxB
-References: <1341287837-7904-1-git-send-email-jiang.liu@huawei.com> <alpine.DEB.2.00.1207050942540.4984@router.home> <4FF5B909.30409@gmail.com> <alpine.DEB.2.00.1207051229490.8670@router.home> <4FF693F6.8070505@huawei.com> <alpine.DEB.2.00.1207060841001.26441@router.home>
-In-Reply-To: <alpine.DEB.2.00.1207060841001.26441@router.home>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Fri, 06 Jul 2012 08:37:57 -0700
+In-Reply-To: <20120706152046.GB6981@electric-eye.fr.zoreil.com>
+References: <1340966060-2749-1-git-send-email-hayeswang@realtek.com>
+	 <1341221002-1522-1-git-send-email-hayeswang@realtek.com>
+	 <1341221002-1522-2-git-send-email-hayeswang@realtek.com>
+	 <20120704220458.GA1621@electric-eye.fr.zoreil.com>
+	 <1341449507.2058.6.camel@joe2Laptop>
+	 <20120706152046.GB6981@electric-eye.fr.zoreil.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
-	Really appreciate your suggestions and I will work out a new version to
-fix callers of PageSlab() instead of changing the slab allocator.
-	Thanks!
-	Gerry
+On Fri, 2012-07-06 at 17:20 +0200, Francois Romieu wrote:
+> Joe Perches <joe@perches.com> :
+> [...]
+> > This pattern is used a couple more times.
+> > There's no failure handling either.
+> 
+> I can do something for the initialize path. Other than that it's mostly
+> deeply burried hardware failure so I'd rather concentrate a bit on 
+> current problem reports.
+> 
+> This series already took me a bit further than expected (see below).
 
-On 07/06/2012 09:50 PM, Christoph Lameter wrote:
-> On Fri, 6 Jul 2012, Jiang Liu wrote:
-> 
->> 	Originally the patch is aimed to fix an issue encountered when
->> hot-removing a hot-added memory device. Currently memory hotplug is only
->> supported with SPARSE memory model. After offlining all pages of a memory
->> section, we need to free resources used by "struct mem_section" itself.
->> That is to free section_mem_map and pageblock_flags. For memory section
->> created at boot time, section_mem_map and pageblock_flags are allocated
->> from bootmem. For memory section created at runtime, section_mem_map
->> and pageblock_flags are allocated from slab. So when freeing these
->> resources, we use PageSlab() to tell whether there are allocated from slab.
->> So free_section_usemap() has following code snippet.
->> {
->>         usemap_page = virt_to_page(usemap);
->>         /*
->>          * Check to see if allocation came from hot-plug-add
->>          */
->>         if (PageSlab(usemap_page)) {
-> 
-> Change this to PageSlab(usemap_page) || PageCompound(usemap_page) and then
-> the code segment will work. Fallback to the page allocator always implied
-> the use of compound pages. It would be cleaner if memory hotplug had an
-> indicator which allocation mechanism was used and would use the
-> corresponding free action. Slab allocators could put multiple objects into
-> the slab page (if the structures are sufficiently small). So this is not
-> that good of a solution.
-> 
-> 
->> 	And when fixing this issue, we found some other usages of PageSlab() may
->> have the same issue. For example:
->> 	1) /proc/kpageflags and /proc/kpagecount may return incorrect result for
->> pages allocated by slab.
-> 
-> Ok then the compound page handling is broken in those.
-> 
->> 	2) DRBD has following comments. At first glance, it seems that it's
->> 	dangerous if PageSlab() to return false for pages allocated by slab.
-> 
-> Again the pages that do not have PageSlab set were not allocated using a
-> slab allocator. They were allocated by calls to the page allocator.
-> 
->> 	(With more thinking, the comments is a little out of date because now
->> 	put_page/get_page already correctly handle compound pages, so it should
->> 	be OK to send pages allocated from slab.)
-> 
-> AFAICT they always handled compound pages correctly.
-> 
->> 	3) show_mem() on ARM and unicore32 reports much less pages used by slab
->> 	if SLUB/SLOB is used instead of SLAB because SLUB/SLOB doesn't mark big
->> 	compound pages with PG_slab flag.
-> 
-> Right. That is because SLUB/SLOB lets the page allocator directly
-> allocator large structures where it would not make sense to use the slab
-> allocators. The main purpose of the slab allocators is to allocate
-> objects in fractions of pages. This does not seem to be a use case for
-> slab objects. Maybe it would be better to directly call the page allocator
-> for your large structures?
-> 
->> 	For example, if the memory backing a "struct resource" structure is
->> allocated from bootmem, __release_region() shouldn't free the memory into
->> slab allocator, otherwise it will trigger panic as below. This issue is
->> reproducible when hot-removing a memory device present at boot time on x86
->> platforms. On x86 platforms, e820_reserve_resources() allocates bootmem for
->> all physical memory resources present at boot time. Later when those memory
->> devices are hot-removed, __release_region() will try to free  memory from
->> bootmem into slab, so trigger the panic. And a proposed fix is:
-> 
-> Working out how a certain memory structure was allocated could be most
-> easily done by setting a flag somewhere instead of checking the page flags
-> of a page that may potentially include multiple slab objects.
-> 
+Allez Francois.
+
+When you take up a suggestion, you really go with it.
 
 
