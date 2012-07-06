@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933343Ab2GFKuZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 06:50:25 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:42702 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932831Ab2GFKuD (ORCPT
+	id S933312Ab2GFKvB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 06:51:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51340 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932831Ab2GFKu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 06:50:03 -0400
-X-Greylist: delayed 3582 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jul 2012 06:50:02 EDT
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Date: Fri, 06 Jul 2012 17:38:50 +0900 (JST)
-Message-Id: <20120706.173850.11462611.d.hatayama@jp.fujitsu.com>
-To: wency@cn.fujitsu.com
-Cc: zhangyanfei@cn.fujitsu.com, dzickus@redhat.com, luto@mit.edu,
-        kvm@vger.kernel.org, joerg.roedel@amd.com, mtosatti@redhat.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        paul.gortmaker@windriver.com, ludwig.nussel@suse.de, avi@redhat.com,
-        gregkh@linuxfoundation.org, ebiederm@xmission.com
-Subject: Re: [PATCH v4 2/3] KVM-INTEL: Add new module vmcsinfo-intel to
- fill VMCSINFO
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <4FF6A0F3.2010201@cn.fujitsu.com>
-References: <4FF4155F.6070508@cn.fujitsu.com>
-	<20120706.170410.119097767.d.hatayama@jp.fujitsu.com>
-	<4FF6A0F3.2010201@cn.fujitsu.com>
-X-Mailer: Mew version 6.3 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Jul 2012 06:50:59 -0400
+Date: Fri, 6 Jul 2012 03:50:41 -0700
+From: tip-bot for Konstantin Stepanyuk <konstantin.stepanyuk@gmail.com>
+Message-ID: <tip-f526a4ce2643e2636c091cf2bf0ec1442110c5b7@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, fweisbec@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de, konstantin.stepanyuk@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, fweisbec@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de, konstantin.stepanyuk@gmail.com
+In-Reply-To: <1340833934-18783-1-git-send-email-konstantin.stepanyuk@gmail.com>
+References: <1340833934-18783-1-git-send-email-konstantin.stepanyuk@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tools lib traceevent: Fix clean target in Makefile
+Git-Commit-ID: f526a4ce2643e2636c091cf2bf0ec1442110c5b7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 03:50:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wen Congyang <wency@cn.fujitsu.com>
-Subject: Re: [PATCH v4 2/3] KVM-INTEL: Add new module vmcsinfo-intel to fill VMCSINFO
-Date: Fri, 6 Jul 2012 16:25:23 +0800
+Commit-ID:  f526a4ce2643e2636c091cf2bf0ec1442110c5b7
+Gitweb:     http://git.kernel.org/tip/f526a4ce2643e2636c091cf2bf0ec1442110c5b7
+Author:     Konstantin Stepanyuk <konstantin.stepanyuk@gmail.com>
+AuthorDate: Wed, 27 Jun 2012 15:52:14 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 29 Jun 2012 13:28:11 -0300
 
-> At 07/06/2012 04:04 PM, HATAYAMA Daisuke Wrote:
->> From: Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
->> Subject: [PATCH v4 2/3] KVM-INTEL: Add new module vmcsinfo-intel to fill VMCSINFO
->> Date: Wed, 4 Jul 2012 18:05:19 +0800
->> 
->>> Besides, this patch also exports vmcs revision identifier via
->>> /sys/devices/system/cpu/vmcs_id and offsets of fields via
->>> /sys/devices/system/cpu/vmcs/.
->>> Individual offsets are contained in subfiles named by the filed's
->>> encoding, e.g.: /sys/devices/cpu/vmcs/0800
->> 
->> According to the discussion starting from
->> 
->> http://lkml.indiana.edu/hypermail/linux/kernel/1105.3/00749.html
-> 
-> IIRC, kvm can not work in such environment. The vcpu can run on
-> different cpu. If the cpu's vmcs is different, I don't know what
-> will happen. So do we need to support for such environment now?
-> I think that if kvm can not work in such environment, we should
-> not provide vmcs information for each physical cpu.
-> 
+tools lib traceevent: Fix clean target in Makefile
 
-I think so too. The design can be kept very simple if kvm doesn't
-support such case, and it would be good news. Is it true?
+Dependency files were not cleaned up. Add missing space to fix the issue.
 
-Thanks.
-HATAYAMA, Daisuke
+Signed-off-by: Konstantin Stepanyuk <konstantin.stepanyuk@gmail.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1340833934-18783-1-git-send-email-konstantin.stepanyuk@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/lib/traceevent/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index 3d69aa9..423f4b8 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -290,7 +290,7 @@ install_lib: all_cmd install_plugins install_python
+ install: install_lib
+ 
+ clean:
+-	$(RM) *.o *~ $(TARGETS) *.a *.so $(VERSION_FILES).*.d
++	$(RM) *.o *~ $(TARGETS) *.a *.so $(VERSION_FILES) .*.d
+ 	$(RM) tags TAGS
+ 
+ endif # skip-makefile
