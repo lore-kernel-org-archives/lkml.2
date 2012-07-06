@@ -1,125 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030312Ab2GFLwf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 07:52:35 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56344 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030243Ab2GFLwd convert rfc822-to-8bit (ORCPT
+	id S1030324Ab2GFLwp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 07:52:45 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:44251 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030293Ab2GFLwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 07:52:33 -0400
-Message-ID: <1341575532.7709.47.camel@twins>
-Subject: Re: [PATCH 09/16] sched: normalize tg load contributions against
- runnable time
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Date: Fri, 06 Jul 2012 13:52:12 +0200
-In-Reply-To: <1341431285.19870.15.camel@laptop>
-References: <20120628022413.30496.32798.stgit@kitami.mtv.corp.google.com>
-	 <20120628022414.30496.11931.stgit@kitami.mtv.corp.google.com>
-	 <1341431285.19870.15.camel@laptop>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 6 Jul 2012 07:52:42 -0400
+Message-ID: <4FF6D183.7040407@linaro.org>
+Date: Fri, 06 Jul 2012 12:52:35 +0100
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de, Mattias WALLIN <mattias.wallin@stericsson.com>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Daniel WILLERUD <daniel.willerud@stericsson.com>
+Subject: Re: [PATCH 3/9] ARM: ux500: Remove AB8500 regulator register initialisation
+ information
+References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org> <1341493572-29735-4-git-send-email-lee.jones@linaro.org> <CACRpkdbRtFX8_++rndCpsH7R1uhwPrkTE_GKgNTM6r1PSuwY0A@mail.gmail.com> <4FF6979F.2000904@linaro.org> <20120706112317.GD4017@opensource.wolfsonmicro.com>
+In-Reply-To: <20120706112317.GD4017@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-04 at 21:48 +0200, Peter Zijlstra wrote:
-> On Wed, 2012-06-27 at 19:24 -0700, Paul Turner wrote:
-> > Entities of equal weight should receive equitable distribution of cpu time.
-> > This is challenging in the case of a task_group's shares as execution may be
-> > occurring on multiple cpus simultaneously.
-> > 
-> > To handle this we divide up the shares into weights proportionate with the load
-> > on each cfs_rq.  This does not however, account for the fact that the sum of
-> > the parts may be less than one cpu and so we need to normalize:
-> >   load(tg) = min(runnable_avg(tg), 1) * tg->shares
-> > Where runnable_avg is the aggregate time in which the task_group had runnable
-> > children. 
+On 06/07/12 12:23, Mark Brown wrote:
+> On Fri, Jul 06, 2012 at 08:45:35AM +0100, Lee Jones wrote:
 > 
-> I remember we had a bit of a discussion on this last time, I thought you
-> were going to convince me this approximation was 'right'.
+>> Please take a note of this and also do not apply the regulator
+>> driver counterpart of the patch-set (it was one of the ones you
+>> Reviewed-by in the previous batch).
 > 
-> Care to still do so.. the rationale used should at least live in a
-> comment somewhere, otherwise someone will go silly trying to understand
-> things later on.
+> I've no idea what patches you're talking about, sorry.
 
-So if we treat the per-cpu utilization u_i as probability, then we're
-looking for:
+Regarding patch:
+> [PATCH 08/15] regulator: Stop initialising AB8500's registers during bring-up
 
-  P(\Union_{i=1..n} u_i) := 
-	\Sum_{k=1..n} (-1)^(k-1) P(\Intersection_{i=1..k} u_i)
+On 20/06/12 14:19, Lee Jones wrote:> On 20/06/12 14:08, Mark Brown wrote:
+>> On Wed, Jun 20, 2012 at 01:56:44PM +0100, Lee Jones wrote:
+>>> There is no need to initialise the AB8500's regulator registers, as
+>>> most of this work is already carried out by framework features.
+>>
+>> Does this have any dependency on the rest of the series?
+> 
+> Unfortunately yes.
+> 
+> It needs the "ARM: ux500:" stuff to go in first.
 
-Computing this however is far too expensive, what we can do is
-approximate by setting u = avg(u_i) and then using:
+Then you added your Reviewed-by: until the ux500 stuff goes in.
 
-  u_i == u_j for all i,j
+However, the ux500 patch has been NACKed, so please don't take the aforementioned patch in either.
 
-and assuming all variables are independent, giving us:
-
-  P(A \Intersection B) = P(A)P(B)
-
-This then yields:
-
-  P(\Union_{i=1..n} u_i) ~= \Sum_{k=1..n} (-1)^(k-1) (n choose k) u^k
-
-Which unfortunately isn't a series I found a sane solution for, but
-numerically (see below) we can see it very quickly approaches 1 when n
->> 1.
-
-Therefore, the chosen approximation of min(1, \Sum_i u_i) is indeed a
-sane approximation since for very small u_i and/or small n the sum is
-less likely to exceed 1 and for big u_i and/or big n the clip to 1 is
-indeed correct.
-
-*phew*
-
-Was this what you meant? :-)
-
-Now all that is left is grok the actual code..
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515 
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
 
 
-probability_union.bc
----
-
-
-define f (x) {
-	if (x <= 1) return (1);
-	return (f(x-1) * x);
-}
-
-define choose (n,k) {
-	return f(n) / (f(n-k) * f(k));
-}
-
-define pu (p,n) {
-	auto s, k
-
-	s = 0;
-	for (k = 1; k <= n; k++) {
-		s += (-1)^(k-1) * choose(n,k) * p^k;
-	}
-
-	return s;
-}
-
-
-for (n=2; n<128; n*=2) {
-	print n, ": "
-	for (p = 1; p < 11; p++) {
-		print pu(p/10,n), " "
-	}
-	print "\n"
-}
-quit
