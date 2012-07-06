@@ -1,115 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757982Ab2GFQgc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 12:36:32 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:43280 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757906Ab2GFQga (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 12:36:30 -0400
-Date: Fri, 6 Jul 2012 09:33:38 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Josh Triplett <josh@joshtriplett.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 6/6] x86: Exit RCU extended QS on notify resume
-Message-ID: <20120706163338.GW2522@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1341576018-10721-1-git-send-email-fweisbec@gmail.com>
- <1341576018-10721-7-git-send-email-fweisbec@gmail.com>
+	id S1758003Ab2GFQoQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 12:44:16 -0400
+Received: from fieldses.org ([174.143.236.118]:48033 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757906Ab2GFQoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 12:44:15 -0400
+Date: Fri, 6 Jul 2012 12:44:12 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v3] NFSd: set nfsd_serv to NULL after service
+ destruction
+Message-ID: <20120706164412.GJ3051@fieldses.org>
+References: <20120703124603.3766.26607.stgit@localhost.localdomain>
+ <20120705212117.GB3051@fieldses.org>
+ <4FF6AB2D.7050705@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1341576018-10721-7-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12070616-1780-0000-0000-0000072A241A
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000284; HX=3.00000191; KW=3.00000007;
- PH=3.00000001; SC=3.00000004; SDB=6.00154304; UDB=6.00034812; UTC=2012-07-06
- 16:36:28
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4FF6AB2D.7050705@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, 2012 at 02:00:18PM +0200, Frederic Weisbecker wrote:
-> do_notify_resume() may be called on irq exit but it won't
-> be protected between rcu_irq_enter() and rcu_irq_exit()
-> and we don't call rcu_user_exit() on irq entry (unlike
-> syscalls/exceptions entry).
+On Fri, Jul 06, 2012 at 01:09:01PM +0400, Stanislav Kinsbursky wrote:
+> 06.07.2012 01:21, J. Bruce Fields пишет:
+> >On Tue, Jul 03, 2012 at 04:46:41PM +0400, Stanislav Kinsbursky wrote:
+> >>v3:
+> >>1) Rebased for 3.6 kernel.
+> >>
+> >>v2:
+> >>1) Set global nfsd_serv pointer to NULL only if no running threads left.
+> >>
+> >>Otherwise we will get NULL pointer dereference on last thread exit in
+> >>nfsd_last_thread().
+> >>This patch also introduces nfsd_destroy() helper for per-net NFSd shutdown.
+> >
+> >That last step should really be done in a separate patch, then the
+> >bugfix done after that.
+> >
+> >But I'm confused: I'm not seeing the NULL dereference.
+> >nfsd_last_thread doesn't use nfsd_serv as far as I can tell.
+> >
 > 
-> Since it can use RCU read side critical section, we must call
-> rcu_user_exit() before doing anything there.
+> Sorry for the bad comment, Bruce. It takes time even for me to
+> reconstruct the problem in my mind.
+> The reason for this patch was an error path in nfs_svc().
 > 
-> This complete support for RCU userspace extended quiescent state
-> in x86.
+> int
+> nfsd_svc(unsigned short port, int nrservs)
+> {
 > 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Alessio Igor Bogani <abogani@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Avi Kivity <avi@redhat.com>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Geoff Levand <geoff@infradead.org>
-> Cc: Gilad Ben Yossef <gilad@benyossef.com>
-> Cc: Hakan Akkan <hakanakkan@gmail.com>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Josh Triplett <josh@joshtriplett.org>
-> Cc: Kevin Hilman <khilman@ti.com>
-> Cc: Max Krasnyansky <maxk@qualcomm.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Stephen Hemminger <shemminger@vyatta.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  arch/x86/Kconfig         |    1 +
->  arch/x86/kernel/signal.c |    2 ++
->  2 files changed, 3 insertions(+), 0 deletions(-)
+> <--- snip --->
 > 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index c70684f..38dfcc2 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -95,6 +95,7 @@ config X86
->  	select KTIME_SCALAR if X86_32
->  	select GENERIC_STRNCPY_FROM_USER
->  	select GENERIC_STRNLEN_USER
-> +	select HAVE_RCU_USER_QS if X86_64
+> out_destroy:
+>         if (nfsd_serv->sv_nrthreads == 1)
+>                 svc_shutdown_net(nfsd_serv, net); <=== nfsd_serv = NULL
+>         svc_destroy(nfsd_serv);			  <=== NULL ptr
+> out:
+>         mutex_unlock(&nfsd_mutex);
+>         return error;
+> }
+> 
+> I'll prepare patch series with proper comments. Thanks.
 
-And I will bite yet again.  Why only 64-bit kernels?
+This is what I'll queue up for 3.6 if it looks OK to you.  Same end
+result, just split into cleanup and bugfix, with your details above
+added to the second patch.
 
-							Thanx, Paul
+--b.
 
->  config INSTRUCTION_DECODER
->  	def_bool (KPROBES || PERF_EVENTS || UPROBES)
-> diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-> index 21af737..5af078e 100644
-> --- a/arch/x86/kernel/signal.c
-> +++ b/arch/x86/kernel/signal.c
-> @@ -776,6 +776,8 @@ static void do_signal(struct pt_regs *regs)
->  void
->  do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
->  {
-> +	rcu_user_exit();
-> +
->  #ifdef CONFIG_X86_MCE
->  	/* notify userspace of pending MCEs */
->  	if (thread_info_flags & _TIF_MCE_NOTIFY)
-> -- 
-> 1.7.5.4
-> 
+commit ab7115dec8aac910c0c7dec80564a4b1acc1dce1
+Author: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Date:   Tue Jul 3 16:46:41 2012 +0400
 
+    NFSd: set nfsd_serv to NULL after service destruction
+    
+    In nfsd_destroy():
+    
+    	if (destroy)
+    		svc_shutdown_net(nfsd_serv, net);
+    	svc_destroy(nfsd_server);
+    
+    svc_shutdown_net(nfsd_serv, net) calls nfsd_last_thread(), which sets
+    nfsd_serv to NULL, causing a NULL dereference on the following line.
+    
+    Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+
+diff --git a/fs/nfsd/nfsd.h b/fs/nfsd/nfsd.h
+index 7b248a2..2244222 100644
+--- a/fs/nfsd/nfsd.h
++++ b/fs/nfsd/nfsd.h
+@@ -82,6 +82,8 @@ static inline void nfsd_destroy(struct net *net)
+ 	if (destroy)
+ 		svc_shutdown_net(nfsd_serv, net);
+ 	svc_destroy(nfsd_serv);
++	if (destroy)
++		nfsd_serv = NULL;
+ }
+ 
+ #if defined(CONFIG_NFSD_V2_ACL) || defined(CONFIG_NFSD_V3_ACL)
+diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+index 8621e36..240473c 100644
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -254,8 +254,6 @@ static void nfsd_shutdown(void)
+ 
+ static void nfsd_last_thread(struct svc_serv *serv, struct net *net)
+ {
+-	/* When last nfsd thread exits we need to do some clean-up */
+-	nfsd_serv = NULL;
+ 	nfsd_shutdown();
+ 
+ 	svc_rpcb_cleanup(serv, net);
+@@ -332,6 +330,7 @@ static int nfsd_get_default_max_blksize(void)
+ int nfsd_create_serv(void)
+ {
+ 	int error;
++	struct net *net = current->nsproxy->net_ns;
+ 
+ 	WARN_ON(!mutex_is_locked(&nfsd_mutex));
+ 	if (nfsd_serv) {
+@@ -346,7 +345,7 @@ int nfsd_create_serv(void)
+ 	if (nfsd_serv == NULL)
+ 		return -ENOMEM;
+ 
+-	error = svc_bind(nfsd_serv, current->nsproxy->net_ns);
++	error = svc_bind(nfsd_serv, net);
+ 	if (error < 0) {
+ 		svc_destroy(nfsd_serv);
+ 		return error;
+@@ -557,12 +556,13 @@ nfsd(void *vrqstp)
+ 	nfsdstats.th_cnt --;
+ 
+ out:
+-	if (rqstp->rq_server->sv_nrthreads == 1)
+-		svc_shutdown_net(rqstp->rq_server, &init_net);
++	rqstp->rq_server = NULL;
+ 
+ 	/* Release the thread */
+ 	svc_exit_thread(rqstp);
+ 
++	nfsd_destroy(&init_net);
++
+ 	/* Release module */
+ 	mutex_unlock(&nfsd_mutex);
+ 	module_put_and_exit(0);
+
+commit 1e6dcb6ef5c3313f625e4a130687a889a1426e9d
+Author: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Date:   Tue Jul 3 16:46:41 2012 +0400
+
+    NFSd: introduce nfsd_destroy() helper
+    
+    Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+
+diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+index c55298e..fa49cff 100644
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -673,9 +673,7 @@ static ssize_t __write_ports_addfd(char *buf)
+ 
+ 	err = svc_addsock(nfsd_serv, fd, buf, SIMPLE_TRANSACTION_LIMIT);
+ 	if (err < 0) {
+-		if (nfsd_serv->sv_nrthreads == 1)
+-			svc_shutdown_net(nfsd_serv, net);
+-		svc_destroy(nfsd_serv);
++		nfsd_destroy(net);
+ 		return err;
+ 	}
+ 
+@@ -744,9 +742,7 @@ out_close:
+ 		svc_xprt_put(xprt);
+ 	}
+ out_err:
+-	if (nfsd_serv->sv_nrthreads == 1)
+-		svc_shutdown_net(nfsd_serv, net);
+-	svc_destroy(nfsd_serv);
++	nfsd_destroy(net);
+ 	return err;
+ }
+ 
+diff --git a/fs/nfsd/nfsd.h b/fs/nfsd/nfsd.h
+index 6d425c2..7b248a2 100644
+--- a/fs/nfsd/nfsd.h
++++ b/fs/nfsd/nfsd.h
+@@ -75,6 +75,15 @@ int		nfsd_set_nrthreads(int n, int *);
+ int		nfsd_pool_stats_open(struct inode *, struct file *);
+ int		nfsd_pool_stats_release(struct inode *, struct file *);
+ 
++static inline void nfsd_destroy(struct net *net)
++{
++	int destroy = (nfsd_serv->sv_nrthreads == 1);
++
++	if (destroy)
++		svc_shutdown_net(nfsd_serv, net);
++	svc_destroy(nfsd_serv);
++}
++
+ #if defined(CONFIG_NFSD_V2_ACL) || defined(CONFIG_NFSD_V3_ACL)
+ #ifdef CONFIG_NFSD_V2_ACL
+ extern struct svc_version nfsd_acl_version2;
+diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+index ee709fc..8621e36 100644
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -427,11 +427,7 @@ int nfsd_set_nrthreads(int n, int *nthreads)
+ 		if (err)
+ 			break;
+ 	}
+-
+-	if (nfsd_serv->sv_nrthreads == 1)
+-		svc_shutdown_net(nfsd_serv, net);
+-	svc_destroy(nfsd_serv);
+-
++	nfsd_destroy(net);
+ 	return err;
+ }
+ 
+@@ -478,9 +474,7 @@ out_shutdown:
+ 	if (error < 0 && !nfsd_up_before)
+ 		nfsd_shutdown();
+ out_destroy:
+-	if (nfsd_serv->sv_nrthreads == 1)
+-		svc_shutdown_net(nfsd_serv, net);
+-	svc_destroy(nfsd_serv);		/* Release server */
++	nfsd_destroy(net);		/* Release server */
+ out:
+ 	mutex_unlock(&nfsd_mutex);
+ 	return error;
+@@ -682,9 +676,7 @@ int nfsd_pool_stats_release(struct inode *inode, struct file *file)
+ 
+ 	mutex_lock(&nfsd_mutex);
+ 	/* this function really, really should have been called svc_put() */
+-	if (nfsd_serv->sv_nrthreads == 1)
+-		svc_shutdown_net(nfsd_serv, net);
+-	svc_destroy(nfsd_serv);
++	nfsd_destroy(net);
+ 	mutex_unlock(&nfsd_mutex);
+ 	return ret;
+ }
