@@ -1,159 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab2GFFAU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 01:00:20 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39455 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751004Ab2GFFAS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 01:00:18 -0400
-Message-ID: <1341550812.3023.3.camel@dabdike.hilton.com>
-Subject: Re: [PATCH v5 3/4] block: implement runtime pm strategy
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Shaohua Li <shli@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Date: Fri, 06 Jul 2012 09:00:12 +0400
-In-Reply-To: <1341547472-6863-4-git-send-email-ming.m.lin@intel.com>
-References: <1341547472-6863-1-git-send-email-ming.m.lin@intel.com>
-	 <1341547472-6863-4-git-send-email-ming.m.lin@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752628Ab2GFFB1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 01:01:27 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:54830 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004Ab2GFFB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 01:01:26 -0400
+Date: Fri, 6 Jul 2012 13:00:13 +0800
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/memcg: swappiness should between 0 and 100
+Message-ID: <20120706050013.GA15372@shangw>
+Reply-To: Gavin Shan <shangw@linux.vnet.ibm.com>
+References: <1341550312-6815-1-git-send-email-liwp.linux@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341550312-6815-1-git-send-email-liwp.linux@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12070605-6078-0000-0000-00000CED4C21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-06 at 12:04 +0800, Lin Ming wrote:
-> When a request is added:
->     If device is suspended or is suspending and the request is not a
->     PM request, resume the device.
-> 
-> When a request finishes:
->     Call pm_runtime_mark_last_busy().
-> 
-> When pick a request:
->     If device is resuming/suspending, then only PM request is allowed to go.
->     Return NULL for other cases.
+On Fri, Jul 06, 2012 at 12:51:52PM +0800, Wanpeng Li wrote:
+>From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>
+>Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+>---
+> mm/memcontrol.c |    2 +-
+> 1 files changed, 1 insertions(+), 1 deletions(-)
+>
+>diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>index 5e4d1ab..69a7d45 100644
+>--- a/mm/memcontrol.c
+>+++ b/mm/memcontrol.c
+>@@ -4176,7 +4176,7 @@ static int mem_cgroup_swappiness_write(struct cgroup *cgrp, struct cftype *cft,
 
-This is a complete reinvention of the quiesce state, just with new names
-and moved up to block in part ... why do we have to have two separate
-systems for stopping a device and sending special commands when the
-device is suspended, why not just one?
+It seems that we don't have the function in mainline.
 
-James
+shangw@shangw:~/sandbox/linux/mm$ grep mem_cgroup_swappiness_write -r .
+shangw@shangw:~/sandbox/linux/mm$ 
 
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> ---
->  block/blk-core.c       |    7 +++++++
->  block/elevator.c       |    4 ++++
->  include/linux/blkdev.h |   37 +++++++++++++++++++++++++++++++++++++
->  3 files changed, 48 insertions(+)
-> 
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 1cc80ae..cb93501 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -1224,6 +1224,8 @@ void __blk_put_request(struct request_queue *q, struct request *req)
->  	if (unlikely(--req->ref_count))
->  		return;
->  
-> +	blk_pm_put_request(q);
-> +
->  	elv_completed_request(q, req);
->  
->  	/* this is a bio leak */
-> @@ -2012,6 +2014,11 @@ struct request *blk_peek_request(struct request_queue *q)
->  	int ret;
->  
->  	while ((rq = __elv_next_request(q)) != NULL) {
-> +
-> +		rq = blk_pm_peek_request(q, rq);
-> +		if (!rq)
-> +			break;
-> +
->  		if (!(rq->cmd_flags & REQ_STARTED)) {
->  			/*
->  			 * This is the first time the device driver
-> diff --git a/block/elevator.c b/block/elevator.c
-> index 6a55d41..37c1a2b 100644
-> --- a/block/elevator.c
-> +++ b/block/elevator.c
-> @@ -536,6 +536,8 @@ void elv_requeue_request(struct request_queue *q, struct request *rq)
->  
->  	rq->cmd_flags &= ~REQ_STARTED;
->  
-> +	blk_pm_requeue_request(q);
-> +
->  	__elv_add_request(q, rq, ELEVATOR_INSERT_REQUEUE);
->  }
->  
-> @@ -558,6 +560,8 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
->  {
->  	trace_block_rq_insert(q, rq);
->  
-> +	blk_pm_add_request(q, rq);
-> +
->  	rq->q = q;
->  
->  	if (rq->cmd_flags & REQ_SOFTBARRIER) {
-> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> index 9395d39..c8c5951 100644
-> --- a/include/linux/blkdev.h
-> +++ b/include/linux/blkdev.h
-> @@ -908,6 +908,36 @@ extern int blk_pre_runtime_suspend(struct request_queue *q);
->  extern void blk_post_runtime_suspend(struct request_queue *q, int err);
->  extern void blk_pre_runtime_resume(struct request_queue *q);
->  extern void blk_post_runtime_resume(struct request_queue *q, int err);
-> +
-> +static inline void blk_pm_put_request(struct request_queue *q)
-> +{
-> +	if (!(--q->nr_pending) && q->dev)
-> +		 pm_runtime_mark_last_busy(q->dev);
-> +}
-> +
-> +static inline struct request *blk_pm_peek_request(
-> +	struct request_queue *q, struct request *rq)
-> +{
-> +	if (q->rpm_status == RPM_SUSPENDED ||
-> +		  (q->rpm_status != RPM_ACTIVE && !(rq->cmd_flags & REQ_PM)))
-> +		return NULL;
-> +	else
-> +		return rq;
-> +}
-> +
-> +static inline void blk_pm_requeue_request(struct request_queue *q)
-> +{
-> +	q->nr_pending--;
-> +}
-> +
-> +static inline void blk_pm_add_request(struct request_queue *q,
-> +	struct request *rq)
-> +{
-> +	if (q->nr_pending++ == 0 && !(rq->cmd_flags & REQ_PM) &&
-> +		    (q->rpm_status == RPM_SUSPENDED ||
-> +		     q->rpm_status == RPM_SUSPENDING) && q->dev)
-> +		pm_request_resume(q->dev);
-> +}
->  #else
->  static inline void blk_pm_runtime_init(struct request_queue *q,
->  	struct device *dev) {}
-> @@ -918,6 +948,13 @@ static inline int blk_pre_runtime_suspend(struct request_queue *q)
->  static inline void blk_post_runtime_suspend(struct request_queue *q, int err) {}
->  static inline void blk_pre_runtime_resume(struct request_queue *q) {}
->  static inline void blk_post_runtime_resume(struct request_queue *q, int err) {}
-> +
-> +static inline void blk_pm_put_request(struct request_queue *q) {}
-> +static inline struct request *blk_pm_peek_request(
-> +	struct request_queue *q, struct request *rq) { return rq; }
-> +static inline void blk_pm_requeue_request(struct request_queue *q) {}
-> +static inline void blk_pm_add_request(struct request_queue *q,
-> +	struct request *req) {}
->  #endif
->  
->  /*
+Thanks,
+Gavin
 
+> 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+> 	struct mem_cgroup *parent;
+>
+>-	if (val > 100)
+>+	if (val > 100 || val < 0)
+> 		return -EINVAL;
+>
+> 	if (cgrp->parent == NULL)
+>-- 
+>1.7.5.4
+>
+>--
+>To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>the body to majordomo@kvack.org.  For more info on Linux MM,
+>see: http://www.linux-mm.org/ .
+>Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
