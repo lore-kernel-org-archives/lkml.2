@@ -1,131 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757973Ab2GFTNn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 15:13:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21938 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757823Ab2GFTNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 15:13:42 -0400
-Message-ID: <4FF7147B.1050001@redhat.com>
-Date: Fri, 06 Jul 2012 12:38:19 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 03/26] mm, mpol: add MPOL_MF_LAZY ...
-References: <20120316144028.036474157@chello.nl> <20120316144240.307470041@chello.nl> <20120323115025.GE16573@suse.de>
-In-Reply-To: <20120323115025.GE16573@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1758003Ab2GFTRO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 15:17:14 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:48588 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755814Ab2GFTRM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 15:17:12 -0400
+Message-ID: <1341602020.16730.695.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI: Add ACPI CPU hot-remove support
+From: Toshi Kani <toshi.kani@hp.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 06 Jul 2012 13:13:40 -0600
+In-Reply-To: <4FF711DE.1030108@gmail.com>
+References: <1340981479-6521-1-git-send-email-toshi.kani@hp.com>
+	 <4FF711DE.1030108@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/2012 07:50 AM, Mel Gorman wrote:
-> On Fri, Mar 16, 2012 at 03:40:31PM +0100, Peter Zijlstra wrote:
->> From: Lee Schermerhorn<Lee.Schermerhorn@hp.com>
->>
->> This patch adds another mbind() flag to request "lazy migration".
->> The flag, MPOL_MF_LAZY, modifies MPOL_MF_MOVE* such that the selected
->> pages are simply unmapped from the calling task's page table ['_MOVE]
->> or from all referencing page tables [_MOVE_ALL].  Anon pages will first
->> be added to the swap [or migration?] cache, if necessary.  The pages
->> will be migrated in the fault path on "first touch", if the policy
->> dictates at that time.
->>
->> <SNIP>
->>
->> @@ -950,6 +950,98 @@ static int unmap_and_move_huge_page(new_
->>   }
->>
->>   /*
->> + * Lazy migration:  just unmap pages, moving anon pages to swap cache, if
->> + * necessary.  Migration will occur, if policy dictates, when a task faults
->> + * an unmapped page back into its page table--i.e., on "first touch" after
->> + * unmapping.  Note that migrate-on-fault only migrates pages whose mapping
->> + * [e.g., file system] supplies a migratepage op, so we skip pages that
->> + * wouldn't migrate on fault.
->> + *
->> + * Pages are placed back on the lru whether or not they were successfully
->> + * unmapped.  Like migrate_pages().
->> + *
->> + * Unline migrate_pages(), this function is only called in the context of
->> + * a task that is unmapping it's own pages while holding its map semaphore
->> + * for write.
->> + */
->> +int migrate_pages_unmap_only(struct list_head *pagelist)
->
-> I'm not properly reviewing these patches at the moment but am taking a
-> quick look as I play some catch up on linux-mm.
->
-> I think it's worth pointing out that this potentially will confuse
-> reclaim. Lets say a process is being migrated to another node and it
-> gets unmapped like this then some heuristics will change.
->
-> 1. If the page was referenced prior to the unmapping then it should be
->     activated if the page reached the end of the LRU due to the checks
->     in page_check_references(). If the process has been unmapped for
->     migrate-on-fault, the pages will instead be reclaimed.
->
-> 2. The heuristic that applies pressure to slab pages if pages are mapped
->     is changed. Prior to migrate-on-fault sc->nr_scanned is incremented
->     for mapped pages to increase the number of slab pages scanned to
->     avoid swapping. During migrate-on-fault, this pressure is relieved
->
-> 3. zone_reclaim_mode in default mode will reclaim pages it would
->     previously have skipped over. It potentially will call shrink_zone more
->     for the local node than falling back to other nodes because it thinks
->     most pages are unmapped. This could lead to some trashing.
->
-> It may not even be a major problem but it's worth thinking about. If it
-> is a problem, it will be necessary to account for migrate-on-fault pages
-> similar to mapped pages during reclaim.
+On Sat, 2012-07-07 at 00:27 +0800, Jiang Liu wrote:
+> Hi Toshi,
+> 	I think a better solution here is to send a notification to acpid
+> daemon instead of directly ejecting the physical processor in kernel by
+> apci hotplug work thread. The daemon should do:
+> 	1) check whether user policy allows to remove the physical processor
+> 	2) resolve any dependency issues, such as some memory/IOHs may have
+> 	dependency on the processor.
+> 	3) Remove all devices on the physical processor through sysfs.
+> 	4) Power off the physical processor through sysfs.
+> 
+> 	If we rely on the acpi hotplug work thread to do the hard work, it
+> may block the work thread for a very long time and it won't respond to other
+> hotplug events.
+> 	Thanks!
+> 	Gerry
 
-I can see other serious issues with this approach:
+Hi Gerry,
 
-4. Putting a lot of pages in the swap cache ends up allocating
-    swap space. This means this NUMA migration scheme will only
-    work on systems that have a substantial amount of memory
-    represented by swap space. This is highly unlikely on systems
-    with memory in the TB range. On smaller systems, it could drive
-    the system out of memory (to the OOM killer), by "filling up"
-    the overflow swap with migration pages instead.
+Good points.  I agree with your concerns in general.
 
-5. In the long run, we want the ability to migrate transparent
-    huge pages as one unit.  The reason is simple, the performance
-    penalty for running on the wrong NUMA node (10-20%) is on the
-    same order of magnitude as the performance penalty for running
-    with 4kB pages instead of 2MB pages (5-15%).
+For step 2) and 4), I am wondering if they are relevant to CPU hotplug
+these days.  In ACPI namespace, a processor object represents a logical
+processor (or a core when hyper-threading is disabled).  A physical
+processor (i.e. a socket) usually has multiple cores, and memory
+controller and bus interface are part of the socket functionality.
+Hence, I think step 2) and 4) belong to socket-level hot-removal
+operation, which can be implemented as container hot-remove when a
+socket is represented with a container object.  
 
-    Breaking up large pages into small ones, and having khugepaged
-    reconstitute them on a random NUMA node later on, will negate
-    the performance benefits of both NUMA placement and THP.
+I agree that step 1) needs to be concerned for CPU hotplug.  Other
+approach (which has been implemented in other OS) is that such user
+policy can be managed by management console or hypervisor, which becomes
+a single place to manage the policy for multiple OS instances, i.e. if
+hot-remove is disallowed on a target, it fails a request and does not
+send a GPE.  Asking customers to setup the policy to each OS instance
+can be problematic, esp. when there are many OS instances on virtualized
+environment.  Other issue is that when a hot-remove request is failed or
+ignored in user space, we do not have a way to fail the request with
+_OST at this point.  Therefore, from the management console /
+hypervisor, where a hot-remove request was made from, this case can be
+seen as a hang in the hot-remove request.
 
-In short, while this approach made sense when Lee first proposed
-it several years ago (with smaller memory systems, and before Linux
-had transparent huge pages), I do not believe it is an acceptable
-approach to NUMA migration any more.
+Thanks,
+-Toshi
 
-We really want something like PROT_NONE or PTE_NUMA page table
-(and page directory) entries, so we can avoid filling up swap
-space with migration pages and have the possibility of migrating
-transparent huge pages in one piece at some point.
 
-In other words, NAK to this patch
+> On 06/29/2012 10:51 PM, Toshi Kani wrote:
+> > Added CPU hot-remove support through an ACPI eject notification.
+> > It calls acpi_bus_hot_remove_device(), which shares the same code
+> > path with the sysfs eject operation.  acpi_os_hotplug_execute()
+> > serializes hot-remove operations between ACPI hot-remove and sysfs
+> > eject requests.
+> > 
+> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > 
+> > ---
+> > This patch applies on top of the patchset below.
+> > 
+> > [PATCH v6 0/6] ACPI: Add _OST support for ACPI hotplug
+> > http://marc.info/?l=linux-acpi&m=134074381322973&w=2
+> > 
+> > ---
+> >  drivers/acpi/processor_driver.c |   27 +++++++++++++++++----------
+> >  1 files changed, 17 insertions(+), 10 deletions(-)
+> > 
+> > diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+> > index f9fa1b2..a6f6bde 100644
+> > --- a/drivers/acpi/processor_driver.c
+> > +++ b/drivers/acpi/processor_driver.c
+> > @@ -699,8 +699,8 @@ int acpi_processor_device_add(acpi_handle handle, struct acpi_device **device)
+> >  static void acpi_processor_hotplug_notify(acpi_handle handle,
+> >  					  u32 event, void *data)
+> >  {
+> > -	struct acpi_processor *pr;
+> >  	struct acpi_device *device = NULL;
+> > +	struct acpi_eject_event *ej_event = NULL;
+> >  	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+> >  	int result;
+> >  
+> > @@ -732,20 +732,27 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
+> >  				  "received ACPI_NOTIFY_EJECT_REQUEST\n"));
+> >  
+> >  		if (acpi_bus_get_device(handle, &device)) {
+> > -			printk(KERN_ERR PREFIX
+> > -				    "Device don't exist, dropping EJECT\n");
+> > +			pr_err(PREFIX "Device don't exist, dropping EJECT\n");
+> >  			break;
+> >  		}
+> > -		pr = acpi_driver_data(device);
+> > -		if (!pr) {
+> > -			printk(KERN_ERR PREFIX
+> > -				    "Driver data is NULL, dropping EJECT\n");
+> > +		if (!acpi_driver_data(device)) {
+> > +			pr_err(PREFIX "Driver data is NULL, dropping EJECT\n");
+> >  			break;
+> >  		}
+> >  
+> > -		/* REVISIT: update when eject is supported */
+> > -		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+> > -		break;
+> > +		ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
+> > +		if (!ej_event) {
+> > +			pr_err(PREFIX "No memory, dropping EJECT\n");
+> > +			break;
+> > +		}
+> > +
+> > +		ej_event->handle = handle;
+> > +		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
+> > +		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
+> > +					(void *)ej_event);
+> > +
+> > +		/* eject is performed asynchronously */
+> > +		return;
+> >  
+> >  	default:
+> >  		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+> > 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
--- 
-All rights reversed
+
