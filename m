@@ -1,19 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964837Ab2GFKmn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 06:42:43 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:38261 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964810Ab2GFKmk (ORCPT
+	id S1030219Ab2GFKmd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 06:42:33 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:46829 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S964812Ab2GFKlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 06:42:40 -0400
-From: Antonio Meireles <antonio.meireles@openfiler.com>
-To: linux-kernel@vger.kernel.org
-Cc: len.brown@intel.com, Antonio Meireles <antonio.meireles@openfiler.com>
-Subject: [PATCH] tools/power x86: Makefile fixes
-Date: Fri,  6 Jul 2012 11:42:24 +0100
-Message-Id: <1341571344-25408-1-git-send-email-antonio.meireles@openfiler.com>
-X-Mailer: git-send-email 1.7.10.2
+	Fri, 6 Jul 2012 06:41:32 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av4EAHC/9k9bdWOb/2dsb2JhbABFhWSxVIEHghkBBSMECwFGECUCJgICVwcSiA+nOZMDgSCPLYESA5U3kAOCYQ
+X-IronPort-AV: E=Sophos;i="4.77,537,1336341600"; 
+   d="scan'208";a="940130719"
+From: =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
+To: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
+        aaro.koskinen@iki.fi, dan.carpenter@oracle.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
+Subject: [PATCH 19/19 v2] Staging: xgifb: Remove useless condition.
+Date: Fri,  6 Jul 2012 12:40:54 +0200
+Message-Id: <4dd50a041037adf697f21a8a640779802cee835a.1341569486.git.magomez@igalia.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1341569486.git.magomez@igalia.com>
+References: <cover.1341498465.git.magomez@igalia.com>
+ <cover.1341569486.git.magomez@igalia.com>
+In-Reply-To: <cover.1341569486.git.magomez@igalia.com>
+References: <cover.1341569486.git.magomez@igalia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -21,81 +32,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Make the install relative to DESTDIR if specified.
-	Honor, as well, custom installation settings, if they are present.
+Remove last if branch in XGIfb_do_set_var(), as it has no action assigned.
 
-	Signed-off-by: Antonio Meireles <antonio.meireles@openfiler.com>
+Signed-off-by: Miguel Gómez <magomez@igalia.com>
 ---
- tools/power/x86/turbostat/Makefile              |   24 +++++++++++++++++++----
- tools/power/x86/x86_energy_perf_policy/Makefile |   24 +++++++++++++++++++----
- 2 files changed, 40 insertions(+), 8 deletions(-)
+ drivers/staging/xgifb/XGI_main_26.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/tools/power/x86/turbostat/Makefile b/tools/power/x86/turbostat/Makefile
-index fd8e1f1..8b1c430 100644
---- a/tools/power/x86/turbostat/Makefile
-+++ b/tools/power/x86/turbostat/Makefile
-@@ -1,8 +1,24 @@
--turbostat : turbostat.c
-+OUTPUT=./
-+ifeq ("$(origin O)", "command line")
-+       OUTPUT := $(O)/
-+endif
-+
-+DESTDIR ?=
-+
-+bindir ?= /usr/bin
-+mandir ?= /usr/man
-+
-+INSTALL = /usr/bin/install -c
-+INSTALL_PROGRAM = ${INSTALL}
-+INSTALL_DATA  = ${INSTALL} -m 644
-+
-+$(OUTPUT)turbostat : turbostat.c
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index 0f49a21..64ffd70 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -973,8 +973,6 @@ static int XGIfb_do_set_var(struct fb_var_screeninfo *var, int isactive,
+ 		vtotal <<= 1;
+ 	else if ((var->vmode & FB_VMODE_MASK) == FB_VMODE_DOUBLE)
+ 		vtotal <<= 2;
+-	else if ((var->vmode & FB_VMODE_MASK) == FB_VMODE_INTERLACED) {
+-	}
  
- clean :
--	rm -f turbostat
-+	rm -f $(OUTPUT)turbostat
- 
- install :
--	install turbostat /usr/bin/turbostat
--	install turbostat.8 /usr/share/man/man8
-+	$(INSTALL) -d $(DESTDIR)${bindir}
-+	$(INSTALL) -d $(DESTDIR)${mandir}/man8
-+	$(INSTALL_PROGRAM) $(OUTPUT)turbostat $(DESTDIR)${bindir}/
-+	$(INSTALL_DATA) turbostat.8 $(DESTDIR)${mandir}/man8/
-diff --git a/tools/power/x86/x86_energy_perf_policy/Makefile b/tools/power/x86/x86_energy_perf_policy/Makefile
-index f458237..c20971d 100644
---- a/tools/power/x86/x86_energy_perf_policy/Makefile
-+++ b/tools/power/x86/x86_energy_perf_policy/Makefile
-@@ -1,8 +1,24 @@
--x86_energy_perf_policy : x86_energy_perf_policy.c
-+OUTPUT=./
-+ifeq ("$(origin O)", "command line")
-+       OUTPUT := $(O)/
-+endif
-+
-+DESTDIR ?=
-+
-+bindir ?= /usr/bin
-+mandir ?= /usr/man
-+
-+INSTALL = /usr/bin/install -c
-+INSTALL_PROGRAM = ${INSTALL}
-+INSTALL_DATA  = ${INSTALL} -m 644
-+
-+$(OUTPUT)x86_energy_perf_policy : x86_energy_perf_policy.c
- 
- clean :
--	rm -f x86_energy_perf_policy
-+	rm -f $(OUTPUT)x86_energy_perf_policy
- 
- install :
--	install x86_energy_perf_policy /usr/bin/
--	install x86_energy_perf_policy.8 /usr/share/man/man8/
-+	$(INSTALL) -d $(DESTDIR)${bindir}
-+	$(INSTALL) -d $(DESTDIR)${mandir}/man8
-+	$(INSTALL_PROGRAM) $(OUTPUT)x86_energy_perf_policy $(DESTDIR)${bindir}/
-+	$(INSTALL_DATA) x86_energy_perf_policy.8 $(DESTDIR)${mandir}/man8/
+ 	if (!htotal || !vtotal) {
+ 		pr_debug("Invalid 'var' information\n");
 -- 
-1.7.10.2
+1.7.9.5
 
