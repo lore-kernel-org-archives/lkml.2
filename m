@@ -1,116 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757537Ab2GFSjM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 14:39:12 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:64359 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754946Ab2GFSjJ (ORCPT
+	id S1757599Ab2GFSk6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 14:40:58 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:39953 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754946Ab2GFSk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 14:39:09 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6764"; a="205765313"
-Message-ID: <4FF730CD.7050907@codeaurora.org>
-Date: Fri, 06 Jul 2012 11:39:09 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Fri, 6 Jul 2012 14:40:56 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: dilip.daya@hp.com
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, netdev@vger.kernel.org
+References: <1340900320.3441.88.camel@pro6455b.example.com>
+	<20120705220749.GA11255@mail.hallyn.com> <87ehopu3e5.fsf@xmission.com>
+	<1341597680.2829.22.camel@pro6455b.example.com>
+Date: Fri, 06 Jul 2012 11:40:45 -0700
+In-Reply-To: <1341597680.2829.22.camel@pro6455b.example.com> (Dilip Daya's
+	message of "Fri, 06 Jul 2012 14:01:20 -0400")
+Message-ID: <87pq88g2c2.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: smp: Fix suspicious RCU originating from cpu_die()
-References: <1341531958-31721-1-git-send-email-sboyd@codeaurora.org> <20120706002404.GJ2522@linux.vnet.ibm.com>
-In-Reply-To: <20120706002404.GJ2522@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX191s2yWfs0a/4h1cW8tSaqj4UjxglByb+U=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.1995]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;dilip.daya@hp.com
+X-Spam-Relay-Country: 
+Subject: Re: Network namespace and bonding WARNING at fs/proc/generic.c remove_proc_entry
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/12 17:24, Paul E. McKenney wrote:
-> On Thu, Jul 05, 2012 at 04:45:58PM -0700, Stephen Boyd wrote:
->> @@ -179,7 +184,7 @@ void __ref cpu_die(void)
->>  	mb();
->>
->>  	/* Tell __cpu_die() that this CPU is now safe to dispose of */
->> -	complete(&cpu_died);
->> +	__this_cpu_write(cpu_state, CPU_DEAD);
-> Or you could do something like:
->
-> 	RCU_NONIDLE(complete(&cpu_died));
->
-> This would tell RCU that it needed to pay attention to this CPU for
-> the duration of the "complete()" function call despite the CPU's being
-> idle.  And might allow you to dispense with the rest of the patch.
+Dilip Daya <dilip.daya@hp.com> writes:
 
-Great! I like that more since we get to keep the completion mechanism
-instead of a busy wait.
+> Hi Eric,
 
-Russell, which one would you prefer? Here's the other version
+> We do need to move bonds between namespaces - because we require
+> physical interfaces in each namespace -- we don't want the overheads of
+> virtual interfaces, don't have the management infrastructure, and don't
+> want to manufacture fake mac addresses that would be required for
+> macvlan interfaces.   Since the bonds are implicitly created in the host
+> namespace, the only way we know to get bonds directly into the
+> namespaces is to move them.
 
------>8-----8<-----
-Subject: [PATCH] ARM: smp: Fix suspicious RCU originating from cpu_die()
+There about 3 ways to create bonding devices.  One of those ways
+is to create bonding devices when loading the module.  Another
+way is to create a bond device with "echo '+bond35 > /sys/class/net/bonding_masters".
+them when loading the module, and my favorite is the standard way
+"ip link add type bond".  All but loading the bonding device work in the
+network namespace you are in at the type.
 
-While running hotplug tests I ran into this RCU splat
+> Would "NETDEV_UNREGISTER and NETDEV_REGISTER events to remove/add the
+> per device proc files at the appropriate time." help in the case?
 
-===============================
-[ INFO: suspicious RCU usage. ]
-3.4.0 #3275 Tainted: G        W
--------------------------------
-include/linux/rcupdate.h:729 rcu_read_lock() used illegally while idle!
+Yes.  But since you can create the bonding device in the network
+namespace you need it in, I don't see the point, of adding a code
+path no one will test for 3 years at a time.
 
-other info that might help us debug this:
+It seems easier to me to just not allow migration of bonding devices
+and set peoples expectations a little lower.  Especially given
+the very complex user space interfaces.
 
-RCU used illegally from idle CPU!
-rcu_scheduler_active = 1, debug_locks = 0
-RCU used illegally from extended quiescent state!
-4 locks held by swapper/2/0:
- #0:  ((cpu_died).wait.lock){......}, at: [<c00ab128>] complete+0x1c/0x5c
- #1:  (&p->pi_lock){-.-.-.}, at: [<c00b275c>] try_to_wake_up+0x2c/0x388
- #2:  (&rq->lock){-.-.-.}, at: [<c00b2860>] try_to_wake_up+0x130/0x388
- #3:  (rcu_read_lock){.+.+..}, at: [<c00abe5c>] cpuacct_charge+0x28/0x1f4
+On ther other hand if you want to write and test and generally own the
+patch I will review it.
 
-stack backtrace:
-[<c001521c>] (unwind_backtrace+0x0/0x12c) from [<c00abec8>] (cpuacct_charge+0x94/0x1f4)
-[<c00abec8>] (cpuacct_charge+0x94/0x1f4) from [<c00b395c>] (update_curr+0x24c/0x2c8)
-[<c00b395c>] (update_curr+0x24c/0x2c8) from [<c00b59c4>] (enqueue_task_fair+0x50/0x194)
-[<c00b59c4>] (enqueue_task_fair+0x50/0x194) from [<c00afea4>] (enqueue_task+0x30/0x34)
-[<c00afea4>] (enqueue_task+0x30/0x34) from [<c00b0908>] (ttwu_activate+0x14/0x38)
-[<c00b0908>] (ttwu_activate+0x14/0x38) from [<c00b28a8>] (try_to_wake_up+0x178/0x388)
-[<c00b28a8>] (try_to_wake_up+0x178/0x388) from [<c00a82a0>] (__wake_up_common+0x34/0x78)
-[<c00a82a0>] (__wake_up_common+0x34/0x78) from [<c00ab154>] (complete+0x48/0x5c)
-[<c00ab154>] (complete+0x48/0x5c) from [<c07db7cc>] (cpu_die+0x2c/0x58)
-[<c07db7cc>] (cpu_die+0x2c/0x58) from [<c000f954>] (cpu_idle+0x64/0xfc)
-[<c000f954>] (cpu_idle+0x64/0xfc) from [<80208160>] (0x80208160)
-
-When a cpu is marked offline during its idle thread it calls
-cpu_die() during an RCU idle period. cpu_die() calls complete()
-to notify the killing process that the cpu has died. complete()
-calls into the scheduler code and eventually grabs an RCU read
-lock in cpuacct_charge().
-
-Mark complete() as RCU_NONIDLE so that RCU pays attention to this
-CPU for the duration of the complete() function even though it's
-in idle.
-
-Suggested-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/kernel/smp.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 2c7217d..aea74f5 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -179,7 +179,7 @@ void __ref cpu_die(void)
- 	mb();
- 
- 	/* Tell __cpu_die() that this CPU is now safe to dispose of */
--	complete(&cpu_died);
-+	RCU_NONIDLE(complete(&cpu_died));
- 
- 	/*
- 	 * actual CPU shutdown procedure is at least platform (if not
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Eric
 
