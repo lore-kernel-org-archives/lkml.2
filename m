@@ -1,79 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758763Ab2GFVOl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 17:14:41 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:60877 "EHLO
+	id S1758760Ab2GFVOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 17:14:40 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:60888 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758309Ab2GFVGi (ORCPT
+	with ESMTP id S1758323Ab2GFVGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jul 2012 17:06:38 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 03/36] ipc: allow compat IPC version field parsing if !ARCH_WANT_OLD_COMPAT_IPC
-Date: Fri,  6 Jul 2012 22:05:44 +0100
-Message-Id: <1341608777-12982-4-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH 04/36] ipc: compat: use signed size_t types for msgsnd and msgrcv
+Date: Fri,  6 Jul 2012 22:05:45 +0100
+Message-Id: <1341608777-12982-5-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
 References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 06 Jul 2012 21:07:29.0875 (UTC) FILETIME=[5A7CC230:01CD5BBB]
-X-MC-Unique: 112070622063605101
+X-OriginalArrivalTime: 06 Jul 2012 21:07:30.0188 (UTC) FILETIME=[5AAC84C0:01CD5BBB]
+X-MC-Unique: 112070622063702001
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66LEkeD005466
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66LF0TK005471
 
 From: Will Deacon <will.deacon@arm.com>
 
-Commit 48b25c43 ("[PATCH v3] ipc: provide generic compat versions of IPC
-syscalls") added a new ARCH_WANT_OLD_COMPAT_IPC config option for
-architectures to select if their compat target requires the old IPC
-syscall interface.
+The msgsnd and msgrcv system calls use size_t to represent the size of
+the message being transferred. POSIX states that values of msgsz greater
+than SSIZE_MAX cause the result to be implementation-defined. On Linux,
+this equates to returning -EINVAL if (long) msgsz < 0.
 
-For architectures that do not require the internal calling conventions
-provided by this option, but have a compat target where the C library
-passes the IPC_64 flag explicitly, compat_ipc_parse_version no longer
-strips out the flag before calling the native system call
-implementation, resulting in unknown SHM/IPC commands and -EINVAL being
-returned to userspace.
+For compat tasks where !CONFIG_ARCH_WANT_OLD_COMPAT_IPC and
+compat_size_t is smaller than size_t, negative size values passed from
+userspace will be interpreted as positive values by do_msg{rcv,snd} and
+will fail to exit early with -EINVAL.
 
-This patch separates the selection of the internal calling conventions
-for the IPC syscalls from the version parsing, allowing architectures to
-select __ARCH_WANT_COMPAT_IPC_PARSE_VERSION if they want to use version
-parsing whilst retaining the newer syscall calling conventions.
+This patch changes the compat prototypes for msg{rcv,snd} so that the
+message size is represented as a compat_ssize_t, which we cast to the
+native ssize_t type for the core IPC code.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- include/linux/compat.h |    1 +
- ipc/compat.c           |    2 +-
- 2 files changed, 2 insertions(+), 1 deletions(-)
+ include/linux/compat.h |    4 ++--
+ ipc/compat.c           |    8 ++++----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/include/linux/compat.h b/include/linux/compat.h
-index 4e89039..9f68e90 100644
+index 9f68e90..f2b8fe2 100644
 --- a/include/linux/compat.h
 +++ b/include/linux/compat.h
-@@ -256,6 +256,7 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
- 			   compat_size_t __user *len_ptr);
- 
- #ifdef CONFIG_ARCH_WANT_OLD_COMPAT_IPC
-+#define __ARCH_WANT_COMPAT_IPC_PARSE_VERSION
- long compat_sys_semctl(int first, int second, int third, void __user *uptr);
- long compat_sys_msgsnd(int first, int second, int third, void __user *uptr);
- long compat_sys_msgrcv(int first, int second, int msgtyp, int third,
+@@ -266,9 +266,9 @@ long compat_sys_shmat(int first, int second, compat_uptr_t third, int version,
+ #else
+ long compat_sys_semctl(int semid, int semnum, int cmd, int arg);
+ long compat_sys_msgsnd(int msqid, struct compat_msgbuf __user *msgp,
+-		size_t msgsz, int msgflg);
++		compat_ssize_t msgsz, int msgflg);
+ long compat_sys_msgrcv(int msqid, struct compat_msgbuf __user *msgp,
+-		size_t msgsz, long msgtyp, int msgflg);
++		compat_ssize_t msgsz, long msgtyp, int msgflg);
+ long compat_sys_shmat(int shmid, compat_uptr_t shmaddr, int shmflg);
+ #endif
+ long compat_sys_msgctl(int first, int second, void __user *uptr);
 diff --git a/ipc/compat.c b/ipc/compat.c
-index 53cebdf..a41600f 100644
+index a41600f..20f92b2 100644
 --- a/ipc/compat.c
 +++ b/ipc/compat.c
-@@ -118,7 +118,7 @@ extern int sem_ctls[];
+@@ -373,21 +373,21 @@ long compat_sys_semctl(int semid, int semnum, int cmd, int arg)
+ }
  
- static inline int compat_ipc_parse_version(int *cmd)
+ long compat_sys_msgsnd(int msqid, struct compat_msgbuf __user *msgp,
+-		       size_t msgsz, int msgflg)
++		       compat_ssize_t msgsz, int msgflg)
  {
--#ifdef CONFIG_ARCH_WANT_OLD_COMPAT_IPC
-+#ifdef	__ARCH_WANT_COMPAT_IPC_PARSE_VERSION
- 	int version = *cmd & IPC_64;
+ 	compat_long_t mtype;
  
- 	/* this is tricky: architectures that have support for the old
+ 	if (get_user(mtype, &msgp->mtype))
+ 		return -EFAULT;
+-	return do_msgsnd(msqid, mtype, msgp->mtext, msgsz, msgflg);
++	return do_msgsnd(msqid, mtype, msgp->mtext, (ssize_t)msgsz, msgflg);
+ }
+ 
+ long compat_sys_msgrcv(int msqid, struct compat_msgbuf __user *msgp,
+-		       size_t msgsz, long msgtyp, int msgflg)
++		       compat_ssize_t msgsz, long msgtyp, int msgflg)
+ {
+ 	long err, mtype;
+ 
+-	err =  do_msgrcv(msqid, &mtype, msgp->mtext, msgsz, msgtyp, msgflg);
++	err =  do_msgrcv(msqid, &mtype, msgp->mtext, (ssize_t)msgsz, msgtyp, msgflg);
+ 	if (err < 0)
+ 		goto out;
+ 
 
