@@ -1,73 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab2GFBIn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 21:08:43 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:47238 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753241Ab2GFBIl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 21:08:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <1341404019.2507.107.camel@laptop>
-References: <1341352848-11833-1-git-send-email-jolsa@redhat.com>
-	<1341352848-11833-8-git-send-email-jolsa@redhat.com>
-	<1341398360.2507.99.camel@laptop>
-	<20120704120001.GC960@krava.redhat.com>
-	<1341404019.2507.107.camel@laptop>
-Date: Fri, 6 Jul 2012 03:08:39 +0200
-Message-ID: <CABPqkBQk7+8D9S3kAqRBz6qMZ1_Vi88XXgNF1PGb89t5bP=NRg@mail.gmail.com>
-Subject: Re: [PATCH 07/10] perf, tool: Add support to specify hw event as pmu
- event term
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	id S1755415Ab2GFBNl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 21:13:41 -0400
+Received: from mga11.intel.com ([192.55.52.93]:24132 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753241Ab2GFBNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 21:13:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="173951273"
+Subject: Re: [PATCH v4 2/4] block: add runtime pm helpers
+From: Lin Ming <ming.m.lin@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
+        Shaohua Li <shli@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org
+In-Reply-To: <201207051511.20772.rjw@sisk.pl>
+References: <1341473199-3837-1-git-send-email-ming.m.lin@intel.com>
+	 <1341473199-3837-3-git-send-email-ming.m.lin@intel.com>
+	 <201207051511.20772.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 Jul 2012 09:13:36 +0800
+Message-ID: <1341537216.11117.10.camel@minggr>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 4, 2012 at 2:13 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Wed, 2012-07-04 at 14:00 +0200, Jiri Olsa wrote:
->> On Wed, Jul 04, 2012 at 12:39:20PM +0200, Peter Zijlstra wrote:
->> > On Wed, 2012-07-04 at 00:00 +0200, Jiri Olsa wrote:
->> > >
->> > > It's possible to use sysfs attribute name as 'event' term value,
->> > > or any possible alias for hw event, e.g.:
->> > >   cycles                     OR cpu-cycles
->> > >   branch_misses              OR branch-misses
->> > >   bus_cycles                 OR bus-cycles
->> > >   cache_misses               OR cache-misses
->> > >   cache_references           OR cache-references
->> > >   ref_cycles                 OR ref-cycles
->> > >   stalled_cycles_backend     OR stalled-cycles-backend
->> > >   stalled_cycles_frontend    OR stalled-cycles-frontend
->> >
->> > Do we really want to do that?
->>
->> well, the aliasing works on sysfs filename base.. so when you specify
->>    event=str
->>
->> 'str' file is looked up in 'events' dir.
->
-> Right..
->
->> We use '_' in file names and '-' in event symbol names. I thought it might be
->> confusing allowing just '_' so I added also the '-' version.
->>
-What's wrong with keeping the - in the filenames as well? That would help
-keep things simple. That would avoid yet another layer of aliases.
+On Thu, 2012-07-05 at 15:11 +0200, Rafael J. Wysocki wrote:
+> On Thursday, July 05, 2012, Lin Ming wrote:
+> > Add runtime pm helper functions:
+> > 
+> > blk_pm_runtime_init()
+> > blk_pre_runtime_suspend()
+> > blk_post_runtime_suspend()
+> > blk_pre_runtime_resume()
+> > blk_post_runtime_suspend()
+> 
+> What exactly do you need these things for?  Please be specific.
 
+Alan described these functions nicely, copied here.
+http://marc.info/?l=linux-kernel&m=133727953025955&w=2
 
->> I could keep just the '-' version.. with some more work on kernel ATTR
->> function names ;) but it seems like common sysfs practise to use '_'.
->
-> We could map '-' to '_', but I'm not sure about the aliases in general.
-> I mean if the sysfs event name is 'cycles' also allowing 'cpu_cycles' is
-> somewhat confusing and arbitrary.
->
-> I think it would be best to stick to discoverable names only. Anybody?
->
->
+I'll add these function descriptions to the patch log.
+
+====
+This is not the way to do it.  The block subsystem should not use 
+suspend/resume callbacks.
+
+Instead, there should be block functions that can be called by client
+drivers: block_pre_runtime_suspend, block_post_runtime_suspend,
+bock_pre_runtime_resume, and block_post_runtime_resume.
+
+They should do something like this:
+
+	block_pre_runtime_suspend:
+		If any requests are in the queue, return -EBUSY.
+		Otherwise set q->rpm_status to RPM_SUSPENDING and
+		return 0.
+
+	block_post_runtime_suspend:
+		If the suspend succeeded then set q->rpm_status to 
+		RPM_SUSPENDED.  Otherwise set it to RPM_ACTIVE and
+		call pm_runtime_mark_last_busy().
+
+	block_pre_runtime_resume:
+		Set q->rpm_status to RPM_RESUMING.
+
+	block_post_runtime_resume:
+		If the resume succeeded then set q->rpm_status to
+		RPM_ACTIVE and call pm_runtime_mark_last_busy() and
+		pm_runtime_request_autosuspend().
+		Otherwise set q->rpm_status to RPM_SUSPENDED.
+
+There should also be an initialization function for client drivers to
+call.  block_runtime_pm_init() should call pm_runtime_mark_last_busy(),
+pm_runtime_use_autosuspend(), and pm_runtime_autosuspend().
+
+Next, you have to modify the parts of the block layer that run when a 
+new request is added to the queue or a request is removed.
+
+	When a request is added:
+		If q->rpm_status is RPM_SUSPENDED, or if q->rpm_status
+		is RPM_SUSPENDING and the REQ_PM flag isn't set, call
+		pm_runtime_request_resume().
+
+	When a request finishes:
+		Call pm_runtime_mark_last_busy().
+
+Next, you have to change the parts of the block layer responsible for
+taking a request from the queue and handing it to the lower-level
+driver (both peek and get).  If q->rpm_status is RPM_SUSPENDED, they
+shouldn't do anything -- act as though the queue is empty.  If
+q->rpm_status is RPM_SUSPENDING or RPM_RESUMING, they should hand over
+the request only if it has the REQ_PM flag set.
+
+For this to work, the block layer has to know what struct device
+pointer to pass to the pm_runtime_* routines.  You'll have to add that
+information to the request_queue structure; I guess q->dev can get set
+by block_pm_runtime_init().  In fact, when that's done you won't need
+q->rpm_status any more.  You'll be able to use q->dev->power.rpm_status
+directly, and you won't have to update it because the PM core does that
+for you.
+
+(Or maybe it would be easier to make q->rpm_status be a pointer to 
+q->dev->power.rpm_status.  That way, if CONFIG_PM_RUNTIME isn't enabled 
+or block_runtime_pm_init() hasn't been called, you can have 
+q->rpm_status simply point to a static value that is permanently set to 
+RPM_ACTIVE.)
+
+I may have left some parts out from this brief description.  Hopefully 
+you'll be able to figure out the general idea and get it to work.
+====
+
+Thanks,
+Lin Ming
+
