@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133Ab2GFHot (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 03:44:49 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39584 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab2GFHos (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 03:44:48 -0400
-Date: Fri, 6 Jul 2012 00:44:29 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Fasheh <mfasheh@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
-        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ocfs2 fixes for 3.5-rc5
-Message-ID: <20120706074428.GA27550@dhcp-172-17-9-228.mtv.corp.google.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Mark Fasheh <mfasheh@suse.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
+	id S1756148Ab2GFHo5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 03:44:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36257 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751069Ab2GFHoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 03:44:54 -0400
+Message-ID: <4FF697EA.807@redhat.com>
+Date: Fri, 06 Jul 2012 15:46:50 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Amos Kong <akong@redhat.com>
+CC: Sasha Levin <levinsasha928@gmail.com>, mst@redhat.com, mashirle@us.ibm.com,
+        krkumar2@in.ibm.com, habanero@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, edumazet@google.com,
+        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
+        kvm@vger.kernel.org, sri@us.ibm.com
+Subject: Re: [net-next RFC V5 5/5] virtio_net: support negotiating the number
+ of queues through ctrl vq
+References: <1341484194-8108-1-git-send-email-jasowang@redhat.com>  <1341484194-8108-6-git-send-email-jasowang@redhat.com> <1341492679.18786.18.camel@lappy> <4FF5F3F7.8090307@redhat.com>
+In-Reply-To: <4FF5F3F7.8090307@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus et al,
-	Here are the all of the ocfs2 fixes that have been stewing in my
-tree.  Please pull.
+On 07/06/2012 04:07 AM, Amos Kong wrote:
+> On 07/05/2012 08:51 PM, Sasha Levin wrote:
+>> On Thu, 2012-07-05 at 18:29 +0800, Jason Wang wrote:
+>>> @@ -1387,6 +1404,10 @@ static int virtnet_probe(struct virtio_device *vdev)
+>>>          if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
+>>>                  vi->has_cvq = true;
+>>>
+>
+>>> +       /* Use single tx/rx queue pair as default */
+>>> +       vi->num_queue_pairs = 1;
+>>> +       vi->total_queue_pairs = num_queue_pairs;
+> vi->total_queue_pairs also should be set to 1
+>
+>             vi->total_queue_pairs = 1;
 
-Joel
+Hi Amos:
 
-The following changes since commit 9e85a6f9dc231f3ed3c1dc1b12217505d970142a:
+total_queue_pairs is the max number of queue pairs that the deivce could 
+provide, so it's ok here.
+>> The code is using this "default" even if the amount of queue pairs it
+>> wants was specified during initialization. This basically limits any
+>> device to use 1 pair when starting up.
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe kvm" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-  Merge tag 'clk-fixes-for-linus' of git://git.linaro.org/people/mturquette/linux (2012-07-03 18:06:49 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git fixes
-
-Jan Kara (1):
-      ocfs2: Fix bogus error message from ocfs2_global_read_info
-
-Jeff Liu (1):
-      ocfs2: for SEEK_DATA/SEEK_HOLE, return internal error unchanged if ocfs2_get_clusters_nocache() or ocfs2_inode_lock() call failed.
-
-Junxiao Bi (2):
-      ocfs2: clear unaligned io flag when dio fails
-      aio: make kiocb->private NUll in init_sync_kiocb()
-
-Srinivas Eeda (1):
-      ocfs2: use spinlock irqsave for downconvert lock.patch
-
-roel (1):
-      ocfs2: Misplaced parens in unlikley
-
- fs/ocfs2/dlmglue.c      |   33 ++++++++++++++++++++-------------
- fs/ocfs2/extent_map.c   |    2 --
- fs/ocfs2/file.c         |    4 +++-
- fs/ocfs2/quota_global.c |    2 --
- include/linux/aio.h     |    1 +
- 5 files changed, 24 insertions(+), 18 deletions(-)
