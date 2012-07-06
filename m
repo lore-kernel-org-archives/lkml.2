@@ -1,62 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933503Ab2GFLPe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 07:15:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48477 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933021Ab2GFLPc (ORCPT
+	id S933516Ab2GFLQB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 07:16:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52088 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533Ab2GFLP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 07:15:32 -0400
-Message-ID: <1341573327.6611.2.camel@phoenix>
-Subject: [PATCH 2/2] regulator: aat2870: Remove unused min_uV and max_uV
- from struct aat2870_regulator
-From: Axel Lin <axel.lin@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jin Park <jinyoungp@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 06 Jul 2012 19:15:27 +0800
-In-Reply-To: <1341573272.6611.1.camel@phoenix>
-References: <1341573272.6611.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 6 Jul 2012 07:15:59 -0400
+Date: Fri, 6 Jul 2012 04:15:29 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-d286447f23cdb0337a5429e10b39761f6b1d5c18@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        namhyung.kim@lge.com, namhyung@kernel.org, bp@alien8.de,
+        fweisbec@gmail.com, rostedt@goodmis.org, acme@infradead.org,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        namhyung.kim@lge.com, bp@alien8.de, namhyung@kernel.org,
+        fweisbec@gmail.com, rostedt@goodmis.org, acme@infradead.org,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1333940074-19052-7-git-send-email-namhyung.kim@lge.com>
+References: <1333940074-19052-7-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tools lib traceevent: Handle realloc()
+  failure path
+Git-Commit-ID: d286447f23cdb0337a5429e10b39761f6b1d5c18
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 04:15:36 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both min_uV and max_uV are not used in the code, remove them.
+Commit-ID:  d286447f23cdb0337a5429e10b39761f6b1d5c18
+Gitweb:     http://git.kernel.org/tip/d286447f23cdb0337a5429e10b39761f6b1d5c18
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Mon, 9 Apr 2012 11:54:33 +0900
+Committer:  Namhyung Kim <namhyung@kernel.org>
+CommitDate: Wed, 4 Jul 2012 13:40:31 +0900
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+tools lib traceevent: Handle realloc() failure path
+
+The realloc can fail so that we should handle it properly.
+
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1333940074-19052-7-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- drivers/regulator/aat2870-regulator.c |    5 -----
- 1 file changed, 5 deletions(-)
+ tools/lib/traceevent/event-parse.c |   76 ++++++++++++++++++++++++++++--------
+ 1 files changed, 60 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/regulator/aat2870-regulator.c b/drivers/regulator/aat2870-regulator.c
-index 6644e83..6f45bfd 100644
---- a/drivers/regulator/aat2870-regulator.c
-+++ b/drivers/regulator/aat2870-regulator.c
-@@ -33,9 +33,6 @@ struct aat2870_regulator {
- 	struct aat2870_data *aat2870;
- 	struct regulator_desc desc;
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index cd334d5..05eb6b4 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -1264,9 +1264,15 @@ static int event_read_fields(struct event_format *event, struct format_field **f
+ 					field->flags |= FIELD_IS_POINTER;
  
--	int min_uV;
--	int max_uV;
--
- 	u8 enable_addr;
- 	u8 enable_shift;
- 	u8 enable_mask;
-@@ -127,8 +124,6 @@ static const unsigned int aat2870_ldo_voltages[] = {
- 			.type = REGULATOR_VOLTAGE,	\
- 			.owner = THIS_MODULE,		\
- 		},					\
--		.min_uV = 1200000,			\
--		.max_uV = 3300000,			\
- 	}
+ 				if (field->type) {
+-					field->type = realloc(field->type,
+-							      strlen(field->type) +
+-							      strlen(last_token) + 2);
++					char *new_type;
++					new_type = realloc(field->type,
++							   strlen(field->type) +
++							   strlen(last_token) + 2);
++					if (!new_type) {
++						free(last_token);
++						goto fail;
++					}
++					field->type = new_type;
+ 					strcat(field->type, " ");
+ 					strcat(field->type, last_token);
+ 					free(last_token);
+@@ -1291,6 +1297,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
+ 		if (strcmp(token, "[") == 0) {
+ 			enum event_type last_type = type;
+ 			char *brackets = token;
++			char *new_brackets;
+ 			int len;
  
- static struct aat2870_regulator aat2870_regulators[] = {
--- 
-1.7.9.5
-
-
-
+ 			field->flags |= FIELD_IS_ARRAY;
+@@ -1310,9 +1317,14 @@ static int event_read_fields(struct event_format *event, struct format_field **f
+ 					len = 1;
+ 				last_type = type;
+ 
+-				brackets = realloc(brackets,
+-						   strlen(brackets) +
+-						   strlen(token) + len);
++				new_brackets = realloc(brackets,
++						       strlen(brackets) +
++						       strlen(token) + len);
++				if (!new_brackets) {
++					free(brackets);
++					goto fail;
++				}
++				brackets = new_brackets;
+ 				if (len == 2)
+ 					strcat(brackets, " ");
+ 				strcat(brackets, token);
+@@ -1328,7 +1340,12 @@ static int event_read_fields(struct event_format *event, struct format_field **f
+ 
+ 			free_token(token);
+ 
+-			brackets = realloc(brackets, strlen(brackets) + 2);
++			new_brackets = realloc(brackets, strlen(brackets) + 2);
++			if (!new_brackets) {
++				free(brackets);
++				goto fail;
++			}
++			brackets = new_brackets;
+ 			strcat(brackets, "]");
+ 
+ 			/* add brackets to type */
+@@ -1339,10 +1356,16 @@ static int event_read_fields(struct event_format *event, struct format_field **f
+ 			 * the format: type [] item;
+ 			 */
+ 			if (type == EVENT_ITEM) {
+-				field->type = realloc(field->type,
+-						      strlen(field->type) +
+-						      strlen(field->name) +
+-						      strlen(brackets) + 2);
++				char *new_type;
++				new_type = realloc(field->type,
++						   strlen(field->type) +
++						   strlen(field->name) +
++						   strlen(brackets) + 2);
++				if (!new_type) {
++					free(brackets);
++					goto fail;
++				}
++				field->type = new_type;
+ 				strcat(field->type, " ");
+ 				strcat(field->type, field->name);
+ 				free_token(field->name);
+@@ -1350,9 +1373,15 @@ static int event_read_fields(struct event_format *event, struct format_field **f
+ 				field->name = token;
+ 				type = read_token(&token);
+ 			} else {
+-				field->type = realloc(field->type,
+-						      strlen(field->type) +
+-						      strlen(brackets) + 1);
++				char *new_type;
++				new_type = realloc(field->type,
++						   strlen(field->type) +
++						   strlen(brackets) + 1);
++				if (!new_type) {
++					free(brackets);
++					goto fail;
++				}
++				field->type = new_type;
+ 				strcat(field->type, brackets);
+ 			}
+ 			free(brackets);
+@@ -1735,10 +1764,16 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
+ 		/* could just be a type pointer */
+ 		if ((strcmp(arg->op.op, "*") == 0) &&
+ 		    type == EVENT_DELIM && (strcmp(token, ")") == 0)) {
++			char *new_atom;
++
+ 			if (left->type != PRINT_ATOM)
+ 				die("bad pointer type");
+-			left->atom.atom = realloc(left->atom.atom,
++			new_atom = realloc(left->atom.atom,
+ 					    strlen(left->atom.atom) + 3);
++			if (!new_atom)
++				goto out_free;
++
++			left->atom.atom = new_atom;
+ 			strcat(left->atom.atom, " *");
+ 			free(arg->op.op);
+ 			*arg = *left;
+@@ -2597,7 +2632,16 @@ process_arg_token(struct event_format *event, struct print_arg *arg,
+ 		}
+ 		/* atoms can be more than one token long */
+ 		while (type == EVENT_ITEM) {
+-			atom = realloc(atom, strlen(atom) + strlen(token) + 2);
++			char *new_atom;
++			new_atom = realloc(atom,
++					   strlen(atom) + strlen(token) + 2);
++			if (!new_atom) {
++				free(atom);
++				*tok = NULL;
++				free_token(token);
++				return EVENT_ERROR;
++			}
++			atom = new_atom;
+ 			strcat(atom, " ");
+ 			strcat(atom, token);
+ 			free_token(token);
