@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab2GFO7e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 10:59:34 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53931 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab2GFO7d (ORCPT
+	id S1757537Ab2GFPAE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 11:00:04 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:36600 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753916Ab2GFPAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 10:59:33 -0400
+	Fri, 6 Jul 2012 11:00:00 -0400
+Date: Fri, 6 Jul 2012 10:59:59 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: Lin Ming <ming.m.lin@intel.com>, Jens Axboe <axboe@kernel.dk>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Shaohua Li <shli@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH v5 3/4] block: implement runtime pm strategy
+In-Reply-To: <1341561953.3023.31.camel@dabdike.hilton.com>
+Message-ID: <Pine.LNX.4.44L0.1207061042550.28821-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1207060928580.26790@router.home>
-References: <1340389359-2407-1-git-send-email-js1304@gmail.com>
-	<1340389359-2407-3-git-send-email-js1304@gmail.com>
-	<alpine.DEB.2.00.1207050924330.4138@router.home>
-	<CAAmzW4NJyX9e_dMyJBA5zDiVYVmL1vbUkaRHNoSbbhDZWW7iMg@mail.gmail.com>
-	<alpine.DEB.2.00.1207060928580.26790@router.home>
-Date: Fri, 6 Jul 2012 23:59:31 +0900
-Message-ID: <CAAmzW4P941qeKy6UH079r73zR5VjUeNZNB53Mi4wiHE28f==gg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] slub: release a lock if freeing object with a lock is
- failed in __slab_free()
-From: JoonSoo Kim <js1304@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/6 Christoph Lameter <cl@linux.com>:
-> On Fri, 6 Jul 2012, JoonSoo Kim wrote:
->
->> For example,
->> When we try to free object A at cpu 1, another process try to free
->> object B at cpu 2 at the same time.
->> object A, B is in same slab, and this slab is in full list.
->>
->> CPU 1                           CPU 2
->> prior = page->freelist;    prior = page->freelist
->> ....                                  ...
->> new.inuse--;                   new.inuse--;
->> taking lock                      try to take the lock, but failed, so
->> spinning...
->> free success                   spinning...
->> add_partial
->> release lock                    taking lock
->>                                        fail cmpxchg_double_slab
->>                                        retry
->>                                        currently, we don't need lock
->>
->> At CPU2, we don't need lock anymore, because this slab already in partial list.
->
-> For that scenario we could also simply do a trylock there and redo
-> the loop if we fail. But still what guarantees that another process will
-> not modify the page struct between fetching the data and a successful
-> trylock?
+On Fri, 6 Jul 2012, James Bottomley wrote:
 
+> The mechanism is pretty much identical:  For quiesce you set the sdev
+> state to SDEV_QUIESCE and then send in special requests with REQ_PREEMPT
+> to bypass the suspend.  In your additional scheme you set a queue flag
+> RPM_SUSPENDED by a pm specific set of callbacks and you only then accept
+> requests with REQ_PM.  I don't see any difference in actual effect
+> (well, except that quiesce can be done on a non-empty queue, but that's
+> a simple flag difference).
+> 
+> What I don't want to see is duplicated mechanisms.  If you want to make
+> a general quiesce mechanism in block instead of SCSI, I'm fine with
+> that, but I want to see our current quiesce mechanism moved to it first
+> since that demonstrates you got it right.  If you don't want to do that,
+> then just use the existing mechanism in SCSI.
 
-I'm not familiar with English, so take my ability to understand into
-consideration.
+Moving the whole thing to block sounds like a good suggestion.  But are
+the end results supposed to be the same?  For example, if a rotating
+disk is put into the QUIESCE state, does it get spun down (as would
+happen with a runtime suspend)?  I rather got the impression that
+QUIESCE meant carrying out existing requests and not accepting new
+ones, without the other actions needed for suspend.
 
-we don't need guarantees that another process will not modify
-the page struct between fetching the data and a successful trylock.
+What is the client interface for the quiesce mechanism?  There are a
+few calls in scsi_transport_spi.c, but no other obvious entry points
+besides sysfs.
 
-As I understand, do u ask below scenario?
+Are you suggesting that writing "quiesce" to the state attribute should
+drain the request queue and then initiate a runtime suspend?
 
-CPU A               CPU B
-lock
-cmpxchg fail
-retry
-unlock
-...                       modify page strcut
-...
-cmpxchg~~
+> Now that I look at it, your q->nr_pending is an inexact duplicate of
+> sdev->device_busy as well.  Again, no objection to moving this to block,
+> but if you then make SCSI use it for sdev->device_busy, you'll get a
+> very fast indication of whether you got this right or not, which is an
+> excellent reason for unifying.
 
-In this case, cmpxchg will fail and just redo the loop.
-If we need the lock again during redo, re-take the lock.
-But I think this is not common case.
+They aren't exactly the same, because nr_pending counts requests on the
+queue whether or not they have been started at the SCSI level.  But
+obviously they are closely related.
+
+Alan Stern
+
