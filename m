@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758661Ab2GFVLA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 17:11:00 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33023 "EHLO
+	id S1758644Ab2GFVK6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 17:10:58 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33040 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758380Ab2GFVGn (ORCPT
+	with ESMTP id S1758382Ab2GFVGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 17:06:43 -0400
+	Fri, 6 Jul 2012 17:06:44 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 22/36] AArch64: ELF definitions
-Date: Fri,  6 Jul 2012 22:06:03 +0100
-Message-Id: <1341608777-12982-23-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH 23/36] AArch64: System calls handling
+Date: Fri,  6 Jul 2012 22:06:04 +0100
+Message-Id: <1341608777-12982-24-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
 References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 06 Jul 2012 21:07:36.0591 (UTC) FILETIME=[5E7D89F0:01CD5BBB]
-X-MC-Unique: 112070622064201801
+X-OriginalArrivalTime: 06 Jul 2012 21:07:36.0903 (UTC) FILETIME=[5EAD2570:01CD5BBB]
+X-MC-Unique: 112070622064207001
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66LBG3s005400
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66LBPca005404
 
-This patch adds definitions for the ELF format, including personality
-personality setting and EXEC_PAGESIZE. The are only two hwcap
-definitions for 64-bit applications - HWCAP_FP and HWCAP_ASIMD.
+This patch adds support for system calls coming from 64-bit
+applications. It uses the asm-generic/unistd.h definitions with the
+canonical set of system calls. The private system calls are only used
+for 32-bit (compat) applications as 64-bit ones can set the TLS and
+flush the caches entirely from user space.
+
+The sys_call_table is just an array defined in a C file and it contains
+pointers to the syscall functions. The array is 4KB aligned to allow the
+use of the ADRP instruction (longer range ADR) in entry.S.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/aarch64/include/asm/auxvec.h   |   23 +++++
- arch/aarch64/include/asm/elf.h      |  177 +++++++++++++++++++++++++++++++++++
- arch/aarch64/include/asm/hwcap.h    |   58 ++++++++++++
- arch/aarch64/include/asm/param.h    |   24 +++++
- arch/aarch64/include/asm/shmparam.h |   29 ++++++
- arch/aarch64/kernel/elf.c           |   42 ++++++++
- 6 files changed, 353 insertions(+), 0 deletions(-)
- create mode 100644 arch/aarch64/include/asm/auxvec.h
- create mode 100644 arch/aarch64/include/asm/elf.h
- create mode 100644 arch/aarch64/include/asm/hwcap.h
- create mode 100644 arch/aarch64/include/asm/param.h
- create mode 100644 arch/aarch64/include/asm/shmparam.h
- create mode 100644 arch/aarch64/kernel/elf.c
+ arch/aarch64/include/asm/stat.h     |   64 ++++++++++++++++
+ arch/aarch64/include/asm/statfs.h   |   24 ++++++
+ arch/aarch64/include/asm/syscalls.h |   41 ++++++++++
+ arch/aarch64/include/asm/unistd.h   |   28 +++++++
+ arch/aarch64/kernel/sys.c           |  139 +++++++++++++++++++++++++++++++++++
+ 5 files changed, 296 insertions(+), 0 deletions(-)
+ create mode 100644 arch/aarch64/include/asm/stat.h
+ create mode 100644 arch/aarch64/include/asm/statfs.h
+ create mode 100644 arch/aarch64/include/asm/syscalls.h
+ create mode 100644 arch/aarch64/include/asm/unistd.h
+ create mode 100644 arch/aarch64/kernel/sys.c
 
-diff --git a/arch/aarch64/include/asm/auxvec.h b/arch/aarch64/include/asm/auxvec.h
+diff --git a/arch/aarch64/include/asm/stat.h b/arch/aarch64/include/asm/stat.h
 new file mode 100644
-index 0000000..0fcd431
+index 0000000..22571ac
 --- /dev/null
-+++ b/arch/aarch64/include/asm/auxvec.h
-@@ -0,0 +1,23 @@
++++ b/arch/aarch64/include/asm/stat.h
+@@ -0,0 +1,64 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
 + *
@@ -68,265 +72,59 @@ index 0000000..0fcd431
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
-+#ifndef __ASM_AUXVEC_H
-+#define __ASM_AUXVEC_H
++#ifndef __ASM_STAT_H
++#define __ASM_STAT_H
 +
-+/* vDSO location */
-+#define AT_SYSINFO_EHDR	33
++#include <asm-generic/stat.h>
++
++#if defined(__KERNEL__) && defined(CONFIG_AARCH32_EMULATION)
++
++#include <asm/compat.h>
++
++/* This matches struct stat64 in glibc2.1, hence the absolutely
++ * insane amounts of padding around dev_t's.
++ * Note: The kernel zero's the padded region because glibc might read them
++ * in the hope that the kernel has stretched to using larger sizes.
++ */
++struct stat64 {
++	compat_u64	st_dev;
++	unsigned char   __pad0[4];
++
++#define STAT64_HAS_BROKEN_ST_INO	1
++	compat_ulong_t	__st_ino;
++	compat_uint_t	st_mode;
++	compat_uint_t	st_nlink;
++
++	compat_ulong_t	st_uid;
++	compat_ulong_t	st_gid;
++
++	compat_u64	st_rdev;
++	unsigned char   __pad3[4];
++
++	compat_s64	st_size;
++	compat_ulong_t	st_blksize;
++	compat_u64	st_blocks;	/* Number 512-byte blocks allocated. */
++
++	compat_ulong_t	st_atime;
++	compat_ulong_t	st_atime_nsec;
++
++	compat_ulong_t	st_mtime;
++	compat_ulong_t	st_mtime_nsec;
++
++	compat_ulong_t	st_ctime;
++	compat_ulong_t	st_ctime_nsec;
++
++	compat_u64	st_ino;
++};
 +
 +#endif
-diff --git a/arch/aarch64/include/asm/elf.h b/arch/aarch64/include/asm/elf.h
++
++#endif
+diff --git a/arch/aarch64/include/asm/statfs.h b/arch/aarch64/include/asm/statfs.h
 new file mode 100644
-index 0000000..b10ac43
+index 0000000..2f75b53
 --- /dev/null
-+++ b/arch/aarch64/include/asm/elf.h
-@@ -0,0 +1,177 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+#ifndef __ASM_ELF_H
-+#define __ASM_ELF_H
-+
-+#include <asm/hwcap.h>
-+
-+/*
-+ * ELF register definitions..
-+ */
-+#include <asm/ptrace.h>
-+#include <asm/user.h>
-+
-+typedef unsigned long elf_greg_t;
-+typedef unsigned long elf_freg_t[3];
-+
-+#define ELF_NGREG (sizeof (struct pt_regs) / sizeof(elf_greg_t))
-+typedef elf_greg_t elf_gregset_t[ELF_NGREG];
-+
-+typedef struct user_fp elf_fpregset_t;
-+
-+#define EM_AARCH64		183
-+
-+/*
-+ * AArch64 static relocation types.
-+ */
-+
-+/* Miscellaneous. */
-+#define R_ARM_NONE			0
-+#define R_AARCH64_NONE			256
-+
-+/* Data. */
-+#define R_AARCH64_ABS64			257
-+#define R_AARCH64_ABS32			258
-+#define R_AARCH64_ABS16			259
-+#define R_AARCH64_PREL64		260
-+#define R_AARCH64_PREL32		261
-+#define R_AARCH64_PREL16		262
-+
-+/* Instructions. */
-+#define R_AARCH64_MOVW_UABS_G0		263
-+#define R_AARCH64_MOVW_UABS_G0_NC	264
-+#define R_AARCH64_MOVW_UABS_G1		265
-+#define R_AARCH64_MOVW_UABS_G1_NC	266
-+#define R_AARCH64_MOVW_UABS_G2		267
-+#define R_AARCH64_MOVW_UABS_G2_NC	268
-+#define R_AARCH64_MOVW_UABS_G3		269
-+
-+#define R_AARCH64_MOVW_SABS_G0		270
-+#define R_AARCH64_MOVW_SABS_G1		271
-+#define R_AARCH64_MOVW_SABS_G2		272
-+
-+#define R_AARCH64_LD_PREL_LO19		273
-+#define R_AARCH64_ADR_PREL_LO21		274
-+#define R_AARCH64_ADR_PREL_PG_HI21	275
-+#define R_AARCH64_ADR_PREL_PG_HI21_NC	276
-+#define R_AARCH64_ADD_ABS_LO12_NC	277
-+#define R_AARCH64_LDST8_ABS_LO12_NC	278
-+
-+#define R_AARCH64_TSTBR14		279
-+#define R_AARCH64_CONDBR19		280
-+#define R_AARCH64_JUMP26		282
-+#define R_AARCH64_CALL26		283
-+#define R_AARCH64_LDST16_ABS_LO12_NC	284
-+#define R_AARCH64_LDST32_ABS_LO12_NC	285
-+#define R_AARCH64_LDST64_ABS_LO12_NC	286
-+#define R_AARCH64_LDST128_ABS_LO12_NC	299
-+
-+#define R_AARCH64_MOVW_PREL_G0		287
-+#define R_AARCH64_MOVW_PREL_G0_NC	288
-+#define R_AARCH64_MOVW_PREL_G1		289
-+#define R_AARCH64_MOVW_PREL_G1_NC	290
-+#define R_AARCH64_MOVW_PREL_G2		291
-+#define R_AARCH64_MOVW_PREL_G2_NC	292
-+#define R_AARCH64_MOVW_PREL_G3		293
-+
-+
-+/*
-+ * These are used to set parameters in the core dumps.
-+ */
-+#define ELF_CLASS	ELFCLASS64
-+#define ELF_DATA	ELFDATA2LSB
-+#define ELF_ARCH	EM_AARCH64
-+
-+#define ELF_PLATFORM_SIZE	16
-+#define ELF_PLATFORM		("aarch64")
-+
-+/*
-+ * This is used to ensure we don't load something for the wrong architecture.
-+ */
-+#define elf_check_arch(x)		((x)->e_machine == EM_AARCH64)
-+
-+#define elf_read_implies_exec(ex,stk)	(stk != EXSTACK_DISABLE_X)
-+
-+#define CORE_DUMP_USE_REGSET
-+#define ELF_EXEC_PAGESIZE	PAGE_SIZE
-+
-+/*
-+ * This is the location that an ET_DYN program is loaded if exec'ed.  Typical
-+ * use of this is to invoke "./ld.so someprog" to test out a new version of
-+ * the loader.  We need to make sure that it is out of the way of the program
-+ * that it will "exec", and that there is sufficient room for the brk.
-+ */
-+extern unsigned long randomize_et_dyn(unsigned long base);
-+#define ELF_ET_DYN_BASE	(randomize_et_dyn(2 * TASK_SIZE_64 / 3))
-+
-+/*
-+ * When the program starts, a1 contains a pointer to a function to be
-+ * registered with atexit, as per the SVR4 ABI.  A value of 0 means we have no
-+ * such handler.
-+ */
-+#define ELF_PLAT_INIT(_r, load_addr)	(_r)->regs[0] = 0
-+
-+extern void				elf_set_personality(int personality);
-+#define SET_PERSONALITY(ex)		elf_set_personality(PER_LINUX)
-+
-+#define ARCH_DLINFO							\
-+do {									\
-+	NEW_AUX_ENT(AT_SYSINFO_EHDR,					\
-+		    (elf_addr_t)current->mm->context.vdso);		\
-+} while (0)
-+
-+#define ARCH_HAS_SETUP_ADDITIONAL_PAGES
-+struct linux_binprm;
-+extern int arch_setup_additional_pages(struct linux_binprm *bprm,
-+				       int uses_interp);
-+
-+/* 1GB of VA */
-+#define STACK_RND_MASK			(test_thread_flag(TIF_32BIT) ? \
-+						0x7ff >> (PAGE_SHIFT - 12) : \
-+						0x3ffff >> (PAGE_SHIFT - 12))
-+
-+struct mm_struct;
-+extern unsigned long arch_randomize_brk(struct mm_struct *mm);
-+#define arch_randomize_brk arch_randomize_brk
-+
-+#ifdef CONFIG_AARCH32_EMULATION
-+#define EM_ARM				40
-+#define COMPAT_ELF_PLATFORM		("v8l")
-+
-+#define COMPAT_ELF_ET_DYN_BASE		(randomize_et_dyn(2 * TASK_SIZE_32 / 3))
-+
-+/* AArch32 registers. */
-+#define COMPAT_ELF_NGREG		18
-+typedef unsigned int			compat_elf_greg_t;
-+typedef compat_elf_greg_t		compat_elf_gregset_t[COMPAT_ELF_NGREG];
-+
-+/* AArch32 EABI. */
-+#define EF_ARM_EABI_MASK		0xff000000
-+#define compat_elf_check_arch(x)	(((x)->e_machine == EM_ARM) && \
-+					 ((x)->e_flags & EF_ARM_EABI_MASK))
-+
-+#define compat_start_thread		compat_start_thread
-+#define COMPAT_SET_PERSONALITY(ex)	elf_set_personality(PER_LINUX32)
-+#define COMPAT_ARCH_DLINFO
-+extern int aarch32_setup_vectors_page(struct linux_binprm *bprm,
-+				      int uses_interp);
-+#define compat_arch_setup_additional_pages \
-+					aarch32_setup_vectors_page
-+
-+#endif /* CONFIG_AARCH32_EMULATION */
-+
-+#endif
-diff --git a/arch/aarch64/include/asm/hwcap.h b/arch/aarch64/include/asm/hwcap.h
-new file mode 100644
-index 0000000..d6f2eef
---- /dev/null
-+++ b/arch/aarch64/include/asm/hwcap.h
-@@ -0,0 +1,58 @@
-+/*
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+#ifndef __ASM_HWCAP_H
-+#define __ASM_HWCAP_H
-+
-+/*
-+ * HWCAP flags - for elf_hwcap (in kernel) and AT_HWCAP
-+ */
-+#define HWCAP_FP		(1 << 0)
-+#define HWCAP_ASIMD		(1 << 1)
-+
-+#ifdef CONFIG_AARCH32_EMULATION
-+#define COMPAT_HWCAP_HALF	(1 << 1)
-+#define COMPAT_HWCAP_THUMB	(1 << 2)
-+#define COMPAT_HWCAP_FAST_MULT	(1 << 4)
-+#define COMPAT_HWCAP_VFP	(1 << 6)
-+#define COMPAT_HWCAP_EDSP	(1 << 7)
-+#define COMPAT_HWCAP_NEON	(1 << 12)
-+#define COMPAT_HWCAP_VFPv3	(1 << 13)
-+#define COMPAT_HWCAP_TLS	(1 << 15)
-+#define COMPAT_HWCAP_VFPv4	(1 << 16)
-+#define COMPAT_HWCAP_IDIVA	(1 << 17)
-+#define COMPAT_HWCAP_IDIVT	(1 << 18)
-+#define COMPAT_HWCAP_IDIV	(COMPAT_HWCAP_IDIVA|COMPAT_HWCAP_IDIVT)
-+
-+#endif /* CONFIG_AARCH32_EMULATION */
-+
-+#if defined(__KERNEL__) && !defined(__ASSEMBLY__)
-+/*
-+ * This yields a mask that user programs can use to figure out what
-+ * instruction set this cpu supports.
-+ */
-+#define ELF_HWCAP		(elf_hwcap)
-+#ifdef CONFIG_AARCH32_EMULATION
-+#define COMPAT_ELF_HWCAP	(COMPAT_HWCAP_HALF|COMPAT_HWCAP_THUMB|\
-+				 COMPAT_HWCAP_FAST_MULT|COMPAT_HWCAP_EDSP|\
-+				 COMPAT_HWCAP_TLS|COMPAT_HWCAP_VFP|\
-+				 COMPAT_HWCAP_VFPv3|COMPAT_HWCAP_VFPv4|\
-+				 COMPAT_HWCAP_NEON|COMPAT_HWCAP_IDIV)
-+#endif
-+extern unsigned int elf_hwcap;
-+#endif
-+
-+#endif
-diff --git a/arch/aarch64/include/asm/param.h b/arch/aarch64/include/asm/param.h
-new file mode 100644
-index 0000000..8977c76
---- /dev/null
-+++ b/arch/aarch64/include/asm/param.h
++++ b/arch/aarch64/include/asm/statfs.h
 @@ -0,0 +1,24 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
@@ -344,20 +142,20 @@ index 0000000..8977c76
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
-+#ifndef __ASM_PARAM_H
-+#define __ASM_PARAM_H
++#ifndef __ASM_STATFS_H
++#define __ASM_STATFS_H
 +
-+#define EXEC_PAGESIZE	65536
++#define ARCH_PACK_COMPAT_STATFS64 __attribute__((packed,aligned(4)))
 +
-+#include <asm-generic/param.h>
++#include <asm-generic/statfs.h>
 +
 +#endif
-diff --git a/arch/aarch64/include/asm/shmparam.h b/arch/aarch64/include/asm/shmparam.h
+diff --git a/arch/aarch64/include/asm/syscalls.h b/arch/aarch64/include/asm/syscalls.h
 new file mode 100644
-index 0000000..e0e2eed
+index 0000000..c58969e
 --- /dev/null
-+++ b/arch/aarch64/include/asm/shmparam.h
-@@ -0,0 +1,29 @@
++++ b/arch/aarch64/include/asm/syscalls.h
+@@ -0,0 +1,41 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
 + *
@@ -374,28 +172,38 @@ index 0000000..e0e2eed
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
-+#ifndef __ASM_SHMPARAM_H
-+#define __ASM_SHMPARAM_H
++#ifndef __ASM_SYSCALLS_H
++#define __ASM_SYSCALLS_H
++
++#include <linux/linkage.h>
++#include <linux/compiler.h>
++#include <linux/signal.h>
 +
 +/*
-+ * For IPC syscalls from compat tasks, we need to use the legacy 16k
-+ * alignment value. Since we don't have aliasing D-caches, the rest of
-+ * the time we can safely use PAGE_SIZE.
++ * System call wrappers implemented in kernel/entry.S.
 + */
-+#define COMPAT_SHMLBA	0x4000
++asmlinkage long sys_execve_wrapper(const char __user *filename,
++				   const char __user *const __user *argv,
++				   const char __user *const __user *envp);
++asmlinkage long sys_clone_wrapper(unsigned long clone_flags,
++				  unsigned long newsp,
++				  void __user *parent_tid,
++				  unsigned long tls_val,
++				  void __user *child_tid);
++asmlinkage long sys_rt_sigreturn_wrapper(void);
++asmlinkage long sys_sigaltstack_wrapper(const stack_t __user *uss,
++					stack_t __user *uoss);
 +
-+#include <asm-generic/shmparam.h>
++#include <asm-generic/syscalls.h>
 +
-+#endif /* __ASM_SHMPARAM_H */
-diff --git a/arch/aarch64/kernel/elf.c b/arch/aarch64/kernel/elf.c
++#endif	/* __ASM_SYSCALLS_H */
+diff --git a/arch/aarch64/include/asm/unistd.h b/arch/aarch64/include/asm/unistd.h
 new file mode 100644
-index 0000000..7c2ff95
+index 0000000..66399a3
 --- /dev/null
-+++ b/arch/aarch64/kernel/elf.c
-@@ -0,0 +1,42 @@
++++ b/arch/aarch64/include/asm/unistd.h
+@@ -0,0 +1,28 @@
 +/*
-+ * ELF personality setting
-+ *
 + * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -411,28 +219,161 @@ index 0000000..7c2ff95
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
++#if !defined(__ASM_UNISTD_H) || defined(__SYSCALL)
++#define __ASM_UNISTD_H
++
++#ifndef __SYSCALL_COMPAT
++#include <asm-generic/unistd.h>
++#endif
++
++#if defined(__KERNEL__) && defined(CONFIG_AARCH32_EMULATION)
++#include <asm/unistd32.h>
++#endif
++
++#endif /* __ASM_UNISTD_H */
+diff --git a/arch/aarch64/kernel/sys.c b/arch/aarch64/kernel/sys.c
+new file mode 100644
+index 0000000..c1af95d
+--- /dev/null
++++ b/arch/aarch64/kernel/sys.c
+@@ -0,0 +1,139 @@
++/*
++ * AArch64-specific system calls implementation
++ *
++ * Copyright (C) 2012 ARM Ltd.
++ * Author: Catalin Marinas <catalin.marinas@arm.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++#include <linux/compiler.h>
++#include <linux/errno.h>
++#include <linux/fs.h>
++#include <linux/mm.h>
 +#include <linux/export.h>
 +#include <linux/sched.h>
-+#include <linux/personality.h>
-+#include <linux/binfmts.h>
-+#include <linux/elf.h>
++#include <linux/slab.h>
++#include <linux/syscalls.h>
 +
-+void elf_set_personality(int personality)
++/*
++ * Clone a task - this clones the calling program thread.
++ */
++asmlinkage long sys_clone(unsigned long clone_flags, unsigned long newsp,
++			  int __user *parent_tidptr, unsigned long tls_val,
++			  int __user *child_tidptr, struct pt_regs *regs)
 +{
-+	switch (personality & PER_MASK) {
-+	case PER_LINUX:
-+		clear_thread_flag(TIF_32BIT);
-+		break;
-+	case PER_LINUX32:
-+		set_thread_flag(TIF_32BIT);
-+		break;
-+	default:
-+		pr_warning("Process %s tried to assume unknown personality %d\n",
-+			   current->comm, personality);
-+		return;
-+	}
-+
-+	current->personality = personality;
++	if (!newsp)
++		newsp = regs->sp;
++	/* 16-byte aligned stack mandatory on AArch64 */
++	if (newsp & 15)
++		return -EINVAL;
++	return do_fork(clone_flags, newsp, regs, 0, parent_tidptr, child_tidptr);
 +}
-+EXPORT_SYMBOL(elf_set_personality);
++
++/*
++ * sys_execve() executes a new program.
++ */
++asmlinkage long sys_execve(const char __user *filenamei,
++			   const char __user *const __user *argv,
++			   const char __user *const __user *envp,
++			   struct pt_regs *regs)
++{
++	long error;
++	char * filename;
++
++	filename = getname(filenamei);
++	error = PTR_ERR(filename);
++	if (IS_ERR(filename))
++		goto out;
++	error = do_execve(filename, argv, envp, regs);
++	putname(filename);
++out:
++	return error;
++}
++
++int kernel_execve(const char *filename,
++		  const char *const argv[],
++		  const char *const envp[])
++{
++	struct pt_regs regs;
++	int ret;
++
++	memset(&regs, 0, sizeof(struct pt_regs));
++	ret = do_execve(filename,
++			(const char __user *const __user *)argv,
++			(const char __user *const __user *)envp, &regs);
++	if (ret < 0)
++		goto out;
++
++	/*
++	 * Save argc to the register structure for userspace.
++	 */
++	regs.regs[0] = ret;
++
++	/*
++	 * We were successful.  We won't be returning to our caller, but
++	 * instead to user space by manipulating the kernel stack.
++	 */
++	asm(	"add	x0, %0, %1\n\t"
++		"mov	x1, %2\n\t"
++		"mov	x2, %3\n\t"
++		"bl	memmove\n\t"	/* copy regs to top of stack */
++		"mov	x27, #0\n\t"	/* not a syscall */
++		"mov	x28, %0\n\t"	/* thread structure */
++		"mov	sp, x0\n\t"	/* reposition stack pointer */
++		"b	ret_to_user"
++		:
++		: "r" (current_thread_info()),
++		  "Ir" (THREAD_START_SP - sizeof(regs)),
++		  "r" (&regs),
++		  "Ir" (sizeof(regs))
++		: "x0", "x1", "x2", "x27", "x28", "x30", "memory");
++
++ out:
++	return ret;
++}
++EXPORT_SYMBOL(kernel_execve);
++
++asmlinkage long sys_mmap(unsigned long addr, unsigned long len,
++			 unsigned long prot, unsigned long flags,
++			 unsigned long fd, off_t off)
++{
++	if (offset_in_page(off) != 0)
++		return -EINVAL;
++
++	return sys_mmap_pgoff(addr, len, prot, flags, fd, off >> PAGE_SHIFT);
++}
++
++/*
++ * Wrappers to pass the pt_regs argument.
++ */
++#define sys_execve		sys_execve_wrapper
++#define sys_clone		sys_clone_wrapper
++#define sys_rt_sigreturn	sys_rt_sigreturn_wrapper
++#define sys_sigaltstack		sys_sigaltstack_wrapper
++
++#include <asm/syscalls.h>
++
++#undef __SYSCALL
++#define __SYSCALL(nr, sym)	[nr] = sym,
++
++/*
++ * The sys_call_table array must be 4K aligned to be accessible from
++ * kernel/entry.S.
++ */
++void *sys_call_table[__NR_syscalls] __aligned(4096) = {
++	[0 ... __NR_syscalls - 1] = sys_ni_syscall,
++#include <asm/unistd.h>
++};
 
