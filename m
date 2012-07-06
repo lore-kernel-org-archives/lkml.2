@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758542Ab2GFVKg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 17:10:36 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33150 "EHLO
+	id S1758677Ab2GFVN0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 17:13:26 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:32933 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758336Ab2GFVGp (ORCPT
+	with ESMTP id S1756114Ab2GFVGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 17:06:45 -0400
+	Fri, 6 Jul 2012 17:06:42 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 29/36] AArch64: Debugging support
-Date: Fri,  6 Jul 2012 22:06:10 +0100
-Message-Id: <1341608777-12982-30-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH 18/36] AArch64: Atomic operations
+Date: Fri,  6 Jul 2012 22:05:59 +0100
+Message-Id: <1341608777-12982-19-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.9.111.gf3fb0
 In-Reply-To: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
 References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 06 Jul 2012 21:07:39.0386 (UTC) FILETIME=[602805A0:01CD5BBB]
-X-MC-Unique: 112070622064307501
+X-OriginalArrivalTime: 06 Jul 2012 21:07:34.0982 (UTC) FILETIME=[5D880660:01CD5BBB]
+X-MC-Unique: 112070622064101201
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66LDLAc005438
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q66LDY9a005442
 
-From: Will Deacon <will.deacon@arm.com>
-
-This patch adds ptrace, debug monitors and hardware breakpoints support.
+This patch introduces the atomic, mutex and futex operations. Many
+atomic operations use the load-acquire and store-release operations
+which imply barriers, avoiding the need for explicit DMB.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/aarch64/include/asm/debug-monitors.h |   89 +++
- arch/aarch64/include/asm/hw_breakpoint.h  |  138 +++++
- arch/aarch64/kernel/debug-monitors.c      |  289 ++++++++++
- arch/aarch64/kernel/hw_breakpoint.c       |  881 +++++++++++++++++++++++++++++
- arch/aarch64/kernel/ptrace.c              |  835 +++++++++++++++++++++++++++
- 5 files changed, 2232 insertions(+), 0 deletions(-)
- create mode 100644 arch/aarch64/include/asm/debug-monitors.h
- create mode 100644 arch/aarch64/include/asm/hw_breakpoint.h
- create mode 100644 arch/aarch64/kernel/debug-monitors.c
- create mode 100644 arch/aarch64/kernel/hw_breakpoint.c
- create mode 100644 arch/aarch64/kernel/ptrace.c
+ arch/aarch64/include/asm/atomic.h |  307 +++++++++++++++++++++++++++++++++++++
+ arch/aarch64/include/asm/futex.h  |  135 ++++++++++++++++
+ arch/aarch64/include/asm/mutex.h  |  132 ++++++++++++++++
+ 3 files changed, 574 insertions(+), 0 deletions(-)
+ create mode 100644 arch/aarch64/include/asm/atomic.h
+ create mode 100644 arch/aarch64/include/asm/futex.h
+ create mode 100644 arch/aarch64/include/asm/mutex.h
 
-diff --git a/arch/aarch64/include/asm/debug-monitors.h b/arch/aarch64/include/asm/debug-monitors.h
+diff --git a/arch/aarch64/include/asm/atomic.h b/arch/aarch64/include/asm/atomic.h
 new file mode 100644
-index 0000000..23404aa
+index 0000000..a26675b
 --- /dev/null
-+++ b/arch/aarch64/include/asm/debug-monitors.h
-@@ -0,0 +1,89 @@
++++ b/arch/aarch64/include/asm/atomic.h
+@@ -0,0 +1,307 @@
 +/*
++ * Based on arch/arm/include/asm/atomic.h
++ *
++ * Copyright (C) 1996 Russell King.
++ * Copyright (C) 2002 Deep Blue Solutions Ltd.
 + * Copyright (C) 2012 ARM Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -66,85 +66,299 @@ index 0000000..23404aa
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
-+#ifndef __ASM_DEBUG_MONITORS_H
-+#define __ASM_DEBUG_MONITORS_H
++#ifndef __ASM_ATOMIC_H
++#define __ASM_ATOMIC_H
++
++#include <linux/compiler.h>
++#include <linux/types.h>
++
++#include <asm/barrier.h>
++#include <asm/cmpxchg.h>
++
++#define ATOMIC_INIT(i)	{ (i) }
 +
 +#ifdef __KERNEL__
 +
-+#define	DBG_ESR_EVT(x)		(((x) >> 27) & 0x7)
++/*
++ * On ARM, ordinary assignment (str instruction) doesn't clear the local
++ * strex/ldrex monitor on some implementations. The reason we can use it for
++ * atomic_set() is the clrex or dummy strex done on every exception return.
++ */
++#define atomic_read(v)	(*(volatile int *)&(v)->counter)
++#define atomic_set(v,i)	(((v)->counter) = (i))
 +
-+/* AArch64 */
-+#define DBG_ESR_EVT_HWBP	0x0
-+#define DBG_ESR_EVT_HWSS	0x1
-+#define DBG_ESR_EVT_HWWP	0x2
-+#define DBG_ESR_EVT_BRK		0x6
-+
-+enum debug_el {
-+	DBG_ACTIVE_EL0 = 0,
-+	DBG_ACTIVE_EL1,
-+};
-+
-+/* AArch32 */
-+#define DBG_ESR_EVT_BKPT	0x4
-+#define DBG_ESR_EVT_VECC	0x5
-+
-+#define AARCH32_BREAK_ARM	0x07f001f0
-+#define AARCH32_BREAK_THUMB	0xde01
-+#define AARCH32_BREAK_THUMB2_LO	0xf7f0
-+#define AARCH32_BREAK_THUMB2_HI	0xa000
-+
-+#ifndef __ASSEMBLY__
-+struct task_struct;
-+
-+#define local_dbg_save(flags)							\
-+	do {									\
-+		typecheck(unsigned long, flags);				\
-+		asm volatile(							\
-+		"mrs	%0, daif			// local_dbg_save\n"	\
-+		"msr	daifset, #8"						\
-+		: "=r" (flags) : : "memory");					\
-+	} while (0)
-+
-+#define local_dbg_restore(flags)						\
-+	do {									\
-+		typecheck(unsigned long, flags);				\
-+		asm volatile(							\
-+		"msr	daif, %0			// local_dbg_restore\n"	\
-+		: : "r" (flags) : "memory");					\
-+	} while (0)
-+
-+#define DBG_ARCH_ID_RESERVED	0	/* In case of ptrace ABI updates. */
-+
-+u8 debug_monitors_arch(void);
-+
-+void enable_debug_monitors(enum debug_el el);
-+void disable_debug_monitors(enum debug_el el);
-+
-+void user_rewind_single_step(struct task_struct *task);
-+void user_fastforward_single_step(struct task_struct *task);
-+
-+void kernel_enable_single_step(struct pt_regs *regs);
-+void kernel_disable_single_step(void);
-+int kernel_active_single_step(void);
-+
-+#ifdef CONFIG_HAVE_HW_BREAKPOINT
-+int reinstall_suspended_bps(struct pt_regs *regs);
-+#else
-+static inline int reinstall_suspended_bps(struct pt_regs *regs)
++/*
++ * AArch64 UP and SMP safe atomic ops.  We use load exclusive and
++ * store exclusive to ensure that these are atomic.  We may loop
++ * to ensure that the update happens.
++ */
++static inline void atomic_add(int i, atomic_t *v)
 +{
-+	return -ENODEV;
-+}
-+#endif
++	unsigned long tmp;
++	int result;
 +
-+#endif	/* __ASSEMBLY */
-+#endif	/* __KERNEL__ */
-+#endif	/* __ASM_DEBUG_MONITORS_H */
-diff --git a/arch/aarch64/include/asm/hw_breakpoint.h b/arch/aarch64/include/asm/hw_breakpoint.h
++	asm volatile("// atomic_add\n"
++"1:	ldxr	%w0, [%3]\n"
++"	add	%w0, %w0, %w4\n"
++"	stxr	%w1, %w0, [%3]\n"
++"	cbnz	%w1,1b"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter), "Ir" (i)
++	: "cc");
++}
++
++static inline int atomic_add_return(int i, atomic_t *v)
++{
++	unsigned long tmp;
++	int result;
++
++	asm volatile("// atomic_add_return\n"
++"1:	ldaxr	%w0, [%3]\n"
++"	add	%w0, %w0, %w4\n"
++"	stlxr	%w1, %w0, [%3]\n"
++"	cbnz	%w1, 1b"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter), "Ir" (i)
++	: "cc");
++
++	return result;
++}
++
++static inline void atomic_sub(int i, atomic_t *v)
++{
++	unsigned long tmp;
++	int result;
++
++	asm volatile("// atomic_sub\n"
++"1:	ldxr	%w0, [%3]\n"
++"	sub	%w0, %w0, %w4\n"
++"	stxr	%w1, %w0, [%3]\n"
++"	cbnz	%w1, 1b"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter), "Ir" (i)
++	: "cc");
++}
++
++static inline int atomic_sub_return(int i, atomic_t *v)
++{
++	unsigned long tmp;
++	int result;
++
++	asm volatile("// atomic_sub_return\n"
++"1:	ldaxr	%w0, [%3]\n"
++"	sub	%w0, %w0, %w4\n"
++"	stlxr	%w1, %w0, [%3]\n"
++"	cbnz	%w1, 1b"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter), "Ir" (i)
++	: "cc");
++
++	return result;
++}
++
++static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
++{
++	unsigned long tmp;
++	int oldval;
++
++	asm volatile("// atomic_cmpxchg\n"
++"1:	ldaxr	%w1, [%3]\n"
++"	cmp	%w1, %w4\n"
++"	b.ne	2f\n"
++"	stlxr	%w0, %w5, [%3]\n"
++"	cbnz	%w0, 1b\n"
++"2:"
++	: "=&r" (tmp), "=&r" (oldval), "+o" (ptr->counter)
++	: "r" (&ptr->counter), "Ir" (old), "r" (new)
++	: "cc");
++
++	return oldval;
++}
++
++static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
++{
++	unsigned long tmp, tmp2;
++
++	asm volatile("// atomic_clear_mask\n"
++"1:	ldxr	%0, [%3]\n"
++"	bic	%0, %0, %4\n"
++"	stxr	%w1, %0, [%3]\n"
++"	cbnz	%w1, 1b"
++	: "=&r" (tmp), "=&r" (tmp2), "+o" (*addr)
++	: "r" (addr), "Ir" (mask)
++	: "cc");
++}
++
++#define atomic_xchg(v, new) (xchg(&((v)->counter), new))
++
++static inline int __atomic_add_unless(atomic_t *v, int a, int u)
++{
++	int c, old;
++
++	c = atomic_read(v);
++	while (c != u && (old = atomic_cmpxchg((v), c, c + a)) != c)
++		c = old;
++	return c;
++}
++
++#define atomic_inc(v)		atomic_add(1, v)
++#define atomic_dec(v)		atomic_sub(1, v)
++
++#define atomic_inc_and_test(v)	(atomic_add_return(1, v) == 0)
++#define atomic_dec_and_test(v)	(atomic_sub_return(1, v) == 0)
++#define atomic_inc_return(v)    (atomic_add_return(1, v))
++#define atomic_dec_return(v)    (atomic_sub_return(1, v))
++#define atomic_sub_and_test(i, v) (atomic_sub_return(i, v) == 0)
++
++#define atomic_add_negative(i,v) (atomic_add_return(i, v) < 0)
++
++#define smp_mb__before_atomic_dec()	smp_mb()
++#define smp_mb__after_atomic_dec()	smp_mb()
++#define smp_mb__before_atomic_inc()	smp_mb()
++#define smp_mb__after_atomic_inc()	smp_mb()
++
++/*
++ * 64-bit atomic operations.
++ */
++#define ATOMIC64_INIT(i) { (i) }
++
++#define atomic64_read(v)	(*(volatile long long *)&(v)->counter)
++#define atomic64_set(v,i)	(((v)->counter) = (i))
++
++static inline void atomic64_add(u64 i, atomic64_t *v)
++{
++	long result;
++	unsigned long tmp;
++
++	asm volatile("// atomic64_add\n"
++"1:	ldxr	%0, [%3]\n"
++"	add	%0, %0, %4\n"
++"	stxr	%w1, %0, [%3]\n"
++"	cbnz	%w1, 1b"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter), "Ir" (i)
++	: "cc");
++}
++
++static inline long atomic64_add_return(long i, atomic64_t *v)
++{
++	long result;
++	unsigned long tmp;
++
++	asm volatile("// atomic64_add_return\n"
++"1:	ldaxr	%0, [%3]\n"
++"	add	%0, %0, %4\n"
++"	stlxr	%w1, %0, [%3]\n"
++"	cbnz	%w1, 1b"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter), "Ir" (i)
++	: "cc");
++
++	return result;
++}
++
++static inline void atomic64_sub(u64 i, atomic64_t *v)
++{
++	long result;
++	unsigned long tmp;
++
++	asm volatile("// atomic64_sub\n"
++"1:	ldxr	%0, [%3]\n"
++"	sub	%0, %0, %4\n"
++"	stxr	%w1, %0, [%3]\n"
++"	cbnz	%w1, 1b"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter), "Ir" (i)
++	: "cc");
++}
++
++static inline long atomic64_sub_return(long i, atomic64_t *v)
++{
++	long result;
++	unsigned long tmp;
++
++	asm volatile("// atomic64_sub_return\n"
++"1:	ldaxr	%0, [%3]\n"
++"	sub	%0, %0, %4\n"
++"	stlxr	%w1, %0, [%3]\n"
++"	cbnz	%w1, 1b"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter), "Ir" (i)
++	: "cc");
++
++	return result;
++}
++
++static inline long atomic64_cmpxchg(atomic64_t *ptr, long old, long new)
++{
++	long oldval;
++	unsigned long res;
++
++	asm volatile("// atomic64_cmpxchg\n"
++"1:	ldaxr	%1, [%3]\n"
++"	cmp	%1, %4\n"
++"	b.ne	2f\n"
++"	stlxr	%w0, %5, [%3]\n"
++"	cbnz	%w0, 1b\n"
++"2:"
++	: "=&r" (res), "=&r" (oldval), "+o" (ptr->counter)
++	: "r" (&ptr->counter), "Ir" (old), "r" (new)
++	: "cc");
++
++	return oldval;
++}
++
++#define atomic64_xchg(v, new) (xchg(&((v)->counter), new))
++
++#define ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
++static inline long atomic64_dec_if_positive(atomic64_t *v)
++{
++	long result;
++	unsigned long tmp;
++
++	asm volatile("// atomic64_dec_if_positive\n"
++"1:	ldaxr	%0, [%3]\n"
++"	subs	%0, %0, #1\n"
++"	b.mi	2f\n"
++"	stlxr	%w1, %0, [%3]\n"
++"	cbnz	%w1, 1b\n"
++"2:"
++	: "=&r" (result), "=&r" (tmp), "+o" (v->counter)
++	: "r" (&v->counter)
++	: "cc");
++
++	return result;
++}
++
++static inline int atomic64_add_unless(atomic64_t *v, long a, long u)
++{
++	long c, old;
++
++	c = atomic64_read(v);
++	while (c != u && (old = atomic64_cmpxchg((v), c, c + a)) != c)
++		c = old;
++
++	return c != u;
++}
++
++#define atomic64_add_negative(a, v)	(atomic64_add_return((a), (v)) < 0)
++#define atomic64_inc(v)			atomic64_add(1LL, (v))
++#define atomic64_inc_return(v)		atomic64_add_return(1LL, (v))
++#define atomic64_inc_and_test(v)	(atomic64_inc_return(v) == 0)
++#define atomic64_sub_and_test(a, v)	(atomic64_sub_return((a), (v)) == 0)
++#define atomic64_dec(v)			atomic64_sub(1LL, (v))
++#define atomic64_dec_return(v)		atomic64_sub_return(1LL, (v))
++#define atomic64_dec_and_test(v)	(atomic64_dec_return((v)) == 0)
++#define atomic64_inc_not_zero(v)	atomic64_add_unless((v), 1LL, 0LL)
++
++#endif
++#endif
+diff --git a/arch/aarch64/include/asm/futex.h b/arch/aarch64/include/asm/futex.h
 new file mode 100644
-index 0000000..226eccf
+index 0000000..dd14a24
 --- /dev/null
-+++ b/arch/aarch64/include/asm/hw_breakpoint.h
-@@ -0,0 +1,138 @@
++++ b/arch/aarch64/include/asm/futex.h
+@@ -0,0 +1,135 @@
 +/*
 + * Copyright (C) 2012 ARM Ltd.
 + *
@@ -161,2149 +375,261 @@ index 0000000..226eccf
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
-+#ifndef __ASM_HW_BREAKPOINT_H
-+#define __ASM_HW_BREAKPOINT_H
++#ifndef __ASM_FUTEX_H
++#define __ASM_FUTEX_H
 +
 +#ifdef __KERNEL__
 +
-+struct arch_hw_breakpoint_ctrl {
-+	u32 __reserved	: 19,
-+	len		: 8,
-+	type		: 2,
-+	privilege	: 2,
-+	enabled		: 1;
-+};
-+
-+struct arch_hw_breakpoint {
-+	u64 address;
-+	u64 trigger;
-+	struct arch_hw_breakpoint_ctrl ctrl;
-+};
-+
-+static inline u32 encode_ctrl_reg(struct arch_hw_breakpoint_ctrl ctrl)
-+{
-+	return (ctrl.len << 5) | (ctrl.type << 3) | (ctrl.privilege << 1) |
-+		ctrl.enabled;
-+}
-+
-+static inline void decode_ctrl_reg(u32 reg,
-+				   struct arch_hw_breakpoint_ctrl *ctrl)
-+{
-+	ctrl->enabled	= reg & 0x1;
-+	reg >>= 1;
-+	ctrl->privilege	= reg & 0x3;
-+	reg >>= 2;
-+	ctrl->type	= reg & 0x3;
-+	reg >>= 2;
-+	ctrl->len	= reg & 0xff;
-+}
-+
-+/* Breakpoint */
-+#define ARM_BREAKPOINT_EXECUTE	0
-+
-+/* Watchpoints */
-+#define ARM_BREAKPOINT_LOAD	1
-+#define ARM_BREAKPOINT_STORE	2
-+#define AARCH64_ESR_ACCESS_MASK	(1 << 6)
-+
-+/* Privilege Levels */
-+#define AARCH64_BREAKPOINT_EL1	1
-+#define AARCH64_BREAKPOINT_EL0	2
-+
-+/* Lengths */
-+#define ARM_BREAKPOINT_LEN_1	0x1
-+#define ARM_BREAKPOINT_LEN_2	0x3
-+#define ARM_BREAKPOINT_LEN_4	0xf
-+#define ARM_BREAKPOINT_LEN_8	0xff
-+
-+/* Kernel stepping */
-+#define ARM_KERNEL_STEP_NONE	0
-+#define ARM_KERNEL_STEP_ACTIVE	1
-+#define ARM_KERNEL_STEP_SUSPEND	2
-+
-+/*
-+ * Limits.
-+ * Changing these will require modifications to the register accessors.
-+ */
-+#define ARM_MAX_BRP		16
-+#define ARM_MAX_WRP		16
-+#define ARM_MAX_HBP_SLOTS	(ARM_MAX_BRP + ARM_MAX_WRP)
-+
-+/* Virtual debug register bases. */
-+#define AARCH64_DBG_REG_BVR	0
-+#define AARCH64_DBG_REG_BCR	(AARCH64_DBG_REG_BVR + ARM_MAX_BRP)
-+#define AARCH64_DBG_REG_WVR	(AARCH64_DBG_REG_BCR + ARM_MAX_BRP)
-+#define AARCH64_DBG_REG_WCR	(AARCH64_DBG_REG_WVR + ARM_MAX_WRP)
-+
-+/* Debug register names. */
-+#define AARCH64_DBG_REG_NAME_BVR	"bvr"
-+#define AARCH64_DBG_REG_NAME_BCR	"bcr"
-+#define AARCH64_DBG_REG_NAME_WVR	"wvr"
-+#define AARCH64_DBG_REG_NAME_WCR	"wcr"
-+
-+/* Accessor macros for the debug registers. */
-+#define AARCH64_DBG_READ(N, REG, VAL) do {\
-+	asm volatile("mrs %0, dbg" REG #N "_el1" : "=r" (VAL));\
-+} while (0)
-+
-+#define AARCH64_DBG_WRITE(N, REG, VAL) do {\
-+	asm volatile("msr dbg" REG #N "_el1, %0" :: "r" (VAL));\
-+} while (0)
-+
-+struct task_struct;
-+struct notifier_block;
-+struct perf_event;
-+struct pmu;
-+
-+extern int arch_bp_generic_fields(struct arch_hw_breakpoint_ctrl ctrl,
-+				  int *gen_len, int *gen_type);
-+extern int arch_check_bp_in_kernelspace(struct perf_event *bp);
-+extern int arch_validate_hwbkpt_settings(struct perf_event *bp);
-+extern int hw_breakpoint_exceptions_notify(struct notifier_block *unused,
-+					   unsigned long val, void *data);
-+
-+extern int arch_install_hw_breakpoint(struct perf_event *bp);
-+extern void arch_uninstall_hw_breakpoint(struct perf_event *bp);
-+extern void hw_breakpoint_pmu_read(struct perf_event *bp);
-+extern int hw_breakpoint_slots(int type);
-+
-+#ifdef CONFIG_HAVE_HW_BREAKPOINT
-+extern void hw_breakpoint_thread_switch(struct task_struct *next);
-+extern void ptrace_hw_copy_thread(struct task_struct *task);
-+#else
-+static inline void hw_breakpoint_thread_switch(struct task_struct *next)
-+{
-+}
-+static inline void ptrace_hw_copy_thread(struct task_struct *task)
-+{
-+}
-+#endif
-+
-+extern struct pmu perf_ops_bp;
-+
-+#endif	/* __KERNEL__ */
-+#endif	/* __ASM_BREAKPOINT_H */
-diff --git a/arch/aarch64/kernel/debug-monitors.c b/arch/aarch64/kernel/debug-monitors.c
-new file mode 100644
-index 0000000..94bc2da
---- /dev/null
-+++ b/arch/aarch64/kernel/debug-monitors.c
-@@ -0,0 +1,289 @@
-+/*
-+ * ARMv8 single-step debug support and mdscr context switching.
-+ *
-+ * Copyright (C) 2012 ARM Limited
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ *
-+ * Author: Will Deacon <will.deacon@arm.com>
-+ */
-+
-+#include <linux/cpu.h>
-+#include <linux/debugfs.h>
-+#include <linux/hardirq.h>
-+#include <linux/init.h>
-+#include <linux/ptrace.h>
-+#include <linux/stat.h>
-+
-+#include <asm/debug-monitors.h>
-+#include <asm/local.h>
-+#include <asm/cputype.h>
-+#include <asm/system_misc.h>
-+
-+/* Low-level stepping controls. */
-+#define DBG_MDSCR_SS		(1 << 0)
-+#define DBG_SPSR_SS		(1 << 21)
-+
-+/* MDSCR_EL1 enabling bits */
-+#define DBG_MDSCR_KDE		(1 << 13)
-+#define DBG_MDSCR_MDE		(1 << 15)
-+#define DBG_MDSCR_MASK		~(DBG_MDSCR_KDE | DBG_MDSCR_MDE)
-+
-+/* Determine debug architecture. */
-+u8 debug_monitors_arch(void)
-+{
-+	return read_cpuid(ID_AA64DFR0_EL1) & 0xf;
-+}
-+
-+/*
-+ * MDSCR access routines.
-+ */
-+static void mdscr_write(u32 mdscr)
-+{
-+	unsigned long flags;
-+	local_dbg_save(flags);
-+	asm volatile("msr mdscr_el1, %0" :: "r" (mdscr));
-+	local_dbg_restore(flags);
-+}
-+
-+static u32 mdscr_read(void)
-+{
-+	u32 mdscr;
-+	asm volatile("mrs %0, mdscr_el1" : "=r" (mdscr));
-+	return mdscr;
-+}
-+
-+/*
-+ * Allow root to disable self-hosted debug from userspace.
-+ * This is useful if you want to connect an external JTAG debugger.
-+ */
-+static u32 debug_enabled = 1;
-+
-+static int create_debug_debugfs_entry(void)
-+{
-+	debugfs_create_bool("debug_enabled", 0644, NULL, &debug_enabled);
-+	return 0;
-+}
-+fs_initcall(create_debug_debugfs_entry);
-+
-+static int __init early_debug_disable(char *buf)
-+{
-+	debug_enabled = 0;
-+	return 0;
-+}
-+
-+early_param("nodebugmon", early_debug_disable);
-+
-+/*
-+ * Keep track of debug users on each core.
-+ * The ref counts are per-cpu so we use a local_t type.
-+ */
-+static DEFINE_PER_CPU(local_t, mde_ref_count);
-+static DEFINE_PER_CPU(local_t, kde_ref_count);
-+
-+void enable_debug_monitors(enum debug_el el)
-+{
-+	u32 mdscr, enable = 0;
-+
-+	WARN_ON(preemptible());
-+
-+	if (local_inc_return(&__get_cpu_var(mde_ref_count)) == 1)
-+		enable = DBG_MDSCR_MDE;
-+
-+	if (el == DBG_ACTIVE_EL1 &&
-+	    local_inc_return(&__get_cpu_var(kde_ref_count)) == 1)
-+		enable |= DBG_MDSCR_KDE;
-+
-+	if (enable && debug_enabled) {
-+		mdscr = mdscr_read();
-+		mdscr |= enable;
-+		mdscr_write(mdscr);
-+	}
-+}
-+
-+void disable_debug_monitors(enum debug_el el)
-+{
-+	u32 mdscr, disable = 0;
-+
-+	WARN_ON(preemptible());
-+
-+	if (local_dec_and_test(&__get_cpu_var(mde_ref_count)))
-+		disable = ~DBG_MDSCR_MDE;
-+
-+	if (el == DBG_ACTIVE_EL1 &&
-+	    local_dec_and_test(&__get_cpu_var(kde_ref_count)))
-+		disable &= ~DBG_MDSCR_KDE;
-+
-+	if (disable) {
-+		mdscr = mdscr_read();
-+		mdscr &= disable;
-+		mdscr_write(mdscr);
-+	}
-+}
-+
-+/*
-+ * OS lock clearing.
-+ */
-+static void clear_os_lock(void *unused)
-+{
-+	asm volatile("msr mdscr_el1, %0" : : "r" (0));
-+	isb();
-+	asm volatile("msr oslar_el1, %0" : : "r" (0));
-+	isb();
-+}
-+
-+static int __cpuinit os_lock_notify(struct notifier_block *self,
-+				    unsigned long action, void *data)
-+{
-+	int cpu = (unsigned long)data;
-+	if (action == CPU_ONLINE)
-+		smp_call_function_single(cpu, clear_os_lock, NULL, 1);
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block __cpuinitdata os_lock_nb = {
-+	.notifier_call = os_lock_notify,
-+};
-+
-+static int __cpuinit debug_monitors_init(void)
-+{
-+	/* Clear the OS lock. */
-+	smp_call_function(clear_os_lock, NULL, 1);
-+	clear_os_lock(NULL);
-+
-+	/* Register hotplug handler. */
-+	register_cpu_notifier(&os_lock_nb);
-+	return 0;
-+}
-+postcore_initcall(debug_monitors_init);
-+
-+/*
-+ * Single step API and exception handling.
-+ */
-+static void set_regs_spsr_ss(struct pt_regs *regs)
-+{
-+	unsigned long spsr;
-+
-+	spsr = regs->pstate;
-+	spsr &= ~DBG_SPSR_SS;
-+	spsr |= DBG_SPSR_SS;
-+	regs->pstate = spsr;
-+}
-+
-+static void clear_regs_spsr_ss(struct pt_regs *regs)
-+{
-+	unsigned long spsr;
-+
-+	spsr = regs->pstate;
-+	spsr &= ~DBG_SPSR_SS;
-+	regs->pstate = spsr;
-+}
-+
-+static int single_step_handler(unsigned long addr, unsigned int esr,
-+			       struct pt_regs *regs)
-+{
-+	siginfo_t info;
-+
-+	/*
-+	 * If we are stepping a pending breakpoint, call the hw_breakpoint
-+	 * handler first.
-+	 */
-+	if (!reinstall_suspended_bps(regs))
-+		return 0;
-+
-+	if (user_mode(regs)) {
-+		info.si_signo = SIGTRAP;
-+		info.si_errno = 0;
-+		info.si_code  = TRAP_HWBKPT;
-+		info.si_addr  = (void __user *)instruction_pointer(regs);
-+		force_sig_info(SIGTRAP, &info, current);
-+
-+		/*
-+		 * ptrace will disable single step unless explicitly
-+		 * asked to re-enable it. For other clients, it makes
-+		 * sense to leave it enabled (i.e. rewind the controls
-+		 * to the active-not-pending state).
-+		 */
-+		user_rewind_single_step(current);
-+	} else {
-+		/* TODO: route to KGDB */
-+		pr_warning("Unexpected kernel single-step exception at EL1\n");
-+		/*
-+		 * Re-enable stepping since we know that we will be
-+		 * returning to regs.
-+		 */
-+		set_regs_spsr_ss(regs);
-+	}
-+
-+	return 0;
-+}
-+
-+static int __init single_step_init(void)
-+{
-+	hook_debug_fault_code(DBG_ESR_EVT_HWSS, single_step_handler, SIGTRAP,
-+			      TRAP_HWBKPT, "single-step handler");
-+	return 0;
-+}
-+arch_initcall(single_step_init);
-+
-+/* Re-enable single step for syscall restarting. */
-+void user_rewind_single_step(struct task_struct *task)
-+{
-+	/*
-+	 * If single step is active for this thread, then set SPSR.SS
-+	 * to 1 to avoid returning to the active-pending state.
-+	 */
-+	if (test_ti_thread_flag(task_thread_info(task), TIF_SINGLESTEP))
-+		set_regs_spsr_ss(task_pt_regs(task));
-+}
-+
-+void user_fastforward_single_step(struct task_struct *task)
-+{
-+	if (test_ti_thread_flag(task_thread_info(task), TIF_SINGLESTEP))
-+		clear_regs_spsr_ss(task_pt_regs(task));
-+}
-+
-+/* Kernel API */
-+void kernel_enable_single_step(struct pt_regs *regs)
-+{
-+	WARN_ON(!irqs_disabled());
-+	set_regs_spsr_ss(regs);
-+	mdscr_write(mdscr_read() | DBG_MDSCR_SS);
-+	enable_debug_monitors(DBG_ACTIVE_EL1);
-+}
-+
-+void kernel_disable_single_step(void)
-+{
-+	WARN_ON(!irqs_disabled());
-+	mdscr_write(mdscr_read() & ~DBG_MDSCR_SS);
-+	disable_debug_monitors(DBG_ACTIVE_EL1);
-+}
-+
-+int kernel_active_single_step(void)
-+{
-+	WARN_ON(!irqs_disabled());
-+	return mdscr_read() & DBG_MDSCR_SS;
-+}
-+
-+/* ptrace API */
-+void user_enable_single_step(struct task_struct *task)
-+{
-+	set_ti_thread_flag(task_thread_info(task), TIF_SINGLESTEP);
-+	set_regs_spsr_ss(task_pt_regs(task));
-+}
-+
-+void user_disable_single_step(struct task_struct *task)
-+{
-+	clear_ti_thread_flag(task_thread_info(task), TIF_SINGLESTEP);
-+}
-diff --git a/arch/aarch64/kernel/hw_breakpoint.c b/arch/aarch64/kernel/hw_breakpoint.c
-new file mode 100644
-index 0000000..701f873
---- /dev/null
-+++ b/arch/aarch64/kernel/hw_breakpoint.c
-@@ -0,0 +1,881 @@
-+/*
-+ * HW_breakpoint: a unified kernel/user-space hardware breakpoint facility,
-+ * using the CPU's debug registers.
-+ *
-+ * Copyright (C) 2012 ARM Limited
-+ * Author: Will Deacon <will.deacon@arm.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ */
-+
-+#define pr_fmt(fmt) "hw-breakpoint: " fmt
-+
-+#include <linux/errno.h>
-+#include <linux/hw_breakpoint.h>
-+#include <linux/perf_event.h>
-+#include <linux/ptrace.h>
-+#include <linux/smp.h>
-+
-+#include <asm/compat.h>
-+#include <asm/current.h>
-+#include <asm/debug-monitors.h>
-+#include <asm/hw_breakpoint.h>
-+#include <asm/kdebug.h>
-+#include <asm/traps.h>
-+#include <asm/cputype.h>
-+#include <asm/system_misc.h>
-+
-+/* Breakpoint currently in use for each BRP. */
-+static DEFINE_PER_CPU(struct perf_event *, bp_on_reg[ARM_MAX_BRP]);
-+
-+/* Watchpoint currently in use for each WRP. */
-+static DEFINE_PER_CPU(struct perf_event *, wp_on_reg[ARM_MAX_WRP]);
-+
-+/* Currently stepping a per-CPU kernel breakpoint. */
-+static DEFINE_PER_CPU(int, stepping_kernel_bp);
-+
-+/* Number of BRP/WRP registers on this CPU. */
-+static int core_num_brps;
-+static int core_num_wrps;
-+
-+/* Determine number of BRP registers available. */
-+static int get_num_brps(void)
-+{
-+	return ((read_cpuid(ID_AA64DFR0_EL1) >> 12) & 0xf) + 1;
-+}
-+
-+/* Determine number of WRP registers available. */
-+static int get_num_wrps(void)
-+{
-+	return ((read_cpuid(ID_AA64DFR0_EL1) >> 20) & 0xf) + 1;
-+}
-+
-+int hw_breakpoint_slots(int type)
-+{
-+	/*
-+	 * We can be called early, so don't rely on
-+	 * our static variables being initialised.
-+	 */
-+	switch (type) {
-+	case TYPE_INST:
-+		return get_num_brps();
-+	case TYPE_DATA:
-+		return get_num_wrps();
-+	default:
-+		pr_warning("unknown slot type: %d\n", type);
-+		return 0;
-+	}
-+}
-+
-+#define READ_WB_REG_CASE(OFF, N, REG, VAL)	\
-+	case (OFF + N):				\
-+		AARCH64_DBG_READ(N, REG, VAL);	\
-+		break
-+
-+#define WRITE_WB_REG_CASE(OFF, N, REG, VAL)	\
-+	case (OFF + N):				\
-+		AARCH64_DBG_WRITE(N, REG, VAL);	\
-+		break
-+
-+#define GEN_READ_WB_REG_CASES(OFF, REG, VAL)	\
-+	READ_WB_REG_CASE(OFF,  0, REG, VAL);	\
-+	READ_WB_REG_CASE(OFF,  1, REG, VAL);	\
-+	READ_WB_REG_CASE(OFF,  2, REG, VAL);	\
-+	READ_WB_REG_CASE(OFF,  3, REG, VAL);	\
-+	READ_WB_REG_CASE(OFF,  4, REG, VAL);	\
-+	READ_WB_REG_CASE(OFF,  5, REG, VAL);	\
-+	READ_WB_REG_CASE(OFF,  6, REG, VAL);	\
-+	READ_WB_REG_CASE(OFF,  7, REG, VAL);	\
-+	READ_WB_REG_CASE(OFF,  8, REG, VAL);	\
-+	READ_WB_REG_CASE(OFF,  9, REG, VAL);	\
-+	READ_WB_REG_CASE(OFF, 10, REG, VAL);	\
-+	READ_WB_REG_CASE(OFF, 11, REG, VAL);	\
-+	READ_WB_REG_CASE(OFF, 12, REG, VAL);	\
-+	READ_WB_REG_CASE(OFF, 13, REG, VAL);	\
-+	READ_WB_REG_CASE(OFF, 14, REG, VAL);	\
-+	READ_WB_REG_CASE(OFF, 15, REG, VAL)
-+
-+#define GEN_WRITE_WB_REG_CASES(OFF, REG, VAL)	\
-+	WRITE_WB_REG_CASE(OFF,  0, REG, VAL);	\
-+	WRITE_WB_REG_CASE(OFF,  1, REG, VAL);	\
-+	WRITE_WB_REG_CASE(OFF,  2, REG, VAL);	\
-+	WRITE_WB_REG_CASE(OFF,  3, REG, VAL);	\
-+	WRITE_WB_REG_CASE(OFF,  4, REG, VAL);	\
-+	WRITE_WB_REG_CASE(OFF,  5, REG, VAL);	\
-+	WRITE_WB_REG_CASE(OFF,  6, REG, VAL);	\
-+	WRITE_WB_REG_CASE(OFF,  7, REG, VAL);	\
-+	WRITE_WB_REG_CASE(OFF,  8, REG, VAL);	\
-+	WRITE_WB_REG_CASE(OFF,  9, REG, VAL);	\
-+	WRITE_WB_REG_CASE(OFF, 10, REG, VAL);	\
-+	WRITE_WB_REG_CASE(OFF, 11, REG, VAL);	\
-+	WRITE_WB_REG_CASE(OFF, 12, REG, VAL);	\
-+	WRITE_WB_REG_CASE(OFF, 13, REG, VAL);	\
-+	WRITE_WB_REG_CASE(OFF, 14, REG, VAL);	\
-+	WRITE_WB_REG_CASE(OFF, 15, REG, VAL)
-+
-+static u64 read_wb_reg(int reg, int n)
-+{
-+	u64 val = 0;
-+
-+	switch (reg + n) {
-+	GEN_READ_WB_REG_CASES(AARCH64_DBG_REG_BVR, AARCH64_DBG_REG_NAME_BVR, val);
-+	GEN_READ_WB_REG_CASES(AARCH64_DBG_REG_BCR, AARCH64_DBG_REG_NAME_BCR, val);
-+	GEN_READ_WB_REG_CASES(AARCH64_DBG_REG_WVR, AARCH64_DBG_REG_NAME_WVR, val);
-+	GEN_READ_WB_REG_CASES(AARCH64_DBG_REG_WCR, AARCH64_DBG_REG_NAME_WCR, val);
-+	default:
-+		pr_warning("attempt to read from unknown breakpoint register %d\n", n);
-+	}
-+
-+	return val;
-+}
-+
-+static void write_wb_reg(int reg, int n, u64 val)
-+{
-+	switch (reg + n) {
-+	GEN_WRITE_WB_REG_CASES(AARCH64_DBG_REG_BVR, AARCH64_DBG_REG_NAME_BVR, val);
-+	GEN_WRITE_WB_REG_CASES(AARCH64_DBG_REG_BCR, AARCH64_DBG_REG_NAME_BCR, val);
-+	GEN_WRITE_WB_REG_CASES(AARCH64_DBG_REG_WVR, AARCH64_DBG_REG_NAME_WVR, val);
-+	GEN_WRITE_WB_REG_CASES(AARCH64_DBG_REG_WCR, AARCH64_DBG_REG_NAME_WCR, val);
-+	default:
-+		pr_warning("attempt to write to unknown breakpoint register %d\n", n);
-+	}
-+	isb();
-+}
-+
-+/*
-+ * Convert a breakpoint privilege level to the corresponding exception
-+ * level.
-+ */
-+static enum debug_el debug_exception_level(int privilege)
-+{
-+	switch (privilege) {
-+	case AARCH64_BREAKPOINT_EL0:
-+		return DBG_ACTIVE_EL0;
-+	case AARCH64_BREAKPOINT_EL1:
-+		return DBG_ACTIVE_EL1;
-+	default:
-+		pr_warning("invalid breakpoint privilege level %d\n", privilege);
-+		return -EINVAL;
-+	}
-+}
-+
-+/*
-+ * Install a perf counter breakpoint.
-+ */
-+int arch_install_hw_breakpoint(struct perf_event *bp)
-+{
-+	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
-+	struct perf_event **slot, **slots;
-+	struct debug_info *debug_info = &current->thread.debug;
-+	int i, max_slots, ctrl_reg, val_reg, reg_enable;
-+	u32 ctrl;
-+
-+	if (info->ctrl.type == ARM_BREAKPOINT_EXECUTE) {
-+		/* Breakpoint */
-+		ctrl_reg = AARCH64_DBG_REG_BCR;
-+		val_reg = AARCH64_DBG_REG_BVR;
-+		slots = __get_cpu_var(bp_on_reg);
-+		max_slots = core_num_brps;
-+		reg_enable = !debug_info->bps_disabled;
-+	} else {
-+		/* Watchpoint */
-+		ctrl_reg = AARCH64_DBG_REG_WCR;
-+		val_reg = AARCH64_DBG_REG_WVR;
-+		slots = __get_cpu_var(wp_on_reg);
-+		max_slots = core_num_wrps;
-+		reg_enable = !debug_info->wps_disabled;
-+	}
-+
-+	for (i = 0; i < max_slots; ++i) {
-+		slot = &slots[i];
-+
-+		if (!*slot) {
-+			*slot = bp;
-+			break;
-+		}
-+	}
-+
-+	if (WARN_ONCE(i == max_slots, "Can't find any breakpoint slot"))
-+		return -ENOSPC;
-+
-+	/* Ensure debug monitors are enabled at the correct exception level.  */
-+	enable_debug_monitors(debug_exception_level(info->ctrl.privilege));
-+
-+	/* Setup the address register. */
-+	write_wb_reg(val_reg, i, info->address);
-+
-+	/* Setup the control register. */
-+	ctrl = encode_ctrl_reg(info->ctrl);
-+	write_wb_reg(ctrl_reg, i, reg_enable ? ctrl | 0x1 : ctrl & ~0x1);
-+
-+	return 0;
-+}
-+
-+void arch_uninstall_hw_breakpoint(struct perf_event *bp)
-+{
-+	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
-+	struct perf_event **slot, **slots;
-+	int i, max_slots, base;
-+
-+	if (info->ctrl.type == ARM_BREAKPOINT_EXECUTE) {
-+		/* Breakpoint */
-+		base = AARCH64_DBG_REG_BCR;
-+		slots = __get_cpu_var(bp_on_reg);
-+		max_slots = core_num_brps;
-+	} else {
-+		/* Watchpoint */
-+		base = AARCH64_DBG_REG_WCR;
-+		slots = __get_cpu_var(wp_on_reg);
-+		max_slots = core_num_wrps;
-+	}
-+
-+	/* Remove the breakpoint. */
-+	for (i = 0; i < max_slots; ++i) {
-+		slot = &slots[i];
-+
-+		if (*slot == bp) {
-+			*slot = NULL;
-+			break;
-+		}
-+	}
-+
-+	if (WARN_ONCE(i == max_slots, "Can't find any breakpoint slot"))
-+		return;
-+
-+	/* Reset the control register. */
-+	write_wb_reg(base, i, 0);
-+
-+	/* Release the debug monitors for the correct exception level.  */
-+	disable_debug_monitors(debug_exception_level(info->ctrl.privilege));
-+}
-+
-+static int get_hbp_len(u8 hbp_len)
-+{
-+	unsigned int len_in_bytes = 0;
-+
-+	switch (hbp_len) {
-+	case ARM_BREAKPOINT_LEN_1:
-+		len_in_bytes = 1;
-+		break;
-+	case ARM_BREAKPOINT_LEN_2:
-+		len_in_bytes = 2;
-+		break;
-+	case ARM_BREAKPOINT_LEN_4:
-+		len_in_bytes = 4;
-+		break;
-+	case ARM_BREAKPOINT_LEN_8:
-+		len_in_bytes = 8;
-+		break;
-+	}
-+
-+	return len_in_bytes;
-+}
-+
-+/*
-+ * Check whether bp virtual address is in kernel space.
-+ */
-+int arch_check_bp_in_kernelspace(struct perf_event *bp)
-+{
-+	unsigned int len;
-+	unsigned long va;
-+	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
-+
-+	va = info->address;
-+	len = get_hbp_len(info->ctrl.len);
-+
-+	return (va >= TASK_SIZE) && ((va + len - 1) >= TASK_SIZE);
-+}
-+
-+/*
-+ * Extract generic type and length encodings from an arch_hw_breakpoint_ctrl.
-+ * Hopefully this will disappear when ptrace can bypass the conversion
-+ * to generic breakpoint descriptions.
-+ */
-+int arch_bp_generic_fields(struct arch_hw_breakpoint_ctrl ctrl,
-+			   int *gen_len, int *gen_type)
-+{
-+	/* Type */
-+	switch (ctrl.type) {
-+	case ARM_BREAKPOINT_EXECUTE:
-+		*gen_type = HW_BREAKPOINT_X;
-+		break;
-+	case ARM_BREAKPOINT_LOAD:
-+		*gen_type = HW_BREAKPOINT_R;
-+		break;
-+	case ARM_BREAKPOINT_STORE:
-+		*gen_type = HW_BREAKPOINT_W;
-+		break;
-+	case ARM_BREAKPOINT_LOAD | ARM_BREAKPOINT_STORE:
-+		*gen_type = HW_BREAKPOINT_RW;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	/* Len */
-+	switch (ctrl.len) {
-+	case ARM_BREAKPOINT_LEN_1:
-+		*gen_len = HW_BREAKPOINT_LEN_1;
-+		break;
-+	case ARM_BREAKPOINT_LEN_2:
-+		*gen_len = HW_BREAKPOINT_LEN_2;
-+		break;
-+	case ARM_BREAKPOINT_LEN_4:
-+		*gen_len = HW_BREAKPOINT_LEN_4;
-+		break;
-+	case ARM_BREAKPOINT_LEN_8:
-+		*gen_len = HW_BREAKPOINT_LEN_8;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * Construct an arch_hw_breakpoint from a perf_event.
-+ */
-+static int arch_build_bp_info(struct perf_event *bp)
-+{
-+	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
-+
-+	/* Type */
-+	switch (bp->attr.bp_type) {
-+	case HW_BREAKPOINT_X:
-+		info->ctrl.type = ARM_BREAKPOINT_EXECUTE;
-+		break;
-+	case HW_BREAKPOINT_R:
-+		info->ctrl.type = ARM_BREAKPOINT_LOAD;
-+		break;
-+	case HW_BREAKPOINT_W:
-+		info->ctrl.type = ARM_BREAKPOINT_STORE;
-+		break;
-+	case HW_BREAKPOINT_RW:
-+		info->ctrl.type = ARM_BREAKPOINT_LOAD | ARM_BREAKPOINT_STORE;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	/* Len */
-+	switch (bp->attr.bp_len) {
-+	case HW_BREAKPOINT_LEN_1:
-+		info->ctrl.len = ARM_BREAKPOINT_LEN_1;
-+		break;
-+	case HW_BREAKPOINT_LEN_2:
-+		info->ctrl.len = ARM_BREAKPOINT_LEN_2;
-+		break;
-+	case HW_BREAKPOINT_LEN_4:
-+		info->ctrl.len = ARM_BREAKPOINT_LEN_4;
-+		break;
-+	case HW_BREAKPOINT_LEN_8:
-+		info->ctrl.len = ARM_BREAKPOINT_LEN_8;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	/*
-+	 * On AArch64, we only permit breakpoints of length 4, whereas
-+	 * AArch32 also requires breakpoints of length 2 for Thumb.
-+	 * Watchpoints can be of length 1, 2, 4 or 8 bytes.
-+	 */
-+	if (info->ctrl.type == ARM_BREAKPOINT_EXECUTE) {
-+		if (is_compat_task()) {
-+			if (info->ctrl.len != ARM_BREAKPOINT_LEN_2 &&
-+			    info->ctrl.len != ARM_BREAKPOINT_LEN_4)
-+				return -EINVAL;
-+		} else if (info->ctrl.len != ARM_BREAKPOINT_LEN_4) {
-+			/*
-+			 * FIXME: Some tools (I'm looking at you perf) assume
-+			 *	  that breakpoints should be sizeof(long). This
-+			 *	  is nonsense. For now, we fix up the parameter
-+			 *	  but we should probably return -EINVAL instead.
-+			 */
-+			info->ctrl.len = ARM_BREAKPOINT_LEN_4;
-+		}
-+	}
-+
-+	/* Address */
-+	info->address = bp->attr.bp_addr;
-+
-+	/*
-+	 * Privilege
-+	 * Note that we disallow combined EL0/EL1 breakpoints because
-+	 * that would complicate the stepping code.
-+	 */
-+	if (arch_check_bp_in_kernelspace(bp))
-+		info->ctrl.privilege = AARCH64_BREAKPOINT_EL1;
-+	else
-+		info->ctrl.privilege = AARCH64_BREAKPOINT_EL0;
-+
-+	/* Enabled? */
-+	info->ctrl.enabled = !bp->attr.disabled;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Validate the arch-specific HW Breakpoint register settings.
-+ */
-+int arch_validate_hwbkpt_settings(struct perf_event *bp)
-+{
-+	struct arch_hw_breakpoint *info = counter_arch_bp(bp);
-+	int ret;
-+	u64 alignment_mask, offset;
-+
-+	/* Build the arch_hw_breakpoint. */
-+	ret = arch_build_bp_info(bp);
-+	if (ret)
-+		return ret;
-+
-+	/*
-+	 * Check address alignment.
-+	 * We don't do any clever alignment correction for watchpoints
-+	 * because using 64-bit unaligned addresses is deprecated for
-+	 * AArch64.
-+	 *
-+	 * AArch32 tasks expect some simple alignment fixups, so emulate
-+	 * that here.
-+	 */
-+	if (is_compat_task()) {
-+		if (info->ctrl.len == ARM_BREAKPOINT_LEN_8)
-+			alignment_mask = 0x7;
-+		else
-+			alignment_mask = 0x3;
-+		offset = info->address & alignment_mask;
-+		switch (offset) {
-+		case 0:
-+			/* Aligned */
-+			break;
-+		case 1:
-+			/* Allow single byte watchpoint. */
-+			if (info->ctrl.len == ARM_BREAKPOINT_LEN_1)
-+				break;
-+		case 2:
-+			/* Allow halfword watchpoints and breakpoints. */
-+			if (info->ctrl.len == ARM_BREAKPOINT_LEN_2)
-+				break;
-+		default:
-+			return -EINVAL;
-+		}
-+
-+		info->address &= ~alignment_mask;
-+		info->ctrl.len <<= offset;
-+	} else {
-+		if (info->ctrl.type == ARM_BREAKPOINT_EXECUTE)
-+			alignment_mask = 0x3;
-+		else
-+			alignment_mask = 0x7;
-+		if (info->address & alignment_mask)
-+			return -EINVAL;
-+	}
-+
-+	/*
-+	 * Disallow per-task kernel breakpoints since these would
-+	 * complicate the stepping code.
-+	 */
-+	if (info->ctrl.privilege == AARCH64_BREAKPOINT_EL1 && bp->hw.bp_target)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Enable/disable all of the breakpoints active at the specified
-+ * exception level at the register level.
-+ * This is used when single-stepping after a breakpoint exception.
-+ */
-+static void toggle_bp_registers(int reg, enum debug_el el, int enable)
-+{
-+	int i, max_slots, privilege;
-+	u32 ctrl;
-+	struct perf_event **slots;
-+
-+	switch (reg) {
-+	case AARCH64_DBG_REG_BCR:
-+		slots = __get_cpu_var(bp_on_reg);
-+		max_slots = core_num_brps;
-+		break;
-+	case AARCH64_DBG_REG_WCR:
-+		slots = __get_cpu_var(wp_on_reg);
-+		max_slots = core_num_wrps;
-+		break;
-+	default:
-+		return;
-+	}
-+
-+	for (i = 0; i < max_slots; ++i) {
-+		if (!slots[i])
-+			continue;
-+
-+		privilege = counter_arch_bp(slots[i])->ctrl.privilege;
-+		if (debug_exception_level(privilege) != el)
-+			continue;
-+
-+		ctrl = read_wb_reg(reg, i);
-+		if (enable)
-+			ctrl |= 0x1;
-+		else
-+			ctrl &= ~0x1;
-+		write_wb_reg(reg, i, ctrl);
-+	}
-+}
-+
-+/*
-+ * Debug exception handlers.
-+ */
-+static int breakpoint_handler(unsigned long unused, unsigned int esr,
-+			      struct pt_regs *regs)
-+{
-+	int i, step = 0, *kernel_step;
-+	u32 ctrl_reg;
-+	u64 addr, val;
-+	struct perf_event *bp, **slots;
-+	struct debug_info *debug_info;
-+	struct arch_hw_breakpoint_ctrl ctrl;
-+
-+	slots = (struct perf_event **)__get_cpu_var(bp_on_reg);
-+	addr = instruction_pointer(regs);
-+	debug_info = &current->thread.debug;
-+
-+	for (i = 0; i < core_num_brps; ++i) {
-+		rcu_read_lock();
-+
-+		bp = slots[i];
-+
-+		if (bp == NULL)
-+			goto unlock;
-+
-+		/* Check if the breakpoint value matches. */
-+		val = read_wb_reg(AARCH64_DBG_REG_BVR, i);
-+		if (val != (addr & ~0x3))
-+			goto unlock;
-+
-+		/* Possible match, check the byte address select to confirm. */
-+		ctrl_reg = read_wb_reg(AARCH64_DBG_REG_BCR, i);
-+		decode_ctrl_reg(ctrl_reg, &ctrl);
-+		if (!((1 << (addr & 0x3)) & ctrl.len))
-+			goto unlock;
-+
-+		counter_arch_bp(bp)->trigger = addr;
-+		perf_bp_event(bp, regs);
-+
-+		/* Do we need to handle the stepping? */
-+		if (!bp->overflow_handler)
-+			step = 1;
-+unlock:
-+		rcu_read_unlock();
-+	}
-+
-+	if (!step)
-+		return 0;
-+
-+	if (user_mode(regs)) {
-+		debug_info->bps_disabled = 1;
-+		toggle_bp_registers(AARCH64_DBG_REG_BCR, DBG_ACTIVE_EL0, 0);
-+
-+		/* If we're already stepping a watchpoint, just return. */
-+		if (debug_info->wps_disabled)
-+			return 0;
-+
-+		if (test_thread_flag(TIF_SINGLESTEP))
-+			debug_info->suspended_step = 1;
-+		else
-+			user_enable_single_step(current);
-+	} else {
-+		toggle_bp_registers(AARCH64_DBG_REG_BCR, DBG_ACTIVE_EL1, 0);
-+		kernel_step = &__get_cpu_var(stepping_kernel_bp);
-+
-+		if (*kernel_step != ARM_KERNEL_STEP_NONE)
-+			return 0;
-+
-+		if (kernel_active_single_step()) {
-+			*kernel_step = ARM_KERNEL_STEP_SUSPEND;
-+		} else {
-+			*kernel_step = ARM_KERNEL_STEP_ACTIVE;
-+			kernel_enable_single_step(regs);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int watchpoint_handler(unsigned long addr, unsigned int esr,
-+			      struct pt_regs *regs)
-+{
-+	int i, step = 0, *kernel_step, access;
-+	u32 ctrl_reg;
-+	u64 val, alignment_mask;
-+	struct perf_event *wp, **slots;
-+	struct debug_info *debug_info;
-+	struct arch_hw_breakpoint *info;
-+	struct arch_hw_breakpoint_ctrl ctrl;
-+
-+	slots = (struct perf_event **)__get_cpu_var(wp_on_reg);
-+	debug_info = &current->thread.debug;
-+
-+	for (i = 0; i < core_num_wrps; ++i) {
-+		rcu_read_lock();
-+
-+		wp = slots[i];
-+
-+		if (wp == NULL)
-+			goto unlock;
-+
-+		info = counter_arch_bp(wp);
-+		/* AArch32 watchpoints are either 4 or 8 bytes aligned. */
-+		if (is_compat_task()) {
-+			if (info->ctrl.len == ARM_BREAKPOINT_LEN_8)
-+				alignment_mask = 0x7;
-+			else
-+				alignment_mask = 0x3;
-+		} else {
-+			alignment_mask = 0x7;
-+		}
-+
-+		/* Check if the watchpoint value matches. */
-+		val = read_wb_reg(AARCH64_DBG_REG_WVR, i);
-+		if (val != (addr & ~alignment_mask))
-+			goto unlock;
-+
-+		/* Possible match, check the byte address select to confirm. */
-+		ctrl_reg = read_wb_reg(AARCH64_DBG_REG_WCR, i);
-+		decode_ctrl_reg(ctrl_reg, &ctrl);
-+		if (!((1 << (addr & alignment_mask)) & ctrl.len))
-+			goto unlock;
-+
-+		/*
-+		 * Check that the access type matches.
-+		 * 0 => load, otherwise => store
-+		 */
-+		access = (esr & AARCH64_ESR_ACCESS_MASK) ? HW_BREAKPOINT_W :
-+			 HW_BREAKPOINT_R;
-+		if (!(access & hw_breakpoint_type(wp)))
-+			goto unlock;
-+
-+		info->trigger = addr;
-+		perf_bp_event(wp, regs);
-+
-+		/* Do we need to handle the stepping? */
-+		if (!wp->overflow_handler)
-+			step = 1;
-+
-+unlock:
-+		rcu_read_unlock();
-+	}
-+
-+	if (!step)
-+		return 0;
-+
-+	/*
-+	 * We always disable EL0 watchpoints because the kernel can
-+	 * cause these to fire via an unprivileged access.
-+	 */
-+	toggle_bp_registers(AARCH64_DBG_REG_WCR, DBG_ACTIVE_EL0, 0);
-+
-+	if (user_mode(regs)) {
-+		debug_info->wps_disabled = 1;
-+
-+		/* If we're already stepping a breakpoint, just return. */
-+		if (debug_info->bps_disabled)
-+			return 0;
-+
-+		if (test_thread_flag(TIF_SINGLESTEP))
-+			debug_info->suspended_step = 1;
-+		else
-+			user_enable_single_step(current);
-+	} else {
-+		toggle_bp_registers(AARCH64_DBG_REG_WCR, DBG_ACTIVE_EL1, 0);
-+		kernel_step = &__get_cpu_var(stepping_kernel_bp);
-+
-+		if (*kernel_step != ARM_KERNEL_STEP_NONE)
-+			return 0;
-+
-+		if (kernel_active_single_step()) {
-+			*kernel_step = ARM_KERNEL_STEP_SUSPEND;
-+		} else {
-+			*kernel_step = ARM_KERNEL_STEP_ACTIVE;
-+			kernel_enable_single_step(regs);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * Handle single-step exception.
-+ */
-+int reinstall_suspended_bps(struct pt_regs *regs)
-+{
-+	struct debug_info *debug_info = &current->thread.debug;
-+	int handled_exception = 0, *kernel_step;
-+
-+	kernel_step = &__get_cpu_var(stepping_kernel_bp);
-+
-+	/*
-+	 * Called from single-step exception handler.
-+	 * Return 0 if execution can resume, 1 if a SIGTRAP should be
-+	 * reported.
-+	 */
-+	if (user_mode(regs)) {
-+		if (debug_info->bps_disabled) {
-+			debug_info->bps_disabled = 0;
-+			toggle_bp_registers(AARCH64_DBG_REG_BCR, DBG_ACTIVE_EL0, 1);
-+			handled_exception = 1;
-+		}
-+
-+		if (debug_info->wps_disabled) {
-+			debug_info->wps_disabled = 0;
-+			toggle_bp_registers(AARCH64_DBG_REG_WCR, DBG_ACTIVE_EL0, 1);
-+			handled_exception = 1;
-+		}
-+
-+		if (handled_exception) {
-+			if (debug_info->suspended_step) {
-+				debug_info->suspended_step = 0;
-+				/* Allow exception handling to fall-through. */
-+				handled_exception = 0;
-+			} else {
-+				user_disable_single_step(current);
-+			}
-+		}
-+	} else if (*kernel_step != ARM_KERNEL_STEP_NONE) {
-+		toggle_bp_registers(AARCH64_DBG_REG_BCR, DBG_ACTIVE_EL1, 1);
-+		toggle_bp_registers(AARCH64_DBG_REG_WCR, DBG_ACTIVE_EL1, 1);
-+
-+		if (!debug_info->wps_disabled)
-+			toggle_bp_registers(AARCH64_DBG_REG_WCR, DBG_ACTIVE_EL0, 1);
-+
-+		if (*kernel_step != ARM_KERNEL_STEP_SUSPEND) {
-+			kernel_disable_single_step();
-+			handled_exception = 1;
-+		} else {
-+			handled_exception = 0;
-+		}
-+
-+		*kernel_step = ARM_KERNEL_STEP_NONE;
-+	}
-+
-+	return !handled_exception;
-+}
-+
-+/*
-+ * Context-switcher for restoring suspended breakpoints.
-+ */
-+void hw_breakpoint_thread_switch(struct task_struct *next)
-+{
-+	/*
-+	 *           current        next
-+	 * disabled: 0              0     => The usual case, NOTIFY_DONE
-+	 *           0              1     => Disable the registers
-+	 *           1              0     => Enable the registers
-+	 *           1              1     => NOTIFY_DONE. per-task bps will
-+	 *                                   get taken care of by perf.
-+	 */
-+
-+	struct debug_info *current_debug_info, *next_debug_info;
-+
-+	current_debug_info = &current->thread.debug;
-+	next_debug_info = &next->thread.debug;
-+
-+	/* Update breakpoints. */
-+	if (current_debug_info->bps_disabled != next_debug_info->bps_disabled)
-+		toggle_bp_registers(AARCH64_DBG_REG_BCR,
-+				    DBG_ACTIVE_EL0,
-+				    !next_debug_info->bps_disabled);
-+
-+	/* Update watchpoints. */
-+	if (current_debug_info->wps_disabled != next_debug_info->wps_disabled)
-+		toggle_bp_registers(AARCH64_DBG_REG_WCR,
-+				    DBG_ACTIVE_EL0,
-+				    !next_debug_info->wps_disabled);
-+}
-+
-+/*
-+ * CPU initialisation.
-+ */
-+static void reset_ctrl_regs(void *unused)
-+{
-+	int i;
-+
-+	for (i = 0; i < core_num_brps; ++i) {
-+		write_wb_reg(AARCH64_DBG_REG_BCR, i, 0UL);
-+		write_wb_reg(AARCH64_DBG_REG_BVR, i, 0UL);
-+	}
-+
-+	for (i = 0; i < core_num_wrps; ++i) {
-+		write_wb_reg(AARCH64_DBG_REG_WCR, i, 0UL);
-+		write_wb_reg(AARCH64_DBG_REG_WVR, i, 0UL);
-+	}
-+}
-+
-+static int __cpuinit hw_breakpoint_reset_notify(struct notifier_block *self,
-+						unsigned long action,
-+						void *hcpu)
-+{
-+	int cpu = (long)hcpu;
-+	if (action == CPU_ONLINE)
-+		smp_call_function_single(cpu, reset_ctrl_regs, NULL, 1);
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block __cpuinitdata hw_breakpoint_reset_nb = {
-+	.notifier_call = hw_breakpoint_reset_notify,
-+};
-+
-+/*
-+ * One-time initialisation.
-+ */
-+static int __init arch_hw_breakpoint_init(void)
-+{
-+	core_num_brps = get_num_brps();
-+	core_num_wrps = get_num_wrps();
-+
-+	pr_info("found %d breakpoint and %d watchpoint registers.\n",
-+		core_num_brps, core_num_wrps);
-+
-+	/*
-+	 * Reset the breakpoint resources. We assume that a halting
-+	 * debugger will leave the world in a nice state for us.
-+	 */
-+	smp_call_function(reset_ctrl_regs, NULL, 1);
-+	reset_ctrl_regs(NULL);
-+
-+	/* Register debug fault handlers. */
-+	hook_debug_fault_code(DBG_ESR_EVT_HWBP, breakpoint_handler, SIGTRAP,
-+			      TRAP_HWBKPT, "hw-breakpoint handler");
-+	hook_debug_fault_code(DBG_ESR_EVT_HWWP, watchpoint_handler, SIGTRAP,
-+			      TRAP_HWBKPT, "hw-watchpoint handler");
-+
-+	/* Register hotplug notifier. */
-+	register_cpu_notifier(&hw_breakpoint_reset_nb);
-+
-+	return 0;
-+}
-+arch_initcall(arch_hw_breakpoint_init);
-+
-+void hw_breakpoint_pmu_read(struct perf_event *bp)
-+{
-+}
-+
-+/*
-+ * Dummy function to register with die_notifier.
-+ */
-+int hw_breakpoint_exceptions_notify(struct notifier_block *unused,
-+				    unsigned long val, void *data)
-+{
-+	return NOTIFY_DONE;
-+}
-diff --git a/arch/aarch64/kernel/ptrace.c b/arch/aarch64/kernel/ptrace.c
-new file mode 100644
-index 0000000..fd46e41
---- /dev/null
-+++ b/arch/aarch64/kernel/ptrace.c
-@@ -0,0 +1,835 @@
-+/*
-+ * Based on arch/arm/kernel/ptrace.c
-+ *
-+ * By Ross Biro 1/23/92
-+ * edited by Linus Torvalds
-+ * ARM modifications Copyright (C) 2000 Russell King
-+ * Copyright (C) 2012 ARM Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/sched.h>
-+#include <linux/mm.h>
-+#include <linux/smp.h>
-+#include <linux/ptrace.h>
-+#include <linux/user.h>
-+#include <linux/security.h>
-+#include <linux/init.h>
-+#include <linux/signal.h>
++#include <linux/futex.h>
 +#include <linux/uaccess.h>
-+#include <linux/perf_event.h>
-+#include <linux/hw_breakpoint.h>
-+#include <linux/regset.h>
-+#include <linux/tracehook.h>
-+#include <linux/elf.h>
++#include <asm/errno.h>
 +
-+#include <asm/compat.h>
-+#include <asm/debug-monitors.h>
-+#include <asm/pgtable.h>
-+#include <asm/traps.h>
-+#include <asm/system_misc.h>
++#define __futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)		\
++	asm volatile(							\
++"1:	ldaxr	%w1, %2\n"						\
++	insn "\n"							\
++"2:	stlxr	%w3, %w0, %2\n"						\
++"	cbnz	%w3, 1b\n"						\
++"3:	.pushsection __ex_table,\"a\"\n"				\
++"	.align	3\n"							\
++"	.quad	1b, 4f, 2b, 4f\n"					\
++"	.popsection\n"							\
++"	.pushsection .fixup,\"ax\"\n"					\
++"4:	mov	%w0, %w5\n"						\
++"	b	3b\n"							\
++"	.popsection"							\
++	: "=&r" (ret), "=&r" (oldval), "+Q" (*uaddr), "=&r" (tmp)	\
++	: "r" (oparg), "Ir" (-EFAULT)					\
++	: "cc")
 +
-+/*
-+ * TODO: does not yet catch signals sent when the child dies.
-+ * in exit.c or in signal.c.
-+ */
-+
-+/*
-+ * Called by kernel/ptrace.c when detaching..
-+ */
-+void ptrace_disable(struct task_struct *child)
++static inline int
++futex_atomic_op_inuser (int encoded_op, u32 __user *uaddr)
 +{
-+}
++	int op = (encoded_op >> 28) & 7;
++	int cmp = (encoded_op >> 24) & 15;
++	int oparg = (encoded_op << 8) >> 20;
++	int cmparg = (encoded_op << 20) >> 20;
++	int oldval = 0, ret, tmp;
 +
-+/*
-+ * Handle hitting a breakpoint.
-+ */
-+static int ptrace_break(struct pt_regs *regs)
-+{
-+	siginfo_t info;
++	if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))
++		oparg = 1 << oparg;
 +
-+	info.si_signo = SIGTRAP;
-+	info.si_errno = 0;
-+	info.si_code  = TRAP_BRKPT;
-+	info.si_addr  = (void __user *)instruction_pointer(regs);
-+
-+	force_sig_info(SIGTRAP, &info, current);
-+	return 0;
-+}
-+
-+static int aarch64_break_trap(unsigned long addr, unsigned int esr,
-+			      struct pt_regs *regs)
-+{
-+	return ptrace_break(regs);
-+}
-+
-+#ifdef CONFIG_HAVE_HW_BREAKPOINT
-+/*
-+ * Convert a virtual register number into an index for a thread_info
-+ * breakpoint array. Breakpoints are identified using positive numbers
-+ * whilst watchpoints are negative. The registers are laid out as pairs
-+ * of (address, control), each pair mapping to a unique hw_breakpoint struct.
-+ * Register 0 is reserved for describing resource information.
-+ */
-+static int ptrace_hbp_num_to_idx(long num)
-+{
-+	if (num < 0)
-+		num = (ARM_MAX_BRP << 1) - num;
-+	return (num - 1) >> 1;
-+}
-+
-+/*
-+ * Returns the virtual register number for the address of the
-+ * breakpoint at index idx.
-+ */
-+static long ptrace_hbp_idx_to_num(int idx)
-+{
-+	long mid = ARM_MAX_BRP << 1;
-+	long num = (idx << 1) + 1;
-+	return num > mid ? mid - num : num;
-+}
-+
-+/*
-+ * Handle hitting a HW-breakpoint.
-+ */
-+static void ptrace_hbptriggered(struct perf_event *bp,
-+				struct perf_sample_data *data,
-+				struct pt_regs *regs)
-+{
-+	struct arch_hw_breakpoint *bkpt = counter_arch_bp(bp);
-+	long num;
-+	int i;
-+	siginfo_t info;
-+
-+	for (i = 0; i < ARM_MAX_HBP_SLOTS; ++i)
-+		if (current->thread.debug.hbp[i] == bp)
-+			break;
-+
-+	num = (i == ARM_MAX_HBP_SLOTS) ? 0 : ptrace_hbp_idx_to_num(i);
-+
-+	info.si_signo	= SIGTRAP;
-+	info.si_errno	= (int)num;
-+	info.si_code	= TRAP_HWBKPT;
-+	info.si_addr	= (void __user *)(bkpt->trigger);
-+
-+	force_sig_info(SIGTRAP, &info, current);
-+}
-+
-+/*
-+ * Unregister breakpoints from this task and reset the pointers in
-+ * the thread_struct.
-+ */
-+void flush_ptrace_hw_breakpoint(struct task_struct *tsk)
-+{
-+	int i;
-+	struct thread_struct *t = &tsk->thread;
-+
-+	for (i = 0; i < ARM_MAX_HBP_SLOTS; i++) {
-+		if (t->debug.hbp[i]) {
-+			unregister_hw_breakpoint(t->debug.hbp[i]);
-+			t->debug.hbp[i] = NULL;
-+		}
-+	}
-+}
-+
-+void ptrace_hw_copy_thread(struct task_struct *task)
-+{
-+	memset(&task->thread.debug, 0, sizeof(struct debug_info));
-+}
-+
-+static u32 ptrace_get_hbp_resource_info(void)
-+{
-+	u8 num_brps, num_wrps, debug_arch, wp_len;
-+	u32 reg = 0;
-+
-+	num_brps	= hw_breakpoint_slots(TYPE_INST);
-+	num_wrps	= hw_breakpoint_slots(TYPE_DATA);
-+
-+	debug_arch	= debug_monitors_arch();
-+	wp_len		= 8;		/* Reserved on AArch64 */
-+	reg		|= debug_arch;
-+	reg		<<= 8;
-+	reg		|= wp_len;
-+	reg		<<= 8;
-+	reg		|= num_wrps;
-+	reg		<<= 8;
-+	reg		|= num_brps;
-+
-+	return reg;
-+}
-+
-+static struct perf_event *ptrace_hbp_create(struct task_struct *tsk, int type)
-+{
-+	struct perf_event_attr attr;
-+
-+	ptrace_breakpoint_init(&attr);
-+
-+	/*
-+	 * Initialise fields to sane defaults
-+	 * (i.e. values that will pass validation).
-+	 */
-+	attr.bp_addr	= 0;
-+	attr.bp_len	= HW_BREAKPOINT_LEN_4;
-+	attr.bp_type	= type;
-+	attr.disabled	= 1;
-+
-+	return register_user_hw_breakpoint(&attr, ptrace_hbptriggered, NULL,
-+					   tsk);
-+}
-+
-+static int ptrace_gethbpregs(struct task_struct *tsk, long num,
-+			     unsigned long  __user *data)
-+{
-+	u64 addr_reg;
-+	u32 ctrl_reg;
-+	int idx, ret = 0;
-+	struct perf_event *bp;
-+	struct arch_hw_breakpoint_ctrl arch_ctrl;
-+
-+	if (num == 0) {
-+		ctrl_reg = ptrace_get_hbp_resource_info();
-+		if (put_user(ctrl_reg, (u32 __user *)data))
-+			ret = -EFAULT;
-+	} else {
-+		idx = ptrace_hbp_num_to_idx(num);
-+		if (idx < 0 || idx >= ARM_MAX_HBP_SLOTS)
-+			return -EINVAL;
-+
-+		bp = tsk->thread.debug.hbp[idx];
-+		arch_ctrl = counter_arch_bp(bp)->ctrl;
-+
-+		if (is_compat_task()) {
-+			/*
-+			 * Fix up the len because we may have adjusted
-+			 * it to compensate for an unaligned address.
-+			 */
-+			while (!(arch_ctrl.len & 0x1))
-+				arch_ctrl.len >>= 1;
-+		}
-+
-+		if (num & 0x1) {
-+			addr_reg = bp ? bp->attr.bp_addr : 0;
-+			if (put_user(addr_reg, data))
-+				ret = -EFAULT;
-+		} else {
-+			ctrl_reg = bp ? encode_ctrl_reg(arch_ctrl) : 0;
-+			if (put_user(ctrl_reg, (u32 __user *)data))
-+				ret = -EFAULT;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+static int ptrace_sethbpregs(struct task_struct *tsk, long num,
-+			     unsigned long __user *data)
-+{
-+	int idx, gen_len, gen_type, implied_type, ret;
-+	u64 user_addr;
-+	u32 user_ctrl;
-+	struct perf_event *bp;
-+	struct arch_hw_breakpoint_ctrl ctrl;
-+	struct perf_event_attr attr;
-+
-+	if (num == 0)
-+		return 0;
-+	else if (num < 0)
-+		implied_type = HW_BREAKPOINT_RW;
-+	else
-+		implied_type = HW_BREAKPOINT_X;
-+
-+	idx = ptrace_hbp_num_to_idx(num);
-+	if (idx < 0 || idx >= ARM_MAX_HBP_SLOTS)
++	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
 +		return -EFAULT;
 +
-+	bp = tsk->thread.debug.hbp[idx];
-+	if (!bp) {
-+		bp = ptrace_hbp_create(tsk, implied_type);
-+		if (IS_ERR(bp))
-+			return PTR_ERR(bp);
-+		tsk->thread.debug.hbp[idx] = bp;
++	pagefault_disable();	/* implies preempt_disable() */
++
++	switch (op) {
++	case FUTEX_OP_SET:
++		__futex_atomic_op("mov	%w0, %w4",
++				  ret, oldval, uaddr, tmp, oparg);
++		break;
++	case FUTEX_OP_ADD:
++		__futex_atomic_op("add	%w0, %w1, %w4",
++				  ret, oldval, uaddr, tmp, oparg);
++		break;
++	case FUTEX_OP_OR:
++		__futex_atomic_op("orr	%w0, %w1, %w4",
++				  ret, oldval, uaddr, tmp, oparg);
++		break;
++	case FUTEX_OP_ANDN:
++		__futex_atomic_op("and	%w0, %w1, %w4",
++				  ret, oldval, uaddr, tmp, ~oparg);
++		break;
++	case FUTEX_OP_XOR:
++		__futex_atomic_op("eor	%w0, %w1, %w4",
++				  ret, oldval, uaddr, tmp, oparg);
++		break;
++	default:
++		ret = -ENOSYS;
 +	}
 +
-+	attr = bp->attr;
++	pagefault_enable();	/* subsumes preempt_enable() */
 +
-+	if (num & 0x1) {
-+		/* Address */
-+		if (get_user(user_addr, data))
-+			return -EFAULT;
-+		attr.bp_addr = user_addr;
-+	} else {
-+		/* Control */
-+		if (get_user(user_ctrl, (u32 __user *)data))
-+			return -EFAULT;
-+		decode_ctrl_reg(user_ctrl, &ctrl);
-+		ret = arch_bp_generic_fields(ctrl, &gen_len, &gen_type);
-+		if (ret)
-+			return ret;
-+
-+		if ((gen_type & implied_type) != gen_type)
-+			return -EINVAL;
-+
-+		attr.bp_len	= gen_len;
-+		attr.bp_type	= gen_type;
-+		attr.disabled	= !ctrl.enabled;
++	if (!ret) {
++		switch (cmp) {
++		case FUTEX_OP_CMP_EQ: ret = (oldval == cmparg); break;
++		case FUTEX_OP_CMP_NE: ret = (oldval != cmparg); break;
++		case FUTEX_OP_CMP_LT: ret = (oldval < cmparg); break;
++		case FUTEX_OP_CMP_GE: ret = (oldval >= cmparg); break;
++		case FUTEX_OP_CMP_LE: ret = (oldval <= cmparg); break;
++		case FUTEX_OP_CMP_GT: ret = (oldval > cmparg); break;
++		default: ret = -ENOSYS;
++		}
 +	}
-+
-+	return modify_user_hw_breakpoint(bp, &attr);
-+}
-+#endif	/* CONFIG_HAVE_HW_BREAKPOINT */
-+
-+static int gpr_get(struct task_struct *target,
-+		   const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   void *kbuf, void __user *ubuf)
-+{
-+	struct user_pt_regs *uregs = &task_pt_regs(target)->user_regs;
-+	return user_regset_copyout(&pos, &count, &kbuf, &ubuf, uregs, 0, -1);
++	return ret;
 +}
 +
-+static int gpr_set(struct task_struct *target, const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   const void *kbuf, const void __user *ubuf)
++static inline int
++futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
++			      u32 oldval, u32 newval)
 +{
-+	int ret;
-+	struct user_pt_regs newregs;
++	int ret = 0;
++	u32 val, tmp;
 +
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &newregs, 0, -1);
-+	if (ret)
-+		return ret;
++	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
++		return -EFAULT;
 +
-+	if (!valid_user_regs(&newregs))
-+		return -EINVAL;
++	asm volatile("// futex_atomic_cmpxchg_inatomic\n"
++"1:	ldaxr	%w1, %2\n"
++"	sub	%w3, %w1, %w4\n"
++"	cbnz	%w3, 3f\n"
++"2:	stlxr	%w3, %w5, %2\n"
++"	cbnz	%w3, 1b\n"
++"3:	.pushsection __ex_table,\"a\"\n"
++"	.align	3\n"
++"	.quad	1b, 4f, 2b, 4f\n"
++"	.popsection\n"
++"	.pushsection .fixup,\"ax\"\n"
++"4:	mov	%w0, %w6\n"
++"	b	3b\n"
++"	.popsection"
++	: "+r" (ret), "=&r" (val), "+Q" (*uaddr), "=&r" (tmp)
++	: "r" (oldval), "r" (newval), "Ir" (-EFAULT)
++	: "cc", "memory");
 +
-+	task_pt_regs(target)->user_regs = newregs;
-+	return 0;
++	*uval = val;
++	return ret;
++}
++
++#endif /* __KERNEL__ */
++#endif /* __ASM_FUTEX_H */
+diff --git a/arch/aarch64/include/asm/mutex.h b/arch/aarch64/include/asm/mutex.h
+new file mode 100644
+index 0000000..76c6e31
+--- /dev/null
++++ b/arch/aarch64/include/asm/mutex.h
+@@ -0,0 +1,132 @@
++/*
++ * Based on arch/arm/include/asm/mutex.h
++ *
++ * Copyright (C) 2012 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ *
++ * Please look into asm-generic/mutex-xchg.h for a formal definition.
++ */
++#ifndef __ASM_MUTEX_H
++#define __ASM_MUTEX_H
++
++/*
++ * Attempting to lock a mutex on ARMv8+ can be done with a bastardized
++ * atomic decrement (it is not a reliable atomic decrement but it satisfies
++ * the defined semantics for our purpose, while being smaller and faster
++ * than a real atomic decrement or atomic swap.  The idea is to attempt
++ * decrementing the lock value only once.  If once decremented it isn't zero,
++ * or if its store-back fails due to a dispute on the exclusive store, we
++ * simply bail out immediately through the slow path where the lock will be
++ * reattempted until it succeeds.
++ */
++static inline void
++__mutex_fastpath_lock(atomic_t *count, void (*fail_fn)(atomic_t *))
++{
++	int __ex_flag, __res;
++
++	asm(
++
++		"ldxr	%w0, [%2]	\n\t"
++		"sub	%w0, %w0, #1	\n\t"
++		"stxr	%w1, %w0, [%2]	"
++
++		: "=&r" (__res), "=&r" (__ex_flag)
++		: "r" (&(count)->counter)
++		: "cc","memory" );
++
++	__res |= __ex_flag;
++	if (unlikely(__res != 0))
++		fail_fn(count);
++}
++
++static inline int
++__mutex_fastpath_lock_retval(atomic_t *count, int (*fail_fn)(atomic_t *))
++{
++	int __ex_flag, __res;
++
++	asm(
++
++		"ldxr	%w0, [%2]	\n\t"
++		"sub	%w0, %w0, #1	\n\t"
++		"stxr	%w1, %w0, [%2]	"
++
++		: "=&r" (__res), "=&r" (__ex_flag)
++		: "r" (&(count)->counter)
++		: "cc","memory" );
++
++	__res |= __ex_flag;
++	if (unlikely(__res != 0))
++		__res = fail_fn(count);
++	return __res;
 +}
 +
 +/*
-+ * TODO: update fp accessors for lazy context switching (sync/flush hwstate)
++ * Same trick is used for the unlock fast path. However the original value,
++ * rather than the result, is used to test for success in order to have
++ * better generated assembly.
 + */
-+static int fpr_get(struct task_struct *target, const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   void *kbuf, void __user *ubuf)
++static inline void
++__mutex_fastpath_unlock(atomic_t *count, void (*fail_fn)(atomic_t *))
 +{
-+	struct user_fpsimd_state *uregs;
-+	uregs = &target->thread.fpsimd_state.user_fpsimd;
-+	return user_regset_copyout(&pos, &count, &kbuf, &ubuf, uregs, 0, -1);
++	int __ex_flag, __res, __orig;
++
++	asm(
++
++		"ldxr	%w0, [%3]	\n\t"
++		"add	%w1, %w0, #1	\n\t"
++		"stxr	%w2, %w1, [%3]	"
++
++		: "=&r" (__orig), "=&r" (__res), "=&r" (__ex_flag)
++		: "r" (&(count)->counter)
++		: "cc","memory" );
++
++	__orig |= __ex_flag;
++	if (unlikely(__orig != 0))
++		fail_fn(count);
 +}
 +
-+static int fpr_set(struct task_struct *target, const struct user_regset *regset,
-+		   unsigned int pos, unsigned int count,
-+		   const void *kbuf, const void __user *ubuf)
++/*
++ * If the unlock was done on a contended lock, or if the unlock simply fails
++ * then the mutex remains locked.
++ */
++#define __mutex_slowpath_needs_to_unlock()	1
++
++/*
++ * For __mutex_fastpath_trylock we use another construct which could be
++ * described as a "single value cmpxchg".
++ *
++ * This provides the needed trylock semantics like cmpxchg would, but it is
++ * lighter and less generic than a true cmpxchg implementation.
++ */
++static inline int
++__mutex_fastpath_trylock(atomic_t *count, int (*fail_fn)(atomic_t *))
 +{
-+	int ret;
-+	struct user_fpsimd_state newstate;
++	int __ex_flag, __res, __orig;
 +
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &newstate, 0, -1);
-+	if (ret)
-+		return ret;
++	asm("1:	ldxr	%w0, [%3]\n"
++		 "	subs	%w1, %w0, #1\n"
++		 "	csel	%w0, wzr, %w0, lt\n"
++		 "	b.lt	2f\n"
++		 "	stxr	%w2, %w1, [%3]\n"
++		 "	cbnz	%w2, 1b\n"
++		 "2:\n"
++		 : "=&r" (__orig), "=&r" (__res), "=&r" (__ex_flag)
++		 : "r" (&count->counter)
++		 : "cc", "memory");
 +
-+	target->thread.fpsimd_state.user_fpsimd = newstate;
-+	return ret;
++	return __orig;
 +}
 +
-+enum aarch64_regset {
-+	REGSET_GPR,
-+	REGSET_FPR,
-+};
-+
-+static const struct user_regset aarch64_regsets[] = {
-+	[REGSET_GPR] = {
-+		.core_note_type = NT_PRSTATUS,
-+		.n = sizeof(struct user_pt_regs) / sizeof(u64),
-+		.size = sizeof(u64),
-+		.align = sizeof(u64),
-+		.get = gpr_get,
-+		.set = gpr_set
-+	},
-+	[REGSET_FPR] = {
-+		.core_note_type = NT_PRFPREG,
-+		.n = sizeof(struct user_fpsimd_state) / sizeof(u32),
-+		/*
-+		 * We pretend we have 32-bit registers because the fpsr and
-+		 * fpcr are 32-bits wide.
-+		 */
-+		.size = sizeof(u32),
-+		.align = sizeof(u32),
-+		.get = fpr_get,
-+		.set = fpr_set
-+	},
-+};
-+
-+static const struct user_regset_view user_aarch64_view = {
-+	.name = "aarch64", .e_machine = EM_AARCH64,
-+	.regsets = aarch64_regsets, .n = ARRAY_SIZE(aarch64_regsets)
-+};
-+
-+#ifdef CONFIG_AARCH32_EMULATION
-+enum compat_regset {
-+	REGSET_COMPAT_GPR,
-+	REGSET_COMPAT_VFP,
-+};
-+
-+static int compat_gpr_get(struct task_struct *target,
-+			  const struct user_regset *regset,
-+			  unsigned int pos, unsigned int count,
-+			  void *kbuf, void __user *ubuf)
-+{
-+	int ret = 0;
-+	unsigned int i, start, num_regs;
-+
-+	/* Calculate the number of AArch32 registers contained in count */
-+	num_regs = count / regset->size;
-+
-+	/* Convert pos into an register number */
-+	start = pos / regset->size;
-+
-+	if (start + num_regs > regset->n)
-+		return -EIO;
-+
-+	for (i = 0; i < num_regs; ++i) {
-+		unsigned int idx = start + i;
-+		void *reg;
-+
-+		switch (idx) {
-+		case 15:
-+			reg = (void *)&task_pt_regs(target)->pc;
-+			break;
-+		case 16:
-+			reg = (void *)&task_pt_regs(target)->pstate;
-+			break;
-+		case 17:
-+			reg = (void *)&task_pt_regs(target)->orig_x0;
-+			break;
-+		default:
-+			reg = (void *)&task_pt_regs(target)->regs[idx];
-+		}
-+
-+		ret = copy_to_user(ubuf, reg, sizeof(compat_ulong_t));
-+
-+		if (ret)
-+			break;
-+		else
-+			ubuf += sizeof(compat_ulong_t);
-+	}
-+
-+	return ret;
-+}
-+
-+static int compat_gpr_set(struct task_struct *target,
-+			  const struct user_regset *regset,
-+			  unsigned int pos, unsigned int count,
-+			  const void *kbuf, const void __user *ubuf)
-+{
-+	struct pt_regs newregs;
-+	int ret = 0;
-+	unsigned int i, start, num_regs;
-+
-+	/* Calculate the number of AArch32 registers contained in count */
-+	num_regs = count / regset->size;
-+
-+	/* Convert pos into an register number */
-+	start = pos / regset->size;
-+
-+	if (start + num_regs > regset->n)
-+		return -EIO;
-+
-+	newregs = *task_pt_regs(target);
-+
-+	for (i = 0; i < num_regs; ++i) {
-+		unsigned int idx = start + i;
-+		void *reg;
-+
-+		switch (idx) {
-+		case 15:
-+			reg = (void *)&newregs.pc;
-+			break;
-+		case 16:
-+			reg = (void *)&newregs.pstate;
-+			break;
-+		case 17:
-+			reg = (void *)&newregs.orig_x0;
-+			break;
-+		default:
-+			reg = (void *)&newregs.regs[idx];
-+		}
-+
-+		ret = copy_from_user(reg, ubuf, sizeof(compat_ulong_t));
-+
-+		if (ret)
-+			goto out;
-+		else
-+			ubuf += sizeof(compat_ulong_t);
-+	}
-+
-+	if (valid_user_regs(&newregs.user_regs))
-+		*task_pt_regs(target) = newregs;
-+	else
-+		ret = -EINVAL;
-+
-+out:
-+	return ret;
-+}
-+
-+static int compat_vfp_get(struct task_struct *target,
-+			  const struct user_regset *regset,
-+			  unsigned int pos, unsigned int count,
-+			  void *kbuf, void __user *ubuf)
-+{
-+	struct user_fpsimd_state *uregs;
-+	compat_ulong_t fpscr;
-+	int ret;
-+
-+	uregs = &target->thread.fpsimd_state.user_fpsimd;
-+
-+	/*
-+	 * The VFP registers are packed into the fpsimd_state, so they all sit
-+	 * nicely together for us. We just need to create the fpscr separately.
-+	 */
-+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, uregs, 0,
-+				  VFP_STATE_SIZE - sizeof(compat_ulong_t));
-+
-+	if (count && !ret) {
-+		fpscr = (uregs->fpsr & VFP_FPSCR_STAT_MASK) |
-+			(uregs->fpcr & VFP_FPSCR_CTRL_MASK);
-+		ret = put_user(fpscr, (compat_ulong_t *)ubuf);
-+	}
-+
-+	return ret;
-+}
-+
-+static int compat_vfp_set(struct task_struct *target,
-+			  const struct user_regset *regset,
-+			  unsigned int pos, unsigned int count,
-+			  const void *kbuf, const void __user *ubuf)
-+{
-+	struct user_fpsimd_state *uregs;
-+	compat_ulong_t fpscr;
-+	int ret;
-+
-+	if (pos + count > VFP_STATE_SIZE)
-+		return -EIO;
-+
-+	uregs = &target->thread.fpsimd_state.user_fpsimd;
-+
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, uregs, 0,
-+				 VFP_STATE_SIZE - sizeof(compat_ulong_t));
-+
-+	if (count && !ret) {
-+		ret = get_user(fpscr, (compat_ulong_t *)ubuf);
-+		uregs->fpsr = fpscr & VFP_FPSCR_STAT_MASK;
-+		uregs->fpcr = fpscr & VFP_FPSCR_CTRL_MASK;
-+	}
-+
-+	return ret;
-+}
-+
-+static const struct user_regset aarch32_regsets[] = {
-+	[REGSET_COMPAT_GPR] = {
-+		.core_note_type = NT_PRSTATUS,
-+		.n = COMPAT_ELF_NGREG,
-+		.size = sizeof(compat_elf_greg_t),
-+		.align = sizeof(compat_elf_greg_t),
-+		.get = compat_gpr_get,
-+		.set = compat_gpr_set
-+	},
-+	[REGSET_COMPAT_VFP] = {
-+		.core_note_type = NT_ARM_VFP,
-+		.n = VFP_STATE_SIZE / sizeof(compat_ulong_t),
-+		.size = sizeof(compat_ulong_t),
-+		.align = sizeof(compat_ulong_t),
-+		.get = compat_vfp_get,
-+		.set = compat_vfp_set
-+	},
-+};
-+
-+static const struct user_regset_view user_aarch32_view = {
-+	.name = "aarch32", .e_machine = EM_ARM,
-+	.regsets = aarch32_regsets, .n = ARRAY_SIZE(aarch32_regsets)
-+};
-+#endif /* CONFIG_AARCH32_EMULATION */
-+
-+const struct user_regset_view *task_user_regset_view(struct task_struct *task)
-+{
-+#ifdef CONFIG_AARCH32_EMULATION
-+	if (test_tsk_thread_flag(task, TIF_32BIT))
-+		return &user_aarch32_view;
 +#endif
-+	return &user_aarch64_view;
-+}
-+
-+long arch_ptrace(struct task_struct *child, long request,
-+		 unsigned long addr, unsigned long data)
-+{
-+	int ret;
-+	unsigned long *datap = (unsigned long __user *)data;
-+
-+	switch (request) {
-+		case PTRACE_GET_THREAD_AREA:
-+			ret = put_user(child->thread.tp_value, datap);
-+			break;
-+
-+#ifdef CONFIG_HAVE_HW_BREAKPOINT
-+		case PTRACE_GETHBPREGS:
-+			ret = ptrace_gethbpregs(child, addr, datap);
-+			break;
-+
-+		case PTRACE_SETHBPREGS:
-+			ret = ptrace_sethbpregs(child, addr, datap);
-+			break;
-+#endif
-+
-+		default:
-+			ret = ptrace_request(child, request, addr, data);
-+			break;
-+	}
-+
-+	return ret;
-+}
-+
-+#ifdef CONFIG_AARCH32_EMULATION
-+
-+#include <linux/compat.h>
-+
-+int aarch32_break_trap(struct pt_regs *regs)
-+{
-+	unsigned int instr;
-+	bool bp = false;
-+	void __user *pc = (void __user *)instruction_pointer(regs);
-+
-+	if (compat_thumb_mode(regs)) {
-+		/* get 16-bit Thumb instruction */
-+		get_user(instr, (u16 __user *)pc);
-+		if (instr == AARCH32_BREAK_THUMB2_LO) {
-+			/* get second half of 32-bit Thumb-2 instruction */
-+			get_user(instr, (u16 __user *)(pc + 2));
-+			bp = instr == AARCH32_BREAK_THUMB2_HI;
-+		} else {
-+			bp = instr == AARCH32_BREAK_THUMB;
-+		}
-+	} else {
-+		/* 32-bit ARM instruction */
-+		get_user(instr, (u32 __user *)pc);
-+		bp = (instr & ~0xf0000000) == AARCH32_BREAK_ARM;
-+	}
-+
-+	if (bp)
-+		return ptrace_break(regs);
-+	return 1;
-+}
-+
-+static int compat_ptrace_read_user(struct task_struct *tsk, compat_ulong_t off,
-+				   compat_ulong_t __user *ret)
-+{
-+	compat_ulong_t tmp;
-+
-+	if (off & 3)
-+		return -EIO;
-+
-+	if (off == PT_TEXT_ADDR)
-+		tmp = tsk->mm->start_code;
-+	else if (off == PT_DATA_ADDR)
-+		tmp = tsk->mm->start_data;
-+	else if (off == PT_TEXT_END_ADDR)
-+		tmp = tsk->mm->end_code;
-+	else if (off < sizeof(compat_elf_gregset_t))
-+		return copy_regset_to_user(tsk, &user_aarch32_view,
-+					   REGSET_COMPAT_GPR, off,
-+					   sizeof(compat_ulong_t), ret);
-+	else if (off >= COMPAT_USER_SZ)
-+		return -EIO;
-+	else
-+		tmp = 0;
-+
-+	return put_user(tmp, ret);
-+}
-+
-+static int compat_ptrace_write_user(struct task_struct *tsk, compat_ulong_t off,
-+				    compat_ulong_t val)
-+{
-+	int ret;
-+
-+	if (off & 3 || off >= COMPAT_USER_SZ)
-+		return -EIO;
-+
-+	if (off >= sizeof(compat_elf_gregset_t))
-+		return 0;
-+
-+	ret = copy_regset_from_user(tsk, &user_aarch32_view,
-+				    REGSET_COMPAT_GPR, off,
-+				    sizeof(compat_ulong_t),
-+				    &val);
-+	return ret;
-+}
-+
-+#ifdef CONFIG_HAVE_HW_BREAKPOINT
-+static int compat_ptrace_gethbpregs(struct task_struct *tsk, compat_long_t num,
-+				    compat_ulong_t __user *data)
-+{
-+	int ret;
-+	unsigned long kdata;
-+
-+	mm_segment_t old_fs = get_fs();
-+	set_fs(KERNEL_DS);
-+	ret = ptrace_gethbpregs(tsk, (long)num, &kdata);
-+	set_fs(old_fs);
-+
-+	if (!ret)
-+		ret = put_user(kdata, data);
-+
-+	return ret;
-+}
-+
-+static int compat_ptrace_sethbpregs(struct task_struct *tsk, compat_long_t num,
-+				    compat_ulong_t __user *data)
-+{
-+	int ret;
-+	unsigned long kdata = 0;
-+	mm_segment_t old_fs = get_fs();
-+
-+	ret = get_user(kdata, data);
-+
-+	if (!ret) {
-+		set_fs(KERNEL_DS);
-+		ret = ptrace_sethbpregs(tsk, (long)num, &kdata);
-+		set_fs(old_fs);
-+	}
-+
-+	return ret;
-+}
-+#endif	/* CONFIG_HAVE_HW_BREAKPOINT */
-+
-+long compat_arch_ptrace(struct task_struct *child, compat_long_t request,
-+			compat_ulong_t caddr, compat_ulong_t cdata)
-+{
-+	unsigned long addr = caddr;
-+	unsigned long data = cdata;
-+	void __user *datap = compat_ptr(data);
-+	int ret;
-+
-+	switch (request) {
-+		case PTRACE_PEEKUSR:
-+			ret = compat_ptrace_read_user(child, addr, datap);
-+			break;
-+
-+		case PTRACE_POKEUSR:
-+			ret = compat_ptrace_write_user(child, addr, data);
-+			break;
-+
-+		case PTRACE_GETREGS:
-+			ret = copy_regset_to_user(child,
-+						  &user_aarch32_view,
-+						  REGSET_COMPAT_GPR,
-+						  0, sizeof(compat_elf_gregset_t),
-+						  datap);
-+			break;
-+
-+		case PTRACE_SETREGS:
-+			ret = copy_regset_from_user(child,
-+						    &user_aarch32_view,
-+						    REGSET_COMPAT_GPR,
-+						    0, sizeof(compat_elf_gregset_t),
-+						    datap);
-+			break;
-+
-+		case PTRACE_GET_THREAD_AREA:
-+			ret = put_user((compat_ulong_t)child->thread.tp_value,
-+				       (compat_ulong_t __user *)datap);
-+			break;
-+
-+		case PTRACE_SET_SYSCALL:
-+			task_pt_regs(child)->syscallno = data;
-+			ret = 0;
-+			break;
-+
-+		case COMPAT_PTRACE_GETVFPREGS:
-+			ret = copy_regset_to_user(child,
-+						  &user_aarch32_view,
-+						  REGSET_COMPAT_VFP,
-+						  0, VFP_STATE_SIZE,
-+						  datap);
-+			break;
-+
-+		case COMPAT_PTRACE_SETVFPREGS:
-+			ret = copy_regset_from_user(child,
-+						    &user_aarch32_view,
-+						    REGSET_COMPAT_VFP,
-+						    0, VFP_STATE_SIZE,
-+						    datap);
-+			break;
-+
-+#ifdef CONFIG_HAVE_HW_BREAKPOINT
-+		case PTRACE_GETHBPREGS:
-+			ret = compat_ptrace_gethbpregs(child, addr, datap);
-+			break;
-+
-+		case PTRACE_SETHBPREGS:
-+			ret = compat_ptrace_sethbpregs(child, addr, datap);
-+			break;
-+#endif
-+
-+		default:
-+			ret = compat_ptrace_request(child, request, addr,
-+						    data);
-+			break;
-+	}
-+
-+	return ret;
-+}
-+#endif /* CONFIG_AARCH32_EMULATION */
-+
-+static int __init ptrace_break_init(void)
-+{
-+	hook_debug_fault_code(DBG_ESR_EVT_BRK, aarch64_break_trap, SIGTRAP,
-+			      TRAP_BRKPT, "ptrace BRK handler");
-+	return 0;
-+}
-+core_initcall(ptrace_break_init);
-+
-+
-+asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
-+{
-+	unsigned long saved_reg;
-+
-+	if (!test_thread_flag(TIF_SYSCALL_TRACE))
-+		return regs->syscallno;
-+
-+	if (test_thread_flag(TIF_32BIT)) {
-+		/* AArch32 uses ip (r12) for scratch */
-+		saved_reg = regs->regs[12];
-+		regs->regs[12] = dir;
-+	} else {
-+		/*
-+		 * Save X7. X7 is used to denote syscall entry/exit:
-+		 *   X7 = 0 -> entry, = 1 -> exit
-+		 */
-+		saved_reg = regs->regs[7];
-+		regs->regs[7] = dir;
-+	}
-+
-+	if (dir)
-+		tracehook_report_syscall_exit(regs, 0);
-+	else if (tracehook_report_syscall_entry(regs))
-+		regs->syscallno = ~0UL;
-+
-+	if (test_thread_flag(TIF_32BIT))
-+		regs->regs[12] = saved_reg;
-+	else
-+		regs->regs[7] = saved_reg;
-+
-+	return regs->syscallno;
-+}
 
