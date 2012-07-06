@@ -1,171 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932969Ab2GFHkM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 03:40:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31227 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754003Ab2GFHkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 03:40:09 -0400
-Message-ID: <4FF696C9.5070907@redhat.com>
-Date: Fri, 06 Jul 2012 15:42:01 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Rick Jones <rick.jones2@hp.com>
-CC: mst@redhat.com, mashirle@us.ibm.com, krkumar2@in.ibm.com,
-        habanero@linux.vnet.ibm.com, rusty@rustcorp.com.au,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, edumazet@google.com,
-        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
-        akong@redhat.com, kvm@vger.kernel.org, sri@us.ibm.com
-Subject: Re: [net-next RFC V5 0/5] Multiqueue virtio-net
-References: <1341484194-8108-1-git-send-email-jasowang@redhat.com> <4FF5D2B7.6080602@hp.com>
-In-Reply-To: <4FF5D2B7.6080602@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933005Ab2GFHlk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 03:41:40 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48043 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274Ab2GFHli (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 03:41:38 -0400
+X-AuditID: 9c930179-b7cceae000004195-c7-4ff692eb4ec8
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>
+Subject: [PATCHSET 0/6] perf tools: Minimal build without libelf dependency (v3)
+Date: Fri,  6 Jul 2012 16:21:31 +0900
+Message-Id: <1341559297-25725-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/2012 01:45 AM, Rick Jones wrote:
-> On 07/05/2012 03:29 AM, Jason Wang wrote:
->
->>
->> Test result:
->>
->> 1) 1 vm 2 vcpu 1q vs 2q, 1 - 1q, 2 - 2q, no pinning
->>
->> - Guest to External Host TCP STREAM
->> sessions size throughput1 throughput2   norm1 norm2
->> 1 64 650.55 655.61 100% 24.88 24.86 99%
->> 2 64 1446.81 1309.44 90% 30.49 27.16 89%
->> 4 64 1430.52 1305.59 91% 30.78 26.80 87%
->> 8 64 1450.89 1270.82 87% 30.83 25.95 84%
->
-> Was the -D test-specific option used to set TCP_NODELAY?  I'm guessing 
-> from your description of how packet sizes were smaller with multiqueue 
-> and your need to hack tcp_write_xmit() it wasn't but since we don't 
-> have the specific netperf command lines (hint hint :) I wanted to make 
-> certain.
-Hi Rick:
+Hi,
 
-I didn't specify -D for disabling Nagle. I also collects rx packets and 
-average packet size:
+This is my third version of the series. I removed RFC tag in subject
+line since I think most of you seem to agree with the change. :)
 
-Guest to External Host ( 2vcpu 1q vs 2q )
-sessions size tput-sq tput-mq %  norm-sq norm-mq %  #tx-pkts-sq 
-#tx-pkts-mq % avg-sz-sq avg-sz-mq %
-1 64 668.85 671.13 100% 25.80 26.86 104% 629038 627126 99% 1395 1403 100%
-2 64 1421.29 1345.40 94% 32.06 27.57 85% 1318498 1246721 94% 1413 1414 100%
-4 64 1469.96 1365.42 92% 32.44 27.04 83% 1362542 1277848 93% 1414 1401 99%
-8 64 1131.00 1361.58 120% 24.81 26.76 107% 1223700 1280970 104% 1395 
-1394 99%
-1 256 1883.98 1649.87 87% 60.67 58.48 96% 1542775 1465836 95% 1592 1472 92%
-2 256 4847.09 3539.74 73% 98.35 64.05 65% 2683346 3074046 114% 2323 1505 64%
-4 256 5197.33 3283.48 63% 109.14 62.39 57% 1819814 2929486 160% 3636 
-1467 40%
-8 256 5953.53 3359.22 56% 122.75 64.21 52% 906071 2924148 322% 8282 1502 18%
-1 512 3019.70 2646.07 87% 93.89 86.78 92% 2003780 2256077 112% 1949 1532 78%
-2 512 7455.83 5861.03 78% 173.79 104.43 60% 1200322 3577142 298% 7831 
-2114 26%
-4 512 8962.28 7062.20 78% 213.08 127.82 59% 468142 2594812 554% 24030 
-3468 14%
-8 512 7849.82 8523.85 108% 175.41 154.19 87% 304923 1662023 545% 38640 
-6479 16%
+Patch 1 and 2 are independent to the series and can be applied solely
+(and possibly merged to one).
 
-When multiqueue were enabled, it does have a higher packets per second 
-but with a much more smaller packet size. It looks to me that multiqueue 
-is faster and guest tcp have less oppotunity to build a larger skbs to 
-send, so lots of small packet were required to send which leads to much 
-more #exit and vhost works. One interesting thing is, if I run tcpdump 
-in the host where guest run, I can get obvious throughput increasing. To 
-verify the assumption, I hack the tcp_write_xmit() with following patch 
-and set tcp_tso_win_divisor=1, then I multiqueue can outperform or at 
-least get the same throughput as singlequeue, though it could introduce 
-latency but I havent' measured it.
+This patchset is based on Arnaldo's perf/core branch at 81e9b994bb20
+("Merge tag 'libtraceevent-core-for-acme' of
+git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf into
+perf/core") and tested on x86_64 and ARM.
 
-I'm not expert of tcp, but looks like the changes are reasonable:
-- we can do full-sized TSO check in tcp_tso_should_defer() only for 
-westwood, according to tcp westwood
-- run tcp_tso_should_defer for tso_segs = 1 when tso is enabled.
+You can also get this set on perf/minimal-v3 branch on my tree (see
+above) if you want.
 
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index c465d3e..166a888 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1567,7 +1567,7 @@ static bool tcp_tso_should_defer(struct sock *sk, 
-struct sk_buff *skb)
-
-         in_flight = tcp_packets_in_flight(tp);
-
--       BUG_ON(tcp_skb_pcount(skb) <= 1 || (tp->snd_cwnd <= in_flight));
-+       BUG_ON(tp->snd_cwnd <= in_flight);
-
-         send_win = tcp_wnd_end(tp) - TCP_SKB_CB(skb)->seq;
-
-@@ -1576,9 +1576,11 @@ static bool tcp_tso_should_defer(struct sock *sk, 
-struct sk_buff *skb)
-
-         limit = min(send_win, cong_win);
-
-+#if 0
-         /* If a full-sized TSO skb can be sent, do it. */
-         if (limit >= sk->sk_gso_max_size)
-                 goto send_now;
-+#endif
-
-         /* Middle in queue won't get any more data, full sendable 
-already? */
-         if ((skb != tcp_write_queue_tail(sk)) && (limit >= skb->len))
-@@ -1795,10 +1797,9 @@ static bool tcp_write_xmit(struct sock *sk, 
-unsigned int mss_now, int nonagle,
-                                                      
-(tcp_skb_is_last(sk, skb) ?
-                                                       nonagle : 
-TCP_NAGLE_PUSH))))
-                                 break;
--               } else {
--                       if (!push_one && tcp_tso_should_defer(sk, skb))
--                               break;
-                 }
-+               if (!push_one && tcp_tso_should_defer(sk, skb))
-+                       break;
-
-                 limit = mss_now;
-                 if (tso_segs > 1 && !tcp_urg_mode(tp))
+Any comments are welcome.
+Namhyung
 
 
+v3:
+ * drop already merged (cross-build related) patches
+ * drop SYMBIND_* change (Arnaldo)
+
+v2:
+ * change make option name to NO_LIBELF
+ * make it default when libelf doesn't exist (Ingo)
+ * get rid of elf-minimal.h and use elf.h (Jiri)
+
+The original description follows.
+
+--- 
+
+Current build procedure of perf tools requires a couple of external
+libraries. Although most of them are optional, elfutils' libelf is
+mandatory for resolving symbols and build-id of the binaries being
+profiled. For some reason, it makes embedded guys' life harder who
+want to build and run perf tools on their boards.
+
+This patchset tries to fix the problem by letting the perf could
+be built without the libelf. The initial intent was just providing
+perf record command to gather performance events interested on the
+system and copies perf.data to development box to be used by (full-
+fledged) perf report for analysis.
+
+However it's changed to have most of perf commands as is because
+perf can resolve kernel symbols without libelf and many of perf
+commands deal (mostly) with kernel events - so no need to restrict
+capability of perf tools. Therefore, the end result is not so
+minimalistic actually and the only thing it cannot do is "perf probe".
+
+And there's a poor man's version of ELF parser only for parsing the
+build-id info. While it's not absolutely needed, I think it's good to
+have, just in case.
+
+In addition, I changed my mind to keep unrelated configurations -
+i.g. tui/gui and perf/python support - enabled by default so that
+it can be configured by a find-grained config method in the future.
+
+To build a minimal perf tools explicitly, pass NO_LIBELF=1 to make.
+Or, if the system doesn't provide the elfutils it'll detect that
+and converts to the minimal build mode automatically. The resulting
+perf report will not display symbol names in userland:
+
+ # Samples: 3K of event 'cycles'
+ # Event count (approx.): 3740267998
+ #
+ # Overhead  Command      Shared Object                          Symbol
+ # ........  .......  .................  ..............................
+ #
+     99.70%  noploop  noploop            [.] 0x000000000000066d        
+      0.10%  noploop  [kernel.kallsyms]  [k] free_pgd_range            
+      0.03%  noploop  [kernel.kallsyms]  [k] native_write_msr_safe     
+      0.03%  noploop  [kernel.kallsyms]  [k] raise_softirq             
+      0.03%  noploop  [kernel.kallsyms]  [k] rb_insert_color       
+ 
+But perf buildid-list can show the build-id's:
+
+ $ ./perf buildid-list --with-hits
+ 5eaf1839576cc801053e63300762def90a77a305 [kernel.kallsyms]
+ 43a7a2b399b6ee2ff29c6bdadbda6bff88712ed4 /home/namhyung/bin/noploop
+
+So it can be packed using perf archive command and copied and
+analized with full-fledged perf tools on a development machine.
 
 
->
-> Instead of calling them throughput1 and throughput2, it might be more 
-> clear in future to identify them as singlequeue and multiqueue.
->
+Namhyung Kim (6):
+  tools lib traceevent: Detect build environment changes
+  tools lib traceevent: Ignore TRACEEVENT-CFLAGS file
+  perf symbols: Introduce symbol__elf_init()
+  perf tools: Split out util/symbol-elf.c
+  perf tools: Support minimal build without libelf
+  perf symbols: Implement poor man's ELF parser
 
-Sure.
-> Also, how are you combining the concurrent netperf results?  Are you 
-> taking sums of what netperf reports, or are you gathering statistics 
-> outside of netperf?
->
+ tools/lib/traceevent/.gitignore     |    1 +
+ tools/lib/traceevent/Makefile       |   14 +-
+ tools/perf/Makefile                 |   58 ++-
+ tools/perf/builtin-buildid-list.c   |    4 +-
+ tools/perf/builtin-inject.c         |    5 +-
+ tools/perf/command-list.txt         |    2 +-
+ tools/perf/perf.c                   |    2 +
+ tools/perf/util/generate-cmdlist.sh |   15 +
+ tools/perf/util/map.c               |   22 +-
+ tools/perf/util/map.h               |    1 +
+ tools/perf/util/symbol-elf.c        |  775 +++++++++++++++++++++++++++++++++
+ tools/perf/util/symbol-minimal.c    |  267 ++++++++++++
+ tools/perf/util/symbol.c            |  802 +----------------------------------
+ tools/perf/util/symbol.h            |   16 +
+ 14 files changed, 1169 insertions(+), 815 deletions(-)
+ create mode 100644 tools/lib/traceevent/.gitignore
+ create mode 100644 tools/perf/util/symbol-elf.c
+ create mode 100644 tools/perf/util/symbol-minimal.c
 
-The throughput were just sumed from netperf result like what netperf 
-manual suggests. The cpu utilization were measured by mpstat.
->> - TCP RR
->> sessions size throughput1 throughput2   norm1 norm2
->> 50 1 54695.41 84164.98 153% 1957.33 1901.31 97%
->
-> A single instance TCP_RR test would help confirm/refute any 
-> non-trivial change in (effective) path length between the two cases.
->
-
-Yes, I would test this thanks.
-> happy benchmarking,
->
-> rick jones
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe 
-> linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+1.7.10.4
 
