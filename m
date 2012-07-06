@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758126Ab2GFR4C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 13:56:02 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:63908 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757859Ab2GFR4A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 13:56:00 -0400
-MIME-Version: 1.0
-X-Originating-IP: [93.172.10.162]
-In-Reply-To: <81C3A93C17462B4BBD7E272753C10579232F92EFE2@EXDCVYMBSTM005.EQ1STM.local>
-References: <1340375470-13097-1-git-send-email-sjur.brandeland@stericsson.com>
- <1340375470-13097-5-git-send-email-sjur.brandeland@stericsson.com>
- <CAK=WgbbG2nHH7+rm6CoR=VhiXVQT3-2VqJYLswmg9EshWu_=EA@mail.gmail.com>
- <81C3A93C17462B4BBD7E272753C10579232F86BE52@EXDCVYMBSTM005.EQ1STM.local>
- <CAK=Wgbb_pAx9Kfwbh23k=62vQUx5vnVpwe3q50BY=KwAkLC=ng@mail.gmail.com> <81C3A93C17462B4BBD7E272753C10579232F92EFE2@EXDCVYMBSTM005.EQ1STM.local>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Fri, 6 Jul 2012 20:55:39 +0300
-Message-ID: <CAK=Wgbbt4E7RNntRp4K2q5i2rw6ZpVfxbVrH9u4djJus0L5AJg@mail.gmail.com>
-Subject: Re: [RFC 4/4] remoteproc: Add driver for STE Modem
-To: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758132Ab2GFR5g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 13:57:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36804 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757859Ab2GFR5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 13:57:35 -0400
+Subject: Re: [PATCH] CONFIG_CC_STACKPROTECTOR is no longer experimental
+From: Jean Delvare <jdelvare@suse.de>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <4FF71F1C.4040608@xenotime.net>
+References: <1341583705.4655.18.camel@amber.site>
+	 <4FF71F1C.4040608@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Suse Linux
+Date: Fri, 06 Jul 2012 19:57:19 +0200
+Message-ID: <1341597439.4655.23.camel@amber.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sjur,
+Hi Randy,
 
-On Fri, Jul 6, 2012 at 12:18 PM, Sjur BRENDELAND
-<sjur.brandeland@stericsson.com> wrote:
-> The simple story is that when Host writes a bit indicated with TX-mask
-> it generates an interrupt on the modem-side. And likewise when the
-> modem writes a bit indicated with RX mask the Host will receive an
-> interrupt.
+Le vendredi 06 juillet 2012 à 10:23 -0700, Randy Dunlap a écrit :
+> On 07/06/2012 07:08 AM, Jean Delvare wrote:
+> 
+> > This feature has been around for over 5 years now, so I presume it is
+> > no longer considered experimental.
+> > 
+> > Signed-off-by: Jean Delvare <jdelvare@suse.de>
+> > Cc: Ingo Molnar <mingo@redhat.com>
+> > Cc: Arjan van de Ven <arjan@linux.intel.com>
+> > Cc: Andi Kleen <andi@firstfloor.org>
+> > ---
+> > Or is there any reason to still consider this an experimental feature?
+> 
+> 
+> I doubt it, but if it is still experimental, it should also have
+> 	depends on EXPERIMENTAL
 
-Ok, thanks.
+Agreed.
 
-> Yes, if you can guarantee this, I could make a very simple solution.
+> and then it would be nice if kconfig (the software) would add the
+>   " (EXPERIMENTAL)" tag when it sees such a dependency.
 
-Great!
+Oh yeah, I've been dreaming of this for years now but never found the
+time to actually look into implementing it. Not sure if I would actually
+be able to anyway, as it will probably require some Kconfig magic beyond
+my knowledge.
 
-> Ok, I guess a more standard way to solve this is use #ifdef's and
-> dummy inline functions in the header file instead. I'll do that
-> next time around then.
 
-I'm still puzzled a bit about this: can we just depend on some
-CONFIG_STE_MODEM_HANDLERS (totally made up name) instead, without even
-adding the #ifdefs ?
+-- 
+Jean Delvare
+Suse L3
 
-Since ste_modem_rproc is anyway platform specific, I'm wondering
-whether there's any legitimate configuration where it is needed, but
-the symbols it depends on aren't around.
-
-> OK, we can do it this way as well. It feels a bit over-the-top in my case,
-> but I understand where you're coming from any why.
-
-Thanks! It should really be super simple and straight-forward to
-implement. If you see that for some reason it isn't, let me know and
-I'll help.
-
-Ohad.
