@@ -1,130 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab2GFORm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 10:17:42 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:38808 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181Ab2GFORl convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	id S1757470Ab2GFORx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 10:17:53 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:54016 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757339Ab2GFORl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jul 2012 10:17:41 -0400
-Message-Id: <4FF70FDB020000780008E199@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 06 Jul 2012 15:18:35 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: simplify mtrr_bp_init()
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+Date: Fri, 6 Jul 2012 16:17:36 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, josh@joshtriplett.org,
+        heiko.carstens@de.ibm.com, pascal.chapperon@wanadoo.fr,
+        wfg@linux.intel.com, C.Emde@osadl.org, mathieu.desnoyers@efficios.com,
+        dhowells@redhat.com, efault@gmx.de, levinsasha928@gmail.com
+Subject: Re: [GIT PULL rcu/next] RCU commits for 3.6
+Message-ID: <20120706141736.GB23400@gmail.com>
+References: <20120706140116.GA17758@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120706140116.GA17758@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the x86_phys_bits cpuinfo field is uniformly available on
-32- and 64-bit, the function no longer needs to determine this anew.
 
-Additionally, both size_or_mask and size_and_mask can be set once at
-the end of the function instead of individually in each special case,
-as their value solely depends on the physical address size determined
-to be used here.
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> Hello, Ingo,
+> 
+> The major features of this series are:
+> 
+> 1.	Preventing latency spikes of more than 200 microseconds for
+> 	kernels built with NR_CPUS=4096, which is reportedly becoming
+> 	the default for some distros.  This is a first step, as it does
+> 	not help with systems that actually -have- 4096 CPUs (work on
+> 	this case is in progress, but is not yet ready for mainline).
+> 	This category also includes improving concurrency of rcu_barrier(),
+> 	placed here due to conflicts.  Posted to LKML at:
+> 	https://lkml.org/lkml/2012/6/22/381.  Note that patches 18-22
+> 	of that series have been defered to 3.7, as they have not yet
+> 	proven themselves to be mainline-ready (and yes, these are the
+> 	ones intended to get rid of RCU's latency spikes for systems
+> 	that actually have 4096 CPUs).
+> 2.	Updates to documentation and rcutorture fixes, the latter category
+> 	including improvements to rcu_barrier() testing.  Posted to LKML at:
+> 	http://lkml.indiana.edu/hypermail/linux/kernel/1206.1/04094.html.
+> 3.	Miscellaneous fixes posted to LKML at:
+> 	https://lkml.org/lkml/2012/6/22/500, with the exception of the
+> 	last commit, which was posted here:
+> 	http://www.gossamer-threads.com/lists/linux/kernel/1561830
+> 4.	RCU_FAST_NO_HZ fixes and improvements.  Posted to LKML at:
+> 	http://lkml.indiana.edu/hypermail/linux/kernel/1206.1/00006.html
+> 	and http://www.gossamer-threads.com/lists/linux/kernel/1561833.
+> 	The first four patches of the first series went into 3.5 to fix
+> 	a regression.
+> 5.	Code-style fixes.  These were posted to LKML at
+> 	http://lkml.indiana.edu/hypermail/linux/kernel/1205.2/01180.html and
+> 	http://lkml.indiana.edu/hypermail/linux/kernel/1205.2/01181.html.
+> 
+> All of this code has been exposed to -next testing.
+> 
+> These changes are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
+> 
+> 								Thanx, Paul
+> 
+> -------------------->
+> Carsten Emde (1):
+>       rcu: Prevent uninitialized string in RCU CPU stall info
+> 
+> Paul E. McKenney (48):
+>       rcu: Control RCU_FANOUT_LEAF from boot-time parameter
+>       rcu: Four-level hierarchy is no longer experimental
+>       rcu: Size rcu_node tree from nr_cpu_ids rather than NR_CPUS
+>       rcu: Prevent excessive line length in RCU_STATE_INITIALIZER()
+>       rcu: Place pointer to call_rcu() in rcu_data structure
+>       rcu: Move _rcu_barrier()'s rcu_head structures to rcu_data structures
+>       rcu: Move rcu_barrier_cpu_count to rcu_state structure
+>       rcu: Move rcu_barrier_completion to rcu_state structure
+>       rcu: Move rcu_barrier_mutex to rcu_state structure
+>       rcu: Remove needless initialization
+>       rcu: Increase rcu_barrier() concurrency
+>       rcu: Add tracing for _rcu_barrier()
+>       rcu: Add rcu_barrier() statistics to debugfs tracing
+>       rcu: Remove unneeded __rcu_process_callbacks() argument
+>       rcu: Introduce for_each_rcu_flavor() and use it
+>       rcu: Use for_each_rcu_flavor() in TREE_RCU tracing
+>       rcu: RCU_SAVE_DYNTICK code no longer ever dead
+>       rcu: Update documentation to cover call_srcu() and srcu_barrier().
+>       rcu: Rationalize ordering of torture_ops list
+>       rcu: Test srcu_barrier() from rcutorture test suite
+>       rcu: Fix bug in rcu_barrier() torture test
+>       rcu: Fix diagnostic-printk typo in rcutorture
+>       rcu: Make rcutorture fakewriters invoke rcu_barrier()
+>       rcu: Fix detection of abruptly-ending stall
+>       rcu: Consolidate duplicate callback-list initialization
+>       rcu: Add ACCESS_ONCE() to ->qlen accesses
+>       rcu: Add a gcc-style structure initializer for RCU pointers
+>       rcu: Use new RCU_POINTER_INITIALIZER for gcc-style initializations
+>       rcu: Remove return value from RCU_INIT_POINTER()
+>       key: Remove extraneous parentheses from rcu_assign_keypointer()
+>       rcu: Remove return value from rcu_assign_pointer()
+>       rcu: Consolidate tree/tiny __rcu_read_{,un}lock() implementations
+>       rcu: Remove function versions of __kfree_rcu and __is_kfree_rcu_offset
+>       rcu: Make __call_rcu() handle invocation from idle
+>       rcu: Prevent __call_rcu() from invoking RCU core on offline CPUs
+>       rcu: Split RCU core processing out of __call_rcu()
+>       rcu: Fix rcu_is_cpu_idle() #ifdef in TINY_RCU
+>       rcu: Disable preemption in rcu_blocking_is_gp()
+>       rcu: Add check for CPUs going offline with callbacks queued
+>       rcu: Dump only the current CPU's buffers for idle-entry/exit warnings
+>       rcu: The rcu_needs_cpu() function is not a quiescent state
+>       rcu: Round FAST_NO_HZ lazy timeout to nearest second
+>       rcu: Fix qlen_lazy breakage
+>       rcu: Make RCU_FAST_NO_HZ respect nohz= boot parameter
+>       rcu: Introduce check for callback list/count mismatch
+>       Merge branches 'bigrtm.2012.07.04a', 'doctorture.2012.07.02a', 'fixes.2012.07.06a' and 'fnh.2012.07.02a' into HEAD
+>       rcu: Fix code-style issues involving "else"
+>       rcu: Fix broken strings in RCU's source code.
+> 
+>  Documentation/RCU/checklist.txt     |   39 ++--
+>  Documentation/RCU/rcubarrier.txt    |   15 +-
+>  Documentation/RCU/torture.txt       |    9 +
+>  Documentation/RCU/whatisRCU.txt     |    6 +-
+>  Documentation/kernel-parameters.txt |    5 +
+>  include/linux/init_task.h           |    4 +-
+>  include/linux/key.h                 |    4 +-
+>  include/linux/rcupdate.h            |   53 ++---
+>  include/trace/events/rcu.h          |   45 ++++
+>  kernel/rcupdate.c                   |   44 ++++
+>  kernel/rcutiny.c                    |    4 +-
+>  kernel/rcutiny_plugin.h             |   56 +----
+>  kernel/rcutorture.c                 |   72 ++++--
+>  kernel/rcutree.c                    |  478 ++++++++++++++++++++++------------
+>  kernel/rcutree.h                    |   46 ++--
+>  kernel/rcutree_plugin.h             |  223 ++++-------------
+>  kernel/rcutree_trace.c              |  148 ++++++-----
+>  kernel/time/tick-sched.c            |    2 +-
+>  lib/list_debug.c                    |    6 +-
+>  19 files changed, 669 insertions(+), 590 deletions(-)
 
----
- arch/x86/kernel/cpu/mtrr/main.c |   47 ++++++++++------------------------------
- 1 file changed, 12 insertions(+), 35 deletions(-)
+Pulled, thanks a lot Paul!
 
---- 3.5-rc5/arch/x86/kernel/cpu/mtrr/main.c
-+++ 3.5-rc5-x86-mtrr-init-simplify/arch/x86/kernel/cpu/mtrr/main.c
-@@ -592,67 +592,41 @@ int __initdata changed_by_mtrr_cleanup;
-  */
- void __init mtrr_bp_init(void)
- {
--	u32 phys_addr;
-+	unsigned int phys_addr = boot_cpu_data.x86_phys_bits;
- 
- 	init_ifs();
- 
--	phys_addr = 32;
--
- 	if (cpu_has_mtrr) {
- 		mtrr_if = &generic_mtrr_ops;
--		size_or_mask = 0xff000000;			/* 36 bits */
--		size_and_mask = 0x00f00000;
--		phys_addr = 36;
--
--		/*
--		 * This is an AMD specific MSR, but we assume(hope?) that
--		 * Intel will implement it to when they extend the address
--		 * bus of the Xeon.
--		 */
--		if (cpuid_eax(0x80000000) >= 0x80000008) {
--			phys_addr = cpuid_eax(0x80000008) & 0xff;
--			/* CPUID workaround for Intel 0F33/0F34 CPU */
--			if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL &&
--			    boot_cpu_data.x86 == 0xF &&
--			    boot_cpu_data.x86_model == 0x3 &&
--			    (boot_cpu_data.x86_mask == 0x3 ||
--			     boot_cpu_data.x86_mask == 0x4))
--				phys_addr = 36;
--
--			size_or_mask = ~((1ULL << (phys_addr - PAGE_SHIFT)) - 1);
--			size_and_mask = ~size_or_mask & 0xfffff00000ULL;
--		} else if (boot_cpu_data.x86_vendor == X86_VENDOR_CENTAUR &&
--			   boot_cpu_data.x86 == 6) {
-+
-+		if (boot_cpu_data.x86_vendor == X86_VENDOR_CENTAUR &&
-+		    boot_cpu_data.x86 == 6) {
- 			/*
- 			 * VIA C* family have Intel style MTRRs,
- 			 * but don't support PAE
- 			 */
--			size_or_mask = 0xfff00000;		/* 32 bits */
--			size_and_mask = 0;
- 			phys_addr = 32;
--		}
-+		} else if (phys_addr < 36)
-+			phys_addr = 36;
- 	} else {
- 		switch (boot_cpu_data.x86_vendor) {
- 		case X86_VENDOR_AMD:
- 			if (cpu_has_k6_mtrr) {
- 				/* Pre-Athlon (K6) AMD CPU MTRRs */
- 				mtrr_if = mtrr_ops[X86_VENDOR_AMD];
--				size_or_mask = 0xfff00000;	/* 32 bits */
--				size_and_mask = 0;
-+				phys_addr = 32;
- 			}
- 			break;
- 		case X86_VENDOR_CENTAUR:
- 			if (cpu_has_centaur_mcr) {
- 				mtrr_if = mtrr_ops[X86_VENDOR_CENTAUR];
--				size_or_mask = 0xfff00000;	/* 32 bits */
--				size_and_mask = 0;
-+				phys_addr = 32;
- 			}
- 			break;
- 		case X86_VENDOR_CYRIX:
- 			if (cpu_has_cyrix_arr) {
- 				mtrr_if = mtrr_ops[X86_VENDOR_CYRIX];
--				size_or_mask = 0xfff00000;	/* 32 bits */
--				size_and_mask = 0;
-+				phys_addr = 32;
- 			}
- 			break;
- 		default:
-@@ -660,6 +634,9 @@ void __init mtrr_bp_init(void)
- 		}
- 	}
- 
-+	size_or_mask = ~((1ULL << (phys_addr - PAGE_SHIFT)) - 1);
-+	size_and_mask = ~size_or_mask & 0xfffff00000ULL;
-+
- 	if (mtrr_if) {
- 		set_num_var_ranges();
- 		init_table();
-
-
-
+	Ingo
