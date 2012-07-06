@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933497Ab2GFDQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 23:16:57 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43696 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932465Ab2GFDQ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 23:16:56 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FF65898.3000301@jp.fujitsu.com>
-Date: Fri, 6 Jul 2012 12:16:40 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S933511Ab2GFDSL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 23:18:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23560 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932465Ab2GFDSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 23:18:09 -0400
+Message-ID: <4FF65966.9040600@redhat.com>
+Date: Fri, 06 Jul 2012 11:20:06 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: <linux-acpi@vger.kernel.org>, <lenb@kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] acpi : cpu hot-remove returns error number when cpu_down()
- fails
-Content-Type: text/plain; charset="ISO-2022-JP"
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: mst@redhat.com, mashirle@us.ibm.com, krkumar2@in.ibm.com,
+        habanero@linux.vnet.ibm.com, rusty@rustcorp.com.au,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, edumazet@google.com,
+        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
+        akong@redhat.com, kvm@vger.kernel.org, sri@us.ibm.com
+Subject: Re: [net-next RFC V5 5/5] virtio_net: support negotiating the number
+ of queues through ctrl vq
+References: <1341484194-8108-1-git-send-email-jasowang@redhat.com>  <1341484194-8108-6-git-send-email-jasowang@redhat.com> <1341492679.18786.18.camel@lappy>
+In-Reply-To: <1341492679.18786.18.camel@lappy>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even if cpu_down() fails, acpi_processor_remove() continues to remove the cpu.
-But in this case, it should return error number since some process may run on
-the cpu. If the cpu has a running process and the cpu is turned the power off,
-the system cannot work well.
+On 07/05/2012 08:51 PM, Sasha Levin wrote:
+> On Thu, 2012-07-05 at 18:29 +0800, Jason Wang wrote:
+>> @@ -1387,6 +1404,10 @@ static int virtnet_probe(struct virtio_device *vdev)
+>>          if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
+>>                  vi->has_cvq = true;
+>>
+>> +       /* Use single tx/rx queue pair as default */
+>> +       vi->num_queue_pairs = 1;
+>> +       vi->total_queue_pairs = num_queue_pairs;
+> The code is using this "default" even if the amount of queue pairs it
+> wants was specified during initialization. This basically limits any
+> device to use 1 pair when starting up.
+>
 
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-
----
- drivers/acpi/processor_driver.c |   18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
-
-Index: linux-3.5-rc4/drivers/acpi/processor_driver.c
-===================================================================
---- linux-3.5-rc4.orig/drivers/acpi/processor_driver.c	2012-06-25 04:53:04.000000000 +0900
-+++ linux-3.5-rc4/drivers/acpi/processor_driver.c	2012-07-05 21:02:58.711285382 +0900
-@@ -610,7 +610,7 @@ err_free_pr:
- static int acpi_processor_remove(struct acpi_device *device, int type)
- {
- 	struct acpi_processor *pr = NULL;
--
-+	int ret;
-
- 	if (!device || !acpi_driver_data(device))
- 		return -EINVAL;
-@@ -621,8 +621,9 @@ static int acpi_processor_remove(struct
- 		goto free;
-
- 	if (type == ACPI_BUS_REMOVAL_EJECT) {
--		if (acpi_processor_handle_eject(pr))
--			return -EINVAL;
-+		ret = acpi_processor_handle_eject(pr);
-+		if (ret)
-+			return ret;
- 	}
-
- 	acpi_processor_power_exit(pr, device);
-@@ -841,12 +842,17 @@ static acpi_status acpi_processor_hotadd
-
- static int acpi_processor_handle_eject(struct acpi_processor *pr)
- {
--	if (cpu_online(pr->id))
--		cpu_down(pr->id);
-+	int ret;
-+
-+	if (cpu_online(pr->id)) {
-+		ret = cpu_down(pr->id);
-+		if (ret)
-+			return ret;
-+	}
-
- 	arch_unregister_cpu(pr->id);
- 	acpi_unmap_lsapic(pr->id);
--	return (0);
-+	return ret;
- }
- #else
- static acpi_status acpi_processor_hotadd_init(struct acpi_processor *pr)
+Yes, currently the virtio-net driver would use 1 txq/txq by default 
+since multiqueue may not outperform in all kinds of workload. So it's 
+better to keep it as default and let user enable multiqueue by ethtool -L.
 
