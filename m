@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933204Ab2GFVc7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 17:32:59 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43328 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932123Ab2GFVc5 (ORCPT
+	id S933187Ab2GFVeq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 17:34:46 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:37964 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932123Ab2GFVeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 17:32:57 -0400
-Message-ID: <4FF75986.8010706@wwwdotorg.org>
-Date: Fri, 06 Jul 2012 15:32:54 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Fri, 6 Jul 2012 17:34:44 -0400
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH 08/36] AArch64: Kernel booting and initialisation
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <1341608777-12982-9-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1341608777-12982-9-git-send-email-catalin.marinas@arm.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAErSpo6Jq0oaq0Scq46C=_6LNhMyBv76QxHQDpujsuq-bizytQ@mail.gmail.com>
+References: <CANHD2=rF6dBkLLkWAj8uS3nq0B1wCt7Uvu=HzO84UNz2kuiaFg@mail.gmail.com>
+	<20120313081235.GC15333@redhat.com>
+	<CAErSpo6t-cVBdJfyARi3ifEuBUvopbG5GQSP5YywrvumDK8HFA@mail.gmail.com>
+	<CANHD2=qSWRv76mjwhTNMgO=u5yYCh2QZzxbNLNaPWm1d52FtOg@mail.gmail.com>
+	<20120528140448.GA22783@redhat.com>
+	<CAErSpo6XVgzeQiWjXJs6vxdQ5_O7LFG-j4p=4S7rQSyBdq7-SA@mail.gmail.com>
+	<20120529092154.GA2441@redhat.com>
+	<CAErSpo6Xxq_kcEYACKUsuNDOJDhEDnxWgBUateOJEBcfqufhSg@mail.gmail.com>
+	<CANHD2=o-eyd2JR7oK4gJgQi3Mi-a=R1RKuGsuWzzR_WosQaNEA@mail.gmail.com>
+	<20120702053110.GA2500@redhat.com>
+	<CANHD2=pEham5SZ6EguurMd9MBuyptyx5CGF1RDhU8Ow9CaRoXA@mail.gmail.com>
+	<CAErSpo6Jq0oaq0Scq46C=_6LNhMyBv76QxHQDpujsuq-bizytQ@mail.gmail.com>
+Date: Fri, 6 Jul 2012 14:34:42 -0700
+X-Google-Sender-Auth: xeJvvAzfdUcF3Pzy9SQ-lGXGO30
+Message-ID: <CAE9FiQXwx7L2H=BBcUbH2t3NyfAGZtrm4LG_uQ0OdoSTAZUgTw@mail.gmail.com>
+Subject: Re: Initializing iwl3945 error
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Kamil Grzebien <ciptok@gmail.com>, Stanislaw Gruszka <sgruszka@redhat.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/2012 03:05 PM, Catalin Marinas wrote:
-> The patch adds the kernel booting and the initial setup code.
-> Documentation/aarch64/booting.txt describes the booting protocol on the
-> AArch64 Linux kernel. This is subject to change following the work on
-> boot standardisation, ACPI.
+On Fri, Jul 6, 2012 at 1:38 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>  pci 0000:0b:00.0: reg 10: [mem 0xf1eff000-0xf1efffff]
+> -pci 0000:00:1c.1: BAR 15: assigned [mem 0xf0200000-0xf03fffff 64bit pref]
+> +pci 0000:00:1c.1: bridge window [io  0x1000-0x0fff] to [bus 0b-0b]
+> add_size 1000
+> +pci 0000:00:1c.1: bridge window [mem 0x00100000-0x000fffff 64bit pref] to [bus
+> 0b-0b] add_size 200000
+> +pci 0000:00:1c.1: res[15]=[mem 0x00100000-0x000fffff 64bit pref]
+> get_res_add_size add_size 200000
+> +pci 0000:00:1c.1: res[13]=[io  0x1000-0x0fff] get_res_add_size add_size 1000
+> +pci 0000:00:1c.1: BAR 15: assigned [mem 0xf0400000-0xf05fffff 64bit pref]
+>  pci_bus 0000:0b: resource 1 [mem 0xf1e00000-0xf1efffff]
+> -pci_bus 0000:0b: resource 2 [mem 0xf0200000-0xf03fffff 64bit pref]
+> +pci_bus 0000:0b: resource 2 [mem 0xf0400000-0xf05fffff 64bit pref]
 
-> diff --git a/Documentation/aarch64/booting.txt b/Documentation/aarch64/booting.txt
+Those wild print out about add_size is used to double check if the
+option size is passed correctly.
 
-> +3. Decompress the kernel image
-> +------------------------------
-> +
-> +Requirement: OPTIONAL
-> +
-> +The AArch64 kernel does not provide a decompressor and therefore
-> +requires gzip decompression to be performed by the boot loader if the
-> +default Image.gz target is used.  For bootloaders that do not implement
-> +this requirement, the larger Image target is available instead.
+diff between 3.3 and 3.4:
+in kernel 3.4, 1c.0 pref mem64 get allocated before 1c.1 pref mem64.
+that should be caused by: We replaced local version resource list with
+generic list.
 
-I'm curious why a decompressor isn't provided.
+But that should not be reason for why 3.3 does not work on Kamil's setup.
 
-The reason I ask is that this change will cause differences in the way
-e.g. a U-Boot script boots the kernel; the filename would be different,
-you'd need to use a uImage in order for U-Boot to decompress the kernel
-instead of a raw zImage, etc. This makes things on AArch64 work just a
-little bit different from existing systems, and differences between
-systems make for more things for everyone to understand and remember;
-more mistakes will be made. U-Boot has recently grown a "bootz" command
-to simplify booting a zImage directly for example, and now it seems that
-won't be useful moving forward.
+I would suspect that pci pm change fixes the problem.
 
-Also, on Tegra at least and perhaps OMAP too, there are a few parts of
-earlyprintk serial port setup (i.e. port selection) which happen as part
-of the decompressor rather than the main kernel image, so we'd have to
-re-jig that too.
+Thanks
 
-> +4. Call the kernel image
-> +------------------------
-> +
-> +Requirement: MANDATORY
-> +
-> +The decompressed kernel image contains a 32-byte header as follows:
-> +
-> +  u32 magic	= 0x14000008;	/* branch to stext, little-endian */
-> +  u32 res0	= 0;		/* reserved */
-> +  u64 text_offset;		/* Image load offset */
-> +  u64 res1	= 0;		/* reserved */
-> +  u64 res2	= 0;		/* reserved */
-> +
-> +The image must be placed at the specified offset (currently 0x80000)
-> +from the start of the system RAM (aligned to 2MB) and called there.
-
-Is "0x80000" meant to have an extra "0"; 0x80000 isn't aligned to 2MB
-unless I'm really missing too much sleep today.
+Yinghai
