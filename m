@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932735Ab2GFWpL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 18:45:11 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:37429 "EHLO
+	id S1758665Ab2GFWqI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 18:46:08 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:37448 "EHLO
 	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756532Ab2GFWpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 18:45:08 -0400
+	id S932495Ab2GFWpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 18:45:10 -0400
 From: "Theodore Ts'o" <tytso@mit.edu>
 To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
 Cc: ewust@umich.edu, zakir@umich.edu, nadiah@cs.ucsd.edu, jhalderm@umich.edu,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         "Theodore Ts'o" <tytso@mit.edu>, stable@vger.kernel.org
-Subject: [PATCH 07/12] random: use the arch-specific rng in xfer_secondary_pool
-Date: Fri,  6 Jul 2012 18:44:59 -0400
-Message-Id: <1341614704-24965-8-git-send-email-tytso@mit.edu>
+Subject: [PATCH 11/12] rtc: wm831x: Feed the write counter into device_add_randomness()
+Date: Fri,  6 Jul 2012 18:45:03 -0400
+Message-Id: <1341614704-24965-12-git-send-email-tytso@mit.edu>
 X-Mailer: git-send-email 1.7.11.1.108.gb129051
 In-Reply-To: <1341614704-24965-1-git-send-email-tytso@mit.edu>
 References: <1341614704-24965-1-git-send-email-tytso@mit.edu>
@@ -23,77 +24,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the CPU supports a hardware random number generator, use it in
-xfer_secondary_pool(), where it will significantly improve things and
-where we can afford it.
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Also, remove the use of the arch-specific rng in
-add_timer_randomness(), since the call is significantly slower than
-get_cycles(), and we're much better off using it in
-xfer_secondary_pool() anyway.
+The tamper evident features of the RTC include the "write counter" which
+is a pseudo-random number regenerated whenever we set the RTC. Since this
+value is unpredictable it should provide some useful seeding to the random
+number generator.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Only do this on boot since the goal is to seed the pool rather than add
+useful entropy.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Cc: stable@vger.kernel.org
 ---
- drivers/char/random.c | 23 ++++++++++++++---------
- 1 file changed, 14 insertions(+), 9 deletions(-)
+ drivers/rtc/rtc-wm831x.c | 24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index e867409..c39bdc4 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -702,11 +702,7 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
- 		goto out;
- 
- 	sample.jiffies = jiffies;
+diff --git a/drivers/rtc/rtc-wm831x.c b/drivers/rtc/rtc-wm831x.c
+index 59c6245..ea5c6f8 100644
+--- a/drivers/rtc/rtc-wm831x.c
++++ b/drivers/rtc/rtc-wm831x.c
+@@ -24,7 +24,7 @@
+ #include <linux/mfd/wm831x/core.h>
+ #include <linux/delay.h>
+ #include <linux/platform_device.h>
 -
--	/* Use arch random value, fall back to cycles */
--	if (!arch_get_random_int(&sample.cycles))
--		sample.cycles = get_cycles();
--
-+	sample.cycles = get_cycles();
- 	sample.num = num;
- 	mix_pool_bytes(&input_pool, &sample, sizeof(sample), NULL);
- 
-@@ -838,7 +834,11 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
-  */
- static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- {
--	__u32 tmp[OUTPUT_POOL_WORDS];
-+	union {
-+		__u32	tmp[OUTPUT_POOL_WORDS];
-+		long	hwrand[4];
-+	} u;
-+	int	i;
- 
- 	if (r->pull && r->entropy_count < nbytes * 8 &&
- 	    r->entropy_count < r->poolinfo->POOLBITS) {
-@@ -849,17 +849,22 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
- 		/* pull at least as many as BYTES as wakeup BITS */
- 		bytes = max_t(int, bytes, random_read_wakeup_thresh / 8);
- 		/* but never more than the buffer size */
--		bytes = min_t(int, bytes, sizeof(tmp));
-+		bytes = min_t(int, bytes, sizeof(u.tmp));
- 
- 		DEBUG_ENT("going to reseed %s with %d bits "
- 			  "(%d of %d requested)\n",
- 			  r->name, bytes * 8, nbytes * 8, r->entropy_count);
- 
--		bytes = extract_entropy(r->pull, tmp, bytes,
-+		bytes = extract_entropy(r->pull, u.tmp, bytes,
- 					random_read_wakeup_thresh / 8, rsvd);
--		mix_pool_bytes(r, tmp, bytes, NULL);
-+		mix_pool_bytes(r, u.tmp, bytes, NULL);
- 		credit_entropy_bits(r, bytes*8);
- 	}
-+	for (i = 0; i < 4; i++)
-+		if (arch_get_random_long(&u.hwrand[i]))
-+			break;
-+	if (i)
-+		mix_pool_bytes(r, &u.hwrand, sizeof(u.hwrand), 0);
- }
++#include <linux/random.h>
  
  /*
+  * R16416 (0x4020) - RTC Write Counter
+@@ -96,6 +96,26 @@ struct wm831x_rtc {
+ 	unsigned int alarm_enabled:1;
+ };
+ 
++static void wm831x_rtc_add_randomness(struct wm831x *wm831x)
++{
++	int ret;
++	u16 reg;
++
++	/*
++	 * The write counter contains a pseudo-random number which is
++	 * regenerated every time we set the RTC so it should be a
++	 * useful per-system source of entropy.
++	 */
++	ret = wm831x_reg_read(wm831x, WM831X_RTC_WRITE_COUNTER);
++	if (ret >= 0) {
++		reg = ret;
++		add_device_randomness(&reg, sizeof(reg));
++	} else {
++		dev_warn(wm831x->dev, "Failed to read RTC write counter: %d\n",
++			 ret);
++	}
++}
++
+ /*
+  * Read current time and date in RTC
+  */
+@@ -431,6 +451,8 @@ static int wm831x_rtc_probe(struct platform_device *pdev)
+ 			alm_irq, ret);
+ 	}
+ 
++	wm831x_rtc_add_randomness(wm831x);
++
+ 	return 0;
+ 
+ err:
 -- 
 1.7.11.1.108.gb129051
 
