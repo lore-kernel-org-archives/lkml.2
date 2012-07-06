@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756850Ab2GFKMD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 06:12:03 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36610 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab2GFKL7 (ORCPT
+	id S1756797Ab2GFKMA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 06:12:00 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:31560 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946Ab2GFKL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Jul 2012 06:11:59 -0400
-Date: Fri, 6 Jul 2012 12:11:49 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Glauber Costa <glommer@parallels.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        ksummit-2012-discuss@lists.linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2012-discuss] [ATTEND or not ATTEND] That's the
- question!
-Message-ID: <20120706101149.GA26028@localhost.localdomain>
-References: <alpine.LFD.2.02.1206152313310.3086@ionos>
- <20120615233413.GB8894@kroah.com>
- <alpine.LFD.2.02.1206161103320.3086@ionos>
- <20120616072906.7469ec24@tpl.lwn.net>
- <20120620195121.GA1719@fieldses.org>
- <4FF6B32A.7070006@parallels.com>
- <20120706095450.GB7728@somewhere.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120706095450.GB7728@somewhere.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: delayed 780 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jul 2012 06:11:59 EDT
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: linux-mmc@vger.kernel.org, Ludovic.Desroches@atmel.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] mmc: atmel-mci: modify CLKDIV displaying in debugfs
+Date: Fri,  6 Jul 2012 12:11:51 +0200
+Message-Id: <1341569511-11340-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, 2012 at 11:54:52AM +0200, Frederic Weisbecker wrote:
-> On Fri, Jul 06, 2012 at 01:43:06PM +0400, Glauber Costa wrote:
-> > The same way we have checkpatch, we can have something automated that
-> > will attempt to rule out some trivial patches in the counting process.
-> > We can scan a patch, and easily determine if each part of it is:
-> > 
-> > * pure whitespace
-> > * pure Documentation change
-> > * comment fix
-> > 
-> > And if a patch is 100 % comprised by those, we simply don't count it.
-> > People that just want to increase their numbers - they will always
-> > exist, will tend to stop doing that. Simply because doing it will not
-> > help them at all.
-> 
-> OTOH, documentation changes or comment fixes, and even sometimes pure whitespace
-> fixes, can be very valuable contributions. This can be a useful and ungrateful
-> work and that deserve credit.
-> 
-> We just can't find an automated and right way to evaluate a contribution.
+Modify clock division displaying in debugfs for matching
+the new CLKDIV,CLKODD user interface arrangement.
+Is using the has_odd_clk_div property to choose the proper format.
 
-Well what about submitters and maintainers labeling patches below the
-SOB with tags like the following?
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/mmc/host/atmel-mci.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
-   Signed-off-by: Richard Cochran <richardcochran@gmail.com>
-   Tags: docu whitespace trivial
+diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+index 1fe20cd..9c5daa2 100644
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -396,11 +396,17 @@ static int atmci_regs_show(struct seq_file *s, void *v)
+ 	clk_disable(host->mck);
+ 	spin_unlock_bh(&host->lock);
+ 
+-	seq_printf(s, "MR:\t0x%08x%s%s CLKDIV=%u\n",
++	seq_printf(s, "MR:\t0x%08x%s%s ",
+ 			buf[ATMCI_MR / 4],
+ 			buf[ATMCI_MR / 4] & ATMCI_MR_RDPROOF ? " RDPROOF" : "",
+-			buf[ATMCI_MR / 4] & ATMCI_MR_WRPROOF ? " WRPROOF" : "",
+-			buf[ATMCI_MR / 4] & 0xff);
++			buf[ATMCI_MR / 4] & ATMCI_MR_WRPROOF ? " WRPROOF" : "");
++	if (host->caps.has_odd_clk_div)
++		seq_printf(s, "{CLKDIV,CLKODD}=%u\n",
++				((buf[ATMCI_MR / 4] & 0xff) << 1)
++				| ((buf[ATMCI_MR / 4] >> 16) & 1));
++	else
++		seq_printf(s, "CLKDIV=%u\n",
++				(buf[ATMCI_MR / 4] & 0xff));
+ 	seq_printf(s, "DTOR:\t0x%08x\n", buf[ATMCI_DTOR / 4]);
+ 	seq_printf(s, "SDCR:\t0x%08x\n", buf[ATMCI_SDCR / 4]);
+ 	seq_printf(s, "ARGR:\t0x%08x\n", buf[ATMCI_ARGR / 4]);
+-- 
+1.7.5.4
 
-Part of the review would be making sure the labels fit.
-
-Thanks,
-Richard
