@@ -1,88 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933668Ab2GFLca (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 07:32:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33376 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933596Ab2GFLc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 07:32:27 -0400
-Date: Fri, 6 Jul 2012 08:32:09 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
-        kvm@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] apic: fix kvm build on UP without IOAPIC
-Message-ID: <20120706113209.GB18059@amt.cnet>
-References: <20120701150506.GA31304@redhat.com>
- <4FF0849D.5080406@zytor.com>
- <20120706111314.GG19552@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120706111314.GG19552@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933670Ab2GFLdX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 07:33:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39231 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933522Ab2GFLdV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 07:33:21 -0400
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Chiwoong Byun <woong.byun@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>
+Subject: [PATCH v3] mfd: max77686: Add device tree support.
+Date: Fri,  6 Jul 2012 17:02:55 +0530
+Message-Id: <1341574375-17397-1-git-send-email-yadi.brar@samsung.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20120705124141.GB4111@opensource.wolfsonmicro.com>
+References: <20120705124141.GB4111@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, 2012 at 01:13:14PM +0200, Ingo Molnar wrote:
-> 
-> * H. Peter Anvin <hpa@zytor.com> wrote:
-> 
-> > On 07/01/2012 08:05 AM, Michael S. Tsirkin wrote:
-> > >On UP i386, when APIC is disabled
-> > ># CONFIG_X86_UP_APIC is not set
-> > ># CONFIG_PCI_IOAPIC is not set
-> > >
-> > >code looking at apicdrivers never has any effect but it
-> > >still gets compiled in. In particular, this causes
-> > >build failures with kvm, but it generally bloats the kernel
-> > >unnecessarily.
-> > >
-> > >Fix by defining both __apicdrivers and __apicdrivers_end
-> > >to be NULL when CONFIG_X86_LOCAL_APIC is unset: I verified
-> > >that as the result any loop scanning __apicdrivers gets optimized out by
-> > >the compiler.
-> > >
-> > >Warning: a .config with apic disabled doesn't seem to boot
-> > >for me (even without this patch). Still verifying why,
-> > >meanwhile this patch is compile-tested only.
-> > >
-> > >Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > >---
-> > >
-> > >Note: if this patch makes sense, can x86 maintainers
-> > >please ACK applying it through the kvm tree, since that is
-> > >where we see the issue that it addresses?
-> > >Avi, Marcelo, maybe you can carry this in kvm/linux-next as a temporary
-> > >measure so that linux-next builds?
-> > >
-> > 
-> > I'm not happy about that as a workflow, but since you guys have an
-> > immediate problem I guess we can do that.
-> 
-> I'm rather unhappy about this workflow - we've got quite a few 
-> apic bits in the x86 tree this cycle as well and need extra 
-> external interaction, not.
-> 
-> Which KVM tree commit caused this, could someone please give a 
-> lkml link or quote it here? It's not referenced in the fix patch 
-> either.
-> 
-> Thanks,
-> 
-> 	Ingo
+This patch adds device tree support for mfd driver and adds
+Documentation/devicetree/bindings/mfd/max77686.txt.
+This patch also intialize max77686 pointer to NULL in max77686_i2c_probe
+to silent a compile time warning.
 
-This tree (kvm.git next):
+Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+---
+ Documentation/devicetree/bindings/mfd/max77686.txt |   59 ++++++++++++++++++++
+ drivers/mfd/max77686.c                             |   45 +++++++++++++--
+ 2 files changed, 98 insertions(+), 6 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/max77686.txt
 
-http://git.kernel.org/?p=virt/kvm/kvm.git;a=shortlog;h=refs/heads/next
-
-Introduced by this commit:
-
-http://git.kernel.org/?p=virt/kvm/kvm.git;a=commit;h=ab9cf4996bb989983e73da894b8dd0239aa2c3c2
-
+diff --git a/Documentation/devicetree/bindings/mfd/max77686.txt b/Documentation/devicetree/bindings/mfd/max77686.txt
+new file mode 100644
+index 0000000..c6a3469
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/max77686.txt
+@@ -0,0 +1,59 @@
++Maxim MAX77686 multi-function device
++
++MAX77686 is a Mulitifunction device with PMIC, RTC and Charger on chip. It is
++interfaced to host controller using i2c interface. PMIC and Charger submodules
++are addressed using same i2c slave address whereas RTC submodule uses
++different i2c slave address,presently for which we are statically creating i2c
++client while probing.This document describes the binding for mfd device and
++PMIC submodule.
++
++Required properties:
++- compatible : Must be "maxim,max77686";
++- reg : Specifies the i2c slave address of PMIC block.
++- interrupts : This i2c device has an IRQ line connected to the main SoC.
++- interrupt-parent : The parent interrupt controller.
++
++Optional node:
++- voltage-regulators : The regulators of max77686 have to be instantiated
++  under subnode named "voltage-regulators" using the following format.
++
++	regulator_name {
++		regulator-compatible = LDOn/BUCKn
++		standard regulator constraints....
++	};
++	refer Documentation/devicetree/bindings/regulator/regulator.txt
++
++  The regulator-compatible property of regulator should initialized with string
++to get matched with their hardware counterparts as follow:
++
++	-LDOn 	:	for LDOs, where n can lie in range 1 to 26.
++		 	example: LDO1, LDO2, LDO26.
++	-BUCKn 	:	for BUCKs, where n can lie in range 1 to 9.
++			example: BUCK1, BUCK5, BUCK9.
++
++Example:
++
++	max77686@09 {
++		compatible = "maxim,max77686";
++		interrupt-parent = <&wakeup_eint>;
++		interrupts = <26 0>;
++		reg = <0x09>;
++
++		voltage-regulators {
++			ldo11_reg {
++				regulator-compatible = "LDO11";
++				regulator-name = "vdd_ldo11";
++				regulator-min-microvolt = <1900000>;
++				regulator-max-microvolt = <1900000>;
++				regulator-always-on;
++			};
++
++			buck1_reg {
++				regulator-compatible = "BUCK1";
++				regulator-name = "vdd_mif";
++				regulator-min-microvolt = <950000>;
++				regulator-max-microvolt = <1300000>;
++				regulator-always-on;
++				regulator-boot-on;
++			};
++	}
+diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+index 5c78e94..e0d95d6 100644
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -35,6 +35,11 @@
+ 
+ #define I2C_ADDR_RTC	(0x0C >> 1)
+ 
++static struct of_device_id __devinitdata max77686_pmic_dt_match[] = {
++	{.compatible = "maxim,max77686",        .data = 0},
++	{},
++};
++
+ static struct mfd_cell max77686_devs[] = {
+ 	{ .name = "max77686-pmic", },
+ 	{ .name = "max77686-rtc", },
+@@ -45,14 +50,46 @@ static struct regmap_config max77686_regmap_config = {
+ 	.val_bits = 8,
+ };
+ 
++#ifdef CONFIG_OF
++static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
++								  *dev)
++{
++	struct max77686_platform_data *pd;
++
++	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
++	if (!pd) {
++		dev_err(dev, "could not allocate memory for pdata\n");
++		return NULL;
++	}
++
++	dev->platform_data = pd;
++	return pd;
++}
++#else
++static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
++								  *dev)
++{
++	return 0;
++}
++#endif
++
+ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 			      const struct i2c_device_id *id)
+ {
+-	struct max77686_dev *max77686;
++	struct max77686_dev *max77686 = NULL;
+ 	struct max77686_platform_data *pdata = i2c->dev.platform_data;
+ 	unsigned int data;
+ 	int ret = 0;
+ 
++	if (i2c->dev.of_node)
++		pdata = max77686_i2c_parse_dt_pdata(&i2c->dev);
++
++	if (!pdata) {
++		ret = -EIO;
++		dev_err(&i2c->dev, "No platform data found.\n");
++		goto err;
++	}
++
+ 	max77686 = kzalloc(sizeof(struct max77686_dev), GFP_KERNEL);
+ 	if (max77686 == NULL)
+ 		return -ENOMEM;
+@@ -71,11 +108,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 	max77686->i2c = i2c;
+ 	max77686->type = id->driver_data;
+ 
+-	if (!pdata) {
+-		ret = -EIO;
+-		goto err;
+-	}
+-
+ 	max77686->wakeup = pdata->wakeup;
+ 	max77686->irq_gpio = pdata->irq_gpio;
+ 	max77686->irq = i2c->irq;
+@@ -133,6 +165,7 @@ static struct i2c_driver max77686_i2c_driver = {
+ 	.driver = {
+ 		   .name = "max77686",
+ 		   .owner = THIS_MODULE,
++		   .of_match_table = of_match_ptr(max77686_pmic_dt_match),
+ 	},
+ 	.probe = max77686_i2c_probe,
+ 	.remove = max77686_i2c_remove,
+-- 
+1.7.0.4
 
