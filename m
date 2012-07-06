@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933286Ab2GFKol (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 06:44:41 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:46829 "EHLO
+	id S933338Ab2GFKo6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 06:44:58 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:29884 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S964791Ab2GFKl1 (ORCPT
+	with ESMTP id S933167Ab2GFKl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 06:41:27 -0400
+	Fri, 6 Jul 2012 06:41:26 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av4EAHC/9k9bdWOb/2dsb2JhbABFhWSxVIEHghkBBSMECwFGECUCJgICVwcSiA+nOZMDgSCPLYESA5U3iSaGXYJh
+X-IronPort-Anti-Spam-Result: Av4EAHC/9k9bdWOb/2dsb2JhbABFhWSxVIEHghkBBSMECwFGECUCJgICVwcSiA+nOZMDgSCBIY4MgRIDlTeJJoZdgmE
 X-IronPort-AV: E=Sophos;i="4.77,537,1336341600"; 
-   d="scan'208";a="940130696"
+   d="scan'208";a="940130685"
 From: =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
 To: arnaud.patard@rtp-net.org, gregkh@linuxfoundation.org,
         aaro.koskinen@iki.fi, dan.carpenter@oracle.com
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Miguel=20G=C3=B3mez?= <magomez@igalia.com>
-Subject: [PATCH 11/19 v2] Staging: xgifb: Refactor XGI_AjustCRT2Rate().
-Date: Fri,  6 Jul 2012 12:40:46 +0200
-Message-Id: <fbe0b17e35b483c6083b33d4173dcf99a8eb6acd.1341569486.git.magomez@igalia.com>
+Subject: [PATCH 07/19 v2] Staging: xgifb: Simplify XGIfb_GetXG21DefaultLVDSModeIdx().
+Date: Fri,  6 Jul 2012 12:40:42 +0200
+Message-Id: <fafeba4d6423f66f18643bc69057cd8b977e0302.1341569486.git.magomez@igalia.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1341569486.git.magomez@igalia.com>
 References: <cover.1341498465.git.magomez@igalia.com>
@@ -32,115 +32,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refactor some conditions to reduce indentation and fix style warnings.
+Simplify the code and make it more readable.
 
 Signed-off-by: Miguel Gómez <magomez@igalia.com>
 ---
- drivers/staging/xgifb/vb_setmode.c |   73 ++++++++++++------------------------
- 1 file changed, 25 insertions(+), 48 deletions(-)
+ drivers/staging/xgifb/XGI_main_26.c |   27 +++++++++------------------
+ 1 file changed, 9 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
-index 4b49705..03edf36 100644
---- a/drivers/staging/xgifb/vb_setmode.c
-+++ b/drivers/staging/xgifb/vb_setmode.c
-@@ -250,48 +250,30 @@ static unsigned char XGI_AjustCRT2Rate(unsigned short ModeNo,
- 		if (pVBInfo->VBInfo & (SetCRT2ToLCD | XGI_SetCRT2ToLCDA)) {
- 			tempax |= SupportLCD;
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index 788d141..c1aa037 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -262,28 +262,19 @@ static void XGIRegInit(struct vb_device_info *XGI_Pr, unsigned long BaseAddr)
  
--			if (pVBInfo->LCDResInfo != Panel_1280x1024) {
--				if (pVBInfo->LCDResInfo != Panel_1280x960) {
--					if (pVBInfo->LCDInfo &
--					    LCDNonExpanding) {
--						if (resinfo >= 9) {
--							tempax = 0;
--							return 0;
--						}
--					}
--				}
--			}
-+			if (pVBInfo->LCDResInfo != Panel_1280x1024 &&
-+			    pVBInfo->LCDResInfo != Panel_1280x960 &&
-+			    (pVBInfo->LCDInfo & LCDNonExpanding) &&
-+			    resinfo >= 9)
-+				return 0;
+ static int XGIfb_GetXG21DefaultLVDSModeIdx(struct xgifb_video_info *xgifb_info)
+ {
++	int i = 0;
+ 
+-	int found_mode = 0;
+-	int XGIfb_mode_idx = 0;
+-
+-	found_mode = 0;
+-	while ((XGIbios_mode[XGIfb_mode_idx].mode_no != 0)
+-			&& (XGIbios_mode[XGIfb_mode_idx].xres
+-					<= xgifb_info->lvds_data.LVDSHDE)) {
+-		if ((XGIbios_mode[XGIfb_mode_idx].xres
+-				== xgifb_info->lvds_data.LVDSHDE)
+-				&& (XGIbios_mode[XGIfb_mode_idx].yres
+-					== xgifb_info->lvds_data.LVDSVDE)
+-				&& (XGIbios_mode[XGIfb_mode_idx].bpp == 8)) {
+-			found_mode = 1;
+-			break;
++	while ((XGIbios_mode[i].mode_no != 0)
++	       && (XGIbios_mode[i].xres <= xgifb_info->lvds_data.LVDSHDE)) {
++		if ((XGIbios_mode[i].xres == xgifb_info->lvds_data.LVDSHDE)
++		    && (XGIbios_mode[i].yres == xgifb_info->lvds_data.LVDSVDE)
++		    && (XGIbios_mode[i].bpp == 8)) {
++			return i;
  		}
+-		XGIfb_mode_idx++;
++		i++;
+ 	}
+-	if (!found_mode)
+-		XGIfb_mode_idx = -1;
  
- 		if (pVBInfo->VBInfo & SetCRT2ToHiVision) { /* for HiTV */
- 			if ((pVBInfo->VBType & VB_SIS301LV) &&
- 			    (pVBInfo->VBExtInfo == VB_YPbPr1080i)) {
- 				tempax |= SupportYPbPr750p;
--				if (pVBInfo->VBInfo & SetInSlaveMode) {
--					if (resinfo == 4)
--						return 0;
--
--					if (resinfo == 3)
--						return 0;
--
--					if (resinfo > 7)
--						return 0;
--				}
-+				if ((pVBInfo->VBInfo & SetInSlaveMode) &&
-+				    ((resinfo == 3) ||
-+				     (resinfo == 4) ||
-+				     (resinfo > 7)))
-+					return 0;
- 			} else {
- 				tempax |= SupportHiVision;
--				if (pVBInfo->VBInfo & SetInSlaveMode) {
--					if (resinfo == 4)
-+				if ((pVBInfo->VBInfo & SetInSlaveMode) &&
-+				    ((resinfo == 4) ||
-+				     (resinfo == 3 &&
-+				      (pVBInfo->SetFlag & TVSimuMode)) ||
-+				     (resinfo > 7)))
- 						return 0;
--
--					if (resinfo == 3) {
--						if (pVBInfo->SetFlag
--								& TVSimuMode)
--							return 0;
--					}
--
--					if (resinfo > 7)
--						return 0;
--				}
- 			}
- 		} else {
- 			if (pVBInfo->VBInfo & (SetCRT2ToAVIDEO |
-@@ -301,23 +283,18 @@ static unsigned char XGI_AjustCRT2Rate(unsigned short ModeNo,
- 					       SetCRT2ToHiVision)) {
- 				tempax |= SupportTV;
+-	return XGIfb_mode_idx;
++	return -1;
+ }
  
--				if (pVBInfo->VBType & (VB_SIS301B | VB_SIS302B
--						| VB_SIS301LV | VB_SIS302LV
--						| VB_XGI301C)) {
-+				if (pVBInfo->VBType & (VB_SIS301B |
-+						       VB_SIS302B |
-+						       VB_SIS301LV |
-+						       VB_SIS302LV |
-+						       VB_XGI301C))
- 					tempax |= SupportTV1024;
--				}
- 
--				if (!(pVBInfo->VBInfo & TVSetPAL)) {
--					if (modeflag & NoSupportSimuTV) {
--						if (pVBInfo->VBInfo &
--						    SetInSlaveMode) {
--							if (!(pVBInfo->VBInfo &
--							      SetNotSimuMode)) {
--								return 0;
--							}
--						}
--					}
--				}
-+				if (!(pVBInfo->VBInfo & TVSetPAL) &&
-+				    (modeflag & NoSupportSimuTV) &&
-+				    (pVBInfo->VBInfo & SetInSlaveMode) &&
-+				    (!(pVBInfo->VBInfo & SetNotSimuMode)))
-+					return 0;
- 			}
- 		}
- 	} else { /* for LVDS */
+ static void XGIfb_search_mode(struct xgifb_video_info *xgifb_info,
 -- 
 1.7.9.5
 
