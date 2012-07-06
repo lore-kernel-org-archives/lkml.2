@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758737Ab2GFWvA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 18:51:00 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:37464 "EHLO
+	id S1758781Ab2GFWwS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 18:52:18 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:37466 "EHLO
 	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755829Ab2GFWu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 18:50:58 -0400
+	id S1756935Ab2GFWu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 18:50:59 -0400
 From: "Theodore Ts'o" <tytso@mit.edu>
 To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
 Cc: ewust@umich.edu, zakir@umich.edu, nadiah@cs.ucsd.edu, jhalderm@umich.edu,
-        "Theodore Ts'o" <tytso@mit.edu>, stable@vger.kernel.org
-Subject: [PATCH 08/12] random: add new get_random_bytes_arch() function
-Date: Fri,  6 Jul 2012 18:45:00 -0400
-Message-Id: <1341614704-24965-9-git-send-email-tytso@mit.edu>
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>, stable@vger.kernel.org
+Subject: [PATCH 02/12] random: make 'add_interrupt_randomness()' do something sane
+Date: Fri,  6 Jul 2012 18:44:54 -0400
+Message-Id: <1341614704-24965-3-git-send-email-tytso@mit.edu>
 X-Mailer: git-send-email 1.7.11.1.108.gb129051
 In-Reply-To: <1341614704-24965-1-git-send-email-tytso@mit.edu>
 References: <1341614704-24965-1-git-send-email-tytso@mit.edu>
@@ -23,119 +24,283 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a new function, get_random_bytes_arch() which will use the
-architecture-specific hardware random number generator if it is
-present.  Change get_random_bytes() to not use the HW RNG, even if it
-is avaiable.
+We've been moving away from add_interrupt_randomness() for various
+reasons: it's too expensive to do on every interrupt, and flooding the
+CPU with interrupts could theoretically cause bogus floods of entropy
+from a somewhat externally controllable source.
 
-The reason for this is that the hw random number generator is fast (if
-it is present), but it requires that we trust the hardware
-manufacturer to have not put in a back door.  (For example, an
-increasing counter encrypted by an AES key known to the NSA.)
+This solves both problems by limiting the actual randomness addition
+to just once a second or after 128 interrupts, whicever comes first.
+During that time, the interrupt cycle data is buffered up in a per-cpu
+pool.  Also, we make sure the the nonblocking pool used by urandom is
+initialized before we start feeding the normal input pool.  This
+assures that /dev/urandom is returning unpredictable data as soon as
+possible.
 
-It's unlikely that Intel (for example) was paid off by the US
-Government to do this, but it's impossible for them to prove otherwise
---- especially since Bull Mountain is documented to use AES as a
-whitener.  Hence, the output of an evil, trojan-horse version of
-RDRAND is statistically indistinguishable from an RDRAND implemented
-to the specifications claimed by Intel.  Short of using a tunnelling
-electronic microscope to reverse engineer an Ivy Bridge chip and
-disassembling and analyzing the CPU microcode, there's no way for us
-to tell for sure.
+(Based on an original patch by Linus, but significantly modified by
+tytso.)
 
-Since users of get_random_bytes() in the Linux kernel need to be able
-to support hardware systems where the HW RNG is not present, most
-time-sensitive users of this interface have already created their own
-cryptographic RNG interface which uses get_random_bytes() as a seed.
-So it's much better to use the HW RNG to improve the existing random
-number generator, by mixing in any entropy returned by the HW RNG into
-/dev/random's entropy pool, but to always _use_ /dev/random's entropy
-pool.
-
-This way we get almost of the benefits of the HW RNG without any
-potential liabilities.  The only benefits we forgo is the
-speed/performance enhancements --- and generic kernel code can't
-depend on depend on get_random_bytes() having the speed of a HW RNG
-anyway.
-
-For those places that really want access to the arch-specific HW RNG,
-if it is available, we provide get_random_bytes_arch().
-
+Tested-by: Eric Wustrow <ewust@umich.edu>
+Reported-by: Eric Wustrow <ewust@umich.edu>
+Reported-by: Nadia Heninger <nadiah@cs.ucsd.edu>
+Reported-by: Zakir Durumeric <zakir@umich.edu>
+Reported-by: J. Alex Halderman <jhalderm@umich.edu>.
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Cc: stable@vger.kernel.org
 ---
- drivers/char/random.c  | 29 ++++++++++++++++++++++++-----
- include/linux/random.h |  1 +
- 2 files changed, 25 insertions(+), 5 deletions(-)
+ drivers/char/random.c     | 103 ++++++++++++++++++++++++++++++++++++++--------
+ drivers/mfd/ab3100-core.c |   2 -
+ include/linux/random.h    |   2 +-
+ kernel/irq/handle.c       |   7 ++--
+ 4 files changed, 90 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/char/random.c b/drivers/char/random.c
-index c39bdc4..79c105a 100644
+index cb541b9..556088b 100644
 --- a/drivers/char/random.c
 +++ b/drivers/char/random.c
-@@ -1036,17 +1036,34 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
+@@ -127,19 +127,15 @@
+  *
+  * 	void add_input_randomness(unsigned int type, unsigned int code,
+  *                                unsigned int value);
+- * 	void add_interrupt_randomness(int irq);
++ *	void add_interrupt_randomness(int irq, int irq_flags);
+  * 	void add_disk_randomness(struct gendisk *disk);
+  *
+  * add_input_randomness() uses the input layer interrupt timing, as well as
+  * the event type information from the hardware.
+  *
+- * add_interrupt_randomness() uses the inter-interrupt timing as random
+- * inputs to the entropy pool.  Note that not all interrupts are good
+- * sources of randomness!  For example, the timer interrupts is not a
+- * good choice, because the periodicity of the interrupts is too
+- * regular, and hence predictable to an attacker.  Network Interface
+- * Controller interrupts are a better measure, since the timing of the
+- * NIC interrupts are more unpredictable.
++ * add_interrupt_randomness() uses the interrupt timing as random
++ * inputs to the entropy pool. Using the cycle counters and the irq source
++ * as inputs, it feeds the randomness roughly once a second.
+  *
+  * add_disk_randomness() uses what amounts to the seek time of block
+  * layer request events, on a per-disk_devt basis, as input to the
+@@ -248,6 +244,7 @@
+ #include <linux/percpu.h>
+ #include <linux/cryptohash.h>
+ #include <linux/fips.h>
++#include <linux/ptrace.h>
+ 
+ #ifdef CONFIG_GENERIC_HARDIRQS
+ # include <linux/irq.h>
+@@ -256,6 +253,7 @@
+ #include <asm/processor.h>
+ #include <asm/uaccess.h>
+ #include <asm/irq.h>
++#include <asm/irq_regs.h>
+ #include <asm/io.h>
  
  /*
-  * This function is the exported kernel interface.  It returns some
-- * number of good random numbers, suitable for seeding TCP sequence
-- * numbers, etc.
-+ * number of good random numbers, suitable for key generation, seeding
-+ * TCP sequence numbers, etc.  It does not use the hw random number
-+ * generator, if available; use get_random_bytes_arch() for that.
-  */
- void get_random_bytes(void *buf, int nbytes)
+@@ -421,7 +419,9 @@ struct entropy_store {
+ 	spinlock_t lock;
+ 	unsigned add_ptr;
+ 	int entropy_count;
++	int entropy_total;
+ 	int input_rotate;
++	unsigned int initialized:1;
+ 	__u8 last_data[EXTRACT_SIZE];
+ };
+ 
+@@ -454,6 +454,10 @@ static struct entropy_store nonblocking_pool = {
+ 	.pool = nonblocking_pool_data
+ };
+ 
++static __u32 const twist_table[8] = {
++	0x00000000, 0x3b6e20c8, 0x76dc4190, 0x4db26158,
++	0xedb88320, 0xd6d6a3e8, 0x9b64c2b0, 0xa00ae278 };
++
+ /*
+  * This function adds bytes into the entropy "pool".  It does not
+  * update the entropy estimate.  The caller should call
+@@ -467,9 +471,6 @@ static struct entropy_store nonblocking_pool = {
+ static void mix_pool_bytes_extract(struct entropy_store *r, const void *in,
+ 				   int nbytes, __u8 out[64])
  {
-+	extract_entropy(&nonblocking_pool, buf, nbytes, 0, 0);
-+}
-+EXPORT_SYMBOL(get_random_bytes);
+-	static __u32 const twist_table[8] = {
+-		0x00000000, 0x3b6e20c8, 0x76dc4190, 0x4db26158,
+-		0xedb88320, 0xd6d6a3e8, 0x9b64c2b0, 0xa00ae278 };
+ 	unsigned long i, j, tap1, tap2, tap3, tap4, tap5;
+ 	int input_rotate;
+ 	int wordmask = r->poolinfo->poolwords - 1;
+@@ -528,6 +529,36 @@ static void mix_pool_bytes(struct entropy_store *r, const void *in, int bytes)
+        mix_pool_bytes_extract(r, in, bytes, NULL);
+ }
+ 
++struct fast_pool {
++	__u32		pool[4];
++	unsigned long	last;
++	unsigned short	count;
++	unsigned char	rotate;
++	unsigned char	last_timer_intr;
++};
 +
 +/*
-+ * This function will use the architecture-specific hardware random
-+ * number generator if it is available.  The arch-specific hw RNG will
-+ * almost certainly be faster than what we can do in software, but it
-+ * is impossible to verify that it is implemented securely (as
-+ * opposed, to, say, the AES encryption of a sequence number using a
-+ * key known by the NSA).  So it's useful if we need the speed, but
-+ * only if we're willing to trust the hardware manufacturer not to
-+ * have put in a back door.
++ * This is a fast mixing routine used by the interrupt randomness
++ * collector.  It's hardcoded for an 128 bit pool and assumes that any
++ * locks that might be needed are taken by the caller.
 + */
-+void get_random_bytes_arch(void *buf, int nbytes)
++static void fast_mix(struct fast_pool *f, const void *in, int nbytes)
 +{
- 	char *p = buf;
- 
- 	while (nbytes) {
- 		unsigned long v;
- 		int chunk = min(nbytes, (int)sizeof(unsigned long));
--		
++	const char	*bytes = in;
++	__u32		w;
++	unsigned	i = f->count;
++	unsigned	input_rotate = f->rotate;
 +
- 		if (!arch_get_random_long(&v))
- 			break;
- 		
-@@ -1055,9 +1072,11 @@ void get_random_bytes(void *buf, int nbytes)
- 		nbytes -= chunk;
- 	}
- 
--	extract_entropy(&nonblocking_pool, p, nbytes, 0, 0);
-+	if (nbytes)
-+		extract_entropy(&nonblocking_pool, p, nbytes, 0, 0);
- }
--EXPORT_SYMBOL(get_random_bytes);
-+EXPORT_SYMBOL(get_random_bytes_arch);
++	while (nbytes--) {
++		w = rol32(*bytes++, input_rotate & 31) ^ f->pool[i & 3] ^
++			f->pool[(i + 1) & 3];
++		f->pool[i & 3] = (w >> 3) ^ twist_table[w & 7];
++		input_rotate += (i++ & 3) ? 7 : 14;
++	}
++	f->count = i;
++	f->rotate = input_rotate;
++}
 +
- 
  /*
-  * init_std_data - initialize pool with system data
+  * Credit (or debit) the entropy store with n bits of entropy
+  */
+@@ -551,6 +582,12 @@ static void credit_entropy_bits(struct entropy_store *r, int nbits)
+ 		entropy_count = r->poolinfo->POOLBITS;
+ 	r->entropy_count = entropy_count;
+ 
++	if (!r->initialized && nbits > 0) {
++		r->entropy_total += nbits;
++		if (r->entropy_total > 128)
++			r->initialized = 1;
++	}
++
+ 	/* should we wake readers? */
+ 	if (r == &input_pool && entropy_count >= random_read_wakeup_thresh) {
+ 		wake_up_interruptible(&random_read_wait);
+@@ -700,17 +737,48 @@ void add_input_randomness(unsigned int type, unsigned int code,
+ }
+ EXPORT_SYMBOL_GPL(add_input_randomness);
+ 
+-void add_interrupt_randomness(int irq)
++static DEFINE_PER_CPU(struct fast_pool, irq_randomness);
++
++void add_interrupt_randomness(int irq, int irq_flags)
+ {
+-	struct timer_rand_state *state;
++	struct entropy_store	*r;
++	struct fast_pool	*fast_pool = &__get_cpu_var(irq_randomness);
++	struct pt_regs		*regs = get_irq_regs();
++	unsigned long		now = jiffies;
++	__u32			input[4], cycles = get_cycles();
++
++	input[0] = cycles ^ jiffies;
++	input[1] = irq;
++	if (regs) {
++		__u64 ip = instruction_pointer(regs);
++		input[2] = ip;
++		input[3] = ip >> 32;
++	}
+ 
+-	state = get_timer_rand_state(irq);
++	fast_mix(fast_pool, input, sizeof(input));
+ 
+-	if (state == NULL)
++	if ((fast_pool->count & 255) &&
++	    !time_after(now, fast_pool->last + HZ))
+ 		return;
+ 
+-	DEBUG_ENT("irq event %d\n", irq);
+-	add_timer_randomness(state, 0x100 + irq);
++	fast_pool->last = now;
++
++	r = nonblocking_pool.initialized ? &input_pool : &nonblocking_pool;
++	mix_pool_bytes(r, &fast_pool->pool, sizeof(fast_pool->pool));
++	/*
++	 * If we don't have a valid cycle counter, and we see
++	 * back-to-back timer interrupts, then skip giving credit for
++	 * any entropy.
++	 */
++	if (cycles == 0) {
++		if (irq_flags & __IRQF_TIMER) {
++			if (fast_pool->last_timer_intr)
++				return;
++			fast_pool->last_timer_intr = 1;
++		} else
++			fast_pool->last_timer_intr = 0;
++	}
++	credit_entropy_bits(r, 1);
+ }
+ 
+ #ifdef CONFIG_BLOCK
+@@ -971,6 +1039,7 @@ static void init_std_data(struct entropy_store *r)
+ 
+ 	spin_lock_irqsave(&r->lock, flags);
+ 	r->entropy_count = 0;
++	r->entropy_total = 0;
+ 	spin_unlock_irqrestore(&r->lock, flags);
+ 
+ 	now = ktime_get_real();
+diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
+index 1efad20..9522d6b 100644
+--- a/drivers/mfd/ab3100-core.c
++++ b/drivers/mfd/ab3100-core.c
+@@ -409,8 +409,6 @@ static irqreturn_t ab3100_irq_handler(int irq, void *data)
+ 	u32 fatevent;
+ 	int err;
+ 
+-	add_interrupt_randomness(irq);
+-
+ 	err = ab3100_get_register_page_interruptible(ab3100, AB3100_EVENTA1,
+ 				       event_regs, 3);
+ 	if (err)
 diff --git a/include/linux/random.h b/include/linux/random.h
-index e14b438..29e217a 100644
+index 8f74538..6ef39d7 100644
 --- a/include/linux/random.h
 +++ b/include/linux/random.h
-@@ -56,6 +56,7 @@ extern void add_input_randomness(unsigned int type, unsigned int code,
- extern void add_interrupt_randomness(int irq, int irq_flags);
+@@ -52,7 +52,7 @@ extern void rand_initialize_irq(int irq);
+ 
+ extern void add_input_randomness(unsigned int type, unsigned int code,
+ 				 unsigned int value);
+-extern void add_interrupt_randomness(int irq);
++extern void add_interrupt_randomness(int irq, int irq_flags);
  
  extern void get_random_bytes(void *buf, int nbytes);
-+extern void get_random_bytes_arch(void *buf, int nbytes);
  void generate_random_uuid(unsigned char uuid_out[16]);
+diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
+index bdb1803..131ca17 100644
+--- a/kernel/irq/handle.c
++++ b/kernel/irq/handle.c
+@@ -133,7 +133,7 @@ irqreturn_t
+ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
+ {
+ 	irqreturn_t retval = IRQ_NONE;
+-	unsigned int random = 0, irq = desc->irq_data.irq;
++	unsigned int flags = 0, irq = desc->irq_data.irq;
  
- #ifndef MODULE
+ 	do {
+ 		irqreturn_t res;
+@@ -161,7 +161,7 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
+ 
+ 			/* Fall through to add to randomness */
+ 		case IRQ_HANDLED:
+-			random |= action->flags;
++			flags |= action->flags;
+ 			break;
+ 
+ 		default:
+@@ -172,8 +172,7 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
+ 		action = action->next;
+ 	} while (action);
+ 
+-	if (random & IRQF_SAMPLE_RANDOM)
+-		add_interrupt_randomness(irq);
++	add_interrupt_randomness(irq, flags);
+ 
+ 	if (!noirqdebug)
+ 		note_interrupt(irq, desc, retval);
 -- 
 1.7.11.1.108.gb129051
 
