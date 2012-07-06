@@ -1,48 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757871Ab2GFP5k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 11:57:40 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:60309 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658Ab2GFP5j convert rfc822-to-8bit (ORCPT
+	id S1755964Ab2GFP7b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 11:59:31 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43325 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694Ab2GFP73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 11:57:39 -0400
+	Fri, 6 Jul 2012 11:59:29 -0400
+Date: Sat, 7 Jul 2012 00:59:20 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Joonsoo Kim <js1304@gmail.com>
+Cc: akpm@linux-foundation.org, Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: don't invoke __alloc_pages_direct_compact when order
+ 0
+Message-ID: <20120706155920.GA7721@barrios>
+References: <1341588521-17744-1-git-send-email-js1304@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4FF70A49.3040802@gmail.com>
-References: <1341588498-21689-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1341588498-21689-6-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAH9JG2XzWS_PF8E4V2bHjq=PtTMEtdDcm1Q03GxK8h4E28Rpjw@mail.gmail.com>
-	<4FF70A49.3040802@gmail.com>
-Date: Fri, 6 Jul 2012 18:57:37 +0300
-Message-ID: <CAHp75Vd2edLv_Tc8w-BXdKe3yjDVdm59-=_aQC8fJk-wmXf_6g@mail.gmail.com>
-Subject: Re: [PATCH 6/6] staging: ccg: print MAC addresses via %pM
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Daniel Hazelton <dshadowwolf@gmail.com>
-Cc: Kyungmin Park <kmpark@infradead.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341588521-17744-1-git-send-email-js1304@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 6, 2012 at 6:54 PM, Daniel Hazelton <dshadowwolf@gmail.com> wrote:
->>> --- a/drivers/staging/ccg/ccg.c
->>> +++ b/drivers/staging/ccg/ccg.c
->>> @@ -564,9 +564,7 @@ static int rndis_function_bind_config(struct ccg_usb_function *f,
->>>                 return -1;
->>>         }
->>>
->>> -       pr_info("%s MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", __func__,
->>> -               rndis->ethaddr[0], rndis->ethaddr[1], rndis->ethaddr[2],
->>> -               rndis->ethaddr[3], rndis->ethaddr[4], rndis->ethaddr[5]);
->>> +       pr_info("%s MAC: pM\n", __func__, rndis->ethaddr);
-> You lost a % there - it should be "%s MAC: %pM\n", no ?
-Thanks, I noticed this already. Patch v2 was sent recently.
+Hi Joonsoo,
 
--- 
-With Best Regards,
-Andy Shevchenko
+On Sat, Jul 07, 2012 at 12:28:41AM +0900, Joonsoo Kim wrote:
+> __alloc_pages_direct_compact has many arguments so invoking it is very costly.
+
+It's already slow path so it's pointless for such optimization.
+
+> And in almost invoking case, order is 0, so return immediately.
+
+You can't make sure it.
+
+> 
+> Let's not invoke it when order 0
+
+Let's not ruin git blame.
+
+> 
+> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 6092f33..f4039aa 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -2056,7 +2056,10 @@ out:
+>  }
+>  
+>  #ifdef CONFIG_COMPACTION
+> -/* Try memory compaction for high-order allocations before reclaim */
+> +/*
+> + * Try memory compaction for high-order allocations before reclaim
+> + * Must be called with order > 0
+> + */
+>  static struct page *
+>  __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+>  	struct zonelist *zonelist, enum zone_type high_zoneidx,
+> @@ -2067,8 +2070,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+>  {
+>  	struct page *page;
+>  
+> -	if (!order)
+> -		return NULL;
+> +	BUG_ON(!order);
+>  
+>  	if (compaction_deferred(preferred_zone, order)) {
+>  		*deferred_compaction = true;
+> @@ -2363,15 +2365,17 @@ rebalance:
+>  	 * Try direct compaction. The first pass is asynchronous. Subsequent
+>  	 * attempts after direct reclaim are synchronous
+>  	 */
+> -	page = __alloc_pages_direct_compact(gfp_mask, order,
+> -					zonelist, high_zoneidx,
+> -					nodemask,
+> -					alloc_flags, preferred_zone,
+> -					migratetype, sync_migration,
+> -					&deferred_compaction,
+> -					&did_some_progress);
+> -	if (page)
+> -		goto got_pg;
+> +	if (unlikely(order)) {
+> +		page = __alloc_pages_direct_compact(gfp_mask, order,
+> +						zonelist, high_zoneidx,
+> +						nodemask,
+> +						alloc_flags, preferred_zone,
+> +						migratetype, sync_migration,
+> +						&deferred_compaction,
+> +						&did_some_progress);
+> +		if (page)
+> +			goto got_pg;
+> +	}
+>  	sync_migration = true;
+>  
+>  	/*
+> @@ -2446,15 +2450,17 @@ rebalance:
+>  		 * direct reclaim and reclaim/compaction depends on compaction
+>  		 * being called after reclaim so call directly if necessary
+>  		 */
+> -		page = __alloc_pages_direct_compact(gfp_mask, order,
+> -					zonelist, high_zoneidx,
+> -					nodemask,
+> -					alloc_flags, preferred_zone,
+> -					migratetype, sync_migration,
+> -					&deferred_compaction,
+> -					&did_some_progress);
+> -		if (page)
+> -			goto got_pg;
+> +		if (unlikely(order)) {
+> +			page = __alloc_pages_direct_compact(gfp_mask, order,
+> +						zonelist, high_zoneidx,
+> +						nodemask,
+> +						alloc_flags, preferred_zone,
+> +						migratetype, sync_migration,
+> +						&deferred_compaction,
+> +						&did_some_progress);
+> +			if (page)
+> +				goto got_pg;
+> +		}
+>  	}
+>  
+>  nopage:
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
