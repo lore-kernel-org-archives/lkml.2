@@ -1,181 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932788Ab2GFACQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 20:02:16 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45462 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755607Ab2GFACO (ORCPT
+	id S1757493Ab2GFADd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 20:03:33 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60980 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754779Ab2GFADb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 20:02:14 -0400
+	Thu, 5 Jul 2012 20:03:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120705231034.GA16931@lizard>
-References: <20120705231034.GA16931@lizard>
-Date: Thu, 5 Jul 2012 17:02:12 -0700
-X-Google-Sender-Auth: 9rqrRJxxmEqMb-HNMhODToTBxCY
-Message-ID: <CAMbhsRTeWgWyf2gcjr_TSr99Z6wL8bLmMGPYsTsVXoL-+A2Cyg@mail.gmail.com>
-Subject: Re: [PATCH 0/6] KGDB/KDB FIQ (NMI) debugger
-From: Colin Cross <ccross@android.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        kgdb-bugreport@lists.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+In-Reply-To: <e0ff1884-b2df-4ae0-9810-f57402c5c68c@AM1EHSMHS008.ehs.local>
+References: <e0ff1884-b2df-4ae0-9810-f57402c5c68c@AM1EHSMHS008.ehs.local>
+Date: Thu, 5 Jul 2012 17:03:29 -0700
+Message-ID: <CAB9O=CMZaGQ_s0rk4MrmV2gYuMWxOHQ4ai8Dv+UcFUW0T7kXdA@mail.gmail.com>
+Subject: Re: FW: [PATCH 3/3] ARM: zynq: Map DEBUG_LL UARTs in vmalloc space.
+From: John Linn <johnhlinn@gmail.com>
+To: nbowler@elliptictech.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: linux@arm.linux.org.uk
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 5, 2012 at 4:10 PM, Anton Vorontsov
-<anton.vorontsov@linaro.org> wrote:
+On Thu, Jul 5, 2012 at 3:29 PM, John Linn <John.Linn@xilinx.com> wrote:
 >
-> Hi all,
 >
-> These patches introduce KGDB FIQ debugger support. The idea (and some
-> code, of course) comes from Google's FIQ debugger[1]. There are some
-> differences (mostly implementation details, feature-wise they're almost
-> equivalent, or can be made equivalent, if desired).
+>> -----Original Message-----
+>> From: Nick Bowler [mailto:nbowler@elliptictech.com]
+>> Sent: Wednesday, July 04, 2012 7:14 AM
+>> To: linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org
+>> Cc: Russell King; John Linn
+>> Subject: [PATCH 3/3] ARM: zynq: Map DEBUG_LL UARTs in vmalloc space.
+>>
+>> Unlike the other statically mapped devices on this platform, the
+>> physical=virtual mapping of the UARTs placese these devices outside
+>> of the vmalloc region (0xf0000000–0xff000000).  This causes the
+>> following crash when booting the ZC702 board with CONFIG_DEBUG_LL
+>> enabled:
+>>
+>>   BUG: mapping for 0xe0001000 at 0xe0001000 out of vmalloc space
+>>   ------------[ cut here ]------------
+>>   kernel BUG at /scratch_space/linux/arch/arm/mm/mmu.c:580!
+>>   Internal error: Oops - BUG: 0 [#1] PREEMPT ARM
+>>   Modules linked in:
+>>   CPU: 0    Not tainted  (3.5.0-rc5-00012-g832a165 #50)
+>>   PC is at early_pte_alloc+0x54/0x70
+>>   LR is at create_mapping+0x288/0x310
+>>   pc : [<c043ab14>]    lr : [<c043adb8>]    psr: 200001d3
+>>   sp : c07fff10  ip : 000008f8  fp : 00000000
+>>   r10: 00001000  r9 : 413fc090  r8 : e0001000
+>>   r7 : e0002000  r6 : 00000041  r5 : e0001000  r4 : c0007800
+>>   r3 : 2000040e  r2 : 00000041  r1 : e0001000  r0 : 2000040e
+>>   Flags: nzCv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
+>>   Control: 18c5387d  Table: 00004059  DAC: 00000015
+>>   Process swapper (pid: 0, stack limit = 0xc07fe2e8)
+>>   Stack: (0xc07fff10 to 0xc0800000)
+>>   ff00:                                     e0001000 c080a81c c0007800
+>> c043adb8
+>>   ff20: e0001000 00000080 e0002000 e0001fff 00000080 c0451270 00000001
+>> ef7fdfe0
+>>   ff40: c043ae40 40000001 413fc090 ef7fe000 00000000 c043ae7c c043c0c0
+>> c044fcbc
+>>   ff60: 00000000 0002f7ff c0450fb8 c07fffe4 00000000 c043b5e4 ffff0000
+>> 0002f7ff
+>>   ff80: 00001000 00000008 c08148c4 c044fcbc c0830218 00008000 c08148c4
+>> c0438b08
+>>   ffa0: 00000000 18c5387d c03b5952 c07fffc4 c0837ec4 00000001 c080604c
+>> c0450ba8
+>>   ffc0: c0809a54 00004059 00000000 c04354f4 00000000 00000000 00000000
+>> 00000000
+>>   ffe0: 00000000 c0450bac 18c5387d c080604c c0450ba8 0000803c 00000000
+>> 00000000
+>>   [<c043ab14>] (early_pte_alloc+0x54/0x70) from [<c043adb8>]
+>> (create_mapping+0x288/0x310)
+>>   [<c043adb8>] (create_mapping+0x288/0x310) from [<c043ae7c>]
+>> (iotable_init+0x3c/0xb0)
+>>   [<c043ae7c>] (iotable_init+0x3c/0xb0) from [<c043b5e4>]
+>> (paging_init+0x574/0x708)
+>>   [<c043b5e4>] (paging_init+0x574/0x708) from [<c0438b08>]
+>> (setup_arch+0x518/0x7d4)
+>>   [<c0438b08>] (setup_arch+0x518/0x7d4) from [<c04354f4>]
+>> (start_kernel+0x68/0x2d4)
+>>   [<c04354f4>] (start_kernel+0x68/0x2d4) from [<0000803c>] (0x803c)
+>>   Code: f57ff04f e5940000 e3100002 0a000000 (e7f001f2)
+>>   ---[ end trace 1b75b31a2719ed1c ]---
+>>   Kernel panic - not syncing: Attempted to kill the idle task!
+>>
+>> It seems easy enough to move the static mappings into the vmalloc range,
+>> so let's do so.  This allows the system to boot.
+>>
+>> Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
+>> Cc: John Linn <john.linn@xilinx.com>
 
-I haven't looked at this in detail yet, but the concept it sounds
-pretty nice.  One difference I would like to highlight is that the FIQ
-debugger is designed to be limited enough to leave enabled on
-production devices, and is often the only debugging feature available
-on just-before-production devices when trying to nail those last few
-pesky bugs.  KGDB can obviously only be enabled on development
-devices, although perhaps a more limited KDB could be left enabled.
+Signed-off-by: John Linn <johnhlinn@gmail.com>
 
-> The FIQ debugger is a facility that can be used to debug situations
-> when the kernel stuck in uninterruptable sections, e.g. the kernel
-> infinitely loops or deadlocked in an interrupt or with interrupts
-> disabled. On some development boards there is even a special NMI
-> button, which is very useful for debugging weird kernel hangs.
+>>
+>> ---
+>>  arch/arm/mach-zynq/include/mach/zynq_soc.h |    7 +++----
+>>  1 files changed, 3 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-zynq/include/mach/zynq_soc.h b/arch/arm/mach-
+>> zynq/include/mach/zynq_soc.h
+>> index 6f83f1c..e1c4704 100644
+>> --- a/arch/arm/mach-zynq/include/mach/zynq_soc.h
+>> +++ b/arch/arm/mach-zynq/include/mach/zynq_soc.h
+>> @@ -17,13 +17,12 @@
+>>
+>>  #define PERIPHERAL_CLOCK_RATE                2500000
+>>
+>> -/* For now, all mappings are flat (physical = virtual)
+>> - */
+>> +/* The UART must be mapped within the vmalloc range (0xF0000000-
+>> 0xFF000000). */
+>>  #define UART0_PHYS                   0xE0000000
+>> -#define UART0_VIRT                   UART0_PHYS
+>> +#define UART0_VIRT                   0xF0000000
+>>
+>>  #define UART1_PHYS                   0xE0001000
+>> -#define UART1_VIRT                   UART1_PHYS
+>> +#define UART1_VIRT                   0xF0001000
+>>
+>>  #define TTC0_PHYS                    0xF8001000
+>>  #define TTC0_VIRT                    TTC0_PHYS
+>> --
+>> 1.7.8.6
+>>
+>>
 >
-> And FIQ is basically an NMI, it has a higher priority than IRQs, and
-> upon IRQ exception FIQs are not disabled. It is still possible to
-> disable FIQs (as well as some "NMIs" on other architectures), but via
-> special means.
->
-> So, here FIQs and NMIs are synonyms, but in the code I use NMI term
-> for arch-independent code, and FIQs for ARM code.
-
-Unfortunately, FIQs have been repurposed as secure interrupts on every
-ARM SoC that supports TrustZone, which is basically all of the latest
-generation, as well as a few of the previous generation.  When an FIQ
-arrives, the cpu traps into the secure mode, generally running a
-separate secure OS written by a 3rd party vendor.  We've tried to get
-some SoC secure implementations to drop out of secure mode and into
-the FIQ exception vector for specific irqs, with the registers set up
-to allow the FIQ handler to return back to the original execution
-point, but it's been successful.  It's a tricky problem, because
-non-secure can't enable/disable FIQs, so they have to be enabled when
-secure jumps to the FIQ exception vector, which then causes reentrancy
-issues.
-
-An alternate solution could be to standardize a secure FIQ handler
-interface, where the secure side could drop into the kernel with the
-registers already saved somewhere, and then the kernel would trap back
-into secure mode when the handler finished to allow the secure
-interrupt to be re-enabled.  Obviously not part of this patch set, but
-until something like that exists, this isn't going to get used on
-today's SoCs.
-
-> A few years ago KDB wasn't yet ready for production, or even not
-> well-known, so originally Google implemented its own FIQ debugger
-> that included its own shell, ring-buffer, commands, dumping,
-> backtracing logic and whatnot. This is very much like PowerPC's xmon
-> (arch/powerpc/xmon), except that xmon was there for a decade, so it
-> even predates KDB.
->
-> Anyway, nowadays KGDB/KDB is the cross-platform debugger, and the
-> only feature that was missing is NMI handling. This is now fixed for
-> ARM.
->
-> There a few differences comparing to the original (Google's) FIQ
-> debugger:
->
-> - Doing stuff in FIQ context is dangerous, as there we are not allowed
->   to cause aborts or faults. In the original FIQ debugger there was a
->   "signal" software-induced interrupt, upon exit from FIQ it would fire,
->   and we would continue to execute "dangerous" commands from there.
->
->   In KGDB/KDB we don't use signal interrupts. We can do easier:
->   set up a breakpoint, continue, and you'll trap into KGDB again
->   in a safe context.
-
-I like this, much better than generating an interrupt (which may not
-even be possible on some platforms).
-
->   It works for most cases, but I can imagine cases when you can't
->   set up a breakpoint. For these cases we'd better introduce a
->   KDB command "exit_nmi", that will rise the SW IRQ, after which
->   we're allowed to do anything.
->
-> - KGDB/KDB FIQ debugger shell is synchronous. In Google's version
->   you could have a dedicated shell always running in the FIQ context,
->   so when you type something on a serial line, you won't actually cause
->   any debugging actions, FIQ would save the characters in its own
->   buffer and continue execution normally. But when you hit return key
->   after the command, then the command is executed.
->
->   In KGDB/KDB FIQ debugger it is different. When you start any activity
->   on the FIQ-enabled serial console, you'll enter KGDB and kernel will
->   stop until you instruct it to continue.
->
->   This might look as a drastic change, but it is not. There is actually
->   no difference whether you have sync or async shell, or at least I
->   couldn't find any use-case where this would matter at all. Anyways,
->   it is still possible to do async shell in KDB, just don't see any
->   need for this.
-
-I think it could be an issue if KDB stopped execution whenever it
-received any character.  Serial ports are often noisy, especially when
-muxed over another port (we often use serial over the headset
-connector).  Noise on the async command line just causes characters
-that are ignored, on a command line that blocked execution noise would
-be catastrophic.
-
-> - Original FIQ debugger used a custom FIQ vector handling code, w/
->   a lot of logic in it. In this approach I'm using the fact that
->   FIQs are basically IRQs, except that we there are a bit more
->   registers banked, and we can actually trap from the IRQ context.
->
->   But this all does not prevent us from using a simple jump-table
->   based approach as used in the generic ARM entry code. So, here
->   I just reuse the generic approach.
->
-> Note that I testing the code on a modelled ARM machine (QEMU Versatile),
-> so there might be some issues on a real HW, but it works in QEMU tho. :-)
->
-> Assuming you have QEMU >= 1.1.0, you can easily play with the code
-> using ARM/versatile defconfig and command like this:
->
->   qemu-system-arm -nographic -machine versatilepb \
->         -kernel linux/arch/arm/boot/zImage  \
->         -append "console=ttyAMA0 kgdboc=ttyAMA0 kgdb_fiq.enable=1"
->
-> TODO:
->
-> 1. alignment_trap macro uses local label, so we have to put the label
->    into each file that use the macro. We can get rid of the label;
-> 2. Need per-machine kgdb_arch_enable_nmi(), probably will introduce
->    a pointer to a func;
-> 3. Since console interrupt is actually is overtaken by NMI handler, we
->    should make serial/uart drivers stop using TX interrupts. This my
->    homework to think how to do it better. Currently, we would just
->    better not use console= and kgdboc= on the same tty (but it still
->    works, just might cause troubles if you hit TX interrupt);
-
-One of the nice features in FIQ debugger is the "console" command,
-which causes all incoming serial characters to get passed to a console
-device provided by the FIQ debugger, and characters from the console
-to go out the serial port (when it is enabled).  That way you can
-still have the console when you want it, but only one driver talking
-to the hardware.
-
-> 4. Address any comments. :-)
->
-> Thanks!
 >
