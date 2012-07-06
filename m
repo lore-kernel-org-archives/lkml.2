@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642Ab2GFKRC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 06:17:02 -0400
-Received: from aristotle.killerwolves.net ([182.160.128.151]:47729 "EHLO
-	aristotle.killerwolves.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751694Ab2GFKRA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 06:17:00 -0400
-X-Greylist: delayed 419 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jul 2012 06:17:00 EDT
-From: Ben Peddell <klightspeed@killerwolves.net>
-To: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] initramfs: handle trailing junk after valid image
-Message-Id: <20120706101203.7EFC677A0D@aristotle.killerwolves.net>
-Date: Fri,  6 Jul 2012 20:12:03 +1000 (EST)
+	id S932967Ab2GFKRV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 06:17:21 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:45818 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932831Ab2GFKRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 06:17:20 -0400
+Message-ID: <4FF6BA8D.6080107@parallels.com>
+Date: Fri, 6 Jul 2012 14:14:37 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Richard Cochran <richardcochran@gmail.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        <ksummit-2012-discuss@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2012-discuss] [ATTEND or not ATTEND] That's the question!
+References: <alpine.LFD.2.02.1206152313310.3086@ionos> <20120615233413.GB8894@kroah.com> <alpine.LFD.2.02.1206161103320.3086@ionos> <20120616072906.7469ec24@tpl.lwn.net> <20120620195121.GA1719@fieldses.org> <4FF6B32A.7070006@parallels.com> <20120706095450.GB7728@somewhere.redhat.com> <20120706101149.GA26028@localhost.localdomain>
+In-Reply-To: <20120706101149.GA26028@localhost.localdomain>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The initramfs handling since commit df37bd15 has been rejecting
-valid images that have garbage after them.  For example, on an
-architecture where the initramfs address and size are specified
-as a kernel parameter (specifically unicore32 and arm), specifying
-e.g. initrd=0x01000000,4M will not work unless the image is padded
-with nulls to 4MiB.  This is unlikely to occur if the user is using
-this parameter to work around a bug in the bootloader.
+On 07/06/2012 02:11 PM, Richard Cochran wrote:
+> On Fri, Jul 06, 2012 at 11:54:52AM +0200, Frederic Weisbecker wrote:
+>> On Fri, Jul 06, 2012 at 01:43:06PM +0400, Glauber Costa wrote:
+>>> The same way we have checkpatch, we can have something automated that
+>>> will attempt to rule out some trivial patches in the counting process.
+>>> We can scan a patch, and easily determine if each part of it is:
+>>>
+>>> * pure whitespace
+>>> * pure Documentation change
+>>> * comment fix
+>>>
+>>> And if a patch is 100 % comprised by those, we simply don't count it.
+>>> People that just want to increase their numbers - they will always
+>>> exist, will tend to stop doing that. Simply because doing it will not
+>>> help them at all.
+>>
+>> OTOH, documentation changes or comment fixes, and even sometimes pure whitespace
+>> fixes, can be very valuable contributions. This can be a useful and ungrateful
+>> work and that deserve credit.
+>>
+>> We just can't find an automated and right way to evaluate a contribution.
+> 
+> Well what about submitters and maintainers labeling patches below the
+> SOB with tags like the following?
+> 
+>    Signed-off-by: Richard Cochran <richardcochran@gmail.com>
+>    Tags: docu whitespace trivial
+> 
+> Part of the review would be making sure the labels fit.
+> 
 
----
- init/initramfs.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/init/initramfs.c b/init/initramfs.c
-index 84c6bf1..26c2cb1 100644
---- a/init/initramfs.c
-+++ b/init/initramfs.c
-@@ -467,6 +467,9 @@ static char * __init unpack_to_rootfs(char *buf, unsigned len)
- 					 compress_name);
- 				message = msg_buf;
- 			}
-+		} else if (state == Reset) {
-+			my_inptr = len;
-+			pr_warn("%s: junk at end of compressed archive\n", __func__);
- 		} else
- 			error("junk in compressed archive");
- 		if (state != Reset)
--- 
-1.7.3.4
-
+Problem 1: What do you do with the commits already in the tree that
+lacks any tagging ?
