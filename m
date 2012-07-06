@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933248Ab2GFKsb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 06:48:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51281 "EHLO
+	id S933272Ab2GFKuD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 06:50:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51314 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932831Ab2GFKs2 (ORCPT
+	with ESMTP id S933021Ab2GFKuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 06:48:28 -0400
-Date: Fri, 6 Jul 2012 03:47:54 -0700
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-wfw6y3b9ugtey8snaow9nmg5@git.kernel.org>
+	Fri, 6 Jul 2012 06:50:00 -0400
+Date: Fri, 6 Jul 2012 03:49:46 -0700
+From: tip-bot for Steven Rostedt <srostedt@redhat.com>
+Message-ID: <tip-a5fb833172eca69136e9ee1ada778e404086ab8a@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, acme@ghostprotocols.net, namhyung.kim@lge.com,
-        namhyung@kernel.org, fweisbec@gmail.com, rostedt@goodmis.org,
-        tglx@linutronix.de, avi@redhat.com
+        rostedt@goodmis.org, dhsharp@google.com, srostedt@redhat.com,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, acme@ghostprotocols.net, namhyung.kim@lge.com,
-        namhyung@kernel.org, fweisbec@gmail.com, rostedt@goodmis.org,
-        tglx@linutronix.de, avi@redhat.com
-In-Reply-To: <1340757701-10711-2-git-send-email-namhyung@kernel.org>
-References: <1340757701-10711-2-git-send-email-namhyung@kernel.org>
+        rostedt@goodmis.org, srostedt@redhat.com, dhsharp@google.com,
+        tglx@linutronix.de
+In-Reply-To: <1340060577-9112-1-git-send-email-dhsharp@google.com>
+References: <1340060577-9112-1-git-send-email-dhsharp@google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing/kvm: Use __print_hex()
-  for kvm_emulate_insn tracepoint
-Git-Commit-ID: b102f1d0f1cd0bb5ec82e5aeb1e33502d6ad6710
+Subject: [tip:perf/core] ring-buffer: Fix uninitialized read_stamp
+Git-Commit-ID: a5fb833172eca69136e9ee1ada778e404086ab8a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,115 +29,68 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 03:48:03 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 03:49:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b102f1d0f1cd0bb5ec82e5aeb1e33502d6ad6710
-Gitweb:     http://git.kernel.org/tip/b102f1d0f1cd0bb5ec82e5aeb1e33502d6ad6710
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Wed, 27 Jun 2012 09:41:39 +0900
+Commit-ID:  a5fb833172eca69136e9ee1ada778e404086ab8a
+Gitweb:     http://git.kernel.org/tip/a5fb833172eca69136e9ee1ada778e404086ab8a
+Author:     Steven Rostedt <srostedt@redhat.com>
+AuthorDate: Thu, 28 Jun 2012 13:35:04 -0400
 Committer:  Steven Rostedt <rostedt@goodmis.org>
 CommitDate: Thu, 28 Jun 2012 13:52:15 -0400
 
-tracing/kvm: Use __print_hex() for kvm_emulate_insn tracepoint
+ring-buffer: Fix uninitialized read_stamp
 
-The kvm_emulate_insn tracepoint used __print_insn()
-for printing its instructions. However it makes the
-format of the event hard to parse as it reveals TP
-internals.
+The ring buffer reader page is used to swap a page from the writable
+ring buffer. If the writer happens to be on that page, it ends up on the
+reader page, but will simply move off of it, back into the writable ring
+buffer as writes are added.
 
-Fortunately, kernel provides __print_hex for almost
-same purpose, we can use it instead of open coding
-it. The user-space can be changed to parse it later.
+The time stamp passed back to the readers is stored in the cpu_buffer per
+CPU descriptor. This stamp is updated when a swap of the reader page takes
+place, and it reads the current stamp from the page taken from the writable
+ring buffer. Everytime a writer goes to a new page, it updates the time stamp
+of that page.
 
-That means raw kernel tracing will not be affected
-by this change:
+The problem happens if a reader reads a page from an empty per CPU ring buffer.
+If the buffer is empty, the swap still takes place, placing the writer at the
+start of the reader page. If at a later time, a write happens, it updates the
+page's time stamp and continues. But the problem is that the read_stamp does
+not get updated, because the page was already swapped.
 
- # cd /sys/kernel/debug/tracing/
- # cat events/kvm/kvm_emulate_insn/format
- name: kvm_emulate_insn
- ID: 29
- format:
-	...
- print fmt: "%x:%llx:%s (%s)%s", REC->csbase, REC->rip, __print_hex(REC->insn, REC->len), \
- __print_symbolic(REC->flags, { 0, "real" }, { (1 << 0) | (1 << 1), "vm16" }, \
- { (1 << 0), "prot16" }, { (1 << 0) | (1 << 2), "prot32" }, { (1 << 0) | (1 << 3), "prot64" }), \
- REC->failed ? " failed" : ""
+The solution to this was to not swap the page if the ring buffer happens to
+be empty. This also removes the side effect that the writes on the reader
+page will not get updated because the writer never gets back on the reader
+page without a swap. That is, if a read happens on an empty buffer, but then
+no reads happen for a while. If a swap took place, and the writer were to start
+writing a lot of data (function tracer), it will start overflowing the ring buffer
+and overwrite the older data. But because the writer never goes back onto the
+reader page, the data left on the reader page never gets overwritten. This
+causes the reader to see really old data, followed by a jump to newer data.
 
- # echo 1 > events/kvm/kvm_emulate_insn/enable
- # cat trace
- # tracer: nop
- #
- # entries-in-buffer/entries-written: 2183/2183   #P:12
- #
- #                              _-----=> irqs-off
- #                             / _----=> need-resched
- #                            | / _---=> hardirq/softirq
- #                            || / _--=> preempt-depth
- #                            ||| /     delay
- #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
- #              | |       |   ||||       |         |
-         qemu-kvm-1782  [002] ...1   140.931636: kvm_emulate_insn: 0:c102fa25:89 10 (prot32)
-         qemu-kvm-1781  [004] ...1   140.931637: kvm_emulate_insn: 0:c102fa25:89 10 (prot32)
-
-Link: http://lkml.kernel.org/n/tip-wfw6y3b9ugtey8snaow9nmg5@git.kernel.org
-Link: http://lkml.kernel.org/r/1340757701-10711-2-git-send-email-namhyung@kernel.org
-
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: kvm@vger.kernel.org
-Acked-by: Avi Kivity <avi@redhat.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1340060577-9112-1-git-send-email-dhsharp@google.com
+Google-Bug-Id: 6410455
+Reported-by: David Sharp <dhsharp@google.com>
+tested-by: David Sharp <dhsharp@google.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/kvm/trace.h   |   12 +-----------
- include/trace/ftrace.h |    1 +
- 2 files changed, 2 insertions(+), 11 deletions(-)
+ kernel/trace/ring_buffer.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
-index 911d264..62d02e3 100644
---- a/arch/x86/kvm/trace.h
-+++ b/arch/x86/kvm/trace.h
-@@ -710,16 +710,6 @@ TRACE_EVENT(kvm_skinit,
- 		  __entry->rip, __entry->slb)
- );
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 1d0f6a8..82a3e0c 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -3239,6 +3239,10 @@ rb_get_reader_page(struct ring_buffer_per_cpu *cpu_buffer)
+ 	if (cpu_buffer->commit_page == cpu_buffer->reader_page)
+ 		goto out;
  
--#define __print_insn(insn, ilen) ({		                 \
--	int i;							 \
--	const char *ret = p->buffer + p->len;			 \
--								 \
--	for (i = 0; i < ilen; ++i)				 \
--		trace_seq_printf(p, " %02x", insn[i]);		 \
--	trace_seq_printf(p, "%c", 0);				 \
--	ret;							 \
--	})
--
- #define KVM_EMUL_INSN_F_CR0_PE (1 << 0)
- #define KVM_EMUL_INSN_F_EFL_VM (1 << 1)
- #define KVM_EMUL_INSN_F_CS_D   (1 << 2)
-@@ -786,7 +776,7 @@ TRACE_EVENT(kvm_emulate_insn,
- 
- 	TP_printk("%x:%llx:%s (%s)%s",
- 		  __entry->csbase, __entry->rip,
--		  __print_insn(__entry->insn, __entry->len),
-+		  __print_hex(__entry->insn, __entry->len),
- 		  __print_symbolic(__entry->flags,
- 				   kvm_trace_symbol_emul_flags),
- 		  __entry->failed ? " failed" : ""
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 7697249..c6bc2fa 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -571,6 +571,7 @@ static inline void ftrace_test_probe_##call(void)			\
- 
- #undef __print_flags
- #undef __print_symbolic
-+#undef __print_hex
- #undef __get_dynamic_array
- #undef __get_str
- 
++	/* Don't bother swapping if the ring buffer is empty */
++	if (rb_num_of_entries(cpu_buffer) == 0)
++		goto out;
++
+ 	/*
+ 	 * Reset the reader page to size zero.
+ 	 */
