@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab2GFBEd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 21:04:33 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45417 "EHLO
+	id S1754152Ab2GFBGo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 21:06:44 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38082 "EHLO
 	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab2GFBEb (ORCPT
+	with ESMTP id S1752157Ab2GFBGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 21:04:31 -0400
+	Thu, 5 Jul 2012 21:06:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120705172654.GG32640@tassilo.jf.intel.com>
-References: <1341254598-1379-3-git-send-email-andi@firstfloor.org>
-	<1341256733.23484.11.camel@twins>
-	<20120702195744.GG11413@one.firstfloor.org>
-	<1341260540.23484.25.camel@twins>
-	<20120702210008.GB14479@tassilo.jf.intel.com>
-	<1341265014.23484.47.camel@twins>
-	<20120702215722.GC14479@tassilo.jf.intel.com>
-	<CABPqkBSdtV6FTqVestcmy_skyK5AFTeShoT6vDFk34A0XaXWDA@mail.gmail.com>
-	<20120703040446.GJ11413@one.firstfloor.org>
-	<CABPqkBT4Dgte73hM+im0VP-Px1rXXURcyHhsSA2RYXCTZSdOxg@mail.gmail.com>
-	<20120705172654.GG32640@tassilo.jf.intel.com>
-Date: Fri, 6 Jul 2012 03:04:29 +0200
-Message-ID: <CABPqkBQS5gs7F41-Q4gUoURujst0RpJmn5iwUeUYjFUsFkhPBw@mail.gmail.com>
-Subject: Re: [PATCH 2/5] perf, x86: Enable PDIR precise instruction profiling
- on IvyBridge
+In-Reply-To: <20120705164447.GE7533@infradead.org>
+References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
+	<87fw9blyhj.fsf@sejong.aot.lge.com>
+	<20120702101518.GC967@krava.redhat.com>
+	<1341234662.1476.13.camel@leonhard>
+	<20120702133341.GD967@krava.redhat.com>
+	<CABPqkBTKNuwJXY7jRa+Zt8rmFftZUeJiYKEsKJeRiLdoHN3KWQ@mail.gmail.com>
+	<20120705164447.GE7533@infradead.org>
+Date: Fri, 6 Jul 2012 03:06:41 +0200
+Message-ID: <CABPqkBSS82X2Dt46jwLzbvC4WxkbewA8DhrMYjGmpAtugV2HNQ@mail.gmail.com>
+Subject: Re: [PATCHv3 0/3] perf tool: Add new event group management
 From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org,
+        drepper@gmail.com
 Content-Type: text/plain; charset=UTF-8
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 5, 2012 at 7:26 PM, Andi Kleen <ak@linux.intel.com> wrote:
-> On Thu, Jul 05, 2012 at 05:45:16PM +0200, Stephane Eranian wrote:
->> On Tue, Jul 3, 2012 at 6:04 AM, Andi Kleen <andi@firstfloor.org> wrote:
->> >> Well, the only way I can think of would be to request that the
->> >> event be programmed with exclusive mode ALWAYS. That
->> >> should not be to hard to add.
+On Thu, Jul 5, 2012 at 6:44 PM, Arnaldo Carvalho de Melo
+<acme@redhat.com> wrote:
+> Em Thu, Jul 05, 2012 at 06:15:20PM +0200, Stephane Eranian escreveu:
+>> On Mon, Jul 2, 2012 at 3:33 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+>> > perf, tool: Enable sampling on specified event group leader
 >> >
->> > I suspect it would need some special callbacks from the events core,
->> > that's why I only tried on IvyBridge.
->> >x
->> You could simply add a check in the x86 init code like what is done
->> with the pebs events and precise mode.
+>> > Adding the functionality to the group modifier event syntax.
+>> > Allowing user to select leader event inside the group using
+>> > event index (command line event position in the group).
+>> >
+>> > Following example selects e2 as leader:
+>> >   -e '{e1,e2,e3,e4}:2'
+>> >
+>> I don't understand why you actually need the :2 suffix. There can
+>> only be one leader. So assume it is the first one. Users have to
+>> know the first one is the leader which seems like a natural thing
+>> to do for me. It would make you syntax less ugly than it already
+>> is.
 >
-> Ah requiring the user to set exclusive? Maybe. Right now perf does not even
-> have an option to set it. Would seem user unfriendly to me though.
-
-Yes, that's what I meant since the beginning. Require exclusive mode
-on the event is all we need to enforce the restriction. The scheduling
-would still only work on counter 1.
-
-I know that perf record/stat do not support this but given the new event
-parser it should not too hard to add an excl term to the syntax. I have
-that in libpfm4 now as an option on events. That's clearly a perf_event
-option like period or freq and not a HW option like inv, edge.
+> Agreed, looks like creeping featurism.
+>
+>> I would have thought you could enable this with a simple
+>> cmdline option which changes the way you interpret the
+>> multiple -e options:
+>>
+>> perf record --group-reads -e e1,e2,e3 -e e4,e5,e6 .....
+>>
+>> Would setup the group leaders (e1, e4) for 2 groups.
+>> NO curly braces, no : needed.
+>
+> Yeah, curly braces needed just when one wants to add group wide
+> modifiers.
+And even, in that case that seems overkill too.
+You can simply repeat the modifier on each event. A group cannot
+big that big. It is limited in size by the number of physical counters
+plus the events constraints.
