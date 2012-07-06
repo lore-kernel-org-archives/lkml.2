@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab2GFQ34 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 12:29:56 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:43472 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757852Ab2GFQ3y (ORCPT
+	id S932161Ab2GFQc1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 12:32:27 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:44108 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757864Ab2GFQcZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 12:29:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <tip-xxrt0a1zronm1sm36obwc2vy@git.kernel.org>
-References: <tip-xxrt0a1zronm1sm36obwc2vy@git.kernel.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 6 Jul 2012 09:29:33 -0700
-X-Google-Sender-Auth: 8mMLpJkWPqvKw9HXxlMB9jHPMI0
-Message-ID: <CA+55aFxY7SqwSQWuRXSg+W=ftp9FtCT1MMEqMiCi1H279Fis-A@mail.gmail.com>
-Subject: Re: [tip:perf/core] perf/x86: Fix USER/KERNEL tagging of samples
-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, fweisbec@gmail.com,
-        akpm@linux-foundation.org, tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 6 Jul 2012 12:32:25 -0400
+From: Yuri Khan <yurivkhan@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Yuri Khan <yurivkhan@gmail.com>
+Subject: [PATCH 0/1] Input: xpad - Add a variation of Mad Catz Beat Pad
+Date: Fri,  6 Jul 2012 23:32:03 +0700
+Message-Id: <1341592324-665-1-git-send-email-yurivkhan@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 5, 2012 at 11:20 PM, tip-bot for Peter Zijlstra
-<a.p.zijlstra@chello.nl> wrote:
->
-> Several perf interrupt handlers (PEBS,IBS,BTS) re-write regs->ip but
-> do not update the segment registers. So use an regs->ip based test
-> instead of an regs->cs/regs->flags based test.
+Hello all,
 
-Christ, people, YOU CANNOT DO THIS!
+I have a dance pad that has the vendor and product IDs of a Mad Catz 
+Beat Pad (0738:4540), but it doesn't get handled by xpad.ko because xpad 
+expects (a) interface class and subclass of 'X':'B', or (b) interface 
+class 255, subclass 93, protocol 1 or 129; while my device identifies as 
+interface class 3 (HID), subclass 0, protocol 0. As a result, usbhid 
+grabs it and it sort of works, but the diagonal pads are not mapped.
 
-It is never *ever* valid to test the IP to see if you're in kernel
-space or user space. People can do various odd segments etc, the IP is
-totally meaningless.
+When I add a usbhid option quirks=0x0738:0x4540:0x4 (so that usbhid does 
+not attempt to handle this device) and rebuild the xpad module with the 
+following patch, the device works as expected. Dmitry Torokhov, the 
+current maintainer of input drivers, suggested that I include a change 
+to add the usbhid quirk in my patch.
 
-If the perf handlers fake the IP information, they had better fake the
-CS/eflags information too. Because it is *wrong* to look at IP. Don't
-do it.
+Yuri Khan (1):
+  Input: xpad - Add a variation of Mad Catz Beat Pad
 
-                Linus
+ drivers/hid/hid-ids.h           |    3 +++
+ drivers/hid/usbhid/hid-quirks.c |    2 ++
+ drivers/input/joystick/xpad.c   |    2 ++
+ 3 files changed, 7 insertions(+)
+
+-- 
+1.7.9.5
+
