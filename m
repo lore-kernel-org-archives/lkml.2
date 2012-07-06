@@ -1,97 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932944Ab2GFGan (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 02:30:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49139 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932508Ab2GFGal (ORCPT
+	id S932984Ab2GFGbP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 02:31:15 -0400
+Received: from mga11.intel.com ([192.55.52.93]:2590 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932307Ab2GFGbN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 02:30:41 -0400
-Date: Thu, 5 Jul 2012 23:30:28 -0700
-From: "tip-bot for Yan, Zheng" <zheng.z.yan@intel.com>
-Message-ID: <tip-eca26c9950f4d3e9c92ba275e9f4aee834aa1913@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, zheng.z.yan@intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        zheng.z.yan@intel.com, tglx@linutronix.de
-In-Reply-To: <1340780953-21130-1-git-send-email-zheng.z.yan@intel.com>
-References: <1340780953-21130-1-git-send-email-zheng.z.yan@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86:
-  Use 0xff as pseudo code for fixed uncore event
-Git-Commit-ID: eca26c9950f4d3e9c92ba275e9f4aee834aa1913
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 6 Jul 2012 02:31:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="189076636"
+From: "Hefty, Sean" <sean.hefty@intel.com>
+To: Roland Dreier <roland@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: linux-next: build failure after merge of the infiniband tree
+Thread-Topic: linux-next: build failure after merge of the infiniband tree
+Thread-Index: AQHNWyAbnVVLR8zONE275K7suC6c/pccFlcA//+1CnA=
+Date: Fri, 6 Jul 2012 06:31:12 +0000
+Message-ID: <1828884A29C6694DAF28B7E6B8A8237346A4FE1B@ORSMSX101.amr.corp.intel.com>
+References: <20120706123555.949d8efb4de5c4df18fb1ec0@canb.auug.org.au>
+ <CAL1RGDW+3Q86QUp-aaWajT8nLK_7hQuCbxeE4q9He=aGdAMX6Q@mail.gmail.com>
+In-Reply-To: <CAL1RGDW+3Q86QUp-aaWajT8nLK_7hQuCbxeE4q9He=aGdAMX6Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 05 Jul 2012 23:30:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  eca26c9950f4d3e9c92ba275e9f4aee834aa1913
-Gitweb:     http://git.kernel.org/tip/eca26c9950f4d3e9c92ba275e9f4aee834aa1913
-Author:     Yan, Zheng <zheng.z.yan@intel.com>
-AuthorDate: Wed, 27 Jun 2012 15:09:12 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 5 Jul 2012 21:55:58 +0200
+> Thanks, fixed with a "#if IS_ENABLED(CONFIG_IPV6)" around the code
+> that touches ipv6... Sean, let me know if more is required.
 
-perf/x86: Use 0xff as pseudo code for fixed uncore event
-
-Stephane Eranian suggestted using 0xff as pseudo code for fixed
-uncore event and using the umask value to determine which of the
-fixed events we want to map to. So far there is at most one fixed
-counter in a uncore PMU. So just change the definition of
-UNCORE_FIXED_EVENT to 0xff.
-
-Suggested-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1340780953-21130-1-git-send-email-zheng.z.yan@intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |    4 ++--
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 6f43f95..c42a3f7 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -179,7 +179,7 @@ static struct attribute *snbep_uncore_pcu_formats_attr[] = {
- };
- 
- static struct uncore_event_desc snbep_uncore_imc_events[] = {
--	INTEL_UNCORE_EVENT_DESC(clockticks,      "event=0xff,umask=0xff"),
-+	INTEL_UNCORE_EVENT_DESC(clockticks,      "event=0xff,umask=0x00"),
- 	INTEL_UNCORE_EVENT_DESC(cas_count_read,  "event=0x04,umask=0x03"),
- 	INTEL_UNCORE_EVENT_DESC(cas_count_write, "event=0x04,umask=0x0c"),
- 	{ /* end: all zeroes */ },
-@@ -616,7 +616,7 @@ static struct attribute_group nhm_uncore_format_group = {
- };
- 
- static struct uncore_event_desc nhm_uncore_events[] = {
--	INTEL_UNCORE_EVENT_DESC(clockticks,                "event=0xff,umask=0xff"),
-+	INTEL_UNCORE_EVENT_DESC(clockticks,                "event=0xff,umask=0x00"),
- 	INTEL_UNCORE_EVENT_DESC(qmc_writes_full_any,       "event=0x2f,umask=0x0f"),
- 	INTEL_UNCORE_EVENT_DESC(qmc_normal_reads_any,      "event=0x2c,umask=0x0f"),
- 	INTEL_UNCORE_EVENT_DESC(qhl_request_ioh_reads,     "event=0x20,umask=0x01"),
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index 4d52db0..88498c7 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -9,7 +9,7 @@
- 
- #define UNCORE_PMU_HRTIMER_INTERVAL	(60 * NSEC_PER_SEC)
- 
--#define UNCORE_FIXED_EVENT		0xffff
-+#define UNCORE_FIXED_EVENT		0xff
- #define UNCORE_PMC_IDX_MAX_GENERIC	8
- #define UNCORE_PMC_IDX_FIXED		UNCORE_PMC_IDX_MAX_GENERIC
- #define UNCORE_PMC_IDX_MAX		(UNCORE_PMC_IDX_FIXED + 1)
+The fix-up looks to be complete.  Thanks
