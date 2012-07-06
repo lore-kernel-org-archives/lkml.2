@@ -1,68 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758015Ab2GFQxX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 12:53:23 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:37343 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757932Ab2GFQxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 12:53:22 -0400
-Date: Fri, 6 Jul 2012 12:52:57 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Matt Mackall <mpm@selenic.com>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>, w@1wt.eu,
-        ewust@umich.edu, zakir@umich.edu, greg@kroah.com, nadiah@cs.ucsd.edu,
-        jhalderm@umich.edu, tglx@linutronix.de, davem@davemloft.net,
-        stable@kernel.org
-Subject: Re: [PATCH 01/10] random: make 'add_interrupt_randomness()' do
- something sane
-Message-ID: <20120706165257.GD10798@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Matt Mackall <mpm@selenic.com>,
-	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-	w@1wt.eu, ewust@umich.edu, zakir@umich.edu, greg@kroah.com,
-	nadiah@cs.ucsd.edu, jhalderm@umich.edu, tglx@linutronix.de,
-	davem@davemloft.net, stable@kernel.org
-References: <CA+55aFyMYVLCW0OYTVttkjjOwyu9VgDM9haNC=BeoRCEiWWNPQ@mail.gmail.com>
- <1341524367.4020.1324.camel@calx>
- <CA+55aFxAe1pRN+jvdLveHQ+nNRNC6HDZ+S4Y9P202rxgNLN8pg@mail.gmail.com>
- <20120705220040.GA15685@thunk.org>
- <CA+55aFzFMZpiDMJO9UxoXSjOCzvxn7tgvmAHLM36OmaiMasQhw@mail.gmail.com>
- <1341527482.4020.1355.camel@calx>
- <20120705232136.GD15685@thunk.org>
- <CA+55aFxhobNMY5RLmH+tKox8voqfH-bVqKVF03JeeVrHkhLcaQ@mail.gmail.com>
- <20120706130127.GB10798@thunk.org>
- <CA+55aFw90o8btDJhztkS=2NXiZvXNAkCsZkx-p9+RRx-cMQc6A@mail.gmail.com>
+	id S1754960Ab2GFQ5r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 12:57:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42753 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770Ab2GFQ5p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 12:57:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFw90o8btDJhztkS=2NXiZvXNAkCsZkx-p9+RRx-cMQc6A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1341592324-665-1-git-send-email-yurivkhan@gmail.com>
+References: <1341592324-665-1-git-send-email-yurivkhan@gmail.com>
+Date: Fri, 6 Jul 2012 23:57:44 +0700
+Message-ID: <CAP_d_8WLyGPtfWY3Po4yYyg2L7EiWuWuF6X4WZ+Me6LMLwfDCQ@mail.gmail.com>
+Subject: Re: [PATCH 0/1] Input: xpad - Add a variation of Mad Catz Beat Pad
+From: Yuri Khan <yurivkhan@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Yuri Khan <yurivkhan@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, 2012 at 09:24:00AM -0700, Linus Torvalds wrote:
-> On Fri, Jul 6, 2012 at 6:01 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> > What in the world is "fast count"?  I've grepped for it,
-> > and I can't find it.
-> 
-> It's your own fast-pool counter that Matt was talking about.
+On Fri, Jul 6, 2012 at 11:32 PM, Yuri Khan <yurivkhan@gmail.com> wrote:
 
-When he said "check it against HZ", it confused me, since there's no
-way to compare it against HZ.  But yes, I can certainly not give any
-credit for entropy if __IRQF_TIMER is set, or keep track of whether
-the previous interrupt had __IRQF_TIMER set in its descriptor.  That's
-simple enough.
+> When I add a usbhid option quirks=0x0738:0x4540:0x4 (so that usbhid does
+> not attempt to handle this device) and rebuild the xpad module with the
+> following patch, the device works as expected. Dmitry Torokhov, the
+> current maintainer of input drivers, suggested that I include a change
+> to add the usbhid quirk in my patch.
 
-I thought he was saying there was some way to distinguish between
-interrupts triggered by the clock interrupt versus other devices on
-the same irq channel --- and I couldn't figure out any to do that in
-an architecture independent way.
-
-					- Ted
-
+Of course the good idea only ever comes after the fact. If I change
+usbhid to ignore this vendor:device unconditionally, then xpad should
+also always handle it regardless of interface class/subclass/protocol,
+right?
