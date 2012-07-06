@@ -1,58 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757918Ab2GFQYX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 12:24:23 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:50042 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756667Ab2GFQYW (ORCPT
+	id S1757924Ab2GFQ1W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 12:27:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:32911 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757029Ab2GFQ1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 12:24:22 -0400
+	Fri, 6 Jul 2012 12:27:20 -0400
+Message-ID: <4FF711DE.1030108@gmail.com>
+Date: Sat, 07 Jul 2012 00:27:10 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120706130127.GB10798@thunk.org>
-References: <1341511933-11169-2-git-send-email-tytso@mit.edu>
- <1341514078.4020.1213.camel@calx> <CA+55aFyMYVLCW0OYTVttkjjOwyu9VgDM9haNC=BeoRCEiWWNPQ@mail.gmail.com>
- <1341524367.4020.1324.camel@calx> <CA+55aFxAe1pRN+jvdLveHQ+nNRNC6HDZ+S4Y9P202rxgNLN8pg@mail.gmail.com>
- <20120705220040.GA15685@thunk.org> <CA+55aFzFMZpiDMJO9UxoXSjOCzvxn7tgvmAHLM36OmaiMasQhw@mail.gmail.com>
- <1341527482.4020.1355.camel@calx> <20120705232136.GD15685@thunk.org>
- <CA+55aFxhobNMY5RLmH+tKox8voqfH-bVqKVF03JeeVrHkhLcaQ@mail.gmail.com> <20120706130127.GB10798@thunk.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 6 Jul 2012 09:24:00 -0700
-X-Google-Sender-Auth: D-EJecDs7AFTKwEcFa91rdAjjtE
-Message-ID: <CA+55aFw90o8btDJhztkS=2NXiZvXNAkCsZkx-p9+RRx-cMQc6A@mail.gmail.com>
-Subject: Re: [PATCH 01/10] random: make 'add_interrupt_randomness()' do
- something sane
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>, w@1wt.eu,
-        ewust@umich.edu, zakir@umich.edu, greg@kroah.com, nadiah@cs.ucsd.edu,
-        jhalderm@umich.edu, tglx@linutronix.de, davem@davemloft.net,
-        stable@kernel.org
+To: Toshi Kani <toshi.kani@hp.com>
+CC: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: Add ACPI CPU hot-remove support
+References: <1340981479-6521-1-git-send-email-toshi.kani@hp.com>
+In-Reply-To: <1340981479-6521-1-git-send-email-toshi.kani@hp.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 6, 2012 at 6:01 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> What in the world is "fast count"?  I've grepped for it,
-> and I can't find it.
+Hi Toshi,
+	I think a better solution here is to send a notification to acpid
+daemon instead of directly ejecting the physical processor in kernel by
+apci hotplug work thread. The daemon should do:
+	1) check whether user policy allows to remove the physical processor
+	2) resolve any dependency issues, such as some memory/IOHs may have
+	dependency on the processor.
+	3) Remove all devices on the physical processor through sysfs.
+	4) Power off the physical processor through sysfs.
 
-It's your own fast-pool counter that Matt was talking about.
+	If we rely on the acpi hotplug work thread to do the hard work, it
+may block the work thread for a very long time and it won't respond to other
+hotplug events.
+	Thanks!
+	Gerry
+On 06/29/2012 10:51 PM, Toshi Kani wrote:
+> Added CPU hot-remove support through an ACPI eject notification.
+> It calls acpi_bus_hot_remove_device(), which shares the same code
+> path with the sysfs eject operation.  acpi_os_hotplug_execute()
+> serializes hot-remove operations between ACPI hot-remove and sysfs
+> eject requests.
+> 
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> 
+> ---
+> This patch applies on top of the patchset below.
+> 
+> [PATCH v6 0/6] ACPI: Add _OST support for ACPI hotplug
+> http://marc.info/?l=linux-acpi&m=134074381322973&w=2
+> 
+> ---
+>  drivers/acpi/processor_driver.c |   27 +++++++++++++++++----------
+>  1 files changed, 17 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+> index f9fa1b2..a6f6bde 100644
+> --- a/drivers/acpi/processor_driver.c
+> +++ b/drivers/acpi/processor_driver.c
+> @@ -699,8 +699,8 @@ int acpi_processor_device_add(acpi_handle handle, struct acpi_device **device)
+>  static void acpi_processor_hotplug_notify(acpi_handle handle,
+>  					  u32 event, void *data)
+>  {
+> -	struct acpi_processor *pr;
+>  	struct acpi_device *device = NULL;
+> +	struct acpi_eject_event *ej_event = NULL;
+>  	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+>  	int result;
+>  
+> @@ -732,20 +732,27 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
+>  				  "received ACPI_NOTIFY_EJECT_REQUEST\n"));
+>  
+>  		if (acpi_bus_get_device(handle, &device)) {
+> -			printk(KERN_ERR PREFIX
+> -				    "Device don't exist, dropping EJECT\n");
+> +			pr_err(PREFIX "Device don't exist, dropping EJECT\n");
+>  			break;
+>  		}
+> -		pr = acpi_driver_data(device);
+> -		if (!pr) {
+> -			printk(KERN_ERR PREFIX
+> -				    "Driver data is NULL, dropping EJECT\n");
+> +		if (!acpi_driver_data(device)) {
+> +			pr_err(PREFIX "Driver data is NULL, dropping EJECT\n");
+>  			break;
+>  		}
+>  
+> -		/* REVISIT: update when eject is supported */
+> -		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+> -		break;
+> +		ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
+> +		if (!ej_event) {
+> +			pr_err(PREFIX "No memory, dropping EJECT\n");
+> +			break;
+> +		}
+> +
+> +		ej_event->handle = handle;
+> +		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
+> +		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
+> +					(void *)ej_event);
+> +
+> +		/* eject is performed asynchronously */
+> +		return;
+>  
+>  	default:
+>  		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+> 
 
-> I can simply not credit entropy of the timer is on the irq, but I
-> think you and Matt were suggesting more subtle.  I just have no idea
-> how to tell if there were non-timer interrupts during the last HZ
-> cycle.  Can you give me a hint?
 
-So instead of not calling the add_interrupt_randomness() at all if the
-__IRQF_TIMER bit was set, just pass it in as an argument. That way you
-can still use the cycle counter for mixing stuff, but the random.c
-code could at least (perhaps in the future) decide that if all it has
-seen is timer interrupts, and get_cycles() always returns zero (no
-cycle counter), we won't count it as entropy.
-
-At least with no-HZ there's still going to be *some* data there
-because you won't get called for every tick, so things like random app
-timers etc will affect even the timer interrupt distribution, but...
-
-                Linus
