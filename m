@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758803Ab2GFWvP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 18:51:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47099 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756360Ab2GFWvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 18:51:11 -0400
-Date: Sat, 7 Jul 2012 08:51:03 +1000
-From: NeilBrown <neilb@suse.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: [PATCH] MFD: twl-core: move device_init_wakeup to after
- platform_device_add.
-Message-ID: <20120707085103.7b1a51ec@notabene.brown>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/FzB3P.31BHtTq=w7qVSh96N"; protocol="application/pgp-signature"
+	id S1758827Ab2GFWvi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 18:51:38 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:37471 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756360Ab2GFWve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 18:51:34 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
+Cc: ewust@umich.edu, zakir@umich.edu, nadiah@cs.ucsd.edu, jhalderm@umich.edu,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, stable@vger.kernel.org
+Subject: [PATCH 12/12] mfd: wm831x: Feed the device UUID into device_add_randomness()
+Date: Fri,  6 Jul 2012 18:45:04 -0400
+Message-Id: <1341614704-24965-13-git-send-email-tytso@mit.edu>
+X-Mailer: git-send-email 1.7.11.1.108.gb129051
+In-Reply-To: <1341614704-24965-1-git-send-email-tytso@mit.edu>
+References: <1341614704-24965-1-git-send-email-tytso@mit.edu>
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/FzB3P.31BHtTq=w7qVSh96N
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
+wm831x devices contain a unique ID value. Feed this into the newly added
+device_add_randomness() to add some per device seed data to the pool.
 
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Cc: stable@vger.kernel.org
+---
+ drivers/mfd/wm831x-otp.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-device_init_wakeup uses the dev_name() of the device to set the
-name of the wakeup_source which appears in
-/sys/kernel/debug/wakeup_sources.
+diff --git a/drivers/mfd/wm831x-otp.c b/drivers/mfd/wm831x-otp.c
+index f742745..b90f3e0 100644
+--- a/drivers/mfd/wm831x-otp.c
++++ b/drivers/mfd/wm831x-otp.c
+@@ -18,6 +18,7 @@
+ #include <linux/bcd.h>
+ #include <linux/delay.h>
+ #include <linux/mfd/core.h>
++#include <linux/random.h>
+ 
+ #include <linux/mfd/wm831x/core.h>
+ #include <linux/mfd/wm831x/otp.h>
+@@ -66,6 +67,7 @@ static DEVICE_ATTR(unique_id, 0444, wm831x_unique_id_show, NULL);
+ 
+ int wm831x_otp_init(struct wm831x *wm831x)
+ {
++	char uuid[WM831X_UNIQUE_ID_LEN];
+ 	int ret;
+ 
+ 	ret = device_create_file(wm831x->dev, &dev_attr_unique_id);
+@@ -73,6 +75,12 @@ int wm831x_otp_init(struct wm831x *wm831x)
+ 		dev_err(wm831x->dev, "Unique ID attribute not created: %d\n",
+ 			ret);
+ 
++	ret = wm831x_unique_id_read(wm831x, uuid);
++	if (ret == 0)
++		add_device_randomness(uuid, sizeof(uuid));
++	else
++		dev_err(wm831x->dev, "Failed to read UUID: %d\n", ret);
++
+ 	return ret;
+ }
+ 
+-- 
+1.7.11.1.108.gb129051
 
-For a platform device, that name is not set until platform_device_add
-calls dev_set_name.
-
-So the call to device_init_wakeup() must be after the call to
-platform_device_add().
-Making this change causes correct names to appear in the
-wakeup_sources file.
-
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index 6fc90be..b012efd 100644
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -568,7 +568,6 @@ add_numbered_child(unsigned chip, const char *name, int=
- num,
- 		goto err;
- 	}
-=20
--	device_init_wakeup(&pdev->dev, can_wakeup);
- 	pdev->dev.parent =3D &twl->client->dev;
-=20
- 	if (pdata) {
-@@ -593,6 +592,8 @@ add_numbered_child(unsigned chip, const char *name, int=
- num,
- 	}
-=20
- 	status =3D platform_device_add(pdev);
-+	if (status =3D=3D 0)
-+		device_init_wakeup(&pdev->dev, can_wakeup);
-=20
- err:
- 	if (status < 0) {
-
---Sig_/FzB3P.31BHtTq=w7qVSh96N
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT/dr1znsnt1WYoG5AQJBlQ//Tr7CxCNid9BXVqBxbJWQdDzEpXJ7bvt+
-oRFA9lRidhHrQtXfH4eaeBfvQv5PIj3goktfWXAt8D/ZbNDNsBoDL/WfWI1IxDnw
-1G3pmLlC2LbhYRd3/iYhF6um00WZ2MKBmTqgrLLeX/FQAywdhC/WtW+b7+NfEKjb
-iOb6NoqITaCV4ZHazoiW0SjeHb8o0pzYWw7OQCJTWB4rd1S7x2sXHmhBwD6hM6RK
-/cn10pmNMvi6J4R74WgfVDnpzFexd5HLQtjinz308K/vIpUc5VDq0r549xa9qWfB
-U/+I+lwaO51046ISKfbzaBfTpqaiqTb4plmu0rAtgsS1ha8ZXfr/KKpeXYkFTsUE
-Th7jF6CMU2H2SBJAbZQ+jfg/cpVzpAnkL/drP0/WFTqzS/xLiOLIK0Sdu1mwcntb
-9b4TSVDr6TuKiQHlKh1a9RTYSvdgv6leqqZMoI1LwVzfTtQJzYir+kncfuxE5iK6
-SF+ws2EtpaWcrwaIdy5elleUDY+oVSKn6VTJNrbylmdRjRMUnUj2yVQPoQTC99Qw
-RZOZhVjnBWs+gzWZL9iOcobUFyi6xK8iw5n6E1uiu3wu/t3GBXmJ2nj/yO+Jk6N3
-5eIV6xMAWuH2JeGkOjWGHo1ECQjo3nXNyfUmIY4LjCRFzo0KN+x3bKHQKXL26ZWb
-dEFQ/+bMv5k=
-=0/8b
------END PGP SIGNATURE-----
-
---Sig_/FzB3P.31BHtTq=w7qVSh96N--
