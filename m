@@ -1,546 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab2GFHd2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 03:33:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49567 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753836Ab2GFHd0 (ORCPT
+	id S932725Ab2GFHfd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 03:35:33 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:53737 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754368Ab2GFHfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 03:33:26 -0400
-Date: Thu, 5 Jul 2012 23:33:08 -0700
-From: "tip-bot for Yan, Zheng" <zheng.z.yan@intel.com>
-Message-ID: <tip-6a67943a18c264d5f3df436da38edb3e59adc905@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, zheng.z.yan@intel.com, tglx@linutronix.de
-In-Reply-To: <1341381616-12229-5-git-send-email-zheng.z.yan@intel.com>
-References: <1341381616-12229-5-git-send-email-zheng.z.yan@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Uncore filter support for SandyBridge-EP
-Git-Commit-ID: 6a67943a18c264d5f3df436da38edb3e59adc905
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 6 Jul 2012 03:35:31 -0400
+Message-ID: <4FF693F6.8070505@huawei.com>
+Date: Fri, 6 Jul 2012 15:29:58 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 05 Jul 2012 23:33:16 -0700 (PDT)
+To: Christoph Lameter <cl@linux.com>
+CC: Jiang Liu <liuj97@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>, Mel Gorman <mgorman@suse.de>,
+        Yinghai Lu <yinghai@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Minchan Kim <minchan@kernel.org>,
+        Keping Chen <chenkeping@huawei.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/4] mm: introduce a safer interface to check whether
+ a page is managed by SLxB
+References: <1341287837-7904-1-git-send-email-jiang.liu@huawei.com> <alpine.DEB.2.00.1207050942540.4984@router.home> <4FF5B909.30409@gmail.com> <alpine.DEB.2.00.1207051229490.8670@router.home>
+In-Reply-To: <alpine.DEB.2.00.1207051229490.8670@router.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.108.108.229]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6a67943a18c264d5f3df436da38edb3e59adc905
-Gitweb:     http://git.kernel.org/tip/6a67943a18c264d5f3df436da38edb3e59adc905
-Author:     Yan, Zheng <zheng.z.yan@intel.com>
-AuthorDate: Wed, 4 Jul 2012 14:00:15 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 5 Jul 2012 21:56:01 +0200
+On 2012-7-6 1:36, Christoph Lameter wrote:
+> On Thu, 5 Jul 2012, Jiang Liu wrote:
+> 
+>> 	I think here PageSlab() is used to check whether a page hosting a memory
+>> object is managed/allocated by the slab allocator. If it's allocated by slab
+>> allocator, we could use kfree() to free the object.
+> 
+> This is BS (here? what does that refer to). Could you please respond to my
+> email?
+> 
+>> 	We encountered this issue when trying to implement physical memory hot-removal.
+>> After removing a memory device, we need to tear down memory management structures
+>> of the removed memory device. Those memory management structures may be allocated
+>> by bootmem allocator at boot time, or allocated by slab allocator at runtime when
+>> hot-adding memory device. So in our case, PageSlab() is used to distinguish between
+>> bootmem allocator and slab allocator. With SLUB, some pages will never be released
+>> due to the issue described above.
+> 
+> Trying to be more detailed that in my last email:
+> 
+> These compound pages could also be allocated by any other kernel subsystem
+> for metadata purposes and they will never be marked as slab pages. These
+> generic structures generally cannot be removed.
+> 
+> For the slab allocators: Only kmalloc memory uses the unmarked compound
+> pages and those kmalloc objects are never recoverable. You can only
+> recover objects that are in slabs marked reclaimable and those are
+> properly marked as slab pages.
+> 
+> AFAICT the patchset is pointless.
+Hi Chris,
+	Seems there's a big misunderstanding here. 
+	We are not trying to use PageSlab() as a common mechanism to check
+whether a page could be migrated/removed. For that, we still rely on 
+ZONE_MOVABLE, MIGRATE_RECLAIM, MIGRATE_MOVABLE, MIGRATE_CMA to migrate or
+reclaim pages for hot-removing.
+	Originally the patch is aimed to fix an issue encountered when 
+hot-removing a hot-added memory device. Currently memory hotplug is only
+supported with SPARSE memory model. After offlining all pages of a memory
+section, we need to free resources used by "struct mem_section" itself.
+That is to free section_mem_map and pageblock_flags. For memory section
+created at boot time, section_mem_map and pageblock_flags are allocated
+from bootmem. For memory section created at runtime, section_mem_map
+and pageblock_flags are allocated from slab. So when freeing these
+resources, we use PageSlab() to tell whether there are allocated from slab.
+So free_section_usemap() has following code snippet.
+{
+        usemap_page = virt_to_page(usemap);
+        /*
+         * Check to see if allocation came from hot-plug-add
+         */
+        if (PageSlab(usemap_page)) {
+                kfree(usemap);
+                if (memmap)
+                        __kfree_section_memmap(memmap, PAGES_PER_SECTION);
+                return;
+        }
 
-perf/x86: Uncore filter support for SandyBridge-EP
+        /*
+         * The usemap came from bootmem. This is packed with other usemaps
+         * on the section which has pgdat at boot time. Just keep it as is now.
+         */
 
-This patch adds C-Box and PCU filter support for SandyBridge-EP
-uncore. We can filter C-Box events by thread/core ID and filter
-PCU events by frequency/voltage.
+        if (memmap) {
+                struct page *memmap_page;
+                memmap_page = virt_to_page(memmap);
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1341381616-12229-5-git-send-email-zheng.z.yan@intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |  228 ++++++++++++++++++++-----
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |   24 +++-
- 2 files changed, 206 insertions(+), 46 deletions(-)
+                nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
+                        >> PAGE_SHIFT;
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 4fecbd0..19faffc 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -14,10 +14,13 @@ static cpumask_t uncore_cpu_mask;
- /* constraint for the fixed counter */
- static struct event_constraint constraint_fixed =
- 	EVENT_CONSTRAINT(~0ULL, 1 << UNCORE_PMC_IDX_FIXED, ~0ULL);
-+static struct event_constraint constraint_empty =
-+	EVENT_CONSTRAINT(0, 0, 0);
- 
- DEFINE_UNCORE_FORMAT_ATTR(event, event, "config:0-7");
- DEFINE_UNCORE_FORMAT_ATTR(umask, umask, "config:8-15");
- DEFINE_UNCORE_FORMAT_ATTR(edge, edge, "config:18");
-+DEFINE_UNCORE_FORMAT_ATTR(tid_en, tid_en, "config:19");
- DEFINE_UNCORE_FORMAT_ATTR(inv, inv, "config:23");
- DEFINE_UNCORE_FORMAT_ATTR(cmask5, cmask, "config:24-28");
- DEFINE_UNCORE_FORMAT_ATTR(cmask8, cmask, "config:24-31");
-@@ -26,8 +29,19 @@ DEFINE_UNCORE_FORMAT_ATTR(thresh5, thresh, "config:24-28");
- DEFINE_UNCORE_FORMAT_ATTR(occ_sel, occ_sel, "config:14-15");
- DEFINE_UNCORE_FORMAT_ATTR(occ_invert, occ_invert, "config:30");
- DEFINE_UNCORE_FORMAT_ATTR(occ_edge, occ_edge, "config:14-51");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_tid, filter_tid, "config1:0-4");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_nid, filter_nid, "config1:10-17");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_state, filter_state, "config1:18-22");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_opc, filter_opc, "config1:23-31");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_brand0, filter_brand0, "config1:0-7");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_brand1, filter_brand1, "config1:8-15");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_brand2, filter_brand2, "config1:16-23");
-+DEFINE_UNCORE_FORMAT_ATTR(filter_brand3, filter_brand3, "config1:24-31");
- 
- /* Sandy Bridge-EP uncore support */
-+static struct intel_uncore_type snbep_uncore_cbox;
-+static struct intel_uncore_type snbep_uncore_pcu;
-+
- static void snbep_uncore_pci_disable_box(struct intel_uncore_box *box)
- {
- 	struct pci_dev *pdev = box->pci_dev;
-@@ -120,6 +134,10 @@ static void snbep_uncore_msr_enable_event(struct intel_uncore_box *box,
- 					struct perf_event *event)
- {
- 	struct hw_perf_event *hwc = &event->hw;
-+	struct hw_perf_event_extra *reg1 = &hwc->extra_reg;
-+
-+	if (reg1->idx != EXTRA_REG_NONE)
-+		wrmsrl(reg1->reg, reg1->config);
- 
- 	wrmsrl(hwc->config_base, hwc->config | SNBEP_PMON_CTL_EN);
- }
-@@ -149,6 +167,71 @@ static void snbep_uncore_msr_init_box(struct intel_uncore_box *box)
- 		wrmsrl(msr, SNBEP_PMON_BOX_CTL_INT);
- }
- 
-+static struct event_constraint *
-+snbep_uncore_get_constraint(struct intel_uncore_box *box,
-+			    struct perf_event *event)
-+{
-+	struct intel_uncore_extra_reg *er;
-+	struct hw_perf_event_extra *reg1 = &event->hw.extra_reg;
-+	unsigned long flags;
-+	bool ok = false;
-+
-+	if (reg1->idx == EXTRA_REG_NONE || (box->phys_id >= 0 && reg1->alloc))
-+		return NULL;
-+
-+	er = &box->shared_regs[reg1->idx];
-+	raw_spin_lock_irqsave(&er->lock, flags);
-+	if (!atomic_read(&er->ref) || er->config1 == reg1->config) {
-+		atomic_inc(&er->ref);
-+		er->config1 = reg1->config;
-+		ok = true;
-+	}
-+	raw_spin_unlock_irqrestore(&er->lock, flags);
-+
-+	if (ok) {
-+		if (box->phys_id >= 0)
-+			reg1->alloc = 1;
-+		return NULL;
-+	}
-+	return &constraint_empty;
-+}
-+
-+static void snbep_uncore_put_constraint(struct intel_uncore_box *box,
-+					struct perf_event *event)
-+{
-+	struct intel_uncore_extra_reg *er;
-+	struct hw_perf_event_extra *reg1 = &event->hw.extra_reg;
-+
-+	if (box->phys_id < 0 || !reg1->alloc)
-+		return;
-+
-+	er = &box->shared_regs[reg1->idx];
-+	atomic_dec(&er->ref);
-+	reg1->alloc = 0;
-+}
-+
-+static int snbep_uncore_hw_config(struct intel_uncore_box *box,
-+				  struct perf_event *event)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+	struct hw_perf_event_extra *reg1 = &hwc->extra_reg;
-+
-+	if (box->pmu->type == &snbep_uncore_cbox) {
-+		reg1->reg = SNBEP_C0_MSR_PMON_BOX_FILTER +
-+			SNBEP_CBO_MSR_OFFSET * box->pmu->pmu_idx;
-+		reg1->config = event->attr.config1 &
-+			SNBEP_CB0_MSR_PMON_BOX_FILTER_MASK;
-+	} else if (box->pmu->type == &snbep_uncore_pcu) {
-+		reg1->reg = SNBEP_PCU_MSR_PMON_BOX_FILTER;
-+		reg1->config = event->attr.config1 &
-+			SNBEP_PCU_MSR_PMON_BOX_FILTER_MASK;
-+	} else {
-+		return 0;
-+	}
-+	reg1->idx = 0;
-+	return 0;
-+}
-+
- static struct attribute *snbep_uncore_formats_attr[] = {
- 	&format_attr_event.attr,
- 	&format_attr_umask.attr,
-@@ -167,6 +250,20 @@ static struct attribute *snbep_uncore_ubox_formats_attr[] = {
- 	NULL,
- };
- 
-+static struct attribute *snbep_uncore_cbox_formats_attr[] = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_tid_en.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_thresh8.attr,
-+	&format_attr_filter_tid.attr,
-+	&format_attr_filter_nid.attr,
-+	&format_attr_filter_state.attr,
-+	&format_attr_filter_opc.attr,
-+	NULL,
-+};
-+
- static struct attribute *snbep_uncore_pcu_formats_attr[] = {
- 	&format_attr_event.attr,
- 	&format_attr_occ_sel.attr,
-@@ -175,6 +272,10 @@ static struct attribute *snbep_uncore_pcu_formats_attr[] = {
- 	&format_attr_thresh5.attr,
- 	&format_attr_occ_invert.attr,
- 	&format_attr_occ_edge.attr,
-+	&format_attr_filter_brand0.attr,
-+	&format_attr_filter_brand1.attr,
-+	&format_attr_filter_brand2.attr,
-+	&format_attr_filter_brand3.attr,
- 	NULL,
- };
- 
-@@ -203,6 +304,11 @@ static struct attribute_group snbep_uncore_ubox_format_group = {
- 	.attrs = snbep_uncore_ubox_formats_attr,
- };
- 
-+static struct attribute_group snbep_uncore_cbox_format_group = {
-+	.name = "format",
-+	.attrs = snbep_uncore_cbox_formats_attr,
-+};
-+
- static struct attribute_group snbep_uncore_pcu_format_group = {
- 	.name = "format",
- 	.attrs = snbep_uncore_pcu_formats_attr,
-@@ -215,6 +321,9 @@ static struct intel_uncore_ops snbep_uncore_msr_ops = {
- 	.disable_event	= snbep_uncore_msr_disable_event,
- 	.enable_event	= snbep_uncore_msr_enable_event,
- 	.read_counter	= snbep_uncore_msr_read_counter,
-+	.get_constraint = snbep_uncore_get_constraint,
-+	.put_constraint = snbep_uncore_put_constraint,
-+	.hw_config	= snbep_uncore_hw_config,
- };
- 
- static struct intel_uncore_ops snbep_uncore_pci_ops = {
-@@ -307,31 +416,33 @@ static struct intel_uncore_type snbep_uncore_ubox = {
- };
- 
- static struct intel_uncore_type snbep_uncore_cbox = {
--	.name		= "cbox",
--	.num_counters   = 4,
--	.num_boxes	= 8,
--	.perf_ctr_bits	= 44,
--	.event_ctl	= SNBEP_C0_MSR_PMON_CTL0,
--	.perf_ctr	= SNBEP_C0_MSR_PMON_CTR0,
--	.event_mask	= SNBEP_PMON_RAW_EVENT_MASK,
--	.box_ctl	= SNBEP_C0_MSR_PMON_BOX_CTL,
--	.msr_offset	= SNBEP_CBO_MSR_OFFSET,
--	.constraints	= snbep_uncore_cbox_constraints,
--	.ops		= &snbep_uncore_msr_ops,
--	.format_group	= &snbep_uncore_format_group,
-+	.name			= "cbox",
-+	.num_counters		= 4,
-+	.num_boxes		= 8,
-+	.perf_ctr_bits		= 44,
-+	.event_ctl		= SNBEP_C0_MSR_PMON_CTL0,
-+	.perf_ctr		= SNBEP_C0_MSR_PMON_CTR0,
-+	.event_mask		= SNBEP_CBO_MSR_PMON_RAW_EVENT_MASK,
-+	.box_ctl		= SNBEP_C0_MSR_PMON_BOX_CTL,
-+	.msr_offset		= SNBEP_CBO_MSR_OFFSET,
-+	.num_shared_regs	= 1,
-+	.constraints		= snbep_uncore_cbox_constraints,
-+	.ops			= &snbep_uncore_msr_ops,
-+	.format_group		= &snbep_uncore_cbox_format_group,
- };
- 
- static struct intel_uncore_type snbep_uncore_pcu = {
--	.name		= "pcu",
--	.num_counters   = 4,
--	.num_boxes	= 1,
--	.perf_ctr_bits	= 48,
--	.perf_ctr	= SNBEP_PCU_MSR_PMON_CTR0,
--	.event_ctl	= SNBEP_PCU_MSR_PMON_CTL0,
--	.event_mask	= SNBEP_PCU_MSR_PMON_RAW_EVENT_MASK,
--	.box_ctl	= SNBEP_PCU_MSR_PMON_BOX_CTL,
--	.ops		= &snbep_uncore_msr_ops,
--	.format_group	= &snbep_uncore_pcu_format_group,
-+	.name			= "pcu",
-+	.num_counters		= 4,
-+	.num_boxes		= 1,
-+	.perf_ctr_bits		= 48,
-+	.perf_ctr		= SNBEP_PCU_MSR_PMON_CTR0,
-+	.event_ctl		= SNBEP_PCU_MSR_PMON_CTL0,
-+	.event_mask		= SNBEP_PCU_MSR_PMON_RAW_EVENT_MASK,
-+	.box_ctl		= SNBEP_PCU_MSR_PMON_BOX_CTL,
-+	.num_shared_regs	= 1,
-+	.ops			= &snbep_uncore_msr_ops,
-+	.format_group		= &snbep_uncore_pcu_format_group,
- };
- 
- static struct intel_uncore_type *snbep_msr_uncores[] = {
-@@ -747,15 +858,22 @@ static void uncore_pmu_init_hrtimer(struct intel_uncore_box *box)
- 	box->hrtimer.function = uncore_pmu_hrtimer;
- }
- 
--struct intel_uncore_box *uncore_alloc_box(int cpu)
-+struct intel_uncore_box *uncore_alloc_box(struct intel_uncore_type *type,
-+					  int cpu)
- {
- 	struct intel_uncore_box *box;
-+	int i, size;
- 
--	box = kmalloc_node(sizeof(*box), GFP_KERNEL | __GFP_ZERO,
--			   cpu_to_node(cpu));
-+	size = sizeof(*box) + type->num_shared_regs *
-+		sizeof(struct intel_uncore_extra_reg);
-+
-+	box = kmalloc_node(size, GFP_KERNEL | __GFP_ZERO, cpu_to_node(cpu));
- 	if (!box)
- 		return NULL;
- 
-+	for (i = 0; i < type->num_shared_regs; i++)
-+		raw_spin_lock_init(&box->shared_regs[i].lock);
-+
- 	uncore_pmu_init_hrtimer(box);
- 	atomic_set(&box->refcnt, 1);
- 	box->cpu = -1;
-@@ -834,11 +952,18 @@ static int uncore_collect_events(struct intel_uncore_box *box,
- }
- 
- static struct event_constraint *
--uncore_event_constraint(struct intel_uncore_type *type,
--			struct perf_event *event)
-+uncore_get_event_constraint(struct intel_uncore_box *box,
-+			    struct perf_event *event)
- {
-+	struct intel_uncore_type *type = box->pmu->type;
- 	struct event_constraint *c;
- 
-+	if (type->ops->get_constraint) {
-+		c = type->ops->get_constraint(box, event);
-+		if (c)
-+			return c;
-+	}
-+
- 	if (event->hw.config == ~0ULL)
- 		return &constraint_fixed;
- 
-@@ -852,19 +977,25 @@ uncore_event_constraint(struct intel_uncore_type *type,
- 	return &type->unconstrainted;
- }
- 
-+static void uncore_put_event_constraint(struct intel_uncore_box *box,
-+					struct perf_event *event)
-+{
-+	if (box->pmu->type->ops->put_constraint)
-+		box->pmu->type->ops->put_constraint(box, event);
-+}
-+
- static int uncore_assign_events(struct intel_uncore_box *box,
- 				int assign[], int n)
- {
- 	unsigned long used_mask[BITS_TO_LONGS(UNCORE_PMC_IDX_MAX)];
- 	struct event_constraint *c, *constraints[UNCORE_PMC_IDX_MAX];
--	int i, ret, wmin, wmax;
-+	int i, wmin, wmax, ret = 0;
- 	struct hw_perf_event *hwc;
- 
- 	bitmap_zero(used_mask, UNCORE_PMC_IDX_MAX);
- 
- 	for (i = 0, wmin = UNCORE_PMC_IDX_MAX, wmax = 0; i < n; i++) {
--		c = uncore_event_constraint(box->pmu->type,
--				box->event_list[i]);
-+		c = uncore_get_event_constraint(box, box->event_list[i]);
- 		constraints[i] = c;
- 		wmin = min(wmin, c->weight);
- 		wmax = max(wmax, c->weight);
-@@ -888,13 +1019,17 @@ static int uncore_assign_events(struct intel_uncore_box *box,
- 			break;
- 
- 		__set_bit(hwc->idx, used_mask);
--		assign[i] = hwc->idx;
-+		if (assign)
-+			assign[i] = hwc->idx;
- 	}
--	if (i == n)
--		return 0;
--
- 	/* slow path */
--	ret = perf_assign_events(constraints, n, wmin, wmax, assign);
-+	if (i != n)
-+		ret = perf_assign_events(constraints, n, wmin, wmax, assign);
-+
-+	if (!assign || ret) {
-+		for (i = 0; i < n; i++)
-+			uncore_put_event_constraint(box, box->event_list[i]);
-+	}
- 	return ret ? -EINVAL : 0;
- }
- 
-@@ -1021,6 +1156,8 @@ static void uncore_pmu_event_del(struct perf_event *event, int flags)
- 
- 	for (i = 0; i < box->n_events; i++) {
- 		if (event == box->event_list[i]) {
-+			uncore_put_event_constraint(box, event);
-+
- 			while (++i < box->n_events)
- 				box->event_list[i - 1] = box->event_list[i];
- 
-@@ -1048,10 +1185,9 @@ static int uncore_validate_group(struct intel_uncore_pmu *pmu,
- {
- 	struct perf_event *leader = event->group_leader;
- 	struct intel_uncore_box *fake_box;
--	int assign[UNCORE_PMC_IDX_MAX];
- 	int ret = -EINVAL, n;
- 
--	fake_box = uncore_alloc_box(smp_processor_id());
-+	fake_box = uncore_alloc_box(pmu->type, smp_processor_id());
- 	if (!fake_box)
- 		return -ENOMEM;
- 
-@@ -1073,7 +1209,7 @@ static int uncore_validate_group(struct intel_uncore_pmu *pmu,
- 
- 	fake_box->n_events = n;
- 
--	ret = uncore_assign_events(fake_box, assign, n);
-+	ret = uncore_assign_events(fake_box, NULL, n);
- out:
- 	kfree(fake_box);
- 	return ret;
-@@ -1117,6 +1253,10 @@ int uncore_pmu_event_init(struct perf_event *event)
- 		return -EINVAL;
- 	event->cpu = box->cpu;
- 
-+	event->hw.idx = -1;
-+	event->hw.last_tag = ~0ULL;
-+	event->hw.extra_reg.idx = EXTRA_REG_NONE;
-+
- 	if (event->attr.config == UNCORE_FIXED_EVENT) {
- 		/* no fixed counter */
- 		if (!pmu->type->fixed_ctl)
-@@ -1130,11 +1270,13 @@ int uncore_pmu_event_init(struct perf_event *event)
- 		hwc->config = ~0ULL;
- 	} else {
- 		hwc->config = event->attr.config & pmu->type->event_mask;
-+		if (pmu->type->ops->hw_config) {
-+			ret = pmu->type->ops->hw_config(box, event);
-+			if (ret)
-+				return ret;
-+		}
- 	}
- 
--	event->hw.idx = -1;
--	event->hw.last_tag = ~0ULL;
--
- 	if (event->group_leader != event)
- 		ret = uncore_validate_group(pmu, event);
- 	else
-@@ -1276,7 +1418,7 @@ static int __devinit uncore_pci_add(struct intel_uncore_type *type,
- 	if (phys_id < 0)
- 		return -ENODEV;
- 
--	box = uncore_alloc_box(0);
-+	box = uncore_alloc_box(type, 0);
- 	if (!box)
- 		return -ENOMEM;
- 
-@@ -1458,7 +1600,7 @@ static int __cpuinit uncore_cpu_prepare(int cpu, int phys_id)
- 			if (pmu->func_id < 0)
- 				pmu->func_id = j;
- 
--			box = uncore_alloc_box(cpu);
-+			box = uncore_alloc_box(type, cpu);
- 			if (!box)
- 				return -ENOMEM;
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index 88498c7..b13e9ea 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -97,6 +97,10 @@
- 				 SNBEP_PMON_CTL_INVERT | \
- 				 SNBEP_U_MSR_PMON_CTL_TRESH_MASK)
- 
-+#define SNBEP_CBO_PMON_CTL_TID_EN		(1 << 19)
-+#define SNBEP_CBO_MSR_PMON_RAW_EVENT_MASK	(SNBEP_PMON_RAW_EVENT_MASK | \
-+						 SNBEP_CBO_PMON_CTL_TID_EN)
-+
- /* SNB-EP PCU event control */
- #define SNBEP_PCU_MSR_PMON_CTL_OCC_SEL_MASK	0x0000c000
- #define SNBEP_PCU_MSR_PMON_CTL_TRESH_MASK	0x1f000000
-@@ -140,15 +144,17 @@
- /* SNB-EP Cbo register */
- #define SNBEP_C0_MSR_PMON_CTR0			0xd16
- #define SNBEP_C0_MSR_PMON_CTL0			0xd10
--#define SNBEP_C0_MSR_PMON_BOX_FILTER		0xd14
- #define SNBEP_C0_MSR_PMON_BOX_CTL		0xd04
-+#define SNBEP_C0_MSR_PMON_BOX_FILTER		0xd14
-+#define SNBEP_CB0_MSR_PMON_BOX_FILTER_MASK	0xfffffc1f
- #define SNBEP_CBO_MSR_OFFSET			0x20
- 
- /* SNB-EP PCU register */
- #define SNBEP_PCU_MSR_PMON_CTR0			0xc36
- #define SNBEP_PCU_MSR_PMON_CTL0			0xc30
--#define SNBEP_PCU_MSR_PMON_BOX_FILTER		0xc34
- #define SNBEP_PCU_MSR_PMON_BOX_CTL		0xc24
-+#define SNBEP_PCU_MSR_PMON_BOX_FILTER		0xc34
-+#define SNBEP_PCU_MSR_PMON_BOX_FILTER_MASK	0xffffffff
- #define SNBEP_PCU_MSR_CORE_C3_CTR		0x3fc
- #define SNBEP_PCU_MSR_CORE_C6_CTR		0x3fd
- 
-@@ -163,7 +169,6 @@ struct intel_uncore_type {
- 	int num_boxes;
- 	int perf_ctr_bits;
- 	int fixed_ctr_bits;
--	int single_fixed;
- 	unsigned perf_ctr;
- 	unsigned event_ctl;
- 	unsigned event_mask;
-@@ -171,6 +176,8 @@ struct intel_uncore_type {
- 	unsigned fixed_ctl;
- 	unsigned box_ctl;
- 	unsigned msr_offset;
-+	unsigned num_shared_regs:8;
-+	unsigned single_fixed:1;
- 	struct event_constraint unconstrainted;
- 	struct event_constraint *constraints;
- 	struct intel_uncore_pmu *pmus;
-@@ -188,6 +195,10 @@ struct intel_uncore_ops {
- 	void (*disable_event)(struct intel_uncore_box *, struct perf_event *);
- 	void (*enable_event)(struct intel_uncore_box *, struct perf_event *);
- 	u64 (*read_counter)(struct intel_uncore_box *, struct perf_event *);
-+	int (*hw_config)(struct intel_uncore_box *, struct perf_event *);
-+	struct event_constraint *(*get_constraint)(struct intel_uncore_box *,
-+						   struct perf_event *);
-+	void (*put_constraint)(struct intel_uncore_box *, struct perf_event *);
- };
- 
- struct intel_uncore_pmu {
-@@ -200,6 +211,12 @@ struct intel_uncore_pmu {
- 	struct list_head box_list;
- };
- 
-+struct intel_uncore_extra_reg {
-+	raw_spinlock_t lock;
-+	u64 config1;
-+	atomic_t ref;
-+};
-+
- struct intel_uncore_box {
- 	int phys_id;
- 	int n_active;	/* number of active events */
-@@ -215,6 +232,7 @@ struct intel_uncore_box {
- 	struct intel_uncore_pmu *pmu;
- 	struct hrtimer hrtimer;
- 	struct list_head list;
-+	struct intel_uncore_extra_reg shared_regs[0];
- };
- 
- #define UNCORE_BOX_FLAG_INITIATED	0
+                free_map_bootmem(memmap_page, nr_pages);
+        }
+}
+
+	Here if usemap is allocated from SLUB but PageSlab() incorrectly return
+false, we will try to free pages allocated from slab as bootmem pages. That will
+confuse the memory hotplug logic.
+
+	And when fixing this issue, we found some other usages of PageSlab() may
+have the same issue. For example:
+	1) /proc/kpageflags and /proc/kpagecount may return incorrect result for
+pages allocated by slab.
+	2) DRBD has following comments. At first glance, it seems that it's 
+	dangerous if PageSlab() to return false for pages allocated by slab.
+	(With more thinking, the comments is a little out of date because now
+	put_page/get_page already correctly handle compound pages, so it should
+	be OK to send pages allocated from slab.)
+        /* e.g. XFS meta- & log-data is in slab pages, which have a
+         * page_count of 0 and/or have PageSlab() set.
+         * we cannot use send_page for those, as that does get_page();
+         * put_page(); and would cause either a VM_BUG directly, or
+         * __page_cache_release a page that would actually still be referenced
+         * by someone, leading to some obscure delayed Oops somewhere else. */
+        if (disable_sendpage || (page_count(page) < 1) || PageSlab(page))
+                return _drbd_no_send_page(mdev, page, offset, size, msg_flags);
+
+	3) show_mem() on ARM and unicore32 reports much less pages used by slab
+	if SLUB/SLOB is used instead of SLAB because SLUB/SLOB doesn't mark big
+	compound pages with PG_slab flag.
+
+	So we worked out the patch set to address these issues. We also found
+other possible usages of the proposed macro. 
+	For example, if the memory backing a "struct resource" structure is
+allocated from bootmem, __release_region() shouldn't free the memory into 
+slab allocator, otherwise it will trigger panic as below. This issue is 
+reproducible when hot-removing a memory device present at boot time on x86
+platforms. On x86 platforms, e820_reserve_resources() allocates bootmem for
+all physical memory resources present at boot time. Later when those memory
+devices are hot-removed, __release_region() will try to free  memory from
+bootmem into slab, so trigger the panic. And a proposed fix is:
+diff --git a/kernel/resource.c b/kernel/resource.c
+index e1d2b8e..a40c11b 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -19,6 +19,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/device.h>
+ #include <linux/pfn.h>
++#include <linux/mm.h>
+ #include <asm/io.h>
+
+
+@@ -947,7 +948,8 @@ void __release_region(struct resource *parent, resource_size_t start,
+                        write_unlock(&resource_lock);
+                        if (res->flags & IORESOURCE_MUXED)
+                                wake_up(&muxed_resource_wait);
+-                       kfree(res);
++                       if (mem_managed_by_slab(res))
++                               kfree(res);
+                        return;
+                }
+                p = &res->sibling;
+
+
+------------[ cut here ]------------
+kernel BUG at mm/slub.c:3471!
+invalid opcode: 0000 [#1] SMP
+CPU 2
+Modules linked in: module(O+) cpufreq_conservative cpufreq_userspace
+cpufreq_powersave acpi_cpufreq mperf fuse loop dm_mod coretemp igb bnx2
+tpm_tis i2c_i801 serio_raw microcode tpm sg tpm_bios i2c_core dca iTCO_wdt
+iTCO_vendor_support pcspkr button mptctl usbhid hid uhci_hcd ehci_hcd usbcore
+usb_common sd_mod crc_t10dif edd ext3 mbcache jbd fan ide_pci_generic ide_core
+ata_generic ata_piix libata thermal processor thermal_sys hwmon mptsas
+mptscsih mptbase scsi_transport_sas scsi_mod
+
+Pid: 30857, comm: insmod Tainted: G           O 3.4.0-rc4-memory-hotplug+ #10
+Huawei Technologies Co., Ltd. Tecal RH2285          /BC11BTSA
+RIP: 0010:[<ffffffff810d245f>]  [<ffffffff810d245f>] kfree+0x49/0xb1
+RSP: 0018:ffff880c1bbd1ec8  EFLAGS: 00010246
+RAX: 0060000000000400 RBX: ffff880c3ffbee60 RCX: 0000000000000082
+RDX: ffffea0000000000 RSI: 0000000100000000 RDI: ffffea0030ffef80
+RBP: ffff880c1bbd1ed8 R08: ffff880c1bbd1de8 R09: ffff880627802700
+R10: ffffffff810c16a4 R11: 0000000000013a90 R12: ffff880c3ffbee50
+R13: 0000000100000000 R14: 0000000c3fffffff R15: 0000000000000002
+FS:  00007fe63ca906f0(0000) GS:ffff880627c40000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007fe63caca000 CR3: 000000061b2e4000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process insmod (pid: 30857, threadinfo ffff880c1bbd0000, task
+ffff880c1e08ca70)
+Stack:
+ ffff880c3ffbee60 ffff880c3ffbee50 ffff880c1bbd1f08 ffffffff810313d0
+ ffffffffa00e8090 0000000000025feb ffffffffa00ea000 0000000000000000
+ ffff880c1bbd1f18 ffffffffa00ea032 ffff880c1bbd1f48 ffffffff8100020c
+Call Trace:
+ [<ffffffff810313d0>] __release_region+0x88/0xb4
+ [<ffffffffa00ea000>] ? 0xffffffffa00e9fff
+ [<ffffffffa00ea032>] test_module_init+0x32/0x36 [module]
+ [<ffffffff8100020c>] do_one_initcall+0x7c/0x130
+ [<ffffffff8106e9ac>] sys_init_module+0x7c/0x1c4
+ [<ffffffff81310a22>] system_call_fastpath+0x16/0x1b
+Code: ba 00 00 00 00 00 ea ff ff 48 c1 e0 06 48 8d 3c 10 48 8b 07 66 85 c0 79
+04 48 8b 7f 30 48 8b 07 84 c0 78 12 66 f7 07 00 c0 75 04 <0f> 0b eb fe e8 44
+30 fd ff eb 58 4c 8b 55 08 4c 8b 4f 30 49 8b
+RIP  [<ffffffff810d245f>] kfree+0x49/0xb1
+ RSP <ffff880c1bbd1ec8>
+---[ end trace f5e0eba731c4d41e ]---
+
+	Thanks!
+	Gerry
+
