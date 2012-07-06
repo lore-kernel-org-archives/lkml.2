@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964854Ab2GFKpz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 06:45:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:20109 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1030211Ab2GFKpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 06:45:44 -0400
-X-IronPort-AV: E=Sophos;i="4.77,537,1336320000"; 
-   d="scan'208";a="5344504"
-Message-ID: <4FF6C2E2.5020608@cn.fujitsu.com>
-Date: Fri, 06 Jul 2012 18:50:10 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S964861Ab2GFKqH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 06:46:07 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:59541 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933034Ab2GFKqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 06:46:04 -0400
+Message-ID: <4FF6C148.7030402@parallels.com>
+Date: Fri, 6 Jul 2012 14:43:20 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 2/7 v6] update linux headers
-References: <4FF6B188.2060607@cn.fujitsu.com> <4FF6B232.4050502@cn.fujitsu.com> <4FF6BD1D.8020605@siemens.com>
-In-Reply-To: <4FF6BD1D.8020605@siemens.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/06 18:45:40,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/06 18:45:41,
-	Serialize complete at 2012/07/06 18:45:41
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: Richard Cochran <richardcochran@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        <ksummit-2012-discuss@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2012-discuss] [ATTEND or not ATTEND] That's the question!
+References: <alpine.LFD.2.02.1206152313310.3086@ionos> <20120615233413.GB8894@kroah.com> <alpine.LFD.2.02.1206161103320.3086@ionos> <20120616072906.7469ec24@tpl.lwn.net> <20120620195121.GA1719@fieldses.org> <4FF6B32A.7070006@parallels.com> <20120706095450.GB7728@somewhere.redhat.com> <20120706101149.GA26028@localhost.localdomain> <4FF6BFC7.9060405@linux.vnet.ibm.com>
+In-Reply-To: <4FF6BFC7.9060405@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 07/06/2012 06:25 PM, Jan Kiszka Wrote:
-> On 2012-07-06 11:38, Wen Congyang wrote:
->> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> 
-> Which kvm.git hash is this referring? Please state this to avoid that we
-> are merging support for kernel features that are still under review.
-
-The following kvm.git:
-http://git.kernel.org/?p=virt/kvm/kvm.git;a=summary
-
-I apply my kvm's patch, and use ./scripts/update-linux-headers.sh to
-generate this patch.
-
-Thanks
-Wen Congyang
-
-> 
-> Jan
-> 
->> ---
->>  linux-headers/asm-x86/kvm_para.h |    2 ++
->>  linux-headers/linux/kvm_para.h   |    6 ++++++
->>  2 files changed, 8 insertions(+), 0 deletions(-)
+On 07/06/2012 02:36 PM, Srivatsa S. Bhat wrote:
+> On 07/06/2012 03:41 PM, Richard Cochran wrote:
+>> On Fri, Jul 06, 2012 at 11:54:52AM +0200, Frederic Weisbecker wrote:
+>>> On Fri, Jul 06, 2012 at 01:43:06PM +0400, Glauber Costa wrote:
+>>>> The same way we have checkpatch, we can have something automated that
+>>>> will attempt to rule out some trivial patches in the counting process.
+>>>> We can scan a patch, and easily determine if each part of it is:
+>>>>
+>>>> * pure whitespace
+>>>> * pure Documentation change
+>>>> * comment fix
+>>>>
+>>>> And if a patch is 100 % comprised by those, we simply don't count it.
+>>>> People that just want to increase their numbers - they will always
+>>>> exist, will tend to stop doing that. Simply because doing it will not
+>>>> help them at all.
+>>>
+>>> OTOH, documentation changes or comment fixes, and even sometimes pure whitespace
+>>> fixes, can be very valuable contributions. This can be a useful and ungrateful
+>>> work and that deserve credit.
+>>>
+>>> We just can't find an automated and right way to evaluate a contribution.
 >>
->> diff --git a/linux-headers/asm-x86/kvm_para.h b/linux-headers/asm-x86/kvm_para.h
->> index f2ac46a..f9d858f 100644
->> --- a/linux-headers/asm-x86/kvm_para.h
->> +++ b/linux-headers/asm-x86/kvm_para.h
->> @@ -89,5 +89,7 @@ struct kvm_vcpu_pv_apf_data {
->>  	__u32 enabled;
->>  };
->>  
->> +#define KVM_PV_PORT	(0x505UL)
->> +
->>  
->>  #endif /* _ASM_X86_KVM_PARA_H */
->> diff --git a/linux-headers/linux/kvm_para.h b/linux-headers/linux/kvm_para.h
->> index 7bdcf93..4fbd625 100644
->> --- a/linux-headers/linux/kvm_para.h
->> +++ b/linux-headers/linux/kvm_para.h
->> @@ -20,6 +20,12 @@
->>  #define KVM_HC_FEATURES			3
->>  #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
->>  
->> +/* The bit of the value read from KVM_PV_PORT */
->> +#define KVM_PV_FEATURE_PANICKED	0
->> +
->> +/* The value writen to KVM_PV_PORT */
->> +#define KVM_PV_PANICKED		1
->> +
->>  /*
->>   * hypercalls use architecture specific
->>   */
+>> Well what about submitters and maintainers labeling patches below the
+>> SOB with tags like the following?
+>>
+>>    Signed-off-by: Richard Cochran <richardcochran@gmail.com>
+>>    Tags: docu whitespace trivial
+>>
+>> Part of the review would be making sure the labels fit.
 >>
 > 
+> Please no!
+> I don't see why we should clutter the changelog with tags for reasons as
+> unimportant as measuring some patch's value!
+> 
+Stronger: Having the maintainer to do more work is hardly a way to decrease
+the amount of work he does. (Well, it could be in some cases, but not in
+this)
+
+
 
