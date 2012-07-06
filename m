@@ -1,91 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298Ab2GFJU1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 05:20:27 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:34663 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526Ab2GFJUZ (ORCPT
+	id S1755751Ab2GFJUi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 05:20:38 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:42796 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752731Ab2GFJUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 05:20:25 -0400
-Date: Fri, 6 Jul 2012 11:20:19 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, levinsasha928@gmail.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [GIT RFC PULL rcu/urgent] Revert to fix RCU-related
- deadlock/softlockup
-Message-ID: <20120706092019.GA30564@gmail.com>
-References: <20120705161644.GA10670@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120705161644.GA10670@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 6 Jul 2012 05:20:36 -0400
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Chiwoong Byun <woong.byun@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>
+Subject: [PATCH 6/6] regulator: max77686: Initialise rmatch.of_node to NULL.
+Date: Fri,  6 Jul 2012 14:50:08 +0530
+Message-Id: <1341566408-17105-1-git-send-email-yadi.brar@samsung.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Now of_regulator_match() returns without finding the match if match->of_node
+is not NULL.
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+---
+ drivers/regulator/max77686.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> Hello, Ingo,
-> 
-> This series has a single revert from the ill-starred attempt to inline
-> __rcu_read_lock() for preemptible RCU.  Without this revert, on mainline
-> kernels using CONFIG_RCU_BOOST there is a low-probability deadlock on the
-> runqueue locks, but one that actually appeared in Sasha Levin's testing.
-> With the revert, and with an diagnostic patch that increased probability
-> of the deadlock to a MTBF of roughly 10 seconds, Sasha's tests ran for
-> two days with no failure.
-> 
-> The sequence of events leading to the deadlock is as follows:
-> 
-> 1.	A task enters an RCU read-side critical section, and is both
-> 	preempted and subjected to RCU priority boosting.
-> 2.	The task starts to exit its RCU read-side critical section,
-> 	but is preempted in __rcu_read_unlock() just after the assignment
-> 	setting t->rcu_read_lock_nesting to INT_MIN.  (The diagnostic
-> 	patch mentioned above expands this window by ten microseconds,
-> 	and is available in -rcu as a debug option queued for 3.7.)
-> 3.	The task enters the scheduler, where it acquires the corresponding
-> 	runqueue lock, then invokes rcu_switch_from() which in turn
-> 	invokes rcu_preempt_note_context_switch(), which in turn invokes
-> 	rcu_read_unlock_special(), which attempts to deboost the task.
-> 4.	The attempt to deboost the task recursively enters the scheduler
-> 	with a runqueue lock held, which can result in deadlock.
-> 
-> The revert moves the point at which rcu_preempt_note_context_switch() is
-> called to a point in the scheduler code before the runqueue lock is
-> acquired, avoiding the deadlock.
-> 
-> This pull is marked "RFC" because CONFIG_RCU_BOOST=y is not used much
-> outside of the real-time community.  I will be sending another pull
-> request later today (Pacific Time) for 3.6 RCU commits, which will
-> include this commit as well.  Your choice.  ;-)
+diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
+index fc695eb..c564af6 100644
+--- a/drivers/regulator/max77686.c
++++ b/drivers/regulator/max77686.c
+@@ -262,6 +262,7 @@ static int max77686_pmic_dt_parse_pdata(struct max77686_dev *iodev,
+ 	for (i = 0; i < pdata->num_regulators; i++) {
+ 		rmatch.name = regulators[i].name;
+ 		rmatch.init_data = NULL;
++		rmatch.of_node = NULL;
+ 		of_regulator_match(iodev->dev, regulators_np, &rmatch, 1);
+ 		rdata[i].initdata = rmatch.init_data;
+ 	}
+-- 
+1.7.0.4
 
-It got introduced in this cycle so I agree with you that the fix 
-for the regression is justified.
-
-> This change is available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/urgent
-> 
-> 							Thanx, Paul
-> 
-> ------------------>
-> Paul E. McKenney (1):
->       Revert "rcu: Move PREEMPT_RCU preemption to switch_to() invocation"
-> 
->  arch/um/drivers/mconsole_kern.c |    1 -
->  include/linux/rcupdate.h        |    1 -
->  include/linux/rcutiny.h         |    6 ++++++
->  include/linux/sched.h           |   10 ----------
->  kernel/rcutree.c                |    1 +
->  kernel/rcutree.h                |    1 +
->  kernel/rcutree_plugin.h         |   14 +++++++++++---
->  kernel/sched/core.c             |    1 -
->  8 files changed, 19 insertions(+), 16 deletions(-)
-
-Pulled, thanks Paul!
-
-	Ingo
