@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761Ab2GFK6T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 06:58:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51475 "EHLO
+	id S1756793Ab2GFK7h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 06:59:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51492 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755102Ab2GFK6S (ORCPT
+	with ESMTP id S1755102Ab2GFK7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 06:58:18 -0400
-Date: Fri, 6 Jul 2012 03:58:02 -0700
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-287e74aa3db097469bdca401f33f00ef20dc710d@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, bookjovi@gmail.com, jolsa@redhat.com,
-        tglx@linutronix.de
+	Fri, 6 Jul 2012 06:59:35 -0400
+Date: Fri, 6 Jul 2012 03:58:57 -0700
+From: tip-bot for Robert Richter <robert.richter@amd.com>
+Message-ID: <tip-9bc8f9fe2c6e3778202c76ef85ef291567c00cb8@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, robert.richter@amd.com, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, bookjovi@gmail.com,
-        tglx@linutronix.de
-In-Reply-To: <1340918329-3012-3-git-send-email-jolsa@redhat.com>
-References: <1340918329-3012-3-git-send-email-jolsa@redhat.com>
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, robert.richter@amd.com, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1339706321-8802-3-git-send-email-jolsa@redhat.com>
+References: <1339706321-8802-3-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evsel:
-  Handle hw breakpoints event names in perf_evsel__name()
-Git-Commit-ID: 287e74aa3db097469bdca401f33f00ef20dc710d
+Subject: [tip:perf/core] perf tools: Fix generation of pmu list
+Git-Commit-ID: 9bc8f9fe2c6e3778202c76ef85ef291567c00cb8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,161 +31,61 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 03:58:08 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 06 Jul 2012 03:59:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  287e74aa3db097469bdca401f33f00ef20dc710d
-Gitweb:     http://git.kernel.org/tip/287e74aa3db097469bdca401f33f00ef20dc710d
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Thu, 28 Jun 2012 23:18:49 +0200
+Commit-ID:  9bc8f9fe2c6e3778202c76ef85ef291567c00cb8
+Gitweb:     http://git.kernel.org/tip/9bc8f9fe2c6e3778202c76ef85ef291567c00cb8
+Author:     Robert Richter <robert.richter@amd.com>
+AuthorDate: Thu, 14 Jun 2012 22:38:37 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 29 Jun 2012 13:28:13 -0300
+CommitDate: Fri, 29 Jun 2012 13:31:27 -0300
 
-perf evsel: Handle hw breakpoints event names in perf_evsel__name()
+perf tools: Fix generation of pmu list
 
-Adding hw breakpoint events hook in the perf_evsel__name function, to
-display event names properly all over the perf tools.
+The internal pmu list was never used. With each perf_pmu__find() call
+the pmu structure was created new by parsing sysfs. Beside this it
+caused memory leaks. We now keep all pmus by adding them to the list.
 
-Updated hw breakpoints events tests.
+Also, pmu_lookup() should return pmus that do not expose the format
+specifier in sysfs.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Jovi Zhang <bookjovi@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+We need a valid internal pmu list in a later patch to iterate over all
+pmus that exist in the system.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1340918329-3012-3-git-send-email-jolsa@redhat.com
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1339706321-8802-3-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evsel.c             |   30 ++++++++++++++++++++++++++++++
- tools/perf/util/parse-events-test.c |   10 ++++++++++
- tools/perf/util/parse-events.c      |    4 +---
- 3 files changed, 41 insertions(+), 3 deletions(-)
+ tools/perf/util/pmu.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 3d1f696..e817713 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -15,6 +15,7 @@
- #include "cpumap.h"
- #include "thread_map.h"
- #include "target.h"
-+#include "../../../include/linux/hw_breakpoint.h"
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 74d0948e..67715a4 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -72,7 +72,7 @@ static int pmu_format(char *name, struct list_head *format)
+ 		 "%s/bus/event_source/devices/%s/format", sysfs, name);
  
- #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
- #define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
-@@ -152,6 +153,31 @@ static int perf_evsel__sw_name(struct perf_evsel *evsel, char *bf, size_t size)
- 	return r + perf_evsel__add_modifiers(evsel, bf + r, size - r);
+ 	if (stat(path, &st) < 0)
+-		return -1;
++		return 0;	/* no error if format does not exist */
+ 
+ 	if (pmu_format_parse(path, format))
+ 		return -1;
+@@ -252,6 +252,7 @@ static struct perf_pmu *pmu_lookup(char *name)
+ 	list_splice(&aliases, &pmu->aliases);
+ 	pmu->name = strdup(name);
+ 	pmu->type = type;
++	list_add_tail(&pmu->list, &pmus);
+ 	return pmu;
  }
  
-+static int __perf_evsel__bp_name(char *bf, size_t size, u64 addr, u64 type)
-+{
-+	int r;
-+
-+	r = scnprintf(bf, size, "mem:0x%" PRIx64 ":", addr);
-+
-+	if (type & HW_BREAKPOINT_R)
-+		r += scnprintf(bf + r, size - r, "r");
-+
-+	if (type & HW_BREAKPOINT_W)
-+		r += scnprintf(bf + r, size - r, "w");
-+
-+	if (type & HW_BREAKPOINT_X)
-+		r += scnprintf(bf + r, size - r, "x");
-+
-+	return r;
-+}
-+
-+static int perf_evsel__bp_name(struct perf_evsel *evsel, char *bf, size_t size)
-+{
-+	struct perf_event_attr *attr = &evsel->attr;
-+	int r = __perf_evsel__bp_name(bf, size, attr->bp_addr, attr->bp_type);
-+	return r + perf_evsel__add_modifiers(evsel, bf + r, size - r);
-+}
-+
- const char *perf_evsel__hw_cache[PERF_COUNT_HW_CACHE_MAX]
- 				[PERF_EVSEL__MAX_ALIASES] = {
-  { "L1-dcache",	"l1-d",		"l1d",		"L1-data",		},
-@@ -285,6 +311,10 @@ const char *perf_evsel__name(struct perf_evsel *evsel)
- 		scnprintf(bf, sizeof(bf), "%s", "unknown tracepoint");
- 		break;
- 
-+	case PERF_TYPE_BREAKPOINT:
-+		perf_evsel__bp_name(evsel, bf, sizeof(bf));
-+		break;
-+
- 	default:
- 		scnprintf(bf, sizeof(bf), "%s", "unknown attr type");
- 		break;
-diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
-index de81fe1..dd0c306 100644
---- a/tools/perf/util/parse-events-test.c
-+++ b/tools/perf/util/parse-events-test.c
-@@ -325,6 +325,8 @@ static int test__checkevent_breakpoint_modifier(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
- 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong name",
-+			!strcmp(perf_evsel__name(evsel), "mem:0x0:rw:u"));
- 
- 	return test__checkevent_breakpoint(evlist);
- }
-@@ -338,6 +340,8 @@ static int test__checkevent_breakpoint_x_modifier(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
- 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong name",
-+			!strcmp(perf_evsel__name(evsel), "mem:0x0:x:k"));
- 
- 	return test__checkevent_breakpoint_x(evlist);
- }
-@@ -351,6 +355,8 @@ static int test__checkevent_breakpoint_r_modifier(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
- 	TEST_ASSERT_VAL("wrong exclude_hv", !evsel->attr.exclude_hv);
- 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong name",
-+			!strcmp(perf_evsel__name(evsel), "mem:0x0:r:hp"));
- 
- 	return test__checkevent_breakpoint_r(evlist);
- }
-@@ -364,6 +370,8 @@ static int test__checkevent_breakpoint_w_modifier(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
- 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
- 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong name",
-+			!strcmp(perf_evsel__name(evsel), "mem:0x0:w:up"));
- 
- 	return test__checkevent_breakpoint_w(evlist);
- }
-@@ -377,6 +385,8 @@ static int test__checkevent_breakpoint_rw_modifier(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude_kernel", !evsel->attr.exclude_kernel);
- 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
- 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong name",
-+			!strcmp(perf_evsel__name(evsel), "mem:0x0:rw:kp"));
- 
- 	return test__checkevent_breakpoint_rw(evlist);
- }
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 7ae76af..1dc44dc 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -418,7 +418,6 @@ int parse_events_add_breakpoint(struct list_head **list, int *idx,
- 				void *ptr, char *type)
- {
- 	struct perf_event_attr attr;
--	char name[MAX_NAME_LEN];
- 
- 	memset(&attr, 0, sizeof(attr));
- 	attr.bp_addr = (unsigned long) ptr;
-@@ -437,8 +436,7 @@ int parse_events_add_breakpoint(struct list_head **list, int *idx,
- 
- 	attr.type = PERF_TYPE_BREAKPOINT;
- 
--	snprintf(name, MAX_NAME_LEN, "mem:%p:%s", ptr, type ? type : "rw");
--	return add_event(list, idx, &attr, name);
-+	return add_event(list, idx, &attr, NULL);
- }
- 
- static int config_term(struct perf_event_attr *attr,
