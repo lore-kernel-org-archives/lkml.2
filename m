@@ -1,120 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab2GFBNl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jul 2012 21:13:41 -0400
-Received: from mga11.intel.com ([192.55.52.93]:24132 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753241Ab2GFBNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jul 2012 21:13:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="173951273"
-Subject: Re: [PATCH v4 2/4] block: add runtime pm helpers
-From: Lin Ming <ming.m.lin@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jens Axboe <axboe@kernel.dk>, Alan Stern <stern@rowland.harvard.edu>,
-        Shaohua Li <shli@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org
-In-Reply-To: <201207051511.20772.rjw@sisk.pl>
-References: <1341473199-3837-1-git-send-email-ming.m.lin@intel.com>
-	 <1341473199-3837-3-git-send-email-ming.m.lin@intel.com>
-	 <201207051511.20772.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 Jul 2012 09:13:36 +0800
-Message-ID: <1341537216.11117.10.camel@minggr>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755890Ab2GFBSq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jul 2012 21:18:46 -0400
+Received: from anubis.se.axis.com ([195.60.68.12]:42898 "EHLO
+	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050Ab2GFBSn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jul 2012 21:18:43 -0400
+X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Jul 2012 21:18:43 EDT
+Date: Fri, 6 Jul 2012 03:12:36 +0200
+Message-Id: <201207060112.q661CaG4002389@ignucius.se.axis.com>
+From: Hans-Peter Nilsson <hans-peter.nilsson@axis.com>
+To: geert@linux-m68k.org
+CC: jack@suse.cz, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-cris-kernel@axis.com
+In-reply-to: <CAMuHMdVJTUF3r=MKzpkvj6y_xdVdw=zEgAy2_wm_hG94jdrhBA@mail.gmail.com>
+	(message from Geert Uytterhoeven on Wed, 4 Jul 2012 22:17:28 +0200)
+Subject: Re: size_t/ssize_t warnings (was: Re: Build regressions/improvements in
+	v3.5-rc5)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-07-05 at 15:11 +0200, Rafael J. Wysocki wrote:
-> On Thursday, July 05, 2012, Lin Ming wrote:
-> > Add runtime pm helper functions:
-> > 
-> > blk_pm_runtime_init()
-> > blk_pre_runtime_suspend()
-> > blk_post_runtime_suspend()
-> > blk_pre_runtime_resume()
-> > blk_post_runtime_suspend()
+> From: Geert Uytterhoeven <geert@linux-m68k.org>
+> Date: Wed, 4 Jul 2012 22:17:28 +0200
+
+> On Wed, Jul 4, 2012 at 3:34 PM, Jan Kara <jack@suse.cz> wrote:
+> >>   + fs/quota/quota_tree.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 4 has type 'ssize_t' [-Wformat]:  => 372:4
+> >>   + fs/quota/quota_v2.c: warning: format '%zd' expects argument of type 'signed size_t', but argument 5 has type 'ssize_t' [-Wformat]:  => 66:92
+> >   These really look like false positives (there are quite a few of this
+> > kind). Can we possibly silence them?
 > 
-> What exactly do you need these things for?  Please be specific.
+> These 2 warnings happen on cris only, because size_t is unsigned int and
+> ssize_t is (signed) long.
 
-Alan described these functions nicely, copied here.
-http://marc.info/?l=linux-kernel&m=133727953025955&w=2
+Um, no, ssize_t isn't long.  Do you mean __kernel_ssize_t?
+(Or are you looking at cris-axis-elf?  ...no, that can't be it,
+as you see __SIZE_TYPE__ being unsigned int.)
 
-I'll add these function descriptions to the patch log.
+> They go away if I make ssize_t int.
 
-====
-This is not the way to do it.  The block subsystem should not use 
-suspend/resume callbacks.
+But ssize_t already is int...
 
-Instead, there should be block functions that can be called by client
-drivers: block_pre_runtime_suspend, block_post_runtime_suspend,
-bock_pre_runtime_resume, and block_post_runtime_resume.
+N.B. size_t is different between cris-axis-elf and
+cris-axis-linux-gnu.  The former uses the default definition in
+gcc/defaults.h (long unsigned int) and the latter sets it
+specifically to "unsigned int", in gcc/config/cris/linux.h (or
+before 2010-12-09, from config/svr4.h).  The ssize_t definition
+comes from glibc, where it is "int".
 
-They should do something like this:
+>                         __kernel_size_t                         __kernel_ssize_t
+>                         ---------------                         ----------------
 
-	block_pre_runtime_suspend:
-		If any requests are in the queue, return -EBUSY.
-		Otherwise set q->rpm_status to RPM_SUSPENDING and
-		return 0.
+> cris:                   __SIZE_TYPE__ (unsigned int)            long
 
-	block_post_runtime_suspend:
-		If the suspend succeeded then set q->rpm_status to 
-		RPM_SUSPENDED.  Otherwise set it to RPM_ACTIVE and
-		call pm_runtime_mark_last_busy().
+A bit odd; __kernel_ssize_t should probably change to int, to
+match ssize_t.
 
-	block_pre_runtime_resume:
-		Set q->rpm_status to RPM_RESUMING.
+> Cris-people: __SIZE_TYPE__ turned out to be hardcoded in my compiler (gcc
+> 4.6.3 from Tony's collection) to unsigned int. Is that correct?
 
-	block_post_runtime_resume:
-		If the resume succeeded then set q->rpm_status to
-		RPM_ACTIVE and call pm_runtime_mark_last_busy() and
-		pm_runtime_request_autosuspend().
-		Otherwise set q->rpm_status to RPM_SUSPENDED.
+Correct, for cris-axis-linux-gnu.
 
-There should also be an initialization function for client drivers to
-call.  block_runtime_pm_init() should call pm_runtime_mark_last_busy(),
-pm_runtime_use_autosuspend(), and pm_runtime_autosuspend().
+> And why do some 32-bit architectures use unsigned long/long?
 
-Next, you have to modify the parts of the block layer that run when a 
-new request is added to the queue or a request is removed.
+I'd guess from the gcc default.
 
-	When a request is added:
-		If q->rpm_status is RPM_SUSPENDED, or if q->rpm_status
-		is RPM_SUSPENDING and the REQ_PM flag isn't set, call
-		pm_runtime_request_resume().
-
-	When a request finishes:
-		Call pm_runtime_mark_last_busy().
-
-Next, you have to change the parts of the block layer responsible for
-taking a request from the queue and handing it to the lower-level
-driver (both peek and get).  If q->rpm_status is RPM_SUSPENDED, they
-shouldn't do anything -- act as though the queue is empty.  If
-q->rpm_status is RPM_SUSPENDING or RPM_RESUMING, they should hand over
-the request only if it has the REQ_PM flag set.
-
-For this to work, the block layer has to know what struct device
-pointer to pass to the pm_runtime_* routines.  You'll have to add that
-information to the request_queue structure; I guess q->dev can get set
-by block_pm_runtime_init().  In fact, when that's done you won't need
-q->rpm_status any more.  You'll be able to use q->dev->power.rpm_status
-directly, and you won't have to update it because the PM core does that
-for you.
-
-(Or maybe it would be easier to make q->rpm_status be a pointer to 
-q->dev->power.rpm_status.  That way, if CONFIG_PM_RUNTIME isn't enabled 
-or block_runtime_pm_init() hasn't been called, you can have 
-q->rpm_status simply point to a static value that is permanently set to 
-RPM_ACTIVE.)
-
-I may have left some parts out from this brief description.  Hopefully 
-you'll be able to figure out the general idea and get it to work.
-====
-
-Thanks,
-Lin Ming
-
+brgds, H-P
