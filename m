@@ -1,74 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab2GFNFo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 09:05:44 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:52738
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750924Ab2GFNFn (ORCPT
+	id S1753991Ab2GFNJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 09:09:56 -0400
+Received: from [216.32.181.186] ([216.32.181.186]:28177 "EHLO
+	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751052Ab2GFNJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 09:05:43 -0400
+	Fri, 6 Jul 2012 09:09:55 -0400
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
 X-SpamScore: -12
 X-BigFish: VPS-12(zz98dI1432Izz1202hzz15d4R8275bhz2dh668h839h944hd25he5bhf0ah)
-X-WSS-ID: 0M6QPP6-01-HAZ-02
+X-WSS-ID: 0M6QPUG-01-HHW-02
 X-M-MSG: 
-Date: Fri, 6 Jul 2012 15:05:30 +0200
+Date: Fri, 6 Jul 2012 15:08:38 +0200
 From: Joerg Roedel <joerg.roedel@amd.com>
-To: Ingo Molnar <mingo@kernel.org>
-CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <x86@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH 03/28] x86/irq: Use irq_remap specific print_IO_APIC
- paths only on Intel
-Message-ID: <20120706130530.GC2639@amd.com>
+To: <iommu@lists.linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 17/28] iommu/amd: Split device table initialization into
+ irq and dma part
+Message-ID: <20120706130838.GD2639@amd.com>
 References: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
- <1341491808-23083-4-git-send-email-joerg.roedel@amd.com>
- <20120706085036.GB24449@gmail.com>
+ <1341491808-23083-18-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20120706085036.GB24449@gmail.com>
+In-Reply-To: <1341491808-23083-18-git-send-email-joerg.roedel@amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, 2012 at 10:50:36AM +0200, Ingo Molnar wrote:
+On Thu, Jul 05, 2012 at 02:36:37PM +0200, Joerg Roedel wrote:
+> When the IOMMU is enabled very early (as with irq-remapping)
+> some devices are still in BIOS hand. When dma is blocked
+> early this can cause lots of IO_PAGE_FAULTs. So delay the
+> DMA initialization and do it right before the dma_ops are
+> initialized.
 > 
-> * Joerg Roedel <joerg.roedel@amd.com> wrote:
-> >  extern int irq_remapping_enabled;
-> > +extern int intel_irq_remap_debug;
+> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 
-> Instead of yet another set of global flags thrown around the 
-> kernel please properly factor out this code, its data structures 
-> and methods: introduce a single descriptor structure that 
-> describes this piece of hardware, with debugging flags part of 
-> this structure - with operations function pointer structure and 
-> such.
+Okay, I merged this patch with the previous one after another review.
+This patch basically undoes and refactors what the previous patch did.
+So it makes sense to do it all in one patch.
 
-Not sure I understand what you mean. So, simplified, from a hardware
-point of view we have IO-APICs and MSIs. This doesn't change with
-IOMMU-based interrupt remapping. The IO-APICs and MSIs are properly
-abstraced through 'struct irq_chip'.
-
-When an IOMMU comes into play the IO-APICs and MSIs need to be
-programmed differently so that they send the IRQ messages in a way the
-IOMMU can remap. This is done by using a different 'struct irq_chip'
-when interrupt remapping is enabled.
-
-For IRQ remapping there are two (not so much) different implementations
-which are abstracted through 'struct irq_remap_ops' made accessible via
-functions.
-
-So what I _think_ you mean is to add another call-back to the
-irq_remap_ops to print out debugging information and use that call-back
-when IRQ remapping is enabled instead of the routine in io_apic.c. Is
-that right?
-
-Regards,
-
-	Joerg
+> ---
+>  drivers/iommu/amd_iommu_init.c |   22 ++++++++++++++++++----
+>  1 file changed, 18 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+> index e663f1d..453f80a 100644
+> --- a/drivers/iommu/amd_iommu_init.c
+> +++ b/drivers/iommu/amd_iommu_init.c
+> @@ -1383,19 +1383,27 @@ static int __init init_memory_definitions(struct acpi_table_header *table)
+>   * Init the device table to not allow DMA access for devices and
+>   * suppress all page faults
+>   */
+> -static void init_device_table(void)
+> +static void init_device_table_dma(void)
+>  {
+>  	u32 devid;
+>  
+>  	for (devid = 0; devid <= amd_iommu_last_bdf; ++devid) {
+>  		set_dev_entry_bit(devid, DEV_ENTRY_VALID);
+>  		set_dev_entry_bit(devid, DEV_ENTRY_TRANSLATION);
+> -
+> -		if (amd_iommu_irq_remap)
+> -			set_dev_entry_bit(devid, DEV_ENTRY_IRQ_TBL_EN);
+>  	}
+>  }
+>  
+> +static void init_device_table(void)
+> +{
+> +	u32 devid;
+> +
+> +	if (!amd_iommu_irq_remap)
+> +		return;
+> +
+> +	for (devid = 0; devid <= amd_iommu_last_bdf; ++devid)
+> +		set_dev_entry_bit(devid, DEV_ENTRY_IRQ_TBL_EN);
+> +}
+> +
+>  static void iommu_init_flags(struct amd_iommu *iommu)
+>  {
+>  	iommu->acpi_flags & IVHD_FLAG_HT_TUN_EN_MASK ?
+> @@ -1783,8 +1791,14 @@ static bool detect_ivrs(void)
+>  
+>  static int amd_iommu_init_dma(void)
+>  {
+> +	struct amd_iommu *iommu;
+>  	int ret;
+>  
+> +	init_device_table_dma();
+> +
+> +	for_each_iommu(iommu)
+> +		iommu_flush_all_caches(iommu);
+> +
+>  	if (iommu_pass_through)
+>  		ret = amd_iommu_init_passthrough();
+>  	else
+> -- 
+> 1.7.9.5
 
 -- 
 AMD Operating System Research Center
