@@ -1,57 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751307Ab2GGSXX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 14:23:23 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:37634 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751031Ab2GGSXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 14:23:21 -0400
-Date: Sat, 7 Jul 2012 14:23:16 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Kees Cook <keescook@chromium.org>
-Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        ewust@umich.edu, zakir@umich.edu, nadiah@cs.ucsd.edu,
-        jhalderm@umich.edu, stable@vger.kernel.org
-Subject: Re: [PATCH] random: only use gathered bytes from arch_get_random_long
-Message-ID: <20120707182316.GA3681@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Kees Cook <keescook@chromium.org>,
-	Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-	ewust@umich.edu, zakir@umich.edu, nadiah@cs.ucsd.edu,
-	jhalderm@umich.edu, stable@vger.kernel.org
-References: <1341614704-24965-1-git-send-email-tytso@mit.edu>
- <1341614704-24965-8-git-send-email-tytso@mit.edu>
- <20120707171122.GD28340@outflux.net>
+	id S1751356Ab2GGS10 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 14:27:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3590 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751031Ab2GGS1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jul 2012 14:27:25 -0400
+Message-ID: <4FF87F5F.30106@redhat.com>
+Date: Sat, 07 Jul 2012 14:26:39 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120707171122.GD28340@outflux.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 14/26] sched, numa: Numa balancer
+References: <20120316144028.036474157@chello.nl> <20120316144241.012558280@chello.nl>
+In-Reply-To: <20120316144241.012558280@chello.nl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 07, 2012 at 10:11:22AM -0700, Kees Cook wrote:
-> While very unlikely, it is possible for arch_get_random_long() to fail
-> in the middle of the loop in xfer_secondary_pool(), which would mean
-> that the loop could stop with only part of u.hwrand populated, leading
-> to mix_pool_bytes() injecting uninitialized or already injected bytes
-> instead of fresh bytes. This changes the mix_pool_bytes() call to only
-> inject the successfully gathered bytes.
+On 03/16/2012 10:40 AM, Peter Zijlstra wrote:
 
-I don't believe there is a major problem with injecting uninitialized
-or even known bytes into the pool; worst case we're wastiing a tiny
-amount of CPU in this unlikely case (versus the CPU costs of doing the
-multiplication each time).  Not that I think really matters one way or
-the other... 
+> +/*
+> + * Assumes symmetric NUMA -- that is, each node is of equal size.
+> + */
+> +static void set_max_mem_load(unsigned long load)
+> +{
+> +	unsigned long old_load;
+> +
+> +	spin_lock(&max_mem_load.lock);
+> +	old_load = max_mem_load.load;
+> +	if (!old_load)
+> +		old_load = load;
+> +	max_mem_load.load = (old_load + load) >> 1;
+> +	spin_unlock(&max_mem_load.lock);
+> +}
 
-Is there a reason why you're particularly concerned about what might
-happen in the case where arch_get_random_long() fails mid-loop (which
-can happen if RDRAND returns an error for whatever reason, granted)?
+The above in your patch kind of conflicts with this bit
+from patch 6/26:
 
-Regards,
++	/*
++	 * Migration allocates pages in the highest zone. If we cannot
++	 * do so then migration (at least from node to node) is not
++	 * possible.
++	 */
++	if (vma->vm_file &&
++		gfp_zone(mapping_gfp_mask(vma->vm_file->f_mapping))
++								< policy_zone)
++			return 0;
 
-						- Ted
+Looking at how the memory load code is used, I wonder
+if it would make sense to count "zone size - free - inactive
+file" pages instead?
+
+> +			/*
+> +			 * Avoid migrating ne's when we'll know we'll push our
+> +			 * node over the memory limit.
+> +			 */
+> +			if (max_mem_load &&
+> +			    imb->mem_load + mem_moved + ne_mem > max_mem_load)
+> +				goto next;
+
+> +static void numa_balance(struct node_queue *this_nq)
+> +{
+> +	struct numa_imbalance imb;
+> +	int busiest;
+> +
+> +	busiest = find_busiest_node(this_nq->node, &imb);
+> +	if (busiest == -1)
+> +		return;
+> +
+> +	if (imb.cpu <= 0 && imb.mem <= 0)
+> +		return;
+> +
+> +	move_processes(nq_of(busiest), this_nq, &imb);
+> +}
+
+You asked how and why Andrea's algorithm converges.
+After looking at both patch sets for a while, and asking
+for clarification, I think I can see how his code converges.
+
+It is not yet clear to me how and why your code converges.
+
+I see some dual bin packing (CPU & memory) heuristics, but
+it is not at all clear to me how they interact, especially
+when workloads are going active and idle on a regular basis.
+
+-- 
+All rights reversed
