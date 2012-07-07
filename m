@@ -1,315 +1,859 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751455Ab2GGJkM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 05:40:12 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:38688 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab2GGJj7 (ORCPT
+	id S1751400Ab2GGJkK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 05:40:10 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:40436 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab2GGJjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 05:39:59 -0400
-X-AuditID: cbfee61a-b7f616d000004b7e-ae-4ff803ed4f1a
+	Sat, 7 Jul 2012 05:39:41 -0400
+X-AuditID: cbfee61a-b7f616d000004b7e-9b-4ff803dcbcaa
 From: Sangbeom Kim <sbkim73@samsung.com>
-To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+To: sameo@linux.intel.com
+Cc: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, sbkim01@gmail.com,
         "'Liam Girdwood'" <lrg@ti.com>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org, sbkim01@gmail.com
-Subject: [PATCH V2 3/7] regulator: s5m8767: Modify function and variable name
-Date: Sat, 07 Jul 2012 18:39:58 +0900
-Message-id: <0ff001cd5c24$793ab100$6bb01300$@com>
+Subject: [PATCH V2 2/7] mfd: samsung: Modify samsung mfd driver for common api
+Date: Sat, 07 Jul 2012 18:39:40 +0900
+Message-id: <0fef01cd5c24$6eb2c4c0$4c184e40$@com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1cJHS5gqHJH9GcTGeYcLkZXwOavA==
+Thread-index: Ac1cJG6DcZ/pmkg0RnqhMUDsQj6h1g==
 Content-language: ko
-x-cr-hashedpuzzle: BM8b BP3j DiU0 MPW+ OANT QmKm WWxR eGpc h6Jo phj1 pyvw tKip
- vEQY zEog 3S1b
- 5wnB;5;YgByAG8AbwBuAGkAZQBAAG8AcABlAG4AcwBvAHUAcgBjAGUALgB3AG8AbABmAHMAbwBuAG0AaQBjAHIAbwAuAGMAbwBtADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAcgBnAEAAdABpAC4AYwBvAG0AOwBzAGEAbQBlAG8AQABsAGkAbgB1AHgALgBpAG4AdABlAGwALgBjAG8AbQA7AHMAYgBrAGkAbQAwADEAQABnAG0AYQBpAGwALgBjAG8AbQA=;Sosha1_v1;7;{5C12E12D-C92F-466B-8C8C-CE7E0F90EFED};cwBiAGsAaQBtADcAMwBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Sat,
- 07 Jul 2012 09:39:51
- GMT;WwBQAEEAVABDAEgAIABWADIAIAAzAC8ANwBdACAAcgBlAGcAdQBsAGEAdABvAHIAOgAgAHMANQBtADgANwA2ADcAOgAgAE0AbwBkAGkAZgB5ACAAZgB1AG4AYwB0AGkAbwBuACAAYQBuAGQAIAB2AGEAcgBpAGEAYgBsAGUAIABuAGEAbQBlAA==
-x-cr-puzzleid: {5C12E12D-C92F-466B-8C8C-CE7E0F90EFED}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t9jAd23zD/8DRZOsbK4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZM+dMYSm47lrx8uYulgbGYxZdjJwcEgImEjNubWKFsMUkLtxb
-	z9bFyMUhJLCIUeLtwTcsEM5cJombc3uZQarYBDQkVu5+ywZiiwiEScyctZIFxGYW8JK4+Oo5
-	mC0s4CvxYudxRhCbRUBVYkf7frANvAKGEr3TnzBD2IISPybfg+rVkli/8zgThC0vsXnNW6Aa
-	DqCL1CUe/dWFWKUn8WrSI6gSEYl9L94xgtwmIfCAVWLl2f+MEB+YSnzfu5ZlAqPQLCQrZiFZ
-	MQvJillIZi1gZFnFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERzKz6R2MK5ssDjEKMDBqMTD
-	+2HHd38h1sSy4srcQ4wSHMxKIrw/7gGFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8xp7f/UXEkhP
-	LEnNTk0tSC2CyTJxcEoB4+IPy5Uk3tnWxiKlTb+XzN6h9lW49aiezO+zeR9aZ1kwNaou+NNy
-	fdH2i9ueKJj4N/F9jKnu7ZUtElTjs7VUyrnDtnXmZLX4DpdrTcabN166fv/JLeOJsTeeNgpJ
-	THe5nmMyQ887I+CAUj2DA9+lZ1Pqew23OF85eEOv1q1OJevxAb7Kv+W3lFiKMxINtZiLihMB
-	NCqEimECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGLMWRmVeSWpSXmKPExsVy+t9jAd07zD/8DdaeE7W4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZ365uYSn4fZqxYuXd06wNjGeWMXYxcnJICJhIXHvzgA3CFpO4
+	cG89mC0ksIhR4vZ6oS5GLiB7LpPE9o537CAJNgENiZW734IViQhISjx7vI4RpIhZoJ1RYsmB
+	vUxdjBwcwgJ+Er0nNUBqWARUJZ78fc8CYvMKGEo8ubgeyhaU+DH5HpjNLKAlsX7ncSYIW15i
+	85q3zCBjJATUJR791YVYpScx/c8lNogSEYl9L94xTmAUmIVk0iwkk2YhmTQLScsCRpZVjKKp
+	BckFxUnpuYZ6xYm5xaV56XrJ+bmbGMGh+UxqB+PKBotDjAIcjEo8vB92fPcXYk0sK67MPcQo
+	wcGsJML74x5QiDclsbIqtSg/vqg0J7X4EKM0B4uSOK+x91d/IYH0xJLU7NTUgtQimCwTB6dU
+	A+Mhuane/sJnj0yu2NMr5ro35tSBZycKbv/O9Pl3rPHUNXfLKfZdPhNki/jOhPLpsXZUVmYU
+	v4w13bZy2r46DlfDvMmueUt8tEJZXyt2PUowfllZ7Ff0MaHElJU19O92E9ctu6/1Pn25+Ksf
+	1wx7XiPeVXdOdBkJdkgxbGhXfvVr44Uk/ejLIkosxRmJhlrMRcWJAIIok+xJAgAA
 X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As function and variable name of Samsung mfd driver is changed,
-This patch modify s5m8767 regulator driver.
+Previous naming rule of samsung pmic start with s5m prefix.
+But It is changed by s2m.
+To cover various samsung s2m and s5m series,
+This patch modify function and variable name for common usage.
 
 Signed-off-by: Sangbeom Kim <sbkim73@samsung.com>
 ---
- drivers/regulator/s5m8767.c |   74 +++++++++++++++++++++---------------------
- 1 files changed, 37 insertions(+), 37 deletions(-)
+ drivers/mfd/sec-core.c               |  126 +++++++++++-----------
+ drivers/mfd/sec-irq.c                |  203 +++++++++++++++++-----------------
+ include/linux/mfd/samsung/s5m-core.h |   34 +++---
+ include/linux/mfd/samsung/s5m-pmic.h |   34 +++---
+ 4 files changed, 198 insertions(+), 199 deletions(-)
 
-diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-index f292e56..79b0659 100644
---- a/drivers/regulator/s5m8767.c
-+++ b/drivers/regulator/s5m8767.c
-@@ -24,10 +24,10 @@
- 
- struct s5m8767_info {
- 	struct device *dev;
--	struct s5m87xx_dev *iodev;
-+	struct sec_pmic_dev *iodev;
- 	int num_regulators;
- 	struct regulator_dev **rdev;
--	struct s5m_opmode_data *opmode;
-+	struct sec_opmode_data *opmode;
- 
- 	int ramp_delay;
- 	bool buck2_ramp;
-@@ -45,43 +45,43 @@ struct s5m8767_info {
- 	int buck_gpioindex;
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index b090360..6684e77 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -1,5 +1,5 @@
+ /*
+- * s5m87xx.c
++ * sec_pmic.c
+  *
+  * Copyright (c) 2011 Samsung Electronics Co., Ltd
+  *              http://www.samsung.com
+@@ -54,95 +54,95 @@ static struct mfd_cell s5m8767_devs[] = {
+ 	},
  };
  
--struct s5m_voltage_desc {
-+struct sec_voltage_desc {
- 	int max;
- 	int min;
- 	int step;
- };
- 
--static const struct s5m_voltage_desc buck_voltage_val1 = {
-+static const struct sec_voltage_desc buck_voltage_val1 = {
- 	.max = 2225000,
- 	.min =  650000,
- 	.step =   6250,
- };
- 
--static const struct s5m_voltage_desc buck_voltage_val2 = {
-+static const struct sec_voltage_desc buck_voltage_val2 = {
- 	.max = 1600000,
- 	.min =  600000,
- 	.step =   6250,
- };
- 
--static const struct s5m_voltage_desc buck_voltage_val3 = {
-+static const struct sec_voltage_desc buck_voltage_val3 = {
- 	.max = 3000000,
- 	.min =  750000,
- 	.step =  12500,
- };
- 
--static const struct s5m_voltage_desc ldo_voltage_val1 = {
-+static const struct sec_voltage_desc ldo_voltage_val1 = {
- 	.max = 3950000,
- 	.min =  800000,
- 	.step =  50000,
- };
- 
--static const struct s5m_voltage_desc ldo_voltage_val2 = {
-+static const struct sec_voltage_desc ldo_voltage_val2 = {
- 	.max = 2375000,
- 	.min =  800000,
- 	.step =  25000,
- };
- 
--static const struct s5m_voltage_desc *reg_voltage_map[] = {
-+static const struct sec_voltage_desc *reg_voltage_map[] = {
- 	[S5M8767_LDO1] = &ldo_voltage_val2,
- 	[S5M8767_LDO2] = &ldo_voltage_val2,
- 	[S5M8767_LDO3] = &ldo_voltage_val1,
-@@ -213,7 +213,7 @@ static int s5m8767_reg_is_enabled(struct regulator_dev *rdev)
- 	else if (ret)
- 		return ret;
- 
--	ret = s5m_reg_read(s5m8767->iodev, reg, &val);
-+	ret = sec_reg_read(s5m8767->iodev, reg, &val);
- 	if (ret)
- 		return ret;
- 
-@@ -230,7 +230,7 @@ static int s5m8767_reg_enable(struct regulator_dev *rdev)
- 	if (ret)
- 		return ret;
- 
--	return s5m_reg_update(s5m8767->iodev, reg, enable_ctrl, mask);
-+	return sec_reg_update(s5m8767->iodev, reg, enable_ctrl, mask);
- }
- 
- static int s5m8767_reg_disable(struct regulator_dev *rdev)
-@@ -243,7 +243,7 @@ static int s5m8767_reg_disable(struct regulator_dev *rdev)
- 	if (ret)
- 		return ret;
- 
--	return s5m_reg_update(s5m8767->iodev, reg, ~mask, mask);
-+	return sec_reg_update(s5m8767->iodev, reg, ~mask, mask);
- }
- 
- static int s5m8767_get_voltage_register(struct regulator_dev *rdev, int *_reg)
-@@ -305,7 +305,7 @@ static int s5m8767_get_voltage_sel(struct regulator_dev *rdev)
- 
- 	mask = (reg_id < S5M8767_BUCK1) ? 0x3f : 0xff;
- 
--	ret = s5m_reg_read(s5m8767->iodev, reg, &val);
-+	ret = sec_reg_read(s5m8767->iodev, reg, &val);
- 	if (ret)
- 		return ret;
- 
-@@ -315,7 +315,7 @@ static int s5m8767_get_voltage_sel(struct regulator_dev *rdev)
- }
- 
- static int s5m8767_convert_voltage_to_sel(
--		const struct s5m_voltage_desc *desc,
-+		const struct sec_voltage_desc *desc,
- 		int min_vol, int max_vol)
+-int s5m_reg_read(struct s5m87xx_dev *s5m87xx, u8 reg, void *dest)
++int sec_reg_read(struct sec_pmic_dev *sec_pmic, u8 reg, void *dest)
  {
- 	int selector = 0;
-@@ -407,7 +407,7 @@ static int s5m8767_set_voltage_sel(struct regulator_dev *rdev,
- 		if (ret)
- 			return ret;
- 
--		return s5m_reg_update(s5m8767->iodev, reg, selector, mask);
-+		return sec_reg_update(s5m8767->iodev, reg, selector, mask);
- 	}
+-	return regmap_read(s5m87xx->regmap, reg, dest);
++	return regmap_read(sec_pmic->regmap, reg, dest);
  }
+-EXPORT_SYMBOL_GPL(s5m_reg_read);
++EXPORT_SYMBOL_GPL(sec_reg_read);
  
-@@ -416,7 +416,7 @@ static int s5m8767_set_voltage_time_sel(struct regulator_dev *rdev,
- 					     unsigned int new_sel)
+-int s5m_bulk_read(struct s5m87xx_dev *s5m87xx, u8 reg, int count, u8 *buf)
++int sec_bulk_read(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf)
  {
- 	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
--	const struct s5m_voltage_desc *desc;
-+	const struct sec_voltage_desc *desc;
- 	int reg_id = rdev_get_id(rdev);
+-	return regmap_bulk_read(s5m87xx->regmap, reg, buf, count);
++	return regmap_bulk_read(sec_pmic->regmap, reg, buf, count);
+ }
+-EXPORT_SYMBOL_GPL(s5m_bulk_read);
++EXPORT_SYMBOL_GPL(sec_bulk_read);
  
- 	desc = reg_voltage_map[reg_id];
-@@ -501,8 +501,8 @@ static struct regulator_desc regulators[] = {
- 
- static __devinit int s5m8767_pmic_probe(struct platform_device *pdev)
+-int s5m_reg_write(struct s5m87xx_dev *s5m87xx, u8 reg, u8 value)
++int sec_reg_write(struct sec_pmic_dev *sec_pmic, u8 reg, u8 value)
  {
--	struct s5m87xx_dev *iodev = dev_get_drvdata(pdev->dev.parent);
--	struct s5m_platform_data *pdata = dev_get_platdata(iodev->dev);
-+	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
-+	struct sec_pmic_platform_data *pdata = dev_get_platdata(iodev->dev);
- 	struct regulator_config config = { };
- 	struct regulator_dev **rdev;
- 	struct s5m8767_info *s5m8767;
-@@ -572,21 +572,21 @@ static __devinit int s5m8767_pmic_probe(struct platform_device *pdev)
- 						pdata->buck2_init +
- 						buck_voltage_val2.step);
+-	return regmap_write(s5m87xx->regmap, reg, value);
++	return regmap_write(sec_pmic->regmap, reg, value);
+ }
+-EXPORT_SYMBOL_GPL(s5m_reg_write);
++EXPORT_SYMBOL_GPL(sec_reg_write);
  
--	s5m_reg_write(s5m8767->iodev, S5M8767_REG_BUCK2DVS2, buck_init);
-+	sec_reg_write(s5m8767->iodev, S5M8767_REG_BUCK2DVS2, buck_init);
+-int s5m_bulk_write(struct s5m87xx_dev *s5m87xx, u8 reg, int count, u8 *buf)
++int s5m_bulk_write(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf)
+ {
+-	return regmap_raw_write(s5m87xx->regmap, reg, buf, count);
++	return regmap_raw_write(sec_pmic->regmap, reg, buf, count);
+ }
+ EXPORT_SYMBOL_GPL(s5m_bulk_write);
  
- 	buck_init = s5m8767_convert_voltage_to_sel(&buck_voltage_val2,
- 						pdata->buck3_init,
- 						pdata->buck3_init +
- 						buck_voltage_val2.step);
+-int s5m_reg_update(struct s5m87xx_dev *s5m87xx, u8 reg, u8 val, u8 mask)
++int sec_reg_update(struct sec_pmic_dev *sec_pmic, u8 reg, u8 val, u8 mask)
+ {
+-	return regmap_update_bits(s5m87xx->regmap, reg, mask, val);
++	return regmap_update_bits(sec_pmic->regmap, reg, mask, val);
+ }
+-EXPORT_SYMBOL_GPL(s5m_reg_update);
++EXPORT_SYMBOL_GPL(sec_reg_update);
  
--	s5m_reg_write(s5m8767->iodev, S5M8767_REG_BUCK3DVS2, buck_init);
-+	sec_reg_write(s5m8767->iodev, S5M8767_REG_BUCK3DVS2, buck_init);
+-static struct regmap_config s5m_regmap_config = {
++static struct regmap_config sec_regmap_config = {
+ 	.reg_bits = 8,
+ 	.val_bits = 8,
+ };
  
- 	buck_init = s5m8767_convert_voltage_to_sel(&buck_voltage_val2,
- 						pdata->buck4_init,
- 						pdata->buck4_init +
- 						buck_voltage_val2.step);
+-static int s5m87xx_i2c_probe(struct i2c_client *i2c,
++static int sec_pmic_probe(struct i2c_client *i2c,
+ 			    const struct i2c_device_id *id)
+ {
+-	struct s5m_platform_data *pdata = i2c->dev.platform_data;
+-	struct s5m87xx_dev *s5m87xx;
++	struct sec_pmic_platform_data *pdata = i2c->dev.platform_data;
++	struct sec_pmic_dev *sec_pmic;
+ 	int ret;
  
--	s5m_reg_write(s5m8767->iodev, S5M8767_REG_BUCK4DVS2, buck_init);
-+	sec_reg_write(s5m8767->iodev, S5M8767_REG_BUCK4DVS2, buck_init);
+-	s5m87xx = devm_kzalloc(&i2c->dev, sizeof(struct s5m87xx_dev),
++	sec_pmic = devm_kzalloc(&i2c->dev, sizeof(struct sec_pmic_dev),
+ 				GFP_KERNEL);
+-	if (s5m87xx == NULL)
++	if (sec_pmic == NULL)
+ 		return -ENOMEM;
  
- 	for (i = 0; i < 8; i++) {
- 		if (s5m8767->buck2_gpiodvs) {
-@@ -672,13 +672,13 @@ static __devinit int s5m8767_pmic_probe(struct platform_device *pdev)
+-	i2c_set_clientdata(i2c, s5m87xx);
+-	s5m87xx->dev = &i2c->dev;
+-	s5m87xx->i2c = i2c;
+-	s5m87xx->irq = i2c->irq;
+-	s5m87xx->type = id->driver_data;
++	i2c_set_clientdata(i2c, sec_pmic);
++	sec_pmic->dev = &i2c->dev;
++	sec_pmic->i2c = i2c;
++	sec_pmic->irq = i2c->irq;
++	sec_pmic->type = id->driver_data;
  
- 	if (pdata->buck2_gpiodvs || pdata->buck3_gpiodvs ||
- 	   pdata->buck4_gpiodvs) {
--		s5m_reg_update(s5m8767->iodev, S5M8767_REG_BUCK2CTRL,
-+		sec_reg_update(s5m8767->iodev, S5M8767_REG_BUCK2CTRL,
- 				(pdata->buck2_gpiodvs) ? (1 << 1) : (0 << 1),
- 				1 << 1);
--		s5m_reg_update(s5m8767->iodev, S5M8767_REG_BUCK3CTRL,
-+		sec_reg_update(s5m8767->iodev, S5M8767_REG_BUCK3CTRL,
- 				(pdata->buck3_gpiodvs) ? (1 << 1) : (0 << 1),
- 				1 << 1);
--		s5m_reg_update(s5m8767->iodev, S5M8767_REG_BUCK4CTRL,
-+		sec_reg_update(s5m8767->iodev, S5M8767_REG_BUCK4CTRL,
- 				(pdata->buck4_gpiodvs) ? (1 << 1) : (0 << 1),
- 				1 << 1);
- 	}
-@@ -686,61 +686,61 @@ static __devinit int s5m8767_pmic_probe(struct platform_device *pdev)
- 	/* Initialize GPIO DVS registers */
- 	for (i = 0; i < 8; i++) {
- 		if (s5m8767->buck2_gpiodvs) {
--			s5m_reg_write(s5m8767->iodev, S5M8767_REG_BUCK2DVS1 + i,
-+			sec_reg_write(s5m8767->iodev, S5M8767_REG_BUCK2DVS1 + i,
- 					   s5m8767->buck2_vol[i]);
- 		}
- 
- 		if (s5m8767->buck3_gpiodvs) {
--			s5m_reg_write(s5m8767->iodev, S5M8767_REG_BUCK3DVS1 + i,
-+			sec_reg_write(s5m8767->iodev, S5M8767_REG_BUCK3DVS1 + i,
- 					   s5m8767->buck3_vol[i]);
- 		}
- 
- 		if (s5m8767->buck4_gpiodvs) {
--			s5m_reg_write(s5m8767->iodev, S5M8767_REG_BUCK4DVS1 + i,
-+			sec_reg_write(s5m8767->iodev, S5M8767_REG_BUCK4DVS1 + i,
- 					   s5m8767->buck4_vol[i]);
- 		}
+ 	if (pdata) {
+-		s5m87xx->device_type = pdata->device_type;
+-		s5m87xx->ono = pdata->ono;
+-		s5m87xx->irq_base = pdata->irq_base;
+-		s5m87xx->wakeup = pdata->wakeup;
++		sec_pmic->device_type = pdata->device_type;
++		sec_pmic->ono = pdata->ono;
++		sec_pmic->irq_base = pdata->irq_base;
++		sec_pmic->wakeup = pdata->wakeup;
  	}
  
- 	if (s5m8767->buck2_ramp)
--		s5m_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP, 0x08, 0x08);
-+		sec_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP, 0x08, 0x08);
+-	s5m87xx->regmap = devm_regmap_init_i2c(i2c, &s5m_regmap_config);
+-	if (IS_ERR(s5m87xx->regmap)) {
+-		ret = PTR_ERR(s5m87xx->regmap);
++	sec_pmic->regmap = devm_regmap_init_i2c(i2c, &sec_regmap_config);
++	if (IS_ERR(sec_pmic->regmap)) {
++		ret = PTR_ERR(sec_pmic->regmap);
+ 		dev_err(&i2c->dev, "Failed to allocate register map: %d\n",
+ 			ret);
+ 		return ret;
+ 	}
  
- 	if (s5m8767->buck3_ramp)
--		s5m_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP, 0x04, 0x04);
-+		sec_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP, 0x04, 0x04);
+-	s5m87xx->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
+-	i2c_set_clientdata(s5m87xx->rtc, s5m87xx);
++	sec_pmic->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
++	i2c_set_clientdata(sec_pmic->rtc, sec_pmic);
  
- 	if (s5m8767->buck4_ramp)
--		s5m_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP, 0x02, 0x02);
-+		sec_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP, 0x02, 0x02);
+ 	if (pdata && pdata->cfg_pmic_irq)
+ 		pdata->cfg_pmic_irq();
  
- 	if (s5m8767->buck2_ramp || s5m8767->buck3_ramp
- 		|| s5m8767->buck4_ramp) {
- 		switch (s5m8767->ramp_delay) {
- 		case 5:
--			s5m_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
-+			sec_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
- 					0x40, 0xf0);
+-	s5m_irq_init(s5m87xx);
++	sec_irq_init(sec_pmic);
+ 
+-	pm_runtime_set_active(s5m87xx->dev);
++	pm_runtime_set_active(sec_pmic->dev);
+ 
+-	switch (s5m87xx->device_type) {
++	switch (sec_pmic->device_type) {
+ 	case S5M8751X:
+-		ret = mfd_add_devices(s5m87xx->dev, -1, s5m8751_devs,
++		ret = mfd_add_devices(sec_pmic->dev, -1, s5m8751_devs,
+ 					ARRAY_SIZE(s5m8751_devs), NULL, 0);
+ 		break;
+ 	case S5M8763X:
+-		ret = mfd_add_devices(s5m87xx->dev, -1, s5m8763_devs,
++		ret = mfd_add_devices(sec_pmic->dev, -1, s5m8763_devs,
+ 					ARRAY_SIZE(s5m8763_devs), NULL, 0);
+ 		break;
+ 	case S5M8767X:
+-		ret = mfd_add_devices(s5m87xx->dev, -1, s5m8767_devs,
++		ret = mfd_add_devices(sec_pmic->dev, -1, s5m8767_devs,
+ 					ARRAY_SIZE(s5m8767_devs), NULL, 0);
+ 		break;
+ 	default:
+@@ -156,50 +156,50 @@ static int s5m87xx_i2c_probe(struct i2c_client *i2c,
+ 	return ret;
+ 
+ err:
+-	mfd_remove_devices(s5m87xx->dev);
+-	s5m_irq_exit(s5m87xx);
+-	i2c_unregister_device(s5m87xx->rtc);
++	mfd_remove_devices(sec_pmic->dev);
++	sec_irq_exit(sec_pmic);
++	i2c_unregister_device(sec_pmic->rtc);
+ 	return ret;
+ }
+ 
+-static int s5m87xx_i2c_remove(struct i2c_client *i2c)
++static int sec_pmic_remove(struct i2c_client *i2c)
+ {
+-	struct s5m87xx_dev *s5m87xx = i2c_get_clientdata(i2c);
++	struct sec_pmic_dev *sec_pmic = i2c_get_clientdata(i2c);
+ 
+-	mfd_remove_devices(s5m87xx->dev);
+-	s5m_irq_exit(s5m87xx);
+-	i2c_unregister_device(s5m87xx->rtc);
++	mfd_remove_devices(sec_pmic->dev);
++	sec_irq_exit(sec_pmic);
++	i2c_unregister_device(sec_pmic->rtc);
+ 	return 0;
+ }
+ 
+-static const struct i2c_device_id s5m87xx_i2c_id[] = {
+-	{ "s5m87xx", 0 },
++static const struct i2c_device_id sec_pmic_id[] = {
++	{ "sec_pmic", 0 },
+ 	{ }
+ };
+-MODULE_DEVICE_TABLE(i2c, s5m87xx_i2c_id);
++MODULE_DEVICE_TABLE(i2c, sec_pmic_id);
+ 
+-static struct i2c_driver s5m87xx_i2c_driver = {
++static struct i2c_driver sec_pmic_driver = {
+ 	.driver = {
+-		   .name = "s5m87xx",
++		   .name = "sec_pmic",
+ 		   .owner = THIS_MODULE,
+ 	},
+-	.probe = s5m87xx_i2c_probe,
+-	.remove = s5m87xx_i2c_remove,
+-	.id_table = s5m87xx_i2c_id,
++	.probe = sec_pmic_probe,
++	.remove = sec_pmic_remove,
++	.id_table = sec_pmic_id,
+ };
+ 
+-static int __init s5m87xx_i2c_init(void)
++static int __init sec_pmic_init(void)
+ {
+-	return i2c_add_driver(&s5m87xx_i2c_driver);
++	return i2c_add_driver(&sec_pmic_driver);
+ }
+ 
+-subsys_initcall(s5m87xx_i2c_init);
++subsys_initcall(sec_pmic_init);
+ 
+-static void __exit s5m87xx_i2c_exit(void)
++static void __exit sec_pmic_exit(void)
+ {
+-	i2c_del_driver(&s5m87xx_i2c_driver);
++	i2c_del_driver(&sec_pmic_driver);
+ }
+-module_exit(s5m87xx_i2c_exit);
++module_exit(sec_pmic_exit);
+ 
+ MODULE_AUTHOR("Sangbeom Kim <sbkim73@samsung.com>");
+ MODULE_DESCRIPTION("Core support for the S5M MFD");
+diff --git a/drivers/mfd/sec-irq.c b/drivers/mfd/sec-irq.c
+index f60364f..c1e2a59 100644
+--- a/drivers/mfd/sec-irq.c
++++ b/drivers/mfd/sec-irq.c
+@@ -16,12 +16,12 @@
+ #include <linux/irq.h>
+ #include <linux/mfd/samsung/s5m-core.h>
+ 
+-struct s5m_irq_data {
++struct sec_irq_data {
+ 	int reg;
+ 	int mask;
+ };
+ 
+-static struct s5m_irq_data s5m8767_irqs[] = {
++static struct sec_irq_data s5m8767_irqs[] = {
+ 	[S5M8767_IRQ_PWRR] = {
+ 		.reg = 1,
+ 		.mask = S5M8767_IRQ_PWRR_MASK,
+@@ -92,7 +92,7 @@ static struct s5m_irq_data s5m8767_irqs[] = {
+ 	},
+ };
+ 
+-static struct s5m_irq_data s5m8763_irqs[] = {
++static struct sec_irq_data s5m8763_irqs[] = {
+ 	[S5M8763_IRQ_DCINF] = {
+ 		.reg = 1,
+ 		.mask = S5M8763_IRQ_DCINF_MASK,
+@@ -167,51 +167,51 @@ static struct s5m_irq_data s5m8763_irqs[] = {
+ 	},
+ };
+ 
+-static inline struct s5m_irq_data *
+-irq_to_s5m8767_irq(struct s5m87xx_dev *s5m87xx, int irq)
++static inline struct sec_irq_data *
++irq_to_s5m8767_irq(struct sec_pmic_dev *sec_pmic, int irq)
+ {
+-	return &s5m8767_irqs[irq - s5m87xx->irq_base];
++	return &s5m8767_irqs[irq - sec_pmic->irq_base];
+ }
+ 
+ static void s5m8767_irq_lock(struct irq_data *data)
+ {
+-	struct s5m87xx_dev *s5m87xx = irq_data_get_irq_chip_data(data);
++	struct sec_pmic_dev *sec_pmic = irq_data_get_irq_chip_data(data);
+ 
+-	mutex_lock(&s5m87xx->irqlock);
++	mutex_lock(&sec_pmic->irqlock);
+ }
+ 
+ static void s5m8767_irq_sync_unlock(struct irq_data *data)
+ {
+-	struct s5m87xx_dev *s5m87xx = irq_data_get_irq_chip_data(data);
++	struct sec_pmic_dev *sec_pmic = irq_data_get_irq_chip_data(data);
+ 	int i;
+ 
+-	for (i = 0; i < ARRAY_SIZE(s5m87xx->irq_masks_cur); i++) {
+-		if (s5m87xx->irq_masks_cur[i] != s5m87xx->irq_masks_cache[i]) {
+-			s5m87xx->irq_masks_cache[i] = s5m87xx->irq_masks_cur[i];
+-			s5m_reg_write(s5m87xx, S5M8767_REG_INT1M + i,
+-					s5m87xx->irq_masks_cur[i]);
++	for (i = 0; i < ARRAY_SIZE(sec_pmic->irq_masks_cur); i++) {
++		if (sec_pmic->irq_masks_cur[i] != sec_pmic->irq_masks_cache[i]) {
++			sec_pmic->irq_masks_cache[i] = sec_pmic->irq_masks_cur[i];
++			sec_reg_write(sec_pmic, S5M8767_REG_INT1M + i,
++					sec_pmic->irq_masks_cur[i]);
+ 		}
+ 	}
+ 
+-	mutex_unlock(&s5m87xx->irqlock);
++	mutex_unlock(&sec_pmic->irqlock);
+ }
+ 
+ static void s5m8767_irq_unmask(struct irq_data *data)
+ {
+-	struct s5m87xx_dev *s5m87xx = irq_data_get_irq_chip_data(data);
+-	struct s5m_irq_data *irq_data = irq_to_s5m8767_irq(s5m87xx,
++	struct sec_pmic_dev *sec_pmic = irq_data_get_irq_chip_data(data);
++	struct sec_irq_data *irq_data = irq_to_s5m8767_irq(sec_pmic,
+ 							       data->irq);
+ 
+-	s5m87xx->irq_masks_cur[irq_data->reg - 1] &= ~irq_data->mask;
++	sec_pmic->irq_masks_cur[irq_data->reg - 1] &= ~irq_data->mask;
+ }
+ 
+ static void s5m8767_irq_mask(struct irq_data *data)
+ {
+-	struct s5m87xx_dev *s5m87xx = irq_data_get_irq_chip_data(data);
+-	struct s5m_irq_data *irq_data = irq_to_s5m8767_irq(s5m87xx,
++	struct sec_pmic_dev *sec_pmic = irq_data_get_irq_chip_data(data);
++	struct sec_irq_data *irq_data = irq_to_s5m8767_irq(sec_pmic,
+ 							       data->irq);
+ 
+-	s5m87xx->irq_masks_cur[irq_data->reg - 1] |= irq_data->mask;
++	sec_pmic->irq_masks_cur[irq_data->reg - 1] |= irq_data->mask;
+ }
+ 
+ static struct irq_chip s5m8767_irq_chip = {
+@@ -222,51 +222,51 @@ static struct irq_chip s5m8767_irq_chip = {
+ 	.irq_unmask = s5m8767_irq_unmask,
+ };
+ 
+-static inline struct s5m_irq_data *
+-irq_to_s5m8763_irq(struct s5m87xx_dev *s5m87xx, int irq)
++static inline struct sec_irq_data *
++irq_to_s5m8763_irq(struct sec_pmic_dev *sec_pmic, int irq)
+ {
+-	return &s5m8763_irqs[irq - s5m87xx->irq_base];
++	return &s5m8763_irqs[irq - sec_pmic->irq_base];
+ }
+ 
+ static void s5m8763_irq_lock(struct irq_data *data)
+ {
+-	struct s5m87xx_dev *s5m87xx = irq_data_get_irq_chip_data(data);
++	struct sec_pmic_dev *sec_pmic = irq_data_get_irq_chip_data(data);
+ 
+-	mutex_lock(&s5m87xx->irqlock);
++	mutex_lock(&sec_pmic->irqlock);
+ }
+ 
+ static void s5m8763_irq_sync_unlock(struct irq_data *data)
+ {
+-	struct s5m87xx_dev *s5m87xx = irq_data_get_irq_chip_data(data);
++	struct sec_pmic_dev *sec_pmic = irq_data_get_irq_chip_data(data);
+ 	int i;
+ 
+-	for (i = 0; i < ARRAY_SIZE(s5m87xx->irq_masks_cur); i++) {
+-		if (s5m87xx->irq_masks_cur[i] != s5m87xx->irq_masks_cache[i]) {
+-			s5m87xx->irq_masks_cache[i] = s5m87xx->irq_masks_cur[i];
+-			s5m_reg_write(s5m87xx, S5M8763_REG_IRQM1 + i,
+-					s5m87xx->irq_masks_cur[i]);
++	for (i = 0; i < ARRAY_SIZE(sec_pmic->irq_masks_cur); i++) {
++		if (sec_pmic->irq_masks_cur[i] != sec_pmic->irq_masks_cache[i]) {
++			sec_pmic->irq_masks_cache[i] = sec_pmic->irq_masks_cur[i];
++			sec_reg_write(sec_pmic, S5M8763_REG_IRQM1 + i,
++					sec_pmic->irq_masks_cur[i]);
+ 		}
+ 	}
+ 
+-	mutex_unlock(&s5m87xx->irqlock);
++	mutex_unlock(&sec_pmic->irqlock);
+ }
+ 
+ static void s5m8763_irq_unmask(struct irq_data *data)
+ {
+-	struct s5m87xx_dev *s5m87xx = irq_data_get_irq_chip_data(data);
+-	struct s5m_irq_data *irq_data = irq_to_s5m8763_irq(s5m87xx,
++	struct sec_pmic_dev *sec_pmic = irq_data_get_irq_chip_data(data);
++	struct sec_irq_data *irq_data = irq_to_s5m8763_irq(sec_pmic,
+ 							       data->irq);
+ 
+-	s5m87xx->irq_masks_cur[irq_data->reg - 1] &= ~irq_data->mask;
++	sec_pmic->irq_masks_cur[irq_data->reg - 1] &= ~irq_data->mask;
+ }
+ 
+ static void s5m8763_irq_mask(struct irq_data *data)
+ {
+-	struct s5m87xx_dev *s5m87xx = irq_data_get_irq_chip_data(data);
+-	struct s5m_irq_data *irq_data = irq_to_s5m8763_irq(s5m87xx,
++	struct sec_pmic_dev *sec_pmic = irq_data_get_irq_chip_data(data);
++	struct sec_irq_data *irq_data = irq_to_s5m8763_irq(sec_pmic,
+ 							       data->irq);
+ 
+-	s5m87xx->irq_masks_cur[irq_data->reg - 1] |= irq_data->mask;
++	sec_pmic->irq_masks_cur[irq_data->reg - 1] |= irq_data->mask;
+ }
+ 
+ static struct irq_chip s5m8763_irq_chip = {
+@@ -280,26 +280,25 @@ static struct irq_chip s5m8763_irq_chip = {
+ 
+ static irqreturn_t s5m8767_irq_thread(int irq, void *data)
+ {
+-	struct s5m87xx_dev *s5m87xx = data;
++	struct sec_pmic_dev *sec_pmic = data;
+ 	u8 irq_reg[NUM_IRQ_REGS-1];
+ 	int ret;
+ 	int i;
+ 
+-
+-	ret = s5m_bulk_read(s5m87xx, S5M8767_REG_INT1,
++	ret = sec_bulk_read(sec_pmic, S5M8767_REG_INT1,
+ 				NUM_IRQ_REGS - 1, irq_reg);
+ 	if (ret < 0) {
+-		dev_err(s5m87xx->dev, "Failed to read interrupt register: %d\n",
++		dev_err(sec_pmic->dev, "Failed to read interrupt register: %d\n",
+ 				ret);
+ 		return IRQ_NONE;
+ 	}
+ 
+ 	for (i = 0; i < NUM_IRQ_REGS - 1; i++)
+-		irq_reg[i] &= ~s5m87xx->irq_masks_cur[i];
++		irq_reg[i] &= ~sec_pmic->irq_masks_cur[i];
+ 
+ 	for (i = 0; i < S5M8767_IRQ_NR; i++) {
+ 		if (irq_reg[s5m8767_irqs[i].reg - 1] & s5m8767_irqs[i].mask)
+-			handle_nested_irq(s5m87xx->irq_base + i);
++			handle_nested_irq(sec_pmic->irq_base + i);
+ 	}
+ 
+ 	return IRQ_HANDLED;
+@@ -307,44 +306,44 @@ static irqreturn_t s5m8767_irq_thread(int irq, void *data)
+ 
+ static irqreturn_t s5m8763_irq_thread(int irq, void *data)
+ {
+-	struct s5m87xx_dev *s5m87xx = data;
++	struct sec_pmic_dev *sec_pmic = data;
+ 	u8 irq_reg[NUM_IRQ_REGS];
+ 	int ret;
+ 	int i;
+ 
+-	ret = s5m_bulk_read(s5m87xx, S5M8763_REG_IRQ1,
++	ret = sec_bulk_read(sec_pmic, S5M8763_REG_IRQ1,
+ 				NUM_IRQ_REGS, irq_reg);
+ 	if (ret < 0) {
+-		dev_err(s5m87xx->dev, "Failed to read interrupt register: %d\n",
++		dev_err(sec_pmic->dev, "Failed to read interrupt register: %d\n",
+ 				ret);
+ 		return IRQ_NONE;
+ 	}
+ 
+ 	for (i = 0; i < NUM_IRQ_REGS; i++)
+-		irq_reg[i] &= ~s5m87xx->irq_masks_cur[i];
++		irq_reg[i] &= ~sec_pmic->irq_masks_cur[i];
+ 
+ 	for (i = 0; i < S5M8763_IRQ_NR; i++) {
+ 		if (irq_reg[s5m8763_irqs[i].reg - 1] & s5m8763_irqs[i].mask)
+-			handle_nested_irq(s5m87xx->irq_base + i);
++			handle_nested_irq(sec_pmic->irq_base + i);
+ 	}
+ 
+ 	return IRQ_HANDLED;
+ }
+ 
+-int s5m_irq_resume(struct s5m87xx_dev *s5m87xx)
++int sec_irq_resume(struct sec_pmic_dev *sec_pmic)
+ {
+-	if (s5m87xx->irq && s5m87xx->irq_base){
+-		switch (s5m87xx->device_type) {
++	if (sec_pmic->irq && sec_pmic->irq_base){
++		switch (sec_pmic->device_type) {
+ 		case S5M8763X:
+-			s5m8763_irq_thread(s5m87xx->irq_base, s5m87xx);
++			s5m8763_irq_thread(sec_pmic->irq_base, sec_pmic);
  			break;
- 		case 10:
--			s5m_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
-+			sec_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
- 					0x90, 0xf0);
- 			break;
- 		case 25:
--			s5m_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
-+			sec_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
- 					0xd0, 0xf0);
- 			break;
- 		case 50:
--			s5m_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
-+			sec_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
- 					0xe0, 0xf0);
- 			break;
- 		case 100:
--			s5m_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
-+			sec_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
- 					0xf0, 0xf0);
+ 		case S5M8767X:
+-			s5m8767_irq_thread(s5m87xx->irq_base, s5m87xx);
++			s5m8767_irq_thread(sec_pmic->irq_base, sec_pmic);
  			break;
  		default:
--			s5m_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
-+			sec_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
- 					0x90, 0xf0);
+-			dev_err(s5m87xx->dev,
++			dev_err(sec_pmic->dev,
+ 				"Unknown device type %d\n",
+-				s5m87xx->device_type);
++				sec_pmic->device_type);
+ 			return -EINVAL;
+ 
  		}
+@@ -352,43 +351,43 @@ int s5m_irq_resume(struct s5m87xx_dev *s5m87xx)
+ 	return 0;
+ }
+ 
+-int s5m_irq_init(struct s5m87xx_dev *s5m87xx)
++int sec_irq_init(struct sec_pmic_dev *sec_pmic)
+ {
+ 	int i;
+ 	int cur_irq;
+ 	int ret = 0;
+-	int type = s5m87xx->device_type;
++	int type = sec_pmic->device_type;
+ 
+-	if (!s5m87xx->irq) {
+-		dev_warn(s5m87xx->dev,
++	if (!sec_pmic->irq) {
++		dev_warn(sec_pmic->dev,
+ 			 "No interrupt specified, no interrupts\n");
+-		s5m87xx->irq_base = 0;
++		sec_pmic->irq_base = 0;
+ 		return 0;
  	}
  
- 	for (i = 0; i < pdata->num_regulators; i++) {
--		const struct s5m_voltage_desc *desc;
-+		const struct sec_voltage_desc *desc;
- 		int id = pdata->regulators[i].id;
+-	if (!s5m87xx->irq_base) {
+-		dev_err(s5m87xx->dev,
++	if (!sec_pmic->irq_base) {
++		dev_err(sec_pmic->dev,
+ 			"No interrupt base specified, no interrupts\n");
+ 		return 0;
+ 	}
  
- 		desc = reg_voltage_map[id];
+-	mutex_init(&s5m87xx->irqlock);
++	mutex_init(&sec_pmic->irqlock);
+ 
+ 	switch (type) {
+ 	case S5M8763X:
+ 		for (i = 0; i < NUM_IRQ_REGS; i++) {
+-			s5m87xx->irq_masks_cur[i] = 0xff;
+-			s5m87xx->irq_masks_cache[i] = 0xff;
+-			s5m_reg_write(s5m87xx, S5M8763_REG_IRQM1 + i,
++			sec_pmic->irq_masks_cur[i] = 0xff;
++			sec_pmic->irq_masks_cache[i] = 0xff;
++			sec_reg_write(sec_pmic, S5M8763_REG_IRQM1 + i,
+ 						0xff);
+ 		}
+ 
+-		s5m_reg_write(s5m87xx, S5M8763_REG_STATUSM1, 0xff);
+-		s5m_reg_write(s5m87xx, S5M8763_REG_STATUSM2, 0xff);
++		sec_reg_write(sec_pmic, S5M8763_REG_STATUSM1, 0xff);
++		sec_reg_write(sec_pmic, S5M8763_REG_STATUSM2, 0xff);
+ 
+ 		for (i = 0; i < S5M8763_IRQ_NR; i++) {
+-			cur_irq = i + s5m87xx->irq_base;
+-			irq_set_chip_data(cur_irq, s5m87xx);
++			cur_irq = i + sec_pmic->irq_base;
++			irq_set_chip_data(cur_irq, sec_pmic);
+ 			irq_set_chip_and_handler(cur_irq, &s5m8763_irq_chip,
+ 						 handle_edge_irq);
+ 			irq_set_nested_thread(cur_irq, 1);
+@@ -399,30 +398,30 @@ int s5m_irq_init(struct s5m87xx_dev *s5m87xx)
+ #endif
+ 		}
+ 
+-		ret = request_threaded_irq(s5m87xx->irq, NULL,
++		ret = request_threaded_irq(sec_pmic->irq, NULL,
+ 					s5m8763_irq_thread,
+ 					IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+-					"s5m87xx-irq", s5m87xx);
++					"sec-pmic-irq", sec_pmic);
+ 		if (ret) {
+-			dev_err(s5m87xx->dev, "Failed to request IRQ %d: %d\n",
+-				s5m87xx->irq, ret);
++			dev_err(sec_pmic->dev, "Failed to request IRQ %d: %d\n",
++				sec_pmic->irq, ret);
+ 			return ret;
+ 		}
+ 		break;
+ 	case S5M8767X:
+ 		for (i = 0; i < NUM_IRQ_REGS - 1; i++) {
+-			s5m87xx->irq_masks_cur[i] = 0xff;
+-			s5m87xx->irq_masks_cache[i] = 0xff;
+-			s5m_reg_write(s5m87xx, S5M8767_REG_INT1M + i,
++			sec_pmic->irq_masks_cur[i] = 0xff;
++			sec_pmic->irq_masks_cache[i] = 0xff;
++			sec_reg_write(sec_pmic, S5M8767_REG_INT1M + i,
+ 						0xff);
+ 		}
+ 		for (i = 0; i < S5M8767_IRQ_NR; i++) {
+-			cur_irq = i + s5m87xx->irq_base;
+-			irq_set_chip_data(cur_irq, s5m87xx);
++			cur_irq = i + sec_pmic->irq_base;
++			irq_set_chip_data(cur_irq, sec_pmic);
+ 			if (ret) {
+-				dev_err(s5m87xx->dev,
++				dev_err(sec_pmic->dev,
+ 					"Failed to irq_set_chip_data %d: %d\n",
+-					s5m87xx->irq, ret);
++					sec_pmic->irq, ret);
+ 				return ret;
+ 			}
+ 
+@@ -436,40 +435,40 @@ int s5m_irq_init(struct s5m87xx_dev *s5m87xx)
+ #endif
+ 		}
+ 
+-		ret = request_threaded_irq(s5m87xx->irq, NULL,
++		ret = request_threaded_irq(sec_pmic->irq, NULL,
+ 					   s5m8767_irq_thread,
+ 					   IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+-					   "s5m87xx-irq", s5m87xx);
++					   "sec-pmic-irq", sec_pmic);
+ 		if (ret) {
+-			dev_err(s5m87xx->dev, "Failed to request IRQ %d: %d\n",
+-				s5m87xx->irq, ret);
++			dev_err(sec_pmic->dev, "Failed to request IRQ %d: %d\n",
++				sec_pmic->irq, ret);
+ 			return ret;
+ 		}
+ 		break;
+ 	default:
+-		dev_err(s5m87xx->dev,
+-			"Unknown device type %d\n", s5m87xx->device_type);
++		dev_err(sec_pmic->dev,
++			"Unknown device type %d\n", sec_pmic->device_type);
+ 		return -EINVAL;
+ 	}
+ 
+-	if (!s5m87xx->ono)
++	if (!sec_pmic->ono)
+ 		return 0;
+ 
+ 	switch (type) {
+ 	case S5M8763X:
+-		ret = request_threaded_irq(s5m87xx->ono, NULL,
++		ret = request_threaded_irq(sec_pmic->ono, NULL,
+ 						s5m8763_irq_thread,
+ 						IRQF_TRIGGER_FALLING |
+ 						IRQF_TRIGGER_RISING |
+-						IRQF_ONESHOT, "s5m87xx-ono",
+-						s5m87xx);
++						IRQF_ONESHOT, "sec-pmic-ono",
++						sec_pmic);
+ 		break;
+ 	case S5M8767X:
+-		ret = request_threaded_irq(s5m87xx->ono, NULL,
++		ret = request_threaded_irq(sec_pmic->ono, NULL,
+ 					s5m8767_irq_thread,
+ 					IRQF_TRIGGER_FALLING |
+ 					IRQF_TRIGGER_RISING |
+-					IRQF_ONESHOT, "s5m87xx-ono", s5m87xx);
++					IRQF_ONESHOT, "sec-pmic-ono", sec_pmic);
+ 		break;
+ 	default:
+ 		ret = -EINVAL;
+@@ -477,19 +476,19 @@ int s5m_irq_init(struct s5m87xx_dev *s5m87xx)
+ 	}
+ 
+ 	if (ret) {
+-		dev_err(s5m87xx->dev, "Failed to request IRQ %d: %d\n",
+-			s5m87xx->ono, ret);
++		dev_err(sec_pmic->dev, "Failed to request IRQ %d: %d\n",
++			sec_pmic->ono, ret);
+ 		return ret;
+ 	}
+ 
+ 	return 0;
+ }
+ 
+-void s5m_irq_exit(struct s5m87xx_dev *s5m87xx)
++void sec_irq_exit(struct sec_pmic_dev *sec_pmic)
+ {
+-	if (s5m87xx->ono)
+-		free_irq(s5m87xx->ono, s5m87xx);
++	if (sec_pmic->ono)
++		free_irq(sec_pmic->ono, sec_pmic);
+ 
+-	if (s5m87xx->irq)
+-		free_irq(s5m87xx->irq, s5m87xx);
++	if (sec_pmic->irq)
++		free_irq(sec_pmic->irq, sec_pmic);
+ }
+diff --git a/include/linux/mfd/samsung/s5m-core.h b/include/linux/mfd/samsung/s5m-core.h
+index 0b2e0ed..47ed571 100644
+--- a/include/linux/mfd/samsung/s5m-core.h
++++ b/include/linux/mfd/samsung/s5m-core.h
+@@ -11,12 +11,12 @@
+  *
+  */
+ 
+-#ifndef __LINUX_MFD_S5M_CORE_H
+-#define __LINUX_MFD_S5M_CORE_H
++#ifndef __LINUX_MFD_SEC_CORE_H
++#define __LINUX_MFD_SEC_CORE_H
+ 
+ #define NUM_IRQ_REGS	4
+ 
+-enum s5m_device_type {
++enum sec_device_type {
+ 	S5M8751X,
+ 	S5M8763X,
+ 	S5M8767X,
+@@ -292,7 +292,7 @@ enum s5m8763_irq {
+ #define S5M8763_ENRAMP                  (1 << 4)
+ 
+ /**
+- * struct s5m87xx_dev - s5m87xx master device for sub-drivers
++ * struct sec_pmic_dev - s5m87xx master device for sub-drivers
+  * @dev: master device of the chip (can be used to access platform data)
+  * @i2c: i2c client private data for regulator
+  * @rtc: i2c client private data for rtc
+@@ -305,7 +305,7 @@ enum s5m8763_irq {
+  * @irq_masks_cache: cached hardware value
+  * @type: indicate which s5m87xx "variant" is used
+  */
+-struct s5m87xx_dev {
++struct sec_pmic_dev {
+ 	struct device *dev;
+ 	struct regmap *regmap;
+ 	struct i2c_client *i2c;
+@@ -323,19 +323,19 @@ struct s5m87xx_dev {
+ 	bool wakeup;
+ };
+ 
+-int s5m_irq_init(struct s5m87xx_dev *s5m87xx);
+-void s5m_irq_exit(struct s5m87xx_dev *s5m87xx);
+-int s5m_irq_resume(struct s5m87xx_dev *s5m87xx);
++int sec_irq_init(struct sec_pmic_dev *sec_pmic);
++void sec_irq_exit(struct sec_pmic_dev *sec_pmic);
++int sec_irq_resume(struct sec_pmic_dev *sec_pmic);
+ 
+-extern int s5m_reg_read(struct s5m87xx_dev *s5m87xx, u8 reg, void *dest);
+-extern int s5m_bulk_read(struct s5m87xx_dev *s5m87xx, u8 reg, int count, u8 *buf);
+-extern int s5m_reg_write(struct s5m87xx_dev *s5m87xx, u8 reg, u8 value);
+-extern int s5m_bulk_write(struct s5m87xx_dev *s5m87xx, u8 reg, int count, u8 *buf);
+-extern int s5m_reg_update(struct s5m87xx_dev *s5m87xx, u8 reg, u8 val, u8 mask);
++extern int sec_reg_read(struct sec_pmic_dev *sec_pmic, u8 reg, void *dest);
++extern int sec_bulk_read(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf);
++extern int sec_reg_write(struct sec_pmic_dev *sec_pmic, u8 reg, u8 value);
++extern int sec_bulk_write(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf);
++extern int sec_reg_update(struct sec_pmic_dev *sec_pmic, u8 reg, u8 val, u8 mask);
+ 
+-struct s5m_platform_data {
+-	struct s5m_regulator_data	*regulators;
+-	struct s5m_opmode_data		*opmode;
++struct sec_pmic_platform_data {
++	struct sec_regulator_data	*regulators;
++	struct sec_opmode_data		*opmode;
+ 	int				device_type;
+ 	int				num_regulators;
+ 
+@@ -376,4 +376,4 @@ struct s5m_platform_data {
+ 	int				buck4_init;
+ };
+ 
+-#endif /*  __LINUX_MFD_S5M_CORE_H */
++#endif /*  __LINUX_MFD_SEC_CORE_H */
+diff --git a/include/linux/mfd/samsung/s5m-pmic.h b/include/linux/mfd/samsung/s5m-pmic.h
+index 7c719f2..2c03d7d 100644
+--- a/include/linux/mfd/samsung/s5m-pmic.h
++++ b/include/linux/mfd/samsung/s5m-pmic.h
+@@ -8,8 +8,8 @@
+  * published by the Free Software Foundation.
+ */
+ 
+-#ifndef __LINUX_MFD_S5M_PMIC_H
+-#define __LINUX_MFD_S5M_PMIC_H
++#ifndef __LINUX_MFD_SEC_PMIC_H
++#define __LINUX_MFD_SEC_PMIC_H
+ 
+ #include <linux/regulator/machine.h>
+ 
+@@ -90,40 +90,40 @@ enum s5m8763_regulators {
+ };
+ 
+ /**
+- * s5m87xx_regulator_data - regulator data
++ * sec_regulator_data - regulator data
+  * @id: regulator id
+  * @initdata: regulator init data (contraints, supplies, ...)
+  */
+-struct s5m_regulator_data {
++struct sec_regulator_data {
+ 	int				id;
+ 	struct regulator_init_data	*initdata;
+ };
+ 
+ /*
+- * s5m_opmode_data - regulator operation mode data
++ * sec_opmode_data - regulator operation mode data
+  * @id: regulator id
+  * @mode: regulator operation mode
+  */
+-struct s5m_opmode_data {
++struct sec_opmode_data {
+ 	int id;
+ 	int mode;
+ };
+ 
+ /*
+- * s5m regulator operation mode
+- * S5M_OPMODE_OFF	Regulator always OFF
+- * S5M_OPMODE_ON	Regulator always ON
+- * S5M_OPMODE_LOWPOWER  Regulator is on in low-power mode
+- * S5M_OPMODE_SUSPEND   Regulator is changed by PWREN pin
++ * samsung regulator operation mode
++ * SEC_OPMODE_OFF	Regulator always OFF
++ * SEC_OPMODE_ON	Regulator always ON
++ * SEC_OPMODE_LOWPOWER  Regulator is on in low-power mode
++ * SEC_OPMODE_SUSPEND   Regulator is changed by PWREN pin
+  *			If PWREN is high, regulator is on
+  *			If PWREN is low, regulator is off
+  */
+ 
+-enum s5m_opmode {
+-	S5M_OPMODE_OFF,
+-	S5M_OPMODE_ON,
+-	S5M_OPMODE_LOWPOWER,
+-	S5M_OPMODE_SUSPEND,
++enum sec_opmode {
++	SEC_OPMODE_OFF,
++	SEC_OPMODE_ON,
++	SEC_OPMODE_LOWPOWER,
++	SEC_OPMODE_SUSPEND,
+ };
+ 
+-#endif /*  __LINUX_MFD_S5M_PMIC_H */
++#endif /*  __LINUX_MFD_SEC_PMIC_H */
 -- 
 1.7.5.4
 
