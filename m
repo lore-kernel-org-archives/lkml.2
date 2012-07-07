@@ -1,108 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852Ab2GGVan (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 17:30:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57928 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673Ab2GGVam (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 17:30:42 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-Date: Sat, 7 Jul 2012 21:30:36 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <20120706235804.1bd26a1a@pyramind.ukuu.org.uk>
-In-Reply-To: <20120706235804.1bd26a1a@pyramind.ukuu.org.uk>
+	id S1751821Ab2GGVkj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 17:40:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59044 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750970Ab2GGVki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jul 2012 17:40:38 -0400
+Date: Sat, 7 Jul 2012 23:40:33 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Arnaud Lacombe <lacombar@gmail.com>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Jan Beulich <jbeulich@novell.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: "Inconsistent kallsyms data" error
+Message-ID: <20120707214033.GA5303@pobox.suse.cz>
+References: <CA+55aFyr+gexQW9Gmg=_V145SUeKOcfSNUx5h4p7bgjMp=07Og@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207072130.37220.arnd@arndb.de>
-X-Provags-ID: V02:K0:wQaoI0/ohJWf33xJS8IqOEs4LKZGIlJkCmkCF1OAlDT
- JTTMiOeLB/kO2gU6z2rDa5M5e67tRyjNC6YE0CP2N3IgZHDkgk
- u+tyALsvRdATOm8l8q0iJlvy3YItko9sMR0a9YndDbbF9GH/sb
- 2Lzlc5H6goZG1WTF8eG3tPZvQHfognh4AhsKJURzM5AoNxmfZU
- NhelZ6LKp5tTsvQcR/lFvdQFoBA/CVpFRf1H8p1eILFC/RDrFN
- PxTBU25Cnjoy1HUJ9hf7A8mLVUkuI+nH3aVmIUrpBo+y3Eey0S
- /Xp5F9bSzoVFAep2bzoWf/D2jUJKgXEhjG3pfHRPRrMqNSpjbO
- 0x2BnShRknll2lkczrCc=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyr+gexQW9Gmg=_V145SUeKOcfSNUx5h4p7bgjMp=07Og@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 06 July 2012, Alan Cox wrote:
-> >  arch/x86/include/asm/atomic64_32.h              |    1 +
-> >  arch/x86/include/asm/atomic64_64.h              |    1 +
-> >  arch/xtensa/kernel/syscall.c                    |    2 +-
+On Thu, Jul 05, 2012 at 02:18:18PM -0700, Linus Torvalds wrote:
+> So for some unknown reason I'm hitting this on just one particular
+> machine, and it's *very* annoying.
 > 
-> This looks odd to say the least ?
+> It's annoying for three reasons:
+> 
+>  - it's breaking the build (duh)
+> 
+>  - the error is printed out to stderr, so you don't even *see* it as
+> an error if you redirect the normal messages somewhere else (like any
+> sane person, ie me, does)
 
-See patch 1/36. I think it makes sense, though you could argue that
-testing #ifdef atomic64_dec_if_positive would be nicer than testing
-#ifdef ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE.
+I'm committing the attached patch to kbuild.git#kbuild.
 
-> The only other question I'd ask is given that ppc and x86 have both done
-> 32/64bit separate architectures and then gone the other way is that
-> something ARM 64bit needs to think about ?
 
-It's the most debated question so far, in the private review that we've
-done before, and in the public Linaro meetings. You are right that everyone
-else merged their architectures (and sparc, mips in addition ot the ones
-you mentioned, parisc and tile were always combined IIRC).
+>  - when the error happens, it doesn't show *what* went wrong, and in
+> fact it explicitly cleans up all the files that could show what
+> happened.
 
-I've also touched on this question in my reply to Olof, but I can give
-a longer summary of what we talked about before and what I got out of it.
-The basic argument is
+Right, the files need to be preserved somehow. At the same
+time, we can't leave the final files there, to not mark the link as
+successful. I will have a look.
 
-a) Pro merge: Avoid code duplication, because duplicate code leads to duplicate
-bugs and extra maintainance overhead.
+No idea about the actual kallsyms bug yet, sorry.
 
-b) Pro split: Start with a fresh code base without all the legacy code that
-we are currently in the process of reworking; Most code is actually
-different anyway.
+Michal
 
-I was long undecided in this and tried to look at both sides, but I'm now
-leaning towards b).
-Look at what's actually in the arch trees:
 
-* Assembly code: On the other architectures, the 32 and 64 bit instruction
-sets are mostly identical, normally with additional instructions for 64 bit,
-but in case of ARM AArch64, the instruction set is actually completely new
-and it's not possible to write assembler in a way that builds on both
-versions.
+>From 5369f55021feb27a1481267e7afefe14128d669f Mon Sep 17 00:00:00 2001
+From: Michal Marek <mmarek@suse.cz>
+Date: Sat, 7 Jul 2012 23:04:40 +0200
+Subject: [PATCH] kbuild: Print errors to stderr
 
-* System call interface: Most architectures use the same user space ABI
-for 32 and 64 bit, with minor variations. In case of AArch64, we use the
-new generic ABI, while 32 bit ARM uses one that has grown over a long
-time and carries around a lot of legacy baggage. AArch64 has to emulate
-the 32 bit ABI for running old user space, but the 32-bit compat
-implementation cannot actually share any code with the native 32 bit
-one.
+... at least in the top-level Makefile and scripts/link-vmlinux.sh.
+There are some more instances of the 'echo <error>; exit 1' pattern in
+some arch Makefiles and kconfig.
 
-* Platform support: In most architectures, there is a single system-level
-architecture describing stuff like interrupt controllers, timers, SMP
-initialization, etc, and that is usually shared between 32 and 64 bit.
-On 32 bit ARM, we have about 50 distinct platforms, but some of them
-have a lot in common with platforms of another architecture (arm/shmobile
-with sh, arm/imx with powerpc/85xx, arm/rpc with x86, ...). The same code
-is what we're reworking currently and moving out of arch/arm into drivers
-whereever that makes sense.
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
+ Makefile                |   24 ++++++++++++------------
+ scripts/link-vmlinux.sh |    4 ++--
+ 2 files changed, 14 insertions(+), 14 deletions(-)
 
-* Basic infrastructure: pci support, ptrace, signal handling, dma-mapping,
-etc. A lot of things that are copied between architectures are actually
-completely generic and should just be moved into common code out of the
-arch/ directory structure. It's better to share these between aarch64 and
-multiple other new architectures than just between 32 and 64 bit ARM.
-
-Given all of these things that we are not going to share anyway, I think
-it's better to be flexible with the new code and clean up or try out
-things that we would not be able to change easily in a merged code base
-without running the risk of introducing many regressions for 32 bit systems.
-The risk of duplicating code is still there, but I think we can deal with
-that on a case-by-case basis and make sure we don't merge duplicate
-files that should either be shared in one form or another, or that should
-be done differently to start with.
-
-	Arnd
+diff --git a/Makefile b/Makefile
+index 0d718ed..d7d7949 100644
+--- a/Makefile
++++ b/Makefile
+@@ -535,11 +535,11 @@ PHONY += include/config/auto.conf
+ 
+ include/config/auto.conf:
+ 	$(Q)test -e include/generated/autoconf.h -a -e $@ || (		\
+-	echo;								\
+-	echo "  ERROR: Kernel configuration is invalid.";		\
+-	echo "         include/generated/autoconf.h or $@ are missing.";\
+-	echo "         Run 'make oldconfig && make prepare' on kernel src to fix it.";	\
+-	echo;								\
++	echo >&2;							\
++	echo >&2 "  ERROR: Kernel configuration is invalid.";		\
++	echo >&2 "         include/generated/autoconf.h or $@ are missing.";\
++	echo >&2 "         Run 'make oldconfig && make prepare' on kernel src to fix it.";	\
++	echo >&2 ;							\
+ 	/bin/false)
+ 
+ endif # KBUILD_EXTMOD
+@@ -796,8 +796,8 @@ prepare3: include/config/kernel.release
+ ifneq ($(KBUILD_SRC),)
+ 	@$(kecho) '  Using $(srctree) as source for kernel'
+ 	$(Q)if [ -f $(srctree)/.config -o -d $(srctree)/include/config ]; then \
+-		echo "  $(srctree) is not clean, please run 'make mrproper'"; \
+-		echo "  in the '$(srctree)' directory.";\
++		echo >&2 "  $(srctree) is not clean, please run 'make mrproper'"; \
++		echo >&2 "  in the '$(srctree)' directory.";\
+ 		/bin/false; \
+ 	fi;
+ endif
+@@ -971,11 +971,11 @@ else # CONFIG_MODULES
+ # ---------------------------------------------------------------------------
+ 
+ modules modules_install: FORCE
+-	@echo
+-	@echo "The present kernel configuration has modules disabled."
+-	@echo "Type 'make config' and enable loadable module support."
+-	@echo "Then build a kernel with module support enabled."
+-	@echo
++	@echo >&2
++	@echo >&2 "The present kernel configuration has modules disabled."
++	@echo >&2 "Type 'make config' and enable loadable module support."
++	@echo >&2 "Then build a kernel with module support enabled."
++	@echo >&2
+ 	@exit 1
+ 
+ endif # CONFIG_MODULES
+diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
+index cd9c6c6..4629038 100644
+--- a/scripts/link-vmlinux.sh
++++ b/scripts/link-vmlinux.sh
+@@ -210,8 +210,8 @@ if [ -n "${CONFIG_KALLSYMS}" ]; then
+ 	mksysmap ${kallsyms_vmlinux} .tmp_System.map
+ 
+ 	if ! cmp -s System.map .tmp_System.map; then
+-		echo Inconsistent kallsyms data
+-		echo echo Try "make KALLSYMS_EXTRA_PASS=1" as a workaround
++		echo >&2 Inconsistent kallsyms data
++		echo >&2 echo Try "make KALLSYMS_EXTRA_PASS=1" as a workaround
+ 		cleanup
+ 		exit 1
+ 	fi
