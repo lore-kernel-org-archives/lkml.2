@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671Ab2GGBIc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 21:08:32 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:50258 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab2GGBIa (ORCPT
+	id S1756786Ab2GGBLc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 21:11:32 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64665 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709Ab2GGBLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 21:08:30 -0400
-Date: Fri, 6 Jul 2012 20:08:22 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        ewust@umich.edu, zakir@umich.edu, nadiah@cs.ucsd.edu,
-        jhalderm@umich.edu, Linus Torvalds <torvalds@linux-foundation.org>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 05/12] usb: feed USB device information to the
- /dev/random driver
-Message-ID: <20120707010822.GA3097@burratino>
-References: <1341614704-24965-1-git-send-email-tytso@mit.edu>
- <1341614704-24965-6-git-send-email-tytso@mit.edu>
- <20120706230218.GD3728@burratino>
- <20120706232659.GA28978@thunk.org>
+	Fri, 6 Jul 2012 21:11:31 -0400
+X-AuditID: 9c93016f-b7c7eae0000025c5-3b-4ff78cc0360f
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf lock record fails
+References: <4FF7200B.5060008@gmail.com>
+Date: Sat, 07 Jul 2012 10:06:56 +0900
+In-Reply-To: <4FF7200B.5060008@gmail.com> (David Ahern's message of "Fri, 06
+	Jul 2012 11:27:39 -0600")
+Message-ID: <874npkidlb.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120706232659.GA28978@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi, David
 
-Theodore Ts'o wrote:
-> On Fri, Jul 06, 2012 at 06:02:18PM -0500, Jonathan Nieder wrote:
-
->> Why cc: stable@?  Does this fix a build error, oops, hang, data
->> corruption, real security issue, or other critical "oh, that's not
->> good" bug?
+On Fri, 06 Jul 2012 11:27:39 -0600, David Ahern wrote:
+> What config options need to be enabled for 'perf lock record' to work?
+> I tried a number of custom builds and stock Fedora kernels. I always
+> get:
 >
-> All of the /dev/random patches in this patch series that were marked
-> for the stable backports are to address a security issue.  See:
-> https://factorable.net/
-
-Thanks for explaining.  If there's occasion for a reroll (I'm guessing
-there won't be) then it would be nice to mention this in the commit
-messages.
-
-[...]
-> While these patches are designed to do as much as we can without
-> assuming any fixes in userspace, and the weak kea vulnerabilities are
-> much more obviously detectable in embedded devices with close to zero
-> available entropy, ideally there are improvements that can and should
-> be done in upstream userspace packages as well as in the packaging and
-> installation scripts for more general-purpose server and workstation
-> distributions.
+> $ perf lock record -- sleep 1
+> invalid or unsupported event: 'lock:lock_acquire'
 >
-> For example, ssh key generation should happen as late as possible;
-> ideally, some time *after* the networking has been brought up.
-[...]
->               The same is true for the generation of remote
-> administration keys for ntpd and bind.
+> Though trace_lock_acquire exists, CONFIG_LOCKDEP is set, and ftrace is
+> enabled.
+>
+> What am I missing?
+>
 
-Very much agreed.  These patches look like an improvement but on
-diskless systems without a hardware RNG it still seems possible for
-someone with knowledge of the hardware configuration to predict the
-generator state.
+Weird. AFAICS lock_acquire and lock_release depend on CONFIG_LOCKDEP,
+and lock_acquired and lock_contented depend on CONFIG_LOCK_STAT (I guess
+it should be warned/commented somewhere?). Maybe CONFIG_EVENT_TRACING?
 
-Except that patch 2 improves matters a lot.
-
-Thanks for your work and kindness,
-Jonathan
+Thanks,
+Namhyung
