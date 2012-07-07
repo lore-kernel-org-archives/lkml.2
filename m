@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab2GGDJT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 23:09:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52514 "EHLO mx1.redhat.com"
+	id S1756814Ab2GGDVY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 23:21:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:56557 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751428Ab2GGDJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 23:09:18 -0400
-Message-ID: <4FF7A84D.5040006@redhat.com>
-Date: Sat, 07 Jul 2012 00:09:01 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1751585Ab2GGDVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jul 2012 23:21:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="119730541"
+Message-ID: <4FF7AB30.50405@intel.com>
+Date: Sat, 07 Jul 2012 11:21:20 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-To: Du Changbin <changbin.du@gmail.com>
-CC: mchehab@infradead.org, anssi.hannula@iki.fi, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Resend PATCH] media: rc: ati_remote.c: code style and compile
- warning fixing
-References: <031601cd5be2$b8831fb0$29895f10$@gmail.com>
-In-Reply-To: <031601cd5be2$b8831fb0$29895f10$@gmail.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+CC: linux-kernel@vger.kernel.org, hpa@zytor.com,
+        "Wu, Fengguang" <fengguang.wu@intel.com>
+Subject: Re: Fwd: Re: [linux-next-20120706] x86/mm: incompatible pointer typewarning.
+References: <4FF6F14C.3070104@intel.com> <4FF6F1E9.7050709@intel.com> <201207070943.DBB17689.FOMQJtOFLHOVFS@I-love.SAKURA.ne.jp>
+In-Reply-To: <201207070943.DBB17689.FOMQJtOFLHOVFS@I-love.SAKURA.ne.jp>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 06-07-2012 22:49, Du Changbin escreveu:
->>> diff --git a/drivers/media/rc/ati_remote.c
-> b/drivers/media/rc/ati_remote.c
->>> index 7be377f..0df66ac 100644
->>> --- a/drivers/media/rc/ati_remote.c
->>> +++ b/drivers/media/rc/ati_remote.c
->>> @@ -23,6 +23,8 @@
->>>     *                Vincent Vanackere <vanackere@lif.univ-mrs.fr>
->>>     *            Added support for the "Lola" remote contributed by:
->>>     *                Seth Cohn <sethcohn@yahoo.com>
->>> + *  Jul 2012: Du, Changbin <changbin.du@gmail.com>
->>> + *            Code style and compile warning fixing
->>
->> You shouldn't be changing the driver's authorship just due to codingstyle
->> and warning fixes. Btw, Please split Coding Style form Compilation
-> warnings,
->> as they're two different matters.
+On 07/07/2012 08:43 AM, Tetsuo Handa wrote:
+
+> Alex Shi wrote:
+>> Thanks for your report, mm should means mm_struct. no vma. My fault.
+>> Could you like try this patch.
 > 
-> Sorry, I didn't know this rule. I just want to make  a track for me. OK, I
-> will resend this patch and remove me from it.
-> BTW, I am looking for something to learn these basic rules when sending
-> patches. Could you tell me where I can find it?
-
-There are some rules at linuxtv wiki pages, others at the Kernel Documentation
-dir and other not so explicit rules like the above that you'll get as you
-continue contributing ;)
-
-In opposite to other open source projects, the contribution history is the
-git logs, and not inside the comments at the source code.
+> Builds OK. Thank you.
 
 
-> Many thanks!
-> [Du, Changbin]
+Uh, seems the allnoconfig setting is different on different tree.
+I need to tired it other tree no just Linus' tree. :(
 
-Thanks,
-Mauro
+> 
+>> From 97781231b130e7f7fced12244653ed9b9946c944 Mon Sep 17 00:00:00 2001
+>> From: Alex Shi <alex.shi@intel.com>
+>> Date: Fri, 6 Jul 2012 20:49:25 +0800
+>> Subject: [PATCH] x86/tlb: fix allnoconfig building warning
+>>
+>> The incompatible parameter of flush_tlb_mm_range cause build warning.
+>> Fix it by correct parameter.
+
+
+
+-- 
+Thanks
+    Alex
