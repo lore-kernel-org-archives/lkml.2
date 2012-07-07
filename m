@@ -1,116 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab2GGTFF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 15:05:05 -0400
-Received: from fieldses.org ([174.143.236.118]:39964 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751143Ab2GGTFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 15:05:02 -0400
-Date: Sat, 7 Jul 2012 15:04:51 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Filipe Brandenburger <filbranden@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] locks: prevent side-effects of
- locks_release_private before file_lock is initialized
-Message-ID: <20120707190451.GA17049@fieldses.org>
-References: <1339815965-1171-1-git-send-email-filbranden@gmail.com>
- <1340761848-1352-1-git-send-email-filbranden@gmail.com>
- <20120705224251.GH3051@fieldses.org>
+	id S1751429Ab2GGT1Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 15:27:24 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:62418 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab2GGT1V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jul 2012 15:27:21 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Date: Sat, 7 Jul 2012 19:27:12 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
+In-Reply-To: <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120705224251.GH3051@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207071927.13135.arnd@arndb.de>
+X-Provags-ID: V02:K0:/eVOohxP/GM6ufB0msh95V8lA/K8+4Iy4Ad4awEpf6J
+ qOzFkrdzd10YFgo9tVQ9Bpe1UlLYM9R8Pw6DwktuZ2N10XxEAg
+ A77iJHDdYF6+fpYAjTTfWreX3ROa3cXgw3d6ASAuhkK8xI38Vz
+ 2pTSSL8aB70SLeLIjNnZ57cVLPa07eJokxLHnOkTq8d6QUpdgG
+ mWvQgB2lRQx4A66B02tbAb9cLfyV3PxooFiQz+lingaPLMPdtv
+ bmSZwpP8+MyHFxmrQpyh59Kgau1antQxnilmy8dyMmCp6aVeNB
+ jU4iSkUZZ7l5R1qEtn+SlaEsIM6WV6N8cOV5DZjXKqncun4nl7
+ eo/eLg+tD+XdmX7Mqqoc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 06:42:51PM -0400, J. Bruce Fields wrote:
-> On Tue, Jun 26, 2012 at 09:50:48PM -0400, Filipe Brandenburger wrote:
-> > When calling fcntl(F_SETLEASE) for a second time on the same file descriptor,
-> > do_fcntl_add_lease will allocate and initialize a new file_lock to pass to
-> > __vfs_setlease. If that function decides to reuse the existing file_lock, it
-> > will free the newly allocated one to prevent leaking memory.
-> > 
-> > However, the newly allocate file_lock was initialized with a valid file
-> > descriptor pointer and fl_lmops that contains a lm_release_private function,
-> > so calling locks_free_lock will trigger a call to lease_release_private_callback
-> > which will clear the fcntl(F_SETOWN) and fcntl(F_SETSIG) settings for the file
-> > descriptor even though the lease is not really being cleared at that point (as
-> > only the temporary file_lock is being freed.)
-> > 
-> > This patch will fix this bug by calling kmem_cache_free directly instead of
-> > locks_free_lock if the file_lock will not be used. This will end up avoiding
-> > the call to lease_release_private_callback.
-> > 
-> > This bug was tracked in kernel.org Bugzilla database:
-> > https://bugzilla.kernel.org/show_bug.cgi?id=43336
+On Saturday 07 July 2012, Olof Johansson wrote:
 
-Apologies for not taking a closer look till now.
+> > ARM introduced AArch64 as part of the ARMv8 architecture
+> 
+> With the risk of bikeshedding here, but I find the name awkward. How
+> about just naming the arch port arm64 instead? It's considerably more
+> descriptive in the context of the kernel.  For reference, we didn't
+> name ppc64, nor powerpc, after what the IBM/power.org marketing people
+> were currently calling the architecture at the time either.
 
-Having done so.... I think the real problem is that we have this
-release callback at all.  The fact is, this doesn't really have anything
-to do with releasing resources.  And of the places we free a lease, I
-believe only one of them actually wants this.
+I agree the name sucks, and I'd much prefer to just call it arm64
+as well. The main advantage of the aarch64 name is that it's the
+same as the identifier in the elf triplet, and it makes sense to
+keep the same name for all places where we need to identify the
+architecture. This also includes the rpm and dpkg architecture names,
+and the string returned by the uname syscall. If everything else
+is aarch64, we should use that in the kernel directory too, but
+if everyone calls it arm64 anyway, we should probably use that name
+for as many things as possible.
 
-That callback was added without any visible justification by the patch
-below, pulled out of one of the historical git repos.  It looks to me
-like we could just revert it.
+> > There is no hardware platform available at this point. From a kernel
+> > perspective, the aim is to minimise (or even completely remove) the
+> > platform code from the architecture specific directory. FDT is currently
+> > mandated and there are ongoing discussions for ACPI support.
+> 
+> This will be interesting to see how it plays out over time, and how
+> many vendors will drop in arm64 cores on their existing designs and
+> thus need to pull over infrastructure from arch/arm for their platform
+> type. A lot of the drivers have moved out to common code so much of it
+> should be possible to do cleanly, but there is still some risk for
+> duplication.
 
-Could you try that?  If it works, could you send in the result with
-proper changelog, etc.?
+For new platforms, the risk is very low, even if they want to support
+the same peripherals in both 32 and 64 bit kernels, since almost all
+of that can be in drivers/ already. The main missing bits are the
+lack of a place to put irqchip drivers (I think there are already
+patches to create drivers/irqchip/) and dma engines require platform
+specific setup code because of the lack of DT bindings (also being
+worked on).
 
---b.
+I'm a little more worried about platforms that have an existing 32 bit
+code base and have developers that want to reuse the existing code.
+We have to make it very clear from the start that copying platform
+code from arch/arm to arch/arm64 is not acceptable. Using Makefile
+magic to redirect into the 32 bit platform directory would be a
+possibility but I would really hope we can get everyone to do a clean
+64 platform from the start, and hopefully move the 32 bit code over
+to use the same drivers over time, and drastically shrink their
+exisiting platform code.
 
-commit fd08d90925ac99d076382bcf4089085f92992954
-Author: William A. Adamson <andros@thnk.citi.umich.edu>
-Date:   Tue Oct 19 18:44:22 2004 -0700
+> I guess it's a good chance to clean up some of it and start from a
+> clean slate, if you can avoid the temptation of just moving over code.
 
-    [PATCH] nfs4 lease: move the f_delown processing
-    
-    Move the f_delown processing from lease_modify() into a new default lock
-    manager fl_release_private callback.
-    
-    Signed-off-by: Andy Adamson <andros@citi.umich.edu>
-    Signed-off-by: Andrew Morton <akpm@osdl.org>
-    Signed-off-by: Linus Torvalds <torvalds@osdl.org>
+Agreed. It's clear from the code that it started out as a copy of the
+32 bit ARM code base, which I think was a mistake, but it has also
+moved on since then and many areas of the 64 bit code are now much
+cleaner because they don't have to worry about breaking legacy code.
+We're also more flexible with trying out stuff without having to
+worry about breaking some 10 year old board code.
 
-diff --git a/fs/locks.c b/fs/locks.c
-index e05dffc..1257539 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -397,8 +397,18 @@ static void lease_break_callback(struct file_lock *fl)
- 	kill_fasync(&fl->fl_fasync, SIGIO, POLL_MSG);
- }
- 
-+static void lease_release_private_callback(struct file_lock *fl)
-+{
-+	if (!fl->fl_file)
-+		return;
-+
-+	f_delown(fl->fl_file);
-+	fl->fl_file->f_owner.signum = 0;
-+}
-+
- struct lock_manager_operations lease_manager_ops = {
- 	.fl_break = lease_break_callback,
-+	.fl_release_private = lease_release_private_callback,
- };
- 
- /*
-@@ -1056,13 +1066,8 @@ static int lease_modify(struct file_lock **before, int arg)
- 	if (error)
- 		return error;
- 	locks_wake_up_blocks(fl);
--	if (arg == F_UNLCK) {
--		struct file *filp = fl->fl_file;
--
--		f_delown(filp);
--		filp->f_owner.signum = 0;
-+	if (arg == F_UNLCK)
- 		locks_delete_lock(before);
--	}
- 	return 0;
- }
- 
+	Arnd
