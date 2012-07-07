@@ -1,203 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927Ab2GGWB2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 18:01:28 -0400
-Received: from plane.gmane.org ([80.91.229.3]:38369 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751818Ab2GGWB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 18:01:27 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Oleksandr Natalenko <pfactum@gmail.com>
-Subject: Re: [PATCH]RIFS-V3-Test For 3.4.x kernel.
-Date: Sun, 08 Jul 2012 01:01:14 +0300
-Message-ID: <jtabja$fhs$1@dough.gmane.org>
-References: <CANQmPXibzo2OVPorHX3dcgbDFPnr=3FPm5Bu1-DbthSykzkJcA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 160-249-113-92.pool.ukrtel.net
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120616 Thunderbird/13.0.1
-In-Reply-To: <CANQmPXibzo2OVPorHX3dcgbDFPnr=3FPm5Bu1-DbthSykzkJcA@mail.gmail.com>
+	id S1751986Ab2GGWjR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 18:39:17 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:53558 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860Ab2GGWjK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jul 2012 18:39:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120702101057.2a8dd6a6@notabene.brown>
+References: <1340998590-23042-1-git-send-email-andrew.p.boie@intel.com>
+	<20120630032333.GB3972@kroah.com>
+	<CAMbhsRSYL3oE_mbdjyNbV453DddPNUyJBU2eLJhUNaASF1+MtA@mail.gmail.com>
+	<20120630041928.GA1816@kroah.com>
+	<CAMbhsRRUs1tHQ+DfWzhKE6M47+Rqu0uB4hQgX7d7ZGzaZi9uyw@mail.gmail.com>
+	<20120702101057.2a8dd6a6@notabene.brown>
+Date: Sat, 7 Jul 2012 15:39:09 -0700
+X-Google-Sender-Auth: ttUxv2T_jQrc7lOZm4scfMGXJqw
+Message-ID: <CAMbhsRSQhBTxA9g1b4Pc6px4gYcOzn4miOrS6ecdJmOQ+RNSGA@mail.gmail.com>
+Subject: Re: [PATCH] bcb: Android bootloader control block driver
+From: Colin Cross <ccross@android.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Andrew Boie <andrew.p.boie@intel.com>, arve@android.com,
+        rebecca@android.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Could you please make some chart to visually compare latencies with CFS?
+On Sun, Jul 1, 2012 at 5:10 PM, NeilBrown <neilb@suse.de> wrote:
+> On Fri, 29 Jun 2012 21:37:36 -0700 Colin Cross <ccross@android.com> wrote:
+>
+>> What's the point of the existing syscall option if it doesn't work on
+>> all platforms, or at least all platforms that want to support it?  It
+>> doesn't make sense to me to use REBOOT2 on some SoCs because they
+>> happen to use something that userspace cannot access, but use direct
+>> access from userspace and a different reboot syscall option on other
+>> SoCs.
 
-Also, has RIFS got cgroups support?
+You missed this part of my message.
 
-07.07.12 23:58, Chen написав(ла):
-> 1. Benchmark:
-> [admin@localhost ~]$ latt -c255 sleep 10
-> 
-> Parameters: min_wait=100ms, max_wait=500ms, clients=255
-> Entries logged: 1020
-> 
-> Wakeup averages
-> -------------------------------------
-> 	Max		  106549 usec
-> 	Avg		    1446 usec
-> 	Stdev		    6182 usec
-> 	Stdev mean	     194 usec
-> 
-> Work averages
-> -------------------------------------
-> 	Max		 2793229 usec
-> 	Avg		 2189141 usec
-> 	Stdev		  351389 usec
-> 	Stdev mean	   11002 usec
-> [admin@localhost ~]$ latt -c128 sleep 10
-> 
-> Parameters: min_wait=100ms, max_wait=500ms, clients=128
-> Entries logged: 768
-> 
-> Wakeup averages
-> -------------------------------------
-> 	Max		   70824 usec
-> 	Avg		    1761 usec
-> 	Stdev		    5074 usec
-> 	Stdev mean	     183 usec
-> 
-> Work averages
-> -------------------------------------
-> 	Max		 1464295 usec
-> 	Avg		 1163262 usec
-> 	Stdev		  210801 usec
-> 	Stdev mean	    7607 usec
-> [admin@localhost ~]$ latt -c64 sleep 10
-> 
-> Parameters: min_wait=100ms, max_wait=500ms, clients=64
-> Entries logged: 640
-> 
-> Wakeup averages
-> -------------------------------------
-> 	Max		   53780 usec
-> 	Avg		    1375 usec
-> 	Stdev		    4772 usec
-> 	Stdev mean	     189 usec
-> 
-> Work averages
-> -------------------------------------
-> 	Max		  797045 usec
-> 	Avg		  596825 usec
-> 	Stdev		  111695 usec
-> 	Stdev mean	    4415 usec
-> [admin@localhost ~]$ latt -c32 sleep 10
-> 
-> Parameters: min_wait=100ms, max_wait=500ms, clients=32
-> Entries logged: 480
-> 
-> Wakeup averages
-> -------------------------------------
-> 	Max		   86032 usec
-> 	Avg		    2147 usec
-> 	Stdev		    7659 usec
-> 	Stdev mean	     350 usec
-> 
-> Work averages
-> -------------------------------------
-> 	Max		  374303 usec
-> 	Avg		  309004 usec
-> 	Stdev		   43155 usec
-> 	Stdev mean	    1970 usec
-> [admin@localhost ~]$ latt -c16 sleep 10
-> 
-> Parameters: min_wait=100ms, max_wait=500ms, clients=16
-> Entries logged: 320
-> 
-> Wakeup averages
-> -------------------------------------
-> 	Max		   41166 usec
-> 	Avg		    1150 usec
-> 	Stdev		    4706 usec
-> 	Stdev mean	     263 usec
-> 
-> Work averages
-> -------------------------------------
-> 	Max		  178917 usec
-> 	Avg		  155367 usec
-> 	Stdev		   16074 usec
-> 	Stdev mean	     899 usec
-> [admin@localhost ~]$ latt -c8 sleep 10
-> 
-> Parameters: min_wait=100ms, max_wait=500ms, clients=8
-> Entries logged: 184
-> 
-> Wakeup averages
-> -------------------------------------
-> 	Max		   20256 usec
-> 	Avg		     585 usec
-> 	Stdev		    2306 usec
-> 	Stdev mean	     170 usec
-> 
-> Work averages
-> -------------------------------------
-> 	Max		   88262 usec
-> 	Avg		   75957 usec
-> 	Stdev		    7102 usec
-> 	Stdev mean	     524 usec
-> [admin@localhost ~]$ latt -c4 sleep 10
-> 
-> Parameters: min_wait=100ms, max_wait=500ms, clients=4
-> Entries logged: 104
-> 
-> Wakeup averages
-> -------------------------------------
-> 	Max		    7950 usec
-> 	Avg		     663 usec
-> 	Stdev		    1719 usec
-> 	Stdev mean	     169 usec
-> 
-> Work averages
-> -------------------------------------
-> 	Max		   50647 usec
-> 	Avg		   38685 usec
-> 	Stdev		    4053 usec
-> 	Stdev mean	     397 usec
-> [admin@localhost ~]$ latt -c2 sleep 10
-> 
-> Parameters: min_wait=100ms, max_wait=500ms, clients=2
-> Entries logged: 54
-> 
-> Wakeup averages
-> -------------------------------------
-> 	Max		      33 usec
-> 	Avg		       9 usec
-> 	Stdev		       5 usec
-> 	Stdev mean	       1 usec
-> 
-> Work averages
-> -------------------------------------
-> 	Max		   21700 usec
-> 	Avg		   20590 usec
-> 	Stdev		     258 usec
-> 	Stdev mean	      35 usec
-> [admin@localhost ~]$ latt -c1 sleep 10
-> 
-> Parameters: min_wait=100ms, max_wait=500ms, clients=1
-> Entries logged: 27
-> 
-> Wakeup averages
-> -------------------------------------
-> 	Max		      22 usec
-> 	Avg		       9 usec
-> 	Stdev		       3 usec
-> 	Stdev mean	       1 usec
-> 
-> Work averages
-> -------------------------------------
-> 	Max		   20614 usec
-> 	Avg		   20162 usec
-> 	Stdev		     125 usec
-> 	Stdev mean	      24 usec
-> 
-> 
-> 
-> RIFS-V3 is the new name of RIFS-ES. It looks like CFS. but with RIFS,
-> the latency is much lower.
-> 
+>> >> <snip>
+>> >>
+>> >> >>
+>> >> >> diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
+>> >> >> index 9a99238..c30fd20 100644
+>> >> >> --- a/drivers/staging/android/Kconfig
+>> >> >> +++ b/drivers/staging/android/Kconfig
+>> >> >> @@ -78,6 +78,17 @@ config ANDROID_INTF_ALARM_DEV
+>> >> >>         elapsed realtime, and a non-wakeup alarm on the monotonic clock.
+>> >> >>         Also exports the alarm interface to user-space.
+>> >> >>
+>> >> >> +config BOOTLOADER_CONTROL
+>> >> >> +     tristate "Bootloader Control Block module"
+>> >> >> +     default n
+>> >> >> +     help
+>> >> >> +       This driver installs a reboot hook, such that if reboot() is invoked
+>> >> >> +       with a string argument NNN, "bootonce-NNN" is copied to the command
+>> >> >> +       field in the Bootloader Control Block on the /misc partition, to be
+>> >> >> +       read by the bootloader. If the string matches one of the boot labels
+>> >> >> +       defined in its configuration, it will boot once into that label. The
+>> >> >> +       device and partition number are specified on the kernel command line.
+>> >> >> +
+>> >> >>  endif # if ANDROID
+>> >> >>
+>> >> >>  endmenu
+>> >>
+>> >> Most of this driver is not unique to Android.
+>> >
+>> > Do any other systems use it?
+>>
+>> None that I'm aware of, but REBOOT2 existed long before Android, so I
+>> assume something must have used it.
+>
+> Dangerous that - making assumptions.
+>
+> I've just spent a while hunting though the code and the history.
+> The LINUX_REBOOT_CMD_RESTART2 option to sys_reboot - which is the only one
+> that uses the the 'arg' option - was added in 2.1.30.  This was the same time
+> that reboot notifiers were added and there seem to be steps towards a more
+> generic "machine_restart" call.
+> No code actually *used* the arg.
+>
+> Looking through current code is rather time consuming as you have to follow
+> several levels of indirection to find code that might actually use the arg,
+> but I spend a while looking, trying to cover samples for all archs and driver
+> classes (there are lots of watchdogs -  I didn't check them all).
+> I only found *1* instance of code which actually used the arg.
+> This is arch/alpha/kernel/process.c which tests if the arg is NULL, and
+> selects between a "cold bootstrap" and a "warm bootstrap".
+>
+> I think we would be well served by a patch that just removes it.  Or at
+> least, that ignores the value of the arg and just passes NULL or (void*)1.
+> And definitely don't pass it to the reboot notifiers - no code uses it there.
+>
+> I can certainly see value in having a standard interface to say "the next
+> reboot should boot 'foo' rather than the default".  I don't think there is
+> any real need for the kernel to provide that interface.
+>
+> I would suggest that you create
+>     /sbin/next-boot-image
+> (or some better name), which gets a different program installed depending on
+> what boot loader is in use.  Then your libcutils can just
+>
+>   system("/sbin/next-boot-image foo")
+>   reboot(LINUX_REBOOT_CMD_RESTART);
+>
+> and work on all platforms.
+> (Or use a loadable module, or a binder RPC to some service, or dbus or smoke
+> signals or whatever).
+>
 
-
-
+On many (most?) ARM SoCs, the reboot flag is not stored on disk, or
+anywhere else userspace can access.  It is stored in a power
+management controller scratch register that survives resets, or a
+register in an external I2C PMIC, or in internal SoC RAM (I've seen
+all of these).  For your proposal, every SoC would need a custom API
+to save the reboot flag somewhere.  For these devices, it clearly
+makes more sense to use something like the REBOOT2 API, and if we have
+to use it on some devices, it makes no sense to me to not use it on
+other devices just because userspace could theoretically handle it.
