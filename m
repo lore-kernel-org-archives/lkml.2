@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754236Ab2GGAi3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jul 2012 20:38:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47017 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab2GGAi1 (ORCPT
+	id S1755767Ab2GGAnI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jul 2012 20:43:08 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:64338 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800Ab2GGAnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jul 2012 20:38:27 -0400
-Date: Sat, 7 Jul 2012 09:38:19 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: JoonSoo Kim <js1304@gmail.com>
-Cc: Minchan Kim <minchan@kernel.org>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: don't invoke __alloc_pages_direct_compact when order
- 0
-Message-ID: <20120707003819.GA2041@barrios>
-References: <1341588521-17744-1-git-send-email-js1304@gmail.com>
- <20120706155920.GA7721@barrios>
- <CAAmzW4N+-xS65-NDJF2V9nzGDBTFC=20sZ8LJx5wCZ8=t7SpTQ@mail.gmail.com>
-MIME-Version: 1.0
+	Fri, 6 Jul 2012 20:43:06 -0400
+X-Nat-Received: from [202.181.97.72]:60776 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1341621782.30242
+To: alex.shi@intel.com, linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: Fwd: Re: [linux-next-20120706] x86/mm: incompatible pointer typewarning.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <4FF6F14C.3070104@intel.com>
+	<4FF6F1E9.7050709@intel.com>
+In-Reply-To: <4FF6F1E9.7050709@intel.com>
+Message-Id: <201207070943.DBB17689.FOMQJtOFLHOVFS@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 7 Jul 2012 09:43:00 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAmzW4N+-xS65-NDJF2V9nzGDBTFC=20sZ8LJx5wCZ8=t7SpTQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 06072012 #8538937, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 07, 2012 at 01:58:24AM +0900, JoonSoo Kim wrote:
-> 2012/7/7 Minchan Kim <minchan@kernel.org>:
-> > Hi Joonsoo,
-> >
-> > On Sat, Jul 07, 2012 at 12:28:41AM +0900, Joonsoo Kim wrote:
-> >> __alloc_pages_direct_compact has many arguments so invoking it is very costly.
-> >
-> > It's already slow path so it's pointless for such optimization.
-> 
-> I know this is so minor optimization.
-> But why don't we do such a one?
-> Is there any weak point?
+Alex Shi wrote:
+> Thanks for your report, mm should means mm_struct. no vma. My fault.
+> Could you like try this patch.
 
-Let's think about it.
-You are adding *new rule* for minor optimization.
-If new users uses __alloc_pages_direct_compact in future, they always have to
-check whether order is zero not not. So it could increase code size as well as
-bad for readbility. Even, I'm not sure adding branch is always win than
-just passing the some arguement in all architecures.
+Builds OK. Thank you.
 
+> From 97781231b130e7f7fced12244653ed9b9946c944 Mon Sep 17 00:00:00 2001
+> From: Alex Shi <alex.shi@intel.com>
+> Date: Fri, 6 Jul 2012 20:49:25 +0800
+> Subject: [PATCH] x86/tlb: fix allnoconfig building warning
 > 
-> >> And in almost invoking case, order is 0, so return immediately.
-> >
-> > You can't make sure it.
-> 
-> Okay.
-> 
-> >>
-> >> Let's not invoke it when order 0
-> >
-> > Let's not ruin git blame.
-> 
-> Hmm...
-> When I do git blame, I can't find anything related to this.
-
-I mean if we merge the pointless patch, it could be showed firstly instead of
-meaningful patch when we do git blame. It makes us bothering when we find blame-patch.
-
-> 
-> Thanks for comments
-
+> The incompatible parameter of flush_tlb_mm_range cause build warning.
+> Fix it by correct parameter.
