@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751906Ab2GGGDM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 02:03:12 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:42296 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab2GGGDK (ORCPT
+	id S1752005Ab2GGGPA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 02:15:00 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53460 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523Ab2GGGO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 02:03:10 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "Steven J. Magnani" <steve@digidescorp.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] fat (exportfs): reconnect file handles to evicted inodes/dentries
-References: <1341342576-15394-1-git-send-email-steve@digidescorp.com>
-	<1341342576-15394-3-git-send-email-steve@digidescorp.com>
-	<87pq8bokcp.fsf@devron.myhome.or.jp>
-	<1341606824.2214.14.camel@iscandar.digidescorp.com>
-	<871ukobntl.fsf@devron.myhome.or.jp>
-	<1341623782.2021.9.camel@iscandar>
-Date: Sat, 07 Jul 2012 15:03:04 +0900
-In-Reply-To: <1341623782.2021.9.camel@iscandar> (Steven J. Magnani's message
-	of "Fri, 06 Jul 2012 20:16:22 -0500")
-Message-ID: <87wr2g9kh3.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Sat, 7 Jul 2012 02:14:59 -0400
+Date: Sat, 7 Jul 2012 09:14:47 +0300
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: Richard Weinberger <richard@nod.at>,
+        Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] ubi: Fix bad PEBs reserve caclulation
+Message-ID: <20120707091447.25d735e3@pixies.home.jungo.com>
+In-Reply-To: <CACQ1gAhm-EsNPpDW26NSf-LJnxvJf0Y+tOnR9ZKPYdT_adPp7g@mail.gmail.com>
+References: <1341389164-24409-1-git-send-email-shmulik.ladkani@gmail.com>
+	<4FF4005E.1070106@nod.at>
+	<20120704143339.513439b4@pixies.home.jungo.com>
+	<CACQ1gAhm-EsNPpDW26NSf-LJnxvJf0Y+tOnR9ZKPYdT_adPp7g@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Steven J. Magnani" <steve@digidescorp.com> writes:
+Hi Richard,
 
-> On Sat, 2012-07-07 at 06:07 +0900, OGAWA Hirofumi wrote: 
->> "Steven J. Magnani" <steve@digidescorp.com> writes:
->> 
->> > On Wed, 2012-07-04 at 20:07 +0900, OGAWA Hirofumi wrote: 
->> >> Please don't add new lock_super() usage if it is not necessary. Almost
->> >> all of lock_super() just replaced lock_kernel() usage. It rather should
->> >> be removed in future.  Probably, this should use inode->i_mutex instead.
->> >> 
->> >> BTW, the above issue is same with all of directory read.
->> >
->> > I don't think there's really an alternative here. The cases addressed by
->> > this patch all involve walking on-disk structures via
->> > unofficial/temporary inodes created from information in the NFS handle
->> > (i.e., outside the normal inode creation paths). When this process is
->> > successful we end up with "official" connected inodes/dentries, but
->> > getting there is really a "bottom up" strategy instead of the usual "top
->> > down" approach.
->> >
->> > Because the "bottom up" method is lacking guarantees that "top down"
->> > takes for granted - i.e., that a cluster on disk that's supposed to be a
->> > directory actually *is* a directory -  I am adding some defensive code
->> > in the next spin of the patch.
->> 
->> I'm not sure what you meant. Where is the problem? ->get_name()? If so,
->> it has parent dentry parameter. What is the wrong if we take
->> mutex_lock(parent->d_inode)?
->
-> The temporary/"unofficial" inodes are unhashed and thus not visible
-> outside of the functions using them. They exist only to support access
-> to directory contents when we can't gain that access via other means
-> (because we only have "bottom up" information, about an object and
-> perhaps its parent, in a form that can't be used to look up hashed
-> inodes/dentries). Hashing them wouldn't help, because they don't have
-> the correct key (for instance, in the case of a ".." entry).
->
-> Am I missing something?
+On Fri, 6 Jul 2012 17:27:59 +0200 Richard Genoud <richard.genoud@gmail.com> wrote:
+> I've got an oops...
+> this is my dev-kernel in 3.5-rc5 + some work to be able to boot on my board
+> NB: If I use ubi_format it's ok.
+> the mtd1 device has 1984 PEB
+> the 4 last are UBI reserved + BBT
+> 
+> I didn't test without your patch, but anyway something is wrong there.
 
-You mean the unhashed inode is created by ->get_parent()? If so, the
-root cause sounds like ->get_parent() itself. If not, I'm not
-understanding the meaning of the temporary/unofficial inode here.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Many thanks for testing.
+
+Could you please verify the crash only occurs with the patch?
+
+Can you provide the vmlinux matching this oops, so I may analyze the
+exact null dereferencing point?
+It seems to be somewhere in ubi_wl_init, however the patch seems not to
+affect these parts of ubi...
+
+Also, what's your CONFIG_MTD_UBI_BEB_LIMIT?
+
+Regards,
+Shmulik
