@@ -1,37 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab2GGIka (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 04:40:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45513 "EHLO
+	id S1750997Ab2GGJW0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 05:22:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36615 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840Ab2GGIk0 (ORCPT
+	with ESMTP id S1750736Ab2GGJWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 04:40:26 -0400
-Date: Sat, 7 Jul 2012 01:40:23 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Joonsoo Kim <js1304@gmail.com>
-cc: akpm@linux-foundation.org, Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: don't invoke __alloc_pages_direct_compact when order
- 0
-In-Reply-To: <1341588521-17744-1-git-send-email-js1304@gmail.com>
-Message-ID: <alpine.DEB.2.00.1207070139510.10445@chino.kir.corp.google.com>
-References: <1341588521-17744-1-git-send-email-js1304@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 7 Jul 2012 05:22:25 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: David Airlie <airlied@linux.ie>, Dave Airlie <airlied@redhat.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH] drm/mgag200: fix null pointer dereference
+Date: Sat,  7 Jul 2012 14:52:15 +0530
+Message-Id: <1341652935-19188-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 7 Jul 2012, Joonsoo Kim wrote:
+we are referencing the pointer after doing alloc_apertures,
+as alloc_apertures kzallocs, the kzalloc may fail and we get a NULL.
 
-> __alloc_pages_direct_compact has many arguments so invoking it is very costly.
-> And in almost invoking case, order is 0, so return immediately.
-> 
+so we need to check for NULL before we dereference this pointer
 
-If "zero cost" is "very costly", then this might make sense.
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
+ drivers/gpu/drm/mgag200/mgag200_drv.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-__alloc_pages_direct_compact() is inlined by gcc.
+diff --git a/drivers/gpu/drm/mgag200/mgag200_drv.c b/drivers/gpu/drm/mgag200/mgag200_drv.c
+index 93e832d..ea1024d 100644
+--- a/drivers/gpu/drm/mgag200/mgag200_drv.c
++++ b/drivers/gpu/drm/mgag200/mgag200_drv.c
+@@ -47,6 +47,9 @@ static void mgag200_kick_out_firmware_fb(struct pci_dev *pdev)
+ 	bool primary = false;
+ 
+ 	ap = alloc_apertures(1);
++	if (!ap)
++		return;
++
+ 	ap->ranges[0].base = pci_resource_start(pdev, 0);
+ 	ap->ranges[0].size = pci_resource_len(pdev, 0);
+ 
+-- 
+1.7.9.5
+
