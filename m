@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751742Ab2GGREs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 13:04:48 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:50222 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab2GGREr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 13:04:47 -0400
+	id S1751792Ab2GGRL3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 13:11:29 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:42478 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751428Ab2GGRL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jul 2012 13:11:28 -0400
+Date: Sat, 7 Jul 2012 10:11:22 -0700
+From: Kees Cook <keescook@chromium.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        ewust@umich.edu, zakir@umich.edu, nadiah@cs.ucsd.edu,
+        jhalderm@umich.edu, stable@vger.kernel.org
+Subject: [PATCH] random: only use gathered bytes from arch_get_random_long
+Message-ID: <20120707171122.GD28340@outflux.net>
+References: <1341614704-24965-1-git-send-email-tytso@mit.edu>
+ <1341614704-24965-8-git-send-email-tytso@mit.edu>
 MIME-Version: 1.0
-In-Reply-To: <CAHdPZaN3HNCJRDGG9kNMfHKOxQr6ULYK36DQyhaQUOM83dtUxQ@mail.gmail.com>
-References: <CAHdPZaN3HNCJRDGG9kNMfHKOxQr6ULYK36DQyhaQUOM83dtUxQ@mail.gmail.com>
-Date: Sat, 7 Jul 2012 22:34:46 +0530
-Message-ID: <CAHdPZaO7_TdWm2SJNe3_8sWonEoNFj6-8y3F=9o96=L_9Vvhzg@mail.gmail.com>
-Subject: Re: config warnings while selecting u300_defconfig
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341614704-24965-8-git-send-email-tytso@mit.edu>
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 7, 2012 at 10:32 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
-> Hi,
->
-> While doing compiling for u300, i selected the u300_defconfig,
->
-> make ARCH=arm CROSS_COMPILE="/home/devendra/gcc-linaro-arm-linux-gnueabihf-2012.05-20120523_linux/bin/arm-linux-gnueabihf-"
-> u300_defconfig
->
-> my cross toolchain is
->
->
-> linux# gcc-linaro-arm-linux-gnueabihf-2012.05-20120523_linux/bin/arm-linux-gnueabihf-gcc
-> --version
->
-> arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-2012.05-20120523 -
-> Linaro GCC 2012.05) 4.7.1 20120514 (prerelease)
->
->
-> i got the following warnings,
->
->
->
-> root@devendra:/home/devendra/linux# make ARCH=arm
-> CROSS_COMPILE="/home/devendra/gcc-linaro-arm-linux-gnueabihf-2012.05-20120523_linux/bin/arm-linux-gnueabihf-"
-> drivers/pinctrl/
-> scripts/kconfig/conf --silentoldconfig Kconfig
-> include/config/auto.conf:394:warning: symbol value 'm' invalid for
-> STMMAC_PLATFORM
-> include/config/auto.conf:730:warning: symbol value 'elf64-x86-64'
-> invalid for OUTPUT_FORMAT
-> include/config/auto.conf:1050:warning: symbol value
-> 'arch/x86/configs/x86_64_defconfig' invalid for ARCH_DEFCONFIG
-> include/config/auto.conf:1335:warning: symbol value '' invalid for
-> ACPI_CUSTOM_DSDT_FILE
-> include/config/auto.conf:2388:warning: symbol value '-fcall-saved-rdi
-> -fcall-saved-rsi -fcall-saved-rdx -fcall-saved-rcx -fcall-saved-r8
-> -fcall-saved-r9 -fcall-saved-r10 -fcall-saved-r11' invalid for
-> ARCH_HWEIGHT_CFLAGS
->
->
-> i m not sure whether this is a compiler issue or a real warning.
->
-> Thanks,
-> Devendra.
+While very unlikely, it is possible for arch_get_random_long() to fail
+in the middle of the loop in xfer_secondary_pool(), which would mean
+that the loop could stop with only part of u.hwrand populated, leading
+to mix_pool_bytes() injecting uninitialized or already injected bytes
+instead of fresh bytes. This changes the mix_pool_bytes() call to only
+inject the successfully gathered bytes.
 
-forgot to mention , this comes in for-next branch of pinctrl. not sure
-the same problem persists in other branches.,
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: stable@vger.kernel.org
+---
+Should be applied on top of the tytso/random dev branch.
+---
+ drivers/char/random.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index aaf4629..6fc3128 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -879,7 +879,7 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
+ 		if (arch_get_random_long(&u.hwrand[i]))
+ 			break;
+ 	if (i)
+-		mix_pool_bytes(r, &u.hwrand, sizeof(u.hwrand), 0);
++		mix_pool_bytes(r, &u.hwrand, i * sizeof(u.hwrand[0]), 0);
+ }
+ 
+ /*
+-- 
+1.7.0.4
+
+-- 
+Kees Cook
+Chrome OS Security
