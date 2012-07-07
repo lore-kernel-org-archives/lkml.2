@@ -1,126 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385Ab2GGOlB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 10:41:01 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56661 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104Ab2GGOlA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 10:41:00 -0400
+	id S1751440Ab2GGOmm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 10:42:42 -0400
+Received: from mga11.intel.com ([192.55.52.93]:26007 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751288Ab2GGOmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jul 2012 10:42:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="174496420"
+Date: Sat, 7 Jul 2012 22:42:28 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Sha Zhengju <handai.szj@gmail.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, gthelen@google.com, yinghan@google.com,
+        akpm@linux-foundation.org, mhocko@suse.cz,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH 3/7] Make TestSetPageDirty and dirty page accounting in
+ one func
+Message-ID: <20120707144228.GA24329@localhost>
+References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>
+ <1340881275-5651-1-git-send-email-handai.szj@taobao.com>
+ <4FF1827A.7060806@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20120530124333.GA3008@alberich.amd.com>
-References: <CA+fU7qen=cwc1vMY1bv21_0GuNKXPQZXsQLVszYG1WG_r1XUGA@mail.gmail.com>
-	<20120524123116.GA4048@alberich.amd.com>
-	<CA+fU7qfPznJpRABC4Z=xmRZW6p5Mw3dFLBySk9HuPnaCYMMnEg@mail.gmail.com>
-	<20120529140940.GA10421@alberich.amd.com>
-	<CA+fU7qdKYA3KJr3xET_evO_1ztSKh0K0csn5Coro7Mkv_my+eg@mail.gmail.com>
-	<20120530124333.GA3008@alberich.amd.com>
-Date: Sat, 7 Jul 2012 15:40:58 +0100
-Message-ID: <CALyZvKxcdNWMHEGwgdO=sGTTs9sZYerYXcQEyqFwixKzzz3giA@mail.gmail.com>
-Subject: Re: PROBLEM: Performance drop
-From: Jason Vas Dias <jason.vas.dias@gmail.com>
-To: Andreas Herrmann <herrmann.der.user@googlemail.com>
-Cc: Comrade DOS <suloevdmitry@gmail.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF1827A.7060806@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I can confirm that the AMD Turion X2 2.2Ghz  HP Compaq 6715b
-"business" x86_64 k8 dual-core laptops circa 2007
-DO get stuck in 800Khz mode  and cannot switch out of it after booting
-the "stable" "v3.4.4" tagged kernel.
+On Mon, Jul 02, 2012 at 08:14:02PM +0900, KAMEZAWA Hiroyuki wrote:
+> (2012/06/28 20:01), Sha Zhengju wrote:
+> > From: Sha Zhengju <handai.szj@taobao.com>
+> > 
+> > Commit a8e7d49a(Fix race in create_empty_buffers() vs __set_page_dirty_buffers())
+> > extracts TestSetPageDirty from __set_page_dirty and is far away from
+> > account_page_dirtied.But it's better to make the two operations in one single
+> > function to keep modular.So in order to avoid the potential race mentioned in
+> > commit a8e7d49a, we can hold private_lock until __set_page_dirty completes.
+> > I guess there's no deadlock between ->private_lock and ->tree_lock by quick look.
+> > 
+> > It's a prepare patch for following memcg dirty page accounting patches.
+> > 
+> > Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+> 
+> I think there is no problem with the lock order.
 
-I followed the containing post and reverted commit
-ff74ae50f01ee67764564815c023c362c87ce18b :
+Me think so, too.
 
-Commit d51cdad33bb5bb370c05129f7c7f3a16a55eff40
-Author: root <root@jvdspc.localdomain>
-Date:   Fri Jul 6 18:57:03 2012 +0000
+> My small concern is the impact on the performance. IIUC, lock contention here can be
+> seen if multiple threads write to the same file in parallel.
+> Do you have any numbers before/after the patch ?
 
-    Revert "ACPI: Evaluate thermal trip points before reading temperature"
+That would be a worthwhile test. The patch moves ->tree_lock and
+->i_lock into ->private_lock, these are often contented locks..
 
-    This reverts commit 9bcb8118965ab4631a65ee0726e6518f75cda6c5.
+For example, in the below case of 12 hard disks, each running 1 dd
+write, the ->tree_lock and ->private_lock have the top #1 and #2
+contentions.
 
-commit ff74ae50f01ee67764564815c023c362c87ce18b
-Author: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date:   Fri Jun 22 11:37:50 2012 -0700
+lkp-nex04/JBOD-12HDD-thresh=1000M/ext4-1dd-1-3.3.0/lock_stat
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                              class name    con-bounces    contentions   waittime-min   waittime-max waittime-total    acq-bounces   acquisitions   holdtime-min   holdtime-max holdtime-total
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-And wow !  what a difference - back to a circa 2007 machine versus  a
-circa 1987 machine.
+           &(&mapping->tree_lock)->rlock:      18629034       19138284           0.09        1029.32    24353812.07       49650988      482883410           0.11         186.88   260706119.09
+           -----------------------------
+           &(&mapping->tree_lock)->rlock            783          [<ffffffff81109267>] tag_pages_for_writeback+0x2b/0x9d
+           &(&mapping->tree_lock)->rlock        3195817          [<ffffffff81100d6c>] add_to_page_cache_locked+0xa3/0x119
+           &(&mapping->tree_lock)->rlock        3863710          [<ffffffff81108df7>] test_set_page_writeback+0x63/0x140
+           &(&mapping->tree_lock)->rlock        3311518          [<ffffffff81172ade>] __set_page_dirty+0x25/0xa5
+           -----------------------------
+           &(&mapping->tree_lock)->rlock        3450725          [<ffffffff81100d6c>] add_to_page_cache_locked+0xa3/0x119
+           &(&mapping->tree_lock)->rlock        3225542          [<ffffffff81172ade>] __set_page_dirty+0x25/0xa5
+           &(&mapping->tree_lock)->rlock        2241958          [<ffffffff81108df7>] test_set_page_writeback+0x63/0x140
+           &(&mapping->tree_lock)->rlock        7339603          [<ffffffff8110ac33>] test_clear_page_writeback+0x64/0x155
 
-Not too many of us  left around trying to run the latest version of
-linux on nearly 5-year-old hardware I guess, but still -
-please can you restore correct Linux cpufreq & thermal operation on
-old-style AMD k8 CPUs ?
-They do seem to depend on the temperature being set BEFORE 1st entry .
+...............................................................................................................................................................................................
 
-Thanks & Regards,
-Jason Vas Dias (a Software Engineer) <jason.vas.dias@gmail.com>
+        &(&mapping->private_lock)->rlock:       1165199        1191201           0.11        2843.25     1621608.38       13341420      152761848           0.10        3727.92    33559035.07
+        --------------------------------
+        &(&mapping->private_lock)->rlock              1          [<ffffffff81172913>] __find_get_block_slow+0x5a/0x135
+        &(&mapping->private_lock)->rlock         385576          [<ffffffff811735d6>] create_empty_buffers+0x48/0xbf
+        &(&mapping->private_lock)->rlock         805624          [<ffffffff8117346d>] try_to_free_buffers+0x57/0xaa
+        --------------------------------
+        &(&mapping->private_lock)->rlock              1          [<ffffffff811746dd>] __getblk+0x1b8/0x257
+        &(&mapping->private_lock)->rlock         952718          [<ffffffff8117346d>] try_to_free_buffers+0x57/0xaa
+        &(&mapping->private_lock)->rlock         238482          [<ffffffff811735d6>] create_empty_buffers+0x48/0xbf
 
-
-On Wed, May 30, 2012 at 1:43 PM, Andreas Herrmann
-<herrmann.der.user@googlemail.com> wrote:
-> On Wed, May 30, 2012 at 03:20:27AM +0700, Comrade DOS wrote:
->> > Unfortunately you have used acpi=debug instead of apic=debug.  So I
->> > can't compare I/O APIC configurations between the different test
->> > scenarios.
->>
->> Sorry me for this mistake.
->
-> No problem.
->
-> The logs show no difference in IO-APIC pin usage.
-> So it's not the old problem ...
->
-> Comparing both logs I found following differences:
->
-> (Most other stuff seems just to be changed formatting.)
->
-> -ACPI: Thermal Zone [TZ1] (67 C)
-> +ACPI: Thermal Zone [TZ1] (62 C)
->
-> I think what's shown is the temperature value which just differed
-> between the boots. But that made me look at acpi/thermal.c where the
-> messages came from. The only change between 3.3 and 3.4 is this
-> commit:
->
->   commit 9bcb8118965ab4631a65ee0726e6518f75cda6c5
->   Author: Matthew Garrett <mjg@redhat.com>
->   Date:   Wed Feb 1 10:26:54 2012 -0500
->
->     ACPI: Evaluate thermal trip points before reading temperature
->
-> I'd suggest to do a test with this patch reverted.  Maybe this change
-> to fix issues with one HP Laptop (re-)intruduced the trouble with your
-> system.
->
-> If reverting the patch helps we have to take a closer look at your
-> ACPI tables.  So can you please do a
->
->  # git revert 9bcb8118965ab4631a65ee0726e6518f75cda6c5
->
-> on top of v3.4 and rebuid your kernel and rerun your test (with
-> apic=debug. This allows easier diff to dmesg output of your previous
-> test runs).
->
-> In any case it also would be good to have the acpi tables from your
-> system. So please also use
-> # acpidump >acpidump.3.3    (using the 3.3.x kernel)
-> # acpidump >acpidump.3.4    (using the unmodified 3.4 version)
->
-> and send all files as attachments to your mail.
->
-> This will allow me to look at your thermal zone definitions in the
-> working and non-working case.
->
->
-> Thanks,
->
-> Andreas
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Thanks,
+Fengguang
