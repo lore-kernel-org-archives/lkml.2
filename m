@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977Ab2GGVBC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 17:01:02 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:57662 "EHLO ogre.sisk.pl"
+	id S1752010Ab2GGVBo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 17:01:44 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:57648 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751624Ab2GGVBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 17:01:00 -0400
+	id S1751700Ab2GGVA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jul 2012 17:00:57 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/4] hwmon / exynos4_tmu: Use struct dev_pm_ops for power management
-Date: Sat, 7 Jul 2012 23:06:08 +0200
+Subject: [PATCH 1/4] hwmon / abituguru: Use struct dev_pm_ops for power management
+Date: Sat, 7 Jul 2012 23:04:09 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
 Cc: Linux PM list <linux-pm@vger.kernel.org>,
         Hans de Goede <hdegoede@redhat.com>,
@@ -22,69 +22,77 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207072306.09305.rjw@sisk.pl>
+Message-Id: <201207072304.10067.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Make the Exynos4 TMU driver define its PM callbacks through
+Make the Abit uGuru driver define its PM callbacks through
 a struct dev_pm_ops object rather than by using legacy PM hooks
 in struct platform_driver.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/hwmon/exynos4_tmu.c |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ drivers/hwmon/abituguru.c |   21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
-Index: linux/drivers/hwmon/exynos4_tmu.c
+Index: linux/drivers/hwmon/abituguru.c
 ===================================================================
---- linux.orig/drivers/hwmon/exynos4_tmu.c
-+++ linux/drivers/hwmon/exynos4_tmu.c
-@@ -476,34 +476,37 @@ static int __devexit exynos4_tmu_remove(
+--- linux.orig/drivers/hwmon/abituguru.c
++++ linux/drivers/hwmon/abituguru.c
+@@ -1514,9 +1514,11 @@ LEAVE_UPDATE:
  }
  
  #ifdef CONFIG_PM
--static int exynos4_tmu_suspend(struct platform_device *pdev, pm_message_t state)
-+static int exynos4_tmu_suspend(struct device *dev)
+-static int abituguru_suspend(struct platform_device *pdev, pm_message_t state)
++static int abituguru_suspend(struct device *dev)
  {
--	exynos4_tmu_control(pdev, false);
-+	exynos4_tmu_control(to_platform_device(dev), false);
- 
+-	struct abituguru_data *data = platform_get_drvdata(pdev);
++	struct abituguru_data *data;
++
++	data = platform_get_drvdata(to_platform_device(dev));
+ 	/*
+ 	 * make sure all communications with the uguru are done and no new
+ 	 * ones are started
+@@ -1525,29 +1527,32 @@ static int abituguru_suspend(struct plat
  	return 0;
  }
  
--static int exynos4_tmu_resume(struct platform_device *pdev)
-+static int exynos4_tmu_resume(struct device *dev)
+-static int abituguru_resume(struct platform_device *pdev)
++static int abituguru_resume(struct device *dev)
  {
-+	struct platform_device *pdev = to_platform_device(dev);
+-	struct abituguru_data *data = platform_get_drvdata(pdev);
++	struct abituguru_data *data;
 +
- 	exynos4_tmu_initialize(pdev);
- 	exynos4_tmu_control(pdev, true);
- 
++	data = platform_get_drvdata(to_platform_device(dev));
+ 	/* See if the uGuru is still ready */
+ 	if (inb_p(data->addr + ABIT_UGURU_DATA) != ABIT_UGURU_STATUS_INPUT)
+ 		data->uguru_ready = 0;
+ 	mutex_unlock(&data->update_lock);
  	return 0;
  }
 +
-+static SIMPLE_DEV_PM_OPS(exynos4_tmu_pm, exynos4_tmu_suspend, exynos4_tmu_resume);
-+#define EXYNOS4_TMU_PM	(&exynos4_tmu_pm)
++static SIMPLE_DEV_PM_OPS(abituguru_pm, abituguru_suspend, abituguru_resume);
++#define ABIT_UGURU_PM	(&abituguru_pm)
  #else
--#define exynos4_tmu_suspend NULL
--#define exynos4_tmu_resume NULL
-+#define EXYNOS4_TMU_PM	NULL
- #endif
+-#define abituguru_suspend	NULL
+-#define abituguru_resume	NULL
++#define ABIT_UGURU_PM	NULL
+ #endif /* CONFIG_PM */
  
- static struct platform_driver exynos4_tmu_driver = {
+ static struct platform_driver abituguru_driver = {
  	.driver = {
- 		.name   = "exynos4-tmu",
- 		.owner  = THIS_MODULE,
-+		.pm     = EXYNOS4_TMU_PM,
+ 		.owner	= THIS_MODULE,
+ 		.name	= ABIT_UGURU_NAME,
++		.pm	= ABIT_UGURU_PM,
  	},
- 	.probe = exynos4_tmu_probe,
- 	.remove	= __devexit_p(exynos4_tmu_remove),
--	.suspend = exynos4_tmu_suspend,
--	.resume = exynos4_tmu_resume,
+ 	.probe		= abituguru_probe,
+ 	.remove		= __devexit_p(abituguru_remove),
+-	.suspend	= abituguru_suspend,
+-	.resume		= abituguru_resume,
  };
  
- module_platform_driver(exynos4_tmu_driver);
+ static int __init abituguru_detect(void)
 
