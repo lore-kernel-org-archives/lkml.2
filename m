@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab2GGGDN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 02:03:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35696 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab2GGGDL (ORCPT
+	id S1751906Ab2GGGDM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 02:03:12 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:42296 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab2GGGDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 02:03:11 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        wwang <wei_wang@realsil.com.cn>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH 2/2] staging/rts_pstor: fix single statements block warning
-Date: Sat,  7 Jul 2012 11:33:04 +0530
-Message-Id: <1341640984-25208-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 7 Jul 2012 02:03:10 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: "Steven J. Magnani" <steve@digidescorp.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] fat (exportfs): reconnect file handles to evicted inodes/dentries
+References: <1341342576-15394-1-git-send-email-steve@digidescorp.com>
+	<1341342576-15394-3-git-send-email-steve@digidescorp.com>
+	<87pq8bokcp.fsf@devron.myhome.or.jp>
+	<1341606824.2214.14.camel@iscandar.digidescorp.com>
+	<871ukobntl.fsf@devron.myhome.or.jp>
+	<1341623782.2021.9.camel@iscandar>
+Date: Sat, 07 Jul 2012 15:03:04 +0900
+In-Reply-To: <1341623782.2021.9.camel@iscandar> (Steven J. Magnani's message
+	of "Fri, 06 Jul 2012 20:16:22 -0500")
+Message-ID: <87wr2g9kh3.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following warning is fixed up.
-drivers/staging/rts_pstor/sd.c:190: WARNING: braces {} are not necessary for single statement blocks
+"Steven J. Magnani" <steve@digidescorp.com> writes:
 
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
- drivers/staging/rts_pstor/sd.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> On Sat, 2012-07-07 at 06:07 +0900, OGAWA Hirofumi wrote: 
+>> "Steven J. Magnani" <steve@digidescorp.com> writes:
+>> 
+>> > On Wed, 2012-07-04 at 20:07 +0900, OGAWA Hirofumi wrote: 
+>> >> Please don't add new lock_super() usage if it is not necessary. Almost
+>> >> all of lock_super() just replaced lock_kernel() usage. It rather should
+>> >> be removed in future.  Probably, this should use inode->i_mutex instead.
+>> >> 
+>> >> BTW, the above issue is same with all of directory read.
+>> >
+>> > I don't think there's really an alternative here. The cases addressed by
+>> > this patch all involve walking on-disk structures via
+>> > unofficial/temporary inodes created from information in the NFS handle
+>> > (i.e., outside the normal inode creation paths). When this process is
+>> > successful we end up with "official" connected inodes/dentries, but
+>> > getting there is really a "bottom up" strategy instead of the usual "top
+>> > down" approach.
+>> >
+>> > Because the "bottom up" method is lacking guarantees that "top down"
+>> > takes for granted - i.e., that a cluster on disk that's supposed to be a
+>> > directory actually *is* a directory -  I am adding some defensive code
+>> > in the next spin of the patch.
+>> 
+>> I'm not sure what you meant. Where is the problem? ->get_name()? If so,
+>> it has parent dentry parameter. What is the wrong if we take
+>> mutex_lock(parent->d_inode)?
+>
+> The temporary/"unofficial" inodes are unhashed and thus not visible
+> outside of the functions using them. They exist only to support access
+> to directory contents when we can't gain that access via other means
+> (because we only have "bottom up" information, about an object and
+> perhaps its parent, in a form that can't be used to look up hashed
+> inodes/dentries). Hashing them wouldn't help, because they don't have
+> the correct key (for instance, in the case of a ".." entry).
+>
+> Am I missing something?
 
-diff --git a/drivers/staging/rts_pstor/sd.c b/drivers/staging/rts_pstor/sd.c
-index ff9bf0f..3cc9a48 100644
---- a/drivers/staging/rts_pstor/sd.c
-+++ b/drivers/staging/rts_pstor/sd.c
-@@ -187,9 +187,9 @@ RTY_SEND_CMD:
- 		     SD_TRANSFER_END | SD_STAT_IDLE, SD_TRANSFER_END | SD_STAT_IDLE);
- 
- 	if (rsp_type == SD_RSP_TYPE_R2) {
--		for (reg_addr = PPBUF_BASE2; reg_addr < PPBUF_BASE2 + 16; reg_addr++) {
-+		for (reg_addr = PPBUF_BASE2; reg_addr < PPBUF_BASE2 + 16; reg_addr++)
- 			rtsx_add_cmd(chip, READ_REG_CMD, reg_addr, 0, 0);
--		}
-+
- 		stat_idx = 16;
- 	} else if (rsp_type != SD_RSP_TYPE_R0) {
- 		for (reg_addr = REG_SD_CMD0; reg_addr <= REG_SD_CMD4; reg_addr++) {
+You mean the unhashed inode is created by ->get_parent()? If so, the
+root cause sounds like ->get_parent() itself. If not, I'm not
+understanding the meaning of the temporary/unofficial inode here.
 -- 
-1.7.9.5
-
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
