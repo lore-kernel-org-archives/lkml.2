@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab2GGRAU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 13:00:20 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:42416 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab2GGRAS (ORCPT
+	id S1751703Ab2GGRCg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 13:02:36 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:53823 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab2GGRCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 13:00:18 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "Steven J. Magnani" <steve@digidescorp.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] fat (exportfs): reconnect file handles to evicted inodes/dentries
-References: <1341342576-15394-1-git-send-email-steve@digidescorp.com>
-	<1341342576-15394-3-git-send-email-steve@digidescorp.com>
-	<87pq8bokcp.fsf@devron.myhome.or.jp>
-	<1341606824.2214.14.camel@iscandar.digidescorp.com>
-	<871ukobntl.fsf@devron.myhome.or.jp>
-	<1341623782.2021.9.camel@iscandar>
-	<87wr2g9kh3.fsf@devron.myhome.or.jp>
-	<1341679286.2435.12.camel@iscandar>
-Date: Sun, 08 Jul 2012 02:00:13 +0900
-In-Reply-To: <1341679286.2435.12.camel@iscandar> (Steven J. Magnani's message
-	of "Sat, 07 Jul 2012 11:41:26 -0500")
-Message-ID: <87zk7bo6aq.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
+	Sat, 7 Jul 2012 13:02:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+Date: Sat, 7 Jul 2012 22:32:34 +0530
+Message-ID: <CAHdPZaN3HNCJRDGG9kNMfHKOxQr6ULYK36DQyhaQUOM83dtUxQ@mail.gmail.com>
+Subject: config warnings while selecting u300_defconfig
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Steven J. Magnani" <steve@digidescorp.com> writes:
+Hi,
 
->> You mean the unhashed inode is created by ->get_parent()? If so, the
->> root cause sounds like ->get_parent() itself. If not, I'm not
->> understanding the meaning of the temporary/unofficial inode here.
->
-> Maybe "private" is a better word than "unofficial". Private inodes are
-> created anywhere fat_new_inode (nee fat_build_unhashed_inode) is called
-> directly, instead of through fat_build_inode. So yes, this is on the
-> get_parent paths (via fat_lookup_dir), and also on the fh_to_dentry path
-> when inode reconstruction is necessary.
->
-> With private inodes, I don't see how anyone but the code that created
-> them could find them to lock them. The reason they're private is that
-> they're temporary aliases; at the time they're created, we don't have
-> enough information to register them in a way that others could find
-> them. A lookup, etc. operation will look for the inode of the "drivers"
-> directory, not the ".." of the "usb" directory. We do need these private
-> inodes in order to walk directory entries. I don't think they're a
-> problem that needs solving; if we didn't use private inodes, we'd still
-> need a way to walk directory entries in the context of these NFS
-> operations, and there would still be potential races between that and
-> other operations on the filesystem.
+While doing compiling for u300, i selected the u300_defconfig,
 
-How do you prevent to modify or free the those inode/blocks from other
-path?  Yeah, it is racy. And if races is not solved, that's simply wrong
-and not solution.
+make ARCH=arm CROSS_COMPILE="/home/devendra/gcc-linaro-arm-linux-gnueabihf-2012.05-20120523_linux/bin/arm-linux-gnueabihf-"
+u300_defconfig
 
-Although I'm not thinking deeply about NFS support on FAT. Just a idea,
-the one of possible solutions would be register it to hash, and find it
-on all path. So, all path will use same inode and lock.
+my cross toolchain is
 
-We need the key, possible key is - if it is only directory, FAT may be
-able to use i_start as additional search key.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+
+linux# gcc-linaro-arm-linux-gnueabihf-2012.05-20120523_linux/bin/arm-linux-gnueabihf-gcc
+--version
+
+arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-2012.05-20120523 -
+Linaro GCC 2012.05) 4.7.1 20120514 (prerelease)
+
+
+i got the following warnings,
+
+
+
+root@devendra:/home/devendra/linux# make ARCH=arm
+CROSS_COMPILE="/home/devendra/gcc-linaro-arm-linux-gnueabihf-2012.05-20120523_linux/bin/arm-linux-gnueabihf-"
+drivers/pinctrl/
+scripts/kconfig/conf --silentoldconfig Kconfig
+include/config/auto.conf:394:warning: symbol value 'm' invalid for
+STMMAC_PLATFORM
+include/config/auto.conf:730:warning: symbol value 'elf64-x86-64'
+invalid for OUTPUT_FORMAT
+include/config/auto.conf:1050:warning: symbol value
+'arch/x86/configs/x86_64_defconfig' invalid for ARCH_DEFCONFIG
+include/config/auto.conf:1335:warning: symbol value '' invalid for
+ACPI_CUSTOM_DSDT_FILE
+include/config/auto.conf:2388:warning: symbol value '-fcall-saved-rdi
+-fcall-saved-rsi -fcall-saved-rdx -fcall-saved-rcx -fcall-saved-r8
+-fcall-saved-r9 -fcall-saved-r10 -fcall-saved-r11' invalid for
+ARCH_HWEIGHT_CFLAGS
+
+
+i m not sure whether this is a compiler issue or a real warning.
+
+Thanks,
+Devendra.
