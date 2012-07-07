@@ -1,42 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab2GGIdL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 04:33:11 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34823 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016Ab2GGIdB (ORCPT
+	id S1752616Ab2GGIka (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 04:40:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45513 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840Ab2GGIk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 04:33:01 -0400
+	Sat, 7 Jul 2012 04:40:26 -0400
+Date: Sat, 7 Jul 2012 01:40:23 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Joonsoo Kim <js1304@gmail.com>
+cc: akpm@linux-foundation.org, Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: don't invoke __alloc_pages_direct_compact when order
+ 0
+In-Reply-To: <1341588521-17744-1-git-send-email-js1304@gmail.com>
+Message-ID: <alpine.DEB.2.00.1207070139510.10445@chino.kir.corp.google.com>
+References: <1341588521-17744-1-git-send-email-js1304@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20120707091447.25d735e3@pixies.home.jungo.com>
-References: <1341389164-24409-1-git-send-email-shmulik.ladkani@gmail.com>
- <4FF4005E.1070106@nod.at> <20120704143339.513439b4@pixies.home.jungo.com>
- <CACQ1gAhm-EsNPpDW26NSf-LJnxvJf0Y+tOnR9ZKPYdT_adPp7g@mail.gmail.com> <20120707091447.25d735e3@pixies.home.jungo.com>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Sat, 7 Jul 2012 10:32:45 +0200
-Message-ID: <CACQ1gAjz7n6mM0U-iBdwqSJuA=dn6tDz1Py7Cd4EsxtnYKjBnQ@mail.gmail.com>
-Subject: Re: [PATCH 0/5] ubi: Fix bad PEBs reserve caclulation
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Cc: Richard Weinberger <richard@nod.at>,
-        Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/7/7 Shmulik Ladkani <shmulik.ladkani@gmail.com>:
-> Many thanks for testing.
->
-> Could you please verify the crash only occurs with the patch?
->
-> Can you provide the vmlinux matching this oops, so I may analyze the
-> exact null dereferencing point?
-> It seems to be somewhere in ubi_wl_init, however the patch seems not to
-> affect these parts of ubi...
->
-> Also, what's your CONFIG_MTD_UBI_BEB_LIMIT?
+On Sat, 7 Jul 2012, Joonsoo Kim wrote:
 
-I'll do that on monday.
+> __alloc_pages_direct_compact has many arguments so invoking it is very costly.
+> And in almost invoking case, order is 0, so return immediately.
+> 
 
-Nice week-end !
+If "zero cost" is "very costly", then this might make sense.
+
+__alloc_pages_direct_compact() is inlined by gcc.
