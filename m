@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab2GGVA6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 17:00:58 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:57636 "EHLO ogre.sisk.pl"
+	id S1752020Ab2GGVBE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 17:01:04 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:57656 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751624Ab2GGVA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 17:00:56 -0400
+	id S1751847Ab2GGVA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jul 2012 17:00:58 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/4] hwmon / gpio-fan: Use struct dev_pm_ops for power management
-Date: Sat, 7 Jul 2012 23:05:28 +0200
+Subject: [PATCH 2/4] hwmon / abituguru3: Use struct dev_pm_ops for power management
+Date: Sat, 7 Jul 2012 23:04:42 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
 Cc: Linux PM list <linux-pm@vger.kernel.org>,
         Hans de Goede <hdegoede@redhat.com>,
@@ -22,74 +22,74 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207072305.28595.rjw@sisk.pl>
+Message-Id: <201207072304.42750.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Make the gpio-fan driver define its PM callbacks through
+Make the Abit uGuru rev. 3 driver define its PM callbacks through
 a struct dev_pm_ops object rather than by using legacy PM hooks
 in struct platform_driver.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/hwmon/gpio-fan.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ drivers/hwmon/abituguru3.c |   21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
-Index: linux/drivers/hwmon/gpio-fan.c
+Index: linux/drivers/hwmon/abituguru3.c
 ===================================================================
---- linux.orig/drivers/hwmon/gpio-fan.c
-+++ linux/drivers/hwmon/gpio-fan.c
-@@ -503,10 +503,11 @@ static int __devexit gpio_fan_remove(str
+--- linux.orig/drivers/hwmon/abituguru3.c
++++ linux/drivers/hwmon/abituguru3.c
+@@ -1142,9 +1142,11 @@ LEAVE_UPDATE:
  }
  
  #ifdef CONFIG_PM
--static int gpio_fan_suspend(struct platform_device *pdev, pm_message_t state)
-+static int gpio_fan_suspend(struct device *dev)
+-static int abituguru3_suspend(struct platform_device *pdev, pm_message_t state)
++static int abituguru3_suspend(struct device *dev)
  {
--	struct gpio_fan_data *fan_data = platform_get_drvdata(pdev);
-+	struct gpio_fan_data *fan_data;
- 
-+	fan_data = platform_get_drvdata(to_platform_device(dev));
- 	if (fan_data->ctrl) {
- 		fan_data->resume_speed = fan_data->speed_index;
- 		set_fan_speed(fan_data, 0);
-@@ -515,27 +516,29 @@ static int gpio_fan_suspend(struct platf
+-	struct abituguru3_data *data = platform_get_drvdata(pdev);
++	struct abituguru3_data *data;
++
++	data = platform_get_drvdata(to_platform_device(dev));
+ 	/*
+ 	 * make sure all communications with the uguru3 are done and no new
+ 	 * ones are started
+@@ -1153,26 +1155,29 @@ static int abituguru3_suspend(struct pla
  	return 0;
  }
  
--static int gpio_fan_resume(struct platform_device *pdev)
-+static int gpio_fan_resume(struct device *dev)
+-static int abituguru3_resume(struct platform_device *pdev)
++static int abituguru3_resume(struct device *dev)
  {
--	struct gpio_fan_data *fan_data = platform_get_drvdata(pdev);
-+	struct gpio_fan_data *fan_data;
- 
-+	fan_data = platform_get_drvdata(to_platform_device(dev));
- 	if (fan_data->ctrl)
- 		set_fan_speed(fan_data, fan_data->resume_speed);
- 
+-	struct abituguru3_data *data = platform_get_drvdata(pdev);
++	struct abituguru3_data *data;
++
++	data = platform_get_drvdata(to_platform_device(dev));
+ 	mutex_unlock(&data->update_lock);
  	return 0;
  }
 +
-+static SIMPLE_DEV_PM_OPS(gpio_fan_pm, gpio_fan_suspend, gpio_fan_resume);
-+#define GPIO_FAN_PM	(&gpio_fan_pm)
++static SIMPLE_DEV_PM_OPS(abituguru3_pm, abituguru3_suspend, abituguru3_resume);
++#define ABIT_UGURU3_PM	(&abituguru3_pm)
  #else
--#define gpio_fan_suspend NULL
--#define gpio_fan_resume NULL
-+#define GPIO_FAN_PM	NULL
- #endif
+-#define abituguru3_suspend	NULL
+-#define abituguru3_resume	NULL
++#define ABIT_UGURU3_PM	NULL
+ #endif /* CONFIG_PM */
  
- static struct platform_driver gpio_fan_driver = {
- 	.probe		= gpio_fan_probe,
- 	.remove		= __devexit_p(gpio_fan_remove),
--	.suspend	= gpio_fan_suspend,
--	.resume		= gpio_fan_resume,
- 	.driver	= {
- 		.name	= "gpio-fan",
-+		.pm	= GPIO_FAN_PM,
+ static struct platform_driver abituguru3_driver = {
+ 	.driver = {
+ 		.owner	= THIS_MODULE,
+ 		.name	= ABIT_UGURU3_NAME,
++		.pm	= ABIT_UGURU3_PM
  	},
+ 	.probe	= abituguru3_probe,
+ 	.remove	= __devexit_p(abituguru3_remove),
+-	.suspend = abituguru3_suspend,
+-	.resume = abituguru3_resume
  };
  
+ static int __init abituguru3_dmi_detect(void)
 
