@@ -1,92 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751369Ab2GGOj2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 10:39:28 -0400
-Received: from tundra.namei.org ([65.99.196.166]:49558 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751104Ab2GGOj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 10:39:26 -0400
-Date: Sun, 8 Jul 2012 00:39:23 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-doc@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: [GIT] security: Minor improvements to no_new_privs documentation
-In-Reply-To: <56ad7562a2a40a29b8ce72f4ec5e5836c5cb72f6.1341512511.git.luto@amacapital.net>
-Message-ID: <alpine.LRH.2.02.1207080038180.14390@tundra.namei.org>
-References: <4FF3A627.40809@landley.net> <56ad7562a2a40a29b8ce72f4ec5e5836c5cb72f6.1341512511.git.luto@amacapital.net>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1751385Ab2GGOlB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 10:41:01 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:56661 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab2GGOlA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jul 2012 10:41:00 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120530124333.GA3008@alberich.amd.com>
+References: <CA+fU7qen=cwc1vMY1bv21_0GuNKXPQZXsQLVszYG1WG_r1XUGA@mail.gmail.com>
+	<20120524123116.GA4048@alberich.amd.com>
+	<CA+fU7qfPznJpRABC4Z=xmRZW6p5Mw3dFLBySk9HuPnaCYMMnEg@mail.gmail.com>
+	<20120529140940.GA10421@alberich.amd.com>
+	<CA+fU7qdKYA3KJr3xET_evO_1ztSKh0K0csn5Coro7Mkv_my+eg@mail.gmail.com>
+	<20120530124333.GA3008@alberich.amd.com>
+Date: Sat, 7 Jul 2012 15:40:58 +0100
+Message-ID: <CALyZvKxcdNWMHEGwgdO=sGTTs9sZYerYXcQEyqFwixKzzz3giA@mail.gmail.com>
+Subject: Re: PROBLEM: Performance drop
+From: Jason Vas Dias <jason.vas.dias@gmail.com>
+To: Andreas Herrmann <herrmann.der.user@googlemail.com>
+Cc: Comrade DOS <suloevdmitry@gmail.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull for 3.5.
+I can confirm that the AMD Turion X2 2.2Ghz  HP Compaq 6715b
+"business" x86_64 k8 dual-core laptops circa 2007
+DO get stuck in 800Khz mode  and cannot switch out of it after booting
+the "stable" "v3.4.4" tagged kernel.
+
+I followed the containing post and reverted commit
+ff74ae50f01ee67764564815c023c362c87ce18b :
+
+Commit d51cdad33bb5bb370c05129f7c7f3a16a55eff40
+Author: root <root@jvdspc.localdomain>
+Date:   Fri Jul 6 18:57:03 2012 +0000
+
+    Revert "ACPI: Evaluate thermal trip points before reading temperature"
+
+    This reverts commit 9bcb8118965ab4631a65ee0726e6518f75cda6c5.
+
+commit ff74ae50f01ee67764564815c023c362c87ce18b
+Author: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date:   Fri Jun 22 11:37:50 2012 -0700
+
+And wow !  what a difference - back to a circa 2007 machine versus  a
+circa 1987 machine.
+
+Not too many of us  left around trying to run the latest version of
+linux on nearly 5-year-old hardware I guess, but still -
+please can you restore correct Linux cpufreq & thermal operation on
+old-style AMD k8 CPUs ?
+They do seem to depend on the temperature being set BEFORE 1st entry .
+
+Thanks & Regards,
+Jason Vas Dias (a Software Engineer) <jason.vas.dias@gmail.com>
 
 
-The following changes since commit 26c439d4005d94b8da28e023e285fd4a9943470e:
-  Linus Torvalds (1):
-        Merge tag 'ecryptfs-3.5-rc6-fixes' of git://git.kernel.org/.../tyhicks/ecryptfs
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
-
-Andy Lutomirski (1):
-      security: Minor improvements to no_new_privs documentation
-
- Documentation/prctl/no_new_privs.txt |    7 +++++++
- include/linux/prctl.h                |    2 ++
- 2 files changed, 9 insertions(+)
-
-commit c540521bba5d2f24bd2c0417157bfaf8b85e2eee
-Author: Andy Lutomirski <luto@amacapital.net>
-Date:   Thu Jul 5 11:23:24 2012 -0700
-
-    security: Minor improvements to no_new_privs documentation
-    
-    The documentation didn't actually mention how to enable no_new_privs.
-    This also adds a note about possible interactions between
-    no_new_privs and LSMs (i.e. why teaching systemd to set no_new_privs
-    is not necessarily a good idea), and it references the new docs
-    from include/linux/prctl.h.
-    
-    Suggested-by: Rob Landley <rob@landley.net>
-    Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-    Acked-by: Kees Cook <keescook@chromium.org>
-    Signed-off-by: James Morris <james.l.morris@oracle.com>
-
-diff --git a/Documentation/prctl/no_new_privs.txt b/Documentation/prctl/no_new_privs.txt
-index cb705ec..f7be84f 100644
---- a/Documentation/prctl/no_new_privs.txt
-+++ b/Documentation/prctl/no_new_privs.txt
-@@ -25,6 +25,13 @@ bits will no longer change the uid or gid; file capabilities will not
- add to the permitted set, and LSMs will not relax constraints after
- execve.
- 
-+To set no_new_privs, use prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0).
-+
-+Be careful, though: LSMs might also not tighten constraints on exec
-+in no_new_privs mode.  (This means that setting up a general-purpose
-+service launcher to set no_new_privs before execing daemons may
-+interfere with LSM-based sandboxing.)
-+
- Note that no_new_privs does not prevent privilege changes that do not
- involve execve.  An appropriately privileged task can still call
- setuid(2) and receive SCM_RIGHTS datagrams.
-diff --git a/include/linux/prctl.h b/include/linux/prctl.h
-index 3988012..289760f 100644
---- a/include/linux/prctl.h
-+++ b/include/linux/prctl.h
-@@ -141,6 +141,8 @@
-  * Changing LSM security domain is considered a new privilege.  So, for example,
-  * asking selinux for a specific new context (e.g. with runcon) will result
-  * in execve returning -EPERM.
-+ *
-+ * See Documentation/prctl/no_new_privs.txt for more details.
-  */
- #define PR_SET_NO_NEW_PRIVS	38
- #define PR_GET_NO_NEW_PRIVS	39
+On Wed, May 30, 2012 at 1:43 PM, Andreas Herrmann
+<herrmann.der.user@googlemail.com> wrote:
+> On Wed, May 30, 2012 at 03:20:27AM +0700, Comrade DOS wrote:
+>> > Unfortunately you have used acpi=debug instead of apic=debug.  So I
+>> > can't compare I/O APIC configurations between the different test
+>> > scenarios.
+>>
+>> Sorry me for this mistake.
+>
+> No problem.
+>
+> The logs show no difference in IO-APIC pin usage.
+> So it's not the old problem ...
+>
+> Comparing both logs I found following differences:
+>
+> (Most other stuff seems just to be changed formatting.)
+>
+> -ACPI: Thermal Zone [TZ1] (67 C)
+> +ACPI: Thermal Zone [TZ1] (62 C)
+>
+> I think what's shown is the temperature value which just differed
+> between the boots. But that made me look at acpi/thermal.c where the
+> messages came from. The only change between 3.3 and 3.4 is this
+> commit:
+>
+>   commit 9bcb8118965ab4631a65ee0726e6518f75cda6c5
+>   Author: Matthew Garrett <mjg@redhat.com>
+>   Date:   Wed Feb 1 10:26:54 2012 -0500
+>
+>     ACPI: Evaluate thermal trip points before reading temperature
+>
+> I'd suggest to do a test with this patch reverted.  Maybe this change
+> to fix issues with one HP Laptop (re-)intruduced the trouble with your
+> system.
+>
+> If reverting the patch helps we have to take a closer look at your
+> ACPI tables.  So can you please do a
+>
+>  # git revert 9bcb8118965ab4631a65ee0726e6518f75cda6c5
+>
+> on top of v3.4 and rebuid your kernel and rerun your test (with
+> apic=debug. This allows easier diff to dmesg output of your previous
+> test runs).
+>
+> In any case it also would be good to have the acpi tables from your
+> system. So please also use
+> # acpidump >acpidump.3.3    (using the 3.3.x kernel)
+> # acpidump >acpidump.3.4    (using the unmodified 3.4 version)
+>
+> and send all files as attachments to your mail.
+>
+> This will allow me to look at your thermal zone definitions in the
+> working and non-working case.
+>
+>
+> Thanks,
+>
+> Andreas
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
