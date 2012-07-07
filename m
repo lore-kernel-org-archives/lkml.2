@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab2GGH6u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 03:58:50 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48932 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752276Ab2GGH6r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 03:58:47 -0400
+	id S1752601Ab2GGH6z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 03:58:55 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34132 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751133Ab2GGH6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jul 2012 03:58:51 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 CC: <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>,
         <j-keerthy@ti.com>, <grant.likely@secretlab.ca>, <b-cousson@ti.com>,
         <kbaidarov@dev.rtsoft.ru>, Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCHv2 2/4] staging: omap-thermal: common code to expose driver to thermal framework
-Date: Sat, 7 Jul 2012 10:57:50 +0300
-Message-ID: <1341647872-15267-3-git-send-email-eduardo.valentin@ti.com>
+Subject: [PATCHv2 3/4] staging: omap-thermal: add OMAP4 data structures
+Date: Sat, 7 Jul 2012 10:57:51 +0300
+Message-ID: <1341647872-15267-4-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
 In-Reply-To: <1341647872-15267-1-git-send-email-eduardo.valentin@ti.com>
 References: <1341647872-15267-1-git-send-email-eduardo.valentin@ti.com>
@@ -24,569 +23,362 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch has the common thermal framework support for OMAP
-bandgap driver. It includes the zone registration and unregistration,
-the cpu cooling and the trip definitions.
-
-The trips definition is essentially one trip for passive cooling
-using the generic cpu cooling device and another one for thermal
-shutdown. The cpu cooling device is built based on the existing
-cpu freq table. The build should be agnostic to omap version,
-but relies that cpufreq is up and running by the time the driver
-registers the cpu cooling, as it relies on the table walk api
-from cpufreq.
+This patch adds the data structures needed for proper registration
+of OMAP4 chips. This patch includes definitions for these chip versions:
+. OMAP4430
+. OMAP4460
+. OMAP4470
 
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- drivers/staging/omap-thermal/Kconfig               |    8 +
- drivers/staging/omap-thermal/Makefile              |    1 +
- drivers/staging/omap-thermal/omap-thermal-common.c |  397 ++++++++++++++++++++
- drivers/staging/omap-thermal/omap-thermal.h        |  108 ++++++
- 4 files changed, 514 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/omap-thermal/omap-thermal-common.c
- create mode 100644 drivers/staging/omap-thermal/omap-thermal.h
+ drivers/staging/omap-thermal/Kconfig         |   14 ++
+ drivers/staging/omap-thermal/Makefile        |    1 +
+ drivers/staging/omap-thermal/omap-bandgap.c  |   14 ++
+ drivers/staging/omap-thermal/omap-bandgap.h  |   10 +
+ drivers/staging/omap-thermal/omap4-thermal.c |  259 ++++++++++++++++++++++++++
+ 5 files changed, 298 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/omap-thermal/omap4-thermal.c
 
 diff --git a/drivers/staging/omap-thermal/Kconfig b/drivers/staging/omap-thermal/Kconfig
-index f3fd2ea..b3996cc 100644
+index b3996cc..e16f0bc 100644
 --- a/drivers/staging/omap-thermal/Kconfig
 +++ b/drivers/staging/omap-thermal/Kconfig
-@@ -9,3 +9,11 @@ config OMAP_BANDGAP
- 	  This includes alert interrupts generation and also the TSHUT
- 	  support.
- 
-+config OMAP_THERMAL
-+	bool "Texas Instruments OMAP4+ thermal framework support"
+@@ -17,3 +17,17 @@ config OMAP_THERMAL
+ 	  If you say yes here you want to get support for generic thermal
+ 	  framework for the Texas Instruments OMAP4460+ on die bandgap
+ 	  temperature sensor.
++
++config OMAP4_THERMAL
++	bool "Texas Instruments OMAP4 thermal support"
 +	depends on OMAP_BANDGAP
-+	depends on CPU_THERMAL
++	depends on ARCH_OMAP4
 +	help
-+	  If you say yes here you want to get support for generic thermal
-+	  framework for the Texas Instruments OMAP4460+ on die bandgap
-+	  temperature sensor.
++	  If you say yes here you get thermal support for the Texas Instruments
++	  OMAP4 SoC family. The current chip supported are:
++	   - OMAP4430
++	   - OMAP4460
++	   - OMAP4470
++
++	  This includes alert interrupts generation and also the TSHUT
++	  support.
 diff --git a/drivers/staging/omap-thermal/Makefile b/drivers/staging/omap-thermal/Makefile
-index c92a854..fcdf773 100644
+index fcdf773..76f9c19 100644
 --- a/drivers/staging/omap-thermal/Makefile
 +++ b/drivers/staging/omap-thermal/Makefile
-@@ -1,2 +1,3 @@
+@@ -1,3 +1,4 @@
  obj-$(CONFIG_OMAP_BANDGAP)	+= omap-thermal.o
  omap-thermal-y			:= omap-bandgap.o
-+omap-thermal-$(CONFIG_OMAP_THERMAL)	+= omap-thermal-common.o
-diff --git a/drivers/staging/omap-thermal/omap-thermal-common.c b/drivers/staging/omap-thermal/omap-thermal-common.c
+ omap-thermal-$(CONFIG_OMAP_THERMAL)	+= omap-thermal-common.o
++omap-thermal-$(CONFIG_OMAP4_THERMAL)	+= omap4-thermal.o
+diff --git a/drivers/staging/omap-thermal/omap-bandgap.c b/drivers/staging/omap-thermal/omap-bandgap.c
+index 3b2cd87..cc0869a 100644
+--- a/drivers/staging/omap-thermal/omap-bandgap.c
++++ b/drivers/staging/omap-thermal/omap-bandgap.c
+@@ -1143,6 +1143,20 @@ static const struct dev_pm_ops omap_bandgap_dev_pm_ops = {
+ #endif
+ 
+ static const struct of_device_id of_omap_bandgap_match[] = {
++#ifdef CONFIG_OMAP4_THERMAL
++	{
++		.compatible = "ti,omap4430-bandgap",
++		.data = (void *)&omap4430_data,
++	},
++	{
++		.compatible = "ti,omap4460-bandgap",
++		.data = (void *)&omap4460_data,
++	},
++	{
++		.compatible = "ti,omap4470-bandgap",
++		.data = (void *)&omap4470_data,
++	},
++#endif
+ 	/* Sentinel */
+ 	{ },
+ };
+diff --git a/drivers/staging/omap-thermal/omap-bandgap.h b/drivers/staging/omap-thermal/omap-bandgap.h
+index 8b9883d..6d442fe 100644
+--- a/drivers/staging/omap-thermal/omap-bandgap.h
++++ b/drivers/staging/omap-thermal/omap-bandgap.h
+@@ -422,4 +422,14 @@ int omap_bandgap_set_sensor_data(struct omap_bandgap *bg_ptr, int id,
+ 				 void *data);
+ void *omap_bandgap_get_sensor_data(struct omap_bandgap *bg_ptr, int id);
+ 
++#ifdef CONFIG_OMAP4_THERMAL
++extern const struct omap_bandgap_data omap4430_data;
++extern const struct omap_bandgap_data omap4460_data;
++extern const struct omap_bandgap_data omap4470_data;
++#else
++#define omap4430_data					NULL
++#define omap4460_data					NULL
++#define omap4470_data					NULL
++#endif
++
+ #endif
+diff --git a/drivers/staging/omap-thermal/omap4-thermal.c b/drivers/staging/omap-thermal/omap4-thermal.c
 new file mode 100644
-index 0000000..a52caa4
+index 0000000..fa9dbcd
 --- /dev/null
-+++ b/drivers/staging/omap-thermal/omap-thermal-common.c
-@@ -0,0 +1,397 @@
++++ b/drivers/staging/omap-thermal/omap4-thermal.c
+@@ -0,0 +1,259 @@
 +/*
-+ * OMAP thermal driver interface
++ * OMAP4 thermal driver.
 + *
-+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
++ * Copyright (C) 2011-2012 Texas Instruments Inc.
 + * Contact:
-+ *   Eduardo Valentin <eduardo.valentin@ti.com>
++ *	Eduardo Valentin <eduardo.valentin@ti.com>
 + *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
 + *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-+ * 02110-1301 USA
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
 + *
 + */
-+
-+#include <linux/device.h>
-+#include <linux/err.h>
-+#include <linux/mutex.h>
-+#include <linux/gfp.h>
-+#include <linux/kernel.h>
-+#include <linux/workqueue.h>
-+#include <linux/thermal.h>
-+#include <linux/cpufreq.h>
-+#include <linux/cpu_cooling.h>
 +
 +#include "omap-thermal.h"
 +#include "omap-bandgap.h"
 +
-+/* common data structures */
-+struct omap_thermal_data {
-+	struct thermal_zone_device *omap_thermal;
-+	struct thermal_cooling_device *cool_dev;
-+	struct omap_bandgap *bg_ptr;
-+	enum thermal_device_mode mode;
-+	struct work_struct thermal_wq;
-+	int sensor_id;
-+};
-+
-+static void omap_thermal_work(struct work_struct *work)
-+{
-+	struct omap_thermal_data *data = container_of(work,
-+					struct omap_thermal_data, thermal_wq);
-+
-+	thermal_zone_device_update(data->omap_thermal);
-+
-+	dev_dbg(&data->omap_thermal->device, "updated thermal zone %s\n",
-+		data->omap_thermal->type);
-+}
-+
-+/**
-+ * omap_thermal_hotspot_temperature - returns sensor extrapolated temperature
-+ * @t:	omap sensor temperature
-+ * @s:	omap sensor slope value
-+ * @c:	omap sensor const value
-+ */
-+static inline int omap_thermal_hotspot_temperature(int t, int s, int c)
-+{
-+	int delta = t * s / 1000 + c;
-+
-+	if (delta < 0)
-+		delta = 0;
-+
-+	return t + delta;
-+}
-+
-+/* thermal zone ops */
-+/* Get temperature callback function for thermal zone*/
-+static inline int omap_thermal_get_temp(struct thermal_zone_device *thermal,
-+					 unsigned long *temp)
-+{
-+	struct omap_thermal_data *data = thermal->devdata;
-+	struct omap_bandgap *bg_ptr = data->bg_ptr;
-+	struct omap_temp_sensor *s = &bg_ptr->conf->sensors[data->sensor_id];
-+	int ret, tmp, pcb_temp, slope, constant;
-+
-+	ret = omap_bandgap_read_temperature(bg_ptr, data->sensor_id, &tmp);
-+	if (ret)
-+		return ret;
-+
-+	pcb_temp = 0;
-+	ret = thermal_zone_lookup_temperature("pcb", &pcb_temp);
-+	if (ret) {
-+		dev_dbg(bg_ptr->dev, "%s: failed to read pcb zone\n", __func__);
-+		pcb_temp = 0;
-+		ret = 0;
-+	}
-+
-+	/* In case pcb zone is available, use the extrapolation rule with it */
-+	if (pcb_temp) {
-+		tmp -= pcb_temp;
-+		slope = s->slope_pcb;
-+		constant = s->constant_pcb;
-+	} else {
-+		slope = s->slope;
-+		constant = s->constant;
-+	}
-+	*temp = omap_thermal_hotspot_temperature(tmp, slope, constant);
-+
-+	return ret;
-+}
-+
-+/* simple trending callback function for thermal zone */
-+static int omap_thermal_get_trend(struct thermal_zone_device *thermal,
-+				  int trip, enum thermal_trend *trend)
-+{
-+	unsigned long trip_temp;
-+	long t;
-+
-+	if (!omap_thermal_is_valid_trip(trip))
-+		return -EINVAL;
-+
-+	if (trip != 0)
-+		return -EINVAL;
-+
-+	trip_temp = omap_thermal_get_trip_value(trip);
-+
-+	/*
-+	 * tz->temperature has already been updated by generic thermal layer,
-+	 * before this callback being invoked
-+	 * TODO: update this based on hw history buffer
-+	 */
-+	t = (thermal->temperature - thermal->last_temperature) +
-+		2 * (thermal->temperature - trip_temp);
-+
-+	*trend = t > 0 ? THERMAL_TREND_RAISING :
-+		(t < 0 ? THERMAL_TREND_DROPPING : THERMAL_TREND_NONE);
-+
-+	return 0;
-+}
-+
-+/* Bind callback functions for thermal zone */
-+static int omap_thermal_bind(struct thermal_zone_device *thermal,
-+			      struct thermal_cooling_device *cdev)
-+{
-+	struct omap_thermal_data *data = thermal->devdata;
-+	int max, id;
-+
-+	if (IS_ERR_OR_NULL(data))
-+		return -ENODEV;
-+
-+	/* check if this is the cooling device we registered */
-+	if (data->cool_dev != cdev)
-+		return 0;
-+
-+	id = data->sensor_id;
-+	max = data->bg_ptr->conf->sensors[id].cooling_data.freq_clip_count;
-+
-+	/* Simple thing, two trips, one passive another critical */
-+	return thermal_zone_bind_cooling_device(thermal, 0, cdev, 0, max - 1);
-+}
-+
-+/* Unbind callback functions for thermal zone */
-+static int omap_thermal_unbind(struct thermal_zone_device *thermal,
-+				struct thermal_cooling_device *cdev)
-+{
-+	struct omap_thermal_data *data = thermal->devdata;
-+
-+	if (IS_ERR_OR_NULL(data))
-+		return -ENODEV;
-+
-+	/* check if this is the cooling device we registered */
-+	if (data->cool_dev != cdev)
-+		return 0;
-+
-+	/* Simple thing, two trips, one passive another critical */
-+	return thermal_zone_unbind_cooling_device(thermal, 0, cdev);
-+}
-+
-+/* Get mode callback functions for thermal zone */
-+static int omap_thermal_get_mode(struct thermal_zone_device *thermal,
-+				  enum thermal_device_mode *mode)
-+{
-+	struct omap_thermal_data *data = thermal->devdata;
-+
-+	if (data)
-+		*mode = data->mode;
-+
-+	return 0;
-+}
-+
-+/* Set mode callback functions for thermal zone */
-+static int omap_thermal_set_mode(struct thermal_zone_device *thermal,
-+				  enum thermal_device_mode mode)
-+{
-+	struct omap_thermal_data *data = thermal->devdata;
-+
-+	if (!data->omap_thermal) {
-+		dev_notice(&thermal->device, "thermal zone not registered\n");
-+		return 0;
-+	}
-+
-+	mutex_lock(&data->omap_thermal->lock);
-+
-+	if (mode == THERMAL_DEVICE_ENABLED)
-+		data->omap_thermal->polling_delay = FAST_TEMP_MONITORING_RATE;
-+	else
-+		data->omap_thermal->polling_delay = 0;
-+
-+	mutex_unlock(&data->omap_thermal->lock);
-+
-+	data->mode = mode;
-+	thermal_zone_device_update(data->omap_thermal);
-+	dev_dbg(&thermal->device, "thermal polling set for duration=%d msec\n",
-+		data->omap_thermal->polling_delay);
-+
-+	return 0;
-+}
-+
-+/* Get trip type callback functions for thermal zone */
-+static int omap_thermal_get_trip_type(struct thermal_zone_device *thermal,
-+				       int trip, enum thermal_trip_type *type)
-+{
-+	if (!omap_thermal_is_valid_trip(trip))
-+		return -EINVAL;
-+
-+	if (trip + 1 == OMAP_TRIP_NUMBER)
-+		*type = THERMAL_TRIP_CRITICAL;
-+	else
-+		*type = THERMAL_TRIP_PASSIVE;
-+
-+	return 0;
-+}
-+
-+/* Get trip temperature callback functions for thermal zone */
-+static int omap_thermal_get_trip_temp(struct thermal_zone_device *thermal,
-+				       int trip, unsigned long *temp)
-+{
-+	if (!omap_thermal_is_valid_trip(trip))
-+		return -EINVAL;
-+
-+	*temp = omap_thermal_get_trip_value(trip);
-+
-+	return 0;
-+}
-+
-+/* Get critical temperature callback functions for thermal zone */
-+static int omap_thermal_get_crit_temp(struct thermal_zone_device *thermal,
-+				       unsigned long *temp)
-+{
-+	/* shutdown zone */
-+	return omap_thermal_get_trip_temp(thermal, OMAP_TRIP_NUMBER - 1, temp);
-+}
-+
-+static struct thermal_zone_device_ops omap_thermal_ops = {
-+	.get_temp = omap_thermal_get_temp,
-+	.get_trend = omap_thermal_get_trend,
-+	.bind = omap_thermal_bind,
-+	.unbind = omap_thermal_unbind,
-+	.get_mode = omap_thermal_get_mode,
-+	.set_mode = omap_thermal_set_mode,
-+	.get_trip_type = omap_thermal_get_trip_type,
-+	.get_trip_temp = omap_thermal_get_trip_temp,
-+	.get_crit_temp = omap_thermal_get_crit_temp,
-+};
-+
-+int omap_thermal_expose_sensor(struct omap_bandgap *bg_ptr, int id,
-+			       char *domain)
-+{
-+	struct omap_thermal_data *data;
-+
-+	data = devm_kzalloc(bg_ptr->dev, sizeof(*data), GFP_KERNEL);
-+	if (!data) {
-+		dev_err(bg_ptr->dev, "kzalloc fail\n");
-+		return -ENOMEM;
-+	}
-+	data->sensor_id = id;
-+	data->bg_ptr = bg_ptr;
-+	data->mode = THERMAL_DEVICE_ENABLED;
-+	INIT_WORK(&data->thermal_wq, omap_thermal_work);
-+
-+	/* Create thermal zone */
-+	data->omap_thermal = thermal_zone_device_register(domain,
-+				OMAP_TRIP_NUMBER, 0, data, &omap_thermal_ops,
-+				0, FAST_TEMP_MONITORING_RATE);
-+	if (IS_ERR_OR_NULL(data->omap_thermal)) {
-+		dev_err(bg_ptr->dev, "thermal zone device is NULL\n");
-+		return PTR_ERR(data->omap_thermal);
-+	}
-+	data->omap_thermal->polling_delay = FAST_TEMP_MONITORING_RATE;
-+	omap_bandgap_set_sensor_data(bg_ptr, id, data);
-+
-+	return 0;
-+}
-+
-+int omap_thermal_remove_sensor(struct omap_bandgap *bg_ptr, int id)
-+{
-+	struct omap_thermal_data *data;
-+
-+	data = omap_bandgap_get_sensor_data(bg_ptr, id);
-+
-+	thermal_zone_device_unregister(data->omap_thermal);
-+
-+	return 0;
-+}
-+
-+int omap_thermal_report_sensor_temperature(struct omap_bandgap *bg_ptr, int id)
-+{
-+	struct omap_thermal_data *data;
-+
-+	data = omap_bandgap_get_sensor_data(bg_ptr, id);
-+
-+	schedule_work(&data->thermal_wq);
-+
-+	return 0;
-+}
-+
-+static int omap_thermal_build_cpufreq_clip(struct omap_bandgap *bg_ptr,
-+					   struct freq_clip_table **tab_ptr,
-+					   int *tab_size)
-+{
-+	struct cpufreq_frequency_table *freq_table;
-+	struct freq_clip_table *tab;
-+	int i, count = 0;
-+
-+	freq_table = cpufreq_frequency_get_table(0);
-+	if (IS_ERR_OR_NULL(freq_table)) {
-+		dev_err(bg_ptr->dev,
-+			"%s: failed to get cpufreq table (%p)\n",
-+			__func__, freq_table);
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++) {
-+		unsigned int freq = freq_table[i].frequency;
-+		if (freq == CPUFREQ_ENTRY_INVALID)
-+			continue;
-+		count++;
-+	}
-+
-+	tab = devm_kzalloc(bg_ptr->dev, sizeof(*tab) * count, GFP_KERNEL);
-+	if (!tab) {
-+		dev_err(bg_ptr->dev,
-+			"%s: no memory available\n", __func__);
-+		return -ENOMEM;
-+	}
-+
-+	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++) {
-+		unsigned int freq = freq_table[i].frequency;
-+
-+		if (freq == CPUFREQ_ENTRY_INVALID)
-+			continue;
-+
-+		tab[count - i - 1].freq_clip_max = freq;
-+		tab[count - i - 1].temp_level = OMAP_TRIP_HOT;
-+		tab[count - i - 1].mask_val = cpumask_of(0);
-+	}
-+
-+	*tab_ptr = tab;
-+	*tab_size = count;
-+
-+	return 0;
-+}
-+
-+int omap_thermal_register_cpu_cooling(struct omap_bandgap *bg_ptr, int id)
-+{
-+	struct omap_thermal_data *data;
-+	struct freq_clip_table *tab_ptr;
-+	int tab_size, ret;
-+
-+	data = omap_bandgap_get_sensor_data(bg_ptr, id);
-+
-+	ret = omap_thermal_build_cpufreq_clip(bg_ptr, &tab_ptr, &tab_size);
-+	if (ret < 0) {
-+		dev_err(bg_ptr->dev,
-+			"%s: failed to build cpufreq clip table\n", __func__);
-+		return ret;
-+	}
-+
-+	/* Register cooling device */
-+	data->cool_dev = cpufreq_cooling_register(tab_ptr, tab_size);
-+	if (IS_ERR_OR_NULL(data->cool_dev)) {
-+		dev_err(bg_ptr->dev,
-+			"Failed to register cpufreq cooling device\n");
-+		return PTR_ERR(data->cool_dev);
-+	}
-+	bg_ptr->conf->sensors[id].cooling_data.freq_clip_count = tab_size;
-+
-+	return 0;
-+}
-+
-+int omap_thermal_unregister_cpu_cooling(struct omap_bandgap *bg_ptr, int id)
-+{
-+	struct omap_thermal_data *data;
-+
-+	data = omap_bandgap_get_sensor_data(bg_ptr, id);
-+	cpufreq_cooling_unregister(data->cool_dev);
-+
-+	return 0;
-+}
-diff --git a/drivers/staging/omap-thermal/omap-thermal.h b/drivers/staging/omap-thermal/omap-thermal.h
-new file mode 100644
-index 0000000..0dd2184
---- /dev/null
-+++ b/drivers/staging/omap-thermal/omap-thermal.h
-@@ -0,0 +1,108 @@
 +/*
-+ * OMAP thermal definitions
-+ *
-+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
-+ * Contact:
-+ *   Eduardo Valentin <eduardo.valentin@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-+ * 02110-1301 USA
-+ *
++ * OMAP4430 has one instance of thermal sensor for MPU
++ * need to describe the individual bit fields
 + */
-+#ifndef __OMAP_THERMAL_H
-+#define __OMAP_THERMAL_H
++static struct temp_sensor_registers
++omap4430_mpu_temp_sensor_registers = {
++	.temp_sensor_ctrl = OMAP4430_TEMP_SENSOR_CTRL_OFFSET,
++	.bgap_tempsoff_mask = OMAP4430_BGAP_TEMPSOFF_MASK,
++	.bgap_soc_mask = OMAP4430_BGAP_TEMP_SENSOR_SOC_MASK,
++	.bgap_eocz_mask = OMAP4430_BGAP_TEMP_SENSOR_EOCZ_MASK,
++	.bgap_dtemp_mask = OMAP4430_BGAP_TEMP_SENSOR_DTEMP_MASK,
 +
-+#include "omap-bandgap.h"
++	.bgap_mode_ctrl = OMAP4430_TEMP_SENSOR_CTRL_OFFSET,
++	.mode_ctrl_mask = OMAP4430_SINGLE_MODE_MASK,
 +
-+/* sensors gradient and offsets */
-+#define OMAP_GRADIENT_SLOPE_4460				348
-+#define OMAP_GRADIENT_CONST_4460				-9301
-+#define OMAP_GRADIENT_SLOPE_4470				308
-+#define OMAP_GRADIENT_CONST_4470				-7896
++	.bgap_efuse = OMAP4430_FUSE_OPP_BGAP,
++};
 +
-+#define OMAP_GRADIENT_SLOPE_5430_CPU				196
-+#define OMAP_GRADIENT_CONST_5430_CPU				-6822
-+#define OMAP_GRADIENT_SLOPE_5430_GPU				64
-+#define OMAP_GRADIENT_CONST_5430_GPU				978
++/* Thresholds and limits for OMAP4430 MPU temperature sensor */
++static struct temp_sensor_data omap4430_mpu_temp_sensor_data = {
++	.min_freq = OMAP4430_MIN_FREQ,
++	.max_freq = OMAP4430_MAX_FREQ,
++	.max_temp = OMAP4430_MAX_TEMP,
++	.min_temp = OMAP4430_MIN_TEMP,
++	.hyst_val = OMAP4430_HYST_VAL,
++	.adc_start_val = OMAP4430_ADC_START_VALUE,
++	.adc_end_val = OMAP4430_ADC_END_VALUE,
++};
 +
-+/* PCB sensor calculation constants */
-+#define OMAP_GRADIENT_SLOPE_W_PCB_4460				1142
-+#define OMAP_GRADIENT_CONST_W_PCB_4460				-393
-+#define OMAP_GRADIENT_SLOPE_W_PCB_4470				1063
-+#define OMAP_GRADIENT_CONST_W_PCB_4470				-477
-+
-+#define OMAP_GRADIENT_SLOPE_W_PCB_5430_CPU			469
-+#define OMAP_GRADIENT_CONST_W_PCB_5430_CPU			-1272
-+#define OMAP_GRADIENT_SLOPE_W_PCB_5430_GPU			378
-+#define OMAP_GRADIENT_CONST_W_PCB_5430_GPU			154
-+
-+/* trip points of interest in milicelsius (at hotspot level) */
-+#define OMAP_TRIP_COLD						100000
-+#define OMAP_TRIP_HOT						110000
-+#define OMAP_TRIP_SHUTDOWN					125000
-+#define OMAP_TRIP_NUMBER					2
-+#define OMAP_TRIP_STEP							\
-+	((OMAP_TRIP_SHUTDOWN - OMAP_TRIP_HOT) / (OMAP_TRIP_NUMBER - 1))
-+
-+/* Update rates */
-+#define FAST_TEMP_MONITORING_RATE				250
-+
-+/* helper macros */
-+/**
-+ * omap_thermal_get_trip_value - returns trip temperature based on index
-+ * @i:	trip index
++/*
++ * Temperature values in milli degree celsius
++ * ADC code values from 530 to 923
 + */
-+#define omap_thermal_get_trip_value(i)					\
-+	(OMAP_TRIP_HOT + ((i) * OMAP_TRIP_STEP))
++static const int
++omap4430_adc_to_temp[OMAP4430_ADC_END_VALUE - OMAP4430_ADC_START_VALUE + 1] = {
++	-38000, -35000, -34000, -32000, -30000, -28000, -26000, -24000, -22000,
++	-20000, -18000, -17000, -15000, -13000, -12000, -10000, -8000, -6000,
++	-5000, -3000, -1000, 0, 2000, 3000, 5000, 6000, 8000, 10000, 12000,
++	13000, 15000, 17000, 19000, 21000, 23000, 25000, 27000, 28000, 30000,
++	32000, 33000, 35000, 37000, 38000, 40000, 42000, 43000, 45000, 47000,
++	48000, 50000, 52000, 53000, 55000, 57000, 58000, 60000, 62000, 64000,
++	66000, 68000, 70000, 71000, 73000, 75000, 77000, 78000, 80000, 82000,
++	83000, 85000, 87000, 88000, 90000, 92000, 93000, 95000, 97000, 98000,
++	100000, 102000, 103000, 105000, 107000, 109000, 111000, 113000, 115000,
++	117000, 118000, 120000, 122000, 123000,
++};
 +
-+/**
-+ * omap_thermal_is_valid_trip - check for trip index
-+ * @i:	trip index
++/* OMAP4430 data */
++const struct omap_bandgap_data omap4430_data = {
++	.features = OMAP_BANDGAP_FEATURE_MODE_CONFIG |
++			OMAP_BANDGAP_FEATURE_POWER_SWITCH,
++	.fclock_name = "bandgap_fclk",
++	.div_ck_name = "bandgap_fclk",
++	.conv_table = omap4430_adc_to_temp,
++	.expose_sensor = omap_thermal_expose_sensor,
++	.remove_sensor = omap_thermal_remove_sensor,
++	.sensors = {
++		{
++			.registers = &omap4430_mpu_temp_sensor_registers,
++			.ts_data = &omap4430_mpu_temp_sensor_data,
++			.domain = "cpu",
++			.slope = 0,
++			.constant = 20000,
++			.slope_pcb = 0,
++			.constant_pcb = 20000,
++			.register_cooling = omap_thermal_register_cpu_cooling,
++			.unregister_cooling = omap_thermal_unregister_cpu_cooling,
++		},
++	},
++	.sensor_count = 1,
++};
++/*
++ * OMAP4460 has one instance of thermal sensor for MPU
++ * need to describe the individual bit fields
 + */
-+#define omap_thermal_is_valid_trip(trip)				\
-+	((trip) >= 0 && (trip) < OMAP_TRIP_NUMBER)
++static struct temp_sensor_registers
++omap4460_mpu_temp_sensor_registers = {
++	.temp_sensor_ctrl = OMAP4460_TEMP_SENSOR_CTRL_OFFSET,
++	.bgap_tempsoff_mask = OMAP4460_BGAP_TEMPSOFF_MASK,
++	.bgap_soc_mask = OMAP4460_BGAP_TEMP_SENSOR_SOC_MASK,
++	.bgap_eocz_mask = OMAP4460_BGAP_TEMP_SENSOR_EOCZ_MASK,
++	.bgap_dtemp_mask = OMAP4460_BGAP_TEMP_SENSOR_DTEMP_MASK,
 +
-+#ifdef CONFIG_OMAP_THERMAL
-+int omap_thermal_expose_sensor(struct omap_bandgap *bg_ptr, int id,
-+			       char *domain);
-+int omap_thermal_remove_sensor(struct omap_bandgap *bg_ptr, int id);
-+int omap_thermal_register_cpu_cooling(struct omap_bandgap *bg_ptr, int id);
-+int omap_thermal_unregister_cpu_cooling(struct omap_bandgap *bg_ptr, int id);
-+#else
-+static inline
-+int omap_thermal_expose_sensor(struct omap_bandgap *bg_ptr, int id,
-+			       char *domain)
-+{
-+	return 0;
-+}
++	.bgap_mask_ctrl = OMAP4460_BGAP_CTRL_OFFSET,
++	.mask_hot_mask = OMAP4460_MASK_HOT_MASK,
++	.mask_cold_mask = OMAP4460_MASK_COLD_MASK,
 +
-+static inline
-+int omap_thermal_remove_sensor(struct omap_bandgap *bg_ptr, int id)
-+{
-+	return 0;
-+}
++	.bgap_mode_ctrl = OMAP4460_BGAP_CTRL_OFFSET,
++	.mode_ctrl_mask = OMAP4460_SINGLE_MODE_MASK,
 +
-+static inline
-+int omap_thermal_register_cpu_cooling(struct omap_bandgap *bg_ptr, int id)
-+{
-+	return 0;
-+}
++	.bgap_counter = OMAP4460_BGAP_COUNTER_OFFSET,
++	.counter_mask = OMAP4460_COUNTER_MASK,
 +
-+static inline
-+int omap_thermal_unregister_cpu_cooling(struct omap_bandgap *bg_ptr, int id)
-+{
-+	return 0;
-+}
-+#endif
-+#endif
++	.bgap_threshold = OMAP4460_BGAP_THRESHOLD_OFFSET,
++	.threshold_thot_mask = OMAP4460_T_HOT_MASK,
++	.threshold_tcold_mask = OMAP4460_T_COLD_MASK,
++
++	.tshut_threshold = OMAP4460_BGAP_TSHUT_OFFSET,
++	.tshut_hot_mask = OMAP4460_TSHUT_HOT_MASK,
++	.tshut_cold_mask = OMAP4460_TSHUT_COLD_MASK,
++
++	.bgap_status = OMAP4460_BGAP_STATUS_OFFSET,
++	.status_clean_stop_mask = OMAP4460_CLEAN_STOP_MASK,
++	.status_bgap_alert_mask = OMAP4460_BGAP_ALERT_MASK,
++	.status_hot_mask = OMAP4460_HOT_FLAG_MASK,
++	.status_cold_mask = OMAP4460_COLD_FLAG_MASK,
++
++	.bgap_efuse = OMAP4460_FUSE_OPP_BGAP,
++};
++
++/* Thresholds and limits for OMAP4460 MPU temperature sensor */
++static struct temp_sensor_data omap4460_mpu_temp_sensor_data = {
++	.tshut_hot = OMAP4460_TSHUT_HOT,
++	.tshut_cold = OMAP4460_TSHUT_COLD,
++	.t_hot = OMAP4460_T_HOT,
++	.t_cold = OMAP4460_T_COLD,
++	.min_freq = OMAP4460_MIN_FREQ,
++	.max_freq = OMAP4460_MAX_FREQ,
++	.max_temp = OMAP4460_MAX_TEMP,
++	.min_temp = OMAP4460_MIN_TEMP,
++	.hyst_val = OMAP4460_HYST_VAL,
++	.adc_start_val = OMAP4460_ADC_START_VALUE,
++	.adc_end_val = OMAP4460_ADC_END_VALUE,
++	.update_int1 = 1000,
++	.update_int2 = 2000,
++};
++
++/*
++ * Temperature values in milli degree celsius
++ * ADC code values from 530 to 923
++ */
++static const int
++omap4460_adc_to_temp[OMAP4460_ADC_END_VALUE - OMAP4460_ADC_START_VALUE + 1] = {
++	-40000, -40000, -40000, -40000, -39800, -39400, -39000, -38600, -38200,
++	-37800, -37300, -36800, -36400, -36000, -35600, -35200, -34800,
++	-34300, -33800, -33400, -33000, -32600, -32200, -31800, -31300,
++	-30800, -30400, -30000, -29600, -29200, -28700, -28200, -27800,
++	-27400, -27000, -26600, -26200, -25700, -25200, -24800, -24400,
++	-24000, -23600, -23200, -22700, -22200, -21800, -21400, -21000,
++	-20600, -20200, -19700, -19200, -18800, -18400, -18000, -17600,
++	-17200, -16700, -16200, -15800, -15400, -15000, -14600, -14200,
++	-13700, -13200, -12800, -12400, -12000, -11600, -11200, -10700,
++	-10200, -9800, -9400, -9000, -8600, -8200, -7700, -7200, -6800,
++	-6400, -6000, -5600, -5200, -4800, -4300, -3800, -3400, -3000,
++	-2600, -2200, -1800, -1300, -800, -400, 0, 400, 800, 1200, 1600,
++	2100, 2600, 3000, 3400, 3800, 4200, 4600, 5100, 5600, 6000, 6400,
++	6800, 7200, 7600, 8000, 8500, 9000, 9400, 9800, 10200, 10600, 11000,
++	11400, 11900, 12400, 12800, 13200, 13600, 14000, 14400, 14800,
++	15300, 15800, 16200, 16600, 17000, 17400, 17800, 18200, 18700,
++	19200, 19600, 20000, 20400, 20800, 21200, 21600, 22100, 22600,
++	23000, 23400, 23800, 24200, 24600, 25000, 25400, 25900, 26400,
++	26800, 27200, 27600, 28000, 28400, 28800, 29300, 29800, 30200,
++	30600, 31000, 31400, 31800, 32200, 32600, 33100, 33600, 34000,
++	34400, 34800, 35200, 35600, 36000, 36400, 36800, 37300, 37800,
++	38200, 38600, 39000, 39400, 39800, 40200, 40600, 41100, 41600,
++	42000, 42400, 42800, 43200, 43600, 44000, 44400, 44800, 45300,
++	45800, 46200, 46600, 47000, 47400, 47800, 48200, 48600, 49000,
++	49500, 50000, 50400, 50800, 51200, 51600, 52000, 52400, 52800,
++	53200, 53700, 54200, 54600, 55000, 55400, 55800, 56200, 56600,
++	57000, 57400, 57800, 58200, 58700, 59200, 59600, 60000, 60400,
++	60800, 61200, 61600, 62000, 62400, 62800, 63300, 63800, 64200,
++	64600, 65000, 65400, 65800, 66200, 66600, 67000, 67400, 67800,
++	68200, 68700, 69200, 69600, 70000, 70400, 70800, 71200, 71600,
++	72000, 72400, 72800, 73200, 73600, 74100, 74600, 75000, 75400,
++	75800, 76200, 76600, 77000, 77400, 77800, 78200, 78600, 79000,
++	79400, 79800, 80300, 80800, 81200, 81600, 82000, 82400, 82800,
++	83200, 83600, 84000, 84400, 84800, 85200, 85600, 86000, 86400,
++	86800, 87300, 87800, 88200, 88600, 89000, 89400, 89800, 90200,
++	90600, 91000, 91400, 91800, 92200, 92600, 93000, 93400, 93800,
++	94200, 94600, 95000, 95500, 96000, 96400, 96800, 97200, 97600,
++	98000, 98400, 98800, 99200, 99600, 100000, 100400, 100800, 101200,
++	101600, 102000, 102400, 102800, 103200, 103600, 104000, 104400,
++	104800, 105200, 105600, 106100, 106600, 107000, 107400, 107800,
++	108200, 108600, 109000, 109400, 109800, 110200, 110600, 111000,
++	111400, 111800, 112200, 112600, 113000, 113400, 113800, 114200,
++	114600, 115000, 115400, 115800, 116200, 116600, 117000, 117400,
++	117800, 118200, 118600, 119000, 119400, 119800, 120200, 120600,
++	121000, 121400, 121800, 122200, 122600, 123000, 123400, 123800, 124200,
++	124600, 124900, 125000, 125000, 125000, 125000
++};
++
++/* OMAP4460 data */
++const struct omap_bandgap_data omap4460_data = {
++	.features = OMAP_BANDGAP_FEATURE_TSHUT |
++			OMAP_BANDGAP_FEATURE_TSHUT_CONFIG |
++			OMAP_BANDGAP_FEATURE_TALERT |
++			OMAP_BANDGAP_FEATURE_MODE_CONFIG |
++			OMAP_BANDGAP_FEATURE_POWER_SWITCH |
++			OMAP_BANDGAP_FEATURE_COUNTER,
++	.fclock_name = "bandgap_ts_fclk",
++	.div_ck_name = "div_ts_ck",
++	.conv_table = omap4460_adc_to_temp,
++	.expose_sensor = omap_thermal_expose_sensor,
++	.remove_sensor = omap_thermal_remove_sensor,
++	.sensors = {
++		{
++			.registers = &omap4460_mpu_temp_sensor_registers,
++			.ts_data = &omap4460_mpu_temp_sensor_data,
++			.domain = "cpu",
++			.slope = OMAP_GRADIENT_SLOPE_4460,
++			.constant = OMAP_GRADIENT_CONST_4460,
++			.slope_pcb = OMAP_GRADIENT_SLOPE_W_PCB_4460,
++			.constant_pcb = OMAP_GRADIENT_CONST_W_PCB_4460,
++			.register_cooling = omap_thermal_register_cpu_cooling,
++			.unregister_cooling = omap_thermal_unregister_cpu_cooling,
++		},
++	},
++	.sensor_count = 1,
++};
++
++/* OMAP4470 data */
++const struct omap_bandgap_data omap4470_data = {
++	.features = OMAP_BANDGAP_FEATURE_TSHUT |
++			OMAP_BANDGAP_FEATURE_TSHUT_CONFIG |
++			OMAP_BANDGAP_FEATURE_TALERT |
++			OMAP_BANDGAP_FEATURE_MODE_CONFIG |
++			OMAP_BANDGAP_FEATURE_POWER_SWITCH |
++			OMAP_BANDGAP_FEATURE_COUNTER,
++	.fclock_name = "bandgap_ts_fclk",
++	.div_ck_name = "div_ts_ck",
++	.conv_table = omap4460_adc_to_temp,
++	.expose_sensor = omap_thermal_expose_sensor,
++	.remove_sensor = omap_thermal_remove_sensor,
++	.sensors = {
++		{
++			.registers = &omap4460_mpu_temp_sensor_registers,
++			.ts_data = &omap4460_mpu_temp_sensor_data,
++			.domain = "cpu",
++			.slope = OMAP_GRADIENT_SLOPE_4470,
++			.constant = OMAP_GRADIENT_CONST_4470,
++			.slope_pcb = OMAP_GRADIENT_SLOPE_W_PCB_4470,
++			.constant_pcb = OMAP_GRADIENT_CONST_W_PCB_4470,
++			.register_cooling = omap_thermal_register_cpu_cooling,
++			.unregister_cooling = omap_thermal_unregister_cpu_cooling,
++		},
++	},
++	.sensor_count = 1,
++};
 -- 
 1.7.7.1.488.ge8e1c
 
