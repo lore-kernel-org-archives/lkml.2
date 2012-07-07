@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703Ab2GGRCg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 13:02:36 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:53823 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351Ab2GGRCf (ORCPT
+	id S1751773Ab2GGRDZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 13:03:25 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:40983 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab2GGRDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 13:02:35 -0400
+	Sat, 7 Jul 2012 13:03:24 -0400
+Message-ID: <4FF86BD9.3050805@gmail.com>
+Date: Sat, 07 Jul 2012 12:03:21 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Date: Sat, 7 Jul 2012 22:32:34 +0530
-Message-ID: <CAHdPZaN3HNCJRDGG9kNMfHKOxQr6ULYK36DQyhaQUOM83dtUxQ@mail.gmail.com>
-Subject: config warnings while selecting u300_defconfig
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Grant Likely <grant.likely@secretlab.ca>
+Subject: [GIT PULL] DT clk binding support for 3.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Mike,
 
-While doing compiling for u300, i selected the u300_defconfig,
+Please pull DT clk binding and highbank clk support for 3.6. The only
+real change from 3.5 pull request is returning error values rather than
+NULL to align with the rest of the clk framework. There's been a little
+discussion but otherwise has been quiet.
 
-make ARCH=arm CROSS_COMPILE="/home/devendra/gcc-linaro-arm-linux-gnueabihf-2012.05-20120523_linux/bin/arm-linux-gnueabihf-"
-u300_defconfig
+Rob
 
-my cross toolchain is
+The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
 
+  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
 
-linux# gcc-linaro-arm-linux-gnueabihf-2012.05-20120523_linux/bin/arm-linux-gnueabihf-gcc
---version
+are available in the git repository at:
 
-arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-2012.05-20120523 -
-Linaro GCC 2012.05) 4.7.1 20120514 (prerelease)
+  git://sources.calxeda.com/kernel/linux.git clk-for-3.6
 
+for you to fetch changes up to 39a8e38a03823c3acaec02c6d7c551e268cb2139:
 
-i got the following warnings,
+  clk: add highbank clock support (2012-07-01 17:04:45 -0500)
 
+----------------------------------------------------------------
+Grant Likely (2):
+      clk: add DT clock binding support
+      clk: add DT fixed-clock binding support
 
+Rob Herring (2):
+      dt: add clock binding doc to primecell bindings
+      clk: add highbank clock support
 
-root@devendra:/home/devendra/linux# make ARCH=arm
-CROSS_COMPILE="/home/devendra/gcc-linaro-arm-linux-gnueabihf-2012.05-20120523_linux/bin/arm-linux-gnueabihf-"
-drivers/pinctrl/
-scripts/kconfig/conf --silentoldconfig Kconfig
-include/config/auto.conf:394:warning: symbol value 'm' invalid for
-STMMAC_PLATFORM
-include/config/auto.conf:730:warning: symbol value 'elf64-x86-64'
-invalid for OUTPUT_FORMAT
-include/config/auto.conf:1050:warning: symbol value
-'arch/x86/configs/x86_64_defconfig' invalid for ARCH_DEFCONFIG
-include/config/auto.conf:1335:warning: symbol value '' invalid for
-ACPI_CUSTOM_DSDT_FILE
-include/config/auto.conf:2388:warning: symbol value '-fcall-saved-rdi
--fcall-saved-rsi -fcall-saved-rdx -fcall-saved-rcx -fcall-saved-r8
--fcall-saved-r9 -fcall-saved-r10 -fcall-saved-r11' invalid for
-ARCH_HWEIGHT_CFLAGS
-
-
-i m not sure whether this is a compiler issue or a real warning.
-
-Thanks,
-Devendra.
+ .../devicetree/bindings/arm/primecell.txt          |    6 +
+ .../devicetree/bindings/clock/calxeda.txt          |   17 +
+ .../devicetree/bindings/clock/clock-bindings.txt   |  117 +++++++
+ .../devicetree/bindings/clock/fixed-clock.txt      |   21 ++
+ arch/arm/Kconfig                                   |    1 +
+ arch/arm/boot/dts/highbank.dts                     |   91 +++++-
+ arch/arm/mach-highbank/Makefile                    |    2 +-
+ arch/arm/mach-highbank/clock.c                     |   62 ----
+ arch/arm/mach-highbank/highbank.c                  |    7 +
+ drivers/clk/Makefile                               |    1 +
+ drivers/clk/clk-fixed-rate.c                       |   23 ++
+ drivers/clk/clk-highbank.c                         |  345
+++++++++++++++++++++
+ drivers/clk/clk.c                                  |  140 ++++++++
+ drivers/clk/clkdev.c                               |   77 +++++
+ include/linux/clk-provider.h                       |   16 +
+ include/linux/clk.h                                |   19 ++
+ 16 files changed, 881 insertions(+), 64 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/calxeda.txt
+ create mode 100644
+Documentation/devicetree/bindings/clock/clock-bindings.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/fixed-clock.txt
+ delete mode 100644 arch/arm/mach-highbank/clock.c
+ create mode 100644 drivers/clk/clk-highbank.c
