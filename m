@@ -1,135 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab2GGVkj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 17:40:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59044 "EHLO mx2.suse.de"
+	id S1751867Ab2GGVwu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 17:52:50 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:57706 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750970Ab2GGVki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 17:40:38 -0400
-Date: Sat, 7 Jul 2012 23:40:33 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sam Ravnborg <sam@ravnborg.org>, Arnaud Lacombe <lacombar@gmail.com>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Jan Beulich <jbeulich@novell.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: "Inconsistent kallsyms data" error
-Message-ID: <20120707214033.GA5303@pobox.suse.cz>
-References: <CA+55aFyr+gexQW9Gmg=_V145SUeKOcfSNUx5h4p7bgjMp=07Og@mail.gmail.com>
+	id S1751645Ab2GGVwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jul 2012 17:52:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: [PATCH][update] PM / crypto / ux500: Use struct dev_pm_ops for power management
+Date: Sat, 7 Jul 2012 23:58:21 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
+References: <201207062238.08013.rjw@sisk.pl>
+In-Reply-To: <201207062238.08013.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyr+gexQW9Gmg=_V145SUeKOcfSNUx5h4p7bgjMp=07Og@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207072358.21943.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 05, 2012 at 02:18:18PM -0700, Linus Torvalds wrote:
-> So for some unknown reason I'm hitting this on just one particular
-> machine, and it's *very* annoying.
-> 
-> It's annoying for three reasons:
-> 
->  - it's breaking the build (duh)
-> 
->  - the error is printed out to stderr, so you don't even *see* it as
-> an error if you redirect the normal messages somewhere else (like any
-> sane person, ie me, does)
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-I'm committing the attached patch to kbuild.git#kbuild.
+Make the ux500 crypto driver define its PM callbacks through
+struct dev_pm_ops objects rather than by using legacy PM hooks
+in struct platform_driver.
 
-
->  - when the error happens, it doesn't show *what* went wrong, and in
-> fact it explicitly cleans up all the files that could show what
-> happened.
-
-Right, the files need to be preserved somehow. At the same
-time, we can't leave the final files there, to not mark the link as
-successful. I will have a look.
-
-No idea about the actual kallsyms bug yet, sorry.
-
-Michal
-
-
->From 5369f55021feb27a1481267e7afefe14128d669f Mon Sep 17 00:00:00 2001
-From: Michal Marek <mmarek@suse.cz>
-Date: Sat, 7 Jul 2012 23:04:40 +0200
-Subject: [PATCH] kbuild: Print errors to stderr
-
-... at least in the top-level Makefile and scripts/link-vmlinux.sh.
-There are some more instances of the 'echo <error>; exit 1' pattern in
-some arch Makefiles and kconfig.
-
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- Makefile                |   24 ++++++++++++------------
- scripts/link-vmlinux.sh |    4 ++--
- 2 files changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/Makefile b/Makefile
-index 0d718ed..d7d7949 100644
---- a/Makefile
-+++ b/Makefile
-@@ -535,11 +535,11 @@ PHONY += include/config/auto.conf
+dev_get_drvdata() may be used directly instead of being wrapped in
+platform_get_drvdata(to_platform_device()).
+
+---
+ drivers/crypto/ux500/cryp/cryp_core.c |   39 ++++++++++++++++------------------
+ drivers/crypto/ux500/hash/hash_core.c |   33 +++++++++++++---------------
+ 2 files changed, 34 insertions(+), 38 deletions(-)
+
+Index: linux/drivers/crypto/ux500/cryp/cryp_core.c
+===================================================================
+--- linux.orig/drivers/crypto/ux500/cryp/cryp_core.c
++++ linux/drivers/crypto/ux500/cryp/cryp_core.c
+@@ -1661,27 +1661,26 @@ static void ux500_cryp_shutdown(struct p
  
- include/config/auto.conf:
- 	$(Q)test -e include/generated/autoconf.h -a -e $@ || (		\
--	echo;								\
--	echo "  ERROR: Kernel configuration is invalid.";		\
--	echo "         include/generated/autoconf.h or $@ are missing.";\
--	echo "         Run 'make oldconfig && make prepare' on kernel src to fix it.";	\
--	echo;								\
-+	echo >&2;							\
-+	echo >&2 "  ERROR: Kernel configuration is invalid.";		\
-+	echo >&2 "         include/generated/autoconf.h or $@ are missing.";\
-+	echo >&2 "         Run 'make oldconfig && make prepare' on kernel src to fix it.";	\
-+	echo >&2 ;							\
- 	/bin/false)
+ }
  
- endif # KBUILD_EXTMOD
-@@ -796,8 +796,8 @@ prepare3: include/config/kernel.release
- ifneq ($(KBUILD_SRC),)
- 	@$(kecho) '  Using $(srctree) as source for kernel'
- 	$(Q)if [ -f $(srctree)/.config -o -d $(srctree)/include/config ]; then \
--		echo "  $(srctree) is not clean, please run 'make mrproper'"; \
--		echo "  in the '$(srctree)' directory.";\
-+		echo >&2 "  $(srctree) is not clean, please run 'make mrproper'"; \
-+		echo >&2 "  in the '$(srctree)' directory.";\
- 		/bin/false; \
- 	fi;
- endif
-@@ -971,11 +971,11 @@ else # CONFIG_MODULES
- # ---------------------------------------------------------------------------
+-static int ux500_cryp_suspend(struct platform_device *pdev, pm_message_t state)
++static int ux500_cryp_suspend(struct device *dev)
+ {
+ 	int ret;
++	struct platform_device *pdev = to_platform_device(dev);
+ 	struct cryp_device_data *device_data;
+ 	struct resource *res_irq;
+ 	struct cryp_ctx *temp_ctx = NULL;
  
- modules modules_install: FORCE
--	@echo
--	@echo "The present kernel configuration has modules disabled."
--	@echo "Type 'make config' and enable loadable module support."
--	@echo "Then build a kernel with module support enabled."
--	@echo
-+	@echo >&2
-+	@echo >&2 "The present kernel configuration has modules disabled."
-+	@echo >&2 "Type 'make config' and enable loadable module support."
-+	@echo >&2 "Then build a kernel with module support enabled."
-+	@echo >&2
- 	@exit 1
+-	dev_dbg(&pdev->dev, "[%s]", __func__);
++	dev_dbg(dev, "[%s]", __func__);
  
- endif # CONFIG_MODULES
-diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-index cd9c6c6..4629038 100644
---- a/scripts/link-vmlinux.sh
-+++ b/scripts/link-vmlinux.sh
-@@ -210,8 +210,8 @@ if [ -n "${CONFIG_KALLSYMS}" ]; then
- 	mksysmap ${kallsyms_vmlinux} .tmp_System.map
+ 	/* Handle state? */
+ 	device_data = platform_get_drvdata(pdev);
+ 	if (!device_data) {
+-		dev_err(&pdev->dev, "[%s]: platform_get_drvdata() failed!",
+-			__func__);
++		dev_err(dev, "[%s]: platform_get_drvdata() failed!", __func__);
+ 		return -ENOMEM;
+ 	}
  
- 	if ! cmp -s System.map .tmp_System.map; then
--		echo Inconsistent kallsyms data
--		echo echo Try "make KALLSYMS_EXTRA_PASS=1" as a workaround
-+		echo >&2 Inconsistent kallsyms data
-+		echo >&2 echo Try "make KALLSYMS_EXTRA_PASS=1" as a workaround
- 		cleanup
- 		exit 1
- 	fi
+ 	res_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+ 	if (!res_irq)
+-		dev_err(&pdev->dev, "[%s]: IORESOURCE_IRQ, unavailable",
+-			__func__);
++		dev_err(dev, "[%s]: IORESOURCE_IRQ, unavailable", __func__);
+ 	else
+ 		disable_irq(res_irq->start);
+ 
+@@ -1692,32 +1691,32 @@ static int ux500_cryp_suspend(struct pla
+ 
+ 	if (device_data->current_ctx == ++temp_ctx) {
+ 		if (down_interruptible(&driver_data.device_allocation))
+-			dev_dbg(&pdev->dev, "[%s]: down_interruptible() "
+-					"failed", __func__);
+-		ret = cryp_disable_power(&pdev->dev, device_data, false);
++			dev_dbg(dev, "[%s]: down_interruptible() failed",
++				__func__);
++		ret = cryp_disable_power(dev, device_data, false);
+ 
+ 	} else
+-		ret = cryp_disable_power(&pdev->dev, device_data, true);
++		ret = cryp_disable_power(dev, device_data, true);
+ 
+ 	if (ret)
+-		dev_err(&pdev->dev, "[%s]: cryp_disable_power()", __func__);
++		dev_err(dev, "[%s]: cryp_disable_power()", __func__);
+ 
+ 	return ret;
+ }
+ 
+-static int ux500_cryp_resume(struct platform_device *pdev)
++static int ux500_cryp_resume(struct device *dev)
+ {
+ 	int ret = 0;
++	struct platform_device *pdev = to_platform_device(dev);
+ 	struct cryp_device_data *device_data;
+ 	struct resource *res_irq;
+ 	struct cryp_ctx *temp_ctx = NULL;
+ 
+-	dev_dbg(&pdev->dev, "[%s]", __func__);
++	dev_dbg(dev, "[%s]", __func__);
+ 
+ 	device_data = platform_get_drvdata(pdev);
+ 	if (!device_data) {
+-		dev_err(&pdev->dev, "[%s]: platform_get_drvdata() failed!",
+-			__func__);
++		dev_err(dev, "[%s]: platform_get_drvdata() failed!", __func__);
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -1730,11 +1729,10 @@ static int ux500_cryp_resume(struct plat
+ 	if (!device_data->current_ctx)
+ 		up(&driver_data.device_allocation);
+ 	else
+-		ret = cryp_enable_power(&pdev->dev, device_data, true);
++		ret = cryp_enable_power(dev, device_data, true);
+ 
+ 	if (ret)
+-		dev_err(&pdev->dev, "[%s]: cryp_enable_power() failed!",
+-			__func__);
++		dev_err(dev, "[%s]: cryp_enable_power() failed!", __func__);
+ 	else {
+ 		res_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+ 		if (res_irq)
+@@ -1744,15 +1742,16 @@ static int ux500_cryp_resume(struct plat
+ 	return ret;
+ }
+ 
++static SIMPLE_DEV_PM_OPS(ux500_cryp_pm, ux500_cryp_suspend, ux500_cryp_resume);
++
+ static struct platform_driver cryp_driver = {
+ 	.probe  = ux500_cryp_probe,
+ 	.remove = ux500_cryp_remove,
+ 	.shutdown = ux500_cryp_shutdown,
+-	.suspend  = ux500_cryp_suspend,
+-	.resume   = ux500_cryp_resume,
+ 	.driver = {
+ 		.owner = THIS_MODULE,
+ 		.name  = "cryp1"
++		.pm    = &ux500_cryp_pm,
+ 	}
+ };
+ 
+Index: linux/drivers/crypto/ux500/hash/hash_core.c
+===================================================================
+--- linux.orig/drivers/crypto/ux500/hash/hash_core.c
++++ linux/drivers/crypto/ux500/hash/hash_core.c
+@@ -1894,19 +1894,17 @@ static void ux500_hash_shutdown(struct p
+ 
+ /**
+  * ux500_hash_suspend - Function that suspends the hash device.
+- * @pdev:	The platform device.
+- * @state:	-
++ * @dev:	Device to suspend.
+  */
+-static int ux500_hash_suspend(struct platform_device *pdev, pm_message_t state)
++static int ux500_hash_suspend(struct device *dev)
+ {
+ 	int ret;
+ 	struct hash_device_data *device_data;
+ 	struct hash_ctx *temp_ctx = NULL;
+ 
+-	device_data = platform_get_drvdata(pdev);
++	device_data = dev_get_drvdata(dev);
+ 	if (!device_data) {
+-		dev_err(&pdev->dev, "[%s] platform_get_drvdata() failed!",
+-				__func__);
++		dev_err(dev, "[%s] platform_get_drvdata() failed!", __func__);
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -1917,33 +1915,32 @@ static int ux500_hash_suspend(struct pla
+ 
+ 	if (device_data->current_ctx == ++temp_ctx) {
+ 		if (down_interruptible(&driver_data.device_allocation))
+-			dev_dbg(&pdev->dev, "[%s]: down_interruptible() "
+-					"failed", __func__);
++			dev_dbg(dev, "[%s]: down_interruptible() failed",
++				__func__);
+ 		ret = hash_disable_power(device_data, false);
+ 
+ 	} else
+ 		ret = hash_disable_power(device_data, true);
+ 
+ 	if (ret)
+-		dev_err(&pdev->dev, "[%s]: hash_disable_power()", __func__);
++		dev_err(dev, "[%s]: hash_disable_power()", __func__);
+ 
+ 	return ret;
+ }
+ 
+ /**
+  * ux500_hash_resume - Function that resume the hash device.
+- * @pdev:	The platform device.
++ * @dev:	Device to resume.
+  */
+-static int ux500_hash_resume(struct platform_device *pdev)
++static int ux500_hash_resume(struct device *dev)
+ {
+ 	int ret = 0;
+ 	struct hash_device_data *device_data;
+ 	struct hash_ctx *temp_ctx = NULL;
+ 
+-	device_data = platform_get_drvdata(pdev);
++	device_data = dev_get_drvdata(dev);
+ 	if (!device_data) {
+-		dev_err(&pdev->dev, "[%s] platform_get_drvdata() failed!",
+-				__func__);
++		dev_err(dev, "[%s] platform_get_drvdata() failed!", __func__);
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -1958,21 +1955,21 @@ static int ux500_hash_resume(struct plat
+ 		ret = hash_enable_power(device_data, true);
+ 
+ 	if (ret)
+-		dev_err(&pdev->dev, "[%s]: hash_enable_power() failed!",
+-			__func__);
++		dev_err(dev, "[%s]: hash_enable_power() failed!", __func__);
+ 
+ 	return ret;
+ }
+ 
++static SIMPLE_DEV_PM_OPS(ux500_hash_pm, ux500_hash_suspend, ux500_hash_resume);
++
+ static struct platform_driver hash_driver = {
+ 	.probe  = ux500_hash_probe,
+ 	.remove = ux500_hash_remove,
+ 	.shutdown = ux500_hash_shutdown,
+-	.suspend  = ux500_hash_suspend,
+-	.resume   = ux500_hash_resume,
+ 	.driver = {
+ 		.owner = THIS_MODULE,
+ 		.name  = "hash1",
++		.pm    = &ux500_hash_pm,
+ 	}
+ };
+ 
+
