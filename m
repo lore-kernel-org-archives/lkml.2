@@ -1,133 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751238Ab2GGEjB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 00:39:01 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:45116 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913Ab2GGEi7 (ORCPT
+	id S1751348Ab2GGEs5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 00:48:57 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:59868 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050Ab2GGEsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 00:38:59 -0400
-Date: Sat, 7 Jul 2012 06:38:47 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Borislav Petkov <bp@amd64.org>, Chen Gong <gong.chen@linux.intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH] x86/mce: Need to let kill_proc() send signal to doomed
- process
-Message-ID: <20120707043847.GB5708@aftab.osrc.amd.com>
-References: <6695e005b7368df4307d34276300fe030e83466c.1341611925.git.tony.luck@intel.com>
+	Sat, 7 Jul 2012 00:48:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6695e005b7368df4307d34276300fe030e83466c.1341611925.git.tony.luck@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FF6C958.9090809@grupopie.com>
+References: <CA+55aFyr+gexQW9Gmg=_V145SUeKOcfSNUx5h4p7bgjMp=07Og@mail.gmail.com>
+ <4FF6C958.9090809@grupopie.com>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Sat, 7 Jul 2012 00:48:23 -0400
+X-Google-Sender-Auth: TXjSC8oDvVM914gSBS7hvaYtqCo
+Message-ID: <CAP=VYLqCNDo+3tz2RibPwwCNUNNYf1WA+wmeeUor8AmJqnfz1A@mail.gmail.com>
+Subject: Re: "Inconsistent kallsyms data" error
+To: Paulo Marques <pmarques@grupopie.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+        Arnaud Lacombe <lacombar@gmail.com>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Jan Beulich <jbeulich@novell.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, 2012 at 02:33:15PM -0700, Tony Luck wrote:
-> In commit dad1743e5993f19b3d7e7bd0fb35dc45b5326626
->   x86/mce: Only restart instruction after machine check recovery if it is safe
-> we fixed mce_notify_process() to force a signal to the current process
-> if it was not restartable (RIPV bit not set in MCG_STATUS). But doing
-> it here means that the process doesn't get told the virtual address of
-> the fault via siginfo_t->si_addr. This would prevent application level
-> recovery from the fault.
+On Fri, Jul 6, 2012 at 7:17 AM, Paulo Marques <pmarques@grupopie.com> wrote:
 
-Ok, this makes sense, we want to kill all the processes mapping that
-page.
+[...]
 
-> Make a new MF_MUST_KILL flag bit for memory_failure() et. al. to use
-> so that we will provide the right information with the signal.
-> 
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c | 4 ++--
->  include/linux/mm.h               | 1 +
->  mm/memory-failure.c              | 8 +++++---
->  3 files changed, 8 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index da27c5d..43f918d 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -1200,8 +1200,8 @@ void mce_notify_process(void)
->  	 * doomed. We still need to mark the page as poisoned and alert any
->  	 * other users of the page.
->  	 */
-> -	if (memory_failure(pfn, MCE_VECTOR, MF_ACTION_REQUIRED) < 0 ||
-> -			   mi->restartable == 0) {
-> +	if (memory_failure(pfn, MCE_VECTOR,
-> +			   MF_ACTION_REQUIRED|MF_MUST_KILL) < 0) {
+>
+> There was a recent thread from David Brown on the arm linux mailing list
+> ("ARM: two possible fixes for the KALLSYMS build problem"). He tracked
+> down the problem to having empty per_cpu sections on a non-smp build.
 
-This makes mi->restartable unused?
+Actually rmk diagnosed it as the empty per_cpu sections.  See it here:
 
-And more specifically, we're not looking at RIPV anymore. I'm guessing
-when we've reached this point, we always MUST_KILL?
+http://marc.info/?l=linux-next&m=133267456809502&w=2
 
->  		pr_err("Memory error not recovered");
->  		force_sig(SIGBUS, current);
->  	}
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index b36d08c..f9f279c 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -1591,6 +1591,7 @@ void vmemmap_populate_print_last(void);
->  enum mf_flags {
->  	MF_COUNT_INCREASED = 1 << 0,
->  	MF_ACTION_REQUIRED = 1 << 1,
-> +	MF_MUST_KILL = 1 << 2,
->  };
->  extern int memory_failure(unsigned long pfn, int trapno, int flags);
->  extern void memory_failure_queue(unsigned long pfn, int trapno, int flags);
-> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-> index ab1e714..e3e0045 100644
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -858,7 +858,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
->  	struct address_space *mapping;
->  	LIST_HEAD(tokill);
->  	int ret;
-> -	int kill = 1;
-> +	int kill = 1, doit;
->  	struct page *hpage = compound_head(p);
->  	struct page *ppage;
->  
-> @@ -965,12 +965,14 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
->  	 * Now that the dirty bit has been propagated to the
->  	 * struct page and all unmaps done we can decide if
->  	 * killing is needed or not.  Only kill when the page
-> -	 * was dirty, otherwise the tokill list is merely
-> +	 * was dirty or the process is not restartable,
-> +	 * otherwise the tokill list is merely
->  	 * freed.  When there was a problem unmapping earlier
->  	 * use a more force-full uncatchable kill to prevent
->  	 * any accesses to the poisoned memory.
->  	 */
-> -	kill_procs(&tokill, !!PageDirty(ppage), trapno,
-> +	doit = !!PageDirty(ppage) || (flags & MF_MUST_KILL) != 0;
+Paul.
+--
 
-Maybe
-
-				     !!(flags & MF_MUST_KILL)
-?
-
-> +	kill_procs(&tokill, doit, trapno,
->  		      ret != SWAP_SUCCESS, p, pfn, flags);
->  
->  	return ret;
-> -- 
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+> The alignment of these sections made the symbols jump around and change
+> from one build to the next. This particular problem might be ARM
+> specific, though.
+>
+> --
+> Paulo Marques - www.grupopie.com
+>
+> "I used to be indecisive, but now I'm not so sure."
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
