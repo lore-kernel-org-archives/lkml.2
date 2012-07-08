@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614Ab2GHV5z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 17:57:55 -0400
+	id S1752599Ab2GHV5t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 17:57:49 -0400
 Received: from mail-we0-f174.google.com ([74.125.82.174]:42390 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab2GHV4z (ORCPT
+	with ESMTP id S1752426Ab2GHV4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 17:56:55 -0400
+	Sun, 8 Jul 2012 17:56:54 -0400
 From: David Herrmann <dh.herrmann@googlemail.com>
 To: linux-serial@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, florianschandinat@gmx.de,
         linux-fbdev@vger.kernel.org, gregkh@linuxfoundation.org,
         alan@lxorguk.ukuu.org.uk, bonbons@linux-vserver.org,
         David Herrmann <dh.herrmann@googlemail.com>
-Subject: [PATCH v2 03/11] fblog: new framebuffer kernel log dummy driver
-Date: Sun,  8 Jul 2012 23:56:46 +0200
-Message-Id: <1341784614-2797-4-git-send-email-dh.herrmann@googlemail.com>
+Subject: [PATCH v2 02/11] fbcon: move bit_putcs() into separate source file
+Date: Sun,  8 Jul 2012 23:56:45 +0200
+Message-Id: <1341784614-2797-3-git-send-email-dh.herrmann@googlemail.com>
 X-Mailer: git-send-email 1.7.11.1
 In-Reply-To: <1341784614-2797-1-git-send-email-dh.herrmann@googlemail.com>
 References: <1341784614-2797-1-git-send-email-dh.herrmann@googlemail.com>
@@ -23,211 +23,320 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fblog displays all kernel log messages on all connected framebuffers. It
-replaces fbcon when CONFIG_VT=n is selected. Its main purpose is to debug
-boot problems by displaying the whole boot log on the screen. This patch
-provides the first dummy module-init/deinit functions.
+If we want to use font-draw-operations in other modules than fbcon, we
+need to split this function off of fbcon headers and sources. This also
+makes bit_putcs() totally independent of vc_* and fbcon_* structures.
 
-As it uses all the font and fb functions I placed it in
-drivers/video/console. However, this means that we need to move the check
-for CONFIG_VT in Makefile/Kconfig from drivers/video into
-drivers/video/console as fblog does not depend on CONFIG_VT.
+As scr_read() cannot be called inside of non-fbcon/vt functions, we need
+to assemble the buffer before passing it to fbdraw_font(). This slows down
+this operations a little bit but my rough benchmark showed that it didn't
+really matter. Anyway, if it does, we can still put it into VT_BUF_HAVE_RW
+conditions so platforms that don't use it won't be affected. And for other
+platforms we can add the buffer to the vc-struct so we can reuse it.
 
 Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
 ---
- drivers/video/Kconfig          |  5 +----
- drivers/video/Makefile         |  2 +-
- drivers/video/console/Kconfig  | 37 +++++++++++++++++++++++++++++--------
- drivers/video/console/Makefile |  1 +
- drivers/video/console/fblog.c  | 41 +++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 73 insertions(+), 13 deletions(-)
- create mode 100644 drivers/video/console/fblog.c
+ drivers/video/console/bitblit.c | 127 ++++------------------------------------
+ drivers/video/console/fbdraw.c  | 125 +++++++++++++++++++++++++++++++++++++++
+ drivers/video/console/fbdraw.h  |   4 ++
+ 3 files changed, 139 insertions(+), 117 deletions(-)
 
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index 0217f74..e8fd53d 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -2448,10 +2448,7 @@ source "drivers/video/omap/Kconfig"
- source "drivers/video/omap2/Kconfig"
- source "drivers/video/exynos/Kconfig"
- source "drivers/video/backlight/Kconfig"
+diff --git a/drivers/video/console/bitblit.c b/drivers/video/console/bitblit.c
+index 6ec2905..c5d897b 100644
+--- a/drivers/video/console/bitblit.c
++++ b/drivers/video/console/bitblit.c
+@@ -54,132 +54,25 @@ static void bit_clear(struct vc_data *vc, struct fb_info *info, int sy,
+ 	info->fbops->fb_fillrect(info, &region);
+ }
+ 
+-static inline void bit_putcs_aligned(struct vc_data *vc, struct fb_info *info,
+-				     const u16 *s, u32 attr, u32 cnt,
+-				     u32 d_pitch, u32 s_pitch, u32 cellsize,
+-				     struct fb_image *image, u8 *buf, u8 *dst)
+-{
+-	u16 charmask = vc->vc_hi_font_mask ? 0x1ff : 0xff;
+-	u32 idx = vc->vc_font.width >> 3;
+-	u8 *src;
 -
--if VT
--	source "drivers/video/console/Kconfig"
--endif
-+source "drivers/video/console/Kconfig"
+-	while (cnt--) {
+-		src = vc->vc_font.data + (scr_readw(s++)&
+-					  charmask)*cellsize;
+-
+-		if (attr) {
+-			fbdraw_update_attr(buf, src, attr, &vc->vc_font);
+-			src = buf;
+-		}
+-
+-		if (likely(idx == 1))
+-			__fb_pad_aligned_buffer(dst, d_pitch, src, idx,
+-						image->height);
+-		else
+-			fb_pad_aligned_buffer(dst, d_pitch, src, idx,
+-					      image->height);
+-
+-		dst += s_pitch;
+-	}
+-
+-	info->fbops->fb_imageblit(info, image);
+-}
+-
+-static inline void bit_putcs_unaligned(struct vc_data *vc,
+-				       struct fb_info *info, const u16 *s,
+-				       u32 attr, u32 cnt, u32 d_pitch,
+-				       u32 s_pitch, u32 cellsize,
+-				       struct fb_image *image, u8 *buf,
+-				       u8 *dst)
+-{
+-	u16 charmask = vc->vc_hi_font_mask ? 0x1ff : 0xff;
+-	u32 shift_low = 0, mod = vc->vc_font.width % 8;
+-	u32 shift_high = 8;
+-	u32 idx = vc->vc_font.width >> 3;
+-	u8 *src;
+-
+-	while (cnt--) {
+-		src = vc->vc_font.data + (scr_readw(s++)&
+-					  charmask)*cellsize;
+-
+-		if (attr) {
+-			fbdraw_update_attr(buf, src, attr, &vc->vc_font);
+-			src = buf;
+-		}
+-
+-		fb_pad_unaligned_buffer(dst, d_pitch, src, idx,
+-					image->height, shift_high,
+-					shift_low, mod);
+-		shift_low += mod;
+-		dst += (shift_low >= 8) ? s_pitch : s_pitch - 1;
+-		shift_low &= 7;
+-		shift_high = 8 - shift_low;
+-	}
+-
+-	info->fbops->fb_imageblit(info, image);
+-
+-}
+-
+ static void bit_putcs(struct vc_data *vc, struct fb_info *info,
+ 		      const unsigned short *s, int count, int yy, int xx,
+ 		      int fg, int bg)
+ {
+-	struct fb_image image;
+-	u32 width = DIV_ROUND_UP(vc->vc_font.width, 8);
+-	u32 cellsize = width * vc->vc_font.height;
+-	u32 maxcnt = info->pixmap.size/cellsize;
+-	u32 scan_align = info->pixmap.scan_align - 1;
+-	u32 buf_align = info->pixmap.buf_align - 1;
+-	u32 mod = vc->vc_font.width % 8, cnt, pitch, size;
++	u16 *buf;
++	int i;
+ 	u32 attribute = get_attribute(info, scr_readw(s));
+-	u8 *dst, *buf = NULL;
  
- if FB || SGI_NEWPORT_CONSOLE
- 	source "drivers/video/logo/Kconfig"
-diff --git a/drivers/video/Makefile b/drivers/video/Makefile
-index ee8dafb..9f8a7f0 100644
---- a/drivers/video/Makefile
-+++ b/drivers/video/Makefile
-@@ -11,7 +11,7 @@ fb-y                              := fbmem.o fbmon.o fbcmap.o fbsysfs.o \
-                                      modedb.o fbcvt.o
- fb-objs                           := $(fb-y)
+-	image.fg_color = fg;
+-	image.bg_color = bg;
+-	image.dx = xx * vc->vc_font.width;
+-	image.dy = yy * vc->vc_font.height;
+-	image.height = vc->vc_font.height;
+-	image.depth = 1;
++	buf = kmalloc(sizeof(*buf) * count, GFP_KERNEL);
++	if (!buf)
++		return;
  
--obj-$(CONFIG_VT)		  += console/
-+obj-y				  += console/
- obj-$(CONFIG_LOGO)		  += logo/
- obj-y				  += backlight/
+-	if (attribute) {
+-		buf = kmalloc(cellsize, GFP_KERNEL);
+-		if (!buf)
+-			return;
+-	}
+-
+-	while (count) {
+-		if (count > maxcnt)
+-			cnt = maxcnt;
+-		else
+-			cnt = count;
+-
+-		image.width = vc->vc_font.width * cnt;
+-		pitch = DIV_ROUND_UP(image.width, 8) + scan_align;
+-		pitch &= ~scan_align;
+-		size = pitch * image.height + buf_align;
+-		size &= ~buf_align;
+-		dst = fb_get_buffer_offset(info, &info->pixmap, size);
+-		image.data = dst;
+-
+-		if (!mod)
+-			bit_putcs_aligned(vc, info, s, attribute, cnt, pitch,
+-					  width, cellsize, &image, buf, dst);
+-		else
+-			bit_putcs_unaligned(vc, info, s, attribute, cnt,
+-					    pitch, width, cellsize, &image,
+-					    buf, dst);
+-
+-		image.dx += cnt * vc->vc_font.width;
+-		count -= cnt;
+-		s += cnt;
+-	}
++	for (i = 0; i < count; ++i)
++		buf[i] = scr_readw(s++);
  
-diff --git a/drivers/video/console/Kconfig b/drivers/video/console/Kconfig
-index e2c96d0..7374362 100644
---- a/drivers/video/console/Kconfig
-+++ b/drivers/video/console/Kconfig
-@@ -6,7 +6,7 @@ menu "Console display driver support"
+-	/* buf is always NULL except when in monochrome mode, so in this case
+-	   it's a gain to check buf against NULL even though kfree() handles
+-	   NULL pointers just fine */
+-	if (unlikely(buf))
+-		kfree(buf);
++	fbdraw_font(info, &vc->vc_font, vc->vc_hi_font_mask, xx, yy, fg, bg,
++		    attribute, buf, count);
  
- config VGA_CONSOLE
- 	bool "VGA text console" if EXPERT || !X86
--	depends on !4xx && !8xx && !SPARC && !M68K && !PARISC && !FRV && !SUPERH && !BLACKFIN && !AVR32 && !MN10300 && (!ARM || ARCH_FOOTBRIDGE || ARCH_INTEGRATOR || ARCH_NETWINDER)
-+	depends on VT && !4xx && !8xx && !SPARC && !M68K && !PARISC && !FRV && !SUPERH && !BLACKFIN && !AVR32 && !MN10300 && (!ARM || ARCH_FOOTBRIDGE || ARCH_INTEGRATOR || ARCH_NETWINDER)
- 	default y
- 	help
- 	  Saying Y here will allow you to use Linux in text mode through a
-@@ -45,7 +45,7 @@ config VGACON_SOFT_SCROLLBACK_SIZE
- 	 screenfuls of scrollback buffer
++	kfree(buf);
+ }
  
- config MDA_CONSOLE
--	depends on !M68K && !PARISC && ISA
-+	depends on VT && !M68K && !PARISC && ISA
- 	tristate "MDA text console (dual-headed) (EXPERIMENTAL)"
- 	---help---
- 	  Say Y here if you have an old MDA or monochrome Hercules graphics
-@@ -61,14 +61,14 @@ config MDA_CONSOLE
+ static void bit_clear_margins(struct vc_data *vc, struct fb_info *info,
+diff --git a/drivers/video/console/fbdraw.c b/drivers/video/console/fbdraw.c
+index 65e7003..e2e0661 100644
+--- a/drivers/video/console/fbdraw.c
++++ b/drivers/video/console/fbdraw.c
+@@ -41,6 +41,131 @@ void fbdraw_update_attr(u8 *dst, const u8 *src, int attribute,
+ }
+ EXPORT_SYMBOL(fbdraw_update_attr);
  
- config SGI_NEWPORT_CONSOLE
-         tristate "SGI Newport Console support"
--        depends on SGI_IP22 
-+        depends on VT && SGI_IP22
-         help
-           Say Y here if you want the console on the Newport aka XL graphics
-           card of your Indy.  Most people say Y here.
- 
- config DUMMY_CONSOLE
- 	bool
--	depends on VGA_CONSOLE!=y || SGI_NEWPORT_CONSOLE!=y 
-+	depends on VT && (VGA_CONSOLE!=y || SGI_NEWPORT_CONSOLE!=y)
- 	default y
- 
- config DUMMY_CONSOLE_COLUMNS
-@@ -89,7 +89,7 @@ config DUMMY_CONSOLE_ROWS
- 
- config FRAMEBUFFER_CONSOLE
- 	tristate "Framebuffer Console support"
--	depends on FB
-+	depends on VT && FB
- 	select CRC32
- 	help
- 	  Low-level framebuffer-based console driver.
-@@ -122,16 +122,37 @@ config FRAMEBUFFER_CONSOLE_ROTATION
- 
- config STI_CONSOLE
-         bool "STI text console"
--        depends on PARISC
-+        depends on VT && PARISC
-         default y
-         help
-           The STI console is the builtin display/keyboard on HP-PARISC
-           machines.  Say Y here to build support for it into your kernel.
-           The alternative is to use your primary serial port as a console.
- 
-+config FBLOG
-+	tristate "Framebuffer Kernel Log Driver"
-+	depends on !VT && FB
-+	default n
-+	help
-+	  This driver displays all kernel log messages on all connected
-+	  framebuffers. It is mutually exclusive with CONFIG_FRAMEBUFFER_CONSOLE
-+	  and CONFIG_VT. It was mainly created for debugging purposes when
-+	  CONFIG_VT is not selected but you still want kernel boot messages on
-+	  the screen.
-+
-+	  This driver overwrites all other graphics output on the framebuffer as
-+	  long as it is active so the kernel log will always be visible. You
-+	  need to disable this driver via sysfs to be able to start another
-+	  graphics application.
-+
-+	  If unsure, say N.
-+
-+	  To compile this driver as a module, choose M here: the module will
-+	  be called fblog.
-+
- config FONTS
- 	bool "Select compiled-in fonts"
--	depends on FRAMEBUFFER_CONSOLE || STI_CONSOLE
-+	depends on FRAMEBUFFER_CONSOLE || STI_CONSOLE || FBLOG
- 	help
- 	  Say Y here if you would like to use fonts other than the default
- 	  your frame buffer console usually use.
-@@ -158,7 +179,7 @@ config FONT_8x8
- 
- config FONT_8x16
- 	bool "VGA 8x16 font" if FONTS
--	depends on FRAMEBUFFER_CONSOLE || SGI_NEWPORT_CONSOLE || STI_CONSOLE || USB_SISUSBVGA_CON
-+	depends on FRAMEBUFFER_CONSOLE || SGI_NEWPORT_CONSOLE || STI_CONSOLE || USB_SISUSBVGA_CON || FBLOG
- 	default y if !SPARC && !FONTS
- 	help
- 	  This is the "high resolution" font for the VGA frame buffer (the one
-diff --git a/drivers/video/console/Makefile b/drivers/video/console/Makefile
-index 9a52226..ec0e155 100644
---- a/drivers/video/console/Makefile
-+++ b/drivers/video/console/Makefile
-@@ -20,6 +20,7 @@ font-objs += $(font-objs-y)
- 
- # Each configuration option enables a list of files.
- 
-+obj-$(CONFIG_FBLOG)               += fblog.o font.o
- obj-$(CONFIG_DUMMY_CONSOLE)       += dummycon.o
- obj-$(CONFIG_SGI_NEWPORT_CONSOLE) += newport_con.o font.o
- obj-$(CONFIG_STI_CONSOLE)         += sticon.o sticore.o font.o
-diff --git a/drivers/video/console/fblog.c b/drivers/video/console/fblog.c
-new file mode 100644
-index 0000000..fb39737
---- /dev/null
-+++ b/drivers/video/console/fblog.c
-@@ -0,0 +1,41 @@
-+/*
-+ * Framebuffer Kernel Log Driver
-+ * Copyright (c) 2012 David Herrmann <dh.herrmann@googlemail.com>
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ */
-+
-+/*
-+ * Framebuffer Kernel Log
-+ * This driver prints the kernel log to all connected display devices. It
-+ * replaces CONFIG_VT and cannot run simultaneously with it. It does not provide
-+ * any virtual-terminal, though. It should only be used to get kernel boot
-+ * messages to debug kernel errors.
-+ * Hence, this driver is neither optimized for speed, nor does it provide any
-+ * fancy features like colored text output.
-+ * This driver forcibly writes to the framebuffer while active, therefore, you
-+ * cannot run other graphics applications simultaneously. You need to disable
-+ * all fblog instances before running other graphics applications.
-+ */
-+
-+#include <linux/module.h>
-+
-+static int __init fblog_init(void)
++static inline void bit_putcs_aligned(struct fb_info *info, bool hi_font,
++				     struct console_font *font, u32 attribute,
++				     u32 d_pitch, u32 s_pitch, u32 cellsize,
++				     struct fb_image *image, u8 *buf, u8 *dst,
++				     const u16 *chars, size_t cnt)
 +{
-+	return 0;
++	u16 charmask = hi_font ? 0x1ff : 0xff;
++	u32 idx = font->width >> 3;
++	u8 *src;
++
++	while (cnt--) {
++		src = font->data + ((*chars++) & charmask) * cellsize;
++
++		if (attribute) {
++			fbdraw_update_attr(buf, src, attribute, font);
++			src = buf;
++		}
++
++		if (likely(idx == 1))
++			__fb_pad_aligned_buffer(dst, d_pitch, src, idx,
++						image->height);
++		else
++			fb_pad_aligned_buffer(dst, d_pitch, src, idx,
++					      image->height);
++
++		dst += s_pitch;
++	}
++
++	info->fbops->fb_imageblit(info, image);
 +}
 +
-+static void __exit fblog_exit(void)
++static inline void bit_putcs_unaligned(struct fb_info *info, bool hi_font,
++				       struct console_font *font, u32 attribute,
++				       u32 d_pitch, u32 s_pitch, u32 cellsize,
++				       struct fb_image *image, u8 *buf, u8 *dst,
++				       const u16 *chars, size_t cnt)
 +{
++	u16 charmask = hi_font ? 0x1ff : 0xff;
++	u32 shift_low = 0, mod = font->width % 8;
++	u32 shift_high = 8;
++	u32 idx = font->width >> 3;
++	u8 *src;
++
++	while (cnt--) {
++		src = font->data + ((*chars++) & charmask) * cellsize;
++
++		if (attribute) {
++			fbdraw_update_attr(buf, src, attribute, font);
++			src = buf;
++		}
++
++		fb_pad_unaligned_buffer(dst, d_pitch, src, idx,
++					image->height, shift_high,
++					shift_low, mod);
++		shift_low += mod;
++		dst += (shift_low >= 8) ? s_pitch : s_pitch - 1;
++		shift_low &= 7;
++		shift_high = 8 - shift_low;
++	}
++
++	info->fbops->fb_imageblit(info, image);
 +}
 +
-+module_init(fblog_init);
-+module_exit(fblog_exit);
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("David Herrmann <dh.herrmann@googlemail.com>");
-+MODULE_DESCRIPTION("Framebuffer Kernel Log Driver");
++void fbdraw_font(struct fb_info *info, struct console_font *font, bool hi_font,
++		 unsigned int xpos, unsigned int ypos, int fg, int bg,
++		 u32 attribute, const u16 *chars, size_t count)
++{
++	struct fb_image image;
++	u32 width = DIV_ROUND_UP(font->width, 8);
++	u32 cellsize = width * font->height;
++	u32 maxcnt = info->pixmap.size / cellsize;
++	u32 scan_align = info->pixmap.scan_align - 1;
++	u32 buf_align = info->pixmap.buf_align - 1;
++	u32 mod = font->width % 8, cnt, pitch, size;
++	u8 *dst, *buf = NULL;
++
++	image.fg_color = fg;
++	image.bg_color = bg;
++	image.dx = xpos * font->width;
++	image.dy = ypos * font->height;
++	image.height = font->height;
++	image.depth = 1;
++
++	if (attribute) {
++		buf = kmalloc(cellsize, GFP_KERNEL);
++		if (!buf)
++			return;
++	}
++
++	while (count) {
++		if (count > maxcnt)
++			cnt = maxcnt;
++		else
++			cnt = count;
++
++		image.width = font->width * cnt;
++		pitch = DIV_ROUND_UP(image.width, 8) + scan_align;
++		pitch &= ~scan_align;
++		size = pitch * image.height + buf_align;
++		size &= ~buf_align;
++		dst = fb_get_buffer_offset(info, &info->pixmap, size);
++		image.data = dst;
++
++		if (!mod)
++			bit_putcs_aligned(info, hi_font, font, attribute,
++					  pitch, width, cellsize, &image, buf,
++					  dst, chars, cnt);
++		else
++			bit_putcs_unaligned(info, hi_font, font, attribute,
++					    pitch, width, cellsize, &image, buf,
++					    dst, chars, cnt);
++
++		image.dx += cnt * font->width;
++		count -= cnt;
++		chars += cnt;
++	}
++
++	/* buf is always NULL except when in monochrome mode, so in this case
++	   it's a gain to check buf against NULL even though kfree() handles
++	   NULL pointers just fine */
++	if (unlikely(buf))
++		kfree(buf);
++}
++EXPORT_SYMBOL(fbdraw_font);
++
+ MODULE_LICENSE("GPL v2");
+ MODULE_AUTHOR("David Herrmann <dh.herrmann@googlemail.com>");
+ MODULE_DESCRIPTION("Framebuffer helpers for image draw-operations");
+diff --git a/drivers/video/console/fbdraw.h b/drivers/video/console/fbdraw.h
+index 77edd7f..b9f1ffa 100644
+--- a/drivers/video/console/fbdraw.h
++++ b/drivers/video/console/fbdraw.h
+@@ -23,4 +23,8 @@
+ void fbdraw_update_attr(u8 *dst, const u8 *src, int attribute,
+ 			struct console_font *font);
+ 
++void fbdraw_font(struct fb_info *info, struct console_font *font, bool hi_font,
++		 unsigned int xpos, unsigned int ypos, int fg, int bg,
++		 u32 attribute, const u16 *chars, size_t count);
++
+ #endif /* _VIDEO_FBDRAW_H */
 -- 
 1.7.11.1
 
