@@ -1,79 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792Ab2GHKiz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 06:38:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50226 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272Ab2GHKix (ORCPT
+	id S1751413Ab2GHKvQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 06:51:16 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47768 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab2GHKvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 06:38:53 -0400
-Message-ID: <4FF96332.8080401@gmail.com>
-Date: Sun, 08 Jul 2012 18:38:42 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Zheng Liu <gnehzuil.liu@gmail.com>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ext4: fix the comment in ext4_ext_insert_extent for
- ext4_ext_try_to_merge in extents.c
-References: <4FF68511.9050207@gmail.com> <CANWLp03uEyPZUbUD+rO=AtRQPLVSvTMTJERhCX94Nfw-7QRtmQ@mail.gmail.com>
-In-Reply-To: <CANWLp03uEyPZUbUD+rO=AtRQPLVSvTMTJERhCX94Nfw-7QRtmQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sun, 8 Jul 2012 06:51:15 -0400
+From: Valentin Ilie <valentin.ilie@gmail.com>
+To: paul.gortmaker@windriver.com, dhowells@redhat.com
+Cc: linux-kernel@vger.kernel.org, Valentin Ilie <valentin.ilie@gmail.com>
+Subject: [PATCH] Kernel: dma.c: fixed coding style issues
+Date: Sun,  8 Jul 2012 13:51:05 +0300
+Message-Id: <1341744665-15678-1-git-send-email-valentin.ilie@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012年07月07日 23:15, Zheng Liu wrote:
-> Hi Sheng-Hui,
-> 
-> It seems that there has a patch to fix it.
-> http://www.spinics.net/lists/linux-ext4/msg32611.html
-> 
-> Regards,
-> Zheng
+Fixed coding style issues. (checkpatch warnings)
 
-Got it. 
+Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
+---
+ kernel/dma.c |   17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-I didn't track the patch list. Just checked the git tree.
-
-Thanks,
-
-> 
-> On Fri, Jul 6, 2012 at 2:26 PM, Wang Sheng-Hui <shhuiw@gmail.com> wrote:
->> The left and right extents merge is done by
->> ext4_ext_try_to_merge. No specific left/right
->> fun calls any more.
->>
->> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
->> ---
->>  fs/ext4/extents.c |    4 +---
->>  1 files changed, 1 insertions(+), 3 deletions(-)
->>
->> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
->> index 5207b7b..6c2a37d 100644
->> --- a/fs/ext4/extents.c
->> +++ b/fs/ext4/extents.c
->> @@ -1891,12 +1891,10 @@ has_space:
->>         nearex->ee_len = newext->ee_len;
->>
->>  merge:
->> -       /* try to merge extents to the right */
->> +       /* try to merge extents to the neighbours */
->>         if (!(flag & EXT4_GET_BLOCKS_PRE_IO))
->>                 ext4_ext_try_to_merge(inode, path, nearex);
->>
->> -       /* try to merge extents to the left */
->> -
->>         /* time to correct all indexes above */
->>         err = ext4_ext_correct_indexes(handle, inode, path);
->>         if (err)
->> --
->> 1.7.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/kernel/dma.c b/kernel/dma.c
+index 6c6262f..082cd74 100644
+--- a/kernel/dma.c
++++ b/kernel/dma.c
+@@ -38,6 +38,7 @@
+ 
+ 
+ DEFINE_SPINLOCK(dma_spin_lock);
++EXPORT_SYMBOL(dma_spin_lock);
+ 
+ /*
+  *	If our port doesn't define this it has no PC like DMA
+@@ -66,7 +67,7 @@ static struct dma_chan dma_chan_busy[MAX_DMA_CHANNELS] = {
+  * @dmanr: DMA channel number
+  * @device_id: reserving device ID string, used in /proc/dma
+  */
+-int request_dma(unsigned int dmanr, const char * device_id)
++int request_dma(unsigned int dmanr, const char *device_id)
+ {
+ 	if (dmanr >= MAX_DMA_CHANNELS)
+ 		return -EINVAL;
+@@ -87,12 +88,12 @@ int request_dma(unsigned int dmanr, const char * device_id)
+ void free_dma(unsigned int dmanr)
+ {
+ 	if (dmanr >= MAX_DMA_CHANNELS) {
+-		printk(KERN_WARNING "Trying to free DMA%d\n", dmanr);
++		pr_warn("Trying to free DMA%d\n", dmanr);
+ 		return;
+ 	}
+ 
+ 	if (xchg(&dma_chan_busy[dmanr].lock, 0) == 0) {
+-		printk(KERN_WARNING "Trying to free free DMA%d\n", dmanr);
++		pr_warn("Trying to free free DMA%d\n", dmanr);
+ 		return;
+ 	}
+ 
+@@ -104,12 +105,14 @@ int request_dma(unsigned int dmanr, const char *device_id)
+ {
+ 	return -EINVAL;
+ }
++EXPORT_SYMBOL(request_dma);
+ 
+ void free_dma(unsigned int dmanr)
+ {
+ }
++EXPORT_SYMBOL(free_dma);
+ 
+-#endif
++#endif /* MAX_DMA_CHANNELS */
+ 
+ #ifdef CONFIG_PROC_FS
+ 
+@@ -153,8 +156,4 @@ static int __init proc_dma_init(void)
+ }
+ 
+ __initcall(proc_dma_init);
+-#endif
+-
+-EXPORT_SYMBOL(request_dma);
+-EXPORT_SYMBOL(free_dma);
+-EXPORT_SYMBOL(dma_spin_lock);
++#endif /* CONFIG_PROC_FS */
+-- 
+1.7.10.4
 
