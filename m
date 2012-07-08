@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab2GHTOj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 15:14:39 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:65397 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752061Ab2GHTOh (ORCPT
+	id S1752169Ab2GHTXK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 15:23:10 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:40185 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751893Ab2GHTXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 15:14:37 -0400
+	Sun, 8 Jul 2012 15:23:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <w3psjd55kwl.wl%kuninori.morimoto.gx@renesas.com>
-References: <20120706161455.dd899154fbc8a79ee530572f@canb.auug.org.au>
-	<CACRpkdbZddOBf0PXFJjr_aRD3TEa9hSvXjAjf3--8Ko_W0zZcg@mail.gmail.com>
-	<w3psjd55kwl.wl%kuninori.morimoto.gx@renesas.com>
-Date: Sun, 8 Jul 2012 21:14:37 +0200
-Message-ID: <CACRpkdb=bg7fc1HEW5U2PBjs_hLDRgGUNP=O6BEJRmYfCiSWpA@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the gpio-lw tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+X-Originating-IP: [93.172.10.162]
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sun, 8 Jul 2012 22:22:47 +0300
+Message-ID: <CAK=WgbY2-K991tkQ_09=vCEAnuz3N8K2sXU=R1sOQ_Fm1VC_nw@mail.gmail.com>
+Subject: [GIT PULL] hwspinlock fix for 3.5
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org,
+        Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 6, 2012 at 10:55 AM, Kuninori Morimoto
-<kuninori.morimoto.gx@renesas.com> wrote:
->
-> Dear Linus
->
->> > After merging the gpio-lw tree, today's linux-next build (x86_64
->> > allmodconfig) failed like this:
->> >
->> > ERROR: "irq_set_chip_and_handler_name" [drivers/gpio/gpio-pcf857x.ko] undefined!
->> > ERROR: "dummy_irq_chip" [drivers/gpio/gpio-pcf857x.ko] undefined!
->>
->> Thanks, I've dropped the offending patch, Kuninori can you look into this and
->> provide a new patch? It's the second patch from your patch set.
->
-> OK. I will, but it will be next week.
-> And could you please show me where is your repository/branch ?
+Hi Linus,
 
-http://git.kernel.org/?p=linux/kernel/git/linusw/linux-gpio.git;a=summary
-branch devel/for-next
+The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
 
-Linus Walleij
+  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/ohad/hwspinlock.git
+tags/hwspinlock-3.5-fixes
+
+for you to fetch changes up to 476a7eeb60e70ddab138e7cb4bc44ef5ac20782e:
+
+  hwspinlock/core: use global ID to register hwspinlocks on multiple
+devices (2012-07-07 22:35:30 +0300)
+
+----------------------------------------------------------------
+A single hwspinlock core fix for multiple hwspinlock devices scenarios,
+from Shinya Kuribayashi.
+
+----------------------------------------------------------------
+Shinya Kuribayashi (1):
+      hwspinlock/core: use global ID to register hwspinlocks on multiple devices
+
+ drivers/hwspinlock/hwspinlock_core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
