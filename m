@@ -1,56 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab2GHWAT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 18:00:19 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49269 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752564Ab2GHV5s (ORCPT
+	id S1752471Ab2GHWBs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 18:01:48 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:49814 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752370Ab2GHWBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 17:57:48 -0400
-Date: Sun, 8 Jul 2012 22:57:12 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: remove asm/locks.h
-Message-ID: <20120708215712.GA6404@mudshark.cambridge.arm.com>
-References: <1341262188.1911.147.camel@x61.thuisdomein>
- <20120702215203.GA25234@mudshark.cambridge.arm.com>
- <1341300030.1911.179.camel@x61.thuisdomein>
- <20120708160258.GC27030@mudshark.cambridge.arm.com>
- <1341773106.22584.9.camel@x61.thuisdomein>
+	Sun, 8 Jul 2012 18:01:46 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX19ZwztCx1lZZ0VsyXje0XBbv+B48dpKeTHZEzpnWs
+	eLcGJV0qlTNj7b
+Message-ID: <4FFA034C.7000105@gmx.de>
+Date: Sun, 08 Jul 2012 22:01:48 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341773106.22584.9.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Parsons <lost.distance@yahoo.com>
+CC: mreimer@sdgsystems.com, philipp.zabel@gmail.com,
+        linux-kernel@vger.kernel.org,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCH RESEND] video: w100fb: Reduce sleep mode battery discharge
+References: <20120603103355.3845gmx1@mx072.gmx.net>
+In-Reply-To: <20120603103355.3845gmx1@mx072.gmx.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 08, 2012 at 07:45:06PM +0100, Paul Bolle wrote:
-> On Sun, 2012-07-08 at 17:03 +0100, Will Deacon wrote:
-> >  Please can you put this into the patch system?
+On 06/03/2012 10:33 AM, Paul Parsons wrote:
+> In 2006 and 2007 the handhelds.org kernel w100fb driver was patched to
+> reduce sleep mode battery discharge. Unfortunately those two patches
+> never migrated to the mainline kernel.
 > 
-> I'm not sure what the patch system is, but I am certain that I'm not
-> allowed to put this patch into it.
+> Fortunately the function affected - w100_suspend() - has not changed
+> since; thus those patches still apply cleanly.
+> 
+> Applying those patches to linux-3.4-rc3 running on an HP iPAQ hx4700
+> reduces the sleep mode battery discharge from approximately 26 mA to
+> approximately 11 mA.
+> 
+> This patch combines those two patches into a single unified patch.
+> 
+> Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
+> Cc: Matt Reimer <mreimer@sdgsystems.com>
+> Cc: Philipp Zabel <philipp.zabel@gmail.com>
 
-Don't be so certain -- the patch system is the preferred method for submitting
-patches to arch/arm/ via Russell's tree. Since you're not familiar with it,
-I've sent the patch for you this time:
+Applied.
 
-  http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=7460/1
 
-but if you have any additional patches to core ARM code then you can send
-them following mailing list review and looking at the help here:
+Thanks,
 
-  http://www.arm.linux.org.uk/developer/patches/info.php
+Florian Tobias Schandinat
 
-Note that changes to soc-specific code goes via the arm-soc tree (Arnd and
-Olof) so don't use the patch system for that.
+> ---
+> 
+> Many thanks to Matt Reimer for suggesting this.
+> 
+> The seeming demise of handhelds.org has removed any formal patch logs.
+> However the patches can still be viewed online:
+> 2006 patch:
+> http://paste.lisp.org/display/31700
+> 2007 patch:
+> http://osdir.com/ml/handhelds.linux.kernel/2007-02/msg00020.html
+> 
+> And the fully patched handhelds.org kernel is still available, e.g.:
+> http://www.linuxtogo.org/~goxboxlive/htcuniversal/Kernel/linux-2.6.21-hh20.tar.bz2
+> 
+>  drivers/video/w100fb.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/video/w100fb.c b/drivers/video/w100fb.c
+> index 90a2e30..2f6b2b8 100644
+> --- a/drivers/video/w100fb.c
+> +++ b/drivers/video/w100fb.c
+> @@ -1567,6 +1567,18 @@ static void w100_suspend(u32 mode)
+>  		val = readl(remapped_regs + mmPLL_CNTL);
+>  		val |= 0x00000004;  /* bit2=1 */
+>  		writel(val, remapped_regs + mmPLL_CNTL);
+> +
+> +		writel(0x00000000, remapped_regs + mmLCDD_CNTL1);
+> +		writel(0x00000000, remapped_regs + mmLCDD_CNTL2);
+> +		writel(0x00000000, remapped_regs + mmGENLCD_CNTL1);
+> +		writel(0x00000000, remapped_regs + mmGENLCD_CNTL2);
+> +		writel(0x00000000, remapped_regs + mmGENLCD_CNTL3);
+> +
+> +		val = readl(remapped_regs + mmMEM_EXT_CNTL);
+> +		val |= 0xF0000000;
+> +		val &= ~(0x00000001);
+> +		writel(val, remapped_regs + mmMEM_EXT_CNTL);
+> +
+>  		writel(0x0000001d, remapped_regs + mmPWRMGT_CNTL);
+>  	}
+>  }
 
-Cheers,
-
-Will
