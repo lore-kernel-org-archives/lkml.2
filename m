@@ -1,79 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab2GHViM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 17:38:12 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752185Ab2GHViJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 17:38:09 -0400
-Message-ID: <4FF9FDBB.8010702@nod.at>
-Date: Sun, 08 Jul 2012 23:38:03 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: daniel@caiaq.de, rusty@rustcorp.com.au, mchehab@redhat.com,
-        axel.lin@gmail.com, linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: input: eeti_ts.c build error
-References: <4FF83E48.6060303@nod.at> <20120708010520.GC19007@core.coreip.homeip.net>
-In-Reply-To: <20120708010520.GC19007@core.coreip.homeip.net>
-X-Enigmail-Version: 1.4.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig14E9AB125CA5C982B36A3E7C"
+	id S1752463Ab2GHV4y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 17:56:54 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42390 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752320Ab2GHV4w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 17:56:52 -0400
+From: David Herrmann <dh.herrmann@googlemail.com>
+To: linux-serial@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, florianschandinat@gmx.de,
+        linux-fbdev@vger.kernel.org, gregkh@linuxfoundation.org,
+        alan@lxorguk.ukuu.org.uk, bonbons@linux-vserver.org,
+        David Herrmann <dh.herrmann@googlemail.com>
+Subject: [PATCH v2 00/11] fblog: framebuffer kernel log driver
+Date: Sun,  8 Jul 2012 23:56:43 +0200
+Message-Id: <1341784614-2797-1-git-send-email-dh.herrmann@googlemail.com>
+X-Mailer: git-send-email 1.7.11.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig14E9AB125CA5C982B36A3E7C
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi
 
-Am 08.07.2012 03:05, schrieb Dmitry Torokhov:
-> Hi Richard,
->=20
-> On Sat, Jul 07, 2012 at 03:48:56PM +0200, Richard Weinberger wrote:
->> Hi!
->>
->> While building a kernel for an ARM board the following build error cam=
-e across:
->>
->> drivers/input/touchscreen/eeti_ts.c: In function 'eeti_ts_irq_active':=
+This is version 2 of the fblog driver. The fblog driver allows showing the
+kernel console on all available framebuffers. It's a replacement for CONFIG_VT
+and fbcon that is much, much smaller and simpler. It should be used for
+debugging purposes only, therefore, it is currently not optimized for speed.
 
->> drivers/input/touchscreen/eeti_ts.c:65:2: error: implicit declaration =
-of function 'irq_to_gpio' [-Werror=3Dimplicit-function-declaration]
->>
->> .config is attached.
->> Happens on 3.4.4 and Linus's tree as of today.
->=20
-> Could you please try the patch below? I have had it for a long time but=
+Three patches extract update_attr(), bit_putcs() and get/put_fb_info() so they
+can be used from fblog, the other patches actually implement fblog.
 
-> could not find anyone to test it.
+Version 2 addresses the issues from the last series. I extracted bit_putcs()
+into fbdraw_font() so we have a single function shared between fbcon and fblog
+to draw text. Furthermore, I reworked the framebuffer-registration logic inside
+of fblog so there shouldn't be any more races with fbmem.c fb registration.
+There is also a new configuration parameter that allows enabling fblog only on
+specific framebuffers as requested from several people.
 
-I don't have such a device.
-The only thing I can do is a compile test.
+I also redid the whole patch-split so it should be much easier to follow. I am
+using this driver on my x86_64 machine without any problems. If you remove the
+"!VT" line in Kconfig then this can even be used with VTs enabled (even though
+this is kind of racy between fbcon and fblog, obviously). Unloading the module
+still has to be done with "rmmod -f fblog" as we still have a reference to our
+own module. I haven't found a way to avoid this.
 
-Thanks,
-//richard
+The reason why I wrote this driver is to make CONFIG_VT obsolete. This way I can
+drop a lot of code from the kernel and make it much smaller. In combination with
+user-space terminals like "kmscon" there is actually no need for in-kernel
+terminals anymore.
 
+This patchset is built based on linux-next as I have no idea whose tree this is
+going through.
 
---------------enig14E9AB125CA5C982B36A3E7C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Feedback is appreciated.
+Regards
+David
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+David Herrmann (11):
+  fbcon: move update_attr() into separate source file
+  fbcon: move bit_putcs() into separate source file
+  fblog: new framebuffer kernel log dummy driver
+  fbdev: export get_fb_info()/put_fb_info()
+  fblog: register one fblog object per framebuffer
+  fblog: open fb on registration
+  fblog: allow selecting fbs via sysfs
+  fblog: cache framebuffer BLANK and SUSPEND states
+  fblog: register console driver
+  fblog: draw console to framebuffers
+  MAINTAINERS: add fblog entry
 
-iQEcBAEBAgAGBQJP+f28AAoJEN9758yqZn9esmsH/iCjS4pkHD6IC2kRvUms3OSa
-IFzJ2ZX/0lj3fiYjccKCzRBFCoPE5SfClbYkkWtBHaLXg6vOFqCVaSOugcs7x6eZ
-61Vy6pQkMxwKWpwEjqgSMIATmAVt5RAFiywlrRDFz4jKYj3Mu1T4Zgi7xUiNHEip
-eJkVHmW37mUZpvfEhvgndySWiDif9sisVrllPUt4L6R5VmmBOSGPt2CE2sde1aLN
-2+cmtRpA5WhJ2+exrqcW+yeCHixN/MlEioYGiVbHPrkLtCPXbbs1aghdKlpAGgk5
-d1XQ0sVMhjv2Lndaw0n/b7KHp1ks6uKOFlyGgn/uDwV81NzuwR1qFUsHEcjyPRE=
-=mEpZ
------END PGP SIGNATURE-----
+ MAINTAINERS                     |   6 +
+ drivers/video/Kconfig           |   5 +-
+ drivers/video/Makefile          |   2 +-
+ drivers/video/console/Kconfig   |  37 ++-
+ drivers/video/console/Makefile  |   4 +-
+ drivers/video/console/bitblit.c | 149 +--------
+ drivers/video/console/fbcon.h   |   5 +-
+ drivers/video/console/fbdraw.c  | 171 +++++++++++
+ drivers/video/console/fbdraw.h  |  30 ++
+ drivers/video/console/fblog.c   | 665 ++++++++++++++++++++++++++++++++++++++++
+ drivers/video/fbmem.c           |   6 +-
+ include/linux/fb.h              |   3 +
+ 12 files changed, 925 insertions(+), 158 deletions(-)
+ create mode 100644 drivers/video/console/fbdraw.c
+ create mode 100644 drivers/video/console/fbdraw.h
+ create mode 100644 drivers/video/console/fblog.c
 
---------------enig14E9AB125CA5C982B36A3E7C--
+-- 
+1.7.11.1
+
