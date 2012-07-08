@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529Ab2GHJX7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 05:23:59 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59929 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751113Ab2GHJX6 (ORCPT
+	id S1751629Ab2GHJZu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 05:25:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52774 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab2GHJZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 05:23:58 -0400
-Date: Sun, 8 Jul 2012 10:23:42 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Greg KH <greg@kroah.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH 07/36] AArch64: Assembly macros and definitions
-Message-ID: <20120708092342.GC3845@arm.com>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
- <1341608777-12982-8-git-send-email-catalin.marinas@arm.com>
- <20120707055723.GA26762@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120707055723.GA26762@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 8 Jul 2012 05:25:49 -0400
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: greg@kroah.com
+Cc: sjakub@gmail.com, linux-kernel@vger.kernel.org,
+        Toshiaki Yamane <yamanetoshi@gmail.com>
+Subject: [PATCH] [PATCH] asus_oled: Use pr_err(...) rather than printk(KERN_ERR ...)
+Date: Sun,  8 Jul 2012 18:25:47 +0900
+Message-Id: <1341739547-17254-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 07, 2012 at 06:57:23AM +0100, Greg KH wrote:
-> On Fri, Jul 06, 2012 at 10:05:48PM +0100, Catalin Marinas wrote:
-> > +++ b/arch/aarch64/include/asm/assembler.h
-> > @@ -0,0 +1,143 @@
-> > +/*
-> > + * Based on arch/arm/include/asm/assembler.h
-> > + *
-> > + * Copyright (C) 1996-2000 Russell King
-> > + * Copyright (C) 2012 ARM Ltd.
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + *
-> > + * This program is distributed in the hope that it will be useful,
-> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > + * GNU General Public License for more details.
-> > + *
-> > + * You should have received a copy of the GNU General Public License
-> > + * along with this program; if not, write to the Free Software
-> > + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-> 
-> You do this in all of your new files, and I have to ask, are you really
-> willing to keep up with the office location of the FSF for the next 40+
-> years?  I suggest dropping this last paragraph if at all possible.
+This change is inspired by checkpatch.
 
-Good point. Thanks.
+Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
+---
+ drivers/staging/asus_oled/asus_oled.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/staging/asus_oled/asus_oled.c b/drivers/staging/asus_oled/asus_oled.c
+index 510d796..f63c1d3 100644
+--- a/drivers/staging/asus_oled/asus_oled.c
++++ b/drivers/staging/asus_oled/asus_oled.c
+@@ -782,20 +782,20 @@ static int __init asus_oled_init(void)
+ 	oled_class = class_create(THIS_MODULE, ASUS_OLED_UNDERSCORE_NAME);
+ 
+ 	if (IS_ERR(oled_class)) {
+-		printk(KERN_ERR "Error creating " ASUS_OLED_UNDERSCORE_NAME " class\n");
++		pr_err("Error creating " ASUS_OLED_UNDERSCORE_NAME " class\n");
+ 		return PTR_ERR(oled_class);
+ 	}
+ 
+ 	retval = class_create_file(oled_class, &class_attr_version.attr);
+ 	if (retval) {
+-		printk(KERN_ERR "Error creating class version file\n");
++		pr_err("Error creating class version file\n");
+ 		goto error;
+ 	}
+ 
+ 	retval = usb_register(&oled_driver);
+ 
+ 	if (retval) {
+-		printk(KERN_ERR "usb_register failed. Error number %d\n", retval);
++		pr_err("usb_register failed. Error number %d\n", retval);
+ 		goto error;
+ 	}
+ 
 -- 
-Catalin
+1.7.5.4
+
