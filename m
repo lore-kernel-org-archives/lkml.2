@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678Ab2GHNGm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 09:06:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60799 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214Ab2GHNGl (ORCPT
+	id S1751897Ab2GHNHE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 09:07:04 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:42627 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344Ab2GHNHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 09:06:41 -0400
+	Sun, 8 Jul 2012 09:07:02 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Ravishankar N <cyberax82@gmail.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: Re: [PATCH] fat: Support fallocate on fat.
+References: <1341716859-6768-1-git-send-email-linkinjeon@gmail.com>
+Date: Sun, 08 Jul 2012 22:06:56 +0900
+In-Reply-To: <1341716859-6768-1-git-send-email-linkinjeon@gmail.com> (Namjae
+	Jeon's message of "Sat, 7 Jul 2012 23:07:39 -0400")
+Message-ID: <87sjd2766n.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20120708135911.69fe9566@pyramind.ukuu.org.uk>
-References: <CAGoecWyMKF4gC7FaoBCrBs+rD=u6oJRHS5Q2qVkkwoZZ1_4RCg@mail.gmail.com>
- <20120706175501.GA11908@kroah.com> <CAPXgP11Om4T-U6e-uZVYsV0FcJtkgnMfa+v94R46v=xdbhm77w@mail.gmail.com>
- <20120708135911.69fe9566@pyramind.ukuu.org.uk>
-From: Kay Sievers <kay@vrfy.org>
-Date: Sun, 8 Jul 2012 15:06:20 +0200
-Message-ID: <CAPXgP11LwEdCg=iySj55mjV5=am-6rjx8VdasAFDU97AeH3iPg@mail.gmail.com>
-Subject: Re: Bug 44211 - /proc/kmsg does not (always) block for 1-byte reads
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg KH <greg@kroah.com>, Jukka Ollila <jiiksteri@gmail.com>,
-        linux-kernel@vger.kernel.org, jbeulich@novell.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 8, 2012 at 2:59 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> The patch will not fix the underlying problem, but just make it behave
->> more like it was and allow partial message reads. This is a years old
->> problem, the net is full of bugreports of stuff going wrong with
->> running dd bs=1 on /proc/kmsg. It is a really stupid idea, and can not
->> work for many other reasons too. The interface can not safely be used
->> that way, it does not have the usual semantics, it always returned 0
->> for read() whenever it needed to.
+Namjae Jeon <linkinjeon@gmail.com> writes:
+
+> +/*
+> + * preallocate space for a file. This implements fat's fallocate file
+> + * operation, which gets called from sys_fallocate system call. User
+> + * space requests len bytes at offset.If FALLOC_FL_KEEP_SIZE is set
+> + * we just allocate clusters without zeroing them out.Otherwise we
+> + * allocate and zero out clusters via an expanding truncate.
+> + */
+> +static long fat_fallocate(struct file *file, int mode,
+> +		loff_t offset, loff_t len)
+> +{
+> +	int err = 0;
+> +	struct inode *inode = file->f_mapping->host;
+> +	int cluster, nr_cluster, fclus, dclus, free_bytes, nr_bytes;
+> +	struct super_block *sb = inode->i_sb;
+> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+
+What happens if called for directory? And does this guarantee it never
+expose the uninitialized data userland?
+
+> +	/* No support for hole punch or other fallocate flags. */
+> +	if (mode & ~FALLOC_FL_KEEP_SIZE)
+> +		return -EOPNOTSUPP;
 >
-> If you are breaking the semantics perhaps that should also get fixed ?
+> +	if ((offset + len) <= MSDOS_I(inode)->mmu_private) {
+> +		fat_msg(sb, KERN_ERR,
+> +				"fat_fallocate():Blocks already allocated");
+> +		return -EINVAL;
+> +	}
 
-I hopefully just restored the old semantics now.
+Please don't output any message by user error. And EINVAL is right
+behavior if (offset + len) < allocated size? Sounds like strange design.
 
-Fixing it properly would be a bigger code change, and it can't use the
-far-too-simple tunneling through the syslog() syscall to feed
-/proc/kmsg.
+> +	if ((mode & FALLOC_FL_KEEP_SIZE)) {
+> +		/* First compute the number of clusters to be allocated */
+> +		if (inode->i_size > 0) {
+> +			err = fat_get_cluster(inode, FAT_ENT_EOF,
+> +					&fclus, &dclus);
+> +			if (err < 0) {
+> +				fat_msg(sb, KERN_ERR,
+> +						"fat_fallocate():fat_get_cluster() error");
 
-If the seq_file interface could be used, that would probably be the
-best option, but I have no good idea how to make blocking reads, and
-concurrent non-blocks work with the seq_file stuff.
+Use "%s" and __func__. And looks like the error is normal
+(e.g. ENOSPC), so I don't see why it needs to report.
 
-This is how read() in /proc/kmsg works and it is not protected by a
-lock or anything, and there is a not too small window between the
-check and the action. Things just go wrong if there is more than a
-single reader, but that was the case since forever.
+[...]
 
-static ssize_t kmsg_read(struct file *file, char __user *buf,
-                         size_t count, loff_t *ppos)
-{
-        if ((file->f_flags & O_NONBLOCK) &&
-            !do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_FILE))
-                return -EAGAIN;
-        return do_syslog(SYSLOG_ACTION_READ, buf, count, SYSLOG_FROM_FILE);
-}
+> +	/*
+> +	 * calculate i_blocks and mmu_private from the actual number of
+> +	 * allocated clusters instead of doing it from file size.This ensures
+> +	 * that the preallocated disk space using FALLOC_FL_KEEP_SIZE is
+> +	 * persistent across remounts and writes go into the allocated clusters.
+> +	 */
+> +	fat_calc_dir_size(inode);
 
-Thanks,
-Kay
+Looks like the wrong. If you didn't initialize preallocated space, the
+data never be exposed to userland. It is security bug.
+
+>  	inode->i_blocks = ((inode->i_size + (sbi->cluster_size - 1))
+>  			   & ~((loff_t)sbi->cluster_size - 1)) >> 9;
+> +	MSDOS_I(inode)->mmu_private = inode->i_size;
+> +	/* restore i_size */
+> +	inode->i_size = le32_to_cpu(de->size);
+>  
+>  	fat_time_fat2unix(sbi, &inode->i_mtime, de->time, de->date, 0);
+>  	if (sbi->options.isvfat) {
+
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
