@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab2GHV5H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 17:57:07 -0400
+	id S1752800Ab2GHV6I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 17:58:08 -0400
 Received: from mail-wg0-f44.google.com ([74.125.82.44]:64593 "EHLO
 	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752400Ab2GHV4y (ORCPT
+	with ESMTP id S1752484Ab2GHV5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 17:56:54 -0400
+	Sun, 8 Jul 2012 17:57:04 -0400
 From: David Herrmann <dh.herrmann@googlemail.com>
 To: linux-serial@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, florianschandinat@gmx.de,
         linux-fbdev@vger.kernel.org, gregkh@linuxfoundation.org,
         alan@lxorguk.ukuu.org.uk, bonbons@linux-vserver.org,
         David Herrmann <dh.herrmann@googlemail.com>
-Subject: [PATCH v2 01/11] fbcon: move update_attr() into separate source file
-Date: Sun,  8 Jul 2012 23:56:44 +0200
-Message-Id: <1341784614-2797-2-git-send-email-dh.herrmann@googlemail.com>
+Subject: [PATCH v2 07/11] fblog: allow selecting fbs via sysfs
+Date: Sun,  8 Jul 2012 23:56:50 +0200
+Message-Id: <1341784614-2797-8-git-send-email-dh.herrmann@googlemail.com>
 X-Mailer: git-send-email 1.7.11.1
 In-Reply-To: <1341784614-2797-1-git-send-email-dh.herrmann@googlemail.com>
 References: <1341784614-2797-1-git-send-email-dh.herrmann@googlemail.com>
@@ -23,210 +23,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we want to use update_attr() independently from fbcon, we need to split
-it off from bitblit.c and fbcon.h. Therefore, introduce a new header and
-source file (fbdraw.[ch]) which does not depende on vc_* and fbcon_*
-structures in any way.
+fblog is mainly useful during boot, reboot, panics and maintenance. In all
+cases you often want to control which monitors are used for console
+output. Moreover, in multi-seat environments it is desireable to reduce
+system-overhead by not drawing the console to all framebuffers. Two
+mechanisms to select framebuffers for fblog are added:
 
-This does not introduce any new code nor does it make the paths deeper,
-it simply splits the function off.
+1) "active" module parameter: This parameter selects whether new
+framebuffers are opened automatically. By default this is on, that is, all
+framebuffers are automatically used by fblog during boot. By passing
+fblog.active=0 you can deactivate this.
+The init process can set this to 0 via
+/sys/modules/fblog/parameters/active, too. However, this does not affect
+already available and used framebuffers in any way.
 
-The other update_attr() functions (inside the rotation sources) seem
-similar but are significantly different and I haven't found a way to merge
-them efficiently (which is probably the reason why they are split off
-now). Furthermore, I do not intend to use them in the coming code so there
-is no need to split them off.
+2) "active" sysfs attribute for each fblog object. Reading this value
+returns whether a framebuffer is currently active. Writing it opens/closes
+the framebuffer. This allows runtime control which fbs are used. For
+instance, init can set these to 0 after bootup.
 
 Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
 ---
- drivers/video/console/Makefile  |  3 ++-
- drivers/video/console/bitblit.c | 26 +++--------------------
- drivers/video/console/fbcon.h   |  5 +----
- drivers/video/console/fbdraw.c  | 46 +++++++++++++++++++++++++++++++++++++++++
- drivers/video/console/fbdraw.h  | 26 +++++++++++++++++++++++
- 5 files changed, 78 insertions(+), 28 deletions(-)
- create mode 100644 drivers/video/console/fbdraw.c
- create mode 100644 drivers/video/console/fbdraw.h
+ drivers/video/console/fblog.c | 50 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 49 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/video/console/Makefile b/drivers/video/console/Makefile
-index a862e91..9a52226 100644
---- a/drivers/video/console/Makefile
-+++ b/drivers/video/console/Makefile
-@@ -25,7 +25,8 @@ obj-$(CONFIG_SGI_NEWPORT_CONSOLE) += newport_con.o font.o
- obj-$(CONFIG_STI_CONSOLE)         += sticon.o sticore.o font.o
- obj-$(CONFIG_VGA_CONSOLE)         += vgacon.o
- obj-$(CONFIG_MDA_CONSOLE)         += mdacon.o
--obj-$(CONFIG_FRAMEBUFFER_CONSOLE) += fbcon.o bitblit.o font.o softcursor.o
-+obj-$(CONFIG_FRAMEBUFFER_CONSOLE) += fbcon.o bitblit.o font.o softcursor.o \
-+                                     fbdraw.o
- ifeq ($(CONFIG_FB_TILEBLITTING),y)
- obj-$(CONFIG_FRAMEBUFFER_CONSOLE)     += tileblit.o
- endif
-diff --git a/drivers/video/console/bitblit.c b/drivers/video/console/bitblit.c
-index 28b1a83..6ec2905 100644
---- a/drivers/video/console/bitblit.c
-+++ b/drivers/video/console/bitblit.c
-@@ -22,26 +22,6 @@
+diff --git a/drivers/video/console/fblog.c b/drivers/video/console/fblog.c
+index 113be36..b490dba 100644
+--- a/drivers/video/console/fblog.c
++++ b/drivers/video/console/fblog.c
+@@ -42,6 +42,7 @@ struct fblog_fb {
+ 
+ static DEFINE_MUTEX(fblog_registration_lock);
+ static struct fblog_fb *fblog_fbs[FB_MAX];
++static bool active = 1;
+ 
+ #define to_fblog_dev(_d) container_of(_d, struct fblog_fb, dev)
+ 
+@@ -116,6 +117,37 @@ static void fblog_close(struct fblog_fb *fb, bool kill_dev, bool locked)
+ 	mutex_unlock(&fb->lock);
+ }
+ 
++static ssize_t fblog_dev_active_show(struct device *dev,
++				     struct device_attribute *attr,
++				     char *buf)
++{
++	struct fblog_fb *fb = to_fblog_dev(dev);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n",
++			!!test_bit(FBLOG_OPEN, &fb->flags));
++}
++
++static ssize_t fblog_dev_active_store(struct device *dev,
++				      struct device_attribute *attr,
++				      const char *buf,
++				      size_t count)
++{
++	struct fblog_fb *fb = to_fblog_dev(dev);
++	unsigned long num;
++	int ret = 0;
++
++	num = simple_strtoul(buf, NULL, 10);
++	if (num)
++		ret = fblog_open(fb, false);
++	else
++		fblog_close(fb, false, false);
++
++	return ret ? ret : count;
++}
++
++static DEVICE_ATTR(active, S_IRUGO | S_IWUSR | S_IWGRP, fblog_dev_active_show,
++		   fblog_dev_active_store);
++
  /*
-  * Accelerated handlers.
-  */
--static void update_attr(u8 *dst, u8 *src, int attribute,
--			       struct vc_data *vc)
--{
--	int i, offset = (vc->vc_font.height < 10) ? 1 : 2;
--	int width = DIV_ROUND_UP(vc->vc_font.width, 8);
--	unsigned int cellsize = vc->vc_font.height * width;
--	u8 c;
--
--	offset = cellsize - (offset * width);
--	for (i = 0; i < cellsize; i++) {
--		c = src[i];
--		if (attribute & FBCON_ATTRIBUTE_UNDERLINE && i >= offset)
--			c = 0xff;
--		if (attribute & FBCON_ATTRIBUTE_BOLD)
--			c |= c >> 1;
--		if (attribute & FBCON_ATTRIBUTE_REVERSE)
--			c = ~c;
--		dst[i] = c;
--	}
--}
+  * fblog framebuffer list
+  * The fblog_fbs[] array contains all currently registered framebuffers. If a
+@@ -149,6 +181,7 @@ static void fblog_do_unregister(struct fb_info *info)
+ 	fblog_fbs[info->node] = NULL;
  
- static void bit_bmove(struct vc_data *vc, struct fb_info *info, int sy,
- 		      int sx, int dy, int dx, int height, int width)
-@@ -88,7 +68,7 @@ static inline void bit_putcs_aligned(struct vc_data *vc, struct fb_info *info,
- 					  charmask)*cellsize;
+ 	fblog_close(fb, true, false);
++	device_remove_file(&fb->dev, &dev_attr_active);
+ 	device_del(&fb->dev);
+ 	put_device(&fb->dev);
+ }
+@@ -157,6 +190,7 @@ static void fblog_do_register(struct fb_info *info, bool force)
+ {
+ 	struct fblog_fb *fb;
+ 	int ret;
++	bool do_open = true;
  
- 		if (attr) {
--			update_attr(buf, src, attr, vc);
-+			fbdraw_update_attr(buf, src, attr, &vc->vc_font);
- 			src = buf;
- 		}
- 
-@@ -123,7 +103,7 @@ static inline void bit_putcs_unaligned(struct vc_data *vc,
- 					  charmask)*cellsize;
- 
- 		if (attr) {
--			update_attr(buf, src, attr, vc);
-+			fbdraw_update_attr(buf, src, attr, &vc->vc_font);
- 			src = buf;
- 		}
- 
-@@ -275,7 +255,7 @@ static void bit_cursor(struct vc_data *vc, struct fb_info *info, int mode,
- 			return;
- 		kfree(ops->cursor_data);
- 		ops->cursor_data = dst;
--		update_attr(dst, src, attribute, vc);
-+		fbdraw_update_attr(dst, src, attribute, &vc->vc_font);
- 		src = dst;
+ 	fb = fblog_fbs[info->node];
+ 	if (fb && fb->info != info) {
+@@ -187,7 +221,18 @@ static void fblog_do_register(struct fb_info *info, bool force)
+ 		return;
  	}
  
-diff --git a/drivers/video/console/fbcon.h b/drivers/video/console/fbcon.h
-index 6bd2e0c..8623bac 100644
---- a/drivers/video/console/fbcon.h
-+++ b/drivers/video/console/fbcon.h
-@@ -16,6 +16,7 @@
- #include <linux/vt_kern.h>
- 
- #include <asm/io.h>
-+#include "fbdraw.h"
- 
- #define FBCON_FLAGS_INIT         1
- #define FBCON_FLAGS_CURSOR_TIMER 2
-@@ -219,10 +220,6 @@ extern void fbcon_set_tileops(struct vc_data *vc, struct fb_info *info);
- extern void fbcon_set_bitops(struct fbcon_ops *ops);
- extern int  soft_cursor(struct fb_info *info, struct fb_cursor *cursor);
- 
--#define FBCON_ATTRIBUTE_UNDERLINE 1
--#define FBCON_ATTRIBUTE_REVERSE   2
--#define FBCON_ATTRIBUTE_BOLD      4
--
- static inline int real_y(struct display *p, int ypos)
- {
- 	int rows = p->vrows;
-diff --git a/drivers/video/console/fbdraw.c b/drivers/video/console/fbdraw.c
-new file mode 100644
-index 0000000..65e7003
---- /dev/null
-+++ b/drivers/video/console/fbdraw.c
-@@ -0,0 +1,46 @@
-+/*
-+ * Framebuffer helpers for image draw-operations
-+ *
-+ * Copyright (c) 2004 Antonino Daplas <adaplas @pol.net>
-+ * Copyright (c) 2012 David Herrmann <dh.herrmann@googlemail.com>
-+ *
-+ * Originally from drivers/video/console/bitblit.c which itself originally is
-+ * from the 'accel_*' routines in drivers/video/console/fbcon.c.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file COPYING in the main directory of this archive for
-+ * more details.
-+ */
-+
-+#include <linux/console.h>
-+#include <linux/fb.h>
-+#include <linux/kd.h>
-+#include <linux/module.h>
-+#include <linux/string.h>
-+#include "fbdraw.h"
-+
-+void fbdraw_update_attr(u8 *dst, const u8 *src, int attribute,
-+			struct console_font *font)
-+{
-+	int i, offset = (font->height < 10) ? 1 : 2;
-+	int width = DIV_ROUND_UP(font->width, 8);
-+	unsigned int cellsize = font->height * width;
-+	u8 c;
-+
-+	offset = cellsize - (offset * width);
-+	for (i = 0; i < cellsize; i++) {
-+		c = src[i];
-+		if (attribute & FBCON_ATTRIBUTE_UNDERLINE && i >= offset)
-+			c = 0xff;
-+		if (attribute & FBCON_ATTRIBUTE_BOLD)
-+			c |= c >> 1;
-+		if (attribute & FBCON_ATTRIBUTE_REVERSE)
-+			c = ~c;
-+		dst[i] = c;
+-	fblog_open(fb, true);
++	ret = device_create_file(&fb->dev, &dev_attr_active);
++	if (ret) {
++		pr_err("fblog: cannot create sysfs entry");
++		/* do not open fb if we cannot create control file */
++		do_open = false;
 +	}
-+}
-+EXPORT_SYMBOL(fbdraw_update_attr);
 +
-+MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR("David Herrmann <dh.herrmann@googlemail.com>");
-+MODULE_DESCRIPTION("Framebuffer helpers for image draw-operations");
-diff --git a/drivers/video/console/fbdraw.h b/drivers/video/console/fbdraw.h
-new file mode 100644
-index 0000000..77edd7f
---- /dev/null
-+++ b/drivers/video/console/fbdraw.h
-@@ -0,0 +1,26 @@
-+/*
-+ * Framebuffer helpers for image draw-operations
-+ *
-+ * Copyright (c) 2012 David Herrmann <dh.herrmann@googlemail.com>
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file COPYING in the main directory of this archive for
-+ * more details.
-+ */
++	if (!active)
++		do_open = false;
 +
-+#ifndef _VIDEO_FBDRAW_H
-+#define _VIDEO_FBDRAW_H
++	if (do_open)
++		fblog_open(fb, true);
+ }
+ 
+ static void fblog_register(struct fb_info *info, bool force)
+@@ -314,6 +359,9 @@ static void __exit fblog_exit(void)
+ 	}
+ }
+ 
++module_param(active, bool, S_IRUGO);
++MODULE_PARM_DESC(active, "Activate fblog by default");
 +
-+#include <linux/console.h>
-+#include <linux/fb.h>
-+#include <linux/kd.h>
-+
-+/* fbcon character attributes */
-+#define FBCON_ATTRIBUTE_UNDERLINE 1
-+#define FBCON_ATTRIBUTE_REVERSE   2
-+#define FBCON_ATTRIBUTE_BOLD      4
-+
-+void fbdraw_update_attr(u8 *dst, const u8 *src, int attribute,
-+			struct console_font *font);
-+
-+#endif /* _VIDEO_FBDRAW_H */
+ module_init(fblog_init);
+ module_exit(fblog_exit);
+ MODULE_LICENSE("GPL");
 -- 
 1.7.11.1
 
