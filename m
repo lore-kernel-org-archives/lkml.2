@@ -1,92 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463Ab2GHV4y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 17:56:54 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42390 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752320Ab2GHV4w (ORCPT
+	id S1752544Ab2GHV5H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 17:57:07 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64593 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752400Ab2GHV4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 17:56:52 -0400
+	Sun, 8 Jul 2012 17:56:54 -0400
 From: David Herrmann <dh.herrmann@googlemail.com>
 To: linux-serial@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, florianschandinat@gmx.de,
         linux-fbdev@vger.kernel.org, gregkh@linuxfoundation.org,
         alan@lxorguk.ukuu.org.uk, bonbons@linux-vserver.org,
         David Herrmann <dh.herrmann@googlemail.com>
-Subject: [PATCH v2 00/11] fblog: framebuffer kernel log driver
-Date: Sun,  8 Jul 2012 23:56:43 +0200
-Message-Id: <1341784614-2797-1-git-send-email-dh.herrmann@googlemail.com>
+Subject: [PATCH v2 01/11] fbcon: move update_attr() into separate source file
+Date: Sun,  8 Jul 2012 23:56:44 +0200
+Message-Id: <1341784614-2797-2-git-send-email-dh.herrmann@googlemail.com>
 X-Mailer: git-send-email 1.7.11.1
+In-Reply-To: <1341784614-2797-1-git-send-email-dh.herrmann@googlemail.com>
+References: <1341784614-2797-1-git-send-email-dh.herrmann@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+If we want to use update_attr() independently from fbcon, we need to split
+it off from bitblit.c and fbcon.h. Therefore, introduce a new header and
+source file (fbdraw.[ch]) which does not depende on vc_* and fbcon_*
+structures in any way.
 
-This is version 2 of the fblog driver. The fblog driver allows showing the
-kernel console on all available framebuffers. It's a replacement for CONFIG_VT
-and fbcon that is much, much smaller and simpler. It should be used for
-debugging purposes only, therefore, it is currently not optimized for speed.
+This does not introduce any new code nor does it make the paths deeper,
+it simply splits the function off.
 
-Three patches extract update_attr(), bit_putcs() and get/put_fb_info() so they
-can be used from fblog, the other patches actually implement fblog.
+The other update_attr() functions (inside the rotation sources) seem
+similar but are significantly different and I haven't found a way to merge
+them efficiently (which is probably the reason why they are split off
+now). Furthermore, I do not intend to use them in the coming code so there
+is no need to split them off.
 
-Version 2 addresses the issues from the last series. I extracted bit_putcs()
-into fbdraw_font() so we have a single function shared between fbcon and fblog
-to draw text. Furthermore, I reworked the framebuffer-registration logic inside
-of fblog so there shouldn't be any more races with fbmem.c fb registration.
-There is also a new configuration parameter that allows enabling fblog only on
-specific framebuffers as requested from several people.
-
-I also redid the whole patch-split so it should be much easier to follow. I am
-using this driver on my x86_64 machine without any problems. If you remove the
-"!VT" line in Kconfig then this can even be used with VTs enabled (even though
-this is kind of racy between fbcon and fblog, obviously). Unloading the module
-still has to be done with "rmmod -f fblog" as we still have a reference to our
-own module. I haven't found a way to avoid this.
-
-The reason why I wrote this driver is to make CONFIG_VT obsolete. This way I can
-drop a lot of code from the kernel and make it much smaller. In combination with
-user-space terminals like "kmscon" there is actually no need for in-kernel
-terminals anymore.
-
-This patchset is built based on linux-next as I have no idea whose tree this is
-going through.
-
-Feedback is appreciated.
-Regards
-David
-
-David Herrmann (11):
-  fbcon: move update_attr() into separate source file
-  fbcon: move bit_putcs() into separate source file
-  fblog: new framebuffer kernel log dummy driver
-  fbdev: export get_fb_info()/put_fb_info()
-  fblog: register one fblog object per framebuffer
-  fblog: open fb on registration
-  fblog: allow selecting fbs via sysfs
-  fblog: cache framebuffer BLANK and SUSPEND states
-  fblog: register console driver
-  fblog: draw console to framebuffers
-  MAINTAINERS: add fblog entry
-
- MAINTAINERS                     |   6 +
- drivers/video/Kconfig           |   5 +-
- drivers/video/Makefile          |   2 +-
- drivers/video/console/Kconfig   |  37 ++-
- drivers/video/console/Makefile  |   4 +-
- drivers/video/console/bitblit.c | 149 +--------
- drivers/video/console/fbcon.h   |   5 +-
- drivers/video/console/fbdraw.c  | 171 +++++++++++
- drivers/video/console/fbdraw.h  |  30 ++
- drivers/video/console/fblog.c   | 665 ++++++++++++++++++++++++++++++++++++++++
- drivers/video/fbmem.c           |   6 +-
- include/linux/fb.h              |   3 +
- 12 files changed, 925 insertions(+), 158 deletions(-)
+Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
+---
+ drivers/video/console/Makefile  |  3 ++-
+ drivers/video/console/bitblit.c | 26 +++--------------------
+ drivers/video/console/fbcon.h   |  5 +----
+ drivers/video/console/fbdraw.c  | 46 +++++++++++++++++++++++++++++++++++++++++
+ drivers/video/console/fbdraw.h  | 26 +++++++++++++++++++++++
+ 5 files changed, 78 insertions(+), 28 deletions(-)
  create mode 100644 drivers/video/console/fbdraw.c
  create mode 100644 drivers/video/console/fbdraw.h
- create mode 100644 drivers/video/console/fblog.c
 
+diff --git a/drivers/video/console/Makefile b/drivers/video/console/Makefile
+index a862e91..9a52226 100644
+--- a/drivers/video/console/Makefile
++++ b/drivers/video/console/Makefile
+@@ -25,7 +25,8 @@ obj-$(CONFIG_SGI_NEWPORT_CONSOLE) += newport_con.o font.o
+ obj-$(CONFIG_STI_CONSOLE)         += sticon.o sticore.o font.o
+ obj-$(CONFIG_VGA_CONSOLE)         += vgacon.o
+ obj-$(CONFIG_MDA_CONSOLE)         += mdacon.o
+-obj-$(CONFIG_FRAMEBUFFER_CONSOLE) += fbcon.o bitblit.o font.o softcursor.o
++obj-$(CONFIG_FRAMEBUFFER_CONSOLE) += fbcon.o bitblit.o font.o softcursor.o \
++                                     fbdraw.o
+ ifeq ($(CONFIG_FB_TILEBLITTING),y)
+ obj-$(CONFIG_FRAMEBUFFER_CONSOLE)     += tileblit.o
+ endif
+diff --git a/drivers/video/console/bitblit.c b/drivers/video/console/bitblit.c
+index 28b1a83..6ec2905 100644
+--- a/drivers/video/console/bitblit.c
++++ b/drivers/video/console/bitblit.c
+@@ -22,26 +22,6 @@
+ /*
+  * Accelerated handlers.
+  */
+-static void update_attr(u8 *dst, u8 *src, int attribute,
+-			       struct vc_data *vc)
+-{
+-	int i, offset = (vc->vc_font.height < 10) ? 1 : 2;
+-	int width = DIV_ROUND_UP(vc->vc_font.width, 8);
+-	unsigned int cellsize = vc->vc_font.height * width;
+-	u8 c;
+-
+-	offset = cellsize - (offset * width);
+-	for (i = 0; i < cellsize; i++) {
+-		c = src[i];
+-		if (attribute & FBCON_ATTRIBUTE_UNDERLINE && i >= offset)
+-			c = 0xff;
+-		if (attribute & FBCON_ATTRIBUTE_BOLD)
+-			c |= c >> 1;
+-		if (attribute & FBCON_ATTRIBUTE_REVERSE)
+-			c = ~c;
+-		dst[i] = c;
+-	}
+-}
+ 
+ static void bit_bmove(struct vc_data *vc, struct fb_info *info, int sy,
+ 		      int sx, int dy, int dx, int height, int width)
+@@ -88,7 +68,7 @@ static inline void bit_putcs_aligned(struct vc_data *vc, struct fb_info *info,
+ 					  charmask)*cellsize;
+ 
+ 		if (attr) {
+-			update_attr(buf, src, attr, vc);
++			fbdraw_update_attr(buf, src, attr, &vc->vc_font);
+ 			src = buf;
+ 		}
+ 
+@@ -123,7 +103,7 @@ static inline void bit_putcs_unaligned(struct vc_data *vc,
+ 					  charmask)*cellsize;
+ 
+ 		if (attr) {
+-			update_attr(buf, src, attr, vc);
++			fbdraw_update_attr(buf, src, attr, &vc->vc_font);
+ 			src = buf;
+ 		}
+ 
+@@ -275,7 +255,7 @@ static void bit_cursor(struct vc_data *vc, struct fb_info *info, int mode,
+ 			return;
+ 		kfree(ops->cursor_data);
+ 		ops->cursor_data = dst;
+-		update_attr(dst, src, attribute, vc);
++		fbdraw_update_attr(dst, src, attribute, &vc->vc_font);
+ 		src = dst;
+ 	}
+ 
+diff --git a/drivers/video/console/fbcon.h b/drivers/video/console/fbcon.h
+index 6bd2e0c..8623bac 100644
+--- a/drivers/video/console/fbcon.h
++++ b/drivers/video/console/fbcon.h
+@@ -16,6 +16,7 @@
+ #include <linux/vt_kern.h>
+ 
+ #include <asm/io.h>
++#include "fbdraw.h"
+ 
+ #define FBCON_FLAGS_INIT         1
+ #define FBCON_FLAGS_CURSOR_TIMER 2
+@@ -219,10 +220,6 @@ extern void fbcon_set_tileops(struct vc_data *vc, struct fb_info *info);
+ extern void fbcon_set_bitops(struct fbcon_ops *ops);
+ extern int  soft_cursor(struct fb_info *info, struct fb_cursor *cursor);
+ 
+-#define FBCON_ATTRIBUTE_UNDERLINE 1
+-#define FBCON_ATTRIBUTE_REVERSE   2
+-#define FBCON_ATTRIBUTE_BOLD      4
+-
+ static inline int real_y(struct display *p, int ypos)
+ {
+ 	int rows = p->vrows;
+diff --git a/drivers/video/console/fbdraw.c b/drivers/video/console/fbdraw.c
+new file mode 100644
+index 0000000..65e7003
+--- /dev/null
++++ b/drivers/video/console/fbdraw.c
+@@ -0,0 +1,46 @@
++/*
++ * Framebuffer helpers for image draw-operations
++ *
++ * Copyright (c) 2004 Antonino Daplas <adaplas @pol.net>
++ * Copyright (c) 2012 David Herrmann <dh.herrmann@googlemail.com>
++ *
++ * Originally from drivers/video/console/bitblit.c which itself originally is
++ * from the 'accel_*' routines in drivers/video/console/fbcon.c.
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file COPYING in the main directory of this archive for
++ * more details.
++ */
++
++#include <linux/console.h>
++#include <linux/fb.h>
++#include <linux/kd.h>
++#include <linux/module.h>
++#include <linux/string.h>
++#include "fbdraw.h"
++
++void fbdraw_update_attr(u8 *dst, const u8 *src, int attribute,
++			struct console_font *font)
++{
++	int i, offset = (font->height < 10) ? 1 : 2;
++	int width = DIV_ROUND_UP(font->width, 8);
++	unsigned int cellsize = font->height * width;
++	u8 c;
++
++	offset = cellsize - (offset * width);
++	for (i = 0; i < cellsize; i++) {
++		c = src[i];
++		if (attribute & FBCON_ATTRIBUTE_UNDERLINE && i >= offset)
++			c = 0xff;
++		if (attribute & FBCON_ATTRIBUTE_BOLD)
++			c |= c >> 1;
++		if (attribute & FBCON_ATTRIBUTE_REVERSE)
++			c = ~c;
++		dst[i] = c;
++	}
++}
++EXPORT_SYMBOL(fbdraw_update_attr);
++
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR("David Herrmann <dh.herrmann@googlemail.com>");
++MODULE_DESCRIPTION("Framebuffer helpers for image draw-operations");
+diff --git a/drivers/video/console/fbdraw.h b/drivers/video/console/fbdraw.h
+new file mode 100644
+index 0000000..77edd7f
+--- /dev/null
++++ b/drivers/video/console/fbdraw.h
+@@ -0,0 +1,26 @@
++/*
++ * Framebuffer helpers for image draw-operations
++ *
++ * Copyright (c) 2012 David Herrmann <dh.herrmann@googlemail.com>
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file COPYING in the main directory of this archive for
++ * more details.
++ */
++
++#ifndef _VIDEO_FBDRAW_H
++#define _VIDEO_FBDRAW_H
++
++#include <linux/console.h>
++#include <linux/fb.h>
++#include <linux/kd.h>
++
++/* fbcon character attributes */
++#define FBCON_ATTRIBUTE_UNDERLINE 1
++#define FBCON_ATTRIBUTE_REVERSE   2
++#define FBCON_ATTRIBUTE_BOLD      4
++
++void fbdraw_update_attr(u8 *dst, const u8 *src, int attribute,
++			struct console_font *font);
++
++#endif /* _VIDEO_FBDRAW_H */
 -- 
 1.7.11.1
 
