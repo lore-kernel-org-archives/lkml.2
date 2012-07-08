@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266Ab2GHPMg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 11:12:36 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:38689 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab2GHPMf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 11:12:35 -0400
+	id S1752266Ab2GHPzF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 11:55:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11225 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751859Ab2GHPzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 11:55:03 -0400
+Message-ID: <4FF9AD2A.1000901@redhat.com>
+Date: Sun, 08 Jul 2012 18:54:18 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <1341739547-17254-1-git-send-email-yamanetoshi@gmail.com>
-References: <1341739547-17254-1-git-send-email-yamanetoshi@gmail.com>
-Date: Sun, 8 Jul 2012 20:42:35 +0530
-Message-ID: <CAHdPZaOBiO8onji718m4caXjpAwoS9Fd1SKT5fM-hX8xxUbFZw@mail.gmail.com>
-Subject: Re: [PATCH] [PATCH] asus_oled: Use pr_err(...) rather than
- printk(KERN_ERR ...)
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Toshiaki Yamane <yamanetoshi@gmail.com>
-Cc: greg@kroah.com, sjakub@gmail.com, linux-kernel@vger.kernel.org
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Josh Triplett <josh@joshtriplett.org>,
+        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/6] rcu: Allow rcu_user_enter()/exit() to nest
+References: <1341576018-10721-1-git-send-email-fweisbec@gmail.com> <1341576018-10721-3-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1341576018-10721-3-git-send-email-fweisbec@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-git format-patch -s --subject-prfix="PATCH V2' will be better,
+On 07/06/2012 03:00 PM, Frederic Weisbecker wrote:
+> Allow calls to rcu_user_enter() even if we are already
+> in userspace (as seen by RCU) and allow calls to rcu_user_exit()
+> even if we are already in the kernel.
+> 
+> This makes the APIs more flexible to be called from architectures.
+> Exception entries for example won't need to know if they come from
+> userspace before calling rcu_user_exit().
+
+I guess I should switch kvm to rcu_user_enter() and co, so we can
+disable the tick while running in a guest.  But where are those
+functions?  What are the rules for calling them?
+
+-- 
+error compiling committee.c: too many arguments to function
 
 
-On Sun, Jul 8, 2012 at 2:55 PM, Toshiaki Yamane <yamanetoshi@gmail.com> wrote:
-> This change is inspired by checkpatch.
->
-> Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
-> ---
->  drivers/staging/asus_oled/asus_oled.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/staging/asus_oled/asus_oled.c b/drivers/staging/asus_oled/asus_oled.c
-> index 510d796..f63c1d3 100644
-> --- a/drivers/staging/asus_oled/asus_oled.c
-> +++ b/drivers/staging/asus_oled/asus_oled.c
-> @@ -782,20 +782,20 @@ static int __init asus_oled_init(void)
->         oled_class = class_create(THIS_MODULE, ASUS_OLED_UNDERSCORE_NAME);
->
->         if (IS_ERR(oled_class)) {
-> -               printk(KERN_ERR "Error creating " ASUS_OLED_UNDERSCORE_NAME " class\n");
-> +               pr_err("Error creating " ASUS_OLED_UNDERSCORE_NAME " class\n");
->                 return PTR_ERR(oled_class);
->         }
->
->         retval = class_create_file(oled_class, &class_attr_version.attr);
->         if (retval) {
-> -               printk(KERN_ERR "Error creating class version file\n");
-> +               pr_err("Error creating class version file\n");
->                 goto error;
->         }
->
->         retval = usb_register(&oled_driver);
->
->         if (retval) {
-> -               printk(KERN_ERR "usb_register failed. Error number %d\n", retval);
-> +               pr_err("usb_register failed. Error number %d\n", retval);
->                 goto error;
->         }
->
-> --
-> 1.7.5.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
