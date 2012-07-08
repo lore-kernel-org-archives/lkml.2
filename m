@@ -1,71 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab2GHMCR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 08:02:17 -0400
-Received: from mx.treblig.org ([80.68.94.177]:53466 "EHLO mx.treblig.org"
+	id S1752060Ab2GHMHt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 08:07:49 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450Ab2GHMCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 08:02:16 -0400
-X-Greylist: delayed 2675 seconds by postgrey-1.27 at vger.kernel.org; Sun, 08 Jul 2012 08:02:16 EDT
-Date: Sun, 8 Jul 2012 12:17:36 +0100
-From: "Dr. David Alan Gilbert" <linux@treblig.org>
-To: Jon Masters <jcm@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-Message-ID: <20120708111736.GA11121@gallifrey>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
- <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
- <201207071927.13135.arnd@arndb.de>
- <4FF93C99.80203@redhat.com>
+	id S1751450Ab2GHMHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 08:07:48 -0400
+Message-ID: <4FF9780D.4010709@nod.at>
+Date: Sun, 08 Jul 2012 14:07:41 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF93C99.80203@redhat.com>
-X-Chocolate: 70 percent or better cocoa solids preferably
-X-Operating-System: Linux/2.6.36.4-kvm-i386-20110819 (i686)
-X-Uptime: 12:14:59 up 124 days, 21:48,  1 user,  load average: 0.00, 0.01,
- 0.05
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
+        thomas.wucher@linutronix.de, tglx@linutronix.de, tim.bird@am.sony.com,
+        Marius.Mazarel@ugal.ro, artem.bityutskiy@linux.intel.com,
+        nyoushchenko@mvista.com
+Subject: Re: UBI fastmap updates
+References: <1340982869-77042-1-git-send-email-richard@nod.at> <20120708144745.36109029@pixies.home.jungo.com>
+In-Reply-To: <20120708144745.36109029@pixies.home.jungo.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigEDFE67F89D1E5D3F9ECC9E42"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jon Masters (jcm@redhat.com) wrote:
-> On 07/07/2012 03:27 PM, Arnd Bergmann wrote:
-> > On Saturday 07 July 2012, Olof Johansson wrote:
-> > 
-> >>> ARM introduced AArch64 as part of the ARMv8 architecture
-> >>
-> >> With the risk of bikeshedding here, but I find the name awkward. How
-> >> about just naming the arch port arm64 instead? It's considerably more
-> >> descriptive in the context of the kernel.  For reference, we didn't
-> >> name ppc64, nor powerpc, after what the IBM/power.org marketing people
-> >> were currently calling the architecture at the time either.
-> > 
-> > I agree the name sucks, and I'd much prefer to just call it arm64
-> > as well. The main advantage of the aarch64 name is that it's the
-> > same as the identifier in the elf triplet, and it makes sense to
-> > keep the same name for all places where we need to identify the
-> > architecture. This also includes the rpm and dpkg architecture names,
-> > and the string returned by the uname syscall. If everything else
-> > is aarch64, we should use that in the kernel directory too, but
-> > if everyone calls it arm64 anyway, we should probably use that name
-> > for as many things as possible.
-> 
-> FWIW I actually really like the aarch64 name (but you know that already
-> :) ). I think it clearly spells out that this is not just a 64-bit
-> extension to the existing 32-bit ARM Architecture, it is a new (inspired
-> by ARM) architecture. Implementations will also run in AArch32 state
-> (A32 and T32), but it's not like x86->x86_64.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigEDFE67F89D1E5D3F9ECC9E42
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-It's one advantage is that it won't trigger the infinite number
-of broken scripts out there that do something on arm*
+Hi Shmulik!
 
-Dave
--- 
- -----Open up your eyes, open up your mind, open up your code -------   
-/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
-\ gro.gilbert @ treblig.org |                               | In Hex /
- \ _________________________|_____ http://www.treblig.org   |_______/
+Am 08.07.2012 13:47, schrieb Shmulik Ladkani:
+> +
+> +		/* TODO: if find_fastmap=3D=3D1, we do not enter this block at all.
+> +		 * shouldn't we? shouldn't we care of compatability of unknown
+> +		 * internal volumes OTHER than the fastmap ones, even if
+> +		 * find_fastmap=3D=3D1?
+> +		 */
+> +
+
+If find_fastmap=3D1 we scan only the first 64 PEBs (now by using scan_peb=
+()).
+When using fastmap can do not care about compatibility of unknown interna=
+l volumes
+at all.
+Fastmap keeps only track of known (and compatible volumes).
+Taking care of unknown internal volumes would imply a full scan.
+
+		int lnum =3D be32_to_cpu(vidh->lnum);
+> =20
+>  		/* Unsupported internal volume */
+> @@ -1221,6 +1228,7 @@ static void destroy_ai(struct ubi_attach_info *ai=
+)
+>   * scan_all - scan entire MTD device.
+>   * @ubi: UBI device description object
+>   * @ai: attach info object
+> + * TODO: document @start
+
+Tomorrow I'll send another kernel-doc update.
+There more tags missing.
+
+>   * This function does full scanning of an MTD device and returns compl=
+ete
+>   * information about it in form of a "struct ubi_attach_info" object. =
+In case
+> @@ -1350,6 +1358,11 @@ out_vidh:
+>  out_ech:
+>  	kfree(ech);
+>  out_ai:
+> +	/* TODO: doesn't seem clean to destroy 'ai' as it was allocated by th=
+e
+> +	 * caller, its his responsibility.
+> +	 * also looks like it leads to double freee in case 'err' returned is=
+
+> +	 * negative
+> +	 */
+
+I have to look closer into this.
+It looks like the call to destroy_ai() in scan_fast() has to go.
+
+>  	destroy_ai(ai);
+>  	return err;
+>  }
+> @@ -1441,6 +1454,7 @@ int ubi_attach(struct ubi_device *ubi, int force_=
+scan)
+> =20
+>  		err =3D scan_all(ubi, scan_ai, 0);
+>  		if (err) {
+> +			/* TODO: hmm... kfree or destroy_ai ? */
+
+True. Must be desroy_ai().
+
+>  			kfree(scan_ai);
+>  			goto out_wl;
+>  		}
+> diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
+> index 50b7590..f769c22 100644
+> --- a/drivers/mtd/ubi/build.c
+> +++ b/drivers/mtd/ubi/build.c
+> @@ -1053,6 +1053,7 @@ int ubi_detach_mtd_dev(int ubi_num, int anyway)
+>  	ubi_notify_all(ubi, UBI_VOLUME_REMOVED, NULL);
+>  	dbg_msg("detaching mtd%d from ubi%d", ubi->mtd->index, ubi_num);
+> =20
+> +	/* TODO: any action on failure? */
+
+What do you expect on failure?
+At this point we have either no fastmap or a valid fastmap on flash.
+If ubi_update_fastmap() fails it will ensure that no invalid fastmap rema=
+ins on flash.
+See invalidate_fastmap().
+
+> --- a/drivers/mtd/ubi/wl.c
+> +++ b/drivers/mtd/ubi/wl.c
+> @@ -272,6 +272,10 @@ static int produce_free_peb(struct ubi_device *ubi=
+)
+>  		dbg_wl("do one work synchronously");
+>  		err =3D do_work(ubi);
+>  		if (err)
+> +			/* TODO: in the new locking scheme, produce_free_peb is
+> +			 * called under wl_lock taken.
+> +			 * so when returning, should reacquire the lock
+> +			 */
+
+Which new locking scheme?
+
+>  			return err;
+> =20
+>  		spin_lock(&ubi->wl_lock);
+> @@ -377,6 +381,7 @@ static struct ubi_wl_entry *find_wl_entry(struct ub=
+i_device *ubi,
+>  	 * as anchor PEB, hold it back and return the second best WL entry
+>  	 * such that fastmap can use the anchor PEB later. */
+>  	if (!ubi->fm_disabled && !ubi->fm && e->pnum < UBI_FM_MAX_START)
+> +		/* TODO: do we have a risk returning NULL here? */
+
+How?
+
+>  		return prev_e;
+> =20
+>  	return e;
+> @@ -405,6 +410,7 @@ static struct ubi_wl_entry *find_mean_wl_entry(stru=
+ct ubi_device *ubi,
+>  		/* If no fastmap has been written and this WL entry can be used
+>  		 * as anchor PEB, hold it back and return the second best
+>  		 * WL entry such that fastmap can use the anchor PEB later. */
+> +		/* TODO: why this is specific just to < WL_FREE_MAX_DIFF case? */
+
+Because find_wl_entry() already takes care of this.
+
+Thanks,
+//richard
+
+
+--------------enigEDFE67F89D1E5D3F9ECC9E42
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJP+XgNAAoJEN9758yqZn9ePqIH/i/RAnugdjNccspm6uE2OfQ5
+o/VLzxLcaoRsnJHP+9zHt6T2OH/s4M+cZO+1A6WK4gOle089bB+9D0UacnoXGk0q
+mE8yqnpTD48Vqr3SV6UJeKXEdlMGFyKljLCdDlzMDJV/fAOjmVa4Co1X44renkaY
+0NX8QSnnIPFZkJkuj4JoiKJojJt5VioIFwn2qEivpX9n/88Ds8NxQSLVwLiNP7Ce
+F28203uvtBIcDZ3n0jcQXamseGeHepWYHMEaBF8l49Wag/Kqmv3A5YKIFQonwdJY
+g1RROjap+Ixg7FF2cdhXNBVlr0N0SKspvA+aDUzOKZhEn0ML9nXY8HjRiiKdlx0=
+=6Ocp
+-----END PGP SIGNATURE-----
+
+--------------enigEDFE67F89D1E5D3F9ECC9E42--
