@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab2GHSNQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 14:13:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27556 "EHLO mx1.redhat.com"
+	id S1752061Ab2GHSew (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 14:34:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14225 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751768Ab2GHSNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 14:13:15 -0400
-Message-ID: <4FF9CDAE.30305@redhat.com>
-Date: Sun, 08 Jul 2012 14:13:02 -0400
-From: Jon Masters <jcm@redhat.com>
-Organization: Red Hat, Inc.
+	id S1751862Ab2GHSev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 14:34:51 -0400
+Message-ID: <4FF9D29D.8030903@redhat.com>
+Date: Sun, 08 Jul 2012 14:34:05 -0400
+From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: "Dr. David Alan Gilbert" <linux@treblig.org>
-CC: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com> <201207071927.13135.arnd@arndb.de> <4FF93C99.80203@redhat.com> <20120708111736.GA11121@gallifrey>
-In-Reply-To: <20120708111736.GA11121@gallifrey>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 25/26] sched, numa: Only migrate long-running entities
+References: <20120316144028.036474157@chello.nl> <20120316144241.749359061@chello.nl>
+In-Reply-To: <20120316144241.749359061@chello.nl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2012 07:17 AM, Dr. David Alan Gilbert wrote:
-> * Jon Masters (jcm@redhat.com) wrote:
->> On 07/07/2012 03:27 PM, Arnd Bergmann wrote:
->>> On Saturday 07 July 2012, Olof Johansson wrote:
->>>
->>>>> ARM introduced AArch64 as part of the ARMv8 architecture
->>>>
->>>> With the risk of bikeshedding here, but I find the name awkward. How
->>>> about just naming the arch port arm64 instead? It's considerably more
->>>> descriptive in the context of the kernel.  For reference, we didn't
->>>> name ppc64, nor powerpc, after what the IBM/power.org marketing people
->>>> were currently calling the architecture at the time either.
->>>
->>> I agree the name sucks, and I'd much prefer to just call it arm64
->>> as well. The main advantage of the aarch64 name is that it's the
->>> same as the identifier in the elf triplet, and it makes sense to
->>> keep the same name for all places where we need to identify the
->>> architecture. This also includes the rpm and dpkg architecture names,
->>> and the string returned by the uname syscall. If everything else
->>> is aarch64, we should use that in the kernel directory too, but
->>> if everyone calls it arm64 anyway, we should probably use that name
->>> for as many things as possible.
->>
->> FWIW I actually really like the aarch64 name (but you know that already
->> :) ). I think it clearly spells out that this is not just a 64-bit
->> extension to the existing 32-bit ARM Architecture, it is a new (inspired
->> by ARM) architecture. Implementations will also run in AArch32 state
->> (A32 and T32), but it's not like x86->x86_64.
-> 
-> It's one advantage is that it won't trigger the infinite number
-> of broken scripts out there that do something on arm*
+On 03/16/2012 10:40 AM, Peter Zijlstra wrote:
 
-Indeed. I believe that was another reason for the name choice,
-especially in the toolchain, but also in kernel/uname.
+> +static u64 process_cpu_runtime(struct numa_entity *ne)
+> +{
+> +	struct task_struct *p, *t;
+> +	u64 runtime = 0;
+> +
+> +	rcu_read_lock();
+> +	t = p = ne_owner(ne);
+> +	if (p) do {
+> +		runtime += t->se.sum_exec_runtime; // @#$#@ 32bit
+> +	} while ((t = next_thread(t)) != p);
+> +	rcu_read_unlock();
+> +
+> +	return runtime;
+> +}
 
-Jon.
+> +	/*
+> +	 * Don't bother migrating memory if there's less than 1 second
+> +	 * of runtime on the tasks.
+> +	 */
+> +	if (ne->nops->cpu_runtime(ne) < NSEC_PER_SEC)
+> +		return false;
+
+Do we really want to calculate the amount of CPU time used
+by a process, and start migrating after just one second?
+
+Or would it be ok to start migrating once a process has
+been scanned once or twice by the NUMA code?
+
+-- 
+All rights reversed
