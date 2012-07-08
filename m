@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab2GHXU1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 19:20:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60339 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752390Ab2GHXUZ (ORCPT
+	id S1752752Ab2GHXYo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 19:24:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40972 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab2GHXYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 19:20:25 -0400
-Message-ID: <1341789621.25597.247.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH V3] rtlwifi: rtl8192ce: rtl8192se: rtl8192de: Update to
- rtl_92ce_92se_92de_linux_mac80211_0004.0816.2011 driver
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        dwmw2@infradead.org
-Date: Mon, 09 Jul 2012 00:20:21 +0100
-In-Reply-To: <1341778577-2544-1-git-send-email-Larry.Finger@lwfinger.net>
-References: <1341778577-2544-1-git-send-email-Larry.Finger@lwfinger.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-DMkOFfp/xUI1ejlrzmTG"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 8 Jul 2012 19:24:43 -0400
+Message-ID: <4FFA16B6.9050009@gmail.com>
+Date: Mon, 09 Jul 2012 09:24:38 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: /sys and access(2): Correctly implemented?
+References: <4FF6A17B020000A10000A5E8@gwsmtp1.uni-regensburg.de>
+In-Reply-To: <4FF6A17B020000A10000A5E8@gwsmtp1.uni-regensburg.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/07/12 16:27, Ulrich Windl wrote:
+> Hi!
+> 
+> Recently I found a problem with the command (kernel 3.0.34-0.7-default from SLES 11 SP2, run as root):
+> test -r "$file" && cat "$file"
+> emitting "Permission denied"
+> 
+> Investigating, I found that "test" actually uses "access()" to check for permissions. Unfortunately there are some files in /sys that have "write-only" permission bits set (e.g. /sys/devices/system/cpu/probe).
+> 
+> ~ # ll /sys/devices/system/cpu/probe
+> --w------- 1 root root 4096 Jun 29 12:43 /sys/devices/system/cpu/probe
+> ~ # F=/sys/devices/system/cpu/probe
+> ~ # test "$F" && cat "$F"
+> cat: /sys/devices/system/cpu/probe: Permission denied
 
---=-DMkOFfp/xUI1ejlrzmTG
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Looks like you have a typo here, I think you wanted "test -r $F", not
+"test $F", the latter will just evaluate "$F" as an expression which
+will be true, and so you get the permission denied error running cat.
 
-On Sun, 2012-07-08 at 15:16 -0500, Larry Finger wrote:
-> Realtek driver rtl_92ce_92se_92de_linux_mac80211_0004.0816.2011 introduce=
-d new
-> versions of the firmware for rtl8192se, and rtl8192de. It also adds new
-> firmware for new cuts of the RTL8192CE chips.
->=20
-> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-> ---
->=20
-> V2 - sent to Ben Hutchings
->    - fixed the mode for new files
->    - made clearer the source of the new files
-> V3 - Removed extraneous material from File line
-[...]
+Using "test -r $F" on a write-only sysfs file correctly returns false on
+my machine (Ubuntu 10.04.4 LTS/2.6.32-41-generic).
 
-Applied, thanks.
-
-Ben.
-
---=20
-Ben Hutchings
-No political challenge can be met by shopping. - George Monbiot
-
---=-DMkOFfp/xUI1ejlrzmTG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAT/oVtee/yOyVhhEJAQoc7w/+OjG7YSRy3PQZDz8Y974/Bs1Bw6LaShXd
-Qhec+Zlyx2QeFVUPu7OVfktdi4nJvGpCh98x7xyAsnlu6LAHV7GXvBsCDV2A3RII
-KdKXp3PFfWdk/8Zwh8Ga0GD7B2X20yegq0EKl5Y6Ykf2b1FBv4LYDlTdhZTXfe4q
-yANjEW35XM/MhcfRMUQRUNomPmjerL2HkR0yANhNUXiYrjj1WHhm5SsPAe6ZdixU
-fCWbblzlholYXy7DPzqvdt5bTbJ0IlOEVm+My9EMhI8J2CCQYhqJPAEqGSfX3PqX
-YJ4PFxJ4wnACzYWtdJ5Pg1Zb7jx7bJ63SU9G3jIFV86h6gxVWGuNRuyfbPa8IVco
-mtSxRxjLles8JZnvTXYk0CfJWRk5FZhO83xe5Y+3ZO3Mh5kxIC7O/2IFkBfoyUoz
-cQhGp7NNVqBEOKIVWHiEN+uBu5RBttBbawVYESz0eOntmZzLN17dm5xWNyXEVZcd
-MzIqkIE8fhMxznvbOuT1vD7yFYx5QdN09WIjTgXWDsXBc7uNKGObZI/htaM8hdrW
-yLZDpj2DMCfXw7UzcT+Alb7ucILO7NaCr19kVqxvJzOIil3/6HzgwycMdXsqdUEg
-eYTlJMt3QE4zHpypAWOhrTWUBoXkA6OxZjh0CbKBpjCh1tb3zm7dwdtN++49zRfx
-S1PVEEFZOpk=
-=2O6L
------END PGP SIGNATURE-----
-
---=-DMkOFfp/xUI1ejlrzmTG--
+~Ryan
