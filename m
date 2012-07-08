@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109Ab2GHLiT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 07:38:19 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:56591 "EHLO
+	id S1752036Ab2GHLiQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 07:38:16 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:49825 "EHLO
 	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751817Ab2GHLhw (ORCPT
+	by vger.kernel.org with ESMTP id S1751747Ab2GHLhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 8 Jul 2012 07:37:52 -0400
 X-IronPort-AV: E=Sophos;i="4.77,546,1336341600"; 
-   d="scan'208";a="166023137"
+   d="scan'208";a="166023136"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: "David S. Miller" <davem@davemloft.net>
+To: Karsten Keil <isdn@linux-pingi.de>
 Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/7] net/rxrpc/ar-peer.c: remove invalid reference to list iterator variable
-Date: Sun,  8 Jul 2012 13:37:39 +0200
-Message-Id: <1341747464-1772-3-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 1/7] drivers/isdn/mISDN/stack.c: remove invalid reference to list iterator variable
+Date: Sun,  8 Jul 2012 13:37:38 +0200
+Message-Id: <1341747464-1772-2-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1341747464-1772-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1341747464-1772-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -28,28 +28,30 @@ From: Julia Lawall <Julia.Lawall@lip6.fr>
 If list_for_each_entry, etc complete a traversal of the list, the iterator
 variable ends up pointing to an address at an offset from the list head,
 and not a meaningful structure.  Thus this value should not be used after
-the end of the iterator.  This seems to be a copy-paste bug from a previous
-debugging message, and so the meaningless value is just deleted.
+the end of the iterator.  The dereferences are just deleted from the
+debugging statement.
 
 This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
 
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- net/rxrpc/ar-peer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/isdn/mISDN/stack.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/rxrpc/ar-peer.c b/net/rxrpc/ar-peer.c
-index 2754f09..bebaa43 100644
---- a/net/rxrpc/ar-peer.c
-+++ b/net/rxrpc/ar-peer.c
-@@ -229,7 +229,7 @@ found_UDP_peer:
- 	return peer;
- 
- new_UDP_peer:
--	_net("Rx UDP DGRAM from NEW peer %d", peer->debug_id);
-+	_net("Rx UDP DGRAM from NEW peer");
- 	read_unlock_bh(&rxrpc_peer_lock);
- 	_leave(" = -EBUSY [new]");
- 	return ERR_PTR(-EBUSY);
+diff --git a/drivers/isdn/mISDN/stack.c b/drivers/isdn/mISDN/stack.c
+index 1a0ae44..5f21f62 100644
+--- a/drivers/isdn/mISDN/stack.c
++++ b/drivers/isdn/mISDN/stack.c
+@@ -135,8 +135,8 @@ send_layer2(struct mISDNstack *st, struct sk_buff *skb)
+ 			skb = NULL;
+ 		else if (*debug & DEBUG_SEND_ERR)
+ 			printk(KERN_DEBUG
+-			       "%s ch%d mgr prim(%x) addr(%x) err %d\n",
+-			       __func__, ch->nr, hh->prim, ch->addr, ret);
++			       "%s mgr prim(%x) err %d\n",
++			       __func__, hh->prim, ret);
+ 	}
+ out:
+ 	mutex_unlock(&st->lmutex);
 
