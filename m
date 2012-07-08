@@ -1,59 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751629Ab2GHJZu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 05:25:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52774 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab2GHJZt (ORCPT
+	id S1751710Ab2GHJad (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 05:30:33 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:54358 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab2GHJab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 05:25:49 -0400
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: greg@kroah.com
-Cc: sjakub@gmail.com, linux-kernel@vger.kernel.org,
-        Toshiaki Yamane <yamanetoshi@gmail.com>
-Subject: [PATCH] [PATCH] asus_oled: Use pr_err(...) rather than printk(KERN_ERR ...)
-Date: Sun,  8 Jul 2012 18:25:47 +0900
-Message-Id: <1341739547-17254-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sun, 8 Jul 2012 05:30:31 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: linux-media <linux-media@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+Subject: Re: [GIT PULL FOR v3.5] Move sta2x11_vip to staging
+Date: Sun, 08 Jul 2012 11:30:27 +0200
+Message-ID: <5064628.nqT5f41kQb@casa>
+User-Agent: KMail/4.8.4 (Linux/3.4.4-3.fc17.x86_64; KDE/4.8.4; x86_64; ; )
+In-Reply-To: <201206271117.56365.hverkuil@xs4all.nl>
+References: <201205260939.58100.hverkuil@xs4all.nl> <1444585.tu7qHxh2Mp@harkonnen> <201206271117.56365.hverkuil@xs4all.nl>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change is inspired by checkpatch.
+> Any news on this?
 
-Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
----
- drivers/staging/asus_oled/asus_oled.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Hi Hans,
 
-diff --git a/drivers/staging/asus_oled/asus_oled.c b/drivers/staging/asus_oled/asus_oled.c
-index 510d796..f63c1d3 100644
---- a/drivers/staging/asus_oled/asus_oled.c
-+++ b/drivers/staging/asus_oled/asus_oled.c
-@@ -782,20 +782,20 @@ static int __init asus_oled_init(void)
- 	oled_class = class_create(THIS_MODULE, ASUS_OLED_UNDERSCORE_NAME);
- 
- 	if (IS_ERR(oled_class)) {
--		printk(KERN_ERR "Error creating " ASUS_OLED_UNDERSCORE_NAME " class\n");
-+		pr_err("Error creating " ASUS_OLED_UNDERSCORE_NAME " class\n");
- 		return PTR_ERR(oled_class);
- 	}
- 
- 	retval = class_create_file(oled_class, &class_attr_version.attr);
- 	if (retval) {
--		printk(KERN_ERR "Error creating class version file\n");
-+		pr_err("Error creating class version file\n");
- 		goto error;
- 	}
- 
- 	retval = usb_register(&oled_driver);
- 
- 	if (retval) {
--		printk(KERN_ERR "usb_register failed. Error number %d\n", retval);
-+		pr_err("usb_register failed. Error number %d\n", retval);
- 		goto error;
- 	}
- 
+I'm on it :)
+
 -- 
-1.7.5.4
-
+Federico Vaga
