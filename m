@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466Ab2GHU7O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 16:59:14 -0400
-Received: from spider.alvarezp.com ([207.210.217.159]:36842 "EHLO
-	spider.alvarezp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370Ab2GHU7N (ORCPT
+	id S1752492Ab2GHVNv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 17:13:51 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:26171
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752312Ab2GHVNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 16:59:13 -0400
-X-Greylist: delayed 830 seconds by postgrey-1.27 at vger.kernel.org; Sun, 08 Jul 2012 16:59:13 EDT
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Jonathan Nieder" <jrnieder@gmail.com>,
-        "Bob Moore" <robert.moore@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Adrian Knoth" <adi@drcomp.erfurt.thur.de>, "Shaohua Li" <shli@kernel.org>,
-        "Len Brown" <len.brown@intel.com>, linux-acpi@vger.kernel.org,
+	Sun, 8 Jul 2012 17:13:49 -0400
+X-IronPort-AV: E=Sophos;i="4.77,547,1336341600"; 
+   d="scan'208";a="149999165"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: David Airlie <airlied@linux.ie>
+Cc: kernel-janitors@vger.kernel.org, dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ACPI: Leave Bus Master Arbitration enabled for
- suspend/resume
-References: <op.wg3en6ij6g6bxc@localhost.localdomain>
- <201207082143.04099.rjw@sisk.pl> <20120708194519.GA8807@burratino>
- <201207082208.19664.rjw@sisk.pl>
-Date: Sun, 08 Jul 2012 13:43:59 -0700
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-From: "Octavio Alvarez" <alvarezp@alvarezp.com>
-Message-ID: <op.wg5ajlqi6g6bxc@localhost.localdomain>
-In-Reply-To: <201207082208.19664.rjw@sisk.pl>
-User-Agent: Opera Mail/12.00 (Linux)
+Subject: [PATCH 2/3] drivers/gpu/drm/gma500/oaktrail_crtc.c: remove invalid reference to list iterator variable
+Date: Sun,  8 Jul 2012 23:13:42 +0200
+Message-Id: <1341782023-23868-2-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1341782023-23868-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1341782023-23868-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 08 Jul 2012 13:08:19 -0700, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
->> This is an old suspend/resume lockup fix:
->>
->> 	commit 2780cc4660e1
->> 	Author: Len Brown <len.brown@intel.com>
->> 	Date:   Thu Dec 23 13:43:30 2004 -0500
->>
->> 	    [ACPI] Fix suspend/resume lockup issue
->> 	    by leaving Bus Master Arbitration enabled.
->> 	    The ACPI spec mandates it be disabled only for C3.
->>
->> The bug snuck back in in commit 2feec47d4c5f (ACPICA: ACPI 5: Support
->> for new FADT SleepStatus, SleepControl registers, 2012-02-14),
->> presumably by copy/pasting a copy of the code without that fix for the
->> legacy case.
->>
->> On affected machines, after that commit, the machine locks up hard on
->> resume from suspend.  The same fix as seven years ago still works.
->>
-> Applied to the linux-next branch of the linux-pm.git tree.
->
-> I think I'll push it for v3.6, since the bug is serious and is a  
-> regression.
->
-> Bob, I think we should incorporate this into ACPICA, shouldn't we?
+If list_for_each_entry, etc complete a traversal of the list, the iterator
+variable ends up pointing to an address at an offset from the list head,
+and not a meaningful structure.  Thus this value should not be used after
+the end of the iterator.
 
-This bug affects since 3.4. I'd like to ask for this to be applied in the
-stable branches too, considering Jonathan's comments that this is a replay
-of an old and proven fix.
+A break is added after the switch; the break in the switch would jump out
+of the switch, but not out of the complete iteration.
 
-(I don't know if 3.3 is affected too. I know 3.2 is not affected by this.)
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-Thanks.
+// <smpl>
+@@
+identifier c;
+expression E;
+iterator name list_for_each_entry;
+statement S;
+@@
 
--- 
-Octavio.
+list_for_each_entry(c,...) { ... when != break;
+                                 when forall
+                                 when strict
+}
+...
+(
+c = E
+|
+*c
+)
+// </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
+
+---
+ drivers/gpu/drm/gma500/oaktrail_crtc.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/gpu/drm/gma500/oaktrail_crtc.c b/drivers/gpu/drm/gma500/oaktrail_crtc.c
+index f821c83..4b2172e 100644
+--- a/drivers/gpu/drm/gma500/oaktrail_crtc.c
++++ b/drivers/gpu/drm/gma500/oaktrail_crtc.c
+@@ -329,6 +329,7 @@ static int oaktrail_crtc_mode_set(struct drm_crtc *crtc,
+ 			is_mipi = true;
+ 			break;
+ 		}
++		break;
+ 	}
+ 
+ 	/* Disable the VGA plane that we never use */
