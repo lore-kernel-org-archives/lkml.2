@@ -1,89 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751809Ab2GHRVS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 13:21:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57933 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751211Ab2GHRVR (ORCPT
+	id S1751696Ab2GHRaf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 13:30:35 -0400
+Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:36695
+	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with SMTP id S1751211Ab2GHRae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 13:21:17 -0400
-Message-ID: <1341768068.25597.237.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH V2] rtlwifi: rtl8192ce: rtl8192se: rtl8192de: Update to
- rtl_92ce_92se_92de_linux_mac80211_0004.0816.2011 driver
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        dwmw2@infradead.org
-Date: Sun, 08 Jul 2012 18:21:08 +0100
-In-Reply-To: <1341767819.25597.234.camel@deadeye.wl.decadent.org.uk>
-References: <1341713001-5077-1-git-send-email-Larry.Finger@lwfinger.net>
-	 <1341767819.25597.234.camel@deadeye.wl.decadent.org.uk>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-cnDLOwfe9E29opnQU8hf"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 8 Jul 2012 13:30:34 -0400
+Date: Sun, 8 Jul 2012 19:30:31 +0200 (CEST)
+From: Joel Reardon <joel@clambassador.com>
+X-X-Sender: joel@eristoteles.iwoars.net
+To: Artem Bityutskiy <dedekind1@gmail.com>
+cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [patch v2] UBIFS: add key state map data structure and accessors
+In-Reply-To: <1340016236.2420.23.camel@sauron.fi.intel.com>
+Message-ID: <alpine.DEB.2.00.1207081928190.12575@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1206090016010.14953@eristoteles.iwoars.net> <1340016236.2420.23.camel@sauron.fi.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds the key state map to keymap, a structure that holds the state
+of all keys in the KSA. The states are defined in an enum, and a get/set
+accessor is added. These accessors are static only: the external interface
+will simply be "mark used" or "mark deleted" and range checking, along with
+locking the mutex for the state object, will be done there.
 
---=-cnDLOwfe9E29opnQU8hf
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The memory is allocated in keymap_init() and keymap_free()
+is added to deallocate the memory. Init is called when mounting is performed,
+and free is called mounting failed or when unmounting. This was tested using
+integck along with unit tests for get/set sanity.
 
-On Sun, 2012-07-08 at 18:16 +0100, Ben Hutchings wrote:
-> On Sat, 2012-07-07 at 21:03 -0500, Larry Finger wrote:
-> > Realtek driver rtl_92ce_92se_92de_linux_mac80211_0004.0816.2011 introdu=
-ced new
-> > versions of the firmware for rtl8192se, and rtl8192de. It also adds new
-> > firmware for new cuts of the RTL8192CE chips.
-> [...]
-> > --- a/WHENCE
-> > +++ b/WHENCE
-> > @@ -1589,6 +1589,8 @@ Licence: Redistributable. See LICENCE.rtlwifi_fir=
-mware.txt for details.
-> >  Driver: rtl8192ce - Realtek 802.11n WLAN driver for RTL8192CE
-> > =20
-> >  File: rtlwifi/rtl8192cfw.bin
-> > +File: rtlwifi/rtl8192cfwU.bin	- Driver for newer A cut chip
-> > +File: rtlwifi/rtl8192cfwU_B.bin - Driver for newer B cut chip
-> [...]
->=20
-> Whatever gave you the idea that you could put free text after a
-> filename?  Add an Info field if you must.
+I tried to simply the get/set part. The idea is that each byte is divided
+into four two-bit values: [v1, v2, v3, v4], and each value is
+independantly accessed.
 
-I see that there are still a few other instances of this in the current
-WHENCE, which I'm going to fix now.
+Joel Reardon
 
-Ben.
+Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
+---
+ fs/ubifs/keymap.c |  137 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ fs/ubifs/super.c  |    6 ++
+ fs/ubifs/ubifs.h  |    1 +
+ 3 files changed, 141 insertions(+), 3 deletions(-)
 
---=20
-Ben Hutchings
-Life would be so much easier if we could look at the source code.
+diff --git a/fs/ubifs/keymap.c b/fs/ubifs/keymap.c
+index 6f812c5..ca63a74 100644
+--- a/fs/ubifs/keymap.c
++++ b/fs/ubifs/keymap.c
+@@ -28,14 +28,43 @@
+ #include <linux/random.h>
+ #include "ubifs.h"
 
---=-cnDLOwfe9E29opnQU8hf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
++/*
++ * Key states take 2 bits each, and so are stored 4-per-byte. The following
++ * shifts and masks are used for accessing the byte as a four-tuple of two
++ * bits.
++ */
++#define KEYMAP_STATES_PER_BYTE 4
++#define KEYMAP_STATES_PER_BYTE_SHIFT 2
++#define KEYMAP_STATES_PER_BYTE_MASK (((1 << KEYMAP_STATES_PER_BYTE_SHIFT) - 1))
++
++/**
++ * Defines the three possible states of a key:
++ * @KEYMAP_STATE_UNUSED: the key has never been assigned or used
++ * @KEYMAP_STATE_USED: the key has been assigned and is used for live data
++ * @KEYMAP_STATE_DELETED: the key has been assigned and is used for
++ *			  deleted data.
++ */
++enum {
++	KEYMAP_STATE_UNUSED,
++	KEYMAP_STATE_USED,
++	KEYMAP_STATE_DELETED,
++	KEYMAP_STATE_CNT,
++};
++
+ /**
+  * struct ubifs_keymap - UBIFS key map.
+  * @key_size: size of a key in bytes
+  * @keys_per_leb: number of keys per KSA LEB
+- * @ksa_size: number of LEBS in the KSA
++ * @ksa_lebs: number of LEBS in the KSA
+  * @ksa_first: the first LEB belonging to the KSA
++ * @state: a double-array [ksa_lebs]x[keys_per_leb] that stores the
++ *	   state of the key at that position. The state consumes two bits so
++ *	   each byte contains four states. The first index is from 0 to the
++ *	   number of KSA LEBs - 1, and the second is from 0 to the number of
++ *	   keys per LEB (divided by packing of key states per byte)
+  * @unused: the number of unused keys in the system
+  * @deleted: the number of deleted keys in the system.
++ * @state_mutex: this mutex must be locked when updating a key's state
+  *
+  * This manages the use of keys in UBIFS. There is only
+  * instance of the keymap for the UBIFS main context. Its main purpose is to
+@@ -45,13 +74,68 @@
+ struct ubifs_keymap {
+ 	unsigned int key_size;
+ 	unsigned int keys_per_leb;
+-	unsigned int ksa_size;
++	unsigned int ksa_lebs;
+ 	unsigned int ksa_first;
++	u8 **state;
+ 	long long unused;
+ 	long long deleted;
++	struct mutex state_mutex;
+ };
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ /**
++ * set_state - set the key state
++ * @km: the keymap
++ * @ksa_leb: the KSA eraseblock number
++ * @ksa_offset: the key's offset in the KSA eraseblock
++ * @value: the new state
++ *
++ * This function sets a key position's state. It assumes @km's @state_mutex is
++ * currently held.
++ */
++static void set_state(struct ubifs_keymap *km, int ksa_leb,
++		      int ksa_offset, int value)
++{
++	uint8_t *byte;
++	int pair;
++	int mask;
++
++	ubifs_assert(ksa_leb >= 0 && ksa_leb < km->ksa_lebs);
++	ubifs_assert(value >= 0 && value < KEYMAP_STATE_CNT);
++	ubifs_assert(ksa_offset > 0 && ksa_offset <= km->keys_per_leb);
++
++	pair = ksa_offset % KEYMAP_STATES_PER_BYTE;
++	mask = KEYMAP_STATES_PER_BYTE_MASK
++		<< (KEYMAP_STATES_PER_BYTE_SHIFT * pair);
++	byte = km->state[ksa_leb] + (ksa_offset / KEYMAP_STATES_PER_BYTE);
++	*byte = (*byte & ~mask) +
++		(value << pair * KEYMAP_STATES_PER_BYTE_SHIFT);
++}
++
++/**
++ * get_state - get the key state
++ * @km: the keymap
++ * @ksa_leb: the KSA eraseblock number
++ * @ksa_offset: the key's offset in the KSA eraseblock
++ *
++ * This function returns key position's state.
++ */
++static int get_state(struct ubifs_keymap *km, int ksa_leb, int ksa_offset)
++{
++	uint8_t byte;
++	int pair, value;
++
++	ubifs_assert(ksa_leb >= 0 && ksa_leb < km->ksa_lebs);
++	ubifs_assert(ksa_offset > 0 && ksa_offset <= km->keys_per_leb);
++
++	byte = km->state[ksa_leb][ksa_offset / KEYMAP_STATES_PER_BYTE];
++	pair = ksa_offset % KEYMAP_STATES_PER_BYTE;
++	value = (byte >> (pair * KEYMAP_STATES_PER_BYTE_SHIFT))
++		& KEYMAP_STATES_PER_BYTE_MASK;
++	ubifs_assert(value >= 0 && value < KEYMAP_STATE_CNT);
++	return value;
++}
++
++/**
+  * ksa_pos_decouple - convert a ksa_pos to ksa_leb and offset
+  * @ksa_pos: the key's position in the KSA
+  * @ksa_leb: gets the KSA LEB number for the key position
+@@ -85,20 +169,67 @@ static long long ksa_pos_couple(int ksa_leb, int ksa_offs)
+  * @c: the ubifs info context to put the keymap into
+  *
+  * This function allocates a keymap data structure and initializes its fields.
+- * The ubifs_info context @c is passed as a parameter and its @km field is set
++ * It assumes that @c has already correctly loaded the superblock. The
++ * ubifs_info context @c is passed as a parameter and its @km field is set
+  * to the keymap that is preprared by this function. If memory cannot be
+  * allocated, it returns -ENOMEM. Otherwise it returns 0.
+  */
+ int keymap_init(struct ubifs_info *c)
+ {
+ 	struct ubifs_keymap *km;
++	int i, len;
 
-iQIVAwUAT/nBhOe/yOyVhhEJAQq5RQ/8CNE0S8kHKc6n2qZx3nB7GmboXBaBS17o
-DToAKcmC9/MugWi1VBoPN59Ei8qf2NVVDlZktdVo2e+CWwFN9MpWEw3cJayhvP0M
-Aqq/SnCfRFyHDn1cHki7J2B6WMlMZBGEdjzBVbN6IuUWhYe/F7f1gBj3z33Jg5bn
-a8948HeDTyl5mIad4MihvEjqJQy1xPqI5qsVlsrR7ob1J59sI5PfYHKC8wHRmihS
-g5xLJhb02Ui3SYcvxIPfapX9HhOZEya84fkp+bRWchdMY9Demw877kvsfHhc7SrR
-pTfZAyuoY64N0v+Z4MfK1TLDXMpPI+ltuhjmIJOxv/35FSoYZC20sEEDcQmb0xwr
-Ea2HTJFoWrI2RxnWuUeI7FTNOvdVkUFmtuPTXjAAskSI1wHX/q7MjwJ4ENlhsUtE
-0ZclAxv8WPWvlTroyQXb32mk9UfZgzJ7Ydyr/Lpgw8Nmog701JLgtXbGq0xaS2si
-eEi1YYj8wmPu30JZttgwSfczO2DIXENyuOLcU9jP5tM652KJqbUVkRAuy9NmAg7+
-f8JUHxXm7Y8zDCkpG+cWaFCF1ki0vn1BnnQ5e6DBtVzoDvymuTY6pA9XZBIqcwus
-8xqQK4dDt+6IVVW+noFXC9yebzUn1U4/FqWbBe7FTJb5CK9M7yWaAh05fku5OFkt
-9gQEG8CkdLw=
-=VxsG
------END PGP SIGNATURE-----
++	if (!c->use_ubifsec)
++		return 0;
+ 	c->km = km = kzalloc(sizeof(struct ubifs_keymap), GFP_NOFS);
+ 	if (!km)
+ 		return -ENOMEM;
 
---=-cnDLOwfe9E29opnQU8hf--
+ 	km->key_size = UBIFS_CRYPTO_KEYSIZE;
+ 	km->keys_per_leb = c->leb_size / km->key_size;
++	ubifs_assert(km->keys_per_leb % KEYMAP_STATES_PER_BYTE == 0);
++
++	km->ksa_lebs = c->ksa_lebs;
++	km->ksa_first = c->ksa_first;
++	km->state = NULL;
++	km->unused = 0;
++	km->deleted = 0;
++	km->state = kmalloc(sizeof(u8 *) * km->ksa_lebs, GFP_NOFS);
++	if (!km->state)
++		return -ENOMEM;
++	len = (sizeof(u8) * km->keys_per_leb) >> KEYMAP_STATES_PER_BYTE_SHIFT;
++	for (i = 0; i < km->ksa_lebs; ++i) {
++		km->state[i] = kzalloc(len, GFP_NOFS);
++		if (!(km->state[i]))
++			return -ENOMEM;
++		km->unused += km->keys_per_leb;
++	}
++	mutex_init(&km->state_mutex);
+
+ 	return 0;
+ }
++
++/**
++ * keymap_free - destruct and free memory used by a struct keymap
++ * @c: the ubifs info context that contanis the keymap
++ *
++ * This function frees the memory being used by the keymap.
++ */
++void keymap_free(struct ubifs_info *c)
++{
++	struct ubifs_keymap *km = c->km;
++
++	if (!c->use_ubifsec)
++		return;
++	ubifs_assert(km);
++
++	mutex_destroy(&km->state_mutex);
++	if (km->state) {
++		int i;
++		for (i = 0; i < km->ksa_lebs; ++i)
++			kfree(km->state[i]);
++		kfree(km->state);
++	}
++	kfree(km);
++	c->km = NULL;
++}
+diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
+index 879ecf5..ed76644 100644
+--- a/fs/ubifs/super.c
++++ b/fs/ubifs/super.c
+@@ -1244,6 +1244,10 @@ static int mount_ubifs(struct ubifs_info *c)
+ 	if (err)
+ 		goto out_free;
+
++	err = keymap_init(c);
++	if (err)
++		goto out_free;
++
+ 	/*
+ 	 * Make sure the compressor which is set as default in the superblock
+ 	 * or overridden by mount options is actually compiled in.
+@@ -1525,6 +1529,7 @@ out_free:
+ 	kfree(c->bu.buf);
+ 	vfree(c->ileb_buf);
+ 	vfree(c->sbuf);
++	keymap_free(c);
+ 	kfree(c->bottom_up_buf);
+ 	ubifs_debugging_exit(c);
+ 	return err;
+@@ -1564,6 +1569,7 @@ static void ubifs_umount(struct ubifs_info *c)
+ 	kfree(c->bu.buf);
+ 	vfree(c->ileb_buf);
+ 	vfree(c->sbuf);
++	keymap_free(c);
+ 	kfree(c->bottom_up_buf);
+ 	ubifs_debugging_exit(c);
+ }
+diff --git a/fs/ubifs/ubifs.h b/fs/ubifs/ubifs.h
+index 2b43107..7efab26 100644
+--- a/fs/ubifs/ubifs.h
++++ b/fs/ubifs/ubifs.h
+@@ -1812,6 +1812,7 @@ int ubifs_decompress(void *buf, int len, void *out, int *out_len,
+
+ /* keymap.c */
+ int keymap_init(struct ubifs_info *c);
++void keymap_free(struct ubifs_info *c);
+
+ #include "debug.h"
+ #include "misc.h"
+-- 
+1.7.5.4
+
+
