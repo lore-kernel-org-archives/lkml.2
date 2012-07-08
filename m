@@ -1,48 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273Ab2GHU22 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 16:28:28 -0400
-Received: from seven.medozas.de ([5.9.24.206]:58094 "EHLO seven.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444Ab2GHU21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 16:28:27 -0400
-Date: Sun, 8 Jul 2012 22:28:26 +0200 (CEST)
-From: Jan Engelhardt <jengelh@inai.de>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-In-Reply-To: <20120708050531.GA17672@khazad-dum.debian.net>
-Message-ID: <alpine.LNX.2.01.1207082226150.22454@frira.zrqbmnf.qr>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com> <201207071927.13135.arnd@arndb.de> <alpine.LNX.2.01.1207080142570.26355@frira.zrqbmnf.qr>
- <20120708050531.GA17672@khazad-dum.debian.net>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+	id S1752310Ab2GHUaH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 16:30:07 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:65425 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066Ab2GHUaG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 16:30:06 -0400
+X-Originating-IP: 108.223.40.66
+Date: Sun, 8 Jul 2012 13:30:04 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Alistair John Strachan <alistair@devzero.co.uk>,
+        lm-sensors@lm-sensors.org, Jean Delvare <khali@linux-fr.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH 4/4][update] hwmon / exynos4_tmu: Use struct dev_pm_ops
+ for power management
+Message-ID: <20120708203004.GA20390@roeck-us.net>
+References: <201207072302.16491.rjw@sisk.pl>
+ <201207072306.09305.rjw@sisk.pl>
+ <20120708170244.GA16423@roeck-us.net>
+ <201207082148.15674.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201207082148.15674.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 2012-07-08 07:05, Henrique de Moraes Holschuh wrote:
->>>
->>>I agree the name sucks, and I'd much prefer to just call it arm64 as
->>>well. The main advantage of the aarch64 name is that it's the same
->>>as the identifier in the elf triplet, [...] to identify the
->>>architecture, [...] the rpm and dpkg architecture names, and [...]
->>>the uname syscall.
->>
->>Any hindrance changing the specs? There is not even arm64 hardware - or
->>aarch64, for that matter - out there yet according to the initial post,
->>so I doubt there is anything in userspace yet.
->
->There is, in gnu config (the autoconf config.sub/config.guess stuff), and
->maybe some of the gnu toolchain?
->
->I did wonder why the awkward aarch64 identifier instead of something like
->arm64 which has also the benefit of good marketing by carrying the ARM name
->in the arch name, but since it was not my place to ask about it and ARM had
->already submitted "aarch64" to gnu upstream...
+On Sun, Jul 08, 2012 at 09:48:15PM +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+Hi Rafael,
 
-Well maybe ARM just wants to render itself unimportant. Fine by me, but 
-the shareholders might think differently ;-)
+> Make the Exynos4 TMU driver define its PM callbacks through
+> a struct dev_pm_ops object rather than by using legacy PM hooks
+> in struct platform_driver.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+>  drivers/hwmon/exynos4_tmu.c |   18 +++++++++++-------
+>  1 file changed, 11 insertions(+), 7 deletions(-)
+> 
+> Index: linux/drivers/hwmon/exynos4_tmu.c
+> ===================================================================
+> --- linux.orig/drivers/hwmon/exynos4_tmu.c
+> +++ linux/drivers/hwmon/exynos4_tmu.c
+> @@ -476,34 +476,38 @@ static int __devexit exynos4_tmu_remove(
+>  }
+>  
+>  #ifdef CONFIG_PM
+> -static int exynos4_tmu_suspend(struct platform_device *pdev, pm_message_t state)
+> +static int exynos4_tmu_suspend(struct device *dev)
+>  {
+> -	exynos4_tmu_control(pdev, false);
+> +	exynos4_tmu_control(to_platform_device(dev), false);
+>  
+>  	return 0;
+>  }
+>  
+> -static int exynos4_tmu_resume(struct platform_device *pdev)
+> +static int exynos4_tmu_resume(struct device *dev)
+>  {
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +
+>  	exynos4_tmu_initialize(pdev);
+>  	exynos4_tmu_control(pdev, true);
+>  
+>  	return 0;
+>  }
+> +
+> +static SIMPLE_DEV_PM_OPS(exynos4_tmu_pm,
+> +			 exynos4_tmu_suspend, exynos4_tmu_resume);
+> +#define EXYNOS4_TMU_PM	(&exynos4_tmu_pm)
+>  #else
+> -#define exynos4_tmu_suspend NULL
+> -#define exynos4_tmu_resume NULL
+> +#define EXYNOS4_TMU_PM	NULL
+>  #endif
+
+Actually, looking into other drivers, the common approach seems to be to declare
+
+static SIMPLE_DEV_PM_OPS(exynos4_tmu_pm,
+			 exynos4_tmu_suspend, exynos4_tmu_resume);
+
+outside the #ifdef code and then just assign
+
+		.pm = &exynos4_tmu_pm;
+
+unconditionally.
+
+That seems to be a much simpler solution. Any special reason for not
+implementing it this way ? Same question applies to the other patches in the
+series.
+
+Thanks,
+Guenter
+
+>  
+>  static struct platform_driver exynos4_tmu_driver = {
+>  	.driver = {
+>  		.name   = "exynos4-tmu",
+>  		.owner  = THIS_MODULE,
+> +		.pm     = EXYNOS4_TMU_PM,
+>  	},
+>  	.probe = exynos4_tmu_probe,
+>  	.remove	= __devexit_p(exynos4_tmu_remove),
+> -	.suspend = exynos4_tmu_suspend,
+> -	.resume = exynos4_tmu_resume,
+>  };
+>  
+>  module_platform_driver(exynos4_tmu_driver);
+> 
