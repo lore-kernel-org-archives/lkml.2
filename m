@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751536Ab2GHQ5j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 12:57:39 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56180 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab2GHQ5i (ORCPT
+	id S1751629Ab2GHRCo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 13:02:44 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:49192 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341Ab2GHRCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 12:57:38 -0400
+	Sun, 8 Jul 2012 13:02:42 -0400
+X-Originating-IP: 108.223.40.66
+Date: Sun, 8 Jul 2012 10:02:44 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Alistair John Strachan <alistair@devzero.co.uk>,
+        lm-sensors@lm-sensors.org, Jean Delvare <khali@linux-fr.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH 4/4] hwmon / exynos4_tmu: Use struct dev_pm_ops for power
+ management
+Message-ID: <20120708170244.GA16423@roeck-us.net>
+References: <201207072302.16491.rjw@sisk.pl>
+ <201207072306.09305.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <1341764963-11402-1-git-send-email-tremyfr@yahoo.fr>
-References: <1341764963-11402-1-git-send-email-tremyfr@yahoo.fr>
-Date: Sun, 8 Jul 2012 13:57:37 -0300
-Message-ID: <CAOMZO5BjcnB=CJ=i=V7Ct9oMvgnnbK8AjWvYJZdoVmZu=+_MQQ@mail.gmail.com>
-Subject: Re: [PATCH] Add nand platform on imx27 devicetree
-From: Fabio Estevam <festevam@gmail.com>
-To: Philippe Reynes <tremyfr@yahoo.fr>
-Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201207072306.09305.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philippe,
+On Sat, Jul 07, 2012 at 11:06:08PM +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> Make the Exynos4 TMU driver define its PM callbacks through
+> a struct dev_pm_ops object rather than by using legacy PM hooks
+> in struct platform_driver.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-On Sun, Jul 8, 2012 at 1:29 PM, Philippe Reynes <tremyfr@yahoo.fr> wrote:
-> Signed-off-by: Philippe Reynes <tremyfr@yahoo.fr>
-> ---
->  arch/arm/mach-imx/Kconfig |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-> index eff4db5..565422b 100644
-> --- a/arch/arm/mach-imx/Kconfig
-> +++ b/arch/arm/mach-imx/Kconfig
-> @@ -381,6 +381,7 @@ config MACH_IMX27_DT
->         bool "Support i.MX27 platforms from device tree"
->         select SOC_IMX27
->         select USE_OF
-> +       select IMX_HAVE_PLATFORM_MXC_NAND
+Please fix:
 
-Bu doing this you end up selecting unnecessary code for dt.
+WARNING: line over 80 characters
+#313: FILE: drivers/hwmon/exynos4_tmu.c:496:
++static SIMPLE_DEV_PM_OPS(exynos4_tmu_pm, exynos4_tmu_suspend, exynos4_tmu_resume);
 
-I proposed a fix for this already:
-http://patchwork.ozlabs.org/patch/168645/
-
-Regards,
-
-Fabio Estevam
+Guenter
