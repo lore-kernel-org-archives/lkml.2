@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab2GHW7c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 18:59:32 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:27086 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390Ab2GHW7b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 18:59:31 -0400
-Date: Mon, 9 Jul 2012 00:59:30 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: devel@driverdev.osuosl.org, Marcos Paulo de Souza <marcos.mage@gmail.com>,
-        Forest Bond <forest@alittletooquiet.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] staging: vt6656: iwctl: remove a few remaining redundant
- newlines
-In-Reply-To: <alpine.LNX.2.00.1207090052220.15263@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1207090056180.15263@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1206272116490.6908@swampdragon.chaosbits.net> <20120706230945.GA8835@kroah.com> <alpine.LNX.2.00.1207070228340.13344@swampdragon.chaosbits.net> <alpine.LNX.2.00.1207090052220.15263@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752687Ab2GHXBQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 19:01:16 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53695 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752390Ab2GHXBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 19:01:15 -0400
+Date: Mon, 9 Jul 2012 01:01:00 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Sha Zhengju <handai.szj@gmail.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, gthelen@google.com, yinghan@google.com,
+        akpm@linux-foundation.org, mhocko@suse.cz,
+        linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH 6/7] memcg: add per cgroup writeback pages accounting
+Message-ID: <20120708230100.GA5340@cmpxchg.org>
+References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>
+ <1340881525-5835-1-git-send-email-handai.szj@taobao.com>
+ <4FF291BE.7030509@jp.fujitsu.com>
+ <20120708144459.GA18272@localhost>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120708144459.GA18272@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I missed a few redundant newlines the first time.
+On Sun, Jul 08, 2012 at 10:44:59PM +0800, Fengguang Wu wrote:
+> On Tue, Jul 03, 2012 at 03:31:26PM +0900, KAMEZAWA Hiroyuki wrote:
+> > (2012/06/28 20:05), Sha Zhengju wrote:
+> > > From: Sha Zhengju <handai.szj@taobao.com>
+> > > 
+> > > Similar to dirty page, we add per cgroup writeback pages accounting. The lock
+> > > rule still is:
+> > > 	mem_cgroup_begin_update_page_stat()
+> > > 	modify page WRITEBACK stat
+> > > 	mem_cgroup_update_page_stat()
+> > > 	mem_cgroup_end_update_page_stat()
+> > > 
+> > > There're two writeback interface to modify: test_clear/set_page_writeback.
+> > > 
+> > > Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+> > 
+> > Seems good to me. BTW, you named macros as MEM_CGROUP_STAT_FILE_XXX
+> > but I wonder these counters will be used for accounting swap-out's dirty pages..
+> > 
+> > STAT_DIRTY, STAT_WRITEBACK ? do you have better name ?
+> 
+> Perhaps we can follow the established "enum zone_stat_item" names:
+> 
+>         NR_FILE_DIRTY,
+>         NR_WRITEBACK,
+> 
+> s/NR_/MEM_CGROUP_STAT_/
+> 
+> The names indicate that dirty pages for anonymous pages are not
+> accounted (by __set_page_dirty_no_writeback()). While the writeback
+> pages accounting include both the file/anon pages.
+> 
+> Ah then we'll need to update the document in patch 0 accordingly. This
+> may sound a bit tricky to the users..
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/staging/vt6656/iwctl.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+We already report the global one as "nr_dirty", though.  Please don't
+give the memcg one a different name.
 
-diff --git a/drivers/staging/vt6656/iwctl.c b/drivers/staging/vt6656/iwctl.c
-index 13ad62c..8b9894b 100644
---- a/drivers/staging/vt6656/iwctl.c
-+++ b/drivers/staging/vt6656/iwctl.c
-@@ -964,7 +964,6 @@ int iwctl_giwrts(struct net_device *dev, struct iw_request_info *info,
- 	wrq->value = pDevice->wRTSThreshold;
- 	wrq->disabled = (wrq->value >= 2312);
- 	wrq->fixed = 1;
--
- 	return 0;
- }
- 
-@@ -1003,7 +1002,6 @@ int iwctl_giwfrag(struct net_device *dev, struct iw_request_info *info,
- 	wrq->value = pDevice->wFragmentationThreshold;
- 	wrq->disabled = (wrq->value >= 2312);
- 	wrq->fixed = 1;
--
- 	return 0;
- }
- 
-@@ -1097,7 +1095,6 @@ int iwctl_siwencode(struct net_device *dev, struct iw_request_info *info,
- 
- 	// Send the key to the card
- 	if (wrq->length > 0) {
--
- 		if (wrq->length == WLAN_WEP232_KEYLEN) {
- 			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Set 232 bit wep key\n");
- 		} else if (wrq->length == WLAN_WEP104_KEYLEN) {
-@@ -1119,8 +1116,7 @@ int iwctl_siwencode(struct net_device *dev, struct iw_request_info *info,
- 					dwKeyIndex | (1 << 31),
- 					wrq->length, NULL,
- 					pDevice->abyKey,
--					KEY_CTL_WEP
--				);
-+					KEY_CTL_WEP);
- 			spin_unlock_irq(&pDevice->lock);
- 		}
- 		pDevice->byKeyIndex = (BYTE)dwKeyIndex;
--- 
-1.7.11.1
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+The enum naming is not too critical, but it would be nice to have it
+match the public name.
