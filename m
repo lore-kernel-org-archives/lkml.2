@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999Ab2GHTIr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 15:08:47 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:35237 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916Ab2GHTIq (ORCPT
+	id S1752209Ab2GHTL5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 15:11:57 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:63229 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751893Ab2GHTL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 15:08:46 -0400
+	Sun, 8 Jul 2012 15:11:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAHdPZaN3HNCJRDGG9kNMfHKOxQr6ULYK36DQyhaQUOM83dtUxQ@mail.gmail.com>
-References: <CAHdPZaN3HNCJRDGG9kNMfHKOxQr6ULYK36DQyhaQUOM83dtUxQ@mail.gmail.com>
-Date: Sun, 8 Jul 2012 21:08:45 +0200
-Message-ID: <CACRpkdYPSM_2SjNyeJ5o-PXGkTPcCRAqePRh9bRT54hAjZotCQ@mail.gmail.com>
-Subject: Re: config warnings while selecting u300_defconfig
+In-Reply-To: <4FF6A2DF.5030407@linaro.org>
+References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org>
+	<1341493572-29735-9-git-send-email-lee.jones@linaro.org>
+	<4FF6A2DF.5030407@linaro.org>
+Date: Sun, 8 Jul 2012 21:11:55 +0200
+Message-ID: <CACRpkdZJAiBvatPGpKZP4mgUb-M-pPY34LVaj7ANkRaX9C4fJQ@mail.gmail.com>
+Subject: Re: [PATCH 8/9] ARM: ux500: Clean-up temporary Device Tree enablement helpers
 From: Linus Walleij <linus.walleij@linaro.org>
-To: "devendra.aaru" <devendra.aaru@gmail.com>
-Cc: linux-kernel@vger.kernel.org
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linus.walleij@stericsson.com, STEricsson_nomadik_linux@list.st.com,
+        arnd@arndb.de, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 7, 2012 at 7:02 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
+On Fri, Jul 6, 2012 at 10:33 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> While doing compiling for u300, i selected the u300_defconfig,
-(...)
-> i got the following warnings,
->
-> root@devendra:/home/devendra/linux# make ARCH=arm
-> CROSS_COMPILE="/home/devendra/gcc-linaro-arm-linux-gnueabihf-2012.05-20120523_linux/bin/arm-linux-gnueabihf-"
-> drivers/pinctrl/
-> scripts/kconfig/conf --silentoldconfig Kconfig
-> include/config/auto.conf:394:warning: symbol value 'm' invalid for
-> STMMAC_PLATFORM
-> include/config/auto.conf:730:warning: symbol value 'elf64-x86-64'
-> invalid for OUTPUT_FORMAT
-> include/config/auto.conf:1050:warning: symbol value
-> 'arch/x86/configs/x86_64_defconfig' invalid for ARCH_DEFCONFIG
-> include/config/auto.conf:1335:warning: symbol value '' invalid for
-> ACPI_CUSTOM_DSDT_FILE
-> include/config/auto.conf:2388:warning: symbol value '-fcall-saved-rdi
-> -fcall-saved-rsi -fcall-saved-rdx -fcall-saved-rcx -fcall-saved-r8
-> -fcall-saved-r9 -fcall-saved-r10 -fcall-saved-r11' invalid for
-> ARCH_HWEIGHT_CFLAGS
+> Is this a NAK, or did you just miss it?
 
-The world is full of warnings, but I cannot see that any of these relate to
-the pinctrl subsystem ...
+I have replied to this patch that I want the commit message changed,
+didn't you get it?
 
-You can surely fix them, but I won't be of any help to do so :-/
+I'll forward.
 
-Yours,
-Linus Walleij
+Linus
