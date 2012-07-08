@@ -1,249 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738Ab2GHRPp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 13:15:45 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39993 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab2GHRPn (ORCPT
+	id S1751882Ab2GHRRG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 13:17:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57903 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751405Ab2GHRRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 13:15:43 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Mike Turquette <mturquette@ti.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 1/1] clk: add DT support for clock gating control
-Date: Sun,  8 Jul 2012 19:15:26 +0200
-Message-Id: <1341767726-25630-1-git-send-email-sebastian.hesselbarth@googlemail.com>
-X-Mailer: git-send-email 1.7.10
+	Sun, 8 Jul 2012 13:17:04 -0400
+Message-ID: <1341767819.25597.234.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH V2] rtlwifi: rtl8192ce: rtl8192se: rtl8192de: Update to
+ rtl_92ce_92se_92de_linux_mac80211_0004.0816.2011 driver
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        dwmw2@infradead.org
+Date: Sun, 08 Jul 2012 18:16:59 +0100
+In-Reply-To: <1341713001-5077-1-git-send-email-Larry.Finger@lwfinger.net>
+References: <1341713001-5077-1-git-send-email-Larry.Finger@lwfinger.net>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-7Xn0rm9+cDSldte2vMoh"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for using clock gates (clk-gate) from DT based
-on Rob Herrings DT clk binding support for 3.6.
 
-It adds a helper function to clk-gate to allocate all resources required by
-a set of individual clock gates, i.e. register base address and lock. Each
-clock gate is described as a child of the clock-gating-control in DT and
-also created by the helper function.
+--=-7Xn0rm9+cDSldte2vMoh
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: Mike Turquette <mturquette@ti.com>
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-doc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
----
- .../bindings/clock/clock-gating-control.txt        |   80 +++++++++++++++++++
- drivers/clk/clk-gate.c                             |   84 ++++++++++++++++++++
- include/linux/clk-provider.h                       |    2 +
- 3 files changed, 166 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/clock-gating-control.txt
+On Sat, 2012-07-07 at 21:03 -0500, Larry Finger wrote:
+> Realtek driver rtl_92ce_92se_92de_linux_mac80211_0004.0816.2011 introduce=
+d new
+> versions of the firmware for rtl8192se, and rtl8192de. It also adds new
+> firmware for new cuts of the RTL8192CE chips.
+[...]
+> --- a/WHENCE
+> +++ b/WHENCE
+> @@ -1589,6 +1589,8 @@ Licence: Redistributable. See LICENCE.rtlwifi_firmw=
+are.txt for details.
+>  Driver: rtl8192ce - Realtek 802.11n WLAN driver for RTL8192CE
+> =20
+>  File: rtlwifi/rtl8192cfw.bin
+> +File: rtlwifi/rtl8192cfwU.bin	- Driver for newer A cut chip
+> +File: rtlwifi/rtl8192cfwU_B.bin - Driver for newer B cut chip
+[...]
 
-diff --git a/Documentation/devicetree/bindings/clock/clock-gating-control.txt b/Documentation/devicetree/bindings/clock/clock-gating-control.txt
-new file mode 100644
-index 0000000..05f5728
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/clock-gating-control.txt
-@@ -0,0 +1,80 @@
-+Binding for simple clock gating control based on clock gate register with one
-+bit per clock gate. This is a clock consumer and also a clock provider for a
-+set of gated clocks that are described as children of this node. Each clock gate
-+is described by a bit number and polarity to control the gate.
-+
-+This binding uses the common clock binding[1].
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+==Clock gating control==
-+
-+Required properties:
-+- compatible : shall be "clock-gating-control".
-+- reg : should contain the register physical address and length for
-+        the clock gating control.
-+- clocks : shared parent clock for all gated clocks.
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- #address-cells : number of cells required to describe a clock gate;
-+                   should be <2>.
-+- #size-cells : should be zero.
-+
-+Each individual clock gate bit is described as a child of the
-+corresponding gating control register with the following properties.
-+
-+Required child properties:
-+- reg : should contain the individual bit and polarity to control
-+        the clock gate. A polarity of 0 means that by setting the
-+        bit to 1 the clock passes through the clock gate while
-+	setting the bit to 0 disables the clock. Any other value
-+     	for polarity inverts the meaning of the control bit.
-+
-+Optional child properties:
-+- clocks : overrides the shared parent clock for this clock gate
-+           by the clock passed in this property.
-+- clock-output-names : from common clock binding; allows to set
-+                       a specific name for the gated clock output.
-+
-+==Example==
-+
-+	/* fixed root clock */
-+	osc: oscillator {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <166666667>;
-+	};
-+
-+	/* sata peripheral clock */
-+	sata_clk: ext-oscillator {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <25000000>;
-+	};
-+
-+	/* register-based clock gating control */
-+	gating-control@f10d0038 {
-+		compatible = "clock-gating-control";
-+		reg = <0xf10d0038 0x4>;
-+		clocks = <&osc>;
-+		#clock-cells = <0>;
-+		#address-cells = <2>;
-+		#size-cells = <0>;
-+
-+		/* USB0 clock gate on register bit 0 with inverted polarity */
-+		cg_usb0: clockgate@0 {
-+			reg = <0 1>; /* register bit 0, inverted polarity */
-+		};
-+
-+		/* PCIe0 clock gate on register bit 1 with normal polarity
-+		 * and named output clock */
-+		cg_pcie0: clockgate@1 {
-+			reg = <1 0>; /* register bit 1, normal polarity */
-+			clock-output-names = "pcie0_clk";
-+		};
-+
-+		/* SATA clock gate with different parent clock */
-+		cg_sata: clockgate@3 {
-+			reg = <3 0>; /* register bit 3, normal polarity */
-+			clocks = <&sata_clk>;
-+		};
-+	};
-diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
-index 578465e..1e88907 100644
---- a/drivers/clk/clk-gate.c
-+++ b/drivers/clk/clk-gate.c
-@@ -15,6 +15,9 @@
- #include <linux/io.h>
- #include <linux/err.h>
- #include <linux/string.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_platform.h>
- 
- /**
-  * DOC: basic gatable clock which can gate and ungate it's ouput
-@@ -148,3 +151,84 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
- 
- 	return clk;
- }
-+
-+#ifdef CONFIG_OF
-+/**
-+ * of_clock_gating_control_setup() - Setup function for clock gate control
-+ *   This is a helper for using clk-gate from OF device tree. It allocates
-+ *   a common lock for a base register and creates the individual clk-gates.
-+ */
-+void __init of_clock_gating_control_setup(struct device_node *np)
-+{
-+	struct device_node *child;
-+	const char *pclk_name;
-+	void __iomem *base;
-+	spinlock_t *lockp;
-+	unsigned int rnum;
-+	u64 addr;
-+
-+	pclk_name = of_clk_get_parent_name(np, 0);
-+	if (!pclk_name) {
-+		pr_debug("%s: unable to get parent clock for %s\n",
-+			__func__, np->full_name);
-+		return;
-+	}
-+
-+	lockp = kzalloc(sizeof(spinlock_t), GFP_KERNEL);
-+	if (!lockp) {
-+		pr_debug("%s: unable to allocate spinlock for %s\n",
-+			 __func__, np->full_name);
-+		return;
-+	}
-+
-+	spin_lock_init(lockp);
-+	base = of_iomap(np, 0);
-+	rnum = sizeof(resource_size_t) * 8;
-+	addr = of_translate_address(np, of_get_property(np, "reg", NULL));
-+
-+	pr_debug("create clock gate control %s\n", np->full_name);
-+
-+	for_each_child_of_node(np, child) {
-+		struct clk *cg;
-+		const char *cg_name;
-+		const char *cg_pclk_name;
-+		u32 propval[2];
-+		unsigned int rbit;
-+
-+		if (of_property_read_u32_array(child, "reg", propval, 2)) {
-+			pr_debug("%s: wrong #reg on %s\n",
-+				 __func__, child->full_name);
-+			continue;
-+		}
-+
-+		rbit = propval[0];
-+		if (rbit >= rnum) {
-+			pr_debug("%s: bit position of %s exceeds resources\n",
-+				 __func__, child->full_name);
-+			continue;
-+		}
-+
-+		cg_pclk_name = of_clk_get_parent_name(child, 0);
-+		if (!pclk_name)
-+			cg_pclk_name = pclk_name;
-+
-+		if (of_property_read_string(child, "clock-output-names",
-+					    &cg_name)) {
-+			unsigned int nlen = 4 + 16 + strlen(child->name);
-+			char *name = kzalloc(nlen+1, GFP_KERNEL);
-+			if (!name)
-+				continue;
-+			snprintf(name, nlen, "%u@%llx.%s", rbit,
-+				 (unsigned long long)addr, child->name);
-+			cg_name = name;
-+		}
-+
-+		pr_debug("  create clock gate: %s\n", cg_name);
-+
-+		cg = clk_register_gate(NULL, cg_name, cg_pclk_name, 0,
-+				       base, rbit, propval[1], lockp);
-+		if (cg)
-+			of_clk_add_provider(child, of_clk_src_simple_get, cg);
-+	}
-+}
-+#endif
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index b97f61e..499eac2 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -205,6 +205,8 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
- 		void __iomem *reg, u8 bit_idx,
- 		u8 clk_gate_flags, spinlock_t *lock);
- 
-+void of_clock_gating_control_setup(struct device_node *np);
-+
- /**
-  * struct clk_divider - adjustable divider clock
-  *
--- 
-1.7.10
+Whatever gave you the idea that you could put free text after a
+filename?  Add an Info field if you must.
 
+Ben.
+
+--=20
+Ben Hutchings
+Life would be so much easier if we could look at the source code.
+
+--=-7Xn0rm9+cDSldte2vMoh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAT/nAi+e/yOyVhhEJAQp2Ag//Y7/Pqs8BPaAAosgFpH32ZmVwqc3VGuSa
+lLFAo9++ZubbFWbhotLFfNBRnLwaFa7jHI67lGZBo2cLDY3lXWZoXzJWtr3EyX9K
+YHN2CsjISD31RvB6NvwYdd/kF2ooLJAGSfggiZk6O7hy/RHm+Yys2G5gCIdoNqqj
+C7Usn+7oelzyoSr3L+qP3iIkImCSI4uxsqGQ/icNPsqPoldA5rWn0D17zR/bto/b
+J+QrFnB8Gt+Ftn8oSe9mHVXNIf8UKizHcZgx7UTES7wFTuSoL8oYiAcNOI+GHfTC
+vVqPUj2W/0LLfar/9RP0qApQ7k8gMulOcSR7qzqsVFedna9XtCPQjOTf/0yXFj/0
+HE+Ugufy8u87y5zcU3ZF+hcWkaePZdHjVrkWHpvGKgispz0ZUX5ypd82/zOQvnNK
+PPlg6tYldmt3j/TU2U2M/tl4XsrF9iFX/KNQ71QTZ239hvJFALjPeEy0+UdADApv
+yBMtSz3yycdothlveOm1ApULVtIoKMF6ot6FaYhnfQaKawdntV+82mcV9f2989r4
+l1T66W3WHNXXrCy5Lypvuj/td3DJbFhVvNI4rxFxjQt8G4f5S3wptkK50HgdkuCw
+O2e9gzWc16Zx6cJJWxU2yE5d35O1qtP9iSdL1Smffamow3opbUhszBItydWIQ/sZ
+JOrGNkB8m0M=
+=oESc
+-----END PGP SIGNATURE-----
+
+--=-7Xn0rm9+cDSldte2vMoh--
