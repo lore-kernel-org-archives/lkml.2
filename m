@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab2GHWCi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 18:02:38 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:40497 "HELO
+	id S1752555Ab2GHWDc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 18:03:32 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:38789 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752382Ab2GHWCh (ORCPT
+	with SMTP id S1752382Ab2GHWDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 18:02:37 -0400
+	Sun, 8 Jul 2012 18:03:30 -0400
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX19lVFVq1vFlAGKflb2wZta2xCUfxDDSl9bKkZqdXY
-	ftBfxUGZDVyGiT
-Message-ID: <4FFA0380.2050006@gmx.de>
-Date: Sun, 08 Jul 2012 22:02:40 +0000
+X-Provags-ID: V01U2FsdGVkX1/rip5nBMDrGkbmDf0yv68/pVXG+RATYKOmkpBOLE
+	YHAHEGrbKaaOB0
+Message-ID: <4FFA03B2.90308@gmx.de>
+Date: Sun, 08 Jul 2012 22:03:30 +0000
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
 MIME-Version: 1.0
-To: Emil Goode <emilgoode@gmail.com>
-CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v2] grvga: Fix error handling issues
-References: <1340663852-11719-1-git-send-email-emilgoode@gmail.com>
-In-Reply-To: <1340663852-11719-1-git-send-email-emilgoode@gmail.com>
+To: Ondrej Zary <linux@rainbow-software.org>
+CC: Ondrej Zajicek <santiago@crfreenet.org>, linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [resend] s3fb: Add Virge/MX (86C260)
+References: <201207061512.11975.linux@rainbow-software.org>
+In-Reply-To: <201207061512.11975.linux@rainbow-software.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Y-GMX-Trusted: 0
@@ -28,27 +28,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2012 10:37 PM, Emil Goode wrote:
-> This patch fixes two problems with the error handling in the
-> grvga_probe function and simplifies it making the code
-> easier to read.
+On 07/06/2012 01:12 PM, Ondrej Zary wrote:
+> Add support for Virge/MX (86C260) chip. Although this is a laptop chip,
+> there's an AGP card with this chip too.
 > 
-> - If the call to grvga_parse_custom on line 370 fails we use
->   the wrong label so that release_mem_region will be called
->   without a call to request_mem_region being made.
+> Tested with AGP card, will probably not work correctly with laptops.
+> DDC does not work on this card (even in DOS or Windows).
 > 
-> - If the call to ioremap on line 436 fails we should not try
->   to call iounmap in the error handling code.
-> 
-> This patch introduces the following changes:
-> 
-> - Converts request_mem_region into its devm_ equivalent
->   which simplifies the otherwise messy clean up code.
-> 
-> - Changes the labels for correct error handling and their
->   names to make the code easier to read.
-> 
-> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
 Applied.
 
@@ -57,157 +44,123 @@ Thanks,
 
 Florian Tobias Schandinat
 
-> ---
-> v2: Simplifies the error handling by converting to
->     devm_request_mem_region
 > 
->  drivers/video/grvga.c |   47 ++++++++++++++++++++++-------------------------
->  1 file changed, 22 insertions(+), 25 deletions(-)
-> 
-> diff --git a/drivers/video/grvga.c b/drivers/video/grvga.c
-> index da066c2..5245f9a 100644
-> --- a/drivers/video/grvga.c
-> +++ b/drivers/video/grvga.c
-> @@ -354,7 +354,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
+> --- a/drivers/video/s3fb.c
+> +++ b/drivers/video/s3fb.c
+> @@ -84,7 +84,7 @@ static const char * const s3_names[] = {"S3 Unknown", "S3 Trio32", "S3 Trio64",
+>  			"S3 Virge/VX", "S3 Virge/DX", "S3 Virge/GX",
+>  			"S3 Virge/GX2", "S3 Virge/GX2+", "",
+>  			"S3 Trio3D/1X", "S3 Trio3D/2X", "S3 Trio3D/2X",
+> -			"S3 Trio3D"};
+> +			"S3 Trio3D", "S3 Virge/MX"};
+>  
+>  #define CHIP_UNKNOWN		0x00
+>  #define CHIP_732_TRIO32		0x01
+> @@ -105,6 +105,7 @@ static const char * const s3_names[] = {"S3 Unknown", "S3 Trio32", "S3 Trio64",
+>  #define CHIP_362_TRIO3D_2X	0x11
+>  #define CHIP_368_TRIO3D_2X	0x12
+>  #define CHIP_365_TRIO3D		0x13
+> +#define CHIP_260_VIRGE_MX	0x14
+>  
+>  #define CHIP_XXX_TRIO		0x80
+>  #define CHIP_XXX_TRIO64V2_DXGX	0x81
+> @@ -280,7 +281,8 @@ static int __devinit s3fb_setup_ddc_bus(struct fb_info *info)
 >  	 */
->  	if (fb_get_options("grvga", &options)) {
->  		retval = -ENODEV;
-> -		goto err;
-> +		goto free_fb;
->  	}
->  
->  	if (!options || !*options)
-> @@ -370,7 +370,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  			if (grvga_parse_custom(this_opt, &info->var) < 0) {
->  				dev_err(&dev->dev, "Failed to parse custom mode (%s).\n", this_opt);
->  				retval = -EINVAL;
-> -				goto err1;
-> +				goto free_fb;
->  			}
->  		} else if (!strncmp(this_opt, "addr", 4))
->  			grvga_fix_addr = simple_strtoul(this_opt + 5, NULL, 16);
-> @@ -387,10 +387,11 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  	info->flags = FBINFO_DEFAULT | FBINFO_PARTIAL_PAN_OK | FBINFO_HWACCEL_YPAN;
->  	info->fix.smem_len = grvga_mem_size;
->  
-> -	if (!request_mem_region(dev->resource[0].start, resource_size(&dev->resource[0]), "grlib-svgactrl regs")) {
-> +	if (!devm_request_mem_region(&dev->dev, dev->resource[0].start,
-> +		    resource_size(&dev->resource[0]), "grlib-svgactrl regs")) {
->  		dev_err(&dev->dev, "registers already mapped\n");
->  		retval = -EBUSY;
-> -		goto err;
-> +		goto free_fb;
->  	}
->  
->  	par->regs = of_ioremap(&dev->resource[0], 0,
-> @@ -400,14 +401,14 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  	if (!par->regs) {
->  		dev_err(&dev->dev, "failed to map registers\n");
->  		retval = -ENOMEM;
-> -		goto err1;
-> +		goto free_fb;
->  	}
->  
->  	retval = fb_alloc_cmap(&info->cmap, 256, 0);
->  	if (retval < 0) {
->  		dev_err(&dev->dev, "failed to allocate mem with fb_alloc_cmap\n");
->  		retval = -ENOMEM;
-> -		goto err2;
-> +		goto unmap_regs;
->  	}
->  
->  	if (mode_opt) {
-> @@ -415,7 +416,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  				      grvga_modedb, sizeof(grvga_modedb), &grvga_modedb[0], 8);
->  		if (!retval || retval == 4) {
->  			retval = -EINVAL;
-> -			goto err3;
-> +			goto dealloc_cmap;
+>  /*	vga_wseq(par->state.vgabase, 0x08, 0x06); - not needed, already unlocked */
+>  	if (par->chip == CHIP_357_VIRGE_GX2 ||
+> -	    par->chip == CHIP_359_VIRGE_GX2P)
+> +	    par->chip == CHIP_359_VIRGE_GX2P ||
+> +	    par->chip == CHIP_260_VIRGE_MX)
+>  		svga_wseq_mask(par->state.vgabase, 0x0d, 0x01, 0x03);
+>  	else
+>  		svga_wseq_mask(par->state.vgabase, 0x0d, 0x00, 0x03);
+> @@ -487,7 +489,8 @@ static void s3_set_pixclock(struct fb_info *info, u32 pixclock)
+>  	    par->chip == CHIP_359_VIRGE_GX2P ||
+>  	    par->chip == CHIP_360_TRIO3D_1X ||
+>  	    par->chip == CHIP_362_TRIO3D_2X ||
+> -	    par->chip == CHIP_368_TRIO3D_2X) {
+> +	    par->chip == CHIP_368_TRIO3D_2X ||
+> +	    par->chip == CHIP_260_VIRGE_MX) {
+>  		vga_wseq(par->state.vgabase, 0x12, (n - 2) | ((r & 3) << 6));	/* n and two bits of r */
+>  		vga_wseq(par->state.vgabase, 0x29, r >> 2); /* remaining highest bit of r */
+>  	} else
+> @@ -690,7 +693,8 @@ static int s3fb_set_par(struct fb_info *info)
+>  	    par->chip != CHIP_359_VIRGE_GX2P &&
+>  	    par->chip != CHIP_360_TRIO3D_1X &&
+>  	    par->chip != CHIP_362_TRIO3D_2X &&
+> -	    par->chip != CHIP_368_TRIO3D_2X) {
+> +	    par->chip != CHIP_368_TRIO3D_2X &&
+> +	    par->chip != CHIP_260_VIRGE_MX) {
+>  		vga_wcrt(par->state.vgabase, 0x54, 0x18); /* M parameter */
+>  		vga_wcrt(par->state.vgabase, 0x60, 0xff); /* N parameter */
+>  		vga_wcrt(par->state.vgabase, 0x61, 0xff); /* L parameter */
+> @@ -739,7 +743,8 @@ static int s3fb_set_par(struct fb_info *info)
+>  	    par->chip == CHIP_368_TRIO3D_2X ||
+>  	    par->chip == CHIP_365_TRIO3D    ||
+>  	    par->chip == CHIP_375_VIRGE_DX  ||
+> -	    par->chip == CHIP_385_VIRGE_GX) {
+> +	    par->chip == CHIP_385_VIRGE_GX  ||
+> +	    par->chip == CHIP_260_VIRGE_MX) {
+>  		dbytes = info->var.xres * ((bpp+7)/8);
+>  		vga_wcrt(par->state.vgabase, 0x91, (dbytes + 7) / 8);
+>  		vga_wcrt(par->state.vgabase, 0x90, (((dbytes + 7) / 8) >> 8) | 0x80);
+> @@ -751,7 +756,8 @@ static int s3fb_set_par(struct fb_info *info)
+>  	    par->chip == CHIP_359_VIRGE_GX2P ||
+>  	    par->chip == CHIP_360_TRIO3D_1X ||
+>  	    par->chip == CHIP_362_TRIO3D_2X ||
+> -	    par->chip == CHIP_368_TRIO3D_2X)
+> +	    par->chip == CHIP_368_TRIO3D_2X ||
+> +	    par->chip == CHIP_260_VIRGE_MX)
+>  		vga_wcrt(par->state.vgabase, 0x34, 0x00);
+>  	else	/* enable Data Transfer Position Control (DTPC) */
+>  		vga_wcrt(par->state.vgabase, 0x34, 0x10);
+> @@ -807,7 +813,8 @@ static int s3fb_set_par(struct fb_info *info)
+>  		    par->chip == CHIP_359_VIRGE_GX2P ||
+>  		    par->chip == CHIP_360_TRIO3D_1X ||
+>  		    par->chip == CHIP_362_TRIO3D_2X ||
+> -		    par->chip == CHIP_368_TRIO3D_2X)
+> +		    par->chip == CHIP_368_TRIO3D_2X ||
+> +		    par->chip == CHIP_260_VIRGE_MX)
+>  			svga_wcrt_mask(par->state.vgabase, 0x67, 0x00, 0xF0);
+>  		else {
+>  			svga_wcrt_mask(par->state.vgabase, 0x67, 0x10, 0xF0);
+> @@ -837,7 +844,8 @@ static int s3fb_set_par(struct fb_info *info)
+>  			    par->chip != CHIP_359_VIRGE_GX2P &&
+>  			    par->chip != CHIP_360_TRIO3D_1X &&
+>  			    par->chip != CHIP_362_TRIO3D_2X &&
+> -			    par->chip != CHIP_368_TRIO3D_2X)
+> +			    par->chip != CHIP_368_TRIO3D_2X &&
+> +			    par->chip != CHIP_260_VIRGE_MX)
+>  				hmul = 2;
 >  		}
->  	}
->  
-> @@ -427,10 +428,11 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  
->  		physical_start = grvga_fix_addr;
->  
-> -		if (!request_mem_region(physical_start, grvga_mem_size, dev->name)) {
-> +		if (!devm_request_mem_region(&dev->dev, physical_start,
-> +					     grvga_mem_size, dev->name)) {
->  			dev_err(&dev->dev, "failed to request memory region\n");
->  			retval = -ENOMEM;
-> -			goto err3;
-> +			goto dealloc_cmap;
+>  		break;
+> @@ -864,7 +872,8 @@ static int s3fb_set_par(struct fb_info *info)
+>  			    par->chip != CHIP_359_VIRGE_GX2P &&
+>  			    par->chip != CHIP_360_TRIO3D_1X &&
+>  			    par->chip != CHIP_362_TRIO3D_2X &&
+> -			    par->chip != CHIP_368_TRIO3D_2X)
+> +			    par->chip != CHIP_368_TRIO3D_2X &&
+> +			    par->chip != CHIP_260_VIRGE_MX)
+>  				hmul = 2;
 >  		}
->  
->  		virtual_start = (unsigned long) ioremap(physical_start, grvga_mem_size);
-> @@ -438,7 +440,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  		if (!virtual_start) {
->  			dev_err(&dev->dev, "error mapping framebuffer memory\n");
->  			retval = -ENOMEM;
-> -			goto err4;
-> +			goto dealloc_cmap;
+>  		break;
+> @@ -1208,7 +1217,8 @@ static int __devinit s3_pci_probe(struct pci_dev *dev, const struct pci_device_i
+>  			break;
 >  		}
->  	} else {	/* Allocate frambuffer memory */
+>  	} else if (par->chip == CHIP_357_VIRGE_GX2 ||
+> -		   par->chip == CHIP_359_VIRGE_GX2P) {
+> +		   par->chip == CHIP_359_VIRGE_GX2P ||
+> +		   par->chip == CHIP_260_VIRGE_MX) {
+>  		switch ((regval & 0xC0) >> 6) {
+>  		case 1: /* 4MB */
+>  			info->screen_size = 4 << 20;
+> @@ -1515,6 +1525,7 @@ static struct pci_device_id s3_devices[] __devinitdata = {
+>  	{PCI_DEVICE(PCI_VENDOR_ID_S3, 0x8A12), .driver_data = CHIP_359_VIRGE_GX2P},
+>  	{PCI_DEVICE(PCI_VENDOR_ID_S3, 0x8A13), .driver_data = CHIP_36X_TRIO3D_1X_2X},
+>  	{PCI_DEVICE(PCI_VENDOR_ID_S3, 0x8904), .driver_data = CHIP_365_TRIO3D},
+> +	{PCI_DEVICE(PCI_VENDOR_ID_S3, 0x8C01), .driver_data = CHIP_260_VIRGE_MX},
 >  
-> @@ -451,7 +453,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  				"unable to allocate framebuffer memory (%lu bytes)\n",
->  				grvga_mem_size);
->  			retval = -ENOMEM;
-> -			goto err3;
-> +			goto dealloc_cmap;
->  		}
->  
->  		physical_start = dma_map_single(&dev->dev, (void *)virtual_start, grvga_mem_size, DMA_TO_DEVICE);
-> @@ -484,7 +486,7 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  	retval = register_framebuffer(info);
->  	if (retval < 0) {
->  		dev_err(&dev->dev, "failed to register framebuffer\n");
-> -		goto err4;
-> +		goto free_mem;
->  	}
->  
->  	__raw_writel(physical_start, &par->regs->fb_pos);
-> @@ -493,21 +495,18 @@ static int __devinit grvga_probe(struct platform_device *dev)
->  
->  	return 0;
->  
-> -err4:
-> +free_mem:
->  	dev_set_drvdata(&dev->dev, NULL);
-> -	if (grvga_fix_addr) {
-> -		release_mem_region(physical_start, grvga_mem_size);
-> +	if (grvga_fix_addr)
->  		iounmap((void *)virtual_start);
-> -	} else
-> +	else
->  		kfree((void *)virtual_start);
-> -err3:
-> +dealloc_cmap:
->  	fb_dealloc_cmap(&info->cmap);
-> -err2:
-> +unmap_regs:
->  	of_iounmap(&dev->resource[0], par->regs,
->  		   resource_size(&dev->resource[0]));
-> -err1:
-> -	release_mem_region(dev->resource[0].start, resource_size(&dev->resource[0]));
-> -err:
-> +free_fb:
->  	framebuffer_release(info);
->  
->  	return retval;
-> @@ -524,12 +523,10 @@ static int __devexit grvga_remove(struct platform_device *device)
->  
->  		of_iounmap(&device->resource[0], par->regs,
->  			   resource_size(&device->resource[0]));
-> -		release_mem_region(device->resource[0].start, resource_size(&device->resource[0]));
->  
-> -		if (!par->fb_alloced) {
-> -			release_mem_region(info->fix.smem_start, info->fix.smem_len);
-> +		if (!par->fb_alloced)
->  			iounmap(info->screen_base);
-> -		} else
-> +		else
->  			kfree((void *)info->screen_base);
->  
->  		framebuffer_release(info);
+>  	{0, 0, 0, 0, 0, 0, 0}
+>  };
+> 
 
