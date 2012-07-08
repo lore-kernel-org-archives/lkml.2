@@ -1,164 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab2GHO5c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 10:57:32 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:58148 "EHLO ogre.sisk.pl"
+	id S1752237Ab2GHPL6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 11:11:58 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751742Ab2GHO5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 10:57:30 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: Re: [PATCH -mm 2/3] notifier error injection documentation
-Date: Sun, 8 Jul 2012 17:03:04 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Pavel Machek <pavel@ucw.cz>, Greg KH <greg@kroah.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Dave Jones <davej@redhat.com>
-References: <1341707066-10742-1-git-send-email-akinobu.mita@gmail.com> <1341707066-10742-2-git-send-email-akinobu.mita@gmail.com>
-In-Reply-To: <1341707066-10742-2-git-send-email-akinobu.mita@gmail.com>
+	id S1751859Ab2GHPL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 11:11:57 -0400
+Message-ID: <4FF9A337.2010006@nod.at>
+Date: Sun, 08 Jul 2012 17:11:51 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207081703.04455.rjw@sisk.pl>
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        adrian.hunter@intel.com, Heinz.Egger@linutronix.de,
+        thomas.wucher@linutronix.de, tglx@linutronix.de, tim.bird@am.sony.com,
+        Marius.Mazarel@ugal.ro, artem.bityutskiy@linux.intel.com,
+        nyoushchenko@mvista.com
+Subject: Re: UBI fastmap updates
+References: <1340982869-77042-1-git-send-email-richard@nod.at> <20120708144745.36109029@pixies.home.jungo.com> <4FF9780D.4010709@nod.at>
+In-Reply-To: <4FF9780D.4010709@nod.at>
+X-Enigmail-Version: 1.4.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig59249887AD4D85623A65E480"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, July 08, 2012, Akinobu Mita wrote:
-> fault-injection-notifier-error-injection.patch in -mm tree adds
-> notifier error injection.
-> 
-> This adds Documentation/fault-injection/notifier-error-inject.txt
-> which describes its feature and usage examples.
-> 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: Pavel Machek <pavel@ucw.cz>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: Greg KH <greg@kroah.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Michael Ellerman <michael@ellerman.id.au>
-> Cc: Dave Jones <davej@redhat.com>
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig59249887AD4D85623A65E480
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-ACK for the PM part.
+Am 08.07.2012 14:07, schrieb Richard Weinberger:
+> Hi Shmulik!
+>=20
+> Am 08.07.2012 13:47, schrieb Shmulik Ladkani:
+>> +
+>> +		/* TODO: if find_fastmap=3D=3D1, we do not enter this block at all.=
+
+>> +		 * shouldn't we? shouldn't we care of compatability of unknown
+>> +		 * internal volumes OTHER than the fastmap ones, even if
+>> +		 * find_fastmap=3D=3D1?
+>> +		 */
+>> +
+>=20
+> If find_fastmap=3D1 we scan only the first 64 PEBs (now by using scan_p=
+eb()).
+> When using fastmap can do not care about compatibility of unknown inter=
+nal volumes
+> at all.
+> Fastmap keeps only track of known (and compatible volumes).
+> Taking care of unknown internal volumes would imply a full scan.
+
+Please forget the above statement.
+We have to think of the case where no fastmap was found and the
+64 scanned PEBs get reused by scan_all().
+Thanks for pointing this out!
 
 Thanks,
-Rafael
+//richard
 
 
-> ---
->  .../fault-injection/notifier-error-inject.txt      |   99 ++++++++++++++++++++
->  1 file changed, 99 insertions(+)
->  create mode 100644 Documentation/fault-injection/notifier-error-inject.txt
-> 
-> diff --git a/Documentation/fault-injection/notifier-error-inject.txt b/Documentation/fault-injection/notifier-error-inject.txt
-> new file mode 100644
-> index 0000000..c83526c
-> --- /dev/null
-> +++ b/Documentation/fault-injection/notifier-error-inject.txt
-> @@ -0,0 +1,99 @@
-> +Notifier error injection
-> +========================
-> +
-> +Notifier error injection provides the ability to inject artifical errors to
-> +specified notifier chain callbacks. It is useful to test the error handling of
-> +notifier call chain failures which is rarely executed.  There are kernel
-> +modules that can be used to test the following notifiers.
-> +
-> + * CPU notifier
-> + * PM notifier
-> + * Memory hotplug notifier
-> + * powerpc pSeries reconfig notifier
-> +
-> +CPU notifier error injection module
-> +-----------------------------------
-> +This feature can be used to test the error handling of the CPU notifiers by
-> +injecting artifical errors to CPU notifier chain callbacks.
-> +
-> +If the notifier call chain should be failed with some events notified, write
-> +the error code to debugfs interface
-> +/sys/kernel/debug/notifier-error-inject/cpu/actions/<notifier event>/error
-> +
-> +Possible CPU notifier events to be failed are:
-> +
-> + * CPU_UP_PREPARE
-> + * CPU_UP_PREPARE_FROZEN
-> + * CPU_DOWN_PREPARE
-> + * CPU_DOWN_PREPARE_FROZEN
-> +
-> +Example1: Inject CPU offline error (-1 == -EPERM)
-> +
-> +	# cd /sys/kernel/debug/notifier-error-inject/cpu
-> +	# echo -1 > actions/CPU_DOWN_PREPARE/error
-> +	# echo 0 > /sys/devices/system/cpu/cpu1/online
-> +	bash: echo: write error: Operation not permitted
-> +
-> +Example2: inject CPU online error (-2 == -ENOENT)
-> +
-> +	# echo -2 > actions/CPU_UP_PREPARE/error
-> +	# echo 1 > /sys/devices/system/cpu/cpu1/online
-> +	bash: echo: write error: No such file or directory
-> +
-> +PM notifier error injection module
-> +----------------------------------
-> +This feature is controlled through debugfs interface
-> +/sys/kernel/debug/notifier-error-inject/pm/actions/<notifier event>/error
-> +
-> +Possible PM notifier events to be failed are:
-> +
-> + * PM_HIBERNATION_PREPARE
-> + * PM_SUSPEND_PREPARE
-> + * PM_RESTORE_PREPARE
-> +
-> +Example: Inject PM suspend error (-12 = -ENOMEM)
-> +
-> +	# cd /sys/kernel/debug/notifier-error-inject/pm/
-> +	# echo -12 > actions/PM_SUSPEND_PREPARE/error
-> +	# echo mem > /sys/power/state
-> +	bash: echo: write error: Cannot allocate memory
-> +
-> +Memory hotplug notifier error injection module
-> +----------------------------------------------
-> +This feature is controlled through debugfs interface
-> +/sys/kernel/debug/notifier-error-inject/memory/actions/<notifier event>/error
-> +
-> +Possible memory notifier events to be failed are:
-> +
-> + * MEM_GOING_ONLINE
-> + * MEM_GOING_OFFLINE
-> +
-> +Example: Inject memory hotplug offline error (-12 == -ENOMEM)
-> +
-> +	# cd /sys/kernel/debug/notifier-error-inject/memory
-> +	# echo -12 > actions/MEM_GOING_OFFLINE/error
-> +	# echo offline > /sys/devices/system/memory/memoryXXX/state
-> +	bash: echo: write error: Cannot allocate memory
-> +
-> +powerpc pSeries reconfig notifier error injection module
-> +--------------------------------------------------------
-> +This feature is controlled through debugfs interface
-> +/sys/kernel/debug/notifier-error-inject/pSeries-reconfig/actions/<notifier event>/error
-> +
-> +Possible pSeries reconfig notifier events to be failed are:
-> +
-> + * PSERIES_RECONFIG_ADD
-> + * PSERIES_RECONFIG_REMOVE
-> + * PSERIES_DRCONF_MEM_ADD
-> + * PSERIES_DRCONF_MEM_REMOVE
-> +
-> +For more usage examples
-> +-----------------------
-> +There are tools/testing/selftests using the notifier error injection features
-> +for CPU and memory notifiers.
-> +
-> + * tools/testing/selftests/cpu-hotplug/on-off-test.sh
-> + * tools/testing/selftests/memory-hotplug/on-off-test.sh
-> +
-> +These scripts first do simple online and offline tests and then do fault
-> +injection tests if notifier error injection module is available.
-> 
+--------------enig59249887AD4D85623A65E480
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJP+aM3AAoJEN9758yqZn9esSYIAJxgSb9+EgNvNphf1PvjCpNG
+LfL4BMbO0oLa9SBvvwTFYAIZWxPu+R+0MCNc1cHqHCOqWr9ZbIV87AheHDg68pSB
+3nxbSolEqSIXMilxmlFyrx6lvZddAi2yhh6onAM6EiB598BfYUGVsooHZMpGrDbY
+RjoadObWJ0XS6dfR+TcAVLCbHBDNqP2k71cj9xFDlooL5/LXa5e3W2jxmXZSfKYt
+3/wNF1xSYphxL4B/HxpHA5mbw7L447jourB2yhtIKVhRAplhp1k2rj476K2JgBM3
+YoLiLl8q5eY/tklQisQAz1z/B7Uj1oeMLIDVP5GqCPcrWLwISv5kNHUjAPUTf8w=
+=gwx4
+-----END PGP SIGNATURE-----
+
+--------------enig59249887AD4D85623A65E480--
