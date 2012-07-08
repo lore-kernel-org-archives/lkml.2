@@ -1,64 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133Ab2GHAwi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 20:52:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35100 "EHLO
+	id S1752165Ab2GHBF2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 21:05:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33848 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab2GHAwZ (ORCPT
+	with ESMTP id S1751404Ab2GHBFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 20:52:25 -0400
-Date: Sat, 7 Jul 2012 17:52:20 -0700
+	Sat, 7 Jul 2012 21:05:25 -0400
+Date: Sat, 7 Jul 2012 18:05:20 -0700
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Bob Ross <pigiron@gmx.com>
-Cc: Jan Steinhoff <mail@jan-steinhoff.de>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] synaptics_usb: Remove TrackPoint name trailing whitespace
-Message-ID: <20120708005220.GB19007@core.coreip.homeip.net>
-References: <20120706122817.4ff2cdbf@atom.pigiron.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: daniel@caiaq.de, rusty@rustcorp.com.au, mchehab@redhat.com,
+        axel.lin@gmail.com, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: input: eeti_ts.c build error
+Message-ID: <20120708010520.GC19007@core.coreip.homeip.net>
+References: <4FF83E48.6060303@nod.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120706122817.4ff2cdbf@atom.pigiron.org>
+In-Reply-To: <4FF83E48.6060303@nod.at>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, 2012 at 12:28:17PM -0500, Bob Ross wrote:
-> 
-> The USB TrackPoint name string contains a space at the trailing end that
-> can cause confusion/difficulty when creating udev rules. Example:
-> 
->  "Synaptics Inc. Composite TouchPad / TrackPoint (Stick) "
-> 
-> This patch removes the trailing space.
-> 
-> Signed-off-by: Bob Ross <pigiron@gmx.com>
+Hi Richard,
 
-Applied, thank you Bob.
+On Sat, Jul 07, 2012 at 03:48:56PM +0200, Richard Weinberger wrote:
+> Hi!
+> 
+> While building a kernel for an ARM board the following build error came across:
+> 
+> drivers/input/touchscreen/eeti_ts.c: In function 'eeti_ts_irq_active':
+> drivers/input/touchscreen/eeti_ts.c:65:2: error: implicit declaration of function 'irq_to_gpio' [-Werror=implicit-function-declaration]
+> 
+> .config is attached.
+> Happens on 3.4.4 and Linus's tree as of today.
 
-> ---
-> This patch was based from the "torvalds" git tree.
-> 
->  drivers/input/mouse/synaptics_usb.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/input/mouse/synaptics_usb.c b/drivers/input/mouse/synaptics_usb.c
-> index 3c5eaaa..64cf34e 100644
-> --- a/drivers/input/mouse/synaptics_usb.c
-> +++ b/drivers/input/mouse/synaptics_usb.c
-> @@ -364,7 +364,7 @@ static int synusb_probe(struct usb_interface *intf,
->  			 le16_to_cpu(udev->descriptor.idProduct));
->  
->  	if (synusb->flags & SYNUSB_STICK)
-> -		strlcat(synusb->name, " (Stick) ", sizeof(synusb->name));
-> +		strlcat(synusb->name, " (Stick)", sizeof(synusb->name));
->  
->  	usb_make_path(udev, synusb->phys, sizeof(synusb->phys));
->  	strlcat(synusb->phys, "/input0", sizeof(synusb->phys));
-> -- 
-> 1.7.11
-> 
+Could you please try the patch below? I have had it for a long time but
+could not find anyone to test it.
+
+Thanks.
 
 -- 
 Dmitry
+
+
+Input: eeti_ts - do not use irq_to_gpio
+
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+
+irq_to_gpio is not available on many platforms. Let's switch to using
+one-shot level interrupts with threaded IRQ handlers that should stay
+active as long as there is data.
+
+Reported-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+---
+
+ drivers/input/touchscreen/eeti_ts.c |  166 ++++++++++++-----------------------
+ 1 file changed, 56 insertions(+), 110 deletions(-)
+
+
+diff --git a/drivers/input/touchscreen/eeti_ts.c b/drivers/input/touchscreen/eeti_ts.c
+index 503c709..4d875e5 100644
+--- a/drivers/input/touchscreen/eeti_ts.c
++++ b/drivers/input/touchscreen/eeti_ts.c
+@@ -46,9 +46,6 @@ MODULE_PARM_DESC(flip_y, "flip y coordinate");
+ struct eeti_ts_priv {
+ 	struct i2c_client *client;
+ 	struct input_dev *input;
+-	struct work_struct work;
+-	struct mutex mutex;
+-	int irq, irq_active_high;
+ };
+ 
+ #define EETI_TS_BITDEPTH	(11)
+@@ -60,26 +57,18 @@ struct eeti_ts_priv {
+ #define REPORT_BIT_HAS_PRESSURE	(1 << 6)
+ #define REPORT_RES_BITS(v)	(((v) >> 1) + EETI_TS_BITDEPTH)
+ 
+-static inline int eeti_ts_irq_active(struct eeti_ts_priv *priv)
+-{
+-	return gpio_get_value(irq_to_gpio(priv->irq)) == priv->irq_active_high;
+-}
+-
+-static void eeti_ts_read(struct work_struct *work)
++static irqreturn_t eeti_ts_isr(int irq, void *dev_id)
+ {
++	struct eeti_ts_priv *priv = dev_id;
++	struct i2c_client *client = priv->client;
++	struct input_dev *input  = priv->input;
++	unsigned int x, y, res, pressed;
++	int rc;
+ 	char buf[6];
+-	unsigned int x, y, res, pressed, to = 100;
+-	struct eeti_ts_priv *priv =
+-		container_of(work, struct eeti_ts_priv, work);
+-
+-	mutex_lock(&priv->mutex);
+-
+-	while (eeti_ts_irq_active(priv) && --to)
+-		i2c_master_recv(priv->client, buf, sizeof(buf));
+ 
+-	if (!to) {
+-		dev_err(&priv->client->dev,
+-			"unable to clear IRQ - line stuck?\n");
++	rc = i2c_master_recv(client, buf, sizeof(buf));
++	if (rc < 0) {
++		dev_err(&client->dev, "i2c_master_recv failed, error: %d", rc);
+ 		goto out;
+ 	}
+ 
+@@ -103,46 +92,22 @@ static void eeti_ts_read(struct work_struct *work)
+ 		y = EETI_MAXVAL - y;
+ 
+ 	if (buf[0] & REPORT_BIT_HAS_PRESSURE)
+-		input_report_abs(priv->input, ABS_PRESSURE, buf[5]);
++		input_report_abs(input, ABS_PRESSURE, buf[5]);
+ 
+-	input_report_abs(priv->input, ABS_X, x);
+-	input_report_abs(priv->input, ABS_Y, y);
+-	input_report_key(priv->input, BTN_TOUCH, !!pressed);
+-	input_sync(priv->input);
++	input_report_abs(input, ABS_X, x);
++	input_report_abs(input, ABS_Y, y);
++	input_report_key(input, BTN_TOUCH, pressed);
++	input_sync(input);
+ 
+ out:
+-	mutex_unlock(&priv->mutex);
+-}
+-
+-static irqreturn_t eeti_ts_isr(int irq, void *dev_id)
+-{
+-	struct eeti_ts_priv *priv = dev_id;
+-
+-	 /* postpone I2C transactions as we are atomic */
+-	schedule_work(&priv->work);
+-
+ 	return IRQ_HANDLED;
+ }
+ 
+-static void eeti_ts_start(struct eeti_ts_priv *priv)
+-{
+-	enable_irq(priv->irq);
+-
+-	/* Read the events once to arm the IRQ */
+-	eeti_ts_read(&priv->work);
+-}
+-
+-static void eeti_ts_stop(struct eeti_ts_priv *priv)
+-{
+-	disable_irq(priv->irq);
+-	cancel_work_sync(&priv->work);
+-}
+-
+ static int eeti_ts_open(struct input_dev *dev)
+ {
+ 	struct eeti_ts_priv *priv = input_get_drvdata(dev);
+ 
+-	eeti_ts_start(priv);
++	enable_irq(priv->client->irq);
+ 
+ 	return 0;
+ }
+@@ -151,17 +116,17 @@ static void eeti_ts_close(struct input_dev *dev)
+ {
+ 	struct eeti_ts_priv *priv = input_get_drvdata(dev);
+ 
+-	eeti_ts_stop(priv);
++	disable_irq(priv->client->irq);
+ }
+ 
+ static int __devinit eeti_ts_probe(struct i2c_client *client,
+ 				   const struct i2c_device_id *idp)
+ {
+-	struct eeti_ts_platform_data *pdata;
++	const struct eeti_ts_platform_data *pdata = client->dev.platform_data;
+ 	struct eeti_ts_priv *priv;
+ 	struct input_dev *input;
+ 	unsigned int irq_flags;
+-	int err = -ENOMEM;
++	int err;
+ 
+ 	/*
+ 	 * In contrast to what's described in the datasheet, there seems
+@@ -171,25 +136,15 @@ static int __devinit eeti_ts_probe(struct i2c_client *client,
+ 	 */
+ 
+ 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+-	if (!priv) {
+-		dev_err(&client->dev, "failed to allocate driver data\n");
+-		goto err0;
+-	}
+-
+-	mutex_init(&priv->mutex);
+ 	input = input_allocate_device();
+-
+-	if (!input) {
+-		dev_err(&client->dev, "Failed to allocate input device.\n");
+-		goto err1;
++	if (!priv || !input) {
++		dev_err(&client->dev, "failed to memory\n");
++		err = -ENOMEM;
++		goto err_free_mem;
+ 	}
+ 
+-	input->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
+-	input->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
+-
+-	input_set_abs_params(input, ABS_X, 0, EETI_MAXVAL, 0, 0);
+-	input_set_abs_params(input, ABS_Y, 0, EETI_MAXVAL, 0, 0);
+-	input_set_abs_params(input, ABS_PRESSURE, 0, 0xff, 0, 0);
++	priv->client = client;
++	priv->input = input;
+ 
+ 	input->name = client->name;
+ 	input->id.bustype = BUS_I2C;
+@@ -197,49 +152,47 @@ static int __devinit eeti_ts_probe(struct i2c_client *client,
+ 	input->open = eeti_ts_open;
+ 	input->close = eeti_ts_close;
+ 
+-	priv->client = client;
+-	priv->input = input;
+-	priv->irq = client->irq;
+-
+-	pdata = client->dev.platform_data;
+-
+-	if (pdata)
+-		priv->irq_active_high = pdata->irq_active_high;
++	input->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
++	input->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
+ 
+-	irq_flags = priv->irq_active_high ?
+-		IRQF_TRIGGER_RISING : IRQF_TRIGGER_FALLING;
++	input_set_abs_params(input, ABS_X, 0, EETI_MAXVAL, 0, 0);
++	input_set_abs_params(input, ABS_Y, 0, EETI_MAXVAL, 0, 0);
++	input_set_abs_params(input, ABS_PRESSURE, 0, 0xff, 0, 0);
+ 
+-	INIT_WORK(&priv->work, eeti_ts_read);
+-	i2c_set_clientdata(client, priv);
+ 	input_set_drvdata(input, priv);
+ 
+-	err = input_register_device(input);
+-	if (err)
+-		goto err1;
++	irq_flags = pdata && pdata->irq_active_high ?
++			IRQF_TRIGGER_HIGH : IRQF_TRIGGER_LOW;
++	irq_flags |= IRQF_ONESHOT;
+ 
+-	err = request_irq(priv->irq, eeti_ts_isr, irq_flags,
+-			  client->name, priv);
+-	if (err) {
++	err = request_threaded_irq(client->irq, NULL, eeti_ts_isr,
++				   irq_flags, client->name, priv);
++	if (err < 0) {
+ 		dev_err(&client->dev, "Unable to request touchscreen IRQ.\n");
+-		goto err2;
++		goto err_free_mem;
+ 	}
+ 
+ 	/*
+-	 * Disable the device for now. It will be enabled once the
++	 * Disable the IRQ for now. It will be enabled once the
+ 	 * input device is opened.
+ 	 */
+-	eeti_ts_stop(priv);
++	disable_irq(client->irq);
+ 
++	err = input_register_device(input);
++	if (err)
++		goto err_free_irq;
++
++	i2c_set_clientdata(client, priv);
+ 	device_init_wakeup(&client->dev, 0);
++
+ 	return 0;
+ 
+-err2:
+-	input_unregister_device(input);
+-	input = NULL; /* so we dont try to free it below */
+-err1:
++err_free_irq:
++	free_irq(client->irq, priv);
++err_free_mem:
+ 	input_free_device(input);
+ 	kfree(priv);
+-err0:
++
+ 	return err;
+ }
+ 
+@@ -247,20 +200,14 @@ static int __devexit eeti_ts_remove(struct i2c_client *client)
+ {
+ 	struct eeti_ts_priv *priv = i2c_get_clientdata(client);
+ 
+-	free_irq(priv->irq, priv);
+-	/*
+-	 * eeti_ts_stop() leaves IRQ disabled. We need to re-enable it
+-	 * so that device still works if we reload the driver.
+-	 */
+-	enable_irq(priv->irq);
+-
++	free_irq(client->irq, priv);
+ 	input_unregister_device(priv->input);
+ 	kfree(priv);
+ 
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ static int eeti_ts_suspend(struct device *dev)
+ {
+ 	struct i2c_client *client = to_i2c_client(dev);
+@@ -270,12 +217,12 @@ static int eeti_ts_suspend(struct device *dev)
+ 	mutex_lock(&input_dev->mutex);
+ 
+ 	if (input_dev->users)
+-		eeti_ts_stop(priv);
++		disable_irq(client->irq);
+ 
+ 	mutex_unlock(&input_dev->mutex);
+ 
+ 	if (device_may_wakeup(&client->dev))
+-		enable_irq_wake(priv->irq);
++		enable_irq_wake(client->irq);
+ 
+ 	return 0;
+ }
+@@ -287,20 +234,20 @@ static int eeti_ts_resume(struct device *dev)
+ 	struct input_dev *input_dev = priv->input;
+ 
+ 	if (device_may_wakeup(&client->dev))
+-		disable_irq_wake(priv->irq);
++		disable_irq_wake(client->irq);
+ 
+ 	mutex_lock(&input_dev->mutex);
+ 
+ 	if (input_dev->users)
+-		eeti_ts_start(priv);
++		enable_irq(client->irq);
+ 
+ 	mutex_unlock(&input_dev->mutex);
+ 
+ 	return 0;
+ }
++#endif
+ 
+ static SIMPLE_DEV_PM_OPS(eeti_ts_pm, eeti_ts_suspend, eeti_ts_resume);
+-#endif
+ 
+ static const struct i2c_device_id eeti_ts_id[] = {
+ 	{ "eeti_ts", 0 },
+@@ -311,9 +258,8 @@ MODULE_DEVICE_TABLE(i2c, eeti_ts_id);
+ static struct i2c_driver eeti_ts_driver = {
+ 	.driver = {
+ 		.name = "eeti_ts",
+-#ifdef CONFIG_PM
++		.owner = THIS_MODULE,
+ 		.pm = &eeti_ts_pm,
+-#endif
+ 	},
+ 	.probe = eeti_ts_probe,
+ 	.remove = __devexit_p(eeti_ts_remove),
