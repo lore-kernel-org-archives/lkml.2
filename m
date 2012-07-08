@@ -1,149 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349Ab2GHUwj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 16:52:39 -0400
-Received: from mail.gw90.de ([188.40.100.199]:44938 "EHLO mail.gw90.de"
+	id S1752382Ab2GHU40 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 16:56:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6095 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752097Ab2GHUwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 16:52:38 -0400
-Message-ID: <1341780745.4660.8.camel@mattotaupa>
-Subject: Re: [PATCH 4/7] drivers/gpu/drm: remove invalid reference to list
- iterator variable
-From: Paul Menzel <paulepanter@users.sourceforge.net>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: David Airlie <airlied@linux.ie>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Date: Sun, 08 Jul 2012 22:52:25 +0200
-In-Reply-To: <1341747464-1772-5-git-send-email-Julia.Lawall@lip6.fr>
-References: <1341747464-1772-1-git-send-email-Julia.Lawall@lip6.fr>
-	 <1341747464-1772-5-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-NQbdjuBh9LbTw/oXyUOw"
-X-Mailer: Evolution 3.2.2-1+b1 
-Mime-Version: 1.0
+	id S1752097Ab2GHU4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 16:56:24 -0400
+Date: Sun, 8 Jul 2012 23:56:25 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
+        kvm@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] apic: fix kvm build on UP without IOAPIC
+Message-ID: <20120708205625.GA5292@redhat.com>
+References: <20120701150506.GA31304@redhat.com>
+ <4FF0849D.5080406@zytor.com>
+ <20120706111314.GG19552@gmail.com>
+ <20120706113209.GB18059@amt.cnet>
+ <20120706141222.GA23400@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120706141222.GA23400@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 06, 2012 at 04:12:23PM +0200, Ingo Molnar wrote:
+> 
+> * Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> 
+> > On Fri, Jul 06, 2012 at 01:13:14PM +0200, Ingo Molnar wrote:
+> > > 
+> > > * H. Peter Anvin <hpa@zytor.com> wrote:
+> > > 
+> > > > On 07/01/2012 08:05 AM, Michael S. Tsirkin wrote:
+> > > > >On UP i386, when APIC is disabled
+> > > > ># CONFIG_X86_UP_APIC is not set
+> > > > ># CONFIG_PCI_IOAPIC is not set
+> > > > >
+> > > > >code looking at apicdrivers never has any effect but it
+> > > > >still gets compiled in. In particular, this causes
+> > > > >build failures with kvm, but it generally bloats the kernel
+> > > > >unnecessarily.
+> > > > >
+> > > > >Fix by defining both __apicdrivers and __apicdrivers_end
+> > > > >to be NULL when CONFIG_X86_LOCAL_APIC is unset: I verified
+> > > > >that as the result any loop scanning __apicdrivers gets optimized out by
+> > > > >the compiler.
+> > > > >
+> > > > >Warning: a .config with apic disabled doesn't seem to boot
+> > > > >for me (even without this patch). Still verifying why,
+> > > > >meanwhile this patch is compile-tested only.
+> > > > >
+> > > > >Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > > >---
+> > > > >
+> > > > >Note: if this patch makes sense, can x86 maintainers
+> > > > >please ACK applying it through the kvm tree, since that is
+> > > > >where we see the issue that it addresses?
+> > > > >Avi, Marcelo, maybe you can carry this in kvm/linux-next as a temporary
+> > > > >measure so that linux-next builds?
+> > > > >
+> > > > 
+> > > > I'm not happy about that as a workflow, but since you guys have an
+> > > > immediate problem I guess we can do that.
+> > > 
+> > > I'm rather unhappy about this workflow - we've got quite a few 
+> > > apic bits in the x86 tree this cycle as well and need extra 
+> > > external interaction, not.
+> > > 
+> > > Which KVM tree commit caused this, could someone please give a 
+> > > lkml link or quote it here? It's not referenced in the fix patch 
+> > > either.
+> > > 
+> > > Thanks,
+> > > 
+> > > 	Ingo
+> > 
+> > This tree (kvm.git next):
+> > 
+> > http://git.kernel.org/?p=virt/kvm/kvm.git;a=shortlog;h=refs/heads/next
+> > 
+> > Introduced by this commit:
+> > 
+> > http://git.kernel.org/?p=virt/kvm/kvm.git;a=commit;h=ab9cf4996bb989983e73da894b8dd0239aa2c3c2
+> 
+> This bit:
+> 
+> > +	if (kvm_para_has_feature(KVM_FEATURE_PV_EOI)) {
+> > +		struct apic **drv;
+> > +
+> > +		for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
+> > +			/* Should happen once for each apic */
+> > +			WARN_ON((*drv)->eoi_write == kvm_guest_apic_eoi_write);
+> > +			(*drv)->eoi_write = kvm_guest_apic_eoi_write;
+> > +		}
+> > +	}
+> > +
+> 
+> is rather disgusting I have to say.
+> 
+> WTH is the KVM code meddling with core x86 apic driver data 
+> structures directly? At minimum factor this out and create a 
+> proper apic.c function which is EXPORT_SYMBOL_GPL() exported or 
+> so...
+> 
+> Thanks,
+> 
+> 	Ingo
 
---=-NQbdjuBh9LbTw/oXyUOw
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+OK, so apic_set_eoi_write()?
 
-Dear Julia,
-
-
-Am Sonntag, den 08.07.2012, 13:37 +0200 schrieb Julia Lawall:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> If list_for_each_entry, etc complete a traversal of the list, the iterato=
-r
-> variable ends up pointing to an address at an offset from the list head,
-> and not a meaningful structure.  Thus this value should not be used after
-> the end of the iterator.
->=20
-> In the first two cases, a a break is added after the switch; the break in
-
-s,a a,a,
-
-> the switch would jump out of the switch, but not out of the complete
-> iteration.
->=20
-> In the first case, the null test on connector is removed, because the
-> iterator variable of list_for_each_entry is never null.
->=20
-> In the third case, entry->base.crtc.fb is not a meaningful value.  What
-> seems to be intended is crtc->fb, which gets the information from the las=
-t
-> element of the list.
-
-maybe three separate patches would have been better?
-
-> These problems were found using Coccinelle (http://coccinelle.lip6.fr/).
-
-I always liked your example Coccinelle code snippets. Could you add them
-again to your commit messages? That would be awesome!
-
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> ---
->  drivers/gpu/drm/gma500/mdfld_intel_display.c |    4 +---
->  drivers/gpu/drm/gma500/oaktrail_crtc.c       |    1 +
->  drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c          |    2 +-
->  3 files changed, 3 insertions(+), 4 deletions(-)
->=20
-> diff --git a/drivers/gpu/drm/gma500/mdfld_intel_display.c b/drivers/gpu/d=
-rm/gma500/mdfld_intel_display.c
-> index 3f3cd61..fc1ced0 100644
-> --- a/drivers/gpu/drm/gma500/mdfld_intel_display.c
-> +++ b/drivers/gpu/drm/gma500/mdfld_intel_display.c
-> @@ -755,9 +755,6 @@ static int mdfld_crtc_mode_set(struct drm_crtc *crtc,
->  					sizeof(struct drm_display_mode));
-> =20
->  	list_for_each_entry(connector, &mode_config->connector_list, head) {
-> -		if (!connector)
-> -			continue;
-> -
->  		encoder =3D connector->encoder;
-> =20
->  		if (!encoder)
-> @@ -779,6 +776,7 @@ static int mdfld_crtc_mode_set(struct drm_crtc *crtc,
->  			is_hdmi =3D true;
->  			break;
->  		}
-> +		break;
->  	}
-> =20
->  	/* Disable the VGA plane that we never use */
-> diff --git a/drivers/gpu/drm/gma500/oaktrail_crtc.c b/drivers/gpu/drm/gma=
-500/oaktrail_crtc.c
-> index f821c83..4b2172e 100644
-> --- a/drivers/gpu/drm/gma500/oaktrail_crtc.c
-> +++ b/drivers/gpu/drm/gma500/oaktrail_crtc.c
-> @@ -329,6 +329,7 @@ static int oaktrail_crtc_mode_set(struct drm_crtc *cr=
-tc,
->  			is_mipi =3D true;
->  			break;
->  		}
-> +		break;
->  	}
-> =20
->  	/* Disable the VGA plane that we never use */
-> diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c b/drivers/gpu/drm/vmwgfx=
-/vmwgfx_ldu.c
-> index 070fb23..634611a 100644
-> --- a/drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c
-> +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c
-> @@ -93,7 +93,7 @@ static int vmw_ldu_commit_list(struct vmw_private *dev_=
-priv)
-> =20
->  		if (crtc =3D=3D NULL)
->  			return 0;
-> -		fb =3D entry->base.crtc.fb;
-> +		fb =3D crtc->fb;
-> =20
->  		return vmw_kms_write_svga(dev_priv, w, h, fb->pitches[0],
->  					  fb->bits_per_pixel, fb->depth);
-
-Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
-
-
-Thanks,
-
-Paul
-
---=-NQbdjuBh9LbTw/oXyUOw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEABECAAYFAk/58wkACgkQPX1aK2wOHViFEwCgg6jnQ8eQ8AODrd4z7YUQh4JW
-vTkAoIrEyrVY+YXodmegg0eJsvxbntvM
-=Hh2I
------END PGP SIGNATURE-----
-
---=-NQbdjuBh9LbTw/oXyUOw--
-
+-- 
+MST
