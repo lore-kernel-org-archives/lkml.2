@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175Ab2GHAZr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 20:25:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54685 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab2GHAYx (ORCPT
+	id S1752106Ab2GHA3q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 20:29:46 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:9657 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751515Ab2GHA3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 20:24:53 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: [PATCH -mm 3/3] fault-injection: mention failcmd.sh tool in document
-Date: Sun,  8 Jul 2012 09:24:26 +0900
-Message-Id: <1341707066-10742-3-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1341707066-10742-1-git-send-email-akinobu.mita@gmail.com>
-References: <1341707066-10742-1-git-send-email-akinobu.mita@gmail.com>
+	Sat, 7 Jul 2012 20:29:44 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC101.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -10
+X-BigFish: VS-10(zz98dI9371I936eI542M1432I4015Izz1202hzz8275dhz2fh2a8h668h839h93fhd25hf0ah107ah)
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH net,1/1] hyperv: Add support for setting MAC from within
+ guests
+Thread-Topic: [PATCH net,1/1] hyperv: Add support for setting MAC from
+ within guests
+Thread-Index: AQHNW7v2NmSg3uaojEi/HXuJHHO9xZcc9NCAgAGVEcA=
+Date: Sun, 8 Jul 2012 00:29:38 +0000
+Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0DDC74F4@TK5EX14MBXC222.redmond.corp.microsoft.com>
+References: <1341609932-18971-1-git-send-email-haiyangz@microsoft.com>
+ <1341620355.2923.46.camel@bwh-desktop.uk.solarflarecom.com>
+In-Reply-To: <1341620355.2923.46.camel@bwh-desktop.uk.solarflarecom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.37]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q680TqjF009614
 
-fault-injection-add-tool-to-run-command-with-failslab-or-fail_page_alloc.patch
-in -mm tree adds tools/testing/fault-injection/failcmd.sh to make it
-easier to inject slab/page allocation failures by fault injection.
 
-This adds the introduction to
-Documentation/fault-injection/fault-injection.txt.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
----
- Documentation/fault-injection/fault-injection.txt |   27 +++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+> -----Original Message-----
+> From: Ben Hutchings [mailto:bhutchings@solarflare.com]
+> Sent: Friday, July 06, 2012 8:19 PM
+> To: Haiyang Zhang
+> Cc: davem@davemloft.net; netdev@vger.kernel.org; KY Srinivasan;
+> olaf@aepfle.de; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org
+> Subject: Re: [PATCH net,1/1] hyperv: Add support for setting MAC from
+> within guests
+> 
+> On Fri, 2012-07-06 at 14:25 -0700, Haiyang Zhang wrote:
+> > This adds support for setting synthetic NIC MAC address from within
+> > Linux guests. Before using this feature, the option "spoofing of MAC
+> address"
+> > should be enabled at the Hyper-V manager / Settings of the synthetic
+> > NIC.
+> [...]
+> > +int rndis_filter_set_device_mac(struct hv_device *hdev, char *mac) {
+> [...]
+> > +	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
+> > +	if (t == 0) {
+> > +		netdev_err(ndev, "timeout before we got a set
+> response...\n");
+> > +		/*
+> > +		 * can't put_rndis_request, since we may still receive a
+> > +		 * send-completion.
+> > +		 */
+> > +		return -EBUSY;
+> > +	} else {
+> > +		set_complete = &request->response_msg.msg.set_complete;
+> > +		if (set_complete->status != RNDIS_STATUS_SUCCESS)
+> > +			ret = -EINVAL;
+> [...]
+> 
+> Is there a specific error code that indicates the hypervisor is configured not
+> to allow MAC address changes?  If so, shouldn't that be translated to return
+> EPERM rather than EINVAL?
 
-diff --git a/Documentation/fault-injection/fault-injection.txt b/Documentation/fault-injection/fault-injection.txt
-index dc77948..832fc4f 100644
---- a/Documentation/fault-injection/fault-injection.txt
-+++ b/Documentation/fault-injection/fault-injection.txt
-@@ -241,3 +241,30 @@ trap "echo 0 > /sys/kernel/debug/$FAILTYPE/probability" SIGINT SIGTERM EXIT
- echo "Injecting errors into the module $module... (interrupt to stop)"
- sleep 1000000
- 
-+Tool to run command with failslab or fail_page_alloc
-+----------------------------------------------------
-+In order to make it easier to accomplish the tasks mentioned above, we can use
-+tools/testing/fault-injection/failcmd.sh.  Please run a command
-+"./tools/testing/fault-injection/failcmd.sh --help" for more information and
-+see the following examples.
-+
-+Examples:
-+
-+Run a command "make -C tools/testing/selftests/ run_tests" with injecting slab
-+allocation failure.
-+
-+	# ./tools/testing/fault-injection/failcmd.sh \
-+		-- make -C tools/testing/selftests/ run_tests
-+
-+Same as above except to specify 100 times failures at most instead of one time
-+at most by default.
-+
-+	# ./tools/testing/fault-injection/failcmd.sh --times=100 \
-+		-- make -C tools/testing/selftests/ run_tests
-+
-+Same as above except to inject page allocation failure instead of slab
-+allocation failure.
-+
-+	# env FAILCMD_TYPE=fail_page_alloc \
-+		./tools/testing/fault-injection/failcmd.sh --times=100 \
-+                -- make -C tools/testing/selftests/ run_tests
--- 
-1.7.10.4
+Will do. 
 
+Thanks,
+- Haiyang
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
