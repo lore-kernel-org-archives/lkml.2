@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492Ab2GHWXp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 18:23:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:52243 "EHLO mga09.intel.com"
+	id S1752629Ab2GHWYE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 18:24:04 -0400
+Received: from mga14.intel.com ([143.182.124.37]:36650 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752185Ab2GHWXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 18:23:44 -0400
+	id S1752582Ab2GHWYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 18:24:02 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="168801235"
-Date: Mon, 9 Jul 2012 00:34:56 +0200
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="165496576"
+Date: Mon, 9 Jul 2012 00:35:32 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 2/2] mfd: wm8994: Also restore GPIO IRQ masks after reset
-Message-ID: <20120708223456.GF15345@sortiz-mobl>
-References: <1340978140-11572-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1340978140-11572-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] mfd: arizona: Force on REGMAP for the core
+Message-ID: <20120708223532.GG15345@sortiz-mobl>
+References: <1341315939-17579-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1340978140-11572-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1341315939-17579-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,15 +28,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Mark,
 
-On Fri, Jun 29, 2012 at 02:55:40PM +0100, Mark Brown wrote:
-> This ensures that if we are using a GPIO as a wake source it continues to
-> function while we're suspended.
+On Tue, Jul 03, 2012 at 12:45:39PM +0100, Mark Brown wrote:
+> While the core isn't useful by itself it does depend on regmap so try to
+> force that on.
 > 
+> Reported-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 > Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 > ---
->  drivers/mfd/wm8994-core.c |    7 +++++++
->  1 file changed, 7 insertions(+)
-Applied as well, thanks.
+>  drivers/mfd/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+Patch applied, thanks.
 
 Cheers,
 Samuel.
