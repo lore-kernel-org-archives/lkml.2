@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab2GHXQS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 19:16:18 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:27213 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237Ab2GHXQR (ORCPT
+	id S1752681Ab2GHXTG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 19:19:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60324 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752390Ab2GHXTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 19:16:17 -0400
-Date: Mon, 9 Jul 2012 01:16:15 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Joe Perches <joe@perches.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org,
-        Marcos Paulo de Souza <marcos.mage@gmail.com>,
-        Forest Bond <forest@alittletooquiet.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] staging: vt6656: iwctl: remove a few remaining
- redundant newlines
-In-Reply-To: <1341788740.13174.33.camel@joe2Laptop>
-Message-ID: <alpine.LNX.2.00.1207090113590.15263@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1206272116490.6908@swampdragon.chaosbits.net>  <20120706230945.GA8835@kroah.com>  <alpine.LNX.2.00.1207070228340.13344@swampdragon.chaosbits.net>  <alpine.LNX.2.00.1207090052220.15263@swampdragon.chaosbits.net> 
- <alpine.LNX.2.00.1207090056180.15263@swampdragon.chaosbits.net> <1341788740.13174.33.camel@joe2Laptop>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 8 Jul 2012 19:19:04 -0400
+Message-ID: <1341789536.25597.244.camel@deadeye.wl.decadent.org.uk>
+Subject: [PATCH linux-firmware 0/2] Clean up some metadata in WHENCE
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org
+Cc: David Woodhouse <dwmw2@infradead.org>
+Date: Mon, 09 Jul 2012 00:18:56 +0100
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-VDPinnl78XLKvgxl2KeU"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 8 Jul 2012, Joe Perches wrote:
 
-> On Mon, 2012-07-09 at 00:59 +0200, Jesper Juhl wrote:
-> > I missed a few redundant newlines the first time.
-> []
-> > diff --git a/drivers/staging/vt6656/iwctl.c b/drivers/staging/vt6656/iwctl.c
-> []
-> > @@ -964,7 +964,6 @@ int iwctl_giwrts(struct net_device *dev, struct iw_request_info *info,
-> >  	wrq->value = pDevice->wRTSThreshold;
-> >  	wrq->disabled = (wrq->value >= 2312);
-> >  	wrq->fixed = 1;
-> > -
-> >  	return 0;
-> >  }
-> 
-> I think this is a useful style and these should not be removed.
-> It's akin to a blank line after automatic variable declarations.
-> 
-Thank you for your feedback Joe.
+--=-VDPinnl78XLKvgxl2KeU
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I see your point, but personally I'd rather leave it out - especially for 
-small functions.
+I've committed the following changes.
 
-I'll leave it up to Greg whether or not to take this one :-)
+Ben.
+
+Ben Hutchings (2):
+  WHENCE: Move informational text from File to Info fields
+  WHENCE: Move version strings from Info to Version fields
+
+ WHENCE |  104 +++++++++++++++++++++++++++++++++++++-----------------------=
+----
+ 1 file changed, 60 insertions(+), 44 deletions(-)
+
+--=20
+1.7.10.4
 
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
 
+--=-VDPinnl78XLKvgxl2KeU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAT/oVYOe/yOyVhhEJAQrdpw//VFGQlR+aljFrHkXgyZjbpIuvNf4aSx8s
+CkJcQRb5+H1WyGUmvycvgPxFb126u7LkjhDA248HnDps+aFuXW1TeB1spzzVcFpU
+FejxfxRTvLRzyqQMaorbWFEtY1hMBUDq9vitaRTQov8uApDeYW1pyQelNoseNEsI
+MVLzkIBCnp93w4/SdQzhWkwQo5gy+GUPjMGwivOqg98+kuJkyIsWJi4w++aSAKzP
+HWz/NfMgc0e7ms7owQU4Di9RFC6J94Ac8EverlmEs8sO2cPEIQtk1PCaLxLlUsW1
+PJ3gcCmobBUQmowTSxxjER0ofmR9a+hwOrooYP/Q4td+ddenKRmVMtrieW/63L2K
+dCsLLdwodM8+27/nmRL6gQXFwB+CPKXZWpjsASgceA65OJhEdR6Ln8DH7ZI8vZGH
+zcv6CXPPk/fev8hs4zbbX96k4Zyy4erm6SDinroprx01RQXjsEc0yzZTfqI+gBLR
+DBJN4xqQKt4xsOdcgQ021P56SRn3Hze4wbdPlt4dKPPBVbRuI+yS5GL32F8Zc+JD
+Dl99B5bTroqj7YKRxF1iFaIt7XU/ZVflLvmis4r9zmrMnRUcHCxqejZVrlF7cEyj
+rVHV/i/6YL9Da5nmM96jDhfF4JyhZUHlLsjEg/64VFBGyQz8uAb09vaOht++0zDk
+O1HGFl0B/U4=
+=PHv6
+-----END PGP SIGNATURE-----
+
+--=-VDPinnl78XLKvgxl2KeU--
