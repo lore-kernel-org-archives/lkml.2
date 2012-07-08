@@ -1,92 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914Ab2GHKQQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 06:16:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44151 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272Ab2GHKQB (ORCPT
+	id S1751859Ab2GHKS2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 06:18:28 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61508 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751260Ab2GHKS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 06:16:01 -0400
-From: Hitoshi Nakamori <hitoshi.nakamori@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: hitoshi.nakamori@gmail.com, wei_wang@realsil.com.cn,
-        dan.carpenter@oracle.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] Staging:rts_pstor: Fix brace coding style issue in ms.c
-Date: Sun,  8 Jul 2012 10:15:49 +0900
-Message-Id: <1341710152-4266-2-git-send-email-hitoshi.nakamori@gmail.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1341710152-4266-1-git-send-email-hitoshi.nakamori@gmail.com>
-References: <1341710152-4266-1-git-send-email-hitoshi.nakamori@gmail.com>
+	Sun, 8 Jul 2012 06:18:26 -0400
+Date: Sun, 8 Jul 2012 11:18:12 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Message-ID: <20120708101812.GE3845@arm.com>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+ <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the ms.c file that fixes some brace warning found by checkpatch.pl tool.
+Hi Olof,
 
-Signed-off-by:Hitoshi Nakamori <hitoshi.nakamori@gmail.com>
----
- drivers/staging/rts_pstor/ms.c |   24 +++++++++---------------
- 1 file changed, 9 insertions(+), 15 deletions(-)
+On Sat, Jul 07, 2012 at 04:53:08AM +0100, Olof Johansson wrote:
+> On Fri, Jul 6, 2012 at 2:05 PM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+> > ARM introduced AArch64 as part of the ARMv8 architecture
+> 
+> With the risk of bikeshedding here, but I find the name awkward. How
+> about just naming the arch port arm64 instead? It's considerably more
+> descriptive in the context of the kernel.  For reference, we didn't
+> name ppc64, nor powerpc, after what the IBM/power.org marketing people
+> were currently calling the architecture at the time either.
 
-diff --git a/drivers/staging/rts_pstor/ms.c b/drivers/staging/rts_pstor/ms.c
-index 179a068..99886b0 100644
---- a/drivers/staging/rts_pstor/ms.c
-+++ b/drivers/staging/rts_pstor/ms.c
-@@ -287,9 +287,8 @@ static int ms_read_bytes(struct rtsx_chip *chip, u8 tpc, u8 cnt, u8 cfg, u8 *dat
- 
- 	ptr = rtsx_get_cmd_data(chip) + 1;
- 
--	for (i = 0; i < data_len; i++) {
-+	for (i = 0; i < data_len; i++)
- 		data[i] = ptr[i];
--	}
- 
- 	if ((tpc == PRO_READ_SHORT_DATA) && (data_len == 8)) {
- 		RTSX_DEBUGP("Read format progress:\n");
-@@ -337,34 +336,29 @@ static int ms_set_init_para(struct rtsx_chip *chip)
- 	int retval;
- 
- 	if (CHK_HG8BIT(ms_card)) {
--		if (chip->asic_code) {
-+		if (chip->asic_code)
- 			ms_card->ms_clock = chip->asic_ms_hg_clk;
--		} else {
-+		else
- 			ms_card->ms_clock = chip->fpga_ms_hg_clk;
--		}
- 	} else if (CHK_MSPRO(ms_card) || CHK_MS4BIT(ms_card)) {
--		if (chip->asic_code) {
-+		if (chip->asic_code)
- 			ms_card->ms_clock = chip->asic_ms_4bit_clk;
--		} else {
-+		else
- 			ms_card->ms_clock = chip->fpga_ms_4bit_clk;
--		}
- 	} else {
--		if (chip->asic_code) {
-+		if (chip->asic_code)
- 			ms_card->ms_clock = chip->asic_ms_1bit_clk;
--		} else {
-+		else
- 			ms_card->ms_clock = chip->fpga_ms_1bit_clk;
--		}
- 	}
- 
- 	retval = switch_clock(chip, ms_card->ms_clock);
--	if (retval != STATUS_SUCCESS) {
-+	if (retval != STATUS_SUCCESS)
- 		TRACE_RET(chip, STATUS_FAIL);
--	}
- 
- 	retval = select_card(chip, MS_CARD);
--	if (retval != STATUS_SUCCESS) {
-+	if (retval != STATUS_SUCCESS)
- 		TRACE_RET(chip, STATUS_FAIL);
--	}
- 
- 	return STATUS_SUCCESS;
- }
+The name may not be as nice but AArch64 is the official architecture
+name as per the (not yet released) ARM ARM. It's not a marketing name.
+The complier triplet also uses it, so to avoid confusion I went with the
+same. If you want a comparison, IA-64 is also coming form Intel but it
+wasn't the architecture to be known as x86_64.
+
+On the good side, alphabetically it's before arch/alpha :), so easier to
+grep.
+
+> > There is no hardware platform available at this point. From a kernel
+> > perspective, the aim is to minimise (or even completely remove) the
+> > platform code from the architecture specific directory. FDT is
+> > currently mandated and there are ongoing discussions for ACPI
+> > support.
+> 
+> This will be interesting to see how it plays out over time, and how
+> many vendors will drop in arm64 cores on their existing designs and
+> thus need to pull over infrastructure from arch/arm for their platform
+> type. A lot of the drivers have moved out to common code so much of it
+> should be possible to do cleanly, but there is still some risk for
+> duplication.
+> 
+> I guess it's a good chance to clean up some of it and start from a
+> clean slate, if you can avoid the temptation of just moving over code.
+
+I agree, it's a great advantage to start with a clean port and I will
+try as much as possible to keep the SoC code duplication to a minimum.
+We'll also benefit from the experience of the arm-soc team, which I see
+as taking active role in the AArch64 SoC support.
+
+The architecture is also in a much better shape with generic timers, GIC
+(though not the GICv2 version that we have on arch/arm/) so most of the
+remaining SoC code would belong to drivers/. There is still debate
+around CPU boot and power management and the firmware involvement and we
+try to standardise this as well. Basically AArch64 Linux only runs in
+non-secure mode but some operations require secure side code.
+
+Thanks.
+
 -- 
-1.7.10
-
+Catalin
