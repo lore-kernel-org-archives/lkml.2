@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094Ab2GHSgL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 14:36:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10717 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751862Ab2GHSgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 14:36:10 -0400
-Message-ID: <4FF9D2EF.7010901@redhat.com>
-Date: Sun, 08 Jul 2012 14:35:27 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 14/26] sched, numa: Numa balancer
-References: <20120316144028.036474157@chello.nl> <20120316144241.012558280@chello.nl>
-In-Reply-To: <20120316144241.012558280@chello.nl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1752061Ab2GHSpJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 14:45:09 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:4662 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751486Ab2GHSpI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 14:45:08 -0400
+Message-ID: <1341773106.22584.9.camel@x61.thuisdomein>
+Subject: Re: [PATCH] ARM: remove asm/locks.h
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Sun, 08 Jul 2012 20:45:06 +0200
+In-Reply-To: <20120708160258.GC27030@mudshark.cambridge.arm.com>
+References: <1341262188.1911.147.camel@x61.thuisdomein>
+	 <20120702215203.GA25234@mudshark.cambridge.arm.com>
+	 <1341300030.1911.179.camel@x61.thuisdomein>
+	 <20120708160258.GC27030@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 08 Jul 2012 18:45:06.0761 (UTC) FILETIME=[CB388390:01CD5D39]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/2012 10:40 AM, Peter Zijlstra wrote:
+On Sun, 2012-07-08 at 17:03 +0100, Will Deacon wrote:
+>  Please can you put this into the patch system?
 
-+static bool can_move_ne(struct numa_entity *ne)
-+{
-+	/*
-+	 * XXX: consider mems_allowed, stinking cpusets has mems_allowed
-+	 * per task and it can actually differ over a whole process, la-la-la.
-+	 */
-+	return true;
-+}
+I'm not sure what the patch system is, but I am certain that I'm not
+allowed to put this patch into it.
 
-This looks like something that should be fixed before the
-code is submitted for merging upstream.
 
--- 
-All rights reversed
+Paul Bolle
+
