@@ -1,76 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab2GHOOG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 10:14:06 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50476 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab2GHOOF (ORCPT
+	id S1751977Ab2GHOXX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 10:23:23 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59196 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307Ab2GHOXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 10:14:05 -0400
-Message-ID: <4FF995A9.8060304@gmail.com>
-Date: Sun, 08 Jul 2012 17:14:01 +0300
-From: Oleksandr Natalenko <pfactum@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120616 Thunderbird/13.0.1
-MIME-Version: 1.0
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]RIFS-V3-Test For 3.4.x kernel.
-References: <CANQmPXibzo2OVPorHX3dcgbDFPnr=3FPm5Bu1-DbthSykzkJcA@mail.gmail.com> <jtabja$fhs$1@dough.gmane.org> <CANQmPXjXt4KsYix5syDrRo_qt3DD7tMtHpdNa3Sh-fWhi53Lnw@mail.gmail.com> <jtbje0$iiv$1@dough.gmane.org> <CANQmPXgDmdDE+=ypyHcWLR4Fw7xv4-T-YsyoO7Gp2Gq91F7jFw@mail.gmail.com> <CAFLxGvxT8d0b3dqChLaJ-p=4zL5JaYvM6FywJGdHeAeBKeXs_Q@mail.gmail.com> <CANQmPXiMhahyT5BQAaw5tSX9fzJUp6mqjHz7FgEy=9nLqy2-9A@mail.gmail.com> <CANQmPXjjL_ysho+SDcSZecTc=mcQH_kHDoS5OHZfYVZDZ6=Jww@mail.gmail.com>
-In-Reply-To: <CANQmPXjjL_ysho+SDcSZecTc=mcQH_kHDoS5OHZfYVZDZ6=Jww@mail.gmail.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig0F4EB06DC627D758E8D14AC4"
-To: unlisted-recipients:; (no To-header on input)
+	Sun, 8 Jul 2012 10:23:22 -0400
+From: Valentin Ilie <valentin.ilie@gmail.com>
+To: akpm@linux-foundation.org
+Cc: mingo@kernel.org, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        Valentin Ilie <valentin.ilie@gmail.com>
+Subject: Kernel: panic.c: fixed checkpatch warnings
+Date: Sun,  8 Jul 2012 17:23:10 +0300
+Message-Id: <1341757390-3279-1-git-send-email-valentin.ilie@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig0F4EB06DC627D758E8D14AC4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Replaced printk(KERN_WARNING.. with pr_warn..
 
-What about BFS?
+Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
+---
+ kernel/panic.c |   18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
-08.07.12 16:32, Chen =D0=BD=D0=B0=D0=BF=D0=B8=D1=81=D0=B0=D0=B2(=D0=BB=D0=
-=B0):
-> http://postimage.org/image/70q774n6b/
->=20
-> #COUNT  CFS     RIFS-V3-Trial
-> 1       9       9
-> 2       92      9
-> 4       2523    663
-> 8       8162    585
-> 16      16615   1150
-> 32      31846   2147
-> 64      54921   1375
-> 128     90558   1761
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel"=
- in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->=20
+diff --git a/kernel/panic.c b/kernel/panic.c
+index d2a5f4e..be76bc4 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -37,7 +37,6 @@ int panic_timeout;
+ EXPORT_SYMBOL_GPL(panic_timeout);
+ 
+ ATOMIC_NOTIFIER_HEAD(panic_notifier_list);
+-
+ EXPORT_SYMBOL(panic_notifier_list);
+ 
+ static long no_blink(int state)
+@@ -92,7 +91,7 @@ void panic(const char *fmt, ...)
+ 	va_start(args, fmt);
+ 	vsnprintf(buf, sizeof(buf), fmt, args);
+ 	va_end(args);
+-	printk(KERN_EMERG "Kernel panic - not syncing: %s\n",buf);
++	pr_emerg("Kernel panic - not syncing: %s\n", buf);
+ #ifdef CONFIG_DEBUG_BUGVERBOSE
+ 	/*
+ 	 * Avoid nested stack-dumping if a panic occurs during oops processing
+@@ -129,7 +128,7 @@ void panic(const char *fmt, ...)
+ 		 * Delay timeout seconds before rebooting the machine.
+ 		 * We can't use the "normal" timers since we just panicked.
+ 		 */
+-		printk(KERN_EMERG "Rebooting in %d seconds..", panic_timeout);
++		pr_emerg("Rebooting in %d seconds..", panic_timeout);
+ 
+ 		for (i = 0; i < panic_timeout * 1000; i += PANIC_TIMER_STEP) {
+ 			touch_nmi_watchdog();
+@@ -153,7 +152,7 @@ void panic(const char *fmt, ...)
+ 		extern int stop_a_enabled;
+ 		/* Make sure the user can actually press Stop-A (L1-A) */
+ 		stop_a_enabled = 1;
+-		printk(KERN_EMERG "Press Stop-A (L1-A) to return to the boot prom\n");
++		pr_emerg("Press Stop-A (L1-A) to return to the boot prom\n");
+ 	}
+ #endif
+ #if defined(CONFIG_S390)
+@@ -174,7 +173,6 @@ void panic(const char *fmt, ...)
+ 		mdelay(PANIC_TIMER_STEP);
+ 	}
+ }
+-
+ EXPORT_SYMBOL(panic);
+ 
+ 
+@@ -269,7 +267,7 @@ void add_taint(unsigned flag)
+ 
+ 	default:
+ 		if (__debug_locks_off())
+-			printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
++			pr_warn("Disabling lock debugging due to kernel taint\n");
+ 	}
+ 
+ 	set_bit(flag, &tainted_mask);
+@@ -375,7 +373,7 @@ late_initcall(init_oops_id);
+ void print_oops_end_marker(void)
+ {
+ 	init_oops_id();
+-	printk(KERN_WARNING "---[ end trace %016llx ]---\n",
++	pr_warn("---[ end trace %016llx ]---\n",
+ 		(unsigned long long)oops_id);
+ }
+ 
+@@ -401,11 +399,11 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
+ {
+ 	const char *board;
+ 
+-	printk(KERN_WARNING "------------[ cut here ]------------\n");
+-	printk(KERN_WARNING "WARNING: at %s:%d %pS()\n", file, line, caller);
++	pr_warn("------------[ cut here ]------------\n");
++	pr_warn("WARNING: at %s:%d %pS()\n", file, line, caller);
+ 	board = dmi_get_system_info(DMI_PRODUCT_NAME);
+ 	if (board)
+-		printk(KERN_WARNING "Hardware name: %s\n", board);
++		pr_warn("Hardware name: %s\n", board);
+ 
+ 	if (args)
+ 		vprintk(args->fmt, args->args);
+-- 
+1.7.10.4
 
-
-
---------------enig0F4EB06DC627D758E8D14AC4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQEcBAEBAgAGBQJP+ZWpAAoJELftKrVLdx04qMAIAJclaJyc1bDooqyfCTc1O2RY
-SsCS14uEQlVNvJD7RStoJpIcSt9Y+zUykuV+shrXaiW2iJD2hlG9T/JW0bBlgn3k
-Mu7K+qTlToh7awPRg9wv13oSBXYw5GbPgUToQWEHzpdkyGjrP+hDMNEEQNtfZKXD
-Am2kz2Dbxj+DXQYzKaHvS9UThLlhPyJ8W5VdvcWSTIwyVEeOomWb9aZB0wMHt6UT
-sirQcsIR/J0xa+kLktgjJ3WUeEvyfwuTvgFj6ao4eBXBWQO1sBNt7QlUjJLn06dN
-Pqt7yPBGXgYGUrWwi985upjpoRMxPuHuD8bmZN5FRnVjNI28A2UksW9yVORzGVU=
-=2z0X
------END PGP SIGNATURE-----
-
---------------enig0F4EB06DC627D758E8D14AC4--
