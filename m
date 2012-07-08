@@ -1,92 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751413Ab2GHKvQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 06:51:16 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:47768 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab2GHKvP (ORCPT
+	id S1751908Ab2GHLhv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 07:37:51 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:49825 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751450Ab2GHLhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 06:51:15 -0400
-From: Valentin Ilie <valentin.ilie@gmail.com>
-To: paul.gortmaker@windriver.com, dhowells@redhat.com
-Cc: linux-kernel@vger.kernel.org, Valentin Ilie <valentin.ilie@gmail.com>
-Subject: [PATCH] Kernel: dma.c: fixed coding style issues
-Date: Sun,  8 Jul 2012 13:51:05 +0300
-Message-Id: <1341744665-15678-1-git-send-email-valentin.ilie@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 8 Jul 2012 07:37:50 -0400
+X-IronPort-AV: E=Sophos;i="4.77,546,1336341600"; 
+   d="scan'208";a="166023135"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH 0/7] remove invalid reference to list iterator variable
+Date: Sun,  8 Jul 2012 13:37:37 +0200
+Message-Id: <1341747464-1772-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style issues. (checkpatch warnings)
+If list_for_each_entry, etc complete a traversal of the list, the iterator
+variable ends up pointing to an address at an offset from the list head,
+and not a meaningful structure.  Thus this value should not be used after
+the end of the iterator.
 
-Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
----
- kernel/dma.c |   17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+The complete semantic match that finds this problem is:
+(http://coccinelle.lip6.fr/)
 
-diff --git a/kernel/dma.c b/kernel/dma.c
-index 6c6262f..082cd74 100644
---- a/kernel/dma.c
-+++ b/kernel/dma.c
-@@ -38,6 +38,7 @@
- 
- 
- DEFINE_SPINLOCK(dma_spin_lock);
-+EXPORT_SYMBOL(dma_spin_lock);
- 
- /*
-  *	If our port doesn't define this it has no PC like DMA
-@@ -66,7 +67,7 @@ static struct dma_chan dma_chan_busy[MAX_DMA_CHANNELS] = {
-  * @dmanr: DMA channel number
-  * @device_id: reserving device ID string, used in /proc/dma
-  */
--int request_dma(unsigned int dmanr, const char * device_id)
-+int request_dma(unsigned int dmanr, const char *device_id)
- {
- 	if (dmanr >= MAX_DMA_CHANNELS)
- 		return -EINVAL;
-@@ -87,12 +88,12 @@ int request_dma(unsigned int dmanr, const char * device_id)
- void free_dma(unsigned int dmanr)
- {
- 	if (dmanr >= MAX_DMA_CHANNELS) {
--		printk(KERN_WARNING "Trying to free DMA%d\n", dmanr);
-+		pr_warn("Trying to free DMA%d\n", dmanr);
- 		return;
- 	}
- 
- 	if (xchg(&dma_chan_busy[dmanr].lock, 0) == 0) {
--		printk(KERN_WARNING "Trying to free free DMA%d\n", dmanr);
-+		pr_warn("Trying to free free DMA%d\n", dmanr);
- 		return;
- 	}
- 
-@@ -104,12 +105,14 @@ int request_dma(unsigned int dmanr, const char *device_id)
- {
- 	return -EINVAL;
- }
-+EXPORT_SYMBOL(request_dma);
- 
- void free_dma(unsigned int dmanr)
- {
- }
-+EXPORT_SYMBOL(free_dma);
- 
--#endif
-+#endif /* MAX_DMA_CHANNELS */
- 
- #ifdef CONFIG_PROC_FS
- 
-@@ -153,8 +156,4 @@ static int __init proc_dma_init(void)
- }
- 
- __initcall(proc_dma_init);
--#endif
--
--EXPORT_SYMBOL(request_dma);
--EXPORT_SYMBOL(free_dma);
--EXPORT_SYMBOL(dma_spin_lock);
-+#endif /* CONFIG_PROC_FS */
--- 
-1.7.10.4
+@@
+identifier c,member;
+expression E,x;
+iterator name list_for_each_entry;
+iterator name list_for_each_entry_reverse;
+iterator name list_for_each_entry_continue;
+iterator name list_for_each_entry_continue_reverse;
+iterator name list_for_each_entry_from;
+iterator name list_for_each_entry_safe;
+iterator name list_for_each_entry_safe_continue;
+iterator name list_for_each_entry_safe_from;
+iterator name list_for_each_entry_safe_reverse;
+iterator name hlist_for_each_entry;
+iterator name hlist_for_each_entry_continue;
+iterator name hlist_for_each_entry_from;
+iterator name hlist_for_each_entry_safe;
+statement S;
+@@
+
+(
+list_for_each_entry(c,...,member) { ... when != break;
+                                 when forall
+                                 when strict
+}
+|
+list_for_each_entry_reverse(c,...,member) { ... when != break;
+                                 when forall
+                                 when strict
+}
+|
+list_for_each_entry_continue(c,...,member) { ... when != break;
+                                 when forall
+                                 when strict
+}
+|
+list_for_each_entry_continue_reverse(c,...,member) { ... when != break;
+                                 when forall
+                                 when strict
+}
+|
+list_for_each_entry_from(c,...,member) { ... when != break;
+                                 when forall
+                                 when strict
+}
+|
+list_for_each_entry_safe(c,...,member) { ... when != break;
+                                 when forall
+                                 when strict
+}
+|
+list_for_each_entry_safe_continue(c,...,member) { ... when != break;
+                                 when forall
+                                 when strict
+}
+|
+list_for_each_entry_safe_from(c,...,member) { ... when != break;
+                                 when forall
+                                 when strict
+}
+|
+list_for_each_entry_safe_reverse(c,...,member) { ... when != break;
+                                 when forall
+                                 when strict
+}
+)
+...
+(
+list_for_each_entry(c,...) S
+|
+list_for_each_entry_reverse(c,...) S
+|
+list_for_each_entry_continue(c,...) S
+|
+list_for_each_entry_continue_reverse(c,...) S
+|
+list_for_each_entry_from(c,...) S
+|
+list_for_each_entry_safe(c,...) S
+|
+list_for_each_entry_safe(x,c,...) S
+|
+list_for_each_entry_safe_continue(c,...) S
+|
+list_for_each_entry_safe_continue(x,c,...) S
+|
+list_for_each_entry_safe_from(c,...) S
+|
+list_for_each_entry_safe_from(x,c,...) S
+|
+list_for_each_entry_safe_reverse(c,...) S
+|
+list_for_each_entry_safe_reverse(x,c,...) S
+|
+hlist_for_each_entry(c,...) S
+|
+hlist_for_each_entry_continue(c,...) S
+|
+hlist_for_each_entry_from(c,...) S
+|
+hlist_for_each_entry_safe(c,...) S
+|
+list_remove_head(x,c,...)
+|
+sizeof(<+...c...+>)
+|
+&c->member
+|
+c = E
+|
+*c
+)
 
