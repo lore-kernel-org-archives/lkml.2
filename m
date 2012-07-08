@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704Ab2GHXBr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 19:01:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55393 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237Ab2GHXBq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 19:01:46 -0400
-Date: Sun, 8 Jul 2012 16:01:44 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: JoonSoo Kim <js1304@gmail.com>
-cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Rus <rus@sfinxsoft.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: WARNING: __GFP_FS allocations with IRQs disabled
- (kmemcheck_alloc_shadow)
-In-Reply-To: <CAAmzW4OD2_ODyeY7c1VMPajwzovOms5M8Vnw=XP=uGUyPogiJQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1207081558540.18461@chino.kir.corp.google.com>
-References: <20120708040009.GA8363@localhost> <CAAmzW4OD2_ODyeY7c1VMPajwzovOms5M8Vnw=XP=uGUyPogiJQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752588Ab2GHXDs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 19:03:48 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:42436 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752237Ab2GHXDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 19:03:47 -0400
+Message-ID: <1341788626.13174.31.camel@joe2Laptop>
+Subject: Re: [PATCH 1/3] staging: vt6656: iwctl: fix up spacing around
+ operators
+From: Joe Perches <joe@perches.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org,
+        Marcos Paulo de Souza <marcos.mage@gmail.com>,
+        Forest Bond <forest@alittletooquiet.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
+Date: Sun, 08 Jul 2012 16:03:46 -0700
+In-Reply-To: <alpine.LNX.2.00.1207090054270.15263@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1206272116490.6908@swampdragon.chaosbits.net>
+	 <20120706230945.GA8835@kroah.com>
+	 <alpine.LNX.2.00.1207070228340.13344@swampdragon.chaosbits.net>
+	 <alpine.LNX.2.00.1207090052220.15263@swampdragon.chaosbits.net>
+	 <alpine.LNX.2.00.1207090054270.15263@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jul 2012, JoonSoo Kim wrote:
+On Mon, 2012-07-09 at 00:58 +0200, Jesper Juhl wrote:
+> A few cases were missed in my previous cleanup, this takes care of the
+> last cases of missing space (or too much space (as in a newline))
+> around operators ('=', '==', ',', '<').
 
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 8c691fa..5d41cad 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -1324,8 +1324,14 @@ static struct page *allocate_slab(struct
-> kmem_cache *s, gfp_t flags, int node)
->                 && !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
->                 int pages = 1 << oo_order(oo);
-> 
-> +               if (flags & __GFP_WAIT)
-> +                       local_irq_enable();
-> +
->                 kmemcheck_alloc_shadow(page, oo_order(oo), flags, node);
-> 
-> +               if (flags & __GFP_WAIT)
-> +                       local_irq_disable();
-> +
->                 /*
->                  * Objects from caches that have a constructor don't get
->                  * cleared when they're allocated, so we need to do it here.
+Trivia:
 
-This patch is suboptimal when the branch is taken since you just disabled 
-irqs and now are immediately reenabling them and then disabling them 
-again.  (And your patch is also whitespace damaged, has no changelog, and 
-isn't signed off so it can't be applied.)
+> diff --git a/drivers/staging/vt6656/iwctl.c b/drivers/staging/vt6656/iwctl.c
+[]
+> @@ -1624,8 +1624,7 @@ int iwctl_siwmlme(struct net_device *dev, struct iw_request_info *info,
+>  	case IW_MLME_DISASSOC:
+>  		if (pDevice->bLinkPass == TRUE) {
+>  			PRINT_K("iwctl_siwmlme--->send DISASSOCIATE\n");
+> -			bScheduleCommand((void *)pDevice,
+> -					WLAN_CMD_DISASSOCIATE,
+> +			bScheduleCommand((void *)pDevice, WLAN_CMD_DISASSOCIATE,
+>  					NULL);
 
-The correct fix is what I proposed at 
-http://marc.info/?l=linux-kernel&m=133754837703630 and was awaiting 
-testing.  If Rus, Steven, or Fengguang could test this then we could add 
-it as a stable backport as well.
+pDevice doesn't need a cast.
+
+bScheduleCommand uses a lot of casts for pDevice
+that aren't necessary.
+
+
+
