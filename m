@@ -1,47 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab2GHRHV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 13:07:21 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:62682 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419Ab2GHRHT (ORCPT
+	id S1751738Ab2GHRPp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 13:15:45 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39993 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab2GHRPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 13:07:19 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sun, 8 Jul 2012 10:07:22 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Alistair John Strachan <alistair@devzero.co.uk>,
-        lm-sensors@lm-sensors.org, Jean Delvare <khali@linux-fr.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH 3/4][update] hwmon / gpio-fan: Use struct dev_pm_ops for
- power management
-Message-ID: <20120708170722.GD16423@roeck-us.net>
-References: <201207072302.16491.rjw@sisk.pl>
- <201207072305.28595.rjw@sisk.pl>
- <201207080001.03666.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201207080001.03666.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 8 Jul 2012 13:15:43 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Mike Turquette <mturquette@ti.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 1/1] clk: add DT support for clock gating control
+Date: Sun,  8 Jul 2012 19:15:26 +0200
+Message-Id: <1341767726-25630-1-git-send-email-sebastian.hesselbarth@googlemail.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 08, 2012 at 12:01:03AM +0200, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> Make the gpio-fan driver define its PM callbacks through
-> a struct dev_pm_ops object rather than by using legacy PM hooks
-> in struct platform_driver.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+This patch adds support for using clock gates (clk-gate) from DT based
+on Rob Herrings DT clk binding support for 3.6.
 
-Applied to -next.
+It adds a helper function to clk-gate to allocate all resources required by
+a set of individual clock gates, i.e. register base address and lock. Each
+clock gate is described as a child of the clock-gating-control in DT and
+also created by the helper function.
 
-Thanks,
-Guenter
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: Mike Turquette <mturquette@ti.com>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+---
+ .../bindings/clock/clock-gating-control.txt        |   80 +++++++++++++++++++
+ drivers/clk/clk-gate.c                             |   84 ++++++++++++++++++++
+ include/linux/clk-provider.h                       |    2 +
+ 3 files changed, 166 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/clock-gating-control.txt
+
+diff --git a/Documentation/devicetree/bindings/clock/clock-gating-control.txt b/Documentation/devicetree/bindings/clock/clock-gating-control.txt
+new file mode 100644
+index 0000000..05f5728
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/clock-gating-control.txt
+@@ -0,0 +1,80 @@
++Binding for simple clock gating control based on clock gate register with one
++bit per clock gate. This is a clock consumer and also a clock provider for a
++set of gated clocks that are described as children of this node. Each clock gate
++is described by a bit number and polarity to control the gate.
++
++This binding uses the common clock binding[1].
++
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++==Clock gating control==
++
++Required properties:
++- compatible : shall be "clock-gating-control".
++- reg : should contain the register physical address and length for
++        the clock gating control.
++- clocks : shared parent clock for all gated clocks.
++- #clock-cells : from common clock binding; shall be set to 0.
++- #address-cells : number of cells required to describe a clock gate;
++                   should be <2>.
++- #size-cells : should be zero.
++
++Each individual clock gate bit is described as a child of the
++corresponding gating control register with the following properties.
++
++Required child properties:
++- reg : should contain the individual bit and polarity to control
++        the clock gate. A polarity of 0 means that by setting the
++        bit to 1 the clock passes through the clock gate while
++	setting the bit to 0 disables the clock. Any other value
++     	for polarity inverts the meaning of the control bit.
++
++Optional child properties:
++- clocks : overrides the shared parent clock for this clock gate
++           by the clock passed in this property.
++- clock-output-names : from common clock binding; allows to set
++                       a specific name for the gated clock output.
++
++==Example==
++
++	/* fixed root clock */
++	osc: oscillator {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <166666667>;
++	};
++
++	/* sata peripheral clock */
++	sata_clk: ext-oscillator {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <25000000>;
++	};
++
++	/* register-based clock gating control */
++	gating-control@f10d0038 {
++		compatible = "clock-gating-control";
++		reg = <0xf10d0038 0x4>;
++		clocks = <&osc>;
++		#clock-cells = <0>;
++		#address-cells = <2>;
++		#size-cells = <0>;
++
++		/* USB0 clock gate on register bit 0 with inverted polarity */
++		cg_usb0: clockgate@0 {
++			reg = <0 1>; /* register bit 0, inverted polarity */
++		};
++
++		/* PCIe0 clock gate on register bit 1 with normal polarity
++		 * and named output clock */
++		cg_pcie0: clockgate@1 {
++			reg = <1 0>; /* register bit 1, normal polarity */
++			clock-output-names = "pcie0_clk";
++		};
++
++		/* SATA clock gate with different parent clock */
++		cg_sata: clockgate@3 {
++			reg = <3 0>; /* register bit 3, normal polarity */
++			clocks = <&sata_clk>;
++		};
++	};
+diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
+index 578465e..1e88907 100644
+--- a/drivers/clk/clk-gate.c
++++ b/drivers/clk/clk-gate.c
+@@ -15,6 +15,9 @@
+ #include <linux/io.h>
+ #include <linux/err.h>
+ #include <linux/string.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_platform.h>
+ 
+ /**
+  * DOC: basic gatable clock which can gate and ungate it's ouput
+@@ -148,3 +151,84 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
+ 
+ 	return clk;
+ }
++
++#ifdef CONFIG_OF
++/**
++ * of_clock_gating_control_setup() - Setup function for clock gate control
++ *   This is a helper for using clk-gate from OF device tree. It allocates
++ *   a common lock for a base register and creates the individual clk-gates.
++ */
++void __init of_clock_gating_control_setup(struct device_node *np)
++{
++	struct device_node *child;
++	const char *pclk_name;
++	void __iomem *base;
++	spinlock_t *lockp;
++	unsigned int rnum;
++	u64 addr;
++
++	pclk_name = of_clk_get_parent_name(np, 0);
++	if (!pclk_name) {
++		pr_debug("%s: unable to get parent clock for %s\n",
++			__func__, np->full_name);
++		return;
++	}
++
++	lockp = kzalloc(sizeof(spinlock_t), GFP_KERNEL);
++	if (!lockp) {
++		pr_debug("%s: unable to allocate spinlock for %s\n",
++			 __func__, np->full_name);
++		return;
++	}
++
++	spin_lock_init(lockp);
++	base = of_iomap(np, 0);
++	rnum = sizeof(resource_size_t) * 8;
++	addr = of_translate_address(np, of_get_property(np, "reg", NULL));
++
++	pr_debug("create clock gate control %s\n", np->full_name);
++
++	for_each_child_of_node(np, child) {
++		struct clk *cg;
++		const char *cg_name;
++		const char *cg_pclk_name;
++		u32 propval[2];
++		unsigned int rbit;
++
++		if (of_property_read_u32_array(child, "reg", propval, 2)) {
++			pr_debug("%s: wrong #reg on %s\n",
++				 __func__, child->full_name);
++			continue;
++		}
++
++		rbit = propval[0];
++		if (rbit >= rnum) {
++			pr_debug("%s: bit position of %s exceeds resources\n",
++				 __func__, child->full_name);
++			continue;
++		}
++
++		cg_pclk_name = of_clk_get_parent_name(child, 0);
++		if (!pclk_name)
++			cg_pclk_name = pclk_name;
++
++		if (of_property_read_string(child, "clock-output-names",
++					    &cg_name)) {
++			unsigned int nlen = 4 + 16 + strlen(child->name);
++			char *name = kzalloc(nlen+1, GFP_KERNEL);
++			if (!name)
++				continue;
++			snprintf(name, nlen, "%u@%llx.%s", rbit,
++				 (unsigned long long)addr, child->name);
++			cg_name = name;
++		}
++
++		pr_debug("  create clock gate: %s\n", cg_name);
++
++		cg = clk_register_gate(NULL, cg_name, cg_pclk_name, 0,
++				       base, rbit, propval[1], lockp);
++		if (cg)
++			of_clk_add_provider(child, of_clk_src_simple_get, cg);
++	}
++}
++#endif
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index b97f61e..499eac2 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -205,6 +205,8 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
+ 		void __iomem *reg, u8 bit_idx,
+ 		u8 clk_gate_flags, spinlock_t *lock);
+ 
++void of_clock_gating_control_setup(struct device_node *np);
++
+ /**
+  * struct clk_divider - adjustable divider clock
+  *
+-- 
+1.7.10
+
