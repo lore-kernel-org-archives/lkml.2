@@ -1,86 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab2GHCGr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 22:06:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52017 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751405Ab2GHCGq (ORCPT
+	id S1752286Ab2GHCKG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 22:10:06 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41932 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab2GHCKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 22:06:46 -0400
-Message-ID: <1341713191.25597.207.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 07/12] random: use the arch-specific rng in
- xfer_secondary_pool
-From: Ben Hutchings <ben@decadent.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        ewust@umich.edu, zakir@umich.edu, nadiah@cs.ucsd.edu,
-        jhalderm@umich.edu, stable@vger.kernel.org
-Date: Sun, 08 Jul 2012 03:06:31 +0100
-In-Reply-To: <20120708014124.GA3809@thunk.org>
-References: <1341614704-24965-1-git-send-email-tytso@mit.edu>
-	 <1341614704-24965-8-git-send-email-tytso@mit.edu>
-	 <1341709606.25597.182.camel@deadeye.wl.decadent.org.uk>
-	 <20120708014124.GA3809@thunk.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-guYlRJT20lrZF53RFjFh"
-X-Mailer: Evolution 3.4.3-1 
+	Sat, 7 Jul 2012 22:10:04 -0400
+Message-ID: <1341713399.22696.9.camel@mop>
+Subject: Re: Regression - /proc/kmsg does not (always) block for 1-byte reads
+From: Kay Sievers <kay@vrfy.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Greg Kroah-Hartman <greg@kroah.com>, Jukka Ollila <jiiksteri@gmail.com>,
+        linux-kernel@vger.kernel.org, jbeulich@novell.com,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Date: Sun, 08 Jul 2012 04:09:59 +0200
+In-Reply-To: <CAPXgP12vGkh1q4-L3+wYY5XWZURBXOWQCmovARr0cbf+dHinVQ@mail.gmail.com>
+References: <CAGoecWyMKF4gC7FaoBCrBs+rD=u6oJRHS5Q2qVkkwoZZ1_4RCg@mail.gmail.com>
+	 <20120706203825.20ce3e47@pyramind.ukuu.org.uk>
+	 <CA+55aFy7RncR_z9M+DRzSXJY7cWxY9zG0ioLdiefhxkH__Z7Yw@mail.gmail.com>
+	 <CAPXgP12vGkh1q4-L3+wYY5XWZURBXOWQCmovARr0cbf+dHinVQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.5.3.1 (3.5.3.1-4.fc18) 
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2012-07-07 at 23:19 +0200, Kay Sievers wrote:
+> On Fri, Jul 6, 2012 at 10:30 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > Kay, this needs to be fixed.
+> >
+> > Suggested fix: just use the 'seq_printf()' interfaces, which do the
+> > proper buffering, and allow any size reads of various packetized data.
+> 
+> I'll have a look.
 
---=-guYlRJT20lrZF53RFjFh
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Hmm, we need to block in the read() when we have no data, and we need to
+support concurrent readers where only one of them sees the data, and we
+need O_NONBLOCK support. Maybe I miss something but the seq_file stuff
+seems to get complicated, as it takes a mutex internally which gets in
+the way of the O_NONBLOCK stuff.
 
-On Sat, 2012-07-07 at 21:41 -0400, Theodore Ts'o wrote:
-> On Sun, Jul 08, 2012 at 02:06:46AM +0100, Ben Hutchings wrote:
-> >=20
-> > Surely the number of random bytes being added is i * sizeof(long), not
-> > sizeof(u.hwrand)?
-> >=20
->=20
-> Meh; Kees Cook has made the same observation.  Basically, in the
-> unlikely case where RDRAND fails, we'll end up mixing in stack
-> garbage.  It's not a security vulnerability, since the contents of the
-> entropy pool never gets exposed.  In fact, one could argue that mixing
-> in some unknown garbage from the kernel stack might actually help a
-> little; but it can't hurt.
+Here is what seems to work for me. If the buffer is to small to fit the
+first record, we deliver a partial record, and start from that offset
+again with the next read().
 
-Sorry, I realised after reading further that there's no entropy being
-credited.  However, I expect that kmemcheck will complain unless you
-limit the used length or call kmemcheck_mark_initialized().
+I'll need to do more testing tomorrow.
 
-Ben.
+Thanks,
+Kay
 
---=20
-Ben Hutchings
-Life would be so much easier if we could look at the source code.
+---
+ kernel/printk.c |   28 ++++++++++++++++++++--------
+ 1 file changed, 20 insertions(+), 8 deletions(-)
 
---=-guYlRJT20lrZF53RFjFh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -217,6 +217,7 @@ static DEFINE_RAW_SPINLOCK(logbuf_lock);
+ /* the next printk record to read by syslog(READ) or /proc/kmsg */
+ static u64 syslog_seq;
+ static u32 syslog_idx;
++static size_t syslog_partial;
+ 
+ /* index and sequence number of the first record stored in the buffer */
+ static u64 log_first_seq;
+@@ -890,22 +891,33 @@ static int syslog_print(char __user *buf
+ 
+ 	while (size > 0) {
+ 		size_t n;
++		size_t skip;
+ 
+ 		raw_spin_lock_irq(&logbuf_lock);
+ 		if (syslog_seq < log_first_seq) {
+ 			/* messages are gone, move to first one */
+ 			syslog_seq = log_first_seq;
+ 			syslog_idx = log_first_idx;
++			syslog_partial = 0;
+ 		}
+ 		if (syslog_seq == log_next_seq) {
+ 			raw_spin_unlock_irq(&logbuf_lock);
+ 			break;
+ 		}
++
++		skip = syslog_partial;
+ 		msg = log_from_idx(syslog_idx);
+ 		n = msg_print_text(msg, true, text, LOG_LINE_MAX);
+-		if (n <= size) {
++		if (n - syslog_partial <= size) {
++			/* message fits into buffer, move forward */
+ 			syslog_idx = log_next(syslog_idx);
+ 			syslog_seq++;
++			n -= syslog_partial;
++			syslog_partial = 0;
++		} else if (!len){
++			/* partial read(), remember position */
++			n = size;
++			syslog_partial += n;
+ 		} else
+ 			n = 0;
+ 		raw_spin_unlock_irq(&logbuf_lock);
+@@ -913,17 +925,15 @@ static int syslog_print(char __user *buf
+ 		if (!n)
+ 			break;
+ 
+-		len += n;
+-		size -= n;
+-		buf += n;
+-		n = copy_to_user(buf - n, text, n);
+-
+-		if (n) {
+-			len -= n;
++		if (copy_to_user(buf, text + skip, n)) {
+ 			if (!len)
+ 				len = -EFAULT;
+ 			break;
+ 		}
++
++		len += n;
++		size -= n;
++		buf += n;
+ 	}
+ 
+ 	kfree(text);
+@@ -1107,6 +1117,7 @@ int do_syslog(int type, char __user *buf
+ 			/* messages are gone, move to first one */
+ 			syslog_seq = log_first_seq;
+ 			syslog_idx = log_first_idx;
++			syslog_partial = 0;
+ 		}
+ 		if (from_file) {
+ 			/*
+@@ -1129,6 +1140,7 @@ int do_syslog(int type, char __user *buf
+ 				idx = log_next(idx);
+ 				seq++;
+ 			}
++			error -= syslog_partial;
+ 		}
+ 		raw_spin_unlock_irq(&logbuf_lock);
+ 		break;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAT/jrJ+e/yOyVhhEJAQoCFw//RELed9kJe17JEPTd7u6Pl82UhX78XtoM
-edKxfzApXz36qxuJCxfPTd63q6pQncF5/OBfzipoYq381juKYDywPR2NODrPIlW9
-PFRfxSnYK2K3bnu4mTI0sUBR+SZvPdsgvdgjJGMVBPNjPEWugmzz4WmUSUrIf+v5
-Y9Zfn/feBfUZM0t2oqY9NqGGy/KM6e5qSaJubuYnCFsm34jibx6/nQ6xTG1i8/hd
-dqtL5LAprr3W3tmRQXg3MxJ+Rp/bnUHRSwtxhrOo3TR5xl1++zbVrR4D5IyO+Er+
-FIdwRjdMEwlh0D7cs8bIPUhsB2NCZXzroxv9Gfx9n1b1rsiP3IV/+V0LZ3JI5skr
-xNzX9KzApigsM6HuMQS42xxjWIQzBR4jrhr30VnaI91WKfrCRdNh6B9E9LSCmdjd
-JrMZnk3waAwJ4e95sWB3olr0yc8EmCrspsT5/G7aWuuOSBA5u+pmQrTgE/tkvi8X
-zsIoKum/yL4wWWBqjVOMvqThlBrBdTIp6w6Bck5GuUgsJA59ntqvZpZEgDLZsMTG
-sytVjk0xkOiDkm2PnJ/oPhjHiKBtkbR8ynPcsHf70kXDEYvI3AEDX61rnq6MQGxV
-PdQwKxDpbNx7JEQ38E7ihu/tjmdaS8LYzxU0yqgC3aHH+L8SVo/yb7lKWBmolQqU
-oqc6eb8HQTQ=
-=pPLs
------END PGP SIGNATURE-----
-
---=-guYlRJT20lrZF53RFjFh--
