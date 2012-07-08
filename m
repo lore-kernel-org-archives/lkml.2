@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288Ab2GHTXz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 15:23:55 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:49653 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256Ab2GHTXw (ORCPT
+	id S1752228Ab2GHTcM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 15:32:12 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46808 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075Ab2GHTcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 15:23:52 -0400
-MIME-Version: 1.0
-X-Originating-IP: [93.172.10.162]
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sun, 8 Jul 2012 22:23:32 +0300
-Message-ID: <CAK=WgbbvHobMODDaa+k10uWfbMaH-6SZ6o9f6Vx+aB2TSvfDQw@mail.gmail.com>
-Subject: [GIT PULL] rpmsg fixes for 3.5
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
+	Sun, 8 Jul 2012 15:32:10 -0400
+Date: Sun, 8 Jul 2012 14:32:05 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Octavio Alvarez <alvarezp@alvarezp.com>
+Cc: Bob Moore <robert.moore@intel.com>,
+        Adrian Knoth <adi@drcomp.erfurt.thur.de>, Shaohua Li <shli@kernel.org>,
+        Len Brown <len.brown@intel.com>, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH] ACPI: Leave Bus Master Arbitration enabled for
+ suspend/resume
+Message-ID: <20120708193204.GF7328@burratino>
+References: <op.wg3en6ij6g6bxc@localhost.localdomain>
+ <Pine.LNX.4.44L0.1207072208270.508-100000@netrider.rowland.org>
+ <20120708025730.GE2961@burratino>
+ <op.wg30yabp6g6bxc@localhost.localdomain>
+ <20120708090432.GF4625@burratino>
+ <op.wg4f33nl6g6bxc@localhost.localdomain>
+ <20120708190434.GD7328@burratino>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120708190434.GD7328@burratino>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi again,
 
-The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
+Jonathan Nieder wrote:
 
-  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
+> The bug snuck back in in commit 33620c5419e8 (ACPICA: Support for
+> custom ACPICA build for ACPI 5 reduced hardware, 2012-02-14),
+> presumably by copy/pasting from the wrong source for the legacy case.
 
-are available in the git repository at:
+Um, wrong commit.  Sorry, here's a fixed message.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ohad/rpmsg.git
-tags/rpmsg-3.5-fixes
+ACPI: Leave Bus Master Arbitration enabled for suspend/resume
 
-for you to fetch changes up to 15fd943af50dbc5f7f4de33835795c72595f7bf4:
+This is an old suspend/resume lockup fix:
 
-  rpmsg: make sure inflight messages don't invoke just-removed
-callbacks (2012-07-04 11:51:59 +0300)
+	commit 2780cc4660e1
+	Author: Len Brown <len.brown@intel.com>
+	Date:   Thu Dec 23 13:43:30 2004 -0500
 
-----------------------------------------------------------------
-Fixing two (somewhat rare) endpoint-related race issues, both of which
-were reported by Fernando Guzman Lugo.
+	    [ACPI] Fix suspend/resume lockup issue
+	    by leaving Bus Master Arbitration enabled.
+	    The ACPI spec mandates it be disabled only for C3.
 
-----------------------------------------------------------------
-Ohad Ben-Cohen (2):
-      rpmsg: avoid premature deallocation of endpoints
-      rpmsg: make sure inflight messages don't invoke just-removed callbacks
+	    http://bugzilla.kernel.org/show_bug.cgi?id=3599
 
- drivers/rpmsg/virtio_rpmsg_bus.c | 55 ++++++++++++++++++++++++++++++++++++----
- include/linux/rpmsg.h            |  6 +++++
- 2 files changed, 56 insertions(+), 5 deletions(-)
+	    Signed-off-by: David Shaohua Li <shaohua.li@intel.com>
+	    Signed-off-by: Len Brown <len.brown@intel.com>
+
+The bug snuck back in in commit 2feec47d4c5f (ACPICA: ACPI 5: Support
+for new FADT SleepStatus, SleepControl registers, 2012-02-14),
+presumably by copy/pasting a copy of the code without that fix for the
+legacy case.
+
+On affected machines, after that commit, the machine locks up hard
+on resume from suspend.  The same fix as seven years ago still works.
+
+Addresses <https://bugzilla.kernel.org/show_bug.cgi?id=43641>.
+
+Reported-bisected-and-tested-by: Octavio Alvarez <alvarezp@alvarezp.com>
+Reported-by: Adrian Knoth <adi@drcomp.erfurt.thur.de>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Cc: <stable@vger.kernel.org> # 3.4
