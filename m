@@ -1,184 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301Ab2GHVcQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 17:32:16 -0400
-Received: from smtp.tele.fi ([192.89.123.25]:42981 "EHLO
-	vulpes-int.media.sonera.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752066Ab2GHVcO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 17:32:14 -0400
-X-Greylist: delayed 2698 seconds by postgrey-1.27 at vger.kernel.org; Sun, 08 Jul 2012 17:32:14 EDT
-X-Originating-Ip: [194.89.68.22]
-Date: Sun, 8 Jul 2012 23:47:11 +0300
-From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>, mjg@redhat.com,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: Re: [Xen-devel] Stop the continuous flood of (XEN) traps.c:2432:d0
- Domain	attempted WRMSR ..
-Message-ID: <20120708204711.GI2058@reaktio.net>
-References: <20120203180952.GP12984@reaktio.net>
- <20120203185527.GA9290@phenom.dumpdata.com>
- <20120205194413.GR12984@reaktio.net>
- <20120209212147.GE14007@andromeda.dapyr.net>
- <20120209132715.2d1c0c9f@jbarnes-desktop>
- <20120328202907.GA1784@phenom.dumpdata.com>
+	id S1752382Ab2GHViM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 17:38:12 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752185Ab2GHViJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 17:38:09 -0400
+Message-ID: <4FF9FDBB.8010702@nod.at>
+Date: Sun, 08 Jul 2012 23:38:03 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120328202907.GA1784@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: daniel@caiaq.de, rusty@rustcorp.com.au, mchehab@redhat.com,
+        axel.lin@gmail.com, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: input: eeti_ts.c build error
+References: <4FF83E48.6060303@nod.at> <20120708010520.GC19007@core.coreip.homeip.net>
+In-Reply-To: <20120708010520.GC19007@core.coreip.homeip.net>
+X-Enigmail-Version: 1.4.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig14E9AB125CA5C982B36A3E7C"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 28, 2012 at 04:29:07PM -0400, Konrad Rzeszutek Wilk wrote:
-> On Thu, Feb 09, 2012 at 01:27:15PM -0800, Jesse Barnes wrote:
-> > On Thu, 9 Feb 2012 17:21:47 -0400
-> > Konrad Rzeszutek Wilk <konrad@darnok.org> wrote:
-> > 
-> > > On Sun, Feb 05, 2012 at 09:44:13PM +0200, Pasi K?rkk?inen wrote:
-> > > > On Fri, Feb 03, 2012 at 01:55:27PM -0500, Konrad Rzeszutek Wilk wrote:
-> > > > > On Fri, Feb 03, 2012 at 08:09:52PM +0200, Pasi K?rkk?inen wrote:
-> > > > > > Hello,
-> > > > > > 
-> > > > > > IIRC there was some discussion earlier about these messages in Xen's dmesg:
-> > > > > > 
-> > > > > > (XEN) traps.c:2432:d0 Domain attempted WRMSR 00000000000001ac from 0x0000000000c800c8 to 0x0000000080c880c8.
-> > > > > > (XEN) traps.c:2432:d0 Domain attempted WRMSR 00000000000001ac from 0x0000000000c800c8 to 0x0000000080c880c8.
-> > > > > > (XEN) traps.c:2432:d0 Domain attempted WRMSR 00000000000001ac from 0x0000000000c800c8 to 0x0000000080c880c8.
-> > > > > > (XEN) traps.c:2432:d0 Domain attempted WRMSR 00000000000001ac from 0x0000000000c800c8 to 0x0000000080c880c8.
-> > > > > > 
-> > > > > > At least on my systems there's continuous flood of those messages, so they will fill up the
-> > > > > > Xen dmesg log buffer and "xm dmesg" or "xl dmesg" won't show any valuable information, just those messages.
-> > > > > 
-> > > > > Is it always that MSR? That looks to be TURBO_POWER_CURRENT_LIMIT
-> > > > > which is the intel_ips driver doing.
-> > > > > 
-> > > > 
-> > > > Yeah, it's always the same..
-> > > > 
-> > > > > > 
-> > > > > > I seem to be getting those messages even when there's only dom0 running.
-> > > > > > Is the plan to drop those messages? What's causing them? 
-> > > > > 
-> > > > > Looks to be the intel-ips. If you rename it does the issue disappear?
-> > > > 
-> > > > I just did "rmmod intel_ips" and the flood stopped.. 
-> > > > 
-> > > > 
-> > > > Btw on baremetal I get this in dmesg:
-> > > > 
-> > > > [  745.033645] CPU1: Core temperature above threshold, cpu clock throttled (total events = 1)
-> > > > [  745.033652] CPU3: Core temperature above threshold, cpu clock throttled (total events = 1)
-> > > > [  745.034676] CPU1: Core temperature/speed normal
-> > > > [  745.034678] CPU3: Core temperature/speed normal
-> > > > [  849.678508] intel ips 0000:00:1f.6: MCP limit exceeded: Avg temp 9682, limit 9000
-> > > > [  899.614074] intel ips 0000:00:1f.6: MCP limit exceeded: Avg temp 9896, limit 9000
-> > > > [  899.722881] [Hardware Error]: Machine check events logged
-> > > > [ 1172.675987] CPU3: Core temperature above threshold, cpu clock throttled (total events = 78)
-> > > > [ 1172.675990] CPU1: Core temperature above threshold, cpu clock throttled (total events = 78)
-> > > > [ 1172.677038] CPU1: Core temperature/speed normal
-> > > > [ 1172.677042] CPU3: Core temperature/speed normal
-> > > > [ 1174.260050] intel ips 0000:00:1f.6: MCP limit exceeded: Avg temp 9676, limit 9000
-> > > > [ 1199.339634] [Hardware Error]: Machine check events logged
-> > > 
-> > > Jesse, and Matthew,
-> > > 
-> > > Is there a way to make the intel_ips.c driver be in a "low-power" state?
-> > > 
-> > > My first thought about fixing this was that we could allow the
-> > > hypervisor to allow those RDMSR but the Linux kernel has no power to
-> > > actually influence the power management (as the hypervisor is in charge
-> > > of that) - so would the driver be capable of just sitting back and
-> > > not influencing the CPU?
-> > 
-> > Yeah it's easy enough to turn off or disable.  But it doesn't currently
-> > export any knobs for controlling behavior.  I don't have any issue with
-> > exposing some though...
-> 
-> Pasi,
-> 
-> Could you test the two patches independetly of each other? Meaning
-> test the Linux one without the Xen one, and vice-versa.
-> 
-> 
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig14E9AB125CA5C982B36A3E7C
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Sorry for the really long delay.. I tested these patches now.
+Am 08.07.2012 03:05, schrieb Dmitry Torokhov:
+> Hi Richard,
+>=20
+> On Sat, Jul 07, 2012 at 03:48:56PM +0200, Richard Weinberger wrote:
+>> Hi!
+>>
+>> While building a kernel for an ARM board the following build error cam=
+e across:
+>>
+>> drivers/input/touchscreen/eeti_ts.c: In function 'eeti_ts_irq_active':=
 
+>> drivers/input/touchscreen/eeti_ts.c:65:2: error: implicit declaration =
+of function 'irq_to_gpio' [-Werror=3Dimplicit-function-declaration]
+>>
+>> .config is attached.
+>> Happens on 3.4.4 and Linus's tree as of today.
+>=20
+> Could you please try the patch below? I have had it for a long time but=
 
-> diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
-> index 88a98cf..7276831 100644
-> --- a/drivers/platform/x86/intel_ips.c
-> +++ b/drivers/platform/x86/intel_ips.c
-> @@ -1407,6 +1407,10 @@ static struct ips_mcp_limits *ips_detect_cpu(struct ips_driver *ips)
->  	}
->  
->  	rdmsrl(TURBO_POWER_CURRENT_LIMIT, turbo_power);
-> +	if (turbo_power == 0) {
-> +		ips->turbo_toggle_allowed = false;
-> +		return NULL;
-> +	}
->  	tdp = turbo_power & TURBO_TDP_MASK;
->  
->  	/* Sanity check TDP against CPU */
+> could not find anyone to test it.
 
-This Linux patch applied to Linux 3.4.4 dom0 kernel and no patches to the hypervisor
-didn't change anything.. the hypervisor log is still flooded with:
-
-(XEN) traps.c:2432:d0 Domain attempted WRMSR 00000000000001ac from 0x0000000000c800c8 to 0x0000000080c880c8.
-(XEN) traps.c:2432:d0 Domain attempted WRMSR 00000000000001ac from 0x0000000000c800c8 to 0x0000000080c880c8.
-
-
-And then the Xen patch..
-
-> diff -r 8e2690dbec49 xen/arch/x86/traps.c
-> --- a/xen/arch/x86/traps.c	Sat Mar 24 13:13:49 2012 -0400
-> +++ b/xen/arch/x86/traps.c	Wed Mar 28 16:27:31 2012 -0400
-> @@ -1746,7 +1746,8 @@ void (*pv_post_outb_hook)(unsigned int p
->  static inline uint64_t guest_misc_enable(uint64_t val)
->  {
->      val &= ~(MSR_IA32_MISC_ENABLE_PERF_AVAIL |
-> -             MSR_IA32_MISC_ENABLE_MONITOR_ENABLE);
-> +             MSR_IA32_MISC_ENABLE_MONITOR_ENABLE |
-> +             MSR_IA32_MISC_ENABLE_TURBO);
->      val |= MSR_IA32_MISC_ENABLE_BTS_UNAVAIL |
->             MSR_IA32_MISC_ENABLE_PEBS_UNAVAIL |
->             MSR_IA32_MISC_ENABLE_XTPR_DISABLE;
-> diff -r 8e2690dbec49 xen/include/asm-x86/msr-index.h
-> --- a/xen/include/asm-x86/msr-index.h	Sat Mar 24 13:13:49 2012 -0400
-> +++ b/xen/include/asm-x86/msr-index.h	Wed Mar 28 16:27:31 2012 -0400
-> @@ -327,6 +327,7 @@
->  #define MSR_IA32_MISC_ENABLE_MONITOR_ENABLE (1<<18)
->  #define MSR_IA32_MISC_ENABLE_LIMIT_CPUID  (1<<22)
->  #define MSR_IA32_MISC_ENABLE_XTPR_DISABLE (1<<23)
-> +#define MSR_IA32_MISC_ENABLE_TURBO        (1<<38)
->  
->  #define MSR_IA32_TSC_DEADLINE		0x000006E0
->  #define MSR_IA32_ENERGY_PERF_BIAS	0x000001b0
-
-It seems this Xen patch breaks compilation.. at least on Fedora 16 gcc (Xen 4.1.3-rc2):
-
-traps.c: In function 'guest_misc_enable':
-traps.c:1780:14: error: left shift count >= width of type [-Werror]
-cc1: all warnings being treated as errors
-make[4]: *** [traps.o] Error 1
-
-So I had to do a trivial change to msr-index.h:
-#define MSR_IA32_MISC_ENABLE_TURBO        (1L<<38)
-
-Which seems to fix the compilation. 
-
-I tested the patched hypervisor with stock Fedora 16 Linux 3.4.2-1.fc16.x86_64 dom0 kernel,
-and also then I get the hypervisor log entries:
-
-(XEN) traps.c:2489:d0 Domain attempted WRMSR 00000000000001ac from 0x0000000000c800c8 to 0x0000000080c880c8.
-(XEN) traps.c:2489:d0 Domain attempted WRMSR 00000000000001ac from 0x0000000000c800c8 to 0x0000000080c880c8.
-
-So it looks like unfortunately the patches didn't help reducing the spam in the hypervisor logs.
+I don't have such a device.
+The only thing I can do is a compile test.
 
 Thanks,
+//richard
 
--- Pasi
 
+--------------enig14E9AB125CA5C982B36A3E7C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJP+f28AAoJEN9758yqZn9esmsH/iCjS4pkHD6IC2kRvUms3OSa
+IFzJ2ZX/0lj3fiYjccKCzRBFCoPE5SfClbYkkWtBHaLXg6vOFqCVaSOugcs7x6eZ
+61Vy6pQkMxwKWpwEjqgSMIATmAVt5RAFiywlrRDFz4jKYj3Mu1T4Zgi7xUiNHEip
+eJkVHmW37mUZpvfEhvgndySWiDif9sisVrllPUt4L6R5VmmBOSGPt2CE2sde1aLN
+2+cmtRpA5WhJ2+exrqcW+yeCHixN/MlEioYGiVbHPrkLtCPXbbs1aghdKlpAGgk5
+d1XQ0sVMhjv2Lndaw0n/b7KHp1ks6uKOFlyGgn/uDwV81NzuwR1qFUsHEcjyPRE=
+=mEpZ
+-----END PGP SIGNATURE-----
+
+--------------enig14E9AB125CA5C982B36A3E7C--
