@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650Ab2GHKaW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 06:30:22 -0400
-Received: from nn7.de ([85.214.94.156]:53344 "EHLO nn7.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751226Ab2GHKaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 06:30:21 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sun, 08 Jul 2012 06:30:21 EDT
-Message-ID: <1341743017.7379.6.camel@no>
-Subject: google chrome / chromium hangs on 3.5.0-rc6 but not 3.4.x -
- threading issues?
-From: Soeren Sonnenburg <sonne@debian.org>
-To: linux-kernel@vger.kernel.org
-Date: Sun, 08 Jul 2012 12:23:37 +0200
-Organization: 
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-Gb/TX/rF0bHV+sMs7ZRu"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	id S1751792Ab2GHKiz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 06:38:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50226 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272Ab2GHKix (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 06:38:53 -0400
+Message-ID: <4FF96332.8080401@gmail.com>
+Date: Sun, 08 Jul 2012 18:38:42 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Zheng Liu <gnehzuil.liu@gmail.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ext4: fix the comment in ext4_ext_insert_extent for
+ ext4_ext_try_to_merge in extents.c
+References: <4FF68511.9050207@gmail.com> <CANWLp03uEyPZUbUD+rO=AtRQPLVSvTMTJERhCX94Nfw-7QRtmQ@mail.gmail.com>
+In-Reply-To: <CANWLp03uEyPZUbUD+rO=AtRQPLVSvTMTJERhCX94Nfw-7QRtmQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2012年07月07日 23:15, Zheng Liu wrote:
+> Hi Sheng-Hui,
+> 
+> It seems that there has a patch to fix it.
+> http://www.spinics.net/lists/linux-ext4/msg32611.html
+> 
+> Regards,
+> Zheng
 
---=-Gb/TX/rF0bHV+sMs7ZRu
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: quoted-printable
+Got it. 
 
-Hi,
+I didn't track the patch list. Just checked the git tree.
 
-there seems to be some weird interaction between the latest (git
-current!) linux kernel and recent chrome/chromium releases (>=3D 2X.X).
+Thanks,
 
-Basically chrome fails to open various web sites like https://github.com
-just hanging (waiting). This problem is not there with older kernel
-version (e.g. linux 3.4.4).
+> 
+> On Fri, Jul 6, 2012 at 2:26 PM, Wang Sheng-Hui <shhuiw@gmail.com> wrote:
+>> The left and right extents merge is done by
+>> ext4_ext_try_to_merge. No specific left/right
+>> fun calls any more.
+>>
+>> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+>> ---
+>>  fs/ext4/extents.c |    4 +---
+>>  1 files changed, 1 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+>> index 5207b7b..6c2a37d 100644
+>> --- a/fs/ext4/extents.c
+>> +++ b/fs/ext4/extents.c
+>> @@ -1891,12 +1891,10 @@ has_space:
+>>         nearex->ee_len = newext->ee_len;
+>>
+>>  merge:
+>> -       /* try to merge extents to the right */
+>> +       /* try to merge extents to the neighbours */
+>>         if (!(flag & EXT4_GET_BLOCKS_PRE_IO))
+>>                 ext4_ext_try_to_merge(inode, path, nearex);
+>>
+>> -       /* try to merge extents to the left */
+>> -
+>>         /* time to correct all indexes above */
+>>         err = ext4_ext_correct_indexes(handle, inode, path);
+>>         if (err)
+>> --
+>> 1.7.1
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Opening chrome single-threaded works all nicely. A gdb backtrace of such
-hang and some more analysis can be found under
-
-https://code.google.com/p/chromium/issues/detail?id=3D136258
-http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=3D679827
-
-It should be noted that chrome 18.X is still working with the new
-kernel. However, klogd also seems to have some trouble with the newer
-kernel utilizing 100% of the CPU but not with the older ones but I don't
-know whether the problem is related.
-
-Soeren
---=20
-For the one fact about the future of which we can be certain is that it
-will be utterly fantastic. -- Arthur C. Clarke, 1962
-
---=-Gb/TX/rF0bHV+sMs7ZRu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABCAAGBQJP+V+pAAoJEH82z1Wqh6p3zKsP/iHLeYh0QdgWF16RhiyG2Zl/
-PqG2FmHtpL2ixK6fnL4EO33z3dakDL6deBm3vgjGlfWEW83MktJ9L6GEkETycubj
-jyHKrrz1i1up1iu1icl386Ua0D7iiRv8X3hXeYkqxx2IPl9f96Dyg0FcNz4Ixg5D
-fK+dRK93SdGOfOq88odEwMHXTamw07ZXNqSlhhjOB8INhmHXDfkeIusv+zgm2iwX
-Lftp2hFLGvHYeK+38Y0erFbwJJmxmyvSB0h5q9ZJvZTsnCo6cz6AVH+pu0bjJvox
-0dR/tTx+yiDB0hvh1GlSEvTymiOqFJdcvSRjtcFYQZPiYKWnJ/XTzY99cFmIU31F
-ekW+M+cwc98CaDXMskH2UtN7mbOWxosw/VUwSVu2tJR9sU4WFtNjCPpLzCVYYLJY
-noqYQmz49GrP9ypS70W0Dafy5HWhwTtzucu9eojT2pyO9i112uT32SToKqDhnjWI
-J6O8ziKlFRl89V3AmXaF5GTknZuAu3mSXy81VGRZ/fxJPmu5PPxW7vrTtgI/nGGP
-NiPHQy70DY3Rftb6wz94huEM0CjqqJV+YFY6YTpkWcwiv0g1vkssUSdfmKXouvDs
-PVKXGlTGHZbpTErnNxHzURWSZgwFrGWAdm3PcG6LMc42mb08SPnd+vVu9T7rnb0w
-QrHHpSKJDa64IHxBRbGP
-=sQ2o
------END PGP SIGNATURE-----
-
---=-Gb/TX/rF0bHV+sMs7ZRu--
