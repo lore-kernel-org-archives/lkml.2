@@ -1,104 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751536Ab2GHNB6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 09:01:58 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:53820 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab2GHNB4 convert rfc822-to-8bit (ORCPT
+	id S1751678Ab2GHNGm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 09:06:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60799 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab2GHNGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 09:01:56 -0400
+	Sun, 8 Jul 2012 09:06:41 -0400
 MIME-Version: 1.0
-Reply-To: martin-eric.racine@iki.fi
-In-Reply-To: <1339932233.20497.14.camel@henna.lan>
-References: <20120614162609.4613.22122.reportbug@henna.lan>
-	<20120614215359.GF3537@burratino>
-	<CAPZXPQd9gNCxn7xGyqj_xymPaF5OxvRtxRFkt+SsLs942te4og@mail.gmail.com>
-	<20120616044137.GB4076@burratino>
-	<1339932233.20497.14.camel@henna.lan>
-Date: Sun, 8 Jul 2012 16:01:53 +0300
-X-Google-Sender-Auth: iETyehWAh8sqxeQETyk0c-NWbJE
-Message-ID: <CAPZXPQegp7RA5M0H9Ofq4rJ9aj-rEdg=Ly9_1c6vAKi3COw50g@mail.gmail.com>
-Subject: Re: video: USB webcam fails since kernel 3.2
-From: =?UTF-8?Q?Martin=2D=C3=89ric_Racine?= <martin-eric.racine@iki.fi>
-To: =?UTF-8?Q?Jean=2DFran=C3=A7ois_Moine?= <moinejf@free.fr>
-Cc: 677533@bugs.debian.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20120708135911.69fe9566@pyramind.ukuu.org.uk>
+References: <CAGoecWyMKF4gC7FaoBCrBs+rD=u6oJRHS5Q2qVkkwoZZ1_4RCg@mail.gmail.com>
+ <20120706175501.GA11908@kroah.com> <CAPXgP11Om4T-U6e-uZVYsV0FcJtkgnMfa+v94R46v=xdbhm77w@mail.gmail.com>
+ <20120708135911.69fe9566@pyramind.ukuu.org.uk>
+From: Kay Sievers <kay@vrfy.org>
+Date: Sun, 8 Jul 2012 15:06:20 +0200
+Message-ID: <CAPXgP11LwEdCg=iySj55mjV5=am-6rjx8VdasAFDU97AeH3iPg@mail.gmail.com>
+Subject: Re: Bug 44211 - /proc/kmsg does not (always) block for 1-byte reads
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg KH <greg@kroah.com>, Jukka Ollila <jiiksteri@gmail.com>,
+        linux-kernel@vger.kernel.org, jbeulich@novell.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/17 Martin-Éric Racine <martin-eric.racine@iki.fi>:
-> pe, 2012-06-15 kello 23:41 -0500, Jonathan Nieder kirjoitti:
->> Martin-Ã‰ric Racine wrote:
->> > usb 1-7: new high-speed USB device number 3 using ehci_hcd
->> [...]
->> > usb 1-7: New USB device found, idVendor=0ac8, idProduct=0321
->> > usb 1-7: New USB device strings: Mfr=1, Product=2, SerialNumber=0
->> > usb 1-7: Product: USB2.0 Web Camera
->> > usb 1-7: Manufacturer: Vimicro Corp.
->> [...]
->> > Linux media interface: v0.10
->> > Linux video capture interface: v2.00
->> > gspca_main: v2.14.0 registered
->> > gspca_main: vc032x-2.14.0 probing 0ac8:0321
->> > usbcore: registered new interface driver vc032x
->>
->> The device of interest is discovered.
->>
->> > gspca_main: ISOC data error: [36] len=0, status=-71
->> > gspca_main: ISOC data error: [65] len=0, status=-71
->> [...]
->> > gspca_main: ISOC data error: [48] len=0, status=-71
->> > video_source:sr[3246]: segfault at 0 ip   (null) sp ab36de1c error 14 in cheese[8048000+21000]
->> > gspca_main: ISOC data error: [17] len=0, status=-71
->>
->> (The above data error spew starts around t=121 seconds and continues
->> at a rate of about 15 messages per second.  The segfault is around
->> t=154.)
+On Sun, Jul 8, 2012 at 2:59 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> The patch will not fix the underlying problem, but just make it behave
+>> more like it was and allow partial message reads. This is a years old
+>> problem, the net is full of bugreports of stuff going wrong with
+>> running dd bs=1 on /proc/kmsg. It is a really stupid idea, and can not
+>> work for many other reasons too. The interface can not safely be used
+>> that way, it does not have the usual semantics, it always returned 0
+>> for read() whenever it needed to.
 >
->> The vc032x code hasn't changed since 3.4.1, so please report your
->> symptoms to Jean-FranÃ§ois Moine <moinejf@free.fr>, cc-ing
->> linux-media@vger.kernel.org, linux-kernel@vger.kernel.org, and either
->> me or this bug log so we can track it.  Be sure to mention:
->>
->>  - steps to reproduce, expected result, actual result, and how the
->>    difference indicates a bug (should be simple enough in this case)
->
-> 1. Ensure that user 'myself' is a member of the 'video' group.
-> 2. Launch the webcam application Cheese from the GNOME desktop.
->
-> Expected result: Cheese displays whatever this laptop's camera sees.
->
-> Actual result: Cheese crashes while attempting to access the camera.
->
->>  - how reproducible the bug is (100%?)
->
-> 100%
->
->>  - which kernel versions you have tested and result with each (what is
->>    the newest kernel version that worked?)
->
-> It probably was 3.1.0 or some earlier 3.2 release (the upcoming Debian
-> will release with 3.2.x; 3.4 was only used here for testing purposes),
-> but I wouldn't know for sure since I don't use my webcam too often.
+> If you are breaking the semantics perhaps that should also get fixed ?
 
-I finally found time to perform further testing, using kernel packages
-from snapshots.debian.org, and the last one that positively worked (at
-least using GNOME's webcam application Cheese) was:
+I hopefully just restored the old semantics now.
 
-linux-image-3.1.0-1-686-pae          3.1.8-2
- Linux 3.1 for modern PCs
+Fixing it properly would be a bigger code change, and it can't use the
+far-too-simple tunneling through the syslog() syscall to feed
+/proc/kmsg.
 
-This loaded the following video modules:
+If the seq_file interface could be used, that would probably be the
+best option, but I have no good idea how to make blocking reads, and
+concurrent non-blocks work with the seq_file stuff.
 
-gspca_vc032x
-gspca_main
-videodev
-media
+This is how read() in /proc/kmsg works and it is not protected by a
+lock or anything, and there is a not too small window between the
+check and the action. Things just go wrong if there is more than a
+single reader, but that was the case since forever.
 
-Tests using 3.2.1-1 or more recent crashed as described before. This
-at least gives us a time frame for when the regression started.
+static ssize_t kmsg_read(struct file *file, char __user *buf,
+                         size_t count, loff_t *ppos)
+{
+        if ((file->f_flags & O_NONBLOCK) &&
+            !do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_FILE))
+                return -EAGAIN;
+        return do_syslog(SYSLOG_ACTION_READ, buf, count, SYSLOG_FROM_FILE);
+}
 
-Martin-Éric
+Thanks,
+Kay
