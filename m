@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106Ab2GHA3q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jul 2012 20:29:46 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:9657 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751515Ab2GHA3o (ORCPT
+	id S1752055Ab2GHAeJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jul 2012 20:34:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62546 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975Ab2GHAeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jul 2012 20:29:44 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC101.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -10
-X-BigFish: VS-10(zz98dI9371I936eI542M1432I4015Izz1202hzz8275dhz2fh2a8h668h839h93fhd25hf0ah107ah)
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: RE: [PATCH net,1/1] hyperv: Add support for setting MAC from within
- guests
-Thread-Topic: [PATCH net,1/1] hyperv: Add support for setting MAC from
- within guests
-Thread-Index: AQHNW7v2NmSg3uaojEi/HXuJHHO9xZcc9NCAgAGVEcA=
-Date: Sun, 8 Jul 2012 00:29:38 +0000
-Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0DDC74F4@TK5EX14MBXC222.redmond.corp.microsoft.com>
-References: <1341609932-18971-1-git-send-email-haiyangz@microsoft.com>
- <1341620355.2923.46.camel@bwh-desktop.uk.solarflarecom.com>
-In-Reply-To: <1341620355.2923.46.camel@bwh-desktop.uk.solarflarecom.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.37]
-Content-Type: text/plain; charset="utf-8"
+	Sat, 7 Jul 2012 20:34:06 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+In-Reply-To: <CAGoecWxymi-jrTO5AdeYRMkbqdrk6je9xaUKmBry=LGqNC-D0w@mail.gmail.com>
+References: <CAGoecWyMKF4gC7FaoBCrBs+rD=u6oJRHS5Q2qVkkwoZZ1_4RCg@mail.gmail.com>
+ <20120706203825.20ce3e47@pyramind.ukuu.org.uk> <CAGoecWxymi-jrTO5AdeYRMkbqdrk6je9xaUKmBry=LGqNC-D0w@mail.gmail.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Sun, 8 Jul 2012 02:33:45 +0200
+Message-ID: <CAPXgP13P+cggz7DsVzgJdMNd907O4aDbnVHCdjhg5rWJ-my2hA@mail.gmail.com>
+Subject: Re: Regression - /proc/kmsg does not (always) block for 1-byte reads
+To: Jukka Ollila <jiiksteri@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        jbeulich@novell.com, greg@kroah.com, torvalds@linux-foundation.org,
+        joey@debian.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q680TqjF009614
 
+On Sat, Jul 7, 2012 at 12:05 AM, Jukka Ollila <jiiksteri@gmail.com> wrote:
+> And I did a little digging. According to the Debian package tracking
+> system[1] it would seem that the _stable_ distro carries a version
+> that doesn't do the dd shuffling at all and probably runs its klogd as
+> root, reading /proc/kmsg directly. That may or may not work with
+> 3.5-rc kernels, depending on how big its reads are. I'm CCing the
+> listed maintainer just in case.
+>
+> The unstable version does the problematic dd bs=1 trick. Also the
+> Ubuntu diff in the PTS has the dd. But I have no idea how Ubuntu does
+> it's release management. Not to mention other derivatives.
 
+Just a note, unrelated to fixing the issue:
 
-> -----Original Message-----
-> From: Ben Hutchings [mailto:bhutchings@solarflare.com]
-> Sent: Friday, July 06, 2012 8:19 PM
-> To: Haiyang Zhang
-> Cc: davem@davemloft.net; netdev@vger.kernel.org; KY Srinivasan;
-> olaf@aepfle.de; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org
-> Subject: Re: [PATCH net,1/1] hyperv: Add support for setting MAC from
-> within guests
-> 
-> On Fri, 2012-07-06 at 14:25 -0700, Haiyang Zhang wrote:
-> > This adds support for setting synthetic NIC MAC address from within
-> > Linux guests. Before using this feature, the option "spoofing of MAC
-> address"
-> > should be enabled at the Hyper-V manager / Settings of the synthetic
-> > NIC.
-> [...]
-> > +int rndis_filter_set_device_mac(struct hv_device *hdev, char *mac) {
-> [...]
-> > +	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
-> > +	if (t == 0) {
-> > +		netdev_err(ndev, "timeout before we got a set
-> response...\n");
-> > +		/*
-> > +		 * can't put_rndis_request, since we may still receive a
-> > +		 * send-completion.
-> > +		 */
-> > +		return -EBUSY;
-> > +	} else {
-> > +		set_complete = &request->response_msg.msg.set_complete;
-> > +		if (set_complete->status != RNDIS_STATUS_SUCCESS)
-> > +			ret = -EINVAL;
-> [...]
-> 
-> Is there a specific error code that indicates the hypervisor is configured not
-> to allow MAC address changes?  If so, shouldn't that be translated to return
-> EPERM rather than EINVAL?
+/proc/kmsg can be opened many times, but it never behaved too well
+when this was done.
 
-Will do. 
+The processes might wake up at the same time, but only one of them
+gets the data. If someone does a "cat /proc/kmsg' in parallel, the
+read() in dd might return 0 and dd will exit. And this is not a recent
+change, it was always the case.
 
-Thanks,
-- Haiyang
+Using dd here is a pretty silly idea for many reasons.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Kay
