@@ -1,41 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab2GINdQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 09:33:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64618 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753601Ab2GINdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 09:33:15 -0400
-Date: Mon, 9 Jul 2012 15:30:18 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] uprobes: write_opcode() cleanups
-Message-ID: <20120709133018.GA7954@redhat.com>
-References: <20120624145936.GA23269@redhat.com> <20120706105425.GA31587@gmail.com> <20120706160704.GA8499@redhat.com> <20120706161303.GA8956@redhat.com> <20120709091247.GB2901@gmail.com>
+	id S1753972Ab2GINdr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 09:33:47 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34718 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601Ab2GINdq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 09:33:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120709091247.GB2901@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4FFA3B71.3020105@jonmasters.org>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+	<CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
+	<201207071927.13135.arnd@arndb.de>
+	<4FF93C99.80203@redhat.com>
+	<4FF9D1E9.4050504@jonmasters.org>
+	<20120708172419.2b2f2713@pegasus.ausil.us>
+	<4FFA3B71.3020105@jonmasters.org>
+Date: Mon, 9 Jul 2012 15:33:43 +0200
+X-Google-Sender-Auth: KX9y2ntjkH_cg8hAxKQgLK-1kuw
+Message-ID: <CAMuHMdV-pTjkUJW+Rx18nedXvMArG7NDA4qTNfrCwsrFOrethg@mail.gmail.com>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jon Masters <jonathan@jonmasters.org>
+Cc: Dennis Gilmore <dgilmore@fedoraproject.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09, Ingo Molnar wrote:
+On Mon, Jul 9, 2012 at 4:01 AM, Jon Masters <jonathan@jonmasters.org> wrote:
+> On 07/08/2012 06:24 PM, Dennis Gilmore wrote:
+>> I know that the architecture really is new but thats not really clear
+>> by adding AArch32 into the mix to represent 32 bit arm as ARM has done
+>> or by calling it armv8. There is enough way to confuse them already why
+>> confuse things more by adding yet another variable that is AArch64.
+>> - From my and most of the other Fedora developers that i've discussed it
+>> with its more like reluctant acceptance of AArch64 than thinking is a
+>> good idea.
 >
-> Once Srikar's ack is in then it would be nice to update the
-> patches with the ack and resend #1-#4, to make sure I have all
-> the intended patches and nothing more or less than that.
+> btw, for clarification of anyone who is confused by the names...the new
+> architecture is ARMv8. The 64-bit state is AArch64, during which the
+> processor executes A64 instructions. The 32-bit state is AArch32, during
+> which the processor executes either A32 ("ARM" version 7+) or T32
+> ("Thumb" - I guess Thumb2+ really due to some of deprecation)
+> instructions. I've noticed that there appears to be a clarification
+> effort in which AArch64 is used as an architecture name when ARMv8 would
+> be confusing, which is most of the time if you don't know whether you're
+> referring to the new A64 instruction set or the older ones.
 
-OK, will do.
+Ah, A64... sounds better than AArch64... Even AA64 sounds better than
+AArch64....
 
-I'll wait until Srikar reviews the new series, and then I'll
-send everything acked.
+> Perhaps this is useful if someone is trying to figure out heads or tails
+> of the different terms.
 
-Oleg.
+Many thanks! I was just googleing what this "T32" thingy was...
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
