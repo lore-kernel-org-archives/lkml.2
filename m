@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549Ab2GIOi2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:38:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38270 "EHLO
+	id S1754596Ab2GIOjA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:39:00 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38313 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751606Ab2GIOiV (ORCPT
+	by vger.kernel.org with ESMTP id S1754511Ab2GIOi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:38:21 -0400
-Message-Id: <20120709143121.164764337@decadent.org.uk>
+	Mon, 9 Jul 2012 10:38:28 -0400
+Message-Id: <20120709143119.606278791@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:31:47 +0100
+Date: Mon, 09 Jul 2012 15:31:36 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
-        Denys Fedoryshchenko <denys@visp.net.lb>,
-        James Chapman <jchapman@katalix.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 31/48] net: l2tp_eth: fix kernel panic on rmmod l2tp_eth
+        alan@lxorguk.ukuu.org.uk, Mike Snitzer <snitzer@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: [ 20/48] dm persistent data: handle space map checker creation failure
 In-Reply-To: <20120709143116.348975190@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,42 +28,180 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-[ Upstream commit a06998b88b1651c5f71c0e35f528bf2057188ead ]
+commit 62662303e7f590fdfbb0070ab820a0ad4267c119 upstream.
 
-We must prevent module unloading if some devices are still attached to
-l2tp_eth driver.
+If CONFIG_DM_DEBUG_SPACE_MAPS is enabled and dm_sm_checker_create()
+fails, dm_tm_create_internal() would still return success even though it
+cleaned up all resources it was supposed to have created.  This will
+lead to a kernel crash:
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Denys Fedoryshchenko <denys@visp.net.lb>
-Tested-by: Denys Fedoryshchenko <denys@visp.net.lb>
-Cc: James Chapman <jchapman@katalix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
+...
+RIP: 0010:[<ffffffff81593659>]  [<ffffffff81593659>] dm_bufio_get_block_size+0x9/0x20
+Call Trace:
+  [<ffffffff81599bae>] dm_bm_block_size+0xe/0x10
+  [<ffffffff8159b8b8>] sm_ll_init+0x78/0xd0
+  [<ffffffff8159c1a6>] sm_ll_new_disk+0x16/0xa0
+  [<ffffffff8159c98e>] dm_sm_disk_create+0xfe/0x160
+  [<ffffffff815abf6e>] dm_pool_metadata_open+0x16e/0x6a0
+  [<ffffffff815aa010>] pool_ctr+0x3f0/0x900
+  [<ffffffff8158d565>] dm_table_add_target+0x195/0x450
+  [<ffffffff815904c4>] table_load+0xe4/0x330
+  [<ffffffff815917ea>] ctl_ioctl+0x15a/0x2c0
+  [<ffffffff81591963>] dm_ctl_ioctl+0x13/0x20
+  [<ffffffff8116a4f8>] do_vfs_ioctl+0x98/0x560
+  [<ffffffff8116aa51>] sys_ioctl+0x91/0xa0
+  [<ffffffff81869f52>] system_call_fastpath+0x16/0x1b
+
+Fix the space map checker code to return an appropriate ERR_PTR and have
+dm_sm_disk_create() and dm_tm_create_internal() check for it with
+IS_ERR.
+
+Reported-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/l2tp/l2tp_eth.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/md/persistent-data/dm-space-map-checker.c  |   24 ++++++++++----------
+ drivers/md/persistent-data/dm-space-map-disk.c     |   11 ++++++++-
+ .../md/persistent-data/dm-transaction-manager.c    |    8 +++++--
+ 3 files changed, 28 insertions(+), 15 deletions(-)
 
-diff --git a/net/l2tp/l2tp_eth.c b/net/l2tp/l2tp_eth.c
-index d2726a7..3c55f63 100644
---- a/net/l2tp/l2tp_eth.c
-+++ b/net/l2tp/l2tp_eth.c
-@@ -167,6 +167,7 @@ static void l2tp_eth_delete(struct l2tp_session *session)
- 		if (dev) {
- 			unregister_netdev(dev);
- 			spriv->dev = NULL;
-+			module_put(THIS_MODULE);
- 		}
+diff --git a/drivers/md/persistent-data/dm-space-map-checker.c b/drivers/md/persistent-data/dm-space-map-checker.c
+index 50ed53b..6d7c832 100644
+--- a/drivers/md/persistent-data/dm-space-map-checker.c
++++ b/drivers/md/persistent-data/dm-space-map-checker.c
+@@ -343,25 +343,25 @@ struct dm_space_map *dm_sm_checker_create(struct dm_space_map *sm)
+ 	int r;
+ 	struct sm_checker *smc;
+ 
+-	if (!sm)
+-		return NULL;
++	if (IS_ERR_OR_NULL(sm))
++		return ERR_PTR(-EINVAL);
+ 
+ 	smc = kmalloc(sizeof(*smc), GFP_KERNEL);
+ 	if (!smc)
+-		return NULL;
++		return ERR_PTR(-ENOMEM);
+ 
+ 	memcpy(&smc->sm, &ops_, sizeof(smc->sm));
+ 	r = ca_create(&smc->old_counts, sm);
+ 	if (r) {
+ 		kfree(smc);
+-		return NULL;
++		return ERR_PTR(r);
  	}
+ 
+ 	r = ca_create(&smc->counts, sm);
+ 	if (r) {
+ 		ca_destroy(&smc->old_counts);
+ 		kfree(smc);
+-		return NULL;
++		return ERR_PTR(r);
+ 	}
+ 
+ 	smc->real_sm = sm;
+@@ -371,7 +371,7 @@ struct dm_space_map *dm_sm_checker_create(struct dm_space_map *sm)
+ 		ca_destroy(&smc->counts);
+ 		ca_destroy(&smc->old_counts);
+ 		kfree(smc);
+-		return NULL;
++		return ERR_PTR(r);
+ 	}
+ 
+ 	r = ca_commit(&smc->old_counts, &smc->counts);
+@@ -379,7 +379,7 @@ struct dm_space_map *dm_sm_checker_create(struct dm_space_map *sm)
+ 		ca_destroy(&smc->counts);
+ 		ca_destroy(&smc->old_counts);
+ 		kfree(smc);
+-		return NULL;
++		return ERR_PTR(r);
+ 	}
+ 
+ 	return &smc->sm;
+@@ -391,25 +391,25 @@ struct dm_space_map *dm_sm_checker_create_fresh(struct dm_space_map *sm)
+ 	int r;
+ 	struct sm_checker *smc;
+ 
+-	if (!sm)
+-		return NULL;
++	if (IS_ERR_OR_NULL(sm))
++		return ERR_PTR(-EINVAL);
+ 
+ 	smc = kmalloc(sizeof(*smc), GFP_KERNEL);
+ 	if (!smc)
+-		return NULL;
++		return ERR_PTR(-ENOMEM);
+ 
+ 	memcpy(&smc->sm, &ops_, sizeof(smc->sm));
+ 	r = ca_create(&smc->old_counts, sm);
+ 	if (r) {
+ 		kfree(smc);
+-		return NULL;
++		return ERR_PTR(r);
+ 	}
+ 
+ 	r = ca_create(&smc->counts, sm);
+ 	if (r) {
+ 		ca_destroy(&smc->old_counts);
+ 		kfree(smc);
+-		return NULL;
++		return ERR_PTR(r);
+ 	}
+ 
+ 	smc->real_sm = sm;
+diff --git a/drivers/md/persistent-data/dm-space-map-disk.c b/drivers/md/persistent-data/dm-space-map-disk.c
+index fc469ba..3d0ed53 100644
+--- a/drivers/md/persistent-data/dm-space-map-disk.c
++++ b/drivers/md/persistent-data/dm-space-map-disk.c
+@@ -290,7 +290,16 @@ struct dm_space_map *dm_sm_disk_create(struct dm_transaction_manager *tm,
+ 				       dm_block_t nr_blocks)
+ {
+ 	struct dm_space_map *sm = dm_sm_disk_create_real(tm, nr_blocks);
+-	return dm_sm_checker_create_fresh(sm);
++	struct dm_space_map *smc;
++
++	if (IS_ERR_OR_NULL(sm))
++		return sm;
++
++	smc = dm_sm_checker_create_fresh(sm);
++	if (IS_ERR(smc))
++		dm_sm_destroy(sm);
++
++	return smc;
  }
-@@ -254,6 +255,7 @@ static int l2tp_eth_create(struct net *net, u32 tunnel_id, u32 session_id, u32 p
- 	if (rc < 0)
- 		goto out_del_dev;
+ EXPORT_SYMBOL_GPL(dm_sm_disk_create);
  
-+	__module_get(THIS_MODULE);
- 	/* Must be done after register_netdev() */
- 	strlcpy(session->ifname, dev->name, IFNAMSIZ);
+diff --git a/drivers/md/persistent-data/dm-transaction-manager.c b/drivers/md/persistent-data/dm-transaction-manager.c
+index 02bf78e..e5604b3 100644
+--- a/drivers/md/persistent-data/dm-transaction-manager.c
++++ b/drivers/md/persistent-data/dm-transaction-manager.c
+@@ -347,8 +347,10 @@ static int dm_tm_create_internal(struct dm_block_manager *bm,
+ 		}
  
+ 		*sm = dm_sm_checker_create(inner);
+-		if (!*sm)
++		if (IS_ERR(*sm)) {
++			r = PTR_ERR(*sm);
+ 			goto bad2;
++		}
+ 
+ 	} else {
+ 		r = dm_bm_write_lock(dm_tm_get_bm(*tm), sb_location,
+@@ -367,8 +369,10 @@ static int dm_tm_create_internal(struct dm_block_manager *bm,
+ 		}
+ 
+ 		*sm = dm_sm_checker_create(inner);
+-		if (!*sm)
++		if (IS_ERR(*sm)) {
++			r = PTR_ERR(*sm);
+ 			goto bad2;
++		}
+ 	}
+ 
+ 	return 0;
 
 
