@@ -1,80 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab2GIK0l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 06:26:41 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:48379 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752996Ab2GIK0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 06:26:38 -0400
-Date: Mon, 9 Jul 2012 15:55:59 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] uprobes: suppress uprobe_munmap() from mmput()
-Message-ID: <20120709102559.GA32393@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120708203003.GA18226@redhat.com>
- <1341822602.3462.15.camel@twins>
- <20120709100920.GA21163@redhat.com>
+	id S1753026Ab2GIK1T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 06:27:19 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39918 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab2GIK1R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 06:27:17 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FFAB1F3.1020304@jp.fujitsu.com>
+Date: Mon, 9 Jul 2012 19:26:59 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120709100920.GA21163@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12070910-5112-0000-0000-000009E2BB4D
+To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
+CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
+        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
+Subject: [RFC PATCH v3 5/13] memory-hotplug : does not release memory region
+ in PAGES_PER_SECTION chunks
+References: <4FFAB0A2.8070304@jp.fujitsu.com>
+In-Reply-To: <4FFAB0A2.8070304@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-07-09 12:09:20]:
+Since applying a patch(de7f0cba96786c), release_mem_region() has been changed
+as called in PAGES_PER_SECTION chunks because register_memory_resource() is
+called in PAGES_PER_SECTION chunks by add_memory(). But it seems firmware
+dependency. If CRS are written in the PAGES_PER_SECTION chunks in ACPI DSDT
+Table, register_memory_resource() is called in PAGES_PER_SECTION chunks.
+But if CRS are written in the DIMM unit in ACPI DSDT Table,
+register_memory_resource() is called in DIMM unit. So release_mem_region()
+should not be called in PAGES_PER_SECTION chunks. The patch fixes it.
 
-> On 07/09, Peter Zijlstra wrote:
-> >
-> > On Sun, 2012-07-08 at 22:30 +0200, Oleg Nesterov wrote:
-> > > uprobe_munmap() does get_user_pages() and it is also called from
-> > > the final mmput()->exit_mmap() path. This slows down exit/mmput()
-> > > for no reason, and I think  it is simply dangerous/wrong to try to
-> > > fault-in a page into the dying mm. If nothing else, this happens
-> > > after the last sync_mm_rss(), afaics handle_mm_fault() can change
-> > > the task->rss_stat and make the subsequent check_mm() unhappy.
-> > >
-> > > Change uprobe_munmap() to check mm->mm_users != 0.
-> > >
-> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> > > ---
-> > >  kernel/events/uprobes.c |    3 +++
-> > >  1 files changed, 3 insertions(+), 0 deletions(-)
-> > >
-> > > diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> > > index a93b6df..47c4e24 100644
-> > > --- a/kernel/events/uprobes.c
-> > > +++ b/kernel/events/uprobes.c
-> > > @@ -1082,6 +1082,9 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
-> > >  	if (!atomic_read(&uprobe_events) || !valid_vma(vma, false))
-> > >  		return;
-> > >
-> > > +	if (!atomic_read(&vma->vm_mm->mm_users)) /* called by mmput() ? */
-> > > +		return;
-> > > +
-> > >  	if (!atomic_read(&vma->vm_mm->uprobes_state.count))
-> > >  		return;
-> > >
-> >
-> > But won't you leak uprobe refcounts like this? Those aren't tied to the
-> > task (which is dying) but to the vma's mapping the appropriate hunk of
-> > the text. Not doing the munmap will then not put the uprobe->ref..
-> 
-> No, mmap/munmap do not participate in uprobe refcounting. This code
-> does put_uprobe() for each uprobe, yes, but only because the counter
-> was incremented in build_probe_list().
-> 
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Right
+---
+ arch/powerpc/platforms/pseries/hotplug-memory.c |   13 +++++++++----
+ mm/memory_hotplug.c                             |    4 ++--
+ 2 files changed, 11 insertions(+), 6 deletions(-)
 
--- 
-Thanks and Regards
-Srikar
+Index: linux-3.5-rc4/mm/memory_hotplug.c
+===================================================================
+--- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-07-03 14:22:03.549198802 +0900
++++ linux-3.5-rc4/mm/memory_hotplug.c	2012-07-03 14:22:05.919169458 +0900
+@@ -358,11 +358,11 @@ int __remove_pages(struct zone *zone, un
+ 	BUG_ON(phys_start_pfn & ~PAGE_SECTION_MASK);
+ 	BUG_ON(nr_pages % PAGES_PER_SECTION);
+
++	release_mem_region(phys_start_pfn << PAGE_SHIFT,  nr_pages * PAGE_SIZE);
++
+ 	sections_to_remove = nr_pages / PAGES_PER_SECTION;
+ 	for (i = 0; i < sections_to_remove; i++) {
+ 		unsigned long pfn = phys_start_pfn + i*PAGES_PER_SECTION;
+-		release_mem_region(pfn << PAGE_SHIFT,
+-				   PAGES_PER_SECTION << PAGE_SHIFT);
+ 		ret = __remove_section(zone, __pfn_to_section(pfn));
+ 		if (ret)
+ 			break;
+Index: linux-3.5-rc4/arch/powerpc/platforms/pseries/hotplug-memory.c
+===================================================================
+--- linux-3.5-rc4.orig/arch/powerpc/platforms/pseries/hotplug-memory.c	2012-07-03 14:21:45.641422678
++0900
++++ linux-3.5-rc4/arch/powerpc/platforms/pseries/hotplug-memory.c	2012-07-03 14:22:05.920169437 +0900
+@@ -77,7 +77,8 @@ static int pseries_remove_memblock(unsig
+ {
+ 	unsigned long start, start_pfn;
+ 	struct zone *zone;
+-	int ret;
++	int i, ret;
++	int sections_to_remove;
+
+ 	start_pfn = base >> PAGE_SHIFT;
+
+@@ -97,9 +98,13 @@ static int pseries_remove_memblock(unsig
+ 	 * to sysfs "state" file and we can't remove sysfs entries
+ 	 * while writing to it. So we have to defer it to here.
+ 	 */
+-	ret = __remove_pages(zone, start_pfn, memblock_size >> PAGE_SHIFT);
+-	if (ret)
+-		return ret;
++	sections_to_remove = (memblock_size >> PAGE_SHIFT) / PAGES_PER_SECTION;
++	for (i = 0; i < sections_to_remove; i++) {
++		unsigned long pfn = start_pfn + i * PAGES_PER_SECTION;
++		ret = __remove_pages(zone, start_pfn,  PAGES_PER_SECTION);
++		if (ret)
++			return ret;
++	}
+
+ 	/*
+ 	 * Update memory regions for memory remove
 
