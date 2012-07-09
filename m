@@ -1,41 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463Ab2GIHb5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 03:31:57 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53723 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684Ab2GIHbz (ORCPT
+	id S1752539Ab2GIHdH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 03:33:07 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:35334 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab2GIHdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 03:31:55 -0400
-Date: Mon, 09 Jul 2012 00:31:55 -0700 (PDT)
-Message-Id: <20120709.003155.284089706826738623.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2012-07-06
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120706192034.GA1879@tuxdriver.com>
-References: <20120706192034.GA1879@tuxdriver.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Jul 2012 03:33:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <1341784614-2797-12-git-send-email-dh.herrmann@googlemail.com>
+References: <1341784614-2797-1-git-send-email-dh.herrmann@googlemail.com>
+	<1341784614-2797-12-git-send-email-dh.herrmann@googlemail.com>
+Date: Mon, 9 Jul 2012 09:33:02 +0200
+X-Google-Sender-Auth: -ExTeviMKyM84pvzCsfbDmei2ew
+Message-ID: <CAMuHMdX_aC1hzKf1eRqoSsQ4oALBev8p77v7++aoB2KrkOUaEw@mail.gmail.com>
+Subject: Re: [PATCH v2 11/11] MAINTAINERS: add fblog entry
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Herrmann <dh.herrmann@googlemail.com>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        florianschandinat@gmx.de, linux-fbdev@vger.kernel.org,
+        gregkh@linuxfoundation.org, alan@lxorguk.ukuu.org.uk,
+        bonbons@linux-vserver.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Fri, 6 Jul 2012 15:20:35 -0400
+On Sun, Jul 8, 2012 at 11:56 PM, David Herrmann
+<dh.herrmann@googlemail.com> wrote:
+> Add myself as maintainer for the fblog driver to the MAINTAINERS file.
+>
+> Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
+> ---
+>  MAINTAINERS | 6 ++++++
+>  1 file changed, 6 insertions(+)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index ae8fe46..249b02a 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -2854,6 +2854,12 @@ F:       drivers/video/
+>  F:     include/video/
+>  F:     include/linux/fb.h
+>
+> +FRAMEBUFFER LOG DRIVER
+> +M:     David Herrmann <dh.herrmann@googlemail.com>
+> +L:     linux-serial@vger.kernel.org
 
-> Please let me know if there are problems!
+Why linux-serial, and not linux-fbdev?
 
-This indentation is not correct:
+> +S:     Maintained
+> +F:     drivers/video/console/fblog.c
+> +
+>  FREESCALE DMA DRIVER
+>  M:     Li Yang <leoli@freescale.com>
+>  M:     Zhang Wei <zw@zh-kernel.org>
 
-commit 01f9cb073c827c60c43f769763b49a2026f1a897
-Author: Thomas Huehn <thomas@net.t-labs.tu-berlin.de>
-Date:   Thu Jun 28 14:39:51 2012 -0700
+Gr{oetje,eeting}s,
 
-    mwl8k: fix possible race condition in info->control.sta use
- ...
-+			sta = ieee80211_find_sta_by_ifaddr(hw, wh->addr1,
-+								wh->addr2);
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
