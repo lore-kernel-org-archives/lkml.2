@@ -1,106 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433Ab2GIP3R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 11:29:17 -0400
-Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:44005 "EHLO
-	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751503Ab2GIP3E (ORCPT
+	id S1751583Ab2GIPc0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 11:32:26 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:51753 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209Ab2GIPcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 11:29:04 -0400
+	Mon, 9 Jul 2012 11:32:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Date: Mon, 9 Jul 2012 15:32:11 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <20120709113558.GE8052@arm.com> <20120709145126.313d1574@pyramind.ukuu.org.uk>
+In-Reply-To: <20120709145126.313d1574@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <CAKfTPtCcxg5PNqjXrz9zYwE-DDAUtdbaUuuGpGqGzOFZrk3rnw@mail.gmail.com>
-References: <1341826026-6504-1-git-send-email-vincent.guittot@linaro.org>
- <1341826026-6504-4-git-send-email-vincent.guittot@linaro.org>
- <CAMQu2gydOEVK_fzmzkdrBwBfOq6eZG=0QfLUfFChWJu9unSn2A@mail.gmail.com>
- <CAKfTPtDPGPNk2h_zB=Rf2N2UABAgaDBbij5QFoZTxUTZJbTeAA@mail.gmail.com>
- <CAMQu2gwCXwdDmu9SdLozjC5jt7iDTqm39cY1ZZ=-VqaoF5bSvg@mail.gmail.com>
- <CAKfTPtCicLseyA4DnUwNWf7+jOmab4KLo8Yw=Rz1KPya+fE_-w@mail.gmail.com>
- <CAMQu2gymVGXdnYCN4sdKgmESfDSXTvpH4uCuByAKZTFS4Lt13A@mail.gmail.com> <CAKfTPtCcxg5PNqjXrz9zYwE-DDAUtdbaUuuGpGqGzOFZrk3rnw@mail.gmail.com>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Mon, 9 Jul 2012 20:58:41 +0530
-Message-ID: <CAMQu2gwhzNajqf1n=bhGTLVPqe9FLoY=jppjOA=C+U+R8XF0TQ@mail.gmail.com>
-Subject: Re: [PATCH v4 3/5] ARM: topology: Update cpu_power according to DT information
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
-        linux@arm.linux.org.uk, a.p.zijlstra@chello.nl,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        yong.zhang0@gmail.com, namhyung@kernel.org, jean.pihet@newoldbits.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207091532.12256.arnd@arndb.de>
+X-Provags-ID: V02:K0:K1DVjQKzjbVttMR0Fxsrp/f8Fiiy/XhceR9rm/lUC7U
+ 62Uub4YQQcpC6iGC5XLC35P+R2ZWHyA4SwJryuUG9z7mcg7UqY
+ HluBH5CU5m/xSwxMsiu4Q7E/LUx4llMhXBfA2Isnk1AGcTNHzr
+ 3TDpHOlAjPjDy7u3HJFiwO5B7sX+5ocg4j95Ep7znBJtCJn+pP
+ YYZflCmVZ82tUaoU3YYkcyvpytsT5s9lTJoyUuTD72UFhc9ert
+ 0l1q0cPBKPjtkPia5slgbZwgIEpkbR9LiYNad4MSb19kpJPsmw
+ v1yNqtltrCML0XqJ8+gjpDV51SVkjuhOoDfoD1OA3/1IdONpZK
+ wgDavIJdoL+T2/Ots0+8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 9, 2012 at 8:40 PM, Vincent Guittot
-<vincent.guittot@linaro.org> wrote:
-> On 9 July 2012 16:37, Shilimkar, Santosh <santosh.shilimkar@ti.com> wrote:
->> On Mon, Jul 9, 2012 at 8:06 PM, Vincent Guittot
->> <vincent.guittot@linaro.org> wrote:
->>> On 9 July 2012 15:00, Shilimkar, Santosh <santosh.shilimkar@ti.com> wrote:
->>>> On Mon, Jul 9, 2012 at 6:02 PM, Vincent Guittot
->>>> <vincent.guittot@linaro.org> wrote:
->>>>> On 9 July 2012 12:55, Shilimkar, Santosh <santosh.shilimkar@ti.com> wrote:
->>>>>> Vincent,
->>>>>> On Mon, Jul 9, 2012 at 2:57 PM, Vincent Guittot
->>>>>> <vincent.guittot@linaro.org> wrote:
->>>>>>> Use cpu compatibility field and clock-frequency field of DT to
->>>>>>> estimate the capacity of each core of the system and to update
->>>>>>> the cpu_power field accordingly.
->>>>>>> This patch enables to put more running tasks on big cores than
->>>>>>> on LITTLE ones. But this patch doesn't ensure that long running
->>>>>>> tasks will run on big cores and short ones on LITTLE cores.
->>>>>>>
->>>>>>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->>>>>>> Reviewed-by: Namhyung Kim <namhyung@kernel.org>
->>>>>>> ---
->>>>>>>  arch/arm/kernel/topology.c |  153 ++++++++++++++++++++++++++++++++++++++++++++
->>>>>>>  1 file changed, 153 insertions(+)
->>>>>>>
->>>>>> Sorry for not giving this comment on previous version but we should also
->>>>>> have a way to provide the big.LITTLE information without Device Tree.
->>>>>> May be a platform device/data.
->>>>>
->>>>> Hi Santosh,
->>>>>
->>>>> I had thought of adding such additional way to set cpu_power of
->>>>> big.LITTLE but my conclusion was
->>>>> -it's a new platform so it should come with DT
->>>>> -DT is already required by other patches linked to big.LITTLE
->>>>> (http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/080873.html)
->>>>> -There is no device that can be easily used to get such information at
->>>>> this early boot stage.
->>>>>
->>>> I see. Its new processor but it is just 1 one of the IP in an entire SOC.
->>>> As mentioned below I was talking about full SOC support including
->>>> all the driver subsystem with DT.
->>>>
->>>>>>
->>>>>> I know we are moving DT way, but remember apart from core kernel
->>>>>> infrastructure, to have a complete product build with DT means all the
->>>>>> drivers must be already supporting DT which is not the case with
->>>>>> many huge driver sub-systems like USB, display subsystem, Audio etc.
->>>>>>
->>>>>> Having that support would greatly help for the SOC's which have not yet
->>>>>> reached to stage where entire SOC is DT compliant and want to use
->>>>>> big.LITTLE infrastructure.
->>>>>
->>>>> Can't you support both type of devices on your platform ? You can move
->>>>> your device to DT mode when it is supported ?
->>>>>
->>>> That is what eventually people end up doing who don't have
->>>> DT ready for entire SOC. I was trying to ask whether at least some
->>>> method is proposed(need not be merged in mainline) to have
->>>> the big.LITTLE information parsing without DT.
->>>
->>> Ok, IIUC, you need a temporary methods, which doesn't need to be
->>> merged in mainline, to set the cpu_scale field ?
->>>
->> Yep.
->
-> You could use set_power_scale in your platform code to set the
-> cpu_power of your CPUs until DT is ready for your platform.
->
-Thanks for the clarification. Will try that out.
+On Monday 09 July 2012, Alan Cox wrote:
+> > > These are the same reasons the x86_64 people gave and regretted later.
+> > 
+> > I would not compare the x86_64 extension to the AArch64 architecture.
+> 
+> 
+> It's not an architecture specific observation. I was just observing that
+> you were following a pattern which in all other cases ended up with a
+> merged tree.
 
-Regards
-Santosh
+All except ia64, which is probably considered a good thing nowadays,
+even though there is still a significant amount of shared code between
+ia64 and x86.
+
+In case of sh64, my feeling is that the fact that it's now is more
+a burden than a benefit, given that all relevant arch/sh systems
+are the 32 bit variant.
+
+Another interesting example is unicore32, which actually shares more
+code with arch/arm than the proposed arch/aarch64 does. I think the
+unicore32 code base would benefit from being merged back into arch/arm
+as a third instruction set, but the additional maintainance cost for
+everyone working on ARM makes that unrealistic.
+
+> Now it could be your tree is different, it could be that the right
+> approach in all these cases is actually to do a new tree and merge five
+> years later - I don't know.
+
+It's always a tradeoff. Right now I think it's better for both arm
+and aarch64 to live as separate architectures, and it will remain that
+way for a number of years. Some people suggested that we might want to
+keep the two split initially but add support for the "modern" 32 bit
+platforms in a mixed 32/64 arch/aarch directory like we did for
+powerpc, but I'm rather skeptical about that. On powerpc, that resulted
+in a cleaner end result than doing the merge first would have, but
+it was also a long and painful process.
+It's good to know that we have the option though, in case we decide
+to merge in a few years after all.
+
+> It's your (aarch64 folks) project at the end of the day and you who have
+> to keep all the fixes and errata and whatnot in sync between the two
+> trees and I don't personally care too much which way it happens.
+
+We have a lot of reviewers that are familiar with the 32 bit code, so
+I think the main strategy should be to spot duplicate code early
+and make sure we deal with it individually. Examples for this are
+probably the implementations for kvm and perf, which largely deal
+with the same hardware on both architectures. Those definitely must
+not get duplicated into mostly-identical files. In many cases, we're
+moving those things into drivers/*, in other cases we might want to
+use Makefile logic to include a sub-directory from one arch into another,
+as we do for arch/um.
+
+	Arnd
