@@ -1,59 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab2GIOml (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:42:41 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33621 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754177Ab2GIOmk (ORCPT
+	id S1754539Ab2GIOnE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:43:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38256 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754458Ab2GIOiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:42:40 -0400
-Date: Mon, 9 Jul 2012 07:42:34 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH] Documentation: talk about "Cc: stable@vger.kernel.org"
-Message-ID: <20120709144234.GA3487@kroah.com>
-References: <1341610730-6277-1-git-send-email-tytso@mit.edu>
- <20120706215944.GA6154@blackmetal.musicnaut.iki.fi>
- <alpine.DEB.2.00.1207090345540.8224@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1207090345540.8224@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 9 Jul 2012 10:38:19 -0400
+Message-Id: <20120709143121.866486950@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 09 Jul 2012 15:31:52 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
+        Tom Herbert <therbert@google.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Roland Dreier <roland@kernel.org>, Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 36/48] bonding: Fix corrupted queue_mapping
+In-Reply-To: <20120709143116.348975190@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 03:48:14AM -0700, David Rientjes wrote:
-> On Sat, 7 Jul 2012, Aaro Koskinen wrote:
-> 
-> > > I couldn't remember whether the canonical marking is stable@kernel.org
-> > > or stable@vger.kernel.org, so I went looking, and discovered that it
-> > > wasn't mentioned in the kernel sources.  You can find mention of it in
-> > > Greg K-H's blog, but not everyone would necessarily find this blog
-> > > entry.
-> > 
-> > It's documented in Documentation/stable_kernel_rules.txt.
-> > 
-> 
-> I'm wondering if it would be helpful to the stable maintainers if we 
-> explicitly asked that patches including "Cc: stable@vger.kernel.org" also 
-> include the version number of the earliest version that the change should 
-> be backported to?
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-It can be helpful, and in fact, is what is described in the above file
-already, although it is often overlooked as it is only part of an
-example.
+------------------
 
-But really, it's usually not needed, I'm more interested in getting more
-maintainers to actually start marking patches for stable, that's the
-larger problem we are dealing with.  Sorting out after-the-fact which
-kernel version a patch is to be applied to is much simpler than finding
-the patches in the first place.
+From: Eric Dumazet <edumazet@google.com>
 
-thanks,
+[ Upstream commit 5ee31c6898ea5537fcea160999d60dc63bc0c305 ]
 
-greg k-h
+In the transmit path of the bonding driver, skb->cb is used to
+stash the skb->queue_mapping so that the bonding device can set its
+own queue mapping.  This value becomes corrupted since the skb->cb is
+also used in __dev_xmit_skb.
+
+When transmitting through bonding driver, bond_select_queue is
+called from dev_queue_xmit.  In bond_select_queue the original
+skb->queue_mapping is copied into skb->cb (via bond_queue_mapping)
+and skb->queue_mapping is overwritten with the bond driver queue.
+
+Subsequently in dev_queue_xmit, __dev_xmit_skb is called which writes
+the packet length into skb->cb, thereby overwriting the stashed
+queue mappping.  In bond_dev_queue_xmit (called from hard_start_xmit),
+the queue mapping for the skb is set to the stashed value which is now
+the skb length and hence is an invalid queue for the slave device.
+
+If we want to save skb->queue_mapping into skb->cb[], best place is to
+add a field in struct qdisc_skb_cb, to make sure it wont conflict with
+other layers (eg : Qdiscc, Infiniband...)
+
+This patchs also makes sure (struct qdisc_skb_cb)->data is aligned on 8
+bytes :
+
+netem qdisc for example assumes it can store an u64 in it, without
+misalignment penalty.
+
+Note : we only have 20 bytes left in (struct qdisc_skb_cb)->data[].
+The largest user is CHOKe and it fills it.
+
+Based on a previous patch from Tom Herbert.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Tom Herbert <therbert@google.com>
+Cc: John Fastabend <john.r.fastabend@intel.com>
+Cc: Roland Dreier <roland@kernel.org>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/net/bonding/bond_main.c |    9 +++++----
+ include/net/sch_generic.h       |    7 +++++--
+ 2 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index f65e0b9..1a88e38 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -77,6 +77,7 @@
+ #include <net/route.h>
+ #include <net/net_namespace.h>
+ #include <net/netns/generic.h>
++#include <net/pkt_sched.h>
+ #include "bonding.h"
+ #include "bond_3ad.h"
+ #include "bond_alb.h"
+@@ -382,8 +383,6 @@ struct vlan_entry *bond_next_vlan(struct bonding *bond, struct vlan_entry *curr)
+ 	return next;
+ }
+ 
+-#define bond_queue_mapping(skb) (*(u16 *)((skb)->cb))
+-
+ /**
+  * bond_dev_queue_xmit - Prepare skb for xmit.
+  *
+@@ -396,7 +395,9 @@ int bond_dev_queue_xmit(struct bonding *bond, struct sk_buff *skb,
+ {
+ 	skb->dev = slave_dev;
+ 
+-	skb->queue_mapping = bond_queue_mapping(skb);
++	BUILD_BUG_ON(sizeof(skb->queue_mapping) !=
++		     sizeof(qdisc_skb_cb(skb)->bond_queue_mapping));
++	skb->queue_mapping = qdisc_skb_cb(skb)->bond_queue_mapping;
+ 
+ 	if (unlikely(netpoll_tx_running(slave_dev)))
+ 		bond_netpoll_send_skb(bond_get_slave_by_dev(bond, slave_dev), skb);
+@@ -4151,7 +4152,7 @@ static u16 bond_select_queue(struct net_device *dev, struct sk_buff *skb)
+ 	/*
+ 	 * Save the original txq to restore before passing to the driver
+ 	 */
+-	bond_queue_mapping(skb) = skb->queue_mapping;
++	qdisc_skb_cb(skb)->bond_queue_mapping = skb->queue_mapping;
+ 
+ 	if (unlikely(txq >= dev->real_num_tx_queues)) {
+ 		do {
+diff --git a/include/net/sch_generic.h b/include/net/sch_generic.h
+index 55ce96b..9d7d54a 100644
+--- a/include/net/sch_generic.h
++++ b/include/net/sch_generic.h
+@@ -220,13 +220,16 @@ struct tcf_proto {
+ 
+ struct qdisc_skb_cb {
+ 	unsigned int		pkt_len;
+-	unsigned char		data[24];
++	u16			bond_queue_mapping;
++	u16			_pad;
++	unsigned char		data[20];
+ };
+ 
+ static inline void qdisc_cb_private_validate(const struct sk_buff *skb, int sz)
+ {
+ 	struct qdisc_skb_cb *qcb;
+-	BUILD_BUG_ON(sizeof(skb->cb) < sizeof(unsigned int) + sz);
++
++	BUILD_BUG_ON(sizeof(skb->cb) < offsetof(struct qdisc_skb_cb, data) + sz);
+ 	BUILD_BUG_ON(sizeof(qcb->data) < sz);
+ }
+ 
+
+
