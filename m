@@ -1,106 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286Ab2GIDrO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 23:47:14 -0400
-Received: from mailgw02.mediatek.com ([218.249.47.111]:39375 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752221Ab2GIDrJ (ORCPT
+	id S1752266Ab2GID5b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 23:57:31 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53652 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752053Ab2GID53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 23:47:09 -0400
-X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Sun, 08 Jul 2012 23:47:08 EDT
-From: =?gb2312?B?R2Fvc2VuIFpoYW5nICjVxbjfya0p?= 
-	<gaosen.zhang@mediatek.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: "smurf@smurf.noris.de" <smurf@smurf.noris.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 9 Jul 2012 11:39:47 +0800
-Subject: RE: USB: option: Add MEDIATEK product ids
-Thread-Topic: USB: option: Add MEDIATEK product ids
-Thread-Index: Ac1bniKRUNe9UtMMQtWyLlsae84wogB5aecw
-Message-ID: <06C943F3F9AAC34D8402DE161B283F7C01ED0CE0@MTKMBS30.mediatek.inc>
-References: <CAAwpLmyd2SMR0EKGowDqo54mPUuPmKkziGVTsuRZcrd7i2r2jA@mail.gmail.com>
- <4FF7202B.7090206@mvista.com>
-In-Reply-To: <4FF7202B.7090206@mvista.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
+	Sun, 8 Jul 2012 23:57:29 -0400
+Date: Mon, 9 Jul 2012 13:57:19 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: linux-next: build failure after merge of the mfd tree
+Message-Id: <20120709135719.5c8b0f033520f5981efb2c93@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__9_Jul_2012_13_57_19_+1000_X9NBL4ABTclT0+6h"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q693lKVd013738
 
-Dear Shtylyov,
-	
-	Sorry, I send this patch use web mail(in my mail line not wrapped), I will use git client to send mail again.
-	Thank you very much.
+--Signature=_Mon__9_Jul_2012_13_57_19_+1000_X9NBL4ABTclT0+6h
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-BR,
-Gaosen
+Hi Samuel,
 
------Original Message-----
-From: Sergei Shtylyov [mailto:sshtylyov@mvista.com] 
-Sent: 2012ƒÍ7‘¬7»’ 1:28
-To: Gaosen Zhang (’≈∏ﬂ…≠)
-Cc: smurf@smurf.noris.de; gregkh@linuxfoundation.org; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: USB: option: Add MEDIATEK product ids
+After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-On 07/06/2012 05:50 PM, gaosen wrote:
+ERROR: "arizona_dai_ops" [sound/soc/codecs/snd-soc-wm5102.ko] undefined!
+ERROR: "wm5102_aod" [drivers/mfd/arizona-irq.ko] undefined!
+ERROR: "wm5102_irq" [drivers/mfd/arizona-irq.ko] undefined!
+ERROR: "irq_set_chip_and_handler_name" [drivers/mfd/arizona-irq.ko] undefin=
+ed!
+ERROR: "wm5102_patch" [drivers/mfd/arizona-core.ko] undefined!
+ERROR: "arizona_irq_init" [drivers/mfd/arizona-core.ko] undefined!
+ERROR: "arizona_irq_exit" [drivers/mfd/arizona-core.ko] undefined!
 
-> From 86fcd5bb701bd927d588386c480c37784d10040a Mon Sep 17 00:00:00 2001
-> From: Gaosen Zhang <gaosen.zhang@mediatek.com>
-> Date: Fri, 6 Jul 2012 21:44:10 +0800
-> Subject: [PATCH 1/1] USB: option: Add MEDIATEK product ids
+I have used the mfd tree from next-20120706 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> Signed-off-by: Gaosen Zhang <gaosen.zhang@mediatek.com>
-> ---
->  drivers/usb/serial/option.c |   20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
+--Signature=_Mon__9_Jul_2012_13_57_19_+1000_X9NBL4ABTclT0+6h
+Content-Type: application/pgp-signature
 
-> diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c 
-> index e668a24..f342a2c 100644
-> --- a/drivers/usb/serial/option.c
-> +++ b/drivers/usb/serial/option.c
-[...]
->  	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a1, 0xff, 
-> 0x02, 0x01) },
->  	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff, 
-> 0x00, 0x00) },
->  	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, 0x00a2, 0xff,
-> 0x02, 0x01) },        /* MediaTek MT6276M modem & app port */
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_FP_1COM,
-> 0x0a, 0x00, 0x00) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_FP_2COM,
-> 0x0a, 0x00, 0x00) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_FPDC_1COM,
-> 0x0a, 0x00, 0x00) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_FPDC_2COM,
-> 0x0a, 0x00, 0x00) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_DC_1COM,
-> 0x0a, 0x00, 0x00) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_DC_5COM,
-> 0xff, 0x02, 0x01) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_DC_5COM,
-> 0xff, 0x00, 0x00) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_DC_4COM,
-> 0xff, 0x02, 0x01) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_DC_4COM,
-> 0xff, 0x00, 0x00) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_7208_1COM,
-> 0x02, 0x00, 0x00) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MTK_7208_2COM,
-> 0x02, 0x02, 0x01) },
->  	{ } /* Terminating entry */
->  };
->  MODULE_DEVICE_TABLE(usb, option_ids);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-   Still line wrapped.
+iQIcBAEBCAAGBQJP+lafAAoJEECxmPOUX5FEX10P/2k02AhVnmjuy9oLGB8lZuTu
+2Me0EHXRlKb0CICjXgP2OIrfuSlj4ucbR3pOKAcnCWxIEi4mwiV6yajRn8DULZbd
+4e9NzF+rP1exFpTr/5j7IjpG5/ugCt0bs0xuIz71ix6z7WlInkC5PymaXbwpYhdf
+houq1HVRcEeHy1IwgBRq0KuJNzpISz0TClkr3/Espm8FO0hEiZ09EmW9MmqHiYX+
+5vVDmu1oYVPG0mkP18UlXsx240X4Gcbe1+7PAX+K6O6LaE/PStBiJRswPcoM7t7a
+M8alM6GoOUNPwe0DgFie4xb+hqybaPv62tIaf2gXJ01+GhhbhhQgZpeXhZUst9he
+ltMoVRXVb3Y6a4J68TRBHscmXg5R8jpXiHvdec38jkBl4YY97m1ra0KEby8NLepL
+3PBIshfuEy6ZviWPPqu449hgh0lL/z4EB82nX+8TmwS6hNFFLtyW84oOgY8K8tfG
+oPHpYibdEL/2FxMWGIsO3j6M9PUKrvrT9VEpZ7EAg9MI+HBY/49ZgfvhBQFRgBUc
+TMaaeqVS72eog2xftaOAi4KxrJQir3unMkeUIVBkGiCHQuaU3fmewqWHxJtcyjdV
+h5M9a4pNr6RBq3BprgJ+thGzx/QiHMAdvUZw4HiixyqoBUL1sHZtkjXpxc0WWiQt
+0wLSuaBYvWb2o3tELGEG
+=VUMX
+-----END PGP SIGNATURE-----
 
-WBR, Sergei
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--Signature=_Mon__9_Jul_2012_13_57_19_+1000_X9NBL4ABTclT0+6h--
