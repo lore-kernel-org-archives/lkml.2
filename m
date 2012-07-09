@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab2GILBk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 07:01:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24902 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753189Ab2GILBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 07:01:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="163259290"
-Date: Mon, 9 Jul 2012 13:13:08 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Sangbeom Kim <sbkim73@samsung.com>
-Cc: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, "'Liam Girdwood'" <lrg@ti.com>,
-        sbkim01@gmail.com
-Subject: Re: [PATCH V2 0/7] Initial release of Samsung S2MPS11 pmic driver
-Message-ID: <20120709111308.GL15345@sortiz-mobl>
-References: <0fed01cd5c24$5dd3ebc0$197bc340$@com>
+	id S1753293Ab2GILCH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 07:02:07 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:42257 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752917Ab2GILCE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 07:02:04 -0400
+Date: Mon, 9 Jul 2012 07:01:54 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, lizefan@huawei.com, tj@kernel.org,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Subject: Re: [PATCH] net: cgroup: fix out of bounds accesses
+Message-ID: <20120709110154.GB9186@hmsreliant.think-freely.org>
+References: <1341819910.3265.2106.camel@edumazet-glaptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <0fed01cd5c24$5dd3ebc0$197bc340$@com>
+In-Reply-To: <1341819910.3265.2106.camel@edumazet-glaptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sangbeom,
-
-On Sat, Jul 07, 2012 at 06:39:12PM +0900, Sangbeom Kim wrote:
-> The S2MPS11 is comprised of high efficient Buck converters,
-> various LDOs, and an RTC and tightly coupled with Multi Core Samsung 
-> Application Processors, which is used in a wide variety of mobile applications
-> such as smart phones and tablet PCs.
-> S2MPS11 provide 10 high efficiency buck converters and 38 LDO regulators.
-> Especially, Buck2 can support 7.0A current capacity for high performance
-> samsung application processor.
-> Most of S2MPS11 feature are similar to S5M series.
-> and Instead of using s5m prefix, Samsung decide to use s2m prefix.
-> So, I try to make common mfd driver for S2M and S5M series.
-> Most of s5m prefix is changed into sec prefix.
+On Mon, Jul 09, 2012 at 09:45:10AM +0200, Eric Dumazet wrote:
+> From: Eric Dumazet <edumazet@google.com>
 > 
-> Changes since V1:
-> 1. Replace list_voltage with standard framework
-> 2. Apply regmap_irq
-> 3. Minor changes.
-I was trying to apply this patchset to my for-next branch, but it doesn't
-apply properly.
-Could you please rebase it against this branch and send it to me ?
+> dev->priomap is allocated by extend_netdev_table() called from
+> update_netdev_tables().
+> And this is only called if write_priomap() is called.
+> 
+> But if write_priomap() is not called, it seems we can have out of bounds
+> accesses in cgrp_destroy(), read_priomap() & skb_update_prio()
+> 
+> With help from Gao Feng
+> 
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
+> Cc: Neil Horman <nhorman@tuxdriver.com>
+> Cc: Gao feng <gaofeng@cn.fujitsu.com>
+> ---
+> net/core/dev.c            |    8 ++++++--
+> net/core/netprio_cgroup.c |    4 ++--
+> 2 files changed, 8 insertions(+), 4 deletions(-)
+> 
 
-Cheers,
-Samuel.
+Thank you for doing this Eric, Gao.  Just to be sure (I asked in the previous
+thread), would it be better to avoid the length check in skb_update_prio, and
+instead update the netdev tables to be long enough in cgrp_create and in
+netprio_device_event on device registration?
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Neil
+
