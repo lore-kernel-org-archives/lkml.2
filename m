@@ -1,38 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273Ab2GIPyR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 11:54:17 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:39163 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751796Ab2GIPyQ (ORCPT
+	id S1752447Ab2GIQCe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 12:02:34 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51926 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752306Ab2GIQCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 11:54:16 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ao8HAHj++k9XQAxf/2dsb2JhbABFhWaHa6Y5g2OBCIIgAQEFIzMiARALDgoCAgUWCwICCQMCAQIBJx4GDQEHAQGIDahoklaBIIoghHqBEgObDIovgmE
-Message-ID: <4FFAFE45.5090701@computer.org>
-Date: Mon, 09 Jul 2012 17:52:37 +0200
-From: Jan Ceuleers <jan.ceuleers@computer.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Mon, 9 Jul 2012 12:02:32 -0400
+Date: Mon, 9 Jul 2012 17:02:12 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Message-ID: <20120709160212.GD15120@arm.com>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+ <20120709113558.GE8052@arm.com>
+ <20120709145126.313d1574@pyramind.ukuu.org.uk>
+ <201207091532.12256.arnd@arndb.de>
 MIME-Version: 1.0
-To: Hillf Danton <dhillf@gmail.com>
-CC: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Chen <hi3766691@gmail.com>, Oleksandr Natalenko <pfactum@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]RIFS-V3-Test For 3.4.x kernel.
-References: <CANQmPXibzo2OVPorHX3dcgbDFPnr=3FPm5Bu1-DbthSykzkJcA@mail.gmail.com> <jtabja$fhs$1@dough.gmane.org> <CANQmPXjXt4KsYix5syDrRo_qt3DD7tMtHpdNa3Sh-fWhi53Lnw@mail.gmail.com> <jtbje0$iiv$1@dough.gmane.org> <CANQmPXgDmdDE+=ypyHcWLR4Fw7xv4-T-YsyoO7Gp2Gq91F7jFw@mail.gmail.com> <CAFLxGvxT8d0b3dqChLaJ-p=4zL5JaYvM6FywJGdHeAeBKeXs_Q@mail.gmail.com> <CAJd=RBCj4wFdVvdBoYa2bDPPMgYPq0Wi5dm8-Vq8889PnkAiNQ@mail.gmail.com> <CAFLxGvxA1Z0xB5CsUeRiuwyL9nz+OTB38DqViYMkqbWgd4YKAQ@mail.gmail.com> <CAJd=RBCvmzZiwanZUP=aJZAyMyXgWTbY+zVt9ndHXZr6QTjDsA@mail.gmail.com>
-In-Reply-To: <CAJd=RBCvmzZiwanZUP=aJZAyMyXgWTbY+zVt9ndHXZr6QTjDsA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201207091532.12256.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2012 03:18 PM, Hillf Danton wrote:
->> Most distros already have or are on the way to switch to systemd.
-> 
-> We have to adapt to distros once more:(
+Arnd,
 
-Well they are the customer...
+On Mon, Jul 09, 2012 at 04:32:11PM +0100, Arnd Bergmann wrote:
+> We have a lot of reviewers that are familiar with the 32 bit code, so
+> I think the main strategy should be to spot duplicate code early
+> and make sure we deal with it individually. Examples for this are
+> probably the implementations for kvm and perf, which largely deal
+> with the same hardware on both architectures. Those definitely must
+> not get duplicated into mostly-identical files. In many cases, we're
+> moving those things into drivers/*, in other cases we might want to
+> use Makefile logic to include a sub-directory from one arch into another,
+> as we do for arch/um.
 
-(OK, maybe not _the_ customer, but definitely a major customer).
+I don't see why we would need to get a subdir from one into the other.
+If the SoCs would need some common drivers (like GPIO), they should go
+into drivers/ anyway. There is some perf code that could be shared
+(though not building a subdir as we have different instruction sets) but
+I would like that moved to a more generic place.
+
+-- 
+Catalin
