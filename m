@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab2GIHpQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 03:45:16 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:64651 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752224Ab2GIHpP (ORCPT
+	id S1752615Ab2GIHqf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 03:46:35 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1538 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421Ab2GIHqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 03:45:15 -0400
-Subject: [PATCH] net: cgroup: fix out of bounds accesses
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: nhorman@tuxdriver.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, lizefan@huawei.com, tj@kernel.org,
-        Gao feng <gaofeng@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 Jul 2012 09:45:10 +0200
-Message-ID: <1341819910.3265.2106.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 9 Jul 2012 03:46:34 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 09 Jul 2012 00:42:53 -0700
+Message-ID: <4FFA8CCC.8060000@nvidia.com>
+Date: Mon, 9 Jul 2012 16:48:28 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Alexandre Courbot <acourbot@nvidia.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [RFC][PATCH V2 2/3] pwm_backlight: use power sequences
+References: <1341814105-20690-1-git-send-email-acourbot@nvidia.com> <1341814105-20690-3-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1341814105-20690-3-git-send-email-acourbot@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+Sorry, I just noticed a mistake in this patch I made while merging 
+another one. The following also needs to be changed, otherwise the 
+power-on sequence will never be executed:
 
-dev->priomap is allocated by extend_netdev_table() called from
-update_netdev_tables().
-And this is only called if write_priomap() is called.
+diff --git a/drivers/video/backlight/pwm_bl.c 
+b/drivers/video/backlight/pwm_bl.c
+index 1a38953..4546d23 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -65,7 +98,7 @@ static int pwm_backlight_update_status(struct 
+backlight_device *bl)
+                 duty_cycle = pb->lth_brightness +
+                      (duty_cycle * (pb->period - pb->lth_brightness) / 
+max);
+                 pwm_config(pb->pwm, duty_cycle, pb->period);
+-               pwm_enable(pb->pwm);
++               pwm_backlight_on(bl);
+         }
 
-But if write_priomap() is not called, it seems we can have out of bounds
-accesses in cgrp_destroy(), read_priomap() & skb_update_prio()
 
-With help from Gao Feng
+Apologies for the inconvenience.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Gao feng <gaofeng@cn.fujitsu.com>
----
-net/core/dev.c            |    8 ++++++--
-net/core/netprio_cgroup.c |    4 ++--
-2 files changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 84f01ba..0f28a9e 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2444,8 +2444,12 @@ static void skb_update_prio(struct sk_buff *skb)
- {
- 	struct netprio_map *map = rcu_dereference_bh(skb->dev->priomap);
- 
--	if ((!skb->priority) && (skb->sk) && map)
--		skb->priority = map->priomap[skb->sk->sk_cgrp_prioidx];
-+	if (!skb->priority && skb->sk && map) {
-+		unsigned int prioidx = skb->sk->sk_cgrp_prioidx;
-+
-+		if (prioidx < map->priomap_len)
-+			skb->priority = map->priomap[prioidx];
-+	}
- }
- #else
- #define skb_update_prio(skb)
-diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-index aa907ed..3e953ea 100644
---- a/net/core/netprio_cgroup.c
-+++ b/net/core/netprio_cgroup.c
-@@ -142,7 +142,7 @@ static void cgrp_destroy(struct cgroup *cgrp)
- 	rtnl_lock();
- 	for_each_netdev(&init_net, dev) {
- 		map = rtnl_dereference(dev->priomap);
--		if (map)
-+		if (map && cs->prioidx < map->priomap_len)
- 			map->priomap[cs->prioidx] = 0;
- 	}
- 	rtnl_unlock();
-@@ -166,7 +166,7 @@ static int read_priomap(struct cgroup *cont, struct cftype *cft,
- 	rcu_read_lock();
- 	for_each_netdev_rcu(&init_net, dev) {
- 		map = rcu_dereference(dev->priomap);
--		priority = map ? map->priomap[prioidx] : 0;
-+		priority = (map && prioidx < map->priomap_len) ? map->priomap[prioidx] : 0;
- 		cb->fill(cb, dev->name, priority);
- 	}
- 	rcu_read_unlock();
-
+Alex.
 
