@@ -1,41 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197Ab2GIKeR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 06:34:17 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:1213 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753112Ab2GIKeP (ORCPT
+	id S1753140Ab2GIKfJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 06:35:09 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37097 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854Ab2GIKfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 06:34:15 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArwaAD+z+k9XQAxf/2dsb2JhbABFtUYBAQEBgh+BCIIgAQEFViIBEAsYCRYPCQMCAQIBJx4GDQEFAgEBiA26LYtAhgwDmwyKL4Jh
-Message-ID: <4FFAB374.7040008@computer.org>
-Date: Mon, 09 Jul 2012 12:33:24 +0200
-From: Jan Ceuleers <jan.ceuleers@computer.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Mon, 9 Jul 2012 06:35:06 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FFAB3C6.7020803@jp.fujitsu.com>
+Date: Mon, 9 Jul 2012 19:34:46 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Hayes Wang <hayeswang@realtek.com>
-CC: dwmw2@infradead.org, ben@decadent.org.uk, romieu@fr.zoreil.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: =? ?q?=5BPATCH=20firmware=203/4=5D=20rtl=5Fnic=3A=20add=20new=20firmware=20for=20RTL8106E?=
-References: <1341803512-1309-1-git-send-email-hayeswang@realtek.com> <1341803512-1309-3-git-send-email-hayeswang@realtek.com>
-In-Reply-To: <1341803512-1309-3-git-send-email-hayeswang@realtek.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
+CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
+        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
+Subject: [RFC PATCH v3 12/13] memory-hotplug : add node_device_release
+References: <4FFAB0A2.8070304@jp.fujitsu.com>
+In-Reply-To: <4FFAB0A2.8070304@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2012 05:11 AM, Hayes Wang wrote:
-> File: rtl_nic/rtl8106e-1.fw
-> Version: 0.0.1
-> 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+When calling unregister_node(), the function shows following message at
+device_release().
 
-Hi
+Device 'node2' does not have a release() function, it is broken and must be
+fixed.
 
-I'm afraid that the subject lines of patches 3/4 and 4/4 were mangled.
-Could you try again?
+So the patch implements node_device_release()
 
-Thanks, Jan
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+
+---
+ drivers/base/node.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+Index: linux-3.5-rc4/drivers/base/node.c
+===================================================================
+--- linux-3.5-rc4.orig/drivers/base/node.c	2012-07-03 14:21:44.882432167 +0900
++++ linux-3.5-rc4/drivers/base/node.c	2012-07-03 14:22:23.296951921 +0900
+@@ -252,6 +252,12 @@ static inline void hugetlb_register_node
+ static inline void hugetlb_unregister_node(struct node *node) {}
+ #endif
+
++static void node_device_release(struct device *dev)
++{
++	struct node *node_dev = to_node(dev);
++
++	memset(node_dev, 0, sizeof(struct node));
++}
+
+ /*
+  * register_node - Setup a sysfs device for a node.
+@@ -265,6 +271,7 @@ int register_node(struct node *node, int
+
+ 	node->dev.id = num;
+ 	node->dev.bus = &node_subsys;
++	node->dev.release = node_device_release;
+ 	error = device_register(&node->dev);
+
+ 	if (!error){
+
