@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab2GIKYN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 06:24:13 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:57185 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752761Ab2GIKYL (ORCPT
+	id S1752957Ab2GIKYW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 06:24:22 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:37972 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752932Ab2GIKYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 06:24:11 -0400
-Date: Mon, 9 Jul 2012 12:12:15 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hayeswang <hayeswang@realtek.com>
-Subject: Re: [PATCH net-next 1/2] r8169: support RTL8106E
-Message-ID: <20120709101215.GA6530@electric-eye.fr.zoreil.com>
-References: <1340966060-2749-1-git-send-email-hayeswang@realtek.com> <1341221002-1522-1-git-send-email-hayeswang@realtek.com> <1341221002-1522-2-git-send-email-hayeswang@realtek.com> <20120704220458.GA1621@electric-eye.fr.zoreil.com> <43E32504589B47B9846C4E9DAF98BF60@realtek.com.tw> <20120706152006.GA6981@electric-eye.fr.zoreil.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120708.234857.1032244145219683435.davem@davemloft.net>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Mon, 9 Jul 2012 06:24:20 -0400
+X-Authenticated: #7313500
+X-Provags-ID: V01U2FsdGVkX1+F+ghz2b6F4jROS/JzXxXT1YNUUu1JinQO+TpxRT
+	Zr3PBUwZJENSjz
+From: dl9pf@gmx.de
+To: dl9pf@gmx.de
+Cc: =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <jansimon.moeller@gmx.de>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Trivial: Fix typo on Documentation/dynamic-debug-howto.txt
+Date: Mon,  9 Jul 2012 12:23:02 +0200
+Message-Id: <1341829382-32540-1-git-send-email-dl9pf@gmx.de>
+X-Mailer: git-send-email 1.7.3.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller <davem@davemloft.net> :
-> Francois, what would you like me to do with these two patches?  I
-> haven't seen full ACKs from you yet.
+From: Jan-Simon Möller <jansimon.moeller@gmx.de>
 
-You have two options:
-- You can apply the first (8106) patch. I tested it. I'm ok with Hayes point.
-  Consider it Acked.
-- You wait for a pull request with both patches + the incremental bits for
-  the second one. Some of the incremental bits are needed in the original
-  patch itself while some make more sense before the patch itself.
-  ETA: this evening or tomorrow morning at worst.
+Signed-off-by: Jan-Simon Möller <jansimon.moeller@gmx.de>
+Cc: Rob Landley <rob@landley.net>
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ Documentation/dynamic-debug-howto.txt |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-If you go for the first option, I'll simply skip the first patch and
-apply again. It's the same work for me.
-
+diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
+index 6e16849..5250064 100644
+--- a/Documentation/dynamic-debug-howto.txt
++++ b/Documentation/dynamic-debug-howto.txt
+@@ -242,7 +242,7 @@ Debug Messages at Module Initialization Time
+ 
+ When "modprobe foo" is called, modprobe scans /proc/cmdline for
+ foo.params, strips "foo.", and passes them to the kernel along with
+-params given in modprobe args or /etc/modprob.d/*.conf files,
++params given in modprobe args or /etc/modprobe.d/*.conf files,
+ in the following order:
+ 
+ 1. # parameters given via /etc/modprobe.d/*.conf
 -- 
-Ueimor
+1.7.3.4
+
