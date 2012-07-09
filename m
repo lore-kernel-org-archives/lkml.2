@@ -1,107 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751610Ab2GIFUH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 01:20:07 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:36923 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab2GIFTm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 01:19:42 -0400
-X-AuditID: cbfee61b-b7f566d000005c8a-92-4ffa69ec0bba
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Alex Courbot'" <acourbot@nvidia.com>
-Cc: "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        "'Sascha Hauer'" <s.hauer@pengutronix.de>,
-        "'Stephen Warren'" <swarren@wwwdotorg.org>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org
-References: <20120704104840.GJ24458@pengutronix.de>
- <4FF43692.2040805@nvidia.com> <20120704130056.GC30009@pengutronix.de>
- <4FF45DDF.9000306@nvidia.com> <20120704152451.GA7333@sirena.org.uk>
- <4FF4FDC0.8020405@nvidia.com> <20120705062011.GI30009@pengutronix.de>
- <4FF53368.6090805@nvidia.com> <20120705064742.GL30009@pengutronix.de>
- <4FF5459F.5090201@nvidia.com>
- <20120705075714.GA26428@avionic-0098.mockup.avionic-design.de>
- <4FF54C6C.1060700@nvidia.com> <4FF5BAEE.3020403@wwwdotorg.org>
-In-reply-to: <4FF5BAEE.3020403@wwwdotorg.org>
-Subject: RE: [PATCH] pwm-backlight: add regulator and GPIO support
-Date: Mon, 09 Jul 2012 14:19:40 +0900
-Message-id: <00ae01cd5d92$70d1f9f0$5275edd0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1ax+YoDVG9oqo+SdayMDA31hI4PQCyhEoA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t9jQd03mb/8DbZ/l7c40feB1eLyrjls
-	Fp1fZrE5MHt83iQXwBjFZZOSmpNZllqkb5fAlfHkyE7Wgi1CFROWb2FtYHzL18XIySEhYCLx
-	Zd1jFghbTOLCvfVsXYxcHEIC0xklmre+Z4ZwfjFK7J14gQmkik1ATeLLl8PsILaIgIbEt0Vd
-	YB3MAguYJCYe2gQ2SkjgM7PExx5rEJtTQFdiw71jYHFhASeJ5U2zgBo4OFgEVCXm7bQCMXkF
-	bCX2dqWCVPAKCEr8mHwPrJpZQEti/c7jTBC2vMTmNW+ZQcolBNQlHv3VhbjASOJW10lWiBIR
-	iX0v3jFOYBSahWTSLCSTZiGZNAtJywJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwaH9
-	THoH46oGi0OMAhyMSjy8K9J/+QuxJpYVV+YeYpTgYFYS4X0EEuJNSaysSi3Kjy8qzUktPsQo
-	zcGiJM5r4v3VX0ggPbEkNTs1tSC1CCbLxMEp1cBofXdiSmNHqfD/ex4v297uXNK8gkHTjek8
-	+/OJojHHdT3izx/4mBrDuuLL7yMVESXyLWe3LwrrfXdi19USMfnZ3bab1xrIrChfuORDJWPp
-	xblJc6RlBTZzHfP59yh90duj4Rf/Xc1oCty0wv1oyVTf8z6r1Hc87n8XPe3XtYLPmi/+Xti2
-	pKK0QImlOCPRUIu5qDgRADtuK3dpAgAA
-X-TM-AS-MML: No
+	id S1751526Ab2GIFUE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 01:20:04 -0400
+Received: from gate.crashing.org ([63.228.1.57]:42591 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751347Ab2GIFTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 01:19:36 -0400
+Message-ID: <1341811163.3804.2.camel@pasglop>
+Subject: Re: linux-next: boot failure in next-20120705 and 20120706
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: ppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 09 Jul 2012 15:19:23 +1000
+In-Reply-To: <20120709144946.ada290480c0edc6a99f9c9c6@canb.auug.org.au>
+References: <20120709144946.ada290480c0edc6a99f9c9c6@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: linux-fbdev-owner@vger.kernel.org [mailto:linux-fbdev-owner@vger.kernel.org] On Behalf Of Stephen
-> Warren
-> Sent: Friday, July 06, 2012 1:04 AM
-> To: Alex Courbot
-> Cc: Thierry Reding; Sascha Hauer; Mark Brown; linux-tegra@vger.kernel.org; linux-kernel@vger.kernel.org;
-> linux-fbdev@vger.kernel.org
-> Subject: Re: [PATCH] pwm-backlight: add regulator and GPIO support
+On Mon, 2012-07-09 at 14:49 +1000, Stephen Rothwell wrote:
+> Hi all,
 > 
-> On 07/05/2012 02:12 AM, Alex Courbot wrote:
-> > On 07/05/2012 04:57 PM, Thierry Reding wrote:
-> >> I agree. Non-DT platforms have always used the callbacks to execute this
-> >> kind of code. As you've said before there are situations where it isn't
-> >> just about setting a GPIO or enabling a regulator but it also requires a
-> >> specific timing. Representing this in the platform data would become
-> >> tedious.
-> >
-> > That will settle the whole issue then.
-> >
-> >> So I think for the DT case you can parse the power-on and power-off
-> >> sequences directly and execute code based on it, while in non-DT cases
-> >> the init and exit callbacks should be used instead. I think it even
-> >> makes sense to reuse the platform data's init and exit functions in the
-> >> DT case and implement the parser/interpreter within those.
-> >
-> > It totally makes sense indeed.
+> Boot testing next-20120705 and 20120706 one of my PowerPC machines get this BUG:
 > 
-> I don't agree here. It'd be best if non-DT and DT cases worked as
-> similarly as possible. Relying on callbacks in one case and
-> data-parsed-from-DT in the other isn't consistent with that. After all,
-> in the DT case, you parse some data out of the DT and into some data
-> structure. In the non-DT case, you can have that data structure passed
-> in directly using platform data. Now, there's certainly a need to
-> continue to support callbacks for backwards compatibility, at the very
-> least temporarily before all clients are converted to the new model, but
-> requiring different models rather than simply allowing it seems like a
-> bad idea to me.
+> (this one just after the console login prompt appeared.)
 
-Hi Alex Courbot,
+I'll have a look tomorrow. Make sure you keep the .config & machine at
+hand :-) Any chance you can check with just powerpc-next ?
 
-I couldn't agree with Stephen Warren more.
-Could you support DT and non-DT case for backwards compatibility?
+Cheers,
+Ben.
 
-Best regards,
-Jingoo Han
-
+> kernel BUG at arch/powerpc/kernel/irq.c:188!
+> Oops: Exception in kernel mode, sig: 5 [#1]
+> SMP NR_CPUS=32 NUMA pSeries
+> Modules linked in: binfmt_misc dm_mirror dm_region_hash dm_log ibmveth
+> NIP: c00000000000f7d4 LR: c00000000000f838 CTR: c0000000007222a0
+> REGS: c000000000d17a30 TRAP: 0700   Not tainted  (3.5.0-rc5-autokern1)
+> MSR: 8000000000021032 <SF,ME,IR,DR,RI>  CR: 24000048  XER: 00000000
+> SOFTE: 0
+> TASK = c000000000c41a10[0] 'swapper/0' THREAD: c000000000d14000 CPU: 0
+> GPR00: 0000000000000001 c000000000d17cb0 c000000000d12d10 0000000000000500 
+> GPR04: 0000000000000000 0000000000000000 0000000000000000 0000000000000000 
+> GPR08: 001752557ab9dd5b c000000007ffb000 0000000000000000 c000000000bf5200 
+> GPR12: 0000000000000000 c000000007ffb000 0000000002b00000 00000000009d7000 
+> GPR16: 0000000000d454f0 00000000027dc6f0 0000000001b5f994 0000000000000060 
+> GPR20: 0000000000000000 ffffffffffffffff ffffffffffffffff 8000000000009032 
+> GPR24: c000000000d14000 c000000000d30290 c000000000d30178 c000000000d30290 
+> GPR28: c0000000008a6180 0000000000000008 c000000000c7e130 0000000000000001 
+> NIP [c00000000000f7d4] .__check_irq_replay+0xc4/0xf0
+> LR [c00000000000f838] .arch_local_irq_restore+0x38/0x90
+> Call Trace:
+> [c000000000d17cb0] [c000000000d17d30] init_thread_union+0x3d30/0x4000 (unreliable)
+> [c000000000d17d40] [c00000000000f838] .arch_local_irq_restore+0x38/0x90
+> [c000000000d17db0] [c000000000015c60] .cpu_idle+0x230/0x2b0
+> [c000000000d17e70] [c00000000000b3f8] .rest_init+0x88/0xa0
+> [c000000000d17ef0] [c000000000b86c0c] .start_kernel+0x478/0x498
+> [c000000000d17f90] [c0000000000096f8] .start_here_common+0x20/0x28
+> Instruction dump:
+> 4e800020 7da96b78 7beaf7e3 880901f3 38600500 5400e87e 5400183e 980901f3 
+> 4082ffcc 880d01f3 7c0000d0 78000fe0 <0b000000> 38600000 4bffffb4 38610070 
 > 
+> This is:
+> 	BUG_ON(local_paca->irq_happened != 0);
+> in __check_irq_replay().
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> This only happens on my Power5+ machine.
+
 
