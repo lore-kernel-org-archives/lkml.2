@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab2GIKKa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 06:10:30 -0400
-Received: from smtprelay-b11.telenor.se ([62.127.194.20]:57870 "EHLO
-	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764Ab2GIKK3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 06:10:29 -0400
-X-SENDER-IP: [85.230.168.62]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhlOAGet+k9V5qg+PGdsb2JhbABFiiGtRxkBAQEBHhkNJ4J9EwEPGIECChoTiBG6KBSLLAmGAwObG40BgVQ
-X-IronPort-AV: E=Sophos;i="4.77,552,1336341600"; 
-   d="scan'208";a="77085417"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH] hwmon: (applesmc) Shorten minimum wait time
-Date: Mon,  9 Jul 2012 12:10:26 +0200
-Message-Id: <1341828626-6543-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.11.1
+	id S1752833Ab2GIKL5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 06:11:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40732 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751857Ab2GIKL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 06:11:56 -0400
+Date: Mon, 9 Jul 2012 12:09:20 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] uprobes: suppress uprobe_munmap() from mmput()
+Message-ID: <20120709100920.GA21163@redhat.com>
+References: <20120708203003.GA18226@redhat.com> <1341822602.3462.15.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341822602.3462.15.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 2012 series of MacBooks have a faster SMC, and the current driver
-timings do not work at all. Tests show that decreasing the minimum
-wait time, from 64 us to 16 us, works well. Since this is still larger
-than the original minimum of 10 us used before 2008, there is nothing
-inherently problematic with changing it. The fail frequency on older
-machines seems to increase slightly, but not enough to be noticeable.
+On 07/09, Peter Zijlstra wrote:
+>
+> On Sun, 2012-07-08 at 22:30 +0200, Oleg Nesterov wrote:
+> > uprobe_munmap() does get_user_pages() and it is also called from
+> > the final mmput()->exit_mmap() path. This slows down exit/mmput()
+> > for no reason, and I think  it is simply dangerous/wrong to try to
+> > fault-in a page into the dying mm. If nothing else, this happens
+> > after the last sync_mm_rss(), afaics handle_mm_fault() can change
+> > the task->rss_stat and make the subsequent check_mm() unhappy.
+> >
+> > Change uprobe_munmap() to check mm->mm_users != 0.
+> >
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> > ---
+> >  kernel/events/uprobes.c |    3 +++
+> >  1 files changed, 3 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> > index a93b6df..47c4e24 100644
+> > --- a/kernel/events/uprobes.c
+> > +++ b/kernel/events/uprobes.c
+> > @@ -1082,6 +1082,9 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
+> >  	if (!atomic_read(&uprobe_events) || !valid_vma(vma, false))
+> >  		return;
+> >
+> > +	if (!atomic_read(&vma->vm_mm->mm_users)) /* called by mmput() ? */
+> > +		return;
+> > +
+> >  	if (!atomic_read(&vma->vm_mm->uprobes_state.count))
+> >  		return;
+> >
+>
+> But won't you leak uprobe refcounts like this? Those aren't tied to the
+> task (which is dying) but to the vma's mapping the appropriate hunk of
+> the text. Not doing the munmap will then not put the uprobe->ref..
 
-Tested on MBA11, MBA31, MBA5,2, MBP9,2.
+No, mmap/munmap do not participate in uprobe refcounting. This code
+does put_uprobe() for each uprobe, yes, but only because the counter
+was incremented in build_probe_list().
 
-The patch was originally written by adamski99 (ubuntuforums.org) and
-later tested by janhouse (bbs.archlinux.org).
+uprobe_munmap() is only needed to decrement mm->uprobes_state.count,
+but nobody except uprobe_munmap() itself will use it after mmput().
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
-Hi Guenter,
-
-This patch enables the mid-2012 MacBook models. The patch affects
-older models slightly, but mostly in a good way; all models get
-slightly faster reads, but some older models see a slight increase in
-read fail frequency. I do not think this will be noticeable, but I
-would hesitate to backport too far. For 3.6.
-
-Thanks,
-Henrik
-
- drivers/hwmon/applesmc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-index 0162f55..f41585e 100644
---- a/drivers/hwmon/applesmc.c
-+++ b/drivers/hwmon/applesmc.c
-@@ -54,7 +54,7 @@
- #define APPLESMC_MAX_DATA_LENGTH 32
- 
- /* wait up to 32 ms for a status change. */
--#define APPLESMC_MIN_WAIT	0x0040
-+#define APPLESMC_MIN_WAIT	0x0010
- #define APPLESMC_MAX_WAIT	0x8000
- 
- #define APPLESMC_STATUS_MASK	0x0f
--- 
-1.7.11.1
+Oleg.
 
