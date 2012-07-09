@@ -1,130 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135Ab2GIWr2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 18:47:28 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:34632 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202Ab2GIWr1 (ORCPT
+	id S1752223Ab2GIWzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 18:55:11 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49332 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab2GIWzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 18:47:27 -0400
-Date: Mon, 9 Jul 2012 15:46:53 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
+	Mon, 9 Jul 2012 18:55:09 -0400
+From: Christian Lamparter <chunkeey@googlemail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] shmem: cleanup shmem_add_to_page_cache
-In-Reply-To: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils>
-Message-ID: <alpine.LSU.2.00.1207091544290.2051@eggly.anvils>
-References: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+Subject: Re: [RESEND AGAIN][PATCH] pcmcia: move unbind/rebind into dev_pm_ops.complete
+Date: Tue, 10 Jul 2012 00:54:54 +0200
+User-Agent: KMail/1.13.7 (Linux/3.5.0-rc5-wl+; KDE/4.8.4; x86_64; ; )
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-pcmcia@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Dominik Brodowski <linux@dominikbrodowski.net>
+References: <201207062323.52785.chunkeey@googlemail.com> <20120706213016.GA15424@kroah.com> <20120709145939.80537e0e.akpm@linux-foundation.org>
+In-Reply-To: <20120709145939.80537e0e.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207100054.54535.chunkeey@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-shmem_add_to_page_cache() has three callsites, but only one of them
-wants the radix_tree_preload() (an exceptional entry guarantees that
-the radix tree node is present in the other cases), and only that site
-can achieve mem_cgroup_uncharge_cache_page() (PageSwapCache makes it a
-no-op in the other cases).  We did it this way originally to reflect
-add_to_page_cache_locked(); but it's confusing now, so move the
-radix_tree preloading and mem_cgroup uncharging to that one caller.
+On Monday, July 09, 2012 11:59:39 PM Andrew Morton wrote:
+> On Fri, 6 Jul 2012 14:30:16 -0700
+> Greg KH <gregkh@linuxfoundation.org> wrote:
+> 
+> > On Fri, Jul 06, 2012 at 11:23:52PM +0200, Christian Lamparter wrote:
+> > > The idea of moving rebind procedure into pm.complete
+> > > was taken from the usb-subsystem, which has similar
+> > > problems with reattaching devices during/after
+> > > resume.
+> > > 
+> > > Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+> > > ---
+> > > To Greg:
+> > > 
+> > > I have submitted this patch back in March and again in May.
+> > > As far as I can tell it was neither rejected nor was it
+> > > accepted into linux-pcmcia.git since. So I'm asking you,
+> > > if you could take the patch instead... please.
+> > 
+> > There is a PCMCIA "team" who should be taking these types of patches.
+> > Why are they not doing so?
+> > 
+> 
+> Things are pretty quiet in pcmcia world, but Dominik does appear to
+> still be doing stuff.
+> 
+> I sometimes queue PCMCIA patches for people, but not this one.  The
+> changelog is just junk.  What does the patch do?  Why does it do it? 
+> What problems does it solve?  What are these mysterious "problems with
+> reattaching devices" to which it refers?  Useless...
+> 
+Well, that can be improved, but it is a bit tricky. 
+AFAICT the usb subsystem dealt with pm in this commit:
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Michal Hocko <mhocko@suse.cz>
----
-This is just a cleanup: I'd prefer it to go in along with the fix 2/3,
-but it can be delayed to v3.6 if you prefer.
+"commit 5096aedcd2eb70fbea83f09281f97f9ec973d9de
+Author: Alan Stern <stern@rowland.harvard.edu>
+Date:   Tue Aug 12 14:34:14 2008 -0400
 
- mm/shmem.c |   58 ++++++++++++++++++++++++---------------------------
- 1 file changed, 28 insertions(+), 30 deletions(-)
+    USB: Don't rebind before "complete" callback
 
---- 3.5-rc6+/mm/shmem.c	2012-07-07 19:20:52.026952048 -0700
-+++ linux/mm/shmem.c	2012-07-07 19:21:44.342952082 -0700
-@@ -288,40 +288,31 @@ static int shmem_add_to_page_cache(struc
- 				   struct address_space *mapping,
- 				   pgoff_t index, gfp_t gfp, void *expected)
- {
--	int error = 0;
-+	int error;
- 
- 	VM_BUG_ON(!PageLocked(page));
- 	VM_BUG_ON(!PageSwapBacked(page));
- 
-+	page_cache_get(page);
-+	page->mapping = mapping;
-+	page->index = index;
-+
-+	spin_lock_irq(&mapping->tree_lock);
- 	if (!expected)
--		error = radix_tree_preload(gfp & GFP_RECLAIM_MASK);
-+		error = radix_tree_insert(&mapping->page_tree, index, page);
-+	else
-+		error = shmem_radix_tree_replace(mapping, index, expected,
-+								 page);
- 	if (!error) {
--		page_cache_get(page);
--		page->mapping = mapping;
--		page->index = index;
--
--		spin_lock_irq(&mapping->tree_lock);
--		if (!expected)
--			error = radix_tree_insert(&mapping->page_tree,
--							index, page);
--		else
--			error = shmem_radix_tree_replace(mapping, index,
--							expected, page);
--		if (!error) {
--			mapping->nrpages++;
--			__inc_zone_page_state(page, NR_FILE_PAGES);
--			__inc_zone_page_state(page, NR_SHMEM);
--			spin_unlock_irq(&mapping->tree_lock);
--		} else {
--			page->mapping = NULL;
--			spin_unlock_irq(&mapping->tree_lock);
--			page_cache_release(page);
--		}
--		if (!expected)
--			radix_tree_preload_end();
-+		mapping->nrpages++;
-+		__inc_zone_page_state(page, NR_FILE_PAGES);
-+		__inc_zone_page_state(page, NR_SHMEM);
-+		spin_unlock_irq(&mapping->tree_lock);
-+	} else {
-+		page->mapping = NULL;
-+		spin_unlock_irq(&mapping->tree_lock);
-+		page_cache_release(page);
- 	}
--	if (error)
--		mem_cgroup_uncharge_cache_page(page);
- 	return error;
- }
- 
-@@ -1202,11 +1193,18 @@ repeat:
- 		__set_page_locked(page);
- 		error = mem_cgroup_cache_charge(page, current->mm,
- 						gfp & GFP_RECLAIM_MASK);
--		if (!error)
--			error = shmem_add_to_page_cache(page, mapping, index,
--						gfp, NULL);
- 		if (error)
- 			goto decused;
-+		error = radix_tree_preload(gfp & GFP_RECLAIM_MASK);
-+		if (!error) {
-+			error = shmem_add_to_page_cache(page, mapping, index,
-+							gfp, NULL);
-+			radix_tree_preload_end();
-+		}
-+		if (error) {
-+			mem_cgroup_uncharge_cache_page(page);
-+			goto decused;
-+		}
- 		lru_cache_add_anon(page);
- 
- 		spin_lock(&info->lock);
+	[...] We are not allowed to call drivers' probe routines during 
+	a system sleep transition between the "prepare" and "complete"
+	callbacks, but that's exactly what we do when a driver doesn't
+	have full suspend/resume support. [...]"
+
+And on the pcmcia subsystem we have this:
+
+"commit 88b060d6c03fcb9e4d2018b4349954c4242a5c7f
+Author: Dominik Brodowski <linux@dominikbrodowski.net>
+Date:   Sat Jan 2 14:14:23 2010 +0100
+
+    pcmcia: improve check for same card in slot after resume
+
+    During a suspend/resume cycle, an user may change the card in the
+    PCMCIA/CardBus slot. [...]
+    
+    For CardBus devices, the PCI hotplug interface doesn't offer a "rescan"
+    facility which also _removes_ devices no longer to be found behind a
+    bridge. Therefore, remove and re-add all devices unconditionally."
+
+Unfortunately, the "re-add" is currently done in the *pm resume* callback
+(socket_late_resume), but according to "USB: Don't rebind..." is not
+allowed to have it there, so the patch moves it into the *pm complete*
+callback. The Documentation/power/* contains mostly informations for
+drivers developers, but AFAICT it doesn't say much about the subsystem
+to which the device is connected should behave, so there's a bit of a
+"citing-gap".
+
+So, my question now: Would you accept the pcmcia patch if I add the
+"USB: Don't rebind..." as a reference to why the re-add needs to be
+done in complete? Or do you think that I should bug the pm people
+(and Alan - since he wrote that it is "not allowed") in this case
+so I can link their official answer to this patch?
+
+Regards,
+	Chr
