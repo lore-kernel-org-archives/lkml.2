@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab2GIDdL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 23:33:11 -0400
-Received: from mga14.intel.com ([143.182.124.37]:51469 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751684Ab2GIDdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 23:33:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="165561022"
-Message-ID: <4FFA4EFD.6090708@intel.com>
-Date: Mon, 09 Jul 2012 11:24:45 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1752209Ab2GIDgS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 23:36:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49443 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028Ab2GIDgQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 23:36:16 -0400
+Message-ID: <4FFA51AB.30203@gmail.com>
+Date: Mon, 09 Jul 2012 11:36:11 +0800
+From: Sha Zhengju <handai.szj@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: Zhang Rui <rui.zhang@intel.com>, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, lenb@kernel.org, linux-acpi@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jkosina@suse.cz, chatty@enac.fr, jj_ding@emc.com.tw,
-        bhelgaas@google.com, abelay@mit.edu
-Subject: Re: Fwd: Hid over I2C and ACPI interaction
-References: <CAN+gG=GnMX8Gu6w9za2QrjoVrmORncFgq-+hhmHvxtOPEB=nDw@mail.gmail.com> <4FF52C70.9010601@intel.com> <1341471717.1682.125.camel@rui.sh.intel.com> <20120706055234.GC2237@intel.com>
-In-Reply-To: <20120706055234.GC2237@intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: linux-mm@kvack.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, gthelen@google.com, yinghan@google.com,
+        akpm@linux-foundation.org, mhocko@suse.cz,
+        linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH 6/7] memcg: add per cgroup writeback pages accounting
+References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com> <1340881562-5900-1-git-send-email-handai.szj@taobao.com> <20120708145309.GC18272@localhost>
+In-Reply-To: <20120708145309.GC18272@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012年07月06日 13:52, Mika Westerberg wrote:
-> On Thu, Jul 05, 2012 at 03:01:57PM +0800, Zhang Rui wrote:
->> +Note that although these are ACPI devices, we prefer to use PnP drivers
->> for them,
->> +this is because:
->> +1. all the non-ACPI-predefined Devices are exported as PnP devices as
->> well
->> +2. PnP bus is a well designed bus. Probing via PnP layer saves a lot of
->> work
->> +   for the device driver, e.g. getting&  parsing ACPI resources.
->
-> (Nice BKM, thanks for sharing)
->
-> I have few questions about using PnP drivers instead of pure ACPI drivers.
->
-> ACPI 5.0 defined some new resources, for example "Fixed DMA descriptor"
-> that has information about the request line + channel for the device to
-> use. Hovewer, PnP drivers pass resources as 'struct resource', which
-> basically only has start and end - how do you represent all this new stuff
-> using 'struct resource'?
->
-I think we can add new interface to get acpi specific resources. e.g
-struct acpi_resource pnp_get_acpi_resource(...). When the pnp acpi devices
-were initialized, put those acpi specific resources into a new resource list
-pnpdev->acpi_resources. What pnp_get_acpi_resource does is to get specified
-type acpi resources and return. We also need to define some acpi resource types.
-
-ACPI_RESOURCE_DMA
-ACPI_RESOURCE_I2C_SERIALBUS
-ACPI_RESOURCE_SPI_SERIALBUS
-ACPI_RESOURCE_UART_SERIALBUS
-ACPI_RESOURCE_COMMON_SERIALBUS
-...
-
-How about this? welcome to comments.
-
-> Or should we use acpi_walk_resources() where 'struct resource' is not
-> suitable?
+On 07/08/2012 10:53 PM, Fengguang Wu wrote:
+>> @@ -2245,7 +2252,10 @@ int test_set_page_writeback(struct page *page)
+>>   {
+>>   	struct address_space *mapping = page_mapping(page);
+>>   	int ret;
+>> +	bool locked;
+>> +	unsigned long flags;
+>>
+>> +	mem_cgroup_begin_update_page_stat(page,&locked,&flags);
+>>   	if (mapping) {
+>>   		struct backing_dev_info *bdi = mapping->backing_dev_info;
+>>   		unsigned long flags;
+>> @@ -2272,6 +2282,8 @@ int test_set_page_writeback(struct page *page)
+>>   	}
+>>   	if (!ret)
+>>   		account_page_writeback(page);
+>> +
+>> +	mem_cgroup_end_update_page_stat(page,&locked,&flags);
+>>   	return ret;
+>>
+>>   }
+> Where is the MEM_CGROUP_STAT_FILE_WRITEBACK increased?
 >
 
--- 
-Best Regards
-Tianyu Lan
-linux kernel enabling team
+It's in account_page_writeback().
+
+  void account_page_writeback(struct page *page)
+  {
++	mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_FILE_WRITEBACK);
+  	inc_zone_page_state(page, NR_WRITEBACK);
+  }
+
+
+There isn't a unified interface to dec/inc writeback accounting, so
+I just follow that.
+Maybe we can rework account_page_writeback() to also account
+dec in?
+
+
+Thanks,
+Sha
