@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab2GIHdH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 03:33:07 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:35334 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684Ab2GIHdE (ORCPT
+	id S1752546Ab2GIHeI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 03:34:08 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48851 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751861Ab2GIHeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 03:33:04 -0400
+	Mon, 9 Jul 2012 03:34:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <1341784614-2797-12-git-send-email-dh.herrmann@googlemail.com>
+In-Reply-To: <1341784614-2797-5-git-send-email-dh.herrmann@googlemail.com>
 References: <1341784614-2797-1-git-send-email-dh.herrmann@googlemail.com>
-	<1341784614-2797-12-git-send-email-dh.herrmann@googlemail.com>
-Date: Mon, 9 Jul 2012 09:33:02 +0200
-X-Google-Sender-Auth: -ExTeviMKyM84pvzCsfbDmei2ew
-Message-ID: <CAMuHMdX_aC1hzKf1eRqoSsQ4oALBev8p77v7++aoB2KrkOUaEw@mail.gmail.com>
-Subject: Re: [PATCH v2 11/11] MAINTAINERS: add fblog entry
+	<1341784614-2797-5-git-send-email-dh.herrmann@googlemail.com>
+Date: Mon, 9 Jul 2012 09:34:04 +0200
+X-Google-Sender-Auth: PX6bVyZiq3RjYIJT_umHWQjCq1o
+Message-ID: <CAMuHMdWsSqMjqDuE_qgNUjc1eCWZqLLo1GNxwLYZNih=YBFh0g@mail.gmail.com>
+Subject: Re: [PATCH v2 04/11] fbdev: export get_fb_info()/put_fb_info()
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: David Herrmann <dh.herrmann@googlemail.com>
 Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -28,33 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Sun, Jul 8, 2012 at 11:56 PM, David Herrmann
 <dh.herrmann@googlemail.com> wrote:
-> Add myself as maintainer for the fblog driver to the MAINTAINERS file.
+> --- a/drivers/video/fbmem.c
+> +++ b/drivers/video/fbmem.c
+> @@ -46,7 +46,7 @@ static DEFINE_MUTEX(registration_lock);
+>  struct fb_info *registered_fb[FB_MAX] __read_mostly;
+>  int num_registered_fb __read_mostly;
 >
-> Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
-> ---
->  MAINTAINERS | 6 ++++++
->  1 file changed, 6 insertions(+)
+> -static struct fb_info *get_fb_info(unsigned int idx)
+> +struct fb_info *get_fb_info(unsigned int idx)
+>  {
+>         struct fb_info *fb_info;
 >
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index ae8fe46..249b02a 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -2854,6 +2854,12 @@ F:       drivers/video/
->  F:     include/video/
->  F:     include/linux/fb.h
+> @@ -61,14 +61,16 @@ static struct fb_info *get_fb_info(unsigned int idx)
 >
-> +FRAMEBUFFER LOG DRIVER
-> +M:     David Herrmann <dh.herrmann@googlemail.com>
-> +L:     linux-serial@vger.kernel.org
+>         return fb_info;
+>  }
+> +EXPORT_SYMBOL(get_fb_info);
 
-Why linux-serial, and not linux-fbdev?
+EXPORT_SYMBOL_GPL?
 
-> +S:     Maintained
-> +F:     drivers/video/console/fblog.c
-> +
->  FREESCALE DMA DRIVER
->  M:     Li Yang <leoli@freescale.com>
->  M:     Zhang Wei <zw@zh-kernel.org>
+> -static void put_fb_info(struct fb_info *fb_info)
+> +void put_fb_info(struct fb_info *fb_info)
+>  {
+>         if (!atomic_dec_and_test(&fb_info->count))
+>                 return;
+>         if (fb_info->fbops->fb_destroy)
+>                 fb_info->fbops->fb_destroy(fb_info);
+>  }
+> +EXPORT_SYMBOL(put_fb_info);
+
+EXPORT_SYMBOL_GPL?
 
 Gr{oetje,eeting}s,
 
