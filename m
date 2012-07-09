@@ -1,72 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab2GIW5m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 18:57:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36842 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751184Ab2GIW5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 18:57:41 -0400
-Date: Mon, 9 Jul 2012 18:57:25 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: "Chauhan, Vijay" <Vijay.Chauhan@netapp.com>
-Cc: axboe@kernel.dk, "Martin K. Petersen" <martin.petersen@oracle.com>,
+	id S1753000Ab2GIXBd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 19:01:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38629 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab2GIXBc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 19:01:32 -0400
+Date: Mon, 9 Jul 2012 16:01:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christian Lamparter <chunkeey@googlemail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-pcmcia@lists.infradead.org,
         linux-kernel@vger.kernel.org,
-        "Stankey, Robert" <Robert.Stankey@netapp.com>,
-        "Moger, Babu" <Babu.Moger@netapp.com>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>
-Subject: Re: [PATCH v2] block: do not artificially constrain max_sectors for
- stacking drivers
-Message-ID: <20120709225725.GA1487@redhat.com>
-References: <F200AD42A082BC4088B232D13A916A8907E5DD64@SACEXCMBX02-PRD.hq.netapp.com>
- <20120709130052.GC30048@redhat.com>
- <20120709131611.GD30048@redhat.com>
- <20120709134041.GA30633@redhat.com>
- <20120709141416.GB30633@redhat.com>
- <20120709145711.GB30886@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120709145711.GB30886@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Dominik Brodowski <linux@dominikbrodowski.net>
+Subject: Re: [RESEND AGAIN][PATCH] pcmcia: move unbind/rebind into
+ dev_pm_ops.complete
+Message-Id: <20120709160131.ed3d18d4.akpm@linux-foundation.org>
+In-Reply-To: <201207100054.54535.chunkeey@googlemail.com>
+References: <201207062323.52785.chunkeey@googlemail.com>
+	<20120706213016.GA15424@kroah.com>
+	<20120709145939.80537e0e.akpm@linux-foundation.org>
+	<201207100054.54535.chunkeey@googlemail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09 2012 at 10:57am -0400,
-Mike Snitzer <snitzer@redhat.com> wrote:
+On Tue, 10 Jul 2012 00:54:54 +0200
+Christian Lamparter <chunkeey@googlemail.com> wrote:
 
-> blk_set_stacking_limits() is intended to allow stacking drivers to build
-> up the limits of the stacked device based on the underlying devices'
-> limits.  But in the case of 'max_sectors' the default of
-> BLK_DEF_MAX_SECTORS (1024) doesn't allow the stacking driver to inherit
-> a max_sectors larger than 1024.
+> On Monday, July 09, 2012 11:59:39 PM Andrew Morton wrote:
+> > On Fri, 6 Jul 2012 14:30:16 -0700
+> > Greg KH <gregkh@linuxfoundation.org> wrote:
+> > 
+> > > On Fri, Jul 06, 2012 at 11:23:52PM +0200, Christian Lamparter wrote:
+> > > > The idea of moving rebind procedure into pm.complete
+> > > > was taken from the usb-subsystem, which has similar
+> > > > problems with reattaching devices during/after
+> > > > resume.
+> > > > 
+> > > > Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+> > > > ---
+> > > > To Greg:
+> > > > 
+> > > > I have submitted this patch back in March and again in May.
+> > > > As far as I can tell it was neither rejected nor was it
+> > > > accepted into linux-pcmcia.git since. So I'm asking you,
+> > > > if you could take the patch instead... please.
+> > > 
+> > > There is a PCMCIA "team" who should be taking these types of patches.
+> > > Why are they not doing so?
+> > > 
+> > 
+> > Things are pretty quiet in pcmcia world, but Dominik does appear to
+> > still be doing stuff.
+> > 
+> > I sometimes queue PCMCIA patches for people, but not this one.  The
+> > changelog is just junk.  What does the patch do?  Why does it do it? 
+> > What problems does it solve?  What are these mysterious "problems with
+> > reattaching devices" to which it refers?  Useless...
+> > 
+> Well, that can be improved, but it is a bit tricky. 
+> AFAICT the usb subsystem dealt with pm in this commit:
 > 
-> It is now clear that this artificial limit is getting in the way so
-> change blk_set_stacking_limits's max_sectors to UINT_MAX (which allows
-> stacking drivers like dm-multipath to inherit 'max_sectors' from the
-> underlying paths).
+> "commit 5096aedcd2eb70fbea83f09281f97f9ec973d9de
+> Author: Alan Stern <stern@rowland.harvard.edu>
+> Date:   Tue Aug 12 14:34:14 2008 -0400
 > 
-> blk_limits_max_hw_sectors() must allow stacking drivers to not have
-> max_sectors set to BLK_DEF_MAX_SECTORS as a side-effect.  Move that
-> historic constraint to blk_queue_max_hw_sectors().
+>     USB: Don't rebind before "complete" callback
 > 
-> Reported-by: Vijay Chauhan <vijay.chauhan@netapp.com>
-> Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-> Cc: Martin K. Petersen <martin.petersen@oracle.com>
-> ---
->  block/blk-settings.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
+> 	[...] We are not allowed to call drivers' probe routines during 
+> 	a system sleep transition between the "prepare" and "complete"
+> 	callbacks, but that's exactly what we do when a driver doesn't
+> 	have full suspend/resume support. [...]"
 > 
-> v2: tweak blk_limits_max_hw_sectors and blk_queue_max_hw_sectors
+> And on the pcmcia subsystem we have this:
+> 
+> "commit 88b060d6c03fcb9e4d2018b4349954c4242a5c7f
+> Author: Dominik Brodowski <linux@dominikbrodowski.net>
+> Date:   Sat Jan 2 14:14:23 2010 +0100
+> 
+>     pcmcia: improve check for same card in slot after resume
+> 
+>     During a suspend/resume cycle, an user may change the card in the
+>     PCMCIA/CardBus slot. [...]
+>     
+>     For CardBus devices, the PCI hotplug interface doesn't offer a "rescan"
+>     facility which also _removes_ devices no longer to be found behind a
+>     bridge. Therefore, remove and re-add all devices unconditionally."
+> 
+> Unfortunately, the "re-add" is currently done in the *pm resume* callback
+> (socket_late_resume), but according to "USB: Don't rebind..." is not
+> allowed to have it there, so the patch moves it into the *pm complete*
+> callback. The Documentation/power/* contains mostly informations for
+> drivers developers, but AFAICT it doesn't say much about the subsystem
+> to which the device is connected should behave, so there's a bit of a
+> "citing-gap".
 
-As it happens, v2's changes to blk_limits_max_hw_sectors and
-blk_queue_max_hw_sectors are not strictly required in order for existing
-stacking drivers to have have an unconstrained max_sectors.  Dropping
-those changes also allows for consistency across both block functions.
+hm, it does seem a bit of a screwup.
 
-So I'd be happy if v1 were to be staged for 3.6.  NetApp: it would be
-great if you could confirm that v1 does in fact address the max_sectors
-issue you reported.
+What's unclear to me is whether your patch fixes any observed runtime
+problems.  Or adds any runtime problems, which looks to be a distinct
+possibility.
 
-Thanks,
-Mike
+> So, my question now: Would you accept the pcmcia patch if I add the
+> "USB: Don't rebind..." as a reference to why the re-add needs to be
+> done in complete? Or do you think that I should bug the pm people
+> (and Alan - since he wrote that it is "not allowed") in this case
+> so I can link their official answer to this patch?
+
+Well I could grab it and give it a little bit of testing in linux-next.
+But I'd be super-reluctant to send such a patch upstream without
+detailed input from Alan/Greg/Rafael/Dominik/etc.
+
