@@ -1,54 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895Ab2GICB0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 22:01:26 -0400
-Received: from edison.jonmasters.org ([173.255.233.168]:57596 "EHLO
-	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481Ab2GICBY (ORCPT
+	id S1751954Ab2GICAP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 22:00:15 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:54236 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797Ab2GIB7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 22:01:24 -0400
-Message-ID: <4FFA3B71.3020105@jonmasters.org>
-Date: Sun, 08 Jul 2012 22:01:21 -0400
-From: Jon Masters <jonathan@jonmasters.org>
-Organization: World Organi{s,z}ation of Broken Dreams
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Dennis Gilmore <dgilmore@fedoraproject.org>
-CC: linux-kernel@vger.kernel.org
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com> <201207071927.13135.arnd@arndb.de> <4FF93C99.80203@redhat.com> <4FF9D1E9.4050504@jonmasters.org> <20120708172419.2b2f2713@pegasus.ausil.us>
-In-Reply-To: <20120708172419.2b2f2713@pegasus.ausil.us>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
-X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
+	Sun, 8 Jul 2012 21:59:31 -0400
+From: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: andriy.shevchenko@linux.intel.com, jj@chaosbits.net,
+        forest@alittletooquiet.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+Subject: [PATCH 1/5] staging: vt6656: desc.h: Remove commented macros and useless comments
+Date: Sun,  8 Jul 2012 22:55:46 -0300
+Message-Id: <1341798950-11215-2-git-send-email-marcos.souza.org@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1341798950-11215-1-git-send-email-marcos.souza.org@gmail.com>
+References: <1341798950-11215-1-git-send-email-marcos.souza.org@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2012 06:24 PM, Dennis Gilmore wrote:
+The commented macros are reported by forgotten-macros
+tool(https://github.com/marcosps/forgotten_macros).
 
-> I know that the architecture really is new but thats not really clear
-> by adding AArch32 into the mix to represent 32 bit arm as ARM has done
-> or by calling it armv8. There is enough way to confuse them already why
-> confuse things more by adding yet another variable that is AArch64.
-> - From my and most of the other Fedora developers that i've discussed it
-> with its more like reluctant acceptance of AArch64 than thinking is a
-> good idea. 
+Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+---
+ drivers/staging/vt6656/desc.h |   19 -------------------
+ 1 file changed, 19 deletions(-)
 
-btw, for clarification of anyone who is confused by the names...the new
-architecture is ARMv8. The 64-bit state is AArch64, during which the
-processor executes A64 instructions. The 32-bit state is AArch32, during
-which the processor executes either A32 ("ARM" version 7+) or T32
-("Thumb" - I guess Thumb2+ really due to some of deprecation)
-instructions. I've noticed that there appears to be a clarification
-effort in which AArch64 is used as an architecture name when ARMv8 would
-be confusing, which is most of the time if you don't know whether you're
-referring to the new A64 instruction set or the older ones.
+diff --git a/drivers/staging/vt6656/desc.h b/drivers/staging/vt6656/desc.h
+index 767112b..b68b2ec 100644
+--- a/drivers/staging/vt6656/desc.h
++++ b/drivers/staging/vt6656/desc.h
+@@ -36,8 +36,6 @@
+ #include "ttype.h"
+ #include "tether.h"
+ 
+-/*---------------------  Export Definitions -------------------------*/
+-
+ // max transmit or receive buffer size
+ #define CB_MAX_BUF_SIZE     2900U       // max buffer size
+                                         // NOTE: must be multiple of 4
+@@ -120,17 +118,11 @@
+ #define FRAGCTL_TKIP        0x0200 // 0000 0010 0000 0000
+ #define FRAGCTL_LEGACY      0x0100 // 0000 0001 0000 0000
+ #define FRAGCTL_NONENCRYPT  0x0000 // 0000 0000 0000 0000
+-//#define FRAGCTL_AC3         0x000C // 0000 0000 0000 1100
+-//#define FRAGCTL_AC2         0x0008 // 0000 0000 0000 1000
+-//#define FRAGCTL_AC1         0x0004 // 0000 0000 0000 0100
+-//#define FRAGCTL_AC0         0x0000 // 0000 0000 0000 0000
+ #define FRAGCTL_ENDFRAG     0x0003 // 0000 0000 0000 0011
+ #define FRAGCTL_MIDFRAG     0x0002 // 0000 0000 0000 0010
+ #define FRAGCTL_STAFRAG     0x0001 // 0000 0000 0000 0001
+ #define FRAGCTL_NONFRAG     0x0000 // 0000 0000 0000 0000
+ 
+-//#define TYPE_AC0DMA     0
+-//#define TYPE_TXDMA0     1
+ #define TYPE_TXDMA0     0
+ #define TYPE_AC0DMA     1
+ #define TYPE_ATIMDMA    2
+@@ -147,9 +139,6 @@
+ #define TD_FLAGS_NETIF_SKB               0x01       // check if need release skb
+ #define TD_FLAGS_PRIV_SKB                0x02       // check if called from private skb(hostap)
+ #define TD_FLAGS_PS_RETRY                0x04       // check if PS STA frame re-transmit
+-//#define TD_FLAGS_NETIF_SKB                0x04
+-
+-/*---------------------  Export Types  ------------------------------*/
+ 
+ //
+ // RsvTime buffer header
+@@ -268,7 +257,6 @@ SRTS_a_FB, *PSRTS_a_FB;
+ 
+ typedef const SRTS_a_FB *PCSRTS_a_FB;
+ 
+-
+ //
+ // CTS buffer header
+ //
+@@ -421,12 +409,5 @@ typedef struct tagSKeyEntry {
+     DWORD dwKey4[4];
+ } __attribute__ ((__packed__))
+ SKeyEntry;
+-/*---------------------  Export Macros ------------------------------*/
+-
+-/*---------------------  Export Classes  ----------------------------*/
+-
+-/*---------------------  Export Variables  --------------------------*/
+-
+-/*---------------------  Export Functions  --------------------------*/
+ 
+ #endif /* __DESC_H__ */
+-- 
+1.7.10.4
 
-Perhaps this is useful if someone is trying to figure out heads or tails
-of the different terms.
-
-Jon.
