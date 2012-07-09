@@ -1,100 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab2GIIMD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 04:12:03 -0400
-Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:40966 "EHLO
-	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab2GIIMA convert rfc822-to-8bit (ORCPT
+	id S1752570Ab2GIIPR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 04:15:17 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:23681 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751937Ab2GIIPP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 04:12:00 -0400
-Message-Id: <4FFAAE6C020000A10000A6AB@gwsmtp1.uni-regensburg.de>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Mon, 09 Jul 2012 10:11:56 +0200
-From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-To: "Ryan Mallon" <rmallon@gmail.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: Antw: Re: /sys and access(2): Correctly implemented?
-References: <4FF6A17B020000A10000A5E8@gwsmtp1.uni-regensburg.de>
- <4FFA16B6.9050009@gmail.com>
- <4FFA950B020000A10000A68F@gwsmtp1.uni-regensburg.de>
- <4FFA86C5.7090601@gmail.com>
-In-Reply-To: <4FFA86C5.7090601@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 9 Jul 2012 04:15:15 -0400
+X-IronPort-AV: E=Sophos;i="4.77,551,1336320000"; 
+   d="scan'208";a="5354007"
+Message-ID: <4FFA9321.4030407@cn.fujitsu.com>
+Date: Mon, 09 Jul 2012 16:15:29 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, nhorman@tuxdriver.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        lizefan@huawei.com, tj@kernel.org
+Subject: Re: [PATCH] net: cgroup: fix out of bounds accesses
+References: <1341819910.3265.2106.camel@edumazet-glaptop>
+In-Reply-To: <1341819910.3265.2106.camel@edumazet-glaptop>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/09 16:15:01,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/09 16:15:06
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-Still the problem seems to be related to the sysfs:
-# cd /tmp
-# touch testfile
-# chmod u=w,go= testfile
-# F=/tmp/testfile
-# test -r "$F" && cat "$F"
-
-So it seems access(2) works correctly for root and "normal" filesystems. That's why I came up with the issue here.
-
-Regards,
-Ulrich
-
->>> Ryan Mallon <rmallon@gmail.com> schrieb am 09.07.2012 um 09:22 in Nachricht
-<4FFA86C5.7090601@gmail.com>:
-> On 09/07/12 16:23, Ulrich Windl wrote:
->>>>> Ryan Mallon <rmallon@gmail.com> schrieb am 09.07.2012 um 01:24 in Nachricht
-> > <4FFA16B6.9050009@gmail.com>:
-> >> On 06/07/12 16:27, Ulrich Windl wrote:
-> >>> Hi!
-> >>>
-> >>> Recently I found a problem with the command (kernel 3.0.34-0.7-default from 
-> >> SLES 11 SP2, run as root):
-> >>> test -r "$file" && cat "$file"
-> >>> emitting "Permission denied"
-> >>>
-> >>> Investigating, I found that "test" actually uses "access()" to check for 
-> >> permissions. Unfortunately there are some files in /sys that have 
-> "write-only" 
-> >> permission bits set (e.g. /sys/devices/system/cpu/probe).
-> >>>
-> >>> ~ # ll /sys/devices/system/cpu/probe
-> >>> --w------- 1 root root 4096 Jun 29 12:43 /sys/devices/system/cpu/probe
-> >>> ~ # F=/sys/devices/system/cpu/probe
-> >>> ~ # test "$F" && cat "$F"
-> >>> cat: /sys/devices/system/cpu/probe: Permission denied
-> >>
-> >> Looks like you have a typo here, I think you wanted "test -r $F", not
-> >> "test $F", the latter will just evaluate "$F" as an expression which
-> >> will be true, and so you get the permission denied error running cat.
-> > 
-> > Hi!
-> > 
-> > You are right: It's a typo, but only in the message; the actual test was 
-> done correctly, and the outcome is quite the same.
-> > 
-> >>
-> >> Using "test -r $F" on a write-only sysfs file correctly returns false on
-> >> my machine (Ubuntu 10.04.4 LTS/2.6.32-41-generic).
-> > 
-> > Not here, unfortunately:
+于 2012年07月09日 15:45, Eric Dumazet 写道:
+> From: Eric Dumazet <edumazet@google.com>
 > 
-> Oops, I missed the bit about you running as root. I get the same results
-> running as root on my machine as you, both for sysfs and regular files.
+> dev->priomap is allocated by extend_netdev_table() called from
+> update_netdev_tables().
+> And this is only called if write_priomap() is called.
 > 
-> It appears that access(2) as the super-user is might be implementation
-> defined, see:
+> But if write_priomap() is not called, it seems we can have out of bounds
+> accesses in cgrp_destroy(), read_priomap() & skb_update_prio()
 > 
->   http://pubs.opengroup.org/onlinepubs/000095399/functions/access.html 
->   http://lists.gnu.org/archive/html/bug-bash/2010-07/msg00071.html 
+> With help from Gao Feng
 > 
-> However, I can't find any concrete information on it for Linux, and the
-> manpage doesn't mention anything other the the X_OK bit.
-> 
-> ~Ryan
-> 
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
+> Cc: Neil Horman <nhorman@tuxdriver.com>
+> Cc: Gao feng <gaofeng@cn.fujitsu.com>
+> ---
+> net/core/dev.c            |    8 ++++++--
+> net/core/netprio_cgroup.c |    4 ++--
+> 2 files changed, 8 insertions(+), 4 deletions(-)
 
- 
- 
-
+Acked-by: Gao feng <gaofeng@cn.fujitsu.com>
