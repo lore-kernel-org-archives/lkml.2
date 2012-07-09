@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751056Ab2GIRW0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 13:22:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52415 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab2GIRWZ (ORCPT
+	id S1751202Ab2GIRYB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 13:24:01 -0400
+Received: from mail.digidescorp.com ([50.73.98.161]:36627 "EHLO
+	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915Ab2GIRX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 13:22:25 -0400
-Date: Mon, 9 Jul 2012 10:22:20 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v3 2/3] cgroup: revise how we re-populate root directory
-Message-ID: <20120709172220.GE1341@google.com>
-References: <20120702142925.795007114@napanee.usersys.redhat.com>
- <20120702142926.405632285@napanee.usersys.redhat.com>
- <20120709171748.GD1341@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120709171748.GD1341@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 9 Jul 2012 13:23:59 -0400
+DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
+	c=simple; q=dns; h=message-id:from;
+	b=xWRLPYf8ZdoQAwxrzz/vBIokaoaUEIiJxxRuUiZqWl2jb1hW+Hz7bI/SJbAU
+	ZSVWtE56+3T0qF+FWwSCoegyk5JYJnEYT3PIhr/J2AqtXXsupcj6eUX9s
+	UNXDz2uHLrVoGIkCDuTq7X8TG1ofMgYKuPUjisZuiRr+571oU2rb8E=;
+X-Spam-Processed: mail.digidescorp.com, Mon, 09 Jul 2012 12:23:57 -0500
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=1537d3712a=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Message-ID: <1341854638.2215.37.camel@iscandar.digidescorp.com>
+Subject: Re: [PATCH 2/2] fat (exportfs): reconnect file handles to evicted
+ inodes/dentries
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 09 Jul 2012 12:23:58 -0500
+In-Reply-To: <1341853758.2215.34.camel@iscandar.digidescorp.com>
+References: <1341342576-15394-1-git-send-email-steve@digidescorp.com>
+	 <1341342576-15394-3-git-send-email-steve@digidescorp.com>
+	 <87pq8bokcp.fsf@devron.myhome.or.jp>
+	 <1341606824.2214.14.camel@iscandar.digidescorp.com>
+	 <871ukobntl.fsf@devron.myhome.or.jp> <1341623782.2021.9.camel@iscandar>
+	 <87wr2g9kh3.fsf@devron.myhome.or.jp> <1341679286.2435.12.camel@iscandar>
+	 <87zk7bo6aq.fsf@devron.myhome.or.jp>
+	 <1341835422.2215.6.camel@iscandar.digidescorp.com>
+	 <87sjd1nj7s.fsf@devron.myhome.or.jp>
+	 <1341845277.2215.10.camel@iscandar.digidescorp.com>
+	 <87obnooqz7.fsf@devron.myhome.or.jp>
+	 <1341851223.2215.22.camel@iscandar.digidescorp.com>
+	 <1341853758.2215.34.camel@iscandar.digidescorp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 10:17:48AM -0700, Tejun Heo wrote:
-> On Mon, Jul 02, 2012 at 10:29:27AM -0400, Aristeu Rozanski wrote:
-> > From: Li Zefan <lizefan@huawei.com>
+On Mon, 2012-07-09 at 12:09 -0500, Steven J. Magnani wrote: 
+> On Mon, 2012-07-09 at 11:27 -0500, Steven J. Magnani wrote: 
+> > On Tue, 2012-07-10 at 01:10 +0900, OGAWA Hirofumi wrote: 
+> > > If the inode is not on cache anymore, is there the possibility that
+> > > selects the wrong parent? IIRC, NFS Server can be rebooted at any time
+> > > while the client using the same file handle.
 > > 
-> > When remounting cgroupfs with some subsystems added to it and some
-> > removed, cgroup will remove all the files in root directory and then
-> > re-popluate it.
-> > 
-> > What I'm doing here is, only remove files which belong to subsystems that
-> > are to be unbinded, and only create files for newly-added subsystems.
-> > The purpose is to have all other files untouched.
-> > 
-> > This is a preparation for cgroup xattr support.
-> > 
-> > v3:
-> > - refresh patches after recent refactoring
+> > True, but it's looking like we can just use the default handle
+> > constructed by export_encode_fh(), namely (i_ino, i_generation,
+> > parent->i_ino, parent->i_generation). None of those components should
+> > change in a server reboot.
 > 
-> Changing subsys_bits via remount is being deprecated.  No need to
-> worry about this.
+> I think I misunderstood you when I wrote this. I assumed we were talking
+> about a restart of nfsd, not the entire machine it was running on. If
+> there is a danger of mismapping on a reboot isn't that present in the
+> existing mainline code, i.e. fat_fh_to_dentry()? Ideally, the (i_ino,
+> i_generation) signature would be different on a reboot, although with
+> only 2-second granularity in i_generation I suppose that's less likely
+> than we would prefer. Also I would think that many inodes simply
+> wouldn't exist in the cache, in which case we would fail the operation
+> with ESTALE.
 
-Also, why does this matter?  The xattrs are kept in cgrp anyway.  Why
-does keeping dentry/inode around make difference?
+On further investigation I don't think there is an issue here.
+i_generation is set to the value returned by get_seconds(), which is
+wall-clock time, not relative time since boot.
 
-Thanks.
+------------------------------------------------------------------------
+Steven J. Magnani               "I claim this network for MARS!
+www.digidescorp.com              Earthling, return my space modulator!"
 
--- 
-tejun
+#include <standard.disclaimer>
+
+
