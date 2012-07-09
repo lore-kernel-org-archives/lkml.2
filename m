@@ -1,75 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab2GIXlF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 19:41:05 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50887 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752091Ab2GIXlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 19:41:03 -0400
-Message-ID: <1341877262.6118.73.camel@joe2Laptop>
-Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
-From: Joe Perches <joe@perches.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Michael Neuling <mikey@neuling.org>, linuxppc-dev@ozlabs.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Date: Mon, 09 Jul 2012 16:41:02 -0700
-In-Reply-To: <1341876736.6118.70.camel@joe2Laptop>
-References: <1340651142.7037.2.camel@gandalf.stny.rr.com>
-	 <20120625150722.8cd4f45d.akpm@linux-foundation.org>
-	 <20120625235531.GB3652@kroah.com>
-	 <CA+55aFwczZTA=JUahoj_Sw1fQssDwoM2LGJ6g5nPvehTLxnSpg@mail.gmail.com>
-	 <20120626002307.GA4389@kroah.com>
-	 <CA+55aFxhYRqcU2EUmcsuLrhgo4FEO6-b+mB57wB3JRiXEp3ZrA@mail.gmail.com>
-	 <CAPXgP10cPFSmZ5yr6Z4wVtDa+x2J1yQDF57NJXtxjUuxMHm=Lw@mail.gmail.com>
-	 <CA+55aFzkX=jCC1O6+2oz8meswOqZQ+Q8Ao60q8eAS1G3AuEStQ@mail.gmail.com>
-	 <1340726856.977.6.camel@mop> <22482.1341471787@neuling.org>
-	 <CAPXgP11=o5WB4WejaQCSCL-+5e4sL7tfVz_r3Khyrq3SyrMvsA@mail.gmail.com>
-	 <CAPXgP13u769nSvUdS1iqiVCsxG5nsQd7bNT1=-eNw156U-kPkQ@mail.gmail.com>
-	 <16043.1341483625@neuling.org>
-	 <CAPXgP11+j+fDexHHmAZbBBidtrydrpWeh3DGWOhkuoybNj9skA@mail.gmail.com>
-	 <1341492628.834.3.camel@mop> <30233.1341535279@neuling.org>
-	 <CAPXgP12_F_H2XPpo2wFmb-u3jBdV__=h67R-LVYbqHuLh7tqLg@mail.gmail.com>
-	 <29711.1341545979@neuling.org> <30343.1341546469@neuling.org>
-	 <CAPXgP10JthGjZyqD6gqn2n1rPu1uP+=mem_T-iOritXAQMstRQ@mail.gmail.com>
-	 <21892.1341608647@neuling.org> <1341770155.1011.27.camel@mop>
-	 <1341870165.6118.42.camel@joe2Laptop>
-	 <CAPXgP11Qsj9yGM5nSbRJ_YPFZcr2Km6w4R8wPGU1AytyQChYXQ@mail.gmail.com>
-	 <1341872984.6118.54.camel@joe2Laptop>
-	 <CAPXgP12wrORpTdzMFW0QKr0j1VqZy_PRBFRM2P=qRqPFMQ=zUA@mail.gmail.com>
-	 <1341876736.6118.70.camel@joe2Laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754837Ab2GIXoM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 19:44:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47147 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752505Ab2GIXoJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 19:44:09 -0400
+Date: Mon, 9 Jul 2012 18:43:59 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Greg Thelen <gthelen@google.com>,
+        Tejun Heo <tj@kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2] fail dentry revalidation after namespace change
+Message-ID: <20120709234359.GA6800@sergelap>
+References: <1341565747-15374-1-git-send-email-glommer@parallels.com>
+ <20120709161336.0ec23592.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120709161336.0ec23592.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-09 at 16:32 -0700, Joe Perches wrote:
-> Then you've changed semantics and I think you need to
-> fix it.
+Quoting Andrew Morton (akpm@linux-foundation.org):
+> On Fri,  6 Jul 2012 13:09:07 +0400
+> Glauber Costa <glommer@parallels.com> wrote:
 > 
-> A dev_<level> call is not guaranteed to be a complete
-> message.
+> > When we change the namespace tag of a sysfs entry, the associated dentry
+> > is still kept around. readdir() will work correctly and not display the
+> > old entries, but open() will still succeed, so will reads and writes.
+> > 
+> > This will no longer happen if sysfs is remounted, hinting that this is a
+> > cache-related problem.
+> > 
+> > I am using the following sequence to demonstrate that:
+> > 
+> > shell1:
+> > ip link add type veth
+> > unshare -nm
+> > 
+> > shell2:
+> > ip link set veth1 <pid_of_shell_1>
+> > cat /sys/devices/virtual/net/veth1/ifindex
+> > 
+> > Before that patch, this will succeed (fail to fail). After it, it will
+> > correctly return an error. Differently from a normal rename, which we
+> > handle fine, changing the object namespace will keep it's path intact.
+> > So this check seems necessary as well.
+> > 
+> > ...
+> >
+> > --- a/fs/sysfs/dir.c
+> > +++ b/fs/sysfs/dir.c
+> > @@ -307,6 +307,7 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
+> >  {
+> >  	struct sysfs_dirent *sd;
+> >  	int is_dir;
+> > +	int type;
+> >  
+> >  	if (nd->flags & LOOKUP_RCU)
+> >  		return -ECHILD;
+> > @@ -326,6 +327,13 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
+> >  	if (strcmp(dentry->d_name.name, sd->s_name) != 0)
+> >  		goto out_bad;
+> >  
+> > +	/* The sysfs dirent has been moved to a different namespace */
+> > +	type = KOBJ_NS_TYPE_NONE;
+> > +	if (sd->s_parent)
+> > +		type = sysfs_ns_type(sd->s_parent);
+> > +	if (type && (sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns))
 > 
-> There are dev_<level> and netdev_<level> calls
-> followed by pr_cont.
+> eww, the code is assuming that KOBJ_NS_TYPE_NONE has a value of zero. 
+> Don't do that; it smells bad.
 > 
-> Maybe these could be fixed up and then they could be
-> always integral.  There don't look to be too many.
+> I renamed my version of this patch to "sysfs: fail dentry revalidation
+> after namespace change", as carefully explained in section 15 of the
+> excellent Documentation/SubmittingPatches, then queued this:
 > 
-> This may be most (all?) of them:
+> 
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: sysfs-fail-dentry-revalidation-after-namespace-change-fix
+> 
+> don't assume that KOBJ_NS_TYPE_NONE==0.  Also save a test-n-branch.
+> 
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Cc: Glauber Costa <glommer@parallels.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Tejun Heo <tj@kernel.org>
 
-Nah, there's a bunch more:
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
 
-$ git grep -E -A10 "\b(netdev|dev)_(info|warn|notice|err|alert|emerg|crit)" drivers | \
-  grep -B10 -E "\bprintk\s*\(\s*(KERN_CONT|)\s*\""
-
-All of them could be fixed up though.
-
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  fs/sysfs/dir.c |    8 +++++---
+>  1 file changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff -puN fs/sysfs/dir.c~sysfs-fail-dentry-revalidation-after-namespace-change-fix fs/sysfs/dir.c
+> --- a/fs/sysfs/dir.c~sysfs-fail-dentry-revalidation-after-namespace-change-fix
+> +++ a/fs/sysfs/dir.c
+> @@ -329,10 +329,12 @@ static int sysfs_dentry_revalidate(struc
+>  
+>  	/* The sysfs dirent has been moved to a different namespace */
+>  	type = KOBJ_NS_TYPE_NONE;
+> -	if (sd->s_parent)
+> +	if (sd->s_parent) {
+>  		type = sysfs_ns_type(sd->s_parent);
+> -	if (type && (sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns))
+> -		goto out_bad;
+> +		if (type != KOBJ_NS_TYPE_NONE &&
+> +				sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns)
+> +			goto out_bad;
+> +	}
+>  
+>  	mutex_unlock(&sysfs_mutex);
+>  out_valid:
+> _
+> 
+> 
