@@ -1,191 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733Ab2GIUlF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 16:41:05 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:31834
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753235Ab2GIUlD (ORCPT
+	id S1753534Ab2GIUmn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 16:42:43 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:42898 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab2GIUmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 16:41:03 -0400
-X-IronPort-AV: E=Sophos;i="4.77,555,1336341600"; 
-   d="scan'208";a="150116025"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
-        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>
-Subject: [PATCH] scripts/coccinelle/iterators/use_after_iter.cocci: list iterator variable semantic patch
-Date: Mon,  9 Jul 2012 22:40:51 +0200
-Message-Id: <1341866451-24290-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
+	Mon, 9 Jul 2012 16:42:42 -0400
+Message-ID: <4FFB423D.1040606@linaro.org>
+Date: Mon, 09 Jul 2012 22:42:37 +0200
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: Re: [PATCH 7/9] Input: ab8500-ponkey: Create AB8500 domain IRQ mapping
+References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org> <4FF6994B.9040801@linaro.org> <20120706173957.GA10202@core.coreip.homeip.net> <4FFB288D.4080606@linaro.org> <20120709201422.GA12242@core.coreip.homeip.net> <4FFB40A4.5060505@linaro.org> <CACRpkdbB68mXuV3bx-gyJBdJCd2Ja86J8mvvmR3ez3dJ8SzOEg@mail.gmail.com>
+In-Reply-To: <CACRpkdbB68mXuV3bx-gyJBdJCd2Ja86J8mvvmR3ez3dJ8SzOEg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On 09/07/12 22:37, Linus Walleij wrote:
+> On Mon, Jul 9, 2012 at 10:35 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>
+>> From: Lee Jones <lee.jones@linaro.org>
+>> Date: Tue, 26 Jun 2012 10:46:50 +0100
+>> Subject: [PATCH 1/1] Input: ab8500-ponkey: Create AB8500 domain IRQ mapping
+>>
+>> Before we can use any domain allocated IRQ, we need to first create a
+>> map between the Hardware IRQ (hwirq) and the Linux Virtual IRQ (virq).
+>> We do this with a helper function provided by the AB8500 IRQ domain
+>> controller called ab8500_irq_get_virq(). We need to do this for both
+>> IRQs which the Power-On-Key driver uses; one for button press, the other
+>> for button depress.
+>>
+>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-If list_for_each_entry, etc complete a traversal of the list, the iterator
-variable ends up pointing to an address at an offset from the list head,
-and not a meaningful structure.  Thus this value should not be used after
-the end of the iterator.
+I've just sent a new one following Dmitry's suggestion.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
 
----
- scripts/coccinelle/iterators/use_after_iter.cocci |  147 ++++++++++++++++++++++
- 1 file changed, 147 insertions(+)
-
-diff --git a/scripts/coccinelle/iterators/use_after_iter.cocci b/scripts/coccinelle/iterators/use_after_iter.cocci
-new file mode 100644
-index 0000000..06284c5
---- /dev/null
-+++ b/scripts/coccinelle/iterators/use_after_iter.cocci
-@@ -0,0 +1,147 @@
-+/// If list_for_each_entry, etc complete a traversal of the list, the iterator
-+/// variable ends up pointing to an address at an offset from the list head,
-+/// and not a meaningful structure.  Thus this value should not be used after
-+/// the end of the iterator.
-+//#False positives arise when there is a goto in the iterator and the
-+//#reported reference is at the label of this goto.  Some flag tests
-+//#may also cause a report to be a false positive.
-+///
-+// Confidence: Moderate
-+// Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
-+// Copyright: (C) 2012 Gilles Muller, INRIA/LIP6.  GPLv2.
-+// URL: http://coccinelle.lip6.fr/
-+// Comments:
-+// Options: -no_includes -include_headers
-+
-+virtual context
-+virtual org
-+virtual report
-+
-+@r exists@
-+identifier c,member;
-+expression E,x;
-+iterator name list_for_each_entry;
-+iterator name list_for_each_entry_reverse;
-+iterator name list_for_each_entry_continue;
-+iterator name list_for_each_entry_continue_reverse;
-+iterator name list_for_each_entry_from;
-+iterator name list_for_each_entry_safe;
-+iterator name list_for_each_entry_safe_continue;
-+iterator name list_for_each_entry_safe_from;
-+iterator name list_for_each_entry_safe_reverse;
-+iterator name hlist_for_each_entry;
-+iterator name hlist_for_each_entry_continue;
-+iterator name hlist_for_each_entry_from;
-+iterator name hlist_for_each_entry_safe;
-+statement S;
-+position p1,p2;
-+@@
-+
-+(
-+list_for_each_entry@p1(c,...,member) { ... when != break;
-+                                 when forall
-+                                 when strict
-+}
-+|
-+list_for_each_entry_reverse@p1(c,...,member) { ... when != break;
-+                                 when forall
-+                                 when strict
-+}
-+|
-+list_for_each_entry_continue@p1(c,...,member) { ... when != break;
-+                                 when forall
-+                                 when strict
-+}
-+|
-+list_for_each_entry_continue_reverse@p1(c,...,member) { ... when != break;
-+                                 when forall
-+                                 when strict
-+}
-+|
-+list_for_each_entry_from@p1(c,...,member) { ... when != break;
-+                                 when forall
-+                                 when strict
-+}
-+|
-+list_for_each_entry_safe@p1(c,...,member) { ... when != break;
-+                                 when forall
-+                                 when strict
-+}
-+|
-+list_for_each_entry_safe_continue@p1(c,...,member) { ... when != break;
-+                                 when forall
-+                                 when strict
-+}
-+|
-+list_for_each_entry_safe_from@p1(c,...,member) { ... when != break;
-+                                 when forall
-+                                 when strict
-+}
-+|
-+list_for_each_entry_safe_reverse@p1(c,...,member) { ... when != break;
-+                                 when forall
-+                                 when strict
-+}
-+)
-+...
-+(
-+list_for_each_entry(c,...) S
-+|
-+list_for_each_entry_reverse(c,...) S
-+|
-+list_for_each_entry_continue(c,...) S
-+|
-+list_for_each_entry_continue_reverse(c,...) S
-+|
-+list_for_each_entry_from(c,...) S
-+|
-+list_for_each_entry_safe(c,...) S
-+|
-+list_for_each_entry_safe(x,c,...) S
-+|
-+list_for_each_entry_safe_continue(c,...) S
-+|
-+list_for_each_entry_safe_continue(x,c,...) S
-+|
-+list_for_each_entry_safe_from(c,...) S
-+|
-+list_for_each_entry_safe_from(x,c,...) S
-+|
-+list_for_each_entry_safe_reverse(c,...) S
-+|
-+list_for_each_entry_safe_reverse(x,c,...) S
-+|
-+hlist_for_each_entry(c,...) S
-+|
-+hlist_for_each_entry_continue(c,...) S
-+|
-+hlist_for_each_entry_from(c,...) S
-+|
-+hlist_for_each_entry_safe(c,...) S
-+|
-+list_remove_head(x,c,...)
-+|
-+sizeof(<+...c...+>)
-+|
-+&c->member
-+|
-+c = E
-+|
-+*c@p2
-+)
-+
-+@script:python depends on org@
-+p1 << r.p1;
-+p2 << r.p2;
-+@@
-+
-+cocci.print_main("invalid iterator index reference",p2)
-+cocci.print_secs("iterator",p1)
-+
-+@script:python depends on report@
-+p1 << r.p1;
-+p2 << r.p2;
-+@@
-+
-+msg = "ERROR: invalid reference to the index variable of the iterator on line %s" % (p1[0].line)
-+coccilib.report.print_report(p2[0], msg)
 
