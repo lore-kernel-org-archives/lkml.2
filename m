@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823Ab2GIMsf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 08:48:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21894 "EHLO mx1.redhat.com"
+	id S1753856Ab2GIMtM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 08:49:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26685 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753466Ab2GIMse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 08:48:34 -0400
-Message-ID: <4FFAD31D.7070703@redhat.com>
-Date: Mon, 09 Jul 2012 15:48:29 +0300
+	id S1753663Ab2GIMtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 08:49:10 -0400
+Message-ID: <4FFAD341.3080508@redhat.com>
+Date: Mon, 09 Jul 2012 15:49:05 +0300
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
@@ -33,8 +33,7 @@ On 07/09/2012 02:23 PM, Gleb Natapov wrote:
 >> 
 > Valid will not enough for that.
 
-If me make everything go through operands, why not?
-
+If we make everything go through operands, any reason why not?
 
 -- 
 error compiling committee.c: too many arguments to function
