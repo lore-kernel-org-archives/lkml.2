@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab2GIQXO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 12:23:14 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:33950 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab2GIQXM (ORCPT
+	id S1752244Ab2GIQXW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 12:23:22 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32473 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751830Ab2GIQXQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 12:23:12 -0400
-Date: Mon, 9 Jul 2012 12:14:49 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH 1/4] xen/p2m: Optimize the
- get_phys_to_machine function a bit.
-Message-ID: <20120709161448.GA17595@phenom.dumpdata.com>
-References: <1341330038-21686-1-git-send-email-konrad.wilk@oracle.com>
- <1341330038-21686-2-git-send-email-konrad.wilk@oracle.com>
- <4FFAFBA4.4050603@citrix.com>
+	Mon, 9 Jul 2012 12:23:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="169303883"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Chen Gong <gong.chen@linux.intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: RE: [PATCH] x86/mce: Need to let kill_proc() send signal to doomed
+ process
+Thread-Topic: [PATCH] x86/mce: Need to let kill_proc() send signal to doomed
+ process
+Thread-Index: AQHNW/pwcQlQ7KYPb0WBfET8yEAILZchJMGw
+Date: Mon, 9 Jul 2012 16:22:08 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F19348DFF@ORSMSX104.amr.corp.intel.com>
+References: <6695e005b7368df4307d34276300fe030e83466c.1341611925.git.tony.luck@intel.com>
+ <20120707043847.GB5708@aftab.osrc.amd.com>
+In-Reply-To: <20120707043847.GB5708@aftab.osrc.amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FFAFBA4.4050603@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 04:41:24PM +0100, David Vrabel wrote:
-> On 03/07/12 16:40, Konrad Rzeszutek Wilk wrote:
-> > Running perf tells me that the check for p2m_identity
-> > is done a lot - more than it should.
-> 
-> This patch doesn't change the how often the check is done.  Is this just
-> bad wording of the description?
+> This makes mi->restartable unused?
 
-Its bad wording plus it really does not change the assmebler code - I thought
-it did but since there is only one "if" case it does not matter how
-much I put unlikely in front of it - it is the only branch condition.
+It does ... but it's not what I meant ... somehow I lost the code that set MF_MUST_KILL
+based on mi->restartable. Doh!
 
-Perhaps if I make the code be put in a variable (register) that would
-optimize this a bit more...
+>> +	doit = !!PageDirty(ppage) || (flags & MF_MUST_KILL) != 0;
+>
+> Maybe
+>
+>				     !!(flags & MF_MUST_KILL)
 
+That fits stylistically with the other half of the "||" expression.
 
-> > 
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  arch/x86/xen/p2m.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-> > index 64effdc..161bcdc 100644
-> > --- a/arch/x86/xen/p2m.c
-> > +++ b/arch/x86/xen/p2m.c
-> > @@ -406,7 +406,7 @@ unsigned long get_phys_to_machine(unsigned long pfn)
-> >  	 * and in p2m_*missing, so returning the INVALID_P2M_ENTRY
-> >  	 * would be wrong.
-> >  	 */
-> > -	if (p2m_top[topidx][mididx] == p2m_identity)
-> > +	if (unlikely(p2m_top[topidx][mididx] == p2m_identity))
-> >  		return IDENTITY_FRAME(pfn);
-> >  
-> >  	return p2m_top[topidx][mididx][idx];
+Thanks for the review. I'll update and resend.
+
+-Tony
