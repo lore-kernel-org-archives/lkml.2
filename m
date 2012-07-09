@@ -1,46 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab2GIMdC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 08:33:02 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:48510 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503Ab2GIMdA (ORCPT
+	id S1753750Ab2GIMd1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 08:33:27 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60632 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753566Ab2GIMdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 08:33:00 -0400
-Date: Mon, 9 Jul 2012 13:32:56 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-Message-ID: <20120709123253.GA31383@sirena.org.uk>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
- <20120707032907.GA15120@srcf.ucam.org>
+	Mon, 9 Jul 2012 08:33:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120707032907.GA15120@srcf.ucam.org>
-X-Cookie: Beware of dog.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <CAJRGBZz50QsoWTxGrFxyxoyiy-0-m9evC83dQdLrwTqZbM7oSA@mail.gmail.com>
+References: <20120625212312.GA2345@p4.domain>
+	<CAJRGBZze+hyoj=XepAU3gfSoxzenR1OW+huqGcmF2k3hwMT4kA@mail.gmail.com>
+	<CAJRGBZz50QsoWTxGrFxyxoyiy-0-m9evC83dQdLrwTqZbM7oSA@mail.gmail.com>
+Date: Mon, 9 Jul 2012 20:33:23 +0800
+Message-ID: <CAJRGBZxffxoEcz3y96jV6GXv=BtUAAkV3zZLnPVP6SsGtp1HCQ@mail.gmail.com>
+Subject: Re: [patch update-v1] a simple hardware detector for latency as well
+ as throughput ver. 0.1.0
+From: Luming Yu <luming.yu@gmail.com>
+To: arnd@arndb.de
+Cc: jcm@jonmasters.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 07, 2012 at 04:29:08AM +0100, Matthew Garrett wrote:
+On Wed, Jun 27, 2012 at 11:00 PM, Luming Yu <luming.yu@gmail.com> wrote:
+> On Mon, Jun 25, 2012 at 9:37 PM, Luming Yu <luming.yu@gmail.com> wrote:
+>> On Tue, Jun 26, 2012 at 5:23 AM, Luming Yu <luming.yu@gmail.com> wrote:
+>>> The patch is the fist step to test some basic hardware functions like
+>>> TSC to help people understand if there is any hardware latency as well
+>>> as throughput problem exposed on bare metal or left behind by BIOS or
+>>> interfered by SMI. Currently the patch tests TSC, CPU Frequency, and
+>>> RDRAND, which is a new CPU instruction to get random number introudced
+>>> in new CPU like Intel Ivy Bridge, in stop_machine context.
+>>>
+>>> The tsc samples (ns) below are from a P4 system. You can change from 0
+>>> to 1000 in /sys/kernel/debug/hw_atency_test/threshold to TSC sample at ms.
+>>
+>> typo.
+>>
+>> s/ms/us/
+>>
+>>>
+>>> [root@p4 linux]# rmmod hw_latency_test
+>>> [root@p4 linux]# insmod drivers/misc/hw_latency_test.ko
+>>> [root@p4 linux]# echo tsc > /sys/kernel/debug/hw_latency_test/current
+>>> [root@p4 linux]# echo 1 > /sys/kernel/debug/hw_latency_test/enable
+>>> [root@p4 linux]# cat /sys/kernel/debug/hw_latency_test/sample
+>>> 1340657264.0434121340   388
+>>> 1340657264.0935125912   379
+>>> 1340657265.0436123548   404
+>>> 1340657265.0937122432   441
+>>> ....
+>>> ^C
+>>> [root@p4 linux]# echo 0 > /sys/kernel/debug/hw_latency_test/enable
+>>>
+>>> Signed-off-by: Luming  Yu <luming.yu@intel.com>
+>>> ---
+>>> I will add more tests after the first patch gets merged for those guys
+>>> who want to directly play with new hardware functions, and latency and
+>>> bandwidth is concern, or simply out of curiosity. The patch is based on
+>>> hardware latency dector written by Jcm in RT-tree. I assume I can add
+>>> Jcm's signed off here.
+>>>
+>>>
+>>>  drivers/misc/Kconfig           |    7 +
+>>>  drivers/misc/Makefile          |    2 +
+>>>  drivers/misc/hw_latency_test.c |  833 ++++++++++++++++++++++++++++++++++++++++
+>>>  3 files changed, 842 insertions(+), 0 deletions(-)
+>>>
+>>>
+>>> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+>>> index c779509..a5216b5 100644
+>>> --- a/drivers/misc/Kconfig
+>>> +++ b/drivers/misc/Kconfig
+>>> @@ -123,6 +123,13 @@ config IBM_ASM
+>>>          for information on the specific driver level and support statement
+>>>          for your IBM server.
+>>>
+>>> +config HW_LATENCY_TEST
+>>> +       tristate "Testing module to detect hardware lattency and throughput"
+>>> +       depends on DEBUG_FS
+>>> +       depends on RING_BUFFER
+>>> +       depends on X86
+>
+> I begun the tool on X86, but bear in mind that use standard kernel interface
+> as much as possible. I was trying to measure CPU Frequency, but the use of
+> calibrate_tsc forced me add a X86 dependency here.
+>
+> Other finding is recalibrate_cpu_khz() is a null function in SMP.
+> But the only two users (p4-clockmod.c and powernow-k7.c) themselves
+> could lack of users roo these days.
+>
+> Let me know if there are any other comments.
+>
+> My plan for the tool is to push it in 3.6 or 3.7. So I will routinely
+> get back to the thread probably weekly or bi-weekly in the time frame.
+> :-)
+> The 0.2 will based on what I can see in upstream of the tool.
+>
+> Thanks!!!
 
-> While mandating FDT is a massive advance over arm32, if there's a chance 
-> that ACPI-based AArch64 platforms will ship in a similar timeframe to 
-> FDT then I think we should ensure that ACPI and FDT are merged 
-> beforehand - the alternative is that people are going to end up writing 
-> the same hardware driver twice for different firmware implementations. I 
-> don't think anyone benefits from introducing a platform that has 
-> multiple device representations[1]
-
-If you end up having to write two whole drivers that sounds enormously
-depressing especially for those of us working on devices that aren't
-architecture specific.  We've managed to avoid that thus far with device
-tree and platform data, would it not be possible to mandate that people
-use ACPI in a vaugley sane way which can support this too?
+ping Arnd,  I need to a commit ID in a tree for this work. :-)
