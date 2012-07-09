@@ -1,105 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750Ab2GIMd1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 08:33:27 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:60632 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753566Ab2GIMdZ (ORCPT
+	id S1753716Ab2GIMiA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 08:38:00 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:54874 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497Ab2GIMh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 08:33:25 -0400
+	Mon, 9 Jul 2012 08:37:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAJRGBZz50QsoWTxGrFxyxoyiy-0-m9evC83dQdLrwTqZbM7oSA@mail.gmail.com>
-References: <20120625212312.GA2345@p4.domain>
-	<CAJRGBZze+hyoj=XepAU3gfSoxzenR1OW+huqGcmF2k3hwMT4kA@mail.gmail.com>
-	<CAJRGBZz50QsoWTxGrFxyxoyiy-0-m9evC83dQdLrwTqZbM7oSA@mail.gmail.com>
-Date: Mon, 9 Jul 2012 20:33:23 +0800
-Message-ID: <CAJRGBZxffxoEcz3y96jV6GXv=BtUAAkV3zZLnPVP6SsGtp1HCQ@mail.gmail.com>
-Subject: Re: [patch update-v1] a simple hardware detector for latency as well
- as throughput ver. 0.1.0
-From: Luming Yu <luming.yu@gmail.com>
-To: arnd@arndb.de
-Cc: jcm@jonmasters.org, akpm@linux-foundation.org,
+In-Reply-To: <CAFLxGvxT8d0b3dqChLaJ-p=4zL5JaYvM6FywJGdHeAeBKeXs_Q@mail.gmail.com>
+References: <CANQmPXibzo2OVPorHX3dcgbDFPnr=3FPm5Bu1-DbthSykzkJcA@mail.gmail.com>
+	<jtabja$fhs$1@dough.gmane.org>
+	<CANQmPXjXt4KsYix5syDrRo_qt3DD7tMtHpdNa3Sh-fWhi53Lnw@mail.gmail.com>
+	<jtbje0$iiv$1@dough.gmane.org>
+	<CANQmPXgDmdDE+=ypyHcWLR4Fw7xv4-T-YsyoO7Gp2Gq91F7jFw@mail.gmail.com>
+	<CAFLxGvxT8d0b3dqChLaJ-p=4zL5JaYvM6FywJGdHeAeBKeXs_Q@mail.gmail.com>
+Date: Mon, 9 Jul 2012 20:37:59 +0800
+Message-ID: <CAJd=RBCj4wFdVvdBoYa2bDPPMgYPq0Wi5dm8-Vq8889PnkAiNQ@mail.gmail.com>
+Subject: Re: [PATCH]RIFS-V3-Test For 3.4.x kernel.
+From: Hillf Danton <dhillf@gmail.com>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Chen <hi3766691@gmail.com>, Oleksandr Natalenko <pfactum@gmail.com>,
         linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 11:00 PM, Luming Yu <luming.yu@gmail.com> wrote:
-> On Mon, Jun 25, 2012 at 9:37 PM, Luming Yu <luming.yu@gmail.com> wrote:
->> On Tue, Jun 26, 2012 at 5:23 AM, Luming Yu <luming.yu@gmail.com> wrote:
->>> The patch is the fist step to test some basic hardware functions like
->>> TSC to help people understand if there is any hardware latency as well
->>> as throughput problem exposed on bare metal or left behind by BIOS or
->>> interfered by SMI. Currently the patch tests TSC, CPU Frequency, and
->>> RDRAND, which is a new CPU instruction to get random number introudced
->>> in new CPU like Intel Ivy Bridge, in stop_machine context.
->>>
->>> The tsc samples (ns) below are from a P4 system. You can change from 0
->>> to 1000 in /sys/kernel/debug/hw_atency_test/threshold to TSC sample at ms.
->>
->> typo.
->>
->> s/ms/us/
->>
->>>
->>> [root@p4 linux]# rmmod hw_latency_test
->>> [root@p4 linux]# insmod drivers/misc/hw_latency_test.ko
->>> [root@p4 linux]# echo tsc > /sys/kernel/debug/hw_latency_test/current
->>> [root@p4 linux]# echo 1 > /sys/kernel/debug/hw_latency_test/enable
->>> [root@p4 linux]# cat /sys/kernel/debug/hw_latency_test/sample
->>> 1340657264.0434121340   388
->>> 1340657264.0935125912   379
->>> 1340657265.0436123548   404
->>> 1340657265.0937122432   441
->>> ....
->>> ^C
->>> [root@p4 linux]# echo 0 > /sys/kernel/debug/hw_latency_test/enable
->>>
->>> Signed-off-by: Luming  Yu <luming.yu@intel.com>
->>> ---
->>> I will add more tests after the first patch gets merged for those guys
->>> who want to directly play with new hardware functions, and latency and
->>> bandwidth is concern, or simply out of curiosity. The patch is based on
->>> hardware latency dector written by Jcm in RT-tree. I assume I can add
->>> Jcm's signed off here.
->>>
->>>
->>>  drivers/misc/Kconfig           |    7 +
->>>  drivers/misc/Makefile          |    2 +
->>>  drivers/misc/hw_latency_test.c |  833 ++++++++++++++++++++++++++++++++++++++++
->>>  3 files changed, 842 insertions(+), 0 deletions(-)
->>>
->>>
->>> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
->>> index c779509..a5216b5 100644
->>> --- a/drivers/misc/Kconfig
->>> +++ b/drivers/misc/Kconfig
->>> @@ -123,6 +123,13 @@ config IBM_ASM
->>>          for information on the specific driver level and support statement
->>>          for your IBM server.
->>>
->>> +config HW_LATENCY_TEST
->>> +       tristate "Testing module to detect hardware lattency and throughput"
->>> +       depends on DEBUG_FS
->>> +       depends on RING_BUFFER
->>> +       depends on X86
+On Sun, Jul 8, 2012 at 8:23 PM, richard -rw- weinberger
+<richard.weinberger@gmail.com> wrote:
 >
-> I begun the tool on X86, but bear in mind that use standard kernel interface
-> as much as possible. I was trying to measure CPU Frequency, but the use of
-> calibrate_tsc forced me add a X86 dependency here.
+> Not supporting cgroups is no-go.
 >
-> Other finding is recalibrate_cpu_khz() is a null function in SMP.
-> But the only two users (p4-clockmod.c and powernow-k7.c) themselves
-> could lack of users roo these days.
->
-> Let me know if there are any other comments.
->
-> My plan for the tool is to push it in 3.6 or 3.7. So I will routinely
-> get back to the thread probably weekly or bi-weekly in the time frame.
-> :-)
-> The 0.2 will based on what I can see in upstream of the tool.
->
-> Thanks!!!
-
-ping Arnd,  I need to a commit ID in a tree for this work. :-)
+Then what is the point of supporting cgroups for surfing T, F and G,
+watching video, and listening music with a netbook and/or notebook?
