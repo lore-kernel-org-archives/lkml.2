@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265Ab2GITTZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 15:19:25 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:37205 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751432Ab2GITTY (ORCPT
+	id S1752291Ab2GITXD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 15:23:03 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:50261 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab2GITXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 15:19:24 -0400
-Date: Mon, 9 Jul 2012 21:18:56 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH 11/16] netvm: Propagate page->pfmemalloc from
- skb_alloc_page to skb
-Message-ID: <20120709191856.GD3515@breakpoint.cc>
-References: <1340375443-22455-1-git-send-email-mgorman@suse.de>
- <1340375443-22455-12-git-send-email-mgorman@suse.de>
- <20120626201328.GI6509@breakpoint.cc>
- <20120627084348.GG8271@suse.de>
+	Mon, 9 Jul 2012 15:23:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120627084348.GG8271@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1341861422-25861-1-git-send-email-geert@linux-m68k.org>
+References: <1341861422-25861-1-git-send-email-geert@linux-m68k.org>
+Date: Mon, 9 Jul 2012 21:23:00 +0200
+X-Google-Sender-Auth: sl2Zhegb3yT5PSjk1q6DTiYl5_k
+Message-ID: <CAMuHMdWUCL4HPo4KG-7EeP4rz5bRaY8uR7pUofDybM6Ovi06ug@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.5-rc6
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 27, 2012 at 09:43:48AM +0100, Mel Gorman wrote:
-> > You did not touch all drivers which use alloc_page(s)() like e1000(e). Was
-> > this on purpose?
-> 
-> Yes. The ones I changed were the semi-obvious ones and carried over from
-> when the patches were completely out of tree.  As the changelog notes
-> it is not critical that these annotation happens and can be fixed on a
-> per-driver basis if there are complains about network swapping being slow.
-okay, I was just curious why some drivers were updated and others not.
+On Mon, Jul 9, 2012 at 9:17 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> JFYI, when comparing v3.5-rc6 to v3.5-rc5[3], the summaries are:
+>   - build errors: +5/-19
 
-> I can update e1000 if you like but it's not critical
-> to do so and in fact getting a bug reporting saying that network swap
-> was slow on e1000 would be useful to me in its own way :)
-No, leave as it, I was just curious.
-One thing: Do you think it makes sense to you introduce
-	#define GFP_NET_RX     (GFP_ATOMIC | __GFP_MEMALLOC)
+5 regressions:
+  + error: "usb_speed_string" [drivers/usb/core/usbcore.ko] undefined!:  => N/A
+  + error: "utf16s_to_utf8s" [drivers/usb/core/usbcore.ko] undefined!:  => N/A
 
-and use it within the receive path instead of GFP_ATOMIC?
+i386-randconfig
 
-Sebastian
+  + error: No rule to make target
+/scratch/kisskb/build/linus_sh-randconfig_sh4/usr/include/linux/kvm_para.h:
+ => N/A
+
+sh-randconfig (known issue, the conditional kvm_para.h export that breaks all
+"generic-y += kvm_para.h" platforms)
+
+  + error: idt77252.c: relocation truncated to fit: R_PPC64_REL24
+against symbol `.__raw_spin_lock_init' defined in .text section in
+lib/built-in.o: (.text+0x1ff8c5c) => (.text+0x1ff8518),
+(.text+0x1ff84f4), (.text+0x1ff84d4), (.text+0x1ff8548)
+  + error: idt77252.c: relocation truncated to fit: R_PPC64_REL24
+against symbol `.printk' defined in .text.unlikely section in
+kernel/built-in.o:  => (.text+0x1ff94f4), (.text+0x1ff93d8),
+(.text+0x1ff9418), (.text+0x1ff94b0), (.text+0x1ff8e18),
+(.text+0x1ff8d98)
+
+powerpc-allyesconfig
+
+> [1] http://kisskb.ellerman.id.au/kisskb/head/5220/ (all 116 configs)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
