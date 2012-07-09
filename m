@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864Ab2GIOHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:07:47 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54826 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459Ab2GIOHq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:07:46 -0400
-X-Originating-IP: 108.223.40.66
-Date: Mon, 9 Jul 2012 07:07:48 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [PATCH] hwmon: (applesmc) Shorten minimum wait time
-Message-ID: <20120709140748.GA12691@roeck-us.net>
-References: <1341828626-6543-1-git-send-email-rydberg@euromail.se>
+	id S1754049Ab2GIOJH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:09:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40456 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753527Ab2GIOJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 10:09:05 -0400
+Date: Mon, 9 Jul 2012 16:08:59 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Yuri Khan <yurivkhan@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] Input: xpad - Handle all variations of Mad Catz
+ Beat Pad
+In-Reply-To: <1341726589-5400-1-git-send-email-yurivkhan@gmail.com>
+Message-ID: <alpine.LNX.2.00.1207091608060.19366@pobox.suse.cz>
+References: <1341592324-665-1-git-send-email-yurivkhan@gmail.com> <1341726589-5400-1-git-send-email-yurivkhan@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341828626-6543-1-git-send-email-rydberg@euromail.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 12:10:26PM +0200, Henrik Rydberg wrote:
-> The 2012 series of MacBooks have a faster SMC, and the current driver
-> timings do not work at all. Tests show that decreasing the minimum
-> wait time, from 64 us to 16 us, works well. Since this is still larger
-> than the original minimum of 10 us used before 2008, there is nothing
-> inherently problematic with changing it. The fail frequency on older
-> machines seems to increase slightly, but not enough to be noticeable.
-> 
-> Tested on MBA11, MBA31, MBA5,2, MBP9,2.
-> 
-> The patch was originally written by adamski99 (ubuntuforums.org) and
-> later tested by janhouse (bbs.archlinux.org).
-> 
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+On Sun, 8 Jul 2012, Yuri Khan wrote:
+
+> * Add a quirk to usbhid to ignore this device
 > ---
-> Hi Guenter,
+>  drivers/hid/hid-ids.h           |    3 +++
+>  drivers/hid/usbhid/hid-quirks.c |    2 ++
+>  drivers/input/joystick/xpad.c   |    1 +
+>  3 files changed, 6 insertions(+)
 > 
-> This patch enables the mid-2012 MacBook models. The patch affects
-> older models slightly, but mostly in a good way; all models get
-> slightly faster reads, but some older models see a slight increase in
-> read fail frequency. I do not think this will be noticeable, but I
-> would hesitate to backport too far. For 3.6.
-> 
-Queued for 3.6.
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index d1cdd2d..43c3d75 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -518,6 +518,9 @@
+>  #define USB_DEVICE_ID_CRYSTALTOUCH	0x0006
+>  #define USB_DEVICE_ID_CRYSTALTOUCH_DUAL	0x0007
+>  
+> +#define USB_VENDOR_ID_MADCATZ		0x0738
+> +#define USB_DEVICE_ID_MADCATZ_BEATPAD	0x4540
+> +
+>  #define USB_VENDOR_ID_MCC		0x09db
+>  #define USB_DEVICE_ID_MCC_PMD1024LS	0x0076
+>  #define USB_DEVICE_ID_MCC_PMD1208LS	0x007a
+> diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
+> index 0597ee6..8726d33 100644
+> --- a/drivers/hid/usbhid/hid-quirks.c
+> +++ b/drivers/hid/usbhid/hid-quirks.c
+> @@ -45,6 +45,8 @@ static const struct hid_blacklist {
+>  	{ USB_VENDOR_ID_SAITEK, USB_DEVICE_ID_SAITEK_RUMBLEPAD, HID_QUIRK_BADPAD },
+>  	{ USB_VENDOR_ID_TOPMAX, USB_DEVICE_ID_TOPMAX_COBRAPAD, HID_QUIRK_BADPAD },
+>  
+> +	{ USB_VENDOR_ID_MADCATZ, USB_DEVICE_ID_MADCATZ_BEATPAD, HID_QUIRK_IGNORE },
+> +
+
+Please put it in drivers/hid/hid-core.c, hid_ignore_list[] array instead. 
+HID_QUIRK_IGNORE is there solely for allowing specification as a module 
+parameter.
 
 Thanks,
-Guenter
+
+-- 
+Jiri Kosina
+SUSE Labs
