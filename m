@@ -1,93 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab2GIGHe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 02:07:34 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11323 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab2GIGHa (ORCPT
+	id S1751883Ab2GIGK3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 02:10:29 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:12160 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab2GIGK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 02:07:30 -0400
+	Mon, 9 Jul 2012 02:10:28 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 08 Jul 2012 23:07:24 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [RFC][PATCH V2 3/3] tegra: add pwm backlight device tree nodes
-Date: Mon, 9 Jul 2012 15:08:25 +0900
-Message-ID: <1341814105-20690-4-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.7.11.1
-In-Reply-To: <1341814105-20690-1-git-send-email-acourbot@nvidia.com>
-References: <1341814105-20690-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
+	by hqnvupgp06.nvidia.com on Sun, 08 Jul 2012 23:10:27 -0700
+Message-ID: <4FFA7645.4050107@nvidia.com>
+Date: Mon, 9 Jul 2012 15:12:21 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        "'Sascha Hauer'" <s.hauer@pengutronix.de>,
+        "'Stephen Warren'" <swarren@wwwdotorg.org>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCH] pwm-backlight: add regulator and GPIO support
+References: <20120704104840.GJ24458@pengutronix.de> <4FF43692.2040805@nvidia.com> <20120704130056.GC30009@pengutronix.de> <4FF45DDF.9000306@nvidia.com> <20120704152451.GA7333@sirena.org.uk> <4FF4FDC0.8020405@nvidia.com> <20120705062011.GI30009@pengutronix.de> <4FF53368.6090805@nvidia.com> <20120705064742.GL30009@pengutronix.de> <4FF5459F.5090201@nvidia.com> <20120705075714.GA26428@avionic-0098.mockup.avionic-design.de> <4FF54C6C.1060700@nvidia.com> <4FF5BAEE.3020403@wwwdotorg.org> <00ae01cd5d92$70d1f9f0$5275edd0$%han@samsung.com>
+In-Reply-To: <00ae01cd5d92$70d1f9f0$5275edd0$%han@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- arch/arm/boot/dts/tegra20-ventana.dts | 31 +++++++++++++++++++++++++++++++
- arch/arm/boot/dts/tegra20.dtsi        |  2 +-
- 2 files changed, 32 insertions(+), 1 deletion(-)
+On 07/09/2012 02:19 PM, Jingoo Han wrote:
+> I couldn't agree with Stephen Warren more.
+> Could you support DT and non-DT case for backwards compatibility?
 
-diff --git a/arch/arm/boot/dts/tegra20-ventana.dts b/arch/arm/boot/dts/tegra20-ventana.dts
-index be90544..c67d9e1 100644
---- a/arch/arm/boot/dts/tegra20-ventana.dts
-+++ b/arch/arm/boot/dts/tegra20-ventana.dts
-@@ -317,6 +317,37 @@
- 		bus-width = <8>;
- 	};
- 
-+	backlight {
-+		compatible = "pwm-backlight";
-+		brightness-levels = <0 16 32 48 64 80 96 112 128 144 160 176 192 208 224 240 255>;
-+		default-brightness-level = <12>;
-+
-+		pwms = <&pwm 2 5000000>;
-+		pwm-names = "backlight";
-+		power-supply = <&backlight_reg>;
-+		enable-gpios = <&gpio 28 0>;
-+
-+		power-on-sequence = "REGULATOR", "power", <1>,
-+				    "DELAY", <10>,
-+				    "PWM", "backlight", <1>,
-+				    "GPIO", "enable", <1>;
-+		power-off-sequence = "GPIO", "enable", <0>,
-+				     "PWM", "backlight", <0>,
-+				     "DELAY", <10>,
-+				     "REGULATOR", "power", <0>;
-+	};
-+
-+	backlight_reg: fixedregulator@176 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "backlight_regulator";
-+		regulator-min-microvolt = <1800000>;
-+		regulator-max-microvolt = <1800000>;
-+		gpio = <&gpio 176 0>;
-+		startup-delay-us = <0>;
-+		enable-active-high;
-+		regulator-boot-off;
-+	};
-+
- 	sound {
- 		compatible = "nvidia,tegra-audio-wm8903-ventana",
- 			     "nvidia,tegra-audio-wm8903";
-diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
-index 405d167..67a6cd9 100644
---- a/arch/arm/boot/dts/tegra20.dtsi
-+++ b/arch/arm/boot/dts/tegra20.dtsi
-@@ -123,7 +123,7 @@
- 		status = "disabled";
- 	};
- 
--	pwm {
-+	pwm: pwm {
- 		compatible = "nvidia,tegra20-pwm";
- 		reg = <0x7000a000 0x100>;
- 		#pwm-cells = <2>;
--- 
-1.7.11.1
+Both cases are handled in the new version I just sent. I hope all other 
+concerns have also been addressed properly. If I forgot something please 
+ping me.
 
+Alex.
