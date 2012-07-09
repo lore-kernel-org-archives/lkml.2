@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752291Ab2GITXD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 15:23:03 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:50261 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab2GITXB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 15:23:01 -0400
+	id S1752540Ab2GITZi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 15:25:38 -0400
+Received: from csmtp2.one.com ([91.198.169.22]:47326 "EHLO csmtp2.one.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752248Ab2GITZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 15:25:37 -0400
+From: "Henrik Rydberg" <rydberg@bitmath.se>
+Date: Mon, 9 Jul 2012 21:25:29 +0200
+To: Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Bluetooth: Add MacBookPro10,1 support
+Message-ID: <20120709192529.GA712@polaris.bitmath.org>
+References: <1341856347-257-1-git-send-email-rydberg@euromail.se>
+ <20120709184824.GA21411@x220>
 MIME-Version: 1.0
-In-Reply-To: <1341861422-25861-1-git-send-email-geert@linux-m68k.org>
-References: <1341861422-25861-1-git-send-email-geert@linux-m68k.org>
-Date: Mon, 9 Jul 2012 21:23:00 +0200
-X-Google-Sender-Auth: sl2Zhegb3yT5PSjk1q6DTiYl5_k
-Message-ID: <CAMuHMdWUCL4HPo4KG-7EeP4rz5bRaY8uR7pUofDybM6Ovi06ug@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.5-rc6
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120709184824.GA21411@x220>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 9, 2012 at 9:17 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.5-rc6 to v3.5-rc5[3], the summaries are:
->   - build errors: +5/-19
+On Mon, Jul 09, 2012 at 03:48:24PM -0300, Johan Hedberg wrote:
+> Hi Henrik,
+> 
+> On Mon, Jul 09, 2012, Henrik Rydberg wrote:
+> > Add support for the 2012 15'' MacBook Pro Retina.
+> > 
+> > Patch originally written by clipcarl (forums.opensuse.org).
+> > 
+> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> > ---
+> > Hi Gustavo,
+> > 
+> > This patch adds support for the new retina. Picked up from the suse
+> > forum. Getting it into 3.5 would be great, if possible.
+> > 
+> > Cheers,
+> > Henrik
+> > 
+> >  drivers/bluetooth/btusb.c | 3 +++
+> >  1 file changed, 3 insertions(+)
+> 
+> I believe the requirement is to always include a usb-devices output in
+> the commit message (to let maintainers confirm that no typo has occurred
+> in the patch itself).
 
-5 regressions:
-  + error: "usb_speed_string" [drivers/usb/core/usbcore.ko] undefined!:  => N/A
-  + error: "utf16s_to_utf8s" [drivers/usb/core/usbcore.ko] undefined!:  => N/A
+A patch that has been tested is obviously an even stronger indication.
+Hopefully the modification below will suffice.
 
-i386-randconfig
+Thanks,
+Henrik
 
-  + error: No rule to make target
-/scratch/kisskb/build/linus_sh-randconfig_sh4/usr/include/linux/kvm_para.h:
- => N/A
+>From 63bc0de5b431ca616557d87869f41ee22fdc5906 Mon Sep 17 00:00:00 2001
+From: Henrik Rydberg <rydberg@euromail.se>
+Date: Mon, 9 Jul 2012 13:32:49 +0200
+Subject: [PATCH] Bluetooth: Add MacBookPro10,1 support
 
-sh-randconfig (known issue, the conditional kvm_para.h export that breaks all
-"generic-y += kvm_para.h" platforms)
+Add support for the 2012 15'' MacBook Pro Retina, also known as
+MacBookPro10,1. The bluetooth device presents itself as
 
-  + error: idt77252.c: relocation truncated to fit: R_PPC64_REL24
-against symbol `.__raw_spin_lock_init' defined in .text section in
-lib/built-in.o: (.text+0x1ff8c5c) => (.text+0x1ff8518),
-(.text+0x1ff84f4), (.text+0x1ff84d4), (.text+0x1ff8548)
-  + error: idt77252.c: relocation truncated to fit: R_PPC64_REL24
-against symbol `.printk' defined in .text.unlikely section in
-kernel/built-in.o:  => (.text+0x1ff94f4), (.text+0x1ff93d8),
-(.text+0x1ff9418), (.text+0x1ff94b0), (.text+0x1ff8e18),
-(.text+0x1ff8d98)
+Bus 002 Device 008: ID 05ac:8286 Apple, Inc. 
 
-powerpc-allyesconfig
+Patch originally written and tested by clipcarl (forums.opensuse.org).
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/5220/ (all 116 configs)
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+ drivers/bluetooth/btusb.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-Gr{oetje,eeting}s,
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 83ebb24..6cc54da 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -84,6 +84,9 @@ static struct usb_device_id btusb_table[] = {
+ 	/* Apple MacMini5,1 */
+ 	{ USB_DEVICE(0x05ac, 0x8281) },
+ 
++	/* Apple MacBookPro10,1 */
++	{ USB_DEVICE(0x05ac, 0x8286) },
++
+ 	/* AVM BlueFRITZ! USB v2.0 */
+ 	{ USB_DEVICE(0x057c, 0x3800) },
+ 
+-- 
+1.7.11.1
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
