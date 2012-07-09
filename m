@@ -1,102 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab2GINqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 09:46:39 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30966 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753731Ab2GINqg (ORCPT
+	id S1754041Ab2GINrx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 09:47:53 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55341 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975Ab2GINrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 09:46:36 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=XCM1h4FIAiwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=1XWaLZrsAAAA:8 a=abPVCSYTO7x7SUeL5WAA:9 a=PUjeQqilurYA:10 a=dGJ0OcVc7YAA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1341841593.14828.9.camel@gandalf.stny.rr.com>
-Subject: Re: [patch] mm, slub: ensure irqs are enabled for kmemcheck
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Pekka Enberg <penberg@kernel.org>, JoonSoo Kim <js1304@gmail.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        Christoph Lameter <cl@linux.com>, Rus <rus@sfinxsoft.com>,
-        Ben Hutchings <ben@decadent.org.uk>, stable@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Mon, 09 Jul 2012 09:46:33 -0400
-In-Reply-To: <alpine.DEB.2.00.1207090333560.8224@chino.kir.corp.google.com>
-References: <20120708040009.GA8363@localhost>
-	 <CAAmzW4OD2_ODyeY7c1VMPajwzovOms5M8Vnw=XP=uGUyPogiJQ@mail.gmail.com>
-	 <alpine.DEB.2.00.1207081558540.18461@chino.kir.corp.google.com>
-	 <alpine.LFD.2.02.1207091209220.3050@tux.localdomain>
-	 <alpine.DEB.2.00.1207090333560.8224@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Jul 2012 09:47:51 -0400
+Date: Mon, 9 Jul 2012 14:51:26 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Message-ID: <20120709145126.313d1574@pyramind.ukuu.org.uk>
+In-Reply-To: <20120709113558.GE8052@arm.com>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+	<20120706235804.1bd26a1a@pyramind.ukuu.org.uk>
+	<20120707231456.GA21201@arm.com>
+	<20120708002920.4f55c737@pyramind.ukuu.org.uk>
+	<20120709113558.GE8052@arm.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-09 at 03:36 -0700, David Rientjes wrote:
-> kmemcheck_alloc_shadow() requires irqs to be enabled, so wait to disable
-> them until after its called for __GFP_WAIT allocations.
+> > These are the same reasons the x86_64 people gave and regretted later.
 > 
-> This fixes a warning for such allocations:
-> 
-> 	WARNING: at kernel/lockdep.c:2739 lockdep_trace_alloc+0x14e/0x1c0()
-> 
-> Cc: stable@vger.kernel.org [3.1+]
-> Acked-by: Fengguang Wu <fengguang.wu@intel.com>
-> Tested-by: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
->  mm/slub.c |   13 ++++++-------
->  1 file changed, 6 insertions(+), 7 deletions(-)
-> 
-> diff --git a/mm/slub.c b/mm/slub.c
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -1314,13 +1314,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
->  			stat(s, ORDER_FALLBACK);
->  	}
->  
-> -	if (flags & __GFP_WAIT)
-> -		local_irq_disable();
-> -
-> -	if (!page)
-> -		return NULL;
-> -
-> -	if (kmemcheck_enabled
-> +	if (page && kmemcheck_enabled
-
-One micro-optimization nit...
-
-If kmemcheck_enabled is mostly false, and page is mostly true, wouldn't
-it be better to swap the two?
-
-	if (kmemcheck_enabled && page
-
-Then the first check would just short-circuit out and we don't do the
-double check.
-
-Otherwise it looks good.
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
->  		&& !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
->  		int pages = 1 << oo_order(oo);
->  
-> @@ -1336,6 +1330,11 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
->  			kmemcheck_mark_unallocated_pages(page, pages);
->  	}
->  
-> +	if (flags & __GFP_WAIT)
-> +		local_irq_disable();
-> +	if (!page)
-> +		return NULL;
-> +
->  	page->objects = oo_objects(oo);
->  	mod_zone_page_state(page_zone(page),
->  		(s->flags & SLAB_RECLAIM_ACCOUNT) ?
+> I would not compare the x86_64 extension to the AArch64 architecture.
 
 
+It's not an architecture specific observation. I was just observing that
+you were following a pattern which in all other cases ended up with a
+merged tree.
+
+Now it could be your tree is different, it could be that the right
+approach in all these cases is actually to do a new tree and merge five
+years later - I don't know.
+
+It's your (aarch64 folks) project at the end of the day and you who have
+to keep all the fixes and errata and whatnot in sync between the two
+trees and I don't personally care too much which way it happens.
+
+Alan
