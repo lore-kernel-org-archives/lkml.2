@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab2GIBdk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 21:33:40 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:60868 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429Ab2GIBdj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 21:33:39 -0400
-Message-ID: <1341797610.2439.3.camel@ThinkPad-T420>
-Subject: Re: [PATCH] Fix a dead loop in async_synchronize_full()
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, arjan@linux.intel.com,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Mon, 09 Jul 2012 09:33:30 +0800
-In-Reply-To: <CAM_iQpXhgqOQcD1s9O2weQv8xqfZ6Jpc4atR+QSosrYocbCK-Q@mail.gmail.com>
-References: <1341209044.5102.20.camel@ThinkPad-T420>
-	 <CAM_iQpXhgqOQcD1s9O2weQv8xqfZ6Jpc4atR+QSosrYocbCK-Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12070901-9574-0000-0000-0000037DAA16
+	id S1751668Ab2GIBho (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 21:37:44 -0400
+Received: from mga01.intel.com ([192.55.52.88]:34388 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751209Ab2GIBhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 21:37:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="174836375"
+Date: Mon, 9 Jul 2012 09:37:34 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Sha Zhengju <handai.szj@gmail.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, gthelen@google.com, yinghan@google.com,
+        akpm@linux-foundation.org, mhocko@suse.cz,
+        linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH 6/7] memcg: add per cgroup writeback pages accounting
+Message-ID: <20120709013734.GA8880@localhost>
+References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>
+ <1340881525-5835-1-git-send-email-handai.szj@taobao.com>
+ <4FF291BE.7030509@jp.fujitsu.com>
+ <20120708144459.GA18272@localhost>
+ <20120708230100.GA5340@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120708230100.GA5340@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-06 at 17:12 +0800, Cong Wang wrote:
-> On Mon, Jul 2, 2012 at 2:04 PM, Li Zhong <zhong@linux.vnet.ibm.com> wrote:
-> >  void async_synchronize_full(void)
-> >  {
-> > -       do {
-> > -               async_synchronize_cookie(next_cookie);
-> > -       } while (!list_empty(&async_running) || !list_empty(&async_pending));
-> > +       async_synchronize_cookie_domain(next_cookie, NULL);
-> >  }
+On Mon, Jul 09, 2012 at 01:01:00AM +0200, Johannes Weiner wrote:
+> On Sun, Jul 08, 2012 at 10:44:59PM +0800, Fengguang Wu wrote:
+> > On Tue, Jul 03, 2012 at 03:31:26PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > (2012/06/28 20:05), Sha Zhengju wrote:
+> > > > From: Sha Zhengju <handai.szj@taobao.com>
+> > > > 
+> > > > Similar to dirty page, we add per cgroup writeback pages accounting. The lock
+> > > > rule still is:
+> > > > 	mem_cgroup_begin_update_page_stat()
+> > > > 	modify page WRITEBACK stat
+> > > > 	mem_cgroup_update_page_stat()
+> > > > 	mem_cgroup_end_update_page_stat()
+> > > > 
+> > > > There're two writeback interface to modify: test_clear/set_page_writeback.
+> > > > 
+> > > > Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+> > > 
+> > > Seems good to me. BTW, you named macros as MEM_CGROUP_STAT_FILE_XXX
+> > > but I wonder these counters will be used for accounting swap-out's dirty pages..
+> > > 
+> > > STAT_DIRTY, STAT_WRITEBACK ? do you have better name ?
+> > 
+> > Perhaps we can follow the established "enum zone_stat_item" names:
+> > 
+> >         NR_FILE_DIRTY,
+> >         NR_WRITEBACK,
+> > 
+> > s/NR_/MEM_CGROUP_STAT_/
+> > 
+> > The names indicate that dirty pages for anonymous pages are not
+> > accounted (by __set_page_dirty_no_writeback()). While the writeback
+> > pages accounting include both the file/anon pages.
+> > 
+> > Ah then we'll need to update the document in patch 0 accordingly. This
+> > may sound a bit tricky to the users..
 > 
-> A nitpick:
+> We already report the global one as "nr_dirty", though.  Please don't
+> give the memcg one a different name.
 > 
->  async_synchronize_cookie_domain(next_cookie, NULL);
-> 
-> equals to
-> 
->  async_synchronize_full_domain(NULL)
-> 
+> The enum naming is not too critical, but it would be nice to have it
+> match the public name.
 
-Why do we need one more level in the function calling stack? 
+Fair enough. The public name obviously has more weight :)
 
+Thanks,
+Fengguang
