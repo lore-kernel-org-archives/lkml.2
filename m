@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab2GILGF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 07:06:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55706 "EHLO mx1.redhat.com"
+	id S1753307Ab2GILON (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 07:14:13 -0400
+Received: from mga14.intel.com ([143.182.124.37]:9555 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752910Ab2GILGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 07:06:03 -0400
-Date: Mon, 9 Jul 2012 13:05:29 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Ulrich Drepper <drepper@gmail.com>, Namhyung Kim <namhyung@gmail.com>,
-        acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, andi@firstfloor.org
-Subject: Re: [PATCHv3 0/3] perf tool: Add new event group management
-Message-ID: <20120709110528.GA965@krava.redhat.com>
-References: <1340960907-3725-1-git-send-email-jolsa@redhat.com>
- <87fw9blyhj.fsf@sejong.aot.lge.com>
- <20120702101518.GC967@krava.redhat.com>
- <1341234662.1476.13.camel@leonhard>
- <20120702133341.GD967@krava.redhat.com>
- <CABPqkBTKNuwJXY7jRa+Zt8rmFftZUeJiYKEsKJeRiLdoHN3KWQ@mail.gmail.com>
- <CAOPLpQfWtyRHYT1ZfcdmshYoapBgF=FO7yFacYe8pyL0MBeebA@mail.gmail.com>
- <CABPqkBTTZaCVTtwJZbjXGwAihKAW_PMFK0+TZUTvbOn4pnfzvA@mail.gmail.com>
+	id S1752971Ab2GILOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 07:14:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="120280892"
+Date: Mon, 9 Jul 2012 13:25:40 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Chiwoong Byun <woong.byun@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>
+Subject: Re: [PATCH 1/6] mfd: max77686: Use pmic regmap to read pmic
+ interrupt register.
+Message-ID: <20120709112540.GN15345@sortiz-mobl>
+References: <1341460705-10868-1-git-send-email-yadi.brar@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBTTZaCVTtwJZbjXGwAihKAW_PMFK0+TZUTvbOn4pnfzvA@mail.gmail.com>
+In-Reply-To: <1341460705-10868-1-git-send-email-yadi.brar@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, 2012 at 03:42:54AM +0200, Stephane Eranian wrote:
-> On Fri, Jul 6, 2012 at 3:32 AM, Ulrich Drepper <drepper@gmail.com> wrote:
-> > On Thu, Jul 5, 2012 at 12:15 PM, Stephane Eranian <eranian@google.com> wrote:
-> >> I don't understand why you actually need the :2 suffix. There can
-> >> only be one leader. So assume it is the first one. Users have to
-> >> know the first one is the leader which seems like a natural thing
-> >> to do for me. It would make you syntax less ugly than it already
-> >> is.
-> >
-> > In a blue sky world I would have done this.  In fact, this is what I
-> > tried before reading the sources to find out there is no group support
-> > so far.  But given that multiple -e options already have a meaning I
-> > would be hesitant to change this.
+Hi Yadwinder,
+
+On Thu, Jul 05, 2012 at 09:28:20AM +0530, Yadwinder Singh Brar wrote:
+> PMIC's regmap should be used to read pmic interrupt registers.
 > 
-> That's why I said you activate grouping via -e only when you have
-> the --group-events or --group-reads option in front. That would
-> not change the meaning of the multiple -e when none of those
-> group options are specified.
+> Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+> ---
+>  drivers/mfd/max77686-irq.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+This one and the 4 other mfd patches applied to my for-next branch. Thanks.
 
-I discussed this with peter..
+Cheers,
+Samuel.
 
-<peterz> the {} thing allows: 1) multiple groups in a single -e, 2) group attributes 
-
-as for the leader sampling, we can have the first event to become the leader
-by default (omit the leader index modifier) and enable the leader sampling by
-another modifier:
-
-<peterz> right, just make it a single 'l' (el not one) to indicate 'leader' sampling
-
-
-jirka
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
