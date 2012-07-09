@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab2GIUYT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 16:24:19 -0400
-Received: from csmtp2.one.com ([91.198.169.22]:12033 "EHLO csmtp2.one.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752976Ab2GIUYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 16:24:18 -0400
-From: "Henrik Rydberg" <rydberg@bitmath.se>
-Date: Mon, 9 Jul 2012 22:24:10 +0200
-To: Gustavo Padovan <gustavo@padovan.org>, Henrik Rydberg <rydberg@bitmath.se>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Bluetooth: Add MacBookPro10,1 support
-Message-ID: <20120709202410.GA817@polaris.bitmath.org>
-References: <1341856347-257-1-git-send-email-rydberg@euromail.se>
- <20120709184824.GA21411@x220>
- <20120709192529.GA712@polaris.bitmath.org>
- <20120709194947.GA17281@joana>
+	id S1753192Ab2GIUY7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 16:24:59 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:41653 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753081Ab2GIUY5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 16:24:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120709194947.GA17281@joana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201207072358.21943.rjw@sisk.pl>
+References: <201207062238.08013.rjw@sisk.pl>
+	<201207072358.21943.rjw@sisk.pl>
+Date: Mon, 9 Jul 2012 22:24:56 +0200
+Message-ID: <CACRpkdaMv6ru6aAA_UiOopKzHjmAhpq=DZf5A0CZ+TMKmv6MqQ@mail.gmail.com>
+Subject: Re: [PATCH][update] PM / crypto / ux500: Use struct dev_pm_ops for
+ power management
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM mailing list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Arun MURTHY <arun.murthy@stericsson.com>,
+        Andreas WESTIN <andreas.westin@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gustavo,
+On Sat, Jul 7, 2012 at 11:58 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
 
-> > > I believe the requirement is to always include a usb-devices output in
-> > > the commit message (to let maintainers confirm that no typo has occurred
-> > > in the patch itself).
-> 
-> If you don't have access to the device I can take it without usb-devices,
-> otherwise just add it to the patch and then resend.
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+>
+> Make the ux500 crypto driver define its PM callbacks through
+> struct dev_pm_ops objects rather than by using legacy PM hooks
+> in struct platform_driver.
+>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-I don't, but I trust that this patch is authentic.
+Makes perfect sense to me.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Thanks,
-Henrik
+Yours,
+Linus Walleij
