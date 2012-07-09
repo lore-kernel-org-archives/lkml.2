@@ -1,65 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab2GIOOa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:14:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4175 "EHLO mx1.redhat.com"
+	id S1751928Ab2GIOP7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:15:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40757 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753682Ab2GIOO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:14:29 -0400
-Date: Mon, 9 Jul 2012 10:14:16 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: "Chauhan, Vijay" <Vijay.Chauhan@netapp.com>
-Cc: "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "Moger, Babu" <Babu.Moger@netapp.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "Stankey, Robert" <Robert.Stankey@netapp.com>, axboe@kernel.dk,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] block: do not artificially constrain max_sectors for
- stacking drivers
-Message-ID: <20120709141416.GB30633@redhat.com>
-References: <F200AD42A082BC4088B232D13A916A8907E5DD64@SACEXCMBX02-PRD.hq.netapp.com>
- <20120709130052.GC30048@redhat.com>
- <20120709131611.GD30048@redhat.com>
- <20120709134041.GA30633@redhat.com>
+	id S1750767Ab2GIOP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 10:15:58 -0400
+Date: Mon, 9 Jul 2012 16:15:54 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [patch 01/11] mm: memcg: fix compaction/migration failing due to
+ memcg limits
+Message-ID: <20120709141554.GD4627@tiehlicka.suse.cz>
+References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
+ <1341449103-1986-2-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120709134041.GA30633@redhat.com>
+In-Reply-To: <1341449103-1986-2-git-send-email-hannes@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blk_set_stacking_limits is intended to allow stacking drivers to build
-up the limits of the stacked device based on the underlying devices'
-limits.  But in the case of 'max_sectors' the default of
-BLK_DEF_MAX_SECTORS (1024) doesn't allow the stacking driver to inherit
-a max_sectors larger than 1024.
+[CCing Ingo for the memcg-devel vs tip/sched/numa inter tree dependency
+ - see bellow]
 
-It is now clear that this artificial limit is getting in the way so
-change blk_set_stacking_limits's max_sectors to UINT_MAX (which allows
-stacking drivers like dm-multipath to inherit 'max_sectors' from the
-underlying paths).
+On Thu 05-07-12 02:44:53, Johannes Weiner wrote:
+> Compaction (and page migration in general) can currently be hindered
+> through pages being owned by memory cgroups that are at their limits
+> and unreclaimable.
+> 
+> The reason is that the replacement page is being charged against the
+> limit while the page being replaced is also still charged.  But this
+> seems unnecessary, given that only one of the two pages will still be
+> in use after migration finishes.
+> 
+> This patch changes the memcg migration sequence so that the
+> replacement page is not charged.  Whatever page is still in use after
+> successful or failed migration gets to keep the charge of the page
+> that was going to be replaced.
 
-Reported-by: Vijay Chauhan <vijay.chauhan@netapp.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Cc: Martin K. Petersen <martin.petersen@oracle.com>
----
- block/blk-settings.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+Could you mention the side effect on the stat vs charges discrepancy,
+please?
 
-diff --git a/block/blk-settings.c b/block/blk-settings.c
-index d3234fc..565a678 100644
---- a/block/blk-settings.c
-+++ b/block/blk-settings.c
-@@ -143,8 +143,7 @@ void blk_set_stacking_limits(struct queue_limits *lim)
- 	lim->discard_zeroes_data = 1;
- 	lim->max_segments = USHRT_MAX;
- 	lim->max_hw_sectors = UINT_MAX;
--
--	lim->max_sectors = BLK_DEF_MAX_SECTORS;
-+	lim->max_sectors = UINT_MAX;
- }
- EXPORT_SYMBOL(blk_set_stacking_limits);
- 
+> Reported-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+[...]
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 8137aea..aa06bf4 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+[...]
+> @@ -1519,10 +1512,9 @@ migrate_misplaced_page(struct page *page, struct mm_struct *mm, int node)
+>  {
+>  	struct page *oldpage = page, *newpage;
+>  	struct address_space *mapping = page_mapping(page);
+> -	struct mem_cgroup *mcg;
+> +	struct mem_cgroup *memcg;
+>  	unsigned int gfp;
+>  	int rc = 0;
+> -	int charge = -ENOMEM;
+>  
+>  	VM_BUG_ON(!PageLocked(page));
+>  	VM_BUG_ON(page_mapcount(page));
+> @@ -1556,12 +1548,7 @@ migrate_misplaced_page(struct page *page, struct mm_struct *mm, int node)
+>  	if (!trylock_page(newpage))
+>  		BUG();		/* new page should be unlocked!!! */
+>  
+> -	// XXX hnaz, is this right?
+> -	charge = mem_cgroup_prepare_migration(page, newpage, &mcg, gfp);
+> -	if (charge == -ENOMEM) {
+> -		rc = charge;
+> -		goto out;
+> -	}
+> +	mem_cgroup_prepare_migration(page, newpage, &memcg);
+>  
+>  	newpage->index = page->index;
+>  	newpage->mapping = page->mapping;
+> @@ -1581,11 +1568,9 @@ migrate_misplaced_page(struct page *page, struct mm_struct *mm, int node)
+>  		page = newpage;
+>  	}
+>  
+> +	mem_cgroup_end_migration(memcg, oldpage, newpage, !rc);
+>  out:
+> -	if (!charge)
+> -		mem_cgroup_end_migration(mcg, oldpage, newpage, !rc);
+> -
+> -       if (oldpage != page)
+> +	if (oldpage != page)
+>                 put_page(oldpage);
+>  
+>  	if (rc) {
+
+Hmm, this depends on 4783af47 (mm: Migrate misplaced page) from
+tip/sched/numa which adds an inter tree dependency which is quite
+unfortunate from memcg-devel (aka mmotm git tree) tree POV. 
+I can cherry-pick this patch into memcg-devel but I am not sure what
+is the merging status of the patch (XXX sounds like it is going to be
+updated later). Ingo?
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
