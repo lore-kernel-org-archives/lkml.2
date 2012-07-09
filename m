@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631Ab2GIBvI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 21:51:08 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:43021 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab2GIBvG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 21:51:06 -0400
-Date: Mon, 9 Jul 2012 11:50:46 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: linux-next: build failure after merge of the v4l-dvb tree
-Message-Id: <20120709115046.f09fe2d15e33e7502cbad222@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__9_Jul_2012_11_50_46_+1000_ZbeRoIkMmk_tV4h_"
+	id S1751750Ab2GIBwT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 21:52:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:62829 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751430Ab2GIBwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 21:52:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="174838710"
+Date: Mon, 9 Jul 2012 09:52:09 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: JoonSoo Kim <js1304@gmail.com>, Vegard Nossum <vegard.nossum@gmail.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Rus <rus@sfinxsoft.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: WARNING: __GFP_FS allocations with IRQs disabled
+ (kmemcheck_alloc_shadow)
+Message-ID: <20120709015209.GB8880@localhost>
+References: <20120708040009.GA8363@localhost>
+ <CAAmzW4OD2_ODyeY7c1VMPajwzovOms5M8Vnw=XP=uGUyPogiJQ@mail.gmail.com>
+ <alpine.DEB.2.00.1207081558540.18461@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1207081558540.18461@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__9_Jul_2012_11_50_46_+1000_ZbeRoIkMmk_tV4h_
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Jul 08, 2012 at 04:01:44PM -0700, David Rientjes wrote:
+> On Mon, 9 Jul 2012, JoonSoo Kim wrote:
+> 
+> > diff --git a/mm/slub.c b/mm/slub.c
+> > index 8c691fa..5d41cad 100644
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> > @@ -1324,8 +1324,14 @@ static struct page *allocate_slab(struct
+> > kmem_cache *s, gfp_t flags, int node)
+> >                 && !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
+> >                 int pages = 1 << oo_order(oo);
+> > 
+> > +               if (flags & __GFP_WAIT)
+> > +                       local_irq_enable();
+> > +
+> >                 kmemcheck_alloc_shadow(page, oo_order(oo), flags, node);
+> > 
+> > +               if (flags & __GFP_WAIT)
+> > +                       local_irq_disable();
+> > +
+> >                 /*
+> >                  * Objects from caches that have a constructor don't get
+> >                  * cleared when they're allocated, so we need to do it here.
+> 
+> This patch is suboptimal when the branch is taken since you just disabled 
+> irqs and now are immediately reenabling them and then disabling them 
+> again.  (And your patch is also whitespace damaged, has no changelog, and 
+> isn't signed off so it can't be applied.)
 
-Hi Mauro,
+Agreed.
 
-After merging the v4l-dvb tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+> The correct fix is what I proposed at 
+> http://marc.info/?l=linux-kernel&m=133754837703630 and was awaiting 
+> testing.  If Rus, Steven, or Fengguang could test this then we could add 
+> it as a stable backport as well.
 
-usr/include/linux/v4l2-subdev.h:28: included file 'linux/v4l2-common.h' is =
-not exported
-usr/include/linux/videodev2.h:63: included file 'linux/v4l2-common.h' is no=
-t exported
+Acked-by: Fengguang Wu <fengguang.wu@intel.com>
+Tested-by: Fengguang Wu <fengguang.wu@intel.com>
 
-Introduced by commit 5689b28890f4 ("[media] v4l: Unify selection targets
-across V4L2 and V4L2 subdev interfaces").
-
-I have used the v4l-dvb tree from next-20120706 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__9_Jul_2012_11_50_46_+1000_ZbeRoIkMmk_tV4h_
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP+jj2AAoJEECxmPOUX5FERP0QAIdYQntEeZAs7ditbNC4K90Z
-B3j0pjqsW0pEI+Qch8xrdggfXF7maFCRVSzUqaLp3kyn+TjMrMoDLbzDuOzmJSyv
-xyJatAKVwr4dQaRi2wgG5DAmFkoi2pueGpsv+FvcTUscKDDixlOLd6Ng97lpXqIo
-XAE3BWv4L+wQnNrnBRy0rkzFOJHRmcOogxORWDBpSeDzp8KXvYbm0a62jKjd2CZs
-9ye/ZaHMAHlH05wq3fX3fXA+uc2Mcvg1B3HrSlk8vjCj58fFsszd7G1rqPl2xBNx
-q0Ek4jrySKHm7eHzI9OxFHisAGazEcd/27ASdC97zMx4l2KLfUjXsLoNQj5qY2sy
-AeZ43R9FjKwVa83IrlvGTbhWS000+bvNGJloVRwGnzhan4zleDFFLwt8TrpG+Wh5
-Nkvy8nvUQ083STCz3MBsVmR4PLa+oTUE/zUhI46WIQB/dR9qCvCc+h2UhZXN+7DY
-z5PEL8Su+j5hIq0i8X1yQgZsq4biztIG+KqYPCVmdGN8TqmWvesCgMthIMbQjBXl
-lOEhUy2O2ZEsjYx+xSVxxcOPWcJo61bV/O1DPXIAwaGnv8GRnG3C37SQt4HL58mr
-/TvopX3lWXchV6aqU/2KIn9MyCOYW2w0SXjjJiwSSXbosQfMTFbCUH9MpMyDp1i4
-jaw7OGHIYSWiyK+DF7E9
-=KkNj
------END PGP SIGNATURE-----
-
---Signature=_Mon__9_Jul_2012_11_50_46_+1000_ZbeRoIkMmk_tV4h_--
+Thanks,
+Fengguang
