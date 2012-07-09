@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab2GIOpS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:45:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38216 "EHLO
+	id S1754774Ab2GIOpo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:45:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38212 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754402Ab2GIOiL (ORCPT
+	by vger.kernel.org with ESMTP id S1754396Ab2GIOiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jul 2012 10:38:11 -0400
-Message-Id: <20120709143123.229568316@decadent.org.uk>
+Message-Id: <20120709143122.535842602@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:32:02 +0100
+Date: Mon, 09 Jul 2012 15:31:57 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andy Lutomirski <luto@amacapital.net>,
-        Hugh Dickins <hugh@veritas.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Badari Pulavarty <pbadari@us.ibm.com>, Nick Piggin <npiggin@suse.de>
-Subject: [ 46/48] mm: Hold a file reference in madvise_remove
+        alan@lxorguk.ukuu.org.uk, Chris Mason <chris.mason@fusionio.com>
+Subject: [ 41/48] Btrfs: run delayed directory updates during log replay
 In-Reply-To: <20120709143116.348975190@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,77 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Chris Mason <chris.mason@fusionio.com>
 
-commit 9ab4233dd08036fe34a89c7dc6f47a8bf2eb29eb upstream.
+commit b6305567e7d31b0bec1b8cb9ec0cadd7f7086f5f upstream.
 
-Otherwise the code races with munmap (causing a use-after-free
-of the vma) or with close (causing a use-after-free of the struct
-file).
+While we are resolving directory modifications in the
+tree log, we are triggering delayed metadata updates to
+the filesystem btrees.
 
-The bug was introduced by commit 90ed52ebe481 ("[PATCH] holepunch: fix
-mmap_sem i_mutex deadlock")
+This commit forces the delayed updates to run so the
+replay code can find any modifications done.  It stops
+us from crashing because the directory deleltion replay
+expects items to be removed immediately from the tree.
 
-Cc: Hugh Dickins <hugh@veritas.com>
-Cc: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Badari Pulavarty <pbadari@us.ibm.com>
-Cc: Nick Piggin <npiggin@suse.de>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2:
- - Adjust context
- - madvise_remove() calls vmtruncate_range(), not do_fallocate()]
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/madvise.c |   18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ fs/btrfs/tree-log.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/mm/madvise.c
-+++ b/mm/madvise.c
-@@ -13,6 +13,7 @@
- #include <linux/hugetlb.h>
- #include <linux/sched.h>
- #include <linux/ksm.h>
-+#include <linux/file.h>
+diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
+index 2017d0f..8abeae4 100644
+--- a/fs/btrfs/tree-log.c
++++ b/fs/btrfs/tree-log.c
+@@ -690,6 +690,8 @@ static noinline int drop_one_dir_item(struct btrfs_trans_handle *trans,
+ 	kfree(name);
  
- /*
-  * Any behaviour which results in changes to the vma->vm_flags needs to
-@@ -197,14 +198,16 @@ static long madvise_remove(struct vm_are
- 	struct address_space *mapping;
- 	loff_t offset, endoff;
- 	int error;
-+	struct file *f;
- 
- 	*prev = NULL;	/* tell sys_madvise we drop mmap_sem */
- 
- 	if (vma->vm_flags & (VM_LOCKED|VM_NONLINEAR|VM_HUGETLB))
- 		return -EINVAL;
- 
--	if (!vma->vm_file || !vma->vm_file->f_mapping
--		|| !vma->vm_file->f_mapping->host) {
-+	f = vma->vm_file;
+ 	iput(inode);
 +
-+	if (!f || !f->f_mapping || !f->f_mapping->host) {
- 			return -EINVAL;
- 	}
- 
-@@ -218,9 +221,16 @@ static long madvise_remove(struct vm_are
- 	endoff = (loff_t)(end - vma->vm_start - 1)
- 			+ ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
- 
--	/* vmtruncate_range needs to take i_mutex */
-+	/*
-+	 * vmtruncate_range may need to take i_mutex.  We need to
-+	 * explicitly grab a reference because the vma (and hence the
-+	 * vma's reference to the file) can go away as soon as we drop
-+	 * mmap_sem.
-+	 */
-+	get_file(f);
- 	up_read(&current->mm->mmap_sem);
- 	error = vmtruncate_range(mapping->host, offset, endoff);
-+	fput(f);
- 	down_read(&current->mm->mmap_sem);
- 	return error;
++	btrfs_run_delayed_items(trans, root);
+ 	return ret;
  }
+ 
+@@ -895,6 +897,7 @@ again:
+ 				ret = btrfs_unlink_inode(trans, root, dir,
+ 							 inode, victim_name,
+ 							 victim_name_len);
++				btrfs_run_delayed_items(trans, root);
+ 			}
+ 			kfree(victim_name);
+ 			ptr = (unsigned long)(victim_ref + 1) + victim_name_len;
+@@ -1475,6 +1478,9 @@ again:
+ 			ret = btrfs_unlink_inode(trans, root, dir, inode,
+ 						 name, name_len);
+ 			BUG_ON(ret);
++
++			btrfs_run_delayed_items(trans, root);
++
+ 			kfree(name);
+ 			iput(inode);
+ 
 
 
