@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab2GIONf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:13:35 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47875 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753587Ab2GIONe (ORCPT
+	id S1754081Ab2GIONw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:13:52 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:48404 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753705Ab2GIONu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:13:34 -0400
-Date: Mon, 9 Jul 2012 15:13:24 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "dhillf@gmail.com" <dhillf@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
- page to userspace
-Message-ID: <20120709141324.GK7315@mudshark.cambridge.arm.com>
-References: <1341412376-6272-1-git-send-email-will.deacon@arm.com>
- <20120709122523.GC4627@tiehlicka.suse.cz>
+	Mon, 9 Jul 2012 10:13:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120709122523.GC4627@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.00.1207081547140.18461@chino.kir.corp.google.com>
+References: <1341588521-17744-1-git-send-email-js1304@gmail.com>
+	<alpine.DEB.2.00.1207070139510.10445@chino.kir.corp.google.com>
+	<CAAmzW4PXdpQ2zSnkx8sSScAt1OY0j4+HXVmf=COvP7eMLqrEvQ@mail.gmail.com>
+	<alpine.DEB.2.00.1207081547140.18461@chino.kir.corp.google.com>
+Date: Mon, 9 Jul 2012 23:13:50 +0900
+Message-ID: <CAAmzW4P=Qf1u6spPZCN7o3TRqvwF-rZkZA3eFtAcnCdFg2CDBg@mail.gmail.com>
+Subject: Re: [PATCH] mm: don't invoke __alloc_pages_direct_compact when order 0
+From: JoonSoo Kim <js1304@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 01:25:23PM +0100, Michal Hocko wrote:
-> On Wed 04-07-12 15:32:56, Will Deacon wrote:
-> > When allocating and returning clear huge pages to userspace as a
-> > response to a fault, we may zero and return a mapping to a previously
-> > dirtied physical region (for example, it may have been written by
-> > a private mapping which was freed as a result of an ftruncate on the
-> > backing file). On architectures with Harvard caches, this can lead to
-> > I/D inconsistency since the zeroed view may not be visible to the
-> > instruction stream.
-> > 
-> > This patch solves the problem by flushing the region after allocating
-> > and clearing a new huge page. Note that PowerPC avoids this issue by
-> > performing the flushing in their clear_user_page implementation to keep
-> > the loader happy, however this is closely tied to the semantics of the
-> > PG_arch_1 page flag which is architecture-specific.
-> > 
-> > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> > ---
-> >  mm/hugetlb.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> > index e198831..b83d026 100644
-> > --- a/mm/hugetlb.c
-> > +++ b/mm/hugetlb.c
-> > @@ -2646,6 +2646,7 @@ retry:
-> >  			goto out;
-> >  		}
-> >  		clear_huge_page(page, address, pages_per_huge_page(h));
-> > +		flush_dcache_page(page);
-> >  		__SetPageUptodate(page);
-> 
-> Does this have to be explicit in the arch independent code?
-> It seems that ia64 uses flush_dcache_page already in the clear_user_page
+2012/7/9 David Rientjes <rientjes@google.com>:
+> On Sun, 8 Jul 2012, JoonSoo Kim wrote:
+>
+>> >> __alloc_pages_direct_compact has many arguments so invoking it is very costly.
+>> >> And in almost invoking case, order is 0, so return immediately.
+>> >>
+>> >
+>> > If "zero cost" is "very costly", then this might make sense.
+>> >
+>> > __alloc_pages_direct_compact() is inlined by gcc.
+>>
+>> In my kernel image, __alloc_pages_direct_compact() is not inlined by gcc.
+>
+> Adding Andrew and Mel to the thread since this would require that we
+> revert 11e33f6a55ed ("page allocator: break up the allocator entry point
+> into fast and slow paths") which would obviously not be a clean revert
+> since there have been several changes to these functions over the past
+> three years.
 
-It would match what is done in similar situations by cow_user_page (mm/memory.c)
-and shmem_writepage (mm/shmem.c). Other subsystems also have explicit page
-flushing (DMA bounce, ksm) so I think this is the right place for it.
+Only "__alloc_pages_direct_compact()" is not inlined.
+All others (__alloc_pages_high_priority, __alloc_pages_direct_reclaim,
+...) are inlined correctly.
+So revert is not needed.
 
-Will
+I think __alloc_pages_direct_compact() can't be inlined by gcc,
+because it is so big and is invoked two times in __alloc_pages_nodemask().
+
+> I'm stunned (and skeptical) that __alloc_pages_direct_compact() is not
+> inlined by your gcc, especially since the kernel must be compiled with
+> optimization (either -O1 or -O2 which causes these functions to be
+> inlined).  What version of gcc are you using and on what architecture?
+> Please do "make mm/page_alloc.s" and send it to me privately, I'll file
+> this and fix it up on gcc-bugs.
+
+I will send result of "make mm/page_alloc.s" to you privately.
+My environments is "x86_64, GNU C version 4.6.3"
+
+> I'll definitely be following up on this.
+
+Thanks for comments.
