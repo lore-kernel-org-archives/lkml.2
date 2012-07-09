@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab2GIS2C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 14:28:02 -0400
-Received: from csmtp2.one.com ([91.198.169.22]:23367 "EHLO csmtp2.one.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517Ab2GIS2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 14:28:00 -0400
-From: "Henrik Rydberg" <rydberg@bitmath.se>
-Date: Mon, 9 Jul 2012 20:27:00 +0200
-To: Ben Skeggs <skeggsb@gmail.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [REGRESSION] nouveau: Memory corruption using nva3 engine for
- 0xaf
-Message-ID: <20120709182700.GA383@polaris.bitmath.org>
-References: <1341469873-1582-1-git-send-email-rydberg@euromail.se>
- <20120705064049.GA8693@nisroch.bne.redhat.com>
- <20120705065446.GA1849@polaris.bitmath.org>
- <20120705083410.GA395@polaris.bitmath.org>
- <20120709131325.GA22653@polaris.bitmath.org>
+	id S1752739Ab2GIS2W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 14:28:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33629 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315Ab2GIS2U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 14:28:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120709131325.GA22653@polaris.bitmath.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120709180328.GA4105@redhat.com>
+References: <20120709180328.GA4105@redhat.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Mon, 9 Jul 2012 20:27:57 +0200
+Message-ID: <CAPXgP11oP4aKyg=HUNrb3z_ZbPjU+_u338sD6uhxKyJ43Z8sgQ@mail.gmail.com>
+Subject: Re: 3.5-rc6 printk formatting problem during oom-kill.
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay@vrfy.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartmann <greg@kroah.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 03:13:25PM +0200, Henrik Rydberg wrote:
-> On Thu, Jul 05, 2012 at 10:34:10AM +0200, Henrik Rydberg wrote:
-> > On Thu, Jul 05, 2012 at 08:54:46AM +0200, Henrik Rydberg wrote:
-> > > > Thanks for tracking down the source of this corruption.  I don't have
-> > > > any such hardware, so until someone can figure it out, I think we
-> > > > should apply this patch.
-> > > 
-> > > In that case, I would have to massage the patch a bit first; it
-> > > creates a problem with suspend/resume. Might be something with
-> > > nva3_pm.c, who knows. I am really stabbing in the dark here. :-)
-> > 
-> > It seems the suspend/resume problem is unrelated (bad systemd update),
-> > so I am fine with applying this as is. Obviously not the best
-> > solution, and if I have time I will continue to look for problems in
-> > the nva3 copy code, but for now,
-> > 
-> >     Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> 
-> I have not encountered the problem in a long while, and I do not have
-> the patch applied. It is entirely possible that this was fixed by
-> something else. Unless you have already applied the patch, I would
-> suggest holding on to it to see if the problem reappears.
-> 
-> Sorry for the churn.
+On Mon, Jul 9, 2012 at 8:03 PM, Dave Jones <davej@redhat.com> wrote:
+> I noticed that the format of the oom-killer output seems to have changed, and
+> now it spews stuff like..
+>
+> [49461.758070] lowmem_reserve[]:
+> [49461.758071]  0
+> [49461.758071]  2643
+> [49461.758071]  3878
+> [49461.758072]  3878
+> [49461.758072]
+> [49461.758072] Node 0
 
-... and there it was again, hours after giving up on it. Oh well.
+> Does the oom-killer code need modifying, or the printk code ?
+> I know there's been some regressions in this area recently, but this is still
+> happening on the current tree (8c84bf4166a4698296342841a549bbee03860ac0)
 
-What makes this bug particularly difficult is that as soon as the
-patch is applied, the problem disappears and does not show itself
-again - with or without the patch applied. Sounds very much like the
-problem is a failure state that does not get reset by current
-mainline, but somehow gets reset with the patch applied.
+This likely fixes it:
+  http://git.kernel.org/?p=linux/kernel/git/kay/patches.git;a=blob;f=kmsg-merge-cont.patch;hb=HEAD
 
-I also learnt that the problem is not in the nva3_copy code itself; I
-reverted nva3_copy.c and nva3_pm.c back to v3.4, but the problem persisted.
-
-A DMA problem elsewhere, in the drm code or in the pci layer, seems
-more likely than this particular hardware having problems with this
-particular copy engine. As it stands, though, applying the patch is
-the only thing known to work.
+Let me check if it does, and if I can reproduce it.
 
 Thanks,
-Henrik
+Kay
