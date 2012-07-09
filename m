@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919Ab2GIOvZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:51:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38115 "EHLO
+	id S1755034Ab2GIOwp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:52:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38102 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754318Ab2GIOh6 (ORCPT
+	by vger.kernel.org with ESMTP id S1754309Ab2GIOh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:37:58 -0400
-Message-Id: <20120709143118.065729395@decadent.org.uk>
+	Mon, 9 Jul 2012 10:37:57 -0400
+Message-Id: <20120709143118.240869686@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:31:26 +0100
+Date: Mon, 09 Jul 2012 15:31:27 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 10/48] mac80211: correct behaviour on unrecognised action frames
+        alan@lxorguk.ukuu.org.uk, "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 11/48] ASoC: tlv320aic3x: Fix codec pll configure bug
 In-Reply-To: <20120709143116.348975190@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,46 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
 
-commit 4b5ebccc40843104d980f0714bc86bfcd5568941 upstream.
+commit c9fe573a6584034670c1a55ee8162d623519cbbf upstream.
 
-When receiving an "individually addressed" action frame, the
-receiver is required to return it to the sender. mac80211
-gets this wrong as it also returns group addressed (mcast)
-frames to the sender. Fix this and update the reference to
-the new 802.11 standards version since things were shuffled
-around significantly.
+In sound/soc/codecs/tlv320aic3x.c
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+        data = snd_soc_read(codec, AIC3X_PLL_PROGA_REG);
+        snd_soc_write(codec, AIC3X_PLL_PROGA_REG,
+                      data | (pll_p << PLLP_SHIFT));
+
+In the above code, pll-p value is OR'ed with previous value without
+clearing it. Bug is not seen if pll-p value doesn't change across
+Sampling frequency.
+
+However on some platforms (like AM335x EVM-SK), pll-p may have different
+values across different sampling frequencies. In such case, above code
+configures the pll with a wrong value.
+Because of this bug, when a audio stream is played with pll value
+different from previous stream, audio is heard as differently(like its
+stretched).
+
+Signed-off-by: Hebbar, Gururaja <gururaja.hebbar@ti.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/mac80211/rx.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ sound/soc/codecs/tlv320aic3x.c |    4 +---
+ sound/soc/codecs/tlv320aic3x.h |    1 +
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
-index 7bcecf7..965e6ec 100644
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -2455,7 +2455,7 @@ ieee80211_rx_h_action_return(struct ieee80211_rx_data *rx)
- 	 * frames that we didn't handle, including returning unknown
- 	 * ones. For all other modes we will return them to the sender,
- 	 * setting the 0x80 bit in the action category, as required by
--	 * 802.11-2007 7.3.1.11.
-+	 * 802.11-2012 9.24.4.
- 	 * Newer versions of hostapd shall also use the management frame
- 	 * registration mechanisms, but older ones still use cooked
- 	 * monitor interfaces so push all frames there.
-@@ -2465,6 +2465,9 @@ ieee80211_rx_h_action_return(struct ieee80211_rx_data *rx)
- 	     sdata->vif.type == NL80211_IFTYPE_AP_VLAN))
- 		return RX_DROP_MONITOR;
+diff --git a/sound/soc/codecs/tlv320aic3x.c b/sound/soc/codecs/tlv320aic3x.c
+index 64d2a4f..e9b62b5 100644
+--- a/sound/soc/codecs/tlv320aic3x.c
++++ b/sound/soc/codecs/tlv320aic3x.c
+@@ -935,9 +935,7 @@ static int aic3x_hw_params(struct snd_pcm_substream *substream,
+ 	}
  
-+	if (is_multicast_ether_addr(mgmt->da))
-+		return RX_DROP_MONITOR;
-+
- 	/* do not return rejected action frames */
- 	if (mgmt->u.action.category & 0x80)
- 		return RX_DROP_UNUSABLE;
+ found:
+-	data = snd_soc_read(codec, AIC3X_PLL_PROGA_REG);
+-	snd_soc_write(codec, AIC3X_PLL_PROGA_REG,
+-		      data | (pll_p << PLLP_SHIFT));
++	snd_soc_update_bits(codec, AIC3X_PLL_PROGA_REG, PLLP_MASK, pll_p);
+ 	snd_soc_write(codec, AIC3X_OVRF_STATUS_AND_PLLR_REG,
+ 		      pll_r << PLLR_SHIFT);
+ 	snd_soc_write(codec, AIC3X_PLL_PROGB_REG, pll_j << PLLJ_SHIFT);
+diff --git a/sound/soc/codecs/tlv320aic3x.h b/sound/soc/codecs/tlv320aic3x.h
+index 6f097fb..08c7f66 100644
+--- a/sound/soc/codecs/tlv320aic3x.h
++++ b/sound/soc/codecs/tlv320aic3x.h
+@@ -166,6 +166,7 @@
+ 
+ /* PLL registers bitfields */
+ #define PLLP_SHIFT		0
++#define PLLP_MASK		7
+ #define PLLQ_SHIFT		3
+ #define PLLR_SHIFT		0
+ #define PLLJ_SHIFT		2
 
 
