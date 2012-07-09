@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783Ab2GIFeT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 01:34:19 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:9555 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623Ab2GIFeM (ORCPT
+	id S1751669Ab2GIGC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 02:02:59 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10925 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043Ab2GIGCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 01:34:12 -0400
+	Mon, 9 Jul 2012 02:02:36 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 08 Jul 2012 22:30:32 -0700
+	by hqnvupgp07.nvidia.com on Sun, 08 Jul 2012 22:58:55 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Thierry Reding <thierry.reding@avionic-design.de>
 CC: <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCHv2] pwm_backlight: pass correct brightness to callback
-Date: Mon, 9 Jul 2012 14:36:01 +0900
-Message-ID: <1341812161-13328-1-git-send-email-acourbot@nvidia.com>
+Subject: [PATCHv3] pwm_backlight: pass correct brightness to callback
+Date: Mon, 9 Jul 2012 15:04:23 +0900
+Message-ID: <1341813863-18822-1-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.7.11.1
 In-Reply-To: <4FFA6BCA.2040101@nvidia.com>
 References: <4FFA6BCA.2040101@nvidia.com>
@@ -38,34 +38,28 @@ Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
  1 file changed, 7 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index 057389d..6d1d3ea 100644
+index 057389d..be48517 100644
 --- a/drivers/video/backlight/pwm_bl.c
 +++ b/drivers/video/backlight/pwm_bl.c
-@@ -39,6 +39,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
- {
- 	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
- 	int brightness = bl->props.brightness;
-+	int pwm_brightness;
- 	int max = bl->props.max_brightness;
- 
- 	if (bl->props.power != FB_BLANK_UNBLANK)
-@@ -55,13 +56,15 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
+@@ -54,14 +54,17 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
+ 		pwm_config(pb->pwm, 0, pb->period);
  		pwm_disable(pb->pwm);
  	} else {
++		int duty_cycle;
  		if (pb->levels) {
 -			brightness = pb->levels[brightness];
-+			pwm_brightness = pb->levels[brightness];
++			duty_cycle = pb->levels[brightness];
  			max = pb->levels[max];
 +		} else {
-+			pwm_brightness = brightness;
++			duty_cycle = brightness;
  		}
  
 -		brightness = pb->lth_brightness +
 -			(brightness * (pb->period - pb->lth_brightness) / max);
 -		pwm_config(pb->pwm, brightness, pb->period);
-+		pwm_brightness = pb->lth_brightness +
-+		     (pwm_brightness * (pb->period - pb->lth_brightness) / max);
-+		pwm_config(pb->pwm, pwm_brightness, pb->period);
++		duty_cycle = pb->lth_brightness +
++		     (duty_cycle * (pb->period - pb->lth_brightness) / max);
++		pwm_config(pb->pwm, duty_cycle, pb->period);
  		pwm_enable(pb->pwm);
  	}
  
