@@ -1,111 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab2GIOGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:06:32 -0400
-Received: from mga11.intel.com ([192.55.52.93]:58086 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753295Ab2GIOGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:06:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="175052690"
-Date: Mon, 9 Jul 2012 22:06:22 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
-        JoonSoo Kim <js1304@gmail.com>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        Christoph Lameter <cl@linux.com>, Rus <rus@sfinxsoft.com>,
-        Ben Hutchings <ben@decadent.org.uk>, stable@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm, slub: ensure irqs are enabled for kmemcheck
-Message-ID: <20120709140622.GA26595@localhost>
-References: <20120708040009.GA8363@localhost>
- <CAAmzW4OD2_ODyeY7c1VMPajwzovOms5M8Vnw=XP=uGUyPogiJQ@mail.gmail.com>
- <alpine.DEB.2.00.1207081558540.18461@chino.kir.corp.google.com>
- <alpine.LFD.2.02.1207091209220.3050@tux.localdomain>
- <alpine.DEB.2.00.1207090333560.8224@chino.kir.corp.google.com>
- <1341841593.14828.9.camel@gandalf.stny.rr.com>
+	id S1753864Ab2GIOHr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:07:47 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54826 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459Ab2GIOHq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 10:07:46 -0400
+X-Originating-IP: 108.223.40.66
+Date: Mon, 9 Jul 2012 07:07:48 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] [PATCH] hwmon: (applesmc) Shorten minimum wait time
+Message-ID: <20120709140748.GA12691@roeck-us.net>
+References: <1341828626-6543-1-git-send-email-rydberg@euromail.se>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1341841593.14828.9.camel@gandalf.stny.rr.com>
+In-Reply-To: <1341828626-6543-1-git-send-email-rydberg@euromail.se>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 09:46:33AM -0400, Steven Rostedt wrote:
-> On Mon, 2012-07-09 at 03:36 -0700, David Rientjes wrote:
-> > kmemcheck_alloc_shadow() requires irqs to be enabled, so wait to disable
-> > them until after its called for __GFP_WAIT allocations.
-> > 
-> > This fixes a warning for such allocations:
-> > 
-> > 	WARNING: at kernel/lockdep.c:2739 lockdep_trace_alloc+0x14e/0x1c0()
-> > 
-> > Cc: stable@vger.kernel.org [3.1+]
-> > Acked-by: Fengguang Wu <fengguang.wu@intel.com>
-> > Tested-by: Fengguang Wu <fengguang.wu@intel.com>
-> > Signed-off-by: David Rientjes <rientjes@google.com>
-> > ---
-> >  mm/slub.c |   13 ++++++-------
-> >  1 file changed, 6 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/mm/slub.c b/mm/slub.c
-> > --- a/mm/slub.c
-> > +++ b/mm/slub.c
-> > @@ -1314,13 +1314,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
-> >  			stat(s, ORDER_FALLBACK);
-> >  	}
-> >  
-> > -	if (flags & __GFP_WAIT)
-> > -		local_irq_disable();
-> > -
-> > -	if (!page)
-> > -		return NULL;
-> > -
-> > -	if (kmemcheck_enabled
-> > +	if (page && kmemcheck_enabled
+On Mon, Jul 09, 2012 at 12:10:26PM +0200, Henrik Rydberg wrote:
+> The 2012 series of MacBooks have a faster SMC, and the current driver
+> timings do not work at all. Tests show that decreasing the minimum
+> wait time, from 64 us to 16 us, works well. Since this is still larger
+> than the original minimum of 10 us used before 2008, there is nothing
+> inherently problematic with changing it. The fail frequency on older
+> machines seems to increase slightly, but not enough to be noticeable.
 > 
-> One micro-optimization nit...
+> Tested on MBA11, MBA31, MBA5,2, MBP9,2.
 > 
-> If kmemcheck_enabled is mostly false, and page is mostly true, wouldn't
-> it be better to swap the two?
+> The patch was originally written by adamski99 (ubuntuforums.org) and
+> later tested by janhouse (bbs.archlinux.org).
 > 
-> 	if (kmemcheck_enabled && page
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+> Hi Guenter,
 > 
-> Then the first check would just short-circuit out and we don't do the
-> double check.
-
-I had the same gut feeling but at the time was not as conscious as you ;)
-Now I can dig out a similar optimization by Andrew Morton which also
-saves memory bytes:
-
-On Tue, Jun 19, 2012 at 03:00:14PM -0700, Andrew Morton wrote:
-
-: With my gcc and CONFIG_CGROUP_MEM_RES_CTLR=n (for gawd's sake can we
-: please rename this to CONFIG_MEMCG?), this:
-: 
-: --- a/mm/vmscan.c~memcg-prevent-from-oom-with-too-many-dirty-pages-fix
-: +++ a/mm/vmscan.c
-: @@ -726,8 +726,8 @@ static unsigned long shrink_page_list(st
-:                          * writeback from reclaim and there is nothing else to
-:                          * reclaim.
-:                          */
-: -                       if (PageReclaim(page)
-: -                                       && may_enter_fs && !global_reclaim(sc))
-: +                       if (!global_reclaim(sc) && PageReclaim(page) &&
-: +                                       may_enter_fs)
-:                                 wait_on_page_writeback(page);
-:                         else {
-:                                 nr_writeback++;
-: 
-: 
-: reduces vmscan.o's .text by 48 bytes(!).  Because the compiler can
-: avoid generating any code for PageReclaim() and perhaps the
-: may_enter_fs test.  Because global_reclaim() evaluates to constant
-: true.  Do you think that's an improvement?
+> This patch enables the mid-2012 MacBook models. The patch affects
+> older models slightly, but mostly in a good way; all models get
+> slightly faster reads, but some older models see a slight increase in
+> read fail frequency. I do not think this will be noticeable, but I
+> would hesitate to backport too far. For 3.6.
+> 
+Queued for 3.6.
 
 Thanks,
-Fengguang
+Guenter
