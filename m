@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab2GIK3z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 06:29:55 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:36739 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082Ab2GIK3x (ORCPT
+	id S1753155Ab2GIKaI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 06:30:08 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57898 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753115Ab2GIKaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 06:29:53 -0400
-Date: Mon, 9 Jul 2012 15:59:22 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/5] uprobes: cleanup and document
- write_opcode()->lock_page(old_page)
-Message-ID: <20120709102922.GD32393@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120624145936.GA23269@redhat.com>
- <20120624150053.GD23277@redhat.com>
+	Mon, 9 Jul 2012 06:30:03 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FFAB297.4020303@jp.fujitsu.com>
+Date: Mon, 9 Jul 2012 19:29:43 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120624150053.GD23277@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12070910-7282-0000-0000-00000AB8CF2C
+To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
+CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
+        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
+Subject: [RFC PATCH v3 8/13] memory-hotplug : check page type in get_page_bootmem
+References: <4FFAB0A2.8070304@jp.fujitsu.com>
+In-Reply-To: <4FFAB0A2.8070304@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-06-24 17:00:53]:
+There is a possibility that get_page_bootmem() is called to the same page many
+times. So when get_page_bootmem is called to the same page, the function only
+increments page->_count.
 
-> The comment above write_opcode()->lock_page(old_page) tells about
-> the race with do_wp_page(). I don't really understand which exactly
-> race it means, but afaics this lock_page() was not enough to close
-> all races with do_wp_page().
-> 
-> Anyway, since 77fc4af1 this code is always called with ->mmap_sem
-> hold for writing so we can forget about do_wp_page().
-> 
-> However, we can't simply remove this lock_page(), and the only
-> (afaics) reason is __replace_page()->try_to_free_swap().
-> 
-> Nothing in write_opcode() needs it, move it into __replace_page()
-> and fix the comment.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+ mm/memory_hotplug.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+Index: linux-3.5-rc4/mm/memory_hotplug.c
+===================================================================
+--- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-07-03 14:22:10.170116406 +0900
++++ linux-3.5-rc4/mm/memory_hotplug.c	2012-07-03 14:22:12.299089413 +0900
+@@ -95,10 +95,17 @@ static void release_memory_resource(stru
+ static void get_page_bootmem(unsigned long info,  struct page *page,
+ 			     unsigned long type)
+ {
+-	page->lru.next = (struct list_head *) type;
+-	SetPagePrivate(page);
+-	set_page_private(page, info);
+-	atomic_inc(&page->_count);
++	unsigned long page_type;
++
++	page_type = (unsigned long) page->lru.next;
++	if (type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
++	    type > MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE){
++		page->lru.next = (struct list_head *) type;
++		SetPagePrivate(page);
++		set_page_private(page, info);
++		atomic_inc(&page->_count);
++	} else
++		atomic_inc(&page->_count);
+ }
+
+ /* reference to __meminit __free_pages_bootmem is valid
 
