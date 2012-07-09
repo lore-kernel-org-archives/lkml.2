@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab2GIXiK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 19:38:10 -0400
+	id S1754803Ab2GIXie (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 19:38:34 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:63850 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754724Ab2GIXfr (ORCPT
+	with ESMTP id S1754735Ab2GIXfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 19:35:47 -0400
+	Mon, 9 Jul 2012 19:35:44 -0400
 From: Michel Lespinasse <walken@google.com>
 To: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
         peterz@infradead.org, daniel.santos@pobox.com, axboe@kernel.dk,
         ebiederm@xmission.com
 Cc: linux-mm@kvack.org, akpm@linux-foundation.org,
         linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: [PATCH 05/13] rbtree: performance and correctness test
-Date: Mon,  9 Jul 2012 16:35:15 -0700
-Message-Id: <1341876923-12469-6-git-send-email-walken@google.com>
+Subject: [PATCH 03/13] rbtree: fix incorrect rbtree node insertion in fs/proc/proc_sysctl.c
+Date: Mon,  9 Jul 2012 16:35:13 -0700
+Message-Id: <1341876923-12469-4-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1341876923-12469-1-git-send-email-walken@google.com>
 References: <1341876923-12469-1-git-send-email-walken@google.com>
@@ -23,162 +23,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This small module helps measure the performance of rbtree insert and erase.
+The recently added code to use rbtrees in sysctl did not follow the proper
+rbtree interface on insertion - it was calling rb_link_node() which
+inserts a new node into the binary tree, but missed the call to
+rb_insert_color() which properly balances the rbtree and establishes all
+expected rbtree invariants.
 
-Additionally, we run a few correctness tests to check that the rbtrees have
-all desired properties:
-- contains the right number of nodes in the order desired,
-- never two consecutive red nodes on any path,
-- all paths to leaf nodes have the same number of black nodes,
-- root node is black
+I found out about this only because faulty commit also used rb_init_node(),
+which I am removing within this patchset. But I think it's an easy mistake
+to make, and it makes me wonder if we should change the rbtree API so that
+insertions would be done with a single rb_insert() call (even if its
+implementation could still inline the rb_link_node() part and call
+a private __rb_insert_color function to do the rebalancing).
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- tests/rbtree_test.c |  135 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 135 insertions(+), 0 deletions(-)
- create mode 100644 tests/rbtree_test.c
+ fs/proc/proc_sysctl.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/tests/rbtree_test.c b/tests/rbtree_test.c
-new file mode 100644
-index 0000000..2e3944d
---- /dev/null
-+++ b/tests/rbtree_test.c
-@@ -0,0 +1,135 @@
-+#include <linux/module.h>
-+#include <linux/rbtree.h>
-+#include <linux/random.h>
-+#include <asm/timex.h>
-+
-+#define NODES       100
-+#define PERF_LOOPS  100000
-+#define CHECK_LOOPS 100
-+
-+struct test_node {
-+	struct rb_node rb;
-+	u32 key;
-+};
-+
-+static struct rb_root root = RB_ROOT;
-+static struct test_node nodes[NODES];
-+
-+static struct rnd_state rnd;
-+
-+static void insert(struct test_node *node, struct rb_root *root)
-+{
-+	struct rb_node **new = &root->rb_node, *parent = NULL;
-+
-+	while (*new) {
-+		parent = *new;
-+		if (node->key < rb_entry(parent, struct test_node, rb)->key)
-+			new = &parent->rb_left;
-+		else
-+			new = &parent->rb_right;
-+	}
-+
-+	rb_link_node(&node->rb, parent, new);
-+	rb_insert_color(&node->rb, root);
-+}
-+
-+static inline void erase(struct test_node *node, struct rb_root *root)
-+{
-+	rb_erase(&node->rb, root);
-+}
-+
-+static void init(void)
-+{
-+	int i;
-+	for (i = 0; i < NODES; i++)
-+		nodes[i].key = prandom32(&rnd);
-+}
-+
-+static bool is_red(struct rb_node *rb)
-+{
-+	return rb->rb_parent_color == (unsigned long)rb_parent(rb);
-+}
-+
-+static int black_path_count(struct rb_node *rb)
-+{
-+	int count;
-+	for (count = 0; rb; rb = rb_parent(rb))
-+		count += !is_red(rb);
-+	return count;
-+}
-+
-+static void check(int nr_nodes)
-+{
-+	struct rb_node *rb;
-+	int count = 0;
-+	int blacks;
-+	u32 prev_key = 0;
-+
-+	for (rb = rb_first(&root); rb; rb = rb_next(rb)) {
-+		struct test_node *node = rb_entry(rb, struct test_node, rb);
-+		WARN_ON_ONCE(node->key < prev_key);
-+		WARN_ON_ONCE(is_red(rb) &&
-+			     (!rb_parent(rb) || is_red(rb_parent(rb))));
-+		if (!count)
-+			blacks = black_path_count(rb);
-+		else
-+			WARN_ON_ONCE((!rb->rb_left || !rb->rb_right) &&
-+				     blacks != black_path_count(rb));
-+		prev_key = node->key;
-+		count++;
-+	}
-+	WARN_ON_ONCE(count != nr_nodes);
-+}
-+
-+static int rbtree_test_init(void)
-+{
-+	int i, j;
-+	cycles_t time1, time2, time;
-+
-+	printk(KERN_ALERT "rbtree testing");
-+
-+	prandom32_seed(&rnd, 3141592653589793238);
-+	init();
-+
-+	time1 = get_cycles();
-+
-+	for (i = 0; i < PERF_LOOPS; i++) {
-+		for (j = 0; j < NODES; j++)
-+			insert(nodes + j, &root);
-+		for (j = 0; j < NODES; j++)
-+			erase(nodes + j, &root);
-+	}
-+
-+	time2 = get_cycles();
-+	time = time2 - time1;
-+
-+	time = div_u64(time, PERF_LOOPS);
-+	printk(" -> %llu cycles\n", time);
-+
-+	for (i = 0; i < CHECK_LOOPS; i++) {
-+		init();
-+		for (j = 0; j < NODES; j++) {
-+			check(j);
-+			insert(nodes + j, &root);
-+		}
-+		for (j = 0; j < NODES; j++) {
-+			check(NODES - j);
-+			erase(nodes + j, &root);
-+		}
-+		check(0);
-+	}
-+
-+	return -EAGAIN; /* Fail will directly unload the module */
-+}
-+
-+static void rbtree_test_exit(void)
-+{
-+	printk(KERN_ALERT "test exit\n");
-+}
-+
-+module_init(rbtree_test_init)
-+module_exit(rbtree_test_exit)
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Michel Lespinasse");
-+MODULE_DESCRIPTION("Red Black Tree test");
+diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
+index 33aea86..77602c1a 100644
+--- a/fs/proc/proc_sysctl.c
++++ b/fs/proc/proc_sysctl.c
+@@ -142,6 +142,7 @@ static int insert_entry(struct ctl_table_header *head, struct ctl_table *entry)
+ 	}
+ 
+ 	rb_link_node(node, parent, p);
++	rb_insert_color(node, &head->parent->root);
+ 	return 0;
+ }
+ 
 -- 
 1.7.7.3
 
