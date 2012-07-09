@@ -1,207 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab2GIOjA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:39:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38313 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754511Ab2GIOi2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:38:28 -0400
-Message-Id: <20120709143119.606278791@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:31:36 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mike Snitzer <snitzer@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [ 20/48] dm persistent data: handle space map checker creation failure
-In-Reply-To: <20120709143116.348975190@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1754556Ab2GIOj0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:39:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11012 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754560Ab2GIOjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 10:39:23 -0400
+Message-ID: <4FFAED16.7050204@redhat.com>
+Date: Mon, 09 Jul 2012 17:39:18 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Gleb Natapov <gleb@redhat.com>, David Ahern <dsahern@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf with precise attribute kills all KVM based VMs
+References: <4FFAE6D8.5050609@gmail.com> <20120709141904.GC7298@redhat.com> <1341843844.3462.75.camel@twins>
+In-Reply-To: <1341843844.3462.75.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On 07/09/2012 05:24 PM, Peter Zijlstra wrote:
+> On Mon, 2012-07-09 at 17:19 +0300, Gleb Natapov wrote:
+>> Yes, this is knows problem that I can't find time to fix. The crash is
+>> cause by CPU using host PEBS virtual address while guest is running
+>> which causes guest memory corruption. We should disable evens that use
+>> PEBS at the guest entry. 
+> 
+> Whoops.. so the hardware is reading the DS address as programmed by the
+> host (host linear address) and using it as a guest linear address?
+> 
+> Quality stuff..
+> 
+> Disabling PEBS events for guests isn't pretty though.. 
 
-------------------
+We already have atomic MSR switching at guest entry/exit time.  So it's
+not pretty in terms of not getting full profiling, but the code won't be
+too hard.  Basically we just have to exclude_guest any pebs event.
 
-From: Mike Snitzer <snitzer@redhat.com>
+> but I guess the
+> only alternative is mapping the DS into the guest and reprogramming
+> MSR_IA32_DS_AREA which is all a little involved I suppose?
 
-commit 62662303e7f590fdfbb0070ab820a0ad4267c119 upstream.
+Way too involved, especially as it's virtual addresses and we don't
+control the guest cr3.  Note that the hardware won't fail gracefully.
 
-If CONFIG_DM_DEBUG_SPACE_MAPS is enabled and dm_sm_checker_create()
-fails, dm_tm_create_internal() would still return success even though it
-cleaned up all resources it was supposed to have created.  This will
-lead to a kernel crash:
-
-general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
-...
-RIP: 0010:[<ffffffff81593659>]  [<ffffffff81593659>] dm_bufio_get_block_size+0x9/0x20
-Call Trace:
-  [<ffffffff81599bae>] dm_bm_block_size+0xe/0x10
-  [<ffffffff8159b8b8>] sm_ll_init+0x78/0xd0
-  [<ffffffff8159c1a6>] sm_ll_new_disk+0x16/0xa0
-  [<ffffffff8159c98e>] dm_sm_disk_create+0xfe/0x160
-  [<ffffffff815abf6e>] dm_pool_metadata_open+0x16e/0x6a0
-  [<ffffffff815aa010>] pool_ctr+0x3f0/0x900
-  [<ffffffff8158d565>] dm_table_add_target+0x195/0x450
-  [<ffffffff815904c4>] table_load+0xe4/0x330
-  [<ffffffff815917ea>] ctl_ioctl+0x15a/0x2c0
-  [<ffffffff81591963>] dm_ctl_ioctl+0x13/0x20
-  [<ffffffff8116a4f8>] do_vfs_ioctl+0x98/0x560
-  [<ffffffff8116aa51>] sys_ioctl+0x91/0xa0
-  [<ffffffff81869f52>] system_call_fastpath+0x16/0x1b
-
-Fix the space map checker code to return an appropriate ERR_PTR and have
-dm_sm_disk_create() and dm_tm_create_internal() check for it with
-IS_ERR.
-
-Reported-by: Vivek Goyal <vgoyal@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/md/persistent-data/dm-space-map-checker.c  |   24 ++++++++++----------
- drivers/md/persistent-data/dm-space-map-disk.c     |   11 ++++++++-
- .../md/persistent-data/dm-transaction-manager.c    |    8 +++++--
- 3 files changed, 28 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/md/persistent-data/dm-space-map-checker.c b/drivers/md/persistent-data/dm-space-map-checker.c
-index 50ed53b..6d7c832 100644
---- a/drivers/md/persistent-data/dm-space-map-checker.c
-+++ b/drivers/md/persistent-data/dm-space-map-checker.c
-@@ -343,25 +343,25 @@ struct dm_space_map *dm_sm_checker_create(struct dm_space_map *sm)
- 	int r;
- 	struct sm_checker *smc;
- 
--	if (!sm)
--		return NULL;
-+	if (IS_ERR_OR_NULL(sm))
-+		return ERR_PTR(-EINVAL);
- 
- 	smc = kmalloc(sizeof(*smc), GFP_KERNEL);
- 	if (!smc)
--		return NULL;
-+		return ERR_PTR(-ENOMEM);
- 
- 	memcpy(&smc->sm, &ops_, sizeof(smc->sm));
- 	r = ca_create(&smc->old_counts, sm);
- 	if (r) {
- 		kfree(smc);
--		return NULL;
-+		return ERR_PTR(r);
- 	}
- 
- 	r = ca_create(&smc->counts, sm);
- 	if (r) {
- 		ca_destroy(&smc->old_counts);
- 		kfree(smc);
--		return NULL;
-+		return ERR_PTR(r);
- 	}
- 
- 	smc->real_sm = sm;
-@@ -371,7 +371,7 @@ struct dm_space_map *dm_sm_checker_create(struct dm_space_map *sm)
- 		ca_destroy(&smc->counts);
- 		ca_destroy(&smc->old_counts);
- 		kfree(smc);
--		return NULL;
-+		return ERR_PTR(r);
- 	}
- 
- 	r = ca_commit(&smc->old_counts, &smc->counts);
-@@ -379,7 +379,7 @@ struct dm_space_map *dm_sm_checker_create(struct dm_space_map *sm)
- 		ca_destroy(&smc->counts);
- 		ca_destroy(&smc->old_counts);
- 		kfree(smc);
--		return NULL;
-+		return ERR_PTR(r);
- 	}
- 
- 	return &smc->sm;
-@@ -391,25 +391,25 @@ struct dm_space_map *dm_sm_checker_create_fresh(struct dm_space_map *sm)
- 	int r;
- 	struct sm_checker *smc;
- 
--	if (!sm)
--		return NULL;
-+	if (IS_ERR_OR_NULL(sm))
-+		return ERR_PTR(-EINVAL);
- 
- 	smc = kmalloc(sizeof(*smc), GFP_KERNEL);
- 	if (!smc)
--		return NULL;
-+		return ERR_PTR(-ENOMEM);
- 
- 	memcpy(&smc->sm, &ops_, sizeof(smc->sm));
- 	r = ca_create(&smc->old_counts, sm);
- 	if (r) {
- 		kfree(smc);
--		return NULL;
-+		return ERR_PTR(r);
- 	}
- 
- 	r = ca_create(&smc->counts, sm);
- 	if (r) {
- 		ca_destroy(&smc->old_counts);
- 		kfree(smc);
--		return NULL;
-+		return ERR_PTR(r);
- 	}
- 
- 	smc->real_sm = sm;
-diff --git a/drivers/md/persistent-data/dm-space-map-disk.c b/drivers/md/persistent-data/dm-space-map-disk.c
-index fc469ba..3d0ed53 100644
---- a/drivers/md/persistent-data/dm-space-map-disk.c
-+++ b/drivers/md/persistent-data/dm-space-map-disk.c
-@@ -290,7 +290,16 @@ struct dm_space_map *dm_sm_disk_create(struct dm_transaction_manager *tm,
- 				       dm_block_t nr_blocks)
- {
- 	struct dm_space_map *sm = dm_sm_disk_create_real(tm, nr_blocks);
--	return dm_sm_checker_create_fresh(sm);
-+	struct dm_space_map *smc;
-+
-+	if (IS_ERR_OR_NULL(sm))
-+		return sm;
-+
-+	smc = dm_sm_checker_create_fresh(sm);
-+	if (IS_ERR(smc))
-+		dm_sm_destroy(sm);
-+
-+	return smc;
- }
- EXPORT_SYMBOL_GPL(dm_sm_disk_create);
- 
-diff --git a/drivers/md/persistent-data/dm-transaction-manager.c b/drivers/md/persistent-data/dm-transaction-manager.c
-index 02bf78e..e5604b3 100644
---- a/drivers/md/persistent-data/dm-transaction-manager.c
-+++ b/drivers/md/persistent-data/dm-transaction-manager.c
-@@ -347,8 +347,10 @@ static int dm_tm_create_internal(struct dm_block_manager *bm,
- 		}
- 
- 		*sm = dm_sm_checker_create(inner);
--		if (!*sm)
-+		if (IS_ERR(*sm)) {
-+			r = PTR_ERR(*sm);
- 			goto bad2;
-+		}
- 
- 	} else {
- 		r = dm_bm_write_lock(dm_tm_get_bm(*tm), sb_location,
-@@ -367,8 +369,10 @@ static int dm_tm_create_internal(struct dm_block_manager *bm,
- 		}
- 
- 		*sm = dm_sm_checker_create(inner);
--		if (!*sm)
-+		if (IS_ERR(*sm)) {
-+			r = PTR_ERR(*sm);
- 			goto bad2;
-+		}
- 	}
- 
- 	return 0;
+-- 
+error compiling committee.c: too many arguments to function
 
 
