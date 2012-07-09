@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab2GIVhD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 17:37:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17155 "EHLO mx1.redhat.com"
+	id S1754371Ab2GIVhK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 17:37:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13568 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754128Ab2GIVg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 17:36:59 -0400
+	id S1754343Ab2GIVhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 17:37:06 -0400
 From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH -v2 7/8] PCI: Move final fixup quirks from __init to __devinit
+Subject: [PATCH -v2 8/8] PCI: Integrate 'pci_fixup_final' quirks into hot-plug
+	paths
 To: bhelgaas@google.com
 Cc: linux-pci@vger.kernel.org, rth@twiddle.net, ink@jurassic.park.msu.ru,
         mattst88@gmail.com, ralf@linux-mips.org, tglx@linutronix.de,
         mingo@redhat.com, hpa@zytor.com, yinghai@kernel.org,
         linux-kernel@vger.kernel.org
-Date: Mon, 09 Jul 2012 15:36:39 -0600
-Message-ID: <20120709213639.8975.9566.stgit@amt.stowe>
+Date: Mon, 09 Jul 2012 15:36:46 -0600
+Message-ID: <20120709213645.8975.9613.stgit@amt.stowe>
 In-Reply-To: <20120709213554.8975.60552.stgit@amt.stowe>
 References: <20120709213554.8975.60552.stgit@amt.stowe>
 User-Agent: StGIT/0.14.3
@@ -25,61 +26,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PCI subsystem's final fixups are executed once during boot, after the
-pci-device is found.  As long as the system does not support hot-plug,
-specifying __init is fine.
+PCI's final quirks (pci_fixup_final) are currently invoked by
+pci_apply_final_quirk() which traverses the platform's list of PCI
+devices.  The calling mechanism limits the quirk invocations to a single
+instance during boot.  As such, hot-plugable devices do not have their
+associated final quirks called upon hot-plug events.
 
-With hot-plug, either physically based hot-plug events or pseudo hot-plug
-events such as "echo 1 > /sys/bus/pci/rescan", it is possible to remove a
-PCI bus during run time and have it rediscovered which will require the
-call of the fixups again in order for the device to function properly.
+This series implements a interim solution[1] to integrate pci_fixup_final
+quirks into the various hot-plug event paths.
 
-This patch prepares specific quirk(s) for use with hot-plug events.
+As I intend for the global variable introduced by this patch to be
+temporary I purposely chose not to include its 'extern' declaration within
+a header file (i.e. include/linux/pci.h).
+
+
+[1] I intended to come up with a single, uniform, solution that would
+satisfy both the boot path and the various hot-plug event paths with
+respect to final quirks.  From an architectural perspective, the proper
+placement for the final quirks is somewhere just prior to, or within, the
+device_add path.
+
+I originally started with that approach but eventually realized that there
+are issues with moving the quirks into the device_add path with respect to
+the boot path.  Currently, the boot path scans the PCI devices, adds the
+devices, assigns resources, and then call the final quirks whereas the
+hot-plug paths scan, assign resources, and then add the devices which is
+better sequencing with respect to the assignment of resources and the
+addition of devices.
+
+All of this suggests that we should change PCI device setup in the boot
+path to be more like hot-plug: scan, assign resources, (final fixups),
+then add.  While I think that is the correct approach, and something that
+we should be addressing, it will require a lot of work.  So until that
+occurs, this series should serve as a stop-gap solution for the interim by
+keeping the current boot path sequencing in place and then adding the
+final quirk processing into the device_add path for hot-plug events via a
+(temporary) global variable qualifier.
+
+When the boot path's PCI device setup is addressed we should end up with a
+single, uniform, device_add based solution for applying final quirks
+by:
+  o  removing 'fs_initcall_sync(pci_apply_final_quirks);',
+  o  removing the global variable 'pci_fixup_final_inited' and all
+     of its usages,
+  o  renaming, and moving, the 'pci_cache_line_size' related code
+     currently embedded in 'pci_apply_final_quirks()'.
 
 Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
 ---
 
- drivers/pci/quirks.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/pci/bus.c    |    4 ++++
+ drivers/pci/quirks.c |   18 ++++++++++++++++++
+ 2 files changed, 22 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 4ce5ef2..b511bd4 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -164,6 +164,10 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
+ int pci_bus_add_device(struct pci_dev *dev)
+ {
+ 	int retval;
++	extern bool pci_fixup_final_inited;
++
++	if (pci_fixup_final_inited)
++		pci_fixup_device(pci_fixup_final, dev);
+ 	retval = device_add(&dev->dev);
+ 	if (retval)
+ 		return retval;
 diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 8014091..d19e522 100644
+index d19e522..1850eb5 100644
 --- a/drivers/pci/quirks.c
 +++ b/drivers/pci/quirks.c
-@@ -253,7 +253,7 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA,	PCI_DEVICE_ID_VIA_82C576,	quirk_vsfx)
-  *	workaround applied too
-  *	[Info kindly provided by ALi]
-  */	
--static void __init quirk_alimagik(struct pci_dev *dev)
-+static void __devinit quirk_alimagik(struct pci_dev *dev)
- {
- 	if ((pci_pci_problems&PCIPCI_ALIMAGIK)==0) {
- 		dev_info(&dev->dev, "Limiting direct PCI/PCI transfers\n");
-@@ -789,7 +789,7 @@ static void __devinit quirk_amd_ioapic(struct pci_dev *dev)
+@@ -3054,6 +3054,22 @@ void pci_fixup_device(enum pci_fixup_pass pass, struct pci_dev *dev)
  }
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD,	PCI_DEVICE_ID_AMD_VIPER_7410,	quirk_amd_ioapic);
+ EXPORT_SYMBOL(pci_fixup_device);
  
--static void __init quirk_ioapic_rmw(struct pci_dev *dev)
-+static void __devinit quirk_ioapic_rmw(struct pci_dev *dev)
++
++/*
++ * The global variable 'pci_fixup_final_inited' is being used as a interim
++ * solution for calling the final quirks only during hot-plug events (not
++ * during boot processing).
++ *
++ * When the boot path's PCI device setup sequencing is addressed, we can
++ * remove the instance, and usages of, 'pci_fixup_final_inited' along with
++ * removing 'fs_initcall_sync(pci_apply_final_quirks);' and end up with a
++ * single, uniform, solution that satisfies both the boot path and the
++ * various hot-plug event paths.
++ *
++ * ToDo: Remove 'pci_fixup_final_inited'
++ */
++bool pci_fixup_final_inited;
++
+ static int __init pci_apply_final_quirks(void)
  {
- 	if (dev->devfn == 0 && dev->bus->number == 0)
- 		sis_apic_bug = 1;
-@@ -801,7 +801,7 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_SI,	PCI_ANY_ID,			quirk_ioapic_rmw);
-  * Some settings of MMRBC can lead to data corruption so block changes.
-  * See AMD 8131 HyperTransport PCI-X Tunnel Revision Guide
-  */
--static void __init quirk_amd_8131_mmrbc(struct pci_dev *dev)
-+static void __devinit quirk_amd_8131_mmrbc(struct pci_dev *dev)
- {
- 	if (dev->subordinate && dev->revision <= 0x12) {
- 		dev_info(&dev->dev, "AMD8131 rev %x detected; "
-@@ -2169,7 +2169,7 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_PLX, 0x8624, quirk_tile_plx_gen1);
-  * aware of it.  Instead of setting the flag on all busses in the
-  * machine, simply disable MSI globally.
-  */
--static void __init quirk_disable_all_msi(struct pci_dev *dev)
-+static void __devinit quirk_disable_all_msi(struct pci_dev *dev)
- {
- 	pci_no_msi();
- 	dev_warn(&dev->dev, "MSI quirk detected; MSI disabled\n");
+ 	struct pci_dev *dev = NULL;
+@@ -3084,6 +3100,8 @@ static int __init pci_apply_final_quirks(void)
+ 			pci_cache_line_size = pci_dfl_cache_line_size;
+ 		}
+ 	}
++	pci_fixup_final_inited = 1;
++
+ 	if (!pci_cache_line_size) {
+ 		printk(KERN_DEBUG "PCI: CLS %u bytes, default %u\n",
+ 		       cls << 2, pci_dfl_cache_line_size << 2);
 
