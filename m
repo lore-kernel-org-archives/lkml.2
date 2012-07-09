@@ -1,120 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab2GIXHm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 19:07:42 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52361 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466Ab2GIXHk (ORCPT
+	id S1753626Ab2GIXNj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 19:13:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38640 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510Ab2GIXNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 19:07:40 -0400
-From: Christian Lamparter <chunkeey@googlemail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RESEND AGAIN][PATCH] pcmcia: move unbind/rebind into dev_pm_ops.complete
-Date: Tue, 10 Jul 2012 01:07:26 +0200
-User-Agent: KMail/1.13.7 (Linux/3.5.0-rc5-wl+; KDE/4.8.4; x86_64; ; )
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-pcmcia@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Dominik Brodowski <linux@dominikbrodowski.net>
-References: <201207062323.52785.chunkeey@googlemail.com> <201207100054.54535.chunkeey@googlemail.com> <20120709160131.ed3d18d4.akpm@linux-foundation.org>
-In-Reply-To: <20120709160131.ed3d18d4.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Mon, 9 Jul 2012 19:13:37 -0400
+Date: Mon, 9 Jul 2012 16:13:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        Greg Thelen <gthelen@google.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>, Tejun Heo <tj@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2] fail dentry revalidation after namespace change
+Message-Id: <20120709161336.0ec23592.akpm@linux-foundation.org>
+In-Reply-To: <1341565747-15374-1-git-send-email-glommer@parallels.com>
+References: <1341565747-15374-1-git-send-email-glommer@parallels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207100107.26305.chunkeey@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 10, 2012 01:01:31 AM Andrew Morton wrote:
-> On Tue, 10 Jul 2012 00:54:54 +0200
-> Christian Lamparter <chunkeey@googlemail.com> wrote:
-> 
-> > On Monday, July 09, 2012 11:59:39 PM Andrew Morton wrote:
-> > > On Fri, 6 Jul 2012 14:30:16 -0700
-> > > Greg KH <gregkh@linuxfoundation.org> wrote:
-> > > 
-> > > > On Fri, Jul 06, 2012 at 11:23:52PM +0200, Christian Lamparter wrote:
-> > > > > The idea of moving rebind procedure into pm.complete
-> > > > > was taken from the usb-subsystem, which has similar
-> > > > > problems with reattaching devices during/after
-> > > > > resume.
-> > > > > 
-> > > > > Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-> > > > > ---
-> > > > > To Greg:
-> > > > > 
-> > > > > I have submitted this patch back in March and again in May.
-> > > > > As far as I can tell it was neither rejected nor was it
-> > > > > accepted into linux-pcmcia.git since. So I'm asking you,
-> > > > > if you could take the patch instead... please.
-> > > > 
-> > > > There is a PCMCIA "team" who should be taking these types of patches.
-> > > > Why are they not doing so?
-> > > > 
-> > > 
-> > > Things are pretty quiet in pcmcia world, but Dominik does appear to
-> > > still be doing stuff.
-> > > 
-> > > I sometimes queue PCMCIA patches for people, but not this one.  The
-> > > changelog is just junk.  What does the patch do?  Why does it do it? 
-> > > What problems does it solve?  What are these mysterious "problems with
-> > > reattaching devices" to which it refers?  Useless...
-> > > 
-> > Well, that can be improved, but it is a bit tricky. 
-> > AFAICT the usb subsystem dealt with pm in this commit:
-> > 
-> > "commit 5096aedcd2eb70fbea83f09281f97f9ec973d9de
-> > Author: Alan Stern <stern@rowland.harvard.edu>
-> > Date:   Tue Aug 12 14:34:14 2008 -0400
-> > 
-> >     USB: Don't rebind before "complete" callback
-> > 
-> > 	[...] We are not allowed to call drivers' probe routines during 
-> > 	a system sleep transition between the "prepare" and "complete"
-> > 	callbacks, but that's exactly what we do when a driver doesn't
-> > 	have full suspend/resume support. [...]"
-> > 
-> > And on the pcmcia subsystem we have this:
-> > 
-> > "commit 88b060d6c03fcb9e4d2018b4349954c4242a5c7f
-> > Author: Dominik Brodowski <linux@dominikbrodowski.net>
-> > Date:   Sat Jan 2 14:14:23 2010 +0100
-> > 
-> >     pcmcia: improve check for same card in slot after resume
-> > 
-> >     During a suspend/resume cycle, an user may change the card in the
-> >     PCMCIA/CardBus slot. [...]
-> >     
-> >     For CardBus devices, the PCI hotplug interface doesn't offer a "rescan"
-> >     facility which also _removes_ devices no longer to be found behind a
-> >     bridge. Therefore, remove and re-add all devices unconditionally."
-> > 
-> > Unfortunately, the "re-add" is currently done in the *pm resume* callback
-> > (socket_late_resume), but according to "USB: Don't rebind..." is not
-> > allowed to have it there, so the patch moves it into the *pm complete*
-> > callback. The Documentation/power/* contains mostly informations for
-> > drivers developers, but AFAICT it doesn't say much about the subsystem
-> > to which the device is connected should behave, so there's a bit of a
-> > "citing-gap".
-> 
-> hm, it does seem a bit of a screwup.
-> 
-> What's unclear to me is whether your patch fixes any observed runtime
-> problems.  Or adds any runtime problems, which looks to be a distinct
-> possibility.
+On Fri,  6 Jul 2012 13:09:07 +0400
+Glauber Costa <glommer@parallels.com> wrote:
 
-well, there is this bug
+> When we change the namespace tag of a sysfs entry, the associated dentry
+> is still kept around. readdir() will work correctly and not display the
+> old entries, but open() will still succeed, so will reads and writes.
+> 
+> This will no longer happen if sysfs is remounted, hinting that this is a
+> cache-related problem.
+> 
+> I am using the following sequence to demonstrate that:
+> 
+> shell1:
+> ip link add type veth
+> unshare -nm
+> 
+> shell2:
+> ip link set veth1 <pid_of_shell_1>
+> cat /sys/devices/virtual/net/veth1/ifindex
+> 
+> Before that patch, this will succeed (fail to fail). After it, it will
+> correctly return an error. Differently from a normal rename, which we
+> handle fine, changing the object namespace will keep it's path intact.
+> So this check seems necessary as well.
+> 
+> ...
+>
+> --- a/fs/sysfs/dir.c
+> +++ b/fs/sysfs/dir.c
+> @@ -307,6 +307,7 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
+>  {
+>  	struct sysfs_dirent *sd;
+>  	int is_dir;
+> +	int type;
+>  
+>  	if (nd->flags & LOOKUP_RCU)
+>  		return -ECHILD;
+> @@ -326,6 +327,13 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
+>  	if (strcmp(dentry->d_name.name, sd->s_name) != 0)
+>  		goto out_bad;
+>  
+> +	/* The sysfs dirent has been moved to a different namespace */
+> +	type = KOBJ_NS_TYPE_NONE;
+> +	if (sd->s_parent)
+> +		type = sysfs_ns_type(sd->s_parent);
+> +	if (type && (sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns))
 
-> 
-> > So, my question now: Would you accept the pcmcia patch if I add the
-> > "USB: Don't rebind..." as a reference to why the re-add needs to be
-> > done in complete? Or do you think that I should bug the pm people
-> > (and Alan - since he wrote that it is "not allowed") in this case
-> > so I can link their official answer to this patch?
-> 
-> Well I could grab it and give it a little bit of testing in linux-next.
-> But I'd be super-reluctant to send such a patch upstream without
-> detailed input from Alan/Greg/Rafael/Dominik/etc.
-> 
-> 
+eww, the code is assuming that KOBJ_NS_TYPE_NONE has a value of zero. 
+Don't do that; it smells bad.
+
+I renamed my version of this patch to "sysfs: fail dentry revalidation
+after namespace change", as carefully explained in section 15 of the
+excellent Documentation/SubmittingPatches, then queued this:
+
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: sysfs-fail-dentry-revalidation-after-namespace-change-fix
+
+don't assume that KOBJ_NS_TYPE_NONE==0.  Also save a test-n-branch.
+
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Glauber Costa <glommer@parallels.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ fs/sysfs/dir.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff -puN fs/sysfs/dir.c~sysfs-fail-dentry-revalidation-after-namespace-change-fix fs/sysfs/dir.c
+--- a/fs/sysfs/dir.c~sysfs-fail-dentry-revalidation-after-namespace-change-fix
++++ a/fs/sysfs/dir.c
+@@ -329,10 +329,12 @@ static int sysfs_dentry_revalidate(struc
+ 
+ 	/* The sysfs dirent has been moved to a different namespace */
+ 	type = KOBJ_NS_TYPE_NONE;
+-	if (sd->s_parent)
++	if (sd->s_parent) {
+ 		type = sysfs_ns_type(sd->s_parent);
+-	if (type && (sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns))
+-		goto out_bad;
++		if (type != KOBJ_NS_TYPE_NONE &&
++				sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns)
++			goto out_bad;
++	}
+ 
+ 	mutex_unlock(&sysfs_mutex);
+ out_valid:
+_
+
+
