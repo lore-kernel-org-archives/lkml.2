@@ -1,50 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab2GIVDo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 17:03:44 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:42765 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751992Ab2GIVDm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 17:03:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FFB463F.9040201@linaro.org>
-References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org>
-	<4FF6994B.9040801@linaro.org>
-	<20120706173957.GA10202@core.coreip.homeip.net>
-	<4FFB288D.4080606@linaro.org>
-	<20120709201422.GA12242@core.coreip.homeip.net>
-	<4FFB40A4.5060505@linaro.org>
-	<20120709204620.GA12692@core.coreip.homeip.net>
-	<4FFB463F.9040201@linaro.org>
-Date: Mon, 9 Jul 2012 23:03:41 +0200
-Message-ID: <CACRpkdbjkLvD13_g=TvCUYjqhZ7ySOiEL51h9eT3YVMO4Vnr3A@mail.gmail.com>
-Subject: Re: [PATCH 7/9] Input: ab8500-ponkey: Create AB8500 domain IRQ mapping
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753987Ab2GIVEZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 17:04:25 -0400
+Received: from gate.crashing.org ([63.228.1.57]:35431 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751405Ab2GIVEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 17:04:24 -0400
+Message-ID: <1341867820.3804.4.camel@pasglop>
+Subject: Re: [PATCH 0/4] cputime: Virtual cputime accounting small cleanups
+ and consolidation
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Tue, 10 Jul 2012 07:03:40 +1000
+In-Reply-To: <20120709175053.GE8185@somewhere.redhat.com>
+References: <1340113391-1896-1-git-send-email-fweisbec@gmail.com>
+	 <20120709175053.GE8185@somewhere.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 9, 2012 at 10:59 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Mon, 2012-07-09 at 19:50 +0200, Frederic Weisbecker wrote:
+> On Tue, Jun 19, 2012 at 03:43:07PM +0200, Frederic Weisbecker wrote:
+> > Not sure to which tree this should go. The scheduler one may be.
+> > Anyway if you're fine with it, it is pullable at:
+> > 
+> > git://github.com/fweisbec/linux-dynticks.git
+> > 	virt-cputime
+> 
+> Ping. Are you guys fine with the patchset?
 
-> Before we can use any domain allocated IRQ, we need to first create a
-> map between the Hardware IRQ (hwirq) and the Linux Virtual IRQ (virq).
-> We do this with a helper function provided by the AB8500 IRQ domain
-> controller called ab8500_irq_get_virq(). We need to do this for both
-> IRQs which the Power-On-Key driver uses; one for button press, the other
-> for button depress.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Missed it somewhat. I'll have a look today.
 
-Now since I was fooled by the last patch, thinking you had tested it before
-submitting (obviously not) - please send a test log of some
-cat /dev/input/event* for this one before I ACK it this time.
+(Poke me on IRC with a stick if you don't hear from me in time)
 
-Yours,
-Linus Walleij
+Cheers,
+Ben.
+
+> > 
+> > This is only built tested on the relevant archs.
+> > 
+> > I wish we could do more vtime cputime accounting consolidation
+> > but archs do the things pretty differently although I bet the
+> > behaviour could be more unified.
+> > 
+> > 
+> > Frederic Weisbecker (4):
+> >   cputime: Generalize CONFIG_VIRT_CPU_ACCOUNTING
+> >   sched: Move cputime code to its own file
+> >   cputime: Consolidate vtime handling on context switch
+> >   s390: Remove leftover account_tick_vtime() header
+> > 
+> >  arch/Kconfig                           |    3 +
+> >  arch/ia64/Kconfig                      |   12 +-
+> >  arch/ia64/include/asm/switch_to.h      |    8 -
+> >  arch/ia64/kernel/time.c                |    4 +-
+> >  arch/powerpc/include/asm/time.h        |    6 -
+> >  arch/powerpc/kernel/process.c          |    3 -
+> >  arch/powerpc/kernel/time.c             |    6 +
+> >  arch/powerpc/platforms/Kconfig.cputype |   16 +-
+> >  arch/s390/Kconfig                      |    5 +-
+> >  arch/s390/include/asm/switch_to.h      |    4 -
+> >  arch/s390/kernel/vtime.c               |    4 +-
+> >  include/linux/kernel_stat.h            |    6 +
+> >  init/Kconfig                           |   13 +
+> >  kernel/sched/Makefile                  |    2 +-
+> >  kernel/sched/core.c                    |  552 +-------------------------------
+> >  kernel/sched/cputime.c                 |  497 ++++++++++++++++++++++++++++
+> >  kernel/sched/sched.h                   |   63 ++++
+> >  17 files changed, 600 insertions(+), 604 deletions(-)
+> >  create mode 100644 kernel/sched/cputime.c
+> > 
+> > -- 
+> > 1.7.5.4
+> > 
+
+
