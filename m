@@ -1,172 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736Ab2GIJpJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 05:45:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52400 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751746Ab2GIJpG (ORCPT
+	id S1752781Ab2GIJqg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 05:46:36 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:12529 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783Ab2GIJqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 05:45:06 -0400
-Date: Mon, 9 Jul 2012 02:44:52 -0700
-From: tip-bot for John Stultz <johnstul@us.ibm.com>
-Message-ID: <tip-d7e2e7fef1f0f4e1e614353a6c5eef4e18d98d2d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        johnstul@us.ibm.com, tglx@linutronix.de, prarit@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        johnstul@us.ibm.com, tglx@linutronix.de, prarit@redhat.com
-In-Reply-To: <1341515538-5100-4-git-send-email-johnstul@us.ibm.com>
-References: <1341515538-5100-4-git-send-email-johnstul@us.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] hrtimer:
-  Update hrtimer base offsets each hrtimer_interrupt
-Git-Commit-ID: d7e2e7fef1f0f4e1e614353a6c5eef4e18d98d2d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 9 Jul 2012 05:46:35 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 09 Jul 2012 02:46:34 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <stern@rowland.harvard.edu>, <gregkh@linuxfoundation.org>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH v2] usb: host: Fix possible kernel crash
+Date: Mon, 9 Jul 2012 15:15:51 +0530
+Message-ID: <1341827151-21991-1-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 09 Jul 2012 02:44:58 -0700 (PDT)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d7e2e7fef1f0f4e1e614353a6c5eef4e18d98d2d
-Gitweb:     http://git.kernel.org/tip/d7e2e7fef1f0f4e1e614353a6c5eef4e18d98d2d
-Author:     John Stultz <johnstul@us.ibm.com>
-AuthorDate: Thu, 5 Jul 2012 15:12:18 -0400
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 9 Jul 2012 11:35:38 +0200
+In functions itd_complete &  sitd_complete, a pointer
+by name stream may get dereferenced after freeing it, when
+iso_stream_put is called with stream->refcount = 2.
 
-hrtimer: Update hrtimer base offsets each hrtimer_interrupt
+Hence fixing it.
 
-This patch introduces a new funciton which captures the
-CLOCK_MONOTONIC time, along with the CLOCK_REALTIME and
-CLOCK_BOOTTIME offsets at the same moment. This new function
-is then used in place of ktime_get() when hrtimer_interrupt()
-is expiring timers.
-
-This ensures that any changes to realtime or boottime offsets
-are noticed and stored into the per-cpu hrtimer base structures,
-prior to doing any hrtimer expiration. This should ensure that
-timers are not expired early if the offsets changes under us.
-
-This is useful in the case where clock_was_set() is called from
-atomic context and have to schedule the hrtimer base offset update
-via a timer, as it provides extra robustness in the face of any
-possible timer delay.
-
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-CC: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1341515538-5100-4-git-send-email-johnstul@us.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
 ---
- include/linux/hrtimer.h   |    3 +++
- kernel/hrtimer.c          |   14 +++++++++++---
- kernel/time/timekeeping.c |   34 ++++++++++++++++++++++++++++++++++
- 3 files changed, 48 insertions(+), 3 deletions(-)
+In Patchset 1, modified parameter of iso_stream_put() to handle the crash.
 
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index fd0dc30..f6b2a74 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -320,6 +320,9 @@ extern ktime_t ktime_get(void);
- extern ktime_t ktime_get_real(void);
- extern ktime_t ktime_get_boottime(void);
- extern ktime_t ktime_get_monotonic_offset(void);
-+extern void ktime_get_and_real_and_sleep_offset(ktime_t *monotonic,
-+						ktime_t *real_offset,
-+						ktime_t *sleep_offset);
+However the crash can be handled without modifying the function 
+parameter, by just adding a local variable in the functions that call 
+iso_stream_put(). Hence implemented it in the current patch.
+
+ drivers/usb/host/ehci-sched.c |   16 ++++++++++------
+ 1 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/usb/host/ehci-sched.c b/drivers/usb/host/ehci-sched.c
+index 33182c6..20d0c38 100644
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -1715,6 +1715,7 @@ itd_complete (
+ 	struct ehci_iso_stream			*stream = itd->stream;
+ 	struct usb_device			*dev;
+ 	unsigned				retval = false;
++	u32					stream_ref_count = 0;
  
- DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
+ 	/* for each uframe with a packet */
+ 	for (uframe = 0; uframe < 8; uframe++) {
+@@ -1783,7 +1784,8 @@ itd_complete (
+ 			dev->devpath, stream->bEndpointAddress & 0x0f,
+ 			(stream->bEndpointAddress & USB_DIR_IN) ? "in" : "out");
+ 	}
+-	iso_stream_put (ehci, stream);
++	stream_ref_count = stream->refcount;
++	iso_stream_put(ehci, stream);
  
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index d730678..56600c4 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1258,18 +1258,26 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
- void hrtimer_interrupt(struct clock_event_device *dev)
- {
- 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
--	ktime_t expires_next, now, entry_time, delta;
-+	ktime_t expires_next, now, entry_time, delta, real_offset, sleep_offset;
- 	int i, retries = 0;
+ done:
+ 	itd->urb = NULL;
+@@ -1797,7 +1799,7 @@ done:
+ 		 * Move it to a safe place until a new frame starts.
+ 		 */
+ 		list_move(&itd->itd_list, &ehci->cached_itd_list);
+-		if (stream->refcount == 2) {
++		if (stream_ref_count == 3) {
+ 			/* If iso_stream_put() were called here, stream
+ 			 * would be freed.  Instead, just prevent reuse.
+ 			 */
+@@ -1866,7 +1868,7 @@ done_not_linked:
  
- 	BUG_ON(!cpu_base->hres_active);
- 	cpu_base->nr_events++;
- 	dev->next_event.tv64 = KTIME_MAX;
- 
--	entry_time = now = ktime_get();
-+
-+	ktime_get_and_real_and_sleep_offset(&now, &real_offset, &sleep_offset);
-+
-+	entry_time = now;
- retry:
- 	expires_next.tv64 = KTIME_MAX;
- 
- 	raw_spin_lock(&cpu_base->lock);
-+
-+	/* Update base offsets, to avoid early wakeups */
-+	cpu_base->clock_base[HRTIMER_BASE_REALTIME].offset = real_offset;
-+	cpu_base->clock_base[HRTIMER_BASE_BOOTTIME].offset = sleep_offset;
-+
- 	/*
- 	 * We set expires_next to KTIME_MAX here with cpu_base->lock
- 	 * held to prevent that a timer is enqueued in our queue via
-@@ -1346,7 +1354,7 @@ retry:
- 	 * interrupt routine. We give it 3 attempts to avoid
- 	 * overreacting on some spurious event.
- 	 */
--	now = ktime_get();
-+	ktime_get_and_real_and_sleep_offset(&now, &real_offset, &sleep_offset);
- 	cpu_base->nr_retries++;
- 	if (++retries < 3)
- 		goto retry;
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index cc2991d..b3404cf 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1251,6 +1251,40 @@ void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
+ done:
+ 	if (unlikely (status < 0))
+-		iso_stream_put (ehci, stream);
++		iso_stream_put(ehci, stream);
+ 	return status;
  }
  
- /**
-+ * ktime_get_and_real_and_sleep_offset() - hrtimer helper, gets monotonic ktime,
-+ *	realtime offset, and sleep offsets.
-+ */
-+void ktime_get_and_real_and_sleep_offset(ktime_t *monotonic,
-+						ktime_t *real_offset,
-+						ktime_t *sleep_offset)
-+{
-+	unsigned long seq;
-+	struct timespec wtom, sleep;
-+	u64 secs, nsecs;
-+
-+	do {
-+		seq = read_seqbegin(&timekeeper.lock);
-+
-+		secs = timekeeper.xtime.tv_sec +
-+				timekeeper.wall_to_monotonic.tv_sec;
-+		nsecs = timekeeper.xtime.tv_nsec +
-+				timekeeper.wall_to_monotonic.tv_nsec;
-+		nsecs += timekeeping_get_ns();
-+		/* If arch requires, add in gettimeoffset() */
-+		nsecs += arch_gettimeoffset();
-+
-+		wtom = timekeeper.wall_to_monotonic;
-+		sleep = timekeeper.total_sleep_time;
-+	} while (read_seqretry(&timekeeper.lock, seq));
-+
-+	*monotonic = ktime_add_ns(ktime_set(secs, 0), nsecs);
-+	set_normalized_timespec(&wtom, -wtom.tv_sec, -wtom.tv_nsec);
-+	*real_offset =	timespec_to_ktime(wtom);
-+	*sleep_offset = timespec_to_ktime(sleep);
-+}
-+
-+
-+/**
-  * ktime_get_monotonic_offset() - get wall_to_monotonic in ktime_t format
-  */
- ktime_t ktime_get_monotonic_offset(void)
+@@ -2127,6 +2129,7 @@ sitd_complete (
+ 	struct ehci_iso_stream			*stream = sitd->stream;
+ 	struct usb_device			*dev;
+ 	unsigned				retval = false;
++	u32					stream_ref_count = 0;
+ 
+ 	urb_index = sitd->index;
+ 	desc = &urb->iso_frame_desc [urb_index];
+@@ -2179,7 +2182,8 @@ sitd_complete (
+ 			dev->devpath, stream->bEndpointAddress & 0x0f,
+ 			(stream->bEndpointAddress & USB_DIR_IN) ? "in" : "out");
+ 	}
+-	iso_stream_put (ehci, stream);
++	stream_ref_count = stream->refcount;
++	iso_stream_put(ehci, stream);
+ 
+ done:
+ 	sitd->urb = NULL;
+@@ -2193,7 +2197,7 @@ done:
+ 		 * Move it to a safe place until a new frame starts.
+ 		 */
+ 		list_move(&sitd->sitd_list, &ehci->cached_sitd_list);
+-		if (stream->refcount == 2) {
++		if (stream_ref_count == 3) {
+ 			/* If iso_stream_put() were called here, stream
+ 			 * would be freed.  Instead, just prevent reuse.
+ 			 */
+@@ -2259,7 +2263,7 @@ done_not_linked:
+ 
+ done:
+ 	if (status < 0)
+-		iso_stream_put (ehci, stream);
++		iso_stream_put(ehci, stream);
+ 	return status;
+ }
+ 
+-- 
+1.7.1.1
+
