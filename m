@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755015Ab2GIOyN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:54:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61335 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754648Ab2GIOyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:54:11 -0400
-Message-ID: <4FFAF067.3050905@redhat.com>
-Date: Mon, 09 Jul 2012 10:53:27 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 25/26] sched, numa: Only migrate long-running entities
-References: <20120316144028.036474157@chello.nl>  <20120316144241.749359061@chello.nl> <4FF9D29D.8030903@redhat.com> <1341836787.3462.64.camel@twins>
-In-Reply-To: <1341836787.3462.64.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755065Ab2GIOxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:53:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38090 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754153Ab2GIOh5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 10:37:57 -0400
+Message-Id: <20120709143118.748262282@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 09 Jul 2012 15:31:30 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>,
+        Christian Balzer <chibi@gol.com>
+Subject: [ 14/48] md/raid10: Dont try to recovery unmatched (and unused) chunks.
+In-Reply-To: <20120709143116.348975190@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2012 08:26 AM, Peter Zijlstra wrote:
-> On Sun, 2012-07-08 at 14:34 -0400, Rik van Riel wrote:
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
->> Do we really want to calculate the amount of CPU time used
->> by a process, and start migrating after just one second?
->>
->> Or would it be ok to start migrating once a process has
->> been scanned once or twice by the NUMA code?
->
-> You mean, the 2-3rd time we try and migrate this task, not the memory
-> scanning thing as per Andrea, right?
+------------------
 
-Indeed.  That way we can simply keep a flag somewhere,
-instead of iterating over the threads in a process.
+From: NeilBrown <neilb@suse.de>
 
--- 
-All rights reversed
+commit fc448a18ae6219af9a73257b1fbcd009efab4a81 upstream.
+
+If a RAID10 has an odd number of chunks - as might happen when there
+are an odd number of devices - the last chunk has no pair and so is
+not mirrored.  We don't store data there, but when recovering the last
+device in an array we retry to recover that last chunk from a
+non-existent location.  This results in an error, and the recovery
+aborts.
+
+When we get to that last chunk we should just stop - there is nothing
+more to do anyway.
+
+This bug has been present since the introduction of RAID10, so the
+patch is appropriate for any -stable kernel.
+
+Reported-by: Christian Balzer <chibi@gol.com>
+Tested-by: Christian Balzer <chibi@gol.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/md/raid10.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -2436,6 +2436,12 @@ static sector_t sync_request(struct mdde
+ 			/* want to reconstruct this device */
+ 			rb2 = r10_bio;
+ 			sect = raid10_find_virt(conf, sector_nr, i);
++			if (sect >= mddev->resync_max_sectors) {
++				/* last stripe is not complete - don't
++				 * try to recover this sector.
++				 */
++				continue;
++			}
+ 			/* Unless we are doing a full sync, we only need
+ 			 * to recover the block if it is set in the bitmap
+ 			 */
+
+
