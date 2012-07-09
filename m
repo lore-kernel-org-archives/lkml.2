@@ -1,122 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab2GIJqg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 05:46:36 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12529 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab2GIJqf (ORCPT
+	id S1752530Ab2GIJso (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 05:48:44 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44312 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641Ab2GIJsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 05:46:35 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 09 Jul 2012 02:46:34 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: <stern@rowland.harvard.edu>, <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH v2] usb: host: Fix possible kernel crash
-Date: Mon, 9 Jul 2012 15:15:51 +0530
-Message-ID: <1341827151-21991-1-git-send-email-vbyravarasu@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-X-NVConfidentiality: public
+	Mon, 9 Jul 2012 05:48:41 -0400
+Date: Mon, 9 Jul 2012 11:48:21 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alessandro Rubini <rubini@gnudd.com>, linux-kernel@vger.kernel.org,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        STEricsson_nomadik_linux@list.st.com,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jean Delvare <khali@linux-fr.org>,
+        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH V3 0/3] i2c-nomadik changes
+Message-ID: <20120709094821.GB1296@pengutronix.de>
+References: <cover.1339447570.git.rubini@gnudd.com>
+ <CACRpkdakDBrF+G9wpPn+PQ5tcb2xqeiBoSRMmj_PuB_WhufaaQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EuxKj2iCbKjpUGkD"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdakDBrF+G9wpPn+PQ5tcb2xqeiBoSRMmj_PuB_WhufaaQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In functions itd_complete &  sitd_complete, a pointer
-by name stream may get dereferenced after freeing it, when
-iso_stream_put is called with stream->refcount = 2.
 
-Hence fixing it.
+--EuxKj2iCbKjpUGkD
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
----
-In Patchset 1, modified parameter of iso_stream_put() to handle the crash.
+On Mon, Jun 11, 2012 at 11:37:15PM +0200, Linus Walleij wrote:
+> On Mon, Jun 11, 2012 at 10:56 PM, Alessandro Rubini <rubini@gnudd.com> wr=
+ote:
+>=20
+> > V3:
+> > =A0 =A0 =A0 =A0- fixed according to Linusw feedback (merged the patch h=
+e posted)
+> > =A0 =A0 =A0 =A0- added Tested-by: Linusw on his permission
+>=20
+> I'm happy with this version, Wolfram if it looks OK to you,
+> can you please merge this into the I2C tree?
 
-However the crash can be handled without modifying the function 
-parameter, by just adding a local variable in the functions that call 
-iso_stream_put(). Hence implemented it in the current patch.
+Done now, thanks.
 
- drivers/usb/host/ehci-sched.c |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
+Is the latest version of Lee's patches for DT sent on 20/06 suitable to
+go on top of that?
 
-diff --git a/drivers/usb/host/ehci-sched.c b/drivers/usb/host/ehci-sched.c
-index 33182c6..20d0c38 100644
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -1715,6 +1715,7 @@ itd_complete (
- 	struct ehci_iso_stream			*stream = itd->stream;
- 	struct usb_device			*dev;
- 	unsigned				retval = false;
-+	u32					stream_ref_count = 0;
- 
- 	/* for each uframe with a packet */
- 	for (uframe = 0; uframe < 8; uframe++) {
-@@ -1783,7 +1784,8 @@ itd_complete (
- 			dev->devpath, stream->bEndpointAddress & 0x0f,
- 			(stream->bEndpointAddress & USB_DIR_IN) ? "in" : "out");
- 	}
--	iso_stream_put (ehci, stream);
-+	stream_ref_count = stream->refcount;
-+	iso_stream_put(ehci, stream);
- 
- done:
- 	itd->urb = NULL;
-@@ -1797,7 +1799,7 @@ done:
- 		 * Move it to a safe place until a new frame starts.
- 		 */
- 		list_move(&itd->itd_list, &ehci->cached_itd_list);
--		if (stream->refcount == 2) {
-+		if (stream_ref_count == 3) {
- 			/* If iso_stream_put() were called here, stream
- 			 * would be freed.  Instead, just prevent reuse.
- 			 */
-@@ -1866,7 +1868,7 @@ done_not_linked:
- 
- done:
- 	if (unlikely (status < 0))
--		iso_stream_put (ehci, stream);
-+		iso_stream_put(ehci, stream);
- 	return status;
- }
- 
-@@ -2127,6 +2129,7 @@ sitd_complete (
- 	struct ehci_iso_stream			*stream = sitd->stream;
- 	struct usb_device			*dev;
- 	unsigned				retval = false;
-+	u32					stream_ref_count = 0;
- 
- 	urb_index = sitd->index;
- 	desc = &urb->iso_frame_desc [urb_index];
-@@ -2179,7 +2182,8 @@ sitd_complete (
- 			dev->devpath, stream->bEndpointAddress & 0x0f,
- 			(stream->bEndpointAddress & USB_DIR_IN) ? "in" : "out");
- 	}
--	iso_stream_put (ehci, stream);
-+	stream_ref_count = stream->refcount;
-+	iso_stream_put(ehci, stream);
- 
- done:
- 	sitd->urb = NULL;
-@@ -2193,7 +2197,7 @@ done:
- 		 * Move it to a safe place until a new frame starts.
- 		 */
- 		list_move(&sitd->sitd_list, &ehci->cached_sitd_list);
--		if (stream->refcount == 2) {
-+		if (stream_ref_count == 3) {
- 			/* If iso_stream_put() were called here, stream
- 			 * would be freed.  Instead, just prevent reuse.
- 			 */
-@@ -2259,7 +2263,7 @@ done_not_linked:
- 
- done:
- 	if (status < 0)
--		iso_stream_put (ehci, stream);
-+		iso_stream_put(ehci, stream);
- 	return status;
- }
- 
--- 
-1.7.1.1
+Regards,
 
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--EuxKj2iCbKjpUGkD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk/6qOUACgkQD27XaX1/VRtTWQCgsHsNf254ujlFk20vSpgWXto9
+c3UAnivCKkol+mZVUb7qpOONjxaA6fyb
+=hYOt
+-----END PGP SIGNATURE-----
+
+--EuxKj2iCbKjpUGkD--
