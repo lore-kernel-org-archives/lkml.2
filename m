@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab2GIOkG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:40:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38309 "EHLO
+	id S1754641Ab2GIOkt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:40:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38292 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754506Ab2GIOiZ (ORCPT
+	by vger.kernel.org with ESMTP id S1754486Ab2GIOiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:38:25 -0400
-Message-Id: <20120709143119.739842286@decadent.org.uk>
+	Mon, 9 Jul 2012 10:38:24 -0400
+Message-Id: <20120709143120.195236088@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:31:37 +0100
+Date: Mon, 09 Jul 2012 15:31:40 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mike Snitzer <snitzer@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [ 21/48] dm persistent data: fix allocation failure in space map checker init
+        alan@lxorguk.ukuu.org.uk, Bing Zhao <bzhao@marvell.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 24/48] mwifiex: fix wrong return values in  add_virtual_intf() error cases
 In-Reply-To: <20120709143116.348975190@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,93 +29,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit b0239faaf87c38bb419c9264bf20817438ddc3a9 upstream.
+commit 858faa57dd9e2b91f3f870fbb1185982e42f5a2b upstream
 
-If CONFIG_DM_DEBUG_SPACE_MAPS is enabled and memory is fragmented and a
-sufficiently-large metadata device is used in a thin pool then the space
-map checker will fail to allocate the memory it requires.
+backported for linux-3.2.y, linux-3.3.y, linux-3.4.y
 
-Switch from kmalloc to vmalloc to allow larger virtually contiguous
-allocations for the space map checker's internal count arrays.
+add_virtual_intf() needs to return an ERR_PTR(), instead of NULL,
+on errors, otherwise cfg80211 will crash.
 
-Reported-by: Vivek Goyal <vgoyal@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Reported-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/persistent-data/dm-space-map-checker.c |   30 +++++++++++++--------
- 1 file changed, 19 insertions(+), 11 deletions(-)
+ drivers/net/wireless/mwifiex/cfg80211.c |   21 +++++++++------------
+ 1 files changed, 9 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/md/persistent-data/dm-space-map-checker.c b/drivers/md/persistent-data/dm-space-map-checker.c
-index 6d7c832..fc90c11 100644
---- a/drivers/md/persistent-data/dm-space-map-checker.c
-+++ b/drivers/md/persistent-data/dm-space-map-checker.c
-@@ -8,6 +8,7 @@
+diff --git a/drivers/net/wireless/mwifiex/cfg80211.c b/drivers/net/wireless/mwifiex/cfg80211.c
+index 6505038..baf6919 100644
+--- a/drivers/net/wireless/mwifiex/cfg80211.c
++++ b/drivers/net/wireless/mwifiex/cfg80211.c
+@@ -1214,11 +1214,11 @@ struct net_device *mwifiex_add_virtual_intf(struct wiphy *wiphy,
+ 	void *mdev_priv;
  
- #include <linux/device-mapper.h>
- #include <linux/export.h>
-+#include <linux/vmalloc.h>
+ 	if (!priv)
+-		return NULL;
++		return ERR_PTR(-EFAULT);
  
- #ifdef CONFIG_DM_DEBUG_SPACE_MAPS
+ 	adapter = priv->adapter;
+ 	if (!adapter)
+-		return NULL;
++		return ERR_PTR(-EFAULT);
  
-@@ -89,13 +90,23 @@ static int ca_create(struct count_array *ca, struct dm_space_map *sm)
+ 	switch (type) {
+ 	case NL80211_IFTYPE_UNSPECIFIED:
+@@ -1227,7 +1227,7 @@ struct net_device *mwifiex_add_virtual_intf(struct wiphy *wiphy,
+ 		if (priv->bss_mode) {
+ 			wiphy_err(wiphy, "cannot create multiple"
+ 					" station/adhoc interfaces\n");
+-			return NULL;
++			return ERR_PTR(-EINVAL);
+ 		}
  
- 	ca->nr = nr_blocks;
- 	ca->nr_free = nr_blocks;
--	ca->counts = kzalloc(sizeof(*ca->counts) * nr_blocks, GFP_KERNEL);
--	if (!ca->counts)
--		return -ENOMEM;
-+
-+	if (!nr_blocks)
-+		ca->counts = NULL;
-+	else {
-+		ca->counts = vzalloc(sizeof(*ca->counts) * nr_blocks);
-+		if (!ca->counts)
-+			return -ENOMEM;
-+	}
+ 		if (type == NL80211_IFTYPE_UNSPECIFIED)
+@@ -1244,14 +1244,15 @@ struct net_device *mwifiex_add_virtual_intf(struct wiphy *wiphy,
+ 		break;
+ 	default:
+ 		wiphy_err(wiphy, "type not supported\n");
+-		return NULL;
++		return ERR_PTR(-EINVAL);
+ 	}
  
- 	return 0;
- }
+ 	dev = alloc_netdev_mq(sizeof(struct mwifiex_private *), name,
+ 			      ether_setup, 1);
+ 	if (!dev) {
+ 		wiphy_err(wiphy, "no memory available for netdevice\n");
+-		goto error;
++		priv->bss_mode = NL80211_IFTYPE_UNSPECIFIED;
++		return ERR_PTR(-ENOMEM);
+ 	}
  
-+static void ca_destroy(struct count_array *ca)
-+{
-+	vfree(ca->counts);
-+}
-+
- static int ca_load(struct count_array *ca, struct dm_space_map *sm)
- {
- 	int r;
-@@ -126,12 +137,14 @@ static int ca_load(struct count_array *ca, struct dm_space_map *sm)
- static int ca_extend(struct count_array *ca, dm_block_t extra_blocks)
- {
- 	dm_block_t nr_blocks = ca->nr + extra_blocks;
--	uint32_t *counts = kzalloc(sizeof(*counts) * nr_blocks, GFP_KERNEL);
-+	uint32_t *counts = vzalloc(sizeof(*counts) * nr_blocks);
- 	if (!counts)
- 		return -ENOMEM;
+ 	dev_net_set(dev, wiphy_net(wiphy));
+@@ -1276,7 +1277,9 @@ struct net_device *mwifiex_add_virtual_intf(struct wiphy *wiphy,
+ 	/* Register network device */
+ 	if (register_netdevice(dev)) {
+ 		wiphy_err(wiphy, "cannot register virtual network device\n");
+-		goto error;
++		free_netdev(dev);
++		priv->bss_mode = NL80211_IFTYPE_UNSPECIFIED;
++		return ERR_PTR(-EFAULT);
+ 	}
  
--	memcpy(counts, ca->counts, sizeof(*counts) * ca->nr);
--	kfree(ca->counts);
-+	if (ca->counts) {
-+		memcpy(counts, ca->counts, sizeof(*counts) * ca->nr);
-+		ca_destroy(ca);
-+	}
- 	ca->nr = nr_blocks;
- 	ca->nr_free += extra_blocks;
- 	ca->counts = counts;
-@@ -151,11 +164,6 @@ static int ca_commit(struct count_array *old, struct count_array *new)
- 	return 0;
- }
- 
--static void ca_destroy(struct count_array *ca)
--{
--	kfree(ca->counts);
--}
+ 	sema_init(&priv->async_sem, 1);
+@@ -1288,12 +1291,6 @@ struct net_device *mwifiex_add_virtual_intf(struct wiphy *wiphy,
+ 	mwifiex_dev_debugfs_init(priv);
+ #endif
+ 	return dev;
+-error:
+-	if (dev && (dev->reg_state == NETREG_UNREGISTERED))
+-		free_netdev(dev);
+-	priv->bss_mode = NL80211_IFTYPE_UNSPECIFIED;
 -
- /*----------------------------------------------------------------*/
+-	return NULL;
+ }
+ EXPORT_SYMBOL_GPL(mwifiex_add_virtual_intf);
  
- struct sm_checker {
 
 
