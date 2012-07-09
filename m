@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab2GIOrr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:47:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38131 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754332Ab2GIOiA (ORCPT
+	id S1754870Ab2GIOr5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:47:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51474 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754200Ab2GIOry convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:38:00 -0400
-Message-Id: <20120709143117.360564794@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:31:21 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
-        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "David S. Miller" <davem@davemloft.net>, Ilan Elias <ilane@ti.com>
-Subject: [ 05/48] NFC: Prevent multiple buffer overflows in NCI
-In-Reply-To: <20120709143116.348975190@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 9 Jul 2012 10:47:54 -0400
+Message-ID: <1341845268.3462.80.camel@twins>
+Subject: Re: perf with precise attribute kills all KVM based VMs
+From: Peter Zijlstra <peterz@infradead.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>, David Ahern <dsahern@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 09 Jul 2012 16:47:48 +0200
+In-Reply-To: <4FFAED16.7050204@redhat.com>
+References: <4FFAE6D8.5050609@gmail.com> <20120709141904.GC7298@redhat.com>
+	 <1341843844.3462.75.camel@twins> <4FFAED16.7050204@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 2012-07-09 at 17:39 +0300, Avi Kivity wrote:
+> > Disabling PEBS events for guests isn't pretty though.. 
+> 
+> We already have atomic MSR switching at guest entry/exit time.  So it's
+> not pretty in terms of not getting full profiling, but the code won't be
+> too hard.  Basically we just have to exclude_guest any pebs event. 
 
-------------------
+OK, so ideally we'd do something like the below, except of course that
+that isn't backwards compatible and will break the world :/
 
-From: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+bugger that
 
-commit 67de956ff5dc1d4f321e16cfbd63f5be3b691b43 upstream.
-
-Fix multiple remotely-exploitable stack-based buffer overflows due to
-the NCI code pulling length fields directly from incoming frames and
-copying too much data into statically-sized arrays.
-
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Cc: security@kernel.org
-Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
-Cc: Aloisio Almeida Jr <aloisio.almeida@openbossa.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: David S. Miller <davem@davemloft.net>
-Acked-by: Ilan Elias <ilane@ti.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-[bwh: Backported to 3.2:
- - Drop changes to parsing of tech B and tech F parameters
- - Various renaming]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/net/nfc/nci/ntf.c
-+++ b/net/nfc/nci/ntf.c
-@@ -86,7 +86,7 @@ static int nci_rf_activate_nfca_passive_
- 	nfca_poll->sens_res = __le16_to_cpu(*((__u16 *)data));
- 	data += 2;
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -336,6 +338,9 @@ int x86_setup_perfctr(struct perf_event *event)
+                /* BTS is currently only allowed for user-mode. */
+                if (!attr->exclude_kernel)
+                        return -EOPNOTSUPP;
++
++               if (!attr->exclude_guest)
++                       return -EOPNOTSUPP;
+        }
  
--	nfca_poll->nfcid1_len = *data++;
-+	nfca_poll->nfcid1_len = min_t(__u8, *data++, sizeof(nfca_poll->nfcid1));
+        hwc->config |= config;
+@@ -378,6 +383,9 @@ int x86_pmu_hw_config(struct perf_event *event)
+        if (event->attr.precise_ip) {
+                int precise = 0;
  
- 	nfc_dbg("sens_res 0x%x, nfcid1_len %d",
- 		nfca_poll->sens_res,
-@@ -111,7 +111,7 @@ static int nci_rf_activate_nfca_passive_
- 
- 	switch (ntf->rf_interface_type) {
- 	case NCI_RF_INTERFACE_ISO_DEP:
--		nfca_poll_iso_dep->rats_res_len = *data++;
-+		nfca_poll_iso_dep->rats_res_len = min_t(__u8, *data++, 20);
- 		if (nfca_poll_iso_dep->rats_res_len > 0) {
- 			memcpy(nfca_poll_iso_dep->rats_res,
- 				data,
-
-
++               if (!event->attr.exclude_guest)
++                       return -EOPNOTSUPP;
++
+                /* Support for constant skid */
+                if (x86_pmu.pebs_active && !x86_pmu.pebs_broken) {
+                        precise++;
