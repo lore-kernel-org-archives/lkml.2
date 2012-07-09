@@ -1,143 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab2GIVCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 17:02:36 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:35074 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab2GIVCe (ORCPT
+	id S1753983Ab2GIVDo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 17:03:44 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:42765 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751992Ab2GIVDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 17:02:34 -0400
-From: Greg Thelen <gthelen@google.com>
-To: Sha Zhengju <handai.szj@gmail.com>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, yinghan@google.com,
-        akpm@linux-foundation.org, mhocko@suse.cz,
-        linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH 6/7] memcg: add per cgroup writeback pages accounting
-References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com>
-	<1340881562-5900-1-git-send-email-handai.szj@taobao.com>
-Date: Mon, 09 Jul 2012 14:02:32 -0700
-Message-ID: <xr93zk78zlzr.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Mon, 9 Jul 2012 17:03:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <4FFB463F.9040201@linaro.org>
+References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org>
+	<4FF6994B.9040801@linaro.org>
+	<20120706173957.GA10202@core.coreip.homeip.net>
+	<4FFB288D.4080606@linaro.org>
+	<20120709201422.GA12242@core.coreip.homeip.net>
+	<4FFB40A4.5060505@linaro.org>
+	<20120709204620.GA12692@core.coreip.homeip.net>
+	<4FFB463F.9040201@linaro.org>
+Date: Mon, 9 Jul 2012 23:03:41 +0200
+Message-ID: <CACRpkdbjkLvD13_g=TvCUYjqhZ7ySOiEL51h9eT3YVMO4Vnr3A@mail.gmail.com>
+Subject: Re: [PATCH 7/9] Input: ab8500-ponkey: Create AB8500 domain IRQ mapping
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 28 2012, Sha Zhengju wrote:
+On Mon, Jul 9, 2012 at 10:59 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> From: Sha Zhengju <handai.szj@taobao.com>
+> Before we can use any domain allocated IRQ, we need to first create a
+> map between the Hardware IRQ (hwirq) and the Linux Virtual IRQ (virq).
+> We do this with a helper function provided by the AB8500 IRQ domain
+> controller called ab8500_irq_get_virq(). We need to do this for both
+> IRQs which the Power-On-Key driver uses; one for button press, the other
+> for button depress.
 >
-> Similar to dirty page, we add per cgroup writeback pages accounting. The lock
-> rule still is:
-> 	mem_cgroup_begin_update_page_stat()
-> 	modify page WRITEBACK stat
-> 	mem_cgroup_update_page_stat()
-> 	mem_cgroup_end_update_page_stat()
->
-> There're two writeback interface to modify: test_clear/set_page_writeback.
->
-> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
-> ---
->  include/linux/memcontrol.h |    1 +
->  mm/memcontrol.c            |    5 +++++
->  mm/page-writeback.c        |   12 ++++++++++++
->  3 files changed, 18 insertions(+), 0 deletions(-)
->
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index ad37b59..9193d93 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -39,6 +39,7 @@ enum mem_cgroup_stat_index {
->  	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
->  	MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
->  	MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
-> +	MEM_CGROUP_STAT_FILE_WRITEBACK,  /* # of pages under writeback */
->  	MEM_CGROUP_STAT_NSTATS,
->  };
->  
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 90e2946..8493119 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -83,6 +83,7 @@ static const char * const mem_cgroup_stat_names[] = {
->  	"mapped_file",
->  	"swap",
->  	"dirty",
-> +	"writeback",
->  };
->  
->  enum mem_cgroup_events_index {
-> @@ -2604,6 +2605,10 @@ static int mem_cgroup_move_account(struct page *page,
->  		mem_cgroup_move_account_page_stat(from, to,
->  				MEM_CGROUP_STAT_FILE_DIRTY);
->  
-> +	if (PageWriteback(page))
-> +		mem_cgroup_move_account_page_stat(from, to,
-> +				MEM_CGROUP_STAT_FILE_WRITEBACK);
-> +
->  	mem_cgroup_charge_statistics(from, anon, -nr_pages);
->  
->  	/* caller should have done css_get */
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index e79a2f7..7398836 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -1981,6 +1981,7 @@ EXPORT_SYMBOL(account_page_dirtied);
->   */
->  void account_page_writeback(struct page *page)
->  {
-> +	mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_FILE_WRITEBACK);
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-As already mentioned, I'd also like to see a comment added to
-account_page_writeback() describing the new locking requirements
-(specifically mem_cgroup_begin_update_page_stat being held by caller).
+Now since I was fooled by the last patch, thinking you had tested it before
+submitting (obviously not) - please send a test log of some
+cat /dev/input/event* for this one before I ACK it this time.
 
->  	inc_zone_page_state(page, NR_WRITEBACK);
->  }
->  EXPORT_SYMBOL(account_page_writeback);
-> @@ -2214,7 +2215,10 @@ int test_clear_page_writeback(struct page *page)
->  {
->  	struct address_space *mapping = page_mapping(page);
->  	int ret;
-> +	bool locked;
-> +	unsigned long flags;
->  
-> +	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
->  	if (mapping) {
->  		struct backing_dev_info *bdi = mapping->backing_dev_info;
->  		unsigned long flags;
-> @@ -2235,9 +2239,12 @@ int test_clear_page_writeback(struct page *page)
->  		ret = TestClearPageWriteback(page);
->  	}
->  	if (ret) {
-> +		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_WRITEBACK);
->  		dec_zone_page_state(page, NR_WRITEBACK);
->  		inc_zone_page_state(page, NR_WRITTEN);
->  	}
-> +
-> +	mem_cgroup_end_update_page_stat(page, &locked, &flags);
->  	return ret;
->  }
->  
-> @@ -2245,7 +2252,10 @@ int test_set_page_writeback(struct page *page)
->  {
->  	struct address_space *mapping = page_mapping(page);
->  	int ret;
-> +	bool locked;
-> +	unsigned long flags;
->  
-> +	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
->  	if (mapping) {
->  		struct backing_dev_info *bdi = mapping->backing_dev_info;
->  		unsigned long flags;
-> @@ -2272,6 +2282,8 @@ int test_set_page_writeback(struct page *page)
->  	}
->  	if (!ret)
->  		account_page_writeback(page);
-> +
-> +	mem_cgroup_end_update_page_stat(page, &locked, &flags);
->  	return ret;
->  
->  }
+Yours,
+Linus Walleij
