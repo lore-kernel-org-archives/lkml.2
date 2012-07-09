@@ -1,120 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870Ab2GIJ14 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 05:27:56 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:62734 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752706Ab2GIJ1x (ORCPT
+	id S1752740Ab2GIJcd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 05:32:33 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:61578 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab2GIJcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 05:27:53 -0400
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org
-Cc: linux@arm.linux.org.uk, a.p.zijlstra@chello.nl, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, yong.zhang0@gmail.com, namhyung@kernel.org,
-        jean.pihet@newoldbits.com
-Subject: [PATCH v4 4/5] sched, x86: Remove broken power estimation
-Date: Mon,  9 Jul 2012 11:27:05 +0200
-Message-Id: <1341826026-6504-5-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1341826026-6504-1-git-send-email-vincent.guittot@linaro.org>
-References: <1341826026-6504-1-git-send-email-vincent.guittot@linaro.org>
+	Mon, 9 Jul 2012 05:32:32 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: tytso@mit.edu, Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: [PATCH] ext4: fix double quota opts show
+Date: Mon,  9 Jul 2012 13:32:21 +0400
+Message-Id: <1341826341-32083-1-git-send-email-dmonakhov@openvz.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Currently quota options showed twice, first time in _ext4_show_options()
+(inside main loop), and second time inside ext4_show_quota_options().
+In my case it looks like follows:
+/dev/sdc /mnt ext4 rw,relatime,quota,usrquota,grpquota,data=ordered,usrquota,grpquota 0 0
+Let's do not show quota's opts inside main loop, and let ext4_show_quota_options()
+does it primary job.
 
-The x86 sched power implementation has been broken forever and gets in
-the way of other stuff, remove it.
-
-For archaeological interest, fixing this code would require dealing with
-the cross-cpu calling of these functions and more importantly, we need
-to filter idle time out of the a/m-perf stuff because the ratio will go
-down to 0 when idle, giving a 0 capacity which is not what we'd want.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-wjjwelpti8f8k7i1pdnzmdr8@git.kernel.org
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
 ---
- arch/x86/kernel/cpu/Makefile |    2 +-
- arch/x86/kernel/cpu/sched.c  |   55 ------------------------------------------
- 2 files changed, 1 insertion(+), 56 deletions(-)
- delete mode 100644 arch/x86/kernel/cpu/sched.c
+ fs/ext4/super.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 6ab6aa2..c598126 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -14,7 +14,7 @@ CFLAGS_common.o		:= $(nostackp)
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index eb7aa3e..84c7ba4 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1404,13 +1404,13 @@ static int clear_qf_name(struct super_block *sb, int qtype)
+ #define MOPT_CLEAR_ERR	0x0010
+ #define MOPT_GTE0	0x0020
+ #ifdef CONFIG_QUOTA
+-#define MOPT_Q		0
+-#define MOPT_QFMT	0x0040
++#define MOPT_Q		0x0040
++#define MOPT_QFMT	0x0080
+ #else
+ #define MOPT_Q		MOPT_NOSUPPORT
+ #define MOPT_QFMT	MOPT_NOSUPPORT
+ #endif
+-#define MOPT_DATAJ	0x0080
++#define MOPT_DATAJ	0x0100
  
- obj-y			:= intel_cacheinfo.o scattered.o topology.o
- obj-y			+= proc.o capflags.o powerflags.o common.o
--obj-y			+= vmware.o hypervisor.o sched.o mshyperv.o
-+obj-y			+= vmware.o hypervisor.o mshyperv.o
- obj-y			+= rdrand.o
- obj-y			+= match.o
+ static const struct mount_opts {
+ 	int	token;
+@@ -1786,6 +1786,8 @@ static int _ext4_show_options(struct seq_file *seq, struct super_block *sb,
+ 		     (sbi->s_mount_opt & m->mount_opt) != m->mount_opt) ||
+ 		    (!want_set && (sbi->s_mount_opt & m->mount_opt)))
+ 			continue; /* select Opt_noFoo vs Opt_Foo */
++		if (m->flags & (MOPT_Q | MOPT_QFMT))
++			continue; /* will be handled in show_quota_options */
+ 		SEQ_OPTS_PRINT("%s", token2str(m->token));
+ 	}
  
-diff --git a/arch/x86/kernel/cpu/sched.c b/arch/x86/kernel/cpu/sched.c
-deleted file mode 100644
-index a640ae5..0000000
---- a/arch/x86/kernel/cpu/sched.c
-+++ /dev/null
-@@ -1,55 +0,0 @@
--#include <linux/sched.h>
--#include <linux/math64.h>
--#include <linux/percpu.h>
--#include <linux/irqflags.h>
--
--#include <asm/cpufeature.h>
--#include <asm/processor.h>
--
--#ifdef CONFIG_SMP
--
--static DEFINE_PER_CPU(struct aperfmperf, old_perf_sched);
--
--static unsigned long scale_aperfmperf(void)
--{
--	struct aperfmperf val, *old = &__get_cpu_var(old_perf_sched);
--	unsigned long ratio, flags;
--
--	local_irq_save(flags);
--	get_aperfmperf(&val);
--	local_irq_restore(flags);
--
--	ratio = calc_aperfmperf_ratio(old, &val);
--	*old = val;
--
--	return ratio;
--}
--
--unsigned long arch_scale_freq_power(struct sched_domain *sd, int cpu)
--{
--	/*
--	 * do aperf/mperf on the cpu level because it includes things
--	 * like turbo mode, which are relevant to full cores.
--	 */
--	if (boot_cpu_has(X86_FEATURE_APERFMPERF))
--		return scale_aperfmperf();
--
--	/*
--	 * maybe have something cpufreq here
--	 */
--
--	return default_scale_freq_power(sd, cpu);
--}
--
--unsigned long arch_scale_smt_power(struct sched_domain *sd, int cpu)
--{
--	/*
--	 * aperf/mperf already includes the smt gain
--	 */
--	if (boot_cpu_has(X86_FEATURE_APERFMPERF))
--		return SCHED_LOAD_SCALE;
--
--	return default_scale_smt_power(sd, cpu);
--}
--
--#endif
 -- 
-1.7.9.5
+1.7.1
 
