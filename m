@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184Ab2GIO1l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:27:41 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:38049 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab2GIO1j (ORCPT
+	id S1754177Ab2GIO3Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:29:24 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:38106 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753705Ab2GIO3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:27:39 -0400
-Date: Mon, 9 Jul 2012 10:19:15 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH] xen/events: fix unmask_evtchn for PV on HVM
- guests
-Message-ID: <20120709141915.GB9580@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1206221644370.27860@kaball.uk.xensource.com>
- <1340381685-22529-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <alpine.DEB.2.02.1206221722040.27860@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1206221722040.27860@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 9 Jul 2012 10:29:23 -0400
+Message-ID: <1341844140.8153.1.camel@phoenix>
+Subject: [PATCH] mfd: Guard max77686_pmic_dt_match with CONFIG_OF
+From: Axel Lin <axel.lin@gmail.com>
+To: SamuelOrtiz <sameo@linux.intel.com>
+Cc: Chiwoong Byun <woong.byun@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 09 Jul 2012 22:29:00 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 22, 2012 at 05:26:07PM +0100, Stefano Stabellini wrote:
-> When unmask_evtchn is called, if we already have an event pending, we
-> just set evtchn_pending_sel waiting for local_irq_enable to be called.
-> That is because PV guests set the irq_enable pvops to
+This fixes below build warning if CONFIG_OF is not set.
 
-Can you point out where the PV guests do that please? Even just
-including a snippet of code would be nice so that somebody
-in the future has an idea of where it was/is.
+  CC      drivers/mfd/max77686.o
+drivers/mfd/max77686.c:37:42: warning: 'max77686_pmic_dt_match' defined but not used [-Wunused-variable]
 
-> xen_irq_enable_direct that also handles pending events.
-> 
-> However HVM guests (and ARM guests) do not change or do not have the
-> irq_enable pvop, so evtchn_unmask cannot work properly for them.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/max77686.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Duh!
-> 
-> Considering that having the pending_irq bit set when unmask_evtchn is
-> called is not very common, and it is simpler to keep the
+diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+index 3e31d05..c03e12b 100644
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -34,11 +34,6 @@
+ 
+ #define I2C_ADDR_RTC	(0x0C >> 1)
+ 
+-static struct of_device_id __devinitdata max77686_pmic_dt_match[] = {
+-	{.compatible = "maxim,max77686",        .data = 0},
+-	{},
+-};
+-
+ static struct mfd_cell max77686_devs[] = {
+ 	{ .name = "max77686-pmic", },
+ 	{ .name = "max77686-rtc", },
+@@ -50,6 +45,11 @@ static struct regmap_config max77686_regmap_config = {
+ };
+ 
+ #ifdef CONFIG_OF
++static struct of_device_id __devinitdata max77686_pmic_dt_match[] = {
++	{.compatible = "maxim,max77686",        .data = 0},
++	{},
++};
++
+ static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
+ 								  *dev)
+ {
+-- 
+1.7.9.5
 
-Unless you pin the guests on the vCPUS on which domain0 is not present..
 
-> native_irq_enable implementation for HVM guests (and ARM guests), the
-> best thing to do is just use the EVTCHNOP_unmask hypercall (Xen
-> re-injects pending events in response).
 
-And by re-injects you mean than the IOAPIC or (whatever it is on ARM)
-is armed to show that there is a pending interrupt, right?
-
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  drivers/xen/events.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> index eae0d0b..0132505 100644
-> --- a/drivers/xen/events.c
-> +++ b/drivers/xen/events.c
-> @@ -372,8 +372,11 @@ static void unmask_evtchn(int port)
->  
->  	BUG_ON(!irqs_disabled());
->  
-> -	/* Slow path (hypercall) if this is a non-local port. */
-> -	if (unlikely(cpu != cpu_from_evtchn(port))) {
-> +	/* Slow path (hypercall) if this is a non-local port or if this is
-> +	 * an hvm domain and an event is pending (hvm domains don't have
-> +	 * their own implementation of irq_enable). */
-> +	if (unlikely((cpu != cpu_from_evtchn(port)) ||
-> +			(xen_hvm_domain() && sync_test_bit(port, &s->evtchn_pending[0])))) {
->  		struct evtchn_unmask unmask = { .port = port };
-
-We already have two seperate acks - for when there is an GMFN APIC bitmap and
-when there is not. Can we also have to seperate unmask_evtchn then? And
-just have the HVM and ARM just do a straightforward unmaks_evtchn while
-the PV remains the same?
-
->  		(void)HYPERVISOR_event_channel_op(EVTCHNOP_unmask, &unmask);
->  	} else {
-> 
