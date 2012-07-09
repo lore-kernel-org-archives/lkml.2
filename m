@@ -1,101 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269Ab2GIVms (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 17:42:48 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:40094 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752076Ab2GIVmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 17:42:46 -0400
-Message-ID: <1341870165.6118.42.camel@joe2Laptop>
-Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
-From: Joe Perches <joe@perches.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Michael Neuling <mikey@neuling.org>, linuxppc-dev@ozlabs.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>
-Date: Mon, 09 Jul 2012 14:42:45 -0700
-In-Reply-To: <1341770155.1011.27.camel@mop>
-References: <1340651142.7037.2.camel@gandalf.stny.rr.com>
-	 <20120625150722.8cd4f45d.akpm@linux-foundation.org>
-	 <20120625235531.GB3652@kroah.com>
-	 <CA+55aFwczZTA=JUahoj_Sw1fQssDwoM2LGJ6g5nPvehTLxnSpg@mail.gmail.com>
-	 <20120626002307.GA4389@kroah.com>
-	 <CA+55aFxhYRqcU2EUmcsuLrhgo4FEO6-b+mB57wB3JRiXEp3ZrA@mail.gmail.com>
-	 <CAPXgP10cPFSmZ5yr6Z4wVtDa+x2J1yQDF57NJXtxjUuxMHm=Lw@mail.gmail.com>
-	 <CA+55aFzkX=jCC1O6+2oz8meswOqZQ+Q8Ao60q8eAS1G3AuEStQ@mail.gmail.com>
-	 <1340726856.977.6.camel@mop> <22482.1341471787@neuling.org>
-	 <CAPXgP11=o5WB4WejaQCSCL-+5e4sL7tfVz_r3Khyrq3SyrMvsA@mail.gmail.com>
-	 <CAPXgP13u769nSvUdS1iqiVCsxG5nsQd7bNT1=-eNw156U-kPkQ@mail.gmail.com>
-	 <16043.1341483625@neuling.org>
-	 <CAPXgP11+j+fDexHHmAZbBBidtrydrpWeh3DGWOhkuoybNj9skA@mail.gmail.com>
-	 <1341492628.834.3.camel@mop> <30233.1341535279@neuling.org>
-	 <CAPXgP12_F_H2XPpo2wFmb-u3jBdV__=h67R-LVYbqHuLh7tqLg@mail.gmail.com>
-	 <29711.1341545979@neuling.org> <30343.1341546469@neuling.org>
-	 <CAPXgP13_cQUQLE4RSjACTzj28Pn6r3ZaPhjch2U+uwgi7YKcWA@ma il.gmail.com>
-	 <CAPXgP10JthGjZyqD6gqn2n1rPu1uP+=mem_T-iOritXAQMstRQ@mail.gmail.com>
-	 <21892.1341608647@neuling.org> <1341770155.1011.27.camel@mop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754402Ab2GIVnT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 17:43:19 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:56688 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106Ab2GIVnS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 17:43:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120709203208.28178.94320.stgit@bhelgaas.mtv.corp.google.com>
+References: <20120709202308.28178.58942.stgit@bhelgaas.mtv.corp.google.com>
+	<20120709203208.28178.94320.stgit@bhelgaas.mtv.corp.google.com>
+Date: Mon, 9 Jul 2012 14:43:16 -0700
+X-Google-Sender-Auth: 7eZB5XJgsZvRkrPZWHgchzK-9W0
+Message-ID: <CAE9FiQXN00en27i3F16GL+HJoqVT=DenUWLCg0u4v-7vqcBTcQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] PCI: reimplement P2P bridge 1K I/O windows (Intel P64H2)
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, Daniel Yeisley <dan.yeisley@unisys.com>,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Content-Type: multipart/mixed; boundary=bcaec5015fe17056b904c46c80bc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-07-08 at 19:55 +0200, Kay Sievers wrote:
+--bcaec5015fe17056b904c46c80bc
+Content-Type: text/plain; charset=ISO-8859-1
 
-> At the same time the CPU#2 prints the same warning with a continuation
-> line, but the buffer from CPU#1 can not be flushed to the console, nor
-> can the continuation line printk()s from CPU#2 be merged at this point.
-> The consoles are still locked and busy with replaying the old log
-> messages, so the new continuation data is just stored away in the record
-> buffer as it is coming in.
-> If the console would be registered a bit earlier, or the warning would
-> happen a bit later, we would probably not see any of this.
-> 
-> I can fake something like this just by holding the console semaphore
-> over a longer time and printing continuation lines with different CPUs
-> in a row.
-> 
-> The patch below seems to work for me. It is also here:
->   http://git.kernel.org/?p=linux/kernel/git/kay/patches.git;a=blob;f=kmsg-merge-cont.patch;hb=HEAD
-> 
-> It only applies cleanly on top of this patch:
->   http://git.kernel.org/?p=linux/kernel/git/kay/patches.git;a=blob;f=kmsg-syslog-1-byte-read.patch;hb=HEAD
-> 
+On Mon, Jul 9, 2012 at 1:32 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>
+> Note that the bridge window assignment code, e.g., pbus_size_io(), should
+> pay attention to dev->io_window_1k, too, but I didn't fix that.
 
-Hi Kay.
+Please check attached patch that will fix pbus_size_io.
 
-I just ran a test with what's in Greg's driver-core -for-linus branch.
+You may fold the patch in your patch, or could split your patch to
+two. First one
+only add io_window_1k, and second one will use io_window_1k. Then could put my
+patch between them.
 
-One of the differences in dmesg is timestamping of consecutive
-	pr_<level>("foo...)
-followed directly by
-	pr_cont("bar...")
+Thanks
 
-For instance: (dmesg is 3.4, dmesg.0 is 3.5-rc6+)
+Yinghai
 
-# grep MAP /var/log/dm* -A1
-dmesg:[    0.781687] ata_piix 0000:00:1f.2: MAP [ P0 P2 P1 P3 ]
-dmesg-[    0.781707] ata2: port disabled--ignoring
---
-dmesg.0:[    0.948881] ata_piix 0000:00:1f.2: MAP [
-dmesg.0-[    0.948883]  P0 P2 P1 P3 ]
+--bcaec5015fe17056b904c46c80bc
+Content-Type: application/octet-stream; name="io_window_1k.patch"
+Content-Disposition: attachment; filename="io_window_1k.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h4g2r4jn0
 
-These messages originate starting at
-drivers/ata/ata_piix.c:1354
-
-All the continuations are emitted with pr_cont.
-
-I think this output should still be coalesced without
-timestamp deltas.  Perhaps the timestamping code can
-still be reworked to avoid too small a delta producing
-a new timestamp and another dmesg line.
-
-cheers, Joe
-
+U3ViamVjdDogW1BBVENIXSBQQ0k6IHVwZGF0ZSBwYnVzX3NpemVfaW8oKSB0byBzdXBwb3J0IGlv
+X3dpbmRvd18xawoKU28gaWYgY2hpbGRyZW4gZGV2aWNlIGFsaWdubWVudCBpcyBzbWFsbCB0aGFu
+IDFrLCB3ZSBjb3VsZCB1c2UgMWsgYXMgYnJpZGdlCmFsaWdubWVudC4KClNpZ25lZC1vZmYtYnk6
+IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogZHJpdmVycy9wY2kvc2V0dXAt
+YnVzLmMgfCAgIDIyICsrKysrKysrKysrKysrKysrLS0tLS0KIDEgZmlsZSBjaGFuZ2VkLCAxNyBp
+bnNlcnRpb25zKCspLCA1IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9kcml2ZXJzL3Bj
+aS9zZXR1cC1idXMuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL3BjaS9z
+ZXR1cC1idXMuYworKysgbGludXgtMi42L2RyaXZlcnMvcGNpL3NldHVwLWJ1cy5jCkBAIC03MTcs
+MTAgKzcxNywxMyBAQCBzdGF0aWMgdm9pZCBwYnVzX3NpemVfaW8oc3RydWN0IHBjaV9idXMKIAlz
+dHJ1Y3QgcmVzb3VyY2UgKmJfcmVzID0gZmluZF9mcmVlX2J1c19yZXNvdXJjZShidXMsIElPUkVT
+T1VSQ0VfSU8pOwogCXVuc2lnbmVkIGxvbmcgc2l6ZSA9IDAsIHNpemUwID0gMCwgc2l6ZTEgPSAw
+OwogCXJlc291cmNlX3NpemVfdCBjaGlsZHJlbl9hZGRfc2l6ZSA9IDA7CisJcmVzb3VyY2Vfc2l6
+ZV90IG1pbl9hbGlnbiA9IDQwOTYsIGFsaWduOwogCiAJaWYgKCFiX3JlcykKICAJCXJldHVybjsK
+IAorCWlmIChidXMtPnNlbGYtPmlvX3dpbmRvd18xaykKKwkJbWluX2FsaWduID0gMTAyNDsKIAls
+aXN0X2Zvcl9lYWNoX2VudHJ5KGRldiwgJmJ1cy0+ZGV2aWNlcywgYnVzX2xpc3QpIHsKIAkJaW50
+IGk7CiAKQEAgLTczOCwxNyArNzQxLDI1IEBAIHN0YXRpYyB2b2lkIHBidXNfc2l6ZV9pbyhzdHJ1
+Y3QgcGNpX2J1cwogCQkJZWxzZQogCQkJCXNpemUxICs9IHJfc2l6ZTsKIAorCQkJYWxpZ24gPSBw
+Y2lfcmVzb3VyY2VfYWxpZ25tZW50KGRldiwgcik7CisJCQlpZiAoYWxpZ24gPiBtaW5fYWxpZ24p
+CisJCQkJbWluX2FsaWduID0gYWxpZ247CisKIAkJCWlmIChyZWFsbG9jX2hlYWQpCiAJCQkJY2hp
+bGRyZW5fYWRkX3NpemUgKz0gZ2V0X3Jlc19hZGRfc2l6ZShyZWFsbG9jX2hlYWQsIHIpOwogCQl9
+CiAJfQorCisJaWYgKG1pbl9hbGlnbiA+IDQwOTYpCisJCW1pbl9hbGlnbiA9IDQwOTY7CisKIAlz
+aXplMCA9IGNhbGN1bGF0ZV9pb3NpemUoc2l6ZSwgbWluX3NpemUsIHNpemUxLAotCQkJcmVzb3Vy
+Y2Vfc2l6ZShiX3JlcyksIDQwOTYpOworCQkJcmVzb3VyY2Vfc2l6ZShiX3JlcyksIG1pbl9hbGln
+bik7CiAJaWYgKGNoaWxkcmVuX2FkZF9zaXplID4gYWRkX3NpemUpCiAJCWFkZF9zaXplID0gY2hp
+bGRyZW5fYWRkX3NpemU7CiAJc2l6ZTEgPSAoIXJlYWxsb2NfaGVhZCB8fCAocmVhbGxvY19oZWFk
+ICYmICFhZGRfc2l6ZSkpID8gc2l6ZTAgOgogCQljYWxjdWxhdGVfaW9zaXplKHNpemUsIG1pbl9z
+aXplLCBhZGRfc2l6ZSArIHNpemUxLAotCQkJcmVzb3VyY2Vfc2l6ZShiX3JlcyksIDQwOTYpOwor
+CQkJcmVzb3VyY2Vfc2l6ZShiX3JlcyksIG1pbl9hbGlnbik7CiAJaWYgKCFzaXplMCAmJiAhc2l6
+ZTEpIHsKIAkJaWYgKGJfcmVzLT5zdGFydCB8fCBiX3Jlcy0+ZW5kKQogCQkJZGV2X2luZm8oJmJ1
+cy0+c2VsZi0+ZGV2LCAiZGlzYWJsaW5nIGJyaWRnZSB3aW5kb3cgIgpAQCAtNzU3LDEyICs3Njgs
+MTMgQEAgc3RhdGljIHZvaWQgcGJ1c19zaXplX2lvKHN0cnVjdCBwY2lfYnVzCiAJCWJfcmVzLT5m
+bGFncyA9IDA7CiAJCXJldHVybjsKIAl9Ci0JLyogQWxpZ25tZW50IG9mIHRoZSBJTyB3aW5kb3cg
+aXMgYWx3YXlzIDRLICovCi0JYl9yZXMtPnN0YXJ0ID0gNDA5NjsKKwkvKiBBbGlnbm1lbnQgb2Yg
+dGhlIElPIHdpbmRvdyBzaG91bGQgYmUgNEssIGJ1dCBjb3VsZCBiZSAxSyBzb21ldGltZXMgKi8K
+KwliX3Jlcy0+c3RhcnQgPSBtaW5fYWxpZ247CiAJYl9yZXMtPmVuZCA9IGJfcmVzLT5zdGFydCAr
+IHNpemUwIC0gMTsKIAliX3Jlcy0+ZmxhZ3MgfD0gSU9SRVNPVVJDRV9TVEFSVEFMSUdOOwogCWlm
+IChzaXplMSA+IHNpemUwICYmIHJlYWxsb2NfaGVhZCkgewotCQlhZGRfdG9fbGlzdChyZWFsbG9j
+X2hlYWQsIGJ1cy0+c2VsZiwgYl9yZXMsIHNpemUxLXNpemUwLCA0MDk2KTsKKwkJYWRkX3RvX2xp
+c3QocmVhbGxvY19oZWFkLCBidXMtPnNlbGYsIGJfcmVzLCBzaXplMS1zaXplMCwKKwkJCQkgbWlu
+X2FsaWduKTsKIAkJZGV2X3ByaW50ayhLRVJOX0RFQlVHLCAmYnVzLT5zZWxmLT5kZXYsICJicmlk
+Z2Ugd2luZG93ICIKIAkJCQkgIiVwUiB0byAlcFIgYWRkX3NpemUgJWx4XG4iLCBiX3JlcywKIAkJ
+CQkgJmJ1cy0+YnVzbl9yZXMsIHNpemUxLXNpemUwKTsK
+--bcaec5015fe17056b904c46c80bc--
