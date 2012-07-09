@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab2GIMT1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 08:19:27 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47840 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752991Ab2GIMS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 08:18:58 -0400
-From: Richard Weinberger <richard@nod.at>
-To: linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
-        Heinz.Egger@linutronix.de, thomas.wucher@linutronix.de,
-        shmulik.ladkani@gmail.com, tglx@linutronix.de, tim.bird@am.sony.com,
-        Marius.Mazarel@ugal.ro, artem.bityutskiy@linux.intel.com,
-        nyoushchenko@mvista.com, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 6/7] UBI: Fastmap: Make sure that find_wl_entry() never returns NULL
-Date: Mon,  9 Jul 2012 14:18:42 +0200
-Message-Id: <1341836323-43916-7-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1341836323-43916-1-git-send-email-richard@nod.at>
-References: <1341836323-43916-1-git-send-email-richard@nod.at>
+	id S1753530Ab2GIMT0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 08:19:26 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:53418 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753472Ab2GIMTW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 08:19:22 -0400
+Message-ID: <4FFACC55.4060106@ti.com>
+Date: Mon, 09 Jul 2012 14:19:33 +0200
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0
+MIME-Version: 1.0
+To: Russell King <linux@arm.linux.org.uk>, Benoit Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
+        Rajendra Nayak <rnayak@ti.com>, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH 0/7] arm/dts: Audio support for OMAP4 devices (SDP, PandaBoard)
+References: <1339164125-32534-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1339164125-32534-1-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the rbtree contains only one entry and we don't have fastmap
-on flash find_wl_entry() might return NULL.
-This must not happen.
+Hello,
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/mtd/ubi/wl.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+On 06/08/2012 04:01 PM, Peter Ujfalusi wrote:
+> Hello,
+> 
+> The following series enable the audio functionality on OMAP4 based devices using
+> twl6040 as audio codec.
+> 
+> The series adds the needed bindings in the dts for the OMAP IPs, twl6040 MFD
+> device and for the audio connection on the board.
+> 
+> To be able to differentiate between PandaBoard and PandaBoardES (they have a bit
+> different audio configuration) a new dts file has been created which only
+> changes the audio properties different between the two boards.
+> 
+> Patches for the drivers involved and the documentation related to dts sections
+> has been either in 3.5 or heading for 3.6.
 
-diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-index 79e3257..d61672d 100644
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -376,7 +376,8 @@ static struct ubi_wl_entry *find_wl_entry(struct ubi_device *ubi,
- 	/* If no fastmap has been written and this WL entry can be used
- 	 * as anchor PEB, hold it back and return the second best WL entry
- 	 * such that fastmap can use the anchor PEB later. */
--	if (!ubi->fm_disabled && !ubi->fm && e->pnum < UBI_FM_MAX_START)
-+	if (prev_e && !ubi->fm_disabled &&
-+	    !ubi->fm && e->pnum < UBI_FM_MAX_START)
- 		return prev_e;
- 
- 	return e;
--- 
-1.7.6.5
+Probably this series has been overlooked, since I have not received feedback
+on it.
+Should I resend the series? Which tree should I use to rebase it?
+
+Thank you,
+Péter
+
+> 
+> Regards,
+> Peter
+> ---
+> Peter Ujfalusi (7):
+>   arm/dts: omap4: Add entry for OMAP McPDM IP
+>   arm/dts: omap4: Add entry for OMAP DMIC IP
+>   arm/dts: omap4-sdp: Add fixed regulator to represent VBAT
+>   arm/dts: omap4-sdp: Add support for twl6040
+>   arm/dts: omap4-sdp: Enable audio support via device tree
+>   arm/dts: omap4-panda: Audio support for PandaBoard 4430
+>   arm/dts: New dts file for PandaBoardES (4460)
+> 
+>  arch/arm/boot/dts/omap4-panda.dts   |   37 +++++++++++++++++++
+>  arch/arm/boot/dts/omap4-pandaES.dts |   24 ++++++++++++
+>  arch/arm/boot/dts/omap4-sdp.dts     |   68 +++++++++++++++++++++++++++++++++++
+>  arch/arm/boot/dts/omap4.dtsi        |   18 +++++++++
+>  4 files changed, 147 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/boot/dts/omap4-pandaES.dts
+> 
+
 
