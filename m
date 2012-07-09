@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034Ab2GIDXd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 23:23:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49393 "EHLO
+	id S1752029Ab2GID0f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 23:26:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48301 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab2GIDXb (ORCPT
+	with ESMTP id S1751477Ab2GID0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 23:23:31 -0400
-Message-ID: <1341804203.14367.2.camel@phoenix>
-Subject: [PATCH RFT 2/2] regulator: twl: Convert twl6030ldo_ops to
+	Sun, 8 Jul 2012 23:26:34 -0400
+Message-ID: <1341804388.14367.4.camel@phoenix>
+Subject: [RESEND][PATCH RFT 2/2] regulator: twl: Convert twl6030ldo_ops to
  [get|set]_voltage_sel
 From: Axel Lin <axel.lin@gmail.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: David Dajun Chen <dchen@diasemi.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+Cc: Rajendra Nayak <rnayak@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
         Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Date: Mon, 09 Jul 2012 11:23:23 +0800
-In-Reply-To: <1341625605.7754.1.camel@phoenix>
-References: <1341625605.7754.1.camel@phoenix>
+Date: Mon, 09 Jul 2012 11:26:28 +0800
+In-Reply-To: <1341804151.14367.1.camel@phoenix>
+References: <1341804151.14367.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
@@ -29,6 +27,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
+Sorry, I CCed wrong guys. So here is the resend.
+Axel
  drivers/regulator/twl-regulator.c |   24 +++++++-----------------
  1 file changed, 7 insertions(+), 17 deletions(-)
 
