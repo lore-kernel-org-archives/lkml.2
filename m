@@ -1,223 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab2GIK0V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 06:26:21 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44476 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751857Ab2GIK0T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 06:26:19 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FFAB1BA.9040801@jp.fujitsu.com>
-Date: Mon, 9 Jul 2012 19:26:02 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753038Ab2GIK0l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 06:26:41 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:48379 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752996Ab2GIK0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 06:26:38 -0400
+Date: Mon, 9 Jul 2012 15:55:59 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] uprobes: suppress uprobe_munmap() from mmput()
+Message-ID: <20120709102559.GA32393@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120708203003.GA18226@redhat.com>
+ <1341822602.3462.15.camel@twins>
+ <20120709100920.GA21163@redhat.com>
 MIME-Version: 1.0
-To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
-CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
-Subject: [RFC PATCH v3 4/13] memory-hotplug : remove /sys/firmware/memmap/X
- sysfs
-References: <4FFAB0A2.8070304@jp.fujitsu.com>
-In-Reply-To: <4FFAB0A2.8070304@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120709100920.GA21163@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12070910-5112-0000-0000-000009E2BB4D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
-sysfs files are created. But there is no code to remove these files. The patch
-implements the function to remove them.
+* Oleg Nesterov <oleg@redhat.com> [2012-07-09 12:09:20]:
 
-Note : The code does not free firmware_map_entry since there is no way to free
-       memory which is allocated by bootmem.
+> On 07/09, Peter Zijlstra wrote:
+> >
+> > On Sun, 2012-07-08 at 22:30 +0200, Oleg Nesterov wrote:
+> > > uprobe_munmap() does get_user_pages() and it is also called from
+> > > the final mmput()->exit_mmap() path. This slows down exit/mmput()
+> > > for no reason, and I think  it is simply dangerous/wrong to try to
+> > > fault-in a page into the dying mm. If nothing else, this happens
+> > > after the last sync_mm_rss(), afaics handle_mm_fault() can change
+> > > the task->rss_stat and make the subsequent check_mm() unhappy.
+> > >
+> > > Change uprobe_munmap() to check mm->mm_users != 0.
+> > >
+> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> > > ---
+> > >  kernel/events/uprobes.c |    3 +++
+> > >  1 files changed, 3 insertions(+), 0 deletions(-)
+> > >
+> > > diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> > > index a93b6df..47c4e24 100644
+> > > --- a/kernel/events/uprobes.c
+> > > +++ b/kernel/events/uprobes.c
+> > > @@ -1082,6 +1082,9 @@ void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned lon
+> > >  	if (!atomic_read(&uprobe_events) || !valid_vma(vma, false))
+> > >  		return;
+> > >
+> > > +	if (!atomic_read(&vma->vm_mm->mm_users)) /* called by mmput() ? */
+> > > +		return;
+> > > +
+> > >  	if (!atomic_read(&vma->vm_mm->uprobes_state.count))
+> > >  		return;
+> > >
+> >
+> > But won't you leak uprobe refcounts like this? Those aren't tied to the
+> > task (which is dying) but to the vma's mapping the appropriate hunk of
+> > the text. Not doing the munmap will then not put the uprobe->ref..
+> 
+> No, mmap/munmap do not participate in uprobe refcounting. This code
+> does put_uprobe() for each uprobe, yes, but only because the counter
+> was incremented in build_probe_list().
+> 
 
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Right
 
----
- drivers/firmware/memmap.c    |   78 ++++++++++++++++++++++++++++++++++++++++++-
- include/linux/firmware-map.h |    6 +++
- mm/memory_hotplug.c          |    6 ++-
- 3 files changed, 88 insertions(+), 2 deletions(-)
-
-Index: linux-3.5-rc6/mm/memory_hotplug.c
-===================================================================
---- linux-3.5-rc6.orig/mm/memory_hotplug.c	2012-07-09 18:23:13.323844923 +0900
-+++ linux-3.5-rc6/mm/memory_hotplug.c	2012-07-09 18:23:19.522767424 +0900
-@@ -661,7 +661,11 @@ EXPORT_SYMBOL_GPL(add_memory);
-
- int remove_memory(int nid, u64 start, u64 size)
- {
--	return -EBUSY;
-+	lock_memory_hotplug();
-+	/* remove memmap entry */
-+	firmware_map_remove(start, start + size - 1, "System RAM");
-+	unlock_memory_hotplug();
-+	return 0;
-
- }
- EXPORT_SYMBOL_GPL(remove_memory);
-Index: linux-3.5-rc6/include/linux/firmware-map.h
-===================================================================
---- linux-3.5-rc6.orig/include/linux/firmware-map.h	2012-07-09 18:23:09.532892314 +0900
-+++ linux-3.5-rc6/include/linux/firmware-map.h	2012-07-09 18:23:19.523767412 +0900
-@@ -25,6 +25,7 @@
-
- int firmware_map_add_early(u64 start, u64 end, const char *type);
- int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
-+int firmware_map_remove(u64 start, u64 end, const char *type);
-
- #else /* CONFIG_FIRMWARE_MEMMAP */
-
-@@ -38,6 +39,11 @@ static inline int firmware_map_add_hotpl
- 	return 0;
- }
-
-+static inline int firmware_map_remove(u64 start, u64 end, const char *type)
-+{
-+	return 0;
-+}
-+
- #endif /* CONFIG_FIRMWARE_MEMMAP */
-
- #endif /* _LINUX_FIRMWARE_MAP_H */
-Index: linux-3.5-rc6/drivers/firmware/memmap.c
-===================================================================
---- linux-3.5-rc6.orig/drivers/firmware/memmap.c	2012-07-09 18:23:09.532892314 +0900
-+++ linux-3.5-rc6/drivers/firmware/memmap.c	2012-07-09 18:25:46.371931554 +0900
-@@ -21,6 +21,7 @@
- #include <linux/types.h>
- #include <linux/bootmem.h>
- #include <linux/slab.h>
-+#include <linux/mm.h>
-
- /*
-  * Data types ------------------------------------------------------------------
-@@ -79,7 +80,22 @@ static const struct sysfs_ops memmap_att
- 	.show = memmap_attr_show,
- };
-
-+#define to_memmap_entry(obj) container_of(obj, struct firmware_map_entry, kobj)
-+
-+static void release_firmware_map_entry(struct kobject *kobj)
-+{
-+	struct firmware_map_entry *entry = to_memmap_entry(kobj);
-+	struct page *head_page;
-+
-+	head_page = virt_to_head_page(entry);
-+	if (PageSlab(head_page))
-+		kfree(entry);
-+
-+	/* There is no way to free memory allocated from bootmem*/
-+}
-+
- static struct kobj_type memmap_ktype = {
-+	.release	= release_firmware_map_entry,
- 	.sysfs_ops	= &memmap_attr_ops,
- 	.default_attrs	= def_attrs,
- };
-@@ -123,6 +139,16 @@ static int firmware_map_add_entry(u64 st
- 	return 0;
- }
-
-+/**
-+ * firmware_map_remove_entry() - Does the real work to remove a firmware
-+ * memmap entry.
-+ * @entry: removed entry.
-+ **/
-+static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
-+{
-+	list_del(&entry->list);
-+}
-+
- /*
-  * Add memmap entry on sysfs
-  */
-@@ -144,6 +170,31 @@ static int add_sysfs_fw_map_entry(struct
- 	return 0;
- }
-
-+/*
-+ * Remove memmap entry on sysfs
-+ */
-+static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
-+{
-+	kobject_put(&entry->kobj);
-+}
-+
-+/*
-+ * Search memmap entry
-+ */
-+
-+struct firmware_map_entry * __meminit
-+find_firmware_map_entry(u64 start, u64 end, const char *type)
-+{
-+	struct firmware_map_entry *entry;
-+
-+	list_for_each_entry(entry, &map_entries, list)
-+		if ((entry->start == start) && (entry->end == end) &&
-+		    (!strcmp(entry->type, type)))
-+			return entry;
-+
-+	return NULL;
-+}
-+
- /**
-  * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
-  * memory hotplug.
-@@ -196,6 +247,32 @@ int __init firmware_map_add_early(u64 st
- 	return firmware_map_add_entry(start, end, type, entry);
- }
-
-+/**
-+ * firmware_map_remove() - remove a firmware mapping entry
-+ * @start: Start of the memory range.
-+ * @end:   End of the memory range (inclusive).
-+ * @type:  Type of the memory range.
-+ *
-+ * removes a firmware mapping entry.
-+ *
-+ * Returns 0 on success, or -EINVAL if no entry.
-+ **/
-+int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
-+{
-+	struct firmware_map_entry *entry;
-+
-+	entry = find_firmware_map_entry(start, end, type);
-+	if (!entry)
-+		return -EINVAL;
-+
-+	/* remove the memmap entry */
-+	remove_sysfs_fw_map_entry(entry);
-+
-+	firmware_map_remove_entry(entry);
-+
-+	return 0;
-+}
-+
- /*
-  * Sysfs functions -------------------------------------------------------------
-  */
-@@ -218,7 +295,6 @@ static ssize_t type_show(struct firmware
- }
-
- #define to_memmap_attr(_attr) container_of(_attr, struct memmap_attribute, attr)
--#define to_memmap_entry(obj) container_of(obj, struct firmware_map_entry, kobj)
-
- static ssize_t memmap_attr_show(struct kobject *kobj,
- 				struct attribute *attr, char *buf)
+-- 
+Thanks and Regards
+Srikar
 
