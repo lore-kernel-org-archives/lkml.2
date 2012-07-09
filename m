@@ -1,105 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477Ab2GIHEo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 03:04:44 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:34144 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335Ab2GIHEm (ORCPT
+	id S1751904Ab2GIHHp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 03:07:45 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:37875 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab2GIHHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 03:04:42 -0400
-Message-ID: <1341817465.4579.5.camel@ThinkPad-T420>
-Subject: [PATCH RESEND] Fix a dead loop in async_synchronize_full()
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: arjan@linux.intel.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Christian Kujau <lists@nerdbynature.de>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Date: Mon, 09 Jul 2012 15:04:25 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12070821-5140-0000-0000-000001B789AE
+	Mon, 9 Jul 2012 03:07:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <1341816515.3462.3.camel@twins>
+References: <87zk7cgm6u.fsf@sejong.aot.lge.com> <1341710959.2783.2.camel@acer.local.home>
+ <87obnp92r8.fsf@sejong.aot.lge.com> <1341816515.3462.3.camel@twins>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Mon, 9 Jul 2012 16:07:23 +0900
+X-Google-Sender-Auth: 1iOJq8-Czgdgx6yEIXAjwfpXMQ8
+Message-ID: <CAM9d7cheHNq19oa9baHWbNogqmgeMHUkvcYwGqQ_Co1OhTUkRw@mail.gmail.com>
+Subject: Re: [Question] sched/rt_mutex: re-enqueue_task on rt_mutex_setprio()
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch tries to fix a dead loop in  async_synchronize_full(), which
-could be seen when preemption is disabled on a single cpu machine. 
+On Mon, Jul 9, 2012 at 3:48 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2012-07-09 at 09:50 +0900, Namhyung Kim wrote:
+>> On Sat, 07 Jul 2012 21:29:19 -0400, Steven Rostedt wrote:
+>> > On Sat, 2012-07-07 at 14:44 +0900, Namhyung Kim wrote:
+>> >> Hi,
+>> >>
+>> >> I have a question on the code below:
+>> >>
+>> >> void rt_mutex_setprio(struct task_struct *p, int prio)
+>> >> {
+>> >>         ...
+>> >>    if (on_rq)
+>> >>            enqueue_task(rq, p, oldprio < prio ? ENQUEUE_HEAD : 0);
+>> >>
+>> >> When enqueueing @p with new @prio, it seems put @p at the head of a
+>> >> rq if appropriate. I guess it's the case of boosting @p with higher
+>> >> priority, right?
+>> >
+>> > Actually, no. We put @p at the head of the queue when unboosting. If a
+>> > task is going from a high priority into a lower priority, it is still
+>> > treated as "important" for that priority, and is put to the front of the
+>> > queue (it was just higher than everything else on that queue). But if we
+>> > are boosting a task from a low priority, why put it to the head of other
+>> > tasks of its new priority, when those tasks were just higher than this
+>> > task, and this task is now just an "equal".
+>>
+>> Thanks for the explanation. (Isn't it worth getting commented?) :)
+>
+> Possibly, note that this part is well spec'ed by POSIX, see
+>
+> http://pubs.opengroup.org/onlinepubs/009695299/functions/xsh_chap02_08.html
+>
+> SCHED_FIFO.8
 
-void async_synchronize_full(void)
-{
-        do {
-                async_synchronize_cookie(next_cookie);
-        } while (!list_empty(&async_running) || !
-list_empty(&async_pending));
-}
+Thanks for the pointer. I need to educate myself a lot more!
 
-async_synchronize_cookie() calls async_synchronize_cookie_domain() with
-&async_running as the default domain to synchronize. 
-
-However, there might be some works in the async_pending list from other
-domains. On a single cpu system, without preemption, there is no chance
-for the other works to finish, so async_synchronize_full() enters a dead
-loop. 
-
-It seems async_synchronize_full() wants to synchronize all entries in
-all running lists(domains), so maybe we could just check the entry_count
-to know whether all works are finished. 
-
-Currently, async_synchronize_cookie_domain() expects a non-NULL running
-list ( if NULL, there would be NULL pointer dereference ), so maybe a
-NULL pointer could be used as an indication for the functions to
-synchronize all works in all domains. 
-
-Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Tested-by: Christian Kujau <lists@nerdbynature.de>
----
- kernel/async.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/async.c b/kernel/async.c
-index bd0c168..32d8dc9 100644
---- a/kernel/async.c
-+++ b/kernel/async.c
-@@ -86,6 +86,13 @@ static async_cookie_t  __lowest_in_progress(struct
-list_head *running)
- {
- 	struct async_entry *entry;
- 
-+	if (!running) { /* just check the entry count */
-+		if (atomic_read(&entry_count))
-+			return 0; /* smaller than any cookie */
-+		else
-+			return next_cookie;
-+	}
-+
- 	if (!list_empty(running)) {
- 		entry = list_first_entry(running,
- 			struct async_entry, list);
-@@ -236,9 +243,7 @@ EXPORT_SYMBOL_GPL(async_schedule_domain);
-  */
- void async_synchronize_full(void)
- {
--	do {
--		async_synchronize_cookie(next_cookie);
--	} while (!list_empty(&async_running) || !list_empty(&async_pending));
-+	async_synchronize_cookie_domain(next_cookie, NULL);
- }
- EXPORT_SYMBOL_GPL(async_synchronize_full);
- 
-@@ -258,7 +263,7 @@ EXPORT_SYMBOL_GPL(async_synchronize_full_domain);
- /**
-  * async_synchronize_cookie_domain - synchronize asynchronous function
-calls within a certain domain with cookie checkpointing
-  * @cookie: async_cookie_t to use as checkpoint
-- * @running: running list to synchronize on
-+ * @running: running list to synchronize on, NULL indicates all lists
-  *
-  * This function waits until all asynchronous function calls for the
-  * synchronization domain specified by the running list @list submitted
--- 
-1.7.9.5
-
+Thanks,
+Namhyung
