@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135Ab2GIRpr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 13:45:47 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55498 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751604Ab2GIRpp (ORCPT
+	id S1752184Ab2GIRvE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 13:51:04 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:36276 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752043Ab2GIRvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 13:45:45 -0400
-Date: Mon, 9 Jul 2012 19:45:38 +0200
+	Mon, 9 Jul 2012 13:51:02 -0400
+Date: Mon, 9 Jul 2012 19:50:56 +0200
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Josh Triplett <josh@joshtriplett.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/6] rcu: Allow rcu_user_enter()/exit() to nest
-Message-ID: <20120709174535.GD8185@somewhere.redhat.com>
-References: <1341576018-10721-1-git-send-email-fweisbec@gmail.com>
- <1341576018-10721-3-git-send-email-fweisbec@gmail.com>
- <4FF9AD2A.1000901@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 0/4] cputime: Virtual cputime accounting small cleanups
+ and consolidation
+Message-ID: <20120709175053.GE8185@somewhere.redhat.com>
+References: <1340113391-1896-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FF9AD2A.1000901@redhat.com>
+In-Reply-To: <1340113391-1896-1-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 08, 2012 at 06:54:18PM +0300, Avi Kivity wrote:
-> On 07/06/2012 03:00 PM, Frederic Weisbecker wrote:
-> > Allow calls to rcu_user_enter() even if we are already
-> > in userspace (as seen by RCU) and allow calls to rcu_user_exit()
-> > even if we are already in the kernel.
-> > 
-> > This makes the APIs more flexible to be called from architectures.
-> > Exception entries for example won't need to know if they come from
-> > userspace before calling rcu_user_exit().
+On Tue, Jun 19, 2012 at 03:43:07PM +0200, Frederic Weisbecker wrote:
+> Not sure to which tree this should go. The scheduler one may be.
+> Anyway if you're fine with it, it is pullable at:
 > 
-> I guess I should switch kvm to rcu_user_enter() and co, so we can
-> disable the tick while running in a guest.  But where are those
-> functions?  What are the rules for calling them?
+> git://github.com/fweisbec/linux-dynticks.git
+> 	virt-cputime
 
-I guess we need to have a closer look at the guest case first. We probably need
-to take some care about specifics in time and load accounting usually
-handled by the tick before we can shut it down. RCU is only part of the
-problem.
+Ping. Are you guys fine with the patchset?
+
+> 
+> This is only built tested on the relevant archs.
+> 
+> I wish we could do more vtime cputime accounting consolidation
+> but archs do the things pretty differently although I bet the
+> behaviour could be more unified.
+> 
+> 
+> Frederic Weisbecker (4):
+>   cputime: Generalize CONFIG_VIRT_CPU_ACCOUNTING
+>   sched: Move cputime code to its own file
+>   cputime: Consolidate vtime handling on context switch
+>   s390: Remove leftover account_tick_vtime() header
+> 
+>  arch/Kconfig                           |    3 +
+>  arch/ia64/Kconfig                      |   12 +-
+>  arch/ia64/include/asm/switch_to.h      |    8 -
+>  arch/ia64/kernel/time.c                |    4 +-
+>  arch/powerpc/include/asm/time.h        |    6 -
+>  arch/powerpc/kernel/process.c          |    3 -
+>  arch/powerpc/kernel/time.c             |    6 +
+>  arch/powerpc/platforms/Kconfig.cputype |   16 +-
+>  arch/s390/Kconfig                      |    5 +-
+>  arch/s390/include/asm/switch_to.h      |    4 -
+>  arch/s390/kernel/vtime.c               |    4 +-
+>  include/linux/kernel_stat.h            |    6 +
+>  init/Kconfig                           |   13 +
+>  kernel/sched/Makefile                  |    2 +-
+>  kernel/sched/core.c                    |  552 +-------------------------------
+>  kernel/sched/cputime.c                 |  497 ++++++++++++++++++++++++++++
+>  kernel/sched/sched.h                   |   63 ++++
+>  17 files changed, 600 insertions(+), 604 deletions(-)
+>  create mode 100644 kernel/sched/cputime.c
+> 
+> -- 
+> 1.7.5.4
+> 
