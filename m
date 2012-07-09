@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953Ab2GIX5z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 19:57:55 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52079 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752596Ab2GIX5x (ORCPT
+	id S1754984Ab2GIX6L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 19:58:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42309 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752660Ab2GIX6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 19:57:53 -0400
-Date: Mon, 9 Jul 2012 16:57:14 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Will Deacon <will.deacon@arm.com>
-cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Hillf Danton <dhillf@gmail.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
- page to userspace
-In-Reply-To: <20120709141324.GK7315@mudshark.cambridge.arm.com>
-Message-ID: <alpine.LSU.2.00.1207091622470.2261@eggly.anvils>
-References: <1341412376-6272-1-git-send-email-will.deacon@arm.com> <20120709122523.GC4627@tiehlicka.suse.cz> <20120709141324.GK7315@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 9 Jul 2012 19:58:09 -0400
+Message-ID: <1341878282.25597.302.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH firmware 1/4] rtl_nic: update firmware for RTL8168F
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: dwmw2@infradead.org, romieu@fr.zoreil.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 10 Jul 2012 00:58:02 +0100
+In-Reply-To: <1341803512-1309-1-git-send-email-hayeswang@realtek.com>
+References: <1341803512-1309-1-git-send-email-hayeswang@realtek.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-2ahnEX1hLGnInRm2MQwu"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jul 2012, Will Deacon wrote:
-> On Mon, Jul 09, 2012 at 01:25:23PM +0100, Michal Hocko wrote:
-> > On Wed 04-07-12 15:32:56, Will Deacon wrote:
-> > > When allocating and returning clear huge pages to userspace as a
-> > > response to a fault, we may zero and return a mapping to a previously
-> > > dirtied physical region (for example, it may have been written by
-> > > a private mapping which was freed as a result of an ftruncate on the
-> > > backing file). On architectures with Harvard caches, this can lead to
-> > > I/D inconsistency since the zeroed view may not be visible to the
-> > > instruction stream.
-> > > 
-> > > This patch solves the problem by flushing the region after allocating
-> > > and clearing a new huge page. Note that PowerPC avoids this issue by
-> > > performing the flushing in their clear_user_page implementation to keep
-> > > the loader happy, however this is closely tied to the semantics of the
-> > > PG_arch_1 page flag which is architecture-specific.
-> > > 
-> > > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> > > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> > > ---
-> > >  mm/hugetlb.c |    1 +
-> > >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> > > index e198831..b83d026 100644
-> > > --- a/mm/hugetlb.c
-> > > +++ b/mm/hugetlb.c
-> > > @@ -2646,6 +2646,7 @@ retry:
-> > >  			goto out;
-> > >  		}
-> > >  		clear_huge_page(page, address, pages_per_huge_page(h));
-> > > +		flush_dcache_page(page);
-> > >  		__SetPageUptodate(page);
-> > 
-> > Does this have to be explicit in the arch independent code?
-> > It seems that ia64 uses flush_dcache_page already in the clear_user_page
-> 
-> It would match what is done in similar situations by cow_user_page (mm/memory.c)
-> and shmem_writepage (mm/shmem.c). Other subsystems also have explicit page
-> flushing (DMA bounce, ksm) so I think this is the right place for it.
 
-I am not at all sure if you are right or not:
-please let's consult linux-arch about this - now Cc'ed.
+--=-2ahnEX1hLGnInRm2MQwu
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-If this hugetlb_no_page() were solely mapping the hugepage into that
-userspace, I would say you are wrong.  It's the job of clear_huge_page()
-to take the mapped address into account, and pass it down to the
-architecture-specific implementation, to do whatever flushing is
-needed - you should be providing that in your architecture.
+On Mon, 2012-07-09 at 11:11 +0800, Hayes Wang wrote:
+> File: rtl_nic/rtl8168f-1.fw
+> Version: 0.0.5
+[...]
 
-In particular, notice how clear_huge_page() goes round a loop of
-clear_user_highpage()s: in your patch, you're expecting the implementation
-of flush_dcache_page() to notice whether or not this is a hugepage, and
-flush the appropriate size.
+Applied.
 
-Perhaps yours is the only architecture to need this on huge, and your
-flush_dcache_page() implements it correctly; but it does seem surprising.
+Ben.
 
-If I start to grep the architectures for non-empty flush_dcache_page(),
-I soon find things in arch/arm such as v4_mc_copy_user_highpage() doing
-if (!test_and_set_bit(PG_dcache_clean,)) __flush_dcache_page() - where
-the naming suggests that I'm right, it's the architecture's responsibility
-to arrange whatever flushing is needed in its copy and clear page functions.
+--=20
+Ben Hutchings
+The generation of random numbers is too important to be left to chance.
+                                                            - Robert Coveyo=
+u
 
-But... this hugetlb_no_page() has a VM_MAYSHARE case below, which puts
-the new page into page cache, making it accessible by other processes:
-that may indeed be reason for flush_dcache_page() there - or a loop of
-flush_dcache_page()s.  But I worry then that in the !VM_MAYSHARE case
-you would be duplicating expensive flushes: perhaps they should be
-restricted to the VM_MAYSHARE block.
+--=-2ahnEX1hLGnInRm2MQwu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Hugh
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAT/twCue/yOyVhhEJAQr4Ww/+JHt2k/z1unipydRIdqyA7/B/4LdtJSnE
+KjK3tgVsxjNDvcCjac6MnWNOYJC/p+tXUdT2vdHTpsYhYCt7cAO9GxDvC8JT5B4I
+sZrUWGAThUXPwEon2tgClFU9dU8tvGTAit7b9rPwJb1H8cbv+4Yh/s3BfY5/quLT
+xDpZjkkGOvEcFigP49QWDitUvBjcvR4sArkerw1ARVgRCVmjWZ8tlmY9KEyRbDy2
+a1tvlCI6SAleFsRKVgH00UcCZgsXEjA2aaUQhYV+YHd5awysJtVUW6Kw6pDpRBNt
+jbiP5M+rS5mSE8FTm6g1yvLPrBs7HX0vzBI561niCatUcUeRmP0ZjY4ASOwUt/HK
+r4M8WpI61Z/KLz/ycgDq2SVuJiXwM2/kOYROZ5OLomS6xQ+BRyV5BKzQvYW3WP4K
+mwBPSP/b5pt9CEzjlXSoAjIgrN8fH1YM+IuTB+6SANoYyK0irVOlfYgXI3hc6hMP
+n6UoMycIgoBUpKVz6BCi8FohQdGHKh8Ca7Vvj8GkrBI/W630XcjOcvdtfIx0Q5fQ
+wbPhwOwRg9O3UTpDzpz7unuhRcNCG6qtxrrTXE5FbV8QmgBGJxl29je/IprMBZu7
+VZaKksWDVjFbsUy+jMGPApp/7HZnFkxIMsDZHCwoBYpUUYaOYaFwgg8qgR7+117h
+rmINAnFzfqc=
+=RUi8
+-----END PGP SIGNATURE-----
+
+--=-2ahnEX1hLGnInRm2MQwu--
