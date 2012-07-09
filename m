@@ -1,56 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab2GIVVl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 17:21:41 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:35520 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123Ab2GIVVk (ORCPT
+	id S1754016Ab2GIVXS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 17:23:18 -0400
+Received: from vms173015pub.verizon.net ([206.46.173.15]:58128 "EHLO
+	vms173015pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950Ab2GIVXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 17:21:40 -0400
-Message-ID: <4FFB4B5F.30103@linaro.org>
-Date: Mon, 09 Jul 2012 23:21:35 +0200
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de
-Subject: Re: [PATCH 7/9] Input: ab8500-ponkey: Create AB8500 domain IRQ mapping
-References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org> <4FF6994B.9040801@linaro.org> <20120706173957.GA10202@core.coreip.homeip.net> <4FFB288D.4080606@linaro.org> <20120709201422.GA12242@core.coreip.homeip.net> <4FFB40A4.5060505@linaro.org> <20120709204620.GA12692@core.coreip.homeip.net> <4FFB463F.9040201@linaro.org> <CACRpkdbjkLvD13_g=TvCUYjqhZ7ySOiEL51h9eT3YVMO4Vnr3A@mail.gmail.com>
-In-Reply-To: <CACRpkdbjkLvD13_g=TvCUYjqhZ7ySOiEL51h9eT3YVMO4Vnr3A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 9 Jul 2012 17:23:17 -0400
+X-Greylist: delayed 3608 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Jul 2012 17:23:17 EDT
+From: minyard@acm.org
+To: linux-kernel@vger.kernel.org, linux-cris-kernel@axis.com, starvik@axis.com,
+        jesper.nilsson@axis.com
+Cc: Corey Minyard <cminyard@mvista.com>
+Subject: [PATCH] CRIS: Fix I/O macros
+Date: Mon, 09 Jul 2012 15:22:39 -0500
+Message-id: <1341865359-18482-1-git-send-email-minyard@acm.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/12 23:03, Linus Walleij wrote:
-> On Mon, Jul 9, 2012 at 10:59 PM, Lee Jones <lee.jones@linaro.org> wrote:
->
->> Before we can use any domain allocated IRQ, we need to first create a
->> map between the Hardware IRQ (hwirq) and the Linux Virtual IRQ (virq).
->> We do this with a helper function provided by the AB8500 IRQ domain
->> controller called ab8500_irq_get_virq(). We need to do this for both
->> IRQs which the Power-On-Key driver uses; one for button press, the other
->> for button depress.
->>
->> Signed-off-by: Lee Jones <lee.jones@linaro.org>
->
-> Now since I was fooled by the last patch, thinking you had tested it before
-> submitting (obviously not) - please send a test log of some
-> cat /dev/input/event* for this one before I ACK it this time.
+From: Corey Minyard <cminyard@mvista.com>
 
-I did test it, but must have only looked at the one IRQ incrementing.
+The inb/outb macros for CRIS are broken from a number of points of
+view, missing () around parameters and they have an unprotected if
+statement in them.  This was breaking the compile of IPMI on CRIS
+and thus I was being annoyed by build regressions, so I fixed them.
 
-I can provide a log tomorrow if it makes you feel better. :)
+Plus I don't think they would have worked at all, since the data
+values were missing "&" and the outsl had a "3" instead of a "4"
+for the size.  From what I can tell, this stuff is not used at all,
+so this can't be any more broken than it was before, anyway.
 
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+---
+ arch/cris/include/asm/io.h |   39 +++++++++++++++++++++++++++++++++------
+ 1 files changed, 33 insertions(+), 6 deletions(-)
+
+diff --git a/arch/cris/include/asm/io.h b/arch/cris/include/asm/io.h
+index 32567bc..ac12ae2 100644
+--- a/arch/cris/include/asm/io.h
++++ b/arch/cris/include/asm/io.h
+@@ -133,12 +133,39 @@ static inline void writel(unsigned int b, volatile void __iomem *addr)
+ #define insb(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,1,count) : 0)
+ #define insw(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,2,count) : 0)
+ #define insl(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,4,count) : 0)
+-#define outb(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,1,1)
+-#define outw(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,2,1)
+-#define outl(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,4,1)
+-#define outsb(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,1,count)
+-#define outsw(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,2,count)
+-#define outsl(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,3,count)
++static inline void outb(unsigned char data, unsigned int port)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *) &data, 1, 1);
++}
++static inline void outw(unsigned short data, unsigned int port)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *) &data, 2, 1);
++}
++static inline void outl(unsigned int data, unsigned int port)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *) &data, 4, 1);
++}
++static inline void outsb(unsigned int port, const void *addr,
++			 unsigned long count)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *)addr, 1, count);
++}
++static inline void outsw(unsigned int port, const void *addr,
++			 unsigned long count)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *)addr, 2, count);
++}
++static inline void outsl(unsigned int port, const void *addr,
++			 unsigned long count)
++{
++	if (cris_iops)
++		cris_iops->write_io(port, (void *)addr, 4, count);
++}
+ 
+ /*
+  * Convert a physical pointer to a virtual kernel pointer for /dev/mem
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
-
+1.7.4.1
 
