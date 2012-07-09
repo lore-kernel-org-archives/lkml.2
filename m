@@ -1,53 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab2GIN0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 09:26:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31247 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753895Ab2GIN0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 09:26:44 -0400
-Date: Mon, 9 Jul 2012 16:26:42 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/2] KVM: X86: remove read buffer for mmio read
-Message-ID: <20120709132642.GB7298@redhat.com>
-References: <4FFA9E16.10001@linux.vnet.ibm.com>
- <4FFABD59.2070108@redhat.com>
- <20120709112346.GA23898@redhat.com>
- <4FFAD341.3080508@redhat.com>
- <4FFADB37.4090705@linux.vnet.ibm.com>
+	id S1753716Ab2GINbM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 09:31:12 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40395 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753436Ab2GINbL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 09:31:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FFADB37.4090705@linux.vnet.ibm.com>
+In-Reply-To: <1340783514-8150-3-git-send-email-minchan@kernel.org>
+References: <1340783514-8150-1-git-send-email-minchan@kernel.org>
+	<1340783514-8150-3-git-send-email-minchan@kernel.org>
+Date: Mon, 9 Jul 2012 19:01:09 +0530
+Message-ID: <CAEtiSavGmp=V37jxmLm2eQyRP3F08KotF9Dma5JCn7uaJbPo+w@mail.gmail.com>
+Subject: Re: [PATCH 2/2 v2] memory-hotplug: fix kswapd looping forever problem
+From: Aaditya Kumar <aaditya.kumar.30@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: akpm@linux-foundation.org, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Mel Gorman <mgorman@suse.de>, tim.bird@am.sony.com,
+        frank.rowand@am.sony.com, takuzo.ohara@ap.sony.com,
+        kan.iibuchi@jp.sony.com, aaditya.kumar@ap.sony.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 09:23:03PM +0800, Xiao Guangrong wrote:
-> On 07/09/2012 08:49 PM, Avi Kivity wrote:
-> > On 07/09/2012 02:23 PM, Gleb Natapov wrote:
-> >>
-> >>> kvm-unit-tests.git has a test for xchg to mmio.  Does it still work?
-> >>>
-> >>> I agree this code has to go, but it needs to be replaced by something.
-> >>> Maybe a .valid flag in struct operand.
-> >>>
-> >> Valid will not enough for that.
-> > 
-> > If we make everything go through operands, any reason why not?
-> > 
-> 
-> I noticed some instructions need to read ESP for many times (e.g, iret_real),
-> maybe .valid flag is not enough for this case if the stack is in MMIO, yes?
-> 
-> IIUC, I also noticed ESP is not reset back if it is emulated fail (mmio is needed).
-> If the stack located in mmio region, this kind of instruct will be broken, i know no
-> guest will use mmio as stack but SDM does not limit it, is it valid?
-> 
-Good point about MMIO stack too.
+On Wed, Jun 27, 2012 at 1:21 PM, Minchan Kim <minchan@kernel.org> wrote:
+> When hotplug offlining happens on zone A, it starts to mark freed page
+> as MIGRATE_ISOLATE type in buddy for preventing further allocation.
+> (MIGRATE_ISOLATE is very irony type because it's apparently on buddy
+> but we can't allocate them).
+> When the memory shortage happens during hotplug offlining,
+> current task starts to reclaim, then wake up kswapd.
+> Kswapd checks watermark, then go sleep because current zone_watermark_ok_safe
+> doesn't consider MIGRATE_ISOLATE freed page count.
+> Current task continue to reclaim in direct reclaim path without kswapd's helping.
+> The problem is that zone->all_unreclaimable is set by only kswapd
+> so that current task would be looping forever like below.
+>
+> __alloc_pages_slowpath
+> restart:
+>         wake_all_kswapd
+> rebalance:
+>         __alloc_pages_direct_reclaim
+>                 do_try_to_free_pages
+>                         if global_reclaim && !all_unreclaimable
+>                                 return 1; /* It means we did did_some_progress */
+>         skip __alloc_pages_may_oom
+>         should_alloc_retry
+>                 goto rebalance;
+>
+> If we apply KOSAKI's patch[1] which doesn't depends on kswapd
+> about setting zone->all_unreclaimable, we can solve this problem
+> by killing some task in direct reclaim path. But it doesn't wake up kswapd, still.
+> It could be a problem still if other subsystem needs GFP_ATOMIC request.
+> So kswapd should consider MIGRATE_ISOLATE when it calculate free pages
+> BEFORE going sleep.
+>
+> This patch counts the number of MIGRATE_ISOLATE page block and
+> zone_watermark_ok_safe will consider it if the system has such blocks
+> (fortunately, it's very rare so no problem in POV overhead and kswapd is never
+> hotpath).
+>
+> Copy/modify from Mel's quote
+> "
+> Ideal solution would be "allocating" the pageblock.
+> It would keep the free space accounting as it is but historically,
+> memory hotplug didn't allocate pages because it would be difficult to
+> detect if a pageblock was isolated or if part of some balloon.
+> Allocating just full pageblocks would work around this, However,
+> it would play very badly with CMA.
+> "
+>
+> [1] http://lkml.org/lkml/2012/6/14/74
+>
+> * from v1
+>  - add changelog
+>  - make functions simple
+>  - remove atomic variable
+>  - discard exact isolated free page accounting.
+>  - rebased on next-20120626
+>
+> Suggested-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Aaditya Kumar <aaditya.kumar.30@gmail.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>
+> Aaditya, coul you confirm this patch solve your problem and
+> make sure nr_pageblock_isolate is zero after hotplug end?
 
---
-			Gleb.
+I am really sorry for the delay.
+I  just tried this patch on my ARM setup.
+
+
+>
+> +#ifdef CONFIG_MEMORY_ISOLATION
+> +static inline unsigned long nr_zone_isolate_freepages(struct zone *zone)
+> +{
+> +       unsigned long nr_pages = 0;
+> +
+> +       if (unlikely(zone->nr_pageblock_isolate)) {
+> +               nr_pages = zone->nr_pageblock_isolate * pageblock_nr_pages;
+> +       }
+> +       return nr_pages;
+> +}
+> +#else
+> +static inline unsigned long nr_zone_isolate_freepages(struct zone *zone)
+> +{
+> +       return 0;
+> +}
+> +#endif
+> +
+>  bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+>                       int classzone_idx, int alloc_flags)
+>  {
+> @@ -1629,6 +1651,14 @@ bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
+>         if (z->percpu_drift_mark && free_pages < z->percpu_drift_mark)
+>                 free_pages = zone_page_state_snapshot(z, NR_FREE_PAGES);
+>
+> +       /*
+> +        * If the zone has MIGRATE_ISOLATE type free page,
+> +        * we should consider it. nr_zone_isolate_freepages is never
+> +        * accurate so kswapd might not sleep although she can.
+> +        * But it's more desirable for memory hotplug rather than
+> +        * forever sleep which cause livelock in direct reclaim path.
+> +        */
+> +       free_pages -= nr_zone_isolate_freepages(z);
+>         return __zone_watermark_ok(z, order, mark, classzone_idx, alloc_flags,
+>                                                                 free_pages);
+
+For my test case, pages to be off lined span the whole node.
+With this setup the free_pages become negative. (As you and Kamezawa-san
+already expected.)
+
+BUT because of free_pages going negative the memory off lining still livelocks
+as __zone_watermark_ok() returns true.
+
+This is because in below if comparison, because of an unsigned value
+(z->lowmem_reserve[classzone_idx])
+all the longs are converted to unsigned long.
+
+static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+              int classzone_idx, int alloc_flags, long free_pages)
+{
+ <snip>
+    if (free_pages <= min + z->lowmem_reserve[classzone_idx])
+        return false;
+<snip>
+
+
+So, may be you can consider following also:
+As for the nr_pageblock_isolate going back to zero, yes it is going back to zero
+for my test case.(I tested after this change)
+
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1594,6 +1594,7 @@ static bool __zone_watermark_ok(struct zone *z,
+int order, unsigned long mark,
+ {
+        /* free_pages my go negative - that's OK */
+        long min = mark;
++      long lowmem_res =  z->lowmem_reserve[classzone_idx];
+        int o;
+
+        free_pages -= (1 << order) - 1;
+@@ -1602,7 +1603,7 @@ static bool __zone_watermark_ok(struct zone *z,
+int order, unsigned long mark,
+        if (alloc_flags & ALLOC_HARDER)
+                min -= min / 4;
+
+-       if (free_pages <= min + z->lowmem_reserve[classzone_idx])
++      if (free_pages <= min + lowmem_res)
+                return false;
