@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab2GIPR5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 11:17:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44530 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753266Ab2GIPRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 11:17:55 -0400
-Date: Mon, 9 Jul 2012 17:17:52 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 07/11] mm: memcg: remove unneeded shmem charge type
-Message-ID: <20120709151752.GJ4627@tiehlicka.suse.cz>
-References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
- <1341449103-1986-8-git-send-email-hannes@cmpxchg.org>
+	id S1755256Ab2GIPSS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 11:18:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42512 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755055Ab2GIPSQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 11:18:16 -0400
+Message-ID: <4FFAF635.4020808@gmail.com>
+Date: Mon, 09 Jul 2012 09:18:13 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341449103-1986-8-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf with precise attribute kills all KVM based VMs
+References: <4FFAE6D8.5050609@gmail.com> <20120709141904.GC7298@redhat.com>  <1341843844.3462.75.camel@twins> <4FFAED16.7050204@redhat.com>  <4FFAEF13.7010108@gmail.com> <1341845396.3462.81.camel@twins> <4FFAF042.1050609@gmail.com> <4FFAF19E.70507@gmail.com>
+In-Reply-To: <4FFAF19E.70507@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 05-07-12 02:44:59, Johannes Weiner wrote:
-> shmem page charges have not needed a separate charge type to tell them
-> from regular file pages since 08e552c 'memcg: synchronized LRU'.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+On 7/9/12 8:58 AM, David Ahern wrote:
+> On 7/9/12 8:52 AM, David Ahern wrote:
+>> On 7/9/12 8:49 AM, Peter Zijlstra wrote:
+>>> On Mon, 2012-07-09 at 08:47 -0600, David Ahern wrote:
+>>>>
+>>>> I found this testing changes to perf-kvm, but found the problem extends
+>>>> to just perf-record. With perf-record exclude_guest defaults to 1. See
+>>>> tools/perf/util/util.c, event_attr_init().
+>>>
+>>> You lost me there.. so perf-record defaults to exclude_guest=1 (which
+>>> would make the proposed patch I just send actually possible), but its
+>>> still going *bang* ?
+>>>
+>>
+>>
+>> I can do the formality of testing your proposed patch, but yes I think
+>> so. exclude_guest defaults to 1 because perf_guest defaults to false.
+>
+>
+> Let me dig for a few minutes. exclude_user is getting reset somewhere.
+> Setting a breakpoint on sys_perf_event_open and dumping the attribute:
+>
+> $1 = {type = 0, size = 80, config = 0, {sample_period = 4000,
+> sample_freq = 4000}, sample_type = 263, read_format = 7,
+>    disabled = 1, inherit = 1, pinned = 0, exclusive = 0, exclude_user =
+> 0, exclude_kernel = 0, exclude_hv = 0, exclude_idle =
+>      0, mmap = 1, comm = 1, freq = 1, inherit_stat = 0, enable_on_exec =
+> 1, task = 0, watermark = 0, precise_ip = 1,
+>    mmap_data = 0, sample_id_all = 1, exclude_host = 0, exclude_guest =
+> 0, __reserved_1 = 0, {wakeup_events = 0,
+>      wakeup_watermark = 0}, bp_type = 0, {bp_addr = 0, config1 = 0},
+> {bp_len = 0, config2 = 0}, branch_sample_type = 0}
+>
+>
 
-Yes, MEM_CGROUP_CHARGE_TYPE_SHMEM has been quite confusing.
+Offending function is parse_events_modifier(). It resets exclude_guest 
+to 0. That's a separate thread/bug.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Undoing that (hardcoding exclude_guest to 1) and verifying in gdb that 
+it is set for all cpus:
 
-> ---
->  mm/memcontrol.c |   11 +----------
->  1 files changed, 1 insertions(+), 10 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 4a41b55..418b47d 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -379,7 +379,6 @@ static bool move_file(void)
->  enum charge_type {
->  	MEM_CGROUP_CHARGE_TYPE_CACHE = 0,
->  	MEM_CGROUP_CHARGE_TYPE_ANON,
-> -	MEM_CGROUP_CHARGE_TYPE_SHMEM,	/* used by page migration of shmem */
->  	MEM_CGROUP_CHARGE_TYPE_SWAPOUT,	/* for accounting swapcache */
->  	MEM_CGROUP_CHARGE_TYPE_DROP,	/* a page was unused swap cache */
->  	NR_CHARGE_TYPE,
-> @@ -2835,8 +2834,6 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
->  
->  	if (unlikely(!mm))
->  		mm = &init_mm;
-> -	if (!page_is_file_cache(page))
-> -		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
->  
->  	if (!PageSwapCache(page))
->  		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
-> @@ -3243,10 +3240,8 @@ void mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
->  	 */
->  	if (PageAnon(page))
->  		ctype = MEM_CGROUP_CHARGE_TYPE_ANON;
-> -	else if (page_is_file_cache(page))
-> -		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
->  	else
-> -		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-> +		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
->  	/*
->  	 * The page is committed to the memcg, but it's not actually
->  	 * charged to the res_counter since we plan on replacing the
-> @@ -3340,10 +3335,6 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
->  	 */
->  	if (!memcg)
->  		return;
-> -
-> -	if (PageSwapBacked(oldpage))
-> -		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-> -
->  	/*
->  	 * Even if newpage->mapping was NULL before starting replacement,
->  	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
-> -- 
-> 1.7.7.6
-> 
+(gdb) p *attr
+$17 = {type = 0, size = 80, config = 0, {sample_period = 4000, 
+sample_freq = 4000}, sample_type = 423, read_format = 7,
+   disabled = 1, inherit = 1, pinned = 0, exclusive = 0, exclude_user = 
+0, exclude_kernel = 0, exclude_hv = 0, exclude_idle =
+     0, mmap = 1, comm = 1, freq = 1, inherit_stat = 0, enable_on_exec = 
+0, task = 0, watermark = 0, precise_ip = 1,
+   mmap_data = 0, sample_id_all = 1, exclude_host = 0, exclude_guest = 
+1, __reserved_1 = 0, {wakeup_events = 0,
+     wakeup_watermark = 0}, bp_type = 0, {bp_addr = 0, config1 = 0}, 
+{bp_len = 0, config2 = 0}, branch_sample_type = 0}
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+It still bombs and the VM dies.
+
+David
