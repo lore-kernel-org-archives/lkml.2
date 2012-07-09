@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab2GIOi1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:38:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38264 "EHLO
+	id S1754636Ab2GIOkH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:40:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38307 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754361Ab2GIOiU (ORCPT
+	by vger.kernel.org with ESMTP id S1754503Ab2GIOiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:38:20 -0400
-Message-Id: <20120709143121.428073519@decadent.org.uk>
+	Mon, 9 Jul 2012 10:38:25 -0400
+Message-Id: <20120709143120.057461094@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:31:49 +0100
+Date: Mon, 09 Jul 2012 15:31:39 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, stephen hemminger <shemminger@vyatta.com>,
-        Kirill Smelkov <kirr@mns.spb.ru>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 33/48] sky2: fix checksum bit management on some chips
+        alan@lxorguk.ukuu.org.uk, Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Laurent Chavey <chavey@google.com>,
+        Justin Teravest <teravest@google.com>,
+        David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 23/48] tracing: change CPU ring buffer state from tracing_cpumask
 In-Reply-To: <20120709143116.348975190@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,46 +31,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: stephen hemminger <shemminger@vyatta.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
 
-[ Upstream commit 5ff0feac88ced864f44adb145142269196fa79d9 ]
+commit 71babb2705e2203a64c27ede13ae3508a0d2c16c upstream.
 
-The newer flavors of Yukon II use a different method for receive
-checksum offload. This is indicated in the driver by the SKY2_HW_NEW_LE
-flag. On these newer chips, the BMU_ENA_RX_CHKSUM should not be set.
+According to Documentation/trace/ftrace.txt:
 
-The driver would get incorrectly toggle the bit, enabling the old
-checksum logic on these chips and cause a BUG_ON() assertion. If
-receive checksum was toggled via ethtool.
+tracing_cpumask:
 
-Reported-by: Kirill Smelkov <kirr@mns.spb.ru>
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+        This is a mask that lets the user only trace
+        on specified CPUS. The format is a hex string
+        representing the CPUS.
+
+The tracing_cpumask currently doesn't affect the tracing state of
+per-CPU ring buffers.
+
+This patch enables/disables CPU recording as its corresponding bit in
+tracing_cpumask is set/unset.
+
+Link: http://lkml.kernel.org/r/1336096792-25373-3-git-send-email-vnagarnaik@google.com
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Laurent Chavey <chavey@google.com>
+Cc: Justin Teravest <teravest@google.com>
+Cc: David Sharp <dhsharp@google.com>
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/marvell/sky2.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ kernel/trace/trace.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
-index 65c51ff..11ddd838 100644
---- a/drivers/net/ethernet/marvell/sky2.c
-+++ b/drivers/net/ethernet/marvell/sky2.c
-@@ -4361,10 +4361,12 @@ static int sky2_set_features(struct net_device *dev, u32 features)
- 	struct sky2_port *sky2 = netdev_priv(dev);
- 	u32 changed = dev->features ^ features;
- 
--	if (changed & NETIF_F_RXCSUM) {
--		u32 on = features & NETIF_F_RXCSUM;
--		sky2_write32(sky2->hw, Q_ADDR(rxqaddr[sky2->port], Q_CSR),
--			     on ? BMU_ENA_RX_CHKSUM : BMU_DIS_RX_CHKSUM);
-+	if ((changed & NETIF_F_RXCSUM) &&
-+	    !(sky2->hw->flags & SKY2_HW_NEW_LE)) {
-+		sky2_write32(sky2->hw,
-+			     Q_ADDR(rxqaddr[sky2->port], Q_CSR),
-+			     (features & NETIF_F_RXCSUM)
-+			     ? BMU_ENA_RX_CHKSUM : BMU_DIS_RX_CHKSUM);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 0ed4df0..08a08ba 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2669,10 +2669,12 @@ tracing_cpumask_write(struct file *filp, const char __user *ubuf,
+ 		if (cpumask_test_cpu(cpu, tracing_cpumask) &&
+ 				!cpumask_test_cpu(cpu, tracing_cpumask_new)) {
+ 			atomic_inc(&global_trace.data[cpu]->disabled);
++			ring_buffer_record_disable_cpu(global_trace.buffer, cpu);
+ 		}
+ 		if (!cpumask_test_cpu(cpu, tracing_cpumask) &&
+ 				cpumask_test_cpu(cpu, tracing_cpumask_new)) {
+ 			atomic_dec(&global_trace.data[cpu]->disabled);
++			ring_buffer_record_enable_cpu(global_trace.buffer, cpu);
+ 		}
  	}
- 
- 	if (changed & NETIF_F_RXHASH)
+ 	arch_spin_unlock(&ftrace_max_lock);
 
 
