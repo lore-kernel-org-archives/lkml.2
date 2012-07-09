@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627Ab2GIAQc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 20:16:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:32587 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752443Ab2GIAQa convert rfc822-to-8bit (ORCPT
+	id S1752688Ab2GIAfz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 20:35:55 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49406 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526Ab2GIAfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 20:16:30 -0400
-X-IronPort-AV: E=Sophos;i="4.77,549,1336320000"; 
-   d="scan'208";a="5350121"
-Message-ID: <4FFA22F3.9000704@cn.fujitsu.com>
-Date: Mon, 09 Jul 2012 08:16:51 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: nhorman@tuxdriver.com, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tj@kernel.org, lizefan@huawei.com
-Subject: Re: [PATCH v2] cgroup: fix panic in netprio_cgroup
-References: <1341480520-25081-1-git-send-email-gaofeng@cn.fujitsu.com> <1341777043.3265.1786.camel@edumazet-glaptop>
-In-Reply-To: <1341777043.3265.1786.camel@edumazet-glaptop>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/09 08:16:24,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/09 08:16:24
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 8 Jul 2012 20:35:54 -0400
+Date: Mon, 9 Jul 2012 10:35:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Eric Moore <eric.moore@lsi.com>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>
+Subject: [PATCH] [SCSI] suppress a warning in mpt2sas
+Message-Id: <20120709103544.a8e356f2981249277ab26c3c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__9_Jul_2012_10_35_44_+1000_OKFVEdpOjNOP32xL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年07月09日 03:50, Eric Dumazet 写道:
-> On Thu, 2012-07-05 at 17:28 +0800, Gao feng wrote:
->> we set max_prioidx to the first zero bit index of prioidx_map in
->> function get_prioidx.
->>
->> So when we delete the low index netprio cgroup and adding a new
->> netprio cgroup again,the max_prioidx will be set to the low index.
->>
->> when we set the high index cgroup's net_prio.ifpriomap,the function
->> write_priomap will call update_netdev_tables to alloc memory which
->> size is sizeof(struct netprio_map) + sizeof(u32) * (max_prioidx + 1),
->> so the size of array that map->priomap point to is max_prioidx +1,
->> which is low than what we actually need.
->>
->> fix this by adding check in get_prioidx,only set max_prioidx when
->> max_prioidx low than the new prioidx.
->>
->> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
->> ---
->>  net/core/netprio_cgroup.c |    3 ++-
->>  1 files changed, 2 insertions(+), 1 deletions(-)
->>
->> diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
->> index 5b8aa2f..aa907ed 100644
->> --- a/net/core/netprio_cgroup.c
->> +++ b/net/core/netprio_cgroup.c
->> @@ -49,8 +49,9 @@ static int get_prioidx(u32 *prio)
->>  		return -ENOSPC;
->>  	}
->>  	set_bit(prioidx, prioidx_map);
->> +	if (atomic_read(&max_prioidx) < prioidx)
->> +		atomic_set(&max_prioidx, prioidx);
->>  	spin_unlock_irqrestore(&prioidx_map_lock, flags);
->> -	atomic_set(&max_prioidx, prioidx);
->>  	*prio = prioidx;
->>  	return 0;
->>  }
-> 
-> This patch seems fine to me.
-> 
-> Acked-by: Eric Dumazet <edumazet@google.com>
-> 
-> Neil, looking at this file, I believe something is wrong.
-> 
-> dev->priomap is allocated by extend_netdev_table() called from
-> update_netdev_tables(). And this is only called if write_priomap() is
-> called.
-> 
-> But if write_priomap() is not called, it seems we can have out of bounds
-> accesses in cgrp_destroy() and read_priomap()
+--Signature=_Mon__9_Jul_2012_10_35_44_+1000_OKFVEdpOjNOP32xL
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Agree,and the function skb_update_prio has the same problem.
+Suppress this warning:
+
+drivers/scsi/mpt2sas/mpt2sas_scsih.c: In function '_scsih_sas_broadcast_pri=
+mitive_event':
+drivers/scsi/mpt2sas/mpt2sas_scsih.c:5811:40: warning: unused variable 'eve=
+nt_data' [-Wunused-variable]
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/scsi/mpt2sas/mpt2sas_debug.h |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+After this patch, the same code is generated.  This is relative to Linus tr=
+ee.
+
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_debug.h b/drivers/scsi/mpt2sas/mp=
+t2sas_debug.h
+index 9731f8e..2a6516e 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_debug.h
++++ b/drivers/scsi/mpt2sas/mpt2sas_debug.h
+@@ -79,7 +79,11 @@
+ 		CMD;						\
+ }
+ #else
+-#define MPT_CHECK_LOGGING(IOC, CMD, BITS)
++#define MPT_CHECK_LOGGING(IOC, CMD, BITS)			\
++{								\
++	if (0 & IOC->logging_level & BITS)			\
++		CMD;						\
++}
+ #endif /* CONFIG_SCSI_MPT2SAS_LOGGING */
+=20
+=20
+--=20
+1.7.10.280.gaa39
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__9_Jul_2012_10_35_44_+1000_OKFVEdpOjNOP32xL
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP+idgAAoJEECxmPOUX5FEHDcQAJ2Vb38XfgZw+ZNP2vppk1HA
+ODRQppn5mXwBLHjuD1lWeYS+ACbLQ994mMC9A0pJ3VEqse8hQHSqVSxVmdJv07JR
+kaGibW4SRKsD6yjB5JsofBqIjUmCfFsrpBDOpHFAHwupT1H00rK8CqHUW80PhSR2
+E1icED6e7eqxJnokRBiKGZetgOvcOUHpRF/m5hL694kAKkwwKK+lh5SvLneQagM8
+qdWW1gkw2cDu4ebsqAaNox6NpGHra6b3JLjux/450g9QNXVVTsfXdutE6h70IzwB
+aqhTCpKL84qyIBVMFLUKJuLUMaBD2Okxg/nORXNDGDmbMZhH/lat7Osrcb/SOuHX
+VKdhzQmYxaWoeN/Jiuy9XrUPpB5BHVsYBDmJQGyH1BSs9dITcxXawz2QW1mwmBNl
+/JJR0VVZ9S9cHY2XhP4LQ10xOnl3q4cY4fd+aosF3uZ36xMzfMZrEkKsXpyvwdOE
+8TgasSCIZ/SMdl899ZitC8BdwpOYxY6Sz3LmBfgwb/DiEZO+kPJQjzXiRvGXEYR2
+1msWny03MPfzTLhvldcUX89jay8LI25Iec1BzJ6HUAdozRtsJy6ZdwHxMp3W6arc
+RayHoFuR27/XrdZJOBSM78J+e3EVfoD6wCl79Lo8N7W6cOhBHIWIqkv/BXUuQzYX
+Bf/GNGyC2I1rRzBjBnMi
+=FRee
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__9_Jul_2012_10_35_44_+1000_OKFVEdpOjNOP32xL--
