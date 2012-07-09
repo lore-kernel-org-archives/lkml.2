@@ -1,39 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab2GINLQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 09:11:16 -0400
-Received: from mga09.intel.com ([134.134.136.24]:5993 "EHLO mga09.intel.com"
+	id S1753775Ab2GINMp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 09:12:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25197 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753233Ab2GINLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 09:11:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="169207702"
-Message-ID: <4FFAD870.7090209@linux.intel.com>
-Date: Mon, 09 Jul 2012 06:11:12 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753457Ab2GINMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 09:12:44 -0400
+Message-ID: <4FFAD8D9.8070203@redhat.com>
+Date: Mon, 09 Jul 2012 15:12:57 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Jean Delvare <jdelvare@suse.de>
-CC: Paul Bolle <pebolle@tiscali.nl>, Randy Dunlap <rdunlap@xenotime.net>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] CONFIG_CC_STACKPROTECTOR is no longer experimental
-References: <1341583705.4655.18.camel@amber.site>  <4FF71F1C.4040608@xenotime.net> <1341597439.4655.23.camel@amber.site>  <4FF72733.8000007@linux.intel.com>  <1341605949.22584.6.camel@x61.thuisdomein> <1341820572.4605.35.camel@amber.site>
-In-Reply-To: <1341820572.4605.35.camel@amber.site>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: martin-eric.racine@iki.fi
+CC: =?UTF-8?B?SmVhbi1GcmFuw6dvaXMgTW9pbmU=?= <moinejf@free.fr>,
+        677533@bugs.debian.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: video: USB webcam fails since kernel 3.2
+References: <20120614162609.4613.22122.reportbug@henna.lan> <20120614215359.GF3537@burratino> <CAPZXPQd9gNCxn7xGyqj_xymPaF5OxvRtxRFkt+SsLs942te4og@mail.gmail.com> <20120616044137.GB4076@burratino> <1339932233.20497.14.camel@henna.lan> <CAPZXPQegp7RA5M0H9Ofq4rJ9aj-rEdg=Ly9_1c6vAKi3COw50g@mail.gmail.com> <4FF9CA30.9050105@redhat.com> <CAPZXPQd026xfKrAU0D7CLQGbdAs8U01u5vsHp+5-wbVofAwdqQ@mail.gmail.com>
+In-Reply-To: <CAPZXPQd026xfKrAU0D7CLQGbdAs8U01u5vsHp+5-wbVofAwdqQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/9/2012 12:56 AM, Jean Delvare wrote:
+Hi,
 
-> Back to my initial question, am I right to assume that
-> CONFIG_CC_STACKPROTECTOR is no longer experimental and can be enabled in
-> distribution kernels?
+On 07/09/2012 01:33 PM, Martin-Éric Racine wrote:
 
-it HAS been enabled in distribution kernels for YEARS.
-so yes.
+<snip>
 
+>> Hmm, this is then likely caused by the new isoc bandwidth negotiation code
+>> in 3.2, unfortunately the vc032x driver is one of the few gspca drivers
+>> for which I don't have a cam to test with. Can you try to build your own
+>> kernel from source?
+>>
+>> Boot into your own kernel, and verify the regression is still there,
+>> then edit drivers/media/video/gspca/gspca.c and go to the which_bandwidth
+>> function, and at the beginning of this function add the following line:
+>>
+>> return 2000 * 2000 * 120;
+>>
+>> Then rebuild and re-install the kernel and try again.
+>>
+>> If that helps, remove the added
+>> return 2000 * 2000 * 120;
+>> line, and also remove the following lines from which_bandwidth:
+>>
+>>          /* if the image is compressed, estimate its mean size */
+>>          if (!gspca_dev->cam.needs_full_bandwidth &&
+>>              bandwidth < gspca_dev->cam.cam_mode[i].width *
+>>                                  gspca_dev->cam.cam_mode[i].height)
+>>                  bandwidth = bandwidth * 3 / 8;  /* 0.375 */
+>>
+>> And try again if things still work this way.
+>>
+>> Once you've tested this I can try to write a fix for this.
+>
+> Hans,
+>
+> Thank you for your reply.
+>
+> Just to eliminate the possibility of mistakes on my part while trying
+> to perform the above changes, could you send me a patch against Linux
+> 3.2.21 that I could apply as-is, before building myself a test kernel
+> package?
+
+Erm, that is quite a bit of work from my side for something which you
+can easily do yourself, edit gspca.c, search for which_bandwidth
+and then under the following lines:
+         u32 bandwidth;
+         int i;
+
+Add a line like this:
+	return 2000 * 2000 * 120;
+
+Regards,
+
+Hans
