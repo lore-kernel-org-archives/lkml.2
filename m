@@ -1,117 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928Ab2GIOP7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:15:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40757 "EHLO mx2.suse.de"
+	id S1753076Ab2GIOTK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:19:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32552 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750767Ab2GIOP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:15:58 -0400
-Date: Mon, 9 Jul 2012 16:15:54 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [patch 01/11] mm: memcg: fix compaction/migration failing due to
- memcg limits
-Message-ID: <20120709141554.GD4627@tiehlicka.suse.cz>
-References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
- <1341449103-1986-2-git-send-email-hannes@cmpxchg.org>
+	id S1750790Ab2GIOTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 10:19:09 -0400
+Date: Mon, 9 Jul 2012 17:19:04 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf with precise attribute kills all KVM based VMs
+Message-ID: <20120709141904.GC7298@redhat.com>
+References: <4FFAE6D8.5050609@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1341449103-1986-2-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FFAE6D8.5050609@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CCing Ingo for the memcg-devel vs tip/sched/numa inter tree dependency
- - see bellow]
-
-On Thu 05-07-12 02:44:53, Johannes Weiner wrote:
-> Compaction (and page migration in general) can currently be hindered
-> through pages being owned by memory cgroups that are at their limits
-> and unreclaimable.
+On Mon, Jul 09, 2012 at 08:12:40AM -0600, David Ahern wrote:
+> This is 100% reproducible with Fedora 17, 3.4.2-1.fc16.x86_64 kernel.
 > 
-> The reason is that the replacement page is being charged against the
-> limit while the page being replaced is also still charged.  But this
-> seems unnecessary, given that only one of the two pages will still be
-> in use after migration finishes.
+> Using the precise attribute (:p or :pp) with perf-record, eg,
 > 
-> This patch changes the memcg migration sequence so that the
-> replacement page is not charged.  Whatever page is still in use after
-> successful or failed migration gets to keep the charge of the page
-> that was going to be replaced.
+> perf record -e cycles:p -ag -- sleep 10
+> 
+> All running VMs are killed. The VMs appear to be restarted but crash
+> on restart.
+> 
+> From one of the VMs that has the console redirected to ttyS0 and
+> ttyS0 of the VM mapped to stdio I was able to capture some boot logs
+> on the restart of the VM:
+> 
+Yes, this is knows problem that I can't find time to fix. The crash is
+cause by CPU using host PEBS virtual address while guest is running
+which causes guest memory corruption. We should disable evens that use
+PEBS at the guest entry.
 
-Could you mention the side effect on the stat vs charges discrepancy,
-please?
 
-> Reported-by: David Rientjes <rientjes@google.com>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> [    0.019136] BUG: unable to handle kernel paging request at 13832f88
+> [    0.020252] IP: [<c0104ed0>] mcount+0x0/0xc
+> [    0.021000] *pdpt = 0000000000572001 *pde = 0000000000000000
+> [    0.021942] Oops: 0000 [#1] SMP
+> [    0.021996] __die: Die type Oops
+> [    0.021996] Modules linked in:
+> [    0.021996]
+> [    0.021996] Pid: 0, comm: swapper Not tainted (2.6.27.47 #0)
+> [    0.021996] EIP: 0060:[<c0104ed0>] EFLAGS: 00010296 CPU: 0
+> [    0.021996] EIP is at mcount+0x0/0xc
+> [    0.021996] EAX: f78026c0 EBX: 00000000 ECX: f78026c0 EDX: 000080d0
+> [    0.021996] ESI: f782c228 EDI: f780b240 EBP: c051fef0 ESP: c051fed4
+> [    0.021996]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+> [    0.021996] Process swapper (pid: 0, ti=c051e000 task=c04d0380
+> task.ti=c051e000)
+> [    0.021996] Stack: c0193339 c0267510 c051feec c026745f 00000000
+> f782c228 f780b240 c051fefc
+> [    0.021996]        c026c6b3 f780b240 c051ff14 c0267690 00000000
+> 00000000 f782c200 f780b2a0
+> [    0.021996]        c051ff4c c026720e 00000001 f88055af f782c228
+> 00000000 f782c200 00000000
+> 
+> 
+> 
+> David
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-[...]
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 8137aea..aa06bf4 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-[...]
-> @@ -1519,10 +1512,9 @@ migrate_misplaced_page(struct page *page, struct mm_struct *mm, int node)
->  {
->  	struct page *oldpage = page, *newpage;
->  	struct address_space *mapping = page_mapping(page);
-> -	struct mem_cgroup *mcg;
-> +	struct mem_cgroup *memcg;
->  	unsigned int gfp;
->  	int rc = 0;
-> -	int charge = -ENOMEM;
->  
->  	VM_BUG_ON(!PageLocked(page));
->  	VM_BUG_ON(page_mapcount(page));
-> @@ -1556,12 +1548,7 @@ migrate_misplaced_page(struct page *page, struct mm_struct *mm, int node)
->  	if (!trylock_page(newpage))
->  		BUG();		/* new page should be unlocked!!! */
->  
-> -	// XXX hnaz, is this right?
-> -	charge = mem_cgroup_prepare_migration(page, newpage, &mcg, gfp);
-> -	if (charge == -ENOMEM) {
-> -		rc = charge;
-> -		goto out;
-> -	}
-> +	mem_cgroup_prepare_migration(page, newpage, &memcg);
->  
->  	newpage->index = page->index;
->  	newpage->mapping = page->mapping;
-> @@ -1581,11 +1568,9 @@ migrate_misplaced_page(struct page *page, struct mm_struct *mm, int node)
->  		page = newpage;
->  	}
->  
-> +	mem_cgroup_end_migration(memcg, oldpage, newpage, !rc);
->  out:
-> -	if (!charge)
-> -		mem_cgroup_end_migration(mcg, oldpage, newpage, !rc);
-> -
-> -       if (oldpage != page)
-> +	if (oldpage != page)
->                 put_page(oldpage);
->  
->  	if (rc) {
-
-Hmm, this depends on 4783af47 (mm: Migrate misplaced page) from
-tip/sched/numa which adds an inter tree dependency which is quite
-unfortunate from memcg-devel (aka mmotm git tree) tree POV. 
-I can cherry-pick this patch into memcg-devel but I am not sure what
-is the merging status of the patch (XXX sounds like it is going to be
-updated later). Ingo?
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+--
+			Gleb.
