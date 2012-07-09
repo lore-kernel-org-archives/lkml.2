@@ -1,115 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab2GIXix (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 19:38:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63850 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424Ab2GIXfl (ORCPT
+	id S1754781Ab2GIXjK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 19:39:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47129 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752424Ab2GIXjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 19:35:41 -0400
-From: Michel Lespinasse <walken@google.com>
-To: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
-        peterz@infradead.org, daniel.santos@pobox.com, axboe@kernel.dk,
-        ebiederm@xmission.com
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: [PATCH 01/13] rbtree: reference Documentation/rbtree.txt for usage instructions
-Date: Mon,  9 Jul 2012 16:35:11 -0700
-Message-Id: <1341876923-12469-2-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1341876923-12469-1-git-send-email-walken@google.com>
-References: <1341876923-12469-1-git-send-email-walken@google.com>
+	Mon, 9 Jul 2012 19:39:09 -0400
+Date: Mon, 9 Jul 2012 20:39:02 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [ 35/48] dummy: fix rcu_sched self-detected stalls
+Message-ID: <20120709233901.GB3237@herton-Z68MA-D2H-B3>
+References: <20120709143116.348975190@decadent.org.uk>
+ <20120709143121.743971024@decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120709143121.743971024@decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-include/linux/rbtree.h included some basic usage instructions, while
-Documentation/rbtree.txt had some more complete and easier to follow
-instructions.  Replacing the former with a reference to the latter.
+On Mon, Jul 09, 2012 at 03:31:51PM +0100, Ben Hutchings wrote:
+> 3.2-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Eric Dumazet <edumazet@google.com>
+> 
+> [ Upstream commit 16b0dc29c1af9df341428f4c49ada4f626258082 ]
+> 
+> Trying to "modprobe dummy numdummies=30000" triggers :
+> 
+> INFO: rcu_sched self-detected stall on CPU { 8} (t=60000 jiffies)
+> 
+> After this splat, RTNL is locked and reboot is needed.
+> 
+> We must call cond_resched() to avoid this, even holding RTNL.
+> 
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+>  drivers/net/dummy.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/dummy.c b/drivers/net/dummy.c
+> index eeac9ca..87e4632 100644
+> --- a/drivers/net/dummy.c
+> +++ b/drivers/net/dummy.c
+> @@ -186,8 +186,10 @@ static int __init dummy_init_module(void)
+>  	rtnl_lock();
+>  	err = __rtnl_link_register(&dummy_link_ops);
+>  
+> -	for (i = 0; i < numdummies && !err; i++)
+> +	for (i = 0; i < numdummies && !err; i++) {
+>  		err = dummy_init_one();
+> +		cond_resched();
+> +	}
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
----
- include/linux/rbtree.h |   67 +-----------------------------------------------
- 1 files changed, 1 insertions(+), 66 deletions(-)
+Hi, I got the following build error with this applied to 3.2, on i386
+and arm builds:
 
-diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
-index 033b507..e6a8077 100644
---- a/include/linux/rbtree.h
-+++ b/include/linux/rbtree.h
-@@ -23,72 +23,7 @@
-   I know it's not the cleaner way,  but in C (not in C++) to get
-   performances and genericity...
- 
--  Some example of insert and search follows here. The search is a plain
--  normal search over an ordered tree. The insert instead must be implemented
--  in two steps: First, the code must insert the element in order as a red leaf
--  in the tree, and then the support library function rb_insert_color() must
--  be called. Such function will do the not trivial work to rebalance the
--  rbtree, if necessary.
--
-------------------------------------------------------------------------
--static inline struct page * rb_search_page_cache(struct inode * inode,
--						 unsigned long offset)
--{
--	struct rb_node * n = inode->i_rb_page_cache.rb_node;
--	struct page * page;
--
--	while (n)
--	{
--		page = rb_entry(n, struct page, rb_page_cache);
--
--		if (offset < page->offset)
--			n = n->rb_left;
--		else if (offset > page->offset)
--			n = n->rb_right;
--		else
--			return page;
--	}
--	return NULL;
--}
--
--static inline struct page * __rb_insert_page_cache(struct inode * inode,
--						   unsigned long offset,
--						   struct rb_node * node)
--{
--	struct rb_node ** p = &inode->i_rb_page_cache.rb_node;
--	struct rb_node * parent = NULL;
--	struct page * page;
--
--	while (*p)
--	{
--		parent = *p;
--		page = rb_entry(parent, struct page, rb_page_cache);
--
--		if (offset < page->offset)
--			p = &(*p)->rb_left;
--		else if (offset > page->offset)
--			p = &(*p)->rb_right;
--		else
--			return page;
--	}
--
--	rb_link_node(node, parent, p);
--
--	return NULL;
--}
--
--static inline struct page * rb_insert_page_cache(struct inode * inode,
--						 unsigned long offset,
--						 struct rb_node * node)
--{
--	struct page * ret;
--	if ((ret = __rb_insert_page_cache(inode, offset, node)))
--		goto out;
--	rb_insert_color(node, &inode->i_rb_page_cache);
-- out:
--	return ret;
--}
-------------------------------------------------------------------------
-+  See Documentation/rbtree.txt for documentation and samples.
- */
- 
- #ifndef	_LINUX_RBTREE_H
+linux-stable/drivers/net/dummy.c: In function 'dummy_init_module':
+linux-stable/drivers/net/dummy.c:191:3: error: implicit declaration of function 'cond_resched' [-Werror=implicit-function-declaration]
+
+This doesn't happen on mainline so far. Looking here on mainline, sched.h is
+implicitly included through <linux/netdevice.h> ->
+<net/netprio_cgroup.h> -> <linux/cgroup.h> -> <linux/sched.h>
+
+But on 3.2 this doesn't happen, and build fails on i386 and arm. On
+x86_64 it works though since sched.h is pulled from netdevice.h ->
+ethtool.h -> compat.h if CONFIG_COMPAT is enabled.
+
+May be the best solution is for the patch backported to 3.2, to include
+<linux/sched.h> also.
+
+>  	if (err < 0)
+>  		__rtnl_link_unregister(&dummy_link_ops);
+>  	rtnl_unlock();
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
 -- 
-1.7.7.3
-
+[]'s
+Herton
