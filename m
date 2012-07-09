@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009Ab2GIPl1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 11:41:27 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:34376 "EHLO SMTP.CITRIX.COM"
+	id S1752116Ab2GIPlj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 11:41:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3026 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751300Ab2GIPl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 11:41:26 -0400
-X-IronPort-AV: E=Sophos;i="4.77,552,1336363200"; 
-   d="scan'208";a="30854307"
-Message-ID: <4FFAFBA4.4050603@citrix.com>
-Date: Mon, 9 Jul 2012 16:41:24 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
+	id S1752033Ab2GIPlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 11:41:31 -0400
+Message-ID: <4FFAFB70.7030402@redhat.com>
+Date: Mon, 09 Jul 2012 11:40:32 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 1/4] xen/p2m: Optimize the get_phys_to_machine
- function a bit.
-References: <1341330038-21686-1-git-send-email-konrad.wilk@oracle.com> <1341330038-21686-2-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1341330038-21686-2-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
+        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Don Morris <don.morris@hp.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 00/40] AutoNUMA19
+References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/12 16:40, Konrad Rzeszutek Wilk wrote:
-> Running perf tells me that the check for p2m_identity
-> is done a lot - more than it should.
+On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
 
-This patch doesn't change the how often the check is done.  Is this just
-bad wording of the description?
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/p2m.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-> index 64effdc..161bcdc 100644
-> --- a/arch/x86/xen/p2m.c
-> +++ b/arch/x86/xen/p2m.c
-> @@ -406,7 +406,7 @@ unsigned long get_phys_to_machine(unsigned long pfn)
->  	 * and in p2m_*missing, so returning the INVALID_P2M_ENTRY
->  	 * would be wrong.
->  	 */
-> -	if (p2m_top[topidx][mididx] == p2m_identity)
-> +	if (unlikely(p2m_top[topidx][mididx] == p2m_identity))
->  		return IDENTITY_FRAME(pfn);
->  
->  	return p2m_top[topidx][mididx][idx];
+> o reduced the page_autonuma memory overhead to from 32 to 12 bytes per page
 
+This bit still worries me a little.
+
+Between the compact list management code, the migrate
+daemon, the list locking and page queuing and unqueuing
+code, we are looking at 1000-2000 lines of code.
+
+I know your reasoning why asynchronous migration done
+by a kernel thread should be better than migrate-on-fault,
+but there is no actual evidence that it is in fact true.
+
+Would it be an idea to simplify the code for now, and
+add the asynchronous migration later on, if there are
+compelling benchmark results that show it to be useful?
+
+The amount of source code involved is large enough that
+a justification like that would be useful, IMHO...
+
+-- 
+All rights reversed
