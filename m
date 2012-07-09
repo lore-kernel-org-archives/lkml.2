@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434Ab2GIOiO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:38:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38196 "EHLO
+	id S1754417Ab2GIOiM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:38:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38195 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754389Ab2GIOiI (ORCPT
+	by vger.kernel.org with ESMTP id S1754391Ab2GIOiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jul 2012 10:38:08 -0400
-Message-Id: <20120709143122.828489522@decadent.org.uk>
+Message-Id: <20120709143122.964579659@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:31:59 +0100
+Date: Mon, 09 Jul 2012 15:32:00 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Junxiao Bi <junxiao.bi@oracle.com>,
-        Joel Becker <jlbec@evilplan.org>
-Subject: [ 43/48] ocfs2: clear unaligned io flag when dio fails
+        Jeff Moyer <jmoyer@redhat.com>, Joel Becker <jlbec@evilplan.org>
+Subject: [ 44/48] aio: make kiocb->private NUll in init_sync_kiocb()
 In-Reply-To: <20120709143116.348975190@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,35 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit 3e5d3c35a68c9a933bdbdd8685bd1a205b57e806 upstream.
+commit 2dfd06036ba7ae8e7be2daf5a2fff1dac42390bf upstream.
 
-The unaligned io flag is set in the kiocb when an unaligned
-dio is issued, it should be cleared even when the dio fails,
-or it may affect the following io which are using the same
-kiocb.
+Ocfs2 uses kiocb.*private as a flag of unsigned long size. In
+commit a11f7e6 ocfs2: serialize unaligned aio, the unaligned
+io flag is involved in it to serialize the unaligned aio. As
+*private is not initialized in init_sync_kiocb() of do_sync_write(),
+this unaligned io flag may be unexpectly set in an aligned dio.
+And this will cause OCFS2_I(inode)->ip_unaligned_aio decreased
+to -1 in ocfs2_dio_end_io(), thus the following unaligned dio
+will hang forever at ocfs2_aiodio_wait() in ocfs2_file_aio_write().
 
 Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
 Signed-off-by: Joel Becker <jlbec@evilplan.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ocfs2/file.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/linux/aio.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-index 061591a..98513c8 100644
---- a/fs/ocfs2/file.c
-+++ b/fs/ocfs2/file.c
-@@ -2422,8 +2422,10 @@ out_dio:
- 		unaligned_dio = 0;
- 	}
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index 2314ad8..b1a520e 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -140,6 +140,7 @@ struct kiocb {
+ 		(x)->ki_dtor = NULL;			\
+ 		(x)->ki_obj.tsk = tsk;			\
+ 		(x)->ki_user_data = 0;                  \
++		(x)->private = NULL;			\
+ 	} while (0)
  
--	if (unaligned_dio)
-+	if (unaligned_dio) {
-+		ocfs2_iocb_clear_unaligned_aio(iocb);
- 		atomic_dec(&OCFS2_I(inode)->ip_unaligned_aio);
-+	}
- 
- out:
- 	if (rw_level != -1)
+ #define AIO_RING_MAGIC			0xa10a10a1
 
 
