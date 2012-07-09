@@ -1,110 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab2GINls (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 09:41:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28851 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753731Ab2GINlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 09:41:47 -0400
-Date: Mon, 9 Jul 2012 15:39:04 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uprobes: teach build_probe_list() to consider the range
-Message-ID: <20120709133904.GA8277@redhat.com>
-References: <20120709133510.GA8269@redhat.com>
+	id S1754013Ab2GINn1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 09:43:27 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:43015 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753664Ab2GINnZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 09:43:25 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: "Steven J. Magnani" <steve@digidescorp.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] fat (exportfs): reconnect file handles to evicted inodes/dentries
+References: <1341342576-15394-1-git-send-email-steve@digidescorp.com>
+	<1341342576-15394-3-git-send-email-steve@digidescorp.com>
+	<87pq8bokcp.fsf@devron.myhome.or.jp>
+	<1341606824.2214.14.camel@iscandar.digidescorp.com>
+	<871ukobntl.fsf@devron.myhome.or.jp>
+	<1341623782.2021.9.camel@iscandar>
+	<87wr2g9kh3.fsf@devron.myhome.or.jp>
+	<1341679286.2435.12.camel@iscandar>
+	<87zk7bo6aq.fsf@devron.myhome.or.jp>
+	<1341835422.2215.6.camel@iscandar.digidescorp.com>
+Date: Mon, 09 Jul 2012 22:43:19 +0900
+In-Reply-To: <1341835422.2215.6.camel@iscandar.digidescorp.com> (Steven
+	J. Magnani's message of "Mon, 09 Jul 2012 07:03:42 -0500")
+Message-ID: <87sjd1nj7s.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120709133510.GA8269@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09, Oleg Nesterov wrote:
+"Steven J. Magnani" <steve@digidescorp.com> writes:
+
+>> How do you prevent to modify or free the those inode/blocks from other
+>> path?  Yeah, it is racy. And if races is not solved, that's simply wrong
+>> and not solution.
+>> 
+>> Although I'm not thinking deeply about NFS support on FAT. Just a idea,
+>> the one of possible solutions would be register it to hash, and find it
+>> on all path. So, all path will use same inode and lock.
+>> 
+>> We need the key, possible key is - if it is only directory, FAT may be
+>> able to use i_start as additional search key.
 >
-> Currently build_probe_list() builds the list of all uprobes attached
-> to the given inode, and the caller should filter out those who don't
-> fall into the [start,end) range, this is sub-optimal.
->
-> This patch turns find_least_offset_node() into find_node_in_range()
-> which returns the first node inside the [min,max] range, and changes
-> build_probe_list() to use this node as a starting point for rb_prev()
-> and rb_next() to find all other nodes the caller needs. The resulting
-> list is no longer sorted but we do not care.
->
-> This can speed up both build_probe_list() and the callers, but there
-> is another reason to introduce find_node_in_range(). It can be used
-> to figure out whether the given vma has uprobes or not, this will be
-> needed soon.
+> Interesting idea. I think this, and reformulating the FAT NFS file
+> handle to include the parent's i_ino, will greatly simplify (and speed
+> up) the code.
 
-I guess it is not easy to read this patch without applying, I am sending
-the code to simplify the review.
-----------------------------------------------------------------------
-
-static struct rb_node *
-find_node_in_range(struct inode *inode, loff_t min, loff_t max)
-{
-	struct rb_node *n = uprobes_tree.rb_node;
-
-	while (n) {
-		struct uprobe *u = rb_entry(n, struct uprobe, rb_node);
-
-		if (inode < u->inode) {
-			n = n->rb_left;
-		} else if (inode > u->inode) {
-			n = n->rb_right;
-		} else {
-			if (max < u->offset)
-				n = n->rb_left;
-			else if (min > u->offset)
-				n = n->rb_right;
-			else
-				break;
-		}
-	}
-
-	return n;
-}
-
-/*
- * For a given range in vma, build a list of probes that need to be inserted.
- */
-static void build_probe_list(struct inode *inode,
-				struct vm_area_struct *vma,
-				unsigned long start, unsigned long end,
-				struct list_head *head)
-{
-	loff_t min, max;
-	unsigned long flags;
-	struct rb_node *n, *t;
-	struct uprobe *u;
-
-	INIT_LIST_HEAD(head);
-	min = ((loff_t)vma->vm_pgoff << PAGE_SHIFT) + start - vma->vm_start;
-	max = min + (end - start) - 1;
-
-	spin_lock_irqsave(&uprobes_treelock, flags);
-	n = find_node_in_range(inode, min, max);
-	if (n) {
-		for (t = n; t; t = rb_prev(t)) {
-			u = rb_entry(t, struct uprobe, rb_node);
-			if (u->inode != inode || u->offset < min)
-				break;
-			list_add(&u->pending_list, head);
-			atomic_inc(&u->ref);
-		}
-		for (t = n; (t = rb_next(t)); ) {
-			u = rb_entry(t, struct uprobe, rb_node);
-			if (u->inode != inode || u->offset > max)
-				break;
-			list_add(&u->pending_list, head);
-			atomic_inc(&u->ref);
-		}
-	}
-	spin_unlock_irqrestore(&uprobes_treelock, flags);
-}
-
+Does it work even if the inode was rename()'ed?
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
