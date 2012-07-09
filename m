@@ -1,203 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab2GIJk4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 05:40:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40549 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751771Ab2GIJky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 05:40:54 -0400
-Date: Mon, 9 Jul 2012 11:40:45 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lukas@localhost
-To: Ashish Sangwan <ashishsangwan2@gmail.com>
-cc: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>,
-        sandeen@redhat.com, Ted Tso <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Namjae Jeon <linkinjeon@gmail.com>
-Subject: Re: [PATCH v2] ext4: fix hole punch failure when depth is greater
- than 0
-In-Reply-To: <CAOiN93mJO6=dV4U=Qyw7myz34EF_doaoLsFHksmu4-n8pOzXBA@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1207091121480.5986@localhost>
-References: <1339638836-19990-1-git-send-email-ashish.sangwan2@gmail.com> <CAKYAXd_g_vgAmyD4jyUqz0u=vaSTAKFqZz0sqhM+2+hy1Z85ug@mail.gmail.com> <CAOiN93=BKyGKtpLng-ddX0RFUOdHCaxHi2O26GFokdT19xad2g@mail.gmail.com> <alpine.LFD.2.00.1207021110530.24050@dhcp-1-248.brq.redhat.com>
- <CAOiN93kzvKVDzSJ13HJZDh9ANt3UaBy0o_QHNKCSHHTizjtY0w@mail.gmail.com> <alpine.LFD.2.00.1207041926290.29222@localhost> <CAOiN93mJO6=dV4U=Qyw7myz34EF_doaoLsFHksmu4-n8pOzXBA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752794Ab2GIJnc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 05:43:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52358 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771Ab2GIJna (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 05:43:30 -0400
+Date: Mon, 9 Jul 2012 02:43:01 -0700
+From: tip-bot for John Stultz <johnstul@us.ibm.com>
+Message-ID: <tip-adf374cf61394dd41c027c74a81f9bef90f7a640@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        johnstul@us.ibm.com, jengelh@inai.de, tglx@linutronix.de,
+        prarit@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        johnstul@us.ibm.com, tglx@linutronix.de, jengelh@inai.de,
+        prarit@redhat.com
+In-Reply-To: <1341515538-5100-2-git-send-email-johnstul@us.ibm.com>
+References: <1341515538-5100-2-git-send-email-johnstul@us.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] hrtimer:
+  Fix clock_was_set so it is safe to call from irq context
+Git-Commit-ID: adf374cf61394dd41c027c74a81f9bef90f7a640
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-167555232-1341826849=:5986"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 09 Jul 2012 02:43:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Commit-ID:  adf374cf61394dd41c027c74a81f9bef90f7a640
+Gitweb:     http://git.kernel.org/tip/adf374cf61394dd41c027c74a81f9bef90f7a640
+Author:     John Stultz <johnstul@us.ibm.com>
+AuthorDate: Thu, 5 Jul 2012 15:12:16 -0400
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 9 Jul 2012 11:35:38 +0200
 
---8323328-167555232-1341826849=:5986
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+hrtimer: Fix clock_was_set so it is safe to call from irq context
 
-On Thu, 5 Jul 2012, Ashish Sangwan wrote:
+NOTE: This is a prerequisite patch that's required to
+address the widely observed leap-second related futex/hrtimer
+issues.
 
-> Date: Thu, 5 Jul 2012 15:22:04 +0530
-> From: Ashish Sangwan <ashishsangwan2@gmail.com>
-> To: Lukáš Czerner <lczerner@redhat.com>
-> Cc: sandeen@redhat.com, Ted Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org,
->     linux-ext4@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>
-> Subject: Re: [PATCH v2] ext4: fix hole punch failure when depth is greater
->     than 0
-> 
-> On Wed, Jul 4, 2012 at 11:03 PM, Lukáš Czerner <lczerner@redhat.com> wrote:
-> > So I've finally has some time to look at the patch and reproduce the
-> > problem. Thanks for noticing the problem, the patch seems good,
-> > though I have one question. Is the p_block setting really necessary
-> > ? I do not think so, but I might be missing something. Here is
-> > updated patch I've tested, bellow.
-> AFAICS, p_block setting is necessary. As mentioned in the patch description,
-> whether to continue removing extents or not is decided by the return value
-> of function ext4_ext_more_to_rm() which checks 2 conditions:
-> a) if there are no more indexes to process.
-> b) if the number of entries are decreased in the header of "depth -1".
-> The p_block setting is important for condition b).
-> 
-> In function ext4_ext_more_to_rm, there is this second check:
-> if (le16_to_cpu(path->p_hdr->eh_entries) == path->p_block)
->     return 0;
-> If the value of p_block would not be correct, the above mentioned
-> condition could become
-> true while there are still blocks left to be removed.
+Currently clock_was_set() is unsafe to be called from irq
+context, as it calls on_each_cpu(). This causes problems when
+we need to adjust the time from update_wall_time().
 
-Ok, the code is not very clear, but now I can see it. p_block is
-actually misused here to store the number of indexes in the current
-node while diving into the tree. Then on the way up, we are checking
-that to see if the eh_entries changed or not (which is indicating
-that something has been freed deeper in the tree).
+To fix this, if clock_was_set is called when irqs are
+disabled, we schedule a timer to fire for immedately after
+we're out of interrupt context to then notify the hrtimer
+subsystem.
 
-That said, it makes sense to set it before the loop itself because
-we are actually skipping the path construction while diving into
-the tree since patch is already initialized and we're starting
-walking back from 'depth' up in this case. So the patch seems fine.
-Thanks for catching it and fixing it.
+Reported-by: Jan Engelhardt <jengelh@inai.de>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+CC: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1341515538-5100-2-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/hrtimer.c |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
 
-You can add
-
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
-
-
-> >
-> > Note: there are some indent problems in your patch, like for example
-> > this:
-> >
-> > +                       path[k].p_block =
-> > +                       le16_to_cpu(path[k].p_hdr->eh_entries)+1;
-> >
-> >
-> Before submitting the patch, I run checkpatch.pl with --strict option.
-> It did'nt show any error or warning. Should I re-submit
-> the patch with an extra tab before the second line? The call is yours.
-
-checkpatch.pl does not catch everything. Just look at how wrapping
-of long lines is done in the code, there are plenty of examples.
-
-> 
-> > Anyway, what do you think about the modification ?
-> >
-> Also there is 1 modification missing from your patch.
->     ext4_ext_drop_refs(path);
->         kfree(path);
-> +       path = NULL;
->         if (err == -EAGAIN)
->                 goto again;
-> If path is not set to NULL, it will crash in xfstest #13. Ted has
-> already reported it.
-
-Right, I've probably used the old patch as an example.
-
-Thanks!
--Lukas
-
-> 
-> Thanks,
-> Ashish
-> 
-> > Thanks!
-> > -Lukas
-> >
-> >
-> > diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-> > index b3300eb..94bc1bd 100644
-> > --- a/fs/ext4/extents.c
-> > +++ b/fs/ext4/extents.c
-> > @@ -2570,7 +2570,7 @@ static int ext4_ext_remove_space(struct inode *inode, ext4_lblk_t start,
-> >  {
-> >         struct super_block *sb = inode->i_sb;
-> >         int depth = ext_depth(inode);
-> > -       struct ext4_ext_path *path;
-> > +       struct ext4_ext_path *path = NULL;
-> >         ext4_fsblk_t partial_cluster = 0;
-> >         handle_t *handle;
-> >         int i, err;
-> > @@ -2606,8 +2606,12 @@ again:
-> >                 }
-> >                 depth = ext_depth(inode);
-> >                 ex = path[depth].p_ext;
-> > -               if (!ex)
-> > +               if (!ex) {
-> > +                       ext4_ext_drop_refs(path);
-> > +                       kfree(path);
-> > +                       path = NULL;
-> >                         goto cont;
-> > +               }
-> >
-> >                 ee_block = le32_to_cpu(ex->ee_block);
-> >
-> > @@ -2637,8 +2641,6 @@ again:
-> >                         if (err < 0)
-> >                                 goto out;
-> >                 }
-> > -               ext4_ext_drop_refs(path);
-> > -               kfree(path);
-> >         }
-> >  cont:
-> >
-> > @@ -2646,20 +2648,26 @@ cont:
-> >          * We start scanning from right side, freeing all the blocks
-> >          * after i_size and walking into the tree depth-wise.
-> >          */
-> > -       depth = ext_depth(inode);
-> > -       path = kzalloc(sizeof(struct ext4_ext_path) * (depth + 1), GFP_NOFS);
-> > -       if (path == NULL) {
-> > -               ext4_journal_stop(handle);
-> > -               return -ENOMEM;
-> > -       }
-> > -       path[0].p_depth = depth;
-> > -       path[0].p_hdr = ext_inode_hdr(inode);
-> > +       if (path)
-> > +               i = depth;
-> > +       else {
-> > +               depth = ext_depth(inode);
-> > +               path = kzalloc(sizeof(struct ext4_ext_path) * (depth + 1),
-> > +                              GFP_NOFS);
-> > +               if (path == NULL) {
-> > +                       ext4_journal_stop(handle);
-> > +                       return -ENOMEM;
-> > +               }
-> > +               path[0].p_depth = depth;
-> > +               path[0].p_hdr = ext_inode_hdr(inode);
-> >
-> > -       if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
-> > -               err = -EIO;
-> > -               goto out;
-> > +               if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
-> > +                       err = -EIO;
-> > +                       goto out;
-> > +               }
-> > +               i = 0;
-> >         }
-> > -       i = err = 0;
-> > +       err = 0;
-> >
-> >         while (i >= 0 && err == 0) {
-> >                 if (i == depth) {
-> >
-> > On Mon, 2 Jul 2012, Ashish Sangwan wrote:
-> >
-> 
---8323328-167555232-1341826849=:5986--
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index ae34bf5..d730678 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -746,7 +746,7 @@ static inline void retrigger_next_event(void *arg) { }
+  * resolution timer interrupts. On UP we just disable interrupts and
+  * call the high resolution interrupt code.
+  */
+-void clock_was_set(void)
++static void do_clock_was_set(unsigned long data)
+ {
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 	/* Retrigger the CPU local events everywhere */
+@@ -755,6 +755,21 @@ void clock_was_set(void)
+ 	timerfd_clock_was_set();
+ }
+ 
++static DEFINE_TIMER(clock_was_set_timer, do_clock_was_set , 0, 0);
++
++void clock_was_set(void)
++{
++	/*
++	 * We can't call on_each_cpu() from irq context,
++	 * so if irqs are disabled , schedule the clock_was_set
++	 * via a timer_list timer for right after.
++	 */
++	if (irqs_disabled())
++		mod_timer(&clock_was_set_timer, jiffies);
++	else
++		do_clock_was_set(0);
++}
++
+ /*
+  * During resume we might have to reprogram the high resolution timer
+  * interrupt (on the local CPU):
