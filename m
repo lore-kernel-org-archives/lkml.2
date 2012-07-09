@@ -1,127 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab2GINkP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 09:40:15 -0400
-Received: from mga14.intel.com ([143.182.124.37]:47482 "EHLO mga14.intel.com"
+	id S1754009Ab2GINls (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 09:41:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28851 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753827Ab2GINkN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 09:40:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="120331147"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "Yanmin Zhang <yanmin_zhang@linux.intel.com>
-	(yanmin_zhang@linux.intel.com)" <yanmin_zhang@linux.intel.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>
-Subject: RE: [PATCH] i2c_dw: deadlock happening when system is trying to
- suspend
-Thread-Topic: [PATCH] i2c_dw: deadlock happening when system is trying to
- suspend
-Thread-Index: AQHNXddeJTeqAj9e7keWi3IQHwTWrZcg9LIg
-Date: Mon, 9 Jul 2012 13:40:08 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A10F174@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A0EE76A@SHSMSX101.ccr.corp.intel.com>
- <20120709133154.GK1296@pengutronix.de>
-In-Reply-To: <20120709133154.GK1296@pengutronix.de>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753731Ab2GINlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 09:41:47 -0400
+Date: Mon, 9 Jul 2012 15:39:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uprobes: teach build_probe_list() to consider the range
+Message-ID: <20120709133904.GA8277@redhat.com>
+References: <20120709133510.GA8269@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120709133510.GA8269@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I found the latest kernel code has some difference with my analysis.
-I need more thoughts, then update this issue.
+On 07/09, Oleg Nesterov wrote:
+>
+> Currently build_probe_list() builds the list of all uprobes attached
+> to the given inode, and the caller should filter out those who don't
+> fall into the [start,end) range, this is sub-optimal.
+>
+> This patch turns find_least_offset_node() into find_node_in_range()
+> which returns the first node inside the [min,max] range, and changes
+> build_probe_list() to use this node as a starting point for rb_prev()
+> and rb_next() to find all other nodes the caller needs. The resulting
+> list is no longer sorted but we do not care.
+>
+> This can speed up both build_probe_list() and the callers, but there
+> is another reason to introduce find_node_in_range(). It can be used
+> to figure out whether the given vma has uprobes or not, this will be
+> needed soon.
 
-> -----Original Message-----
-> From: Wolfram Sang [mailto:w.sang@pengutronix.de]
-> Sent: Monday, July 09, 2012 9:32 PM
-> To: Liu, Chuansheng
-> Cc: linux-kernel@vger.kernel.org; linux-i2c@vger.kernel.org; khali@linux-fr.org;
-> ben-linux@fluff.org; Yanmin Zhang <yanmin_zhang@linux.intel.com>
-> (yanmin_zhang@linux.intel.com); Srivatsa S. Bhat; Tu, Xiaobing
-> Subject: Re: [PATCH] i2c_dw: deadlock happening when system is trying to
-> suspend
-> 
-> On Tue, Jun 26, 2012 at 02:29:13PM +0000, Liu, Chuansheng wrote:
-> > From: liu chuansheng <chuansheng.liu@intel.com>
-> > Subject: [PATCH] i2c_dw: deadlock happening when system is trying to
-> > suspend
-> >
-> > In i2c_dw code, there is a race condition that causes pm suspend
-> > thread blocking there always. The scenerio is as below:
-> >
-> > PM thread:
-> > suspend -->
-> > pm_suspend -->
-> > enter_state -->
-> > dpm_suspend_start(will call i2c_dw_pci_suspend(), and the
-> > dw_i2c_dev->lock is hold) ...
-> > suspend_enter -->
-> > dpm_suspend_noirq -->
-> > suspend_device_irqs -->
-> > synchronize_irq()
-> >
-> > synchronize_irq will wait for any pending irq is handled, and the
-> > correpsonding irq thread is finished.
-> >
-> > In this case, there is a i2c device interrupt is pending, the irq
-> > thread do the below things:
-> > IRQ thread:
-> > i2c_smbus_read_byte_data -->
-> > i2c_smbus_xfer -->
-> > i2c_transfer -->
-> > i2c_dw_xfer -->
-> > down()
-> >
-> > The irq thread blocked at down dw_i2c_dev->lock, because in PM thread,
-> > it has been hold after calling i2c_dw_pci_suspend(), but PM thread is
-> > waiting for IRQ thread, then deadlock happened.
-> >
-> > The solution is moving the down() action after pm_runtime_get_sync().
-> >
-> > Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> > ---
-> >  drivers/i2c/busses/i2c-designware-core.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/i2c/busses/i2c-designware-core.c
-> > b/drivers/i2c/busses/i2c-designware-core.c
-> > index 1e48bec..748ecb1 100644
-> > --- a/drivers/i2c/busses/i2c-designware-core.c
-> > +++ b/drivers/i2c/busses/i2c-designware-core.c
-> > @@ -512,8 +512,8 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct
-> > i2c_msg msgs[], int num)
-> >
-> >         dev_dbg(dev->dev, "%s: msgs: %d\n", __func__, num);
-> >
-> > -       mutex_lock(&dev->lock);
-> >         pm_runtime_get_sync(dev->dev);
-> > +       mutex_lock(&dev->lock);
-> >
-> >         INIT_COMPLETION(dev->cmd_complete);
-> >         dev->msgs = msgs;
-> 
-> Don't you need to place the mutex_unlock() before pm_runtime_put then?
-> 
-> Thanks,
-> 
->    Wolfram
-> 
-> --
-> Pengutronix e.K.                           | Wolfram Sang
-> |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/
-> |
+I guess it is not easy to read this patch without applying, I am sending
+the code to simplify the review.
+----------------------------------------------------------------------
+
+static struct rb_node *
+find_node_in_range(struct inode *inode, loff_t min, loff_t max)
+{
+	struct rb_node *n = uprobes_tree.rb_node;
+
+	while (n) {
+		struct uprobe *u = rb_entry(n, struct uprobe, rb_node);
+
+		if (inode < u->inode) {
+			n = n->rb_left;
+		} else if (inode > u->inode) {
+			n = n->rb_right;
+		} else {
+			if (max < u->offset)
+				n = n->rb_left;
+			else if (min > u->offset)
+				n = n->rb_right;
+			else
+				break;
+		}
+	}
+
+	return n;
+}
+
+/*
+ * For a given range in vma, build a list of probes that need to be inserted.
+ */
+static void build_probe_list(struct inode *inode,
+				struct vm_area_struct *vma,
+				unsigned long start, unsigned long end,
+				struct list_head *head)
+{
+	loff_t min, max;
+	unsigned long flags;
+	struct rb_node *n, *t;
+	struct uprobe *u;
+
+	INIT_LIST_HEAD(head);
+	min = ((loff_t)vma->vm_pgoff << PAGE_SHIFT) + start - vma->vm_start;
+	max = min + (end - start) - 1;
+
+	spin_lock_irqsave(&uprobes_treelock, flags);
+	n = find_node_in_range(inode, min, max);
+	if (n) {
+		for (t = n; t; t = rb_prev(t)) {
+			u = rb_entry(t, struct uprobe, rb_node);
+			if (u->inode != inode || u->offset < min)
+				break;
+			list_add(&u->pending_list, head);
+			atomic_inc(&u->ref);
+		}
+		for (t = n; (t = rb_next(t)); ) {
+			u = rb_entry(t, struct uprobe, rb_node);
+			if (u->inode != inode || u->offset > max)
+				break;
+			list_add(&u->pending_list, head);
+			atomic_inc(&u->ref);
+		}
+	}
+	spin_unlock_irqrestore(&uprobes_treelock, flags);
+}
+
