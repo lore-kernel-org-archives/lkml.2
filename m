@@ -1,168 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab2GIWpA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 18:45:00 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:54644 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab2GIWo6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 18:44:58 -0400
-Date: Mon, 9 Jul 2012 15:44:24 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] shmem: fix negative rss in memcg memory.stat
-In-Reply-To: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils>
-Message-ID: <alpine.LSU.2.00.1207091541310.2051@eggly.anvils>
-References: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752793Ab2GIWqT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 18:46:19 -0400
+Received: from home.keithp.com ([63.227.221.253]:49170 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751770Ab2GIWqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 18:46:18 -0400
+X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Jul 2012 18:46:17 EDT
+From: Keith Packard <keithp@keithp.com>
+To: linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>
+Cc: Keith Packard <keithp@keithp.com>
+Subject: [PATCH] drm: use drm_compat_ioctl for 32-bit apps
+Date: Mon,  9 Jul 2012 15:40:07 -0700
+Message-Id: <1341873607-26847-1-git-send-email-keithp@keithp.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When adding the page_private checks before calling shmem_replace_page(),
-I did realize that there is a further race, but thought it too unlikely
-to need a hurried fix.
+Most of the DRM drivers appear to be missing the .compat_ioctl file
+operation entry necessary for 32-bit application compatibility.
 
-But independently I've been chasing why a mem cgroup's memory.stat
-sometimes shows negative rss after all tasks have gone: I expected it
-to be a stats gathering bug, but actually it's shmem swapping's fault.
+This patch  uses drm_compat_ioctl for all drivers which don't have
+their own, and which are using drm_ioctl for .unlocked_ioctl.
 
-It's an old surprise, that when you lock_page(lookup_swap_cache(swap)),
-the page may have been removed from swapcache before getting the lock; 
-or it may have been freed and reused and be back in swapcache; and it
-can even be using the same swap location as before (page_private same).
+This leaves drivers/gpu/drm/psb/psb_drv.c unchanged; it has a custom
+.unlocked_ioctl and will presumably need a custom .compat_ioctl as
+well.
 
-The swapoff case is already secure against this (swap cannot be reused
-until the whole area has been swapped off, and a new swapped on); and
-shmem_getpage_gfp() is protected by shmem_add_to_page_cache()'s check
-for the expected radix_tree entry - but a little too late.
-
-By that time, we might have already decided to shmem_replace_page():
-I don't know of a problem from that, but I'd feel more at ease not to
-do so spuriously.  And we have already done mem_cgroup_cache_charge(),
-on perhaps the wrong mem cgroup: and this charge is not then undone on
-the error path, because PageSwapCache ends up preventing that.
-
-It's this last case which causes the occasional negative rss in
-memory.stat: the page is charged here as cache, but (sometimes) found
-to be anon when eventually it's uncharged - and in between, it's an
-undeserved charge on the wrong memcg.
-
-Fix this by adding an earlier check on the radix_tree entry: it's
-inelegant to descend the tree twice, but swapping is not the fast path,
-and a better solution would need a pair (try+commit) of memcg calls,
-and a rework of shmem_replace_page() to keep out of the swapcache.
-
-We can use the added shmem_confirm_swap() function to replace the
-find_get_page+page_cache_release we were already doing on the error
-path.  And add a comment on that -EEXIST: it seems a peculiar errno
-to be using, but originates from its use in radix_tree_insert().
-
-[It can be surprising to see positive rss left in a memcg's memory.stat
-after all tasks have gone, since it is supposed to count anonymous but
-not shmem.  Aside from sharing anon pages via fork with a task in some
-other memcg, it often happens after swapping: because a swap page can't
-be freed while under writeback, nor while locked.  So it's not an error,
-and these residual pages are easily freed once pressure demands.]
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Keith Packard <keithp@keithp.com>
 ---
-I'd rather like this to go into v3.5, but it is late, and I don't have
-a very strong argument for it: as you prefer.  And I've not marked it
-for stable, since the patch won't apply to v3.4 as is; but I'd happily
-supply a patch for v3.1 onwards if asked.
+ drivers/gpu/drm/ast/ast_drv.c           |    3 +++
+ drivers/gpu/drm/cirrus/cirrus_drv.c     |    3 +++
+ drivers/gpu/drm/exynos/exynos_drm_drv.c |    3 +++
+ drivers/gpu/drm/i810/i810_dma.c         |    3 +++
+ drivers/gpu/drm/i810/i810_drv.c         |    3 +++
+ drivers/gpu/drm/mgag200/mgag200_drv.c   |    3 +++
+ drivers/gpu/drm/savage/savage_drv.c     |    3 +++
+ drivers/gpu/drm/sis/sis_drv.c           |    3 +++
+ drivers/gpu/drm/tdfx/tdfx_drv.c         |    3 +++
+ drivers/gpu/drm/udl/udl_drv.c           |    3 +++
+ drivers/gpu/drm/via/via_drv.c           |    3 +++
+ 11 files changed, 33 insertions(+)
 
- mm/shmem.c |   41 +++++++++++++++++++++++++++++------------
- 1 file changed, 29 insertions(+), 12 deletions(-)
+diff --git a/drivers/gpu/drm/ast/ast_drv.c b/drivers/gpu/drm/ast/ast_drv.c
+index d0c4574..3616480 100644
+--- a/drivers/gpu/drm/ast/ast_drv.c
++++ b/drivers/gpu/drm/ast/ast_drv.c
+@@ -193,6 +193,9 @@ static const struct file_operations ast_fops = {
+ 	.mmap = ast_mmap,
+ 	.poll = drm_poll,
+ 	.fasync = drm_fasync,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = drm_compat_ioctl,
++#endif
+ 	.read = drm_read,
+ };
+ 
+diff --git a/drivers/gpu/drm/cirrus/cirrus_drv.c b/drivers/gpu/drm/cirrus/cirrus_drv.c
+index 7053140..b83a2d7 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_drv.c
++++ b/drivers/gpu/drm/cirrus/cirrus_drv.c
+@@ -74,6 +74,9 @@ static const struct file_operations cirrus_driver_fops = {
+ 	.unlocked_ioctl = drm_ioctl,
+ 	.mmap = cirrus_mmap,
+ 	.poll = drm_poll,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = drm_compat_ioctl,
++#endif
+ 	.fasync = drm_fasync,
+ };
+ static struct drm_driver driver = {
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+index d6de2e0..6b07cfe 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+@@ -240,6 +240,9 @@ static const struct file_operations exynos_drm_driver_fops = {
+ 	.poll		= drm_poll,
+ 	.read		= drm_read,
+ 	.unlocked_ioctl	= drm_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = drm_compat_ioctl,
++#endif
+ 	.release	= drm_release,
+ };
+ 
+diff --git a/drivers/gpu/drm/i810/i810_dma.c b/drivers/gpu/drm/i810/i810_dma.c
+index fa94391..6e8f935 100644
+--- a/drivers/gpu/drm/i810/i810_dma.c
++++ b/drivers/gpu/drm/i810/i810_dma.c
+@@ -115,6 +115,9 @@ static const struct file_operations i810_buffer_fops = {
+ 	.unlocked_ioctl = drm_ioctl,
+ 	.mmap = i810_mmap_buffers,
+ 	.fasync = drm_fasync,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = drm_compat_ioctl,
++#endif
+ 	.llseek = noop_llseek,
+ };
+ 
+diff --git a/drivers/gpu/drm/i810/i810_drv.c b/drivers/gpu/drm/i810/i810_drv.c
+index ec12f7d..8e50757 100644
+--- a/drivers/gpu/drm/i810/i810_drv.c
++++ b/drivers/gpu/drm/i810/i810_drv.c
+@@ -51,6 +51,9 @@ static const struct file_operations i810_driver_fops = {
+ 	.mmap = drm_mmap,
+ 	.poll = drm_poll,
+ 	.fasync = drm_fasync,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = drm_compat_ioctl,
++#endif
+ 	.llseek = noop_llseek,
+ };
+ 
+diff --git a/drivers/gpu/drm/mgag200/mgag200_drv.c b/drivers/gpu/drm/mgag200/mgag200_drv.c
+index 93e832d..895a67e 100644
+--- a/drivers/gpu/drm/mgag200/mgag200_drv.c
++++ b/drivers/gpu/drm/mgag200/mgag200_drv.c
+@@ -81,6 +81,9 @@ static const struct file_operations mgag200_driver_fops = {
+ 	.mmap = mgag200_mmap,
+ 	.poll = drm_poll,
+ 	.fasync = drm_fasync,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = drm_compat_ioctl,
++#endif
+ 	.read = drm_read,
+ };
+ 
+diff --git a/drivers/gpu/drm/savage/savage_drv.c b/drivers/gpu/drm/savage/savage_drv.c
+index 89afe0b..c77823a 100644
+--- a/drivers/gpu/drm/savage/savage_drv.c
++++ b/drivers/gpu/drm/savage/savage_drv.c
+@@ -43,6 +43,9 @@ static const struct file_operations savage_driver_fops = {
+ 	.mmap = drm_mmap,
+ 	.poll = drm_poll,
+ 	.fasync = drm_fasync,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = drm_compat_ioctl,
++#endif
+ 	.llseek = noop_llseek,
+ };
+ 
+diff --git a/drivers/gpu/drm/sis/sis_drv.c b/drivers/gpu/drm/sis/sis_drv.c
+index dd14cd1..02cd328 100644
+--- a/drivers/gpu/drm/sis/sis_drv.c
++++ b/drivers/gpu/drm/sis/sis_drv.c
+@@ -74,6 +74,9 @@ static const struct file_operations sis_driver_fops = {
+ 	.mmap = drm_mmap,
+ 	.poll = drm_poll,
+ 	.fasync = drm_fasync,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = drm_compat_ioctl,
++#endif
+ 	.llseek = noop_llseek,
+ };
+ 
+diff --git a/drivers/gpu/drm/tdfx/tdfx_drv.c b/drivers/gpu/drm/tdfx/tdfx_drv.c
+index 1613c78..3af8832 100644
+--- a/drivers/gpu/drm/tdfx/tdfx_drv.c
++++ b/drivers/gpu/drm/tdfx/tdfx_drv.c
+@@ -49,6 +49,9 @@ static const struct file_operations tdfx_driver_fops = {
+ 	.mmap = drm_mmap,
+ 	.poll = drm_poll,
+ 	.fasync = drm_fasync,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = drm_compat_ioctl,
++#endif
+ 	.llseek = noop_llseek,
+ };
+ 
+diff --git a/drivers/gpu/drm/udl/udl_drv.c b/drivers/gpu/drm/udl/udl_drv.c
+index 6e52069..9f84128 100644
+--- a/drivers/gpu/drm/udl/udl_drv.c
++++ b/drivers/gpu/drm/udl/udl_drv.c
+@@ -66,6 +66,9 @@ static const struct file_operations udl_driver_fops = {
+ 	.unlocked_ioctl	= drm_ioctl,
+ 	.release = drm_release,
+ 	.fasync = drm_fasync,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = drm_compat_ioctl,
++#endif
+ 	.llseek = noop_llseek,
+ };
+ 
+diff --git a/drivers/gpu/drm/via/via_drv.c b/drivers/gpu/drm/via/via_drv.c
+index 02661f3..6061776 100644
+--- a/drivers/gpu/drm/via/via_drv.c
++++ b/drivers/gpu/drm/via/via_drv.c
+@@ -65,6 +65,9 @@ static const struct file_operations via_driver_fops = {
+ 	.mmap = drm_mmap,
+ 	.poll = drm_poll,
+ 	.fasync = drm_fasync,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = drm_compat_ioctl,
++#endif
+ 	.llseek = noop_llseek,
+ };
+ 
+-- 
+1.7.10.4
 
---- 3.5-rc6/mm/shmem.c	2012-07-07 19:20:02.986950655 -0700
-+++ linux/mm/shmem.c	2012-07-07 19:20:52.026952048 -0700
-@@ -264,6 +264,24 @@ static int shmem_radix_tree_replace(stru
- }
- 
- /*
-+ * Sometimes, before we decide whether to proceed or to fail, we must check
-+ * that an entry was not already brought back from swap by a racing thread.
-+ *
-+ * Checking page is not enough: by the time a SwapCache page is locked, it
-+ * might be reused, and again be SwapCache, using the same swap as before.
-+ */
-+static bool shmem_confirm_swap(struct address_space *mapping,
-+			       pgoff_t index, swp_entry_t swap)
-+{
-+	void *item;
-+
-+	rcu_read_lock();
-+	item = radix_tree_lookup(&mapping->page_tree, index);
-+	rcu_read_unlock();
-+	return item == swp_to_radix_entry(swap);
-+}
-+
-+/*
-  * Like add_to_page_cache_locked, but error if expected item has gone.
-  */
- static int shmem_add_to_page_cache(struct page *page,
-@@ -1124,9 +1142,9 @@ repeat:
- 		/* We have to do this with page locked to prevent races */
- 		lock_page(page);
- 		if (!PageSwapCache(page) || page_private(page) != swap.val ||
--		    page->mapping) {
-+		    !shmem_confirm_swap(mapping, index, swap)) {
- 			error = -EEXIST;	/* try again */
--			goto failed;
-+			goto unlock;
- 		}
- 		if (!PageUptodate(page)) {
- 			error = -EIO;
-@@ -1142,9 +1160,12 @@ repeat:
- 
- 		error = mem_cgroup_cache_charge(page, current->mm,
- 						gfp & GFP_RECLAIM_MASK);
--		if (!error)
-+		if (!error) {
- 			error = shmem_add_to_page_cache(page, mapping, index,
- 						gfp, swp_to_radix_entry(swap));
-+			/* We already confirmed swap, and make no allocation */
-+			VM_BUG_ON(error);
-+		}
- 		if (error)
- 			goto failed;
- 
-@@ -1245,14 +1266,10 @@ decused:
- unacct:
- 	shmem_unacct_blocks(info->flags, 1);
- failed:
--	if (swap.val && error != -EINVAL) {
--		struct page *test = find_get_page(mapping, index);
--		if (test && !radix_tree_exceptional_entry(test))
--			page_cache_release(test);
--		/* Have another try if the entry has changed */
--		if (test != swp_to_radix_entry(swap))
--			error = -EEXIST;
--	}
-+	if (swap.val && error != -EINVAL &&
-+	    !shmem_confirm_swap(mapping, index, swap))
-+		error = -EEXIST;
-+unlock:
- 	if (page) {
- 		unlock_page(page);
- 		page_cache_release(page);
-@@ -1264,7 +1281,7 @@ failed:
- 		spin_unlock(&info->lock);
- 		goto repeat;
- 	}
--	if (error == -EEXIST)
-+	if (error == -EEXIST)	/* from above or from radix_tree_insert */
- 		goto repeat;
- 	return error;
- }
