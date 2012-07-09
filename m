@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab2GIOiM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:38:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38195 "EHLO
+	id S1754760Ab2GIOpS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:45:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38216 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754391Ab2GIOiI (ORCPT
+	by vger.kernel.org with ESMTP id S1754402Ab2GIOiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:38:08 -0400
-Message-Id: <20120709143122.964579659@decadent.org.uk>
+	Mon, 9 Jul 2012 10:38:11 -0400
+Message-Id: <20120709143123.229568316@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:32:00 +0100
+Date: Mon, 09 Jul 2012 15:32:02 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Junxiao Bi <junxiao.bi@oracle.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Joel Becker <jlbec@evilplan.org>
-Subject: [ 44/48] aio: make kiocb->private NUll in init_sync_kiocb()
+        alan@lxorguk.ukuu.org.uk, Andy Lutomirski <luto@amacapital.net>,
+        Hugh Dickins <hugh@veritas.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Badari Pulavarty <pbadari@us.ibm.com>, Nick Piggin <npiggin@suse.de>
+Subject: [ 46/48] mm: Hold a file reference in madvise_remove
 In-Reply-To: <20120709143116.348975190@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,38 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 2dfd06036ba7ae8e7be2daf5a2fff1dac42390bf upstream.
+commit 9ab4233dd08036fe34a89c7dc6f47a8bf2eb29eb upstream.
 
-Ocfs2 uses kiocb.*private as a flag of unsigned long size. In
-commit a11f7e6 ocfs2: serialize unaligned aio, the unaligned
-io flag is involved in it to serialize the unaligned aio. As
-*private is not initialized in init_sync_kiocb() of do_sync_write(),
-this unaligned io flag may be unexpectly set in an aligned dio.
-And this will cause OCFS2_I(inode)->ip_unaligned_aio decreased
-to -1 in ocfs2_dio_end_io(), thus the following unaligned dio
-will hang forever at ocfs2_aiodio_wait() in ocfs2_file_aio_write().
+Otherwise the code races with munmap (causing a use-after-free
+of the vma) or with close (causing a use-after-free of the struct
+file).
 
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Joel Becker <jlbec@evilplan.org>
+The bug was introduced by commit 90ed52ebe481 ("[PATCH] holepunch: fix
+mmap_sem i_mutex deadlock")
+
+Cc: Hugh Dickins <hugh@veritas.com>
+Cc: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Badari Pulavarty <pbadari@us.ibm.com>
+Cc: Nick Piggin <npiggin@suse.de>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - madvise_remove() calls vmtruncate_range(), not do_fallocate()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/aio.h |    1 +
- 1 file changed, 1 insertion(+)
+ mm/madvise.c |   18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index 2314ad8..b1a520e 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -140,6 +140,7 @@ struct kiocb {
- 		(x)->ki_dtor = NULL;			\
- 		(x)->ki_obj.tsk = tsk;			\
- 		(x)->ki_user_data = 0;                  \
-+		(x)->private = NULL;			\
- 	} while (0)
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -13,6 +13,7 @@
+ #include <linux/hugetlb.h>
+ #include <linux/sched.h>
+ #include <linux/ksm.h>
++#include <linux/file.h>
  
- #define AIO_RING_MAGIC			0xa10a10a1
+ /*
+  * Any behaviour which results in changes to the vma->vm_flags needs to
+@@ -197,14 +198,16 @@ static long madvise_remove(struct vm_are
+ 	struct address_space *mapping;
+ 	loff_t offset, endoff;
+ 	int error;
++	struct file *f;
+ 
+ 	*prev = NULL;	/* tell sys_madvise we drop mmap_sem */
+ 
+ 	if (vma->vm_flags & (VM_LOCKED|VM_NONLINEAR|VM_HUGETLB))
+ 		return -EINVAL;
+ 
+-	if (!vma->vm_file || !vma->vm_file->f_mapping
+-		|| !vma->vm_file->f_mapping->host) {
++	f = vma->vm_file;
++
++	if (!f || !f->f_mapping || !f->f_mapping->host) {
+ 			return -EINVAL;
+ 	}
+ 
+@@ -218,9 +221,16 @@ static long madvise_remove(struct vm_are
+ 	endoff = (loff_t)(end - vma->vm_start - 1)
+ 			+ ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
+ 
+-	/* vmtruncate_range needs to take i_mutex */
++	/*
++	 * vmtruncate_range may need to take i_mutex.  We need to
++	 * explicitly grab a reference because the vma (and hence the
++	 * vma's reference to the file) can go away as soon as we drop
++	 * mmap_sem.
++	 */
++	get_file(f);
+ 	up_read(&current->mm->mmap_sem);
+ 	error = vmtruncate_range(mapping->host, offset, endoff);
++	fput(f);
+ 	down_read(&current->mm->mmap_sem);
+ 	return error;
+ }
 
 
