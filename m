@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab2GIOxr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:53:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38090 "EHLO
+	id S1755108Ab2GIOyq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:54:46 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38094 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754153Ab2GIOh5 (ORCPT
+	by vger.kernel.org with ESMTP id S1754301Ab2GIOh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:37:57 -0400
-Message-Id: <20120709143118.748262282@decadent.org.uk>
+	Mon, 9 Jul 2012 10:37:56 -0400
+Message-Id: <20120709143117.087082807@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:31:30 +0100
+Date: Mon, 09 Jul 2012 15:31:19 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>,
-        Christian Balzer <chibi@gol.com>
-Subject: [ 14/48] md/raid10: Dont try to recovery unmatched (and unused) chunks.
+        alan@lxorguk.ukuu.org.uk, Stone Piao <piaoyun@marvell.com>,
+        Avinash Patil <patila@marvell.com>, Kiran Divekar <dkiran@marvell.com>,
+        Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 03/48] mwifiex: fix 11n rx packet drop issue
 In-Reply-To: <20120709143116.348975190@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,46 +30,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Stone Piao <piaoyun@marvell.com>
 
-commit fc448a18ae6219af9a73257b1fbcd009efab4a81 upstream.
+commit 925839243dc9aa4ef25305f5afd10ed18258a4ac upstream.
 
-If a RAID10 has an odd number of chunks - as might happen when there
-are an odd number of devices - the last chunk has no pair and so is
-not mirrored.  We don't store data there, but when recovering the last
-device in an array we retry to recover that last chunk from a
-non-existent location.  This results in an error, and the recovery
-aborts.
+Currently we check the sequence number of last packet received
+against start_win. If a sequence hole is detected, start_win is
+updated to next sequence number.
 
-When we get to that last chunk we should just stop - there is nothing
-more to do anyway.
+Since the rx sequence number is initialized to 0, a corner case
+exists when BA setup happens immediately after association. As
+0 is a valid sequence number, start_win gets increased to 1
+incorrectly. This causes the first packet with sequence number 0
+being dropped.
 
-This bug has been present since the introduction of RAID10, so the
-patch is appropriate for any -stable kernel.
+Initialize rx sequence number as 0xffff and skip adjusting
+start_win if the sequence number remains 0xffff. The sequence
+number will be updated once the first packet is received.
 
-Reported-by: Christian Balzer <chibi@gol.com>
-Tested-by: Christian Balzer <chibi@gol.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Stone Piao <piaoyun@marvell.com>
+Signed-off-by: Avinash Patil <patila@marvell.com>
+Signed-off-by: Kiran Divekar <dkiran@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/raid10.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/wireless/mwifiex/11n_rxreorder.c |    5 +++--
+ drivers/net/wireless/mwifiex/11n_rxreorder.h |    7 +++++++
+ drivers/net/wireless/mwifiex/wmm.c           |    2 ++
+ 3 files changed, 12 insertions(+), 2 deletions(-)
 
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -2436,6 +2436,12 @@ static sector_t sync_request(struct mdde
- 			/* want to reconstruct this device */
- 			rb2 = r10_bio;
- 			sect = raid10_find_virt(conf, sector_nr, i);
-+			if (sect >= mddev->resync_max_sectors) {
-+				/* last stripe is not complete - don't
-+				 * try to recover this sector.
-+				 */
-+				continue;
-+			}
- 			/* Unless we are doing a full sync, we only need
- 			 * to recover the block if it is set in the bitmap
- 			 */
+diff --git a/drivers/net/wireless/mwifiex/11n_rxreorder.c b/drivers/net/wireless/mwifiex/11n_rxreorder.c
+index 9c44088..900ee12 100644
+--- a/drivers/net/wireless/mwifiex/11n_rxreorder.c
++++ b/drivers/net/wireless/mwifiex/11n_rxreorder.c
+@@ -256,7 +256,8 @@ mwifiex_11n_create_rx_reorder_tbl(struct mwifiex_private *priv, u8 *ta,
+ 	else
+ 		last_seq = priv->rx_seq[tid];
+ 
+-	if (last_seq >= new_node->start_win)
++	if (last_seq != MWIFIEX_DEF_11N_RX_SEQ_NUM &&
++	    last_seq >= new_node->start_win)
+ 		new_node->start_win = last_seq + 1;
+ 
+ 	new_node->win_size = win_size;
+@@ -596,5 +597,5 @@ void mwifiex_11n_cleanup_reorder_tbl(struct mwifiex_private *priv)
+ 	spin_unlock_irqrestore(&priv->rx_reorder_tbl_lock, flags);
+ 
+ 	INIT_LIST_HEAD(&priv->rx_reorder_tbl_ptr);
+-	memset(priv->rx_seq, 0, sizeof(priv->rx_seq));
++	mwifiex_reset_11n_rx_seq_num(priv);
+ }
+diff --git a/drivers/net/wireless/mwifiex/11n_rxreorder.h b/drivers/net/wireless/mwifiex/11n_rxreorder.h
+index f1bffeb..6c9815a 100644
+--- a/drivers/net/wireless/mwifiex/11n_rxreorder.h
++++ b/drivers/net/wireless/mwifiex/11n_rxreorder.h
+@@ -37,6 +37,13 @@
+ 
+ #define ADDBA_RSP_STATUS_ACCEPT 0
+ 
++#define MWIFIEX_DEF_11N_RX_SEQ_NUM	0xffff
++
++static inline void mwifiex_reset_11n_rx_seq_num(struct mwifiex_private *priv)
++{
++	memset(priv->rx_seq, 0xff, sizeof(priv->rx_seq));
++}
++
+ int mwifiex_11n_rx_reorder_pkt(struct mwifiex_private *,
+ 			       u16 seqNum,
+ 			       u16 tid, u8 *ta,
+diff --git a/drivers/net/wireless/mwifiex/wmm.c b/drivers/net/wireless/mwifiex/wmm.c
+index f3fc655..8c2b5c0 100644
+--- a/drivers/net/wireless/mwifiex/wmm.c
++++ b/drivers/net/wireless/mwifiex/wmm.c
+@@ -404,6 +404,8 @@ mwifiex_wmm_init(struct mwifiex_adapter *adapter)
+ 		priv->add_ba_param.tx_win_size = MWIFIEX_AMPDU_DEF_TXWINSIZE;
+ 		priv->add_ba_param.rx_win_size = MWIFIEX_AMPDU_DEF_RXWINSIZE;
+ 
++		mwifiex_reset_11n_rx_seq_num(priv);
++
+ 		atomic_set(&priv->wmm.tx_pkts_queued, 0);
+ 		atomic_set(&priv->wmm.highest_queued_prio, HIGH_PRIO_TID);
+ 	}
 
 
