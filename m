@@ -1,125 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab2GIXoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 19:44:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47147 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505Ab2GIXoJ (ORCPT
+	id S1754847Ab2GIXrF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 19:47:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44988 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570Ab2GIXrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 19:44:09 -0400
-Date: Mon, 9 Jul 2012 18:43:59 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Greg Thelen <gthelen@google.com>,
-        Tejun Heo <tj@kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2] fail dentry revalidation after namespace change
-Message-ID: <20120709234359.GA6800@sergelap>
-References: <1341565747-15374-1-git-send-email-glommer@parallels.com>
- <20120709161336.0ec23592.akpm@linux-foundation.org>
+	Mon, 9 Jul 2012 19:47:02 -0400
+Date: Mon, 9 Jul 2012 16:44:58 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 4/7] tracing/function: Introduce persistent trace option
+Message-ID: <20120709234457.GA25140@lizard>
+References: <20120626232210.GA11549@lizard>
+ <1340753009-12483-4-git-send-email-anton.vorontsov@linaro.org>
+ <1340800812.16702.3.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120709161336.0ec23592.akpm@linux-foundation.org>
+In-Reply-To: <1340800812.16702.3.camel@gandalf.stny.rr.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andrew Morton (akpm@linux-foundation.org):
-> On Fri,  6 Jul 2012 13:09:07 +0400
-> Glauber Costa <glommer@parallels.com> wrote:
-> 
-> > When we change the namespace tag of a sysfs entry, the associated dentry
-> > is still kept around. readdir() will work correctly and not display the
-> > old entries, but open() will still succeed, so will reads and writes.
-> > 
-> > This will no longer happen if sysfs is remounted, hinting that this is a
-> > cache-related problem.
-> > 
-> > I am using the following sequence to demonstrate that:
-> > 
-> > shell1:
-> > ip link add type veth
-> > unshare -nm
-> > 
-> > shell2:
-> > ip link set veth1 <pid_of_shell_1>
-> > cat /sys/devices/virtual/net/veth1/ifindex
-> > 
-> > Before that patch, this will succeed (fail to fail). After it, it will
-> > correctly return an error. Differently from a normal rename, which we
-> > handle fine, changing the object namespace will keep it's path intact.
-> > So this check seems necessary as well.
-> > 
-> > ...
-> >
-> > --- a/fs/sysfs/dir.c
-> > +++ b/fs/sysfs/dir.c
-> > @@ -307,6 +307,7 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
-> >  {
-> >  	struct sysfs_dirent *sd;
-> >  	int is_dir;
-> > +	int type;
+On Wed, Jun 27, 2012 at 08:40:12AM -0400, Steven Rostedt wrote:
+> On Tue, 2012-06-26 at 16:23 -0700, Anton Vorontsov wrote:
+> > @@ -219,6 +232,8 @@ static int func_set_flag(u32 old_flags, u32 bit, int set)
 > >  
-> >  	if (nd->flags & LOOKUP_RCU)
-> >  		return -ECHILD;
-> > @@ -326,6 +327,13 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
-> >  	if (strcmp(dentry->d_name.name, sd->s_name) != 0)
-> >  		goto out_bad;
-> >  
-> > +	/* The sysfs dirent has been moved to a different namespace */
-> > +	type = KOBJ_NS_TYPE_NONE;
-> > +	if (sd->s_parent)
-> > +		type = sysfs_ns_type(sd->s_parent);
-> > +	if (type && (sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns))
+> >  		return 0;
+> >  	}
+> > +	if (bit == TRACE_FUNC_OPT_PSTORE)
+> > +		return 0;
 > 
-> eww, the code is assuming that KOBJ_NS_TYPE_NONE has a value of zero. 
-> Don't do that; it smells bad.
+> Perhaps this should be a switch() statement, or at least put a
+>  } else if () {
 > 
-> I renamed my version of this patch to "sysfs: fail dentry revalidation
-> after namespace change", as carefully explained in section 15 of the
-> excellent Documentation/SubmittingPatches, then queued this:
-> 
-> 
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: sysfs-fail-dentry-revalidation-after-namespace-change-fix
-> 
-> don't assume that KOBJ_NS_TYPE_NONE==0.  Also save a test-n-branch.
-> 
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> Cc: Glauber Costa <glommer@parallels.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Tejun Heo <tj@kernel.org>
+> As it can't be bit == TRACE_FUNC_OPT_STACK and bit ==
+> TRACE_FUNC_OPT_PSTORE.
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Yup, thanks for the idea. I'll start using 'else if' at first, and then
+will convert it to a switch statement via a separate patch, that way I'll
+not clobber the functional patch with cosmetic changes.
 
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  fs/sysfs/dir.c |    8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
-> 
-> diff -puN fs/sysfs/dir.c~sysfs-fail-dentry-revalidation-after-namespace-change-fix fs/sysfs/dir.c
-> --- a/fs/sysfs/dir.c~sysfs-fail-dentry-revalidation-after-namespace-change-fix
-> +++ a/fs/sysfs/dir.c
-> @@ -329,10 +329,12 @@ static int sysfs_dentry_revalidate(struc
->  
->  	/* The sysfs dirent has been moved to a different namespace */
->  	type = KOBJ_NS_TYPE_NONE;
-> -	if (sd->s_parent)
-> +	if (sd->s_parent) {
->  		type = sysfs_ns_type(sd->s_parent);
-> -	if (type && (sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns))
-> -		goto out_bad;
-> +		if (type != KOBJ_NS_TYPE_NONE &&
-> +				sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns)
-> +			goto out_bad;
-> +	}
->  
->  	mutex_unlock(&sysfs_mutex);
->  out_valid:
-> _
-> 
-> 
+Thanks,
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
