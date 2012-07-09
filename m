@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532Ab2GIBtI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 21:49:08 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:38923 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab2GIBtF (ORCPT
+	id S1751631Ab2GIBvI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 21:51:08 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43021 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405Ab2GIBvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 21:49:05 -0400
-Message-ID: <1341798533.2439.13.camel@ThinkPad-T420>
-Subject: Re: [PATCH powerpc 2/2] kfree the cache name  of pgtable cache if
- SLUB is used
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm <linux-mm@kvack.org>,
-        PowerPC email list <linuxppc-dev@lists.ozlabs.org>
-Date: Mon, 09 Jul 2012 09:48:53 +0800
-In-Reply-To: <4FF6BA39.4000305@parallels.com>
-References: <1340617984.13778.37.camel@ThinkPad-T420>
-	 <1340618099.13778.39.camel@ThinkPad-T420>
-	 <alpine.DEB.2.00.1207031344240.14703@router.home>
-	 <alpine.DEB.2.00.1207031535330.14703@router.home>
-	 <1341392420.18505.41.camel@ThinkPad-T420> <4FF439D0.1000603@parallels.com>
-	 <1341452486.18505.49.camel@ThinkPad-T420> <4FF54F18.50300@parallels.com>
-	 <1341480578.23916.7.camel@ThinkPad-T420> <4FF6BA39.4000305@parallels.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Sun, 8 Jul 2012 21:51:06 -0400
+Date: Mon, 9 Jul 2012 11:50:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: linux-next: build failure after merge of the v4l-dvb tree
+Message-Id: <20120709115046.f09fe2d15e33e7502cbad222@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-x-cbid: 12070816-3568-0000-0000-0000021A6AED
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__9_Jul_2012_11_50_46_+1000_ZbeRoIkMmk_tV4h_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-06 at 14:13 +0400, Glauber Costa wrote:
-> On 07/05/2012 01:29 PM, Li Zhong wrote:
-> > On Thu, 2012-07-05 at 12:23 +0400, Glauber Costa wrote:
-> >> On 07/05/2012 05:41 AM, Li Zhong wrote:
-> >>> On Wed, 2012-07-04 at 16:40 +0400, Glauber Costa wrote:
-> >>>> On 07/04/2012 01:00 PM, Li Zhong wrote:
-> >>>>> On Tue, 2012-07-03 at 15:36 -0500, Christoph Lameter wrote:
-> >>>>>>> Looking through the emails it seems that there is an issue with alias
-> >>>>>>> strings. 
-> >>>>> To be more precise, there seems no big issue currently. I just wanted to
-> >>>>> make following usage of kmem_cache_create (SLUB) possible:
-> >>>>>
-> >>>>> 	name = some string kmalloced
-> >>>>> 	kmem_cache_create(name, ...)
-> >>>>> 	kfree(name);
-> >>>>
-> >>>> Out of curiosity: Why?
-> >>>> This is not (currently) possible with the other allocators (may change
-> >>>> with christoph's unification patches), so you would be making your code
-> >>>> slub-dependent.
-> >>>>
-> >>>
-> >>> For slub itself, I think it's not good that: in some cases, the name
-> >>> string could be kfreed ( if it was kmalloced ) immediately after calling
-> >>> the cache create; in some other case, the name string needs to be kept
-> >>> valid until some init calls finished. 
-> >>>
-> >>> I agree with you that it would make the code slub-dependent, so I'm now
-> >>> working on the consistency of the other allocators regarding this name
-> >>> string duplicating thing. 
-> >>
-> >> If you really need to kfree the string, or even if it is easier for you
-> >> this way, it can be done. As a matter of fact, this is the case for me.
-> >> Just that your patch is not enough. Christoph has a patch that makes
-> >> this behavior consistent over all allocators.
-> > 
-> > Sorry, I didn't know that. Seems I don't need to continue the half-done
-> > work in slab. If possible, would you please give me a link of the patch?
-> > Thank you. 
-> > 
-> 
-> Sorry for the delay. In case you haven't found it out yourself yet:
-> 
-> http://www.spinics.net/lists/linux-mm/msg36149.html
+--Signature=_Mon__9_Jul_2012_11_50_46_+1000_ZbeRoIkMmk_tV4h_
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thank you. I think it is better to have these things in the
-slab_common.c. 
+Hi Mauro,
 
-> 
-> Please not this posted patch as is has a bug.
-> 
-> I do believe that your take on the aliasing code adds value to it. But
-> as I've already said once, might have to dig a bit deeper in that to get
-> to end of the rabbit hole.
+After merging the v4l-dvb tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-With slab_common, I think my slab/slob modifications are not needed any
-more. After I understand the common patches, I will check whether the
-aliasing problem in slub still exists, and if yes, try to send a patch
-based on that. 
+usr/include/linux/v4l2-subdev.h:28: included file 'linux/v4l2-common.h' is =
+not exported
+usr/include/linux/videodev2.h:63: included file 'linux/v4l2-common.h' is no=
+t exported
 
+Introduced by commit 5689b28890f4 ("[media] v4l: Unify selection targets
+across V4L2 and V4L2 subdev interfaces").
+
+I have used the v4l-dvb tree from next-20120706 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__9_Jul_2012_11_50_46_+1000_ZbeRoIkMmk_tV4h_
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP+jj2AAoJEECxmPOUX5FERP0QAIdYQntEeZAs7ditbNC4K90Z
+B3j0pjqsW0pEI+Qch8xrdggfXF7maFCRVSzUqaLp3kyn+TjMrMoDLbzDuOzmJSyv
+xyJatAKVwr4dQaRi2wgG5DAmFkoi2pueGpsv+FvcTUscKDDixlOLd6Ng97lpXqIo
+XAE3BWv4L+wQnNrnBRy0rkzFOJHRmcOogxORWDBpSeDzp8KXvYbm0a62jKjd2CZs
+9ye/ZaHMAHlH05wq3fX3fXA+uc2Mcvg1B3HrSlk8vjCj58fFsszd7G1rqPl2xBNx
+q0Ek4jrySKHm7eHzI9OxFHisAGazEcd/27ASdC97zMx4l2KLfUjXsLoNQj5qY2sy
+AeZ43R9FjKwVa83IrlvGTbhWS000+bvNGJloVRwGnzhan4zleDFFLwt8TrpG+Wh5
+Nkvy8nvUQ083STCz3MBsVmR4PLa+oTUE/zUhI46WIQB/dR9qCvCc+h2UhZXN+7DY
+z5PEL8Su+j5hIq0i8X1yQgZsq4biztIG+KqYPCVmdGN8TqmWvesCgMthIMbQjBXl
+lOEhUy2O2ZEsjYx+xSVxxcOPWcJo61bV/O1DPXIAwaGnv8GRnG3C37SQt4HL58mr
+/TvopX3lWXchV6aqU/2KIn9MyCOYW2w0SXjjJiwSSXbosQfMTFbCUH9MpMyDp1i4
+jaw7OGHIYSWiyK+DF7E9
+=KkNj
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__9_Jul_2012_11_50_46_+1000_ZbeRoIkMmk_tV4h_--
