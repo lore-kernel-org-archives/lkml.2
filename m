@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab2GIS6W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 14:58:22 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:38648 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751614Ab2GIS6V (ORCPT
+	id S1751766Ab2GITGf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 15:06:35 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:48647 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751202Ab2GITGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 14:58:21 -0400
-Date: Mon, 9 Jul 2012 14:58:20 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Clemens Ladisch <clemens@ladisch.de>
-cc: linux-usb@vger.kernel.org, Udo van den Heuvel <udovdh@xs4all.nl>,
-        Simon Jones <sijones2010@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: 3.4.4: disabling irq
-In-Reply-To: <4FFAE2A5.2070701@ladisch.de>
-Message-ID: <Pine.LNX.4.44L0.1207091451490.1954-100000@iolanthe.rowland.org>
+	Mon, 9 Jul 2012 15:06:34 -0400
+X-Authenticated: #7313500
+X-Provags-ID: V01U2FsdGVkX1+NdDJZ9zCNAAgBJ5JOCf5fhEWuoaxxLcYFmLwmNk
+	iW3gflFD6TnOfa
+From: dl9pf@gmx.de
+To: dl9pf@gmx.de
+Cc: =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <jansimon.moeller@gmx.de>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: [PATCH] Trivial: Fix typo in include/linux/clk.h .
+Date: Mon,  9 Jul 2012 21:06:18 +0200
+Message-Id: <1341860778-23898-1-git-send-email-dl9pf@gmx.de>
+X-Mailer: git-send-email 1.7.3.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jul 2012, Clemens Ladisch wrote:
+From: Jan-Simon Möller <jansimon.moeller@gmx.de>
 
-> (forwarded to linux-usb)
-> 
-> Udo van den Heuvel wrote:
-> > Hello,
-> >
-> > One moment the box is runing OK.
-> > One moment the 3.4.4 kernel decides to disable an interrupt.
-> > Why?
+Signed-off-by: Jan-Simon Möller <jansimon.moeller@gmx.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org
+---
+ include/linux/clk.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-The kernel disables IRQs when too many interrupts arrive too quickly.  
-In general that means some device is generating an interrupt request
-and it isn't getting handled by any driver.
-
-> > Jul  8 07:43:49 box3 ntpd[5067]: parse: convert_rawdcf: INCOMPLETE DATA - time code only has 1 bits
-> > Jul  8 07:44:53 box3 kernel: irq 18: nobody cared (try booting with the "irqpoll" option)
-> > Jul  8 07:44:53 box3 kernel: Pid: 1501, comm: irq/18-ohci_hcd Tainted: G        W    3.4.4 #1
-
-> ... and, with apparently the same mainboard:
-> 
-> Simon Jones wrote:
-> > Hi,
-> >
-> > Am not sure where to start with getting help on an issue.
-> >
-> > Since buying my motherboard i have found the usb ports are pretty
-> > unstable, and some devices work on usb2 some on usb3, after a while i
-> > managed to work out which will work where and it's reasonably stable
-> > now.
-> >
-> > Am on kernel 3.2.16 and tonight i thought i would try 3.4.4, it's all
-> > been compiled and seemed fine until i ran mythtv and couldn't get a
-> > smooth picture, then the tuner stopped responding and when looking in
-> > to the logs it appears IRQ18 assigned to the usb chipset gets disabled
-> > from what i can tell, it also causes a crash.
-> >
-> > Motherboard is Gigabyte GA-990XA-UD3
-> > CPU is AMD Bulldozer 6 Core version
-> >
-> > I'll attach the 2 dmesg logs, one from 3.2 and other from 3.4,
-> > hopefully someone can see what's wrong, there is a suggestion to boot
-> > with irqpoll, but really wanted someone's opinion on this.
-
-Simon's log shows a large of number of devices all using the same IRQ.  
-A good place to start would be to unload or unbind the drivers for some
-or all of the devices -- if that can be done before the IRQ is
-disabled.  Maybe it will turn out that an individual device is
-responsible for the problem.
-
-Another possibility is that some other device is using that IRQ line 
-without the kernel's knowledge.  That's not an easy sort of thing to 
-track down, though.
-
-In general, how easy is it to reproduce these problems?  Does the IRQ 
-line always get disabled after the system has been up for a few 
-seconds?
-
-If it does, and if the problem is caused by a software change, git 
-bisection might be the easiest way to track it down.
-
-Alan Stern
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index f7bd858..116172f 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -123,7 +123,7 @@ static inline void clk_unprepare(struct clk *clk)
+ /**
+  * clk_get - lookup and obtain a reference to a clock producer.
+  * @dev: device for clock "consumer"
+- * @id: clock comsumer ID
++ * @id: clock consumer ID
+  *
+  * Returns a struct clk corresponding to the clock producer, or
+  * valid IS_ERR() condition containing errno.  The implementation
+@@ -140,7 +140,7 @@ struct clk *clk_get(struct device *dev, const char *id);
+ /**
+  * devm_clk_get - lookup and obtain a managed reference to a clock producer.
+  * @dev: device for clock "consumer"
+- * @id: clock comsumer ID
++ * @id: clock consumer ID
+  *
+  * Returns a struct clk corresponding to the clock producer, or
+  * valid IS_ERR() condition containing errno.  The implementation
+-- 
+1.7.3.4
 
