@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab2GIKlu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 06:41:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63168 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752721Ab2GIKlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 06:41:49 -0400
-Date: Mon, 9 Jul 2012 12:39:03 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] uprobes: kill copy_vma()->uprobe_mmap()
-Message-ID: <20120709103903.GB21163@redhat.com>
-References: <20120708203008.GA18236@redhat.com> <1341822957.3462.18.camel@twins>
+	id S1753190Ab2GIKnw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 06:43:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58101 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753005Ab2GIKnv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 06:43:51 -0400
+Date: Mon, 9 Jul 2012 03:43:48 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Wanpeng Li <liwp.linux@gmail.com>
+cc: linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/hugetlb: split out
+ is_hugetlb_entry_migration_or_hwpoison
+In-Reply-To: <1341828761-11195-1-git-send-email-liwp.linux@gmail.com>
+Message-ID: <alpine.DEB.2.00.1207090343110.8224@chino.kir.corp.google.com>
+References: <1341828761-11195-1-git-send-email-liwp.linux@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341822957.3462.18.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09, Peter Zijlstra wrote:
->
-> On Sun, 2012-07-08 at 22:30 +0200, Oleg Nesterov wrote:
-> > And why this uprobe_mmap() was added? I believe the intent was wrong.
-> > Note that the caller is going to do move_page_tables(), all registered
-> > uprobes are already faulted in, we only change the virtual addresses.
->
-> I think it was because of the copy_vma + do_munmap. Since do_munmap()
-> should be doing a put on the uprobe, we need an extra get to balance.
+On Mon, 9 Jul 2012, Wanpeng Li wrote:
 
-No, please see the previous email, mmap doesn't increment uprobe->ref.
+> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+> 
+> Code was duplicated in two functions, clean it up.
+> 
+> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+> ---
+>  mm/hugetlb.c |   20 +++++++++-----------
+>  1 files changed, 9 insertions(+), 11 deletions(-)
 
-But this doesn't matter. Even if it did, the new vma will not add the
-new uprobes, we are going to change the virtual address of the already
-existing mapping.
-
-As for mm->uprobes_state.count, move_vma()->do_munmap(old_addr, old_len)
-won't change it afaics, is_swbp_at_addr() can't be true after
-move_page_tables()->ptep_get_and_clear(old_addr), the page with "int3"
-was already moved.
-
-Anyway, this uprobe_mmap() always fails. And we need more fixes, I hope
-to send more patches soon.
-
-> That said, I cannot actually find the uprobe_munmap() from do_munmap(),
-> but that might be due to lack of wakefulness etc..
-
-do_munmap()->unmap_region()->unmap_vmas()->unmap_single_vma()
-
-Yes, I can't keep in mind this path too ;)
-
-Oleg.
-
+Nack, this makes the code more convoluted then the hugetlb code already is 
+and savings two lines of code isn't worth it.
