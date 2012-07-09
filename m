@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526Ab2GIFUE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 01:20:04 -0400
-Received: from gate.crashing.org ([63.228.1.57]:42591 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347Ab2GIFTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 01:19:36 -0400
-Message-ID: <1341811163.3804.2.camel@pasglop>
-Subject: Re: linux-next: boot failure in next-20120705 and 20120706
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: ppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 09 Jul 2012 15:19:23 +1000
-In-Reply-To: <20120709144946.ada290480c0edc6a99f9c9c6@canb.auug.org.au>
-References: <20120709144946.ada290480c0edc6a99f9c9c6@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1751504Ab2GIFW7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 01:22:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37664 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756Ab2GIFW5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 01:22:57 -0400
+Message-ID: <4FFA6AAE.8030700@gmail.com>
+Date: Mon, 09 Jul 2012 13:22:54 +0800
+From: Sha Zhengju <handai.szj@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Fengguang Wu <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, gthelen@google.com, yinghan@google.com,
+        akpm@linux-foundation.org, mhocko@suse.cz,
+        linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH 6/7] memcg: add per cgroup writeback pages accounting
+References: <1340880885-5427-1-git-send-email-handai.szj@taobao.com> <1340881562-5900-1-git-send-email-handai.szj@taobao.com> <20120708145309.GC18272@localhost> <4FFA51AB.30203@gmail.com> <20120709041437.GA10180@localhost> <4FFA5B7F.8030403@jp.fujitsu.com>
+In-Reply-To: <4FFA5B7F.8030403@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-09 at 14:49 +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Boot testing next-20120705 and 20120706 one of my PowerPC machines get this BUG:
-> 
-> (this one just after the console login prompt appeared.)
+On 07/09/2012 12:18 PM, Kamezawa Hiroyuki wrote:
+> (2012/07/09 13:14), Fengguang Wu wrote:
+>> On Mon, Jul 09, 2012 at 11:36:11AM +0800, Sha Zhengju wrote:
+>>> On 07/08/2012 10:53 PM, Fengguang Wu wrote:
+>>>>> @@ -2245,7 +2252,10 @@ int test_set_page_writeback(struct page *page)
+>>>>>   {
+>>>>>       struct address_space *mapping = page_mapping(page);
+>>>>>       int ret;
+>>>>> +    bool locked;
+>>>>> +    unsigned long flags;
+>>>>>
+>>>>> +    mem_cgroup_begin_update_page_stat(page,&locked,&flags);
+>>>>>       if (mapping) {
+>>>>>           struct backing_dev_info *bdi = mapping->backing_dev_info;
+>>>>>           unsigned long flags;
+>>>>> @@ -2272,6 +2282,8 @@ int test_set_page_writeback(struct page *page)
+>>>>>       }
+>>>>>       if (!ret)
+>>>>>           account_page_writeback(page);
+>>>>> +
+>>>>> +    mem_cgroup_end_update_page_stat(page,&locked,&flags);
+>>>>>       return ret;
+>>>>>
+>>>>>   }
+>>>> Where is the MEM_CGROUP_STAT_FILE_WRITEBACK increased?
+>>>>
+>>>
+>>> It's in account_page_writeback().
+>>>
+>>>   void account_page_writeback(struct page *page)
+>>>   {
+>>> +    mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_FILE_WRITEBACK);
+>>>       inc_zone_page_state(page, NR_WRITEBACK);
+>>>   }
+>>
+>> I didn't find that chunk, perhaps it's lost due to rebase..
+>>
+>>> There isn't a unified interface to dec/inc writeback accounting, so
+>>> I just follow that.
+>>> Maybe we can rework account_page_writeback() to also account
+>>> dec in?
+>>
+>> The current seperate inc/dec paths are fine. It sounds like
+>> over-engineering if going any further.
+>>
+>> I'm a bit worried about some 3rd party kernel module to call
+>> account_page_writeback() without 
+>> mem_cgroup_begin/end_update_page_stat().
+>> Will that lead to serious locking issues, or merely inaccurate
+>> accounting?
+>>
+>
+> Ah, Hm. Maybe it's better to add some debug check in
+>  mem_cgroup_update_page_stat(). rcu_read_lock_held() or some.
+>
 
-I'll have a look tomorrow. Make sure you keep the .config & machine at
-hand :-) Any chance you can check with just powerpc-next ?
+This also apply to account_page_dirtied()... But as an "range" lock, I 
+think it's common
+in current kernel: just as set_page_dirty(), the caller should call it 
+under the page lock
+(in most cases) and it's his responsibility to guarantee correctness. I 
+can add some
+comments or debug check as reminding but I think i can only do so...
 
-Cheers,
-Ben.
 
-> kernel BUG at arch/powerpc/kernel/irq.c:188!
-> Oops: Exception in kernel mode, sig: 5 [#1]
-> SMP NR_CPUS=32 NUMA pSeries
-> Modules linked in: binfmt_misc dm_mirror dm_region_hash dm_log ibmveth
-> NIP: c00000000000f7d4 LR: c00000000000f838 CTR: c0000000007222a0
-> REGS: c000000000d17a30 TRAP: 0700   Not tainted  (3.5.0-rc5-autokern1)
-> MSR: 8000000000021032 <SF,ME,IR,DR,RI>  CR: 24000048  XER: 00000000
-> SOFTE: 0
-> TASK = c000000000c41a10[0] 'swapper/0' THREAD: c000000000d14000 CPU: 0
-> GPR00: 0000000000000001 c000000000d17cb0 c000000000d12d10 0000000000000500 
-> GPR04: 0000000000000000 0000000000000000 0000000000000000 0000000000000000 
-> GPR08: 001752557ab9dd5b c000000007ffb000 0000000000000000 c000000000bf5200 
-> GPR12: 0000000000000000 c000000007ffb000 0000000002b00000 00000000009d7000 
-> GPR16: 0000000000d454f0 00000000027dc6f0 0000000001b5f994 0000000000000060 
-> GPR20: 0000000000000000 ffffffffffffffff ffffffffffffffff 8000000000009032 
-> GPR24: c000000000d14000 c000000000d30290 c000000000d30178 c000000000d30290 
-> GPR28: c0000000008a6180 0000000000000008 c000000000c7e130 0000000000000001 
-> NIP [c00000000000f7d4] .__check_irq_replay+0xc4/0xf0
-> LR [c00000000000f838] .arch_local_irq_restore+0x38/0x90
-> Call Trace:
-> [c000000000d17cb0] [c000000000d17d30] init_thread_union+0x3d30/0x4000 (unreliable)
-> [c000000000d17d40] [c00000000000f838] .arch_local_irq_restore+0x38/0x90
-> [c000000000d17db0] [c000000000015c60] .cpu_idle+0x230/0x2b0
-> [c000000000d17e70] [c00000000000b3f8] .rest_init+0x88/0xa0
-> [c000000000d17ef0] [c000000000b86c0c] .start_kernel+0x478/0x498
-> [c000000000d17f90] [c0000000000096f8] .start_here_common+0x20/0x28
-> Instruction dump:
-> 4e800020 7da96b78 7beaf7e3 880901f3 38600500 5400e87e 5400183e 980901f3 
-> 4082ffcc 880d01f3 7c0000d0 78000fe0 <0b000000> 38600000 4bffffb4 38610070 
-> 
-> This is:
-> 	BUG_ON(local_paca->irq_happened != 0);
-> in __check_irq_replay().
-> 
-> This only happens on my Power5+ machine.
+Thanks,
+Sha
 
 
