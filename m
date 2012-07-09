@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab2GIVgN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 17:36:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1387 "EHLO mx1.redhat.com"
+	id S1754195Ab2GIVgb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 17:36:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44551 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751566Ab2GIVgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 17:36:10 -0400
-Message-Id: <20120709213418.799759100@redhat.com>
-User-Agent: quilt/0.48-1
-Date: Mon, 09 Jul 2012 17:34:18 -0400
-From: vgoyal@redhat.com
-To: linux-kernel@vger.kernel.org, axboe@kernel.dk, dm-devel@redhat.com,
-        kzak@redhat.com
-Cc: psusi@ubuntu.com, vgoyal@redhat.comi, maxim.patlasov@gmail.com
-Subject: [patch 0/2] [V4] block: Support online resize of disk partitions 
+	id S1751689Ab2GIVg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 17:36:28 -0400
+From: Myron Stowe <myron.stowe@redhat.com>
+Subject: [PATCH -v2 2/8] PCI: release temporary reference in
+	__nv_msi_ht_cap_quirk()
+To: bhelgaas@google.com
+Cc: linux-pci@vger.kernel.org, rth@twiddle.net, ink@jurassic.park.msu.ru,
+        mattst88@gmail.com, ralf@linux-mips.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 09 Jul 2012 15:36:08 -0600
+Message-ID: <20120709213608.8975.90022.stgit@amt.stowe>
+In-Reply-To: <20120709213554.8975.60552.stgit@amt.stowe>
+References: <20120709213554.8975.60552.stgit@amt.stowe>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+__nv_msi_ht_cap_quirk() acquires a temporary reference via
+'pci_get_bus_and_slot()' that is never released.
 
-Few people have pinged me in rencent past about status of this patch, hence,
-this is V4 of patch which adds support for online resizing of a partition.
-This patch is based on previously posted patches by Phillip Susi. 
+This patch releases the temporary reference.
 
-There are two patches. Out of which one is kernel patch and other one is
-util-linux patch to add support of a user space utility "resizepart" to
-allow resizing the partition.
+Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+---
 
-This ioctl only resizes the partition size in kenrel and does not change
-the size on disk. A user needs to make sure that corresponding changes
-are made to disk data structures also using fdisk(or partx), if changes
-are to be retained across reboot.
+ drivers/pci/quirks.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-Changes since V3
-----------------
-- Do bdput() in error path as per the Maxim's review comments.
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 0f5ca86..8b2d553 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2541,15 +2541,18 @@ static void __devinit __nv_msi_ht_cap_quirk(struct pci_dev *dev, int all)
+ 			else
+ 				nv_ht_enable_msi_mapping(dev);
+ 		}
+-		return;
++		goto out;
+ 	}
+ 
+ 	/* HT MSI is not enabled */
+ 	if (found == 1)
+-		return;
++		goto out;
+ 
+ 	/* Host bridge is not to HT, disable HT MSI mapping on this device */
+ 	ht_disable_msi_mapping(dev);
++
++out:
++	pci_dev_put(host_bridge);
+ }
+ 
+ static void __devinit nv_msi_ht_cap_quirk_all(struct pci_dev *dev)
 
-Changes since V2
-----------------
-- Do not ignore the "start" parameter in RESIZE ioctl.
-- Change resizepart utility to parse sysfs to get to partition start.
-
-Changes since V1
-----------------
-Following are changes since the version Phillip posted.
-- RESIZE ioctl ignores the partition "start" and does not expect user to
-  specify one. Caller needs to just specify "device", "partition number" and
-  "size" of new partition.
-
-- Got rid of part_nr_sects_write_begin/part_nr_sects_write_end functions
-  and replaced these with single part_nr_sects_write().
-
-- Some sequence counter related changes are simply lifted from i_size_write().
-
-- Initialized part->nr_sects_seq using seqcount_init().
-
-Phillip, do let me know if I should put your signed-off-by also in the
-patch.
-
-Any review feedback is welcome.
-
-I did following test.
-
-- Create a partition of 10MB on a disk using fdisk.
-- Add this partition to a volume group
-- Use fdisk to increase the partition size to 20MB. (First delete the
-  partition and then create a new one of 20MB size).
-- Use resizepart to extend partition size in kernel.
-        resizepart /dev/sdc 1 40960
-- Do pvresize on partition so that physical volume can be incrased in
-  size online.
-        pvresize /dev/sda1
-
-pvresize does recognize the new size. Also lsblk and /proc/partitions
-report the new size of partition.
-
-Thanks
-Vivek
