@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab2GIRLO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 13:11:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58274 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab2GIRLM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 13:11:12 -0400
-Date: Mon, 9 Jul 2012 10:11:07 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, shyju pv <shyju.pv@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Sanil kumar <sanil.kumar@huawei.com>,
-        Masanari Iida <standby24x7@gmail.com>
-Subject: Re: [PATCH] cgroup: cgroup_rm_files() was calling simple_unlink()
- with the wrong inode
-Message-ID: <20120709171107.GC1341@google.com>
-References: <20120628180712.GC22641@google.com>
- <4FED10DB.7040500@huawei.com>
- <20120629165809.GB21048@google.com>
- <4FEE98EE.1050409@huawei.com>
- <20120630064724.GC14083@ZenIV.linux.org.uk>
- <CAOS58YNnU3J+c2ZQcRCesSoxn0dSJjDLBsZ2qzZ09X6N-ky0fQ@mail.gmail.com>
- <20120630083421.GD14083@ZenIV.linux.org.uk>
- <20120703171033.GC555@google.com>
- <20120703173806.GD555@google.com>
- <4FF3D757.9060905@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FF3D757.9060905@huawei.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752620Ab2GIRPJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 13:15:09 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59622 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752547Ab2GIRPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 13:15:08 -0400
+Message-ID: <1341854107.6118.11.camel@joe2Laptop>
+Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
+From: Joe Perches <joe@perches.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kay Sievers <kay@vrfy.org>, Michael Neuling <mikey@neuling.org>,
+        linuxppc-dev@ozlabs.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>
+Date: Mon, 09 Jul 2012 10:15:07 -0700
+In-Reply-To: <20120709170956.GB24728@kroah.com>
+References: <CAPXgP11+j+fDexHHmAZbBBidtrydrpWeh3DGWOhkuoybNj9skA@mail.gmail.com>
+	 <1341492628.834.3.camel@mop> <30233.1341535279@neuling.org>
+	 <CAPXgP12_F_H2XPpo2wFmb-u3jBdV__=h67R-LVYbqHuLh7tqLg@mail.gmail.com>
+	 <29711.1341545979@neuling.org> <30343.1341546469@neuling.org>
+	 <CAPXgP13_cQUQLE4RSjACTzj28Pn6r3ZaPhjch2U+uwgi7YKcWA@mail.gmail.com>
+	 <CAPXgP10JthGjZyqD6gqn2n1rPu1uP+=mem_T-iOritXAQMstRQ@mail.gmail.com>
+	 <21892.1341608647@neuling.org> <1341770155.1011.27.camel@mop>
+	 <20120709170956.GB24728@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 04, 2012 at 01:40:39PM +0800, Li Zefan wrote:
-> Tejun Heo wrote:
-> 
-> >>From 6da2689412c78b97716ec524cc30baf7b46508cd Mon Sep 17 00:00:00 2001
-> > From: Tejun Heo <tj@kernel.org>
-> > Date: Tue, 3 Jul 2012 10:32:26 -0700
-> > 
-> > While refactoring cgroup file removal path, 05ef1d7c4a "cgroup:
-> > introduce struct cfent" incorrectly changed the @dir argument of
-> > simple_unlink() to the inode of the file being deleted instead of that
-> > of the containing directory.
-> > 
-> > The effect of this bug is minor - ctime and mtime of the parent
-> > weren't properly updated on file deletion.
-> > 
-> > Fix it by using @cgrp->dentry->d_inode instead.
-> > 
-> > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
-> 
-> 
-> Acked-By: Li Zefan <lizefan@huawei.com>
+On Mon, 2012-07-09 at 10:09 -0700, Greg Kroah-Hartman wrote:
+> is it ok if we
+> just merge this in 3.6-rc1 and backport it to 3.5.1 if it looks ok
+> there?
 
-I think it's now a bit too late for for-3.5-fixes and the effect of
-the bug is rather minor.  Applied to cgroup/for-3.6 w/ stable cc'd.
+I'd prefer it get accepted now so that refactoring the
+printk subsystem could occur for 3.6.
 
-Thanks.
+Another option would be to revert all Kay's changes to the
+printk subsystem, fix this in 3.6 and refactor in 3.7.
 
--- 
-tejun
