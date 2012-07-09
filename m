@@ -1,150 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220Ab2GIPKd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 11:10:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44108 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755055Ab2GIPKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 11:10:32 -0400
-Date: Mon, 9 Jul 2012 17:10:30 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 06/11] mm: memcg: move swapin charge functions above
- callsites
-Message-ID: <20120709151029.GI4627@tiehlicka.suse.cz>
-References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
- <1341449103-1986-7-git-send-email-hannes@cmpxchg.org>
+	id S1755239Ab2GIPKk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 11:10:40 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63657 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754265Ab2GIPKi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 11:10:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341449103-1986-7-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMQu2gymVGXdnYCN4sdKgmESfDSXTvpH4uCuByAKZTFS4Lt13A@mail.gmail.com>
+References: <1341826026-6504-1-git-send-email-vincent.guittot@linaro.org>
+	<1341826026-6504-4-git-send-email-vincent.guittot@linaro.org>
+	<CAMQu2gydOEVK_fzmzkdrBwBfOq6eZG=0QfLUfFChWJu9unSn2A@mail.gmail.com>
+	<CAKfTPtDPGPNk2h_zB=Rf2N2UABAgaDBbij5QFoZTxUTZJbTeAA@mail.gmail.com>
+	<CAMQu2gwCXwdDmu9SdLozjC5jt7iDTqm39cY1ZZ=-VqaoF5bSvg@mail.gmail.com>
+	<CAKfTPtCicLseyA4DnUwNWf7+jOmab4KLo8Yw=Rz1KPya+fE_-w@mail.gmail.com>
+	<CAMQu2gymVGXdnYCN4sdKgmESfDSXTvpH4uCuByAKZTFS4Lt13A@mail.gmail.com>
+Date: Mon, 9 Jul 2012 17:10:36 +0200
+Message-ID: <CAKfTPtCcxg5PNqjXrz9zYwE-DDAUtdbaUuuGpGqGzOFZrk3rnw@mail.gmail.com>
+Subject: Re: [PATCH v4 3/5] ARM: topology: Update cpu_power according to DT information
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
+        linux@arm.linux.org.uk, a.p.zijlstra@chello.nl,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        yong.zhang0@gmail.com, namhyung@kernel.org, jean.pihet@newoldbits.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 05-07-12 02:44:58, Johannes Weiner wrote:
-> Charging cache pages may require swapin in the shmem case.  Save the
-> forward declaration and just move the swapin functions above the cache
-> charging functions.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+On 9 July 2012 16:37, Shilimkar, Santosh <santosh.shilimkar@ti.com> wrote:
+> On Mon, Jul 9, 2012 at 8:06 PM, Vincent Guittot
+> <vincent.guittot@linaro.org> wrote:
+>> On 9 July 2012 15:00, Shilimkar, Santosh <santosh.shilimkar@ti.com> wrote:
+>>> On Mon, Jul 9, 2012 at 6:02 PM, Vincent Guittot
+>>> <vincent.guittot@linaro.org> wrote:
+>>>> On 9 July 2012 12:55, Shilimkar, Santosh <santosh.shilimkar@ti.com> wrote:
+>>>>> Vincent,
+>>>>> On Mon, Jul 9, 2012 at 2:57 PM, Vincent Guittot
+>>>>> <vincent.guittot@linaro.org> wrote:
+>>>>>> Use cpu compatibility field and clock-frequency field of DT to
+>>>>>> estimate the capacity of each core of the system and to update
+>>>>>> the cpu_power field accordingly.
+>>>>>> This patch enables to put more running tasks on big cores than
+>>>>>> on LITTLE ones. But this patch doesn't ensure that long running
+>>>>>> tasks will run on big cores and short ones on LITTLE cores.
+>>>>>>
+>>>>>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>>>>>> Reviewed-by: Namhyung Kim <namhyung@kernel.org>
+>>>>>> ---
+>>>>>>  arch/arm/kernel/topology.c |  153 ++++++++++++++++++++++++++++++++++++++++++++
+>>>>>>  1 file changed, 153 insertions(+)
+>>>>>>
+>>>>> Sorry for not giving this comment on previous version but we should also
+>>>>> have a way to provide the big.LITTLE information without Device Tree.
+>>>>> May be a platform device/data.
+>>>>
+>>>> Hi Santosh,
+>>>>
+>>>> I had thought of adding such additional way to set cpu_power of
+>>>> big.LITTLE but my conclusion was
+>>>> -it's a new platform so it should come with DT
+>>>> -DT is already required by other patches linked to big.LITTLE
+>>>> (http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/080873.html)
+>>>> -There is no device that can be easily used to get such information at
+>>>> this early boot stage.
+>>>>
+>>> I see. Its new processor but it is just 1 one of the IP in an entire SOC.
+>>> As mentioned below I was talking about full SOC support including
+>>> all the driver subsystem with DT.
+>>>
+>>>>>
+>>>>> I know we are moving DT way, but remember apart from core kernel
+>>>>> infrastructure, to have a complete product build with DT means all the
+>>>>> drivers must be already supporting DT which is not the case with
+>>>>> many huge driver sub-systems like USB, display subsystem, Audio etc.
+>>>>>
+>>>>> Having that support would greatly help for the SOC's which have not yet
+>>>>> reached to stage where entire SOC is DT compliant and want to use
+>>>>> big.LITTLE infrastructure.
+>>>>
+>>>> Can't you support both type of devices on your platform ? You can move
+>>>> your device to DT mode when it is supported ?
+>>>>
+>>> That is what eventually people end up doing who don't have
+>>> DT ready for entire SOC. I was trying to ask whether at least some
+>>> method is proposed(need not be merged in mainline) to have
+>>> the big.LITTLE information parsing without DT.
+>>
+>> Ok, IIUC, you need a temporary methods, which doesn't need to be
+>> merged in mainline, to set the cpu_scale field ?
+>>
+> Yep.
 
-OK
-Acked-by: Michal Hocko <mhocko@suse.cz>
+You could use set_power_scale in your platform code to set the
+cpu_power of your CPUs until DT is ready for your platform.
 
-> ---
->  mm/memcontrol.c |   68 +++++++++++++++++++++++++-----------------------------
->  1 files changed, 32 insertions(+), 36 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 3d56b4e..4a41b55 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2729,37 +2729,6 @@ int mem_cgroup_newpage_charge(struct page *page,
->  					MEM_CGROUP_CHARGE_TYPE_ANON);
->  }
->  
-> -static void
-> -__mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
-> -					enum charge_type ctype);
-> -
-> -int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
-> -				gfp_t gfp_mask)
-> -{
-> -	struct mem_cgroup *memcg = NULL;
-> -	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
-> -	int ret;
-> -
-> -	if (mem_cgroup_disabled())
-> -		return 0;
-> -	if (PageCompound(page))
-> -		return 0;
-> -
-> -	if (unlikely(!mm))
-> -		mm = &init_mm;
-> -	if (!page_is_file_cache(page))
-> -		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-> -
-> -	if (!PageSwapCache(page))
-> -		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
-> -	else { /* page is swapcache/shmem */
-> -		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &memcg);
-> -		if (!ret)
-> -			__mem_cgroup_commit_charge_swapin(page, memcg, type);
-> -	}
-> -	return ret;
-> -}
-> -
->  /*
->   * While swap-in, try_charge -> commit or cancel, the page is locked.
->   * And when try_charge() successfully returns, one refcnt to memcg without
-> @@ -2806,6 +2775,15 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
->  	return ret;
->  }
->  
-> +void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *memcg)
-> +{
-> +	if (mem_cgroup_disabled())
-> +		return;
-> +	if (!memcg)
-> +		return;
-> +	__mem_cgroup_cancel_charge(memcg, 1);
-> +}
-> +
->  static void
->  __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *memcg,
->  					enum charge_type ctype)
-> @@ -2843,13 +2821,31 @@ void mem_cgroup_commit_charge_swapin(struct page *page,
->  					  MEM_CGROUP_CHARGE_TYPE_ANON);
->  }
->  
-> -void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *memcg)
-> +int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
-> +				gfp_t gfp_mask)
->  {
-> +	struct mem_cgroup *memcg = NULL;
-> +	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
-> +	int ret;
-> +
->  	if (mem_cgroup_disabled())
-> -		return;
-> -	if (!memcg)
-> -		return;
-> -	__mem_cgroup_cancel_charge(memcg, 1);
-> +		return 0;
-> +	if (PageCompound(page))
-> +		return 0;
-> +
-> +	if (unlikely(!mm))
-> +		mm = &init_mm;
-> +	if (!page_is_file_cache(page))
-> +		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-> +
-> +	if (!PageSwapCache(page))
-> +		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
-> +	else { /* page is swapcache/shmem */
-> +		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &memcg);
-> +		if (!ret)
-> +			__mem_cgroup_commit_charge_swapin(page, memcg, type);
-> +	}
-> +	return ret;
->  }
->  
->  static void mem_cgroup_do_uncharge(struct mem_cgroup *memcg,
-> -- 
-> 1.7.7.6
-> 
+Regards,
+Vincent
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+>
+> Regards
+> Santosh
