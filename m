@@ -1,32 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab2GIV3C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 17:29:02 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:59379 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227Ab2GIV3A (ORCPT
+	id S1754064Ab2GIVbI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 17:31:08 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:51267 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752165Ab2GIVbG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 17:29:00 -0400
-Date: Mon, 09 Jul 2012 14:29:00 -0700 (PDT)
-Message-Id: <20120709.142900.48218599849332348.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2012-07-09
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120709192818.GE1348@tuxdriver.com>
-References: <20120709192818.GE1348@tuxdriver.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.97 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Jul 2012 17:31:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo47VO7F=fY1CRS-uwvp4CsTNttk2tasszs5Fdo7j7RqMA@mail.gmail.com>
+References: <1341861422-25861-1-git-send-email-geert@linux-m68k.org>
+	<CAErSpo47VO7F=fY1CRS-uwvp4CsTNttk2tasszs5Fdo7j7RqMA@mail.gmail.com>
+Date: Mon, 9 Jul 2012 23:31:04 +0200
+X-Google-Sender-Auth: Wld1YGRlBAr1ALqZNgpgXFAXT4w
+Message-ID: <CAMuHMdXXXg=ChD8h2+ot2igtYR7N_C5FHO5ziHZwwL_7BVPBmQ@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.5-rc6
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Mon, 9 Jul 2012 15:28:18 -0400
+Hi Bjorn (or Björn?),
 
-> Please accept these fixes for the 3.5 stream...
+On Mon, Jul 9, 2012 at 11:20 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> There are some PCI-related regressions here that I'd like to fix, but
+> I don't know where to start.  For example, these:
+>
+>>   + drivers/pci/quirks.c: error: implicit declaration of function 'ioread32' [-Werror=implicit-function-declaration]:  => 3154:2
+>>   + drivers/pci/quirks.c: error: implicit declaration of function 'iowrite32' [-Werror=implicit-function-declaration]:  => 3144:2
+>
+> I don't see these in an x86 build, so I assume these are from some
+> other arch or other config.  Can I tell which one?
 
-Pulled, thanks John.
+xtensa-allmodconfig
+
+http://kisskb.ellerman.id.au/kisskb/buildresult/6668885/
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
