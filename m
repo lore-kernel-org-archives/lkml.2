@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab2GIQdS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 12:33:18 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:53674 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095Ab2GIQdR (ORCPT
+	id S1752476Ab2GIQoG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 12:44:06 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39382 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752413Ab2GIQoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 12:33:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-Date: Mon, 9 Jul 2012 16:33:07 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <201207091532.12256.arnd@arndb.de> <20120709160212.GD15120@arm.com>
-In-Reply-To: <20120709160212.GD15120@arm.com>
+	Mon, 9 Jul 2012 12:44:04 -0400
+X-Sasl-enc: 61vP3dEYB9F5WxSF3OxL/HPKd9QJV/opkW0/dQ3SAC/w 1341852243
+Date: Mon, 9 Jul 2012 09:44:02 -0700
+From: Greg KH <greg@kroah.com>
+To: Shachar Shemesh <shachar@liveu.tv>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Subject: [PATCH] tty ldisc: Close/Reopen race prevention should
+ check the proper flag
+Message-ID: <20120709164402.GA14592@kroah.com>
+References: <4FEFF3DF.9000909@liveu.tv>
+ <20120706212430.GA454@kroah.com>
+ <4FF94BC6.3000704@liveu.tv>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207091633.08052.arnd@arndb.de>
-X-Provags-ID: V02:K0:6kFXIL6scNVbjToFzEmCXfXIKIYviGdxF63+gkGpkRO
- mVWGFsykqxwvcM8NJgBTtAPInUJF87iEkjg6lDKyaIQC9j8S8q
- 1CEdIlEBA+FwMlUKmetLx7xJ2ywJcqNV3Ve8rCVIGVBbW4m/yO
- bNPW5emsg8tKAHyUrBxRaJPeexuSnqZqbKsvjAaeSaG7SNUPVH
- TkLCF3+2ROP0/KqBLZJULdcp0ns9WqP7gRs4M/TY4oOzfOuIXB
- jLRCvYCREDGCY53AyQL7GokxNZVp5ydg57mbxTYTSi/WT8OPMW
- WhT4yHB7T4jF9VA1TPuYhyvMK+4g0W5sTCXt1SpdGquJ9PtaWi
- PpePVx1GiYAPaKCGMOzQ=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FF94BC6.3000704@liveu.tv>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 09 July 2012, Catalin Marinas wrote:
-> On Mon, Jul 09, 2012 at 04:32:11PM +0100, Arnd Bergmann wrote:
-> > We have a lot of reviewers that are familiar with the 32 bit code, so
-> > I think the main strategy should be to spot duplicate code early
-> > and make sure we deal with it individually. Examples for this are
-> > probably the implementations for kvm and perf, which largely deal
-> > with the same hardware on both architectures. Those definitely must
-> > not get duplicated into mostly-identical files. In many cases, we're
-> > moving those things into drivers/*, in other cases we might want to
-> > use Makefile logic to include a sub-directory from one arch into another,
-> > as we do for arch/um.
-> 
-> I don't see why we would need to get a subdir from one into the other.
-> If the SoCs would need some common drivers (like GPIO), they should go
-> into drivers/ anyway. There is some perf code that could be shared
-> (though not building a subdir as we have different instruction sets) but
-> I would like that moved to a more generic place.
+On Sun, Jul 08, 2012 at 11:58:46AM +0300, Shachar Shemesh wrote:
+> On 07/07/2012 12:24 AM, Greg KH wrote:
+> >On Sun, Jul 01, 2012 at 09:53:19AM +0300, Shachar Shemesh wrote:
+> >>From: Shachar Shemesh <shachar@liveu.tv>
+> >>
+> >>Commit acfa747b introduced the TTY_HUPPING flag to distinguish
+> >>closed TTY from currently closing ones. The test in tty_set_ldisc
+> >>still remained pointing at the old flag. This causes pppd to
+> >>sometimes lapse into uninterruptible sleep when killed and
+> >>restarted.
+> >>
+> >>Signed-off-by: Shachar Shemesh <shachar@liveu.tv>
+> >>---
+> >>Tested with 3.2.20 kernel.
+> >>
+> >All tabs are converted to spaces and make this patch impossible to apply
+> >:(
+> >
+> >Care to try again?
+> I'm sorry, I'm sending this as an attachment. I've verified that my
+> mailer sends this as plain text, so it should be okay.
 
-I think either way works for the two examples I've given, we can do
-whatever people are more comfortable with. All architectures today have
-kvm and perf under arch/*/* so we could keep it that way and do an
-ugly redirect, or we could get everyone to move to drivers/.
+Yes, that worked, but then I would have to edit the body to include the
+above information in the patch properly.
 
-	Arnd
+So, care to resend it all in a "clean" format that I can apply it in?
+
+thanks,
+
+greg k-h
