@@ -1,51 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab2GIJVZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 05:21:25 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:47527 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab2GIJVX (ORCPT
+	id S1752799Ab2GIJYq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 05:24:46 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57321 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752238Ab2GIJYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 05:21:23 -0400
-Subject: Re: 82571EB: Detected Hardware Unit Hang
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Joe Jin <joe.jin@oracle.com>
-Cc: e1000-devel@lists.sf.net,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <4FFA9B96.6040901@oracle.com>
-References: <4FFA9B96.6040901@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 Jul 2012 11:21:17 +0200
-Message-ID: <1341825677.3265.2330.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Jul 2012 05:24:44 -0400
+Date: Mon, 9 Jul 2012 11:24:36 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
+        kvm@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] apic: fix kvm build on UP without IOAPIC
+Message-ID: <20120709092436.GD2901@gmail.com>
+References: <20120701150506.GA31304@redhat.com>
+ <4FF0849D.5080406@zytor.com>
+ <20120706111314.GG19552@gmail.com>
+ <20120706113209.GB18059@amt.cnet>
+ <20120706141222.GA23400@gmail.com>
+ <20120708205625.GA5292@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120708205625.GA5292@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-09 at 16:51 +0800, Joe Jin wrote:
-> Hi list,
+
+* Michael S. Tsirkin <mst@redhat.com> wrote:
+
+> On Fri, Jul 06, 2012 at 04:12:23PM +0200, Ingo Molnar wrote:
+> > 
+> > * Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> > 
+> > > On Fri, Jul 06, 2012 at 01:13:14PM +0200, Ingo Molnar wrote:
+> > > > 
+> > > > * H. Peter Anvin <hpa@zytor.com> wrote:
+> > > > 
+> > > > > On 07/01/2012 08:05 AM, Michael S. Tsirkin wrote:
+> > > > > >On UP i386, when APIC is disabled
+> > > > > ># CONFIG_X86_UP_APIC is not set
+> > > > > ># CONFIG_PCI_IOAPIC is not set
+> > > > > >
+> > > > > >code looking at apicdrivers never has any effect but it
+> > > > > >still gets compiled in. In particular, this causes
+> > > > > >build failures with kvm, but it generally bloats the kernel
+> > > > > >unnecessarily.
+> > > > > >
+> > > > > >Fix by defining both __apicdrivers and __apicdrivers_end
+> > > > > >to be NULL when CONFIG_X86_LOCAL_APIC is unset: I verified
+> > > > > >that as the result any loop scanning __apicdrivers gets optimized out by
+> > > > > >the compiler.
+> > > > > >
+> > > > > >Warning: a .config with apic disabled doesn't seem to boot
+> > > > > >for me (even without this patch). Still verifying why,
+> > > > > >meanwhile this patch is compile-tested only.
+> > > > > >
+> > > > > >Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > > > >---
+> > > > > >
+> > > > > >Note: if this patch makes sense, can x86 maintainers
+> > > > > >please ACK applying it through the kvm tree, since that is
+> > > > > >where we see the issue that it addresses?
+> > > > > >Avi, Marcelo, maybe you can carry this in kvm/linux-next as a temporary
+> > > > > >measure so that linux-next builds?
+> > > > > >
+> > > > > 
+> > > > > I'm not happy about that as a workflow, but since you guys have an
+> > > > > immediate problem I guess we can do that.
+> > > > 
+> > > > I'm rather unhappy about this workflow - we've got quite a few 
+> > > > apic bits in the x86 tree this cycle as well and need extra 
+> > > > external interaction, not.
+> > > > 
+> > > > Which KVM tree commit caused this, could someone please give a 
+> > > > lkml link or quote it here? It's not referenced in the fix patch 
+> > > > either.
+> > > > 
+> > > > Thanks,
+> > > > 
+> > > > 	Ingo
+> > > 
+> > > This tree (kvm.git next):
+> > > 
+> > > http://git.kernel.org/?p=virt/kvm/kvm.git;a=shortlog;h=refs/heads/next
+> > > 
+> > > Introduced by this commit:
+> > > 
+> > > http://git.kernel.org/?p=virt/kvm/kvm.git;a=commit;h=ab9cf4996bb989983e73da894b8dd0239aa2c3c2
+> > 
+> > This bit:
+> > 
+> > > +	if (kvm_para_has_feature(KVM_FEATURE_PV_EOI)) {
+> > > +		struct apic **drv;
+> > > +
+> > > +		for (drv = __apicdrivers; drv < __apicdrivers_end; drv++) {
+> > > +			/* Should happen once for each apic */
+> > > +			WARN_ON((*drv)->eoi_write == kvm_guest_apic_eoi_write);
+> > > +			(*drv)->eoi_write = kvm_guest_apic_eoi_write;
+> > > +		}
+> > > +	}
+> > > +
+> > 
+> > is rather disgusting I have to say.
+> > 
+> > WTH is the KVM code meddling with core x86 apic driver data 
+> > structures directly? At minimum factor this out and create a 
+> > proper apic.c function which is EXPORT_SYMBOL_GPL() exported or 
+> > so...
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
 > 
-> I'm seeing a Unit Hang even with the latest e1000e driver 2.0.0 when doing
-> scp test. this issue is easy do reproduced on SUN FIRE X2270 M2, just copy
-> a big file (>500M) from another server will hit it at once. 
-> 
-> Would you please help on this?
-> 
+> OK, so apic_set_eoi_write()?
 
-Its a known problem.
+Yes, with a changelog comment analyzing the design decisions and 
+locking here - what happens if actual APIC driver use races with 
+this update on SMP, why is it all safe, etc?
 
-But apparently Intel guys are not very responsive, as they have another
-patch than the following :
+Thanks,
 
-http://permalink.gmane.org/gmane.linux.network/232669
-
-
-We only have to wait they push their alternative patch, eventually.
-
-In the mean time, you can use Hiroaki SHIMODA patch, it works.
-
-
-
+	Ingo
