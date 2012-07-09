@@ -1,76 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161Ab2GITKG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 15:10:06 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:43101 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638Ab2GITKE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 15:10:04 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: "Steven J. Magnani" <steve@digidescorp.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] fat (exportfs): reconnect file handles to evicted inodes/dentries
-References: <1341342576-15394-1-git-send-email-steve@digidescorp.com>
-	<1341342576-15394-3-git-send-email-steve@digidescorp.com>
-	<87pq8bokcp.fsf@devron.myhome.or.jp>
-	<1341606824.2214.14.camel@iscandar.digidescorp.com>
-	<871ukobntl.fsf@devron.myhome.or.jp>
-	<1341623782.2021.9.camel@iscandar>
-	<87wr2g9kh3.fsf@devron.myhome.or.jp>
-	<1341679286.2435.12.camel@iscandar>
-	<87zk7bo6aq.fsf@devron.myhome.or.jp>
-	<1341835422.2215.6.camel@iscandar.digidescorp.com>
-	<87sjd1nj7s.fsf@devron.myhome.or.jp>
-	<1341845277.2215.10.camel@iscandar.digidescorp.com>
-	<87obnooqz7.fsf@devron.myhome.or.jp>
-	<1341851223.2215.22.camel@iscandar.digidescorp.com>
-	<1341853758.2215.34.camel@iscandar.digidescorp.com>
-Date: Tue, 10 Jul 2012 04:10:00 +0900
-In-Reply-To: <1341853758.2215.34.camel@iscandar.digidescorp.com> (Steven
-	J. Magnani's message of "Mon, 09 Jul 2012 12:09:18 -0500")
-Message-ID: <87bojooinr.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752130Ab2GITQA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 15:16:00 -0400
+Received: from waste.org ([173.11.57.241]:47038 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751717Ab2GITP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 15:15:59 -0400
+Message-ID: <1341861346.23136.69.camel@calx>
+Subject: Re: [PATCH 01/10] random: make 'add_interrupt_randomness()' do
+ something sane
+From: Matt Mackall <mpm@selenic.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>, w@1wt.eu,
+        ewust@umich.edu, zakir@umich.edu, greg@kroah.com, nadiah@cs.ucsd.edu,
+        jhalderm@umich.edu, tglx@linutronix.de, davem@davemloft.net,
+        stable@kernel.org
+Date: Mon, 09 Jul 2012 14:15:46 -0500
+In-Reply-To: <20120706165257.GD10798@thunk.org>
+References: <CA+55aFyMYVLCW0OYTVttkjjOwyu9VgDM9haNC=BeoRCEiWWNPQ@mail.gmail.com>
+	 <1341524367.4020.1324.camel@calx>
+	 <CA+55aFxAe1pRN+jvdLveHQ+nNRNC6HDZ+S4Y9P202rxgNLN8pg@mail.gmail.com>
+	 <20120705220040.GA15685@thunk.org>
+	 <CA+55aFzFMZpiDMJO9UxoXSjOCzvxn7tgvmAHLM36OmaiMasQhw@mail.gmail.com>
+	 <1341527482.4020.1355.camel@calx> <20120705232136.GD15685@thunk.org>
+	 <CA+55aFxhobNMY5RLmH+tKox8voqfH-bVqKVF03JeeVrHkhLcaQ@mail.gmail.com>
+	 <20120706130127.GB10798@thunk.org>
+	 <CA+55aFw90o8btDJhztkS=2NXiZvXNAkCsZkx-p9+RRx-cMQc6A@mail.gmail.com>
+	 <20120706165257.GD10798@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Steven J. Magnani" <steve@digidescorp.com> writes:
+On Fri, 2012-07-06 at 12:52 -0400, Theodore Ts'o wrote:
+> On Fri, Jul 06, 2012 at 09:24:00AM -0700, Linus Torvalds wrote:
+> > On Fri, Jul 6, 2012 at 6:01 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+> > > What in the world is "fast count"?  I've grepped for it,
+> > > and I can't find it.
+> > 
+> > It's your own fast-pool counter that Matt was talking about.
+> 
+> When he said "check it against HZ", it confused me, since there's no
+> way to compare it against HZ.  But yes, I can certainly not give any
+> credit for entropy if __IRQF_TIMER is set, or keep track of whether
+> the previous interrupt had __IRQF_TIMER set in its descriptor.  That's
+> simple enough.
+> 
+> I thought he was saying there was some way to distinguish between
+> interrupts triggered by the clock interrupt versus other devices on
+> the same irq channel --- and I couldn't figure out any to do that in
+> an architecture independent way.
 
->> > >> > Interesting idea. I think this, and reformulating the FAT NFS file
->> > >> > handle to include the parent's i_ino, will greatly simplify (and speed
->> > >> > up) the code.
->> > >> 
->> > >> Does it work even if the inode was rename()'ed?
->> > >
->> > > AFAICT. I don't see why it wouldn't; on a rename, the inode's i_pos
->> > > changes but its i_ino stays the same, right?
->> > 
->> > If the inode is not on cache anymore, is there the possibility that
->> > selects the wrong parent? IIRC, NFS Server can be rebooted at any time
->> > while the client using the same file handle.
->> 
->> True, but it's looking like we can just use the default handle
->> constructed by export_encode_fh(), namely (i_ino, i_generation,
->> parent->i_ino, parent->i_generation). None of those components should
->> change in a server reboot.
->
-> I think I misunderstood you when I wrote this. I assumed we were talking
-> about a restart of nfsd, not the entire machine it was running on. If
-> there is a danger of mismapping on a reboot isn't that present in the
-> existing mainline code, i.e. fat_fh_to_dentry()? Ideally, the (i_ino,
-> i_generation) signature would be different on a reboot, although with
-> only 2-second granularity in i_generation I suppose that's less likely
-> than we would prefer. Also I would think that many inodes simply
-> wouldn't exist in the cache, in which case we would fail the operation
-> with ESTALE.
+Sorry.. offline for the weekend.
 
-Ah, i_ino. I was talking about i_pos. Well, so, what happens if the
-child was renamed to other parent on NFS server machine (not via nfs
-client)? The file handle would be including the old i_ino, and the old
-i_ino on file handle is still vaild as old parent. So, it returns the
-wrong parent?
+Let me restate:
+
+- on some architectures, we will call into the RNG on timer interrupts
+- this is generally desirable, as most time sources are asynchronous to
+sched_clock() and thus a source of entropy
+- we also want to keep conditional checks like IRQF_TIMER off the fast
+path
+- but on systems where the timer interrupt is the primary time source,
+we may get effectively no entropy when the system is quiescent
+- so we should check the fast pool count against HZ before crediting
+- but even then, we still should mix the fast pool
+
+Something like:
+
+add_some_randomness(...) /* always mix */
+if (fast_pool->count > HZ) {
+  fast_pool->count = 0;
+  credit_entropy_pool(...); /* only credit when we've got > HZ events */
+}
+
+That should be safe on all systems.
+
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Mathematics is the supreme nostalgia of our time.
+
+
