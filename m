@@ -1,79 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab2GIMc3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 08:32:29 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48025 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753669Ab2GIMcV (ORCPT
+	id S1753730Ab2GIMck (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 08:32:40 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:33614
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753503Ab2GIMci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 08:32:21 -0400
+	Mon, 9 Jul 2012 08:32:38 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -14
+X-BigFish: VPS-14(zz98dI1be0I1dbaI1432Izz1202hzz15d4Rz2dh668h839h944hd25he5bhf0ah)
+X-WSS-ID: 0M6W863-02-87D-02
+X-M-MSG: 
+Date: Mon, 9 Jul 2012 14:32:30 +0200
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <x86@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH 03/28] x86/irq: Use irq_remap specific print_IO_APIC
+ paths only on Intel
+Message-ID: <20120709123230.GA25282@amd.com>
+References: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
+ <1341491808-23083-4-git-send-email-joerg.roedel@amd.com>
+ <20120706085036.GB24449@gmail.com>
+ <20120706130530.GC2639@amd.com>
+ <20120706140037.GA22845@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMQu2gydOEVK_fzmzkdrBwBfOq6eZG=0QfLUfFChWJu9unSn2A@mail.gmail.com>
-References: <1341826026-6504-1-git-send-email-vincent.guittot@linaro.org>
-	<1341826026-6504-4-git-send-email-vincent.guittot@linaro.org>
-	<CAMQu2gydOEVK_fzmzkdrBwBfOq6eZG=0QfLUfFChWJu9unSn2A@mail.gmail.com>
-Date: Mon, 9 Jul 2012 14:32:20 +0200
-Message-ID: <CAKfTPtDPGPNk2h_zB=Rf2N2UABAgaDBbij5QFoZTxUTZJbTeAA@mail.gmail.com>
-Subject: Re: [PATCH v4 3/5] ARM: topology: Update cpu_power according to DT information
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
-        linux@arm.linux.org.uk, a.p.zijlstra@chello.nl,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        yong.zhang0@gmail.com, namhyung@kernel.org, jean.pihet@newoldbits.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120706140037.GA22845@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 July 2012 12:55, Shilimkar, Santosh <santosh.shilimkar@ti.com> wrote:
-> Vincent,
-> On Mon, Jul 9, 2012 at 2:57 PM, Vincent Guittot
-> <vincent.guittot@linaro.org> wrote:
->> Use cpu compatibility field and clock-frequency field of DT to
->> estimate the capacity of each core of the system and to update
->> the cpu_power field accordingly.
->> This patch enables to put more running tasks on big cores than
->> on LITTLE ones. But this patch doesn't ensure that long running
->> tasks will run on big cores and short ones on LITTLE cores.
->>
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->> Reviewed-by: Namhyung Kim <namhyung@kernel.org>
->> ---
->>  arch/arm/kernel/topology.c |  153 ++++++++++++++++++++++++++++++++++++++++++++
->>  1 file changed, 153 insertions(+)
->>
-> Sorry for not giving this comment on previous version but we should also
-> have a way to provide the big.LITTLE information without Device Tree.
-> May be a platform device/data.
+On Fri, Jul 06, 2012 at 04:00:37PM +0200, Ingo Molnar wrote:
+> ( A proper abstraction would stick it all into some sort PCI 
+>   driver alike structure, including enumeration, initialization, 
+>   debugging and other non-core details. )
 
-Hi Santosh,
+This is certainly a multi-cycle process to make sure we do not break
+everything from one release to another. But cleaning that 4000+ lines
+monster up is a good thing, I agree with that. 
 
-I had thought of adding such additional way to set cpu_power of
-big.LITTLE but my conclusion was
--it's a new platform so it should come with DT
--DT is already required by other patches linked to big.LITTLE
-(http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/080873.html)
--There is no device that can be easily used to get such information at
-this early boot stage.
+> So the way this could work in a cleaner fashion is to 
+> encapsulate the logic even more. Today we have a per irq_desc 
+> irq_cfg data descriptor, but there's still global knowledge in 
+> actual vector allocation such as create_irq() or 
+> msi_compose_msg(). Patterns like:
+> 
+>         if (irq_remapped(cfg)) {
+>                 compose_remapped_msi_msg(pdev, irq, dest, msg, hpet_id);
+>                 return err;
+>         }
+> 
+>         if (x2apic_enabled())
+>                 msg->address_hi = MSI_ADDR_BASE_HI |
+>                                   MSI_ADDR_EXT_DEST_ID(dest);
+>         else
+>                 msg->address_hi = MSI_ADDR_BASE_HI;
+> 
+> all all signs of insufficient abstraction.
 
->
-> I know we are moving DT way, but remember apart from core kernel
-> infrastructure, to have a complete product build with DT means all the
-> drivers must be already supporting DT which is not the case with
-> many huge driver sub-systems like USB, display subsystem, Audio etc.
->
-> Having that support would greatly help for the SOC's which have not yet
-> reached to stage where entire SOC is DT compliant and want to use
-> big.LITTLE infrastructure.
+Why was this code merged when you are unhappy with it?
 
-Can't you support both type of devices on your platform ? You can move
-your device to DT mode when it is supported ?
+About the irq_remapped() thing: to abstract this properly it has to be a
+per-irq abstraction, because in the MSI case some interrupts may be
+remapped and others may be not. In the AMD IOMMU case for example, the
+MSI interrupt of the IOMMU device itself is not remapped but all others
+are. So function pointers in 'struct irq_cfg' come into mind for that.
+What do you think about that?
 
-Regards,
-Vincent
+> More importantly, all the silly open-coded if (irq_remapping_enabled)
+> checks should be eliminated from core x86 code. IRQ remapping
+> should be either be an irq_chip detail or should live in a
+> separate layer.
 
->
-> Regards
-> Santosh
+I'll start with factoring out these irq_remapping_enabled and post the
+results so that we can agree on the right direction. I gained some
+experience with this code while factoring out all the VT-d internals
+from it in one of the last cycles.
+
+> So before extending all this please get this into shape.
+
+What about Patches 1 and 2? Any comments on these or are they fine?
+
+
+Kind Regards,
+
+     Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
