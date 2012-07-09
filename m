@@ -1,100 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718Ab2GIUkZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 16:40:25 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60219 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753625Ab2GIUkW (ORCPT
+	id S1753733Ab2GIUlF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 16:41:05 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:31834
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753235Ab2GIUlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 16:40:22 -0400
-X-Sasl-enc: npsX6cQAsbmbeIeiWLVQStmEuj40j59Mom8JMFkMAwwF 1341866421
-Date: Mon, 9 Jul 2012 13:40:19 -0700
-From: Greg Kroah-Hartmann <greg@kroah.com>
-To: Joe Perches <joe@perches.com>
-Cc: Kay Sievers <kay@vrfy.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: 3.5-rc6 printk formatting problem during oom-kill.
-Message-ID: <20120709204019.GA10111@kroah.com>
-References: <20120709180328.GA4105@redhat.com>
- <CAPXgP11oP4aKyg=HUNrb3z_ZbPjU+_u338sD6uhxKyJ43Z8sgQ@mail.gmail.com>
- <1341859731.801.0.camel@mop>
- <1341865916.6118.25.camel@joe2Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341865916.6118.25.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 9 Jul 2012 16:41:03 -0400
+X-IronPort-AV: E=Sophos;i="4.77,555,1336341600"; 
+   d="scan'208";a="150116025"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
+        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH] scripts/coccinelle/iterators/use_after_iter.cocci: list iterator variable semantic patch
+Date: Mon,  9 Jul 2012 22:40:51 +0200
+Message-Id: <1341866451-24290-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 01:31:56PM -0700, Joe Perches wrote:
-> On Mon, 2012-07-09 at 20:48 +0200, Kay Sievers wrote:
-> > On Mon, 2012-07-09 at 20:27 +0200, Kay Sievers wrote:
-> > > On Mon, Jul 9, 2012 at 8:03 PM, Dave Jones <davej@redhat.com> wrote:
-> > > > I noticed that the format of the oom-killer output seems to have changed, and
-> > > > now it spews stuff like..
-> > > >
-> > > > [49461.758070] lowmem_reserve[]:
-> > > > [49461.758071]  0
-> > > > [49461.758071]  2643
-> > > > [49461.758071]  3878
-> > > > [49461.758072]  3878
-> > > > [49461.758072]
-> > > > [49461.758072] Node 0
-> > > 
-> > > > Does the oom-killer code need modifying, or the printk code ?
-> > > > I know there's been some regressions in this area recently, but this is still
-> > > > happening on the current tree (8c84bf4166a4698296342841a549bbee03860ac0)
-> > > 
-> > > This likely fixes it:
-> > >   http://git.kernel.org/?p=linux/kernel/git/kay/patches.git;a=blob;f=kmsg-merge-cont.patch;hb=HEAD
-> > > 
-> > > Let me check if it does, and if I can reproduce it.
-> > 
-> > It looks fine here with the above mentioned patch:
-> > [    0.000000] lowmem_reserve[]:
-> > [    0.000000]  0
-> > [    0.000000]  0
-> > [    0.000000]  0
-> > [    0.000000]  0
-> > [    0.000000] 
-> > [    0.000000] DMA: 
-> > [    0.000000] 1*4kB 
-> > [    0.000000] 0*8kB 
-> > [    0.000000] 0*16kB 
-> > [    0.000000] 1*32kB 
-> > [    0.000000] 2*64kB 
-> > [    0.000000] 1*128kB 
-> > [    0.000000] 1*256kB 
-> > [    0.000000] 0*512kB 
-> > [    0.000000] 1*1024kB 
-> > [    0.000000] 1*2048kB 
-> > [    0.000000] 3*4096kB 
-> > [    0.000000] = 15908kB
-> > 
-> > becomes:
-> > [    0.000000] lowmem_reserve[]: 0 0 0 0
-> > [    0.000000] DMA: 1*4kB 0*8kB 0*16kB 1*32kB 2*64kB 1*128kB 1*256kB 0*512kB 1*1024kB 1*2048kB 3*4096kB = 15908kB
-> 
-> Hi Kay.
-> 
-> That single patch doesn't apply cleanly to Linus'
-> 8c84bf4166a4698296342841a549bbee03860ac0
-> 
-> What else is necessary?
-> 
-> Your tree seems to have a collection of random patches.
-> 
-> It might be useful to clone Linus' tree and produce a
-> branch with all the necessary printk patches in it so
-> someone else could pull it.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-They should all now be in my driver-core-next branch that will show up
-in the next linux-next release, so having a separate tree isn't
-necessary.
+If list_for_each_entry, etc complete a traversal of the list, the iterator
+variable ends up pointing to an address at an offset from the list head,
+and not a meaningful structure.  Thus this value should not be used after
+the end of the iterator.
 
-thanks,
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-greg k-h
+---
+ scripts/coccinelle/iterators/use_after_iter.cocci |  147 ++++++++++++++++++++++
+ 1 file changed, 147 insertions(+)
+
+diff --git a/scripts/coccinelle/iterators/use_after_iter.cocci b/scripts/coccinelle/iterators/use_after_iter.cocci
+new file mode 100644
+index 0000000..06284c5
+--- /dev/null
++++ b/scripts/coccinelle/iterators/use_after_iter.cocci
+@@ -0,0 +1,147 @@
++/// If list_for_each_entry, etc complete a traversal of the list, the iterator
++/// variable ends up pointing to an address at an offset from the list head,
++/// and not a meaningful structure.  Thus this value should not be used after
++/// the end of the iterator.
++//#False positives arise when there is a goto in the iterator and the
++//#reported reference is at the label of this goto.  Some flag tests
++//#may also cause a report to be a false positive.
++///
++// Confidence: Moderate
++// Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
++// Copyright: (C) 2012 Gilles Muller, INRIA/LIP6.  GPLv2.
++// URL: http://coccinelle.lip6.fr/
++// Comments:
++// Options: -no_includes -include_headers
++
++virtual context
++virtual org
++virtual report
++
++@r exists@
++identifier c,member;
++expression E,x;
++iterator name list_for_each_entry;
++iterator name list_for_each_entry_reverse;
++iterator name list_for_each_entry_continue;
++iterator name list_for_each_entry_continue_reverse;
++iterator name list_for_each_entry_from;
++iterator name list_for_each_entry_safe;
++iterator name list_for_each_entry_safe_continue;
++iterator name list_for_each_entry_safe_from;
++iterator name list_for_each_entry_safe_reverse;
++iterator name hlist_for_each_entry;
++iterator name hlist_for_each_entry_continue;
++iterator name hlist_for_each_entry_from;
++iterator name hlist_for_each_entry_safe;
++statement S;
++position p1,p2;
++@@
++
++(
++list_for_each_entry@p1(c,...,member) { ... when != break;
++                                 when forall
++                                 when strict
++}
++|
++list_for_each_entry_reverse@p1(c,...,member) { ... when != break;
++                                 when forall
++                                 when strict
++}
++|
++list_for_each_entry_continue@p1(c,...,member) { ... when != break;
++                                 when forall
++                                 when strict
++}
++|
++list_for_each_entry_continue_reverse@p1(c,...,member) { ... when != break;
++                                 when forall
++                                 when strict
++}
++|
++list_for_each_entry_from@p1(c,...,member) { ... when != break;
++                                 when forall
++                                 when strict
++}
++|
++list_for_each_entry_safe@p1(c,...,member) { ... when != break;
++                                 when forall
++                                 when strict
++}
++|
++list_for_each_entry_safe_continue@p1(c,...,member) { ... when != break;
++                                 when forall
++                                 when strict
++}
++|
++list_for_each_entry_safe_from@p1(c,...,member) { ... when != break;
++                                 when forall
++                                 when strict
++}
++|
++list_for_each_entry_safe_reverse@p1(c,...,member) { ... when != break;
++                                 when forall
++                                 when strict
++}
++)
++...
++(
++list_for_each_entry(c,...) S
++|
++list_for_each_entry_reverse(c,...) S
++|
++list_for_each_entry_continue(c,...) S
++|
++list_for_each_entry_continue_reverse(c,...) S
++|
++list_for_each_entry_from(c,...) S
++|
++list_for_each_entry_safe(c,...) S
++|
++list_for_each_entry_safe(x,c,...) S
++|
++list_for_each_entry_safe_continue(c,...) S
++|
++list_for_each_entry_safe_continue(x,c,...) S
++|
++list_for_each_entry_safe_from(c,...) S
++|
++list_for_each_entry_safe_from(x,c,...) S
++|
++list_for_each_entry_safe_reverse(c,...) S
++|
++list_for_each_entry_safe_reverse(x,c,...) S
++|
++hlist_for_each_entry(c,...) S
++|
++hlist_for_each_entry_continue(c,...) S
++|
++hlist_for_each_entry_from(c,...) S
++|
++hlist_for_each_entry_safe(c,...) S
++|
++list_remove_head(x,c,...)
++|
++sizeof(<+...c...+>)
++|
++&c->member
++|
++c = E
++|
++*c@p2
++)
++
++@script:python depends on org@
++p1 << r.p1;
++p2 << r.p2;
++@@
++
++cocci.print_main("invalid iterator index reference",p2)
++cocci.print_secs("iterator",p1)
++
++@script:python depends on report@
++p1 << r.p1;
++p2 << r.p2;
++@@
++
++msg = "ERROR: invalid reference to the index variable of the iterator on line %s" % (p1[0].line)
++coccilib.report.print_report(p2[0], msg)
+
