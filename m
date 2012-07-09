@@ -1,170 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895Ab2GICf5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 22:35:57 -0400
-Received: from [213.199.154.208] ([213.199.154.208]:12087 "EHLO
-	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751508Ab2GICf4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 22:35:56 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -8
-X-BigFish: VS-8(zzbb2dI98dI9371I542M1432Izz1202hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ahbe9i)
-From: Jia Hongtao-B38951 <B38951@freescale.com>
-To: Greg KH <greg@kroah.com>
-CC: Rob Herring <robherring2@gmail.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Yang-R58472 <r58472@freescale.com>
-Subject: RE: [PATCH V3 5/6] Avoid duplicate probe for of platform devices
-Thread-Topic: [PATCH V3 5/6] Avoid duplicate probe for of platform devices
-Thread-Index: AQHNRV2d07XgG54zbUKKBQTDlvBob5b1mBOAgCYUJaCAAHvPgP//w6JAgAEDDQCAA3kVEA==
-Date: Mon, 9 Jul 2012 02:34:39 +0000
-Message-ID: <412C8208B4A0464FA894C5F0C278CD5D01A1E694@039-SN1MPN1-002.039d.mgd.msft.net>
-References: <1339148585-16947-1-git-send-email-B38951@freescale.com>
- <4FD60FB1.7050106@gmail.com>
- <412C8208B4A0464FA894C5F0C278CD5D01A16829@039-SN1MPN1-002.039d.mgd.msft.net>
- <20120706042611.GA1841@kroah.com>
- <412C8208B4A0464FA894C5F0C278CD5D01A168F2@039-SN1MPN1-002.039d.mgd.msft.net>
- <20120706161718.GA26894@kroah.com>
-In-Reply-To: <20120706161718.GA26894@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.193.20.48]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1751938Ab2GIChT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 22:37:19 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52779 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab2GIChS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 22:37:18 -0400
+X-AuditID: 9c930197-b7b49ae0000027b8-24-4ffa43dba949
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH] mm: Warn about costly page allocation
+Date: Mon,  9 Jul 2012 11:38:20 +0900
+Message-Id: <1341801500-5798-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Since lumpy reclaim was introduced at 2.6.23, it helped higher
+order allocation.
+Recently, we removed it at 3.4 and we didn't enable compaction
+forcingly[1]. The reason makes sense that compaction.o + migration.o
+isn't trivial for system doesn't use higher order allocation.
+But the problem is that we have to enable compaction explicitly
+while lumpy reclaim enabled unconditionally.
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Saturday, July 07, 2012 12:17 AM
-> To: Jia Hongtao-B38951
-> Cc: Rob Herring; devicetree-discuss@lists.ozlabs.org; linux-
-> kernel@vger.kernel.org; Li Yang-R58472
-> Subject: Re: [PATCH V3 5/6] Avoid duplicate probe for of platform devices
-> 
-> On Fri, Jul 06, 2012 at 06:07:43AM +0000, Jia Hongtao-B38951 wrote:
-> >
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:greg@kroah.com]
-> > > Sent: Friday, July 06, 2012 12:26 PM
-> > > To: Jia Hongtao-B38951
-> > > Cc: Rob Herring; devicetree-discuss@lists.ozlabs.org; linux-
-> > > kernel@vger.kernel.org; Li Yang-R58472
-> > > Subject: Re: [PATCH V3 5/6] Avoid duplicate probe for of platform
-> devices
-> > >
-> > > On Fri, Jul 06, 2012 at 02:05:05AM +0000, Jia Hongtao-B38951 wrote:
-> > > > Hi Rob and Greg KH,
-> > > >
-> > > > Do you have any better idea to avoid duplication probe warning?
-> > >
-> > > I have no idea what the problem is that you are trying to solve.
-> > >
-> > > > > On 06/08/2012 04:43 AM, Jia Hongtao wrote:
-> > > > > > We changed the pcie controller driver to platform driver so
-> that
-> > > the
-> > > > > PCI
-> > > > > > of platform devices need to be created earlier in the
-> arch_initcall
-> > > > > stage
-> > > > > > according to the original timing of calling fsl_add_bridge().
-> So we
-> > > do
-> > > > > PCI
-> > > > > > probing separately from other devices. But probing more than
-> once
-> > > could
-> > > > > > cause duplication warning. We add check if the devices have
-> already
-> > > > > probed
-> > > > > > before probing any devices to avoid duplication warning.
-> > >
-> > > Ick, something else is going wrong here, how could you ever have the
-> > > same device probed more than once?
-> > >
-> > > > > > Signed-off-by: Jia Hongtao <B38951@freescale.com>
-> > > > > > Signed-off-by: Li Yang <leoli@freescale.com>
-> > > > > > ---
-> > > > >
-> > > > > Where's v1 and v2 history?
-> > > > >
-> > > > > >  drivers/of/platform.c |   18 ++++++++++++------
-> > > > > >  1 files changed, 12 insertions(+), 6 deletions(-)
-> > > > > >
-> > > > > > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> > > > > > index a37330e..3aab01f 100644
-> > > > > > --- a/drivers/of/platform.c
-> > > > > > +++ b/drivers/of/platform.c
-> > > > > > @@ -139,6 +139,18 @@ struct platform_device
-> *of_device_alloc(struct
-> > > > > device_node *np,
-> > > > > >  	if (!dev)
-> > > > > >  		return NULL;
-> > > > > >
-> > > > > > +	dev->dev.of_node = of_node_get(np);
-> > > > > > +	if (bus_id)
-> > > > > > +		dev_set_name(&dev->dev, "%s", bus_id);
-> > > > > > +	else
-> > > > > > +		of_device_make_bus_id(&dev->dev);
-> > > > > > +
-> > > > > > +	if (kset_find_obj(dev->dev.kobj.kset, kobject_name(&dev-
-> > > >dev.kobj)))
-> > >
-> > > Whatever you are trying to do here, odds are, it's wrong :)
-> > >
-> > > What is happening that is causing the problem?  What is causing the
-> > > platform core to be calling probe on a device more than once?
-> > >
-> > > greg k-h
-> >
-> > This is why in some cases we may probe twice:
-> > Firstly, we need to probe pci controller separately. But in KVM
-> different
-> > topology of device tree is used in which pci nodes are not under root
-> node
-> > but under "simple bus". Unfortunately, of_platform_bus_probe() will
-> probe
-> > all the first level nodes under "simple bus" so pci nodes will probe
-> again.
-> 
-> Sounds like a bug :)
-> 
-> > Two ways to solve this problem:
-> > 1. All the nodes that need to be probed should just under root.
-> 
-> That seems reasonable.
-> 
-> > 2. Avoid duplication probe at runtime like this patch did.
-> 
-> No, don't paper over the real problem in the platform core code like
-> this.  Fix the real issue here instead.
-> 
-> > I do like the first one but it's hard to changing the traditional way
-> that
-> > exist for a long time.
-> 
-> I don't understand, why is this just showing up now?  What changed to
-> cause this?  Couldn't that be the real problem here?
-> 
+Normally, admin doesn't know his system have used higher order
+allocation and even lumpy reclaim have helped it.
+Admin in embdded system have a tendency to minimise code size so that
+they can disable compaction. In this case, we can see page allocation
+failure we can never see in the past. It's critical on embedded side
+because...
 
-The issue is showing up because we now probe devices twice.
-Previously, we just probe devices once. But now we changed the way of pci
-init which makes pci controllers should be probed earlier than other devices.
-So we have to probe pci nodes separately. Probe more than once is the root
-cause of this issue.
+Let's think this scenario.
 
-The pci patchset I mentioned please refer to:
-http://patchwork.ozlabs.org/patch/163742/
+There is QA team in embedded company and they have tested their product.
+In test scenario, they can allocate 100 high order allocation.
+(they don't matter how many high order allocations in kernel are needed
+during test. their concern is just only working well or fail of their
+middleware/application) High order allocation will be serviced well
+by natural buddy allocation without lumpy's help. So they released
+the product and sold out all over the world.
+Unfortunately, in real practice, sometime, 105 high order allocation was
+needed rarely and fortunately, lumpy reclaim could help it so the product
+doesn't have a problem until now.
 
-- Jia Hongtao.
+If they use latest kernel, they will see the new config CONFIG_COMPACTION
+which is very poor documentation, and they can't know it's replacement of
+lumpy reclaim(even, they don't know lumpy reclaim) so they simply disable
+that option for size optimization. Of course, QA team still test it but they
+can't find the problem if they don't do test stronger than old.
+It ends up release the product and sold out all over the world, again.
+But in this time, we don't have both lumpy and compaction so the problem
+would happen in real practice. A poor enginner from Korea have to flight
+to the USA for the fix a ton of products. Otherwise, should recall products
+from all over the world. Maybe he can lose a job. :(
+
+This patch adds warning for notice. If the system try to allocate
+PAGE_ALLOC_COSTLY_ORDER above page and system enters reclaim path,
+it emits the warning. At least, it gives a chance to look into their
+system before the relase.
+
+This patch avoids false positive by alloc_large_system_hash which
+allocates with GFP_ATOMIC and a fallback mechanism so it can make
+this warning useless.
+
+[1] c53919ad(mm: vmscan: remove lumpy reclaim)
+
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ mm/page_alloc.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index a4d3a19..1155e00 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2276,6 +2276,20 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 	return alloc_flags;
+ }
+ 
++#if defined(CONFIG_DEBUG_VM) && !defined(CONFIG_COMPACTION)
++static inline void check_page_alloc_costly_order(unsigned int order)
++{
++	if (unlikely(order > PAGE_ALLOC_COSTLY_ORDER)) {
++		printk_once("WARNING: You are tring to allocate %d-order page."
++		" You might need to turn on CONFIG_COMPACTION\n", order);
++	}
++}
++#else
++static inline void check_page_alloc_costly_order(unsigned int order)
++{
++}
++#endif
++
+ static inline struct page *
+ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+@@ -2353,6 +2367,8 @@ rebalance:
+ 	if (!wait)
+ 		goto nopage;
+ 
++	check_page_alloc_costly_order(order);
++
+ 	/* Avoid recursion of direct reclaim */
+ 	if (current->flags & PF_MEMALLOC)
+ 		goto nopage;
+-- 
+1.7.9.5
 
