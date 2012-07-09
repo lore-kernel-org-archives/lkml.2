@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572Ab2GIQ5d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 12:57:33 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:36840 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752418Ab2GIQ5b (ORCPT
+	id S1752594Ab2GIRFh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 13:05:37 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63137 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752480Ab2GIRFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 12:57:31 -0400
-Date: Mon, 9 Jul 2012 18:57:10 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Eric B Munson <emunson@mgebm.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH 04/16] mm: allow PF_MEMALLOC from softirq context
-Message-ID: <20120709165710.GC3515@breakpoint.cc>
-References: <1340375443-22455-1-git-send-email-mgorman@suse.de>
- <1340375443-22455-5-git-send-email-mgorman@suse.de>
- <20120626165513.GD6509@breakpoint.cc>
- <20120627082614.GE8271@suse.de>
- <20120708181211.GE2872@breakpoint.cc>
- <20120709100442.GZ14154@suse.de>
+	Mon, 9 Jul 2012 13:05:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120709100442.GZ14154@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FFAACF8.8040801@huawei.com>
+References: <1338795894-6292-1-git-send-email-jiang.liu@huawei.com>
+ <CAErSpo7NiCsuM+UxveZbYxNsCiStMH5SLZ8EdFzJ7EduB306OQ@mail.gmail.com>
+ <CAErSpo70NtEJFaQmDtdTLkSB3fQRNy78juAQO-KbXeceZkunkw@mail.gmail.com>
+ <4FF34CEF.3090400@redhat.com> <CAErSpo7=BzPX87qgKS_xkJg4o8BGDan-o7D9NqRiqKvH0kLjfQ@mail.gmail.com>
+ <4FFAACF8.8040801@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 9 Jul 2012 11:05:14 -0600
+Message-ID: <CAErSpo5dV+ZPRmOBmdmTf1hEPXvqtXyTyNj4m2nDFEkKi5NmGQ@mail.gmail.com>
+Subject: Re: [Resend with Ack][PATCH v1] PCI: allow acpiphp to handle PCIe
+ ports without native PCIe hotplug capability
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Don Dutile <ddutile@redhat.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 11:04:42AM +0100, Mel Gorman wrote:
-> > - lets assume your allocation happens with kmalloc() without __GFP_MEMALLOC
-> >   and current->flags has PF_MEMALLOC ORed and your SLAB pool is empty. This
-> >   forces SLAB to allocate more pages from the buddy allocator with it will
-> >   receive more likely (due to ->current->flags + PF_MEMALLOC) but SLAB will
-> >   drop this extra memory because the page has ->pf_memory (or something like
-> >   that) set and the GFP_FLAGS do not have __GFP_MEMALLOC set.
-> > 
-> 
-> It's recorded if the slab page was allocated from PFMEMALLOC reserves (see
-> patch 2 from the swap over NBD series). slab will use this page for objects
-> but only allocate them to callers that pass a gfp_pfmemalloc_allowed() check.
-> kmalloc() users with either __GFP_MEMALLOC or PF_MEMALLOC will get
-> the pages they need but they will not "leak" to !_GFP_MEMALLOC users as
-> that would potentially deadlock.
+On Mon, Jul 9, 2012 at 4:05 AM, Jiang Liu <jiang.liu@huawei.com> wrote:
+> Hi Bjorn and Yinghai,
+>         What's the policy to export a symbol by EXPORT_SYMBOL()
+> or EXPORT_SYMBOL_GPL()? I know the legal difference, but don't
+> know when I should mark a symbol as GPL.
 
-Argh, I missed that gfp_to_alloc_flags() is not only called from
-within the buddy allocater but also from slab. So this is fine then :)
+>From Documentation/DocBook/kernel-hacking.tmpl,
 
-One thing:
-You only get current->flags |= PF_MEMALLOC in softirq _if_ the skb, which is 
-passed to netif_receive_skb(), was allocated with __GFP_MEMALLOC. That
-means if the NIC's RX allocation did not require an allocation from the
-emergency pool (without ->pfmemalloc set) then you never use this extra
-pool, even if this skb would end up in your swap socket. Also, the other way
-around, where you allocate it from the emergency pool but it is a user
-socket and you could drop it.
+    EXPORT_SYMBOL_GPL implies that the function is considered
+    an internal implementation issue, and not really an interface.
 
-What about extending sk_set_memalloc() to record socket's ips + ports
-in a separate list so that skb_pfmemalloc_protocol() might use that
-information and decide on per-protocol basis if the skb is worth to
-spend more ressource to deliver it. That means you would enable the
-extra pool if the currently received skb is part of your swap socket and
-not if the skb was allocated from the emergency pool.
+So I use EXPORT_SYMBOL_GPL unless I'm willing to support the symbol as
+an interface indefinitely.
 
-That said, there is nothing wrong with the code as of now and this
-optimization could be added later (if at all).
-
-Sebastian
+Bjorn
