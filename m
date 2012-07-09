@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703Ab2GICAT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 22:00:19 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39289 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab2GIB7i (ORCPT
+	id S1751895Ab2GICB0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 22:01:26 -0400
+Received: from edison.jonmasters.org ([173.255.233.168]:57596 "EHLO
+	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481Ab2GICBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 21:59:38 -0400
-From: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: andriy.shevchenko@linux.intel.com, jj@chaosbits.net,
-        forest@alittletooquiet.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-Subject: [PATCH 2/5] staging: vt6656: hostap.c: Remove unused macros and some useless comments
-Date: Sun,  8 Jul 2012 22:55:47 -0300
-Message-Id: <1341798950-11215-3-git-send-email-marcos.souza.org@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1341798950-11215-1-git-send-email-marcos.souza.org@gmail.com>
-References: <1341798950-11215-1-git-send-email-marcos.souza.org@gmail.com>
+	Sun, 8 Jul 2012 22:01:24 -0400
+Message-ID: <4FFA3B71.3020105@jonmasters.org>
+Date: Sun, 08 Jul 2012 22:01:21 -0400
+From: Jon Masters <jonathan@jonmasters.org>
+Organization: World Organi{s,z}ation of Broken Dreams
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Dennis Gilmore <dgilmore@fedoraproject.org>
+CC: linux-kernel@vger.kernel.org
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com> <201207071927.13135.arnd@arndb.de> <4FF93C99.80203@redhat.com> <4FF9D1E9.4050504@jonmasters.org> <20120708172419.2b2f2713@pegasus.ausil.us>
+In-Reply-To: <20120708172419.2b2f2713@pegasus.ausil.us>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 74.92.29.237
+X-SA-Exim-Mail-From: jonathan@jonmasters.org
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
+X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The unused macros were reporteds by forgotten-macros
-tool(https://github.com/marcosps/forgotten_macros).
+On 07/08/2012 06:24 PM, Dennis Gilmore wrote:
 
-Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
----
- drivers/staging/vt6656/hostap.c |   20 --------------------
- 1 file changed, 20 deletions(-)
+> I know that the architecture really is new but thats not really clear
+> by adding AArch32 into the mix to represent 32 bit arm as ARM has done
+> or by calling it armv8. There is enough way to confuse them already why
+> confuse things more by adding yet another variable that is AArch64.
+> - From my and most of the other Fedora developers that i've discussed it
+> with its more like reluctant acceptance of AArch64 than thinking is a
+> good idea. 
 
-diff --git a/drivers/staging/vt6656/hostap.c b/drivers/staging/vt6656/hostap.c
-index 51b5adf..f578095 100644
---- a/drivers/staging/vt6656/hostap.c
-+++ b/drivers/staging/vt6656/hostap.c
-@@ -41,31 +41,11 @@
- 
- #define VIAWGET_HOSTAPD_MAX_BUF_SIZE 1024
- #define HOSTAP_CRYPT_FLAG_SET_TX_KEY BIT0
--#define HOSTAP_CRYPT_FLAG_PERMANENT BIT1
--#define HOSTAP_CRYPT_ERR_UNKNOWN_ALG 2
- #define HOSTAP_CRYPT_ERR_UNKNOWN_ADDR 3
--#define HOSTAP_CRYPT_ERR_CRYPT_INIT_FAILED 4
- #define HOSTAP_CRYPT_ERR_KEY_SET_FAILED 5
--#define HOSTAP_CRYPT_ERR_TX_KEY_SET_FAILED 6
--#define HOSTAP_CRYPT_ERR_CARD_CONF_FAILED 7
- 
--
--/*---------------------  Static Definitions -------------------------*/
--
--/*---------------------  Static Classes  ----------------------------*/
--
--/*---------------------  Static Variables  --------------------------*/
--//static int          msglevel                =MSG_LEVEL_DEBUG;
- static int          msglevel                =MSG_LEVEL_INFO;
- 
--/*---------------------  Static Functions  --------------------------*/
--
--
--
--
--/*---------------------  Export Variables  --------------------------*/
--
--
- /*
-  * Description:
-  *      register net_device (AP) for hostap deamon
--- 
-1.7.10.4
+btw, for clarification of anyone who is confused by the names...the new
+architecture is ARMv8. The 64-bit state is AArch64, during which the
+processor executes A64 instructions. The 32-bit state is AArch32, during
+which the processor executes either A32 ("ARM" version 7+) or T32
+("Thumb" - I guess Thumb2+ really due to some of deprecation)
+instructions. I've noticed that there appears to be a clarification
+effort in which AArch64 is used as an architecture name when ARMv8 would
+be confusing, which is most of the time if you don't know whether you're
+referring to the new A64 instruction set or the older ones.
 
+Perhaps this is useful if someone is trying to figure out heads or tails
+of the different terms.
+
+Jon.
