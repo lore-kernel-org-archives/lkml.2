@@ -1,65 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633Ab2GIIpE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 04:45:04 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:59023 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751121Ab2GIIpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 04:45:01 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: comment on pm tree commit
-Date: Mon, 9 Jul 2012 10:24:34 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
-References: <20120709094013.88a1117c9ef4510555147280@canb.auug.org.au>
-In-Reply-To: <20120709094013.88a1117c9ef4510555147280@canb.auug.org.au>
+	id S1752659Ab2GIIrC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 04:47:02 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47145 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746Ab2GIIrA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 04:47:00 -0400
+X-AuditID: 9c93016f-b7c7eae0000025c5-59-4ffa9a81355a
+Date: Mon, 9 Jul 2012 17:46:57 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] mm: Warn about costly page allocation
+Message-ID: <20120709084657.GA7915@bbox>
+References: <1341801500-5798-1-git-send-email-minchan@kernel.org>
+ <20120709082200.GX14154@suse.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207091024.34585.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120709082200.GX14154@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 09, 2012, Stephen Rothwell wrote:
-> Hi Rafael,
-> 
-> I noticed commit b8eec56cd8e5 ("PM / cpuidle: System resume hang fix with
-> cpuidle") in the pm tree needs some work (I noticed it because it was
-> changed in a rebase ...).
-> 
-> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-> index a6b3f2e..b90ccb2 100644
-> --- a/include/linux/cpuidle.h
-> +++ b/include/linux/cpuidle.h
-> @@ -146,6 +146,8 @@ extern void cpuidle_unregister_device(struct cpuidle_device *dev);
->  
->  extern void cpuidle_pause_and_lock(void);
->  extern void cpuidle_resume_and_unlock(void);
-> +extern void cpuidle_pause(void);
-> +extern void cpuidle_resume(void);
->  extern int cpuidle_enable_device(struct cpuidle_device *dev);
->  extern void cpuidle_disable_device(struct cpuidle_device *dev);
->  extern int cpuidle_wrap_enter(struct cpuidle_device *dev,
-> @@ -169,6 +171,8 @@ static inline void cpuidle_unregister_device(struct cpuidle_device *dev) { }
->  
->  static inline void cpuidle_pause_and_lock(void) { }
->  static inline void cpuidle_resume_and_unlock(void) { }
-> +static inline cpuidle_pause(void) { }
-> +static inline cpuidle_resume(void) { }
-> 
-> These need to be "static inline void".  I wonder what review and build
-> testing this went through (the above should produce warnings since they
-> are non void returning functions with no return statements).
+Hi Mel,
 
-Thanks for reporting this, I tried to fix a build issue in the original patch
-hastily and failed miserably as you have noticed and then I build-tested a
-wrong tree.  Sorry.
+On Mon, Jul 09, 2012 at 09:22:00AM +0100, Mel Gorman wrote:
+> On Mon, Jul 09, 2012 at 11:38:20AM +0900, Minchan Kim wrote:
+> > Since lumpy reclaim was introduced at 2.6.23, it helped higher
+> > order allocation.
+> > Recently, we removed it at 3.4 and we didn't enable compaction
+> > forcingly[1]. The reason makes sense that compaction.o + migration.o
+> > isn't trivial for system doesn't use higher order allocation.
+> > But the problem is that we have to enable compaction explicitly
+> > while lumpy reclaim enabled unconditionally.
+> > 
+> > Normally, admin doesn't know his system have used higher order
+> > allocation and even lumpy reclaim have helped it.
+> > Admin in embdded system have a tendency to minimise code size so that
+> > they can disable compaction. In this case, we can see page allocation
+> > failure we can never see in the past. It's critical on embedded side
+> > because...
+> > 
+> > Let's think this scenario.
+> > 
+> > There is QA team in embedded company and they have tested their product.
+> > In test scenario, they can allocate 100 high order allocation.
+> > (they don't matter how many high order allocations in kernel are needed
+> > during test. their concern is just only working well or fail of their
+> > middleware/application) High order allocation will be serviced well
+> > by natural buddy allocation without lumpy's help. So they released
+> > the product and sold out all over the world.
+> > Unfortunately, in real practice, sometime, 105 high order allocation was
+> > needed rarely and fortunately, lumpy reclaim could help it so the product
+> > doesn't have a problem until now.
+> > 
+> > If they use latest kernel, they will see the new config CONFIG_COMPACTION
+> > which is very poor documentation, and they can't know it's replacement of
+> > lumpy reclaim(even, they don't know lumpy reclaim) so they simply disable
+> 
+> Depending on lumpy reclaim or compaction for high-order kernel allocations
+> is dangerous. Both depend on being able to move MIGRATE_MOVABLE allocations
+> to satisy the high-order allocation. If used regularly for high-order kernel
+> allocations and they are long-lived, the system will eventually be unable
+> to grant these allocations, with or without compaction or lumpy reclaim.
 
-It should be fixed now for real.
+Indeed.
 
-Thanks,
-Rafael
+> 
+> Be also aware that lumpy reclaim was very aggressive when reclaiming pages
+> to satisfy an allocation. Compaction is not and compaction can be temporarily
+> disabled if an allocation attempt fails. If lumpy reclaim was being depended
+> upon to satisfy high-order allocations, there is no guarantee, particularly
+> with 3.4, that compaction will succeed as it does not reclaim aggressively.
+
+It's good explanation and let's add it in description.
+
+> 
+> > that option for size optimization. Of course, QA team still test it but they
+> > can't find the problem if they don't do test stronger than old.
+> > It ends up release the product and sold out all over the world, again.
+> > But in this time, we don't have both lumpy and compaction so the problem
+> > would happen in real practice. A poor enginner from Korea have to flight
+> > to the USA for the fix a ton of products. Otherwise, should recall products
+> > from all over the world. Maybe he can lose a job. :(
+> > 
+> > This patch adds warning for notice. If the system try to allocate
+> > PAGE_ALLOC_COSTLY_ORDER above page and system enters reclaim path,
+> > it emits the warning. At least, it gives a chance to look into their
+> > system before the relase.
+> > 
+> > This patch avoids false positive by alloc_large_system_hash which
+> > allocates with GFP_ATOMIC and a fallback mechanism so it can make
+> > this warning useless.
+> > 
+> > [1] c53919ad(mm: vmscan: remove lumpy reclaim)
+> > 
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  mm/page_alloc.c |   16 ++++++++++++++++
+> >  1 file changed, 16 insertions(+)
+> > 
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index a4d3a19..1155e00 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -2276,6 +2276,20 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+> >  	return alloc_flags;
+> >  }
+> >  
+> > +#if defined(CONFIG_DEBUG_VM) && !defined(CONFIG_COMPACTION)
+> > +static inline void check_page_alloc_costly_order(unsigned int order)
+> > +{
+> > +	if (unlikely(order > PAGE_ALLOC_COSTLY_ORDER)) {
+> > +		printk_once("WARNING: You are tring to allocate %d-order page."
+> > +		" You might need to turn on CONFIG_COMPACTION\n", order);
+> > +	}
+> 
+> WARN_ON_ONCE would tell you what is trying to satisfy the allocation.
+
+Do you mean that it would be better to use WARN_ON_ONCE rather than raw printk?
+If so, I would like to insist raw printk because WARN_ON_ONCE could be disabled
+by !CONFIG_BUG.
+If I miss something, could you elaborate it more?
+
+> 
+> It should further check if this is a GFP_MOVABLE allocation or not and if
+> not, then it should either be documented that compaction may only delay
+> allocation failures and that they may need to consider reserving the memory
+> in advance or doing something like forcing MIGRATE_RESERVE to only be used
+> for high-order allocations.
+
+Okay. but I got confused you want to add above description in code directly
+like below or write it down in comment of check_page_alloc_costly_order?
+
+static inline void check_page_alloc_costly_order(unsigned int order, gfp_t gfp_flags)
+{
+       if (unlikely(order > PAGE_ALLOC_COSTLY_ORDER)) {
+               printk_once("WARNING: You are tring to allocate %d-order page."
+               " You might need to turn on CONFIG_COMPACTION\n", order);
+                if (gfp_flags is not GFP_MOVABLE)
+                        printk_once("Compaction doesn't make sure .....\n");
+       }
+
+}
+
+Thanks for the comment, Mel.
+
+> 
+> > +}
+> > +#else
+> > +static inline void check_page_alloc_costly_order(unsigned int order)
+> > +{
+> > +}
+> > +#endif
+> > +
+> >  static inline struct page *
+> >  __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+> >  	struct zonelist *zonelist, enum zone_type high_zoneidx,
+> > @@ -2353,6 +2367,8 @@ rebalance:
+> >  	if (!wait)
+> >  		goto nopage;
+> >  
+> > +	check_page_alloc_costly_order(order);
+> > +
+> >  	/* Avoid recursion of direct reclaim */
+> >  	if (current->flags & PF_MEMALLOC)
+> >  		goto nopage;
+> > -- 
+> > 1.7.9.5
+> > 
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
