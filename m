@@ -1,158 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab2GIOr3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:47:29 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:55316 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754406Ab2GIOql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:46:41 -0400
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: Nathan Zimmer <nzimmer@sgi.com>, Christoph Lameter <cl@linux.com>,
-        Nick Piggin <npiggin@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: [PATCH 2/2 v5][resend] tmpfs: interleave the starting node of /dev/shmem
-Date: Mon,  9 Jul 2012 09:46:39 -0500
-Message-Id: <1341845199-25677-3-git-send-email-nzimmer@sgi.com>
-X-Mailer: git-send-email 1.6.0.2
-In-Reply-To: <1341845199-25677-2-git-send-email-nzimmer@sgi.com>
-References: <1341845199-25677-1-git-send-email-nzimmer@sgi.com>
- <1341845199-25677-2-git-send-email-nzimmer@sgi.com>
+	id S1754347Ab2GIOiA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:38:00 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38084 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754081Ab2GIOh4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 10:37:56 -0400
+Message-Id: <20120709143117.523948559@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 09 Jul 2012 15:31:22 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Felix Fietkau <nbd@openwrt.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 06/48] ath9k: fix dynamic WEP related regression
+In-Reply-To: <20120709143116.348975190@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tmpfs superblock grants an offset for each inode as they are created. Each
-inode then uses that offset to provide a preferred first node for its interleave
-in the newly provided shmem_interleave.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Nick Piggin <npiggin@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Rik van Riel <riel@redhat.com>
-Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
+------------------
+
+From: Felix Fietkau <nbd@openwrt.org>
+
+commit bed3d9c0b71f9afbfec905cb6db3b9f16be29d4d upstream.
+
+commit 7a532fe7131216a02c81a6c1b1f8632da1195a58
+ath9k_hw: fix interpretation of the rx KeyMiss flag
+
+This commit used the rx key miss indication to detect packets that were
+passed from the hardware without being decrypted, however it seems that
+this bit is not only undefined in the static WEP case, but also for
+dynamically allocated WEP keys. This caused a regression when using
+WEP-LEAP.
+
+This patch fixes the regression by keeping track of which key indexes
+refer to CCMP keys and only using the key miss indication for those.
+
+Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/mm.h       |    7 +++++++
- include/linux/shmem_fs.h |    3 +++
- mm/mempolicy.c           |    4 ++++
- mm/shmem.c               |   17 +++++++++++++++++
- 4 files changed, 31 insertions(+), 0 deletions(-)
+ drivers/net/wireless/ath/ath.h        |    1 +
+ drivers/net/wireless/ath/ath9k/recv.c |    3 ++-
+ drivers/net/wireless/ath/key.c        |    4 ++++
+ 3 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index b36d08c..651109e 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -238,6 +238,13 @@ struct vm_operations_struct {
+--- a/drivers/net/wireless/ath/ath.h
++++ b/drivers/net/wireless/ath/ath.h
+@@ -143,6 +143,7 @@ struct ath_common {
+ 	u32 keymax;
+ 	DECLARE_BITMAP(keymap, ATH_KEYMAX);
+ 	DECLARE_BITMAP(tkip_keymap, ATH_KEYMAX);
++	DECLARE_BITMAP(ccmp_keymap, ATH_KEYMAX);
+ 	enum ath_crypt_caps crypt_caps;
+ 
+ 	unsigned int clockrate;
+--- a/drivers/net/wireless/ath/ath9k/recv.c
++++ b/drivers/net/wireless/ath/ath9k/recv.c
+@@ -829,7 +829,8 @@ static bool ath9k_rx_accept(struct ath_c
+ 	 * descriptor does contain a valid key index. This has been observed
+ 	 * mostly with CCMP encryption.
  	 */
- 	struct mempolicy *(*get_policy)(struct vm_area_struct *vma,
- 					unsigned long addr);
-+
-+	/*
-+	 * If the policy is interleave allow the vma to suggest a node.
-+	 */
-+	unsigned long (*interleave)(struct vm_area_struct *vma,
-+					unsigned long addr);
-+
- 	int (*migrate)(struct vm_area_struct *vma, const nodemask_t *from,
- 		const nodemask_t *to, unsigned long flags);
- #endif
-diff --git a/include/linux/shmem_fs.h b/include/linux/shmem_fs.h
-index bef2cf0..6995556 100644
---- a/include/linux/shmem_fs.h
-+++ b/include/linux/shmem_fs.h
-@@ -17,6 +17,7 @@ struct shmem_inode_info {
- 		char		*symlink;	/* unswappable short symlink */
- 	};
- 	struct shared_policy	policy;		/* NUMA memory alloc policy */
-+	unsigned long           node_offset;	/* bias for interleaved nodes */
- 	struct list_head	swaplist;	/* chain of maybes on swap */
- 	struct list_head	xattr_list;	/* list of shmem_xattr */
- 	struct inode		vfs_inode;
-@@ -32,6 +33,8 @@ struct shmem_sb_info {
- 	kgid_t gid;		    /* Mount gid for root directory */
- 	umode_t mode;		    /* Mount mode for root directory */
- 	struct mempolicy *mpol;     /* default memory policy for mappings */
-+	unsigned long next_pref_node;
-+			 /* next interleave bias to suggest for inodes */
- };
+-	if (rx_stats->rs_keyix == ATH9K_RXKEYIX_INVALID)
++	if (rx_stats->rs_keyix == ATH9K_RXKEYIX_INVALID ||
++	    !test_bit(rx_stats->rs_keyix, common->ccmp_keymap))
+ 		rx_stats->rs_status &= ~ATH9K_RXERR_KEYMISS;
  
- static inline struct shmem_inode_info *SHMEM_I(struct inode *inode)
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 1d771e4..e2cbe9e 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1663,6 +1663,10 @@ static inline unsigned interleave_nid(struct mempolicy *pol,
- {
- 	if (vma) {
- 		unsigned long off;
-+		if (vma->vm_ops && vma->vm_ops->interleave) {
-+			off = vma->vm_ops->interleave(vma, addr);
-+			return offset_il_node(pol, vma, off);
-+		}
+ 	if (!rx_stats->rs_datalen)
+--- a/drivers/net/wireless/ath/key.c
++++ b/drivers/net/wireless/ath/key.c
+@@ -556,6 +556,9 @@ int ath_key_config(struct ath_common *co
+ 		return -EIO;
  
- 		/*
- 		 * for small pages, there is no difference between
-diff --git a/mm/shmem.c b/mm/shmem.c
-index d073252..e569338 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -922,6 +922,7 @@ static struct page *shmem_swapin(swp_entry_t swap, gfp_t gfp,
- 	pvma.vm_start = 0;
- 	pvma.vm_pgoff = index;
- 	pvma.vm_policy = spol;
-+	pvma.vm_private_data = (void *) info->node_offset;
- 	if (pvma.vm_policy)
- 		pvma.vm_ops = &shmem_vm_ops;
- 	else
-@@ -938,6 +939,7 @@ static struct page *shmem_alloc_page(gfp_t gfp,
- 	pvma.vm_start = 0;
- 	pvma.vm_pgoff = index;
- 	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, index);
-+	pvma.vm_private_data = (void *) info->node_offset;
- 	if (pvma.vm_policy)
- 		pvma.vm_ops = &shmem_vm_ops;
- 	else
-@@ -1314,6 +1316,19 @@ static struct mempolicy *shmem_get_policy(struct vm_area_struct *vma,
- 	index = ((addr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
- 	return mpol_shared_policy_lookup(&SHMEM_I(inode)->policy, index);
- }
+ 	set_bit(idx, common->keymap);
++	if (key->cipher == WLAN_CIPHER_SUITE_CCMP)
++		set_bit(idx, common->ccmp_keymap);
 +
-+static unsigned long shmem_interleave(struct vm_area_struct *vma,
-+					unsigned long addr)
-+{
-+	unsigned long offset;
-+
-+	/* Use the vm_files prefered node as the initial offset. */
-+	offset = (unsigned long *) vma->vm_private_data;
-+
-+	offset += ((addr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
-+
-+	return offset;
-+}
- #endif
+ 	if (key->cipher == WLAN_CIPHER_SUITE_TKIP) {
+ 		set_bit(idx + 64, common->keymap);
+ 		set_bit(idx, common->tkip_keymap);
+@@ -582,6 +585,7 @@ void ath_key_delete(struct ath_common *c
+ 		return;
  
- int shmem_lock(struct file *file, int lock, struct user_struct *user)
-@@ -1386,6 +1401,7 @@ static struct inode *shmem_get_inode(struct super_block *sb, const struct inode
- 			inode->i_fop = &shmem_file_operations;
- 			mpol_shared_policy_init(&info->policy,
- 						 shmem_get_sbmpol(sbinfo));
-+			info->node_offset = ++(sbinfo->next_pref_node);
- 			break;
- 		case S_IFDIR:
- 			inc_nlink(inode);
-@@ -2871,6 +2887,7 @@ static const struct super_operations shmem_ops = {
- static const struct vm_operations_struct shmem_vm_ops = {
- 	.fault		= shmem_fault,
- #ifdef CONFIG_NUMA
-+	.interleave	= shmem_interleave,
- 	.set_policy     = shmem_set_policy,
- 	.get_policy     = shmem_get_policy,
- #endif
--- 
-1.6.0.2
+ 	clear_bit(key->hw_key_idx, common->keymap);
++	clear_bit(key->hw_key_idx, common->ccmp_keymap);
+ 	if (key->cipher != WLAN_CIPHER_SUITE_TKIP)
+ 		return;
+ 
+
 
