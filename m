@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab2GIOkt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:40:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38292 "EHLO
+	id S1754573Ab2GIOks (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:40:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38301 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754486Ab2GIOiY (ORCPT
+	by vger.kernel.org with ESMTP id S1754496Ab2GIOiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:38:24 -0400
-Message-Id: <20120709143120.195236088@decadent.org.uk>
+	Mon, 9 Jul 2012 10:38:25 -0400
+Message-Id: <20120709143119.898673309@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:31:40 +0100
+Date: Mon, 09 Jul 2012 15:31:38 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Bing Zhao <bzhao@marvell.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 24/48] mwifiex: fix wrong return values in  add_virtual_intf() error cases
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [ 22/48] ALSA: hda - Fix power-map regression for HP dv6 & co
 In-Reply-To: <20120709143116.348975190@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,91 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 858faa57dd9e2b91f3f870fbb1185982e42f5a2b upstream
+commit 6e1c39c6b00d9141a82c231ba7c5e5b1716974b2 upstream.
 
-backported for linux-3.2.y, linux-3.3.y, linux-3.4.y
+The recent fix for power-map controls (commit b0791dda813) caused
+regressions on some other HP laptops.  They have fixed pins but these
+pins are exposed as jack-detectable.  Thus the driver tries to control
+the power-map dynamically per jack detection where it never gets on.
 
-add_virtual_intf() needs to return an ERR_PTR(), instead of NULL,
-on errors, otherwise cfg80211 will crash.
+This patch adds the check of connection and it assumes the no jack
+detection is available for fixed pins no matter what pin capability
+says.
 
-Reported-by: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+BugLink: http://bugs.launchpad.net/bugs/1013183
+Reported-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/mwifiex/cfg80211.c |   21 +++++++++------------
- 1 files changed, 9 insertions(+), 12 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/mwifiex/cfg80211.c b/drivers/net/wireless/mwifiex/cfg80211.c
-index 6505038..baf6919 100644
---- a/drivers/net/wireless/mwifiex/cfg80211.c
-+++ b/drivers/net/wireless/mwifiex/cfg80211.c
-@@ -1214,11 +1214,11 @@ struct net_device *mwifiex_add_virtual_intf(struct wiphy *wiphy,
- 	void *mdev_priv;
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -4457,7 +4457,7 @@ static int stac92xx_init(struct hda_code
+ 					 AC_PINCTL_IN_EN);
+ 	for (i = 0; i < spec->num_pwrs; i++)  {
+ 		hda_nid_t nid = spec->pwr_nids[i];
+-		int pinctl, def_conf;
++		unsigned int pinctl, def_conf;
  
- 	if (!priv)
--		return NULL;
-+		return ERR_PTR(-EFAULT);
- 
- 	adapter = priv->adapter;
- 	if (!adapter)
--		return NULL;
-+		return ERR_PTR(-EFAULT);
- 
- 	switch (type) {
- 	case NL80211_IFTYPE_UNSPECIFIED:
-@@ -1227,7 +1227,7 @@ struct net_device *mwifiex_add_virtual_intf(struct wiphy *wiphy,
- 		if (priv->bss_mode) {
- 			wiphy_err(wiphy, "cannot create multiple"
- 					" station/adhoc interfaces\n");
--			return NULL;
-+			return ERR_PTR(-EINVAL);
- 		}
- 
- 		if (type == NL80211_IFTYPE_UNSPECIFIED)
-@@ -1244,14 +1244,15 @@ struct net_device *mwifiex_add_virtual_intf(struct wiphy *wiphy,
- 		break;
- 	default:
- 		wiphy_err(wiphy, "type not supported\n");
--		return NULL;
-+		return ERR_PTR(-EINVAL);
- 	}
- 
- 	dev = alloc_netdev_mq(sizeof(struct mwifiex_private *), name,
- 			      ether_setup, 1);
- 	if (!dev) {
- 		wiphy_err(wiphy, "no memory available for netdevice\n");
--		goto error;
-+		priv->bss_mode = NL80211_IFTYPE_UNSPECIFIED;
-+		return ERR_PTR(-ENOMEM);
- 	}
- 
- 	dev_net_set(dev, wiphy_net(wiphy));
-@@ -1276,7 +1277,9 @@ struct net_device *mwifiex_add_virtual_intf(struct wiphy *wiphy,
- 	/* Register network device */
- 	if (register_netdevice(dev)) {
- 		wiphy_err(wiphy, "cannot register virtual network device\n");
--		goto error;
-+		free_netdev(dev);
-+		priv->bss_mode = NL80211_IFTYPE_UNSPECIFIED;
-+		return ERR_PTR(-EFAULT);
- 	}
- 
- 	sema_init(&priv->async_sem, 1);
-@@ -1288,12 +1291,6 @@ struct net_device *mwifiex_add_virtual_intf(struct wiphy *wiphy,
- 	mwifiex_dev_debugfs_init(priv);
- #endif
- 	return dev;
--error:
--	if (dev && (dev->reg_state == NETREG_UNREGISTERED))
--		free_netdev(dev);
--	priv->bss_mode = NL80211_IFTYPE_UNSPECIFIED;
--
--	return NULL;
- }
- EXPORT_SYMBOL_GPL(mwifiex_add_virtual_intf);
- 
+ 		/* power on when no jack detection is available */
+ 		/* or when the VREF is used for controlling LED */
+@@ -4484,7 +4484,7 @@ static int stac92xx_init(struct hda_code
+ 		def_conf = get_defcfg_connect(def_conf);
+ 		/* skip any ports that don't have jacks since presence
+  		 * detection is useless */
+-		if (def_conf != AC_JACK_PORT_NONE &&
++		if (def_conf != AC_JACK_PORT_COMPLEX ||
+ 		    !is_jack_detectable(codec, nid)) {
+ 			stac_toggle_power_map(codec, nid, 1);
+ 			continue;
 
 
