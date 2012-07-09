@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab2GIOtG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:49:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38114 "EHLO
+	id S1754877Ab2GIOtE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:49:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38122 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754316Ab2GIOh7 (ORCPT
+	by vger.kernel.org with ESMTP id S1754326Ab2GIOh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Jul 2012 10:37:59 -0400
-Message-Id: <20120709143117.646591387@decadent.org.uk>
+Message-Id: <20120709143123.494694140@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:31:23 +0100
+Date: Mon, 09 Jul 2012 15:32:04 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [ 07/48] NFC: Return from rawsock_release when sk is NULL
+        alan@lxorguk.ukuu.org.uk,
+        =?ISO-8859-15?q?=D0=BE=D0=BB=D1=8C=D0=B3=D0=B0=20=D0=BA=D1=80=D1=8B=D0=B6=D0=B0=D0=BD=D0=BE=D0=B2=D1=81=D0=BA=D0=B0=D1=8F?= 
+	<olga.kryzhanovska@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 48/48] vfs: make O_PATH file descriptors usable for fchdir()
 In-Reply-To: <20120709143116.348975190@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,104 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 03e934f620101ca2cfc9383bd76172dd3e1f8567 upstream.
+commit 332a2e1244bd08b9e3ecd378028513396a004a24 upstream.
 
-Sasha Levin reported following panic :
+We already use them for openat() and friends, but fchdir() also wants to
+be able to use O_PATH file descriptors.  This should make it comparable
+to the O_SEARCH of Solaris.  In particular, O_PATH allows you to access
+(not-quite-open) a directory you don't have read persmission to, only
+execute permission.
 
-[ 2136.383310] BUG: unable to handle kernel NULL pointer dereference at
-00000000000003b0
-[ 2136.384022] IP: [<ffffffff8114e400>] __lock_acquire+0xc0/0x4b0
-[ 2136.384022] PGD 131c4067 PUD 11c0c067 PMD 0
-[ 2136.388106] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 2136.388106] CPU 1
-[ 2136.388106] Pid: 24855, comm: trinity-child1 Tainted: G        W
-3.5.0-rc2-sasha-00015-g7b268f7 #374
-[ 2136.388106] RIP: 0010:[<ffffffff8114e400>]  [<ffffffff8114e400>]
-__lock_acquire+0xc0/0x4b0
-[ 2136.388106] RSP: 0018:ffff8800130b3ca8  EFLAGS: 00010046
-[ 2136.388106] RAX: 0000000000000086 RBX: ffff88001186b000 RCX:
-0000000000000000
-[ 2136.388106] RDX: 0000000000000000 RSI: 0000000000000000 RDI:
-0000000000000000
-[ 2136.388106] RBP: ffff8800130b3d08 R08: 0000000000000001 R09:
-0000000000000000
-[ 2136.388106] R10: 0000000000000000 R11: 0000000000000001 R12:
-0000000000000002
-[ 2136.388106] R13: 00000000000003b0 R14: 0000000000000000 R15:
-0000000000000000
-[ 2136.388106] FS:  00007fa5b1bd4700(0000) GS:ffff88001b800000(0000)
-knlGS:0000000000000000
-[ 2136.388106] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 2136.388106] CR2: 00000000000003b0 CR3: 0000000011d1f000 CR4:
-00000000000406e0
-[ 2136.388106] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-0000000000000000
-[ 2136.388106] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-0000000000000400
-[ 2136.388106] Process trinity-child1 (pid: 24855, threadinfo
-ffff8800130b2000, task ffff88001186b000)
-[ 2136.388106] Stack:
-[ 2136.388106]  ffff8800130b3cd8 ffffffff81121785 ffffffff81236774
-000080d000000001
-[ 2136.388106]  ffff88001b9d6c00 00000000001d6c00 ffffffff130b3d08
-ffff88001186b000
-[ 2136.388106]  0000000000000000 0000000000000002 0000000000000000
-0000000000000000
-[ 2136.388106] Call Trace:
-[ 2136.388106]  [<ffffffff81121785>] ? sched_clock_local+0x25/0x90
-[ 2136.388106]  [<ffffffff81236774>] ? get_empty_filp+0x74/0x220
-[ 2136.388106]  [<ffffffff8114e97a>] lock_acquire+0x18a/0x1e0
-[ 2136.388106]  [<ffffffff836b37df>] ? rawsock_release+0x4f/0xa0
-[ 2136.388106]  [<ffffffff837c0ef0>] _raw_write_lock_bh+0x40/0x80
-[ 2136.388106]  [<ffffffff836b37df>] ? rawsock_release+0x4f/0xa0
-[ 2136.388106]  [<ffffffff836b37df>] rawsock_release+0x4f/0xa0
-[ 2136.388106]  [<ffffffff8321cfe8>] sock_release+0x18/0x70
-[ 2136.388106]  [<ffffffff8321d069>] sock_close+0x29/0x30
-[ 2136.388106]  [<ffffffff81236bca>] __fput+0x11a/0x2c0
-[ 2136.388106]  [<ffffffff81236d85>] fput+0x15/0x20
-[ 2136.388106]  [<ffffffff8321de34>] sys_accept4+0x1b4/0x200
-[ 2136.388106]  [<ffffffff837c165c>] ? _raw_spin_unlock_irq+0x4c/0x80
-[ 2136.388106]  [<ffffffff837c1669>] ? _raw_spin_unlock_irq+0x59/0x80
-[ 2136.388106]  [<ffffffff837c2565>] ? sysret_check+0x22/0x5d
-[ 2136.388106]  [<ffffffff8321de8b>] sys_accept+0xb/0x10
-[ 2136.388106]  [<ffffffff837c2539>] system_call_fastpath+0x16/0x1b
-[ 2136.388106] Code: ec 04 00 0f 85 ea 03 00 00 be d5 0b 00 00 48 c7 c7
-8a c1 40 84 e8 b1 a5 f8 ff 31 c0 e9 d4 03 00 00 66 2e 0f 1f 84 00 00 00
-00 00 <49> 81 7d 00 60 73 5e 85 b8 01 00 00 00 44 0f 44 e0 83 fe 01 77
-[ 2136.388106] RIP  [<ffffffff8114e400>] __lock_acquire+0xc0/0x4b0
-[ 2136.388106]  RSP <ffff8800130b3ca8>
-[ 2136.388106] CR2: 00000000000003b0
-[ 2136.388106] ---[ end trace 6d450e935ee18982 ]---
-[ 2136.388106] Kernel panic - not syncing: Fatal exception in interrupt
+Noticed during development of multithread support for ksh93.
 
-rawsock_release() should test if sock->sk is NULL before calling
-sock_orphan()/sock_put()
-
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Tested-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-[bwh: Backported to 3.2: keep using nfc_dbg(), not pr_debug()]
+Reported-by: ольга крыжановская <olga.kryzhanovska@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/nfc/rawsock.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/open.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/nfc/rawsock.c
-+++ b/net/nfc/rawsock.c
-@@ -52,7 +52,10 @@ static int rawsock_release(struct socket
+diff --git a/fs/open.c b/fs/open.c
+index d6c79a0..1540632 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -397,10 +397,10 @@ SYSCALL_DEFINE1(fchdir, unsigned int, fd)
  {
- 	struct sock *sk = sock->sk;
+ 	struct file *file;
+ 	struct inode *inode;
+-	int error;
++	int error, fput_needed;
  
--	nfc_dbg("sock=%p", sock);
-+	nfc_dbg("sock=%p sk=%p", sock, sk);
-+
-+	if (!sk)
-+		return 0;
+ 	error = -EBADF;
+-	file = fget(fd);
++	file = fget_raw_light(fd, &fput_needed);
+ 	if (!file)
+ 		goto out;
  
- 	sock_orphan(sk);
- 	sock_put(sk);
+@@ -414,7 +414,7 @@ SYSCALL_DEFINE1(fchdir, unsigned int, fd)
+ 	if (!error)
+ 		set_fs_pwd(current->fs, &file->f_path);
+ out_putf:
+-	fput(file);
++	fput_light(file, fput_needed);
+ out:
+ 	return error;
+ }
 
 
