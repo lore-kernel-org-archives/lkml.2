@@ -1,95 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab2GIVnT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 17:43:19 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:56688 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106Ab2GIVnS (ORCPT
+	id S1754443Ab2GIVr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 17:47:59 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:57680 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754392Ab2GIVr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 17:43:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120709203208.28178.94320.stgit@bhelgaas.mtv.corp.google.com>
-References: <20120709202308.28178.58942.stgit@bhelgaas.mtv.corp.google.com>
-	<20120709203208.28178.94320.stgit@bhelgaas.mtv.corp.google.com>
-Date: Mon, 9 Jul 2012 14:43:16 -0700
-X-Google-Sender-Auth: 7eZB5XJgsZvRkrPZWHgchzK-9W0
-Message-ID: <CAE9FiQXN00en27i3F16GL+HJoqVT=DenUWLCg0u4v-7vqcBTcQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] PCI: reimplement P2P bridge 1K I/O windows (Intel P64H2)
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, Daniel Yeisley <dan.yeisley@unisys.com>,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Content-Type: multipart/mixed; boundary=bcaec5015fe17056b904c46c80bc
+	Mon, 9 Jul 2012 17:47:57 -0400
+Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
+From: Andrew Theurer <habanero@linux.vnet.ibm.com>
+Reply-To: habanero@linux.vnet.ibm.com
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+In-Reply-To: <20120709062012.24030.37154.sendpatchset@codeblue>
+References: <20120709062012.24030.37154.sendpatchset@codeblue>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 Jul 2012 16:47:37 -0500
+Message-ID: <1341870457.2909.27.camel@oc2024037011.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12070921-7606-0000-0000-000001DD9102
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bcaec5015fe17056b904c46c80bc
-Content-Type: text/plain; charset=ISO-8859-1
+On Mon, 2012-07-09 at 11:50 +0530, Raghavendra K T wrote:
+> Currently Pause Looop Exit (PLE) handler is doing directed yield to a
+> random VCPU on PL exit. Though we already have filtering while choosing
+> the candidate to yield_to, we can do better.
 
-On Mon, Jul 9, 2012 at 1:32 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->
-> Note that the bridge window assignment code, e.g., pbus_size_io(), should
-> pay attention to dev->io_window_1k, too, but I didn't fix that.
+Hi, Raghu.
 
-Please check attached patch that will fix pbus_size_io.
+> Problem is, for large vcpu guests, we have more probability of yielding
+> to a bad vcpu. We are not able to prevent directed yield to same guy who
+> has done PL exit recently, who perhaps spins again and wastes CPU.
+> 
+> Fix that by keeping track of who has done PL exit. So The Algorithm in series
+> give chance to a VCPU which has:
+> 
+>  (a) Not done PLE exit at all (probably he is preempted lock-holder)
+> 
+>  (b) VCPU skipped in last iteration because it did PL exit, and probably
+>  has become eligible now (next eligible lock holder)
+> 
+> Future enhancemnets:
+>   (1) Currently we have a boolean to decide on eligibility of vcpu. It
+>     would be nice if I get feedback on guest (>32 vcpu) whether we can
+>     improve better with integer counter. (with counter = say f(log n )).
+>   
+>   (2) We have not considered system load during iteration of vcpu. With
+>    that information we can limit the scan and also decide whether schedule()
+>    is better. [ I am able to use #kicked vcpus to decide on this But may
+>    be there are better ideas like information from global loadavg.]
+> 
+>   (3) We can exploit this further with PV patches since it also knows about
+>    next eligible lock-holder.
+> 
+> Summary: There is a huge improvement for moderate / no overcommit scenario
+>  for kvm based guest on PLE machine (which is difficult ;) ).
+> 
+> Result:
+> Base : kernel 3.5.0-rc5 with Rik's Ple handler fix
+> 
+> Machine : Intel(R) Xeon(R) CPU X7560  @ 2.27GHz, 4 numa node, 256GB RAM,
+>           32 core machine
 
-You may fold the patch in your patch, or could split your patch to
-two. First one
-only add io_window_1k, and second one will use io_window_1k. Then could put my
-patch between them.
+Is this with HT enabled, therefore 64 CPU threads?
 
-Thanks
+> Host: enterprise linux  gcc version 4.4.6 20120305 (Red Hat 4.4.6-4) (GCC)
+>   with test kernels 
+> 
+> Guest: fedora 16 with 32 vcpus 8GB memory. 
 
-Yinghai
+Can you briefly explain the 1x and 2x configs?  This of course is highly
+dependent whether or not HT is enabled...
 
---bcaec5015fe17056b904c46c80bc
-Content-Type: application/octet-stream; name="io_window_1k.patch"
-Content-Disposition: attachment; filename="io_window_1k.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h4g2r4jn0
+FWIW, I started testing what I would call "0.5x", where I have one 40
+vcpu guest running on a host with 40 cores and 80 CPU threads total (HT
+enabled, no extra load on the system).  For ebizzy, the results are
+quite erratic from run to run, so I am inclined to discard it as a
+workload, but maybe I should try "1x" and "2x" cpu over-commit as well.
 
-U3ViamVjdDogW1BBVENIXSBQQ0k6IHVwZGF0ZSBwYnVzX3NpemVfaW8oKSB0byBzdXBwb3J0IGlv
-X3dpbmRvd18xawoKU28gaWYgY2hpbGRyZW4gZGV2aWNlIGFsaWdubWVudCBpcyBzbWFsbCB0aGFu
-IDFrLCB3ZSBjb3VsZCB1c2UgMWsgYXMgYnJpZGdlCmFsaWdubWVudC4KClNpZ25lZC1vZmYtYnk6
-IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogZHJpdmVycy9wY2kvc2V0dXAt
-YnVzLmMgfCAgIDIyICsrKysrKysrKysrKysrKysrLS0tLS0KIDEgZmlsZSBjaGFuZ2VkLCAxNyBp
-bnNlcnRpb25zKCspLCA1IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9kcml2ZXJzL3Bj
-aS9zZXR1cC1idXMuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL3BjaS9z
-ZXR1cC1idXMuYworKysgbGludXgtMi42L2RyaXZlcnMvcGNpL3NldHVwLWJ1cy5jCkBAIC03MTcs
-MTAgKzcxNywxMyBAQCBzdGF0aWMgdm9pZCBwYnVzX3NpemVfaW8oc3RydWN0IHBjaV9idXMKIAlz
-dHJ1Y3QgcmVzb3VyY2UgKmJfcmVzID0gZmluZF9mcmVlX2J1c19yZXNvdXJjZShidXMsIElPUkVT
-T1VSQ0VfSU8pOwogCXVuc2lnbmVkIGxvbmcgc2l6ZSA9IDAsIHNpemUwID0gMCwgc2l6ZTEgPSAw
-OwogCXJlc291cmNlX3NpemVfdCBjaGlsZHJlbl9hZGRfc2l6ZSA9IDA7CisJcmVzb3VyY2Vfc2l6
-ZV90IG1pbl9hbGlnbiA9IDQwOTYsIGFsaWduOwogCiAJaWYgKCFiX3JlcykKICAJCXJldHVybjsK
-IAorCWlmIChidXMtPnNlbGYtPmlvX3dpbmRvd18xaykKKwkJbWluX2FsaWduID0gMTAyNDsKIAls
-aXN0X2Zvcl9lYWNoX2VudHJ5KGRldiwgJmJ1cy0+ZGV2aWNlcywgYnVzX2xpc3QpIHsKIAkJaW50
-IGk7CiAKQEAgLTczOCwxNyArNzQxLDI1IEBAIHN0YXRpYyB2b2lkIHBidXNfc2l6ZV9pbyhzdHJ1
-Y3QgcGNpX2J1cwogCQkJZWxzZQogCQkJCXNpemUxICs9IHJfc2l6ZTsKIAorCQkJYWxpZ24gPSBw
-Y2lfcmVzb3VyY2VfYWxpZ25tZW50KGRldiwgcik7CisJCQlpZiAoYWxpZ24gPiBtaW5fYWxpZ24p
-CisJCQkJbWluX2FsaWduID0gYWxpZ247CisKIAkJCWlmIChyZWFsbG9jX2hlYWQpCiAJCQkJY2hp
-bGRyZW5fYWRkX3NpemUgKz0gZ2V0X3Jlc19hZGRfc2l6ZShyZWFsbG9jX2hlYWQsIHIpOwogCQl9
-CiAJfQorCisJaWYgKG1pbl9hbGlnbiA+IDQwOTYpCisJCW1pbl9hbGlnbiA9IDQwOTY7CisKIAlz
-aXplMCA9IGNhbGN1bGF0ZV9pb3NpemUoc2l6ZSwgbWluX3NpemUsIHNpemUxLAotCQkJcmVzb3Vy
-Y2Vfc2l6ZShiX3JlcyksIDQwOTYpOworCQkJcmVzb3VyY2Vfc2l6ZShiX3JlcyksIG1pbl9hbGln
-bik7CiAJaWYgKGNoaWxkcmVuX2FkZF9zaXplID4gYWRkX3NpemUpCiAJCWFkZF9zaXplID0gY2hp
-bGRyZW5fYWRkX3NpemU7CiAJc2l6ZTEgPSAoIXJlYWxsb2NfaGVhZCB8fCAocmVhbGxvY19oZWFk
-ICYmICFhZGRfc2l6ZSkpID8gc2l6ZTAgOgogCQljYWxjdWxhdGVfaW9zaXplKHNpemUsIG1pbl9z
-aXplLCBhZGRfc2l6ZSArIHNpemUxLAotCQkJcmVzb3VyY2Vfc2l6ZShiX3JlcyksIDQwOTYpOwor
-CQkJcmVzb3VyY2Vfc2l6ZShiX3JlcyksIG1pbl9hbGlnbik7CiAJaWYgKCFzaXplMCAmJiAhc2l6
-ZTEpIHsKIAkJaWYgKGJfcmVzLT5zdGFydCB8fCBiX3Jlcy0+ZW5kKQogCQkJZGV2X2luZm8oJmJ1
-cy0+c2VsZi0+ZGV2LCAiZGlzYWJsaW5nIGJyaWRnZSB3aW5kb3cgIgpAQCAtNzU3LDEyICs3Njgs
-MTMgQEAgc3RhdGljIHZvaWQgcGJ1c19zaXplX2lvKHN0cnVjdCBwY2lfYnVzCiAJCWJfcmVzLT5m
-bGFncyA9IDA7CiAJCXJldHVybjsKIAl9Ci0JLyogQWxpZ25tZW50IG9mIHRoZSBJTyB3aW5kb3cg
-aXMgYWx3YXlzIDRLICovCi0JYl9yZXMtPnN0YXJ0ID0gNDA5NjsKKwkvKiBBbGlnbm1lbnQgb2Yg
-dGhlIElPIHdpbmRvdyBzaG91bGQgYmUgNEssIGJ1dCBjb3VsZCBiZSAxSyBzb21ldGltZXMgKi8K
-KwliX3Jlcy0+c3RhcnQgPSBtaW5fYWxpZ247CiAJYl9yZXMtPmVuZCA9IGJfcmVzLT5zdGFydCAr
-IHNpemUwIC0gMTsKIAliX3Jlcy0+ZmxhZ3MgfD0gSU9SRVNPVVJDRV9TVEFSVEFMSUdOOwogCWlm
-IChzaXplMSA+IHNpemUwICYmIHJlYWxsb2NfaGVhZCkgewotCQlhZGRfdG9fbGlzdChyZWFsbG9j
-X2hlYWQsIGJ1cy0+c2VsZiwgYl9yZXMsIHNpemUxLXNpemUwLCA0MDk2KTsKKwkJYWRkX3RvX2xp
-c3QocmVhbGxvY19oZWFkLCBidXMtPnNlbGYsIGJfcmVzLCBzaXplMS1zaXplMCwKKwkJCQkgbWlu
-X2FsaWduKTsKIAkJZGV2X3ByaW50ayhLRVJOX0RFQlVHLCAmYnVzLT5zZWxmLT5kZXYsICJicmlk
-Z2Ugd2luZG93ICIKIAkJCQkgIiVwUiB0byAlcFIgYWRkX3NpemUgJWx4XG4iLCBiX3JlcywKIAkJ
-CQkgJmJ1cy0+YnVzbl9yZXMsIHNpemUxLXNpemUwKTsK
---bcaec5015fe17056b904c46c80bc--
+>From initial observations, at least for the ebizzy workload, the
+percentage of exits that result in a yield_to() are very low, around 1%,
+before these patches.  So, I am concerned that at least for this test,
+reducing that number even more has diminishing returns.  I am however
+still concerned about the scalability problem with yield_to(), which
+shows like this for me (perf):
+
+> 63.56%     282095         qemu-kvm  [kernel.kallsyms]        [k] _raw_spin_lock                  
+> 5.42%      24420         qemu-kvm  [kvm]                    [k] kvm_vcpu_yield_to               
+> 5.33%      26481         qemu-kvm  [kernel.kallsyms]        [k] get_pid_task                    
+> 4.35%      20049         qemu-kvm  [kernel.kallsyms]        [k] yield_to                        
+> 2.74%      15652         qemu-kvm  [kvm]                    [k] kvm_apic_present                
+> 1.70%       8657         qemu-kvm  [kvm]                    [k] kvm_vcpu_on_spin                
+> 1.45%       7889         qemu-kvm  [kvm]                    [k] vcpu_enter_guest                
+         
+For the cpu threads in the host that are actually active (in this case
+1/2 of them), ~50% of their time is in kernel and ~43% in guest.  This
+is for a no-IO workload, so that's just incredible to see so much cpu
+wasted.  I feel that 2 important areas to tackle are a more scalable
+yield_to() and reducing the number of pause exits itself (hopefully by
+just tuning ple_window for the latter).
+
+Honestly, I not confident addressing this problem will improve the
+ebizzy score. That workload is so erratic for me, that I do not trust
+the results at all.  I have however seen consistent improvements in
+disabling PLE for a http guest workload and a very high IOPS guest
+workload, both with much time spent in host in the double runqueue lock
+for yield_to(), so that's why I still gravitate toward that issue.
+
+
+-Andrew Theurer
+
