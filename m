@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab2GIOnE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:43:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38256 "EHLO
+	id S1754705Ab2GIOnc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:43:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38246 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754458Ab2GIOiT (ORCPT
+	by vger.kernel.org with ESMTP id S1754449Ab2GIOiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:38:19 -0400
-Message-Id: <20120709143121.866486950@decadent.org.uk>
+	Mon, 9 Jul 2012 10:38:17 -0400
+Message-Id: <20120709143120.888011340@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:31:52 +0100
+Date: Mon, 09 Jul 2012 15:31:45 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
-        Tom Herbert <therbert@google.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Roland Dreier <roland@kernel.org>, Neil Horman <nhorman@tuxdriver.com>,
+        alan@lxorguk.ukuu.org.uk, Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 36/48] bonding: Fix corrupted queue_mapping
+Subject: [ 29/48] net: sock: validate data_len before allocating skb in  sock_alloc_send_pskb()
 In-Reply-To: <20120709143116.348975190@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,116 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 5ee31c6898ea5537fcea160999d60dc63bc0c305 ]
+[ Upstream commit cc9b17ad29ecaa20bfe426a8d4dbfb94b13ff1cc ]
 
-In the transmit path of the bonding driver, skb->cb is used to
-stash the skb->queue_mapping so that the bonding device can set its
-own queue mapping.  This value becomes corrupted since the skb->cb is
-also used in __dev_xmit_skb.
+We need to validate the number of pages consumed by data_len, otherwise frags
+array could be overflowed by userspace. So this patch validate data_len and
+return -EMSGSIZE when data_len may occupies more frags than MAX_SKB_FRAGS.
 
-When transmitting through bonding driver, bond_select_queue is
-called from dev_queue_xmit.  In bond_select_queue the original
-skb->queue_mapping is copied into skb->cb (via bond_queue_mapping)
-and skb->queue_mapping is overwritten with the bond driver queue.
-
-Subsequently in dev_queue_xmit, __dev_xmit_skb is called which writes
-the packet length into skb->cb, thereby overwriting the stashed
-queue mappping.  In bond_dev_queue_xmit (called from hard_start_xmit),
-the queue mapping for the skb is set to the stashed value which is now
-the skb length and hence is an invalid queue for the slave device.
-
-If we want to save skb->queue_mapping into skb->cb[], best place is to
-add a field in struct qdisc_skb_cb, to make sure it wont conflict with
-other layers (eg : Qdiscc, Infiniband...)
-
-This patchs also makes sure (struct qdisc_skb_cb)->data is aligned on 8
-bytes :
-
-netem qdisc for example assumes it can store an u64 in it, without
-misalignment penalty.
-
-Note : we only have 20 bytes left in (struct qdisc_skb_cb)->data[].
-The largest user is CHOKe and it fills it.
-
-Based on a previous patch from Tom Herbert.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Tom Herbert <therbert@google.com>
-Cc: John Fastabend <john.r.fastabend@intel.com>
-Cc: Roland Dreier <roland@kernel.org>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/bonding/bond_main.c |    9 +++++----
- include/net/sch_generic.h       |    7 +++++--
- 2 files changed, 10 insertions(+), 6 deletions(-)
+ net/core/sock.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index f65e0b9..1a88e38 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -77,6 +77,7 @@
- #include <net/route.h>
- #include <net/net_namespace.h>
- #include <net/netns/generic.h>
-+#include <net/pkt_sched.h>
- #include "bonding.h"
- #include "bond_3ad.h"
- #include "bond_alb.h"
-@@ -382,8 +383,6 @@ struct vlan_entry *bond_next_vlan(struct bonding *bond, struct vlan_entry *curr)
- 	return next;
- }
- 
--#define bond_queue_mapping(skb) (*(u16 *)((skb)->cb))
--
- /**
-  * bond_dev_queue_xmit - Prepare skb for xmit.
-  *
-@@ -396,7 +395,9 @@ int bond_dev_queue_xmit(struct bonding *bond, struct sk_buff *skb,
- {
- 	skb->dev = slave_dev;
- 
--	skb->queue_mapping = bond_queue_mapping(skb);
-+	BUILD_BUG_ON(sizeof(skb->queue_mapping) !=
-+		     sizeof(qdisc_skb_cb(skb)->bond_queue_mapping));
-+	skb->queue_mapping = qdisc_skb_cb(skb)->bond_queue_mapping;
- 
- 	if (unlikely(netpoll_tx_running(slave_dev)))
- 		bond_netpoll_send_skb(bond_get_slave_by_dev(bond, slave_dev), skb);
-@@ -4151,7 +4152,7 @@ static u16 bond_select_queue(struct net_device *dev, struct sk_buff *skb)
- 	/*
- 	 * Save the original txq to restore before passing to the driver
- 	 */
--	bond_queue_mapping(skb) = skb->queue_mapping;
-+	qdisc_skb_cb(skb)->bond_queue_mapping = skb->queue_mapping;
- 
- 	if (unlikely(txq >= dev->real_num_tx_queues)) {
- 		do {
-diff --git a/include/net/sch_generic.h b/include/net/sch_generic.h
-index 55ce96b..9d7d54a 100644
---- a/include/net/sch_generic.h
-+++ b/include/net/sch_generic.h
-@@ -220,13 +220,16 @@ struct tcf_proto {
- 
- struct qdisc_skb_cb {
- 	unsigned int		pkt_len;
--	unsigned char		data[24];
-+	u16			bond_queue_mapping;
-+	u16			_pad;
-+	unsigned char		data[20];
- };
- 
- static inline void qdisc_cb_private_validate(const struct sk_buff *skb, int sz)
- {
- 	struct qdisc_skb_cb *qcb;
--	BUILD_BUG_ON(sizeof(skb->cb) < sizeof(unsigned int) + sz);
+diff --git a/net/core/sock.c b/net/core/sock.c
+index b23f174..8d095b9 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1497,6 +1497,11 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
+ 	gfp_t gfp_mask;
+ 	long timeo;
+ 	int err;
++	int npages = (data_len + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
 +
-+	BUILD_BUG_ON(sizeof(skb->cb) < offsetof(struct qdisc_skb_cb, data) + sz);
- 	BUILD_BUG_ON(sizeof(qcb->data) < sz);
- }
++	err = -EMSGSIZE;
++	if (npages > MAX_SKB_FRAGS)
++		goto failure;
  
+ 	gfp_mask = sk->sk_allocation;
+ 	if (gfp_mask & __GFP_WAIT)
+@@ -1515,14 +1520,12 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
+ 		if (atomic_read(&sk->sk_wmem_alloc) < sk->sk_sndbuf) {
+ 			skb = alloc_skb(header_len, gfp_mask);
+ 			if (skb) {
+-				int npages;
+ 				int i;
+ 
+ 				/* No pages, we're done... */
+ 				if (!data_len)
+ 					break;
+ 
+-				npages = (data_len + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
+ 				skb->truesize += data_len;
+ 				skb_shinfo(skb)->nr_frags = npages;
+ 				for (i = 0; i < npages; i++) {
 
 
