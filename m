@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab2GIU7t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 16:59:49 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:48563 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab2GIU7s (ORCPT
+	id S1753892Ab2GIVAn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 17:00:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65164 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824Ab2GIVAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 16:59:48 -0400
-Message-ID: <4FFB463F.9040201@linaro.org>
-Date: Mon, 09 Jul 2012 22:59:43 +0200
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Mon, 9 Jul 2012 17:00:41 -0400
+Date: Mon, 9 Jul 2012 14:00:38 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Pekka Enberg <penberg@kernel.org>
+cc: Steven Rostedt <rostedt@goodmis.org>, JoonSoo Kim <js1304@gmail.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        Christoph Lameter <cl@linux.com>, Rus <rus@sfinxsoft.com>,
+        Ben Hutchings <ben@decadent.org.uk>, stable@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [patch v2] mm, slub: ensure irqs are enabled for kmemcheck
+In-Reply-To: <1341841593.14828.9.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.DEB.2.00.1207091400090.23926@chino.kir.corp.google.com>
+References: <20120708040009.GA8363@localhost> <CAAmzW4OD2_ODyeY7c1VMPajwzovOms5M8Vnw=XP=uGUyPogiJQ@mail.gmail.com> <alpine.DEB.2.00.1207081558540.18461@chino.kir.corp.google.com> <alpine.LFD.2.02.1207091209220.3050@tux.localdomain>
+ <alpine.DEB.2.00.1207090333560.8224@chino.kir.corp.google.com> <1341841593.14828.9.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de
-Subject: Re: [PATCH 7/9] Input: ab8500-ponkey: Create AB8500 domain IRQ mapping
-References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org> <4FF6994B.9040801@linaro.org> <20120706173957.GA10202@core.coreip.homeip.net> <4FFB288D.4080606@linaro.org> <20120709201422.GA12242@core.coreip.homeip.net> <4FFB40A4.5060505@linaro.org> <20120709204620.GA12692@core.coreip.homeip.net>
-In-Reply-To: <20120709204620.GA12692@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the cock-up(s).
+kmemcheck_alloc_shadow() requires irqs to be enabled, so wait to disable
+them until after its called for __GFP_WAIT allocations.
 
-From: Lee Jones <lee.jones@linaro.org>
-Date: Tue, 26 Jun 2012 10:46:50 +0100
-Subject: [PATCH 1/1] Input: ab8500-ponkey: Create AB8500 domain IRQ mapping
+This fixes a warning for such allocations:
 
-Before we can use any domain allocated IRQ, we need to first create a
-map between the Hardware IRQ (hwirq) and the Linux Virtual IRQ (virq).
-We do this with a helper function provided by the AB8500 IRQ domain
-controller called ab8500_irq_get_virq(). We need to do this for both
-IRQs which the Power-On-Key driver uses; one for button press, the other
-for button depress.
+	WARNING: at kernel/lockdep.c:2739 lockdep_trace_alloc+0x14e/0x1c0()
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Acked-by: Fengguang Wu <fengguang.wu@intel.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- drivers/input/misc/ab8500-ponkey.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/slub.c |   13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/input/misc/ab8500-ponkey.c b/drivers/input/misc/ab8500-ponkey.c
-index 5ceb23e..f6764af 100644
---- a/drivers/input/misc/ab8500-ponkey.c
-+++ b/drivers/input/misc/ab8500-ponkey.c
-@@ -74,8 +74,8 @@ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
+diff --git a/mm/slub.c b/mm/slub.c
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1314,13 +1314,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 			stat(s, ORDER_FALLBACK);
+ 	}
  
- 	ponkey->idev = input;
- 	ponkey->ab8500 = ab8500;
--	ponkey->irq_dbf = irq_dbf;
--	ponkey->irq_dbr = irq_dbr;
-+	ponkey->irq_dbf = ab8500_irq_get_virq(ab8500, irq_dbf);
-+	ponkey->irq_dbr = ab8500_irq_get_virq(ab8500, irq_dbr);
+-	if (flags & __GFP_WAIT)
+-		local_irq_disable();
+-
+-	if (!page)
+-		return NULL;
+-
+-	if (kmemcheck_enabled
++	if (kmemcheck_enabled && page
+ 		&& !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
+ 		int pages = 1 << oo_order(oo);
  
- 	input->name = "AB8500 POn(PowerOn) Key";
- 	input->dev.parent = &pdev->dev;
--- 
-1.7.9.5
-
-
-
+@@ -1336,6 +1330,11 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 			kmemcheck_mark_unallocated_pages(page, pages);
+ 	}
+ 
++	if (flags & __GFP_WAIT)
++		local_irq_disable();
++	if (!page)
++		return NULL;
++
+ 	page->objects = oo_objects(oo);
+ 	mod_zone_page_state(page_zone(page),
+ 		(s->flags & SLAB_RECLAIM_ACCOUNT) ?
