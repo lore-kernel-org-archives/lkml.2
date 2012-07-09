@@ -1,43 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab2GILu7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 07:50:59 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42517 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753206Ab2GILu5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 07:50:57 -0400
-Subject: Re: [PATCH] net: cgroup: fix out of bounds accesses
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, lizefan@huawei.com, tj@kernel.org,
-        Gao feng <gaofeng@cn.fujitsu.com>
-In-Reply-To: <20120709110154.GB9186@hmsreliant.think-freely.org>
-References: <1341819910.3265.2106.camel@edumazet-glaptop>
-	 <20120709110154.GB9186@hmsreliant.think-freely.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 Jul 2012 13:50:52 +0200
-Message-ID: <1341834652.3265.2642.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753377Ab2GIMBZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 08:01:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34260 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753090Ab2GIMBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 08:01:24 -0400
+Date: Mon, 9 Jul 2012 14:01:21 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/memcg: return -EBUSY when oom-kill-disable modified
+ and memcg use_hierarchy, has children
+Message-ID: <20120709120121.GB4627@tiehlicka.suse.cz>
+References: <1341485708-14221-1-git-send-email-liwp.linux@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341485708-14221-1-git-send-email-liwp.linux@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-09 at 07:01 -0400, Neil Horman wrote:
+On Thu 05-07-12 18:55:08, Wanpeng Li wrote:
+> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+> 
+> When oom-kill-disable modified by the user and current memcg use_hierarchy,
+> the change can occur, provided the current memcg has no children. If it
+> has children, return -EBUSY is enough.
 
-> Thank you for doing this Eric, Gao.  Just to be sure (I asked in the previous
-> thread), would it be better to avoid the length check in skb_update_prio, and
-> instead update the netdev tables to be long enough in cgrp_create and in
-> netprio_device_event on device registration?
+I do not think EBUSY makes any difference. I would much rather see the
+test go away...
 
-Yes probably, and it is even needed because extend_netdev_table() can
-acutally fail to expand the table if kzalloc() returned NULL.
+> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+> ---
+>  mm/memcontrol.c |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 63e36e7..4b64fe0 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4521,11 +4521,14 @@ static int mem_cgroup_oom_control_write(struct cgroup *cgrp,
+>  
+>  	cgroup_lock();
+>  	/* oom-kill-disable is a flag for subhierarchy. */
+> -	if ((parent->use_hierarchy) ||
+> -	    (memcg->use_hierarchy && !list_empty(&cgrp->children))) {
+> +	if (parent->use_hierarchy) {
+>  		cgroup_unlock();
+>  		return -EINVAL;
+> +	} else if (memcg->use_hierarchy && !list_empty(&cgrp->children)) {
+> +		cgroup_unlock();
+> +		return -EBUSY;
+>  	}
+> +
+>  	memcg->oom_kill_disable = val;
+>  	if (!val)
+>  		memcg_oom_recover(memcg);
+> -- 
+> 1.7.5.4
+> 
 
-Current code just ignores this allocation failure so we also can crash
-in write_priomap()
-
-
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
