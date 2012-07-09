@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365Ab2GIR0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 13:26:43 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:46807 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981Ab2GIR0l (ORCPT
+	id S1751442Ab2GIR2h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 13:28:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59074 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941Ab2GIR2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 13:26:41 -0400
+	Mon, 9 Jul 2012 13:28:35 -0400
+Date: Mon, 9 Jul 2012 10:28:31 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Hugh Dickins <hughd@google.com>, Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v3 2/3] cgroup: revise how we re-populate root directory
+Message-ID: <20120709172831.GF1341@google.com>
+References: <20120702142925.795007114@napanee.usersys.redhat.com>
+ <20120702142926.405632285@napanee.usersys.redhat.com>
+ <20120709171748.GD1341@google.com>
+ <20120709172220.GE1341@google.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVDW23eLzjNk6ibGq+8KAG9kC2=7g-Eh6p0k3GrxG0LmQ@mail.gmail.com>
-References: <Pine.LNX.4.64.1205311412210.11510@info> <CAErSpo7p6XGmsi0Q0PAbWofs9-91taz2Px=VxzL2KEoWWYJwSA@mail.gmail.com>
- <Pine.LNX.4.64.1206010915580.26561@info> <4FC988CF.5030602@gmail.com>
- <20120706180635.GB17196@google.com> <Pine.LNX.4.64.1207061631270.26974@info>
- <CAE9FiQV5DHZoeXf-bSfuYGUSzmwtdVqGNfhHh7LJ3LBax++Rig@mail.gmail.com>
- <Pine.LNX.4.64.1207070017440.13732@info> <CAE9FiQVDW23eLzjNk6ibGq+8KAG9kC2=7g-Eh6p0k3GrxG0LmQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 9 Jul 2012 11:26:19 -0600
-Message-ID: <CAErSpo6F6V3pzJTMy1Ay1wr8xZCMjgWD78RUDM7yb=DgGNmSUg@mail.gmail.com>
-Subject: Re: [Bug 43331] Re: Bug on bootup of Linux kernel on Panasonic
- Toughbook S10
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bill Unruh <unruh@physics.ubc.ca>, Jiang Liu <liuj97@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        bugzilla-daemon@bugzilla.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120709172220.GE1341@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> looks like they do not bios update for S10 yet.
->
-> http://www.panasonic.com/business/toughbook/computer-support-bios.asp#CF-U1
->
-> maybe you can try to email or call their support.
+On Mon, Jul 09, 2012 at 10:22:20AM -0700, Tejun Heo wrote:
+> > Changing subsys_bits via remount is being deprecated.  No need to
+> > worry about this.
+> 
+> Also, why does this matter?  The xattrs are kept in cgrp anyway.  Why
+> does keeping dentry/inode around make difference?
 
-Please stop suggesting a BIOS upgrade.  The BIOS is totally out of our
-control, and if the current BIOS works with Windows but not Linux,
-99.99% of users will just run Windows.  Those users will just give up
-on Linux, and we'll never even hear about it.
+Ah, okay, the file xattrs are kept in cfe which goes away on file
+deletion.  :)
 
-Fortunately, Bill is a sophisticated user who cared enough to report
-the issue, so we have a chance to do something about it.  What we need
-is for Linux to deal with this situation better, and that *IS* in our
-control.
+While changing subsys via remount is going away, I think removing
+files selectively is still nice to have (even for single hierarchy).
+I wish it were implemented differently tho.  As cgroup_rm_file()
+already has @cft argument, wouldn't it be better to e.g. add @subsys
+arg to cgroup_clear_directory() and let that walk subsys->cftsets
+instead?
 
-For example, we could detect the BAR being read-only when we size it.
-We could use the read-only address to derive the worst-case BAR size
-(32K in this case).  We could mark it as IORESOURCE_PCI_FIXED and use
-that to avoid trying to move it.  We could log a message to this
-effect so the next time it will take 10 minutes instead of 6 weeks to
-diagnose the problem.
+Thanks.
 
-The end result for Bill will be the same (an unexpected message while
-booting), but we can at least make the message intelligible rather
-than "BAR 0: error updating (0xdfa00004 != 0xfed98004)".
+-- 
+tejun
