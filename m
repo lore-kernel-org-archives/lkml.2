@@ -1,48 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab2GIPAR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 11:00:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43119 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752225Ab2GIPAQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 11:00:16 -0400
-Message-ID: <1341845999.3462.86.camel@twins>
-Subject: Re: perf with precise attribute kills all KVM based VMs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 09 Jul 2012 16:59:59 +0200
-In-Reply-To: <4FFAEFF1.9000706@redhat.com>
-References: <4FFAE6D8.5050609@gmail.com> <20120709141904.GC7298@redhat.com>
-	  <1341843844.3462.75.camel@twins> <4FFAED16.7050204@redhat.com>
-	  <4FFAEF13.7010108@gmail.com> <1341845396.3462.81.camel@twins>
-	 <4FFAEFF1.9000706@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1755168Ab2GIPCl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 11:02:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43660 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754085Ab2GIPCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 11:02:39 -0400
+Date: Mon, 9 Jul 2012 17:02:36 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 04/11] mm: memcg: push down PageSwapCache check into
+ uncharge entry functions
+Message-ID: <20120709150236.GG4627@tiehlicka.suse.cz>
+References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
+ <1341449103-1986-5-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341449103-1986-5-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-09 at 17:51 +0300, Avi Kivity wrote:
-> On 07/09/2012 05:49 PM, Peter Zijlstra wrote:
-> > On Mon, 2012-07-09 at 08:47 -0600, David Ahern wrote:
-> >> 
-> >> I found this testing changes to perf-kvm, but found the problem extends 
-> >> to just perf-record. With perf-record exclude_guest defaults to 1. See 
-> >> tools/perf/util/util.c, event_attr_init(). 
-> > 
-> > You lost me there.. so perf-record defaults to exclude_guest=1 (which
-> > would make the proposed patch I just send actually possible), but its
-> > still going *bang* ?
+On Thu 05-07-12 02:44:56, Johannes Weiner wrote:
+> Not all uncharge paths need to check if the page is swapcache, some of
+> them can know for sure.
 > 
-> It's possible that the DS writes overshoot the MSR... or that there's a
-> bug somewhere.
+> Push down the check into all callsites of uncharge_common() so that
+> the patch that removes some of them is more obvious.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-OK, so the first thing to stare at is in what order the MSRs are
-touched, I think you first need to stop the counter, then clear the PEBS
-bits, then clear the DS_AREA one.
+with the fix later in the thread
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
+> ---
+>  mm/memcontrol.c |   18 ++++++++++++------
+>  1 files changed, 12 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 4ea19c6..a3bf414 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2920,8 +2920,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype,
+>  	if (mem_cgroup_disabled())
+>  		return NULL;
+>  
+> -	if (PageSwapCache(page))
+> -		return NULL;
+> +	VM_BUG_ON(PageSwapCache(page));
+>  
+>  	if (PageTransHuge(page)) {
+>  		nr_pages <<= compound_order(page);
+> @@ -3018,6 +3017,8 @@ void mem_cgroup_uncharge_page(struct page *page)
+>  	if (page_mapped(page))
+>  		return;
+>  	VM_BUG_ON(page->mapping && !PageAnon(page));
+> +	if (PageSwapCache(page))
+> +		return;
+>  	__mem_cgroup_uncharge_common(page, MEM_CGROUP_CHARGE_TYPE_ANON, false);
+>  }
+>  
+> @@ -3025,6 +3026,8 @@ void mem_cgroup_uncharge_cache_page(struct page *page)
+>  {
+>  	VM_BUG_ON(page_mapped(page));
+>  	VM_BUG_ON(page->mapping);
+> +	if (PageSwapCache(page))
+> +		return;
+>  	__mem_cgroup_uncharge_common(page, MEM_CGROUP_CHARGE_TYPE_CACHE, false);
+>  }
+>  
+> @@ -3089,6 +3092,8 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
+>  	if (!swapout) /* this was a swap cache but the swap is unused ! */
+>  		ctype = MEM_CGROUP_CHARGE_TYPE_DROP;
+>  
+> +	if (PageSwapCache(page))
+> +		return;
+>  	memcg = __mem_cgroup_uncharge_common(page, ctype, false);
+>  
+>  	/*
+> @@ -3278,10 +3283,11 @@ void mem_cgroup_end_migration(struct mem_cgroup *memcg,
+>  		unused = oldpage;
+>  	}
+>  	anon = PageAnon(used);
+> -	__mem_cgroup_uncharge_common(unused,
+> -		anon ? MEM_CGROUP_CHARGE_TYPE_ANON
+> -		     : MEM_CGROUP_CHARGE_TYPE_CACHE,
+> -		true);
+> +	if (!PageSwapCache(page))
+> +		__mem_cgroup_uncharge_common(unused,
+> +					     anon ? MEM_CGROUP_CHARGE_TYPE_ANON
+> +					     : MEM_CGROUP_CHARGE_TYPE_CACHE,
+> +					     true);
+>  	css_put(&memcg->css);
+>  	/*
+>  	 * We disallowed uncharge of pages under migration because mapcount
+> -- 
+> 1.7.7.6
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
