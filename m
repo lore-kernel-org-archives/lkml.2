@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679Ab2GIMkc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 08:40:32 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58318 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414Ab2GIMka (ORCPT
+	id S1753817Ab2GIMk7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 08:40:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57005 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753589Ab2GIMk6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 08:40:30 -0400
-Subject: Re: [PATCH] net: cgroup: fix out of bounds accesses
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, lizefan@huawei.com, tj@kernel.org,
-        Gao feng <gaofeng@cn.fujitsu.com>
-In-Reply-To: <20120709121350.GC9186@hmsreliant.think-freely.org>
-References: <1341819910.3265.2106.camel@edumazet-glaptop>
-	 <20120709110154.GB9186@hmsreliant.think-freely.org>
-	 <1341834652.3265.2642.camel@edumazet-glaptop>
-	 <20120709121350.GC9186@hmsreliant.think-freely.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 Jul 2012 14:40:25 +0200
-Message-ID: <1341837625.3265.2748.camel@edumazet-glaptop>
+	Mon, 9 Jul 2012 08:40:58 -0400
+Message-ID: <1341837624.3462.68.camel@twins>
+Subject: Re: [RFC][PATCH 14/26] sched, numa: Numa balancer
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Date: Mon, 09 Jul 2012 14:40:24 +0200
+In-Reply-To: <1341836629.3462.60.camel@twins>
+References: <20120316144028.036474157@chello.nl>
+	 <20120316144241.012558280@chello.nl> <4FF87F5F.30106@redhat.com>
+	 <1341836629.3462.60.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-09 at 08:13 -0400, Neil Horman wrote:
-> On Mon, Jul 09, 2012 at 01:50:52PM +0200, Eric Dumazet wrote:
-> > On Mon, 2012-07-09 at 07:01 -0400, Neil Horman wrote:
-> > 
-> > > Thank you for doing this Eric, Gao.  Just to be sure (I asked in the previous
-> > > thread), would it be better to avoid the length check in skb_update_prio, and
-> > > instead update the netdev tables to be long enough in cgrp_create and in
-> > > netprio_device_event on device registration?
-> > 
-> > Yes probably, and it is even needed because extend_netdev_table() can
-> > acutally fail to expand the table if kzalloc() returned NULL.
-> > 
-> > Current code just ignores this allocation failure so we also can crash
-> > in write_priomap()
-> > 
-> ACK, can you follow up with a patch please?
+On Mon, 2012-07-09 at 14:23 +0200, Peter Zijlstra wrote:
+> > It is not yet clear to me how and why your code converges.
+> 
+> I don't think it does.. but since the scheduler interaction is fairly
+> weak it doesn't matter too much from that pov.
+> 
+That is,.. it slowly moves along with the cpu usage, only if there's a
+lot of remote memory allocations (memory pressure) things get funny. 
 
-Gao was working on this allocation problem (he privately sent me a v1 of
-his patch), so I think we can wait Gao submit a v2 to combine all the
-work/ideas in a single patch.
+It'll try and rotate all tasks around a bit trying, but there's no good
+solution for a memory hole on one node and a cpu hole on another, you're
+going to have to take the remote hits.
 
-(ie make sure we dont need additional bound checkings in fast path)
-
-
-
+Again.. what do we want it to do?
