@@ -1,124 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab2GIIvw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 04:51:52 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:21434 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635Ab2GIIvu (ORCPT
+	id S1752609Ab2GII53 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 04:57:29 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:61511 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108Ab2GII52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 04:51:50 -0400
-Message-ID: <4FFA9B96.6040901@oracle.com>
-Date: Mon, 09 Jul 2012 16:51:34 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Mon, 9 Jul 2012 04:57:28 -0400
 MIME-Version: 1.0
-To: e1000-devel@lists.sf.net
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: 82571EB: Detected Hardware Unit Hang
+In-Reply-To: <4FFA3B71.3020105@jonmasters.org>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+ <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
+ <201207071927.13135.arnd@arndb.de> <4FF93C99.80203@redhat.com>
+ <4FF9D1E9.4050504@jonmasters.org> <20120708172419.2b2f2713@pegasus.ausil.us> <4FFA3B71.3020105@jonmasters.org>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Mon, 9 Jul 2012 09:57:07 +0100
+X-Google-Sender-Auth: uT1nNzu6XWR7kxCwArxfYW2Jyhg
+Message-ID: <CAHkRjk7yuAuijEMQ_cfA6DAoFXUOKuV7jBBnZ_Dfspj-KCvbig@mail.gmail.com>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+To: Jon Masters <jonathan@jonmasters.org>
+Cc: Dennis Gilmore <dgilmore@fedoraproject.org>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi list,
+Hi Jon,
 
-I'm seeing a Unit Hang even with the latest e1000e driver 2.0.0 when doing
-scp test. this issue is easy do reproduced on SUN FIRE X2270 M2, just copy
-a big file (>500M) from another server will hit it at once. 
+On 9 July 2012 03:01, Jon Masters <jonathan@jonmasters.org> wrote:
+> On 07/08/2012 06:24 PM, Dennis Gilmore wrote:
+>> I know that the architecture really is new but thats not really clear
+>> by adding AArch32 into the mix to represent 32 bit arm as ARM has done
+>> or by calling it armv8. There is enough way to confuse them already why
+>> confuse things more by adding yet another variable that is AArch64.
+>> - From my and most of the other Fedora developers that i've discussed it
+>> with its more like reluctant acceptance of AArch64 than thinking is a
+>> good idea.
+>
+> btw, for clarification of anyone who is confused by the names...the new
+> architecture is ARMv8. The 64-bit state is AArch64, during which the
+> processor executes A64 instructions. The 32-bit state is AArch32, during
+> which the processor executes either A32 ("ARM" version 7+) or T32
+> ("Thumb" - I guess Thumb2+ really due to some of deprecation)
+> instructions. I've noticed that there appears to be a clarification
+> effort in which AArch64 is used as an architecture name when ARMv8 would
+> be confusing, which is most of the time if you don't know whether you're
+> referring to the new A64 instruction set or the older ones.
 
-Would you please help on this?
+Thanks for clarifying this. I deliberately try not to use ARMv8 name
+to avoid confusion. Indeed, the new architecture is ARMv8 (following
+the ARM architectures numbering scheme). It has an AArch64 mode (with
+new exception model, new ISA) and an *optional* AArch32 mode (pretty
+much the same as ARMv7). The key here is that AArch32 is *optional* -
+we can have it at all levels, only some (e.g. EL0 - user) or not at
+all.
 
-device info:
-# lspci -s 05:00.0 
-05:00.0 Ethernet controller: Intel Corporation 82571EB Gigabit Ethernet Controller (Copper) (rev 06)
+These two modes also share very little, from a software perspective
+it's pretty much some register banking to allow compat mode support
+(e.g. you can read the AArch32 R0 register from the lower half of
+AArch64 X0). The AArch32 mode cannot switch by itself to an AArch64
+mode, this requires taking an exception (can be SVC) to a higher level
+that actually runs in AArch64 mode.
 
-# lspci -s 05:00.0 -n
-05:00.0 0200: 8086:10bc (rev 06)
+On an ARMv8 system, if it supports AArch32 at EL1 (kernel) you can run
+an ARMv7 kernel, and that's good for virtualisation. But I have
+*absolutely* no plans to support an AArch32 kernel for ARMv8 SoCs.
 
-# ethtool -i eth0
-driver: e1000e
-version: 2.0.0-NAPI
-firmware-version: 5.10-2
-bus-info: 0000:05:00.0
-
-# ethtool -k eth0
-Offload parameters for eth0:
-rx-checksumming: on
-tx-checksumming: on
-scatter-gather: on
-tcp segmentation offload: on
-udp fragmentation offload: off
-generic segmentation offload: on
-generic-receive-offload: on
-
-kernel log:
------------
-e1000e 0000:05:00.0: eth0: Detected Hardware Unit Hang:
-  TDH                  <6c>
-  TDT                  <81>
-  next_to_use          <81>
-  next_to_clean        <6b>
-buffer_info[next_to_clean]:
-  time_stamp           <fffc7a23>
-  next_to_watch        <71>
-  jiffies              <fffc8c0c>
-  next_to_watch.status <0>
-MAC Status             <80387>
-PHY Status             <792d>
-PHY 1000BASE-T Status  <3c00>
-PHY Extended Status    <3000>
-PCI Status             <10>
-e1000e 0000:05:00.0: eth0: Detected Hardware Unit Hang:
-  TDH                  <6c>
-  TDT                  <81>
-  next_to_use          <81>
-  next_to_clean        <6b>
-buffer_info[next_to_clean]:
-  time_stamp           <fffc7a23>
-  next_to_watch        <71>
-  jiffies              <fffc9bac>
-  next_to_watch.status <0>
-MAC Status             <80387>
-PHY Status             <792d>
-PHY 1000BASE-T Status  <3c00>
-PHY Extended Status    <3000>
-PCI Status             <10>
-------------[ cut here ]------------
-WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x225/0x230()
-Hardware name: SUN FIRE X2270 M2
-NETDEV WATCHDOG: eth0 (e1000e): transmit queue 0 timed out
-Modules linked in: autofs4 hidp rfcomm bluetooth rfkill lockd sunrpc cpufreq_ondemand acpi_cpufreq mperf be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa ib_mad ib_core ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi cxgb3 mdio libiscsi_tcp libiscsi scsi_transport_iscsi video sbs sbshc acpi_pad acpi_ipmi ipmi_msghandler parport_pc lp parport e1000e(U) snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device igb snd_pcm_oss serio_raw snd_mixer_oss snd_pcm tpm_infineon snd_timer snd soundcore snd_page_alloc i2c_i801 iTCO_wdt i2c_core pcspkr i7core_edac iTCO_vendor_support ioatdma ghes dca edac_core hed dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_mod usb_storage sd_mod crc_t10dif sg ahci libahci ext3 jbd mbcache [last unloaded: microcode]
-Pid: 0, comm: swapper Not tainted 2.6.39-200.24.1.el5uek #1
-Call Trace:
- [<c07d9ac5>] ? dev_watchdog+0x225/0x230
- [<c045ba61>] warn_slowpath_common+0x81/0xa0
- [<c07d9ac5>] ? dev_watchdog+0x225/0x230
- [<c045bb23>] warn_slowpath_fmt+0x33/0x40
- [<c07d9ac5>] dev_watchdog+0x225/0x230
- [<c07d98a0>] ? dev_activate+0xb0/0xb0
- [<c0468e82>] call_timer_fn+0x32/0xf0
- [<c04bceb0>] ? rcu_check_callbacks+0x80/0x80
- [<c046a76d>] run_timer_softirq+0xed/0x1b0
- [<c07d98a0>] ? dev_activate+0xb0/0xb0
- [<c0461a81>] __do_softirq+0x91/0x1a0
- [<c04619f0>] ? local_bh_enable+0x80/0x80
- <IRQ>  [<c0462295>] ? irq_exit+0x95/0xa0
- [<c087f8b8>] ? smp_apic_timer_interrupt+0x38/0x42
- [<c08784f5>] ? apic_timer_interrupt+0x31/0x38
- [<c046007b>] ? do_exit+0x11b/0x370
- [<c065eae4>] ? intel_idle+0xa4/0x100
- [<c078d9b9>] ? cpuidle_idle_call+0xb9/0x1e0
- [<c0411d77>] ? cpu_idle+0x97/0xd0
- [<c085cbbd>] ? rest_init+0x5d/0x70
- [<c0b07a7a>] ? start_kernel+0x28a/0x340
- [<c0b074b0>] ? obsolete_checksetup+0xb0/0xb0
- [<c0b070a4>] ? i386_start_kernel+0x64/0xb0
----[ end trace 5502b55cd4d4e5cb ]---
-e1000e 0000:05:00.0: eth0: Reset adapter
-e1000e: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: Rx/Tx
-
-Thanks,
-Joe
+-- 
+Catalin
