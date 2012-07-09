@@ -1,133 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab2GISiu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 14:38:50 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:43680 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707Ab2GISit (ORCPT
+	id S1752831Ab2GISjZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 14:39:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44373 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752707Ab2GISjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 14:38:49 -0400
-From: Paul Moore <paul@paul-moore.com>
-To: Vincent Sanders <vincent.sanders@collabora.co.uk>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: Re: [PATCH net-next 05/15] security: selinux: Add AF_BUS socket SELinux hooks
-Date: Mon, 09 Jul 2012 14:38:44 -0400
-Message-ID: <27959382.kdMZfHm1r3@sifl>
-User-Agent: KMail/4.8.4 (Linux/3.4.4-gentoo; KDE/4.8.4; x86_64; ; )
-In-Reply-To: <1340988354-26981-6-git-send-email-vincent.sanders@collabora.co.uk>
-References: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk> <1340988354-26981-6-git-send-email-vincent.sanders@collabora.co.uk>
+	Mon, 9 Jul 2012 14:39:24 -0400
+Date: Mon, 9 Jul 2012 19:39:22 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: David Dajun Chen <dchen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: da9052: Use for_each_child_of_node() macro
+Message-ID: <20120709183922.GM3934@opensource.wolfsonmicro.com>
+References: <1341625605.7754.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kUBUi7JBpjcBtem/"
+Content-Disposition: inline
+In-Reply-To: <1341625605.7754.1.camel@phoenix>
+X-Cookie: Long life is in store for you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 29, 2012 05:45:44 PM Vincent Sanders wrote:
-> From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> 
-> Add Security-Enhanced Linux (SELinux) hook for AF_BUS socket address family.
-> 
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> Signed-off-by: Vincent Sanders <vincent.sanders@collabora.co.uk>
 
-It would be very helpful to include a description of how the access controls 
-would work.
+--kUBUi7JBpjcBtem/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->From looking at the other patches, it would appear that when a new socket 
-tries to connect to the AF_BUS bus it is checked against the security label of 
-the bus master, yes?  Further, if no bus master is present, the connect() is 
-denied at the AF_BUS level in the bus_connect() function, yes?
+On Sat, Jul 07, 2012 at 09:46:45AM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Have you considered the socket_getpeersec_dgram() hook?  Since AF_BUS does not 
-appear to be stream oriented I think you can safely ignore 
-socket_getpeersec_stream().
+Applied, thanks.
 
-Have you considered the unix_may_send() hook?  Ignoring the AF_UNIX specific 
-name, it seems like a reasonable hook for AF_BUS; unless you don't expect to 
-have any read-only AF_BUS clients in which case the connect() hook should be 
-enough (it would implicitly grant read/write access to each socket in that 
-case).
+--kUBUi7JBpjcBtem/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Finally, as others have said, you need to ensure that you CC the LSM and 
-SELinux lists on the relevant patches as well as provide LSM hook 
-implementations for LSMs other than SELinux where it makes sense (not all LSMs 
-will require implementations for the new hooks). 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> ---
->  security/selinux/hooks.c |   35 +++++++++++++++++++++++++++++++++++
->  1 file changed, 35 insertions(+)
-> 
-> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> index 4ee6f23..5bacbe2 100644
-> --- a/security/selinux/hooks.c
-> +++ b/security/selinux/hooks.c
-> @@ -67,6 +67,7 @@
->  #include <linux/quota.h>
->  #include <linux/un.h>		/* for Unix socket types */
->  #include <net/af_unix.h>	/* for Unix socket types */
-> +#include <net/af_bus.h>	/* for Bus socket types */
->  #include <linux/parser.h>
->  #include <linux/nfs_mount.h>
->  #include <net/ipv6.h>
-> @@ -4101,6 +4102,39 @@ static int selinux_socket_unix_may_send(struct socket
-> *sock, &ad);
->  }
-> 
-> +static int selinux_socket_bus_connect(struct sock *sock, struct sock
-> *other, +				      struct sock *newsk)
-> +{
-> +	struct sk_security_struct *sksec_sock = sock->sk_security;
-> +	struct sk_security_struct *sksec_other = other->sk_security;
-> +	struct sk_security_struct *sksec_new = newsk->sk_security;
-> +	struct common_audit_data ad;
-> +	struct lsm_network_audit net = {0,};
-> +	int err;
-> +
-> +	ad.type = LSM_AUDIT_DATA_NET;
-> +	ad.u.net = &net;
-> +	ad.u.net->sk = other;
-> +
-> +	err = avc_has_perm(sksec_sock->sid, sksec_other->sid,
-> +			   sksec_other->sclass,
-> +			   UNIX_STREAM_SOCKET__CONNECTTO, &ad);
+iQIcBAEBAgAGBQJP+yVPAAoJEBus8iNuMP3d6noP/jbqeL+WyICrMJMVVMXSvMaJ
+5OjSAlMZuOEjcFMn6o/xPgZlWkLdTch7y6Obf1RazIuFRVEpLpIrF+YawFQPfwn0
+D1e5/WldGDl6FITv4HPxqkyJ1Nuvxn8fbwnWfKY//ZT3kkQzrJBm3Ooem5x5+6/1
+R+TMgsHEQT2xDqys28TPz9QpOfGUtArElJvlgOPIFHPl7/YOVUqSp8ovvnCxDXMu
+6HXkyl0ryeENn4lRVW7u/F/OFIB4q6aA/vYNE6O0cqBfZTK7nCcCPShvSAcQvynd
+QEXKI5ymrQQwUPSYk2/w+EtFYEAJHQp5zJ3ovRf8BuBq2jB0bv2bM48ojhj8iCW4
+lvVsMeOIvSLfhUNY/WO5oKDSmvxuilLvSDFehf3Z9zu8ldqTl17W2AAn/IPzrNx5
+JGGS5pzs4WFKuiNS2IaRLVLVafCfPTwonwxhPaDx39mELZvyuJUwIVJMvVd8MJhf
+ZMet9QkpJ9SGG+WX6Z5M05pTWuwm5wfeXqSjouhMIjFmuyv5p+WIUGOJ3ZC5JahZ
+DGEhnjklVGR7Fos7/KD61dx88Vj6NUe/E/tLa9Ig1RGLkug0S9rg7EtIiXJWeP39
+EW5Yqmn/QvOqNr2E61qnlfbykEMS3KqcmQ08SodlbzoZAV9E8fubB8cv2EtS+ueF
+lal2BrA3ugc8omzxIt2Z
+=3aMS
+-----END PGP SIGNATURE-----
 
-See my earlier comments about the similarities between this new hook and the 
-existing AF_UNIX hook.  The fact that you are reusing the 
-UNIX_STREAM_SOCKET__CONNECTTO permission (which is likely a no-no BTW) only 
-reinforces the similarities between the two.
-
-> +	if (err)
-> +		return err;
-> +
-> +	/* server child socket */
-> +	sksec_new->peer_sid = sksec_sock->sid;
-> +	err = security_sid_mls_copy(sksec_other->sid, sksec_sock->sid,
-> +				    &sksec_new->sid);
-> +	if (err)
-> +		return err;
-> +
-> +	/* connecting socket */
-> +	sksec_sock->peer_sid = sksec_new->sid;
-> +
-> +	return 0;
-> +}
-> +
->  static int selinux_inet_sys_rcv_skb(int ifindex, char *addrp, u16 family,
->  				    u32 peer_sid,
->  				    struct common_audit_data *ad)
-> @@ -5643,6 +5677,7 @@ static struct security_operations selinux_ops = {
-> 
->  	.unix_stream_connect =		selinux_socket_unix_stream_connect,
->  	.unix_may_send =		selinux_socket_unix_may_send,
-> +	.bus_connect =		        selinux_socket_bus_connect,
-> 
->  	.socket_create =		selinux_socket_create,
->  	.socket_post_create =		selinux_socket_post_create,
-
--- 
-paul moore
-www.paul-moore.com
-
+--kUBUi7JBpjcBtem/--
