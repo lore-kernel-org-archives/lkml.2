@@ -1,61 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab2GISiV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 14:38:21 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:52330 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752652Ab2GISiT (ORCPT
+	id S1752810Ab2GISiu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 14:38:50 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:43680 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab2GISit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 14:38:19 -0400
+	Mon, 9 Jul 2012 14:38:49 -0400
+From: Paul Moore <paul@paul-moore.com>
+To: Vincent Sanders <vincent.sanders@collabora.co.uk>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: Re: [PATCH net-next 05/15] security: selinux: Add AF_BUS socket SELinux hooks
+Date: Mon, 09 Jul 2012 14:38:44 -0400
+Message-ID: <27959382.kdMZfHm1r3@sifl>
+User-Agent: KMail/4.8.4 (Linux/3.4.4-gentoo; KDE/4.8.4; x86_64; ; )
+In-Reply-To: <1340988354-26981-6-git-send-email-vincent.sanders@collabora.co.uk>
+References: <1340988354-26981-1-git-send-email-vincent.sanders@collabora.co.uk> <1340988354-26981-6-git-send-email-vincent.sanders@collabora.co.uk>
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdX_aC1hzKf1eRqoSsQ4oALBev8p77v7++aoB2KrkOUaEw@mail.gmail.com>
-References: <1341784614-2797-1-git-send-email-dh.herrmann@googlemail.com>
-	<1341784614-2797-12-git-send-email-dh.herrmann@googlemail.com>
-	<CAMuHMdX_aC1hzKf1eRqoSsQ4oALBev8p77v7++aoB2KrkOUaEw@mail.gmail.com>
-Date: Mon, 9 Jul 2012 20:38:17 +0200
-Message-ID: <CANq1E4RyFpqxH=uG+dDA1=kfc3r8rCoEesZ31op9rCLjxyk6mQ@mail.gmail.com>
-Subject: Re: [PATCH v2 11/11] MAINTAINERS: add fblog entry
-From: David Herrmann <dh.herrmann@googlemail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        florianschandinat@gmx.de, linux-fbdev@vger.kernel.org,
-        gregkh@linuxfoundation.org, alan@lxorguk.ukuu.org.uk,
-        bonbons@linux-vserver.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert
+On Friday, June 29, 2012 05:45:44 PM Vincent Sanders wrote:
+> From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> 
+> Add Security-Enhanced Linux (SELinux) hook for AF_BUS socket address family.
+> 
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Signed-off-by: Vincent Sanders <vincent.sanders@collabora.co.uk>
 
-On Mon, Jul 9, 2012 at 9:33 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Sun, Jul 8, 2012 at 11:56 PM, David Herrmann
-> <dh.herrmann@googlemail.com> wrote:
->> Add myself as maintainer for the fblog driver to the MAINTAINERS file.
->>
->> Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
->> ---
->>  MAINTAINERS | 6 ++++++
->>  1 file changed, 6 insertions(+)
->>
->> diff --git a/MAINTAINERS b/MAINTAINERS
->> index ae8fe46..249b02a 100644
->> --- a/MAINTAINERS
->> +++ b/MAINTAINERS
->> @@ -2854,6 +2854,12 @@ F:       drivers/video/
->>  F:     include/video/
->>  F:     include/linux/fb.h
->>
->> +FRAMEBUFFER LOG DRIVER
->> +M:     David Herrmann <dh.herrmann@googlemail.com>
->> +L:     linux-serial@vger.kernel.org
->
-> Why linux-serial, and not linux-fbdev?
+It would be very helpful to include a description of how the access controls 
+would work.
 
-I thought fbcon was maintained on linux-serial as it is very related
-to the vt/tty layer. If linux-fbdev is the better place, I can move
-this. I CC'ed both lists, anyway.
-I have actually no idea where it fits in best.
+>From looking at the other patches, it would appear that when a new socket 
+tries to connect to the AF_BUS bus it is checked against the security label of 
+the bus master, yes?  Further, if no bus master is present, the connect() is 
+denied at the AF_BUS level in the bus_connect() function, yes?
 
-Thanks
-David
+Have you considered the socket_getpeersec_dgram() hook?  Since AF_BUS does not 
+appear to be stream oriented I think you can safely ignore 
+socket_getpeersec_stream().
+
+Have you considered the unix_may_send() hook?  Ignoring the AF_UNIX specific 
+name, it seems like a reasonable hook for AF_BUS; unless you don't expect to 
+have any read-only AF_BUS clients in which case the connect() hook should be 
+enough (it would implicitly grant read/write access to each socket in that 
+case).
+
+Finally, as others have said, you need to ensure that you CC the LSM and 
+SELinux lists on the relevant patches as well as provide LSM hook 
+implementations for LSMs other than SELinux where it makes sense (not all LSMs 
+will require implementations for the new hooks). 
+
+> ---
+>  security/selinux/hooks.c |   35 +++++++++++++++++++++++++++++++++++
+>  1 file changed, 35 insertions(+)
+> 
+> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+> index 4ee6f23..5bacbe2 100644
+> --- a/security/selinux/hooks.c
+> +++ b/security/selinux/hooks.c
+> @@ -67,6 +67,7 @@
+>  #include <linux/quota.h>
+>  #include <linux/un.h>		/* for Unix socket types */
+>  #include <net/af_unix.h>	/* for Unix socket types */
+> +#include <net/af_bus.h>	/* for Bus socket types */
+>  #include <linux/parser.h>
+>  #include <linux/nfs_mount.h>
+>  #include <net/ipv6.h>
+> @@ -4101,6 +4102,39 @@ static int selinux_socket_unix_may_send(struct socket
+> *sock, &ad);
+>  }
+> 
+> +static int selinux_socket_bus_connect(struct sock *sock, struct sock
+> *other, +				      struct sock *newsk)
+> +{
+> +	struct sk_security_struct *sksec_sock = sock->sk_security;
+> +	struct sk_security_struct *sksec_other = other->sk_security;
+> +	struct sk_security_struct *sksec_new = newsk->sk_security;
+> +	struct common_audit_data ad;
+> +	struct lsm_network_audit net = {0,};
+> +	int err;
+> +
+> +	ad.type = LSM_AUDIT_DATA_NET;
+> +	ad.u.net = &net;
+> +	ad.u.net->sk = other;
+> +
+> +	err = avc_has_perm(sksec_sock->sid, sksec_other->sid,
+> +			   sksec_other->sclass,
+> +			   UNIX_STREAM_SOCKET__CONNECTTO, &ad);
+
+See my earlier comments about the similarities between this new hook and the 
+existing AF_UNIX hook.  The fact that you are reusing the 
+UNIX_STREAM_SOCKET__CONNECTTO permission (which is likely a no-no BTW) only 
+reinforces the similarities between the two.
+
+> +	if (err)
+> +		return err;
+> +
+> +	/* server child socket */
+> +	sksec_new->peer_sid = sksec_sock->sid;
+> +	err = security_sid_mls_copy(sksec_other->sid, sksec_sock->sid,
+> +				    &sksec_new->sid);
+> +	if (err)
+> +		return err;
+> +
+> +	/* connecting socket */
+> +	sksec_sock->peer_sid = sksec_new->sid;
+> +
+> +	return 0;
+> +}
+> +
+>  static int selinux_inet_sys_rcv_skb(int ifindex, char *addrp, u16 family,
+>  				    u32 peer_sid,
+>  				    struct common_audit_data *ad)
+> @@ -5643,6 +5677,7 @@ static struct security_operations selinux_ops = {
+> 
+>  	.unix_stream_connect =		selinux_socket_unix_stream_connect,
+>  	.unix_may_send =		selinux_socket_unix_may_send,
+> +	.bus_connect =		        selinux_socket_bus_connect,
+> 
+>  	.socket_create =		selinux_socket_create,
+>  	.socket_post_create =		selinux_socket_post_create,
+
+-- 
+paul moore
+www.paul-moore.com
+
