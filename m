@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab2GINDT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 09:03:19 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48790 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753457Ab2GINDQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 09:03:16 -0400
-Message-ID: <1341838984.3462.71.camel@twins>
-Subject: Re: [PATCH 07/10] perf, tool: Add support to specify hw event as
- pmu event term
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Stephane Eranian <eranian@google.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com, mingo@elte.hu,
-        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org
-Date: Mon, 09 Jul 2012 15:03:04 +0200
-In-Reply-To: <CABPqkBQk7+8D9S3kAqRBz6qMZ1_Vi88XXgNF1PGb89t5bP=NRg@mail.gmail.com>
-References: <1341352848-11833-1-git-send-email-jolsa@redhat.com>
-	 <1341352848-11833-8-git-send-email-jolsa@redhat.com>
-	 <1341398360.2507.99.camel@laptop> <20120704120001.GC960@krava.redhat.com>
-	 <1341404019.2507.107.camel@laptop>
-	 <CABPqkBQk7+8D9S3kAqRBz6qMZ1_Vi88XXgNF1PGb89t5bP=NRg@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1753475Ab2GINFm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 09:05:42 -0400
+Received: from mga03.intel.com ([143.182.124.21]:33097 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753155Ab2GINFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 09:05:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="165742650"
+Date: Mon, 9 Jul 2012 15:17:12 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: arizona: Error out if initial boot fails
+Message-ID: <20120709131712.GP15345@sortiz-mobl>
+References: <1341831403-4275-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341831403-4275-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-06 at 03:08 +0200, Stephane Eranian wrote:
-> >> We use '_' in file names and '-' in event symbol names. I thought it might be
-> >> confusing allowing just '_' so I added also the '-' version.
-> >>
-> What's wrong with keeping the - in the filenames as well? That would help
-> keep things simple. That would avoid yet another layer of aliases. 
+Hi Mark,
 
-No idea, my fingers prefer _ but it doesn't really matter all that much.
+On Mon, Jul 09, 2012 at 11:56:43AM +0100, Mark Brown wrote:
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mfd/arizona-core.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+Applied, thanks.
 
-# find /sys | grep _ | wc -l
-11753
-# find /sys | grep - | wc -l
-3700
+Cheers,
+Samuel.
 
-
-So sysfs prefers _ as well, but there's enough - to not be the first ;-)
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
