@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab2GIPTA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 11:19:00 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:35911 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755025Ab2GIPS7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 11:18:59 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: JDAqHwMVM1nvr.tmefhqEY5Z_8GbzwHt7.IhBkNlNxA8IPK
- V0GPHs4au7x7STJ9WXSAh7KA2Sad1EAuAef_yj6ayM2ra2dCnO08bEHCTZQE
- SAA.KTQHyW.WVm26hPXOHHbxDphuU7A9eTGbcp_23qNB_4y0_iGf5pA.c.u.
- a4eTtncGvMvqTKFsPXL_DqEmcOJgagvR2CPumVQVspyIo4o1E0JoTWg_ZwHD
- t95za6lem0eaIzrVm19gnPp8euPFOoiX.6sUcLh2RfzTltU96mCkkbj.SrCk
- qI7PGzYwbis1RqOIzJiEVTO_NL7Z9OSfdnjcnvFDnAKDUS_CbeuPnWzubrdv
- sNs4E1HlNeeQ2oZFIAAPkuElrE6pMNS9pDROMT4wu7Mo1SHv8ELe1Xs7QHQ2
- .RycZMhPcRLJPdmnYCgqSQgL_hEzUnZkTR8xI
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 9 Jul 2012 10:18:54 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        wency@cn.fujitsu.com
-Subject: Re: [RFC PATCH v3 0/13] memory-hotplug : hot-remove physical
- memory
-In-Reply-To: <4FFAB0A2.8070304@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1207091015570.30060@router.home>
-References: <4FFAB0A2.8070304@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755258Ab2GIPVB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 11:21:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44854 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753909Ab2GIPU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 11:20:59 -0400
+Date: Mon, 9 Jul 2012 17:20:58 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 08/11] mm: memcg: remove needless !mm fixup to init_mm
+ when charging
+Message-ID: <20120709152058.GK4627@tiehlicka.suse.cz>
+References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
+ <1341449103-1986-9-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341449103-1986-9-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu 05-07-12 02:45:00, Johannes Weiner wrote:
+> It does not matter to __mem_cgroup_try_charge() if the passed mm is
+> NULL or init_mm, it will charge the root memcg in either case.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-On Mon, 9 Jul 2012, Yasuaki Ishimatsu wrote:
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-> Even if you apply these patches, you cannot remove the physical memory
-> completely since these patches are still under development. I want you to
-> cooperate to improve the physical memory hot-remove. So please review these
-> patches and give your comment/idea.
+> ---
+>  mm/memcontrol.c |    5 -----
+>  1 files changed, 0 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 418b47d..6fe4101 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2766,8 +2766,6 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+>  		ret = 0;
+>  	return ret;
+>  charge_cur_mm:
+> -	if (unlikely(!mm))
+> -		mm = &init_mm;
+>  	ret = __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
+>  	if (ret == -EINTR)
+>  		ret = 0;
+> @@ -2832,9 +2830,6 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+>  	if (PageCompound(page))
+>  		return 0;
+>  
+> -	if (unlikely(!mm))
+> -		mm = &init_mm;
+> -
+>  	if (!PageSwapCache(page))
+>  		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
+>  	else { /* page is swapcache/shmem */
+> -- 
+> 1.7.7.6
+> 
 
-Could you at least give a method on how you want to do physical memory
-removal? You would have to remove all objects from the range you want to
-physically remove. That is only possible under special circumstances and
-with a limited set of objects. Even if you exclusively use ZONE_MOVEABLE
-you still may get cases where pages are pinned for a long time.
-
-I am not sure that these patches are useful unless we know where you are
-going with this. If we end up with a situation where we still cannot
-remove physical memory then this patchset is not helpful.
-
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
