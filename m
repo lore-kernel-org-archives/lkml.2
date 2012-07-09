@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab2GIOlV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:41:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38288 "EHLO
+	id S1754666Ab2GIOll (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:41:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38278 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754493Ab2GIOiX (ORCPT
+	by vger.kernel.org with ESMTP id S1754481Ab2GIOiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:38:23 -0400
-Message-Id: <20120709143122.140128311@decadent.org.uk>
+	Mon, 9 Jul 2012 10:38:22 -0400
+Message-Id: <20120709143120.461951078@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:31:54 +0100
+Date: Mon, 09 Jul 2012 15:31:42 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
-        Bogdan Hamciuc <bogdan.hamciuc@freescale.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 38/48] netpoll: fix netpoll_send_udp() bugs
+        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>
+Subject: [ 26/48] udf: Avoid run away loop when partition table length is corrupted
 In-Reply-To: <20120709143116.348975190@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,76 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Jan Kara <jack@suse.cz>
 
-[ Upstream commit 954fba0274058d27c7c07b5ea07c41b3b7477894 ]
+commit adee11b2085bee90bd8f4f52123ffb07882d6256 upstream.
 
-Bogdan Hamciuc diagnosed and fixed following bug in netpoll_send_udp() :
+Check provided length of partition table so that (possibly maliciously)
+corrupted partition table cannot cause accessing data beyond current buffer.
 
-"skb->len += len;" instead of "skb_put(skb, len);"
-
-Meaning that _if_ a network driver needs to call skb_realloc_headroom(),
-only packet headers would be copied, leaving garbage in the payload.
-
-However the skb_realloc_headroom() must be avoided as much as possible
-since it requires memory and netpoll tries hard to work even if memory
-is exhausted (using a pool of preallocated skbs)
-
-It appears netpoll_send_udp() reserved 16 bytes for the ethernet header,
-which happens to work for typicall drivers but not all.
-
-Right thing is to use LL_RESERVED_SPACE(dev)
-(And also add dev->needed_tailroom of tailroom)
-
-This patch combines both fixes.
-
-Many thanks to Bogdan for raising this issue.
-
-Reported-by: Bogdan Hamciuc <bogdan.hamciuc@freescale.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Bogdan Hamciuc <bogdan.hamciuc@freescale.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Reviewed-by: Neil Horman <nhorman@tuxdriver.com>
-Reviewed-by: Cong Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/core/netpoll.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ fs/udf/super.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index ab0633f..db4bb7a 100644
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -351,22 +351,23 @@ EXPORT_SYMBOL(netpoll_send_skb_on_dev);
+diff --git a/fs/udf/super.c b/fs/udf/super.c
+index 9da6f4e..ce911f5 100644
+--- a/fs/udf/super.c
++++ b/fs/udf/super.c
+@@ -1225,6 +1225,7 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
+ 	struct genericPartitionMap *gpm;
+ 	uint16_t ident;
+ 	struct buffer_head *bh;
++	unsigned int table_len;
+ 	int ret = 0;
  
- void netpoll_send_udp(struct netpoll *np, const char *msg, int len)
- {
--	int total_len, eth_len, ip_len, udp_len;
-+	int total_len, ip_len, udp_len;
- 	struct sk_buff *skb;
- 	struct udphdr *udph;
- 	struct iphdr *iph;
- 	struct ethhdr *eth;
+ 	bh = udf_read_tagged(sb, block, block, &ident);
+@@ -1232,13 +1233,20 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
+ 		return 1;
+ 	BUG_ON(ident != TAG_IDENT_LVD);
+ 	lvd = (struct logicalVolDesc *)bh->b_data;
++	table_len = le32_to_cpu(lvd->mapTableLength);
++	if (sizeof(*lvd) + table_len > sb->s_blocksize) {
++		udf_err(sb, "error loading logical volume descriptor: "
++			"Partition table too long (%u > %lu)\n", table_len,
++			sb->s_blocksize - sizeof(*lvd));
++		goto out_bh;
++	}
  
- 	udp_len = len + sizeof(*udph);
--	ip_len = eth_len = udp_len + sizeof(*iph);
--	total_len = eth_len + ETH_HLEN + NET_IP_ALIGN;
-+	ip_len = udp_len + sizeof(*iph);
-+	total_len = ip_len + LL_RESERVED_SPACE(np->dev);
+ 	ret = udf_sb_alloc_partition_maps(sb, le32_to_cpu(lvd->numPartitionMaps));
+ 	if (ret)
+ 		goto out_bh;
  
--	skb = find_skb(np, total_len, total_len - len);
-+	skb = find_skb(np, total_len + np->dev->needed_tailroom,
-+		       total_len - len);
- 	if (!skb)
- 		return;
- 
- 	skb_copy_to_linear_data(skb, msg, len);
--	skb->len += len;
-+	skb_put(skb, len);
- 
- 	skb_push(skb, sizeof(*udph));
- 	skb_reset_transport_header(skb);
+ 	for (i = 0, offset = 0;
+-	     i < sbi->s_partitions && offset < le32_to_cpu(lvd->mapTableLength);
++	     i < sbi->s_partitions && offset < table_len;
+ 	     i++, offset += gpm->partitionMapLength) {
+ 		struct udf_part_map *map = &sbi->s_partmaps[i];
+ 		gpm = (struct genericPartitionMap *)
 
 
