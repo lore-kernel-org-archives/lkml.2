@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab2GISmT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 14:42:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56130 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752890Ab2GISmJ (ORCPT
+	id S1753042Ab2GISm1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 14:42:27 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51310 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752989Ab2GISmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 14:42:09 -0400
+	Mon, 9 Jul 2012 14:42:18 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, joshhunt00@gmail.com, axboe@kernel.dk,
@@ -17,9 +17,9 @@ Cc: torvalds@linux-foundation.org, joshhunt00@gmail.com, axboe@kernel.dk,
         gustavo@padovan.org, johan.hedberg@gmail.com,
         linux-bluetooth@vger.kernel.org, martin.petersen@oracle.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 2/6] workqueue: factor out worker_pool from global_cwq
-Date: Mon,  9 Jul 2012 11:41:51 -0700
-Message-Id: <1341859315-17759-3-git-send-email-tj@kernel.org>
+Subject: [PATCH 6/6] workqueue: reimplement WQ_HIGHPRI using a separate worker_pool
+Date: Mon,  9 Jul 2012 11:41:55 -0700
+Message-Id: <1341859315-17759-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1341859315-17759-1-git-send-email-tj@kernel.org>
 References: <1341859315-17759-1-git-send-email-tj@kernel.org>
@@ -27,738 +27,425 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move worklist and all worker management fields from global_cwq into
-the new struct worker_pool.  worker_pool points back to the containing
-gcwq.  worker and cpu_workqueue_struct are updated to point to
-worker_pool instead of gcwq too.
+WQ_HIGHPRI was implemented by queueing highpri work items at the head
+of the global worklist.  Other than queueing at the head, they weren't
+handled differently; unfortunately, this could lead to execution
+latency of a few seconds on heavily loaded systems.
 
-This change is mechanical and doesn't introduce any functional
-difference other than rearranging of fields and an added level of
-indirection in some places.  This is to prepare for multiple pools per
-gcwq.
+Now that workqueue code has been updated to deal with multiple
+worker_pools per global_cwq, this patch reimplements WQ_HIGHPRI using
+a separate worker_pool.  NR_WORKER_POOLS is bumped to two and
+gcwq->pools[0] is used for normal pri work items and ->pools[1] for
+highpri.  Highpri workers get -20 nice level and has 'H' suffix in
+their names.  Note that this change increases the number of kworkers
+per cpu.
+
+POOL_HIGHPRI_PENDING, pool_determine_ins_pos() and highpri chain
+wakeup code in process_one_work() are no longer used and removed.
+
+This allows proper prioritization of highpri work items and removes
+high execution latency of highpri work items.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Josh Hunt <joshhunt00@gmail.com>
+LKML-Reference: <CAKA=qzaHqwZ8eqpLNFjxnO2fX-tgAOjmpvxgBFjv6dJeQaOW1w@mail.gmail.com>
 ---
- include/trace/events/workqueue.h |    2 +-
- kernel/workqueue.c               |  216 ++++++++++++++++++++-----------------
- 2 files changed, 118 insertions(+), 100 deletions(-)
+ Documentation/workqueue.txt |  103 ++++++++++++++++---------------------------
+ kernel/workqueue.c          |  100 +++++++++++------------------------------
+ 2 files changed, 65 insertions(+), 138 deletions(-)
 
-diff --git a/include/trace/events/workqueue.h b/include/trace/events/workqueue.h
-index 4018f50..f28d1b6 100644
---- a/include/trace/events/workqueue.h
-+++ b/include/trace/events/workqueue.h
-@@ -54,7 +54,7 @@ TRACE_EVENT(workqueue_queue_work,
- 		__entry->function	= work->func;
- 		__entry->workqueue	= cwq->wq;
- 		__entry->req_cpu	= req_cpu;
--		__entry->cpu		= cwq->gcwq->cpu;
-+		__entry->cpu		= cwq->pool->gcwq->cpu;
- 	),
+diff --git a/Documentation/workqueue.txt b/Documentation/workqueue.txt
+index a0b577d..a6ab4b6 100644
+--- a/Documentation/workqueue.txt
++++ b/Documentation/workqueue.txt
+@@ -89,25 +89,28 @@ called thread-pools.
  
- 	TP_printk("work struct=%p function=%pf workqueue=%p req_cpu=%u cpu=%u",
+ The cmwq design differentiates between the user-facing workqueues that
+ subsystems and drivers queue work items on and the backend mechanism
+-which manages thread-pool and processes the queued work items.
++which manages thread-pools and processes the queued work items.
+ 
+ The backend is called gcwq.  There is one gcwq for each possible CPU
+-and one gcwq to serve work items queued on unbound workqueues.
++and one gcwq to serve work items queued on unbound workqueues.  Each
++gcwq has two thread-pools - one for normal work items and the other
++for high priority ones.
+ 
+ Subsystems and drivers can create and queue work items through special
+ workqueue API functions as they see fit. They can influence some
+ aspects of the way the work items are executed by setting flags on the
+ workqueue they are putting the work item on. These flags include
+-things like CPU locality, reentrancy, concurrency limits and more. To
+-get a detailed overview refer to the API description of
++things like CPU locality, reentrancy, concurrency limits, priority and
++more.  To get a detailed overview refer to the API description of
+ alloc_workqueue() below.
+ 
+-When a work item is queued to a workqueue, the target gcwq is
+-determined according to the queue parameters and workqueue attributes
+-and appended on the shared worklist of the gcwq.  For example, unless
+-specifically overridden, a work item of a bound workqueue will be
+-queued on the worklist of exactly that gcwq that is associated to the
+-CPU the issuer is running on.
++When a work item is queued to a workqueue, the target gcwq and
++thread-pool is determined according to the queue parameters and
++workqueue attributes and appended on the shared worklist of the
++thread-pool.  For example, unless specifically overridden, a work item
++of a bound workqueue will be queued on the worklist of either normal
++or highpri thread-pool of the gcwq that is associated to the CPU the
++issuer is running on.
+ 
+ For any worker pool implementation, managing the concurrency level
+ (how many execution contexts are active) is an important issue.  cmwq
+@@ -115,26 +118,26 @@ tries to keep the concurrency at a minimal but sufficient level.
+ Minimal to save resources and sufficient in that the system is used at
+ its full capacity.
+ 
+-Each gcwq bound to an actual CPU implements concurrency management by
+-hooking into the scheduler.  The gcwq is notified whenever an active
+-worker wakes up or sleeps and keeps track of the number of the
+-currently runnable workers.  Generally, work items are not expected to
+-hog a CPU and consume many cycles.  That means maintaining just enough
+-concurrency to prevent work processing from stalling should be
+-optimal.  As long as there are one or more runnable workers on the
+-CPU, the gcwq doesn't start execution of a new work, but, when the
+-last running worker goes to sleep, it immediately schedules a new
+-worker so that the CPU doesn't sit idle while there are pending work
+-items.  This allows using a minimal number of workers without losing
+-execution bandwidth.
++Each thread-pool bound to an actual CPU implements concurrency
++management by hooking into the scheduler.  The thread-pool is notified
++whenever an active worker wakes up or sleeps and keeps track of the
++number of the currently runnable workers.  Generally, work items are
++not expected to hog a CPU and consume many cycles.  That means
++maintaining just enough concurrency to prevent work processing from
++stalling should be optimal.  As long as there are one or more runnable
++workers on the CPU, the thread-pool doesn't start execution of a new
++work, but, when the last running worker goes to sleep, it immediately
++schedules a new worker so that the CPU doesn't sit idle while there
++are pending work items.  This allows using a minimal number of workers
++without losing execution bandwidth.
+ 
+ Keeping idle workers around doesn't cost other than the memory space
+ for kthreads, so cmwq holds onto idle ones for a while before killing
+ them.
+ 
+ For an unbound wq, the above concurrency management doesn't apply and
+-the gcwq for the pseudo unbound CPU tries to start executing all work
+-items as soon as possible.  The responsibility of regulating
++the thread-pools for the pseudo unbound CPU try to start executing all
++work items as soon as possible.  The responsibility of regulating
+ concurrency level is on the users.  There is also a flag to mark a
+ bound wq to ignore the concurrency management.  Please refer to the
+ API section for details.
+@@ -205,31 +208,22 @@ resources, scheduled and executed.
+ 
+   WQ_HIGHPRI
+ 
+-	Work items of a highpri wq are queued at the head of the
+-	worklist of the target gcwq and start execution regardless of
+-	the current concurrency level.  In other words, highpri work
+-	items will always start execution as soon as execution
+-	resource is available.
++	Work items of a highpri wq are queued to the highpri
++	thread-pool of the target gcwq.  Highpri thread-pools are
++	served by worker threads with elevated nice level.
+ 
+-	Ordering among highpri work items is preserved - a highpri
+-	work item queued after another highpri work item will start
+-	execution after the earlier highpri work item starts.
+-
+-	Although highpri work items are not held back by other
+-	runnable work items, they still contribute to the concurrency
+-	level.  Highpri work items in runnable state will prevent
+-	non-highpri work items from starting execution.
+-
+-	This flag is meaningless for unbound wq.
++	Note that normal and highpri thread-pools don't interact with
++	each other.  Each maintain its separate pool of workers and
++	implements concurrency management among its workers.
+ 
+   WQ_CPU_INTENSIVE
+ 
+ 	Work items of a CPU intensive wq do not contribute to the
+ 	concurrency level.  In other words, runnable CPU intensive
+-	work items will not prevent other work items from starting
+-	execution.  This is useful for bound work items which are
+-	expected to hog CPU cycles so that their execution is
+-	regulated by the system scheduler.
++	work items will not prevent other work items in the same
++	thread-pool from starting execution.  This is useful for bound
++	work items which are expected to hog CPU cycles so that their
++	execution is regulated by the system scheduler.
+ 
+ 	Although CPU intensive work items don't contribute to the
+ 	concurrency level, start of their executions is still
+@@ -239,14 +233,6 @@ resources, scheduled and executed.
+ 
+ 	This flag is meaningless for unbound wq.
+ 
+-  WQ_HIGHPRI | WQ_CPU_INTENSIVE
+-
+-	This combination makes the wq avoid interaction with
+-	concurrency management completely and behave as a simple
+-	per-CPU execution context provider.  Work items queued on a
+-	highpri CPU-intensive wq start execution as soon as resources
+-	are available and don't affect execution of other work items.
+-
+ @max_active:
+ 
+ @max_active determines the maximum number of execution contexts per
+@@ -328,20 +314,7 @@ If @max_active == 2,
+  35		w2 wakes up and finishes
+ 
+ Now, let's assume w1 and w2 are queued to a different wq q1 which has
+-WQ_HIGHPRI set,
+-
+- TIME IN MSECS	EVENT
+- 0		w1 and w2 start and burn CPU
+- 5		w1 sleeps
+- 10		w2 sleeps
+- 10		w0 starts and burns CPU
+- 15		w0 sleeps
+- 15		w1 wakes up and finishes
+- 20		w2 wakes up and finishes
+- 25		w0 wakes up and burns CPU
+- 30		w0 finishes
+-
+-If q1 has WQ_CPU_INTENSIVE set,
++WQ_CPU_INTENSIVE set,
+ 
+  TIME IN MSECS	EVENT
+  0		w0 starts and burns CPU
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 27637c2..bc43a0c 100644
+index 9cbf3bc..e7f26cb 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -115,6 +115,7 @@ enum {
-  */
+@@ -52,7 +52,6 @@ enum {
+ 	/* pool flags */
+ 	POOL_MANAGE_WORKERS	= 1 << 0,	/* need to manage workers */
+ 	POOL_MANAGING_WORKERS	= 1 << 1,	/* managing workers */
+-	POOL_HIGHPRI_PENDING	= 1 << 2,	/* highpri works on queue */
  
- struct global_cwq;
-+struct worker_pool;
+ 	/* worker flags */
+ 	WORKER_STARTED		= 1 << 0,	/* started */
+@@ -74,7 +73,7 @@ enum {
+ 	TRUSTEE_RELEASE		= 3,		/* release workers */
+ 	TRUSTEE_DONE		= 4,		/* trustee is done */
  
- /*
-  * The poor guys doing the actual heavy lifting.  All on-duty workers
-@@ -131,7 +132,7 @@ struct worker {
- 	struct cpu_workqueue_struct *current_cwq; /* L: current_work's cwq */
- 	struct list_head	scheduled;	/* L: scheduled works */
- 	struct task_struct	*task;		/* I: worker task */
--	struct global_cwq	*gcwq;		/* I: the associated gcwq */
-+	struct worker_pool	*pool;		/* I: the associated pool */
- 	/* 64 bytes boundary on 64bit, 32 on 32bit */
- 	unsigned long		last_active;	/* L: last active timestamp */
- 	unsigned int		flags;		/* X: flags */
-@@ -139,6 +140,21 @@ struct worker {
- 	struct work_struct	rebind_work;	/* L: rebind worker to cpu */
+-	NR_WORKER_POOLS		= 1,		/* # worker pools per gcwq */
++	NR_WORKER_POOLS		= 2,		/* # worker pools per gcwq */
+ 
+ 	BUSY_WORKER_HASH_ORDER	= 6,		/* 64 pointers */
+ 	BUSY_WORKER_HASH_SIZE	= 1 << BUSY_WORKER_HASH_ORDER,
+@@ -95,6 +94,7 @@ enum {
+ 	 * all cpus.  Give -20.
+ 	 */
+ 	RESCUER_NICE_LEVEL	= -20,
++	HIGHPRI_NICE_LEVEL	= -20,
  };
  
-+struct worker_pool {
-+	struct global_cwq	*gcwq;		/* I: the owning gcwq */
-+
-+	struct list_head	worklist;	/* L: list of pending works */
-+	int			nr_workers;	/* L: total number of workers */
-+	int			nr_idle;	/* L: currently idle ones */
-+
-+	struct list_head	idle_list;	/* X: list of idle workers */
-+	struct timer_list	idle_timer;	/* L: worker idle timeout */
-+	struct timer_list	mayday_timer;	/* L: SOS timer for dworkers */
-+
-+	struct ida		worker_ida;	/* L: for worker IDs */
-+	struct worker		*first_idle;	/* L: first idle worker */
-+};
-+
  /*
-  * Global per-cpu workqueue.  There's one and only one for each cpu
-  * and all works are queued and processed here regardless of their
-@@ -146,27 +162,18 @@ struct worker {
-  */
- struct global_cwq {
- 	spinlock_t		lock;		/* the gcwq lock */
--	struct list_head	worklist;	/* L: list of pending works */
- 	unsigned int		cpu;		/* I: the associated cpu */
- 	unsigned int		flags;		/* L: GCWQ_* flags */
- 
--	int			nr_workers;	/* L: total number of workers */
--	int			nr_idle;	/* L: currently idle ones */
--
--	/* workers are chained either in the idle_list or busy_hash */
--	struct list_head	idle_list;	/* X: list of idle workers */
-+	/* workers are chained either in busy_head or pool idle_list */
+@@ -174,7 +174,7 @@ struct global_cwq {
  	struct hlist_head	busy_hash[BUSY_WORKER_HASH_SIZE];
  						/* L: hash of busy workers */
  
--	struct timer_list	idle_timer;	/* L: worker idle timeout */
--	struct timer_list	mayday_timer;	/* L: SOS timer for dworkers */
--
--	struct ida		worker_ida;	/* L: for worker IDs */
-+	struct worker_pool	pool;		/* the worker pools */
+-	struct worker_pool	pool;		/* the worker pools */
++	struct worker_pool	pools[2];	/* normal and highpri pools */
  
  	struct task_struct	*trustee;	/* L: for gcwq shutdown */
  	unsigned int		trustee_state;	/* L: trustee state */
- 	wait_queue_head_t	trustee_wait;	/* trustee wait */
--	struct worker		*first_idle;	/* L: first idle worker */
- } ____cacheline_aligned_in_smp;
+@@ -277,7 +277,8 @@ EXPORT_SYMBOL_GPL(system_nrt_freezable_wq);
+ #include <trace/events/workqueue.h>
+ 
+ #define for_each_worker_pool(pool, gcwq)				\
+-	for ((pool) = &(gcwq)->pool; (pool); (pool) = NULL)
++	for ((pool) = &(gcwq)->pools[0];				\
++	     (pool) < &(gcwq)->pools[NR_WORKER_POOLS]; (pool)++)
+ 
+ #define for_each_busy_worker(worker, i, pos, gcwq)			\
+ 	for (i = 0; i < BUSY_WORKER_HASH_SIZE; i++)			\
+@@ -473,6 +474,11 @@ static atomic_t unbound_pool_nr_running[NR_WORKER_POOLS] = {
+ 
+ static int worker_thread(void *__worker);
+ 
++static int worker_pool_pri(struct worker_pool *pool)
++{
++	return pool - pool->gcwq->pools;
++}
++
+ static struct global_cwq *get_gcwq(unsigned int cpu)
+ {
+ 	if (cpu != WORK_CPU_UNBOUND)
+@@ -491,7 +497,7 @@ static atomic_t *get_pool_nr_running(struct worker_pool *pool)
+ 	else
+ 		nr_running = &unbound_pool_nr_running;
+ 
+-	return nr_running[0];
++	return nr_running[worker_pool_pri(pool)];
+ }
+ 
+ static struct cpu_workqueue_struct *get_cwq(unsigned int cpu,
+@@ -588,15 +594,14 @@ static struct global_cwq *get_work_gcwq(struct work_struct *work)
+ }
  
  /*
-@@ -175,7 +182,7 @@ struct global_cwq {
-  * aligned at two's power of the number of flag bits.
+- * Policy functions.  These define the policies on how the global
+- * worker pool is managed.  Unless noted otherwise, these functions
+- * assume that they're being called with gcwq->lock held.
++ * Policy functions.  These define the policies on how the global worker
++ * pools are managed.  Unless noted otherwise, these functions assume that
++ * they're being called with gcwq->lock held.
   */
- struct cpu_workqueue_struct {
--	struct global_cwq	*gcwq;		/* I: the associated gcwq */
-+	struct worker_pool	*pool;		/* I: the associated pool */
- 	struct workqueue_struct *wq;		/* I: the owning workqueue */
- 	int			work_color;	/* L: current color */
- 	int			flush_color;	/* L: flushing color */
-@@ -555,7 +562,7 @@ static struct global_cwq *get_work_gcwq(struct work_struct *work)
  
- 	if (data & WORK_STRUCT_CWQ)
- 		return ((struct cpu_workqueue_struct *)
--			(data & WORK_STRUCT_WQ_DATA_MASK))->gcwq;
-+			(data & WORK_STRUCT_WQ_DATA_MASK))->pool->gcwq;
- 
- 	cpu = data >> WORK_STRUCT_FLAG_BITS;
- 	if (cpu == WORK_CPU_NONE)
-@@ -587,13 +594,13 @@ static bool __need_more_worker(struct global_cwq *gcwq)
-  */
- static bool need_more_worker(struct global_cwq *gcwq)
+ static bool __need_more_worker(struct worker_pool *pool)
  {
--	return !list_empty(&gcwq->worklist) && __need_more_worker(gcwq);
-+	return !list_empty(&gcwq->pool.worklist) && __need_more_worker(gcwq);
+-	return !atomic_read(get_pool_nr_running(pool)) ||
+-		(pool->flags & POOL_HIGHPRI_PENDING);
++	return !atomic_read(get_pool_nr_running(pool));
  }
  
- /* Can I start working?  Called from busy but !running workers. */
- static bool may_start_working(struct global_cwq *gcwq)
+ /*
+@@ -623,9 +628,7 @@ static bool keep_working(struct worker_pool *pool)
  {
--	return gcwq->nr_idle;
-+	return gcwq->pool.nr_idle;
+ 	atomic_t *nr_running = get_pool_nr_running(pool);
+ 
+-	return !list_empty(&pool->worklist) &&
+-		(atomic_read(nr_running) <= 1 ||
+-		 (pool->flags & POOL_HIGHPRI_PENDING));
++	return !list_empty(&pool->worklist) && atomic_read(nr_running) <= 1;
  }
  
- /* Do I need to keep working?  Called from currently running workers. */
-@@ -601,7 +608,7 @@ static bool keep_working(struct global_cwq *gcwq)
- {
- 	atomic_t *nr_running = get_gcwq_nr_running(gcwq->cpu);
- 
--	return !list_empty(&gcwq->worklist) &&
-+	return !list_empty(&gcwq->pool.worklist) &&
- 		(atomic_read(nr_running) <= 1 ||
- 		 gcwq->flags & GCWQ_HIGHPRI_PENDING);
- }
-@@ -622,8 +629,8 @@ static bool need_to_manage_workers(struct global_cwq *gcwq)
- static bool too_many_workers(struct global_cwq *gcwq)
- {
- 	bool managing = gcwq->flags & GCWQ_MANAGING_WORKERS;
--	int nr_idle = gcwq->nr_idle + managing; /* manager is considered idle */
--	int nr_busy = gcwq->nr_workers - nr_idle;
-+	int nr_idle = gcwq->pool.nr_idle + managing; /* manager is considered idle */
-+	int nr_busy = gcwq->pool.nr_workers - nr_idle;
- 
- 	return nr_idle > 2 && (nr_idle - 2) * MAX_IDLE_WORKERS_RATIO >= nr_busy;
- }
-@@ -635,10 +642,10 @@ static bool too_many_workers(struct global_cwq *gcwq)
- /* Return the first worker.  Safe with preemption disabled */
- static struct worker *first_worker(struct global_cwq *gcwq)
- {
--	if (unlikely(list_empty(&gcwq->idle_list)))
-+	if (unlikely(list_empty(&gcwq->pool.idle_list)))
- 		return NULL;
- 
--	return list_first_entry(&gcwq->idle_list, struct worker, entry);
-+	return list_first_entry(&gcwq->pool.idle_list, struct worker, entry);
+ /* Do we need a new worker?  Called from manager. */
+@@ -894,43 +897,6 @@ static struct worker *find_worker_executing_work(struct global_cwq *gcwq,
  }
  
  /**
-@@ -696,7 +703,8 @@ struct task_struct *wq_worker_sleeping(struct task_struct *task,
- 				       unsigned int cpu)
+- * pool_determine_ins_pos - find insertion position
+- * @pool: pool of interest
+- * @cwq: cwq a work is being queued for
+- *
+- * A work for @cwq is about to be queued on @pool, determine insertion
+- * position for the work.  If @cwq is for HIGHPRI wq, the work is
+- * queued at the head of the queue but in FIFO order with respect to
+- * other HIGHPRI works; otherwise, at the end of the queue.  This
+- * function also sets POOL_HIGHPRI_PENDING flag to hint @pool that
+- * there are HIGHPRI works pending.
+- *
+- * CONTEXT:
+- * spin_lock_irq(gcwq->lock).
+- *
+- * RETURNS:
+- * Pointer to inserstion position.
+- */
+-static inline struct list_head *pool_determine_ins_pos(struct worker_pool *pool,
+-					       struct cpu_workqueue_struct *cwq)
+-{
+-	struct work_struct *twork;
+-
+-	if (likely(!(cwq->wq->flags & WQ_HIGHPRI)))
+-		return &pool->worklist;
+-
+-	list_for_each_entry(twork, &pool->worklist, entry) {
+-		struct cpu_workqueue_struct *tcwq = get_work_cwq(twork);
+-
+-		if (!(tcwq->wq->flags & WQ_HIGHPRI))
+-			break;
+-	}
+-
+-	pool->flags |= POOL_HIGHPRI_PENDING;
+-	return &twork->entry;
+-}
+-
+-/**
+  * insert_work - insert a work into gcwq
+  * @cwq: cwq @work belongs to
+  * @work: work to insert
+@@ -1070,7 +1036,7 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
+ 	if (likely(cwq->nr_active < cwq->max_active)) {
+ 		trace_workqueue_activate_work(work);
+ 		cwq->nr_active++;
+-		worklist = pool_determine_ins_pos(cwq->pool, cwq);
++		worklist = &cwq->pool->worklist;
+ 	} else {
+ 		work_flags |= WORK_STRUCT_DELAYED;
+ 		worklist = &cwq->delayed_works;
+@@ -1387,6 +1353,7 @@ static struct worker *create_worker(struct worker_pool *pool, bool bind)
  {
- 	struct worker *worker = kthread_data(task), *to_wakeup = NULL;
--	struct global_cwq *gcwq = get_gcwq(cpu);
-+	struct worker_pool *pool = worker->pool;
-+	struct global_cwq *gcwq = pool->gcwq;
- 	atomic_t *nr_running = get_gcwq_nr_running(cpu);
- 
- 	if (worker->flags & WORKER_NOT_RUNNING)
-@@ -716,7 +724,7 @@ struct task_struct *wq_worker_sleeping(struct task_struct *task,
- 	 * could be manipulating idle_list, so dereferencing idle_list
- 	 * without gcwq lock is safe.
- 	 */
--	if (atomic_dec_and_test(nr_running) && !list_empty(&gcwq->worklist))
-+	if (atomic_dec_and_test(nr_running) && !list_empty(&pool->worklist))
- 		to_wakeup = first_worker(gcwq);
- 	return to_wakeup ? to_wakeup->task : NULL;
- }
-@@ -737,7 +745,8 @@ struct task_struct *wq_worker_sleeping(struct task_struct *task,
- static inline void worker_set_flags(struct worker *worker, unsigned int flags,
- 				    bool wakeup)
- {
--	struct global_cwq *gcwq = worker->gcwq;
-+	struct worker_pool *pool = worker->pool;
-+	struct global_cwq *gcwq = pool->gcwq;
- 
- 	WARN_ON_ONCE(worker->task != current);
- 
-@@ -752,7 +761,7 @@ static inline void worker_set_flags(struct worker *worker, unsigned int flags,
- 
- 		if (wakeup) {
- 			if (atomic_dec_and_test(nr_running) &&
--			    !list_empty(&gcwq->worklist))
-+			    !list_empty(&pool->worklist))
- 				wake_up_worker(gcwq);
- 		} else
- 			atomic_dec(nr_running);
-@@ -773,7 +782,7 @@ static inline void worker_set_flags(struct worker *worker, unsigned int flags,
-  */
- static inline void worker_clr_flags(struct worker *worker, unsigned int flags)
- {
--	struct global_cwq *gcwq = worker->gcwq;
-+	struct global_cwq *gcwq = worker->pool->gcwq;
- 	unsigned int oflags = worker->flags;
- 
- 	WARN_ON_ONCE(worker->task != current);
-@@ -894,9 +903,9 @@ static inline struct list_head *gcwq_determine_ins_pos(struct global_cwq *gcwq,
- 	struct work_struct *twork;
- 
- 	if (likely(!(cwq->wq->flags & WQ_HIGHPRI)))
--		return &gcwq->worklist;
-+		return &gcwq->pool.worklist;
- 
--	list_for_each_entry(twork, &gcwq->worklist, entry) {
-+	list_for_each_entry(twork, &gcwq->pool.worklist, entry) {
- 		struct cpu_workqueue_struct *tcwq = get_work_cwq(twork);
- 
- 		if (!(tcwq->wq->flags & WQ_HIGHPRI))
-@@ -924,7 +933,7 @@ static void insert_work(struct cpu_workqueue_struct *cwq,
- 			struct work_struct *work, struct list_head *head,
- 			unsigned int extra_flags)
- {
--	struct global_cwq *gcwq = cwq->gcwq;
-+	struct global_cwq *gcwq = cwq->pool->gcwq;
- 
- 	/* we own @work, set data and link */
- 	set_work_cwq(work, cwq, extra_flags);
-@@ -1196,7 +1205,8 @@ EXPORT_SYMBOL_GPL(queue_delayed_work_on);
-  */
- static void worker_enter_idle(struct worker *worker)
- {
--	struct global_cwq *gcwq = worker->gcwq;
-+	struct worker_pool *pool = worker->pool;
-+	struct global_cwq *gcwq = pool->gcwq;
- 
- 	BUG_ON(worker->flags & WORKER_IDLE);
- 	BUG_ON(!list_empty(&worker->entry) &&
-@@ -1204,15 +1214,15 @@ static void worker_enter_idle(struct worker *worker)
- 
- 	/* can't use worker_set_flags(), also called from start_worker() */
- 	worker->flags |= WORKER_IDLE;
--	gcwq->nr_idle++;
-+	pool->nr_idle++;
- 	worker->last_active = jiffies;
- 
- 	/* idle_list is LIFO */
--	list_add(&worker->entry, &gcwq->idle_list);
-+	list_add(&worker->entry, &pool->idle_list);
- 
- 	if (likely(!(worker->flags & WORKER_ROGUE))) {
--		if (too_many_workers(gcwq) && !timer_pending(&gcwq->idle_timer))
--			mod_timer(&gcwq->idle_timer,
-+		if (too_many_workers(gcwq) && !timer_pending(&pool->idle_timer))
-+			mod_timer(&pool->idle_timer,
- 				  jiffies + IDLE_WORKER_TIMEOUT);
- 	} else
- 		wake_up_all(&gcwq->trustee_wait);
-@@ -1223,7 +1233,7 @@ static void worker_enter_idle(struct worker *worker)
- 	 * warning may trigger spuriously.  Check iff trustee is idle.
- 	 */
- 	WARN_ON_ONCE(gcwq->trustee_state == TRUSTEE_DONE &&
--		     gcwq->nr_workers == gcwq->nr_idle &&
-+		     pool->nr_workers == pool->nr_idle &&
- 		     atomic_read(get_gcwq_nr_running(gcwq->cpu)));
- }
- 
-@@ -1238,11 +1248,11 @@ static void worker_enter_idle(struct worker *worker)
-  */
- static void worker_leave_idle(struct worker *worker)
- {
--	struct global_cwq *gcwq = worker->gcwq;
-+	struct worker_pool *pool = worker->pool;
- 
- 	BUG_ON(!(worker->flags & WORKER_IDLE));
- 	worker_clr_flags(worker, WORKER_IDLE);
--	gcwq->nr_idle--;
-+	pool->nr_idle--;
- 	list_del_init(&worker->entry);
- }
- 
-@@ -1279,7 +1289,7 @@ static void worker_leave_idle(struct worker *worker)
- static bool worker_maybe_bind_and_lock(struct worker *worker)
- __acquires(&gcwq->lock)
- {
--	struct global_cwq *gcwq = worker->gcwq;
-+	struct global_cwq *gcwq = worker->pool->gcwq;
- 	struct task_struct *task = worker->task;
- 
- 	while (true) {
-@@ -1321,7 +1331,7 @@ __acquires(&gcwq->lock)
- static void worker_rebind_fn(struct work_struct *work)
- {
- 	struct worker *worker = container_of(work, struct worker, rebind_work);
--	struct global_cwq *gcwq = worker->gcwq;
-+	struct global_cwq *gcwq = worker->pool->gcwq;
- 
- 	if (worker_maybe_bind_and_lock(worker))
- 		worker_clr_flags(worker, WORKER_REBIND);
-@@ -1362,13 +1372,14 @@ static struct worker *alloc_worker(void)
- static struct worker *create_worker(struct global_cwq *gcwq, bool bind)
- {
+ 	struct global_cwq *gcwq = pool->gcwq;
  	bool on_unbound_cpu = gcwq->cpu == WORK_CPU_UNBOUND;
-+	struct worker_pool *pool = &gcwq->pool;
++	const char *pri = worker_pool_pri(pool) ? "H" : "";
  	struct worker *worker = NULL;
  	int id = -1;
  
- 	spin_lock_irq(&gcwq->lock);
--	while (ida_get_new(&gcwq->worker_ida, &id)) {
-+	while (ida_get_new(&pool->worker_ida, &id)) {
- 		spin_unlock_irq(&gcwq->lock);
--		if (!ida_pre_get(&gcwq->worker_ida, GFP_KERNEL))
-+		if (!ida_pre_get(&pool->worker_ida, GFP_KERNEL))
- 			goto fail;
- 		spin_lock_irq(&gcwq->lock);
- 	}
-@@ -1378,7 +1389,7 @@ static struct worker *create_worker(struct global_cwq *gcwq, bool bind)
- 	if (!worker)
- 		goto fail;
- 
--	worker->gcwq = gcwq;
-+	worker->pool = pool;
- 	worker->id = id;
+@@ -1408,15 +1375,17 @@ static struct worker *create_worker(struct worker_pool *pool, bool bind)
  
  	if (!on_unbound_cpu)
-@@ -1409,7 +1420,7 @@ static struct worker *create_worker(struct global_cwq *gcwq, bool bind)
- fail:
- 	if (id >= 0) {
- 		spin_lock_irq(&gcwq->lock);
--		ida_remove(&gcwq->worker_ida, id);
-+		ida_remove(&pool->worker_ida, id);
- 		spin_unlock_irq(&gcwq->lock);
- 	}
- 	kfree(worker);
-@@ -1428,7 +1439,7 @@ fail:
- static void start_worker(struct worker *worker)
- {
- 	worker->flags |= WORKER_STARTED;
--	worker->gcwq->nr_workers++;
-+	worker->pool->nr_workers++;
- 	worker_enter_idle(worker);
- 	wake_up_process(worker->task);
- }
-@@ -1444,7 +1455,8 @@ static void start_worker(struct worker *worker)
-  */
- static void destroy_worker(struct worker *worker)
- {
--	struct global_cwq *gcwq = worker->gcwq;
-+	struct worker_pool *pool = worker->pool;
-+	struct global_cwq *gcwq = pool->gcwq;
- 	int id = worker->id;
+ 		worker->task = kthread_create_on_node(worker_thread,
+-						      worker,
+-						      cpu_to_node(gcwq->cpu),
+-						      "kworker/%u:%d", gcwq->cpu, id);
++					worker, cpu_to_node(gcwq->cpu),
++					"kworker/%u:%d%s", gcwq->cpu, id, pri);
+ 	else
+ 		worker->task = kthread_create(worker_thread, worker,
+-					      "kworker/u:%d", id);
++					      "kworker/u:%d%s", id, pri);
+ 	if (IS_ERR(worker->task))
+ 		goto fail;
  
- 	/* sanity check frenzy */
-@@ -1452,9 +1464,9 @@ static void destroy_worker(struct worker *worker)
- 	BUG_ON(!list_empty(&worker->scheduled));
- 
- 	if (worker->flags & WORKER_STARTED)
--		gcwq->nr_workers--;
-+		pool->nr_workers--;
- 	if (worker->flags & WORKER_IDLE)
--		gcwq->nr_idle--;
-+		pool->nr_idle--;
- 
- 	list_del_init(&worker->entry);
- 	worker->flags |= WORKER_DIE;
-@@ -1465,7 +1477,7 @@ static void destroy_worker(struct worker *worker)
- 	kfree(worker);
- 
- 	spin_lock_irq(&gcwq->lock);
--	ida_remove(&gcwq->worker_ida, id);
-+	ida_remove(&pool->worker_ida, id);
- }
- 
- static void idle_worker_timeout(unsigned long __gcwq)
-@@ -1479,11 +1491,12 @@ static void idle_worker_timeout(unsigned long __gcwq)
- 		unsigned long expires;
- 
- 		/* idle_list is kept in LIFO order, check the last one */
--		worker = list_entry(gcwq->idle_list.prev, struct worker, entry);
-+		worker = list_entry(gcwq->pool.idle_list.prev, struct worker,
-+				    entry);
- 		expires = worker->last_active + IDLE_WORKER_TIMEOUT;
- 
- 		if (time_before(jiffies, expires))
--			mod_timer(&gcwq->idle_timer, expires);
-+			mod_timer(&gcwq->pool.idle_timer, expires);
- 		else {
- 			/* it's been idle for too long, wake up manager */
- 			gcwq->flags |= GCWQ_MANAGE_WORKERS;
-@@ -1504,7 +1517,7 @@ static bool send_mayday(struct work_struct *work)
- 		return false;
- 
- 	/* mayday mayday mayday */
--	cpu = cwq->gcwq->cpu;
-+	cpu = cwq->pool->gcwq->cpu;
- 	/* WORK_CPU_UNBOUND can't be set in cpumask, use cpu 0 instead */
- 	if (cpu == WORK_CPU_UNBOUND)
- 		cpu = 0;
-@@ -1527,13 +1540,13 @@ static void gcwq_mayday_timeout(unsigned long __gcwq)
- 		 * allocation deadlock.  Send distress signals to
- 		 * rescuers.
- 		 */
--		list_for_each_entry(work, &gcwq->worklist, entry)
-+		list_for_each_entry(work, &gcwq->pool.worklist, entry)
- 			send_mayday(work);
- 	}
- 
- 	spin_unlock_irq(&gcwq->lock);
- 
--	mod_timer(&gcwq->mayday_timer, jiffies + MAYDAY_INTERVAL);
-+	mod_timer(&gcwq->pool.mayday_timer, jiffies + MAYDAY_INTERVAL);
- }
- 
- /**
-@@ -1568,14 +1581,14 @@ restart:
- 	spin_unlock_irq(&gcwq->lock);
- 
- 	/* if we don't make progress in MAYDAY_INITIAL_TIMEOUT, call for help */
--	mod_timer(&gcwq->mayday_timer, jiffies + MAYDAY_INITIAL_TIMEOUT);
-+	mod_timer(&gcwq->pool.mayday_timer, jiffies + MAYDAY_INITIAL_TIMEOUT);
- 
- 	while (true) {
- 		struct worker *worker;
- 
- 		worker = create_worker(gcwq, true);
- 		if (worker) {
--			del_timer_sync(&gcwq->mayday_timer);
-+			del_timer_sync(&gcwq->pool.mayday_timer);
- 			spin_lock_irq(&gcwq->lock);
- 			start_worker(worker);
- 			BUG_ON(need_to_create_worker(gcwq));
-@@ -1592,7 +1605,7 @@ restart:
- 			break;
- 	}
- 
--	del_timer_sync(&gcwq->mayday_timer);
-+	del_timer_sync(&gcwq->pool.mayday_timer);
- 	spin_lock_irq(&gcwq->lock);
- 	if (need_to_create_worker(gcwq))
- 		goto restart;
-@@ -1622,11 +1635,12 @@ static bool maybe_destroy_workers(struct global_cwq *gcwq)
- 		struct worker *worker;
- 		unsigned long expires;
- 
--		worker = list_entry(gcwq->idle_list.prev, struct worker, entry);
-+		worker = list_entry(gcwq->pool.idle_list.prev, struct worker,
-+				    entry);
- 		expires = worker->last_active + IDLE_WORKER_TIMEOUT;
- 
- 		if (time_before(jiffies, expires)) {
--			mod_timer(&gcwq->idle_timer, expires);
-+			mod_timer(&gcwq->pool.idle_timer, expires);
- 			break;
- 		}
- 
-@@ -1659,7 +1673,7 @@ static bool maybe_destroy_workers(struct global_cwq *gcwq)
-  */
- static bool manage_workers(struct worker *worker)
- {
--	struct global_cwq *gcwq = worker->gcwq;
-+	struct global_cwq *gcwq = worker->pool->gcwq;
- 	bool ret = false;
- 
- 	if (gcwq->flags & GCWQ_MANAGING_WORKERS)
-@@ -1732,7 +1746,7 @@ static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
++	if (worker_pool_pri(pool))
++		set_user_nice(worker->task, HIGHPRI_NICE_LEVEL);
++
+ 	/*
+ 	 * A rogue worker will become a regular one if CPU comes
+ 	 * online later on.  Make sure every worker has
+@@ -1763,10 +1732,9 @@ static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
  {
  	struct work_struct *work = list_first_entry(&cwq->delayed_works,
  						    struct work_struct, entry);
--	struct list_head *pos = gcwq_determine_ins_pos(cwq->gcwq, cwq);
-+	struct list_head *pos = gcwq_determine_ins_pos(cwq->pool->gcwq, cwq);
+-	struct list_head *pos = pool_determine_ins_pos(cwq->pool, cwq);
  
  	trace_workqueue_activate_work(work);
- 	move_linked_works(work, pos, NULL);
-@@ -1808,7 +1822,8 @@ __releases(&gcwq->lock)
- __acquires(&gcwq->lock)
- {
- 	struct cpu_workqueue_struct *cwq = get_work_cwq(work);
--	struct global_cwq *gcwq = cwq->gcwq;
-+	struct worker_pool *pool = worker->pool;
-+	struct global_cwq *gcwq = pool->gcwq;
- 	struct hlist_head *bwh = busy_worker_head(gcwq, work);
- 	bool cpu_intensive = cwq->wq->flags & WQ_CPU_INTENSIVE;
- 	work_func_t f = work->func;
-@@ -1854,10 +1869,10 @@ __acquires(&gcwq->lock)
- 	 * wake up another worker; otherwise, clear HIGHPRI_PENDING.
+-	move_linked_works(work, pos, NULL);
++	move_linked_works(work, &cwq->pool->worklist, NULL);
+ 	__clear_bit(WORK_STRUCT_DELAYED_BIT, work_data_bits(work));
+ 	cwq->nr_active++;
+ }
+@@ -1882,21 +1850,6 @@ __acquires(&gcwq->lock)
+ 	list_del_init(&work->entry);
+ 
+ 	/*
+-	 * If HIGHPRI_PENDING, check the next work, and, if HIGHPRI,
+-	 * wake up another worker; otherwise, clear HIGHPRI_PENDING.
+-	 */
+-	if (unlikely(pool->flags & POOL_HIGHPRI_PENDING)) {
+-		struct work_struct *nwork = list_first_entry(&pool->worklist,
+-					 struct work_struct, entry);
+-
+-		if (!list_empty(&pool->worklist) &&
+-		    get_work_cwq(nwork)->wq->flags & WQ_HIGHPRI)
+-			wake_up_worker(pool);
+-		else
+-			pool->flags &= ~POOL_HIGHPRI_PENDING;
+-	}
+-
+-	/*
+ 	 * CPU intensive works don't participate in concurrency
+ 	 * management.  They're the scheduler's responsibility.
  	 */
- 	if (unlikely(gcwq->flags & GCWQ_HIGHPRI_PENDING)) {
--		struct work_struct *nwork = list_first_entry(&gcwq->worklist,
--						struct work_struct, entry);
-+		struct work_struct *nwork = list_first_entry(&pool->worklist,
-+					 struct work_struct, entry);
- 
--		if (!list_empty(&gcwq->worklist) &&
-+		if (!list_empty(&pool->worklist) &&
- 		    get_work_cwq(nwork)->wq->flags & WQ_HIGHPRI)
- 			wake_up_worker(gcwq);
- 		else
-@@ -1950,7 +1965,8 @@ static void process_scheduled_works(struct worker *worker)
- static int worker_thread(void *__worker)
- {
- 	struct worker *worker = __worker;
--	struct global_cwq *gcwq = worker->gcwq;
-+	struct worker_pool *pool = worker->pool;
-+	struct global_cwq *gcwq = pool->gcwq;
- 
- 	/* tell the scheduler that this is a workqueue worker */
- 	worker->task->flags |= PF_WQ_WORKER;
-@@ -1990,7 +2006,7 @@ recheck:
- 
- 	do {
- 		struct work_struct *work =
--			list_first_entry(&gcwq->worklist,
-+			list_first_entry(&pool->worklist,
- 					 struct work_struct, entry);
- 
- 		if (likely(!(*work_data_bits(work) & WORK_STRUCT_LINKED))) {
-@@ -2064,14 +2080,15 @@ repeat:
- 	for_each_mayday_cpu(cpu, wq->mayday_mask) {
- 		unsigned int tcpu = is_unbound ? WORK_CPU_UNBOUND : cpu;
- 		struct cpu_workqueue_struct *cwq = get_cwq(tcpu, wq);
--		struct global_cwq *gcwq = cwq->gcwq;
-+		struct worker_pool *pool = cwq->pool;
-+		struct global_cwq *gcwq = pool->gcwq;
- 		struct work_struct *work, *n;
- 
- 		__set_current_state(TASK_RUNNING);
- 		mayday_clear_cpu(cpu, wq->mayday_mask);
- 
- 		/* migrate to the target cpu if possible */
--		rescuer->gcwq = gcwq;
-+		rescuer->pool = pool;
- 		worker_maybe_bind_and_lock(rescuer);
- 
- 		/*
-@@ -2079,7 +2096,7 @@ repeat:
- 		 * process'em.
- 		 */
- 		BUG_ON(!list_empty(&rescuer->scheduled));
--		list_for_each_entry_safe(work, n, &gcwq->worklist, entry)
-+		list_for_each_entry_safe(work, n, &pool->worklist, entry)
- 			if (get_work_cwq(work) == cwq)
- 				move_linked_works(work, scheduled, &n);
- 
-@@ -2216,7 +2233,7 @@ static bool flush_workqueue_prep_cwqs(struct workqueue_struct *wq,
- 
+@@ -3049,9 +3002,10 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
  	for_each_cwq_cpu(cpu, wq) {
  		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
--		struct global_cwq *gcwq = cwq->gcwq;
-+		struct global_cwq *gcwq = cwq->pool->gcwq;
- 
- 		spin_lock_irq(&gcwq->lock);
- 
-@@ -2432,9 +2449,9 @@ reflush:
- 		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
- 		bool drained;
- 
--		spin_lock_irq(&cwq->gcwq->lock);
-+		spin_lock_irq(&cwq->pool->gcwq->lock);
- 		drained = !cwq->nr_active && list_empty(&cwq->delayed_works);
--		spin_unlock_irq(&cwq->gcwq->lock);
-+		spin_unlock_irq(&cwq->pool->gcwq->lock);
- 
- 		if (drained)
- 			continue;
-@@ -2474,7 +2491,7 @@ static bool start_flush_work(struct work_struct *work, struct wq_barrier *barr,
- 		 */
- 		smp_rmb();
- 		cwq = get_work_cwq(work);
--		if (unlikely(!cwq || gcwq != cwq->gcwq))
-+		if (unlikely(!cwq || gcwq != cwq->pool->gcwq))
- 			goto already_gone;
- 	} else if (wait_executing) {
- 		worker = find_worker_executing_work(gcwq, work);
-@@ -3017,7 +3034,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *fmt,
  		struct global_cwq *gcwq = get_gcwq(cpu);
++		int pool_idx = (bool)(flags & WQ_HIGHPRI);
  
  		BUG_ON((unsigned long)cwq & WORK_STRUCT_FLAG_MASK);
--		cwq->gcwq = gcwq;
-+		cwq->pool = &gcwq->pool;
+-		cwq->pool = &gcwq->pool;
++		cwq->pool = &gcwq->pools[pool_idx];
  		cwq->wq = wq;
  		cwq->flush_color = -1;
  		cwq->max_active = max_active;
-@@ -3344,7 +3361,7 @@ static int __cpuinit trustee_thread(void *__gcwq)
- 
- 	gcwq->flags |= GCWQ_MANAGING_WORKERS;
- 
--	list_for_each_entry(worker, &gcwq->idle_list, entry)
-+	list_for_each_entry(worker, &gcwq->pool.idle_list, entry)
- 		worker->flags |= WORKER_ROGUE;
- 
- 	for_each_busy_worker(worker, i, pos, gcwq)
-@@ -3369,7 +3386,7 @@ static int __cpuinit trustee_thread(void *__gcwq)
- 	atomic_set(get_gcwq_nr_running(gcwq->cpu), 0);
- 
- 	spin_unlock_irq(&gcwq->lock);
--	del_timer_sync(&gcwq->idle_timer);
-+	del_timer_sync(&gcwq->pool.idle_timer);
- 	spin_lock_irq(&gcwq->lock);
- 
- 	/*
-@@ -3391,17 +3408,17 @@ static int __cpuinit trustee_thread(void *__gcwq)
- 	 * may be frozen works in freezable cwqs.  Don't declare
- 	 * completion while frozen.
- 	 */
--	while (gcwq->nr_workers != gcwq->nr_idle ||
-+	while (gcwq->pool.nr_workers != gcwq->pool.nr_idle ||
- 	       gcwq->flags & GCWQ_FREEZING ||
- 	       gcwq->trustee_state == TRUSTEE_IN_CHARGE) {
- 		int nr_works = 0;
- 
--		list_for_each_entry(work, &gcwq->worklist, entry) {
-+		list_for_each_entry(work, &gcwq->pool.worklist, entry) {
- 			send_mayday(work);
- 			nr_works++;
- 		}
- 
--		list_for_each_entry(worker, &gcwq->idle_list, entry) {
-+		list_for_each_entry(worker, &gcwq->pool.idle_list, entry) {
- 			if (!nr_works--)
- 				break;
- 			wake_up_process(worker->task);
-@@ -3428,11 +3445,11 @@ static int __cpuinit trustee_thread(void *__gcwq)
- 	 * all workers till we're canceled.
- 	 */
- 	do {
--		rc = trustee_wait_event(!list_empty(&gcwq->idle_list));
--		while (!list_empty(&gcwq->idle_list))
--			destroy_worker(list_first_entry(&gcwq->idle_list,
-+		rc = trustee_wait_event(!list_empty(&gcwq->pool.idle_list));
-+		while (!list_empty(&gcwq->pool.idle_list))
-+			destroy_worker(list_first_entry(&gcwq->pool.idle_list,
- 							struct worker, entry));
--	} while (gcwq->nr_workers && rc >= 0);
-+	} while (gcwq->pool.nr_workers && rc >= 0);
- 
- 	/*
- 	 * At this point, either draining has completed and no worker
-@@ -3441,7 +3458,7 @@ static int __cpuinit trustee_thread(void *__gcwq)
- 	 * Tell the remaining busy ones to rebind once it finishes the
- 	 * currently scheduled works by scheduling the rebind_work.
- 	 */
--	WARN_ON(!list_empty(&gcwq->idle_list));
-+	WARN_ON(!list_empty(&gcwq->pool.idle_list));
- 
- 	for_each_busy_worker(worker, i, pos, gcwq) {
- 		struct work_struct *rebind_work = &worker->rebind_work;
-@@ -3522,7 +3539,7 @@ static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
- 		kthread_bind(new_trustee, cpu);
- 		/* fall through */
- 	case CPU_UP_PREPARE:
--		BUG_ON(gcwq->first_idle);
-+		BUG_ON(gcwq->pool.first_idle);
- 		new_worker = create_worker(gcwq, false);
- 		if (!new_worker) {
- 			if (new_trustee)
-@@ -3544,8 +3561,8 @@ static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
- 		wait_trustee_state(gcwq, TRUSTEE_IN_CHARGE);
- 		/* fall through */
- 	case CPU_UP_PREPARE:
--		BUG_ON(gcwq->first_idle);
--		gcwq->first_idle = new_worker;
-+		BUG_ON(gcwq->pool.first_idle);
-+		gcwq->pool.first_idle = new_worker;
- 		break;
- 
- 	case CPU_DYING:
-@@ -3562,8 +3579,8 @@ static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
- 		gcwq->trustee_state = TRUSTEE_BUTCHER;
- 		/* fall through */
- 	case CPU_UP_CANCELED:
--		destroy_worker(gcwq->first_idle);
--		gcwq->first_idle = NULL;
-+		destroy_worker(gcwq->pool.first_idle);
-+		gcwq->pool.first_idle = NULL;
- 		break;
- 
- 	case CPU_DOWN_FAILED:
-@@ -3581,11 +3598,11 @@ static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
- 		 * take a look.
- 		 */
- 		spin_unlock_irq(&gcwq->lock);
--		kthread_bind(gcwq->first_idle->task, cpu);
-+		kthread_bind(gcwq->pool.first_idle->task, cpu);
- 		spin_lock_irq(&gcwq->lock);
- 		gcwq->flags |= GCWQ_MANAGE_WORKERS;
--		start_worker(gcwq->first_idle);
--		gcwq->first_idle = NULL;
-+		start_worker(gcwq->pool.first_idle);
-+		gcwq->pool.first_idle = NULL;
- 		break;
- 	}
- 
-@@ -3794,22 +3811,23 @@ static int __init init_workqueues(void)
- 		struct global_cwq *gcwq = get_gcwq(cpu);
- 
- 		spin_lock_init(&gcwq->lock);
--		INIT_LIST_HEAD(&gcwq->worklist);
-+		gcwq->pool.gcwq = gcwq;
-+		INIT_LIST_HEAD(&gcwq->pool.worklist);
- 		gcwq->cpu = cpu;
- 		gcwq->flags |= GCWQ_DISASSOCIATED;
- 
--		INIT_LIST_HEAD(&gcwq->idle_list);
-+		INIT_LIST_HEAD(&gcwq->pool.idle_list);
- 		for (i = 0; i < BUSY_WORKER_HASH_SIZE; i++)
- 			INIT_HLIST_HEAD(&gcwq->busy_hash[i]);
- 
--		init_timer_deferrable(&gcwq->idle_timer);
--		gcwq->idle_timer.function = idle_worker_timeout;
--		gcwq->idle_timer.data = (unsigned long)gcwq;
-+		init_timer_deferrable(&gcwq->pool.idle_timer);
-+		gcwq->pool.idle_timer.function = idle_worker_timeout;
-+		gcwq->pool.idle_timer.data = (unsigned long)gcwq;
- 
--		setup_timer(&gcwq->mayday_timer, gcwq_mayday_timeout,
-+		setup_timer(&gcwq->pool.mayday_timer, gcwq_mayday_timeout,
- 			    (unsigned long)gcwq);
- 
--		ida_init(&gcwq->worker_ida);
-+		ida_init(&gcwq->pool.worker_ida);
- 
- 		gcwq->trustee_state = TRUSTEE_DONE;
- 		init_waitqueue_head(&gcwq->trustee_wait);
 -- 
 1.7.7.3
 
