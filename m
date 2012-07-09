@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab2GIOnp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:43:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38243 "EHLO
+	id S1754738Ab2GIOoH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:44:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38238 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754445Ab2GIOiR (ORCPT
+	by vger.kernel.org with ESMTP id S1754437Ab2GIOiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:38:17 -0400
-Message-Id: <20120709143121.032548570@decadent.org.uk>
+	Mon, 9 Jul 2012 10:38:16 -0400
+Message-Id: <20120709143122.404608942@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:31:46 +0100
+Date: Mon, 09 Jul 2012 15:31:56 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Paul Moore <pmoore@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 30/48] cipso: handle CIPSO options correctly when NetLabel is  disabled
+        alan@lxorguk.ukuu.org.uk, stephen hemminger <shemminger@vyatta.com>,
+        Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 40/48] bridge: Assign rtnl_link_ops to bridge devices created  via ioctl (v2)
 In-Reply-To: <20120709143116.348975190@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,78 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: stephen hemminger <shemminger@vyatta.com>
 
-[ Upstream commit 20e2a86485967c385d7c7befc1646e4d1d39362e ]
+[ Upstream commit 149ddd83a92b02c658d6c61f3276eb6500d585e8 ]
 
-When NetLabel is not enabled, e.g. CONFIG_NETLABEL=n, and the system
-receives a CIPSO tagged packet it is dropped (cipso_v4_validate()
-returns non-zero).  In most cases this is the correct and desired
-behavior, however, in the case where we are simply forwarding the
-traffic, e.g. acting as a network bridge, this becomes a problem.
+This ensures that bridges created with brctl(8) or ioctl(2) directly
+also carry IFLA_LINKINFO when dumped over netlink. This also allows
+to create a bridge with ioctl(2) and delete it with RTM_DELLINK.
 
-This patch fixes the forwarding problem by providing the basic CIPSO
-validation code directly in ip_options_compile() without the need for
-the NetLabel or CIPSO code.  The new validation code can not perform
-any of the CIPSO option label/value verification that
-cipso_v4_validate() does, but it can verify the basic CIPSO option
-format.
-
-The behavior when NetLabel is enabled is unchanged.
-
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/net/cipso_ipv4.h |   29 ++++++++++++++++++++++++++++-
- 1 file changed, 28 insertions(+), 1 deletion(-)
+ net/bridge/br_if.c      |    1 +
+ net/bridge/br_netlink.c |    2 +-
+ net/bridge/br_private.h |    1 +
+ 3 files changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/include/net/cipso_ipv4.h b/include/net/cipso_ipv4.h
-index 9808877..a7a683e 100644
---- a/include/net/cipso_ipv4.h
-+++ b/include/net/cipso_ipv4.h
-@@ -42,6 +42,7 @@
- #include <net/netlabel.h>
- #include <net/request_sock.h>
- #include <linux/atomic.h>
-+#include <asm/unaligned.h>
+diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
+index f603e5b..f3f75ad 100644
+--- a/net/bridge/br_if.c
++++ b/net/bridge/br_if.c
+@@ -240,6 +240,7 @@ int br_add_bridge(struct net *net, const char *name)
+ 		return -ENOMEM;
  
- /* known doi values */
- #define CIPSO_V4_DOI_UNKNOWN          0x00000000
-@@ -285,7 +286,33 @@ static inline int cipso_v4_skbuff_getattr(const struct sk_buff *skb,
- static inline int cipso_v4_validate(const struct sk_buff *skb,
- 				    unsigned char **option)
- {
--	return -ENOSYS;
-+	unsigned char *opt = *option;
-+	unsigned char err_offset = 0;
-+	u8 opt_len = opt[1];
-+	u8 opt_iter;
-+
-+	if (opt_len < 8) {
-+		err_offset = 1;
-+		goto out;
-+	}
-+
-+	if (get_unaligned_be32(&opt[2]) == 0) {
-+		err_offset = 2;
-+		goto out;
-+	}
-+
-+	for (opt_iter = 6; opt_iter < opt_len;) {
-+		if (opt[opt_iter + 1] > (opt_len - opt_iter)) {
-+			err_offset = opt_iter + 1;
-+			goto out;
-+		}
-+		opt_iter += opt[opt_iter + 1];
-+	}
-+
-+out:
-+	*option = opt + err_offset;
-+	return err_offset;
-+
+ 	dev_net_set(dev, net);
++	dev->rtnl_link_ops = &br_link_ops;
+ 
+ 	res = register_netdev(dev);
+ 	if (res)
+diff --git a/net/bridge/br_netlink.c b/net/bridge/br_netlink.c
+index a1daf82..cbf9ccd 100644
+--- a/net/bridge/br_netlink.c
++++ b/net/bridge/br_netlink.c
+@@ -211,7 +211,7 @@ static int br_validate(struct nlattr *tb[], struct nlattr *data[])
+ 	return 0;
  }
- #endif /* CONFIG_NETLABEL */
  
+-static struct rtnl_link_ops br_link_ops __read_mostly = {
++struct rtnl_link_ops br_link_ops __read_mostly = {
+ 	.kind		= "bridge",
+ 	.priv_size	= sizeof(struct net_bridge),
+ 	.setup		= br_dev_setup,
+diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
+index 93264df..b9bba8f 100644
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -536,6 +536,7 @@ extern int (*br_fdb_test_addr_hook)(struct net_device *dev, unsigned char *addr)
+ #endif
+ 
+ /* br_netlink.c */
++extern struct rtnl_link_ops br_link_ops;
+ extern int br_netlink_init(void);
+ extern void br_netlink_fini(void);
+ extern void br_ifinfo_notify(int event, struct net_bridge_port *port);
 
 
