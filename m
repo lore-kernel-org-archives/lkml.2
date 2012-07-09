@@ -1,110 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab2GIUsq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 16:48:46 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56680 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764Ab2GIUsp (ORCPT
+	id S1753838Ab2GIUs7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 16:48:59 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:43707 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753816Ab2GIUs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 16:48:45 -0400
-Message-ID: <4FFB43A8.2070307@linaro.org>
-Date: Mon, 09 Jul 2012 22:48:40 +0200
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Mon, 9 Jul 2012 16:48:58 -0400
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, sameo@linux.intel.com
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de
-Subject: Re: [PATCH 1/1] mfd: ab8500: Clean-up the last two ab8500 related
- DT match tables
-References: <1341578598-9307-1-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1341578598-9307-1-git-send-email-lee.jones@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1341866664.6118.30.camel@joe2Laptop>
+References: <20120709180328.GA4105@redhat.com> <CAPXgP11oP4aKyg=HUNrb3z_ZbPjU+_u338sD6uhxKyJ43Z8sgQ@mail.gmail.com>
+ <1341859731.801.0.camel@mop> <1341865916.6118.25.camel@joe2Laptop>
+ <20120709204019.GA10111@kroah.com> <1341866664.6118.30.camel@joe2Laptop>
+From: Kay Sievers <kay@vrfy.org>
+Date: Mon, 9 Jul 2012 22:48:35 +0200
+Message-ID: <CAPXgP12AN61VxUGb0-=tyChnipUENzwLUNWEZtfFS2oCyYUqHQ@mail.gmail.com>
+Subject: Re: 3.5-rc6 printk formatting problem during oom-kill.
+To: Joe Perches <joe@perches.com>
+Cc: Greg Kroah-Hartmann <greg@kroah.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sam,
+On Mon, Jul 9, 2012 at 10:44 PM, Joe Perches <joe@perches.com> wrote:
 
-I've just seen that you have a new for-next branch, but this patch is 
-missing in it.
+>> > That single patch doesn't apply cleanly to Linus'
+>> > 8c84bf4166a4698296342841a549bbee03860ac0
+>> >
+>> > What else is necessary?
+>> >
+>> > Your tree seems to have a collection of random patches.
+>> >
+>> > It might be useful to clone Linus' tree and produce a
+>> > branch with all the necessary printk patches in it so
+>> > someone else could pull it.
 
-Just making sure you didn't miss it:
+I just worked on top of Greg's tree with the pending stuff for 3.5.
 
-On 06/07/12 14:43, Lee Jones wrote:
-> A patch was recently submitted to stop all ab8500 devices from
-> being registered through Device Tree. Instead, only the db8500
-> will be DT:ed and the rest will continue to be registered via
-> the MFD API, as they always were.
+>> They should all now be in my driver-core-next branch that will show up
+>> in the next linux-next release, so having a separate tree isn't
+>> necessary.
 >
-> Two patches have recently been applied which enable Device Tree
-> probing; one for rtc-ab8500 and the other for ponkey-ab8500.
-> These two need to be removed to prevent double-probing these
-> devices with Device Tree is enabled.
+> I don't think so.
 >
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->   drivers/input/misc/ab8500-ponkey.c |    8 --------
->   drivers/rtc/rtc-ab8500.c           |    6 ------
->   2 files changed, 14 deletions(-)
+> There are real defects in the existing code.
 >
-> diff --git a/drivers/input/misc/ab8500-ponkey.c b/drivers/input/misc/ab8500-ponkey.c
-> index 84ec691..5ceb23e 100644
-> --- a/drivers/input/misc/ab8500-ponkey.c
-> +++ b/drivers/input/misc/ab8500-ponkey.c
-> @@ -132,18 +132,10 @@ static int __devexit ab8500_ponkey_remove(struct platform_device *pdev)
->   	return 0;
->   }
->
-> -#ifdef CONFIG_OF
-> -static const struct of_device_id ab8500_ponkey_match[] = {
-> -	{ .compatible = "stericsson,ab8500-ponkey", },
-> -	{}
-> -};
-> -#endif
-> -
->   static struct platform_driver ab8500_ponkey_driver = {
->   	.driver		= {
->   		.name	= "ab8500-poweron-key",
->   		.owner	= THIS_MODULE,
-> -		.of_match_table = of_match_ptr(ab8500_ponkey_match),
->   	},
->   	.probe		= ab8500_ponkey_probe,
->   	.remove		= __devexit_p(ab8500_ponkey_remove),
-> diff --git a/drivers/rtc/rtc-ab8500.c b/drivers/rtc/rtc-ab8500.c
-> index bf3c2f6..2e5970f 100644
-> --- a/drivers/rtc/rtc-ab8500.c
-> +++ b/drivers/rtc/rtc-ab8500.c
-> @@ -462,16 +462,10 @@ static int __devexit ab8500_rtc_remove(struct platform_device *pdev)
->   	return 0;
->   }
->
-> -static const struct of_device_id ab8500_rtc_match[] = {
-> -	{ .compatible = "stericsson,ab8500-rtc", },
-> -	{}
-> -};
-> -
->   static struct platform_driver ab8500_rtc_driver = {
->   	.driver = {
->   		.name = "ab8500-rtc",
->   		.owner = THIS_MODULE,
-> -		.of_match_table = ab8500_rtc_match,
->   	},
->   	.probe	= ab8500_rtc_probe,
->   	.remove = __devexit_p(ab8500_rtc_remove),
->
+> These are patches that are necessary _now_.
+> not for a -next 3.6 future.
 
-Kind regards,
-Lee
+Wrong conclusion. They are not in the 3.6 branch, but still go into -next:
+  http://git.kernel.org/?p=linux/kernel/git/gregkh/driver-core.git;a=shortlog;h=refs/heads/driver-core-linus
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
-
-
+Kay
