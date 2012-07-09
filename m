@@ -1,63 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225Ab2GIPNk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 11:13:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5052 "EHLO mx1.redhat.com"
+	id S1755232Ab2GIPR5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 11:17:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44530 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753796Ab2GIPNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 11:13:39 -0400
-Date: Mon, 9 Jul 2012 11:13:29 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Phillip Susi <psusi@ubuntu.com>
-Cc: axboe@kernel.dk, maxim.patlasov@gmail.com, dm-devel@redhat.com,
-        kzak@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] block: add partition resize function to blkpg ioctl
-Message-ID: <20120709151329.GE2538@redhat.com>
-References: <1329251991-22468-1-git-send-email-vgoyal@redhat.com>
- <1329251991-22468-2-git-send-email-vgoyal@redhat.com>
- <20120220152849.GH10342@redhat.com>
- <20120302185457.GD26315@redhat.com>
- <4FF79614.2000706@ubuntu.com>
+	id S1753266Ab2GIPRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 11:17:55 -0400
+Date: Mon, 9 Jul 2012 17:17:52 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 07/11] mm: memcg: remove unneeded shmem charge type
+Message-ID: <20120709151752.GJ4627@tiehlicka.suse.cz>
+References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
+ <1341449103-1986-8-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FF79614.2000706@ubuntu.com>
+In-Reply-To: <1341449103-1986-8-git-send-email-hannes@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, 2012 at 09:51:16PM -0400, Phillip Susi wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
+On Thu 05-07-12 02:44:59, Johannes Weiner wrote:
+> shmem page charges have not needed a separate charge type to tell them
+> from regular file pages since 08e552c 'memcg: synchronized LRU'.
 > 
-> What's the status of this patch?  Forgotten, or are there still any outstanding concerns?
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-There was one outstanding concern from maxim about missing "bdput(bdevp)".
-Will see if I can find some time to brush it up and test patches again. If
-somebody can beat me to it, that would be great.
+Yes, MEM_CGROUP_CHARGE_TYPE_SHMEM has been quite confusing.
 
-Thanks
-Vivek
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
+> ---
+>  mm/memcontrol.c |   11 +----------
+>  1 files changed, 1 insertions(+), 10 deletions(-)
 > 
-> On 03/02/2012 01:54 PM, Vivek Goyal wrote:
-> > Hi Jens,
-> > 
-> > Do you have concerns about this patch? If no, can you please consider
-> > merging it.
-> > 
-> > Thanks
-> > Vivek
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1.4.11 (GNU/Linux)
-> Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 4a41b55..418b47d 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -379,7 +379,6 @@ static bool move_file(void)
+>  enum charge_type {
+>  	MEM_CGROUP_CHARGE_TYPE_CACHE = 0,
+>  	MEM_CGROUP_CHARGE_TYPE_ANON,
+> -	MEM_CGROUP_CHARGE_TYPE_SHMEM,	/* used by page migration of shmem */
+>  	MEM_CGROUP_CHARGE_TYPE_SWAPOUT,	/* for accounting swapcache */
+>  	MEM_CGROUP_CHARGE_TYPE_DROP,	/* a page was unused swap cache */
+>  	NR_CHARGE_TYPE,
+> @@ -2835,8 +2834,6 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+>  
+>  	if (unlikely(!mm))
+>  		mm = &init_mm;
+> -	if (!page_is_file_cache(page))
+> -		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
+>  
+>  	if (!PageSwapCache(page))
+>  		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
+> @@ -3243,10 +3240,8 @@ void mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
+>  	 */
+>  	if (PageAnon(page))
+>  		ctype = MEM_CGROUP_CHARGE_TYPE_ANON;
+> -	else if (page_is_file_cache(page))
+> -		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
+>  	else
+> -		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
+> +		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
+>  	/*
+>  	 * The page is committed to the memcg, but it's not actually
+>  	 * charged to the res_counter since we plan on replacing the
+> @@ -3340,10 +3335,6 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
+>  	 */
+>  	if (!memcg)
+>  		return;
+> -
+> -	if (PageSwapBacked(oldpage))
+> -		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
+> -
+>  	/*
+>  	 * Even if newpage->mapping was NULL before starting replacement,
+>  	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
+> -- 
+> 1.7.7.6
 > 
-> iQEcBAEBAgAGBQJP95YUAAoJEJrBOlT6nu75A/kIAIEWs+MlA8Me05jjBGpSFQsn
-> VigiYTF4UdWjA3bG0CNB41eqpzOKVl/B4vTBAy1YezuUXMamBRp1OD6hatEL/blO
-> ps/M2S2NNPgFOzDmZBgfWIib6tnbCJvTowLdt4n4NnP0DoQRn+5bXopL/jcm4lwU
-> XWheiqFFX1xSB5YgP+GMl4zVWZhyrHYcynqK/25EimbEXtjgTyR3Cy4wMfGgMdnI
-> HkY7D0Kn420n+X6uRLXZW8hV3apATZCz3PGsxg7FI83gFi7Tc9rneOhwgRkAXHxq
-> FcJ2NABK83dACAYOU0fhVTmxoumxuHNCmp7iRGiavnbNCBJWxLV2x1WhceX23lc=
-> =1FUQ
-> -----END PGP SIGNATURE-----
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
