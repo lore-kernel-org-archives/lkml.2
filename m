@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155Ab2GIKaI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 06:30:08 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57898 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753115Ab2GIKaD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 06:30:03 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FFAB297.4020303@jp.fujitsu.com>
-Date: Mon, 9 Jul 2012 19:29:43 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753132Ab2GIKaG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 06:30:06 -0400
+Received: from void.printf.net ([89.145.121.20]:54987 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753112Ab2GIKaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 06:30:00 -0400
+From: Chris Ball <cjb@laptop.org>
+To: "Liu\, Chuansheng" <chuansheng.liu@intel.com>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc\@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "Yanmin Zhang \<yanmin_zhang\@linux.intel.com\>
+	\(yanmin_zhang\@linux.intel.com\)" <yanmin_zhang@linux.intel.com>
+Subject: Re: [PATCH] sdio: Change pr_warning to pr_warn_ratelimited
+References: <27240C0AC20F114CBF8149A2696CBE4A0DD517@SHSMSX101.ccr.corp.intel.com>
+Date: Mon, 09 Jul 2012 06:29:52 -0400
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A0DD517@SHSMSX101.ccr.corp.intel.com>
+	(Chuansheng Liu's message of "Thu, 14 Jun 2012 10:49:17 +0000")
+Message-ID: <87mx39ut0f.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
 MIME-Version: 1.0
-To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
-CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
-Subject: [RFC PATCH v3 8/13] memory-hotplug : check page type in get_page_bootmem
-References: <4FFAB0A2.8070304@jp.fujitsu.com>
-In-Reply-To: <4FFAB0A2.8070304@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a possibility that get_page_bootmem() is called to the same page many
-times. So when get_page_bootmem is called to the same page, the function only
-increments page->_count.
+Hi,
 
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+On Thu, Jun 14 2012, Liu, Chuansheng wrote:
+> From: liu chuansheng <chuansheng.liu@intel.com>
+> Subject: [PATCH] sdio: Change pr_warning to pr_warn_ratelimited
+>
+> When debug one bad issue, got lots of pr_warning messages
+> "queuing unknown CIS tuple" which caused the printk storm
+> and flooded the console.
+>
+> This patch is changing the pr_warning api to pr_warn_ratelimited.
+>
+> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+> ---
+>  drivers/mmc/core/sdio_cis.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/mmc/core/sdio_cis.c b/drivers/mmc/core/sdio_cis.c
+> index f1c7ed8..8e94e55 100644
+> --- a/drivers/mmc/core/sdio_cis.c
+> +++ b/drivers/mmc/core/sdio_cis.c
+> @@ -313,7 +313,7 @@ static int sdio_read_cis(struct mmc_card *card, struct sdio_func *func)
+>  
+>                         if (ret == -ENOENT) {
+>                                 /* warn about unknown tuples */
+> -                               pr_warning("%s: queuing unknown"
+> +                               pr_warn_ratelimited("%s: queuing unknown"
+>                                        " CIS tuple 0x%02x (%u bytes)\n",
+>                                        mmc_hostname(card->host),
+>                                        tpl_code, tpl_link);
 
----
- mm/memory_hotplug.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+Thanks, pushed to mmc-next for 3.6.
 
-Index: linux-3.5-rc4/mm/memory_hotplug.c
-===================================================================
---- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-07-03 14:22:10.170116406 +0900
-+++ linux-3.5-rc4/mm/memory_hotplug.c	2012-07-03 14:22:12.299089413 +0900
-@@ -95,10 +95,17 @@ static void release_memory_resource(stru
- static void get_page_bootmem(unsigned long info,  struct page *page,
- 			     unsigned long type)
- {
--	page->lru.next = (struct list_head *) type;
--	SetPagePrivate(page);
--	set_page_private(page, info);
--	atomic_inc(&page->_count);
-+	unsigned long page_type;
-+
-+	page_type = (unsigned long) page->lru.next;
-+	if (type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
-+	    type > MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE){
-+		page->lru.next = (struct list_head *) type;
-+		SetPagePrivate(page);
-+		set_page_private(page, info);
-+		atomic_inc(&page->_count);
-+	} else
-+		atomic_inc(&page->_count);
- }
-
- /* reference to __meminit __free_pages_bootmem is valid
-
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
