@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab2GIPSS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 11:18:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42512 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755055Ab2GIPSQ (ORCPT
+	id S1755251Ab2GIPTA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 11:19:00 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:35911 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755025Ab2GIPS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 11:18:16 -0400
-Message-ID: <4FFAF635.4020808@gmail.com>
-Date: Mon, 09 Jul 2012 09:18:13 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 9 Jul 2012 11:18:59 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: JDAqHwMVM1nvr.tmefhqEY5Z_8GbzwHt7.IhBkNlNxA8IPK
+ V0GPHs4au7x7STJ9WXSAh7KA2Sad1EAuAef_yj6ayM2ra2dCnO08bEHCTZQE
+ SAA.KTQHyW.WVm26hPXOHHbxDphuU7A9eTGbcp_23qNB_4y0_iGf5pA.c.u.
+ a4eTtncGvMvqTKFsPXL_DqEmcOJgagvR2CPumVQVspyIo4o1E0JoTWg_ZwHD
+ t95za6lem0eaIzrVm19gnPp8euPFOoiX.6sUcLh2RfzTltU96mCkkbj.SrCk
+ qI7PGzYwbis1RqOIzJiEVTO_NL7Z9OSfdnjcnvFDnAKDUS_CbeuPnWzubrdv
+ sNs4E1HlNeeQ2oZFIAAPkuElrE6pMNS9pDROMT4wu7Mo1SHv8ELe1Xs7QHQ2
+ .RycZMhPcRLJPdmnYCgqSQgL_hEzUnZkTR8xI
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 9 Jul 2012 10:18:54 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, minchan.kim@gmail.com,
+        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
+        wency@cn.fujitsu.com
+Subject: Re: [RFC PATCH v3 0/13] memory-hotplug : hot-remove physical
+ memory
+In-Reply-To: <4FFAB0A2.8070304@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1207091015570.30060@router.home>
+References: <4FFAB0A2.8070304@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: perf with precise attribute kills all KVM based VMs
-References: <4FFAE6D8.5050609@gmail.com> <20120709141904.GC7298@redhat.com>  <1341843844.3462.75.camel@twins> <4FFAED16.7050204@redhat.com>  <4FFAEF13.7010108@gmail.com> <1341845396.3462.81.camel@twins> <4FFAF042.1050609@gmail.com> <4FFAF19E.70507@gmail.com>
-In-Reply-To: <4FFAF19E.70507@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/9/12 8:58 AM, David Ahern wrote:
-> On 7/9/12 8:52 AM, David Ahern wrote:
->> On 7/9/12 8:49 AM, Peter Zijlstra wrote:
->>> On Mon, 2012-07-09 at 08:47 -0600, David Ahern wrote:
->>>>
->>>> I found this testing changes to perf-kvm, but found the problem extends
->>>> to just perf-record. With perf-record exclude_guest defaults to 1. See
->>>> tools/perf/util/util.c, event_attr_init().
->>>
->>> You lost me there.. so perf-record defaults to exclude_guest=1 (which
->>> would make the proposed patch I just send actually possible), but its
->>> still going *bang* ?
->>>
->>
->>
->> I can do the formality of testing your proposed patch, but yes I think
->> so. exclude_guest defaults to 1 because perf_guest defaults to false.
->
->
-> Let me dig for a few minutes. exclude_user is getting reset somewhere.
-> Setting a breakpoint on sys_perf_event_open and dumping the attribute:
->
-> $1 = {type = 0, size = 80, config = 0, {sample_period = 4000,
-> sample_freq = 4000}, sample_type = 263, read_format = 7,
->    disabled = 1, inherit = 1, pinned = 0, exclusive = 0, exclude_user =
-> 0, exclude_kernel = 0, exclude_hv = 0, exclude_idle =
->      0, mmap = 1, comm = 1, freq = 1, inherit_stat = 0, enable_on_exec =
-> 1, task = 0, watermark = 0, precise_ip = 1,
->    mmap_data = 0, sample_id_all = 1, exclude_host = 0, exclude_guest =
-> 0, __reserved_1 = 0, {wakeup_events = 0,
->      wakeup_watermark = 0}, bp_type = 0, {bp_addr = 0, config1 = 0},
-> {bp_len = 0, config2 = 0}, branch_sample_type = 0}
->
->
 
-Offending function is parse_events_modifier(). It resets exclude_guest 
-to 0. That's a separate thread/bug.
+On Mon, 9 Jul 2012, Yasuaki Ishimatsu wrote:
 
-Undoing that (hardcoding exclude_guest to 1) and verifying in gdb that 
-it is set for all cpus:
+> Even if you apply these patches, you cannot remove the physical memory
+> completely since these patches are still under development. I want you to
+> cooperate to improve the physical memory hot-remove. So please review these
+> patches and give your comment/idea.
 
-(gdb) p *attr
-$17 = {type = 0, size = 80, config = 0, {sample_period = 4000, 
-sample_freq = 4000}, sample_type = 423, read_format = 7,
-   disabled = 1, inherit = 1, pinned = 0, exclusive = 0, exclude_user = 
-0, exclude_kernel = 0, exclude_hv = 0, exclude_idle =
-     0, mmap = 1, comm = 1, freq = 1, inherit_stat = 0, enable_on_exec = 
-0, task = 0, watermark = 0, precise_ip = 1,
-   mmap_data = 0, sample_id_all = 1, exclude_host = 0, exclude_guest = 
-1, __reserved_1 = 0, {wakeup_events = 0,
-     wakeup_watermark = 0}, bp_type = 0, {bp_addr = 0, config1 = 0}, 
-{bp_len = 0, config2 = 0}, branch_sample_type = 0}
+Could you at least give a method on how you want to do physical memory
+removal? You would have to remove all objects from the range you want to
+physically remove. That is only possible under special circumstances and
+with a limited set of objects. Even if you exclusively use ZONE_MOVEABLE
+you still may get cases where pages are pinned for a long time.
 
-It still bombs and the VM dies.
+I am not sure that these patches are useful unless we know where you are
+going with this. If we end up with a situation where we still cannot
+remove physical memory then this patchset is not helpful.
 
-David
+
