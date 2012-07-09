@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab2GIN6Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 09:58:16 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:38881 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527Ab2GIN6P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 09:58:15 -0400
-Message-ID: <4FFAE373.6070905@gmail.com>
-Date: Mon, 09 Jul 2012 08:58:11 -0500
-From: Rob Herring <robherring2@gmail.com>
+	id S1754151Ab2GIN6f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 09:58:35 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:56568 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753527Ab2GIN6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 09:58:34 -0400
+Message-ID: <4FFAE37F.70403@linux.vnet.ibm.com>
+Date: Mon, 09 Jul 2012 08:58:23 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Li Yang-R58472 <r58472@freescale.com>
-CC: Jia Hongtao-B38951 <B38951@freescale.com>, Greg KH <greg@kroah.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 5/6] Avoid duplicate probe for of platform devices
-References: <1339148585-16947-1-git-send-email-B38951@freescale.com> <4FD60FB1.7050106@gmail.com> <412C8208B4A0464FA894C5F0C278CD5D01A16829@039-SN1MPN1-002.039d.mgd.msft.net> <20120706042611.GA1841@kroah.com> <412C8208B4A0464FA894C5F0C278CD5D01A168F2@039-SN1MPN1-002.039d.mgd.msft.net> <20120706161718.GA26894@kroah.com> <412C8208B4A0464FA894C5F0C278CD5D01A1E694@039-SN1MPN1-002.039d.mgd.msft.net> <94F013E7935FF44C83EBE7784D62AD3F09354AE6@039-SN2MPN1-021.039d.mgd.msft.net>
-In-Reply-To: <94F013E7935FF44C83EBE7784D62AD3F09354AE6@039-SN2MPN1-021.039d.mgd.msft.net>
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] zsmalloc improvements
+References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com> <20120704204325.GB2924@localhost.localdomain> <4FF6FF1F.5090701@linux.vnet.ibm.com>
+In-Reply-To: <4FF6FF1F.5090701@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12070913-7182-0000-0000-000001EFE7B0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2012 10:46 PM, Li Yang-R58472 wrote:
->>> I don't understand, why is this just showing up now?  What
->>> changed to cause this?  Couldn't that be the real problem here?
->>> 
->> 
->> The issue is showing up because we now probe devices twice. 
->> Previously, we just probe devices once. But now we changed the way
->> of pci init which makes pci controllers should be probed earlier
->> than other devices. So we have to probe pci nodes separately. Probe
->> more than once is the root cause of this issue.
->> 
->> The pci patchset I mentioned please refer to: 
->> http://patchwork.ozlabs.org/patch/163742/
+On 07/06/2012 10:07 AM, Seth Jennings wrote:
+> On 07/04/2012 03:43 PM, Konrad Rzeszutek Wilk wrote:
+>> On Mon, Jul 02, 2012 at 04:15:48PM -0500, Seth Jennings wrote:
+>>> This exposed an interesting and unexpected result: in all
+>>> cases that I tried, copying the objects that span pages instead
+>>> of using the page table to map them, was _always_ faster.  I could
+>>> not find a case in which the page table mapping method was faster.
+>>
+>> Which architecture was this under? It sounds x86-ish? Is this on
+>> Westmere and more modern machines? What about Core2 architecture?
+>>
+>> Oh how did it work on AMD Phenom boxes?
 > 
-> Let me try to clarify a little bit.  The of platform bus normally
-> traverse the device tree to add all the devices.  The change which
-> caused problem is that we need to probe PCIe RC devices at a earlier
-> stage of initialization.  So we added these PCIe RC devices earlier
-> than the normal device tree traversal process.  These PCIe RC devices
-> will be scanned again during the normal traversal and cause
-> duplicated devices being added.  Our proposal is to deal with
-> duplicated devices automatically and make it possible to scan the
-> device tree multiple times for devices to be added.
+> I don't have a Phenom box but I have an Athlon X2 I can try out.
+> I'll get this information next Monday.
 
-What is making PCI need to be probed earlier? Perhaps deferred probe
-would work?
+Actually, I'm running some production stuff on that box, so
+I rather not put testing stuff on it.  Is there any
+particular reason that you wanted this information? Do you
+have a reason to believe that mapping will be faster than
+copy for AMD procs?
 
-Perhaps giving of_platform_populate an exclude list of compatible
-strings to skip would work.
+(To everyone) I'd like to get this acked before the 3.6
+merge window if there are no concerns/objections.
 
-Rob
+Thanks,
+Seth
+
