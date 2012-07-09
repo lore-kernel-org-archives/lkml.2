@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751218Ab2GIEYz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 00:24:55 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:60652 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750814Ab2GIEYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 00:24:54 -0400
-Message-ID: <1341807891.13174.40.camel@joe2Laptop>
-Subject: Re: [PATCH 0/6] staging: vt6655: Cleanup in usage of macros
-From: Joe Perches <joe@perches.com>
-To: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-Cc: gregkh@linuxfoundation.org, andriy.shevchenko@linux.intel.com,
-        jj@chaosbits.net, forest@alittletooquiet.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Sun, 08 Jul 2012 21:24:51 -0700
-In-Reply-To: <1341802286-28281-1-git-send-email-marcos.souza.org@gmail.com>
-References: <1341802286-28281-1-git-send-email-marcos.souza.org@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1751267Ab2GIEkf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 00:40:35 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57383 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab2GIEkK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 00:40:10 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FFA6023.4060806@jp.fujitsu.com>
+Date: Mon, 09 Jul 2012 13:37:55 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Wanpeng Li <liwp.linux@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/memcg: replace inexistence move_lock_page_cgroup()
+ by move_lock_mem_cgroup() in comment
+References: <a> <1341469733-12104-1-git-send-email-liwp.linux@gmail.com>
+In-Reply-To: <1341469733-12104-1-git-send-email-liwp.linux@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-07-08 at 23:51 -0300, Marcos Paulo de Souza wrote:
-> Hi kernel guys!
+(2012/07/05 15:28), Wanpeng Li wrote:
+> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 > 
-> This patchset aims to clean all unused and commented macros.
+> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+
+> ---
+>   mm/memcontrol.c |    4 ++--
+>   1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> For this challenge, forgotten-macros tool helped us.
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 3d318f6..63e36e7 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1899,7 +1899,7 @@ again:
+>   		return;
+>   	/*
+>   	 * If this memory cgroup is not under account moving, we don't
+> -	 * need to take move_lock_page_cgroup(). Because we already hold
+> +	 * need to take move_lock_mem_cgroup(). Because we already hold
+>   	 * rcu_read_lock(), any calls to move_account will be delayed until
+>   	 * rcu_read_unlock() if mem_cgroup_stolen() == true.
+>   	 */
+> @@ -1921,7 +1921,7 @@ void __mem_cgroup_end_update_page_stat(struct page *page, unsigned long *flags)
+>   	/*
+>   	 * It's guaranteed that pc->mem_cgroup never changes while
+>   	 * lock is held because a routine modifies pc->mem_cgroup
+> -	 * should take move_lock_page_cgroup().
+> +	 * should take move_lock_mem_cgroup().
+>   	 */
+>   	move_unlock_mem_cgroup(pc->mem_cgroup, flags);
+>   }
+> 
 
-Perhaps there may be false positives in your code.
-
-Many times, macros like the below are used:
-
-#define SUBSYSTEM_PREFIX_FOO	1
-#define SUBSYSTEM_PREFIX_BAR	2
-#define SUBSYSTEM_PREFIX_BAZ	3
-
-#define USE_TYPE(type)	SUBSYSTEM_PREFIX_##type
-
-It doesn't seem your code knows that style.
-
-Also, the tool might be more flexible if it was
-written using perl or python.
 
 
