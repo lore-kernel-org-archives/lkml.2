@@ -1,116 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab2GIDVd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 23:21:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11016 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809Ab2GIDVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 23:21:31 -0400
-Message-ID: <4FFA4EAD.7000707@redhat.com>
-Date: Mon, 09 Jul 2012 11:23:25 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Rick Jones <rick.jones2@hp.com>
-CC: mst@redhat.com, mashirle@us.ibm.com, krkumar2@in.ibm.com,
-        habanero@linux.vnet.ibm.com, rusty@rustcorp.com.au,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, edumazet@google.com,
-        tahm@linux.vnet.ibm.com, jwhan@filewood.snu.ac.kr, davem@davemloft.net,
-        akong@redhat.com, kvm@vger.kernel.org, sri@us.ibm.com
-Subject: Re: [net-next RFC V5 0/5] Multiqueue virtio-net
-References: <1341484194-8108-1-git-send-email-jasowang@redhat.com> <4FF5D2B7.6080602@hp.com> <4FF696C9.5070907@redhat.com> <4FF710FD.2090100@hp.com>
-In-Reply-To: <4FF710FD.2090100@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752053Ab2GIDWp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 23:22:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50736 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477Ab2GIDWm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jul 2012 23:22:42 -0400
+Message-ID: <1341804151.14367.1.camel@phoenix>
+Subject: [PATCH RFT 1/2] regulator: twl: Fix the formula to calculate vsel
+ and voltage for twl6030ldo
+From: Axel Lin <axel.lin@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Rajendra Nayak <rnayak@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Date: Mon, 09 Jul 2012 11:22:31 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2012 12:23 AM, Rick Jones wrote:
-> On 07/06/2012 12:42 AM, Jason Wang wrote:
->> I'm not expert of tcp, but looks like the changes are reasonable:
->> - we can do full-sized TSO check in tcp_tso_should_defer() only for
->> westwood, according to tcp westwood
->> - run tcp_tso_should_defer for tso_segs = 1 when tso is enabled.
->
-> I'm sure Eric and David will weigh-in on the TCP change.  My initial 
-> inclination would have been to say "well, if multiqueue is draining 
-> faster, that means ACKs come-back faster, which means the "race" 
-> between more data being queued by netperf and ACKs will go more to the 
-> ACKs which means the segments being sent will be smaller - as 
-> TCP_NODELAY is not set, the Nagle algorithm is in force, which means 
-> once there is data outstanding on the connection, no more will be sent 
-> until either the outstanding data is ACKed, or there is an 
-> accumulation of > MSS worth of data to send.
->
->>> Also, how are you combining the concurrent netperf results?  Are you
->>> taking sums of what netperf reports, or are you gathering statistics
->>> outside of netperf?
->>>
->>
->> The throughput were just sumed from netperf result like what netperf
->> manual suggests. The cpu utilization were measured by mpstat.
->
-> Which mechanism to address skew error?  The netperf manual describes 
-> more than one:
+In twl6030ldo_set_voltage, current code use below formula to calculate vsel:
+        vsel = (min_uV/1000 - 1000)/100 + 1;
+This is worng because when min_uV is 1000000 uV, vsel is 1.
+It should be 0 in this case.
+Fix it by change the equation to: (This equation is common for linear mapping)
+        vsel = DIV_ROUND_UP(min_uV - rdev->desc->min_uV, rdev->desc->uV_step);
 
-This mechanism is missed in my test, I would add them to my test scripts.
->
-> http://www.netperf.org/svn/netperf2/trunk/doc/netperf.html#Using-Netperf-to-Measure-Aggregate-Performance 
->
->
-> Personally, my preference these days is to use the "demo mode" method 
-> of aggregate results as it can be rather faster than (ab)using the 
-> confidence intervals mechanism, which I suspect may not really scale 
-> all that well to large numbers of concurrent netperfs.
+In twl6030ldo_get_voltage, current code use below formula to calculate voltage:
+        mV = 1000mv + 100mv * (vsel - 1)
+This is worng because when vsel is 0, mV is 900mV. Note the min_uV is 1000mV.
+Fix it by change the equation to: (This equation is common for linear mapping)
+        return rdev->desc->min_uV + vsel * rdev->desc->uV_step;
 
-During my test, the confidence interval would even hard to achieved in 
-RR test when I pin vhost/vcpus in the processors, so I didn't use it.
->
-> I also tend to use the --enable-burst configure option to allow me to 
-> minimize the number of concurrent netperfs in the first place.  Set 
-> TCP_NODELAY (the test-specific -D option) and then have several 
-> transactions outstanding at one time (test-specific -b option with a 
-> number of additional in-flight transactions).
->
-> This is expressed in the runemomniaggdemo.sh script:
->
-> http://www.netperf.org/svn/netperf2/trunk/doc/examples/runemomniaggdemo.sh 
->
->
-> which uses the find_max_burst.sh script:
->
-> http://www.netperf.org/svn/netperf2/trunk/doc/examples/find_max_burst.sh
->
-> to pick the burst size to use in the concurrent netperfs, the results 
-> of which can be post-processed with:
->
-> http://www.netperf.org/svn/netperf2/trunk/doc/examples/post_proc.py
->
-> The nice feature of using the "demo mode" mechanism is when it is 
-> coupled with systems with reasonably synchronized clocks (eg NTP) it 
-> can be used for many-to-many testing in addition to one-to-many 
-> testing (which cannot be dealt with by the confidence interval method 
-> of dealing with skew error)
->
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/twl-regulator.c |   17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
-Yes, looks "demo mode" is helpful. I would have a look at these scripts, 
-Thanks.
->>> A single instance TCP_RR test would help confirm/refute any
->>> non-trivial change in (effective) path length between the two cases.
->>>
->>
->> Yes, I would test this thanks.
->
-> Excellent.
->
-> happy benchmarking,
->
-> rick jones
->
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+index 8f0bd56..bb51dec 100644
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -569,30 +569,21 @@ twl6030ldo_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
+ 	if ((min_uV/1000 < info->min_mV) || (max_uV/1000 > info->max_mV))
+ 		return -EDOM;
+ 
+-	/*
+-	 * Use the below formula to calculate vsel
+-	 * mV = 1000mv + 100mv * (vsel - 1)
+-	 */
+-	vsel = (min_uV/1000 - 1000)/100 + 1;
++	vsel = DIV_ROUND_UP(min_uV - rdev->desc->min_uV, rdev->desc->uV_step);
+ 	*selector = vsel;
+-	return twlreg_write(info, TWL_MODULE_PM_RECEIVER, VREG_VOLTAGE, vsel);
+ 
++	return twlreg_write(info, TWL_MODULE_PM_RECEIVER, VREG_VOLTAGE, vsel);
+ }
+ 
+ static int twl6030ldo_get_voltage(struct regulator_dev *rdev)
+ {
+ 	struct twlreg_info	*info = rdev_get_drvdata(rdev);
+-	int		vsel = twlreg_read(info, TWL_MODULE_PM_RECEIVER,
+-								VREG_VOLTAGE);
++	int vsel = twlreg_read(info, TWL_MODULE_PM_RECEIVER, VREG_VOLTAGE);
+ 
+ 	if (vsel < 0)
+ 		return vsel;
+ 
+-	/*
+-	 * Use the below formula to calculate vsel
+-	 * mV = 1000mv + 100mv * (vsel - 1)
+-	 */
+-	return (1000 + (100 * (vsel - 1))) * 1000;
++	return rdev->desc->min_uV + vsel * rdev->desc->uV_step;
+ }
+ 
+ static struct regulator_ops twl6030ldo_ops = {
+-- 
+1.7.9.5
+
+
 
