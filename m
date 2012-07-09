@@ -1,56 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab2GIUmn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 16:42:43 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:42898 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934Ab2GIUmm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 16:42:42 -0400
-Message-ID: <4FFB423D.1040606@linaro.org>
-Date: Mon, 09 Jul 2012 22:42:37 +0200
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de
-Subject: Re: [PATCH 7/9] Input: ab8500-ponkey: Create AB8500 domain IRQ mapping
-References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org> <4FF6994B.9040801@linaro.org> <20120706173957.GA10202@core.coreip.homeip.net> <4FFB288D.4080606@linaro.org> <20120709201422.GA12242@core.coreip.homeip.net> <4FFB40A4.5060505@linaro.org> <CACRpkdbB68mXuV3bx-gyJBdJCd2Ja86J8mvvmR3ez3dJ8SzOEg@mail.gmail.com>
-In-Reply-To: <CACRpkdbB68mXuV3bx-gyJBdJCd2Ja86J8mvvmR3ez3dJ8SzOEg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1753635Ab2GIUo0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 16:44:26 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:35555 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751461Ab2GIUoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 16:44:25 -0400
+Message-ID: <1341866664.6118.30.camel@joe2Laptop>
+Subject: Re: 3.5-rc6 printk formatting problem during oom-kill.
+From: Joe Perches <joe@perches.com>
+To: Greg Kroah-Hartmann <greg@kroah.com>
+Cc: Kay Sievers <kay@vrfy.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 09 Jul 2012 13:44:24 -0700
+In-Reply-To: <20120709204019.GA10111@kroah.com>
+References: <20120709180328.GA4105@redhat.com>
+	 <CAPXgP11oP4aKyg=HUNrb3z_ZbPjU+_u338sD6uhxKyJ43Z8sgQ@mail.gmail.com>
+	 <1341859731.801.0.camel@mop> <1341865916.6118.25.camel@joe2Laptop>
+	 <20120709204019.GA10111@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/12 22:37, Linus Walleij wrote:
-> On Mon, Jul 9, 2012 at 10:35 PM, Lee Jones <lee.jones@linaro.org> wrote:
->
->> From: Lee Jones <lee.jones@linaro.org>
->> Date: Tue, 26 Jun 2012 10:46:50 +0100
->> Subject: [PATCH 1/1] Input: ab8500-ponkey: Create AB8500 domain IRQ mapping
->>
->> Before we can use any domain allocated IRQ, we need to first create a
->> map between the Hardware IRQ (hwirq) and the Linux Virtual IRQ (virq).
->> We do this with a helper function provided by the AB8500 IRQ domain
->> controller called ab8500_irq_get_virq(). We need to do this for both
->> IRQs which the Power-On-Key driver uses; one for button press, the other
->> for button depress.
->>
->> Signed-off-by: Lee Jones <lee.jones@linaro.org>
->
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+On Mon, 2012-07-09 at 13:40 -0700, Greg Kroah-Hartmann wrote:
+> On Mon, Jul 09, 2012 at 01:31:56PM -0700, Joe Perches wrote:
+> > On Mon, 2012-07-09 at 20:48 +0200, Kay Sievers wrote:
+> > > On Mon, 2012-07-09 at 20:27 +0200, Kay Sievers wrote:
+> > > > On Mon, Jul 9, 2012 at 8:03 PM, Dave Jones <davej@redhat.com> wrote:
+> > > > > I noticed that the format of the oom-killer output seems to have changed, and
+> > > > > now it spews stuff like..
+> > > > >
+> > > > > [49461.758070] lowmem_reserve[]:
+> > > > > [49461.758071]  0
+> > > > > [49461.758071]  2643
+> > > > > [49461.758071]  3878
+> > > > > [49461.758072]  3878
+> > > > > [49461.758072]
+> > > > > [49461.758072] Node 0
+> > > > 
+> > > > > Does the oom-killer code need modifying, or the printk code ?
+> > > > > I know there's been some regressions in this area recently, but this is still
+> > > > > happening on the current tree (8c84bf4166a4698296342841a549bbee03860ac0)
+> > > > 
+> > > > This likely fixes it:
+> > > >   http://git.kernel.org/?p=linux/kernel/git/kay/patches.git;a=blob;f=kmsg-merge-cont.patch;hb=HEAD
+> > > > 
+> > > > Let me check if it does, and if I can reproduce it.
+> > > 
+> > > It looks fine here with the above mentioned patch:
+> > > [    0.000000] lowmem_reserve[]:
+> > > [    0.000000]  0
+> > > [    0.000000]  0
+> > > [    0.000000]  0
+> > > [    0.000000]  0
+> > > [    0.000000] 
+> > > [    0.000000] DMA: 
+> > > [    0.000000] 1*4kB 
+> > > [    0.000000] 0*8kB 
+> > > [    0.000000] 0*16kB 
+> > > [    0.000000] 1*32kB 
+> > > [    0.000000] 2*64kB 
+> > > [    0.000000] 1*128kB 
+> > > [    0.000000] 1*256kB 
+> > > [    0.000000] 0*512kB 
+> > > [    0.000000] 1*1024kB 
+> > > [    0.000000] 1*2048kB 
+> > > [    0.000000] 3*4096kB 
+> > > [    0.000000] = 15908kB
+> > > 
+> > > becomes:
+> > > [    0.000000] lowmem_reserve[]: 0 0 0 0
+> > > [    0.000000] DMA: 1*4kB 0*8kB 0*16kB 1*32kB 2*64kB 1*128kB 1*256kB 0*512kB 1*1024kB 1*2048kB 3*4096kB = 15908kB
+> > 
+> > Hi Kay.
+> > 
+> > That single patch doesn't apply cleanly to Linus'
+> > 8c84bf4166a4698296342841a549bbee03860ac0
+> > 
+> > What else is necessary?
+> > 
+> > Your tree seems to have a collection of random patches.
+> > 
+> > It might be useful to clone Linus' tree and produce a
+> > branch with all the necessary printk patches in it so
+> > someone else could pull it.
+> 
+> They should all now be in my driver-core-next branch that will show up
+> in the next linux-next release, so having a separate tree isn't
+> necessary.
 
-I've just sent a new one following Dmitry's suggestion.
+I don't think so.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+There are real defects in the existing code.
+
+These are patches that are necessary _now_.
+not for a -next 3.6 future.
 
 
