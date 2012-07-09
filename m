@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755010Ab2GIOvo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:51:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2796 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754884Ab2GIOvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:51:42 -0400
-Message-ID: <4FFAEFCA.4030106@redhat.com>
-Date: Mon, 09 Jul 2012 10:50:50 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 14/26] sched, numa: Numa balancer
-References: <20120316144028.036474157@chello.nl>  <20120316144241.012558280@chello.nl> <4FF87F5F.30106@redhat.com>  <1341836629.3462.60.camel@twins> <1341837624.3462.68.camel@twins>
-In-Reply-To: <1341837624.3462.68.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754969Ab2GIOv1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:51:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38099 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754306Ab2GIOh6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 10:37:58 -0400
+Message-Id: <20120709143119.018962208@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 09 Jul 2012 15:31:32 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, majianpeng <majianpeng@gmail.com>,
+        NeilBrown <neilb@suse.de>
+Subject: [ 16/48] md/raid5: In ops_run_io, inc nr_pending before calling
+ md_wait_for_blocked_rdev
+In-Reply-To: <20120709143116.348975190@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2012 08:40 AM, Peter Zijlstra wrote:
-> On Mon, 2012-07-09 at 14:23 +0200, Peter Zijlstra wrote:
->>> It is not yet clear to me how and why your code converges.
->>
->> I don't think it does.. but since the scheduler interaction is fairly
->> weak it doesn't matter too much from that pov.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Fair enough. It is just that you asked this same question
-about Andrea's code, and I was asking myself that question
-while reading your code (and failing to figure it out).
+------------------
 
-> That is,.. it slowly moves along with the cpu usage, only if there's a
-> lot of remote memory allocations (memory pressure) things get funny.
->
-> It'll try and rotate all tasks around a bit trying, but there's no good
-> solution for a memory hole on one node and a cpu hole on another, you're
-> going to have to take the remote hits.
+From: majianpeng <majianpeng@gmail.com>
 
-Agreed, I suspect both your code and Andrea's code will
-end up behaving fairly similarly in that situation.
+commit 1850753d2e6d9ca7856581ca5d3cf09521e6a5d7 upstream.
 
-> Again.. what do we want it to do?
+In ops_run_io(), the call to md_wait_for_blocked_rdev will decrement
+nr_pending so we lose the reference we hold on the rdev.
+So atomic_inc it first to maintain the reference.
 
-That is a good question.
+This bug was introduced by commit  73e92e51b7969ef5477d
+    md/raid5.  Don't write to known bad block on doubtful devices.
 
-We can have various situations to deal with:
+which appeared in 3.0, so patch is suitable for stable kernels since
+then.
 
-1) tasks fit nicely inside NUMA nodes
-2) some tasks have more memory than what fits
-    in a NUMA node
-3) some tasks have more threads than what fits
-    in a NUMA node
-4) a combination of the above
+Signed-off-by: majianpeng <majianpeng@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/md/raid5.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-I guess what we want the NUMA code to do to increase
-the number of local memory accesses for each thread,
-and do so in a relatively light weight way.
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index 9567a9c..befadb4 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -606,6 +606,12 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+ 					 * a chance*/
+ 					md_check_recovery(conf->mddev);
+ 				}
++				/*
++				 * Because md_wait_for_blocked_rdev
++				 * will dec nr_pending, we must
++				 * increment it first.
++				 */
++				atomic_inc(&rdev->nr_pending);
+ 				md_wait_for_blocked_rdev(rdev, conf->mddev);
+ 			} else {
+ 				/* Acknowledged bad block - skip the write */
 
--- 
-All rights reversed
+
