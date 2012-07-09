@@ -1,47 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab2GIPWZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 11:22:25 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:38452 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754063Ab2GIPWX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 11:22:23 -0400
-Date: Mon, 9 Jul 2012 11:22:22 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Greg KH <gregkh@linuxfoundation.org>
-cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>
-Subject: Re: usbutils 006 release
-In-Reply-To: <20120706203547.GA28678@kroah.com>
-Message-ID: <Pine.LNX.4.44L0.1207091121060.1954-100000@iolanthe.rowland.org>
+	id S1751429Ab2GIP24 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 11:28:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45180 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750716Ab2GIP2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 11:28:54 -0400
+Date: Mon, 9 Jul 2012 17:28:51 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 09/11] mm: memcg: split swapin charge function into
+ private and public part
+Message-ID: <20120709152851.GL4627@tiehlicka.suse.cz>
+References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
+ <1341449103-1986-10-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341449103-1986-10-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Jul 2012, Greg KH wrote:
-
-> Here's the 006 release of usbutils.
+On Thu 05-07-12 02:45:01, Johannes Weiner wrote:
+> When shmem is charged upon swapin, it does not need to check twice
+> whether the memory controller is enabled.
 > 
-> Some USB 3.0 updates, a new usb.ids file update, and a number of other
-> fixes and updates for annoying problems that people had reported.  Full
-> shortlog information is below if people are curious.
+> Also, shmem pages do not have to be checked for everything that
+> regular anon pages have to be checked for, so let shmem use the
+> internal version directly and allow future patches to move around
+> checks that are only required when swapping in anon pages.
 > 
-> The package can be downladed from kernel.org:
->         http://www.kernel.org/pub/linux/utils/usb/usbutils/
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  mm/memcontrol.c |   24 +++++++++++++++---------
+>  1 files changed, 15 insertions(+), 9 deletions(-)
 > 
-> We've switched over to using git for development now, which makes things
-> much easier than the old cvs tree.  The tree can be found on both
-> kernel.org and github.com if you want to fork it and send us changes
-> easier:
-> 	http://git.kernel.org/?p=linux/kernel/git/gregkh/usbutils.git
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 6fe4101..a8bf86a 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2734,18 +2734,14 @@ int mem_cgroup_newpage_charge(struct page *page,
+>   * struct page_cgroup is acquired. This refcnt will be consumed by
+>   * "commit()" or removed by "cancel()"
+>   */
+> -int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+> -				 struct page *page,
+> -				 gfp_t mask, struct mem_cgroup **memcgp)
+> +static int __mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+> +					  struct page *page,
+> +					  gfp_t mask,
+> +					  struct mem_cgroup **memcgp)
+>  {
+>  	struct mem_cgroup *memcg;
+>  	int ret;
+>  
+> -	*memcgp = NULL;
+> -
+> -	if (mem_cgroup_disabled())
+> -		return 0;
+> -
+>  	if (!do_swap_account)
+>  		goto charge_cur_mm;
+>  	/*
+> @@ -2772,6 +2768,15 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+>  	return ret;
+>  }
+>  
+> +int mem_cgroup_try_charge_swapin(struct mm_struct *mm, struct page *page,
+> +				 gfp_t gfp_mask, struct mem_cgroup **memcgp)
+> +{
+> +	*memcgp = NULL;
+> +	if (mem_cgroup_disabled())
+> +		return 0;
+> +	return __mem_cgroup_try_charge_swapin(mm, page, gfp_mask, memcgp);
+> +}
+> +
+>  void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *memcg)
+>  {
+>  	if (mem_cgroup_disabled())
+> @@ -2833,7 +2838,8 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+>  	if (!PageSwapCache(page))
+>  		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
+>  	else { /* page is swapcache/shmem */
+> -		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &memcg);
+> +		ret = __mem_cgroup_try_charge_swapin(mm, page,
+> +						     gfp_mask, &memcg);
+>  		if (!ret)
+>  			__mem_cgroup_commit_charge_swapin(page, memcg, type);
+>  	}
+> -- 
+> 1.7.7.6
+> 
 
-This link doesn't work for me.  Are you sure the repository is 
-installed at git.kernel.org?
-
-> 	http://github.com/gregkh/usbutils/tree/master
-
-Alan Stern
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
