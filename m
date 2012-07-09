@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914Ab2GIPf1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 11:35:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45883 "EHLO mx2.suse.de"
+	id S1752009Ab2GIPl1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 11:41:27 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:34376 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750756Ab2GIPfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 11:35:25 -0400
-Date: Mon, 9 Jul 2012 17:35:24 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 00/11] mm: memcg: charge/uncharge improvements
-Message-ID: <20120709153524.GO4627@tiehlicka.suse.cz>
-References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
+	id S1751300Ab2GIPl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 11:41:26 -0400
+X-IronPort-AV: E=Sophos;i="4.77,552,1336363200"; 
+   d="scan'208";a="30854307"
+Message-ID: <4FFAFBA4.4050603@citrix.com>
+Date: Mon, 9 Jul 2012 16:41:24 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 1/4] xen/p2m: Optimize the get_phys_to_machine
+ function a bit.
+References: <1341330038-21686-1-git-send-email-konrad.wilk@oracle.com> <1341330038-21686-2-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1341330038-21686-2-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 05-07-12 02:44:52, Johannes Weiner wrote:
-> Hello,
-> 
-> the biggest thing is probably #1, no longer trying (and failing) to
-> charge replacement pages during migration and thus compaction.  The
-> rest is cleanups and tiny optimizations that move some checks out of
-> the charge and uncharge core paths that do not apply to all types of
-> pages alike.
+On 03/07/12 16:40, Konrad Rzeszutek Wilk wrote:
+> Running perf tells me that the check for p2m_identity
+> is done a lot - more than it should.
 
-Nice clean up Johannes.
-Thanks!
-
+This patch doesn't change the how often the check is done.  Is this just
+bad wording of the description?
 > 
->  include/linux/memcontrol.h |   11 +--
->  mm/memcontrol.c            |  205 +++++++++++++++++++++++---------------------
->  mm/migrate.c               |   27 ++-----
->  mm/shmem.c                 |   11 ++-
->  mm/swapfile.c              |    3 +-
->  5 files changed, 124 insertions(+), 133 deletions(-)
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/xen/p2m.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
+> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+> index 64effdc..161bcdc 100644
+> --- a/arch/x86/xen/p2m.c
+> +++ b/arch/x86/xen/p2m.c
+> @@ -406,7 +406,7 @@ unsigned long get_phys_to_machine(unsigned long pfn)
+>  	 * and in p2m_*missing, so returning the INVALID_P2M_ENTRY
+>  	 * would be wrong.
+>  	 */
+> -	if (p2m_top[topidx][mididx] == p2m_identity)
+> +	if (unlikely(p2m_top[topidx][mididx] == p2m_identity))
+>  		return IDENTITY_FRAME(pfn);
+>  
+>  	return p2m_top[topidx][mididx][idx];
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
