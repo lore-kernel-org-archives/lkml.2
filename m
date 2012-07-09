@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab2GIPlj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 11:41:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752033Ab2GIPlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 11:41:31 -0400
-Message-ID: <4FFAFB70.7030402@redhat.com>
-Date: Mon, 09 Jul 2012 11:40:32 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, Alex Shi <alex.shi@intel.com>,
-        Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Don Morris <don.morris@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 00/40] AutoNUMA19
-References: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1340888180-15355-1-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1752153Ab2GIPqU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 11:46:20 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55580 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752033Ab2GIPqT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 11:46:19 -0400
+Date: Mon, 9 Jul 2012 16:49:56 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Message-ID: <20120709164956.4baaf7a4@pyramind.ukuu.org.uk>
+In-Reply-To: <201207091532.12256.arnd@arndb.de>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+	<20120709113558.GE8052@arm.com>
+	<20120709145126.313d1574@pyramind.ukuu.org.uk>
+	<201207091532.12256.arnd@arndb.de>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2012 08:55 AM, Andrea Arcangeli wrote:
+> I think the main strategy should be to spot duplicate code early
+> and make sure we deal with it individually. Examples for this are
+> probably the implementations for kvm and perf, which largely deal
+> with the same hardware on both architectures. Those definitely must
+> not get duplicated into mostly-identical files. In many cases, we're
+> moving those things into drivers/*, in other cases we might want to
+> use Makefile logic to include a sub-directory from one arch into another,
+> as we do for arch/um.
 
-> o reduced the page_autonuma memory overhead to from 32 to 12 bytes per page
+If you want to put a subdir of one arch into another wouldn't it be
+rather cleaner to use arm/arm/aarch64/ as your architecture base ?
 
-This bit still worries me a little.
-
-Between the compact list management code, the migrate
-daemon, the list locking and page queuing and unqueuing
-code, we are looking at 1000-2000 lines of code.
-
-I know your reasoning why asynchronous migration done
-by a kernel thread should be better than migrate-on-fault,
-but there is no actual evidence that it is in fact true.
-
-Would it be an idea to simplify the code for now, and
-add the asynchronous migration later on, if there are
-compelling benchmark results that show it to be useful?
-
-The amount of source code involved is large enough that
-a justification like that would be useful, IMHO...
-
--- 
-All rights reversed
+Alan
