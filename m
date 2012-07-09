@@ -1,80 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab2GIK52 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 06:57:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7867 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753082Ab2GIK51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 06:57:27 -0400
-Date: Mon, 9 Jul 2012 12:54:45 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Joe Perches <joe@perches.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] uprobes: fix overflow in
-	vma_address/find_active_uprobe
-Message-ID: <20120709105445.GA32699@redhat.com>
-References: <20120708203006.GA18233@redhat.com> <1341782304.13174.21.camel@joe2Laptop>
+	id S1752965Ab2GILAN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 07:00:13 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:42225 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab2GILAL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 07:00:11 -0400
+Date: Mon, 9 Jul 2012 06:59:51 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Gao feng <gaofeng@cn.fujitsu.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, tj@kernel.org,
+        lizefan@huawei.com
+Subject: Re: [PATCH v2] cgroup: fix panic in netprio_cgroup
+Message-ID: <20120709105951.GA9186@hmsreliant.think-freely.org>
+References: <1341480520-25081-1-git-send-email-gaofeng@cn.fujitsu.com>
+ <1341777043.3265.1786.camel@edumazet-glaptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1341782304.13174.21.camel@joe2Laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1341777043.3265.1786.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08, Joe Perches wrote:
->
-> On Sun, 2012-07-08 at 22:30 +0200, Oleg Nesterov wrote:
-> > @@ -1450,7 +1450,7 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
-> >
-> >  			inode = vma->vm_file->f_mapping->host;
-> >  			offset = bp_vaddr - vma->vm_start;
-> > -			offset += (vma->vm_pgoff << PAGE_SHIFT);
-> > +			offset += ((loff_t)vma->vm_pgoff << PAGE_SHIFT);
->
-> It's be nice to take remove the unnecessary parenthesis
-> and make it consistent with the vaddr use above it too.
+On Sun, Jul 08, 2012 at 09:50:43PM +0200, Eric Dumazet wrote:
+> On Thu, 2012-07-05 at 17:28 +0800, Gao feng wrote:
+> > we set max_prioidx to the first zero bit index of prioidx_map in
+> > function get_prioidx.
+> > 
+> > So when we delete the low index netprio cgroup and adding a new
+> > netprio cgroup again,the max_prioidx will be set to the low index.
+> > 
+> > when we set the high index cgroup's net_prio.ifpriomap,the function
+> > write_priomap will call update_netdev_tables to alloc memory which
+> > size is sizeof(struct netprio_map) + sizeof(u32) * (max_prioidx + 1),
+> > so the size of array that map->priomap point to is max_prioidx +1,
+> > which is low than what we actually need.
+> > 
+> > fix this by adding check in get_prioidx,only set max_prioidx when
+> > max_prioidx low than the new prioidx.
+> > 
+> > Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+> > ---
+> >  net/core/netprio_cgroup.c |    3 ++-
+> >  1 files changed, 2 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+> > index 5b8aa2f..aa907ed 100644
+> > --- a/net/core/netprio_cgroup.c
+> > +++ b/net/core/netprio_cgroup.c
+> > @@ -49,8 +49,9 @@ static int get_prioidx(u32 *prio)
+> >  		return -ENOSPC;
+> >  	}
+> >  	set_bit(prioidx, prioidx_map);
+> > +	if (atomic_read(&max_prioidx) < prioidx)
+> > +		atomic_set(&max_prioidx, prioidx);
+> >  	spin_unlock_irqrestore(&prioidx_map_lock, flags);
+> > -	atomic_set(&max_prioidx, prioidx);
+> >  	*prio = prioidx;
+> >  	return 0;
+> >  }
+> 
+> This patch seems fine to me.
+> 
+> Acked-by: Eric Dumazet <edumazet@google.com>
+> 
+> Neil, looking at this file, I believe something is wrong.
+> 
+> dev->priomap is allocated by extend_netdev_table() called from
+> update_netdev_tables(). And this is only called if write_priomap() is
+> called.
+> 
+> But if write_priomap() is not called, it seems we can have out of bounds
+> accesses in cgrp_destroy() and read_priomap()
+> 
+> What do you think of following patch ?
+> 
+> diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+> index 5b8aa2f..80150d2 100644
+> --- a/net/core/netprio_cgroup.c
+> +++ b/net/core/netprio_cgroup.c
+> @@ -141,7 +141,7 @@ static void cgrp_destroy(struct cgroup *cgrp)
+>  	rtnl_lock();
+>  	for_each_netdev(&init_net, dev) {
+>  		map = rtnl_dereference(dev->priomap);
+> -		if (map)
+> +		if (map && cs->prioidx < map->priomap_len)
+>  			map->priomap[cs->prioidx] = 0;
+>  	}
+>  	rtnl_unlock();
+> @@ -165,7 +165,7 @@ static int read_priomap(struct cgroup *cont, struct cftype *cft,
+>  	rcu_read_lock();
+>  	for_each_netdev_rcu(&init_net, dev) {
+>  		map = rcu_dereference(dev->priomap);
+> -		priority = map ? map->priomap[prioidx] : 0;
+> +		priority = (map && prioidx < map->priomap_len) ? map->priomap[prioidx] : 0;
+>  		cb->fill(cb, dev->name, priority);
+>  	}
+>  	rcu_read_unlock();
+> 
+> 
+> 
+You're right,  If we create a cgroup after a net device is registered the group
+priority index will likely be out of bounds for those devices.  We can fix it
+like you propose above (including the additional prioidx < map->priomap_len
+check in skb_update_prio as Gao notes), or we can call update_netdev_tables
+iteratively for every net device in cgrp_create, and on device_registration in
+netprio_device_event.
 
-OK, please find v2 below.
+I'm not sure how adventageous one is over the other, but it does seem that,
+given that skb_update_prio is in the transmit path, it might be nice to avoid
+the additional length check there if possible.
 
-------------------------------------------------------------------------------
-Subject: [PATCH] uprobes: fix overflow in vma_address/find_active_uprobe
-
-vma->vm_pgoff is "unsigned long", it should be promoted to loff_t
-before the multiplication to avoid the overflow.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/events/uprobes.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 47c4e24..6194edb 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -117,7 +117,7 @@ static loff_t vma_address(struct vm_area_struct *vma, loff_t offset)
- 	loff_t vaddr;
- 
- 	vaddr = vma->vm_start + offset;
--	vaddr -= vma->vm_pgoff << PAGE_SHIFT;
-+	vaddr -= (loff_t)vma->vm_pgoff << PAGE_SHIFT;
- 
- 	return vaddr;
- }
-@@ -1450,7 +1450,7 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
- 
- 			inode = vma->vm_file->f_mapping->host;
- 			offset = bp_vaddr - vma->vm_start;
--			offset += (vma->vm_pgoff << PAGE_SHIFT);
-+			offset += (loff_t)vma->vm_pgoff << PAGE_SHIFT;
- 			uprobe = find_uprobe(inode, offset);
- 		}
- 
--- 
-1.5.5.1
-
+Thanks!
+Neil
 
