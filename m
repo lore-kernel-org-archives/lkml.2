@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab2GIO4h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:56:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41874 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234Ab2GIO4f convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:56:35 -0400
-Message-ID: <1341845758.3462.84.camel@twins>
-Subject: Re: [RFC][PATCH 25/26] sched, numa: Only migrate long-running
- entities
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Mon, 09 Jul 2012 16:55:58 +0200
-In-Reply-To: <4FFAF067.3050905@redhat.com>
-References: <20120316144028.036474157@chello.nl>
-	  <20120316144241.749359061@chello.nl> <4FF9D29D.8030903@redhat.com>
-	 <1341836787.3462.64.camel@twins> <4FFAF067.3050905@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1755024Ab2GIO5V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:57:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37569 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754219Ab2GIO5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 10:57:19 -0400
+Date: Mon, 9 Jul 2012 17:57:14 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf with precise attribute kills all KVM based VMs
+Message-ID: <20120709145714.GF7298@redhat.com>
+References: <4FFAE6D8.5050609@gmail.com>
+ <20120709141904.GC7298@redhat.com>
+ <1341843844.3462.75.camel@twins>
+ <4FFAED16.7050204@redhat.com>
+ <4FFAEF13.7010108@gmail.com>
+ <1341845396.3462.81.camel@twins>
+ <4FFAEFF1.9000706@redhat.com>
+ <20120709145442.GE7298@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120709145442.GE7298@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-09 at 10:53 -0400, Rik van Riel wrote:
-> On 07/09/2012 08:26 AM, Peter Zijlstra wrote:
-> > On Sun, 2012-07-08 at 14:34 -0400, Rik van Riel wrote:
+On Mon, Jul 09, 2012 at 05:54:42PM +0300, Gleb Natapov wrote:
+> On Mon, Jul 09, 2012 at 05:51:29PM +0300, Avi Kivity wrote:
+> > On 07/09/2012 05:49 PM, Peter Zijlstra wrote:
+> > > On Mon, 2012-07-09 at 08:47 -0600, David Ahern wrote:
+> > >> 
+> > >> I found this testing changes to perf-kvm, but found the problem extends 
+> > >> to just perf-record. With perf-record exclude_guest defaults to 1. See 
+> > >> tools/perf/util/util.c, event_attr_init(). 
+> > > 
+> > > You lost me there.. so perf-record defaults to exclude_guest=1 (which
+> > > would make the proposed patch I just send actually possible), but its
+> > > still going *bang* ?
+> > 
+> > It's possible that the DS writes overshoot the MSR... or that there's a
+> > bug somewhere.
+> > 
+> I hope it is the later, because we can do nothing with the former.
 > 
-> >> Do we really want to calculate the amount of CPU time used
-> >> by a process, and start migrating after just one second?
-> >>
-> >> Or would it be ok to start migrating once a process has
-> >> been scanned once or twice by the NUMA code?
-> >
-> > You mean, the 2-3rd time we try and migrate this task, not the memory
-> > scanning thing as per Andrea, right?
-> 
-> Indeed.  That way we can simply keep a flag somewhere,
-> instead of iterating over the threads in a process.
+Actually we can disable DS before guest entry.
 
-Note that the code in -tip needs to iterate over all tasks in order to
-test all cpus_allowed and mems_allowed masks. But we could keep a
-process wide intersection of those masks around as well I guess,
-updating them is a slow path anyway.
+--
+			Gleb.
