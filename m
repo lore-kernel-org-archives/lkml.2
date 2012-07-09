@@ -1,79 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab2GIMlO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 08:41:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38990 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753491Ab2GIMlN (ORCPT
+	id S1753775Ab2GIMqz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 08:46:55 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:46824 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab2GIMqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 08:41:13 -0400
-Date: Mon, 9 Jul 2012 13:41:11 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] regulator for for 3.5
-Message-ID: <20120709124110.GC3934@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Izn7cH1Com+I3R9J"
-Content-Disposition: inline
-X-Cookie: Long life is in store for you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 9 Jul 2012 08:46:53 -0400
+X-SENDER-IP: [85.230.168.62]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ah5OAAPS+k9V5qg+PGdsb2JhbABFiiGtShkBAQEBHhkNJ4IgAVwTAQ8YGFIYChoTh34DELEJDYlOFIpGZoYMA5sbhR+HYg
+X-IronPort-AV: E=Sophos;i="4.77,553,1336341600"; 
+   d="scan'208";a="371149500"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ryan Bourgeois <bluedragonx@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH 1/2] HID: Add support for 2012 MacBook Pro Retina
+Date: Mon,  9 Jul 2012 14:46:45 +0200
+Message-Id: <1341838006-22407-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.11.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ryan Bourgeois <bluedragonx@gmail.com>
 
---Izn7cH1Com+I3R9J
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Add support for the 15'' MacBook Pro Retina. The keyboard is
+the same as recent models.
 
-The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
+The patch needs to be synchronized with the bcm5974 patch for
+the trackpad - as usual.
 
-  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
+Patch originally written by clipcarl (forums.opensuse.org).
 
-are available in the git repository at:
+[rydberg@euromail.se: Amended mouse ignore lines]
+Signed-off-by: Ryan Bourgeois <bluedragonx@gmail.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+Hi Jiri, Ryan
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/regulator-3.5
+Here is the retina patch, cleaned up and with the mouse ignore stuff
+amended. The accompanying bcm5974 patch follows this one.
 
-for you to fetch changes up to d92d95b6bf2722ffa0fefa7651c51bf336743dd7:
+Simple enough for 3.5, me thinks, but 3.6 should be alright as well.
 
-  regulator: Fix recursive mutex lockdep warning (2012-07-03 20:25:58 +0100)
+Cheers,
+Henrik
 
-----------------------------------------------------------------
-regulator: Fix for 3.5
+ drivers/hid/hid-apple.c | 6 ++++++
+ drivers/hid/hid-core.c  | 6 ++++++
+ drivers/hid/hid-ids.h   | 3 +++
+ 3 files changed, 15 insertions(+)
 
-A smallish fix for a lock dependency issue which affects a bunch of
-Qualcomm boards that do unusually complicated things with their
-regulators, the API is unlikely to be called by any other system.
+diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
+index fa10f84..585344b 100644
+--- a/drivers/hid/hid-apple.c
++++ b/drivers/hid/hid-apple.c
+@@ -517,6 +517,12 @@ static const struct hid_device_id apple_devices[] = {
+ 		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS),
+ 		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI),
++		.driver_data = APPLE_HAS_FN },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ISO),
++		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_JIS),
++		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI),
+ 		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO),
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 6ac0286..6089df5 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1503,6 +1503,9 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ISO) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_JIS) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS) },
+@@ -2089,6 +2092,9 @@ static const struct hid_device_id hid_mouse_ignore_list[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ISO) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_JIS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY) },
+ 	{ }
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index d1cdd2d..eaf5449 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -125,6 +125,9 @@
+ #define USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI	0x024c
+ #define USB_DEVICE_ID_APPLE_WELLSPRING6_ISO	0x024d
+ #define USB_DEVICE_ID_APPLE_WELLSPRING6_JIS	0x024e
++#define USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI	0x0262
++#define USB_DEVICE_ID_APPLE_WELLSPRING7_ISO	0x0263
++#define USB_DEVICE_ID_APPLE_WELLSPRING7_JIS	0x0264
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI  0x0239
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO   0x023a
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS   0x023b
+-- 
+1.7.11.1
 
-----------------------------------------------------------------
-Stephen Boyd (1):
-      regulator: Fix recursive mutex lockdep warning
-
- drivers/regulator/core.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
---Izn7cH1Com+I3R9J
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP+tFeAAoJEBus8iNuMP3dODoP/3lcEsgr30pnwxxKcryV3en/
-X/93hcThxMgRVJJvHjTLOv3rtFvLTFNHBArSwvALa8rw7catLP7zxGO2WVK0Zc7l
-nD4+JRzVgqejxrn45B+BJJwO7BZoIFlEjzSB8cK448gx+pveDsgXElQ/hz5O6Gfv
-7xecg0GcAemgyFSaQaBI4Xn7Q6xrdVhu+WHrNRRap+uBBaq+ELZQfchyIiT27m7v
-JhEdqx2LdKIwSJBIg2RO/AsysP2X+YgxdczqWdGD46tylAPLAHhLLllaHmy1l692
-1DNEN/zZYAHffmgqVZ2z1QkPXXoHFPtIz8IAtaTuynVLsSfJ2t2UV2tu4podEzpJ
-5u7ekt+wnXMbFV4v09cZC6AX08Vny9LIseCYw09y6iI0TVI3WEHE1mO0//nK6R4M
-yE291uEHrj9z+MdC7nIagG/ax/LwaxHr7GTD5Mx/8mCJtAluNbN3IQAN2cg8P7Wh
-z1745UAvS9SQoiPyFqPEipIGB27GMBujKubMXA9YtBpb8X7JeExqqrohY+k1hvXj
-dQktEkvO+zauRdLlhEkgDTZZ34wc8nrFebl0QN6dLtk+ARwJVJxIyNfdQJ0ChKUO
-J80iaGoyHm4pjkc9S3yYrsc0qT82riCwuKaJ8Zbhu672YaD+IaQTciODeQHYZa0l
-NqAAcVARCV8163ZeEm5L
-=w1kZ
------END PGP SIGNATURE-----
-
---Izn7cH1Com+I3R9J--
