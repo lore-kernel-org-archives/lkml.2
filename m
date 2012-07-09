@@ -1,96 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab2GIHmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 03:42:10 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50409 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729Ab2GIHmI (ORCPT
+	id S1752570Ab2GIHpQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 03:45:16 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64651 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224Ab2GIHpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 03:42:08 -0400
-Date: Mon, 9 Jul 2012 09:41:58 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] hw_random: mxc-rnga: Adapt clocks to new i.mx clock
- framework
-Message-ID: <20120709074158.GS30009@pengutronix.de>
-References: <1341606020-26449-1-git-send-email-fabio.estevam@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341606020-26449-1-git-send-email-fabio.estevam@freescale.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:36:53 up 15 days, 22:48, 42 users,  load average: 0.23, 0.48,
- 0.59
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 9 Jul 2012 03:45:15 -0400
+Subject: [PATCH] net: cgroup: fix out of bounds accesses
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: nhorman@tuxdriver.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, lizefan@huawei.com, tj@kernel.org,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 Jul 2012 09:45:10 +0200
+Message-ID: <1341819910.3265.2106.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, 2012 at 05:20:19PM -0300, Fabio Estevam wrote:
-> Cc: Theodore Ts'o <tytso@mit.edu>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au> 
-> Cc: <linux-kernel@vger.kernel.org>
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-> ---
->  drivers/char/hw_random/mxc-rnga.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/char/hw_random/mxc-rnga.c b/drivers/char/hw_random/mxc-rnga.c
-> index 85074de..c49c0b8 100644
-> --- a/drivers/char/hw_random/mxc-rnga.c
-> +++ b/drivers/char/hw_random/mxc-rnga.c
-> @@ -152,14 +152,14 @@ static int __init mxc_rnga_probe(struct platform_device *pdev)
->  	if (rng_dev)
->  		return -EBUSY;
->  
-> -	clk = clk_get(&pdev->dev, "rng");
-> +	clk = clk_get(&pdev->dev, NULL);
->  	if (IS_ERR(clk)) {
->  		dev_err(&pdev->dev, "Could not get rng_clk!\n");
->  		err = PTR_ERR(clk);
->  		goto out;
->  	}
->  
-> -	clk_enable(clk);
-> +	clk_prepare_enable(clk);
->  
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (!res) {
-> @@ -201,7 +201,7 @@ err_ioremap:
->  	release_mem_region(res->start, resource_size(res));
->  
->  err_region:
-> -	clk_disable(clk);
-> +	clk_disable_unprepare(clk);
->  	clk_put(clk);
->  
->  out:
-> @@ -212,7 +212,7 @@ static int __exit mxc_rnga_remove(struct platform_device *pdev)
->  {
->  	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	void __iomem *rng_base = (void __iomem *)mxc_rnga.priv;
-> -	struct clk *clk = clk_get(&pdev->dev, "rng");
-> +	struct clk *clk = clk_get(&pdev->dev, NULL);
+From: Eric Dumazet <edumazet@google.com>
 
-Uhh, that's a driver bug that should be fixed. Although right now there
-is no reference counting for clocks, the driver should keep the clk
-internally instead of simply calling clk_get whenever it needs access to
-a clk.
+dev->priomap is allocated by extend_netdev_table() called from
+update_netdev_tables().
+And this is only called if write_priomap() is called.
 
-Sascha
+But if write_priomap() is not called, it seems we can have out of bounds
+accesses in cgrp_destroy(), read_priomap() & skb_update_prio()
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+With help from Gao Feng
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Gao feng <gaofeng@cn.fujitsu.com>
+---
+net/core/dev.c            |    8 ++++++--
+net/core/netprio_cgroup.c |    4 ++--
+2 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 84f01ba..0f28a9e 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2444,8 +2444,12 @@ static void skb_update_prio(struct sk_buff *skb)
+ {
+ 	struct netprio_map *map = rcu_dereference_bh(skb->dev->priomap);
+ 
+-	if ((!skb->priority) && (skb->sk) && map)
+-		skb->priority = map->priomap[skb->sk->sk_cgrp_prioidx];
++	if (!skb->priority && skb->sk && map) {
++		unsigned int prioidx = skb->sk->sk_cgrp_prioidx;
++
++		if (prioidx < map->priomap_len)
++			skb->priority = map->priomap[prioidx];
++	}
+ }
+ #else
+ #define skb_update_prio(skb)
+diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+index aa907ed..3e953ea 100644
+--- a/net/core/netprio_cgroup.c
++++ b/net/core/netprio_cgroup.c
+@@ -142,7 +142,7 @@ static void cgrp_destroy(struct cgroup *cgrp)
+ 	rtnl_lock();
+ 	for_each_netdev(&init_net, dev) {
+ 		map = rtnl_dereference(dev->priomap);
+-		if (map)
++		if (map && cs->prioidx < map->priomap_len)
+ 			map->priomap[cs->prioidx] = 0;
+ 	}
+ 	rtnl_unlock();
+@@ -166,7 +166,7 @@ static int read_priomap(struct cgroup *cont, struct cftype *cft,
+ 	rcu_read_lock();
+ 	for_each_netdev_rcu(&init_net, dev) {
+ 		map = rcu_dereference(dev->priomap);
+-		priority = map ? map->priomap[prioidx] : 0;
++		priority = (map && prioidx < map->priomap_len) ? map->priomap[prioidx] : 0;
+ 		cb->fill(cb, dev->name, priority);
+ 	}
+ 	rcu_read_unlock();
+
+
