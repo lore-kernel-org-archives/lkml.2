@@ -1,202 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab2GIWqT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 18:46:19 -0400
-Received: from home.keithp.com ([63.227.221.253]:49170 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751770Ab2GIWqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 18:46:18 -0400
-X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Jul 2012 18:46:17 EDT
-From: Keith Packard <keithp@keithp.com>
-To: linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>
-Cc: Keith Packard <keithp@keithp.com>
-Subject: [PATCH] drm: use drm_compat_ioctl for 32-bit apps
-Date: Mon,  9 Jul 2012 15:40:07 -0700
-Message-Id: <1341873607-26847-1-git-send-email-keithp@keithp.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752135Ab2GIWr2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 18:47:28 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34632 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab2GIWr1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 18:47:27 -0400
+Date: Mon, 9 Jul 2012 15:46:53 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] shmem: cleanup shmem_add_to_page_cache
+In-Reply-To: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils>
+Message-ID: <alpine.LSU.2.00.1207091544290.2051@eggly.anvils>
+References: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of the DRM drivers appear to be missing the .compat_ioctl file
-operation entry necessary for 32-bit application compatibility.
+shmem_add_to_page_cache() has three callsites, but only one of them
+wants the radix_tree_preload() (an exceptional entry guarantees that
+the radix tree node is present in the other cases), and only that site
+can achieve mem_cgroup_uncharge_cache_page() (PageSwapCache makes it a
+no-op in the other cases).  We did it this way originally to reflect
+add_to_page_cache_locked(); but it's confusing now, so move the
+radix_tree preloading and mem_cgroup uncharging to that one caller.
 
-This patch  uses drm_compat_ioctl for all drivers which don't have
-their own, and which are using drm_ioctl for .unlocked_ioctl.
-
-This leaves drivers/gpu/drm/psb/psb_drv.c unchanged; it has a custom
-.unlocked_ioctl and will presumably need a custom .compat_ioctl as
-well.
-
-Signed-off-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>
 ---
- drivers/gpu/drm/ast/ast_drv.c           |    3 +++
- drivers/gpu/drm/cirrus/cirrus_drv.c     |    3 +++
- drivers/gpu/drm/exynos/exynos_drm_drv.c |    3 +++
- drivers/gpu/drm/i810/i810_dma.c         |    3 +++
- drivers/gpu/drm/i810/i810_drv.c         |    3 +++
- drivers/gpu/drm/mgag200/mgag200_drv.c   |    3 +++
- drivers/gpu/drm/savage/savage_drv.c     |    3 +++
- drivers/gpu/drm/sis/sis_drv.c           |    3 +++
- drivers/gpu/drm/tdfx/tdfx_drv.c         |    3 +++
- drivers/gpu/drm/udl/udl_drv.c           |    3 +++
- drivers/gpu/drm/via/via_drv.c           |    3 +++
- 11 files changed, 33 insertions(+)
+This is just a cleanup: I'd prefer it to go in along with the fix 2/3,
+but it can be delayed to v3.6 if you prefer.
 
-diff --git a/drivers/gpu/drm/ast/ast_drv.c b/drivers/gpu/drm/ast/ast_drv.c
-index d0c4574..3616480 100644
---- a/drivers/gpu/drm/ast/ast_drv.c
-+++ b/drivers/gpu/drm/ast/ast_drv.c
-@@ -193,6 +193,9 @@ static const struct file_operations ast_fops = {
- 	.mmap = ast_mmap,
- 	.poll = drm_poll,
- 	.fasync = drm_fasync,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = drm_compat_ioctl,
-+#endif
- 	.read = drm_read,
- };
- 
-diff --git a/drivers/gpu/drm/cirrus/cirrus_drv.c b/drivers/gpu/drm/cirrus/cirrus_drv.c
-index 7053140..b83a2d7 100644
---- a/drivers/gpu/drm/cirrus/cirrus_drv.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_drv.c
-@@ -74,6 +74,9 @@ static const struct file_operations cirrus_driver_fops = {
- 	.unlocked_ioctl = drm_ioctl,
- 	.mmap = cirrus_mmap,
- 	.poll = drm_poll,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = drm_compat_ioctl,
-+#endif
- 	.fasync = drm_fasync,
- };
- static struct drm_driver driver = {
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-index d6de2e0..6b07cfe 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-@@ -240,6 +240,9 @@ static const struct file_operations exynos_drm_driver_fops = {
- 	.poll		= drm_poll,
- 	.read		= drm_read,
- 	.unlocked_ioctl	= drm_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = drm_compat_ioctl,
-+#endif
- 	.release	= drm_release,
- };
- 
-diff --git a/drivers/gpu/drm/i810/i810_dma.c b/drivers/gpu/drm/i810/i810_dma.c
-index fa94391..6e8f935 100644
---- a/drivers/gpu/drm/i810/i810_dma.c
-+++ b/drivers/gpu/drm/i810/i810_dma.c
-@@ -115,6 +115,9 @@ static const struct file_operations i810_buffer_fops = {
- 	.unlocked_ioctl = drm_ioctl,
- 	.mmap = i810_mmap_buffers,
- 	.fasync = drm_fasync,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = drm_compat_ioctl,
-+#endif
- 	.llseek = noop_llseek,
- };
- 
-diff --git a/drivers/gpu/drm/i810/i810_drv.c b/drivers/gpu/drm/i810/i810_drv.c
-index ec12f7d..8e50757 100644
---- a/drivers/gpu/drm/i810/i810_drv.c
-+++ b/drivers/gpu/drm/i810/i810_drv.c
-@@ -51,6 +51,9 @@ static const struct file_operations i810_driver_fops = {
- 	.mmap = drm_mmap,
- 	.poll = drm_poll,
- 	.fasync = drm_fasync,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = drm_compat_ioctl,
-+#endif
- 	.llseek = noop_llseek,
- };
- 
-diff --git a/drivers/gpu/drm/mgag200/mgag200_drv.c b/drivers/gpu/drm/mgag200/mgag200_drv.c
-index 93e832d..895a67e 100644
---- a/drivers/gpu/drm/mgag200/mgag200_drv.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_drv.c
-@@ -81,6 +81,9 @@ static const struct file_operations mgag200_driver_fops = {
- 	.mmap = mgag200_mmap,
- 	.poll = drm_poll,
- 	.fasync = drm_fasync,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = drm_compat_ioctl,
-+#endif
- 	.read = drm_read,
- };
- 
-diff --git a/drivers/gpu/drm/savage/savage_drv.c b/drivers/gpu/drm/savage/savage_drv.c
-index 89afe0b..c77823a 100644
---- a/drivers/gpu/drm/savage/savage_drv.c
-+++ b/drivers/gpu/drm/savage/savage_drv.c
-@@ -43,6 +43,9 @@ static const struct file_operations savage_driver_fops = {
- 	.mmap = drm_mmap,
- 	.poll = drm_poll,
- 	.fasync = drm_fasync,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = drm_compat_ioctl,
-+#endif
- 	.llseek = noop_llseek,
- };
- 
-diff --git a/drivers/gpu/drm/sis/sis_drv.c b/drivers/gpu/drm/sis/sis_drv.c
-index dd14cd1..02cd328 100644
---- a/drivers/gpu/drm/sis/sis_drv.c
-+++ b/drivers/gpu/drm/sis/sis_drv.c
-@@ -74,6 +74,9 @@ static const struct file_operations sis_driver_fops = {
- 	.mmap = drm_mmap,
- 	.poll = drm_poll,
- 	.fasync = drm_fasync,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = drm_compat_ioctl,
-+#endif
- 	.llseek = noop_llseek,
- };
- 
-diff --git a/drivers/gpu/drm/tdfx/tdfx_drv.c b/drivers/gpu/drm/tdfx/tdfx_drv.c
-index 1613c78..3af8832 100644
---- a/drivers/gpu/drm/tdfx/tdfx_drv.c
-+++ b/drivers/gpu/drm/tdfx/tdfx_drv.c
-@@ -49,6 +49,9 @@ static const struct file_operations tdfx_driver_fops = {
- 	.mmap = drm_mmap,
- 	.poll = drm_poll,
- 	.fasync = drm_fasync,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = drm_compat_ioctl,
-+#endif
- 	.llseek = noop_llseek,
- };
- 
-diff --git a/drivers/gpu/drm/udl/udl_drv.c b/drivers/gpu/drm/udl/udl_drv.c
-index 6e52069..9f84128 100644
---- a/drivers/gpu/drm/udl/udl_drv.c
-+++ b/drivers/gpu/drm/udl/udl_drv.c
-@@ -66,6 +66,9 @@ static const struct file_operations udl_driver_fops = {
- 	.unlocked_ioctl	= drm_ioctl,
- 	.release = drm_release,
- 	.fasync = drm_fasync,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = drm_compat_ioctl,
-+#endif
- 	.llseek = noop_llseek,
- };
- 
-diff --git a/drivers/gpu/drm/via/via_drv.c b/drivers/gpu/drm/via/via_drv.c
-index 02661f3..6061776 100644
---- a/drivers/gpu/drm/via/via_drv.c
-+++ b/drivers/gpu/drm/via/via_drv.c
-@@ -65,6 +65,9 @@ static const struct file_operations via_driver_fops = {
- 	.mmap = drm_mmap,
- 	.poll = drm_poll,
- 	.fasync = drm_fasync,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = drm_compat_ioctl,
-+#endif
- 	.llseek = noop_llseek,
- };
- 
--- 
-1.7.10.4
+ mm/shmem.c |   58 ++++++++++++++++++++++++---------------------------
+ 1 file changed, 28 insertions(+), 30 deletions(-)
 
+--- 3.5-rc6+/mm/shmem.c	2012-07-07 19:20:52.026952048 -0700
++++ linux/mm/shmem.c	2012-07-07 19:21:44.342952082 -0700
+@@ -288,40 +288,31 @@ static int shmem_add_to_page_cache(struc
+ 				   struct address_space *mapping,
+ 				   pgoff_t index, gfp_t gfp, void *expected)
+ {
+-	int error = 0;
++	int error;
+ 
+ 	VM_BUG_ON(!PageLocked(page));
+ 	VM_BUG_ON(!PageSwapBacked(page));
+ 
++	page_cache_get(page);
++	page->mapping = mapping;
++	page->index = index;
++
++	spin_lock_irq(&mapping->tree_lock);
+ 	if (!expected)
+-		error = radix_tree_preload(gfp & GFP_RECLAIM_MASK);
++		error = radix_tree_insert(&mapping->page_tree, index, page);
++	else
++		error = shmem_radix_tree_replace(mapping, index, expected,
++								 page);
+ 	if (!error) {
+-		page_cache_get(page);
+-		page->mapping = mapping;
+-		page->index = index;
+-
+-		spin_lock_irq(&mapping->tree_lock);
+-		if (!expected)
+-			error = radix_tree_insert(&mapping->page_tree,
+-							index, page);
+-		else
+-			error = shmem_radix_tree_replace(mapping, index,
+-							expected, page);
+-		if (!error) {
+-			mapping->nrpages++;
+-			__inc_zone_page_state(page, NR_FILE_PAGES);
+-			__inc_zone_page_state(page, NR_SHMEM);
+-			spin_unlock_irq(&mapping->tree_lock);
+-		} else {
+-			page->mapping = NULL;
+-			spin_unlock_irq(&mapping->tree_lock);
+-			page_cache_release(page);
+-		}
+-		if (!expected)
+-			radix_tree_preload_end();
++		mapping->nrpages++;
++		__inc_zone_page_state(page, NR_FILE_PAGES);
++		__inc_zone_page_state(page, NR_SHMEM);
++		spin_unlock_irq(&mapping->tree_lock);
++	} else {
++		page->mapping = NULL;
++		spin_unlock_irq(&mapping->tree_lock);
++		page_cache_release(page);
+ 	}
+-	if (error)
+-		mem_cgroup_uncharge_cache_page(page);
+ 	return error;
+ }
+ 
+@@ -1202,11 +1193,18 @@ repeat:
+ 		__set_page_locked(page);
+ 		error = mem_cgroup_cache_charge(page, current->mm,
+ 						gfp & GFP_RECLAIM_MASK);
+-		if (!error)
+-			error = shmem_add_to_page_cache(page, mapping, index,
+-						gfp, NULL);
+ 		if (error)
+ 			goto decused;
++		error = radix_tree_preload(gfp & GFP_RECLAIM_MASK);
++		if (!error) {
++			error = shmem_add_to_page_cache(page, mapping, index,
++							gfp, NULL);
++			radix_tree_preload_end();
++		}
++		if (error) {
++			mem_cgroup_uncharge_cache_page(page);
++			goto decused;
++		}
+ 		lru_cache_add_anon(page);
+ 
+ 		spin_lock(&info->lock);
