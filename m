@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab2GIShN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 14:37:13 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44358 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752079Ab2GIShL (ORCPT
+	id S1752782Ab2GISiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 14:38:21 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:52330 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652Ab2GISiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 14:37:11 -0400
-Date: Mon, 9 Jul 2012 19:37:09 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: tps62360: Convert to devm_gpio_request_one
-Message-ID: <20120709183709.GK3934@opensource.wolfsonmicro.com>
-References: <1341620913.3153.1.camel@phoenix>
+	Mon, 9 Jul 2012 14:38:19 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9JSHP372f+2dzJ8X"
-Content-Disposition: inline
-In-Reply-To: <1341620913.3153.1.camel@phoenix>
-X-Cookie: Long life is in store for you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMuHMdX_aC1hzKf1eRqoSsQ4oALBev8p77v7++aoB2KrkOUaEw@mail.gmail.com>
+References: <1341784614-2797-1-git-send-email-dh.herrmann@googlemail.com>
+	<1341784614-2797-12-git-send-email-dh.herrmann@googlemail.com>
+	<CAMuHMdX_aC1hzKf1eRqoSsQ4oALBev8p77v7++aoB2KrkOUaEw@mail.gmail.com>
+Date: Mon, 9 Jul 2012 20:38:17 +0200
+Message-ID: <CANq1E4RyFpqxH=uG+dDA1=kfc3r8rCoEesZ31op9rCLjxyk6mQ@mail.gmail.com>
+Subject: Re: [PATCH v2 11/11] MAINTAINERS: add fblog entry
+From: David Herrmann <dh.herrmann@googlemail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        florianschandinat@gmx.de, linux-fbdev@vger.kernel.org,
+        gregkh@linuxfoundation.org, alan@lxorguk.ukuu.org.uk,
+        bonbons@linux-vserver.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Geert
 
---9JSHP372f+2dzJ8X
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Mon, Jul 9, 2012 at 9:33 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Sun, Jul 8, 2012 at 11:56 PM, David Herrmann
+> <dh.herrmann@googlemail.com> wrote:
+>> Add myself as maintainer for the fblog driver to the MAINTAINERS file.
+>>
+>> Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
+>> ---
+>>  MAINTAINERS | 6 ++++++
+>>  1 file changed, 6 insertions(+)
+>>
+>> diff --git a/MAINTAINERS b/MAINTAINERS
+>> index ae8fe46..249b02a 100644
+>> --- a/MAINTAINERS
+>> +++ b/MAINTAINERS
+>> @@ -2854,6 +2854,12 @@ F:       drivers/video/
+>>  F:     include/video/
+>>  F:     include/linux/fb.h
+>>
+>> +FRAMEBUFFER LOG DRIVER
+>> +M:     David Herrmann <dh.herrmann@googlemail.com>
+>> +L:     linux-serial@vger.kernel.org
+>
+> Why linux-serial, and not linux-fbdev?
 
-On Sat, Jul 07, 2012 at 08:28:33AM +0800, Axel Lin wrote:
-> Use devm_gpio_request_one to save a few error handling code.
-> Also remove trivial comment for tps62360_remove.
+I thought fbcon was maintained on linux-serial as it is very related
+to the vt/tty layer. If linux-fbdev is the better place, I can move
+this. I CC'ed both lists, anyway.
+I have actually no idea where it fits in best.
 
-I can't apply any of these patches until devm_gpio_request_one() is
-exported in mainline.
-
---9JSHP372f+2dzJ8X
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP+yTCAAoJEBus8iNuMP3dW6EP/3cJi9gr619bR83mHuiqejLY
-btVB2lpzgyYv4t5iQXRxKen0GW9ZAk7jzhwzyJZWgu9VGYyY1NlXCJ5qqeyyrYXO
-M27tMxKfJRq2qXt9dOjEUFmDkT4s2JnfA9YSLPGk1ra/T1CeMSk1j1F/F9ATU7KG
-lszlH4qjrUYAZGI5P7PdDia/blbPpHuxmZAajdQPZ5kTQz4ukrn+RT6hgBozmYTe
-Siwc76utHn88cxD91TFlQXgwwpavJbArBW3uVVm5+t13MAn70T6t5XMvpX8YS9I8
-yxgqxZzzZ/UnzJXqIh4QhJer/mqpn38yNkygJawJvJ1y73eLouJrn7f94yl2JjPE
-w1WRo86T8Xu40KcZeiX0UuUD1LZJcBfD6RlkYhQAjFfm5LsTMQ499tl4t+SSIRxJ
-QzsZDtG/AOBOxNPL6I1cjSPQ/5QnSgInZ2efrM3Fh/NqgprQM9NgGpxxlA9bzwX+
-2qaKWukr/AdTpqlLuDKs+fE0gMZSDO+qlaRNWZ2x+Mp0W0ZMpS4AmGtLA7ifIFPP
-mH3ylLcLWU/aHjXSZFmFV2c2gJzlbpMfccK3COjAlfZTSYRhVVTPeDnOK73ijx6W
-hGk6KKYU47zQKrFz+VMRfsoVEWAaCPt6eZPy0NTJhPf1Axt5XSGniqBFnG9EyD2l
-Af2OFJ4+w7zqECdmz2Ia
-=UfX9
------END PGP SIGNATURE-----
-
---9JSHP372f+2dzJ8X--
+Thanks
+David
