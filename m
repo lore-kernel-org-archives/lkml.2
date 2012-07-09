@@ -1,91 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab2GIUb6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 16:31:58 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:52306 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752976Ab2GIUb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 16:31:57 -0400
-Message-ID: <1341865916.6118.25.camel@joe2Laptop>
-Subject: Re: 3.5-rc6 printk formatting problem during oom-kill.
-From: Joe Perches <joe@perches.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartmann <greg@kroah.com>
-Date: Mon, 09 Jul 2012 13:31:56 -0700
-In-Reply-To: <1341859731.801.0.camel@mop>
-References: <20120709180328.GA4105@redhat.com>
-	 <CAPXgP11oP4aKyg=HUNrb3z_ZbPjU+_u338sD6uhxKyJ43Z8sgQ@mail.gmail.com>
-	 <1341859731.801.0.camel@mop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1753308Ab2GIUcM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 16:32:12 -0400
+Received: from mail-ee0-f74.google.com ([74.125.83.74]:48588 "EHLO
+	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753267Ab2GIUcF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 16:32:05 -0400
+Subject: [PATCH 1/3] PCI: allow P2P bridge windows starting at PCI bus address
+	zero
+To: linux-pci@vger.kernel.org
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Daniel Yeisley <dan.yeisley@unisys.com>, Yinghai Lu <yinghai@kernel.org>,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Date: Mon, 09 Jul 2012 14:32:03 -0600
+Message-ID: <20120709203203.28178.15800.stgit@bhelgaas.mtv.corp.google.com>
+In-Reply-To: <20120709202308.28178.58942.stgit@bhelgaas.mtv.corp.google.com>
+References: <20120709202308.28178.58942.stgit@bhelgaas.mtv.corp.google.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-09 at 20:48 +0200, Kay Sievers wrote:
-> On Mon, 2012-07-09 at 20:27 +0200, Kay Sievers wrote:
-> > On Mon, Jul 9, 2012 at 8:03 PM, Dave Jones <davej@redhat.com> wrote:
-> > > I noticed that the format of the oom-killer output seems to have changed, and
-> > > now it spews stuff like..
-> > >
-> > > [49461.758070] lowmem_reserve[]:
-> > > [49461.758071]  0
-> > > [49461.758071]  2643
-> > > [49461.758071]  3878
-> > > [49461.758072]  3878
-> > > [49461.758072]
-> > > [49461.758072] Node 0
-> > 
-> > > Does the oom-killer code need modifying, or the printk code ?
-> > > I know there's been some regressions in this area recently, but this is still
-> > > happening on the current tree (8c84bf4166a4698296342841a549bbee03860ac0)
-> > 
-> > This likely fixes it:
-> >   http://git.kernel.org/?p=linux/kernel/git/kay/patches.git;a=blob;f=kmsg-merge-cont.patch;hb=HEAD
-> > 
-> > Let me check if it does, and if I can reproduce it.
-> 
-> It looks fine here with the above mentioned patch:
-> [    0.000000] lowmem_reserve[]:
-> [    0.000000]  0
-> [    0.000000]  0
-> [    0.000000]  0
-> [    0.000000]  0
-> [    0.000000] 
-> [    0.000000] DMA: 
-> [    0.000000] 1*4kB 
-> [    0.000000] 0*8kB 
-> [    0.000000] 0*16kB 
-> [    0.000000] 1*32kB 
-> [    0.000000] 2*64kB 
-> [    0.000000] 1*128kB 
-> [    0.000000] 1*256kB 
-> [    0.000000] 0*512kB 
-> [    0.000000] 1*1024kB 
-> [    0.000000] 1*2048kB 
-> [    0.000000] 3*4096kB 
-> [    0.000000] = 15908kB
-> 
-> becomes:
-> [    0.000000] lowmem_reserve[]: 0 0 0 0
-> [    0.000000] DMA: 1*4kB 0*8kB 0*16kB 1*32kB 2*64kB 1*128kB 1*256kB 0*512kB 1*1024kB 1*2048kB 3*4096kB = 15908kB
+cd81e1ea1a4c added checks that prevent us from using P2P bridge windows
+that start at PCI bus address zero.  The reason was to "prevent us from
+overwriting resources that are unassigned."
 
-Hi Kay.
+But generic code should allow address zero in both BARs and bridge
+windows, so I think that commit was a mistake.
 
-That single patch doesn't apply cleanly to Linus'
-8c84bf4166a4698296342841a549bbee03860ac0
+Windows at bus address zero are legal and likely to exist on machines with
+an offset between bus addresses and CPU addresses.  For example, in the
+following hypothetical scenario, the bridge at 00:01.0 has a window at bus
+address zero and the device at 01:00.0 has a BAR at bus address zero, and
+I think both are perfectly valid:
 
-What else is necessary?
+    PCI host bridge to bus 0000:00
+    pci_bus 0000:00: root bus resource [mem 0x100000000-0x1ffffffff] (bus address [0x00000000-0xffffffff])
+    pci 0000:00:01.0: PCI bridge to [bus 01]
+    pci 0000:00:01.0:   bridge window [mem 0x100000000-0x100ffffff]
+    pci 0000:01:00.0: reg 10: [mem 0x100000000-0x100ffffff]
 
-Your tree seems to have a collection of random patches.
+CC: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/pci/probe.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-It might be useful to clone Linus' tree and produce a
-branch with all the necessary printk patches in it so
-someone else could pull it.
-
-cheers, Joe
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 658ac97..9c5d2a9 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -287,7 +287,7 @@ static void __devinit pci_read_bridge_io(struct pci_bus *child)
+ 		limit |= (io_limit_hi << 16);
+ 	}
+ 
+-	if (base && base <= limit) {
++	if (base <= limit) {
+ 		res->flags = (io_base_lo & PCI_IO_RANGE_TYPE_MASK) | IORESOURCE_IO;
+ 		res2.flags = res->flags;
+ 		region.start = base;
+@@ -314,7 +314,7 @@ static void __devinit pci_read_bridge_mmio(struct pci_bus *child)
+ 	pci_read_config_word(dev, PCI_MEMORY_LIMIT, &mem_limit_lo);
+ 	base = (mem_base_lo & PCI_MEMORY_RANGE_MASK) << 16;
+ 	limit = (mem_limit_lo & PCI_MEMORY_RANGE_MASK) << 16;
+-	if (base && base <= limit) {
++	if (base <= limit) {
+ 		res->flags = (mem_base_lo & PCI_MEMORY_RANGE_TYPE_MASK) | IORESOURCE_MEM;
+ 		region.start = base;
+ 		region.end = limit + 0xfffff;
+@@ -360,7 +360,7 @@ static void __devinit pci_read_bridge_mmio_pref(struct pci_bus *child)
+ #endif
+ 		}
+ 	}
+-	if (base && base <= limit) {
++	if (base <= limit) {
+ 		res->flags = (mem_base_lo & PCI_PREF_RANGE_TYPE_MASK) |
+ 					 IORESOURCE_MEM | IORESOURCE_PREFETCH;
+ 		if (res->flags & PCI_PREF_RANGE_TYPE_64)
 
