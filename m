@@ -1,189 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659Ab2GIIrC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 04:47:02 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47145 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751746Ab2GIIrA (ORCPT
+	id S1752553Ab2GIIvw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 04:51:52 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:21434 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635Ab2GIIvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 04:47:00 -0400
-X-AuditID: 9c93016f-b7c7eae0000025c5-59-4ffa9a81355a
-Date: Mon, 9 Jul 2012 17:46:57 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: Warn about costly page allocation
-Message-ID: <20120709084657.GA7915@bbox>
-References: <1341801500-5798-1-git-send-email-minchan@kernel.org>
- <20120709082200.GX14154@suse.de>
+	Mon, 9 Jul 2012 04:51:50 -0400
+Message-ID: <4FFA9B96.6040901@oracle.com>
+Date: Mon, 09 Jul 2012 16:51:34 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120709082200.GX14154@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: e1000-devel@lists.sf.net
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: 82571EB: Detected Hardware Unit Hang
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+Hi list,
 
-On Mon, Jul 09, 2012 at 09:22:00AM +0100, Mel Gorman wrote:
-> On Mon, Jul 09, 2012 at 11:38:20AM +0900, Minchan Kim wrote:
-> > Since lumpy reclaim was introduced at 2.6.23, it helped higher
-> > order allocation.
-> > Recently, we removed it at 3.4 and we didn't enable compaction
-> > forcingly[1]. The reason makes sense that compaction.o + migration.o
-> > isn't trivial for system doesn't use higher order allocation.
-> > But the problem is that we have to enable compaction explicitly
-> > while lumpy reclaim enabled unconditionally.
-> > 
-> > Normally, admin doesn't know his system have used higher order
-> > allocation and even lumpy reclaim have helped it.
-> > Admin in embdded system have a tendency to minimise code size so that
-> > they can disable compaction. In this case, we can see page allocation
-> > failure we can never see in the past. It's critical on embedded side
-> > because...
-> > 
-> > Let's think this scenario.
-> > 
-> > There is QA team in embedded company and they have tested their product.
-> > In test scenario, they can allocate 100 high order allocation.
-> > (they don't matter how many high order allocations in kernel are needed
-> > during test. their concern is just only working well or fail of their
-> > middleware/application) High order allocation will be serviced well
-> > by natural buddy allocation without lumpy's help. So they released
-> > the product and sold out all over the world.
-> > Unfortunately, in real practice, sometime, 105 high order allocation was
-> > needed rarely and fortunately, lumpy reclaim could help it so the product
-> > doesn't have a problem until now.
-> > 
-> > If they use latest kernel, they will see the new config CONFIG_COMPACTION
-> > which is very poor documentation, and they can't know it's replacement of
-> > lumpy reclaim(even, they don't know lumpy reclaim) so they simply disable
-> 
-> Depending on lumpy reclaim or compaction for high-order kernel allocations
-> is dangerous. Both depend on being able to move MIGRATE_MOVABLE allocations
-> to satisy the high-order allocation. If used regularly for high-order kernel
-> allocations and they are long-lived, the system will eventually be unable
-> to grant these allocations, with or without compaction or lumpy reclaim.
+I'm seeing a Unit Hang even with the latest e1000e driver 2.0.0 when doing
+scp test. this issue is easy do reproduced on SUN FIRE X2270 M2, just copy
+a big file (>500M) from another server will hit it at once. 
 
-Indeed.
+Would you please help on this?
 
-> 
-> Be also aware that lumpy reclaim was very aggressive when reclaiming pages
-> to satisfy an allocation. Compaction is not and compaction can be temporarily
-> disabled if an allocation attempt fails. If lumpy reclaim was being depended
-> upon to satisfy high-order allocations, there is no guarantee, particularly
-> with 3.4, that compaction will succeed as it does not reclaim aggressively.
+device info:
+# lspci -s 05:00.0 
+05:00.0 Ethernet controller: Intel Corporation 82571EB Gigabit Ethernet Controller (Copper) (rev 06)
 
-It's good explanation and let's add it in description.
+# lspci -s 05:00.0 -n
+05:00.0 0200: 8086:10bc (rev 06)
 
-> 
-> > that option for size optimization. Of course, QA team still test it but they
-> > can't find the problem if they don't do test stronger than old.
-> > It ends up release the product and sold out all over the world, again.
-> > But in this time, we don't have both lumpy and compaction so the problem
-> > would happen in real practice. A poor enginner from Korea have to flight
-> > to the USA for the fix a ton of products. Otherwise, should recall products
-> > from all over the world. Maybe he can lose a job. :(
-> > 
-> > This patch adds warning for notice. If the system try to allocate
-> > PAGE_ALLOC_COSTLY_ORDER above page and system enters reclaim path,
-> > it emits the warning. At least, it gives a chance to look into their
-> > system before the relase.
-> > 
-> > This patch avoids false positive by alloc_large_system_hash which
-> > allocates with GFP_ATOMIC and a fallback mechanism so it can make
-> > this warning useless.
-> > 
-> > [1] c53919ad(mm: vmscan: remove lumpy reclaim)
-> > 
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  mm/page_alloc.c |   16 ++++++++++++++++
-> >  1 file changed, 16 insertions(+)
-> > 
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > index a4d3a19..1155e00 100644
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -2276,6 +2276,20 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
-> >  	return alloc_flags;
-> >  }
-> >  
-> > +#if defined(CONFIG_DEBUG_VM) && !defined(CONFIG_COMPACTION)
-> > +static inline void check_page_alloc_costly_order(unsigned int order)
-> > +{
-> > +	if (unlikely(order > PAGE_ALLOC_COSTLY_ORDER)) {
-> > +		printk_once("WARNING: You are tring to allocate %d-order page."
-> > +		" You might need to turn on CONFIG_COMPACTION\n", order);
-> > +	}
-> 
-> WARN_ON_ONCE would tell you what is trying to satisfy the allocation.
+# ethtool -i eth0
+driver: e1000e
+version: 2.0.0-NAPI
+firmware-version: 5.10-2
+bus-info: 0000:05:00.0
 
-Do you mean that it would be better to use WARN_ON_ONCE rather than raw printk?
-If so, I would like to insist raw printk because WARN_ON_ONCE could be disabled
-by !CONFIG_BUG.
-If I miss something, could you elaborate it more?
+# ethtool -k eth0
+Offload parameters for eth0:
+rx-checksumming: on
+tx-checksumming: on
+scatter-gather: on
+tcp segmentation offload: on
+udp fragmentation offload: off
+generic segmentation offload: on
+generic-receive-offload: on
 
-> 
-> It should further check if this is a GFP_MOVABLE allocation or not and if
-> not, then it should either be documented that compaction may only delay
-> allocation failures and that they may need to consider reserving the memory
-> in advance or doing something like forcing MIGRATE_RESERVE to only be used
-> for high-order allocations.
+kernel log:
+-----------
+e1000e 0000:05:00.0: eth0: Detected Hardware Unit Hang:
+  TDH                  <6c>
+  TDT                  <81>
+  next_to_use          <81>
+  next_to_clean        <6b>
+buffer_info[next_to_clean]:
+  time_stamp           <fffc7a23>
+  next_to_watch        <71>
+  jiffies              <fffc8c0c>
+  next_to_watch.status <0>
+MAC Status             <80387>
+PHY Status             <792d>
+PHY 1000BASE-T Status  <3c00>
+PHY Extended Status    <3000>
+PCI Status             <10>
+e1000e 0000:05:00.0: eth0: Detected Hardware Unit Hang:
+  TDH                  <6c>
+  TDT                  <81>
+  next_to_use          <81>
+  next_to_clean        <6b>
+buffer_info[next_to_clean]:
+  time_stamp           <fffc7a23>
+  next_to_watch        <71>
+  jiffies              <fffc9bac>
+  next_to_watch.status <0>
+MAC Status             <80387>
+PHY Status             <792d>
+PHY 1000BASE-T Status  <3c00>
+PHY Extended Status    <3000>
+PCI Status             <10>
+------------[ cut here ]------------
+WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x225/0x230()
+Hardware name: SUN FIRE X2270 M2
+NETDEV WATCHDOG: eth0 (e1000e): transmit queue 0 timed out
+Modules linked in: autofs4 hidp rfcomm bluetooth rfkill lockd sunrpc cpufreq_ondemand acpi_cpufreq mperf be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa ib_mad ib_core ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi cxgb3 mdio libiscsi_tcp libiscsi scsi_transport_iscsi video sbs sbshc acpi_pad acpi_ipmi ipmi_msghandler parport_pc lp parport e1000e(U) snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device igb snd_pcm_oss serio_raw snd_mixer_oss snd_pcm tpm_infineon snd_timer snd soundcore snd_page_alloc i2c_i801 iTCO_wdt i2c_core pcspkr i7core_edac iTCO_vendor_support ioatdma ghes dca edac_core hed dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_mod usb_storage sd_mod crc_t10dif sg ahci libahci ext3 jbd mbcache [last unloaded: microcode]
+Pid: 0, comm: swapper Not tainted 2.6.39-200.24.1.el5uek #1
+Call Trace:
+ [<c07d9ac5>] ? dev_watchdog+0x225/0x230
+ [<c045ba61>] warn_slowpath_common+0x81/0xa0
+ [<c07d9ac5>] ? dev_watchdog+0x225/0x230
+ [<c045bb23>] warn_slowpath_fmt+0x33/0x40
+ [<c07d9ac5>] dev_watchdog+0x225/0x230
+ [<c07d98a0>] ? dev_activate+0xb0/0xb0
+ [<c0468e82>] call_timer_fn+0x32/0xf0
+ [<c04bceb0>] ? rcu_check_callbacks+0x80/0x80
+ [<c046a76d>] run_timer_softirq+0xed/0x1b0
+ [<c07d98a0>] ? dev_activate+0xb0/0xb0
+ [<c0461a81>] __do_softirq+0x91/0x1a0
+ [<c04619f0>] ? local_bh_enable+0x80/0x80
+ <IRQ>  [<c0462295>] ? irq_exit+0x95/0xa0
+ [<c087f8b8>] ? smp_apic_timer_interrupt+0x38/0x42
+ [<c08784f5>] ? apic_timer_interrupt+0x31/0x38
+ [<c046007b>] ? do_exit+0x11b/0x370
+ [<c065eae4>] ? intel_idle+0xa4/0x100
+ [<c078d9b9>] ? cpuidle_idle_call+0xb9/0x1e0
+ [<c0411d77>] ? cpu_idle+0x97/0xd0
+ [<c085cbbd>] ? rest_init+0x5d/0x70
+ [<c0b07a7a>] ? start_kernel+0x28a/0x340
+ [<c0b074b0>] ? obsolete_checksetup+0xb0/0xb0
+ [<c0b070a4>] ? i386_start_kernel+0x64/0xb0
+---[ end trace 5502b55cd4d4e5cb ]---
+e1000e 0000:05:00.0: eth0: Reset adapter
+e1000e: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: Rx/Tx
 
-Okay. but I got confused you want to add above description in code directly
-like below or write it down in comment of check_page_alloc_costly_order?
-
-static inline void check_page_alloc_costly_order(unsigned int order, gfp_t gfp_flags)
-{
-       if (unlikely(order > PAGE_ALLOC_COSTLY_ORDER)) {
-               printk_once("WARNING: You are tring to allocate %d-order page."
-               " You might need to turn on CONFIG_COMPACTION\n", order);
-                if (gfp_flags is not GFP_MOVABLE)
-                        printk_once("Compaction doesn't make sure .....\n");
-       }
-
-}
-
-Thanks for the comment, Mel.
-
-> 
-> > +}
-> > +#else
-> > +static inline void check_page_alloc_costly_order(unsigned int order)
-> > +{
-> > +}
-> > +#endif
-> > +
-> >  static inline struct page *
-> >  __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
-> >  	struct zonelist *zonelist, enum zone_type high_zoneidx,
-> > @@ -2353,6 +2367,8 @@ rebalance:
-> >  	if (!wait)
-> >  		goto nopage;
-> >  
-> > +	check_page_alloc_costly_order(order);
-> > +
-> >  	/* Avoid recursion of direct reclaim */
-> >  	if (current->flags & PF_MEMALLOC)
-> >  		goto nopage;
-> > -- 
-> > 1.7.9.5
-> > 
-> 
-> -- 
-> Mel Gorman
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Thanks,
+Joe
