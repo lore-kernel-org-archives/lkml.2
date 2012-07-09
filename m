@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377Ab2GINAh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 09:00:37 -0400
-Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:45344 "EHLO
-	na3sys009aog133.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753155Ab2GINAg (ORCPT
+	id S1753436Ab2GINDM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 09:03:12 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:32978 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753155Ab2GINDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 09:00:36 -0400
+	Mon, 9 Jul 2012 09:03:11 -0400
+Date: Mon, 9 Jul 2012 14:03:09 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sangbeom Kim <sbkim73@samsung.com>
+Cc: "'Liam Girdwood'" <lrg@ti.com>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, sbkim01@gmail.com
+Subject: Re: [PATCH V2 3/7] regulator: s5m8767: Modify function and variable
+ name
+Message-ID: <20120709130309.GD3934@opensource.wolfsonmicro.com>
+References: <0ff001cd5c24$793ab100$6bb01300$@com>
 MIME-Version: 1.0
-In-Reply-To: <CAKfTPtDPGPNk2h_zB=Rf2N2UABAgaDBbij5QFoZTxUTZJbTeAA@mail.gmail.com>
-References: <1341826026-6504-1-git-send-email-vincent.guittot@linaro.org>
- <1341826026-6504-4-git-send-email-vincent.guittot@linaro.org>
- <CAMQu2gydOEVK_fzmzkdrBwBfOq6eZG=0QfLUfFChWJu9unSn2A@mail.gmail.com> <CAKfTPtDPGPNk2h_zB=Rf2N2UABAgaDBbij5QFoZTxUTZJbTeAA@mail.gmail.com>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Mon, 9 Jul 2012 18:30:01 +0530
-Message-ID: <CAMQu2gwCXwdDmu9SdLozjC5jt7iDTqm39cY1ZZ=-VqaoF5bSvg@mail.gmail.com>
-Subject: Re: [PATCH v4 3/5] ARM: topology: Update cpu_power according to DT information
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
-        linux@arm.linux.org.uk, a.p.zijlstra@chello.nl,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        yong.zhang0@gmail.com, namhyung@kernel.org, jean.pihet@newoldbits.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HWvPVVuAAfuRc6SZ"
+Content-Disposition: inline
+In-Reply-To: <0ff001cd5c24$793ab100$6bb01300$@com>
+X-Cookie: Long life is in store for you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 9, 2012 at 6:02 PM, Vincent Guittot
-<vincent.guittot@linaro.org> wrote:
-> On 9 July 2012 12:55, Shilimkar, Santosh <santosh.shilimkar@ti.com> wrote:
->> Vincent,
->> On Mon, Jul 9, 2012 at 2:57 PM, Vincent Guittot
->> <vincent.guittot@linaro.org> wrote:
->>> Use cpu compatibility field and clock-frequency field of DT to
->>> estimate the capacity of each core of the system and to update
->>> the cpu_power field accordingly.
->>> This patch enables to put more running tasks on big cores than
->>> on LITTLE ones. But this patch doesn't ensure that long running
->>> tasks will run on big cores and short ones on LITTLE cores.
->>>
->>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->>> Reviewed-by: Namhyung Kim <namhyung@kernel.org>
->>> ---
->>>  arch/arm/kernel/topology.c |  153 ++++++++++++++++++++++++++++++++++++++++++++
->>>  1 file changed, 153 insertions(+)
->>>
->> Sorry for not giving this comment on previous version but we should also
->> have a way to provide the big.LITTLE information without Device Tree.
->> May be a platform device/data.
->
-> Hi Santosh,
->
-> I had thought of adding such additional way to set cpu_power of
-> big.LITTLE but my conclusion was
-> -it's a new platform so it should come with DT
-> -DT is already required by other patches linked to big.LITTLE
-> (http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/080873.html)
-> -There is no device that can be easily used to get such information at
-> this early boot stage.
->
-I see. Its new processor but it is just 1 one of the IP in an entire SOC.
-As mentioned below I was talking about full SOC support including
-all the driver subsystem with DT.
 
->>
->> I know we are moving DT way, but remember apart from core kernel
->> infrastructure, to have a complete product build with DT means all the
->> drivers must be already supporting DT which is not the case with
->> many huge driver sub-systems like USB, display subsystem, Audio etc.
->>
->> Having that support would greatly help for the SOC's which have not yet
->> reached to stage where entire SOC is DT compliant and want to use
->> big.LITTLE infrastructure.
->
-> Can't you support both type of devices on your platform ? You can move
-> your device to DT mode when it is supported ?
->
-That is what eventually people end up doing who don't have
-DT ready for entire SOC. I was trying to ask whether at least some
-method is proposed(need not be merged in mainline) to have
-the big.LITTLE information parsing without DT.
+--HWvPVVuAAfuRc6SZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Regards
-Santosh
+On Sat, Jul 07, 2012 at 06:39:58PM +0900, Sangbeom Kim wrote:
+> As function and variable name of Samsung mfd driver is changed,
+> This patch modify s5m8767 regulator driver.
+
+This needs to be squashed down into the patch doing the rename in the
+core to avoid build breakage.  Otherwise looks good.
+
+--HWvPVVuAAfuRc6SZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP+tZ/AAoJEBus8iNuMP3dCEAP/jpKyKJeZNzsSCf1k9f1cfhd
+4ot3YXWZP/d++H7sHW5osu6XPoqtsJ/HkZD8YZqDEXYmIBCOCXIr5MkpL7vpuea7
+2+JHtQsF2qxnmZtfldtfpp4Ag9cxgJNBMDXbpwq9/WoFERZgmlcVaM3HKBMh+ezh
+0+fUSz9KKWdjwMvwgyU/bEdw9CFPGDUjsXzHwCS5uPz8GoI6TwF2opI8EOMsFQuu
+ANjfjeXkkEuyjaD9Dfe7lpmnQGeIJPA7Bd/1kliqPS3YDLN3OMoGhFkncsFofhG+
+8aFoHHLi+Lt41pCE6I+9vCqqjjX9/cYxeKrx/1tABcXmk9rJZVuPyRViTyTgGeyI
+PWKTKMjGnPQW28sInCFxHOlssuKd2IpMF9xNLS0sjus/ouQuHAoGHBsbPHqG8d6g
+C/2GA13nwdPe6MDAHqDWrPsCIcCxJuvSwtla0brNAcekvllATr60jgOLWk1FZIB6
+3ZfRDPSncnnbmqEedyFwwByF2g9BiQCFDsgvtXUtbtFvXY7V4KORgdWF4n7rdH/v
+5Qb3Jk4Z0PXbXg1fNLtOedVCOyeT2RFuiNcFFAcocq9LOy7Klwm83i2Qf8CyVhYM
+/Dka47TxiDQZEcX1f57n7vDV3eQRG4r8VO9FLZAshJWOOPxLo7nvKjSaS7egTI8g
+Gkh7P90vRyEe8EbRwHPr
+=t5pF
+-----END PGP SIGNATURE-----
+
+--HWvPVVuAAfuRc6SZ--
