@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab2GIOia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:38:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38261 "EHLO
+	id S1754549Ab2GIOi2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:38:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38270 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754480Ab2GIOiU (ORCPT
+	by vger.kernel.org with ESMTP id S1751606Ab2GIOiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:38:20 -0400
-Message-Id: <20120709143121.566212315@decadent.org.uk>
+	Mon, 9 Jul 2012 10:38:21 -0400
+Message-Id: <20120709143121.164764337@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:31:50 +0100
+Date: Mon, 09 Jul 2012 15:31:47 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Eric Dumazet <edumazet@google.com>,
-        Sathya Perla <sathya.perla@emulex.com>,
+        Denys Fedoryshchenko <denys@visp.net.lb>,
+        James Chapman <jchapman@katalix.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 34/48] be2net: fix a race in be_xmit()
+Subject: [ 31/48] net: l2tp_eth: fix kernel panic on rmmod l2tp_eth
 In-Reply-To: <20120709143116.348975190@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,41 +32,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit cd8f76c0a0c6fce0b2cf23c9bd0123f91453f46d ]
+[ Upstream commit a06998b88b1651c5f71c0e35f528bf2057188ead ]
 
-As soon as hardware is notified of a transmit, we no longer can assume
-skb can be dereferenced, as TX completion might have freed the packet.
+We must prevent module unloading if some devices are still attached to
+l2tp_eth driver.
 
 Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Sathya Perla <sathya.perla@emulex.com>
+Reported-by: Denys Fedoryshchenko <denys@visp.net.lb>
+Tested-by: Denys Fedoryshchenko <denys@visp.net.lb>
+Cc: James Chapman <jchapman@katalix.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/emulex/benet/be_main.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ net/l2tp/l2tp_eth.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/ethernet/emulex/benet/be_main.c b/drivers/net/ethernet/emulex/benet/be_main.c
-index bf266a0..36c7c4e 100644
---- a/drivers/net/ethernet/emulex/benet/be_main.c
-+++ b/drivers/net/ethernet/emulex/benet/be_main.c
-@@ -696,6 +696,8 @@ static netdev_tx_t be_xmit(struct sk_buff *skb,
+diff --git a/net/l2tp/l2tp_eth.c b/net/l2tp/l2tp_eth.c
+index d2726a7..3c55f63 100644
+--- a/net/l2tp/l2tp_eth.c
++++ b/net/l2tp/l2tp_eth.c
+@@ -167,6 +167,7 @@ static void l2tp_eth_delete(struct l2tp_session *session)
+ 		if (dev) {
+ 			unregister_netdev(dev);
+ 			spriv->dev = NULL;
++			module_put(THIS_MODULE);
+ 		}
+ 	}
+ }
+@@ -254,6 +255,7 @@ static int l2tp_eth_create(struct net *net, u32 tunnel_id, u32 session_id, u32 p
+ 	if (rc < 0)
+ 		goto out_del_dev;
  
- 	copied = make_tx_wrbs(adapter, txq, skb, wrb_cnt, dummy_wrb);
- 	if (copied) {
-+		int gso_segs = skb_shinfo(skb)->gso_segs;
-+
- 		/* record the sent skb in the sent_skb table */
- 		BUG_ON(txo->sent_skb_list[start]);
- 		txo->sent_skb_list[start] = skb;
-@@ -713,8 +715,7 @@ static netdev_tx_t be_xmit(struct sk_buff *skb,
++	__module_get(THIS_MODULE);
+ 	/* Must be done after register_netdev() */
+ 	strlcpy(session->ifname, dev->name, IFNAMSIZ);
  
- 		be_txq_notify(adapter, txq->id, wrb_cnt);
- 
--		be_tx_stats_update(txo, wrb_cnt, copied,
--				skb_shinfo(skb)->gso_segs, stopped);
-+		be_tx_stats_update(txo, wrb_cnt, copied, gso_segs, stopped);
- 	} else {
- 		txq->head = start;
- 		dev_kfree_skb_any(skb);
 
 
