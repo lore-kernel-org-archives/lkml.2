@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab2GIMU4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 08:20:56 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47838 "EHLO radon.swed.at"
+	id S1753612Ab2GIMVU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 08:21:20 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753129Ab2GIMS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 08:18:56 -0400
+	id S1753126Ab2GIMSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 08:18:54 -0400
 From: Richard Weinberger <richard@nod.at>
 To: linux-mtd@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
@@ -13,9 +13,9 @@ Cc: linux-kernel@vger.kernel.org, adrian.hunter@intel.com,
         shmulik.ladkani@gmail.com, tglx@linutronix.de, tim.bird@am.sony.com,
         Marius.Mazarel@ugal.ro, artem.bityutskiy@linux.intel.com,
         nyoushchenko@mvista.com, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 4/7] UBI: Fastmap: Fix double free in error path
-Date: Mon,  9 Jul 2012 14:18:40 +0200
-Message-Id: <1341836323-43916-5-git-send-email-richard@nod.at>
+Subject: [PATCH 1/7] UBI: Fastmap: Fix lock imbalance in case of an error
+Date: Mon,  9 Jul 2012 14:18:37 +0200
+Message-Id: <1341836323-43916-2-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1341836323-43916-1-git-send-email-richard@nod.at>
 References: <1341836323-43916-1-git-send-email-richard@nod.at>
@@ -25,32 +25,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- drivers/mtd/ubi/attach.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/mtd/ubi/wl.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mtd/ubi/attach.c b/drivers/mtd/ubi/attach.c
-index 5d61ba7..85c9e0c 100644
---- a/drivers/mtd/ubi/attach.c
-+++ b/drivers/mtd/ubi/attach.c
-@@ -1322,7 +1322,7 @@ static int scan_fast(struct ubi_device *ubi, struct ubi_attach_info *ai)
+diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+index 6c69017..79e3257 100644
+--- a/drivers/mtd/ubi/wl.c
++++ b/drivers/mtd/ubi/wl.c
+@@ -271,10 +271,10 @@ static int produce_free_peb(struct ubi_device *ubi)
  
- 	ech = kzalloc(ubi->ec_hdr_alsize, GFP_KERNEL);
- 	if (!ech)
--		goto out_ai;
-+		goto out;
+ 		dbg_wl("do one work synchronously");
+ 		err = do_work(ubi);
+-		if (err)
+-			return err;
  
- 	vidh = ubi_zalloc_vid_hdr(ubi, GFP_KERNEL);
- 	if (!vidh)
-@@ -1356,8 +1356,7 @@ out_vidh:
- 	ubi_free_vid_hdr(ubi, vidh);
- out_ech:
- 	kfree(ech);
--out_ai:
--	destroy_ai(ai);
-+out:
- 	return err;
- }
- static struct ubi_attach_info *alloc_ai(void)
+ 		spin_lock(&ubi->wl_lock);
++		if (err)
++			return err;
+ 	}
+ 
+ 	return 0;
 -- 
 1.7.6.5
 
