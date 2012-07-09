@@ -1,57 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab2GIVlI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 17:41:08 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:39672 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753967Ab2GIVlG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 17:41:06 -0400
-Message-ID: <4FFB4FC6.7020509@xenotime.net>
-Date: Mon, 09 Jul 2012 14:40:22 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: Tree for July 2 (crypto/hifn_795x)
-References: <20120702172334.2618cae84cc57b4ec5a63ed7@canb.auug.org.au> <4FF1CBF2.8060303@xenotime.net> <20120709205441.11422bntesq3cdno@www.81.fi>
-In-Reply-To: <20120709205441.11422bntesq3cdno@www.81.fi>
-Content-Type: text/plain; charset=UTF-8
+	id S1754269Ab2GIVms (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 17:42:48 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:40094 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752076Ab2GIVmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 17:42:46 -0400
+Message-ID: <1341870165.6118.42.camel@joe2Laptop>
+Subject: Re: [PATCH v3] printk: Have printk() never buffer its data
+From: Joe Perches <joe@perches.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Michael Neuling <mikey@neuling.org>, linuxppc-dev@ozlabs.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>
+Date: Mon, 09 Jul 2012 14:42:45 -0700
+In-Reply-To: <1341770155.1011.27.camel@mop>
+References: <1340651142.7037.2.camel@gandalf.stny.rr.com>
+	 <20120625150722.8cd4f45d.akpm@linux-foundation.org>
+	 <20120625235531.GB3652@kroah.com>
+	 <CA+55aFwczZTA=JUahoj_Sw1fQssDwoM2LGJ6g5nPvehTLxnSpg@mail.gmail.com>
+	 <20120626002307.GA4389@kroah.com>
+	 <CA+55aFxhYRqcU2EUmcsuLrhgo4FEO6-b+mB57wB3JRiXEp3ZrA@mail.gmail.com>
+	 <CAPXgP10cPFSmZ5yr6Z4wVtDa+x2J1yQDF57NJXtxjUuxMHm=Lw@mail.gmail.com>
+	 <CA+55aFzkX=jCC1O6+2oz8meswOqZQ+Q8Ao60q8eAS1G3AuEStQ@mail.gmail.com>
+	 <1340726856.977.6.camel@mop> <22482.1341471787@neuling.org>
+	 <CAPXgP11=o5WB4WejaQCSCL-+5e4sL7tfVz_r3Khyrq3SyrMvsA@mail.gmail.com>
+	 <CAPXgP13u769nSvUdS1iqiVCsxG5nsQd7bNT1=-eNw156U-kPkQ@mail.gmail.com>
+	 <16043.1341483625@neuling.org>
+	 <CAPXgP11+j+fDexHHmAZbBBidtrydrpWeh3DGWOhkuoybNj9skA@mail.gmail.com>
+	 <1341492628.834.3.camel@mop> <30233.1341535279@neuling.org>
+	 <CAPXgP12_F_H2XPpo2wFmb-u3jBdV__=h67R-LVYbqHuLh7tqLg@mail.gmail.com>
+	 <29711.1341545979@neuling.org> <30343.1341546469@neuling.org>
+	 <CAPXgP13_cQUQLE4RSjACTzj28Pn6r3ZaPhjch2U+uwgi7YKcWA@ma il.gmail.com>
+	 <CAPXgP10JthGjZyqD6gqn2n1rPu1uP+=mem_T-iOritXAQMstRQ@mail.gmail.com>
+	 <21892.1341608647@neuling.org> <1341770155.1011.27.camel@mop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2012 10:54 AM, Jussi Kivilinna wrote:
+On Sun, 2012-07-08 at 19:55 +0200, Kay Sievers wrote:
 
-> Quoting Randy Dunlap <rdunlap@xenotime.net>:
+> At the same time the CPU#2 prints the same warning with a continuation
+> line, but the buffer from CPU#1 can not be flushed to the console, nor
+> can the continuation line printk()s from CPU#2 be merged at this point.
+> The consoles are still locked and busy with replaying the old log
+> messages, so the new continuation data is just stored away in the record
+> buffer as it is coming in.
+> If the console would be registered a bit earlier, or the warning would
+> happen a bit later, we would probably not see any of this.
 > 
->> On 07/02/2012 12:23 AM, Stephen Rothwell wrote:
->>
->>> Hi all,
->>>
->>> Changes since 20120629:
->>>
->>
->>
->> on i386:
->>
->>
->> ERROR: "__divdi3" [drivers/crypto/hifn_795x.ko] undefined!
->>
+> I can fake something like this just by holding the console semaphore
+> over a longer time and printing continuation lines with different CPUs
+> in a row.
 > 
-> This is caused by commit feb7b7ab928afa97a79a9c424e4e0691f49d63be. hifn_795x has "DIV_ROUND_UP(NSEC_PER_SEC, dev->pk_clk_freq)", which should be changed to DIV_ROUND_UP_ULL now that NSEC_PER_SEC is 64bit on 32bit archs. Patch to fix hifn_795x is attached (only compile tested).
+> The patch below seems to work for me. It is also here:
+>   http://git.kernel.org/?p=linux/kernel/git/kay/patches.git;a=blob;f=kmsg-merge-cont.patch;hb=HEAD
+> 
+> It only applies cleanly on top of this patch:
+>   http://git.kernel.org/?p=linux/kernel/git/kay/patches.git;a=blob;f=kmsg-syslog-1-byte-read.patch;hb=HEAD
+> 
 
+Hi Kay.
 
+I just ran a test with what's in Greg's driver-core -for-linus branch.
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+One of the differences in dmesg is timestamping of consecutive
+	pr_<level>("foo...)
+followed directly by
+	pr_cont("bar...")
 
-Thanks.
+For instance: (dmesg is 3.4, dmesg.0 is 3.5-rc6+)
 
+# grep MAP /var/log/dm* -A1
+dmesg:[    0.781687] ata_piix 0000:00:1f.2: MAP [ P0 P2 P1 P3 ]
+dmesg-[    0.781707] ata2: port disabled--ignoring
+--
+dmesg.0:[    0.948881] ata_piix 0000:00:1f.2: MAP [
+dmesg.0-[    0.948883]  P0 P2 P1 P3 ]
 
--- 
-~Randy
+These messages originate starting at
+drivers/ata/ata_piix.c:1354
+
+All the continuations are emitted with pr_cont.
+
+I think this output should still be coalesced without
+timestamp deltas.  Perhaps the timestamping code can
+still be reworked to avoid too small a delta producing
+a new timestamp and another dmesg line.
+
+cheers, Joe
+
