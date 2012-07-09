@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216Ab2GILao (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 07:30:44 -0400
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:34324 "EHLO smtp1.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752206Ab2GILan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 07:30:43 -0400
-Date: Mon, 9 Jul 2012 14:30:40 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: Dave Airlie <airlied@gmail.com>
-cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: 3.5-rc5: radeon acceleration regression on Transmeta system
-In-Reply-To: <alpine.SOC.1.00.1207052224340.19147@math.ut.ee>
-Message-ID: <alpine.SOC.1.00.1207090051120.3699@math.ut.ee>
-References: <alpine.SOC.1.00.1207050956300.515@math.ut.ee> <CAPM=9tyo69+8QTCKMDCOTzWT2gR+uXkynOny85PaQ_nCYNMGAg@mail.gmail.com> <alpine.SOC.1.00.1207052224340.19147@math.ut.ee>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1753280Ab2GILch (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 07:32:37 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:42985 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752206Ab2GILcg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 07:32:36 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Ravishankar N <cyberax82@gmail.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: Re: [PATCH] fat: Support fallocate on fat.
+References: <1341716859-6768-1-git-send-email-linkinjeon@gmail.com>
+	<87sjd2766n.fsf@devron.myhome.or.jp>
+	<CAKYAXd9mDfDpUj1T1NrY2LUKfwvk94CTXUh5xrEGq8b_rW41rA@mail.gmail.com>
+	<871uklp5j7.fsf@devron.myhome.or.jp>
+	<CAKYAXd-OD_3Z8=6mBQMvBApje9sN0EiPX8drMXc6pSeMgG8Nnw@mail.gmail.com>
+Date: Mon, 09 Jul 2012 20:32:32 +0900
+In-Reply-To: <CAKYAXd-OD_3Z8=6mBQMvBApje9sN0EiPX8drMXc6pSeMgG8Nnw@mail.gmail.com>
+	(Namjae Jeon's message of "Mon, 9 Jul 2012 20:14:50 +0900")
+Message-ID: <87wr2dnp9r.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > In 3.4, radeon worked with a glitch - window titles were see-throug (not
-> > > drawn). In 3.5-rc5, radeon driver seems to be more careful and disables
-> > > acceleration on this system at all. Full dmesg below.
-> > 
-> > Does it always do it the same? got the dmesg from 3.4 and/or 2.6.32?
-> 
-> That was a good question. I did some more tries, and it was not 
-> repeatable. Sometimes it worked like 3.4 did - rv100 initialized fine, 
-> no borders except when maximized, otherwise worked.
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-Re-tested 3.4.0-rc7 that I had availble from 3.4 times, it worked 4 out 
-of 4 times.
+> 2012/7/9, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+>> Namjae Jeon <linkinjeon@gmail.com> writes:
+>>
+>>>>> +	/*
+>>>>> +	 * calculate i_blocks and mmu_private from the actual number of
+>>>>> +	 * allocated clusters instead of doing it from file size.This ensures
+>>>>> +	 * that the preallocated disk space using FALLOC_FL_KEEP_SIZE is
+>>>>> +	 * persistent across remounts and writes go into the allocated
+>>>>> clusters.
+>>>>> +	 */
+>>>>> +	fat_calc_dir_size(inode);
+>>>>
+>>>> Looks like the wrong. If you didn't initialize preallocated space, the
+>>>> data never be exposed to userland. It is security bug.
+>>> As explained above, if we do append write instead of seeking into a
+>>> random offset, there is no security risk.
+>>
+>> So it means? - if we didn't, there is.
+> Yes, right.
+>>
+>>> The main disadvantage with initializing the preallocated space (as is
+>>> done in case of without FALLOC_FL_KEEP_SIZE ) is it takes long time
+>>> for bigger allocation sizes. It took ~70 seconds to preallocate 2GB on
+>>> our target if FALLOC_FL_KEEP_SIZE is not set.
+>>
+>> It doesn't become the reason to expose uninitialized data.
+> I agree.. If I try to change code for initializing the preallocated
+> space, Is this patch acceptable ?
 
-> Initial windows border problem seems to have been introduced between 
-> 2.6.37 and 2.6.38, bisect is slow.
+I guess, if Windows truncates the above clusters than file size, it may
+be prefer to truncate on linux too. We really need it over umount?
+We never know the file whether corrupted or preallocated.
 
-It's actually more complicated than that. Old kernel images started 
-misbehaving from around 2.6.35-rc5 and any kernel older than that was 
-OK. When I recompiled the older kernels with squeeze gcc (migh have been 
-lenny gcc before, or different answers to make oldconfig), anything from 
-current git down to 2.6.33 is broken with radeon.modeset=1 and works (I 
-get window titles) with radeon.modeset=0.
+And at least for now, it would be better to put under CONFIG_FAT_FALLOC
+or such, and warn it as unofficial way to preallocation on the
+explanation of CONFIG_FAT_FALLOC.
 
-2.6.32 works and has kernel modesetting enabled from dmesg but I think I 
-did not notice screen going fbcon during boot... maybe it only used the 
-modesetting when X started.
+Sorry, I'm still not reviewing the detail of code yet, like locking. And
+I'm still not convinced whether we should add this hack (unofficial way)...
 
-So there are 2 different problems (maybe related), the new one above and 
-the old one of not seeing some window borders when modesetting and 
-acceleration are in use. Maximized windows do have borders.
-
+Thanks.
 -- 
-Meelis Roos (mroos@linux.ee)
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
