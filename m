@@ -1,51 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980Ab2GIVLi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 17:11:38 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:50820 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123Ab2GIVLg (ORCPT
+	id S1752608Ab2GIVTX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 17:19:23 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:21824 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab2GIVTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 17:11:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120709203203.28178.15800.stgit@bhelgaas.mtv.corp.google.com>
-References: <20120709202308.28178.58942.stgit@bhelgaas.mtv.corp.google.com>
-	<20120709203203.28178.15800.stgit@bhelgaas.mtv.corp.google.com>
-Date: Mon, 9 Jul 2012 14:11:35 -0700
-X-Google-Sender-Auth: uYyuV_gbqUj4srlcr7H2Fcc3vFU
-Message-ID: <CAE9FiQW-6x_HrZQLmfw22Temvma7rd12qR3QfKj-Eh1tqWHHNQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] PCI: allow P2P bridge windows starting at PCI bus
- address zero
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, Daniel Yeisley <dan.yeisley@unisys.com>,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 9 Jul 2012 17:19:20 -0400
+Message-ID: <1341868544.16730.780.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 1/2] acpi : cpu hot-remove returns error number when
+ cpu_down() fails
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        linux-acpi@vger.kernel.org, lenb@kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 09 Jul 2012 15:15:44 -0600
+In-Reply-To: <4FFABFAC.3000708@linux.vnet.ibm.com>
+References: <4FF65898.3000301@jp.fujitsu.com>
+	 <4FF6B537.1030703@linux.vnet.ibm.com> <4FFA4269.5050808@jp.fujitsu.com>
+	 <4FFABFAC.3000708@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 9, 2012 at 1:32 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> cd81e1ea1a4c added checks that prevent us from using P2P bridge windows
-> that start at PCI bus address zero.  The reason was to "prevent us from
-> overwriting resources that are unassigned."
->
-> But generic code should allow address zero in both BARs and bridge
-> windows, so I think that commit was a mistake.
->
-> Windows at bus address zero are legal and likely to exist on machines with
-> an offset between bus addresses and CPU addresses.  For example, in the
-> following hypothetical scenario, the bridge at 00:01.0 has a window at bus
-> address zero and the device at 01:00.0 has a BAR at bus address zero, and
-> I think both are perfectly valid:
->
->     PCI host bridge to bus 0000:00
->     pci_bus 0000:00: root bus resource [mem 0x100000000-0x1ffffffff] (bus address [0x00000000-0xffffffff])
->     pci 0000:00:01.0: PCI bridge to [bus 01]
->     pci 0000:00:01.0:   bridge window [mem 0x100000000-0x100ffffff]
->     pci 0000:01:00.0: reg 10: [mem 0x100000000-0x100ffffff]
->
-> CC: Yinghai Lu <yinghai@kernel.org>
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+On Mon, 2012-07-09 at 16:55 +0530, Srivatsa S. Bhat wrote:
+> On 07/09/2012 08:01 AM, Yasuaki Ishimatsu wrote:
+> > Hi Srivatsa,
+> > 
+> > Thank you for your reviewing.
+> > 
+> > 2012/07/06 18:51, Srivatsa S. Bhat wrote:
+> >> On 07/06/2012 08:46 AM, Yasuaki Ishimatsu wrote:
+> >>> Even if cpu_down() fails, acpi_processor_remove() continues to remove the cpu.
+> >>
+> >> Ouch!
+> >>
+> >>> But in this case, it should return error number since some process may run on
+> >>> the cpu. If the cpu has a running process and the cpu is turned the power off,
+> >>> the system cannot work well.
+> >>>
+> >>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> >>>
+> >>> ---
+> >>>   drivers/acpi/processor_driver.c |   18 ++++++++++++------
+> >>>   1 file changed, 12 insertions(+), 6 deletions(-)
+> >>>
+> >>> Index: linux-3.5-rc4/drivers/acpi/processor_driver.c
+> >>> ===================================================================
+> >>> --- linux-3.5-rc4.orig/drivers/acpi/processor_driver.c	2012-06-25 04:53:04.000000000 +0900
+> >>> +++ linux-3.5-rc4/drivers/acpi/processor_driver.c	2012-07-05 21:02:58.711285382 +0900
+> >>> @@ -610,7 +610,7 @@ err_free_pr:
+> >>>   static int acpi_processor_remove(struct acpi_device *device, int type)
+> >>>   {
+> >>>   	struct acpi_processor *pr = NULL;
+> >>> -
+> >>> +	int ret;
+> >>>
+> >>>   	if (!device || !acpi_driver_data(device))
+> >>>   		return -EINVAL;
+> >>> @@ -621,8 +621,9 @@ static int acpi_processor_remove(struct
+> >>>   		goto free;
+> >>>
+> >>>   	if (type == ACPI_BUS_REMOVAL_EJECT) {
+> >>> -		if (acpi_processor_handle_eject(pr))
+> >>> -			return -EINVAL;
+> >>> +		ret = acpi_processor_handle_eject(pr);
+> >>> +		if (ret)
+> >>> +			return ret;
+> >>>   	}
+> >>>
+> >>>   	acpi_processor_power_exit(pr, device);
+> >>> @@ -841,12 +842,17 @@ static acpi_status acpi_processor_hotadd
+> >>>
+> >>>   static int acpi_processor_handle_eject(struct acpi_processor *pr)
+> >>>   {
+> >>> -	if (cpu_online(pr->id))
+> >>> -		cpu_down(pr->id);
+> >>> +	int ret;
+> >>> +
+> >>> +	if (cpu_online(pr->id)) {
+> >>> +		ret = cpu_down(pr->id);
+> >>> +		if (ret)
+> >>> +			return ret;
+> >>> +	}
+> >>>
+> >>
+> >> Strictly speaking, this is not thorough enough. What prevents someone
+> >> from onlining that same cpu again, at this point?
+> >> So, IMHO, you need to wrap the contents of this function inside a
+> >> get_online_cpus()/put_online_cpus() block, to prevent anyone else
+> >> from messing with CPU hotplug at the same time.
+> > 
+> > If I understand your comment by mistake, please let me know.
+> > If the contents is wrapped a inside get_online_cpus()/put_online_cpus() block
+> > as below, cpu_down() will stop since cpu_down() calls cpu_hotplug_begin() and
+> > cpu_hotplug_begin() waits for cpu_hotplug.refcount to become 0.
+> > 
+> 
+> You are right. Sorry, I overlooked that.
+> 
+> > +	get_online_cpus()
+> > +	if (cpu_online(pr->id)) {
+> > +		ret = cpu_down(pr->id);
+> > +		if (ret)
+> > +			return ret;
+> > +	}
+> > +	put_online_cpus()
+> > 
+> > I think following patch can prevent it correctly. How about the patch?
+> >
+> > ---
+> >  drivers/acpi/processor_driver.c |   12 ++++++++++++
+> >  kernel/cpu.c                    |    8 +++++---
+> >  2 files changed, 17 insertions(+), 3 deletions(-)
+> > 
+> > Index: linux-3.5-rc4/drivers/acpi/processor_driver.c
+> > ===================================================================
+> > --- linux-3.5-rc4.orig/drivers/acpi/processor_driver.c	2012-07-09 09:59:01.280211202 +0900
+> > +++ linux-3.5-rc4/drivers/acpi/processor_driver.c	2012-07-09 11:05:34.559859236 +0900
+> > @@ -844,14 +844,26 @@ static int acpi_processor_handle_eject(s
+> >  {
+> >  	int ret;
+> > 
+> > +retry:
+> >  	if (cpu_online(pr->id)) {
+> >  		ret = cpu_down(pr->id);
+> >  		if (ret)
+> >  			return ret;
+> >  	}
+> > 
+> > +	get_online_cpus();
+> > +	/*
+> > +	 * Someone might online the cpu again at this point. So we check that
+> > +	 * cpu has been onlined or not. If cpu is online, we try to offline
+> > +	 * the cpu again.
+> > +	 */
+> > +	if (cpu_online(pr->id)) {
+> 
+> How about this:
+> 	if (unlikely(cpu_online(pr->id)) {
+> since the probability of this happening is quite small...
+> 
+> > +		put_online_cpus();
+> > +		goto retry;
+> > +	}
+> >  	arch_unregister_cpu(pr->id);
+> >  	acpi_unmap_lsapic(pr->id);
+> > +	put_online_cpus();
+> >  	return ret;
+> >  }
+> 
+> This retry logic doesn't look elegant, but I don't see any better method :-(
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+Another possible option is to fail the request instead of retrying it.
+
+It would be quite challenging to allow on-lining and off-lining
+operations to run concurrently.  In fact, even if we close this window,
+there is yet another window right after the new put_online_cpus() call.
+This CPU may become online before calling _EJ0 in the case of
+hot-remove.
+
+This goes beyond the scope of this patch, but IMHO, we should serialize
+in the request level.  That is, a new on-lining request should not be
+allowed to proceed until the current request is complete.  This scheme
+only allows a single operation at a time per OS instance, but I do not
+think it is a big issue.
+
+Serializing in the request level is also important when supporting
+container hot-remove, which can remove multiple children objects under a
+parent container object.  For instance, a Node hot-remove may also
+remove multiple processors underneath of it.  This kind of the
+operations has to make sure that all children objects are remained
+off-line until it ejects the parent object.  
+
+Thanks,
+-Toshi
+
+
