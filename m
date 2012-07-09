@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab2GIRgx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 13:36:53 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:54362 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829Ab2GIRgv (ORCPT
+	id S1751873Ab2GIRho (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 13:37:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40568 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452Ab2GIRhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 13:36:51 -0400
-From: Rafal Krypa <r.krypa@samsung.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rafal Krypa <r.krypa@samsung.com>
-Subject: [PATCH] Smack: don't show empty rules when /smack/load or /smack/load2
- is read
-Date: Mon, 09 Jul 2012 19:36:34 +0200
-Message-id: <1341855394-13359-1-git-send-email-r.krypa@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-X-TM-AS-MML: No
+	Mon, 9 Jul 2012 13:37:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1207091121480.5986@localhost>
+References: <1339638836-19990-1-git-send-email-ashish.sangwan2@gmail.com>
+	<CAKYAXd_g_vgAmyD4jyUqz0u=vaSTAKFqZz0sqhM+2+hy1Z85ug@mail.gmail.com>
+	<CAOiN93=BKyGKtpLng-ddX0RFUOdHCaxHi2O26GFokdT19xad2g@mail.gmail.com>
+	<alpine.LFD.2.00.1207021110530.24050@dhcp-1-248.brq.redhat.com>
+	<CAOiN93kzvKVDzSJ13HJZDh9ANt3UaBy0o_QHNKCSHHTizjtY0w@mail.gmail.com>
+	<alpine.LFD.2.00.1207041926290.29222@localhost>
+	<CAOiN93mJO6=dV4U=Qyw7myz34EF_doaoLsFHksmu4-n8pOzXBA@mail.gmail.com>
+	<alpine.LFD.2.00.1207091121480.5986@localhost>
+Date: Mon, 9 Jul 2012 23:07:42 +0530
+Message-ID: <CAOiN93mB+fTYdMQ69hAD45mf4cw1q72bykgOZ9gmrt8udNvNSg@mail.gmail.com>
+Subject: Re: [PATCH v2] ext4: fix hole punch failure when depth is greater
+ than 0
+From: Ashish Sangwan <ashishsangwan2@gmail.com>
+To: =?ISO-8859-2?Q?Luk=E1=B9_Czerner?= <lczerner@redhat.com>
+Cc: sandeen@redhat.com, Ted Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes empty rules (i.e. with access set to '-') from the
-rule list presented to user space.
-
-Smack by design never removes labels nor rules from its lists. Access
-for a rule may be set to '-' to effectively disable it. Such rules would
-show up in the listing generated when /smack/load or /smack/load2 is
-read. This may cause clutter if many rules were disabled.
-
-As a rule with access set to '-' is equivalent to no rule at all, they
-may be safely hidden from the listing.
-
-Targeted for git://git.gitorious.org/smack-next/kernel.git
-
-Signed-off-by: Rafal Krypa <r.krypa@samsung.com>
----
- security/smack/smackfs.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index 29b760d..d31e6d9 100644
---- a/security/smack/smackfs.c
-+++ b/security/smack/smackfs.c
-@@ -518,6 +518,9 @@ static void smk_rule_show(struct seq_file *s, struct smack_rule *srp, int max)
- 	if (strlen(srp->smk_subject) >= max || strlen(srp->smk_object) >= max)
- 		return;
- 
-+	if (srp->smk_access == 0)
-+		return;
-+
- 	seq_printf(s, "%s %s", srp->smk_subject, srp->smk_object);
- 
- 	seq_putc(s, ' ');
-@@ -532,8 +535,6 @@ static void smk_rule_show(struct seq_file *s, struct smack_rule *srp, int max)
- 		seq_putc(s, 'a');
- 	if (srp->smk_access & MAY_TRANSMUTE)
- 		seq_putc(s, 't');
--	if (srp->smk_access == 0)
--		seq_putc(s, '-');
- 
- 	seq_putc(s, '\n');
- }
--- 
-1.7.10.4
-
+> Ok, the code is not very clear, but now I can see it. p_block is
+> actually misused here to store the number of indexes in the current
+> node while diving into the tree. Then on the way up, we are checking
+> that to see if the eh_entries changed or not (which is indicating
+> that something has been freed deeper in the tree).
+True, p_block is misused. We tried to fix the problem with
+minimum code change.
+>
+> That said, it makes sense to set it before the loop itself because
+> we are actually skipping the path construction while diving into
+> the tree since patch is already initialized and we're starting
+> walking back from 'depth' up in this case. So the patch seems fine.
+> Thanks for catching it and fixing it.
+>
+> You can add
+>
+> Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+>
+Thanks for your review.
+>
+>> >
+>> > Note: there are some indent problems in your patch, like for example
+>> > this:
+>> >
+>> > +                       path[k].p_block =
+>> > +                       le16_to_cpu(path[k].p_hdr->eh_entries)+1;
+>> >
+>> >
+>> Before submitting the patch, I run checkpatch.pl with --strict option.
+>> It did'nt show any error or warning. Should I re-submit
+>> the patch with an extra tab before the second line? The call is yours.
+>
+> checkpatch.pl does not catch everything. Just look at how wrapping
+> of long lines is done in the code, there are plenty of examples.
+>
+True again. I will resend patch with proper indentation.
+>>
+>> > Anyway, what do you think about the modification ?
+>> >
+>> Also there is 1 modification missing from your patch.
+>>     ext4_ext_drop_refs(path);
+>>         kfree(path);
+>> +       path = NULL;
+>>         if (err == -EAGAIN)
+>>                 goto again;
+>> If path is not set to NULL, it will crash in xfstest #13. Ted has
+>> already reported it.
+>
+> Right, I've probably used the old patch as an example.
+>
+> Thanks!
+> -Lukas
+>
+Thanks,
+Ashish
