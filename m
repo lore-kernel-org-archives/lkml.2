@@ -1,112 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab2GISmI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 14:42:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:34193 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752773Ab2GISmF (ORCPT
+	id S1752022Ab2GISph (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 14:45:37 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43546 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750981Ab2GISpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 14:42:05 -0400
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, joshhunt00@gmail.com, axboe@kernel.dk,
-        rni@google.com, vgoyal@redhat.com, vwadekar@nvidia.com,
-        herbert@gondor.hengli.com.au, davem@davemloft.net,
-        linux-crypto@vger.kernel.org, swhiteho@redhat.com, bpm@sgi.com,
-        elder@kernel.org, xfs@oss.sgi.com, marcel@holtmann.org,
-        gustavo@padovan.org, johan.hedberg@gmail.com,
-        linux-bluetooth@vger.kernel.org, martin.petersen@oracle.com
-Subject: [PATCHSET] workqueue: reimplement high priority using a separate worker pool
-Date: Mon,  9 Jul 2012 11:41:49 -0700
-Message-Id: <1341859315-17759-1-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.7.3
+	Mon, 9 Jul 2012 14:45:35 -0400
+Date: Mon, 9 Jul 2012 19:45:30 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>, Liam Girdwood <lrg@ti.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] regulator: max8952: Remove wrong set_suspend_disable
+ callback setting
+Message-ID: <20120709184530.GP3934@opensource.wolfsonmicro.com>
+References: <1341573852.6611.3.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Ep5m4srWGXPl6O+g"
+Content-Disposition: inline
+In-Reply-To: <1341573852.6611.3.camel@phoenix>
+X-Cookie: Long life is in store for you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, WQ_HIGHPRI workqueues share the same worker pool as the
-normal priority ones.  The only difference is that work items from
-highpri wq are queued at the head instead of tail of the worklist.  On
-pathological cases, this simplistics highpri implementation doesn't
-seem to be sufficient.
 
-For example, block layer request_queue delayed processing uses high
-priority delayed_work to restart request processing after a short
-delay.  Unfortunately, it doesn't seem to take too much to push the
-latency between the delay timer expiring and the work item execution
-to few second range leading to unintended long idling of the
-underlying device.  There seem to be real-world cases where this
-latency shows up[1].
+--Ep5m4srWGXPl6O+g
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-A simplistic test case is measuring queue-to-execution latencies with
-a lot of threads saturating CPU cycles.  Measuring over 300sec period
-with 3000 0-nice threads performing 1ms sleeps continuously and a
-highpri work item being repeatedly queued with 1 jiffy interval on a
-single CPU machine, the top latency was 1624ms and the average of top
-20 was 1268ms with stdev 927ms.
+On Fri, Jul 06, 2012 at 07:24:12PM +0800, Axel Lin wrote:
+> Using the same ops for both .disable and .set_suspend_disable callbacks is
+> actively broken. This patch removes .set_suspend_disable callback setting.
 
-This patchset reimplements high priority workqueues so that it uses a
-separate worklist and worker pool.  Now each global_cwq contains two
-worker_pools - one for normal priority work items and the other for
-high priority.  Each has its own worklist and worker pool and the
-highpri worker pool is populated with worker threads w/ -20 nice
-value.
+Applied both, thanks.
 
-This reimplementation brings down the top latency to 16ms with top 20
-average of 3.8ms w/ stdev 5.6ms.  The original block layer bug hasn't
-been verfieid to be fixed yet (Josh?).
+--Ep5m4srWGXPl6O+g
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-The addition of separate worker pools doesn't add much to the
-complexity but does add more threads per cpu.  Highpri worker pool is
-expected to remain small, but the effect is noticeable especially in
-idle states.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-I'm cc'ing all WQ_HIGHPRI users - block, bio-integrity, crypto, gfs2,
-xfs and bluetooth.  Now you guys get proper high priority scheduling
-for highpri work items; however, with more power comes more
-responsibility.
+iQIcBAEBAgAGBQJP+ybDAAoJEBus8iNuMP3ddd8P/198IyQl+pfTTc8zUWcvQ57L
+2zwWJpovcEcu6DCTLGWYeCsiai9mdnlzERpFOcGat19Ad3YfWXTBLkXCHtN36J1v
+/Y3Wsx9t5lRroJ7pCTDDiAuLD1py+AlZUMOD/Ob6iZOA9OiXpOOEgmmUDDRgwKw9
+k5oa2IRS5uCCan2v2YZeUC85OLBJWb9atKswUPP722aHdQcMw5WHup0T73xtv6Dp
+gLC94TQBNg8rZcZCsF8jlyMXatuTeokLpTS77M6BGKRSMaziuOWnfLzSeFybgizg
++GE4cN1nCPjlezvCFZBMnmjlTSw1zR0GIIFsDrF0hI7G2hiZh1CNa160DIHcfbTK
+GoV7UGedifZes+6TBAsRhratU1Pysj/OEEpLQenrs+NB29TIdr4MLqXeKrzjpPb/
+gmH7oSs+9V42JB3dFbjDTNLTUyyL4WVIQ06GkXVt04BZOhLh2l1LuyiioWnK2JrZ
+NAMDNNnBkAJEhfhZG95lQxwkLucb8nBXMq+EJmKnW+fWKqvKpE53GxnO1hXTKRjY
+yd7v1Cuxl29/PoH2KKI0XFXT8tXkARSsFb87XTbAVD3h3D090NDTJcvl1rA+t1f0
+DJC+t1WrRPBoGYKgwSYEcTOKk1+noJGcnGXYS3v8gifYdy+KodqjcfD54ltAyykx
+4Gbu+7lCLBhnuGJQ0+Fb
+=4hKh
+-----END PGP SIGNATURE-----
 
-Especially, the ones with both WQ_HIGHPRI and WQ_CPU_INTENSIVE -
-bio-integrity and crypto - may end up dominating CPU usage.  I think
-it should be mostly okay for bio-integrity considering it sits right
-in the block request completion path.  I don't know enough about
-tegra-aes tho.  aes_workqueue_handler() seems to mostly interact with
-the hardware crypto.  Is it actually cpu cycle intensive?
-
-This patchset contains the following six patches.
-
- 0001-workqueue-don-t-use-WQ_HIGHPRI-for-unbound-workqueue.patch
- 0002-workqueue-factor-out-worker_pool-from-global_cwq.patch
- 0003-workqueue-use-pool-instead-of-gcwq-or-cpu-where-appl.patch
- 0004-workqueue-separate-out-worker_pool-flags.patch
- 0005-workqueue-introduce-NR_WORKER_POOLS-and-for_each_wor.patch
- 0006-workqueue-reimplement-WQ_HIGHPRI-using-a-separate-wo.patch
-
-0001 makes unbound wq not use WQ_HIGHPRI as its meaning will be
-changing and won't suit the purpose unbound wq is using it for.
-
-0002-0005 gradually pulls out worker_pool from global_cwq and update
-code paths to be able to deal with multiple worker_pools per
-global_cwq.
-
-0006 replaces the head-queueing WQ_HIGHPRI implementation with the one
-with separate worker_pool using the multiple worker_pool mechanism
-previously implemented.
-
-The patchset is available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-wq-highpri
-
-diffstat follows.
-
- Documentation/workqueue.txt      |  103 ++----
- include/trace/events/workqueue.h |    2 
- kernel/workqueue.c               |  624 +++++++++++++++++++++------------------
- 3 files changed, 385 insertions(+), 344 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] https://lkml.org/lkml/2012/3/6/475
+--Ep5m4srWGXPl6O+g--
