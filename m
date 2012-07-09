@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab2GIMHR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 08:07:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34716 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753341Ab2GIMHQ convert rfc822-to-8bit (ORCPT
+	id S1753438Ab2GIMIV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 08:08:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53401 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753341Ab2GIMIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 08:07:16 -0400
-Message-ID: <1341835552.3462.50.camel@twins>
-Subject: Re: [RFC][PATCH 14/26] sched, numa: Numa balancer
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Dan Smith <danms@us.ibm.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Mon, 09 Jul 2012 14:05:52 +0200
-In-Reply-To: <4FF87F5F.30106@redhat.com>
-References: <20120316144028.036474157@chello.nl>
-	 <20120316144241.012558280@chello.nl> <4FF87F5F.30106@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 9 Jul 2012 08:08:20 -0400
+Date: Mon, 9 Jul 2012 05:08:05 -0700
+From: tip-bot for Jean Delvare <jdelvare@suse.de>
+Message-ID: <tip-2a8ac745e3171889d364235b8203342e28526d2c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        arjan@linux.intel.com, jdelvare@suse.de, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        arjan@linux.intel.com, tglx@linutronix.de, jdelvare@suse.de
+In-Reply-To: <1341583705.4655.18.camel@amber.site>
+References: <1341583705.4655.18.camel@amber.site>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: CONFIG_CC_STACKPROTECTOR=
+ y is no longer experimental
+Git-Commit-ID: 2a8ac745e3171889d364235b8203342e28526d2c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 09 Jul 2012 05:08:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-07-07 at 14:26 -0400, Rik van Riel wrote:
-> > +/*
-> > + * Assumes symmetric NUMA -- that is, each node is of equal size.
-> > + */
-> > +static void set_max_mem_load(unsigned long load)
-> > +{
-> > +     unsigned long old_load;
-> > +
-> > +     spin_lock(&max_mem_load.lock);
-> > +     old_load = max_mem_load.load;
-> > +     if (!old_load)
-> > +             old_load = load;
-> > +     max_mem_load.load = (old_load + load) >> 1;
-> > +     spin_unlock(&max_mem_load.lock);
-> > +}
-> 
-> The above in your patch kind of conflicts with this bit
-> from patch 6/26:
+Commit-ID:  2a8ac745e3171889d364235b8203342e28526d2c
+Gitweb:     http://git.kernel.org/tip/2a8ac745e3171889d364235b8203342e28526d2c
+Author:     Jean Delvare <jdelvare@suse.de>
+AuthorDate: Fri, 6 Jul 2012 16:08:25 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 9 Jul 2012 13:59:53 +0200
 
-Yeah,.. its pretty broken. Its also effectively disabled, but yeah.
+x86: CONFIG_CC_STACKPROTECTOR=y is no longer experimental
 
+This feature has been around for over 5 years now, and has no
+CONFIG_EXPERIMENTAL dependency anymore, so remove the '(EXPERIMENTAL)'
+tag from the help text as well.
 
-> Looking at how the memory load code is used, I wonder
-> if it would make sense to count "zone size - free - inactive
-> file" pages instead? 
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Acked-by: Arjan van de Ven <arjan@linux.intel.com>
+Link: http://lkml.kernel.org/r/1341583705.4655.18.camel@amber.site
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Something like that, although I guess we'd want a sum over all zones in
-a node for that.
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index c70684f..b03fe17 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1525,7 +1525,7 @@ config SECCOMP
+ 	  If unsure, say Y. Only embedded should say N here.
+ 
+ config CC_STACKPROTECTOR
+-	bool "Enable -fstack-protector buffer overflow detection (EXPERIMENTAL)"
++	bool "Enable -fstack-protector buffer overflow detection"
+ 	---help---
+ 	  This option turns on the -fstack-protector GCC feature. This
+ 	  feature puts, at the beginning of functions, a canary value on
