@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583Ab2GIPc0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 11:32:26 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:51753 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209Ab2GIPcY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 11:32:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-Date: Mon, 9 Jul 2012 15:32:11 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com> <20120709113558.GE8052@arm.com> <20120709145126.313d1574@pyramind.ukuu.org.uk>
-In-Reply-To: <20120709145126.313d1574@pyramind.ukuu.org.uk>
+	id S1751898Ab2GIPcb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 11:32:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45411 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751710Ab2GIPc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 11:32:28 -0400
+Date: Mon, 9 Jul 2012 17:32:27 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 10/11] mm: memcg: only check swap cache pages for
+ repeated charging
+Message-ID: <20120709153226.GM4627@tiehlicka.suse.cz>
+References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
+ <1341449103-1986-11-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207091532.12256.arnd@arndb.de>
-X-Provags-ID: V02:K0:K1DVjQKzjbVttMR0Fxsrp/f8Fiiy/XhceR9rm/lUC7U
- 62Uub4YQQcpC6iGC5XLC35P+R2ZWHyA4SwJryuUG9z7mcg7UqY
- HluBH5CU5m/xSwxMsiu4Q7E/LUx4llMhXBfA2Isnk1AGcTNHzr
- 3TDpHOlAjPjDy7u3HJFiwO5B7sX+5ocg4j95Ep7znBJtCJn+pP
- YYZflCmVZ82tUaoU3YYkcyvpytsT5s9lTJoyUuTD72UFhc9ert
- 0l1q0cPBKPjtkPia5slgbZwgIEpkbR9LiYNad4MSb19kpJPsmw
- v1yNqtltrCML0XqJ8+gjpDV51SVkjuhOoDfoD1OA3/1IdONpZK
- wgDavIJdoL+T2/Ots0+8=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341449103-1986-11-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 09 July 2012, Alan Cox wrote:
-> > > These are the same reasons the x86_64 people gave and regretted later.
-> > 
-> > I would not compare the x86_64 extension to the AArch64 architecture.
+On Thu 05-07-12 02:45:02, Johannes Weiner wrote:
+> Only anon and shmem pages in the swap cache are attempted to be
+> charged multiple times, from every swap pte fault or from
+> shmem_unuse().  No other pages require checking PageCgroupUsed().
 > 
+> Charging pages in the swap cache is also serialized by the page lock,
+> and since both the try_charge and commit_charge are called under the
+> same page lock section, the PageCgroupUsed() check might as well
+> happen before the counter charging, let alone reclaim.
 > 
-> It's not an architecture specific observation. I was just observing that
-> you were following a pattern which in all other cases ended up with a
-> merged tree.
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-All except ia64, which is probably considered a good thing nowadays,
-even though there is still a significant amount of shared code between
-ia64 and x86.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-In case of sh64, my feeling is that the fact that it's now is more
-a burden than a benefit, given that all relevant arch/sh systems
-are the 32 bit variant.
+> ---
+>  mm/memcontrol.c |   17 ++++++++++++-----
+>  1 files changed, 12 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index a8bf86a..d3701cd 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2471,11 +2471,7 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+>  	bool anon;
+>  
+>  	lock_page_cgroup(pc);
+> -	if (unlikely(PageCgroupUsed(pc))) {
+> -		unlock_page_cgroup(pc);
+> -		__mem_cgroup_cancel_charge(memcg, nr_pages);
+> -		return;
+> -	}
+> +	VM_BUG_ON(PageCgroupUsed(pc));
+>  	/*
+>  	 * we don't need page_cgroup_lock about tail pages, becase they are not
+>  	 * accessed by any other context at this point.
+> @@ -2740,8 +2736,19 @@ static int __mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+>  					  struct mem_cgroup **memcgp)
+>  {
+>  	struct mem_cgroup *memcg;
+> +	struct page_cgroup *pc;
+>  	int ret;
+>  
+> +	pc = lookup_page_cgroup(page);
+> +	/*
+> +	 * Every swap fault against a single page tries to charge the
+> +	 * page, bail as early as possible.  shmem_unuse() encounters
+> +	 * already charged pages, too.  The USED bit is protected by
+> +	 * the page lock, which serializes swap cache removal, which
+> +	 * in turn serializes uncharging.
+> +	 */
+> +	if (PageCgroupUsed(pc))
+> +		return 0;
+>  	if (!do_swap_account)
+>  		goto charge_cur_mm;
+>  	/*
+> -- 
+> 1.7.7.6
+> 
 
-Another interesting example is unicore32, which actually shares more
-code with arch/arm than the proposed arch/aarch64 does. I think the
-unicore32 code base would benefit from being merged back into arch/arm
-as a third instruction set, but the additional maintainance cost for
-everyone working on ARM makes that unrealistic.
-
-> Now it could be your tree is different, it could be that the right
-> approach in all these cases is actually to do a new tree and merge five
-> years later - I don't know.
-
-It's always a tradeoff. Right now I think it's better for both arm
-and aarch64 to live as separate architectures, and it will remain that
-way for a number of years. Some people suggested that we might want to
-keep the two split initially but add support for the "modern" 32 bit
-platforms in a mixed 32/64 arch/aarch directory like we did for
-powerpc, but I'm rather skeptical about that. On powerpc, that resulted
-in a cleaner end result than doing the merge first would have, but
-it was also a long and painful process.
-It's good to know that we have the option though, in case we decide
-to merge in a few years after all.
-
-> It's your (aarch64 folks) project at the end of the day and you who have
-> to keep all the fixes and errata and whatnot in sync between the two
-> trees and I don't personally care too much which way it happens.
-
-We have a lot of reviewers that are familiar with the 32 bit code, so
-I think the main strategy should be to spot duplicate code early
-and make sure we deal with it individually. Examples for this are
-probably the implementations for kvm and perf, which largely deal
-with the same hardware on both architectures. Those definitely must
-not get duplicated into mostly-identical files. In many cases, we're
-moving those things into drivers/*, in other cases we might want to
-use Makefile logic to include a sub-directory from one arch into another,
-as we do for arch/um.
-
-	Arnd
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
