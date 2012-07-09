@@ -1,101 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730Ab2GIMck (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 08:32:40 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:33614
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753503Ab2GIMci (ORCPT
+	id S1753722Ab2GIMdC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 08:33:02 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48510 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503Ab2GIMdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 08:32:38 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -14
-X-BigFish: VPS-14(zz98dI1be0I1dbaI1432Izz1202hzz15d4Rz2dh668h839h944hd25he5bhf0ah)
-X-WSS-ID: 0M6W863-02-87D-02
-X-M-MSG: 
-Date: Mon, 9 Jul 2012 14:32:30 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Ingo Molnar <mingo@kernel.org>
-CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <x86@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH 03/28] x86/irq: Use irq_remap specific print_IO_APIC
- paths only on Intel
-Message-ID: <20120709123230.GA25282@amd.com>
-References: <1341491808-23083-1-git-send-email-joerg.roedel@amd.com>
- <1341491808-23083-4-git-send-email-joerg.roedel@amd.com>
- <20120706085036.GB24449@gmail.com>
- <20120706130530.GC2639@amd.com>
- <20120706140037.GA22845@gmail.com>
+	Mon, 9 Jul 2012 08:33:00 -0400
+Date: Mon, 9 Jul 2012 13:32:56 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Message-ID: <20120709123253.GA31383@sirena.org.uk>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+ <20120707032907.GA15120@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120706140037.GA22845@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <20120707032907.GA15120@srcf.ucam.org>
+X-Cookie: Beware of dog.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, 2012 at 04:00:37PM +0200, Ingo Molnar wrote:
-> ( A proper abstraction would stick it all into some sort PCI 
->   driver alike structure, including enumeration, initialization, 
->   debugging and other non-core details. )
+On Sat, Jul 07, 2012 at 04:29:08AM +0100, Matthew Garrett wrote:
 
-This is certainly a multi-cycle process to make sure we do not break
-everything from one release to another. But cleaning that 4000+ lines
-monster up is a good thing, I agree with that. 
+> While mandating FDT is a massive advance over arm32, if there's a chance 
+> that ACPI-based AArch64 platforms will ship in a similar timeframe to 
+> FDT then I think we should ensure that ACPI and FDT are merged 
+> beforehand - the alternative is that people are going to end up writing 
+> the same hardware driver twice for different firmware implementations. I 
+> don't think anyone benefits from introducing a platform that has 
+> multiple device representations[1]
 
-> So the way this could work in a cleaner fashion is to 
-> encapsulate the logic even more. Today we have a per irq_desc 
-> irq_cfg data descriptor, but there's still global knowledge in 
-> actual vector allocation such as create_irq() or 
-> msi_compose_msg(). Patterns like:
-> 
->         if (irq_remapped(cfg)) {
->                 compose_remapped_msi_msg(pdev, irq, dest, msg, hpet_id);
->                 return err;
->         }
-> 
->         if (x2apic_enabled())
->                 msg->address_hi = MSI_ADDR_BASE_HI |
->                                   MSI_ADDR_EXT_DEST_ID(dest);
->         else
->                 msg->address_hi = MSI_ADDR_BASE_HI;
-> 
-> all all signs of insufficient abstraction.
-
-Why was this code merged when you are unhappy with it?
-
-About the irq_remapped() thing: to abstract this properly it has to be a
-per-irq abstraction, because in the MSI case some interrupts may be
-remapped and others may be not. In the AMD IOMMU case for example, the
-MSI interrupt of the IOMMU device itself is not remapped but all others
-are. So function pointers in 'struct irq_cfg' come into mind for that.
-What do you think about that?
-
-> More importantly, all the silly open-coded if (irq_remapping_enabled)
-> checks should be eliminated from core x86 code. IRQ remapping
-> should be either be an irq_chip detail or should live in a
-> separate layer.
-
-I'll start with factoring out these irq_remapping_enabled and post the
-results so that we can agree on the right direction. I gained some
-experience with this code while factoring out all the VT-d internals
-from it in one of the last cycles.
-
-> So before extending all this please get this into shape.
-
-What about Patches 1 and 2? Any comments on these or are they fine?
-
-
-Kind Regards,
-
-     Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+If you end up having to write two whole drivers that sounds enormously
+depressing especially for those of us working on devices that aren't
+architecture specific.  We've managed to avoid that thus far with device
+tree and platform data, would it not be possible to mandate that people
+use ACPI in a vaugley sane way which can support this too?
