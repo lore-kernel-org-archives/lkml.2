@@ -1,111 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab2GINTx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 09:19:53 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:61218 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753210Ab2GINTw (ORCPT
+	id S1753860Ab2GINXN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 09:23:13 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:50848 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab2GINXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 09:19:52 -0400
-Date: Mon, 9 Jul 2012 22:19:42 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: Warn about costly page allocation
-Message-ID: <20120709131942.GA3594@barrios>
-References: <1341801500-5798-1-git-send-email-minchan@kernel.org>
- <20120709082200.GX14154@suse.de>
- <20120709084657.GA7915@bbox>
- <20120709091203.GY14154@suse.de>
- <20120709125048.GA2203@barrios>
- <20120709130551.GA14154@suse.de>
+	Mon, 9 Jul 2012 09:23:12 -0400
+Message-ID: <4FFADB37.4090705@linux.vnet.ibm.com>
+Date: Mon, 09 Jul 2012 21:23:03 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120709130551.GA14154@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 1/2] KVM: X86: remove read buffer for mmio read
+References: <4FFA9E16.10001@linux.vnet.ibm.com> <4FFABD59.2070108@redhat.com> <20120709112346.GA23898@redhat.com> <4FFAD341.3080508@redhat.com>
+In-Reply-To: <4FFAD341.3080508@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12070913-5564-0000-0000-000003878328
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 02:05:51PM +0100, Mel Gorman wrote:
-> On Mon, Jul 09, 2012 at 09:50:48PM +0900, Minchan Kim wrote:
-> > > <SNIP>
-> > > 
-> > > You're aiming this at embedded QA people according to your changelog so
-> > > do whatever you think is going to be the most effective. It's already
-> > > "known" that high-order kernel allocations are meant to be unreliable and
-> > > apparently this is being ignored. The in-code warning could look
-> > > something like
-> > > 
-> > > if (unlikely(order > PAGE_ALLOC_COSTLY_ORDER)) {
-> > > 	printk_once("%s: page allocation high-order stupidity: order:%d, mode:0x%x\n",
-> > >                    current->comm, order, gfp_mask);
-> > > 	if (gfp_flags & __GFP_MOVABLE) {
-> > > 		printk_once("Enable compaction or whatever\n");
-> > > 		dump_stack();
-> > > 	} else {
-> > > 		printk_once("Regular high-order kernel allocations like this will eventually start failing.");
-> > > 		dump_stack();
-> > > 	}
-> > > }
-> > 
-> > I'm not sure we have to check further for __GFP_MOVABLE because I have not seen driver
-> > uses __GFP_MOVABLE for high order allocation. Although it uses the flag, it's never
-> > compactable since it's out of LRU list. So I think it's rather overkill.
-> > 
+On 07/09/2012 08:49 PM, Avi Kivity wrote:
+> On 07/09/2012 02:23 PM, Gleb Natapov wrote:
+>>
+>>> kvm-unit-tests.git has a test for xchg to mmio.  Does it still work?
+>>>
+>>> I agree this code has to go, but it needs to be replaced by something.
+>>> Maybe a .valid flag in struct operand.
+>>>
+>> Valid will not enough for that.
 > 
-> Then I would have considered it even more important to warn them that
-> their specific usage is going to break eventually, with or without
-> compaction. However, you know the target audience for this warning so it's
-> your call.
+> If we make everything go through operands, any reason why not?
 > 
-> > > 
-> > > There should be a comment above it giving more information if you think
-> > > the embedded people will actually read it. Of course, if this warning
-> > > triggers during driver initialisation then it might be a completely useless.
-> > > You could rate limit the warning (printk_ratelimit()) instead to be more
-> > > effective. As I don't know what sort of device drivers you are seeing this
-> > > problem with I can't judge what the best style of warning would be.
-> > 
-> > Okay.
-> > I will send patch like below tomorrow if there isn't any objection.
-> > 
-> > if (unlikely(order > PAGE_ALLOC_COSTLY_ORDER)) {
-> > 	if (printk_ratelimit()) {
-> > 		printk("%s: page allocation high-order stupidity: order:%d, mode:0x%x\n",
-> > 			current->comm, order, gfp_mask);
-> > 		printk_once("Enable compaction or whatever\n");
-> > 		printk_once("Regular high-order kernel allocations like this will eventually start failing.\n");
 
-s/printk_once/printk/g
-Copy&Paste should go away. :(
+I noticed some instructions need to read ESP for many times (e.g, iret_real),
+maybe .valid flag is not enough for this case if the stack is in MMIO, yes?
 
-> > 		dump_stack();
-> > 	}
-> > }
-> 
-> The warning message could be improved. I did not expect you to use "Enable
-> compaction or whatever" verbatim. I was just illustrating what type of
-> warnings I thought might be useful. I expected you would change it to
-> something that embedded driver authors would pay attention to :)
+IIUC, I also noticed ESP is not reset back if it is emulated fail (mmio is needed).
+If the stack located in mmio region, this kind of instruct will be broken, i know no
+guest will use mmio as stack but SDM does not limit it, is it valid?
 
-Okay.
 
-> 
-> As you are using printk_ratelimit(), you can also use pr_warning to
-> annotate this as KERN_WARNING.
 
-Will do.
-Thanks, Mel.
 
-> 
-> -- 
-> Mel Gorman
-> SUSE Labs
