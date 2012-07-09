@@ -1,323 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735Ab2GIScK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 14:32:10 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:33793 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079Ab2GIScG (ORCPT
+	id S1752747Ab2GISdU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 14:33:20 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57877 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752079Ab2GISdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 14:32:06 -0400
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Tobias Klauser <tklauser@distanz.ch>, David Jander <david@protonic.nl>,
-        JJ Ding <dgdunix@gmail.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [PATCH RESEND V2] input: gpio_keys_polled: convert to dt
-Date: Mon,  9 Jul 2012 15:31:43 -0300
-Message-Id: <1341858707-1771-1-git-send-email-aletes.xgr@gmail.com>
+	Mon, 9 Jul 2012 14:33:19 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/2] mfd: arizona: Add support for multiple PDM speaker outputs
+Date: Mon,  9 Jul 2012 19:33:14 +0100
+Message-Id: <1341858795-27504-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.10
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+The registers have stride 2 so we can write the loop properly now.
 
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
-Applies to v3.5-rc6
+ drivers/mfd/arizona-core.c        |    5 ++---
+ include/linux/mfd/arizona/pdata.h |    2 +-
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-Changes since v1:
-* Add biding documentation
-* Fix sizeof in memset
-* Cleanup dt properties extraction
-* Use for_each macro
-* Fix memleak on buttons
-
-Thanks Rob Herring, Dmitry Torokhov and Roland Stiege for reviewing and 
-improvements suggestions.
-
- .../devicetree/bindings/input/gpio-keys-polled.txt |   38 ++++++
- drivers/input/keyboard/gpio_keys_polled.c          |  131 ++++++++++++++++++--
- 2 files changed, 158 insertions(+), 11 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/input/gpio-keys-polled.txt
-
-diff --git a/Documentation/devicetree/bindings/input/gpio-keys-polled.txt b/Documentation/devicetree/bindings/input/gpio-keys-polled.txt
-new file mode 100644
-index 0000000..313abef
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/gpio-keys-polled.txt
-@@ -0,0 +1,38 @@
-+Device-Tree bindings for input/gpio_keys_polled.c keyboard driver
-+
-+Required properties:
-+	- compatible = "gpio-keys-polled";
-+	- poll-interval: Poll interval time in milliseconds
-+
-+Optional properties:
-+	- autorepeat: Boolean, Enable auto repeat feature of Linux input
-+	  subsystem.
-+
-+Each button (key) is represented as a sub-node of "gpio-keys-polled":
-+Subnode properties:
-+
-+	- gpios: OF device-tree gpio specification.
-+	- label: Descriptive name of the key.
-+	- linux,code: Keycode to emit.
-+
-+Optional subnode-properties:
-+	- linux,input-type: Specify event type this button/key generates.
-+	  If not specified defaults to <1> == EV_KEY.
-+	- debounce-interval: Debouncing interval time in milliseconds.
-+	  If not specified defaults to 5.
-+	- gpio-key,wakeup: Boolean, button can wake-up the system.
-+
-+Example nodes:
-+
-+	gpio_keys_polled {
-+			compatible = "gpio-keys-polled";
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			poll-interval = <100>;
-+			autorepeat;
-+			button@21 {
-+				label = "GPIO Key UP";
-+				linux,code = <103>;
-+				gpios = <&gpio1 0 1>;
-+			};
-+			...
-diff --git a/drivers/input/keyboard/gpio_keys_polled.c b/drivers/input/keyboard/gpio_keys_polled.c
-index 20c8ab1..e5cb3ef 100644
---- a/drivers/input/keyboard/gpio_keys_polled.c
-+++ b/drivers/input/keyboard/gpio_keys_polled.c
-@@ -25,6 +25,8 @@
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
- #include <linux/gpio_keys.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_gpio.h>
- 
- #define DRV_NAME	"gpio-keys-polled"
- 
-@@ -38,7 +40,7 @@ struct gpio_keys_button_data {
- struct gpio_keys_polled_dev {
- 	struct input_polled_dev *poll_dev;
- 	struct device *dev;
--	struct gpio_keys_platform_data *pdata;
-+	struct gpio_keys_platform_data pdata;
- 	struct gpio_keys_button_data data[0];
- };
- 
-@@ -67,11 +69,11 @@ static void gpio_keys_polled_check_state(struct input_dev *input,
- static void gpio_keys_polled_poll(struct input_polled_dev *dev)
- {
- 	struct gpio_keys_polled_dev *bdev = dev->private;
--	struct gpio_keys_platform_data *pdata = bdev->pdata;
-+	struct gpio_keys_platform_data *pdata = &bdev->pdata;
- 	struct input_dev *input = dev->input;
- 	int i;
- 
--	for (i = 0; i < bdev->pdata->nbuttons; i++) {
-+	for (i = 0; i < pdata->nbuttons; i++) {
- 		struct gpio_keys_button_data *bdata = &bdev->data[i];
- 
- 		if (bdata->count < bdata->threshold)
-@@ -85,7 +87,7 @@ static void gpio_keys_polled_poll(struct input_polled_dev *dev)
- static void gpio_keys_polled_open(struct input_polled_dev *dev)
- {
- 	struct gpio_keys_polled_dev *bdev = dev->private;
--	struct gpio_keys_platform_data *pdata = bdev->pdata;
-+	struct gpio_keys_platform_data *pdata = &bdev->pdata;
- 
- 	if (pdata->enable)
- 		pdata->enable(bdev->dev);
-@@ -94,31 +96,125 @@ static void gpio_keys_polled_open(struct input_polled_dev *dev)
- static void gpio_keys_polled_close(struct input_polled_dev *dev)
- {
- 	struct gpio_keys_polled_dev *bdev = dev->private;
--	struct gpio_keys_platform_data *pdata = bdev->pdata;
-+	struct gpio_keys_platform_data *pdata = &bdev->pdata;
- 
- 	if (pdata->disable)
- 		pdata->disable(bdev->dev);
- }
-+#ifdef CONFIG_OF
-+static int gpio_keys_polled_get_devtree_pdata(struct device *dev,
-+			    struct gpio_keys_platform_data *pdata)
-+{
-+	struct device_node *node, *pp;
-+	int i;
-+	struct gpio_keys_button *buttons;
-+
-+	node = dev->of_node;
-+	if (node == NULL)
-+		return -ENODEV;
-+
-+	memset(pdata, 0, sizeof(*pdata));
-+
-+	pdata->rep = !!of_get_property(node, "autorepeat", NULL);
-+
-+	of_property_read_u32(node, "poll-interval", &pdata->poll_interval);
-+
-+	pdata->nbuttons = of_get_child_count(node);
-+	if (pdata->nbuttons == 0)
-+		return -ENODEV;
-+
-+	buttons = kzalloc(pdata->nbuttons * (sizeof *buttons), GFP_KERNEL);
-+	if (!buttons)
-+		return -ENOMEM;
-+
-+	i = 0;
-+	for_each_child_of_node(node, pp) {
-+		enum of_gpio_flags flags;
-+
-+		if (!of_find_property(pp, "gpios", NULL)) {
-+			pdata->nbuttons--;
-+			dev_warn(dev, "Found button without gpios\n");
-+			continue;
-+		}
-+		buttons[i].gpio = of_get_gpio_flags(pp, 0, &flags);
-+		buttons[i].active_low = flags & OF_GPIO_ACTIVE_LOW;
-+
-+		if (of_property_read_u32(pp, "linux,code", &buttons[i].code)) {
-+			dev_err(dev, "Button without keycode: 0x%x\n",
-+				buttons[i].gpio);
-+			goto out_fail;
-+		}
-+
-+		buttons[i].desc = of_get_property(pp, "label", NULL);
-+
-+		if (of_property_read_u32(pp, "linux,input-type",
-+			&buttons[i].type))
-+			buttons[i].type = EV_KEY;
-+
-+		buttons[i].wakeup = !!of_get_property(pp, "gpio-key,wakeup",
-+			NULL);
-+
-+		if (of_property_read_u32(pp, "debounce-interval",
-+			&buttons[i].debounce_interval))
-+			buttons[i].debounce_interval = 5;
-+
-+		i++;
-+	}
-+
-+	pdata->buttons = buttons;
-+
-+	return 0;
-+
-+out_fail:
-+	kfree(buttons);
-+	return -ENODEV;
-+}
-+
-+static struct of_device_id gpio_keys_polled_of_match[] = {
-+	{ .compatible = "gpio-keys-polled", },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, gpio_keys_polled_of_match);
-+
-+#else
-+
-+static int gpio_keys_polled_get_devtree_pdata(struct device *dev,
-+			    struct gpio_keys_platform_data *altp)
-+{
-+	return -ENODEV;
-+}
-+#endif
- 
- static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
- {
- 	struct gpio_keys_platform_data *pdata = pdev->dev.platform_data;
- 	struct device *dev = &pdev->dev;
-+	struct gpio_keys_platform_data alt_pdata;
- 	struct gpio_keys_polled_dev *bdev;
- 	struct input_polled_dev *poll_dev;
- 	struct input_dev *input;
- 	int error;
- 	int i;
- 
--	if (!pdata || !pdata->poll_interval)
--		return -EINVAL;
-+	if (!pdata) {
-+		error = gpio_keys_polled_get_devtree_pdata(dev, &alt_pdata);
-+		if (error)
-+			return error;
-+		pdata = &alt_pdata;
-+	}
-+
-+	if (!pdata->poll_interval) {
-+		error = -EINVAL;
-+		goto err_free_buttons;
-+	}
- 
- 	bdev = kzalloc(sizeof(struct gpio_keys_polled_dev) +
- 		       pdata->nbuttons * sizeof(struct gpio_keys_button_data),
- 		       GFP_KERNEL);
- 	if (!bdev) {
- 		dev_err(dev, "no memory for private data\n");
--		return -ENOMEM;
-+		error = -ENOMEM;
-+		goto err_free_buttons;
+diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+index 83558b5..b4978b5 100644
+--- a/drivers/mfd/arizona-core.c
++++ b/drivers/mfd/arizona-core.c
+@@ -462,18 +462,17 @@ int __devinit arizona_dev_init(struct arizona *arizona)
+ 				   ARIZONA_OUT1_MONO, val);
  	}
  
- 	poll_dev = input_allocate_polled_device();
-@@ -184,7 +280,7 @@ static int __devinit gpio_keys_polled_probe(struct platform_device *pdev)
+-	BUILD_BUG_ON(ARIZONA_MAX_PDM_SPK > 1);
+ 	for (i = 0; i < ARIZONA_MAX_PDM_SPK; i++) {
+ 		if (arizona->pdata.spk_mute[i])
+ 			regmap_update_bits(arizona->regmap,
+-					   ARIZONA_PDM_SPK1_CTRL_1,
++					   ARIZONA_PDM_SPK1_CTRL_1 + (i * 2),
+ 					   ARIZONA_SPK1_MUTE_ENDIAN_MASK |
+ 					   ARIZONA_SPK1_MUTE_SEQ1_MASK,
+ 					   arizona->pdata.spk_mute[i]);
  
- 	bdev->poll_dev = poll_dev;
- 	bdev->dev = dev;
--	bdev->pdata = pdata;
-+	bdev->pdata = *pdata;
- 	platform_set_drvdata(pdev, bdev);
+ 		if (arizona->pdata.spk_fmt[i])
+ 			regmap_update_bits(arizona->regmap,
+-					   ARIZONA_PDM_SPK1_CTRL_2,
++					   ARIZONA_PDM_SPK1_CTRL_2 + (i * 2),
+ 					   ARIZONA_SPK1_FMT_MASK,
+ 					   arizona->pdata.spk_fmt[i]);
+ 	}
+diff --git a/include/linux/mfd/arizona/pdata.h b/include/linux/mfd/arizona/pdata.h
+index fa2cb98..68ff91a 100644
+--- a/include/linux/mfd/arizona/pdata.h
++++ b/include/linux/mfd/arizona/pdata.h
+@@ -62,7 +62,7 @@
  
- 	error = input_register_polled_device(poll_dev);
-@@ -209,15 +305,19 @@ err_free_gpio:
+ #define ARIZONA_MAX_OUTPUT 5
  
- err_free_bdev:
- 	kfree(bdev);
--
- 	platform_set_drvdata(pdev, NULL);
-+
-+err_free_buttons:
-+	/* If we have no platform_data, we allocated buttons dynamically. */
-+	if (!pdev->dev.platform_data)
-+		kfree(pdata->buttons);
- 	return error;
- }
+-#define ARIZONA_MAX_PDM_SPK 1
++#define ARIZONA_MAX_PDM_SPK 2
  
- static int __devexit gpio_keys_polled_remove(struct platform_device *pdev)
- {
- 	struct gpio_keys_polled_dev *bdev = platform_get_drvdata(pdev);
--	struct gpio_keys_platform_data *pdata = bdev->pdata;
-+	struct gpio_keys_platform_data *pdata = &bdev->pdata;
- 	int i;
+ struct regulator_init_data;
  
- 	input_unregister_polled_device(bdev->poll_dev);
-@@ -227,6 +327,14 @@ static int __devexit gpio_keys_polled_remove(struct platform_device *pdev)
- 
- 	input_free_polled_device(bdev->poll_dev);
- 
-+	/*
-+	 * If we had no platform_data, we allocated buttons dynamically, and
-+	 * must free them here. pdata->buttons is the pointer to the
-+	 * beginning of the allocated array.
-+	 */
-+	if (!pdev->dev.platform_data)
-+		kfree(pdata->buttons);
-+
- 	kfree(bdev);
- 	platform_set_drvdata(pdev, NULL);
- 
-@@ -239,6 +347,7 @@ static struct platform_driver gpio_keys_polled_driver = {
- 	.driver	= {
- 		.name	= DRV_NAME,
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(gpio_keys_polled_of_match),
- 	},
- };
- module_platform_driver(gpio_keys_polled_driver);
 -- 
 1.7.10
 
