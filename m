@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab2GIOob (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:44:31 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:39371 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754435Ab2GIOo1 (ORCPT
+	id S1754434Ab2GIOiO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:38:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38196 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754389Ab2GIOiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:44:27 -0400
-Message-ID: <1341845061.8153.2.camel@phoenix>
-Subject: [PATCH] mfd: Export pm80x_regmap_config
-From: Axel Lin <axel.lin@gmail.com>
-To: SamuelOrtiz <sameo@linux.intel.com>
-Cc: Qiao Zhou <zhouqiao@marvell.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 09 Jul 2012 22:44:21 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 9 Jul 2012 10:38:08 -0400
+Message-Id: <20120709143122.828489522@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 09 Jul 2012 15:31:59 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Junxiao Bi <junxiao.bi@oracle.com>,
+        Joel Becker <jlbec@evilplan.org>
+Subject: [ 43/48] ocfs2: clear unaligned io flag when dio fails
+In-Reply-To: <20120709143116.348975190@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes below build error when CONFIG_MFD_88PM800=m.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-ERROR: "pm80x_regmap_config" [drivers/mfd/88pm800.ko] undefined!
-make[1]: *** [__modpost] Error 1
-make: *** [modules] Error 2
+------------------
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+From: Junxiao Bi <junxiao.bi@oracle.com>
+
+commit 3e5d3c35a68c9a933bdbdd8685bd1a205b57e806 upstream.
+
+The unaligned io flag is set in the kiocb when an unaligned
+dio is issued, it should be cleared even when the dio fails,
+or it may affect the following io which are using the same
+kiocb.
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Signed-off-by: Joel Becker <jlbec@evilplan.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mfd/88pm80x.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/ocfs2/file.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/88pm80x.c b/drivers/mfd/88pm80x.c
-index 77b8655..62da342 100644
---- a/drivers/mfd/88pm80x.c
-+++ b/drivers/mfd/88pm80x.c
-@@ -29,6 +29,7 @@ const struct regmap_config pm80x_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
- };
-+EXPORT_SYMBOL_GPL(pm80x_regmap_config);
+diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+index 061591a..98513c8 100644
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -2422,8 +2422,10 @@ out_dio:
+ 		unaligned_dio = 0;
+ 	}
  
- int __devinit pm80x_init(struct i2c_client *client,
- 				 const struct i2c_device_id *id)
--- 
-1.7.9.5
-
+-	if (unaligned_dio)
++	if (unaligned_dio) {
++		ocfs2_iocb_clear_unaligned_aio(iocb);
+ 		atomic_dec(&OCFS2_I(inode)->ip_unaligned_aio);
++	}
+ 
+ out:
+ 	if (rw_level != -1)
 
 
