@@ -1,63 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab2GIWbO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 18:31:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43611 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752246Ab2GIWbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 18:31:12 -0400
-Message-ID: <4FFB5B81.4040903@redhat.com>
-Date: Mon, 09 Jul 2012 18:30:25 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754563Ab2GIWgJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 18:36:09 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54089 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab2GIWgG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 18:36:06 -0400
+Date: Mon, 9 Jul 2012 15:35:26 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] shmem/tmpfs: three late patches
+Message-ID: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, S390 <linux-s390@vger.kernel.org>,
-        Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH RFC 2/2] kvm PLE handler: Choose better candidate for
- directed yield
-References: <20120709062012.24030.37154.sendpatchset@codeblue> <20120709062053.24030.52767.sendpatchset@codeblue>
-In-Reply-To: <20120709062053.24030.52767.sendpatchset@codeblue>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2012 02:20 AM, Raghavendra K T wrote:
+Here's three little shmem/tmpfs patches against v3.5-rc6.
+Either the first should go in before v3.5 final, or it should not go
+in at all.  The second and third are independent of it: I'd like them
+in v3.5, but don't have a clinching argument: see what you think.
 
-> +bool kvm_arch_vcpu_check_and_update_eligible(struct kvm_vcpu *vcpu)
-> +{
-> +	bool eligible;
-> +
-> +	eligible = !vcpu->arch.plo.pause_loop_exited ||
-> +			(vcpu->arch.plo.pause_loop_exited&&
-> +			 vcpu->arch.plo.dy_eligible);
-> +
-> +	if (vcpu->arch.plo.pause_loop_exited)
-> +		vcpu->arch.plo.dy_eligible = !vcpu->arch.plo.dy_eligible;
-> +
-> +	return eligible;
-> +}
+[PATCH 1/3] tmpfs: revert SEEK_DATA and SEEK_HOLE
+[PATCH 2/3] shmem: fix negative rss in memcg memory.stat
+[PATCH 3/3] shmem: cleanup shmem_add_to_page_cache
 
-This is a nice simple mechanism to skip CPUs that were
-eligible last time and had pause loop exits recently.
+ mm/shmem.c |  193 +++++++++++++++------------------------------------
+ 1 file changed, 58 insertions(+), 135 deletions(-)
 
-However, it could stand some documentation.  Please
-add a good comment explaining how and why the algorithm
-works, when arch.plo.pause_loop_exited is cleared, etc...
-
-It would be good to make this heuristic understandable
-to people who look at the code for the first time.
-
--- 
-All rights reversed
+Thanks,
+Hugh
