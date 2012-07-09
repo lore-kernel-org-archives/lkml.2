@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292Ab2GIOiF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 10:38:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38086 "EHLO
+	id S1754517Ab2GIOiY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 10:38:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38267 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754130Ab2GIOh4 (ORCPT
+	by vger.kernel.org with ESMTP id S1754288Ab2GIOiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 10:37:56 -0400
-Message-Id: <20120709143116.945009227@decadent.org.uk>
+	Mon, 9 Jul 2012 10:38:20 -0400
+Message-Id: <20120709143120.752484885@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Jul 2012 15:31:18 +0100
+Date: Mon, 09 Jul 2012 15:31:44 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tao Guo <glorioustao@gmail.com>,
-        Tao Guo <Tao.Guo@emc.com>, Neil Brown <neilb@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@kernel.org>
-Subject: [ 02/48] umem: fix up unplugging
+        alan@lxorguk.ukuu.org.uk, Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 28/48] ARM: fix rcu stalls on SMP platforms
 In-Reply-To: <20120709143116.348975190@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,85 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tao Guo <glorioustao@gmail.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 32587371ad3db2f9d335de10dbd8cffd4fff5669 upstream.
+commit 7deabca0acfe02b8e18f59a4c95676012f49a304 upstream.
 
-Fix a regression introduced by 7eaceaccab5f40 ("block: remove per-queue
-plugging").  In that patch, Jens removed the whole mm_unplug_device()
-function, which used to be the trigger to make umem start to work.
+We can stall RCU processing on SMP platforms if a CPU sits in its idle
+loop for a long time.  This happens because we don't call irq_enter()
+and irq_exit() around generic_smp_call_function_interrupt() and
+friends.  Add the necessary calls, and remove the one from within
+ipi_timer(), so that they're all in a common place.
 
-We need to implement unplugging to make umem start to work, or I/O will
-never be triggered.
-
-Signed-off-by: Tao Guo <Tao.Guo@emc.com>
-Cc: Neil Brown <neilb@suse.de>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Shaohua Li <shli@kernel.org>
-Acked-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/block/umem.c |   40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+ arch/arm/kernel/smp.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/block/umem.c b/drivers/block/umem.c
-index aa27120..9a72277 100644
---- a/drivers/block/umem.c
-+++ b/drivers/block/umem.c
-@@ -513,6 +513,44 @@ static void process_page(unsigned long data)
- 	}
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 57db122..26cdc49 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -443,9 +443,7 @@ static DEFINE_PER_CPU(struct clock_event_device, percpu_clockevent);
+ static void ipi_timer(void)
+ {
+ 	struct clock_event_device *evt = &__get_cpu_var(percpu_clockevent);
+-	irq_enter();
+ 	evt->event_handler(evt);
+-	irq_exit();
  }
  
-+struct mm_plug_cb {
-+	struct blk_plug_cb cb;
-+	struct cardinfo *card;
-+};
-+
-+static void mm_unplug(struct blk_plug_cb *cb)
-+{
-+	struct mm_plug_cb *mmcb = container_of(cb, struct mm_plug_cb, cb);
-+
-+	spin_lock_irq(&mmcb->card->lock);
-+	activate(mmcb->card);
-+	spin_unlock_irq(&mmcb->card->lock);
-+	kfree(mmcb);
-+}
-+
-+static int mm_check_plugged(struct cardinfo *card)
-+{
-+	struct blk_plug *plug = current->plug;
-+	struct mm_plug_cb *mmcb;
-+
-+	if (!plug)
-+		return 0;
-+
-+	list_for_each_entry(mmcb, &plug->cb_list, cb.list) {
-+		if (mmcb->cb.callback == mm_unplug && mmcb->card == card)
-+			return 1;
-+	}
-+	/* Not currently on the callback list */
-+	mmcb = kmalloc(sizeof(*mmcb), GFP_ATOMIC);
-+	if (!mmcb)
-+		return 0;
-+
-+	mmcb->card = card;
-+	mmcb->cb.callback = mm_unplug;
-+	list_add(&mmcb->cb.list, &plug->cb_list);
-+	return 1;
-+}
-+
- static void mm_make_request(struct request_queue *q, struct bio *bio)
- {
- 	struct cardinfo *card = q->queuedata;
-@@ -523,6 +561,8 @@ static void mm_make_request(struct request_queue *q, struct bio *bio)
- 	*card->biotail = bio;
- 	bio->bi_next = NULL;
- 	card->biotail = &bio->bi_next;
-+	if (bio->bi_rw & REQ_SYNC || !mm_check_plugged(card))
-+		activate(card);
- 	spin_unlock_irq(&card->lock);
+ #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
+@@ -548,7 +546,9 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
  
- 	return;
+ 	switch (ipinr) {
+ 	case IPI_TIMER:
++		irq_enter();
+ 		ipi_timer();
++		irq_exit();
+ 		break;
+ 
+ 	case IPI_RESCHEDULE:
+@@ -556,15 +556,21 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+ 		break;
+ 
+ 	case IPI_CALL_FUNC:
++		irq_enter();
+ 		generic_smp_call_function_interrupt();
++		irq_exit();
+ 		break;
+ 
+ 	case IPI_CALL_FUNC_SINGLE:
++		irq_enter();
+ 		generic_smp_call_function_single_interrupt();
++		irq_exit();
+ 		break;
+ 
+ 	case IPI_CPU_STOP:
++		irq_enter();
+ 		ipi_cpu_stop(cpu);
++		irq_exit();
+ 		break;
+ 
+ 	default:
 
 
