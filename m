@@ -1,120 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175Ab2GIGXJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 02:23:09 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:58993 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966Ab2GIGW5 (ORCPT
+	id S1751890Ab2GIGXq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 02:23:46 -0400
+Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:54998 "EHLO
+	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab2GIGXp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 02:22:57 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>
-Cc: S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        KVM <kvm@vger.kernel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Date: Mon, 09 Jul 2012 11:50:54 +0530
-Message-Id: <20120709062053.24030.52767.sendpatchset@codeblue>
-In-Reply-To: <20120709062012.24030.37154.sendpatchset@codeblue>
-References: <20120709062012.24030.37154.sendpatchset@codeblue>
-Subject: [PATCH RFC 2/2] kvm PLE handler: Choose better candidate for directed yield
-x-cbid: 12070820-1618-0000-0000-00000206FC88
+	Mon, 9 Jul 2012 02:23:45 -0400
+Message-Id: <4FFA950B020000A10000A68F@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Mon, 09 Jul 2012 08:23:39 +0200
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: "Ryan Mallon" <rmallon@gmail.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Antw: Re: /sys and access(2): Correctly implemented?
+References: <4FF6A17B020000A10000A5E8@gwsmtp1.uni-regensburg.de>
+ <4FFA16B6.9050009@gmail.com>
+In-Reply-To: <4FFA16B6.9050009@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>>> Ryan Mallon <rmallon@gmail.com> schrieb am 09.07.2012 um 01:24 in Nachricht
+<4FFA16B6.9050009@gmail.com>:
+> On 06/07/12 16:27, Ulrich Windl wrote:
+> > Hi!
+> > 
+> > Recently I found a problem with the command (kernel 3.0.34-0.7-default from 
+> SLES 11 SP2, run as root):
+> > test -r "$file" && cat "$file"
+> > emitting "Permission denied"
+> > 
+> > Investigating, I found that "test" actually uses "access()" to check for 
+> permissions. Unfortunately there are some files in /sys that have "write-only" 
+> permission bits set (e.g. /sys/devices/system/cpu/probe).
+> > 
+> > ~ # ll /sys/devices/system/cpu/probe
+> > --w------- 1 root root 4096 Jun 29 12:43 /sys/devices/system/cpu/probe
+> > ~ # F=/sys/devices/system/cpu/probe
+> > ~ # test "$F" && cat "$F"
+> > cat: /sys/devices/system/cpu/probe: Permission denied
+> 
+> Looks like you have a typo here, I think you wanted "test -r $F", not
+> "test $F", the latter will just evaluate "$F" as an expression which
+> will be true, and so you get the permission denied error running cat.
 
-Currently PLE handler can repeatedly do a directed yield to same vcpu
-that has recently done PL exit. This can degrade the performance
-Try to yield to most eligible guy instead, by alternate yielding.
+Hi!
 
-Precisely, give chance to a VCPU which has:
- (a) Not done PLE exit at all (probably he is preempted lock-holder)
- (b) VCPU skipped in last iteration because it did PL exit, and probably
- has become eligible now (next eligible lock holder)
+You are right: It's a typo, but only in the message; the actual test was done correctly, and the outcome is quite the same.
 
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
----
- arch/s390/include/asm/kvm_host.h |    5 +++++
- arch/x86/include/asm/kvm_host.h  |    2 +-
- arch/x86/kvm/x86.c               |   14 ++++++++++++++
- virt/kvm/kvm_main.c              |    3 +++
- 4 files changed, 23 insertions(+), 1 deletions(-)
+> 
+> Using "test -r $F" on a write-only sysfs file correctly returns false on
+> my machine (Ubuntu 10.04.4 LTS/2.6.32-41-generic).
 
-diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
-index dd17537..884f2c4 100644
---- a/arch/s390/include/asm/kvm_host.h
-+++ b/arch/s390/include/asm/kvm_host.h
-@@ -256,5 +256,10 @@ struct kvm_arch{
- 	struct gmap *gmap;
- };
- 
-+static inline bool kvm_arch_vcpu_check_and_update_eligible(struct kvm_vcpu *v)
-+{
-+	return true;
-+}
-+
- extern int sie64a(struct kvm_s390_sie_block *, u64 *);
- #endif
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 857ca68..ce01db3 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -962,7 +962,7 @@ extern bool kvm_find_async_pf_gfn(struct kvm_vcpu *vcpu, gfn_t gfn);
- void kvm_complete_insn_gp(struct kvm_vcpu *vcpu, int err);
- 
- int kvm_is_in_guest(void);
--
-+bool kvm_arch_vcpu_check_and_update_eligible(struct kvm_vcpu *vcpu);
- void kvm_pmu_init(struct kvm_vcpu *vcpu);
- void kvm_pmu_destroy(struct kvm_vcpu *vcpu);
- void kvm_pmu_reset(struct kvm_vcpu *vcpu);
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 07dbd14..24ceae8 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -6623,6 +6623,20 @@ bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu)
- 			kvm_x86_ops->interrupt_allowed(vcpu);
- }
- 
-+bool kvm_arch_vcpu_check_and_update_eligible(struct kvm_vcpu *vcpu)
-+{
-+	bool eligible;
-+
-+	eligible = !vcpu->arch.plo.pause_loop_exited ||
-+			(vcpu->arch.plo.pause_loop_exited &&
-+			 vcpu->arch.plo.dy_eligible);
-+
-+	if (vcpu->arch.plo.pause_loop_exited)
-+		vcpu->arch.plo.dy_eligible = !vcpu->arch.plo.dy_eligible;
-+
-+	return eligible;
-+}
-+
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_exit);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_inj_virq);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_page_fault);
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 7e14068..519321a 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1595,6 +1595,9 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
- 				continue;
- 			if (waitqueue_active(&vcpu->wq))
- 				continue;
-+			if (!kvm_arch_vcpu_check_and_update_eligible(vcpu)) {
-+				continue;
-+			}
- 			if (kvm_vcpu_yield_to(vcpu)) {
- 				kvm->last_boosted_vcpu = i;
- 				yielded = 1;
+Not here, unfortunately:
+# ll /sys/devices/system/cpu/probe
+--w------- 1 root root 4096 Jul  2 11:52 /sys/devices/system/cpu/probe
+# F=/sys/devices/system/cpu/probe
+# test -r "$F" && cat "$F"
+cat: /sys/devices/system/cpu/probe: Permission denied
+# uname -a
+Linux h07 2.6.32.59-0.3-default #1 SMP 2012-04-27 11:14:44 +0200 x86_64 x86_64 x86_64 GNU/Linux
+
+Regards,
+Ulrich
+
 
