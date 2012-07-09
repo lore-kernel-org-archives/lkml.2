@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911Ab2GIRmM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 13:42:12 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:53869 "EHLO
+	id S1752003Ab2GIRnc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 13:43:32 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:54683 "EHLO
 	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084Ab2GIRmK (ORCPT
+	with ESMTP id S1751084Ab2GIRnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 13:42:10 -0400
-Date: Mon, 9 Jul 2012 19:42:02 +0200
+	Mon, 9 Jul 2012 13:43:31 -0400
+Date: Mon, 9 Jul 2012 19:43:23 +0200
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -24,28 +24,32 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/6] rcu: Settle config for userspace extended quiescent
- state
-Message-ID: <20120709174200.GB8185@somewhere.redhat.com>
+Subject: Re: [PATCH 6/6] x86: Exit RCU extended QS on notify resume
+Message-ID: <20120709174321.GC8185@somewhere.redhat.com>
 References: <1341576018-10721-1-git-send-email-fweisbec@gmail.com>
- <1341576018-10721-2-git-send-email-fweisbec@gmail.com>
- <20120706163129.GV2522@linux.vnet.ibm.com>
+ <1341576018-10721-7-git-send-email-fweisbec@gmail.com>
+ <20120706163338.GW2522@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120706163129.GV2522@linux.vnet.ibm.com>
+In-Reply-To: <20120706163338.GW2522@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, 2012 at 09:31:29AM -0700, Paul E. McKenney wrote:
-> On Fri, Jul 06, 2012 at 02:00:13PM +0200, Frederic Weisbecker wrote:
-> > Create a new config option under the RCU menu that put
-> > CPUs under RCU extended quiescent state (as in dynticks
-> > idle mode) when they run in userspace. This require
-> > some contribution from architectures to hook into kernel
-> > and userspace boundaries.
+On Fri, Jul 06, 2012 at 09:33:38AM -0700, Paul E. McKenney wrote:
+> On Fri, Jul 06, 2012 at 02:00:18PM +0200, Frederic Weisbecker wrote:
+> > do_notify_resume() may be called on irq exit but it won't
+> > be protected between rcu_irq_enter() and rcu_irq_exit()
+> > and we don't call rcu_user_exit() on irq entry (unlike
+> > syscalls/exceptions entry).
+> > 
+> > Since it can use RCU read side critical section, we must call
+> > rcu_user_exit() before doing anything there.
+> > 
+> > This complete support for RCU userspace extended quiescent state
+> > in x86.
 > > 
 > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 > > Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -67,51 +71,23 @@ On Fri, Jul 06, 2012 at 09:31:29AM -0700, Paul E. McKenney wrote:
 > > Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 > > Cc: Thomas Gleixner <tglx@linutronix.de>
 > > ---
-> >  arch/Kconfig     |   13 +++++++++++++
-> >  init/Kconfig     |   10 ++++++++++
-> >  kernel/rcutree.c |    4 ++++
-> >  3 files changed, 27 insertions(+), 0 deletions(-)
+> >  arch/x86/Kconfig         |    1 +
+> >  arch/x86/kernel/signal.c |    2 ++
+> >  2 files changed, 3 insertions(+), 0 deletions(-)
 > > 
-> > diff --git a/arch/Kconfig b/arch/Kconfig
-> > index 8c3d957..c2e0ce4 100644
-> > --- a/arch/Kconfig
-> > +++ b/arch/Kconfig
-> > @@ -274,4 +274,17 @@ config SECCOMP_FILTER
-> > 
-> >  	  See Documentation/prctl/seccomp_filter.txt for details.
-> > 
-> > +config HAVE_RCU_USER_QS
-> > +	bool
-> > +	help
-> > +	  Provide kernel entry/exit hooks necessary for userspace
-> > +	  RCU extended quiescent state. Syscalls and exceptions
-> > +	  low level handlers must be wrapped with a call to rcu_user_exit()
-> > +	  on entry and rcu_user_enter() before resuming userspace. Irqs
-> > +	  entry don't need to call rcu_user_exit() because their high level
-> > +	  handlers are protected inside rcu_irq_enter/rcu_irq_exit() but
-> > +	  preemption or signal handling on irq exit still need to be protected
-> > +	  with a call to rcu_user_exit(). rcu_user_enter() must then be
-> > +	  called back on irq exit when the preempted task is back on the CPU.
-> > +
-> >  source "kernel/gcov/Kconfig"
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index d07dcf9..3a4af8f 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -441,6 +441,16 @@ config PREEMPT_RCU
-> >  	  This option enables preemptible-RCU code that is common between
-> >  	  the TREE_PREEMPT_RCU and TINY_PREEMPT_RCU implementations.
-> > 
-> > +config RCU_USER_QS
-> > +	bool "Consider userspace as in RCU extended quiescent state"
-> > +	depends on HAVE_RCU_USER_QS && SMP
+> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> > index c70684f..38dfcc2 100644
+> > --- a/arch/x86/Kconfig
+> > +++ b/arch/x86/Kconfig
+> > @@ -95,6 +95,7 @@ config X86
+> >  	select KTIME_SCALAR if X86_32
+> >  	select GENERIC_STRNCPY_FROM_USER
+> >  	select GENERIC_STRNLEN_USER
+> > +	select HAVE_RCU_USER_QS if X86_64
 > 
-> OK, I'll bite...  Why the "SMP"?  RCU could make good use of knowing
-> about user-mode executing even in UP kernels.
+> And I will bite yet again.  Why only 64-bit kernels?
+> 
+> 							Thanx, Paul
 
-Because Tiny RCU doesn't implement rcu_user_enter()/exit yet. And it
-doesn't need it for now.
-
-To better express the constraint I should probably have used:
-
-	depends on TREE_RCU || TREE_PREEMPT_RCU
+Because I don't want to spend time on implementing it the same way on 32
+in case people disagree with the whole design :)
