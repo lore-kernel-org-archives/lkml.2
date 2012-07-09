@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab2GIQx0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 12:53:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63312 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752418Ab2GIQxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 12:53:25 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH] kvm: Fix device assignment threaded irq handler
-To: avi@redhat.com, mtosatti@redhat.com, mst@redhat.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
-Date: Mon, 09 Jul 2012 10:53:22 -0600
-Message-ID: <20120709165152.30002.32440.stgit@bling.home>
-User-Agent: StGIT/0.14.3
+	id S1752572Ab2GIQ5d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 12:57:33 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:36840 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752418Ab2GIQ5b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 12:57:31 -0400
+Date: Mon, 9 Jul 2012 18:57:10 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH 04/16] mm: allow PF_MEMALLOC from softirq context
+Message-ID: <20120709165710.GC3515@breakpoint.cc>
+References: <1340375443-22455-1-git-send-email-mgorman@suse.de>
+ <1340375443-22455-5-git-send-email-mgorman@suse.de>
+ <20120626165513.GD6509@breakpoint.cc>
+ <20120627082614.GE8271@suse.de>
+ <20120708181211.GE2872@breakpoint.cc>
+ <20120709100442.GZ14154@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120709100442.GZ14154@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel no longer allows us to pass NULL for the hard handler
-without also specifying IRQF_ONESHOT.  IRQF_ONESHOT imposes latency
-in the exit path that we don't need for MSI interrupts.  Long term
-we'd like to inject these interrupts from the hard handler when
-possible.  In the short term, we can create dummy hard handlers
-that return us to the previous behavior.  Credit to Michael for
-original patch.
+On Mon, Jul 09, 2012 at 11:04:42AM +0100, Mel Gorman wrote:
+> > - lets assume your allocation happens with kmalloc() without __GFP_MEMALLOC
+> >   and current->flags has PF_MEMALLOC ORed and your SLAB pool is empty. This
+> >   forces SLAB to allocate more pages from the buddy allocator with it will
+> >   receive more likely (due to ->current->flags + PF_MEMALLOC) but SLAB will
+> >   drop this extra memory because the page has ->pf_memory (or something like
+> >   that) set and the GFP_FLAGS do not have __GFP_MEMALLOC set.
+> > 
+> 
+> It's recorded if the slab page was allocated from PFMEMALLOC reserves (see
+> patch 2 from the swap over NBD series). slab will use this page for objects
+> but only allocate them to callers that pass a gfp_pfmemalloc_allowed() check.
+> kmalloc() users with either __GFP_MEMALLOC or PF_MEMALLOC will get
+> the pages they need but they will not "leak" to !_GFP_MEMALLOC users as
+> that would potentially deadlock.
 
-Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=43328
+Argh, I missed that gfp_to_alloc_flags() is not only called from
+within the buddy allocater but also from slab. So this is fine then :)
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+One thing:
+You only get current->flags |= PF_MEMALLOC in softirq _if_ the skb, which is 
+passed to netif_receive_skb(), was allocated with __GFP_MEMALLOC. That
+means if the NIC's RX allocation did not require an allocation from the
+emergency pool (without ->pfmemalloc set) then you never use this extra
+pool, even if this skb would end up in your swap socket. Also, the other way
+around, where you allocate it from the emergency pool but it is a user
+socket and you could drop it.
 
-Patch against kvm/master for v3.5
+What about extending sk_set_memalloc() to record socket's ips + ports
+in a separate list so that skb_pfmemalloc_protocol() might use that
+information and decide on per-protocol basis if the skb is worth to
+spend more ressource to deliver it. That means you would enable the
+extra pool if the currently received skb is part of your swap socket and
+not if the skb was allocated from the emergency pool.
 
- virt/kvm/assigned-dev.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+That said, there is nothing wrong with the code as of now and this
+optimization could be added later (if at all).
 
-diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
-index b1e091a..23a41a9 100644
---- a/virt/kvm/assigned-dev.c
-+++ b/virt/kvm/assigned-dev.c
-@@ -334,6 +334,11 @@ static int assigned_device_enable_host_intx(struct kvm *kvm,
- }
- 
- #ifdef __KVM_HAVE_MSI
-+static irqreturn_t kvm_assigned_dev_msi(int irq, void *dev_id)
-+{
-+	return IRQ_WAKE_THREAD;
-+}
-+
- static int assigned_device_enable_host_msi(struct kvm *kvm,
- 					   struct kvm_assigned_dev_kernel *dev)
- {
-@@ -346,7 +351,7 @@ static int assigned_device_enable_host_msi(struct kvm *kvm,
- 	}
- 
- 	dev->host_irq = dev->dev->irq;
--	if (request_threaded_irq(dev->host_irq, NULL,
-+	if (request_threaded_irq(dev->host_irq, kvm_assigned_dev_msi,
- 				 kvm_assigned_dev_thread_msi, 0,
- 				 dev->irq_name, dev)) {
- 		pci_disable_msi(dev->dev);
-@@ -358,6 +363,11 @@ static int assigned_device_enable_host_msi(struct kvm *kvm,
- #endif
- 
- #ifdef __KVM_HAVE_MSIX
-+static irqreturn_t kvm_assigned_dev_msix(int irq, void *dev_id)
-+{
-+	return IRQ_WAKE_THREAD;
-+}
-+
- static int assigned_device_enable_host_msix(struct kvm *kvm,
- 					    struct kvm_assigned_dev_kernel *dev)
- {
-@@ -374,7 +384,8 @@ static int assigned_device_enable_host_msix(struct kvm *kvm,
- 
- 	for (i = 0; i < dev->entries_nr; i++) {
- 		r = request_threaded_irq(dev->host_msix_entries[i].vector,
--					 NULL, kvm_assigned_dev_thread_msix,
-+					 kvm_assigned_dev_msix,
-+					 kvm_assigned_dev_thread_msix,
- 					 0, dev->irq_name, dev);
- 		if (r)
- 			goto err;
-
+Sebastian
