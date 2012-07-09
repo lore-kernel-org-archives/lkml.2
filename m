@@ -1,114 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab2GIVin (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 17:38:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23148 "EHLO mx1.redhat.com"
+	id S1754326Ab2GIVjI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 17:39:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39503 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752798Ab2GIVg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 17:36:26 -0400
-From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH -v2 0/8] PCI: Add 'pci_fixup_final' quirks into hot-plug paths
-To: bhelgaas@google.com
-Cc: linux-pci@vger.kernel.org, rth@twiddle.net, ink@jurassic.park.msu.ru,
-        mattst88@gmail.com, ralf@linux-mips.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, yinghai@kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 09 Jul 2012 15:35:55 -0600
-Message-ID: <20120709213554.8975.60552.stgit@amt.stowe>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1751688Ab2GIVgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 17:36:10 -0400
+Message-Id: <20120709213559.918409313@redhat.com>
+User-Agent: quilt/0.48-1
+Date: Mon, 09 Jul 2012 17:34:20 -0400
+From: vgoyal@redhat.com
+To: linux-kernel@vger.kernel.org, axboe@kernel.dk, dm-devel@redhat.com,
+        kzak@redhat.com
+Cc: psusi@ubuntu.com, vgoyal@redhat.comi, maxim.patlasov@gmail.com
+Subject: [patch 2/2] util-linux: resizepart: Utility to resize a partition
+References: <20120709213418.799759100@redhat.com>
+Content-Disposition: inline; filename=0001-util-linux-resizepart-Utility-to-resize-a-partition.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PCI's final quirks (pci_fixup_final) are currently invoked by
-pci_apply_final_quirk() which traverses the platform's list of PCI
-devices.  The calling mechanism, and to some point the use of the device
-list, limits the quirk invocations to a single instance during boot.  As
-such, hot-plugable devices do not have their associated final quirks
-called upon hot-plug events.
 
-This series implements a interim solution to integrate pci_fixup_final
-quirks into the various hot-plug event paths[1].
+A simple user space utility to resize an existing partition. It tries to read
+the start of partiton from sysfs.
 
-The series basis is
-git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git next
+This is a real quick dirty patch I used for my testing. I am sure there
+are better and faster ways of getting to partition "start" from device
+and partition number.
 
-  -v2: Re-worked PATCH 1/9 based on Bjorn's suggestion:
-       http://marc.info/?l=linux-pci&m=134074984925361&w=2
-       There is some more opportunity to clean this up even further
-       if we re-work the script that gathers initcall data to accept
-       'dev_dbg()' structured output.
-
-       Replaced PATCHes 3/9-8/9 with 3/8-7/8 (I don't know what I
-       was thinking with the original set).
-
-
-[1] I intended to come up with a single, uniform, solution that would
-satisfy both the boot path and the various hot-plug event paths with
-respect to final quirks.  From an architectural perspective, the proper
-placement for the final quirks is somewhere just prior to when drivers can
-probe and attach which would be the device_add path: pci_bus_add_devices
-or pci_bus_add device.
-
-I originally started with that approach but eventually realized that there
-are issues with moving the quirks into the device_add path with respect to
-booting.  Using the 'initcall_debug' boot command instrumentation, one
-can see that moving the final quirks into the device_add path would cause
-the quirks to be called substantially earlier during boot.  While there
-may be additional issues, two that were especially concerning were that
-the final quirks would be called *before* both 'pci_subsys_init' and
-'pcibios_assign_resources'.
-
-Calling the quirks prior to resource assignment seems fraught with
-potential issues so I started looking into the various hot-plug paths and
-quickly noticed asymmetry with respect to PCI device setup between the
-boot path and the hot-plug paths.
-
-Currently, the boot path scans the PCI devices, adds the devices, assigns
-resources, and then call the final quirks whereas the hot-plug paths scan,
-assign resources, and then add the devices which is better sequencing with
-respect to the assignment of resources and the addition of devices (i.e.
-resource assignment occurs *before* a driver can probe and attach).
-
-All of this suggests that we should change PCI device setup in the boot
-path to be more like hot-plug: scan, assign resources, (final fixups,)
-then add.  While I think that is the correct approach, and something that
-we should be addressing, it will require a lot of work.  So until that
-occurs, this series should serve as a stop-gap solution for the interim.
-
-When the boot path's PCI device setup is addressed we should end up with a
-single, uniform, device_add based solution for applying final quirks
-after:
-  o  removing 'fs_initcall_sync(pci_apply_final_quirks);',
-  o  removing the global variable 'pci_fixup_final_inited' and all
-     of its usages,
-  o  renaming, and moving, the 'pci_cache_line_size' related code
-     currently embedded in 'pci_apply_final_quirks()'.
-
-Note: I do not have a cross-compile environment so I have only tested x86.
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
+ disk-utils/Makemodule.am |    7 +++-
+ disk-utils/partx.h       |   19 +++++++++
+ disk-utils/resizepart.8  |   38 ++++++++++++++++++
+ disk-utils/resizepart.c  |   98 ++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 161 insertions(+), 1 deletions(-)
+ create mode 100644 disk-utils/resizepart.8
+ create mode 100644 disk-utils/resizepart.c
 
-Myron Stowe (8):
-      PCI: Integrate 'pci_fixup_final' quirks into hot-plug paths
-      PCI: Move final fixup quirks from __init to __devinit
-      x86/PCI: Move final fixup quirks from __init to __devinit
-      MIPS/PCI: Move final fixup quirks from __init to __devinit
-      alpha/PCI: Move final fixup quirks from __init to __devinit
-      PCI: Adjust section annotations of various quirks
-      PCI: release temporary reference in __nv_msi_ht_cap_quirk()
-      PCI: Restructure 'pci_do_fixups()'
-
-
- arch/alpha/kernel/pci.c         |    2 -
- arch/mips/mti-malta/malta-pci.c |    2 -
- arch/mips/pci/ops-tx4927.c      |    2 -
- arch/mips/txx9/generic/pci.c    |    4 +
- arch/x86/kernel/quirks.c        |    2 -
- drivers/pci/bus.c               |    4 +
- drivers/pci/quirks.c            |  107 ++++++++++++++++++++++++++-------------
- 7 files changed, 81 insertions(+), 42 deletions(-)
-
+diff --git a/disk-utils/Makemodule.am b/disk-utils/Makemodule.am
+index 830e8f7..b544e87 100644
+--- a/disk-utils/Makemodule.am
++++ b/disk-utils/Makemodule.am
+@@ -113,7 +113,7 @@ endif # LINUX
+ 
+ 
+ if BUILD_PARTX
+-usrsbin_exec_PROGRAMS += partx addpart delpart
++usrsbin_exec_PROGRAMS += partx addpart delpart resizepart
+ dist_man_MANS += \
+ 	disk-utils/addpart.8 \
+ 	disk-utils/delpart.8 \
+@@ -130,6 +130,11 @@ delpart_SOURCES = \
+ 	disk-utils/partx.h
+ delpart_LDADD = $(LDADD) libcommon.la
+ 
++resizepart_SOURCES = \
++	disk-utils/resizepart.c \
++	disk-utils/partx.h
++resizepart_LDADD = $(LDADD) libcommon.la
++
+ partx_SOURCES = \
+ 	disk-utils/partx.c \
+ 	disk-utils/partx.h
+diff --git a/disk-utils/partx.h b/disk-utils/partx.h
+index ed0fd0a..02e273e 100644
+--- a/disk-utils/partx.h
++++ b/disk-utils/partx.h
+@@ -41,4 +41,23 @@ static inline int partx_add_partition(int fd, int partno,
+ 	return ioctl(fd, BLKPG, &a);
+ }
+ 
++static inline int partx_resize_partition(int fd, int partno,
++			long long start, long long size)
++{
++	struct blkpg_ioctl_arg a;
++	struct blkpg_partition p;
++
++	p.pno = partno;
++	p.start = start << 9;
++	p.length = size << 9;
++	p.devname[0] = 0;
++	p.volname[0] = 0;
++	a.op = BLKPG_RESIZE_PARTITION;
++	a.flags = 0;
++	a.datalen = sizeof(p);
++	a.data = &p;
++
++	return ioctl(fd, BLKPG, &a);
++}
++
+ #endif /*  UTIL_LINUX_PARTX_H */
+diff --git a/disk-utils/resizepart.8 b/disk-utils/resizepart.8
+new file mode 100644
+index 0000000..c009cc3
+--- /dev/null
++++ b/disk-utils/resizepart.8
+@@ -0,0 +1,38 @@
++.\" resizepart.8 --
++.\" Copyright 2012 Vivek Goyal <vgoyal@redhat.com>
++.\" Copyright 2012 Red Hat, Inc.
++.\" May be distributed under the GNU General Public License
++.TH RESIZEPART 8 "February 2012" "util-linux" "System Administration"
++.SH NAME
++resizepart \-
++simple wrapper around the "resize partition" ioctl
++.SH SYNOPSIS
++.B resizepart
++.I device partition length
++.SH DESCRIPTION
++.B resizepart
++is a program that informs the Linux kernel of new partition size.
++
++This command doesn't manipulate partitions on hard drive.
++
++.SH PARAMETERS
++.TP
++.I device
++Specify the disk device.
++.TP
++.I partition
++Specify the partition number.
++.TP
++.I length
++Specify the length of the partition (in 512-byte sectors).
++
++.SH SEE ALSO
++.BR addpart (8),
++.BR delpart (8),
++.BR fdisk (8),
++.BR parted (8),
++.BR partprobe (8),
++.BR partx (8)
++.SH AVAILABILITY
++The resizepart command is part of the util-linux package and is available from
++ftp://ftp.kernel.org/pub/linux/utils/util-linux/.
+diff --git a/disk-utils/resizepart.c b/disk-utils/resizepart.c
+new file mode 100644
+index 0000000..4f9e9ce
+--- /dev/null
++++ b/disk-utils/resizepart.c
+@@ -0,0 +1,98 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include <fcntl.h>
++#include <ctype.h>
++#include "canonicalize.h"
++#include "sysfs.h"
++#include "partx.h"
++
++char *
++get_devname_from_canonical_path(char *path)
++{
++	struct sysfs_cxt cxt;
++	dev_t devno;
++	char name[PATH_MAX];
++	char *devname;
++
++	devno = sysfs_devname_to_devno(path, NULL);
++	if (!devno) {
++		fprintf(stderr, "failed to read devno. \n");
++		exit(1);
++	}
++
++	if (sysfs_init(&cxt, devno, NULL)) {
++		fprintf(stderr, "failed to initialize sysfs. \n");
++		exit(1);
++	}
++	devname = sysfs_get_devname(&cxt, name, sizeof(name));
++	return strdup(devname);
++}
++
++char *
++get_partname_from_devname(char *devname, int partno)
++{
++	char partname[PATH_MAX];
++
++	if (isdigit(devname[strlen(devname) - 1]))
++		snprintf(partname, PATH_MAX, "%sp%d", devname, partno);
++	else
++		snprintf(partname, PATH_MAX, "%s%d", devname, partno);
++
++	return strdup(partname);
++}
++
++
++int
++main(int argc, char **argv)
++{
++	int fd;
++	char *real_path, *devname, *partname, *pstart;
++	char part_sysfs_path[PATH_MAX], part_start[30];
++	FILE *fp;
++
++	if (argc != 4) {
++		fprintf(stderr,
++			"usage: %s diskdevice partitionnr length\n",
++			argv[0]);
++		exit(1);
++	}
++	if ((fd = open(argv[1], O_RDONLY)) < 0) {
++		perror(argv[1]);
++		exit(1);
++	}
++
++	real_path = canonicalize_path(argv[1]);
++
++	if (real_path == NULL) {
++		fprintf(stderr, "canonicalize_path(%s) failed. \n", argv[1]);
++		exit(1);
++	}
++
++	devname = get_devname_from_canonical_path(real_path);
++	partname = get_partname_from_devname(devname, atoi(argv[2]));
++
++	snprintf(part_sysfs_path, PATH_MAX, "/sys/block/%s/%s/start",
++			devname, partname);
++
++	fp = fopen(part_sysfs_path, "r");
++
++	if (!fp) {
++		perror("BLKPG");
++		exit(1);
++	}
++
++	pstart = fgets(part_start, 30, fp);
++
++	if (!pstart) {
++		perror("BLKPG");
++		exit(1);
++	}
++
++	if (partx_resize_partition(fd, atoi(argv[2]), atoll(pstart),
++				atoll(argv[3]))) {
++		perror("BLKPG");
++		exit(1);
++	}
++
++	return 0;
++}
 -- 
+1.7.7.6
+
+
