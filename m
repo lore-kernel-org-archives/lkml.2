@@ -1,142 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884Ab2GICmP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jul 2012 22:42:15 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:49274 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab2GICmN (ORCPT
+	id S1751950Ab2GICom (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jul 2012 22:44:42 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38941 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab2GICok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jul 2012 22:42:13 -0400
-Message-ID: <1341801721.2439.29.camel@ThinkPad-T420>
-Subject: Re: [PATCH SLAB 1/2 v3] duplicate the cache name in SLUB's
- saved_alias list, SLAB, and SLOB
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-mm <linux-mm@kvack.org>,
-        PowerPC email list <linuxppc-dev@lists.ozlabs.org>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        Glauber Costa <glommer@parallels.com>
-Date: Mon, 09 Jul 2012 10:42:01 +0800
-In-Reply-To: <alpine.DEB.2.00.1207060855320.26441@router.home>
-References: <1341561286.24895.9.camel@ThinkPad-T420>
-	 <alpine.DEB.2.00.1207060855320.26441@router.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Sun, 8 Jul 2012 22:44:40 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FFA4504.4040408@jp.fujitsu.com>
+Date: Mon, 09 Jul 2012 11:42:12 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 04/11] mm: memcg: push down PageSwapCache check into uncharge
+ entry functions
+References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org> <1341449103-1986-5-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <1341449103-1986-5-git-send-email-hannes@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12070902-2000-0000-0000-000008320EE3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-07-06 at 08:56 -0500, Christoph Lameter wrote:
-> I thought I posted this a couple of days ago. Would this not fix things
-> without having to change all the allocators?
-
-I was pointed by Glauber to the slab common code patches. I need some
-more time to read the patches. Now I think the slab/slot changes in this
-v3 are not needed, and can be ignored.
-
-But for the SLUB's saved_alias list issue, I don't think the following
-patch helps. Details below: (Maybe I am wrong, as I'm reading the patch
-based on the 3.5-rc6 code ...)
-
+(2012/07/05 9:44), Johannes Weiner wrote:
+> Not all uncharge paths need to check if the page is swapcache, some of
+> them can know for sure.
 > 
+> Push down the check into all callsites of uncharge_common() so that
+> the patch that removes some of them is more obvious.
 > 
-> Subject: slub: Dup name earlier in kmem_cache_create
-> 
-> Dup the name earlier in kmem_cache_create so that alias
-> processing is done using the copy of the string and not
-> the string itself.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 > ---
->  mm/slub.c |   29 ++++++++++++++---------------
->  1 file changed, 14 insertions(+), 15 deletions(-)
-> 
-> Index: linux-2.6/mm/slub.c
-> ===================================================================
-> --- linux-2.6.orig/mm/slub.c	2012-06-11 08:49:56.000000000 -0500
-> +++ linux-2.6/mm/slub.c	2012-07-03 15:17:37.000000000 -0500
-> @@ -3933,8 +3933,12 @@ struct kmem_cache *kmem_cache_create(con
->  	if (WARN_ON(!name))
->  		return NULL;
-> 
-> +	n = kstrdup(name, GFP_KERNEL);
-> +	if (!n)
-> +		goto out;
-> +
->  	down_write(&slub_lock);
-> -	s = find_mergeable(size, align, flags, name, ctor);
-> +	s = find_mergeable(size, align, flags, n, ctor);
->  	if (s) {
->  		s->refcount++;
->  		/*
 
-		......
-		up_write(&slub_lock);
-		return s; 
-	}
+some nitpick.
 
-Here, the function returns without name string n be kfreed. 
+>   mm/memcontrol.c |   18 ++++++++++++------
+>   1 files changed, 12 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 4ea19c6..a3bf414 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2920,8 +2920,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype,
+>   	if (mem_cgroup_disabled())
+>   		return NULL;
+>   
+> -	if (PageSwapCache(page))
+> -		return NULL;
+> +	VM_BUG_ON(PageSwapCache(page));
+>   
+>   	if (PageTransHuge(page)) {
+>   		nr_pages <<= compound_order(page);
+> @@ -3018,6 +3017,8 @@ void mem_cgroup_uncharge_page(struct page *page)
+>   	if (page_mapped(page))
+>   		return;
+>   	VM_BUG_ON(page->mapping && !PageAnon(page));
+> +	if (PageSwapCache(page))
+> +		return;
+>   	__mem_cgroup_uncharge_common(page, MEM_CGROUP_CHARGE_TYPE_ANON, false);
+>   }
+>   
+> @@ -3025,6 +3026,8 @@ void mem_cgroup_uncharge_cache_page(struct page *page)
+>   {
+>   	VM_BUG_ON(page_mapped(page));
+>   	VM_BUG_ON(page->mapping);
+> +	if (PageSwapCache(page))
+> +		return;
+>   	__mem_cgroup_uncharge_common(page, MEM_CGROUP_CHARGE_TYPE_CACHE, false);
+>   }
+>   
+> @@ -3089,6 +3092,8 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
+>   	if (!swapout) /* this was a swap cache but the swap is unused ! */
+>   		ctype = MEM_CGROUP_CHARGE_TYPE_DROP;
+>   
+> +	if (PageSwapCache(page))
+> +		return;
+>   	memcg = __mem_cgroup_uncharge_common(page, ctype, false);
+>   
+>   	/*
+> @@ -3278,10 +3283,11 @@ void mem_cgroup_end_migration(struct mem_cgroup *memcg,
+>   		unused = oldpage;
+>   	}
+>   	anon = PageAnon(used);
+> -	__mem_cgroup_uncharge_common(unused,
+> -		anon ? MEM_CGROUP_CHARGE_TYPE_ANON
+> -		     : MEM_CGROUP_CHARGE_TYPE_CACHE,
+> -		true);
+> +	if (!PageSwapCache(page))
+> +		__mem_cgroup_uncharge_common(unused,
+> +					     anon ? MEM_CGROUP_CHARGE_TYPE_ANON
+> +					     : MEM_CGROUP_CHARGE_TYPE_CACHE,
+> +					     true);
 
-But we couldn't kfree n here, because in sysfs_slab_alias(), if
-(slab_state < SYS_FS), the name need to be kept valid until
-slab_sysfs_init() is finished adding the entry into sysfs. 
-		
-> @@ -3944,7 +3948,7 @@ struct kmem_cache *kmem_cache_create(con
->  		s->objsize = max(s->objsize, (int)size);
->  		s->inuse = max_t(int, s->inuse, ALIGN(size, sizeof(void *)));
-> 
-> -		if (sysfs_slab_alias(s, name)) {
-> +		if (sysfs_slab_alias(s, n)) {
->  			s->refcount--;
->  			goto err;
->  		}
-> @@ -3952,31 +3956,26 @@ struct kmem_cache *kmem_cache_create(con
->  		return s;
->  	}
-> 
-> -	n = kstrdup(name, GFP_KERNEL);
-> -	if (!n)
-> -		goto err;
-> -
->  	s = kmalloc(kmem_size, GFP_KERNEL);
->  	if (s) {
->  		if (kmem_cache_open(s, n,
->  				size, align, flags, ctor)) {
->  			list_add(&s->list, &slab_caches);
->  			up_write(&slub_lock);
-> -			if (sysfs_slab_add(s)) {
-> -				down_write(&slub_lock);
-> -				list_del(&s->list);
-> -				kfree(n);
-> -				kfree(s);
-> -				goto err;
-> -			}
-> -			return s;
-> +			if (!sysfs_slab_add(s))
-> +				return s;
-> +
-> +			down_write(&slub_lock);
-> +			list_del(&s->list);
->  		}
->  		kfree(s);
->  	}
-> -	kfree(n);
-> +
->  err:
-> +	kfree(n);
->  	up_write(&slub_lock);
-> 
-> +out:
->  	if (flags & SLAB_PANIC)
->  		panic("Cannot create slabcache %s\n", name);
->  	else
-> 
+!PageSwapCache(unused) ?
+
+But I think unused page's PG_swapcache is always dropped. So, the check is
+not necessary.
+
+Thanks,
+-Kame
+
+
+
+
+
+
+
+
 
 
