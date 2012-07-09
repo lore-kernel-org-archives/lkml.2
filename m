@@ -1,46 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab2GIKar (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 06:30:47 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:56331 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752942Ab2GIKaq (ORCPT
+	id S1753171Ab2GIKa7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 06:30:59 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37919 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942Ab2GIKa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 06:30:46 -0400
-Date: Mon, 9 Jul 2012 15:59:52 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/5] uprobes: kill
- write_opcode()->lock_page(new_page)
-Message-ID: <20120709102952.GE32393@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120624145936.GA23269@redhat.com>
- <20120624150035.GC23277@redhat.com>
+	Mon, 9 Jul 2012 06:30:56 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FFAB2CF.3050600@jp.fujitsu.com>
+Date: Mon, 9 Jul 2012 19:30:39 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120624150035.GC23277@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12070910-6148-0000-0000-0000077A373F
+To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>
+CC: <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
+        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>, <wency@cn.fujitsu.com>
+Subject: [RFC PATCH v3 9/13] memory-hotplug : move register_page_bootmem_info_node
+ and put_page_bootmem for sparse-vmemmap
+References: <4FFAB0A2.8070304@jp.fujitsu.com>
+In-Reply-To: <4FFAB0A2.8070304@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-06-24 17:00:35]:
+For implementing register_page_bootmem_info_node of sparse-vmemmap,
+register_page_bootmem_info_node and put_page_bootmem are moved to
+memory_hotplug.c
 
-> write_opcode() does lock_page(new_page) for no reason. Nobody can
-> see this page until __replace_page() exposes it under ptl lock, and
-> we do nothing with this page after pte_unmap_unlock().
-> 
-> If nothing else, the similar code in do_wp_page() doesn't lock the
-> new page for page_add_new_anon_rmap/set_pte_at_notify.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Acked-by: Srikar Dronamraju<srikar@linux.vnet.ibm.com>
+---
+ include/linux/memory_hotplug.h |    9 ---------
+ mm/memory_hotplug.c            |    8 ++++++--
+ 2 files changed, 6 insertions(+), 11 deletions(-)
+
+Index: linux-3.5-rc4/include/linux/memory_hotplug.h
+===================================================================
+--- linux-3.5-rc4.orig/include/linux/memory_hotplug.h	2012-07-03 14:22:10.170116406 +0900
++++ linux-3.5-rc4/include/linux/memory_hotplug.h	2012-07-03 14:22:14.409063086 +0900
+@@ -160,17 +160,8 @@ static inline void arch_refresh_nodedata
+ #endif /* CONFIG_NUMA */
+ #endif /* CONFIG_HAVE_ARCH_NODEDATA_EXTENSION */
+
+-#ifdef CONFIG_SPARSEMEM_VMEMMAP
+-static inline void register_page_bootmem_info_node(struct pglist_data *pgdat)
+-{
+-}
+-static inline void put_page_bootmem(struct page *page)
+-{
+-}
+-#else
+ extern void register_page_bootmem_info_node(struct pglist_data *pgdat);
+ extern void put_page_bootmem(struct page *page);
+-#endif
+
+ /*
+  * Lock for memory hotplug guarantees 1) all callbacks for memory hotplug
+Index: linux-3.5-rc4/mm/memory_hotplug.c
+===================================================================
+--- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-07-03 14:22:12.299089413 +0900
++++ linux-3.5-rc4/mm/memory_hotplug.c	2012-07-03 14:22:14.419062959 +0900
+@@ -91,7 +91,6 @@ static void release_memory_resource(stru
+ }
+
+ #ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
+-#ifndef CONFIG_SPARSEMEM_VMEMMAP
+ static void get_page_bootmem(unsigned long info,  struct page *page,
+ 			     unsigned long type)
+ {
+@@ -127,6 +126,7 @@ void __ref put_page_bootmem(struct page
+
+ }
+
++#ifndef CONFIG_SPARSEMEM_VMEMMAP
+ static void register_page_bootmem_info_section(unsigned long start_pfn)
+ {
+ 	unsigned long *usemap, mapsize, section_nr, i;
+@@ -163,6 +163,11 @@ static void register_page_bootmem_info_s
+ 		get_page_bootmem(section_nr, page, MIX_SECTION_INFO);
+
+ }
++#else
++static inline void register_page_bootmem_info_section(unsigned long start_pfn)
++{
++}
++#endif
+
+ void register_page_bootmem_info_node(struct pglist_data *pgdat)
+ {
+@@ -198,7 +203,6 @@ void register_page_bootmem_info_node(str
+ 		register_page_bootmem_info_section(pfn);
+
+ }
+-#endif /* !CONFIG_SPARSEMEM_VMEMMAP */
+
+ static void grow_zone_span(struct zone *zone, unsigned long start_pfn,
+ 			   unsigned long end_pfn)
 
