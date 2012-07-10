@@ -1,72 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101Ab2GJAoa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 20:44:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39210 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752347Ab2GJAo3 (ORCPT
+	id S1755320Ab2GJApL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 20:45:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53901 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755277Ab2GJAow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 20:44:29 -0400
-Date: Mon, 9 Jul 2012 17:47:05 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Glauber Costa <glommer@parallels.com>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, Greg Thelen <gthelen@google.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>, Tejun Heo <tj@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2] fail dentry revalidation after namespace change
-Message-Id: <20120709174705.0e2078c8.akpm@linux-foundation.org>
-In-Reply-To: <87txxgxxs7.fsf@xmission.com>
-References: <1341565747-15374-1-git-send-email-glommer@parallels.com>
-	<20120709161336.0ec23592.akpm@linux-foundation.org>
-	<87txxgxxs7.fsf@xmission.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Jul 2012 20:44:52 -0400
+From: Ashish Sangwan <ashishsangwan2@gmail.com>
+To: Ted Tso <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        lczerner@redhat.com, Ashish Sangwan <ashish.sangwan2@gmail.com>,
+        Namjae Jeon <linkinjeon@gmail.com>
+Subject: [PATCH v3] ext4: fix hole punch failure when depth is greater than 0
+Date: Tue, 10 Jul 2012 06:13:24 +0530
+Message-Id: <1341881004-1601-1-git-send-email-ashish.sangwan2@gmail.com>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 09 Jul 2012 17:30:48 -0700 ebiederm@xmission.com (Eric W. Biederman) wrote:
+Whether to continue removing extents or not is decided by the return value
+of function ext4_ext_more_to_rm() which checks 2 conditions:
+a) if there are no more indexes to process.
+b) if the number of entries are decreased in the header of "depth -1".
 
-> Andrew Morton <akpm@linux-foundation.org> writes:
-> 
-> >>  {
-> >>  	struct sysfs_dirent *sd;
-> >>  	int is_dir;
-> >> +	int type;
-> >>  
-> >>  	if (nd->flags & LOOKUP_RCU)
-> >>  		return -ECHILD;
-> >> @@ -326,6 +327,13 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
-> >>  	if (strcmp(dentry->d_name.name, sd->s_name) != 0)
-> >>  		goto out_bad;
-> >>  
-> >> +	/* The sysfs dirent has been moved to a different namespace */
-> >> +	type = KOBJ_NS_TYPE_NONE;
-> >> +	if (sd->s_parent)
-> >> +		type = sysfs_ns_type(sd->s_parent);
-> >> +	if (type && (sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns))
-> >
-> > eww, the code is assuming that KOBJ_NS_TYPE_NONE has a value of zero. 
-> > Don't do that; it smells bad.
-> 
-> Gag.  An incomplete change in idiom.
-> 
-> KOBJ_NS_TYPE_NONE is explicitly defined as 0 so that it can be used
-> this way, and every where else in fs/sysfs/dir.c uses this idiom.
+In case of hole punch, if the last block to be removed is not part of the
+last extent index than this index will not be deleted, hence the number of
+valid entries in the extent header of "depth - 1" will remain as it is and
+ext4_ext_more_to_rm will return 0 although the required blocks are not
+yet removed.
 
-One man's idiom is another man's idiocy.
+This patch fixes the above mentioned problem as instead of removing the
+extents from the end of file, it starts removing the blocks from the
+particular extent from which removing blocks is actually required and
+continue backward until done.
 
-Seriously.  What sort of idea is that?  Create an enumerated type and
-then just ignore it?
+Signed-off-by: Ashish Sangwan <ashish.sangwan2@gmail.com>
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+---
+ fs/ext4/extents.c |   46 +++++++++++++++++++++++++++++-----------------
+ 1 file changed, 29 insertions(+), 17 deletions(-)
 
-> Pray tell in what parallel universe is that monstrosity above more
-> readable than the line it replaces?
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 91341ec..45ac45d 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -2570,10 +2570,10 @@ static int ext4_ext_remove_space(struct inode *inode, ext4_lblk_t start,
+ {
+ 	struct super_block *sb = inode->i_sb;
+ 	int depth = ext_depth(inode);
+-	struct ext4_ext_path *path;
++	struct ext4_ext_path *path = NULL;
+ 	ext4_fsblk_t partial_cluster = 0;
+ 	handle_t *handle;
+-	int i, err;
++	int i = 0, err;
+ 
+ 	ext_debug("truncate since %u to %u\n", start, end);
+ 
+@@ -2606,8 +2606,12 @@ again:
+ 		}
+ 		depth = ext_depth(inode);
+ 		ex = path[depth].p_ext;
+-		if (!ex)
++		if (!ex) {
++			ext4_ext_drop_refs(path);
++			kfree(path);
++			path = NULL;
+ 			goto cont;
++		}
+ 
+ 		ee_block = le32_to_cpu(ex->ee_block);
+ 
+@@ -2637,8 +2641,6 @@ again:
+ 			if (err < 0)
+ 				goto out;
+ 		}
+-		ext4_ext_drop_refs(path);
+-		kfree(path);
+ 	}
+ cont:
+ 
+@@ -2647,19 +2649,27 @@ cont:
+ 	 * after i_size and walking into the tree depth-wise.
+ 	 */
+ 	depth = ext_depth(inode);
+-	path = kzalloc(sizeof(struct ext4_ext_path) * (depth + 1), GFP_NOFS);
+-	if (path == NULL) {
+-		ext4_journal_stop(handle);
+-		return -ENOMEM;
+-	}
+-	path[0].p_depth = depth;
+-	path[0].p_hdr = ext_inode_hdr(inode);
++	if (path) {
++		int k = i = depth;
++		while (--k > 0)
++			path[k].p_block =
++				le16_to_cpu(path[k].p_hdr->eh_entries)+1;
++	} else {
++		path = kzalloc(sizeof(struct ext4_ext_path) * (depth + 1),
++			       GFP_NOFS);
++		if (path == NULL) {
++			ext4_journal_stop(handle);
++			return -ENOMEM;
++		}
++		path[0].p_depth = depth;
++		path[0].p_hdr = ext_inode_hdr(inode);
+ 
+-	if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
+-		err = -EIO;
+-		goto out;
++		if (ext4_ext_check(inode, path[0].p_hdr, depth)) {
++			err = -EIO;
++			goto out;
++		}
+ 	}
+-	i = err = 0;
++	err = 0;
+ 
+ 	while (i >= 0 && err == 0) {
+ 		if (i == depth) {
+@@ -2773,8 +2783,10 @@ cont:
+ out:
+ 	ext4_ext_drop_refs(path);
+ 	kfree(path);
+-	if (err == -EAGAIN)
++	if (err == -EAGAIN) {
++		path = NULL
+ 		goto again;
++	}
+ 	ext4_journal_stop(handle);
+ 
+ 	return err;
+-- 
+1.7.10.4
 
-Don't be silly, it is not a "monstrosity".  The code it is modifying
-contains an unneeded test-and-branch.  It's a test and branch which the
-compiler might be able to avoid.  If we can demonstrate that the
-compiler does indeed optimise it, or if we can find a less monstrous
-way of implementing it then fine.  Otherwise, efficiency wins.
