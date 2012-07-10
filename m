@@ -1,118 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab2GJUfe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 16:35:34 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:60787 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab2GJUfd (ORCPT
+	id S1753415Ab2GJUmN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 16:42:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34237 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245Ab2GJUmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 16:35:33 -0400
-Date: Tue, 10 Jul 2012 22:35:27 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-Message-ID: <20120710203527.GA16986@gmail.com>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
- <20120710101018.GE15120@arm.com>
- <20120710163358.6ae4a576@pyramind.ukuu.org.uk>
- <201207101652.18401.arnd@arndb.de>
+	Tue, 10 Jul 2012 16:42:11 -0400
+Date: Tue, 10 Jul 2012 13:42:05 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Yuri Khan <yurivkhan@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v3 1/1] Input: xpad - Handle all variations of Mad Catz
+ Beat Pad
+Message-ID: <20120710204205.GA31649@core.coreip.homeip.net>
+References: <1341592324-665-1-git-send-email-yurivkhan@gmail.com>
+ <1341941602-18418-1-git-send-email-yurivkhan@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201207101652.18401.arnd@arndb.de>
+In-Reply-To: <1341941602-18418-1-git-send-email-yurivkhan@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Yuri,
 
-* Arnd Bergmann <arnd@arndb.de> wrote:
+On Wed, Jul 11, 2012 at 12:33:22AM +0700, Yuri Khan wrote:
+> * Add this device to usbhid ignore list
 
-> > What plans to other maintainers and board vendors have ? Any 
-> > design choice has to cope with these happening if a third 
-> > party goes and does it.
+Please do not forget your "Signed-off-by: " so that I can apply the
+patch.
+
+Thanks.
+
+> ---
+>  drivers/hid/hid-core.c        |    1 +
+>  drivers/hid/hid-ids.h         |    3 +++
+>  drivers/input/joystick/xpad.c |    1 +
+>  3 files changed, 5 insertions(+)
 > 
-> It is slightly worrying to have multiple SoC vendors working 
-> on their own platform support. There are a few things we can 
-> assume though:
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index 6ac0286..1540934 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -1995,6 +1995,7 @@ static const struct hid_device_id hid_ignore_list[] = {
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_MCT) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HYBRID) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HEATCONTROL) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_MADCATZ, USB_DEVICE_ID_MADCATZ_BEATPAD) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1024LS) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1208LS) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROCHIP, USB_DEVICE_ID_PICKIT1) },
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index d1cdd2d..43c3d75 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -518,6 +518,9 @@
+>  #define USB_DEVICE_ID_CRYSTALTOUCH	0x0006
+>  #define USB_DEVICE_ID_CRYSTALTOUCH_DUAL	0x0007
+>  
+> +#define USB_VENDOR_ID_MADCATZ		0x0738
+> +#define USB_DEVICE_ID_MADCATZ_BEATPAD	0x4540
+> +
+>  #define USB_VENDOR_ID_MCC		0x09db
+>  #define USB_DEVICE_ID_MCC_PMD1024LS	0x0076
+>  #define USB_DEVICE_ID_MCC_PMD1208LS	0x007a
+> diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
+> index ee16fb6..16974ef 100644
+> --- a/drivers/input/joystick/xpad.c
+> +++ b/drivers/input/joystick/xpad.c
+> @@ -238,6 +238,7 @@ static struct usb_device_id xpad_table [] = {
+>  	XPAD_XBOX360_VENDOR(0x045e),		/* Microsoft X-Box 360 controllers */
+>  	XPAD_XBOX360_VENDOR(0x046d),		/* Logitech X-Box 360 style controllers */
+>  	XPAD_XBOX360_VENDOR(0x0738),		/* Mad Catz X-Box 360 controllers */
+> +	{ USB_DEVICE(0x0738, 0x4540) },		/* Mad Catz Beat Pad */
+>  	XPAD_XBOX360_VENDOR(0x0e6f),		/* 0x0e6f X-Box 360 controllers */
+>  	XPAD_XBOX360_VENDOR(0x12ab),		/* X-Box 360 dance pads */
+>  	XPAD_XBOX360_VENDOR(0x1430),		/* RedOctane X-Box 360 controllers */
+> -- 
+> 1.7.9.5
 > 
-> * Everyone who has an AArch64 implementation has access to 
-> Catalin's kernel patches in is basing their stuff on top of 
-> it.
-> 
-> * Most likely they are all working on server chips, which 
-> means they want to have their hardware supported in upstream 
-> kernels and enterprise distros.
 
-Dunno, the moment Apple comes out with their 64-bit iPhone6 (or 
-whichever version they'll go 64-bit) *everyone* will scramble to 
-go 64-bit, for marketing reasons. Code and SoC details will be 
-ported to 64-bit in the usual fashion: in the crudest, fastest 
-possible way.
-
-There's also a technological threshold: once RAM in a typical 
-smartphone goes above 2GB the pain of a 32-bit kernel becomes 
-significant. We are only about a year away from that point.
-
-So are you *really* convinced that the colorful ARM SoC world is 
-not going to go 64-bit and will all unify behind a platform, and 
-that we can actually force this process by not accepting 
-non-generic patches? Is such a platform design being enforced by 
-ARM, like Intel does it on the x86 side?
-
-> * Unlike on 32 bit, the different platforms cannot be 
-> compile-time exclusive. A platform port that cannot be enabled 
-> without breaking another platform is not getting merged.
-> 
-> * I do not expect board-specific kernel patches, at least no 
-> more than we have them on x86 with the occasional hack to work 
-> around a broken machine.
-
-If 64-bit hardware is made on existing SoC designs, which looks 
-rather likely, then we are not in a position to reject kernel 
-support for them.
-
-Saying 'no' is very rarely a valid option for hardware ugliness. 
-We are encouraged to say 'no' for software details that is 
-actionable by the author of the patches, but hardware ugliness 
-is rarely actionable on that level and we are not holding our 
-users hostage in general just to make a point about ugliness.
-
-> * The differences between SoCs will be confined to device 
-> drivers to a much larger degree than they are on 32 bit, 
-> partly because the SoC companies are trying to be fit into the 
-> single-kernel model, and partly because we have added the 
-> infrastructure to allow it.
-
-There's 600 KLOC of code in arch/arm/, that's 3 times larger 
-than arch/x86/. Most of it is not in any fashion related to the 
-bitness of the CPU, it's platform IO code that is in principle 
-bitness agnostic.
-
-I have a really hard time imagining that all 64-bit ARM hardware 
-will be supported from drivers/: IRQ controllers, timer drivers, 
-all the ugly SoC details.
-
-Do you *really* think that all of the 32-bit ARM code should 
-essentially be thrown away when going to 64-bit ARM, that 
-patches can only touch arch/arm64/ + drivers/ or the highway?
-
-The moment someone adds 64-bit CPU support to arch/arm/ and it's 
-merged we'll have an interesting situation on hand: support for 
-the same CPU in two different architectures in the kernel tree.
-
-Anyway, I'm not an ARM person so I really don't want to make 
-your life harder, I just wanted to potentially save you the 2 
-years of extreme unification stress that the x86 tree went 
-through ;-)
-
-Thanks,
-
-	Ingo
+-- 
+Dmitry
