@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab2GJPcT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 11:32:19 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:51893 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661Ab2GJPcS (ORCPT
+	id S1755954Ab2GJPd5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 11:33:57 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:41462 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661Ab2GJPd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 11:32:18 -0400
-Date: Tue, 10 Jul 2012 10:14:13 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Marcel Selhorst <tpmdd@selhorst.net>
-Cc: Olof Johansson <olof@lixom.net>, Peter Huewe <peter.huewe@infineon.com>,
-        srajiv@linux.vnet.ibm.com, tpmdd-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, Luigi Semenzato <semenzato@google.com>,
-        andi.shyti@gmail.com
-Subject: Re: [PATCH 1/2] char/tpm: Add new driver for Infineon I2C TIS TPM
-Message-ID: <20120710151413.GA1304@linux.vnet.ibm.com>
-References: <1339505034-6400-1-git-send-email-peter.huewe@infineon.com>
- <20120613093744.Horde.0yc-Slm5A05P2ENIeQK2pwA@mail.selhorst.net>
- <CAOesGMh6wkHk6mwJ29RJ-wnc0uUd5SVMqgboG590CTrYzWfJ_w@mail.gmail.com>
- <4FD8C802.7070101@selhorst.net>
+	Tue, 10 Jul 2012 11:33:56 -0400
+Message-ID: <4FFC4A61.3020601@linux.vnet.ibm.com>
+Date: Tue, 10 Jul 2012 10:29:37 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FD8C802.7070101@selhorst.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] zsmalloc: remove x86 dependency
+References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com> <1341263752-10210-2-git-send-email-sjenning@linux.vnet.ibm.com> <4FFB91B8.5070009@kernel.org>
+In-Reply-To: <4FFB91B8.5070009@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071015-4242-0000-0000-00000245D7A0
+x-cbid: 12071015-5518-0000-0000-000005EA43D5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 13, 2012 at 07:04:02PM +0200, Marcel Selhorst wrote:
-> Hi Olof,
+On 07/09/2012 09:21 PM, Minchan Kim wrote:
+> On 07/03/2012 06:15 AM, Seth Jennings wrote:
+<snip>
+>> +static void zs_copy_map_object(char *buf, struct page *firstpage,
+>> +				int off, int size)
 > 
-> > Signed-off-by usually means "I touched this patch", as in applied it,
-> > or forwarded it (or modified and forwarded it). See
-> > Documentation/SubmittingPatches for full explanation. Do you mean
-> > Acked-by or Reviewed-by here instead?
-> 
-> in that case Acked-by is more suitable, sorry for the confusion.
-> Should I reply to the patches again?
+> firstpage is rather misleading.
+> As you know, we use firstpage term for real firstpage of zspage but
+> in case of zs_copy_map_object, it could be a middle page of zspage.
+> So I would like to use "page" instead of firstpage.
 
-  Acked-by seems most appropriate to me, please reply and I'll add you
-when I commit.
+Accepted.
+
+>> +{
+>> +	struct page *pages[2];
+>> +	int sizes[2];
+>> +	void *addr;
+>> +
+>> +	pages[0] = firstpage;
+>> +	pages[1] = get_next_page(firstpage);
+>> +	BUG_ON(!pages[1]);
+>> +
+>> +	sizes[0] = PAGE_SIZE - off;
+>> +	sizes[1] = size - sizes[0];
+>> +
+>> +	/* disable page faults to match kmap_atomic() return conditions */
+>> +	pagefault_disable();
+> 
+> If I understand your intention correctly, you want to prevent calling
+> this function on non-atomic context. Right?
+
+This is moved to zs_map_object() in a later patch, but the
+point is to provide uniform return conditions, regardless of
+whether the object to be mapped is contained in a single
+page or spans two pages.  kmap_atomic() disables page
+faults, so I did it here to create symmetry.  The result is
+that zs_map_object always returns with preemption and page
+faults disabled.
+
+Also, Greg already merged these patches so I'll have to
+incorporate these changes as a separate patch.
 
 Thanks,
-Kent
-
-> 
-> Thanks!
-> Marcel
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Seth
 
