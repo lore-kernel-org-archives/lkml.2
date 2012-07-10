@@ -1,111 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab2GJBvr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 21:51:47 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:33084 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952Ab2GJBvq (ORCPT
+	id S1752902Ab2GJCBJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 22:01:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60656 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952Ab2GJCBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 21:51:46 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Glauber Costa <glommer@parallels.com>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, Greg Thelen <gthelen@google.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>, Tejun Heo <tj@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-References: <1341565747-15374-1-git-send-email-glommer@parallels.com>
-	<20120709161336.0ec23592.akpm@linux-foundation.org>
-	<87txxgxxs7.fsf@xmission.com>
-	<20120709174705.0e2078c8.akpm@linux-foundation.org>
-Date: Mon, 09 Jul 2012 18:51:37 -0700
-In-Reply-To: <20120709174705.0e2078c8.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Mon, 9 Jul 2012 17:47:05 -0700")
-Message-ID: <87629wxu1i.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 9 Jul 2012 22:01:07 -0400
+Date: Mon, 9 Jul 2012 19:01:04 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Wanpeng Li <liwp.linux@gmail.com>
+cc: Gavin Shan <shangw@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        William Irwin <wli@holomorphy.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/hugetlb: fix error code in hugetlbfs_alloc_inode
+In-Reply-To: <20120710011516.GA2457@kernel>
+Message-ID: <alpine.DEB.2.00.1207091859280.25143@chino.kir.corp.google.com>
+References: <1341882184-4549-1-git-send-email-liwp.linux@gmail.com> <20120710010910.GA7362@shangw> <20120710011516.GA2457@kernel>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18n9y6dqKXa5kEMPKSaW+SIlZz5m2+Ynd8=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
-	*      [URIs: linux-foundation.org]
-	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0359]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *****;Andrew Morton <akpm@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v2] fail dentry revalidation after namespace change
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+On Tue, 10 Jul 2012, Wanpeng Li wrote:
 
-> On Mon, 09 Jul 2012 17:30:48 -0700 ebiederm@xmission.com (Eric W. Biederman) wrote:
->
->> Andrew Morton <akpm@linux-foundation.org> writes:
->> 
->> >>  {
->> >>  	struct sysfs_dirent *sd;
->> >>  	int is_dir;
->> >> +	int type;
->> >>  
->> >>  	if (nd->flags & LOOKUP_RCU)
->> >>  		return -ECHILD;
->> >> @@ -326,6 +327,13 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
->> >>  	if (strcmp(dentry->d_name.name, sd->s_name) != 0)
->> >>  		goto out_bad;
->> >>  
->> >> +	/* The sysfs dirent has been moved to a different namespace */
->> >> +	type = KOBJ_NS_TYPE_NONE;
->> >> +	if (sd->s_parent)
->> >> +		type = sysfs_ns_type(sd->s_parent);
->> >> +	if (type && (sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns))
->> >
->> > eww, the code is assuming that KOBJ_NS_TYPE_NONE has a value of zero. 
->> > Don't do that; it smells bad.
->> 
->> Gag.  An incomplete change in idiom.
->> 
->> KOBJ_NS_TYPE_NONE is explicitly defined as 0 so that it can be used
->> this way, and every where else in fs/sysfs/dir.c uses this idiom.
->
-> One man's idiom is another man's idiocy.
+> >>diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+> >>index c4b85d0..79a0f33 100644
+> >>--- a/fs/hugetlbfs/inode.c
+> >>+++ b/fs/hugetlbfs/inode.c
+> >>@@ -696,7 +696,7 @@ static struct inode *hugetlbfs_alloc_inode(struct super_block *sb)
+> >> 	p = kmem_cache_alloc(hugetlbfs_inode_cachep, GFP_KERNEL);
+> >> 	if (unlikely(!p)) {
+> >> 		hugetlbfs_inc_free_inodes(sbinfo);
+> >>-		return NULL;
+> >>+		return -ENOMEM;
+> >
+> >The function is expecting "struct inode *", man.
+> >
+> >static struct inode *hugetlbfs_alloc_inode(struct super_block *sb)
+> >
+> Hmm, replace it by ERR_PTR(-ENOMEM). 
+> 
 
-And code that uses inconsistent idioms is even harder to read.
+Please listen to the feedback you're getting before you reply.
 
-A half assed cleanup is worse than no cleanup.
+This function is called by alloc_inode().  It tests whether the return 
+value is NULL or not, it doesn't check for PTR_ERR().  It's correct the 
+way it's written and you would have broken it.
 
-> Seriously.  What sort of idea is that?  Create an enumerated type and
-> then just ignore it?
-
-It isn't ignored.  It just has a well defined NULL value. That is hardly
-controversial.
-
->> Pray tell in what parallel universe is that monstrosity above more
->> readable than the line it replaces?
->
-> Don't be silly, it is not a "monstrosity".  The code it is modifying
-> contains an unneeded test-and-branch.  It's a test and branch which the
-> compiler might be able to avoid.  If we can demonstrate that the
-> compiler does indeed optimise it, or if we can find a less monstrous
-> way of implementing it then fine.  Otherwise, efficiency wins.
-
-Efficiency wins?  In a rarely used function?  Which kernel are you
-working on?
-
-Readable maintainable code wins.  Unreadable code causes regressions.
-
-Your addition while it may not be monstrous is most definitely less
-readable.
-
-Eric
+In the future, please demonstrate how you've tested your patches before 
+proposing them.
