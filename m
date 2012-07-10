@@ -1,103 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756359Ab2GJQu3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 12:50:29 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:61452 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754038Ab2GJQu1 (ORCPT
+	id S1756386Ab2GJQwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 12:52:09 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56305 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754094Ab2GJQwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 12:50:27 -0400
-Message-ID: <4FFC5D43.7040206@gmail.com>
-Date: Wed, 11 Jul 2012 00:50:11 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Tue, 10 Jul 2012 12:52:07 -0400
+Date: Tue, 10 Jul 2012 09:52:01 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Input: bcm5974 - Add support for 2012 MacBook Pro
+ Retina
+Message-ID: <20120710165201.GA29317@core.coreip.homeip.net>
+References: <1341838006-22407-1-git-send-email-rydberg@euromail.se>
+ <1341838006-22407-2-git-send-email-rydberg@euromail.se>
+ <alpine.LRH.2.00.1207101211070.16114@twin.jikos.cz>
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, rientjes@google.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        wency@cn.fujitsu.com
-Subject: Re: [RFC PATCH v3 0/13] memory-hotplug : hot-remove physical memory
-References: <4FFAB0A2.8070304@jp.fujitsu.com> <alpine.DEB.2.00.1207091015570.30060@router.home> <4FFBFCAC.4010007@jp.fujitsu.com>
-In-Reply-To: <4FFBFCAC.4010007@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.00.1207101211070.16114@twin.jikos.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2012 05:58 PM, Yasuaki Ishimatsu wrote:
-> Hi Christoph,
+On Tue, Jul 10, 2012 at 12:11:55PM +0200, Jiri Kosina wrote:
+> On Mon, 9 Jul 2012, Henrik Rydberg wrote:
 > 
-> 2012/07/10 0:18, Christoph Lameter wrote:
->>
->> On Mon, 9 Jul 2012, Yasuaki Ishimatsu wrote:
->>
->>> Even if you apply these patches, you cannot remove the physical memory
->>> completely since these patches are still under development. I want you to
->>> cooperate to improve the physical memory hot-remove. So please review these
->>> patches and give your comment/idea.
->>
->> Could you at least give a method on how you want to do physical memory
->> removal?
+> > Add support for the 15'' MacBook Pro Retina model (MacBookPro10,1).
+> > 
+> > Patch originally written by clipcarl (forums.opensuse.org).
+> > 
+> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> > ---
+> > Hi Dmitry,
+> > 
+> > Here is a patch for the new retina I picked up from the anonymous
+> > heroes on the linux forums. Looks simple enough for 3.5 to me.  Either
+> > way, the usual sync with Jiri is needed.
 > 
-> We plan to release a dynamic hardware partitionable system. It will be
-> able to hot remove/add a system board which included memory and cpu.
-> But as you know, Linux does not support memory hot-remove on x86 box.
-> So I try to develop it.
+> 	Acked-by: Jiri Kosina <jkosina@suse.cz> 
 > 
-> Current plan to hot remove system board is to use container driver.
-> Thus I define the system board in ACPI DSDT table as a container device.
-> It have supported hot-add a container device. And if container device
-> has _EJ0 ACPI method, "eject" file to remove the container device is
-> prepared as follow:
-> 
-> # ls -l /sys/bus/acpi/devices/ACPI0004\:01/eject
-> --w-------. 1 root root 4096 Jul 10 18:19 /sys/bus/acpi/devices/ACPI0004:01/eject
-> 
-> When I hot-remove the container device, I echo 1 to the file as follow:
-> 
-> #echo 1 > /sys/bus/acpi/devices/ACPI0004\:02/eject
-> 
-> Then acpi_bus_trim() is called. And it calls acpi_memory_device_remove()
-> for removing memory device. But the code does not do nothing.
-> So I developed the continuation of the function.
-> 
->> You would have to remove all objects from the range you want to
->> physically remove. That is only possible under special circumstances and
->> with a limited set of objects. Even if you exclusively use ZONE_MOVEABLE
->> you still may get cases where pages are pinned for a long time.
-> 
-> I know it. So my memory hot-remove plan is as follows:
-> 
-> 1. hot-added a system board
->    All memory which included the system board is offline.
-> 
-> 2. online the memory as removable page
->    The function has not supported yet. It is being developed by Lai as follow:
->    http://lkml.indiana.edu/hypermail/linux/kernel/1207.0/01478.html
->    If it is supported, I will be able to create movable memory.
-> 
-> 3. hot-remove the memory by container device's eject file
-We have implemented a prototype to do physical node (mem + CPU + IOH) hotplug
-for Itanium and is now porting it to x86. But with currently solution, memory
-hotplug functionality may cause 10-20% performance decrease because we concentrate
-all DMA/Normal memory to the first NUMA node, and all other NUMA nodes only
-hosts ZONE_MOVABLE. We are working on solution to minimize the performance
-drop now.
+> for "[PATCH 1/2] HID: Add support for 2012 MacBook Pro Retina". Dmitry, 
+> please either take that through your tree, or send me your Ack for this 
+> one and I'll take it.
 
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
->>
->> I am not sure that these patches are useful unless we know where you are
->> going with this. If we end up with a situation where we still cannot
->> remove physical memory then this patchset is not helpful.
-> 
-> 
-> 
+Thanks Jiri, I'll take it throug my tree then.
 
-
+-- 
+Dmitry
