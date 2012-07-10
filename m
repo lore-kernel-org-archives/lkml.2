@@ -1,54 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab2GJCLr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 22:11:47 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:51713 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755419Ab2GJCLp (ORCPT
+	id S1755488Ab2GJCM3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 22:12:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39670 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752788Ab2GJCM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 22:11:45 -0400
-X-AuditID: cbfee61b-b7f566d000005c8a-0f-4ffb8f5d2f98
-From: Sangbeom Kim <sbkim73@samsung.com>
-To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-Cc: "'Liam Girdwood'" <lrg@ti.com>, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, sbkim01@gmail.com
-References: <0ff001cd5c24$793ab100$6bb01300$@com>
- <20120709130309.GD3934@opensource.wolfsonmicro.com>
-In-reply-to: <20120709130309.GD3934@opensource.wolfsonmicro.com>
-Subject: RE: [PATCH V2 3/7] regulator: s5m8767: Modify function and variable
- name
-Date: Tue, 10 Jul 2012 11:11:41 +0900
-Message-id: <008601cd5e41$586bfe10$0943fa30$@com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1d0zMTV5jBXjbmTGqfwa5JAqtV5gAbZgnQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jQd3Y/t/+Bt/uaFtc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Mzl9fWQv+MFY87mxia2A8wNjFyMkhIWAi0XZ0ITOELSZx4d56
-	ti5GLg4hgemMEr1PlkI5c5kk7k6dD1bFJqAhsXL3W6AEB4eIgJnEz4M8IGFmgSyJW03n2UBs
-	IYF0iQtzdrOA2JwCDhIXNq0CaxUWCJZ4tHo6K4jNIqAq0f5oJ9gRvAKGEs+2X2OCsAUlfky+
-	xwIxU0ti/c7jTBC2vMTmNW+ZQdZKCKhLPPqrCxIWETCSePxsHitEiYjEvhfvGCcwCs1CMmkW
-	kkmzkEyahaRlASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgMH4mvYNxVYPFIUYBDkYl
-	Hl6NvN/+QqyJZcWVuYcYJTiYlUR4b7kChXhTEiurUovy44tKc1KLDzFKc7AoifOaeH/1BwZK
-	YklqdmpqQWoRTJaJg1OqgXHFz+x1+0onxV6d1Pbiz5Qj/1ZeOnu06HQ178Xt7osVNxktYnr7
-	z46vbLZSwoIlSeumTChlVev4Vcq2ddmRJW33dZxiKuYuUjb68Fbi8Pw7ldeLH+07ddSvVDZ0
-	9f/W8+rnw1Yqb2wX2bXryJkNtlcmfz5pbSy0Re8CT2HvtMvfuDZp7eSumPfqlRJLcUaioRZz
-	UXEiAPkHHoJfAgAA
-X-TM-AS-MML: No
+	Mon, 9 Jul 2012 22:12:27 -0400
+Date: Mon, 9 Jul 2012 19:15:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: ebiederm@xmission.com (Eric W. Biederman)
+Cc: Glauber Costa <glommer@parallels.com>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, Greg Thelen <gthelen@google.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>, Tejun Heo <tj@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2] fail dentry revalidation after namespace change
+Message-Id: <20120709191505.bcce7947.akpm@linux-foundation.org>
+In-Reply-To: <87629wxu1i.fsf@xmission.com>
+References: <1341565747-15374-1-git-send-email-glommer@parallels.com>
+	<20120709161336.0ec23592.akpm@linux-foundation.org>
+	<87txxgxxs7.fsf@xmission.com>
+	<20120709174705.0e2078c8.akpm@linux-foundation.org>
+	<87629wxu1i.fsf@xmission.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-Monday, July 09, 2012 10:03 PM +0900, Mark Brown wrote:
+On Mon, 09 Jul 2012 18:51:37 -0700 ebiederm@xmission.com (Eric W. Biederman) wrote:
 
-> This needs to be squashed down into the patch doing the rename in the
-> core to avoid build breakage.  Otherwise looks good.
-Ok, I will squash and resend it.
+> Andrew Morton <akpm@linux-foundation.org> writes:
+> 
+> > On Mon, 09 Jul 2012 17:30:48 -0700 ebiederm@xmission.com (Eric W. Biederman) wrote:
+> >
+> >> Andrew Morton <akpm@linux-foundation.org> writes:
+> >> 
+> >> >>  {
+> >> >>  	struct sysfs_dirent *sd;
+> >> >>  	int is_dir;
+> >> >> +	int type;
+> >> >>  
+> >> >>  	if (nd->flags & LOOKUP_RCU)
+> >> >>  		return -ECHILD;
+> >> >> @@ -326,6 +327,13 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
+> >> >>  	if (strcmp(dentry->d_name.name, sd->s_name) != 0)
+> >> >>  		goto out_bad;
+> >> >>  
+> >> >> +	/* The sysfs dirent has been moved to a different namespace */
+> >> >> +	type = KOBJ_NS_TYPE_NONE;
+> >> >> +	if (sd->s_parent)
+> >> >> +		type = sysfs_ns_type(sd->s_parent);
+> >> >> +	if (type && (sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns))
+> >> >
+> >> > eww, the code is assuming that KOBJ_NS_TYPE_NONE has a value of zero. 
+> >> > Don't do that; it smells bad.
+> >> 
+> >> Gag.  An incomplete change in idiom.
+> >> 
+> >> KOBJ_NS_TYPE_NONE is explicitly defined as 0 so that it can be used
+> >> this way, and every where else in fs/sysfs/dir.c uses this idiom.
+> >
+> > One man's idiom is another man's idiocy.
+> 
+> And code that uses inconsistent idioms is even harder to read.
 
-Thanks,
-Sangbeom.
+Not true.  That patch is more readable when it is changed to use
+correct types.  If only because readers don't need to go in and check
+that KOBJ_NS_TYPE_NONE has value zero.
 
+> > Seriously.  What sort of idea is that?  Create an enumerated type and
+> > then just ignore it?
+> 
+> It isn't ignored.  It just has a well defined NULL value. That is hardly
+> controversial.
+
+If it's uncontroversial, why are we talking about it?  Why did I, an
+experienced C and kernel developer, think that it looked stupid and
+possibly buggy?
+
+I'm uncomfortable with propagating this idiotic and unnecessary trick
+any further.  It's better to fix it.
+
+> >> Pray tell in what parallel universe is that monstrosity above more
+> >> readable than the line it replaces?
+> >
+> > Don't be silly, it is not a "monstrosity".  The code it is modifying
+> > contains an unneeded test-and-branch.  It's a test and branch which the
+> > compiler might be able to avoid.  If we can demonstrate that the
+> > compiler does indeed optimise it, or if we can find a less monstrous
+> > way of implementing it then fine.  Otherwise, efficiency wins.
+> 
+> Efficiency wins?  In a rarely used function?  Which kernel are you
+> working on?
+
+One in which we frequently optimise uncommon code paths.
+
+> Readable maintainable code wins.  Unreadable code causes regressions.
+
+Dude, the whole reason for having enums and enumerated types is for
+readability and maintainability.  If we didn't care about that, we'd
+use literal constants everywhere.  And here you are arguing against
+that readability and maintainability.
+
+If you want to say "yes, the sysfs code is bad but I can't be bothered
+fixing it all" then grumble, but OK.  But for heavens sake, don't go
+and *defend* what that code is doing.
 
