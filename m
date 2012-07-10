@@ -1,298 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab2GJXAf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 19:00:35 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:42806 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754764Ab2GJXAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 19:00:33 -0400
-Message-ID: <4FFCB404.1000705@us.ibm.com>
-Date: Tue, 10 Jul 2012 16:00:20 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, stable@vger.kernel.org
-Subject: Re: [PATCH 0/6] Fix for leapsecond caused hrtimer/futex issue (updated)
-References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
-In-Reply-To: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
-Content-Type: multipart/mixed;
- boundary="------------080809030105090306060500"
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071023-6078-0000-0000-00000D151754
+	id S1754908Ab2GJXDa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 19:03:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35223 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238Ab2GJXD2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 19:03:28 -0400
+From: Benson Leung <bleung@chromium.org>
+To: mjg@redhat.com, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, olofj@chromium.org
+Cc: Benson Leung <bleung@chromium.org>
+Subject: [PATCH] Platform: x86: Add Chrome OS Laptop driver
+Date: Tue, 10 Jul 2012 16:03:13 -0700
+Message-Id: <1341961393-17728-1-git-send-email-bleung@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080809030105090306060500
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+This adds the chromeos_laptop driver. It supports
+the Cypress APA SMBUS touchpad as well as the isl29018 i2c ambient
+light sensor on the Samsung Series 5 550 Chromebook.
 
-On 07/10/2012 03:43 PM, John Stultz wrote:
-> Over the weekend, Thomas got a chance to review the leap second fix
-> in more detail and had a few additional changes he wanted to make
-> to improve performance as well as style.
->
-> So this iteration includes his modifications.
->
-> Once merged, I'll be working to get the backports finished as quickly
-> as I can and sent to -stable.
->
+Signed-off-by: Benson Leung <bleung@chromium.org>
+---
+ drivers/platform/x86/Kconfig           |   11 ++
+ drivers/platform/x86/Makefile          |    1 +
+ drivers/platform/x86/chromeos_laptop.c |  202 ++++++++++++++++++++++++++++++++
+ 3 files changed, 214 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/platform/x86/chromeos_laptop.c
 
-Once again, here's the test case I've been using to stress test 
-leapsecond insertion/deletion (the deletion testing is new since last 
-round).
-
-thanks
--john
-
-
---------------080809030105090306060500
-Content-Type: text/x-csrc;
- name="leap-a-day.c"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="leap-a-day.c"
-
-/* Leap second stress test
- *              by: john stultz (johnstul@us.ibm.com)
- *              (C) Copyright IBM 2012
- *              Licensed under the GPLv2
- *
- *  This test signals the kernel to insert a leap second
- *  every day at midnight GMT. This allows for stessing the
- *  kernel's leap-second behavior, as well as how well applications
- *  handle the leap-second discontinuity.
- *
- *  Usage: leap-a-day [-s]
- *
- *  Options:
- *	-s:	Each iteration, set the date to 10 seconds before midnight GMT.
- *		This speeds up the number of leapsecond transitions tested,
- *		but because it calls settimeofday frequently, advancing the
- *		time by 24 hours every ~16 seconds, it may cause application
- *		disruption.
- *
- *  Other notes: Disabling NTP prior to running this is advised, as the two
- *		 may conflict in thier commands to the kernel.
- *
- *  To build:
- *	$ gcc leap-a-day.c -o leap-a-day -lrt
- */
-
-
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-#include <sys/timex.h>
-#include <string.h>
-#include <signal.h>
-
-#define NSEC_PER_SEC 1000000000ULL
-
-/* returns 1 if a <= b, 0 otherwise */
-static inline int in_order(struct timespec a, struct timespec b)
-{
-        if(a.tv_sec < b.tv_sec)
-                return 1;
-        if(a.tv_sec > b.tv_sec)
-                return 0;
-        if(a.tv_nsec > b.tv_nsec)
-                return 0;
-        return 1;
-}
-
-struct timespec timespec_add(struct timespec ts, unsigned long long ns)
-{
-	ts.tv_nsec += ns;
-	while(ts.tv_nsec >= NSEC_PER_SEC) {
-		ts.tv_nsec -= NSEC_PER_SEC;
-		ts.tv_sec++;
-	}
-	return ts;
-}
-
-
-char* time_state_str(int state)
-{
-	switch (state) {
-		case TIME_OK:	return "TIME_OK";
-		case TIME_INS:	return "TIME_INS";
-		case TIME_DEL:	return "TIME_DEL";
-		case TIME_OOP:	return "TIME_OOP";
-		case TIME_WAIT:	return "TIME_WAIT";
-		case TIME_BAD:	return "TIME_BAD";
-	}
-	return "ERROR"; 
-}
-
-/* clear NTP time_status & time_state */
-void clear_time_state(void)
-{
-	struct timex tx;
-	int ret;
-
-	/*
-	 * XXX - The fact we have to call this twice seems
-	 * to point to a slight issue in the kernel's ntp state
-	 * managment. Needs to be investigated further.
-	 */
-
-	tx.modes = ADJ_STATUS;
-	tx.status = STA_PLL;
-	ret = adjtimex(&tx);
-
-	tx.modes = ADJ_STATUS;
-	tx.status = 0;
-	ret = adjtimex(&tx);
-}
-
-/* Make sure we cleanup on ctrl-c */
-void handler(int unused)
-{
-	clear_time_state();
-	exit(0);
-}
-
-
-/* Test for known hrtimer failure */
-void test_hrtimer_failure(void)
-{
-	struct timespec now, target;
-
-	clock_gettime(CLOCK_REALTIME, &now);
-	target = timespec_add(now, NSEC_PER_SEC/2);
-	clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &target, NULL);
-	clock_gettime(CLOCK_REALTIME, &now);
-
-	if (!in_order(target, now)) {
-		printf("Note: hrtimer early expiration failure observed.\n");
-	}
-
-}
-
-
-
-int main(int argc, char** argv) 
-{
-	struct timeval tv;
-	struct timex tx;
-	struct timespec ts;
-	int settime = 0;
-	int insert = 1;
-
-	signal(SIGINT, handler);
-	signal(SIGKILL, handler);
-	printf("This runs continuously. Press ctrl-c to stop\n");
-
-
-	/* Process arguments */
-	if (argc > 1) {
-		if (!strncmp(argv[1], "-s", 2)) {
-			printf("Setting time to speed up testing\n");
-			settime = 1;
-		} else {
-			printf("Usage: %s [-s]\n", argv[0]);
-			printf("	-s: Set time to right before leap second each iteration\n");
-		}
-	}
-
-	printf("\n");
-	while (1) {
-		int ret;
-		time_t now, next_leap;
-		/* Get the current time */
-		gettimeofday(&tv, NULL);
-
-		/* Calculate the next possible leap second 23:59:60 GMT */
-		tv.tv_sec += 86400 - (tv.tv_sec % 86400);
-		next_leap = ts.tv_sec = tv.tv_sec;
-
-		if (settime) {
-			tv.tv_sec -= 10;
-			settimeofday(&tv, NULL);
-			printf("Setting time to %s", ctime(&ts.tv_sec));
-		}
-
-		/* Reset NTP time state */
-		clear_time_state();
-
-		/* Set the leap second insert flag */
-		tx.modes = ADJ_STATUS;
-		if (insert) 
-			tx.status = STA_INS;
-		else
-			tx.status = STA_DEL;
-		ret = adjtimex(&tx);
-		if (ret < 0 ) {
-			printf("Error: Problem setting STA_INS/STA_DEL!: %s\n",
-							time_state_str(ret));
-			return -1;
-		}
-
-		/* Validate STA_INS was set */
-		ret = adjtimex(&tx);
-		if (tx.status != STA_INS && tx.status != STA_DEL) {
-			printf("Error: STA_INS/STA_DEL not set!: %s\n",
-							time_state_str(ret));
-			return -1;
-		}
-
-		printf("Scheduling leap second for %s", ctime(&next_leap));
-	
-		/* Wake up 3 seconds before leap */
-		ts.tv_sec -= 3;
-		while(clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &ts, NULL))
-			printf("Something woke us up, returning to sleep\n");
-
-		/* Validate STA_INS is still set */
-		ret = adjtimex(&tx);
-		if (tx.status != STA_INS && tx.status != STA_DEL) {
-			printf("Something cleared STA_INS/STA_DEL, setting it again.\n");
-			tx.modes = ADJ_STATUS;
-			if (insert) 
-				tx.status = STA_INS;
-			else
-				tx.status = STA_DEL;
-			ret = adjtimex(&tx);
-		}
-
-		/* Check adjtimex output every half second */
-		now = tx.time.tv_sec;
-		while (now < next_leap+2) {
-			char buf[26];
-			ret = adjtimex(&tx);
-
-			ctime_r(&tx.time.tv_sec, buf);
-			buf[strlen(buf)-1] = 0; /*remove trailing\n */
-
-			printf("%s + %6ld us\t%s\n",
-					buf,
-					tx.time.tv_usec, 
-					time_state_str(ret));
-			now = tx.time.tv_sec;
-			/* Sleep for another half second */
-			ts.tv_sec = 0;
-			ts.tv_nsec = NSEC_PER_SEC/2;
-			clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, NULL);			
-		}
-		/* Switch to using other mode */
-		insert = !insert;
-
-		/* Note if kernel has known hrtimer failure */
-		test_hrtimer_failure();
-
-		printf("Leap complete\n\n");
-	}
-
-	clear_time_state();
-	return 0;
-}
-
---------------080809030105090306060500--
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index 2a262f5..42a177b 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -79,6 +79,17 @@ config ASUS_LAPTOP
+ 
+ 	  If you have an ACPI-compatible ASUS laptop, say Y or M here.
+ 
++config CHROMEOS_LAPTOP
++	tristate "Chrome OS Laptop"
++	depends on I2C
++	depends on DMI
++	---help---
++	  This driver instantiates i2c and smbus devices such as
++	  light sensors and touchpads.
++
++	  If you have a supported Chromebook, choose Y or M here.
++	  The module will be called chromeos_laptop.
++
+ config DELL_LAPTOP
+ 	tristate "Dell Laptop Extras (EXPERIMENTAL)"
+ 	depends on X86
+diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+index bf7e4f9..ace2b38 100644
+--- a/drivers/platform/x86/Makefile
++++ b/drivers/platform/x86/Makefile
+@@ -50,3 +50,4 @@ obj-$(CONFIG_INTEL_MID_POWER_BUTTON)	+= intel_mid_powerbtn.o
+ obj-$(CONFIG_INTEL_OAKTRAIL)	+= intel_oaktrail.o
+ obj-$(CONFIG_SAMSUNG_Q10)	+= samsung-q10.o
+ obj-$(CONFIG_APPLE_GMUX)	+= apple-gmux.o
++obj-$(CONFIG_CHROMEOS_LAPTOP)	+= chromeos_laptop.o
+diff --git a/drivers/platform/x86/chromeos_laptop.c b/drivers/platform/x86/chromeos_laptop.c
+new file mode 100644
+index 0000000..c5486f0
+--- /dev/null
++++ b/drivers/platform/x86/chromeos_laptop.c
+@@ -0,0 +1,202 @@
++/*
++ *  chromeos_laptop.c - Driver to instantiate Chromebook i2c/smbus devices.
++ *
++ *  Author : Benson Leung <bleung@chromium.org>
++ *
++ *  Copyright (C) 2012 Google, Inc.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ */
++
++#include <linux/dmi.h>
++#include <linux/i2c.h>
++#include <linux/module.h>
++
++#define CYAPA_TP_I2C_ADDR	0x67
++#define ISL_ALS_I2C_ADDR	0x44
++
++static struct i2c_client *als;
++static struct i2c_client *tp;
++
++const char *i2c_adapter_names[] = {
++	"SMBus I801 adapter",
++};
++
++/* Keep this enum consistent with i2c_adapter_names */
++enum i2c_adapter_type {
++	I2C_ADAPTER_SMBUS = 0,
++};
++
++static struct i2c_board_info __initdata cyapa_device = {
++	I2C_BOARD_INFO("cyapa", CYAPA_TP_I2C_ADDR),
++	.flags		= I2C_CLIENT_WAKE,
++};
++
++static struct i2c_board_info __initdata isl_als_device = {
++	I2C_BOARD_INFO("isl29018", ISL_ALS_I2C_ADDR),
++};
++
++static __init struct i2c_client *__add_probed_i2c_device(
++		const char *name,
++		int bus,
++		struct i2c_board_info *info,
++		const unsigned short *addrs)
++{
++	const struct dmi_device *dmi_dev;
++	const struct dmi_dev_onboard *dev_data;
++	struct i2c_adapter *adapter;
++	struct i2c_client *client;
++
++	if (bus < 0)
++		return NULL;
++	/*
++	 * If a name is specified, look for irq platform information stashed
++	 * in DMI_DEV_TYPE_DEV_ONBOARD by the Chrome OS custom system firmware.
++	 */
++	if (name) {
++		dmi_dev = dmi_find_device(DMI_DEV_TYPE_DEV_ONBOARD, name, NULL);
++		if (!dmi_dev) {
++			pr_err("%s failed to dmi find device %s.\n",
++			       __func__,
++			       name);
++			return NULL;
++		}
++		dev_data = (struct dmi_dev_onboard *)dmi_dev->device_data;
++		if (!dev_data) {
++			pr_err("%s failed to get data from dmi for %s.\n",
++			       __func__, name);
++			return NULL;
++		}
++		info->irq = dev_data->instance;
++	}
++
++	adapter = i2c_get_adapter(bus);
++	if (!adapter) {
++		pr_err("%s failed to get i2c adapter %d.\n", __func__, bus);
++		return NULL;
++	}
++
++	/* add the i2c device */
++	client = i2c_new_probed_device(adapter, info, addrs, NULL);
++	if (!client)
++		pr_err("%s failed to register device %d-%02x\n",
++		       __func__, bus, info->addr);
++	else
++		pr_debug("%s added i2c device %d-%02x\n",
++			 __func__, bus, info->addr);
++
++	i2c_put_adapter(adapter);
++	return client;
++}
++
++static int __init __find_i2c_adap(struct device *dev, void *data)
++{
++	const char *name = data;
++	const char *prefix = "i2c-";
++	struct i2c_adapter *adapter;
++	if (strncmp(dev_name(dev), prefix, strlen(prefix)))
++		return 0;
++	adapter = to_i2c_adapter(dev);
++	return !strncmp(adapter->name, name, strlen(name));
++}
++
++static int __init find_i2c_adapter_num(enum i2c_adapter_type type)
++{
++	struct device *dev = NULL;
++	struct i2c_adapter *adapter;
++	const char *name = i2c_adapter_names[type];
++	/* find the adapter by name */
++	dev = bus_find_device(&i2c_bus_type, NULL, (void *)name,
++			      __find_i2c_adap);
++	if (!dev) {
++		pr_err("%s: i2c adapter %s not found on system.\n", __func__,
++		       name);
++		return -ENODEV;
++	}
++	adapter = to_i2c_adapter(dev);
++	return adapter->nr;
++}
++
++/*
++ * Probes for a device at a single address, the one provided by
++ * info->addr.
++ * Returns NULL if no device found.
++ */
++static __init struct i2c_client *add_smbus_device(const char *name,
++						  struct i2c_board_info *info)
++{
++	const unsigned short addr_list[] = { info->addr, I2C_CLIENT_END };
++	return __add_probed_i2c_device(name,
++				       find_i2c_adapter_num(I2C_ADAPTER_SMBUS),
++				       info,
++				       addr_list);
++}
++
++static int __init setup_lumpy_tp(const struct dmi_system_id *id)
++{
++	/* add cyapa touchpad on smbus */
++	tp = add_smbus_device("trackpad", &cyapa_device);
++	return 0;
++}
++
++static int __init setup_isl29018_als(const struct dmi_system_id *id)
++{
++	/* add isl29018 light sensor */
++	als = add_smbus_device("lightsensor", &isl_als_device);
++	return 0;
++}
++
++static const struct __initdata dmi_system_id chromeos_laptop_dmi_table[] = {
++	{
++		.ident = "Samsung Series 5 550 - Touchpad",
++		.matches = {
++			DMI_MATCH(DMI_PRODUCT_NAME, "Lumpy"),
++		},
++		.callback = setup_lumpy_tp,
++	},
++	{
++		.ident = "Samsung Series 5 550 - Light Sensor",
++		.matches = {
++			DMI_MATCH(DMI_PRODUCT_NAME, "Lumpy"),
++		},
++		.callback = setup_isl29018_als,
++	},
++	{ }
++};
++
++static int __init chromeos_laptop_init(void)
++{
++	if (!dmi_check_system(chromeos_laptop_dmi_table)) {
++		pr_debug("%s unsupported system.\n", __func__);
++		return -ENODEV;
++	}
++	return 0;
++}
++
++static void __exit chromeos_laptop_exit(void)
++{
++	if (als)
++		i2c_unregister_device(als);
++	if (tp)
++		i2c_unregister_device(tp);
++}
++
++module_init(chromeos_laptop_init);
++module_exit(chromeos_laptop_exit);
++
++MODULE_DESCRIPTION("Chrome OS Laptop driver");
++MODULE_AUTHOR("Benson Leung <bleung@chromium.org>");
++MODULE_LICENSE("GPL");
+-- 
+1.7.7.3
 
