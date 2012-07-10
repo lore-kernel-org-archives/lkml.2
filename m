@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab2GJXs2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 19:48:28 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:41905 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755264Ab2GJXs1 (ORCPT
+	id S1755519Ab2GJXsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 19:48:52 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:45115 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755264Ab2GJXsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 19:48:27 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-160.messagelabs.com!1341964106!9292522!1
-X-Originating-IP: [216.166.12.31]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 15/83] staging: comedi: rtd520: remove RtdAboutStopEnable macro
-Date: Tue, 10 Jul 2012 16:48:22 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201207101648.22429.hartleys@visionengravers.com>
+	Tue, 10 Jul 2012 19:48:50 -0400
+From: cody@linux.vnet.ibm.com
+To: Michal Marek <mmarek@suse.cz>
+Cc: Cody Schafer <cody@linux.vnet.ibm.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] kconfig: allow long lines in config file
+Date: Tue, 10 Jul 2012 16:47:58 -0700
+Message-Id: <1341964078-22594-1-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071023-7408-0000-0000-000006A7D906
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This macro uses the 'devpriv' macro which relies on a local variable
-having a specific name. Plus it's just a wrapper around a simple
-'writel'. Remove the macro.
+From: Cody Schafer <cody@linux.vnet.ibm.com>
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+For some config options (CONFIG_EXTRA_FIRMWARE, for example), the length
+of a config file line can exceed the 1024 byte buffer.
+
+Switch from fgets to getline to fix.
+
+Signed-off-by: Cody Schafer <cody@linux.vnet.ibm.com>
 ---
- drivers/staging/comedi/drivers/rtd520.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ scripts/kconfig/confdata.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/rtd520.c b/drivers/staging/comedi/drivers/rtd520.c
-index f3fea5a..df505a3 100644
---- a/drivers/staging/comedi/drivers/rtd520.c
-+++ b/drivers/staging/comedi/drivers/rtd520.c
-@@ -406,10 +406,6 @@ struct rtdPrivate {
- 
- /* Macros to access registers */
- 
--/* Set About counter stop enable (write only) */
--#define RtdAboutStopEnable(dev, v) \
--	writel((v > 0) ? 1 : 0, devpriv->las0+LAS0_ACNT_STOP_ENABLE)
--
- /* Set external trigger polarity (write only) 0=positive edge, 1=negative */
- #define RtdTriggerPolarity(dev, v) \
- 	writel((v > 0) ? 1 : 0, devpriv->las0+LAS0_ETRG_POLARITY)
-@@ -1533,7 +1529,7 @@ static int rtd_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 		devpriv->flags &= ~SEND_EOS;
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index 52577f0..175037f 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -185,7 +185,8 @@ static int conf_set_sym_val(struct symbol *sym, int def, int def_flags, char *p)
+ int conf_read_simple(const char *name, int def)
+ {
+ 	FILE *in = NULL;
+-	char line[1024];
++	char   *line = NULL;
++	size_t  line_asize = 0;
+ 	char *p, *p2;
+ 	struct symbol *sym;
+ 	int i, def_flags;
+@@ -247,7 +248,7 @@ load:
+ 		}
  	}
- 	writel(1, devpriv->las0 + LAS0_PACER_SELECT);
--	RtdAboutStopEnable(dev, 1);	/* just interrupt, dont stop */
-+	writel(1, devpriv->las0 + LAS0_ACNT_STOP_ENABLE);
  
- 	/* BUG??? these look like enumerated values, but they are bit fields */
+-	while (fgets(line, sizeof(line), in)) {
++	while (getline(&line, &line_asize, in) != -1) {
+ 		conf_lineno++;
+ 		sym = NULL;
+ 		if (line[0] == '#') {
+@@ -335,6 +336,7 @@ setsym:
+ 			cs->def[def].tri = EXPR_OR(cs->def[def].tri, sym->def[def].tri);
+ 		}
+ 	}
++	free(line);
+ 	fclose(in);
  
+ 	if (modules_sym)
 -- 
-1.7.11
+1.7.9.5
 
