@@ -1,142 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab2GJGCg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 02:02:36 -0400
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:58946 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753382Ab2GJGCe (ORCPT
+	id S1753780Ab2GJGDe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 02:03:34 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13369 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052Ab2GJGDb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 02:02:34 -0400
-Message-ID: <4FFBC56F.7080007@ti.com>
-Date: Tue, 10 Jul 2012 11:32:23 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
+	Tue, 10 Jul 2012 02:03:31 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 09 Jul 2012 23:03:31 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Rajendra Nayak <rnayak@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>
+CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "b-cousson@ti.com" <b-cousson@ti.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "hvaibhav@ti.com" <hvaibhav@ti.com>
+Date: Tue, 10 Jul 2012 11:33:23 +0530
+Subject: RE: [PATCH v1 01/11] drivers: usb: otg: add a new driver for omap
+ usb2 phy
+Thread-Topic: [PATCH v1 01/11] drivers: usb: otg: add a new driver for omap
+ usb2 phy
+Thread-Index: Ac1eX4lJqNVWPCBvQFml9Nws/jJ5KQAAHYsQ
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DDAD9FF96@BGMAIL02.nvidia.com>
+References: <1340884267-28908-1-git-send-email-kishon@ti.com>
+ <1340884267-28908-2-git-send-email-kishon@ti.com> <4FFBC1D0.5030506@ti.com>
+In-Reply-To: <4FFBC1D0.5030506@ti.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, b-cousson@ti.com,
-        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, balbi@ti.com,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org, hvaibhav@ti.com
-Subject: Re: [PATCH v1 07/11] drivers: usb: twl4030: Add device tree support
- for twl4030 usb
-References: <1340884267-28908-1-git-send-email-kishon@ti.com> <1340884267-28908-8-git-send-email-kishon@ti.com>
-In-Reply-To: <1340884267-28908-8-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 28 June 2012 05:21 PM, Kishon Vijay Abraham I wrote:
-> Add device tree support for twl6030 usb driver.
+> > +
+> > +#ifdef CONFIG_PM
 
-twl4030?
+Should it not be CONFIG_PM_SLEEP instead of just CONFIG_PM? 
 
-> Update the Documentation with device tree binding information.
->
-> Signed-off-by: Kishon Vijay Abraham I<kishon@ti.com>
-> ---
->   .../devicetree/bindings/usb/twlxxxx-usb.txt        |   19 +++++++++++++
->   drivers/usb/otg/twl4030-usb.c                      |   28 +++++++++++++++----
->   2 files changed, 41 insertions(+), 6 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt b/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
-> index f293271..2d069e4 100644
-> --- a/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
-> +++ b/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
-> @@ -16,3 +16,22 @@ twl6030-usb {
->   	regulator = "vusb";
->   	vusb-supply =<&vusb>;
->   };
-> +
-> +TWL4030 USB PHY AND COMPARATOR
-> + - compatible : Should be "ti,twl4030-usb"
-> + - interrupts : The interrupt numbers to the cpu should be specified. First
-> +   interrupt number is the otg interrupt number that raises ID interrupts
-> +   and VBUS interrupts. The second interrupt number is optional.
-> + -<supply-name>-supply : phandle to the regulator device tree node.
-> +<supply-name>  should be vusb1v5, vusb1v8 and vusb3v1
-> + - usb_mode : The mode used by the phy to connect to the controller. "1"
-> +   specifies "ULPI" mode and "2" specifies "CEA2011_3PIN" mode.
+> > +
+> > +static int omap_usb2_runtime_suspend(struct device *dev)
+> > +{
+> > +	struct platform_device	*pdev = to_platform_device(dev);
+> > +	struct omap_usb	*phy = platform_get_drvdata(pdev);
+> > +
 
-Are these standard usb phy modes or something specific to the twl4030
-usb phy?
 
-> +
-> +twl4030-usb {
-> +	compatible = "ti,twl4030-usb";
-> +	interrupts =<  10 4>;
-> +	vusb1v5-supply =<&vusb1v5>;
-> +	vusb1v8-supply =<&vusb1v8>;
-> +	vusb3v1-supply =<&vusb3v1>;
-> +	usb_mode =<1>;
-> +};
-> diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
-> index 523cad5..a4e7434 100644
-> --- a/drivers/usb/otg/twl4030-usb.c
-> +++ b/drivers/usb/otg/twl4030-usb.c
-> @@ -585,23 +585,28 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
->   	struct twl4030_usb	*twl;
->   	int			status, err;
->   	struct usb_otg		*otg;
-> -
-> -	if (!pdata) {
-> -		dev_dbg(&pdev->dev, "platform_data not available\n");
-> -		return -EINVAL;
-> -	}
-> +	struct device_node	*np = pdev->dev.of_node;
->
->   	twl = devm_kzalloc(&pdev->dev, sizeof *twl, GFP_KERNEL);
->   	if (!twl)
->   		return -ENOMEM;
->
-> +	if (np)
-> +		of_property_read_u32(np, "usb_mode",
-> +				(enum twl4030_usb_mode *)&twl->usb_mode);
-> +	else if (pdata)
-> +		twl->usb_mode = pdata->usb_mode;
-> +	else {
-> +		dev_err(&pdev->dev, "twl4030 initialized without pdata\n");
-> +		return -EINVAL;
-> +	}
-> +
->   	otg = devm_kzalloc(&pdev->dev, sizeof *otg, GFP_KERNEL);
->   	if (!otg)
->   		return -ENOMEM;
->
->   	twl->dev		=&pdev->dev;
->   	twl->irq		= platform_get_irq(pdev, 0);
-> -	twl->usb_mode		= pdata->usb_mode;
->   	twl->vbus_supplied	= false;
->   	twl->asleep		= 1;
->   	twl->linkstat		= OMAP_MUSB_UNKNOWN;
-> @@ -690,12 +695,23 @@ static int __exit twl4030_usb_remove(struct platform_device *pdev)
->   	return 0;
->   }
->
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id twl4030_usb_id_table[] = {
-> +	{ .compatible = "ti,twl4030-usb" },
-> +	{}
-> +};
-> +MODULE_DEVICE_TABLE(of, twl4030_usb_id_table);
-> +#else
-> +#define twl4030_usb_id_table NULL
-> +#endif
-> +
->   static struct platform_driver twl4030_usb_driver = {
->   	.probe		= twl4030_usb_probe,
->   	.remove		= __exit_p(twl4030_usb_remove),
->   	.driver		= {
->   		.name	= "twl4030_usb",
->   		.owner	= THIS_MODULE,
-> +		.of_match_table = twl4030_usb_id_table,
+> > +static int __init usb2_omap_init(void)
+> > +{
+> > +	return platform_driver_register(&omap_usb2_driver);
+> > +}
+> > +arch_initcall(usb2_omap_init);
+> > +
+> > +static void __exit usb2_omap_exit(void)
+> > +{
+> > +	platform_driver_unregister(&omap_usb2_driver);
+> > +}
+> > +module_exit(usb2_omap_exit);
+> > +
 
-use of_match_ptr().
+Do you really need arch_initcall here?
+If not, then you can replace above two function calls with module_platform_driver().
 
->   	},
->   };
->
-
+> > +MODULE_ALIAS("platform: omap_usb2");
+> > +MODULE_AUTHOR("Texas Instruments Inc.");
+> > +MODULE_DESCRIPTION("OMAP USB2 PHY DRIVER");
