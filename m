@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab2GJCLa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 22:11:30 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:53152 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752678Ab2GJCL2 (ORCPT
+	id S1755478Ab2GJCLr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 22:11:47 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:51713 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755419Ab2GJCLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 22:11:28 -0400
-Message-ID: <4FFB8F39.9030209@huawei.com>
-Date: Tue, 10 Jul 2012 10:11:05 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312 Thunderbird/11.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: shyju pv <shyju.pv@huawei.com>, Sanil kumar <sanil.kumar@huawei.com>,
-        Masanari Iida <standby24x7@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <viro@zeniv.linux.org.uk>, <levinsasha928@gmail.com>
-Subject: Re: [PATCH] cgroup: fix dentry still in use bug when dropping css
- refs after umount
-References: <4FEEA5CB.8070809@huawei.com> <20120703170317.GB555@google.com> <20120703225218.GF555@google.com> <4FF3E063.5010604@huawei.com> <20120708063536.GB19021@dhcp-172-17-108-109.mtv.corp.google.com>
-In-Reply-To: <20120708063536.GB19021@dhcp-172-17-108-109.mtv.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.166.88.115]
-X-CFilter-Loop: Reflected
+	Mon, 9 Jul 2012 22:11:45 -0400
+X-AuditID: cbfee61b-b7f566d000005c8a-0f-4ffb8f5d2f98
+From: Sangbeom Kim <sbkim73@samsung.com>
+To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+Cc: "'Liam Girdwood'" <lrg@ti.com>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, sbkim01@gmail.com
+References: <0ff001cd5c24$793ab100$6bb01300$@com>
+ <20120709130309.GD3934@opensource.wolfsonmicro.com>
+In-reply-to: <20120709130309.GD3934@opensource.wolfsonmicro.com>
+Subject: RE: [PATCH V2 3/7] regulator: s5m8767: Modify function and variable
+ name
+Date: Tue, 10 Jul 2012 11:11:41 +0900
+Message-id: <008601cd5e41$586bfe10$0943fa30$@com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1d0zMTV5jBXjbmTGqfwa5JAqtV5gAbZgnQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jQd3Y/t/+Bt/uaFtc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6Mzl9fWQv+MFY87mxia2A8wNjFyMkhIWAi0XZ0ITOELSZx4d56
+	ti5GLg4hgemMEr1PlkI5c5kk7k6dD1bFJqAhsXL3W6AEB4eIgJnEz4M8IGFmgSyJW03n2UBs
+	IYF0iQtzdrOA2JwCDhIXNq0CaxUWCJZ4tHo6K4jNIqAq0f5oJ9gRvAKGEs+2X2OCsAUlfky+
+	xwIxU0ti/c7jTBC2vMTmNW+ZQdZKCKhLPPqrCxIWETCSePxsHitEiYjEvhfvGCcwCs1CMmkW
+	kkmzkEyahaRlASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgMH4mvYNxVYPFIUYBDkYl
+	Hl6NvN/+QqyJZcWVuYcYJTiYlUR4b7kChXhTEiurUovy44tKc1KLDzFKc7AoifOaeH/1BwZK
+	YklqdmpqQWoRTJaJg1OqgXHFz+x1+0onxV6d1Pbiz5Qj/1ZeOnu06HQ178Xt7osVNxktYnr7
+	z46vbLZSwoIlSeumTChlVev4Vcq2ddmRJW33dZxiKuYuUjb68Fbi8Pw7ldeLH+07ddSvVDZ0
+	9f/W8+rnw1Yqb2wX2bXryJkNtlcmfz5pbSy0Re8CT2HvtMvfuDZp7eSumPfqlRJLcUaioRZz
+	UXEiAPkHHoJfAgAA
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/7/8 14:35, Tejun Heo wrote:
+Hi
+Monday, July 09, 2012 10:03 PM +0900, Mark Brown wrote:
 
-> Hello, Li.
-> 
-> On Wed, Jul 04, 2012 at 02:19:15PM +0800, Li Zefan wrote:
->>> I think we're horridly broken for
->>> root cgroup tho - and it has been broken for very long time.  I think
->>> it's mostly hidden because most (all?) controllers short-circuit root
->>> cgroup.  Eh, well....
->>>
->>
->> Could you elaborate a bit on what's broken for root cgroup?
-> 
-> If someone holds css ref of a root cgroup, AFAICS nothing is
-> preventing the cgroup hierarchy from being unmounted and root cgroup
-> destroyed.
-> 
+> This needs to be squashed down into the patch doing the rename in the
+> core to avoid build breakage.  Otherwise looks good.
+Ok, I will squash and resend it.
 
+Thanks,
+Sangbeom.
 
-Right, but that should be safe. The css objects of the root cgroup are
-allocated at boot, and won't be destroyed at umount.
-
-Furthermore when a cgroup hierarchy is going to be unmounted, those css's
-will be made to point to a cgroup named dummytop in rebind_subsystems(),
-and there's a syncronize_rcu() in the end of the function, so accessing
-css->cgroup is always safe.
-
-In this case, dummytop->dentry is NULL, and that's safe too, because
-cgroup_path() is aware of this case.
 
