@@ -1,90 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627Ab2GJMyg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 08:54:36 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58039 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291Ab2GJMyd convert rfc822-to-8bit (ORCPT
+	id S1755650Ab2GJM4L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 08:56:11 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43918 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab2GJM4J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 08:54:33 -0400
-From: Florian Fainelli <florian@openwrt.org>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4 0/4] Add ability to set defaultless network device MAC addresses to deterministic computed locally administered values
-Date: Tue, 10 Jul 2012 14:37:51 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.3; x86_64; ; )
-Cc: Andy Green <andy@warmcat.com>, linux-omap@vger.kernel.org, s-jan@ti.com,
-        arnd@arndb.de, patches@linaro.org, tony@atomide.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org
-References: <20120705024259.26317.16000.stgit@build.warmcat.com>
-In-Reply-To: <20120705024259.26317.16000.stgit@build.warmcat.com>
+	Tue, 10 Jul 2012 08:56:09 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Reply-To: martin-eric.racine@iki.fi
+In-Reply-To: <20120709203929.GC17301@burratino>
+References: <20120614162609.4613.22122.reportbug@henna.lan>
+	<20120614215359.GF3537@burratino>
+	<CAPZXPQd9gNCxn7xGyqj_xymPaF5OxvRtxRFkt+SsLs942te4og@mail.gmail.com>
+	<20120616044137.GB4076@burratino>
+	<1339932233.20497.14.camel@henna.lan>
+	<CAPZXPQegp7RA5M0H9Ofq4rJ9aj-rEdg=Ly9_1c6vAKi3COw50g@mail.gmail.com>
+	<4FF9CA30.9050105@redhat.com>
+	<CAPZXPQd026xfKrAU0D7CLQGbdAs8U01u5vsHp+5-wbVofAwdqQ@mail.gmail.com>
+	<4FFAD8D9.8070203@redhat.com>
+	<20120709203929.GC17301@burratino>
+Date: Tue, 10 Jul 2012 15:56:08 +0300
+X-Google-Sender-Auth: _q1rHnH2PI8XMTKCJVYUyEychYE
+Message-ID: <CAPZXPQcaEzW1zGXfGwp-JuOrfBu2xhoidaYjthD8jhYAFpWr7A@mail.gmail.com>
+Subject: Re: video: USB webcam fails since kernel 3.2
+From: =?UTF-8?Q?Martin=2D=C3=89ric_Racine?= <martin-eric.racine@iki.fi>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: Hans de Goede <hdegoede@redhat.com>, 677533@bugs.debian.org,
+        =?UTF-8?Q?Jean=2DFran=C3=A7ois_Moine?= <moinejf@free.fr>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201207101437.54877.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Jonathan,
 
-Le jeudi 05 juillet 2012 04:44:33, Andy Green a écrit :
-> The following series adds some code to generate legal, locally administered
-> MAC addresses from OMAP4 CPU Die ID fuse data, and then adds a helper at
-> net/ethernet taking care of accepting device path / MAC mapping
-> registrations and running a notifier to enforce the requested MAC when the
-> matching network device turns up.
+Thank you for these detailed instructions. Find the results of my testing below:
 
-This looks like something you can solve by user-space entirely. Expose the 
-OMAP4 CPU Die ID using a sysfs attribute, and let user-space manage the MAC 
-address pool.
+2012/7/9 Jonathan Nieder <jrnieder@gmail.com>:
+> Hans de Goede wrote:
+>
+>> Erm, that is quite a bit of work from my side for something which you
+>> can easily do yourself, edit gspca.c, search for which_bandwidth
+>> and then under the following lines:
+>>         u32 bandwidth;
+>>         int i;
+>>
+>> Add a line like this:
+>>       return 2000 * 2000 * 120;
+>
+> In case it helps, here are some more complete instructions.
+>
+>  0. Prerequisites:
+>
+>         apt-get install git build-essential
+>
+>  1. Get the kernel history, if you don't already have it:
+>
+>         git clone \
+>           git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
 
-If you tell me you want to use this for nfsroot booting, what prevents you 
-from using an initramfs, assign a valid MAC to your interface and switch over 
-your nfsroot once the interface setup is done?
+Cloned up to the following commit:
 
-> 
-> On PandaBoard / ES, two devices have no board-level MAC either assigned by
-> the manufacturer or stored on the board, the last patch in the series adds
-> these device paths and gets them set when the network device is registered.
-> 
-> Lastly for convenient testing, there's a little patch on
-> omap2plus_defconfig that will get Ethernet and WLAN up on Pandaboard.
-> 
-> The patches are against today's linux-omap.
-> 
-> Thanks to Tony Lindgren and Arnd Bergmann for comments leading to the
-> helper in net/ethernet.
-> 
-> ---
-> 
-> Andy Green (4):
->       OMAP: add cpu id register to MAC address helper
->       NET ethernet introduce mac_platform helper
->       OMAP4 PANDA register ethernet and wlan for automatic mac allocation
->       config test config extending omap2plus with wl12xx etc
-> 
-> 
->  arch/arm/configs/omap2plus_defconfig   |   35 +++----
->  arch/arm/mach-omap2/Kconfig            |    1
->  arch/arm/mach-omap2/board-omap4panda.c |   30 ++++++
->  arch/arm/mach-omap2/id.c               |   39 ++++++++
->  arch/arm/mach-omap2/include/mach/id.h  |    1
->  include/net/mac-platform.h             |   39 ++++++++
->  net/Kconfig                            |    5 +
->  net/ethernet/Makefile                  |    3 +
->  net/ethernet/mac-platform.c            |  151
-> ++++++++++++++++++++++++++++++++ 9 files changed, 282 insertions(+), 22
-> deletions(-)
->  create mode 100644 include/net/mac-platform.h
->  create mode 100644 net/ethernet/mac-platform.c
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+commit 2437fccfbfc83bcb868ccc7fdfe2b5310bf07835
+Merge: 6c6ee53 d92d95b6
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Mon Jul 9 13:43:02 2012 -0700
 
--- 
-Florian
+    Merge tag 'regulator-3.5' of
+git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator
+
+>  2. Try linus's master:
+>
+>         cd linux
+>         git fetch origin
+>         git reset --hard origin/master
+>         cp /boot/config-$(uname -r) .config; # current configuration
+>         scripts/config --disable DEBUG_INFO
+>         make localmodconfig; # optional: minimize configuration
+>         make deb-pkg; # optionally with -j<num> for parallel build
+>         dpkg -i ../<name of package>; # as root
+>         reboot
+>         ... test test test ...
+>
+>     Hopefully it reproduces the bug.
+
+Fails as previously.
+
+>  3. Try Hans's first suggested change, as described in the quoted text
+>     above:
+
+/* compute the minimum bandwidth for the current transfer */
+static u32 which_bandwidth(struct gspca_dev *gspca_dev)
+{
+        u32 bandwidth;
+        int i;
+
+        return 2000 * 2000 * 120;
+
+        /* get the (max) image size */
+
+>         cd linux
+>         vi drivers/media/video/gspca/gspca.c
+>         ... make the suggested edits ...
+>         make deb-pkg; # maybe with -j4
+>         dpkg -i ../<name of package>; # as root
+>         reboot
+>         ... test test test ...
+
+The camera works again in Cheese, at least some of the time. Other
+times, launching Cheese immediately crashes GNOME, which restarts the
+X.org server.
+
+However, with Skype 4.0.0.7, it only shows a green square, instead of
+the camera's output.
+
+>  4. Try Hans's second suggested change, as described in a previous
+>     message:
+>
+>         cd linux
+>         vi drivers/media/video/gspca/gspca.c
+>         ... make the suggested edits ...
+>         make deb-pkg; # maybe with -j4
+>         dpkg -i ../<name of package>; # as root
+>         reboot
+>         ... test test test ...
+
+This produces a severely distorted image for a few seconds, then
+Cheese crashes; GNOME itself survives.
+
+Meanwhile, Skype 4.0.0.7 shows a black square, instead of the camera's output.
+
+I hope that the above already provides some usable answers.
+
+Martin-Ã‰ric
