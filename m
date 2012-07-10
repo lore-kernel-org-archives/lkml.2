@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194Ab2GJQRf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 12:17:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33369 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756161Ab2GJQRe (ORCPT
+	id S1756220Ab2GJQT2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 12:19:28 -0400
+Received: from lon1-post-1.mail.demon.net ([195.173.77.148]:60728 "EHLO
+	lon1-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756158Ab2GJQT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 12:17:34 -0400
-Date: Tue, 10 Jul 2012 17:17:28 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: lrg@ti.com, axel.lin@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: tps65910: correct init value of n_voltages
-Message-ID: <20120710161727.GH10022@opensource.wolfsonmicro.com>
-References: <1341845833-7023-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YH9Qf6Fh2G5kB/85"
-Content-Disposition: inline
-In-Reply-To: <1341845833-7023-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 10 Jul 2012 12:19:27 -0400
+Message-ID: <1341937165.1762.10.camel@castor.rsk>
+Subject: [PATCH] USB: remove 8 bytes of padding from usb_host_interface on
+ 64 bit builds
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: linux-usb <linux-usb@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Date: Tue, 10 Jul 2012 17:19:25 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Reorder elements in the usb_host_interface structure to remove 8 bytes
+of padding on 64 bit builds , and so shrink it's size to 40 bytes.
+    
+usb_interface_descriptor is a odd size which leaves a gap that is not
+big enough to hold a pointer, so moving extralen into that gap removes
+the need for more padding.
 
---YH9Qf6Fh2G5kB/85
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Mon, Jul 09, 2012 at 08:27:13PM +0530, Laxman Dewangan wrote:
-> Recent change in the core driver to get the maximum voltage
-> is based on the (n_voltages -1) steps of voltage.
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
 
-Applied, thanks.
+---
+patch against v3.5-rc6
+compiled and tested on x86_64
+I've been running this patch for several weeks with no obvious problems.
+This will allow the usb_host_interface array to be a bit smaller and should
+better align with the cachelines.
 
---YH9Qf6Fh2G5kB/85
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+regards
+Richard 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJP/FVTAAoJEBus8iNuMP3dQTgQAInN4W4ormYtOr5/o1Sa89aC
-tTZV8eBQDSaNuMFDoBDoZYYmsFXGk/S4YmKNS/T8DiMEs/MgXrlXppXdXiUB/fjm
-Wt/ew4yP7vLFnqUIzpsueijyoJoXARsmfj3gMI90PDMmYWiFz9rhNuekgB3CEoWO
-6pRuvFYfzDqOgPGMpsR0AADH+fCOjrAmYPUAHx5jWwQyUzDjhZttk1DwEfSd7C8J
-ucl6VbAae9IWhRqtudU4pa/E9WGXXBnlFJpxRdCEiKEmXNLNTcRm3H+sOVRPD1lU
-WKLVZKnZ3q/RgzBkSbY8ijW/+y9EVlabYEPlFOWBGTQ8bfN6G9YEyHtbR+BYyCqm
-BqsGr1pawA1/a9/mBPeR96OANiHyVUIgnehTXuza71og0VXoZ2FRKECBQM+N4QGt
-6vZ87E5Mho4TbFCy9coHO41HEArEZr+8hSj/hh6ZVjJMFoce49HVvRvxovpb3Kl3
-n3XcXHSTuoC6E/9U+ZjT0PBAg/VmvqD/rIKIvNzsJvxRwrQmiCZYG5ocBSkQLTLa
-J0m3TzYk0qUQqLns9QkKsLUEZVxx7vVmHOufrcY0X/lS2Jqek9P6bPazRUhunsgy
-+hmuGZ/Wntp5pDAyU9P9sMeT0Nh5Zh/CoBd0z95/TPCERPD7Pkxgtu5aid6gKzGI
-cgc3D0DhRFA3oYSop42a
-=VEtt
------END PGP SIGNATURE-----
 
---YH9Qf6Fh2G5kB/85--
+
+diff --git a/include/linux/usb.h b/include/linux/usb.h
+index dea39dc..2abec02 100644
+--- a/include/linux/usb.h
++++ b/include/linux/usb.h
+@@ -77,14 +77,14 @@ struct usb_host_endpoint {
+ struct usb_host_interface {
+ 	struct usb_interface_descriptor	desc;
+ 
++	int extralen;
++	unsigned char *extra;   /* Extra descriptors */
+ 	/* array of desc.bNumEndpoint endpoints associated with this
+ 	 * interface setting.  these will be in no particular order.
+ 	 */
+ 	struct usb_host_endpoint *endpoint;
+ 
+ 	char *string;		/* iInterface string, if present */
+-	unsigned char *extra;   /* Extra descriptors */
+-	int extralen;
+ };
+ 
+ enum usb_interface_condition {
+
+
+
