@@ -1,84 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091Ab2GJAIk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 20:08:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42385 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752731Ab2GJAIi (ORCPT
+	id S1755142Ab2GJAI7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 20:08:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38947 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755045Ab2GJAI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 20:08:38 -0400
-Message-ID: <1341878901.25597.307.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH firmware 3/4] rtl_nic: add new firmware for RTL8106E
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: dwmw2@infradead.org, romieu@fr.zoreil.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 10 Jul 2012 01:08:21 +0100
-In-Reply-To: <1341803512-1309-3-git-send-email-hayeswang@realtek.com>
-References: <1341803512-1309-1-git-send-email-hayeswang@realtek.com>
-	 <1341803512-1309-3-git-send-email-hayeswang@realtek.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-JdafrzDGL3JppFCutGqN"
-X-Mailer: Evolution 3.4.3-1 
+	Mon, 9 Jul 2012 20:08:58 -0400
+Date: Mon, 9 Jul 2012 17:08:56 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v2] mm: Warn about costly page allocation
+Message-Id: <20120709170856.ca67655a.akpm@linux-foundation.org>
+In-Reply-To: <1341878153-10757-1-git-send-email-minchan@kernel.org>
+References: <1341878153-10757-1-git-send-email-minchan@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 10 Jul 2012 08:55:53 +0900
+Minchan Kim <minchan@kernel.org> wrote:
 
---=-JdafrzDGL3JppFCutGqN
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> ...
+>
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -2276,6 +2276,29 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+>  	return alloc_flags;
+>  }
+>  
+> +#if defined(CONFIG_DEBUG_VM) && !defined(CONFIG_COMPACTION)
+> +static inline void check_page_alloc_costly_order(unsigned int order, gfp_t flags)
+> +{
+> +	if (likely(order <= PAGE_ALLOC_COSTLY_ORDER))
+> +		return;
+> +
+> +	if (!printk_ratelimited())
+> +		return;
+> +
+> +	pr_warn("%s: page allocation high-order stupidity: "
+> +		"order:%d, mode:0x%x\n", current->comm, order, flags);
+> +	pr_warn("Enable compaction if high-order allocations are "
+> +		"very few and rare.\n");
+> +	pr_warn("If you need regular high-order allocation, "
+> +		"compaction wouldn't help it.\n");
+> +	dump_stack();
+> +}
+> +#else
+> +static inline void check_page_alloc_costly_order(unsigned int order)
+> +{
+> +}
+> +#endif
 
-On Mon, 2012-07-09 at 11:11 +0800, Hayes Wang wrote:
-> File: rtl_nic/rtl8106e-1.fw
-> Version: 0.0.1
-[...]
+Let's remember that plain old "inline" is ignored by the compiler.  If
+we really really want to inline something then we should use
+__always_inline.
 
-As someone already pointed out, this message was not correctly encoded.
-The character encoding was specified as an empty string
-(Content-Encoding header) or whitespace (Subject):
+And inlining this function would be a bad thing to do - it causes the
+outer function to have an increased cache footprint.  A good way to
+optimise this function is probably to move the unlikely stuff
+out-of-line:
 
-> Content-Type: text/plain; charset=3D""
-[...]
-> Subject: =3D?
-> 	?q?=3D5BPATCH=3D20firmware=3D203/4=3D5D=3D20rtl=3D5Fnic=3D3A=3D20add=3D2=
-0new=3D20firmware=3D20for=3D20RTL8106E?=3D
+	if (unlikely(order > PAGE_ALLOC_COSTLY_ORDER))
+		check_page_alloc_costly_order(...);
 
-I fixed that up just this once, but please fix whatever causes that
-because I don't wish to have to do so again.
+or
 
-Ben.
+static noinline void __check_page_alloc_costly_order(...)
+{
+}
 
---=20
-Ben Hutchings
-The generation of random numbers is too important to be left to chance.
-                                                            - Robert Coveyo=
-u
+static __always_inline void check_page_alloc_costly_order(...)
+{
+	if (unlikely(order > PAGE_ALLOC_COSTLY_ORDER))
+		__check_page_alloc_costly_order(...);
+}
+	
 
---=-JdafrzDGL3JppFCutGqN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Also, the displayed messages don't seem very, umm, professional.  Who
+was stupid - us or the kernel-configurer?  And "Enable
+CONFIG_COMPACTION" would be more specific (and hence helpful) than
+"Enable compaction").
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+And how on earth is the user, or the person who is configuring kernels
+for customers to determine whether the kernel will be frequently
+performing higher-order allocations?
 
-iQIVAwUAT/tydee/yOyVhhEJAQo2oBAAnf4EC6NS642PmYGnPxf6aoR27F8/pkuY
-5fMzwddF5RPMWioojLIbQlVg+1sL7JdPeAzbQzbhYRmHzVAiE0F/cOwEQ102g4yq
-d4rbSsOhN5x3Ew9nL6G/GIs5utu9TxVTOffccumk3UAoJC5XkkVqEr7Lv7nLNkBN
-TjQYITuB/3EQiZtTAq1enm7n3AcORusqI2j3/QU/Qy1B/MPxOkEuwC6RIozvpWpa
-6t8fgmLJygVlv4ges19P7UM2xg1f5comQcB1kE/HoKC2DjBvihHoBK+uTd0GCuTr
-HG40XFB6/YLdS8zsFv2oRq35NQPpXE9j4XnOi1XSNVdMxDZIecWRXNSFSDABfPT1
-l7kkv/Kw2/C/fZK2mu/ScM5pe1pC/xmoH3wRCWRW80sFOs6vuyUwhNWdmmAJ08yv
-nSGcKOo3TTv0TACh8l51uDBM8iMZc6Ezy9NF/NUpN2TZlTMs8PvpZ3/nbwFRCY/1
-z3xU3UqatKyU7TElbINJPsGeDJvvDyBjz2QAdEWzgmJSV2cGw3JqGHu8xak/L8vq
-bVctkXHdFamjFtQLfOqO6xYFPm5mesZYktmwhpgcAhK3Z4dR3DeQPCyyBMH+ASms
-kPRo64KAUS9Mnchp4TToecWbsewl3slw0knQwBRiPIaDiGyfASZTKj4mL6H/NEfi
-GQVz81ZwcqQ=
-=SXst
------END PGP SIGNATURE-----
 
---=-JdafrzDGL3JppFCutGqN--
+So I dunno, this all looks like we have a kernel problem and we're
+throwing our problem onto hopelessly ill-equipped users of that kernel?
+
