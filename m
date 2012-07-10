@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab2GJRl2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 13:41:28 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:43736 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752523Ab2GJRl0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 13:41:26 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Wanpeng Li <liwp.linux@gmail.com>, linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Li Zefan <lizefan@huawei.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwp.linux@gmail.com>
-Subject: Re: [PATCH RFC] mm/hugetlb_cgroup: Add huge_page_order check to avoid incorrectly uncharge
-In-Reply-To: <1341914712-4588-1-git-send-email-liwp.linux@gmail.com>
-References: <1341914712-4588-1-git-send-email-liwp.linux@gmail.com>
-User-Agent: Notmuch/0.13.2+63~g548a9bf (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 10 Jul 2012 23:11:07 +0530
-Message-ID: <87394z1pl8.fsf@skywalker.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12071017-4790-0000-0000-000003A0618A
+	id S1753850Ab2GJRux (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 13:50:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54074 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753173Ab2GJRuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 13:50:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="163888891"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] x86/mce fix (ready for 3.6 merge window)
+Date: Tue, 10 Jul 2012 10:50:51 -0700
+Message-Id: <4ffc6b7b63006ca92@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wanpeng Li <liwp.linux@gmail.com> writes:
+The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
 
-> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
->
-> Against linux-next:
->
-> Function alloc_huge_page will call hugetlb_cgroup_charge_cgroup
-> to charge pages, the compound page have less than 3 pages will not
-> charge to hugetlb cgroup. When alloc_huge_page fails it will call
-> hugetlb_cgroup_uncharge_cgroup to uncharge pages, however,
-> hugetlb_cgroup_uncharge_cgroup doesn't have huge_page_order check.
-> That means it will uncharge pages even if the compound page have less
-> than 3 pages. Add huge_page_order check to avoid this incorrectly
-> uncharge.
->
-> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
 
- Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-mce-ripvfix
 
+for you to fetch changes up to b99c2fc9366d4e32b8d087cd28f6dbf5f7932dae:
 
-> ---
->  mm/hugetlb_cgroup.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
->
-> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-> index b834e8d..2b9e214 100644
-> --- a/mm/hugetlb_cgroup.c
-> +++ b/mm/hugetlb_cgroup.c
-> @@ -252,6 +252,9 @@ void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
->
->  	if (hugetlb_cgroup_disabled() || !h_cg)
->  		return;
-> +
-> +	if (huge_page_order(&hstates[idx]) < HUGETLB_CGROUP_MIN_ORDER)
-> +		return;
->
->  	res_counter_uncharge(&h_cg->hugepage[idx], csize);
->  	return;
-> -- 
-> 1.7.5.4
+  x86/mce: Need to let kill_proc() send signal to doomed process (2012-07-10 10:18:29 -0700)
 
--aneesh
+----------------------------------------------------------------
+Fix application level machine check recovery
 
+----------------------------------------------------------------
+Tony Luck (1):
+      x86/mce: Need to let kill_proc() send signal to doomed process
+
+ arch/x86/kernel/cpu/mcheck/mce.c |  6 ++++--
+ include/linux/mm.h               |  1 +
+ mm/memory-failure.c              | 10 ++++++----
+ 3 files changed, 11 insertions(+), 6 deletions(-)
