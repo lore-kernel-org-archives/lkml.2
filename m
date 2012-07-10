@@ -1,63 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab2GJI3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 04:29:36 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:36064 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753573Ab2GJI3b (ORCPT
+	id S1754442Ab2GJIcz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 04:32:55 -0400
+Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:52744 "EHLO
+	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753685Ab2GJIcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 04:29:31 -0400
-Message-ID: <4FFBE76A.3090902@linux.vnet.ibm.com>
-Date: Tue, 10 Jul 2012 13:57:22 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Tue, 10 Jul 2012 04:32:51 -0400
+Message-ID: <4FFBE8A9.6050608@ti.com>
+Date: Tue, 10 Jul 2012 14:02:41 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
 MIME-Version: 1.0
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
-        S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
-References: <20120709062012.24030.37154.sendpatchset@codeblue> <4FFA8E5E.3070108@de.ibm.com>
-In-Reply-To: <4FFA8E5E.3070108@de.ibm.com>
+To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+CC: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, b-cousson@ti.com,
+        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, balbi@ti.com,
+        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org, hvaibhav@ti.com
+Subject: Re: [PATCH v1 10/11] arm/dts: omap: Add usb_otg and glue data
+References: <1340884267-28908-1-git-send-email-kishon@ti.com>	<1340884267-28908-11-git-send-email-kishon@ti.com>	<4FFBCB39.1010809@ti.com> <CAAe_U6LqF9aZLZgHQYhX6VXXB41HUNmZgXfOwe9V9VtWVe+46g@mail.gmail.com>
+In-Reply-To: <CAAe_U6LqF9aZLZgHQYhX6VXXB41HUNmZgXfOwe9V9VtWVe+46g@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12070922-1396-0000-0000-00000189476E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2012 01:25 PM, Christian Borntraeger wrote:
-> On 09/07/12 08:20, Raghavendra K T wrote:
->> Currently Pause Looop Exit (PLE) handler is doing directed yield to a
->> random VCPU on PL exit. Though we already have filtering while choosing
->> the candidate to yield_to, we can do better.
+On Tuesday 10 July 2012 01:43 PM, ABRAHAM, KISHON VIJAY wrote:
+> Hi,
+>
+> On Tue, Jul 10, 2012 at 11:57 AM, Rajendra Nayak<rnayak@ti.com>  wrote:
+>> On Thursday 28 June 2012 05:21 PM, Kishon Vijay Abraham I wrote:
+>>>
+>>> Add usb otg data node in omap4/omap3 device tree file. Also update
+>>> the node with board specific setting in omapx-<board>.dts file.
+>>>
+>>> Signed-off-by: Kishon Vijay Abraham I<kishon@ti.com>
+>>> ---
+>>>    arch/arm/boot/dts/omap3-beagle.dts |    6 ++++++
+>>>    arch/arm/boot/dts/omap3-evm.dts    |    6 ++++++
+>>>    arch/arm/boot/dts/omap3.dtsi       |    8 ++++++++
+>>>    arch/arm/boot/dts/omap4-panda.dts  |    6 ++++++
+>>>    arch/arm/boot/dts/omap4-sdp.dts    |    6 ++++++
+>>>    arch/arm/boot/dts/omap4.dtsi       |    8 ++++++++
+>>>    6 files changed, 40 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/arch/arm/boot/dts/omap3-beagle.dts
+>>> b/arch/arm/boot/dts/omap3-beagle.dts
+>>> index 5b4506c..f3d7076 100644
+>>> --- a/arch/arm/boot/dts/omap3-beagle.dts
+>>> +++ b/arch/arm/boot/dts/omap3-beagle.dts
+>>> @@ -67,3 +67,9 @@
+>>>    &mmc3 {
+>>>          status = "disable";
+>>>    };
+>>> +
+>>> +&usb_otg_hs {
+>>> +       interface_type =<0>;
+>>> +       mode =<3>;
+>>> +       power =<50>;
+>>> +};
+>>> diff --git a/arch/arm/boot/dts/omap3-evm.dts
+>>> b/arch/arm/boot/dts/omap3-evm.dts
+>>> index 2eee16e..8963b3d 100644
+>>> --- a/arch/arm/boot/dts/omap3-evm.dts
+>>> +++ b/arch/arm/boot/dts/omap3-evm.dts
+>>> @@ -18,3 +18,9 @@
+>>>                  reg =<0x80000000 0x10000000>; /* 256 MB */
+>>>          };
+>>>    };
+>>> +
+>>> +&usb_otg_hs {
+>>> +       interface_type =<0>;
+>>> +       mode =<3>;
+>>> +       power =<50>;
+>>> +};
+>>> diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+>>> index 99474fa..2f565d6 100644
+>>> --- a/arch/arm/boot/dts/omap3.dtsi
+>>> +++ b/arch/arm/boot/dts/omap3.dtsi
+>>> @@ -215,5 +215,13 @@
+>>>                          compatible = "ti,omap3-hsmmc";
+>>>                          ti,hwmods = "mmc3";
+>>>                  };
+>>> +
+>>> +               usb_otg_hs: usb_otg_hs@4a0ab000 {
+>>> +                       compatible = "ti,musb-omap2430";
 >>
->> Problem is, for large vcpu guests, we have more probability of yielding
->> to a bad vcpu. We are not able to prevent directed yield to same guy who
->> has done PL exit recently, who perhaps spins again and wastes CPU.
 >>
->> Fix that by keeping track of who has done PL exit. So The Algorithm in series
->> give chance to a VCPU which has:
+>> this compatible doesn't seem right in omap3.dtsi. Same with
+>> the below entry in omap4.dtsi.
+>> See other IP blocks which are reused across OMAP2/3/4 on
+>> how the compatible for those are handled.
 >
->
-> We could do the same for s390. The appropriate exit would be diag44 (yield to hypervisor).
->
-> Almost all s390 kernels use diag9c (directed yield to a given guest cpu) for spinlocks, though.
-> So there is no win here, but there are other cases were diag44 is used, e.g. cpu_relax.
-> I have to double check with others, if these cases are critical, but for now, it seems
-> that your dummy implementation  for s390 is just fine. After all it is a no-op until
-> we implement something.
->
+> Ok. So it should be like *ti,omap4-musb*, *ti,omap3-musb*?
 
-Thanks for the review. Nice to know that, patch has potential to help 
-s390 also.
+Yes, that would be more appropriate.
 
+>
+> Thanks
+> Kishon
 
