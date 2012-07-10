@@ -1,44 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab2GJTp7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 15:45:59 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:60461 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752297Ab2GJTp6 (ORCPT
+	id S1752674Ab2GJTvZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 15:51:25 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:60295 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643Ab2GJTvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 15:45:58 -0400
+	Tue, 10 Jul 2012 15:51:23 -0400
 MIME-Version: 1.0
-In-Reply-To: <CF1C132D-2873-408A-BCC9-B9F57BE6EDDB@linuxfoundation.org>
-References: <20120710111756.GA11351@localhost>
-	<CF1C132D-2873-408A-BCC9-B9F57BE6EDDB@linuxfoundation.org>
-Date: Tue, 10 Jul 2012 22:45:57 +0300
-X-Google-Sender-Auth: jdpj8DDeZ4wAXIQOckp7WbZrzXk
-Message-ID: <CAOJsxLG7fWuHeh-KXzG1PHwZRWztQQYvmxgn_97aYBCtqrLWug@mail.gmail.com>
-Subject: Re: linux-next: Early crashed kernel on CONFIG_SLOB
-From: Pekka Enberg <penberg@kernel.org>
-To: Christoph Lameter <christoph@linuxfoundation.org>
-Cc: "wfg@linux.intel.com" <wfg@linux.intel.com>,
-        Christoph Lameter <cl@linux.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1341915609.3462.113.camel@twins>
+References: <1341392911-1888300-1-git-send-email-avagin@openvz.org>
+	<1341915609.3462.113.camel@twins>
+Date: Tue, 10 Jul 2012 23:51:21 +0400
+Message-ID: <CANaxB-zkijP1yPL4uaxx-dw-8mnQBb0fe3m8uGv7AcgzAcT8bA@mail.gmail.com>
+Subject: Re: [PATCH] trace: add ability to set a target task for events
+From: Andrey Wagin <avagin@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arun Sharma <asharma@fb.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul 10, 2012, at 6:17, wfg@linux.intel.com wrote:
->> This commit crashes the kernel w/o any dmesg output (the attached one
->> is created by the script as a summary for that run). This is very
->> reproducible in kvm for the attached config.
->>
->>        commit 3b0efdfa1e719303536c04d9abca43abeb40f80a
->>        Author: Christoph Lameter <cl@linux.com>
->>        Date:   Wed Jun 13 10:24:57 2012 -0500
->>
->>            mm, sl[aou]b: Extract common fields from struct kmem_cache
+Hello Peter,
 
-On Tue, Jul 10, 2012 at 9:37 PM, Christoph Lameter
-<christoph@linuxfoundation.org> wrote:
-> I sent a patch yesterday (or was it friday) to fix the issue. Sorry @airport right now.
+2012/7/10 Peter Zijlstra <peterz@infradead.org>:
+> On Wed, 2012-07-04 at 13:08 +0400, Andrew Vagin wrote:
+>> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>>
+>> A few events are interesting not only for a current task.
+>> For example, sched_stat_* are interesting to a task, which
+>> wake up. For this reason, it will be good, if such events will
+>> be delivered to a target task too.
+>>
+>> Now a target task can be set by using __perf_task().
+>
+> Right, I suspect you actually tested this and it works?
 
-Which patch is that? I can't seem to find it.
+Yes, of course I did.
+
+>
+> It would be good it you can expand the Changelog a bit to include your
+> entire use-case.
+Ok, I'm going to send a new version of this patch with your comments.
+
+> IIRC you're wanting to measure task block latency and
+> need the time and place where it goes to sleep, provided by
+> trace_sched_switch + callchain, and the time when it gets woken up,
+> provided by trace_sched_wakeup().
+
+Actually sched_stat_* contains a time period for which a task slept.
+
+Now for profiling sleep times we need to do following actions:
+* Collect sched_switch and sched_stat_sleep events
+# ./perf record -e sched:sched_stat_sleep -e sched:sched_switch -gP -o
+perf.data.raw ~/foo
+* We need to combine sched_switch and  sched_stat_sleep events.
+sched_switch contains a callchain and sched_stat_sleep contains a time
+period. I taught perf-inject to do that. It sets a period from
+sched_stat_sleep to  a proper sched_switch.
+# ./perf inject -v -s -i perf.data.raw -o ./perf.data
+
+>
+> Hmm.. you only add __perf_task() to sched_stat_template, should it also
+> be added to sched_wakeup_template?
+
+Yes, it can be added. It may be useful for someone else.
+
+>
+> ISTR us talking about dis-allowing callgraphs on such cross-task events,
+> since that would be nigh impossible to interpret, right?
+>
+> So do we want something like this on top?
+
+Yes, you are right and I checked your code, it works fine. Thanks a
+lot for comments.
+
+If someone wants to try out my patches, he can clone the branch
+"prof-D-state"  from it git://github.com/avagin/perf.git
