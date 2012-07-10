@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752250Ab2GJT1u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 15:27:50 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:33532 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab2GJT1s (ORCPT
+	id S1752187Ab2GJTdG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 15:33:06 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:48681 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061Ab2GJTdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 15:27:48 -0400
-MIME-Version: 1.0
-X-Originating-IP: [93.172.176.107]
-In-Reply-To: <485F7F7C-2D0C-4B14-8A46-D42C9F8ED4E4@studiofuga.com>
-References: <1341936444-3094-1-git-send-email-fuga@studiofuga.com>
- <CAK=Wgbaf0On3teqOw1myqkS4Dei3Vw2Zn=0xfOv-YiNUjFr0fg@mail.gmail.com> <485F7F7C-2D0C-4B14-8A46-D42C9F8ED4E4@studiofuga.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 10 Jul 2012 22:27:27 +0300
-Message-ID: <CAK=WgbZFHzHLxQfoWW4Cz_PpBCzER75KCd=C3WS-7w_LryKuQA@mail.gmail.com>
-Subject: Re: [PATCH] rpmsg bus subsys_initcall initialization ordering
-To: Federico Fuga <fuga@studiofuga.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 10 Jul 2012 15:33:04 -0400
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>
+Cc: S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Date: Wed, 11 Jul 2012 01:00:57 +0530
+Message-Id: <20120710193056.16440.40112.sendpatchset@codeblue>
+Subject: [PATCH RFC V2 0/2] kvm: Improving directed yield in PLE handler
+x-cbid: 12071009-5140-0000-0000-000001BA09B3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Federico,
 
-On Tue, Jul 10, 2012 at 7:43 PM, Federico Fuga <fuga@studiofuga.com> wrote:
-> omaprpc is out of the official mainline code, it's inside the official ti/omap branch/project.
+Currently Pause Looop Exit (PLE) handler is doing directed yield to a
+random VCPU on PL exit. Though we already have filtering while choosing
+the candidate to yield_to, we can do better.
 
-Ok, thanks for the explanation. In general, we don't change the
-mainline kernel to solve issues with out-of-tree code.
+Problem is, for large vcpu guests, we have more probability of yielding
+to a bad vcpu. We are not able to prevent directed yield to same guy who
+has done PL exit recently, who perhaps spins again and wastes CPU.
 
-> I guessed that the easier solution had been to change the initialization level, in a similar way it's done by the i2c bus driver for example.
-> I don't know if this is the best solution to solve this, maybe the problem could be solved in the omaprpc driver (maybe this could be the right solution).
-...
-> Really, I don't have enough experience to say if it should be solved this way or not. For what I can see, this seems absolutely logic that busses are initialized before other drivers, so subsys_initcall should be perfectly logic.
+Fix that by keeping track of who has done PL exit. So The Algorithm in series
+give chance to a VCPU which has:
 
-I'm not convinced: there is no inherent reason for a bus and its
-driver to live in separate initcalls, so this may all just be an
-omaprpc issue.
+ (a) Not done PLE exit at all (probably he is preempted lock-holder)
 
-> On the other hand, I didn't find another way to solve this dependency problem. I know there is also a Makefile approach, but the dependent driver (omaprpc) is in the staging driver directory, so I think is not feasible.
-> Any other solution?
+ (b) VCPU skipped in last iteration because it did PL exit, and probably
+ has become eligible now (next eligible lock holder)
 
-I'm not familiar with omaprpc, so I can't help much, sorry. The driver
-doesn't seem to be in staging btw (or did you mean it lives in staging
-in that out-of-tree repository?).
+Future enhancemnets:
+  (1) Currently we have a boolean to decide on eligibility of vcpu. It
+    would be nice if I get feedback on guest (>32 vcpu) whether we can
+    improve better with integer counter. (with counter = say f(log n )).
+  
+  (2) We have not considered system load during iteration of vcpu. With
+   that information we can limit the scan and also decide whether schedule()
+   is better. [ I am able to use #kicked vcpus to decide on this But may
+   be there are better ideas like information from global loadavg.]
 
-Thanks,
-Ohad.
+  (3) We can exploit this further with PV patches since it also knows about
+   next eligible lock-holder.
+
+Changes since V1:
+ - Add more documentation for structure and algorithm and Rename
+   plo ==> ple (Rik).
+ - change dy_eligible initial value to false. (otherwise very first directed
+    yield will not be skipped. (Nikunj)
+ - fixup signoff/from issue
+
+Summary: There is a very good improvement for moderate / no overcommit scenario
+ for kvm based guest on PLE machine (which is difficult ;) ).
+ 
+       kernbench    sysbench    ebizzy
+ 1x    28 %          -0.04 %     105 %    
+ 2x    7 %            0.83 %      26 %
+
+---
+ Link for V1: (It also has result)
+  https://lkml.org/lkml/2012/7/9/32
+
+ Raghavendra K T (2):
+   kvm vcpu: Note down pause loop exit
+   kvm PLE handler: Choose better candidate for directed yield
+
+ arch/s390/include/asm/kvm_host.h |    5 +++++
+ arch/x86/include/asm/kvm_host.h  |   13 ++++++++++++-
+ arch/x86/kvm/svm.c               |    1 +
+ arch/x86/kvm/vmx.c               |    1 +
+ arch/x86/kvm/x86.c               |   34 +++++++++++++++++++++++++++++++++-
+ virt/kvm/kvm_main.c              |    3 +++
+ 6 files changed, 55 insertions(+), 2 deletions(-)
+
