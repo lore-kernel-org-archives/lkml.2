@@ -1,81 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab2GJHLz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 03:11:55 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:49165 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152Ab2GJHLy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 03:11:54 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q6A7Bmf4007477, This message is released by code: ctlocs8528
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: Re: [PATCH net-next 6/6] r8169: support RTL8168G
-Date: Tue, 10 Jul 2012 15:12:49 +0800
-Message-ID: <1341904369-5277-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1341898590-1253-1-git-send-email-hayeswang@realtek.com>
-References: <1341898590-1253-1-git-send-email-hayeswang@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754109Ab2GJHPJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 03:15:09 -0400
+Received: from mga03.intel.com ([143.182.124.21]:55226 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752152Ab2GJHPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 03:15:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="120632527"
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Subject: [PATCH] block: remove dead func declaration
+Date: Tue, 10 Jul 2012 15:21:03 +0800
+Message-Id: <1341904863-29150-1-git-send-email-yuanhan.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. Remove rtl_ocpdr_cond. No waiting is needed for mac_ocp_{write / read}.
-2. Set ocp_base to OCP_STD_PHY_BASE after rtl8168g_1_hw_phy_config.
----
- drivers/net/ethernet/realtek/r8169.c |   14 +++-----------
- 1 file changed, 3 insertions(+), 11 deletions(-)
+__generic_unplug_device() function is removed with commit
+7eaceaccab5f40bbfda044629a6298616aeaed50, which forgot to
+remove the declaration at meantime. Here remove it.
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index c29c5fb..7269175 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -1043,13 +1043,6 @@ static void rtl_w1w0_phy_ocp(struct rtl8169_private *tp, int reg, int p, int m)
- 	r8168_phy_ocp_write(tp, reg, (val | p) & ~m);
- }
+Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+---
+ block/blk.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/block/blk.h b/block/blk.h
+index 85f6ae4..a62195b 100644
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -33,7 +33,6 @@ bool __blk_end_bidi_request(struct request *rq, int error,
+ void blk_rq_timed_out_timer(unsigned long data);
+ void blk_delete_timer(struct request *);
+ void blk_add_timer(struct request *);
+-void __generic_unplug_device(struct request_queue *);
  
--DECLARE_RTL_COND(rtl_ocpdr_cond)
--{
--	void __iomem *ioaddr = tp->mmio_addr;
--
--	return RTL_R32(OCPDR) & OCPAR_FLAG;
--}
--
- static void r8168_mac_ocp_write(struct rtl8169_private *tp, u32 reg, u32 data)
- {
- 	void __iomem *ioaddr = tp->mmio_addr;
-@@ -1058,8 +1051,6 @@ static void r8168_mac_ocp_write(struct rtl8169_private *tp, u32 reg, u32 data)
- 		return;
- 
- 	RTL_W32(OCPDR, OCPAR_FLAG | (reg << 15) | data);
--
--	rtl_udelay_loop_wait_low(tp, &rtl_ocpdr_cond, 25, 10);
- }
- 
- static u16 r8168_mac_ocp_read(struct rtl8169_private *tp, u32 reg)
-@@ -1071,8 +1062,7 @@ static u16 r8168_mac_ocp_read(struct rtl8169_private *tp, u32 reg)
- 
- 	RTL_W32(OCPDR, reg << 15);
- 
--	return rtl_udelay_loop_wait_high(tp, &rtl_ocpdr_cond, 25, 10) ?
--		RTL_R32(OCPDR) : ~0;
-+	return RTL_R32(OCPDR);
- }
- 
- #define OCP_STD_PHY_BASE	0xa400
-@@ -3417,6 +3407,8 @@ static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_w1w0_phy_ocp(tp, 0xa438, 0x8000, 0x0000);
- 
- 	rtl_w1w0_phy_ocp(tp, 0xc422, 0x4000, 0x2000);
-+
-+	rtl_writephy(tp, 0x1f, 0x0000);
- }
- 
- static void rtl8102e_hw_phy_config(struct rtl8169_private *tp)
+ /*
+  * Internal atomic flags for request handling
 -- 
-1.7.10.4
+1.7.7.6
 
