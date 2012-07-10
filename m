@@ -1,103 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab2GJLZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 07:25:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63885 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755106Ab2GJLZX (ORCPT
+	id S1755184Ab2GJL1a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 07:27:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39236 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752987Ab2GJL13 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 07:25:23 -0400
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: greg@kroah.com, willy@meta-x.org
-Cc: linux-kernel@vger.kernel.org, Toshiaki Yamane <yamanetoshi@gmail.com>
-Subject: [PATCH 3/3] panel: Use pr_err(...) rather than printk(KERN_ERR ...)
-Date: Tue, 10 Jul 2012 20:25:15 +0900
-Message-Id: <1341919515-8909-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1341919338-8800-1-git-send-email-yamanetoshi@gmail.com>
-References: <1341919338-8800-1-git-send-email-yamanetoshi@gmail.com>
+	Tue, 10 Jul 2012 07:27:29 -0400
+Message-ID: <1341919622.3462.124.camel@twins>
+Subject: Re: [PATCH v4 0/5] ARM: topology: set the capacity of each cores
+ for big.LITTLE
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, devicetree-discuss@lists.ozlabs.org,
+        linux@arm.linux.org.uk, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, yong.zhang0@gmail.com, namhyung@kernel.org,
+        jean.pihet@newoldbits.com, mingo@kernel.org,
+        Russell King <rmk@arm.linux.org.uk>
+Date: Tue, 10 Jul 2012 13:27:02 +0200
+In-Reply-To: <1341826026-6504-1-git-send-email-vincent.guittot@linaro.org>
+References: <1341826026-6504-1-git-send-email-vincent.guittot@linaro.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change is inspired by checkpatch.
+On Mon, 2012-07-09 at 11:27 +0200, Vincent Guittot wrote:
+> This patchset creates an arch_scale_freq_power function for ARM, which is used 
+> to set the relative capacity of each core of a big.LITTLE system. It also removes
+> the broken power estimation of x86.
+> 
+> Modification since v3:
+>  - Add comments
+>  - Add optimization for SMP system
+>  - Ensure that capacity of a CPU will be at most 1
+> 
+> Modification since v2:
+>  - set_power_scale function becomes static
+>  - Rework loop in update_siblings_masks
+>  - Remove useless code in parse_dt_topology
+> 
+> Modification since v1:
+>  - Add and update explanation about the use of the table and the range of the value 
+>  - Remove the use of NR_CPUS and use nr_cpu_ids instead
+>  - Remove broken power estimation of x86
+> 
+> Peter Zijlstra (1):
+>   sched, x86: Remove broken power estimation
 
-Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
----
- drivers/staging/panel/panel.c |   18 +++++++-----------
- 1 files changed, 7 insertions(+), 11 deletions(-)
+Note that this patch already made its way into tip as commit
+bcae21d6e793a7047d38abc9ac0946c53733c1dd so it might be best to base
+whatever tree this is supposed to fo into on something that includes
+that.
 
-diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-index 7b79f53..d6a7a51 100644
---- a/drivers/staging/panel/panel.c
-+++ b/drivers/staging/panel/panel.c
-@@ -1987,7 +1987,7 @@ static struct logical_input *panel_bind_key(char *name, char *press,
- 
- 	key = kzalloc(sizeof(struct logical_input), GFP_KERNEL);
- 	if (!key) {
--		printk(KERN_ERR "panel: not enough memory\n");
-+		pr_err("panel: not enough memory\n");
- 		return NULL;
- 	}
- 	if (!input_name2mask(name, &key->mask, &key->value, &scan_mask_i,
-@@ -2030,7 +2030,7 @@ static struct logical_input *panel_bind_callback(char *name,
- 
- 	callback = kmalloc(sizeof(struct logical_input), GFP_KERNEL);
- 	if (!callback) {
--		printk(KERN_ERR "panel: not enough memory\n");
-+		pr_err("panel: not enough memory\n");
- 		return NULL;
- 	}
- 	memset(callback, 0, sizeof(struct logical_input));
-@@ -2109,8 +2109,7 @@ static void panel_attach(struct parport *port)
- 		return;
- 
- 	if (pprt) {
--		printk(KERN_ERR
--		       "panel_attach(): port->number=%d parport=%d, "
-+		pr_err("panel_attach(): port->number=%d parport=%d, "
- 		       "already registered !\n",
- 		       port->number, parport);
- 		return;
-@@ -2128,8 +2127,7 @@ static void panel_attach(struct parport *port)
- 	}
- 
- 	if (parport_claim(pprt)) {
--		printk(KERN_ERR
--		       "Panel: could not claim access to parport%d. "
-+		pr_err("Panel: could not claim access to parport%d. "
- 		       "Aborting.\n", parport);
- 		goto err_unreg_device;
- 	}
-@@ -2164,8 +2162,7 @@ static void panel_detach(struct parport *port)
- 		return;
- 
- 	if (!pprt) {
--		printk(KERN_ERR
--		       "panel_detach(): port->number=%d parport=%d, "
-+		pr_err("panel_detach(): port->number=%d parport=%d, "
- 		       "nothing to unregister.\n",
- 		       port->number, parport);
- 		return;
-@@ -2277,8 +2274,7 @@ int panel_init(void)
- 	init_in_progress = 1;
- 
- 	if (parport_register_driver(&panel_driver)) {
--		printk(KERN_ERR
--		       "Panel: could not register with parport. Aborting.\n");
-+		pr_err("Panel: could not register with parport. Aborting.\n");
- 		return -EIO;
- 	}
- 
-@@ -2290,7 +2286,7 @@ int panel_init(void)
- 			pprt = NULL;
- 		}
- 		parport_unregister_driver(&panel_driver);
--		printk(KERN_ERR "Panel driver version " PANEL_VERSION
-+		pr_err("Panel driver version " PANEL_VERSION
- 		       " disabled.\n");
- 		return -ENODEV;
- 	}
--- 
-1.7.5.4
+> Vincent Guittot (4):
+>   ARM: topology: Add arch_scale_freq_power function
+>   ARM: topology: factorize the update of sibling masks
+>   ARM: topology: Update cpu_power according to DT information
+>   sched: cpu_power: enable ARCH_POWER
 
+How would you like to proceed with these patches, I'm fine with them
+going through the ARM tree..
+
+In which case:
+
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+
+Ingo, Russell, any other preferences?
