@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932069Ab2GJNcO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 09:32:14 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60065 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755788Ab2GJNcM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 09:32:12 -0400
-From: Chandrabhanu Mahapatra <cmahapatra@ti.com>
-To: <rob.herring@calxeda.com>
-CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <leed.aguilar@ti.com>, Chandrabhanu Mahapatra <cmahapatra@ti.com>
-Subject: [PATCH 0/4] Extend TCA6424 support
-Date: Tue, 10 Jul 2012 19:01:33 +0530
-Message-ID: <cover.1341925681.git.cmahapatra@ti.com>
-X-Mailer: git-send-email 1.7.10
+	id S1755843Ab2GJNfU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 09:35:20 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:49693 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753499Ab2GJNfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 09:35:19 -0400
+Message-ID: <4FFC2F95.7080003@msgid.tls.msk.ru>
+Date: Tue, 10 Jul 2012 17:35:17 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Andrew Hunter <ahh@google.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] core-kernel: use multiply instead of shifts in hash_64
+References: <20120702202534.GC844@google.com>
+In-Reply-To: <20120702202534.GC844@google.com>
+X-Enigmail-Version: 1.4.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone!
-This following patch series extends support capabilities of TCA6424 through
-following patches.
+On 03.07.2012 00:25, Andrew Hunter wrote:
+> diff --git a/include/linux/hash.h b/include/linux/hash.h
+> index b80506b..daabc3d 100644
+> --- a/include/linux/hash.h
+> +++ b/include/linux/hash.h
+> @@ -34,7 +34,9 @@
+>  static inline u64 hash_64(u64 val, unsigned int bits)
+>  {
+>  	u64 hash = val;
+> -
+> +#if BITS_PER_LONG == 64
+> +	hash *= GOLDEN_RATIO_PRIME_64;
+> +#else
+>  	/*  Sigh, gcc can't optimise this alone like it does for 32 bits. */
 
-The 1st patch adds 24 bit support for polarity inversion registers by providing
-24 bit support for invert variable.
-The 2nd patch adds 24 bit support of the variables such as irq_mask, irq_stat, etc.
-The 3rd patch extends 24 lines irq support for TCA6424.
-The 4th patch corrects the implementation of registration of device irqs using
-appropiate api's.
+Hmm.  Does this comment make sense here now?
 
-These patches were based on mainline kernel v3.5rc6.
+Thanks,
 
-All your comments and suggestions are welcome.
-
-Regards,
-Chandrabhanu
-
-Chandrabhanu Mahapatra (1):
-  GPIO: PCA953X: Increase size of invert variable to support 24 bit
-
-Leed Aguilar (3):
-  gpio/pca953x: increase variables size to support 24 bit of data
-  OMAP: Define TCA6424 max number of possible IRQs
-  gpio/pca953x: register the device irq using appropriate api's
-
- arch/arm/plat-omap/include/plat/irqs.h |   11 +++++++-
- drivers/gpio/gpio-pca953x.c            |   47 ++++++++++++++++++--------------
- include/linux/i2c/pca953x.h            |    2 +-
- 3 files changed, 38 insertions(+), 22 deletions(-)
-
--- 
-1.7.10
-
+/mjt
