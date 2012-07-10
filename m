@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab2GJWo1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 18:44:27 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:51849 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754558Ab2GJWoY (ORCPT
+	id S1754809Ab2GJWoB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 18:44:01 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:43504 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754770Ab2GJWn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 18:44:24 -0400
+	Tue, 10 Jul 2012 18:43:58 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Prarit Bhargava <prarit@redhat.com>, stable@vger.kernel.org,
         John Stultz <johnstul@us.ibm.com>
-Subject: [PATCH 4/6] hrtimer: Move lock held region in hrtimer_interrupt()
-Date: Tue, 10 Jul 2012 18:43:22 -0400
-Message-Id: <1341960205-56738-5-git-send-email-johnstul@us.ibm.com>
+Subject: [PATCH 4/6] hrtimers: Move lock held region in hrtimer_interrupt()
+Date: Tue, 10 Jul 2012 18:43:23 -0400
+Message-Id: <1341960205-56738-6-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
 References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071022-5518-0000-0000-000005EDF0F3
+x-cbid: 12071022-4242-0000-0000-000002474F64
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
