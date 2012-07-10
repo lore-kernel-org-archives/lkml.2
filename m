@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab2GJXv5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 19:51:57 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:58485 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755452Ab2GJXv4 (ORCPT
+	id S1755617Ab2GJXwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 19:52:20 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:36800 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755480Ab2GJXwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 19:51:56 -0400
+	Tue, 10 Jul 2012 19:52:19 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-160.messagelabs.com!1341964309!9283484!3
-X-Originating-IP: [216.166.12.31]
+X-Msg-Ref: server-10.tower-132.messagelabs.com!1341964337!13991877!1
+X-Originating-IP: [216.166.12.69]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 21/83] staging: comedi: rtd520: remove RtdPacerStart macro
-Date: Tue, 10 Jul 2012 16:51:46 -0700
+Subject: [PATCH 22/83] staging: comedi: rtd520: remove RtdPacerStop macro
+Date: Tue, 10 Jul 2012 16:52:14 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -23,44 +23,64 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201207101651.46587.hartleys@visionengravers.com>
+Message-ID: <201207101652.14504.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This macro uses the 'devpriv' macro which relies on a local variable
 having a specific name. Plus it's just a wrapper around a simple
-'readl'. Remove the macro.
+'writel'. Remove the macro.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/rtd520.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/staging/comedi/drivers/rtd520.c | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/rtd520.c b/drivers/staging/comedi/drivers/rtd520.c
-index 3b44776..190f287 100644
+index 190f287..5fca77b 100644
 --- a/drivers/staging/comedi/drivers/rtd520.c
 +++ b/drivers/staging/comedi/drivers/rtd520.c
-@@ -407,8 +407,6 @@ struct rtdPrivate {
+@@ -406,10 +406,6 @@ struct rtdPrivate {
+ 
  /* Macros to access registers */
  
- /* pacer start/stop read=start, write=stop*/
--#define RtdPacerStart(dev) \
--	readl(devpriv->las0+LAS0_PACER)
- #define RtdPacerStop(dev) \
- 	writel(0, devpriv->las0+LAS0_PACER)
+-/* pacer start/stop read=start, write=stop*/
+-#define RtdPacerStop(dev) \
+-	writel(0, devpriv->las0+LAS0_PACER)
+-
+ /* Interrupt status */
+ #define RtdInterruptStatus(dev) \
+ 	readw(devpriv->las0+LAS0_IT)
+@@ -1152,7 +1148,7 @@ abortTransfer:
  
-@@ -1609,7 +1607,7 @@ static int rtd_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ transferDone:
+ 	writel(0, devpriv->las0 + LAS0_PACER_STOP);
+-	RtdPacerStop(dev);	/* Stop PACER */
++	writel(0, devpriv->las0 + LAS0_PACER);
+ 	writel(0, devpriv->las0 + LAS0_ADC_CONVERSION);
+ 	RtdInterruptMask(dev, 0);	/* mask out SAMPLE */
+ #ifdef USE_DMA
+@@ -1421,7 +1417,7 @@ static int rtd_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
  
- 	/* BUG: start_src is ASSUMED to be TRIG_NOW */
- 	/* BUG? it seems like things are running before the "start" */
--	RtdPacerStart(dev);	/* Start PACER */
-+	readl(devpriv->las0 + LAS0_PACER);
- 	return 0;
- }
+ 	/* stop anything currently running */
+ 	writel(0, devpriv->las0 + LAS0_PACER_STOP);
+-	RtdPacerStop(dev);	/* make sure PACER is stopped */
++	writel(0, devpriv->las0 + LAS0_PACER);
+ 	writel(0, devpriv->las0 + LAS0_ADC_CONVERSION);
+ 	RtdInterruptMask(dev, 0);
+ #ifdef USE_DMA
+@@ -1619,7 +1615,7 @@ static int rtd_ai_cancel(struct comedi_device *dev, struct comedi_subdevice *s)
+ 	u16 status;
  
+ 	writel(0, devpriv->las0 + LAS0_PACER_STOP);
+-	RtdPacerStop(dev);	/* Stop PACER */
++	writel(0, devpriv->las0 + LAS0_PACER);
+ 	writel(0, devpriv->las0 + LAS0_ADC_CONVERSION);
+ 	RtdInterruptMask(dev, 0);
+ 	devpriv->aiCount = 0;	/* stop and don't transfer any more */
 -- 
 1.7.11
 
