@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab2GJAMi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 20:12:38 -0400
-Received: from ozlabs.org ([203.10.76.45]:33356 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755130Ab2GJAMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 20:12:37 -0400
-From: Rusty Russell <rusty@ozlabs.org>
-To: Jason Vas Dias <jason.vas.dias@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        Matthew Garrett <mjg@redhat.com>, Len Brown <lenb@kernel.org>,
-        Comrade DOS <suloevdmitry@gmail.com>
-Subject: Re: [PATCH: 1/1] ACPI: make evaluation of thermal trip points before temperature or vice versa dependant on new "temp_b4_trip" module parameter to support older AMD x86_64s
-In-Reply-To: <CALyZvKxP793Qq5-SHt1ExfivHWhNeMOgVWD6qDsQ0kjEBOA96w@mail.gmail.com>
-References: <CALyZvKyEiTaU4CDh3F-fYkSjyyFkmhjitaWmXs_PORVEeOnirw@mail.gmail.com> <87bojp3hek.fsf@rustcorp.com.au> <CALyZvKxP793Qq5-SHt1ExfivHWhNeMOgVWD6qDsQ0kjEBOA96w@mail.gmail.com>
-User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 10 Jul 2012 09:36:48 +0930
-Message-ID: <87hatgqy1z.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755237Ab2GJANH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 20:13:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34782 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752783Ab2GJANF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 20:13:05 -0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: [PATCH 1/8] tracing: Fix initialization failure path in tracing_set_tracer()
+Date: Mon,  9 Jul 2012 17:10:39 -0700
+Message-Id: <1341879046-5197-1-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20120710001004.GA22744@lizard>
+References: <20120710001004.GA22744@lizard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jul 2012 19:16:24 +0100, Jason Vas Dias <jason.vas.dias@gmail.com> wrote:
-> Thanks Rusty - sorry I didn't see your email until now - revised patch
-> addressing your comments attached -
-> BTW,  sorry about the word wrap on the initial posting - should I
-> attach a '.patch' file or inline ?  Trying both .
+If tracer->init() fails, current code will leave current_tracer pointing
+to an unusable tracer, which at best makes 'current_tracer' report
+inaccurate value.
 
-The inline one was wrapped.
+Fix the issue by pointing current_tracer to nop tracer, and only update
+current_tracer with the new one after all the initialization succeeds.
 
-> +static int thermal_temp_b4_trip(const struct dmi_system_id *d) {
-> +
-> +       printk(KERN_NOTICE "ACPI: %s detected: : "
-> +                           "getting temperature before trip point
-> initialisation\n", d->ident);
-> +       temp_b4_trip = TRUE;
-> +       return 0;
-> +}
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-TRUE?  true is standard with stdbool.h.
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 814ff30..954f7d7 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3183,10 +3183,10 @@ static int tracing_set_tracer(const char *buf)
+ 	}
+ 	destroy_trace_option_files(topts);
+ 
+-	current_trace = t;
++	current_trace = &nop_trace;
+ 
+-	topts = create_trace_option_files(current_trace);
+-	if (current_trace->use_max_tr) {
++	topts = create_trace_option_files(t);
++	if (t->use_max_tr) {
+ 		int cpu;
+ 		/* we need to make per cpu buffer sizes equivalent */
+ 		for_each_tracing_cpu(cpu) {
+@@ -3206,6 +3206,7 @@ static int tracing_set_tracer(const char *buf)
+ 			goto out;
+ 	}
+ 
++	current_trace = t;
+ 	trace_branch_enable(tr);
+  out:
+ 	mutex_unlock(&trace_types_lock);
+-- 
+1.7.10.4
 
-The patch itself looks reasonable, but it's not my area: I just spotted
-the module_param() abuse :)
-
-Cheers,
-Rusty.
