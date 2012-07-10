@@ -1,86 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab2GJDk7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 23:40:59 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:57924 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864Ab2GJDk6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 23:40:58 -0400
-From: Arun Raghavan <arun.raghavan@collabora.co.uk>
-To: Matthew Garrett <mjg@redhat.com>,
-        Seth Forshee <seth.forshee@canonical.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arun Raghavan <arun.raghavan@collabora.co.uk>
-Subject: [PATCH] apple-gmux: Restore switch registers on suspend/resume
-Date: Tue, 10 Jul 2012 09:09:53 +0530
-Message-Id: <1341891593-6485-1-git-send-email-arun.raghavan@collabora.co.uk>
-X-Mailer: git-send-email 1.7.8.6
+	id S1751427Ab2GJEEk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 00:04:40 -0400
+Received: from void.printf.net ([89.145.121.20]:42311 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750716Ab2GJEEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 00:04:38 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-sh@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Boot regression on Mackerel with current mainline
+References: <201207031218.24797.rjw@sisk.pl>
+	<Pine.LNX.4.64.1207031336320.29890@axis700.grange>
+	<201207031910.24864.rjw@sisk.pl>
+	<Pine.LNX.4.64.1207041125330.21042@axis700.grange>
+Date: Tue, 10 Jul 2012 00:04:27 -0400
+In-Reply-To: <Pine.LNX.4.64.1207041125330.21042@axis700.grange> (Guennadi
+	Liakhovetski's message of "Wed, 4 Jul 2012 11:39:07 +0200 (CEST)")
+Message-ID: <87ipdws1mc.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After suspend and resume, the values of these registers seem to change
-from what they were at suspend time, potentially preventing the actual
-output lines from being enabled post-resume. This saves relevant state
-at suspend and restores it when resumed.
+Hi Guennadi,
 
-This is at least required on the MacBook Pro 8.2 when the Intel GPU is
-manually selected in GRUB config before the kernel is loaded.
+On Wed, Jul 04 2012, Guennadi Liakhovetski wrote:
+> On Tue, 3 Jul 2012, Rafael J. Wysocki wrote:
+>
+>> On Tuesday, July 03, 2012, Guennadi Liakhovetski wrote:
+>> > Hi Rafael
+>> > 
+>> > On Tue, 3 Jul 2012, Rafael J. Wysocki wrote:
+>> > 
+>> > > Hi,
+>> > > 
+>> > > We seem to have a functional regression on Mackerel with 3.5-rc5 which
+>> > > seems to be related to SDHI.  Namely, the SDHI driver appears to wait forever
+>> > > for the devices to appear and commenting out all of the sdhi devices in the
+>> > > board file works around the problem.
+>> > > 
+>> > > I can investigate some more later today if need be.
+>> > 
+>> > Have you checked the logs? Are you seeing any of these in the kernel log:
+>> > 
+>> > genirq: Threaded irq requested with handler=NULL and !ONESHOT for irq 
+>> 
+>> I see this only once per boot, but then sh_mobile_sdhi is saying "timeout
+>> waiting for hardware interrupt" pretty much continuously.
+>
+> Yes, that's the one. Ok, let's fix it in the driver. In fact, a fix has 
+> already been submitted, but for 3.6. I hoped, 3.5 would resort to a softer 
+> form of the ONESHOT failing, so, I didn't push it for -rc. I think, the 
+> easiest would be to apply these two patches:
+>
+> "mmc: tmio: use MMC opcode defines instead of numbers"
+> http://git.kernel.org/?p=linux/kernel/git/cjb/mmc.git;a=commit;h=598cd9cc217b0aa46089a3838a8b1c37b97aa08b
+>
+> and
+>
+> "mmc: extend and rename cd-gpio helpers to handle more slot GPIO functions"
+> http://git.kernel.org/?p=linux/kernel/git/cjb/mmc.git;a=commit;h=d8e60fb51effc83e6f53de191a8440f46e5a3f2c
+>
+> The latter one looks big because of a rename, but with "-M" it's pretty 
+> trivial. Chris, do you agree?
 
-Signed-off-by: Arun Raghavan <arun.raghavan@collabora.co.uk>
----
- drivers/platform/x86/apple-gmux.c |   29 ++++++++++++++++++++++++++++-
- 1 files changed, 28 insertions(+), 1 deletions(-)
+Is the minimal fix to just add "| IRQF_ONESHOT" to the request_threaded_irq
+argument?  If so, I'd rather push just that for 3.5, and I can take care of
+having that change appear simultaneously in linux-next so that there aren't
+any conflicts.  Is that okay with you?
 
-diff --git a/drivers/platform/x86/apple-gmux.c b/drivers/platform/x86/apple-gmux.c
-index 694a15a..5a5d005 100644
---- a/drivers/platform/x86/apple-gmux.c
-+++ b/drivers/platform/x86/apple-gmux.c
-@@ -26,6 +26,11 @@ struct apple_gmux_data {
- 	unsigned long iolen;
- 
- 	struct backlight_device *bdev;
-+
-+	bool was_suspended;
-+	u8 save_switch_ddc;
-+	u8 save_switch_disp;
-+	u8 save_switch_ext;
- };
- 
- /*
-@@ -87,8 +92,30 @@ static int gmux_update_status(struct backlight_device *bd)
- 	struct apple_gmux_data *gmux_data = bl_get_data(bd);
- 	u32 brightness = bd->props.brightness;
- 
--	if (bd->props.state & BL_CORE_SUSPENDED)
-+	if (bd->props.state & BL_CORE_SUSPENDED) {
-+		/* Save mux settings for output lines since they get reset on
-+		 * suspend */
-+		gmux_data->was_suspended = TRUE;
-+		gmux_data->save_switch_ddc = gmux_read8(gmux_data,
-+				GMUX_PORT_SWITCH_DDC);
-+		gmux_data->save_switch_disp = gmux_read8(gmux_data,
-+				GMUX_PORT_SWITCH_DISPLAY);
-+		gmux_data->save_switch_ext = gmux_read8(gmux_data,
-+				GMUX_PORT_SWITCH_EXTERNAL);
-+
- 		return 0;
-+	}
-+
-+	if (gmux_data->was_suspended) {
-+		/* Restore pre-suspend values for output lines */
-+		gmux_data->was_suspended = FALSE;
-+		gmux_write8(gmux_data, GMUX_PORT_SWITCH_DDC,
-+				gmux_data->save_switch_ddc);
-+		gmux_write8(gmux_data, GMUX_PORT_SWITCH_DISPLAY,
-+				gmux_data->save_switch_disp);
-+		gmux_write8(gmux_data, GMUX_PORT_SWITCH_EXTERNAL,
-+				gmux_data->save_switch_ext);
-+	}
- 
- 	/*
- 	 * Older gmux versions require writing out lower bytes first then
+Thanks,
+
+- Chris.
 -- 
-1.7.8.6
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
