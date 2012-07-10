@@ -1,94 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab2GJMwJ (ORCPT <rfc822;w@1wt.eu>);
+	id S1755594Ab2GJMwN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 08:52:13 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:27724 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755379Ab2GJMwJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Jul 2012 08:52:09 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:55022 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755379Ab2GJMwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 08:52:07 -0400
-Message-ID: <4FFC2573.8040804@msgid.tls.msk.ru>
-Date: Tue, 10 Jul 2012 16:52:03 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+Date: Tue, 10 Jul 2012 15:51:57 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Kevin McKinney <klmckinney1@gmail.com>
+Cc: Marcos Souza <marcos.souza.org@gmail.com>, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        standby24x7@gmail.com
+Subject: Re: [PATCH 0/3] staging: bcm: Cleanup bcm driver
+Message-ID: <20120710125156.GE6113@mwanda>
+References: <1341883960-21635-1-git-send-email-marcos.souza.org@gmail.com>
+ <20120710024046.GA8894@gmail.com>
+ <CAH0vN5Kv6MzVGLxBEAeuUGPRoDC9+8aHkPrZZduFqddEMZrsSg@mail.gmail.com>
+ <20120710123840.GA2928@gmail.com>
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.0+ NFS issues
-References: <4FBF2C57.3070203@msgid.tls.msk.ru>   <20120529152416.GC3441@fieldses.org> <4FC5C82E.4020806@msgid.tls.msk.ru>   <20120530132518.GA13794@fieldses.org> <4FC713ED.5040807@msgid.tls.msk.ru>  <1338469169.2420.7.camel@lade.trondhjem.org>  <4FC77128.9090206@msgid.tls.msk.ru> <1338471975.7732.5.camel@lade.trondhjem.org> <4FC77755.5060606@msgid.tls.msk.ru>
-In-Reply-To: <4FC77755.5060606@msgid.tls.msk.ru>
-X-Enigmail-Version: 1.4.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120710123840.GA2928@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I tried to debug this again, maybe to reproduce in a virtual machine,
-and found out that it is only 32bit server code shows this issue:
-after updating the kernel on the server to 64bit (the same version)
-I can't reproduce this issue anymore.  Rebooting back to 32bit,
-and voila, it is here again.
+On Tue, Jul 10, 2012 at 08:38:41AM -0400, Kevin McKinney wrote:
+> On Mon, Jul 09, 2012 at 11:48:09PM -0300, Marcos Souza wrote:
+> > 2012/7/9 Kevin McKinney <klmckinney1@gmail.com>:
+> > > On Mon, Jul 09, 2012 at 10:32:37PM -0300, Marcos Paulo de Souza wrote:
+> > >> Hi Kernel guys!
+> > >>
+> > >> This new patchset tries to clean a little the bcm driver, removing
+> > >> some unused macros and some dead code.
+> > >>
+> > >> These macros and dead code were reported by the forgotten-macros tool
+> > >> (https://github.com/marcosps/forgotten_macros).
+> > >>
+> > >> The tool is under development, but all the patches looks like OK.
+> > >>
+> > >> This patchset is based in staging-next.
+> > >>
+> > >> Thanks guys!
+> > >
+> > > The patchset looks good!
+> > 
+> > Thanks for the answer Kevin!!
+> > 
+> > So, do I have your ack?
+> Yes, I ack.
 
-Something apparenlty isn't right on 32bits... ;)
+The normal format is:
 
-(And yes, the prob is still present and is very annoying :)
+Acked-by: Your Name <email@address.com>
 
-Thanks,
+Some maintainers have scripts which pick Acked-by tags automatically
+or even if they don't they can copy and paste it.
 
-/mjt
-
-
-On 31.05.2012 17:51, Michael Tokarev wrote:
-> On 31.05.2012 17:46, Myklebust, Trond wrote:
->> On Thu, 2012-05-31 at 17:24 +0400, Michael Tokarev wrote:
-> []
->>> I started tcpdump:
->>>
->>>  tcpdump -npvi br0 -s 0 host 192.168.88.4 and \( proto ICMP or port 2049 \) -w nfsdump
->>>
->>> on the client (192.168.88.2).  Next I mounted a directory on the client,
->>> and started reading (tar'ing) a directory into /dev/null.  It captured a
->>> few stalls.  Tcpdump shows number of packets it got, the stalls are at
->>> packet counts 58090, 97069 and 97071.  I cancelled the capture after that.
->>>
->>> The resulting file is available at http://www.corpit.ru/mjt/tmp/nfsdump.xz ,
->>> it is 220Mb uncompressed and 1.3Mb compressed.  The source files are
->>> 10 files of 1Gb each, all made by using `truncate' utility, so does not
->>> take place on disk at all.  This also makes it obvious that the issue
->>> does not depend on the speed of disk on the server (since in this case,
->>> the server disk isn't even in use).
->>
->> OK. So from the above file it looks as if the traffic is mainly READ
->> requests.
-> 
-> The issue here happens only with reads.
-> 
->> In 2 places the server stops responding. In both cases, the client seems
->> to be sending a single TCP frame containing several COMPOUNDS containing
->> READ requests (which should be legal) just prior to the hang. When the
->> server doesn't respond, the client pings it with a RENEW, before it ends
->> up severing the TCP connection and then retransmitting.
-> 
-> And sometimes -- speaking only from the behavour I've seen, not from the
-> actual frames sent -- server does not respond to the RENEW too, in which
-> case the client reports "nfs server no responding", and on the next
-> renew it may actually respond.  This happens too, but much more rare.
-> 
-> During these stalls, ie, when there's no network activity at all,
-> the server NFSD threads are busy eating all available CPU.
-> 
-> What does it all tell us? :)
-> 
-> Thank you!
-> 
-> /mjt
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+regards,
+dan carpenter
 
