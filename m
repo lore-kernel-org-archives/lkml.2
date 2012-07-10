@@ -1,158 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049Ab2GJADw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 20:03:52 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60569 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754993Ab2GJADR (ORCPT
+	id S1755010Ab2GJAGu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 20:06:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52098 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752517Ab2GJAGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 20:03:17 -0400
-X-AuditID: 9c93016f-b7c7eae0000025c5-ed-4ffb7142d7bb
-Date: Tue, 10 Jul 2012 09:03:17 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v2] mm: Warn about costly page allocation
-Message-ID: <20120710000317.GA5935@bbox>
-References: <1341878153-10757-1-git-send-email-minchan@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341878153-10757-1-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 9 Jul 2012 20:06:48 -0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: [PATCH 1/3] pstore/ram_core: Get rid of prz->ecc_symsize and prz->ecc_poly
+Date: Mon,  9 Jul 2012 17:03:18 -0700
+Message-Id: <1341878600-2139-1-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20120709234559.GA22203@lizard>
+References: <20120709234559.GA22203@lizard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please ignore,
-It is sent by mistake. :(
-Sorry for the noise.
+The struct members were never used anywhere outside of
+persistent_ram_init_ecc(), so there's actually no need for them
+to be in the struct.
 
-On Tue, Jul 10, 2012 at 08:55:53AM +0900, Minchan Kim wrote:
-> Since lumpy reclaim was introduced at 2.6.23, it helped higher
-> order allocation.
-> Recently, we removed it at 3.4 and we didn't enable compaction
-> forcingly[1]. The reason makes sense that compaction.o + migration.o
-> isn't trivial for system doesn't use higher order allocation.
-> But the problem is that we have to enable compaction explicitly
-> while lumpy reclaim enabled unconditionally.
-> 
-> Normally, admin doesn't know his system have used higher order
-> allocation and even lumpy reclaim have helped it.
-> Admin in embdded system have a tendency to minimise code size so that
-> they can disable compaction. In this case, we can see page allocation
-> failure we can never see in the past. It's critical on embedded side
-> because...
-> 
-> Let's think this scenario.
-> 
-> There is QA team in embedded company and they have tested their product.
-> In test scenario, they can allocate 100 high order allocation.
-> (they don't matter how many high order allocations in kernel are needed
-> during test. their concern is just only working well or fail of their
-> middleware/application) High order allocation will be serviced well
-> by natural buddy allocation without lumpy's help. So they released
-> the product and sold out all over the world.
-> Unfortunately, in real practice, sometime, 105 high order allocation was
-> needed rarely and fortunately, lumpy reclaim could help it so the product
-> doesn't have a problem until now.
-> 
-> If they use latest kernel, they will see the new config CONFIG_COMPACTION
-> which is very poor documentation, and they can't know it's replacement of
-> lumpy reclaim(even, they don't know lumpy reclaim) so they simply disable
-> that option for size optimization. Of course, QA team still test it but they
-> can't find the problem if they don't do test stronger than old.
-> It ends up release the product and sold out all over the world, again.
-> But in this time, we don't have both lumpy and compaction so the problem
-> would happen in real practice. A poor enginner from Korea have to flight
-> to the USA for the fix a ton of products. Otherwise, should recall products
-> from all over the world. Maybe he can lose a job. :(
-> 
-> This patch adds warning for notice. If the system try to allocate
-> PAGE_ALLOC_COSTLY_ORDER above page and system enters reclaim path,
-> it emits the warning. At least, it gives a chance to look into their
-> system before the relase.
-> 
-> Please keep in mind. It's not a good idea to depend lumpy/compaction
-> for regular high-order allocations. Both depends on being able to move
-> MIGRATE_MOVABLE allocations to satisfy the high-order allocation. If used
-> reregularly for high-order kernel allocations and tehy are long-lived,
-> the system will eventually be unable to grant these allocations, with or
-> without compaction or lumpy reclaim. Hatchet jobs that work around this problem
-> include forcing MIGRATE_RESERVE to be only used for high-order allocations
-> and tuning its size. It's a major hack though and is unlikely to be merged
-> to mainline but might suit an embedded product.
-> 
-> This patch avoids false positive by alloc_large_system_hash which
-> allocates with GFP_ATOMIC and a fallback mechanism so it can make
-> this warning useless.
-> 
-> [1] c53919ad(mm: vmscan: remove lumpy reclaim)
-> 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
-> Changelog
-> 
-> * from v1
->  - add more description about warning failure of high-order allocation
->  - use printk_ratelimited/pr_warn and dump stack - [Mel, Andrew]
-> 
->  mm/page_alloc.c |   25 +++++++++++++++++++++++++
->  1 file changed, 25 insertions(+)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index a4d3a19..710d0e90 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -2276,6 +2276,29 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
->  	return alloc_flags;
->  }
->  
-> +#if defined(CONFIG_DEBUG_VM) && !defined(CONFIG_COMPACTION)
-> +static inline void check_page_alloc_costly_order(unsigned int order, gfp_t flags)
-> +{
-> +	if (likely(order <= PAGE_ALLOC_COSTLY_ORDER))
-> +		return;
-> +
-> +	if (!printk_ratelimited())
-> +		return;
-> +
-> +	pr_warn("%s: page allocation high-order stupidity: "
-> +		"order:%d, mode:0x%x\n", current->comm, order, flags);
-> +	pr_warn("Enable compaction if high-order allocations are "
-> +		"very few and rare.\n");
-> +	pr_warn("If you need regular high-order allocation, "
-> +		"compaction wouldn't help it.\n");
-> +	dump_stack();
-> +}
-> +#else
-> +static inline void check_page_alloc_costly_order(unsigned int order)
-> +{
-> +}
-> +#endif
-> +
->  static inline struct page *
->  __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
->  	struct zonelist *zonelist, enum zone_type high_zoneidx,
-> @@ -2353,6 +2376,8 @@ rebalance:
->  	if (!wait)
->  		goto nopage;
->  
-> +	check_page_alloc_costly_order(order);
-> +
->  	/* Avoid recursion of direct reclaim */
->  	if (current->flags & PF_MEMALLOC)
->  		goto nopage;
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+If we ever want to make polynomial or symbol size configurable,
+it would make more sense to just pass initialized rs_decoder
+to the persistent_ram init functions.
+
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+ fs/pstore/ram_core.c       |    7 +++----
+ include/linux/pstore_ram.h |    2 --
+ 2 files changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
+index a5a7b13..3f4d6e6 100644
+--- a/fs/pstore/ram_core.c
++++ b/fs/pstore/ram_core.c
+@@ -177,14 +177,14 @@ static int persistent_ram_init_ecc(struct persistent_ram_zone *prz)
+ 	struct persistent_ram_buffer *buffer = prz->buffer;
+ 	int ecc_blocks;
+ 	size_t ecc_total;
++	int ecc_symsize = 8;
++	int ecc_poly = 0x11d;
+ 
+ 	if (!prz->ecc)
+ 		return 0;
+ 
+ 	prz->ecc_block_size = 128;
+ 	prz->ecc_size = 16;
+-	prz->ecc_symsize = 8;
+-	prz->ecc_poly = 0x11d;
+ 
+ 	ecc_blocks = DIV_ROUND_UP(prz->buffer_size, prz->ecc_block_size);
+ 	ecc_total = (ecc_blocks + 1) * prz->ecc_size;
+@@ -202,8 +202,7 @@ static int persistent_ram_init_ecc(struct persistent_ram_zone *prz)
+ 	 * first consecutive root is 0
+ 	 * primitive element to generate roots = 1
+ 	 */
+-	prz->rs_decoder = init_rs(prz->ecc_symsize, prz->ecc_poly, 0, 1,
+-				  prz->ecc_size);
++	prz->rs_decoder = init_rs(ecc_symsize, ecc_poly, 0, 1, prz->ecc_size);
+ 	if (prz->rs_decoder == NULL) {
+ 		pr_info("persistent_ram: init_rs failed\n");
+ 		return -EINVAL;
+diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
+index e681af9..a0975c0 100644
+--- a/include/linux/pstore_ram.h
++++ b/include/linux/pstore_ram.h
+@@ -41,8 +41,6 @@ struct persistent_ram_zone {
+ 	int bad_blocks;
+ 	int ecc_block_size;
+ 	int ecc_size;
+-	int ecc_symsize;
+-	int ecc_poly;
+ 
+ 	char *old_log;
+ 	size_t old_log_size;
+-- 
+1.7.10.4
+
