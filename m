@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab2GJKr2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 06:47:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60529 "EHLO mx2.suse.de"
+	id S1754149Ab2GJKtN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 06:49:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38271 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753011Ab2GJKr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 06:47:26 -0400
-Date: Tue, 10 Jul 2012 11:47:22 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: JoonSoo Kim <js1304@gmail.com>
-Cc: David Rientjes <rientjes@google.com>, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: don't invoke __alloc_pages_direct_compact when order
- 0
-Message-ID: <20120710104722.GB14154@suse.de>
-References: <1341588521-17744-1-git-send-email-js1304@gmail.com>
- <alpine.DEB.2.00.1207070139510.10445@chino.kir.corp.google.com>
- <CAAmzW4PXdpQ2zSnkx8sSScAt1OY0j4+HXVmf=COvP7eMLqrEvQ@mail.gmail.com>
+	id S1753011Ab2GJKtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 06:49:11 -0400
+Date: Tue, 10 Jul 2012 13:48:47 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 1/2] KVM: X86: remove read buffer for mmio read
+Message-ID: <20120710104847.GD23898@redhat.com>
+References: <4FFA9E16.10001@linux.vnet.ibm.com>
+ <4FFABD59.2070108@redhat.com>
+ <20120709112346.GA23898@redhat.com>
+ <4FFAD341.3080508@redhat.com>
+ <4FFADB37.4090705@linux.vnet.ibm.com>
+ <4FFADDFA.5000603@redhat.com>
+ <20120710103629.GC23898@redhat.com>
+ <4FFC07BB.8080802@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAmzW4PXdpQ2zSnkx8sSScAt1OY0j4+HXVmf=COvP7eMLqrEvQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FFC07BB.8080802@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 08, 2012 at 11:33:14AM +0900, JoonSoo Kim wrote:
-> 2012/7/7 David Rientjes <rientjes@google.com>:
-> > On Sat, 7 Jul 2012, Joonsoo Kim wrote:
-> >
-> >> __alloc_pages_direct_compact has many arguments so invoking it is very costly.
-> >> And in almost invoking case, order is 0, so return immediately.
-> >>
-> >
-> > If "zero cost" is "very costly", then this might make sense.
-> >
-> > __alloc_pages_direct_compact() is inlined by gcc.
+On Tue, Jul 10, 2012 at 01:45:15PM +0300, Avi Kivity wrote:
+> On 07/10/2012 01:36 PM, Gleb Natapov wrote:
+> > On Mon, Jul 09, 2012 at 04:34:50PM +0300, Avi Kivity wrote:
+> > > On 07/09/2012 04:23 PM, Xiao Guangrong wrote:
+> > > > On 07/09/2012 08:49 PM, Avi Kivity wrote:
+> > > >> On 07/09/2012 02:23 PM, Gleb Natapov wrote:
+> > > >>>
+> > > >>>> kvm-unit-tests.git has a test for xchg to mmio.  Does it still work?
+> > > >>>>
+> > > >>>> I agree this code has to go, but it needs to be replaced by something.
+> > > >>>> Maybe a .valid flag in struct operand.
+> > > >>>>
+> > > >>> Valid will not enough for that.
+> > > >> 
+> > > >> If we make everything go through operands, any reason why not?
+> > > >> 
+> > > > 
+> > > > I noticed some instructions need to read ESP for many times (e.g, iret_real),
+> > > > maybe .valid flag is not enough for this case if the stack is in MMIO, yes?
+> > > 
+> > > Good catch.  We either have to fix it or to restrict stack operations to
+> > > regular memory (->read_std).
+> > > 
+> > > > IIUC, I also noticed ESP is not reset back if it is emulated fail (mmio is needed).
+> > > > If the stack located in mmio region, this kind of instruct will be broken, i know no
+> > > > guest will use mmio as stack but SDM does not limit it, is it valid?
+> > > 
+> > > Stack in mmio (or task switch in mmio) is architecturally valid.  We
+> > > don't have to support it if no guests do it.
+> > > 
+> > But the code is already here, why drop it?
 > 
-> In my kernel image, __alloc_pages_direct_compact() is not inlined by gcc.
+> The read cache is not effective for multiple disjunct reads.
+What do you mean?
 
-Indeed it is due to their being two callsites. In most cases, the page
-allocator takes care that functions have only one callsite so they get
-inlined.
+>                                                                The
+> splitting into 8-byte groups is unneeded.
+> 
+Agree. Easy to fix.
 
-You say that invoking the function is very costly. I agree that a function
-call with that many parameters is hefty but it is also in the slow path of
-the allocator. For order-0 allocations we are about to enter direct reclaim
-where I would expect the cost far exceeds the cost of a function call.
-
-If the cost is indeed high and you have seen this in profiles then I
-suggest you create a forced inline function alloc_pages_direct_compact
-that does this;
-
-if (order != 0)
-	__alloc_pages_direct_compact(...)
-
-and then call alloc_pages_direct_compact instead of
-__alloc_pages_direct_compact. After that, recheck the profiles (although I
-expect the difference to be marginal) and the size of vmlinux (if it gets
-bigger, it's probably not worth it).
-
-That would be functionally similar to your patch but it will preserve git
-blame, churn less code and be harder to make mistakes with in the unlikely
-event a third call to alloc_pages_direct_compact is ever added.
-
-Thanks.
-
--- 
-Mel Gorman
-SUSE Labs
+--
+			Gleb.
