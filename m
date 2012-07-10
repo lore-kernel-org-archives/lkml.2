@@ -1,207 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105Ab2GJAG6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 20:06:58 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:57432 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755020Ab2GJAGw (ORCPT
+	id S1755091Ab2GJAIk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 20:08:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42385 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752731Ab2GJAIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 20:06:52 -0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Arnd Bergmann <arnd@arndb.de>,
-        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
-        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 2/3] pstore/ram: Make ECC size configurable
-Date: Mon,  9 Jul 2012 17:03:19 -0700
-Message-Id: <1341878600-2139-2-git-send-email-anton.vorontsov@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20120709234559.GA22203@lizard>
-References: <20120709234559.GA22203@lizard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 9 Jul 2012 20:08:38 -0400
+Message-ID: <1341878901.25597.307.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH firmware 3/4] rtl_nic: add new firmware for RTL8106E
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: dwmw2@infradead.org, romieu@fr.zoreil.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 10 Jul 2012 01:08:21 +0100
+In-Reply-To: <1341803512-1309-3-git-send-email-hayeswang@realtek.com>
+References: <1341803512-1309-1-git-send-email-hayeswang@realtek.com>
+	 <1341803512-1309-3-git-send-email-hayeswang@realtek.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-JdafrzDGL3JppFCutGqN"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is now pretty straightforward: instead of using bool, just pass
-an integer. For backwards compatibility ramoops.ecc=1 means 16 bytes
-ECC (using 1 byte for ECC isn't much of use anyway).
 
-Suggested-by: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- fs/pstore/ram.c            |   22 ++++++++++++++--------
- fs/pstore/ram_core.c       |   15 ++++++++-------
- include/linux/pstore_ram.h |    4 ++--
- 3 files changed, 24 insertions(+), 17 deletions(-)
+--=-JdafrzDGL3JppFCutGqN
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 58b93fb..b39aebb 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -63,7 +63,9 @@ MODULE_PARM_DESC(dump_oops,
- static int ramoops_ecc;
- module_param_named(ecc, ramoops_ecc, int, 0600);
- MODULE_PARM_DESC(ramoops_ecc,
--		"set to 1 to enable ECC support");
-+		"if non-zero, the option enables ECC support and specifies "
-+		"ECC buffer size in bytes (1 is a special value, means 16 "
-+		"bytes ECC)");
- 
- struct ramoops_context {
- 	struct persistent_ram_zone **przs;
-@@ -73,7 +75,7 @@ struct ramoops_context {
- 	size_t record_size;
- 	size_t console_size;
- 	int dump_oops;
--	bool ecc;
-+	int ecc_size;
- 	unsigned int max_dump_cnt;
- 	unsigned int dump_write_cnt;
- 	unsigned int dump_read_cnt;
-@@ -288,7 +290,7 @@ static int ramoops_init_przs(struct device *dev, struct ramoops_context *cxt,
- 	for (i = 0; i < cxt->max_dump_cnt; i++) {
- 		size_t sz = cxt->record_size;
- 
--		cxt->przs[i] = persistent_ram_new(*paddr, sz, cxt->ecc);
-+		cxt->przs[i] = persistent_ram_new(*paddr, sz, cxt->ecc_size);
- 		if (IS_ERR(cxt->przs[i])) {
- 			err = PTR_ERR(cxt->przs[i]);
- 			dev_err(dev, "failed to request mem region (0x%zx@0x%llx): %d\n",
-@@ -314,7 +316,7 @@ static int ramoops_init_prz(struct device *dev, struct ramoops_context *cxt,
- 	if (*paddr + sz > *paddr + cxt->size)
- 		return -ENOMEM;
- 
--	*prz = persistent_ram_new(*paddr, sz, cxt->ecc);
-+	*prz = persistent_ram_new(*paddr, sz, cxt->ecc_size);
- 	if (IS_ERR(*prz)) {
- 		int err = PTR_ERR(*prz);
- 
-@@ -361,7 +363,7 @@ static int __devinit ramoops_probe(struct platform_device *pdev)
- 	cxt->record_size = pdata->record_size;
- 	cxt->console_size = pdata->console_size;
- 	cxt->dump_oops = pdata->dump_oops;
--	cxt->ecc = pdata->ecc;
-+	cxt->ecc_size = pdata->ecc_size;
- 
- 	paddr = cxt->phys_addr;
- 
-@@ -411,9 +413,9 @@ static int __devinit ramoops_probe(struct platform_device *pdev)
- 	record_size = pdata->record_size;
- 	dump_oops = pdata->dump_oops;
- 
--	pr_info("attached 0x%lx@0x%llx, ecc: %s\n",
-+	pr_info("attached 0x%lx@0x%llx, ecc: %d\n",
- 		cxt->size, (unsigned long long)cxt->phys_addr,
--		ramoops_ecc ? "on" : "off");
-+		cxt->ecc_size);
- 
- 	return 0;
- 
-@@ -478,7 +480,11 @@ static void ramoops_register_dummy(void)
- 	dummy_data->record_size = record_size;
- 	dummy_data->console_size = ramoops_console_size;
- 	dummy_data->dump_oops = dump_oops;
--	dummy_data->ecc = ramoops_ecc;
-+	/*
-+	 * For backwards compatibility ramoops.ecc=1 means 16 bytes ECC
-+	 * (using 1 byte for ECC isn't much of use anyway).
-+	 */
-+	dummy_data->ecc_size = ramoops_ecc == 1 ? 16 : ramoops_ecc;
- 
- 	dummy = platform_device_register_data(NULL, "ramoops", -1,
- 			dummy_data, sizeof(struct ramoops_platform_data));
-diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
-index 3f4d6e6..7e5a2a9 100644
---- a/fs/pstore/ram_core.c
-+++ b/fs/pstore/ram_core.c
-@@ -171,7 +171,8 @@ static void persistent_ram_ecc_old(struct persistent_ram_zone *prz)
- 	}
- }
- 
--static int persistent_ram_init_ecc(struct persistent_ram_zone *prz)
-+static int persistent_ram_init_ecc(struct persistent_ram_zone *prz,
-+				   int ecc_size)
- {
- 	int numerr;
- 	struct persistent_ram_buffer *buffer = prz->buffer;
-@@ -184,7 +185,7 @@ static int persistent_ram_init_ecc(struct persistent_ram_zone *prz)
- 		return 0;
- 
- 	prz->ecc_block_size = 128;
--	prz->ecc_size = 16;
-+	prz->ecc_size = ecc_size;
- 
- 	ecc_blocks = DIV_ROUND_UP(prz->buffer_size, prz->ecc_block_size);
- 	ecc_total = (ecc_blocks + 1) * prz->ecc_size;
-@@ -390,13 +391,13 @@ static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
- }
- 
- static int __devinit persistent_ram_post_init(struct persistent_ram_zone *prz,
--					      bool ecc)
-+					      int ecc_size)
- {
- 	int ret;
- 
--	prz->ecc = ecc;
-+	prz->ecc = ecc_size;
- 
--	ret = persistent_ram_init_ecc(prz);
-+	ret = persistent_ram_init_ecc(prz, ecc_size);
- 	if (ret)
- 		return ret;
- 
-@@ -444,7 +445,7 @@ void persistent_ram_free(struct persistent_ram_zone *prz)
- 
- struct persistent_ram_zone * __devinit persistent_ram_new(phys_addr_t start,
- 							  size_t size,
--							  bool ecc)
-+							  int ecc_size)
- {
- 	struct persistent_ram_zone *prz;
- 	int ret = -ENOMEM;
-@@ -459,7 +460,7 @@ struct persistent_ram_zone * __devinit persistent_ram_new(phys_addr_t start,
- 	if (ret)
- 		goto err;
- 
--	ret = persistent_ram_post_init(prz, ecc);
-+	ret = persistent_ram_post_init(prz, ecc_size);
- 	if (ret)
- 		goto err;
- 
-diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
-index a0975c0..94b79f1 100644
---- a/include/linux/pstore_ram.h
-+++ b/include/linux/pstore_ram.h
-@@ -48,7 +48,7 @@ struct persistent_ram_zone {
- 
- struct persistent_ram_zone * __devinit persistent_ram_new(phys_addr_t start,
- 							  size_t size,
--							  bool ecc);
-+							  int ecc_size);
- void persistent_ram_free(struct persistent_ram_zone *prz);
- void persistent_ram_zap(struct persistent_ram_zone *prz);
- 
-@@ -74,7 +74,7 @@ struct ramoops_platform_data {
- 	unsigned long	record_size;
- 	unsigned long	console_size;
- 	int		dump_oops;
--	bool		ecc;
-+	int		ecc_size;
- };
- 
- #endif
--- 
-1.7.10.4
+On Mon, 2012-07-09 at 11:11 +0800, Hayes Wang wrote:
+> File: rtl_nic/rtl8106e-1.fw
+> Version: 0.0.1
+[...]
 
+As someone already pointed out, this message was not correctly encoded.
+The character encoding was specified as an empty string
+(Content-Encoding header) or whitespace (Subject):
+
+> Content-Type: text/plain; charset=3D""
+[...]
+> Subject: =3D?
+> 	?q?=3D5BPATCH=3D20firmware=3D203/4=3D5D=3D20rtl=3D5Fnic=3D3A=3D20add=3D2=
+0new=3D20firmware=3D20for=3D20RTL8106E?=3D
+
+I fixed that up just this once, but please fix whatever causes that
+because I don't wish to have to do so again.
+
+Ben.
+
+--=20
+Ben Hutchings
+The generation of random numbers is too important to be left to chance.
+                                                            - Robert Coveyo=
+u
+
+--=-JdafrzDGL3JppFCutGqN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAT/tydee/yOyVhhEJAQo2oBAAnf4EC6NS642PmYGnPxf6aoR27F8/pkuY
+5fMzwddF5RPMWioojLIbQlVg+1sL7JdPeAzbQzbhYRmHzVAiE0F/cOwEQ102g4yq
+d4rbSsOhN5x3Ew9nL6G/GIs5utu9TxVTOffccumk3UAoJC5XkkVqEr7Lv7nLNkBN
+TjQYITuB/3EQiZtTAq1enm7n3AcORusqI2j3/QU/Qy1B/MPxOkEuwC6RIozvpWpa
+6t8fgmLJygVlv4ges19P7UM2xg1f5comQcB1kE/HoKC2DjBvihHoBK+uTd0GCuTr
+HG40XFB6/YLdS8zsFv2oRq35NQPpXE9j4XnOi1XSNVdMxDZIecWRXNSFSDABfPT1
+l7kkv/Kw2/C/fZK2mu/ScM5pe1pC/xmoH3wRCWRW80sFOs6vuyUwhNWdmmAJ08yv
+nSGcKOo3TTv0TACh8l51uDBM8iMZc6Ezy9NF/NUpN2TZlTMs8PvpZ3/nbwFRCY/1
+z3xU3UqatKyU7TElbINJPsGeDJvvDyBjz2QAdEWzgmJSV2cGw3JqGHu8xak/L8vq
+bVctkXHdFamjFtQLfOqO6xYFPm5mesZYktmwhpgcAhK3Z4dR3DeQPCyyBMH+ASms
+kPRo64KAUS9Mnchp4TToecWbsewl3slw0knQwBRiPIaDiGyfASZTKj4mL6H/NEfi
+GQVz81ZwcqQ=
+=SXst
+-----END PGP SIGNATURE-----
+
+--=-JdafrzDGL3JppFCutGqN--
