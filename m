@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008Ab2GJPyk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 11:54:40 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61396 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464Ab2GJPyi (ORCPT
+	id S1756031Ab2GJPyv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 11:54:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43454 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752464Ab2GJPys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 11:54:38 -0400
+	Tue, 10 Jul 2012 11:54:48 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+Cc: Yijing Wang <wangyijing@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
         Taku Izumi <izumi.taku@jp.fujitsu.com>,
         "Rafael J . Wysocki" <rjw@sisk.pl>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>,
         Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [RFC PATCH 00/14] improve PCIe capabilities registers handling
-Date: Tue, 10 Jul 2012 23:54:01 +0800
-Message-Id: <1341935655-5381-1-git-send-email-jiang.liu@huawei.com>
+        linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
+Subject: [RFC PATCH 01/14] PCI: add pcie_flags into struct pci_dev to cache PCIe capabilities register
+Date: Tue, 10 Jul 2012 23:54:02 +0800
+Message-Id: <1341935655-5381-2-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1341935655-5381-1-git-send-email-jiang.liu@huawei.com>
+References: <1341935655-5381-1-git-send-email-jiang.liu@huawei.com>
 In-Reply-To: <CAErSpo70NtEJFaQmDtdTLkSB3fQRNy78juAQO-KbXeceZkunkw@mail.gmail.com>
 References: <CAErSpo70NtEJFaQmDtdTLkSB3fQRNy78juAQO-KbXeceZkunkw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <liuj97@gmail.com>
+From: Yijing Wang <wangyijing@huawei.com>
 
-As suggested by Bjorn Helgaas and Don Dutile in threads
-http://www.spinics.net/lists/linux-pci/msg15663.html, we could improve access
-to PCIe capabilities register in to way:
-1) cache content of PCIe Capabilities Register into struct pce_dev to avoid
-   repeatedly reading this register because it's read only.
-2) provide access functions for PCIe Capabilities registers to hide differences
-   among PCIe base specifications, so the caller don't need to handle those
-   differences.
+From: Yijing Wang <wangyijing@huawei.com>
 
-This patch set applies to
-git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci-next
+Since PCI Express Capabilities Register is read only, cache its value
+into struct pci_dev to avoid repeatedly calling pci_read_config_*().
 
-These patch set is still RFC. It provides the new interfaces and has made the
-major changes to adopt those new interfaces. But there are still several device
-drivers left untouched. Any comments about the new interfaces are welcomed,
-especially about function names:). Once we reach an agreement, I will send out
-a formal version with all needed work done.
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
+---
+ drivers/pci/probe.c |    1 +
+ include/linux/pci.h |    1 +
+ 2 files changed, 2 insertions(+)
 
-Jiang Liu (11):
-  PCI: refine and move pcie_cap_has_*() macros to include/linux/pci.h
-  PCI: add access functions for PCIe capabilities to hide PCIe spec
-    differences
-  PCI: use PCIe cap access functions to simplify PCI core
-    implementation
-  hotplug/PCI: use PCIe cap access functions to simplify implementation
-  portdrv/PCI: use PCIe cap access functions to simplify implementation
-  pciehp/PCI: use PCIe cap access functions to simplify implementation
-  PME/PCI: use PCIe cap access functions to simplify implementation
-  AER/PCI: use PCIe cap access functions to simplify implementation
-  ASPM/PCI: use PCIe cap access functions to simplify implementation
-  r8169/PCI: use PCIe cap access functions to simplify implementation
-  qib/PCI: use PCIe cap access functions to simplify implementation
-
-Yijing Wang (1):
-  PCI: add pcie_flags into struct pci_dev to cache PCIe capabilities
-    register
-  PCI: introduce pci_pcie_type(dev) to replace pci_dev->pcie_type
-  PCI: remove unused field pcie_type from struct pci_dev
-
- arch/powerpc/platforms/powernv/pci-ioda.c          |    2 +-
- drivers/infiniband/hw/qib/qib_pcie.c               |   34 ++-
- drivers/iommu/intel-iommu.c                        |    6 +-
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c      |    2 +-
- .../net/ethernet/qlogic/netxen/netxen_nic_main.c   |    2 +-
- drivers/net/ethernet/realtek/r8169.c               |   38 +--
- drivers/pci/access.c                               |   88 +++++++
- drivers/pci/hotplug/pciehp_acpi.c                  |    5 +-
- drivers/pci/hotplug/pciehp_hpc.c                   |    8 +-
- drivers/pci/hotplug/pcihp_slot.c                   |   17 +-
- drivers/pci/iov.c                                  |    6 +-
- drivers/pci/pci.c                                  |  265 +++++---------------
- drivers/pci/pcie/aer/aer_inject.c                  |    2 +-
- drivers/pci/pcie/aer/aerdrv.c                      |   23 +-
- drivers/pci/pcie/aer/aerdrv_acpi.c                 |    2 +-
- drivers/pci/pcie/aer/aerdrv_core.c                 |   47 ++--
- drivers/pci/pcie/aspm.c                            |  110 ++++----
- drivers/pci/pcie/pme.c                             |   23 +-
- drivers/pci/pcie/portdrv_bus.c                     |    2 +-
- drivers/pci/pcie/portdrv_core.c                    |   24 +-
- drivers/pci/pcie/portdrv_pci.c                     |   15 +-
- drivers/pci/probe.c                                |   30 +--
- drivers/pci/quirks.c                               |    8 +-
- drivers/pci/search.c                               |    2 +-
- include/linux/pci.h                                |   65 ++++-
- include/linux/pci_regs.h                           |   19 +-
- 26 files changed, 401 insertions(+), 444 deletions(-)
-
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 6c143b4..65e82e3 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -929,6 +929,7 @@ void set_pcie_port_type(struct pci_dev *pdev)
+ 	pdev->is_pcie = 1;
+ 	pdev->pcie_cap = pos;
+ 	pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &reg16);
++	pdev->pcie_flags = reg16;
+ 	pdev->pcie_type = (reg16 & PCI_EXP_FLAGS_TYPE) >> 4;
+ 	pci_read_config_word(pdev, pos + PCI_EXP_DEVCAP, &reg16);
+ 	pdev->pcie_mpss = reg16 & PCI_EXP_DEVCAP_PAYLOAD;
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 5faa831..f4a7ad6 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -258,6 +258,7 @@ struct pci_dev {
+ 	u8		pcie_mpss:3;	/* PCI-E Max Payload Size Supported */
+ 	u8		rom_base_reg;	/* which config register controls the ROM */
+ 	u8		pin;  		/* which interrupt pin this device uses */
++	u16		pcie_flags;	/* cached PCI-E Capabilities Register */
+ 
+ 	struct pci_driver *driver;	/* which driver has allocated this device */
+ 	u64		dma_mask;	/* Mask of the bits of bus address this
 -- 
 1.7.9.5
 
