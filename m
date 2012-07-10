@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab2GJIAK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 04:00:10 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:50222 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802Ab2GJIAI (ORCPT
+	id S1753235Ab2GJICl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 04:02:41 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:50816 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752739Ab2GJICg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 04:00:08 -0400
-Date: Tue, 10 Jul 2012 10:00:03 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Roland Stigge <stigge@antcom.de>
-Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH] pwm: add lpc32xx pwm support
-Message-ID: <20120710080003.GA30346@avionic-0098.adnet.avionic-design.de>
-References: <1341862074-9240-1-git-send-email-aletes.xgr@gmail.com>
- <20120710064853.GA28840@avionic-0098.adnet.avionic-design.de>
- <4FFBE018.9060108@antcom.de>
+	Tue, 10 Jul 2012 04:02:36 -0400
+Date: Tue, 10 Jul 2012 10:02:30 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, hpa@zytor.com,
+        eranian@google.com, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        akpm@linux-foundation.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [tip:perf/core] perf/x86: Fix USER/KERNEL tagging of samples
+Message-ID: <20120710080230.GA10919@gmail.com>
+References: <tip-xxrt0a1zronm1sm36obwc2vy@git.kernel.org>
+ <CA+55aFxY7SqwSQWuRXSg+W=ftp9FtCT1MMEqMiCi1H279Fis-A@mail.gmail.com>
+ <1341598329.7709.57.camel@twins>
+ <CA+55aFzqoz7dcUCQfSrXxX2T8=2wgWdb1H2vaBhk7V-r0uaogw@mail.gmail.com>
+ <CA+55aFw+vE4zMe1bJohLuoMDaFpqGCz6sBNRE8gkV7JOvtro0g@mail.gmail.com>
+ <1341832997.3462.41.camel@twins>
+ <20120709184145.GA7666@gmail.com>
+ <1341906848.3462.92.camel@twins>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PEIAKu/WMn1b1Hv9"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FFBE018.9060108@antcom.de>
+In-Reply-To: <1341906848.3462.92.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:r0XLHDzK5EMjDVsf/GIvcHUIP3Rnpomesi8wdd586xC
- M+acEfn/XaCINP+BiigNGAW5z0w/blZI10PZ5v9rH5XBsFxbhS
- n4OemSbQ4b/vrRaBE25NsI95OaPZPAEINCkY6CqnOuHpleA1u0
- I7zQUeYxklUuBsfgnFc6yRzoZ0oZL/MzI9tWMAKTzuXSsrb0CW
- HLyoNd8zevn+AVXFi1/CAySUs5aPS2Sg0Du6VXYVogr/UTiIub
- 1yYh4fCjk3POGuLDtZ21T9Wg+kNDdWS5Le0JRfNdBETQeAthNE
- Lubk32La6/U1rJHnan6HDWUOJv0bf+7KsInWgvRQVA2dPY4+wk
- lNdJPVqr0F44RLamlvvAE/k9958Ek1U+iR/a9Uj0zvohiIRKYl
- zWrbhPNCub7UmnkCt58PkRRZjF9oyRxf0k=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---PEIAKu/WMn1b1Hv9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-On Tue, Jul 10, 2012 at 09:56:08AM +0200, Roland Stigge wrote:
-> Hi,
->=20
-> On 07/10/2012 08:48 AM, Thierry Reding wrote:
-> >> --- /dev/null +++
-> >> b/Documentation/devicetree/bindings/pwm/lpc32xx-pwm.txt @@ -0,0
-> >> +1,12 @@ +LPC32XX PWM controller + +Required properties: +-
-> >> compatible: should be "nxp,lpc3220-pwm"
-> >=20
-> > Does the compatible have to be lpc3220-pwm? Can't it be lpc32xx-pwm
-> > to match the driver and binding names?
->=20
-> When creating the other NXP LPC compatible strings, we agreed on
-> taking the first LPC32xx chip, i.e., lpc3220, as prefix. (There are 4
-> of them, -20, -30, -40, -50, most of them supporting things available
-> in lpc3220.)
->=20
-> So lpc3220-pwm looks good here.
+> > > +static unsigned long code_segment_base(struct pt_regs *regs)
+> > > +{
+> > > +#ifdef CONFIG_32BIT
+> > > +     if (user_mode(regs) && regs->cs != __USER_CS)
+> > > +             return get_segment_base(regs->cs);
+> > > +#else
+> > > +     if (test_thread_flag(TIF_IA32)) {
+> > > +             if (user_mode(regs) && regs->cs != __USER32_CS)
+> > > +                     return get_segment_base(regs->cs);
+> > > +     }
+> > > +#endif
+> > > +     return 0;
+> > > +}
+> > 
+> > Will this do the right thing for x32 mode? 
+> 
+> hpa? It looks like x32 has TIF_X32, but from the kernel's POV 
+> its really just another 64bit process, so as long as we don't 
+> trigger the TIF_IA32 case we'll just return 0.
 
-I see, that makes sense.
+Maybe add that as a comment or so, to stop future wondering. 
+Maybe list all the states an x86 process can be in, and describe 
+what we intend to do for each. That will make it easier to match 
+up intent with actual code and will make it easier to keep it 
+correct in the future as well.
 
-Thierry
+> set_personality_ia32() looks like TIF_IA32 and TIF_X32 are 
+> mutually exclusive, so I think we do the right thing.
 
---PEIAKu/WMn1b1Hv9
-Content-Type: application/pgp-signature
+Ok.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Thanks,
 
-iQIcBAEBAgAGBQJP++EDAAoJEN0jrNd/PrOhXSEQAKQTTAAXEG/IVSInc3NfjW5d
-O03+DhBpKzIgivtXSrRQmrKbxKRWZZom5bgUrN/sYy29x4qFelP0J8g+lgUrCDcz
-0SG5CmshOuq5oAv8dFIHM0Mxj8lxINgy5Htvf8w/7eJFmK1HgojqbXk/Yg6R69K8
-2ynmXitT419jHTC+clw1nS3gchwvpc3SSc5pyqxsJt8PuFQKfaSD0ZNwolFg135q
-7YtozCT+AkLQ1pFnx0S7Z6mu2BbfnHsUDJRURCLVxVIxG8zduBUbBct6F84dGFRX
-9soZNqXSXKWQzm7YTgZwW0uRC9b95rkMveJBrcvdygPvVZpeE1+0gHV9lwQY2GRB
-/f8UrKElLbijW1Fvyz6TcPhESYPiW37tY1xZ+ulSdV48u7sMz18fb4ZOe/Jh2G7b
-AKgm5mlkvJ0yzA7UeSK7jm+sTErqlD3o4VbQMToUA2qsSB9VvDByiVWFnST8arz6
-gjZNR+5nToAtbEQw+dxcIx4pjyOWuKdSAAoNrnOfLTz16x96ablmnPAU2J5fwLW4
-XzmaGykOgEJYveUqoDEmORtT0uF+FCajbnABBKJt4gcDLwW7oX98kTvL7Qv8hLke
-cckiah+2EzuiT0LaaHD01Ih+Pg5gZEwZbAFgodaWkNAzenj5za1bGihQHaCCWnat
-JaGg2TP6H8btUsd8Rt4t
-=ZuHh
------END PGP SIGNATURE-----
-
---PEIAKu/WMn1b1Hv9--
+	Ingo
