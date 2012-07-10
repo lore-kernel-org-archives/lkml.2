@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab2GJLYW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 07:24:22 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:51664 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755132Ab2GJLYU (ORCPT
+	id S1755177Ab2GJLZI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 07:25:08 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55669 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755106Ab2GJLZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 07:24:20 -0400
-Message-ID: <4FFC106E.4040407@linux.vnet.ibm.com>
-Date: Tue, 10 Jul 2012 16:52:22 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH RFC 1/2] kvm vcpu: Note down pause loop exit
-References: <20120709062012.24030.37154.sendpatchset@codeblue> <20120709062032.24030.10454.sendpatchset@codeblue> <4FFB5D8E.70402@redhat.com>
-In-Reply-To: <4FFB5D8E.70402@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12071001-7014-0000-0000-0000018907B7
+	Tue, 10 Jul 2012 07:25:07 -0400
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: greg@kroah.com, willy@meta-x.org
+Cc: linux-kernel@vger.kernel.org, Toshiaki Yamane <yamanetoshi@gmail.com>
+Subject: [PATCH 2/3] panel: Use pr_info(...) rather than printk(KERN_INFO ...)
+Date: Tue, 10 Jul 2012 20:24:51 +0900
+Message-Id: <1341919491-8868-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1341919338-8800-1-git-send-email-yamanetoshi@gmail.com>
+References: <1341919338-8800-1-git-send-email-yamanetoshi@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2012 04:09 AM, Rik van Riel wrote:
-> On 07/09/2012 02:20 AM, Raghavendra K T wrote:
->
->> @@ -484,6 +484,13 @@ struct kvm_vcpu_arch {
->> u64 length;
->> u64 status;
->> } osvw;
->> +
->> + /* Pause loop exit optimization */
->> + struct {
->> + bool pause_loop_exited;
->> + bool dy_eligible;
->> + } plo;
->
-> I know kvm_vcpu_arch is traditionally not a well documented
-> structure, but it would be really nice if each variable inside
-> this sub-structure could get some documentation.
+This change is inspired by checkpatch.
 
-Sure. Will document it.
+Signed-off-by: Toshiaki Yamane <yamanetoshi@gmail.com>
+---
+ drivers/staging/panel/panel.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
->
-> Also, do we really want to introduce another acronym here?
->
-> Or would we be better off simply calling this struct .ple,
-> since that is a name people are already familiar with.
-
-Yes. it makes sense to have .ple.
-
+diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+index 6f40ec8..7b79f53 100644
+--- a/drivers/staging/panel/panel.c
++++ b/drivers/staging/panel/panel.c
+@@ -2298,12 +2298,12 @@ int panel_init(void)
+ 	register_reboot_notifier(&panel_notifier);
+ 
+ 	if (pprt)
+-		printk(KERN_INFO "Panel driver version " PANEL_VERSION
+-		       " registered on parport%d (io=0x%lx).\n", parport,
+-		       pprt->port->base);
++		pr_info("Panel driver version " PANEL_VERSION
++			" registered on parport%d (io=0x%lx).\n", parport,
++			pprt->port->base);
+ 	else
+-		printk(KERN_INFO "Panel driver version " PANEL_VERSION
+-		       " not yet registered\n");
++		pr_info("Panel driver version " PANEL_VERSION
++			" not yet registered\n");
+ 	/* tells various subsystems about the fact that initialization
+ 	   is finished */
+ 	init_in_progress = 0;
+-- 
+1.7.5.4
 
