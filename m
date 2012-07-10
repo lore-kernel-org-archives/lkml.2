@@ -1,111 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab2GJCM3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 22:12:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39670 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752788Ab2GJCM1 (ORCPT
+	id S1755515Ab2GJCVo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 22:21:44 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51786 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753064Ab2GJCVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 22:12:27 -0400
-Date: Mon, 9 Jul 2012 19:15:05 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Glauber Costa <glommer@parallels.com>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, Greg Thelen <gthelen@google.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>, Tejun Heo <tj@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2] fail dentry revalidation after namespace change
-Message-Id: <20120709191505.bcce7947.akpm@linux-foundation.org>
-In-Reply-To: <87629wxu1i.fsf@xmission.com>
-References: <1341565747-15374-1-git-send-email-glommer@parallels.com>
-	<20120709161336.0ec23592.akpm@linux-foundation.org>
-	<87txxgxxs7.fsf@xmission.com>
-	<20120709174705.0e2078c8.akpm@linux-foundation.org>
-	<87629wxu1i.fsf@xmission.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 9 Jul 2012 22:21:43 -0400
+X-AuditID: 9c930179-b7c19ae000007374-55-4ffb91b5e22c
+Message-ID: <4FFB91B8.5070009@kernel.org>
+Date: Tue, 10 Jul 2012 11:21:44 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] zsmalloc: remove x86 dependency
+References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com> <1341263752-10210-2-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1341263752-10210-2-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 09 Jul 2012 18:51:37 -0700 ebiederm@xmission.com (Eric W. Biederman) wrote:
-
-> Andrew Morton <akpm@linux-foundation.org> writes:
+On 07/03/2012 06:15 AM, Seth Jennings wrote:
+> This patch replaces the page table assisted object mapping
+> method, which has x86 dependencies, with a arch-independent
+> method that does a simple copy into a temporary per-cpu
+> buffer.
 > 
-> > On Mon, 09 Jul 2012 17:30:48 -0700 ebiederm@xmission.com (Eric W. Biederman) wrote:
-> >
-> >> Andrew Morton <akpm@linux-foundation.org> writes:
-> >> 
-> >> >>  {
-> >> >>  	struct sysfs_dirent *sd;
-> >> >>  	int is_dir;
-> >> >> +	int type;
-> >> >>  
-> >> >>  	if (nd->flags & LOOKUP_RCU)
-> >> >>  		return -ECHILD;
-> >> >> @@ -326,6 +327,13 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
-> >> >>  	if (strcmp(dentry->d_name.name, sd->s_name) != 0)
-> >> >>  		goto out_bad;
-> >> >>  
-> >> >> +	/* The sysfs dirent has been moved to a different namespace */
-> >> >> +	type = KOBJ_NS_TYPE_NONE;
-> >> >> +	if (sd->s_parent)
-> >> >> +		type = sysfs_ns_type(sd->s_parent);
-> >> >> +	if (type && (sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns))
-> >> >
-> >> > eww, the code is assuming that KOBJ_NS_TYPE_NONE has a value of zero. 
-> >> > Don't do that; it smells bad.
-> >> 
-> >> Gag.  An incomplete change in idiom.
-> >> 
-> >> KOBJ_NS_TYPE_NONE is explicitly defined as 0 so that it can be used
-> >> this way, and every where else in fs/sysfs/dir.c uses this idiom.
-> >
-> > One man's idiom is another man's idiocy.
+> While a copy seems like it would be worse than mapping the pages,
+> tests demonstrate the copying is always faster and, in the case of
+> running inside a KVM guest, roughly 4x faster.
 > 
-> And code that uses inconsistent idioms is even harder to read.
-
-Not true.  That patch is more readable when it is changed to use
-correct types.  If only because readers don't need to go in and check
-that KOBJ_NS_TYPE_NONE has value zero.
-
-> > Seriously.  What sort of idea is that?  Create an enumerated type and
-> > then just ignore it?
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> ---
+>  drivers/staging/zsmalloc/Kconfig         |    4 --
+>  drivers/staging/zsmalloc/zsmalloc-main.c |   99 +++++++++++++++++++++---------
+>  drivers/staging/zsmalloc/zsmalloc_int.h  |    5 +-
+>  3 files changed, 72 insertions(+), 36 deletions(-)
 > 
-> It isn't ignored.  It just has a well defined NULL value. That is hardly
-> controversial.
+> diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
+> index a5ab720..9084565 100644
+> --- a/drivers/staging/zsmalloc/Kconfig
+> +++ b/drivers/staging/zsmalloc/Kconfig
+> @@ -1,9 +1,5 @@
+>  config ZSMALLOC
+>  	tristate "Memory allocator for compressed pages"
+> -	# X86 dependency is because of the use of __flush_tlb_one and set_pte
+> -	# in zsmalloc-main.c.
+> -	# TODO: convert these to portable functions
+> -	depends on X86
+>  	default n
+>  	help
+>  	  zsmalloc is a slab-based memory allocator designed to store
+> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+> index 10b0d60..a7a6f22 100644
+> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
+> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+> @@ -470,6 +470,57 @@ static struct page *find_get_zspage(struct size_class *class)
+>  	return page;
+>  }
+>  
+> +static void zs_copy_map_object(char *buf, struct page *firstpage,
+> +				int off, int size)
 
-If it's uncontroversial, why are we talking about it?  Why did I, an
-experienced C and kernel developer, think that it looked stupid and
-possibly buggy?
+firstpage is rather misleading.
+As you know, we use firstpage term for real firstpage of zspage but
+in case of zs_copy_map_object, it could be a middle page of zspage.
+So I would like to use "page" instead of firstpage.
 
-I'm uncomfortable with propagating this idiotic and unnecessary trick
-any further.  It's better to fix it.
+> +{
+> +	struct page *pages[2];
+> +	int sizes[2];
+> +	void *addr;
+> +
+> +	pages[0] = firstpage;
+> +	pages[1] = get_next_page(firstpage);
+> +	BUG_ON(!pages[1]);
+> +
+> +	sizes[0] = PAGE_SIZE - off;
+> +	sizes[1] = size - sizes[0];
+> +
+> +	/* disable page faults to match kmap_atomic() return conditions */
+> +	pagefault_disable();
 
-> >> Pray tell in what parallel universe is that monstrosity above more
-> >> readable than the line it replaces?
-> >
-> > Don't be silly, it is not a "monstrosity".  The code it is modifying
-> > contains an unneeded test-and-branch.  It's a test and branch which the
-> > compiler might be able to avoid.  If we can demonstrate that the
-> > compiler does indeed optimise it, or if we can find a less monstrous
-> > way of implementing it then fine.  Otherwise, efficiency wins.
-> 
-> Efficiency wins?  In a rarely used function?  Which kernel are you
-> working on?
+If I understand your intention correctly, you want to prevent calling
+this function on non-atomic context. Right?
+Please write down description more clearly as point of view what's happen
+if we didn't.
 
-One in which we frequently optimise uncommon code paths.
+> +
+> +	/* copy object to per-cpu buffer */
+> +	addr = kmap_atomic(pages[0]);
+> +	memcpy(buf, addr + off, sizes[0]);
+> +	kunmap_atomic(addr);
+> +	addr = kmap_atomic(pages[1]);
+> +	memcpy(buf + sizes[0], addr, sizes[1]);
+> +	kunmap_atomic(addr);
+> +}
+> +
+> +static void zs_copy_unmap_object(char *buf, struct page *firstpage,
+> +				int off, int size)
 
-> Readable maintainable code wins.  Unreadable code causes regressions.
+Ditto firstpage.
 
-Dude, the whole reason for having enums and enumerated types is for
-readability and maintainability.  If we didn't care about that, we'd
-use literal constants everywhere.  And here you are arguing against
-that readability and maintainability.
+Otherwise, Looks good to me.
 
-If you want to say "yes, the sysfs code is bad but I can't be bothered
-fixing it all" then grumble, but OK.  But for heavens sake, don't go
-and *defend* what that code is doing.
+-- 
+Kind regards,
+Minchan Kim
+
 
