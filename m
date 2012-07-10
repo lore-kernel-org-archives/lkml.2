@@ -1,41 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869Ab2GJUP3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 16:15:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46030 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640Ab2GJUP1 (ORCPT
+	id S1752903Ab2GJUQc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 16:16:32 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:33096 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752527Ab2GJUQb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 16:15:27 -0400
-Date: Tue, 10 Jul 2012 13:15:26 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org,
-        Scan Subscription <scan-subscription@coverity.com>
-Subject: Re: [PATCH] kernel: fix mishandling of out of memory in poweroff
-Message-Id: <20120710131526.e64cf710.akpm@linux-foundation.org>
-In-Reply-To: <20120704153443.4055.53130.stgit@bluebook>
-References: <20120704153443.4055.53130.stgit@bluebook>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Jul 2012 16:16:31 -0400
+MIME-Version: 1.0
+Date: Tue, 10 Jul 2012 22:16:29 +0200
+Message-ID: <CACRpkdYTKu8XVbnLom+VKp=2YGB+EX3Qnc5EX_ciqbaGndbROw@mail.gmail.com>
+Subject: [GIT PULL] gpio fixes for v3.5
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Kevin Hilman <khilman@ti.com>,
+        linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        Alessandro Rubini <rubini@gnudd.com>,
+        Christian Dietrich 
+	<christian.dietrich@informatik.uni-erlangen.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Roland Stigge <stigge@antcom.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 Jul 2012 16:34:51 +0100
-Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+Hi Linus,
 
-> From: Alan Cox <alan@linux.intel.com>
-> 
-> Coverity 703573
-> 
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
+yes, this is a *LATE* GPIO pull request with fixes for v3.5.
 
-It would be nice to have a Reported-by here, but we were only given
-"Scan Subscription <scan-subscription@coverity.com>".
+Grant moved across the planet and accidentally fell off the grid, so he asked
+me to take over the GPIO merges for a while 10 days ago, refer to:
+https://lkml.org/lkml/2012/7/1/220
 
-Is there some human behind these reports?  If so, can that person's
-details please be included?
+Since then I went over the archives and collected this pile of fixes, and pulled
+two of them from the TI maintainer Kevin Hilman. The waited for them to
+atleast hit linux-next once or twice.
 
+This is the info in the usual signed tag, which is more or less the same as
+the commit messages but parsed through my head:
+
+GPIO fixes for v3.5:
+- Invalid context restore on bank 0 for OMAP driver in
+  runtime suspend/resume cycle
+- Check for NULL platform data in sta-2x11 driver
+- Constrain selection of the V1 MSM GPIO driver to applicable
+  platforms (Kconfig issue)
+- Make sure the correct output value is set in the wm8994 driver
+- Export devm_gpio_request_one() so it can be used in modules.
+  Apparently some in-kernel modules can be configured to use this
+  leading to breakage.
+- Check that the GPIO is valid in the lantiq driver
+- Fix the flag bits introduced for v3.5, so they don't overlap
+- Fix a device tree intialization bug for imx21-compatible devices
+- Carry over the OF node to the TPS65910 GPIO chip struct
+
+Please pull it in.
+
+Yours,
+Linus Walleij
+
+The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
+
+  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
+tags/fixes-for-v3.5
+
+Alessandro Rubini (1):
+      gpio-sta2x11: don't use pdata if null
+
+Christian Dietrich (1):
+      gpio/msm_v1: CONFIG_GPIO_MSM_V1 is only available on three SoCs
+
+Grazvydas Ignotas (1):
+      gpio/omap: fix irq loss while in idle with debounce on
+
+Jon Hunter (1):
+      gpio/omap: fix invalid context restore of gpio bank-0
+
+Laxman Dewangan (2):
+      gpio: fix bits conflict for gpio flags
+      gpio: tps65910: initialize of_node of gpio_chip
+
+Linus Walleij (1):
+      Merge branch 'kevin' into fixes
+
+Mark Brown (1):
+      gpiolib: wm8994: Pay attention to the value set when enabling as output
+
+Roland Stigge (1):
+      mips: pci-lantiq: Fix check for valid gpio
+
+Stephen Warren (1):
+      gpio: export devm_gpio_request_one
+
+Uwe Kleine-König (1):
+      gpio/mxc: make irqs work for fsl,imx21-gpio devices
+
+ arch/mips/pci/pci-lantiq.c   |    4 ++--
+ drivers/gpio/Kconfig         |    2 +-
+ drivers/gpio/devres.c        |    1 +
+ drivers/gpio/gpio-mxc.c      |   10 ++++++----
+ drivers/gpio/gpio-omap.c     |   14 +++++++++++++-
+ drivers/gpio/gpio-sta2x11.c  |    5 +++--
+ drivers/gpio/gpio-tps65910.c |    1 +
+ drivers/gpio/gpio-wm8994.c   |    5 ++++-
+ include/linux/gpio.h         |    4 ++--
+ 9 files changed, 33 insertions(+), 13 deletions(-)
