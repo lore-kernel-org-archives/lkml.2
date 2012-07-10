@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab2GJHyW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 03:54:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35663 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534Ab2GJHyV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 03:54:21 -0400
-Message-ID: <1341906848.3462.92.camel@twins>
-Subject: Re: [tip:perf/core] perf/x86: Fix USER/KERNEL tagging of samples
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, hpa@zytor.com,
-        eranian@google.com, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        akpm@linux-foundation.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org,
-        Robert Richter <robert.richter@amd.com>
-Date: Tue, 10 Jul 2012 09:54:08 +0200
-In-Reply-To: <20120709184145.GA7666@gmail.com>
-References: <tip-xxrt0a1zronm1sm36obwc2vy@git.kernel.org>
-	 <CA+55aFxY7SqwSQWuRXSg+W=ftp9FtCT1MMEqMiCi1H279Fis-A@mail.gmail.com>
-	 <1341598329.7709.57.camel@twins>
-	 <CA+55aFzqoz7dcUCQfSrXxX2T8=2wgWdb1H2vaBhk7V-r0uaogw@mail.gmail.com>
-	 <CA+55aFw+vE4zMe1bJohLuoMDaFpqGCz6sBNRE8gkV7JOvtro0g@mail.gmail.com>
-	 <1341832997.3462.41.camel@twins> <20120709184145.GA7666@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1753147Ab2GJH4N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 03:56:13 -0400
+Received: from antcom.de ([188.40.178.216]:51797 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751534Ab2GJH4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 03:56:11 -0400
+Message-ID: <4FFBE018.9060108@antcom.de>
+Date: Tue, 10 Jul 2012 09:56:08 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH] pwm: add lpc32xx pwm support
+References: <1341862074-9240-1-git-send-email-aletes.xgr@gmail.com> <20120710064853.GA28840@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20120710064853.GA28840@avionic-0098.adnet.avionic-design.de>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-09 at 20:41 +0200, Ingo Molnar wrote:
-> > +static unsigned long get_segment_base(unsigned int segment)
-> > +{
-> > +     struct desc_struct *desc;
-> > +     int idx = segment >> 3;
-> > +
-> > +     if ((segment & SEGMENT_TI_MASK) == SEGMENT_LDT) {
-> > +             if (idx > LDT_ENTRIES)
-> > +                     return 0;
-> > +
-> > +             desc = current->active_mm->context.ldt;
-> > +     } else {
-> > +             if (idx > GDT_ENTRIES)
-> > +                     return 0;
-> > +
-> > +             desc = __this_cpu_ptr(&gdt_page.gdt[0]);
-> > +     }
-> > +
-> > +     return get_desc_base(desc + idx);
+Hi,
+
+On 07/10/2012 08:48 AM, Thierry Reding wrote:
+>> --- /dev/null +++
+>> b/Documentation/devicetree/bindings/pwm/lpc32xx-pwm.txt @@ -0,0
+>> +1,12 @@ +LPC32XX PWM controller + +Required properties: +-
+>> compatible: should be "nxp,lpc3220-pwm"
 > 
-> Shouldn't idx be checked against active_mm->context.ldt.size, 
-> not LDT_ENTRIES (which is really just an upper limit)?
+> Does the compatible have to be lpc3220-pwm? Can't it be lpc32xx-pwm
+> to match the driver and binding names?
 
-Ah indeed, fixed that.
+When creating the other NXP LPC compatible strings, we agreed on
+taking the first LPC32xx chip, i.e., lpc3220, as prefix. (There are 4
+of them, -20, -30, -40, -50, most of them supporting things available
+in lpc3220.)
 
-> > +static unsigned long code_segment_base(struct pt_regs *regs)
-> > +{
-> > +#ifdef CONFIG_32BIT
-> > +     if (user_mode(regs) && regs->cs != __USER_CS)
-> > +             return get_segment_base(regs->cs);
-> > +#else
-> > +     if (test_thread_flag(TIF_IA32)) {
-> > +             if (user_mode(regs) && regs->cs != __USER32_CS)
-> > +                     return get_segment_base(regs->cs);
-> > +     }
-> > +#endif
-> > +     return 0;
-> > +}
-> 
-> Will this do the right thing for x32 mode? 
+So lpc3220-pwm looks good here.
 
-hpa? It looks like x32 has TIF_X32, but from the kernel's POV its really
-just another 64bit process, so as long as we don't trigger the TIF_IA32
-case we'll just return 0. 
+Thanks also for the review. Will have a second look when Alexandre
+posts an update.
 
-set_personality_ia32() looks like TIF_IA32 and TIF_X32 are mutually
-exclusive, so I think we do the right thing.
+Thank you two!
+
+Roland
