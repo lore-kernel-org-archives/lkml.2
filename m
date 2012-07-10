@@ -1,76 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab2GJPwc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 11:52:32 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:48648 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752202Ab2GJPwb (ORCPT
+	id S1756008Ab2GJPyk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 11:54:40 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61396 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752464Ab2GJPyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 11:52:31 -0400
-Date: Tue, 10 Jul 2012 16:52:26 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>
-Message-ID: <20120710155226.GH1894@decadent.org.uk>
-References: <20120709143116.348975190@decadent.org.uk>
- <20120709143120.461951078@decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120709143120.461951078@decadent.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [ 26/48] udf: Avoid run away loop when partition table length
- is corrupted
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	Tue, 10 Jul 2012 11:54:38 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [RFC PATCH 00/14] improve PCIe capabilities registers handling
+Date: Tue, 10 Jul 2012 23:54:01 +0800
+Message-Id: <1341935655-5381-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <CAErSpo70NtEJFaQmDtdTLkSB3fQRNy78juAQO-KbXeceZkunkw@mail.gmail.com>
+References: <CAErSpo70NtEJFaQmDtdTLkSB3fQRNy78juAQO-KbXeceZkunkw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 03:31:42PM +0100, Ben Hutchings wrote:
-> 3.2-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Jan Kara <jack@suse.cz>
-> 
-> commit adee11b2085bee90bd8f4f52123ffb07882d6256 upstream.
-> 
-> Check provided length of partition table so that (possibly maliciously)
-> corrupted partition table cannot cause accessing data beyond current buffer.
-> 
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> ---
->  fs/udf/super.c |   10 +++++++++-
->  1 file changed, 9 insertions(+), 1 deletion(-)
-> 
-> diff --git a/fs/udf/super.c b/fs/udf/super.c
-> index 9da6f4e..ce911f5 100644
-> --- a/fs/udf/super.c
-> +++ b/fs/udf/super.c
-[...]
-> @@ -1232,13 +1233,20 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
->  		return 1;
->  	BUG_ON(ident != TAG_IDENT_LVD);
->  	lvd = (struct logicalVolDesc *)bh->b_data;
-> +	table_len = le32_to_cpu(lvd->mapTableLength);
-> +	if (sizeof(*lvd) + table_len > sb->s_blocksize) {
-[...]
+From: Jiang Liu <liuj97@gmail.com>
 
-I don't think this is sufficient, unless there has been some prior
-validation of lvd->mapTableLength.  On a 32-bit machine, the addition
-may overflow.  The untrusted value has to be validated before doing
-any arithmetic on it, e.g.:
+As suggested by Bjorn Helgaas and Don Dutile in threads
+http://www.spinics.net/lists/linux-pci/msg15663.html, we could improve access
+to PCIe capabilities register in to way:
+1) cache content of PCIe Capabilities Register into struct pce_dev to avoid
+   repeatedly reading this register because it's read only.
+2) provide access functions for PCIe Capabilities registers to hide differences
+   among PCIe base specifications, so the caller don't need to handle those
+   differences.
 
-	if (table_len > sb->s_blocksize - sizeof(*lv)) {
+This patch set applies to
+git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci-next
 
-Ben.
+These patch set is still RFC. It provides the new interfaces and has made the
+major changes to adopt those new interfaces. But there are still several device
+drivers left untouched. Any comments about the new interfaces are welcomed,
+especially about function names:). Once we reach an agreement, I will send out
+a formal version with all needed work done.
+
+Jiang Liu (11):
+  PCI: refine and move pcie_cap_has_*() macros to include/linux/pci.h
+  PCI: add access functions for PCIe capabilities to hide PCIe spec
+    differences
+  PCI: use PCIe cap access functions to simplify PCI core
+    implementation
+  hotplug/PCI: use PCIe cap access functions to simplify implementation
+  portdrv/PCI: use PCIe cap access functions to simplify implementation
+  pciehp/PCI: use PCIe cap access functions to simplify implementation
+  PME/PCI: use PCIe cap access functions to simplify implementation
+  AER/PCI: use PCIe cap access functions to simplify implementation
+  ASPM/PCI: use PCIe cap access functions to simplify implementation
+  r8169/PCI: use PCIe cap access functions to simplify implementation
+  qib/PCI: use PCIe cap access functions to simplify implementation
+
+Yijing Wang (1):
+  PCI: add pcie_flags into struct pci_dev to cache PCIe capabilities
+    register
+  PCI: introduce pci_pcie_type(dev) to replace pci_dev->pcie_type
+  PCI: remove unused field pcie_type from struct pci_dev
+
+ arch/powerpc/platforms/powernv/pci-ioda.c          |    2 +-
+ drivers/infiniband/hw/qib/qib_pcie.c               |   34 ++-
+ drivers/iommu/intel-iommu.c                        |    6 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c      |    2 +-
+ .../net/ethernet/qlogic/netxen/netxen_nic_main.c   |    2 +-
+ drivers/net/ethernet/realtek/r8169.c               |   38 +--
+ drivers/pci/access.c                               |   88 +++++++
+ drivers/pci/hotplug/pciehp_acpi.c                  |    5 +-
+ drivers/pci/hotplug/pciehp_hpc.c                   |    8 +-
+ drivers/pci/hotplug/pcihp_slot.c                   |   17 +-
+ drivers/pci/iov.c                                  |    6 +-
+ drivers/pci/pci.c                                  |  265 +++++---------------
+ drivers/pci/pcie/aer/aer_inject.c                  |    2 +-
+ drivers/pci/pcie/aer/aerdrv.c                      |   23 +-
+ drivers/pci/pcie/aer/aerdrv_acpi.c                 |    2 +-
+ drivers/pci/pcie/aer/aerdrv_core.c                 |   47 ++--
+ drivers/pci/pcie/aspm.c                            |  110 ++++----
+ drivers/pci/pcie/pme.c                             |   23 +-
+ drivers/pci/pcie/portdrv_bus.c                     |    2 +-
+ drivers/pci/pcie/portdrv_core.c                    |   24 +-
+ drivers/pci/pcie/portdrv_pci.c                     |   15 +-
+ drivers/pci/probe.c                                |   30 +--
+ drivers/pci/quirks.c                               |    8 +-
+ drivers/pci/search.c                               |    2 +-
+ include/linux/pci.h                                |   65 ++++-
+ include/linux/pci_regs.h                           |   19 +-
+ 26 files changed, 401 insertions(+), 444 deletions(-)
 
 -- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+1.7.9.5
+
