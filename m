@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab2GJKqw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 06:46:52 -0400
-Received: from csmtp3.one.com ([91.198.169.23]:20698 "EHLO csmtp3.one.com"
+	id S1754120Ab2GJKr2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 06:47:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60529 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752924Ab2GJKqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 06:46:51 -0400
-From: "Henrik Rydberg" <rydberg@bitmath.se>
-To: Gustavo Padovan <gustavo@padovan.org>
-Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH v2] Bluetooth: Add MacBookPro10,1 support
-Date: Tue, 10 Jul 2012 12:46:41 +0200
-Message-Id: <1341917201-4705-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.11.1
+	id S1753011Ab2GJKr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 06:47:26 -0400
+Date: Tue, 10 Jul 2012 11:47:22 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: JoonSoo Kim <js1304@gmail.com>
+Cc: David Rientjes <rientjes@google.com>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: don't invoke __alloc_pages_direct_compact when order
+ 0
+Message-ID: <20120710104722.GB14154@suse.de>
+References: <1341588521-17744-1-git-send-email-js1304@gmail.com>
+ <alpine.DEB.2.00.1207070139510.10445@chino.kir.corp.google.com>
+ <CAAmzW4PXdpQ2zSnkx8sSScAt1OY0j4+HXVmf=COvP7eMLqrEvQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CAAmzW4PXdpQ2zSnkx8sSScAt1OY0j4+HXVmf=COvP7eMLqrEvQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the 2012 15'' MacBook Pro Retina, also known as
-MacBookPro10,1. The bluetooth device presents itself as
+On Sun, Jul 08, 2012 at 11:33:14AM +0900, JoonSoo Kim wrote:
+> 2012/7/7 David Rientjes <rientjes@google.com>:
+> > On Sat, 7 Jul 2012, Joonsoo Kim wrote:
+> >
+> >> __alloc_pages_direct_compact has many arguments so invoking it is very costly.
+> >> And in almost invoking case, order is 0, so return immediately.
+> >>
+> >
+> > If "zero cost" is "very costly", then this might make sense.
+> >
+> > __alloc_pages_direct_compact() is inlined by gcc.
+> 
+> In my kernel image, __alloc_pages_direct_compact() is not inlined by gcc.
 
-Bus 002 Device 008: ID 05ac:8286 Apple, Inc.
-Device Descriptor:
-  bLength                18
-  bDescriptorType         1
-  bcdUSB               2.00
-  bDeviceClass          255 Vendor Specific Class
-  bDeviceSubClass         1
-  bDeviceProtocol         1
-  bMaxPacketSize0        64
-  idVendor           0x05ac Apple, Inc.
-  idProduct          0x8286
-  bcdDevice            0.74
-  iManufacturer           1 Apple Inc.
-  iProduct                2 Bluetooth USB Host Controller
-  iSerial                 0
-  bNumConfigurations      1
+Indeed it is due to their being two callsites. In most cases, the page
+allocator takes care that functions have only one callsite so they get
+inlined.
 
-Patch originally written and tested by clipcarl (forums.opensuse.org).
+You say that invoking the function is very costly. I agree that a function
+call with that many parameters is hefty but it is also in the slow path of
+the allocator. For order-0 allocations we are about to enter direct reclaim
+where I would expect the cost far exceeds the cost of a function call.
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/bluetooth/btusb.c | 3 +++
- 1 file changed, 3 insertions(+)
+If the cost is indeed high and you have seen this in profiles then I
+suggest you create a forced inline function alloc_pages_direct_compact
+that does this;
 
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 83ebb24..6cc54da 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -84,6 +84,9 @@ static struct usb_device_id btusb_table[] = {
- 	/* Apple MacMini5,1 */
- 	{ USB_DEVICE(0x05ac, 0x8281) },
- 
-+	/* Apple MacBookPro10,1 */
-+	{ USB_DEVICE(0x05ac, 0x8286) },
-+
- 	/* AVM BlueFRITZ! USB v2.0 */
- 	{ USB_DEVICE(0x057c, 0x3800) },
- 
+if (order != 0)
+	__alloc_pages_direct_compact(...)
+
+and then call alloc_pages_direct_compact instead of
+__alloc_pages_direct_compact. After that, recheck the profiles (although I
+expect the difference to be marginal) and the size of vmlinux (if it gets
+bigger, it's probably not worth it).
+
+That would be functionally similar to your patch but it will preserve git
+blame, churn less code and be harder to make mistakes with in the unlikely
+event a third call to alloc_pages_direct_compact is ever added.
+
+Thanks.
+
 -- 
-1.7.11.1
-
+Mel Gorman
+SUSE Labs
