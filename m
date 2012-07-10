@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab2GJROi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 13:14:38 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:34348 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753099Ab2GJROh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 13:14:37 -0400
-Message-ID: <1341940476.6118.150.camel@joe2Laptop>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-From: Joe Perches <joe@perches.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
+	id S1756536Ab2GJRQd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 13:16:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52913 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754018Ab2GJRQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 13:16:32 -0400
+Date: Tue, 10 Jul 2012 19:16:29 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Date: Tue, 10 Jul 2012 10:14:36 -0700
-In-Reply-To: <20120710101018.GE15120@arm.com>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-	 <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
-	 <201207071927.13135.arnd@arndb.de> <20120710071023.GA10456@gmail.com>
-	 <20120710101018.GE15120@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 03/11] mm: shmem: do not try to uncharge known swapcache
+ pages
+Message-ID: <20120710171628.GB29114@tiehlicka.suse.cz>
+References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
+ <1341449103-1986-4-git-send-email-hannes@cmpxchg.org>
+ <20120709144657.GF4627@tiehlicka.suse.cz>
+ <alpine.LSU.2.00.1207091311300.1842@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1207091311300.1842@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-10 at 11:10 +0100, Catalin Marinas wrote:
-> On Tue, Jul 10, 2012 at 08:10:23AM +0100, Ingo Molnar wrote:
-> > * Arnd Bergmann <arnd@arndb.de> wrote:
-> > > On Saturday 07 July 2012, Olof Johansson wrote:
-> > > > > ARM introduced AArch64 as part of the ARMv8 architecture
-> > > > 
-> > > > With the risk of bikeshedding here, but I find the name awkward. How
-> > > > about just naming the arch port arm64 instead? It's considerably more
-> > > > descriptive in the context of the kernel.  For reference, we didn't
-> > > > name ppc64, nor powerpc, after what the IBM/power.org marketing people
-> > > > were currently calling the architecture at the time either.
-> > > 
-> > > I agree the name sucks, [...]
+On Mon 09-07-12 13:37:39, Hugh Dickins wrote:
+> On Mon, 9 Jul 2012, Michal Hocko wrote:
 > > 
-> > So why not change it now, when it only bothers a few dozen 
-> > people and it is only present in 36 patches? Why go full steam 
-> > ahead to annoy thousands of people with it and why spread the 
-> > naming madness to thousands of commits?
+> > Maybe I am missing something but who does the uncharge from:
+> > shmem_unuse
+> >   mem_cgroup_cache_charge
+> >   shmem_unuse_inode
+> >     shmem_add_to_page_cache
 > 
-> Changing the arch/ dir name is easy at this point. My preference is for
-> consistency with the official name (that cannot be changed) and the gcc
-> triplet. I also don't think it annoys thousands of people, most don't
-> really care. The few reactions I've seen is pretty much because people
-> were expecting arm64 and it came as something else.
+> There isn't any special uncharge for shmem_unuse(): once the swapcache
+> page is matched up with its memcg, it will get uncharged by one of the
+> usual routes to swapcache_free() when the page is freed: maybe in the
+> call from __remove_mapping(), maybe when free_page_and_swap_cache()
+> ends up calling it.
+> 
+> Perhaps you're worrying about error (or unfound) paths in shmem_unuse()?
 
-Count me as one of the 1000s that think it's a poor name choice.
-I think it's a poor name for marketing purposes too.
+Yes that was exactly my concern.
 
-Best of luck with whatever is used.
+> By the time we make the charge, we know for sure that it's a shmem page,
+> and make the charge appropriately; in racy cases it might get uncharged
+> again in the delete_from_swap_cache().  Can the unfound case occur these
+> days?  
 
+I cannot find a change that would prevent from that.
+
+> I'd have to think more deeply to answer that, but the charge will
+> not go missing.
+> 
+> Hugh
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
