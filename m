@@ -1,351 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab2GJNie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 09:38:34 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:45207 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752859Ab2GJNid (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 09:38:33 -0400
+	id S1755894Ab2GJNkE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 09:40:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41948 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753489Ab2GJNkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 09:40:03 -0400
+Date: Tue, 10 Jul 2012 15:39:58 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] mm/hugetlb_cgroup: Add huge_page_order check to
+ avoid incorrectly uncharge
+Message-ID: <20120710133958.GA20833@tiehlicka.suse.cz>
+References: <1341914712-4588-1-git-send-email-liwp.linux@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAEa47NoBn=ZsjcFgdP4ydu9rCaPDXknJ9eSYKvET8rVoS695zA@mail.gmail.com>
-References: <CAEa47NoBn=ZsjcFgdP4ydu9rCaPDXknJ9eSYKvET8rVoS695zA@mail.gmail.com>
-Date: Tue, 10 Jul 2012 16:38:27 +0300
-Message-ID: <CAEa47Nqy-u_72kBTPQJy8hhJuDyJ_gmsTziEbrJcUocWzwp9ig@mail.gmail.com>
-Subject: Re: How to get drivers/usb/musb/omap2430.c built into the kernel, not
- as module? (bug in kconfig?)
-From: Ruslan Bilovol <ruslan.bilovol@ti.com>
-To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341914712-4588-1-git-send-email-liwp.linux@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+wider auditory (linux-kernel)
+On Tue 10-07-12 18:05:12, Wanpeng Li wrote:
+> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+> 
+> Against linux-next:
+> 
+> Function alloc_huge_page will call hugetlb_cgroup_charge_cgroup
+> to charge pages, the compound page have less than 3 pages will not
+> charge to hugetlb cgroup. When alloc_huge_page fails it will call
+> hugetlb_cgroup_uncharge_cgroup to uncharge pages, however,
+> hugetlb_cgroup_uncharge_cgroup doesn't have huge_page_order check.
+> That means it will uncharge pages even if the compound page have less
+> than 3 pages. Add huge_page_order check to avoid this incorrectly
+> uncharge.
+> 
+> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
 
----------- Forwarded message ----------
-From: Ruslan Bilovol <ruslan.bilovol@ti.com>
-Date: Fri, Jul 6, 2012 at 7:53 PM
-Subject: How to get drivers/usb/musb/omap2430.c built into the kernel, not
-as module? (bug in kconfig?)
-To: linux-usb@vger.kernel.org
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
+> ---
+>  mm/hugetlb_cgroup.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+> index b834e8d..2b9e214 100644
+> --- a/mm/hugetlb_cgroup.c
+> +++ b/mm/hugetlb_cgroup.c
+> @@ -252,6 +252,9 @@ void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+>  
+>  	if (hugetlb_cgroup_disabled() || !h_cg)
+>  		return;
+> +
+> +	if (huge_page_order(&hstates[idx]) < HUGETLB_CGROUP_MIN_ORDER)
+> +		return;
+>  
+>  	res_counter_uncharge(&h_cg->hugepage[idx], csize);
+>  	return;
+> -- 
+> 1.7.5.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Hi all,
-
-It seems we have an issue in kconfig (or I missed something).
-
-I need drivers/usb/musb/omap2430.c to be built into the kernel.
-For this, I enable next option in the defconfig:
-          CONFIG_USB_MUSB_OMAP2PLUS=y
-
-It's clear (from the drivers/usb/musb/Makefile) that it allows build
-of that file:
-          obj-$(CONFIG_USB_MUSB_OMAP2PLUS)              += omap2430.o
-
-In the drivers/usb/musb/Makefile we have next:
-
-          choice
-                prompt "Platform Glue Layer"
-          [...]
-
-          config USB_MUSB_OMAP2PLUS
-                tristate "OMAP2430 and onwards"
-                depends on ARCH_OMAP2PLUS
-
-          [...]
-          endchoice
-
-
-But suddenly after
-          make ARCH=arm CROSS_COMPILE=arm-none-linux-gnueabi-
-omap2plus_defconfig
-I see that it is defined as module (CONFIG_USB_MUSB_OMAP2PLUS=m) in my
-.config
-
-I have slightly rootcaused this and find that looks like we have an
-issue with kconfig.
-Do you have any idea or observations on this?
-After next fix it works as expected:
-
-diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
-index 22a3c40..6a03622 100644
---- a/scripts/kconfig/symbol.c
-+++ b/scripts/kconfig/symbol.c
-@@ -273,8 +273,6 @@ static struct symbol *sym_calc_choice(struct symbol
-*sym)
-                        flags &= def_sym->flags;
-        }
-
--       sym->flags &= flags | ~SYMBOL_DEF_USER;
--
-        /* is the user choice visible? */
-        def_sym = sym->def[S_DEF_USER].val;
-        if (def_sym && def_sym->visible != no)
-
-
-This fix changes only state of CONFIG_USB_MUSB_OMAP2PLUS in the final
-.config.
-
-
-Also it works as expected if I change tristate to bool for all choices
-under "Platform Glue Layer"
-
-My custom omap2plus_defconfig:
-
-CONFIG_EXPERIMENTAL=y
-CONFIG_SYSVIPC=y
-CONFIG_POSIX_MQUEUE=y
-CONFIG_BSD_PROCESS_ACCT=y
-CONFIG_IKCONFIG=y
-CONFIG_IKCONFIG_PROC=y
-CONFIG_LOG_BUF_SHIFT=16
-CONFIG_BLK_DEV_INITRD=y
-CONFIG_EXPERT=y
-# CONFIG_SYSCTL_SYSCALL is not set
-CONFIG_KALLSYMS_EXTRA_PASS=y
-CONFIG_SLAB=y
-CONFIG_PROFILING=y
-CONFIG_OPROFILE=y
-CONFIG_KPROBES=y
-CONFIG_MODULES=y
-CONFIG_MODULE_FORCE_LOAD=y
-CONFIG_MODULE_UNLOAD=y
-CONFIG_MODULE_FORCE_UNLOAD=y
-CONFIG_MODVERSIONS=y
-CONFIG_MODULE_SRCVERSION_ALL=y
-# CONFIG_BLK_DEV_BSG is not set
-CONFIG_ARCH_OMAP=y
-CONFIG_OMAP_RESET_CLOCKS=y
-CONFIG_OMAP_MUX_DEBUG=y
-CONFIG_ARM_THUMBEE=y
-CONFIG_ARM_ERRATA_411920=y
-CONFIG_NO_HZ=y
-CONFIG_HIGH_RES_TIMERS=y
-CONFIG_SMP=y
-CONFIG_NR_CPUS=2
-CONFIG_LEDS=y
-CONFIG_ZBOOT_ROM_TEXT=0x0
-CONFIG_ZBOOT_ROM_BSS=0x0
-CONFIG_CMDLINE="init=/sbin/init console=ttyO2,115200n8 mem=1G
-vmalloc=768M omap_wdt.timer_margin=30"
-CONFIG_CMDLINE_EXTEND=y
-CONFIG_KEXEC=y
-CONFIG_FPE_NWFPE=y
-CONFIG_BINFMT_MISC=y
-CONFIG_PM_DEBUG=y
-CONFIG_NET=y
-CONFIG_PACKET=y
-CONFIG_UNIX=y
-CONFIG_XFRM_USER=y
-CONFIG_NET_KEY=y
-CONFIG_NET_KEY_MIGRATE=y
-CONFIG_INET=y
-CONFIG_IP_MULTICAST=y
-CONFIG_IP_PNP=y
-CONFIG_IP_PNP_DHCP=y
-CONFIG_IP_PNP_BOOTP=y
-CONFIG_IP_PNP_RARP=y
-# CONFIG_INET_LRO is not set
-# CONFIG_IPV6 is not set
-CONFIG_NETFILTER=y
-CONFIG_BT=m
-CONFIG_BT_HCIUART=m
-CONFIG_BT_HCIUART_H4=y
-CONFIG_BT_HCIUART_BCSP=y
-CONFIG_BT_HCIUART_LL=y
-CONFIG_BT_HCIBCM203X=m
-CONFIG_BT_HCIBPA10X=m
-CONFIG_CFG80211=m
-CONFIG_MAC80211=m
-CONFIG_MAC80211_RC_PID=y
-CONFIG_MAC80211_RC_DEFAULT_PID=y
-CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-CONFIG_CONNECTOR=y
-CONFIG_MTD=y
-CONFIG_MTD_CMDLINE_PARTS=y
-CONFIG_MTD_CHAR=y
-CONFIG_MTD_BLOCK=y
-CONFIG_MTD_OOPS=y
-CONFIG_MTD_CFI=y
-CONFIG_MTD_CFI_INTELEXT=y
-CONFIG_MTD_NAND=y
-CONFIG_MTD_NAND_OMAP2=y
-CONFIG_MTD_ONENAND=y
-CONFIG_MTD_ONENAND_VERIFY_WRITE=y
-CONFIG_MTD_ONENAND_OMAP2=y
-CONFIG_MTD_UBI=y
-CONFIG_BLK_DEV_LOOP=y
-CONFIG_BLK_DEV_RAM=y
-CONFIG_BLK_DEV_RAM_SIZE=16384
-CONFIG_SCSI=y
-CONFIG_BLK_DEV_SD=y
-CONFIG_SCSI_MULTI_LUN=y
-CONFIG_SCSI_SCAN_ASYNC=y
-CONFIG_MD=y
-CONFIG_NETDEVICES=y
-CONFIG_SMSC_PHY=y
-CONFIG_NET_ETHERNET=y
-CONFIG_SMC91X=y
-CONFIG_SMSC911X=y
-CONFIG_KS8851=y
-CONFIG_KS8851_MLL=y
-CONFIG_LIBERTAS=m
-CONFIG_LIBERTAS_USB=m
-CONFIG_LIBERTAS_SDIO=m
-CONFIG_LIBERTAS_DEBUG=y
-CONFIG_USB_USBNET=y
-CONFIG_USB_NET_SMSC95XX=y
-CONFIG_USB_ALI_M5632=y
-CONFIG_USB_AN2720=y
-CONFIG_USB_EPSON2888=y
-CONFIG_USB_KC2190=y
-CONFIG_INPUT_JOYDEV=y
-CONFIG_INPUT_EVDEV=y
-CONFIG_KEYBOARD_GPIO=y
-CONFIG_KEYBOARD_TWL4030=y
-CONFIG_INPUT_TOUCHSCREEN=y
-CONFIG_TOUCHSCREEN_ADS7846=y
-CONFIG_INPUT_MISC=y
-CONFIG_INPUT_TWL4030_PWRBUTTON=y
-CONFIG_VT_HW_CONSOLE_BINDING=y
-# CONFIG_LEGACY_PTYS is not set
-CONFIG_SERIAL_8250_NR_UARTS=32
-CONFIG_SERIAL_8250_EXTENDED=y
-CONFIG_SERIAL_8250_MANY_PORTS=y
-CONFIG_SERIAL_8250_SHARE_IRQ=y
-CONFIG_SERIAL_8250_DETECT_IRQ=y
-CONFIG_SERIAL_8250_RSA=y
-CONFIG_HW_RANDOM=y
-CONFIG_I2C_CHARDEV=y
-CONFIG_SPI=y
-CONFIG_SPI_OMAP24XX=y
-CONFIG_DEBUG_GPIO=y
-CONFIG_GPIO_SYSFS=y
-CONFIG_GPIO_TWL4030=y
-CONFIG_W1=y
-CONFIG_POWER_SUPPLY=y
-CONFIG_WATCHDOG=y
-CONFIG_OMAP_WATCHDOG=y
-CONFIG_TWL4030_WATCHDOG=y
-CONFIG_REGULATOR_TWL4030=y
-CONFIG_REGULATOR_TPS65023=y
-CONFIG_REGULATOR_TPS6507X=y
-CONFIG_FB=y
-CONFIG_FIRMWARE_EDID=y
-CONFIG_FB_MODE_HELPERS=y
-CONFIG_FB_TILEBLITTING=y
-CONFIG_FB_OMAP_LCD_VGA=y
-CONFIG_OMAP2_DSS=m
-CONFIG_OMAP2_DSS_RFBI=y
-CONFIG_OMAP2_DSS_SDI=y
-CONFIG_OMAP2_DSS_DSI=y
-CONFIG_FB_OMAP2=m
-CONFIG_PANEL_GENERIC_DPI=m
-CONFIG_PANEL_SHARP_LS037V7DW01=m
-CONFIG_PANEL_NEC_NL8048HL11_01B=m
-CONFIG_PANEL_TAAL=m
-CONFIG_PANEL_TPO_TD043MTEA1=m
-CONFIG_PANEL_ACX565AKM=m
-CONFIG_BACKLIGHT_LCD_SUPPORT=y
-CONFIG_LCD_CLASS_DEVICE=y
-CONFIG_LCD_PLATFORM=y
-CONFIG_DISPLAY_SUPPORT=y
-CONFIG_FRAMEBUFFER_CONSOLE=y
-CONFIG_FRAMEBUFFER_CONSOLE_ROTATION=y
-CONFIG_FONTS=y
-CONFIG_FONT_8x8=y
-CONFIG_FONT_8x16=y
-CONFIG_LOGO=y
-CONFIG_SOUND=m
-CONFIG_SND=m
-CONFIG_SND_MIXER_OSS=m
-CONFIG_SND_PCM_OSS=m
-CONFIG_SND_VERBOSE_PRINTK=y
-CONFIG_SND_DEBUG=y
-CONFIG_SND_USB_AUDIO=m
-CONFIG_SND_SOC=m
-CONFIG_SND_OMAP_SOC=m
-CONFIG_SND_OMAP_SOC_OMAP3_PANDORA=m
-CONFIG_USB=y
-CONFIG_USB_DEBUG=y
-CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
-CONFIG_USB_DEVICEFS=y
-CONFIG_USB_SUSPEND=y
-CONFIG_USB_MON=y
-CONFIG_USB_EHCI_HCD=y
-CONFIG_USB_WDM=y
-CONFIG_USB_STORAGE=y
-CONFIG_USB_LIBUSUAL=y
-CONFIG_USB_GADGET=y
-CONFIG_USB_GADGET_DEBUG=y
-CONFIG_USB_GADGET_DEBUG_FILES=y
-CONFIG_USB_GADGET_DEBUG_FS=y
-
-CONFIG_USB_MUSB_HDRC=y
-CONFIG_USB_MUSB_OMAP2PLUS=y
-CONFIG_USB_INVENTRA_DMA=y
-CONFIG_TWL6030_USB=y
-CONFIG_USB_ACM=y
-CONFIG_USB_SERIAL=y
-CONFIG_USB_GADGET_VBUS_DRAW=500
-CONFIG_MFD_OMAP_USB_HOST=y
-CONFIG_USB_ZERO=y
-
-CONFIG_MMC=y
-CONFIG_MMC_UNSAFE_RESUME=y
-CONFIG_SDIO_UART=y
-CONFIG_MMC_OMAP=y
-CONFIG_MMC_OMAP_HS=y
-CONFIG_RTC_CLASS=y
-CONFIG_RTC_DRV_TWL92330=y
-CONFIG_RTC_DRV_TWL4030=y
-CONFIG_EXT2_FS=y
-CONFIG_EXT3_FS=y
-# CONFIG_EXT3_FS_XATTR is not set
-CONFIG_QUOTA=y
-CONFIG_QFMT_V2=y
-CONFIG_MSDOS_FS=y
-CONFIG_VFAT_FS=y
-CONFIG_TMPFS=y
-CONFIG_JFFS2_FS=y
-CONFIG_JFFS2_SUMMARY=y
-CONFIG_JFFS2_FS_XATTR=y
-CONFIG_JFFS2_COMPRESSION_OPTIONS=y
-CONFIG_JFFS2_LZO=y
-CONFIG_JFFS2_RUBIN=y
-CONFIG_UBIFS_FS=y
-CONFIG_CRAMFS=y
-CONFIG_NFS_FS=y
-CONFIG_NFS_V3=y
-CONFIG_NFS_V3_ACL=y
-CONFIG_NFS_V4=y
-CONFIG_ROOT_NFS=y
-CONFIG_PARTITION_ADVANCED=y
-CONFIG_NLS_CODEPAGE_437=y
-CONFIG_NLS_ISO8859_1=y
-CONFIG_PRINTK_TIME=y
-CONFIG_MAGIC_SYSRQ=y
-CONFIG_DEBUG_KERNEL=y
-CONFIG_SCHEDSTATS=y
-CONFIG_TIMER_STATS=y
-CONFIG_PROVE_LOCKING=y
-CONFIG_DEBUG_SPINLOCK_SLEEP=y
-# CONFIG_DEBUG_BUGVERBOSE is not set
-CONFIG_DEBUG_INFO=y
-# CONFIG_RCU_CPU_STALL_DETECTOR is not set
-CONFIG_SECURITY=y
-CONFIG_CRYPTO_MICHAEL_MIC=y
-# CONFIG_CRYPTO_ANSI_CPRNG is not set
-CONFIG_CRC_CCITT=y
-CONFIG_CRC_T10DIF=y
-CONFIG_CRC_ITU_T=y
-CONFIG_CRC7=y
-CONFIG_LIBCRC32C=y
-
-
-
-
---
-Best regards,
-Ruslan Bilovol
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
