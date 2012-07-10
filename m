@@ -1,77 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab2GJWKR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 18:10:17 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:57366 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103Ab2GJWKP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 18:10:15 -0400
-From: Gustavo Padovan <gustavo@padovan.org>
-To: linux-bluetooth@vger.kernel.org
-Cc: Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org> (supporter:USB
-	SUBSYSTEM),
-        linux-usb@vger.kernel.org (open list:USB SUBSYSTEM),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH -v2] USB: add USB_VENDOR_AND_INTERFACE_INFO() macro
-Date: Tue, 10 Jul 2012 19:10:06 -0300
-Message-Id: <1341958206-15610-1-git-send-email-gustavo@padovan.org>
-X-Mailer: git-send-email 1.7.10.2
+	id S1754297Ab2GJWQZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 18:16:25 -0400
+Received: from fly.hiwaay.net ([216.180.54.1]:49121 "EHLO fly.hiwaay.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750748Ab2GJWQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 18:16:24 -0400
+X-Greylist: delayed 481 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Jul 2012 18:16:24 EDT
+Date: Tue, 10 Jul 2012 17:08:23 -0500
+From: Chris Adams <cmadams@hiwaay.net>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Message-ID: <20120710220823.GA17364@hiwaay.net>
+References: <jknWN-4WG-3@gated-at.bofh.it> <jkulA-O3-3@gated-at.bofh.it> <jkIRz-2Hu-11@gated-at.bofh.it> <jlCTL-A5-5@gated-at.bofh.it>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120710101018.GE15120@arm.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Once upon a time, Catalin Marinas  <catalin.marinas@arm.com> said:
+>Changing the arch/ dir name is easy at this point. My preference is for
+>consistency with the official name (that cannot be changed) and the gcc
+>triplet.
 
-A lot of Broadcom Bluetooth devices provides vendor specific interface
-class and we are getting flooded by patches adding new device support.
-This change will help us enable support for any other Broadcom with vendor
-specific device that arrives in the future.
-
-Only the product id changes for those devices, so this macro would be
-perfect for us:
-
-{ USB_VENDOR_AND_INTERFACE_INFO(0x0a5c, 0xff, 0x01, 0x01) }
-
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
----
- include/linux/usb.h |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
-
-diff --git a/include/linux/usb.h b/include/linux/usb.h
-index dea39dc..edb1dc8 100644
---- a/include/linux/usb.h
-+++ b/include/linux/usb.h
-@@ -829,6 +829,27 @@ static inline int usb_make_path(struct usb_device *dev, char *buf, size_t size)
- 	.bInterfaceSubClass = (sc), \
- 	.bInterfaceProtocol = (pr)
- 
-+/**
-+ * USB_VENDOR_AND_INTERFACE_INFO - describe a specific usb vendor with a class of usb interfaces
-+ * @vend: the 16 bit USB Vendor ID
-+ * @cl: bInterfaceClass value
-+ * @sc: bInterfaceSubClass value
-+ * @pr: bInterfaceProtocol value
-+ *
-+ * This macro is used to create a struct usb_device_id that matches a
-+ * specific vendor with a specific class of interfaces.
-+ *
-+ * This is especially useful when explicitly matching devices that have
-+ * vendor specific bDeviceClass values, but standards-compliant interfaces.
-+ */
-+#define USB_VENDOR_AND_INTERFACE_INFO(vend, cl, sc, pr) \
-+	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
-+		| USB_DEVICE_ID_MATCH_VENDOR, \
-+	.idVendor = (vend), \
-+	.bInterfaceClass = (cl), \
-+	.bInterfaceSubClass = (sc), \
-+	.bInterfaceProtocol = (pr)
-+
- /* ----------------------------------------------------------------------- */
- 
- /* Stuff for dynamic usb ids */
+What ARM Ltd. says is the "official" name isn't necessarily what the
+rest of the world will call it.  Linux uses "i386" for what Intel calls
+"IA-32" (which virtually nobody else uses).
 -- 
-1.7.10.2
-
+Chris Adams <cmadams@hiwaay.net>
+Systems and Network Administrator - HiWAAY Internet Services
+I don't speak for anybody but myself - that's enough trouble.
