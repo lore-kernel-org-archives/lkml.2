@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab2GJOU1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 10:20:27 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:58643 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753867Ab2GJOUW (ORCPT
+	id S1753486Ab2GJOVB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 10:21:01 -0400
+Received: from mail.digidescorp.com ([50.73.98.161]:49663 "EHLO
+	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751806Ab2GJOVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 10:20:22 -0400
-Date: Tue, 10 Jul 2012 10:20:20 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Christian Lamparter <chunkeey@googlemail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        <linux-pcmcia@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [RESEND AGAIN][PATCH] pcmcia: move unbind/rebind into
- dev_pm_ops.complete
-In-Reply-To: <201207100119.25214.chunkeey@googlemail.com>
-Message-ID: <Pine.LNX.4.44L0.1207101010360.1308-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 10 Jul 2012 10:21:00 -0400
+DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
+	c=simple; q=dns; h=from:message-id;
+	b=qXqFsP3CSyuxK24Y70h+wgoOLv2N+XImbi1ieBnoVyIa6rbjeMAORlDNFtIa
+	JRkN4Vu3Du3LtG/gz3T696To477PmG0t49ptbXIH8+lTjGZryqt5q3nGQ
+	MeeHXZIOhndAYuSF9JjHn4B47OicVbjonyQZtuV/R3KLoBZOVV1k58=;
+X-Spam-Processed: mail.digidescorp.com, Tue, 10 Jul 2012 09:20:58 -0500
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=1538729052=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: linux-kernel@vger.kernel.org, steve@digidescorp.com
+Subject: [PATCH v2 0/2] fat (exportfs): fix dentry reconnection
+Date: Tue, 10 Jul 2012 09:20:51 -0500
+Message-Id: <1341930053-10689-1-git-send-email-steve@digidescorp.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jul 2012, Christian Lamparter wrote:
+Under memory pressure, the system may evict dentries from cache.
+When the FAT driver receives a NFS request involving an evicted dentry,
+it is unable to reconnect it to the filesystem root. 
+This causes the request to fail, often with ENOENT.
 
-> > > So, my question now: Would you accept the pcmcia patch if I add the
-> > > "USB: Don't rebind..." as a reference to why the re-add needs to be
-> > > done in complete? Or do you think that I should bug the pm people
-> > > (and Alan - since he wrote that it is "not allowed") in this case
-> > > so I can link their official answer to this patch?
-> > 
-> > Well I could grab it and give it a little bit of testing in linux-next.
-> > But I'd be super-reluctant to send such a patch upstream without
-> > detailed input from Alan/Greg/Rafael/Dominik/etc.
-> Alright, I've added them in the 'CC'.
-> 
-> To Alan:
-> Can you please tell me, if you (still) know the details why the "re-add"
-> is not allowed in _resume callback (see patch message & commit id from
-> above: USB: Don't rebind before "complete")?
+This is partially due to ineffectiveness of the current FAT NFS implementation,
+and partially due to an unimplemented fh_to_parent method. The latter
+can cause file accesses to fail on shares exported with subtree_check.
 
-It's a little complicated.  The basic idea is that the PM core needs to
-send suspend and resume messages to every device in the right order,
-and it can't do that if new devices are being added at the same time.  
-That's one of the main reasons we created the "prepare" and "complete" 
-callbacks.
+This patch set provides the FAT driver with the ability to reconnect dentries.
+NFS file handle generation and lookups are simplified and made congruent with
+ext2.
 
-However the situation really isn't quite that rigid.  In particular, 
-adding new children during a resume callback shouldn't cause much of
-problem because the children don't need to be resumed anyway (since 
-they were never suspended).  On the other hand, if you do it you will 
-get a dev_warn() from the PM core, something like "parent should not be 
-sleeping".
+Testing has involved a memory-starved virtual machine running 3.5-rc5
+that exports a ~2 GB vfat filesystem containing a kernel tree
+(~770 MB, ~40000 files, 9 levels). Both 'cp -r' and 'ls -lR' operations
+were performed from a client, some overlapping, some consecutive.
+Exports with 'subtree_check' and 'no_subtree_check' have been tested.
 
-Still, it is considered bad form and should be avoided if possible.
+Note that while this patch set improves FAT's NFS support, it does not
+eliminate ESTALE errors completely.
 
-Alan Stern
+The following should be considered for NFS clients who are sensitive to ESTALE:
+
+* Mounting with lookupcache=none
+  Unfortunately this can degrade performance severely, particularly for deep
+  filesystems.
+
+* Incorporating VFS patches to retry ESTALE failures on the client-side, 
+  such as https://lkml.org/lkml/2012/6/29/381
+
+* Handling ESTALE errors in client application code
+
+
+This series depends on the following patches:
+* fat: Fix non-atomic NFS i_pos read
+* fat: Accessors for msdos_dir_entry 'start' fields
+* fat: Refactor shortname parsing
+
+Changes since v1:
+* Dropped code to reconstitute evicted inodes. Too risky.
+* Dropped FAT-specific get_name method. Not needed.
+* Added index of directories by i_logstart (per. H. OGAWA)
+  and "nfs" mount option to enable it
+
 
