@@ -1,91 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552Ab2GJSlL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 14:41:11 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:29149 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab2GJSlK (ORCPT
+	id S1751656Ab2GJSpE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 14:45:04 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45476 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430Ab2GJSpC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 14:41:10 -0400
-Date: Tue, 10 Jul 2012 14:32:13 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Olaf Hering <olaf@aepfle.de>
-Cc: Daniel Kiper <dkiper@net-space.pl>, xen-devel@lists.xensource.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jan Beulich <JBeulich@suse.com>
-Subject: Re: [Xen-devel] incorrect layout of globals from head_64.S during
- kexec boot
-Message-ID: <20120710183213.GB24536@phenom.dumpdata.com>
-References: <4FF6FCA9020000780008E0BB@nat28.tlf.novell.com>
- <20120706133105.GA20600@aepfle.de>
- <20120706141419.GA21951@aepfle.de>
- <4FF7174C020000780008E1FF@nat28.tlf.novell.com>
- <20120706172918.GA15222@aepfle.de>
- <20120710093327.GA13864@aepfle.de>
- <20120710141411.GB1791@phenom.dumpdata.com>
- <20120710152308.GA31819@aepfle.de>
- <20120710172626.GA6868@phenom.dumpdata.com>
- <20120710180953.GB20075@aepfle.de>
+	Tue, 10 Jul 2012 14:45:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120710180953.GB20075@aepfle.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1341935655-5381-1-git-send-email-jiang.liu@huawei.com>
+References: <CAErSpo70NtEJFaQmDtdTLkSB3fQRNy78juAQO-KbXeceZkunkw@mail.gmail.com>
+ <1341935655-5381-1-git-send-email-jiang.liu@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 10 Jul 2012 12:44:39 -0600
+Message-ID: <CAErSpo7zftEkExQMND_a7V-nJKqvuncNGnC_rfFtxQfywUO4jA@mail.gmail.com>
+Subject: Re: [RFC PATCH 00/14] improve PCIe capabilities registers handling
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Don Dutile <ddutile@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 08:09:53PM +0200, Olaf Hering wrote:
-> On Tue, Jul 10, Konrad Rzeszutek Wilk wrote:
-> 
-> > On Tue, Jul 10, 2012 at 05:23:08PM +0200, Olaf Hering wrote:
-> > > I was not thinking of statically allocated pages but some new concept of
-> > > allocating such shared pages. Shouldnt there be some dedicated area in
-> > > the E820 table which has to be used during the whole life time of the
-> > > guest?
-> > 
-> > Not that I can see. But I don't see why that could not be added? Perhaps
-> > the HVM loader can make it happen? But then how would it tell the kernel
-> > that this E820_RESERVED is the shared_info one. Not the other ones..
-> 
-> Maybe just use a new E820 type for this sort of thing? Its just the
+On Tue, Jul 10, 2012 at 9:54 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> From: Jiang Liu <liuj97@gmail.com>
+>
+> As suggested by Bjorn Helgaas and Don Dutile in threads
+> http://www.spinics.net/lists/linux-pci/msg15663.html, we could improve access
+> to PCIe capabilities register in to way:
+> 1) cache content of PCIe Capabilities Register into struct pce_dev to avoid
+>    repeatedly reading this register because it's read only.
+> 2) provide access functions for PCIe Capabilities registers to hide differences
+>    among PCIe base specifications, so the caller don't need to handle those
+>    differences.
+>
+> This patch set applies to
+> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci-next
+>
+> These patch set is still RFC. It provides the new interfaces and has made the
+> major changes to adopt those new interfaces. But there are still several device
+> drivers left untouched. Any comments about the new interfaces are welcomed,
+> especially about function names:). Once we reach an agreement, I will send out
+> a formal version with all needed work done.
+>
+> Jiang Liu (11):
+>   PCI: refine and move pcie_cap_has_*() macros to include/linux/pci.h
+>   PCI: add access functions for PCIe capabilities to hide PCIe spec
+>     differences
+>   PCI: use PCIe cap access functions to simplify PCI core
+>     implementation
+>   hotplug/PCI: use PCIe cap access functions to simplify implementation
+>   portdrv/PCI: use PCIe cap access functions to simplify implementation
+>   pciehp/PCI: use PCIe cap access functions to simplify implementation
+>   PME/PCI: use PCIe cap access functions to simplify implementation
+>   AER/PCI: use PCIe cap access functions to simplify implementation
+>   ASPM/PCI: use PCIe cap access functions to simplify implementation
+>   r8169/PCI: use PCIe cap access functions to simplify implementation
+>   qib/PCI: use PCIe cap access functions to simplify implementation
+>
+> Yijing Wang (1):
+>   PCI: add pcie_flags into struct pci_dev to cache PCIe capabilities
+>     register
+>   PCI: introduce pci_pcie_type(dev) to replace pci_dev->pcie_type
+>   PCI: remove unused field pcie_type from struct pci_dev
+>
+>  arch/powerpc/platforms/powernv/pci-ioda.c          |    2 +-
+>  drivers/infiniband/hw/qib/qib_pcie.c               |   34 ++-
+>  drivers/iommu/intel-iommu.c                        |    6 +-
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c      |    2 +-
+>  .../net/ethernet/qlogic/netxen/netxen_nic_main.c   |    2 +-
+>  drivers/net/ethernet/realtek/r8169.c               |   38 +--
+>  drivers/pci/access.c                               |   88 +++++++
+>  drivers/pci/hotplug/pciehp_acpi.c                  |    5 +-
+>  drivers/pci/hotplug/pciehp_hpc.c                   |    8 +-
+>  drivers/pci/hotplug/pcihp_slot.c                   |   17 +-
+>  drivers/pci/iov.c                                  |    6 +-
+>  drivers/pci/pci.c                                  |  265 +++++---------------
+>  drivers/pci/pcie/aer/aer_inject.c                  |    2 +-
+>  drivers/pci/pcie/aer/aerdrv.c                      |   23 +-
+>  drivers/pci/pcie/aer/aerdrv_acpi.c                 |    2 +-
+>  drivers/pci/pcie/aer/aerdrv_core.c                 |   47 ++--
+>  drivers/pci/pcie/aspm.c                            |  110 ++++----
+>  drivers/pci/pcie/pme.c                             |   23 +-
+>  drivers/pci/pcie/portdrv_bus.c                     |    2 +-
+>  drivers/pci/pcie/portdrv_core.c                    |   24 +-
+>  drivers/pci/pcie/portdrv_pci.c                     |   15 +-
+>  drivers/pci/probe.c                                |   30 +--
+>  drivers/pci/quirks.c                               |    8 +-
+>  drivers/pci/search.c                               |    2 +-
+>  include/linux/pci.h                                |   65 ++++-
+>  include/linux/pci_regs.h                           |   19 +-
+>  26 files changed, 401 insertions(+), 444 deletions(-)
 
-Ewww.
-> question wether some other OS can cope with an unknown type. From my
-> reading of the e820 related code a region with an unknown type is just
-> ignored.
-
-Sure. And we could scan it.. but scanning E820_UNKNOWN for some magic
-header seems .. hacky.
-
-> 
-> > > Are there more shared areas or is it just the shared info page?
-> > > 
-> > > > And I am kind of worried that moving it to the .data section won't
-> > > > be completly safe - as the decompressor might blow away that part too.
-> > > 
-> > > The decompressor may just clear the area, but since there is no way to
-> > > tell where the shared pages are its always a risk to allocate them at
-> > > compile time.
-> > 
-> > Yeah, and with the hypervisor potentially still updating the "old"
-> > MFN before the new kernel has registered the new MFN, we can end up
-> > corrupting the new kernel. Ouch.
-> > 
-> > Would all of these issues disappear if the hypervisor had a hypercall
-> > that would stop updating the shared info? or just deregister the MFN?
-> > What if you ripped the GMFN out using 'decrease_reservation' hypercall?
-> > Would that eliminate the pesky GMFN?
-> 
-> I'm not sure, most likely the gfn will just disappear from the guest,
-> like a ballooned page disappears. Accessing it will likely cause a
-> crash.
-
-What about an populate_physmap right afterwards to stick a newly
-minted GMFN in its place? I don't really know whether this dance
-of balloon out/balloon in the same GMFN will break the shared_info
-relationship. Perhaps not?
-
-What we are going for is to stop the hypervisor from using the shared_info
-MFN... perhaps there are other ways to do this?
+Very nice; I like this a lot.
