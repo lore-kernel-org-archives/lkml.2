@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab2GJRXP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 13:23:15 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:38117 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752719Ab2GJRXN (ORCPT
+	id S932117Ab2GJRdn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 13:33:43 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38788 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab2GJRdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 13:23:13 -0400
-Message-ID: <1341940989.2605.17.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: RE: [PATCH net,1/1] hyperv: Add support for setting MAC from within
- guests
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-CC: "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Date: Tue, 10 Jul 2012 18:23:09 +0100
-In-Reply-To: <A1F3067C9B68744AA19F6802BAB8FFDC0DDC8C5E@TK5EX14MBXC222.redmond.corp.microsoft.com>
-References: <1341609932-18971-1-git-send-email-haiyangz@microsoft.com>
-	 <1341620355.2923.46.camel@bwh-desktop.uk.solarflarecom.com>
-	 <A1F3067C9B68744AA19F6802BAB8FFDC0DDC8C5E@TK5EX14MBXC222.redmond.corp.microsoft.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+	Tue, 10 Jul 2012 13:33:40 -0400
+From: Yuri Khan <yurivkhan@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Yuri Khan <yurivkhan@gmail.com>
+Subject: [PATCH v3 1/1] Input: xpad - Handle all variations of Mad Catz Beat Pad
+Date: Wed, 11 Jul 2012 00:33:22 +0700
+Message-Id: <1341941602-18418-1-git-send-email-yurivkhan@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1341592324-665-1-git-send-email-yurivkhan@gmail.com>
+References: <1341592324-665-1-git-send-email-yurivkhan@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-10 at 17:03 +0000, Haiyang Zhang wrote:
-> 
-> > -----Original Message-----
-> > From: Ben Hutchings [mailto:bhutchings@solarflare.com]
-> > Sent: Friday, July 06, 2012 8:19 PM
-> > To: Haiyang Zhang
-> > Cc: davem@davemloft.net; netdev@vger.kernel.org; KY Srinivasan;
-> > olaf@aepfle.de; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org
-> > Subject: Re: [PATCH net,1/1] hyperv: Add support for setting MAC from
-> > within guests
-> > 
-> > On Fri, 2012-07-06 at 14:25 -0700, Haiyang Zhang wrote:
-> > > This adds support for setting synthetic NIC MAC address from within
-> > Linux
-> > > guests. Before using this feature, the option "spoofing of MAC
-> > address"
-> > > should be enabled at the Hyper-V manager / Settings of the synthetic
-> > > NIC.
-> > [...]
-> > > +int rndis_filter_set_device_mac(struct hv_device *hdev, char *mac)
-> > > +{
-> > [...]
-> > > +	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
-> > > +	if (t == 0) {
-> > > +		netdev_err(ndev, "timeout before we got a set
-> > response...\n");
-> > > +		/*
-> > > +		 * can't put_rndis_request, since we may still receive a
-> > > +		 * send-completion.
-> > > +		 */
-> > > +		return -EBUSY;
-> > > +	} else {
-> > > +		set_complete = &request->response_msg.msg.set_complete;
-> > > +		if (set_complete->status != RNDIS_STATUS_SUCCESS)
-> > > +			ret = -EINVAL;
-> > [...]
-> > 
-> > Is there a specific error code that indicates the hypervisor is
-> > configured not to allow MAC address changes?  If so, shouldn't that be
-> > translated to return EPERM rather than EINVAL?
-> 
-> I have check the return code, 0xc000000d, which is returned both when MAC
-> spoofing is not enabled or the parameter contains other errors. So we can't
-> tell if it permission error or not. I will re-submit this patch still
-> using EINVAL.
+* Add this device to usbhid ignore list
+---
+ drivers/hid/hid-core.c        |    1 +
+ drivers/hid/hid-ids.h         |    3 +++
+ drivers/input/joystick/xpad.c |    1 +
+ 3 files changed, 5 insertions(+)
 
-Oh well, thanks for trying!
-
-Ben.
-
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 6ac0286..1540934 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1995,6 +1995,7 @@ static const struct hid_device_id hid_ignore_list[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_MCT) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HYBRID) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LD, USB_DEVICE_ID_LD_HEATCONTROL) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_MADCATZ, USB_DEVICE_ID_MADCATZ_BEATPAD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1024LS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MCC, USB_DEVICE_ID_MCC_PMD1208LS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROCHIP, USB_DEVICE_ID_PICKIT1) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index d1cdd2d..43c3d75 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -518,6 +518,9 @@
+ #define USB_DEVICE_ID_CRYSTALTOUCH	0x0006
+ #define USB_DEVICE_ID_CRYSTALTOUCH_DUAL	0x0007
+ 
++#define USB_VENDOR_ID_MADCATZ		0x0738
++#define USB_DEVICE_ID_MADCATZ_BEATPAD	0x4540
++
+ #define USB_VENDOR_ID_MCC		0x09db
+ #define USB_DEVICE_ID_MCC_PMD1024LS	0x0076
+ #define USB_DEVICE_ID_MCC_PMD1208LS	0x007a
+diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
+index ee16fb6..16974ef 100644
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -238,6 +238,7 @@ static struct usb_device_id xpad_table [] = {
+ 	XPAD_XBOX360_VENDOR(0x045e),		/* Microsoft X-Box 360 controllers */
+ 	XPAD_XBOX360_VENDOR(0x046d),		/* Logitech X-Box 360 style controllers */
+ 	XPAD_XBOX360_VENDOR(0x0738),		/* Mad Catz X-Box 360 controllers */
++	{ USB_DEVICE(0x0738, 0x4540) },		/* Mad Catz Beat Pad */
+ 	XPAD_XBOX360_VENDOR(0x0e6f),		/* 0x0e6f X-Box 360 controllers */
+ 	XPAD_XBOX360_VENDOR(0x12ab),		/* X-Box 360 dance pads */
+ 	XPAD_XBOX360_VENDOR(0x1430),		/* RedOctane X-Box 360 controllers */
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+1.7.9.5
 
