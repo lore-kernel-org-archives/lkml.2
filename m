@@ -1,97 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab2GJRTN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 13:19:13 -0400
-Received: from mail.ausil.us ([74.119.218.133]:41041 "EHLO mail.ausil.us"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756526Ab2GJRTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 13:19:12 -0400
-X-Greylist: delayed 1547 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Jul 2012 13:19:12 EDT
-Date: Tue, 10 Jul 2012 11:52:55 -0500
-From: Dennis Gilmore <dennis@ausil.us>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
+	id S1756546Ab2GJRXP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 13:23:15 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:38117 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752719Ab2GJRXN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 13:23:13 -0400
+Message-ID: <1341940989.2605.17.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: RE: [PATCH net,1/1] hyperv: Add support for setting MAC from within
+ guests
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-Message-ID: <20120710115255.3a85e0b2@adria.ausil.us>
-In-Reply-To: <20120710101018.GE15120@arm.com>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-	<CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
-	<201207071927.13135.arnd@arndb.de>
-	<20120710071023.GA10456@gmail.com>
-	<20120710101018.GE15120@arm.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Date: Tue, 10 Jul 2012 18:23:09 +0100
+In-Reply-To: <A1F3067C9B68744AA19F6802BAB8FFDC0DDC8C5E@TK5EX14MBXC222.redmond.corp.microsoft.com>
+References: <1341609932-18971-1-git-send-email-haiyangz@microsoft.com>
+	 <1341620355.2923.46.camel@bwh-desktop.uk.solarflarecom.com>
+	 <A1F3067C9B68744AA19F6802BAB8FFDC0DDC8C5E@TK5EX14MBXC222.redmond.corp.microsoft.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q6AHJKbf024953
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-El Tue, 10 Jul 2012 11:10:18 +0100
-Catalin Marinas <catalin.marinas@arm.com> escribiÃ³:
-> On Tue, Jul 10, 2012 at 08:10:23AM +0100, Ingo Molnar wrote:
-> > * Arnd Bergmann <arnd@arndb.de> wrote:
-> > > On Saturday 07 July 2012, Olof Johansson wrote:
-> > > > > ARM introduced AArch64 as part of the ARMv8 architecture
-> > > > 
-> > > > With the risk of bikeshedding here, but I find the name
-> > > > awkward. How about just naming the arch port arm64 instead?
-> > > > It's considerably more descriptive in the context of the
-> > > > kernel.  For reference, we didn't name ppc64, nor powerpc,
-> > > > after what the IBM/power.org marketing people were currently
-> > > > calling the architecture at the time either.
-> > > 
-> > > I agree the name sucks, [...]
+On Tue, 2012-07-10 at 17:03 +0000, Haiyang Zhang wrote:
+> 
+> > -----Original Message-----
+> > From: Ben Hutchings [mailto:bhutchings@solarflare.com]
+> > Sent: Friday, July 06, 2012 8:19 PM
+> > To: Haiyang Zhang
+> > Cc: davem@davemloft.net; netdev@vger.kernel.org; KY Srinivasan;
+> > olaf@aepfle.de; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org
+> > Subject: Re: [PATCH net,1/1] hyperv: Add support for setting MAC from
+> > within guests
 > > 
-> > So why not change it now, when it only bothers a few dozen 
-> > people and it is only present in 36 patches? Why go full steam 
-> > ahead to annoy thousands of people with it and why spread the 
-> > naming madness to thousands of commits?
-> 
-> Changing the arch/ dir name is easy at this point. My preference is
-> for consistency with the official name (that cannot be changed) and
-> the gcc triplet. I also don't think it annoys thousands of people,
-> most don't really care. The few reactions I've seen is pretty much
-> because people were expecting arm64 and it came as something else.
-> 
-> But I'll make a decision on this before the next version of the
-> series.
-> 
-> > > [...] This also includes the rpm and dpkg architecture names, 
-> > > and the string returned by the uname syscall. If everything 
-> > > else is aarch64, we should use that in the kernel directory 
-> > > too, but if everyone calls it arm64 anyway, we should probably 
-> > > use that name for as many things as possible.
+> > On Fri, 2012-07-06 at 14:25 -0700, Haiyang Zhang wrote:
+> > > This adds support for setting synthetic NIC MAC address from within
+> > Linux
+> > > guests. Before using this feature, the option "spoofing of MAC
+> > address"
+> > > should be enabled at the Hyper-V manager / Settings of the synthetic
+> > > NIC.
+> > [...]
+> > > +int rndis_filter_set_device_mac(struct hv_device *hdev, char *mac)
+> > > +{
+> > [...]
+> > > +	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
+> > > +	if (t == 0) {
+> > > +		netdev_err(ndev, "timeout before we got a set
+> > response...\n");
+> > > +		/*
+> > > +		 * can't put_rndis_request, since we may still receive a
+> > > +		 * send-completion.
+> > > +		 */
+> > > +		return -EBUSY;
+> > > +	} else {
+> > > +		set_complete = &request->response_msg.msg.set_complete;
+> > > +		if (set_complete->status != RNDIS_STATUS_SUCCESS)
+> > > +			ret = -EINVAL;
+> > [...]
 > > 
-> > Yeah.
+> > Is there a specific error code that indicates the hypervisor is
+> > configured not to allow MAC address changes?  If so, shouldn't that be
+> > translated to return EPERM rather than EINVAL?
 > 
-> What are Red Hat's plans for the AArh64 rpm architecture name?
+> I have check the return code, 0xc000000d, which is returned both when MAC
+> spoofing is not enabled or the parameter contains other errors. So we can't
+> tell if it permission error or not. I will re-submit this patch still
+> using EINVAL.
 
-the rpm arch will be the output of uname -m
+Oh well, thanks for trying!
 
-As i've said previously I personally prefer arm64 I think it will be
-better for users but they will learn if it ends up being aarch64.
+Ben.
 
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-if uname -m is arm64 we will have foo-1.1-1.arm64.rpm 
-if uname -m ends up as aarch64 we will have foo-1.1-1.aarch64.rpm
-
-Dennis
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iEYEARECAAYFAk/8XewACgkQkSxm47BaWfe/xwCgqq9ctMj9VG6zruJtmLDzrRZM
-Ew8AoJRACBzQCLHLkoSveQ+2XoIrw1rY
-=e8W0
------END PGP SIGNATURE-----
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
