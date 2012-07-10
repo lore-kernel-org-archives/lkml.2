@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab2GJQ6X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 12:58:23 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37772 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754316Ab2GJQ6V (ORCPT
+	id S1756473Ab2GJRED (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 13:04:03 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:39073
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756293Ab2GJREA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 12:58:21 -0400
-Date: Tue, 10 Jul 2012 17:57:46 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
+	Tue, 10 Jul 2012 13:04:00 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -10
+X-BigFish: VS-10(zz98dI9371I936eI542M1432I4015Izz1202hzz8275dhz2fh2a8h668h839h93fhd25hf0ah107ah)
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-Message-ID: <20120710165746.GB20221@arm.com>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
- <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
- <201207071927.13135.arnd@arndb.de>
- <20120710071023.GA10456@gmail.com>
- <20120710101018.GE15120@arm.com>
- <20120710163358.6ae4a576@pyramind.ukuu.org.uk>
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH net,1/1] hyperv: Add support for setting MAC from within
+ guests
+Thread-Topic: [PATCH net,1/1] hyperv: Add support for setting MAC from
+ within guests
+Thread-Index: AQHNW7v2NmSg3uaojEi/HXuJHHO9xZcc9NCAgAXN8rA=
+Date: Tue, 10 Jul 2012 17:03:53 +0000
+Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0DDC8C5E@TK5EX14MBXC222.redmond.corp.microsoft.com>
+References: <1341609932-18971-1-git-send-email-haiyangz@microsoft.com>
+ <1341620355.2923.46.camel@bwh-desktop.uk.solarflarecom.com>
+In-Reply-To: <1341620355.2923.46.camel@bwh-desktop.uk.solarflarecom.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.72]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120710163358.6ae4a576@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q6AH4KCt024895
 
-On Tue, Jul 10, 2012 at 04:33:58PM +0100, Alan Cox wrote:
-> > In the AArch32 kernel port many implementation decisions newer
-> > architectures were made in a way that preserves backwards compatibility
-> > to over 15 years ago (and for *good* reasons, ARMv4 hardware is still in
-> > use). But keeping the same decisions in AArch64 is wrong.
+
+
+> -----Original Message-----
+> From: Ben Hutchings [mailto:bhutchings@solarflare.com]
+> Sent: Friday, July 06, 2012 8:19 PM
+> To: Haiyang Zhang
+> Cc: davem@davemloft.net; netdev@vger.kernel.org; KY Srinivasan;
+> olaf@aepfle.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org
+> Subject: Re: [PATCH net,1/1] hyperv: Add support for setting MAC from
+> within guests
 > 
-> Same argument as x86-32 v x86-64. Same issues about compatibility.
-
-I don't deny that the arguments may be the same (I should go back and
-read those threads). The AArch64 context is different and we can't do a
-comparison with the x86 case.
-
-> > AArch64 is also in its early days with a lot of developments to come
-> > (and still waiting for hardware). Until we really know the final shape,
-> > the AArch64 code base must allowed to evolve independently from the
-> > AArch32 one.
+> On Fri, 2012-07-06 at 14:25 -0700, Haiyang Zhang wrote:
+> > This adds support for setting synthetic NIC MAC address from within
+> Linux
+> > guests. Before using this feature, the option "spoofing of MAC
+> address"
+> > should be enabled at the Hyper-V manager / Settings of the synthetic
+> > NIC.
+> [...]
+> > +int rndis_filter_set_device_mac(struct hv_device *hdev, char *mac)
+> > +{
+> [...]
+> > +	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
+> > +	if (t == 0) {
+> > +		netdev_err(ndev, "timeout before we got a set
+> response...\n");
+> > +		/*
+> > +		 * can't put_rndis_request, since we may still receive a
+> > +		 * send-completion.
+> > +		 */
+> > +		return -EBUSY;
+> > +	} else {
+> > +		set_complete = &request->response_msg.msg.set_complete;
+> > +		if (set_complete->status != RNDIS_STATUS_SUCCESS)
+> > +			ret = -EINVAL;
+> [...]
 > 
-> That is one area where while the merge was needed and a lot of work the
-> original split may well have been sensible for x86-64 as well.
+> Is there a specific error code that indicates the hypervisor is
+> configured not to allow MAC address changes?  If so, shouldn't that be
+> translated to return EPERM rather than EINVAL?
 
-That's exactly why I don't see the point in arguing whether the current
-AArch64 port should be merged into arch/arm/.
+I have check the return code, 0xc000000d, which is returned both when MAC
+spoofing is not enabled or the parameter contains other errors. So we can't
+tell if it permission error or not. I will re-submit this patch still
+using EINVAL.
 
-> > The initial target is servers (see the companies that have announced
-> > plans around ARMv8) but I agree, we may see it in other devices in the
-> > future. But as the maintainer I have no plans to support a 32-bit SoC on
-> > an AArch64/ARMv8 system (which may or may not support AArch32 at kernel
-> > level). If an AArch64 SoC would share some devices with an AArch32 SoC,
-> > such code will go to drivers/.
-> 
-> What plans to other maintainers and board vendors have ? Any design choice
-> has to cope with these happening if a third party goes and does it.
+Thanks,
+- Haiyang
 
-Very few vendors (or architecture licensees) went public on this, so
-cannot speak for their plans. But there are ongoing private discussions
-on standardising relevant parts of the SoC, having a common firmware API
-for CPU booting, possibly using ACPI. Again, it's early development
-stage.
-
-If a third party tries to push a 32-bit ARMv8 SoC port, I rely on the
-arm-soc team (Arnd, Olof) to reject it. It's similar to the argument
-against people running a 32-bit kernel on x86_64 hardware. The main
-reason we have 32-bit at the EL1 (kernel) level is for virtualisation
-where one may want to run a 32-bit guest OS.
-
--- 
-Catalin
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
