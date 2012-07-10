@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756536Ab2GJRQd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 13:16:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52913 "EHLO mx2.suse.de"
+	id S1756543Ab2GJRTN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 13:19:13 -0400
+Received: from mail.ausil.us ([74.119.218.133]:41041 "EHLO mail.ausil.us"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754018Ab2GJRQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 13:16:32 -0400
-Date: Tue, 10 Jul 2012 19:16:29 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
+	id S1756526Ab2GJRTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 13:19:12 -0400
+X-Greylist: delayed 1547 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Jul 2012 13:19:12 EDT
+Date: Tue, 10 Jul 2012 11:52:55 -0500
+From: Dennis Gilmore <dennis@ausil.us>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 03/11] mm: shmem: do not try to uncharge known swapcache
- pages
-Message-ID: <20120710171628.GB29114@tiehlicka.suse.cz>
-References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
- <1341449103-1986-4-git-send-email-hannes@cmpxchg.org>
- <20120709144657.GF4627@tiehlicka.suse.cz>
- <alpine.LSU.2.00.1207091311300.1842@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1207091311300.1842@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Message-ID: <20120710115255.3a85e0b2@adria.ausil.us>
+In-Reply-To: <20120710101018.GE15120@arm.com>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+	<CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
+	<201207071927.13135.arnd@arndb.de>
+	<20120710071023.GA10456@gmail.com>
+	<20120710101018.GE15120@arm.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q6AHJKbf024953
 
-On Mon 09-07-12 13:37:39, Hugh Dickins wrote:
-> On Mon, 9 Jul 2012, Michal Hocko wrote:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+El Tue, 10 Jul 2012 11:10:18 +0100
+Catalin Marinas <catalin.marinas@arm.com> escribiÃ³:
+> On Tue, Jul 10, 2012 at 08:10:23AM +0100, Ingo Molnar wrote:
+> > * Arnd Bergmann <arnd@arndb.de> wrote:
+> > > On Saturday 07 July 2012, Olof Johansson wrote:
+> > > > > ARM introduced AArch64 as part of the ARMv8 architecture
+> > > > 
+> > > > With the risk of bikeshedding here, but I find the name
+> > > > awkward. How about just naming the arch port arm64 instead?
+> > > > It's considerably more descriptive in the context of the
+> > > > kernel.  For reference, we didn't name ppc64, nor powerpc,
+> > > > after what the IBM/power.org marketing people were currently
+> > > > calling the architecture at the time either.
+> > > 
+> > > I agree the name sucks, [...]
 > > 
-> > Maybe I am missing something but who does the uncharge from:
-> > shmem_unuse
-> >   mem_cgroup_cache_charge
-> >   shmem_unuse_inode
-> >     shmem_add_to_page_cache
+> > So why not change it now, when it only bothers a few dozen 
+> > people and it is only present in 36 patches? Why go full steam 
+> > ahead to annoy thousands of people with it and why spread the 
+> > naming madness to thousands of commits?
 > 
-> There isn't any special uncharge for shmem_unuse(): once the swapcache
-> page is matched up with its memcg, it will get uncharged by one of the
-> usual routes to swapcache_free() when the page is freed: maybe in the
-> call from __remove_mapping(), maybe when free_page_and_swap_cache()
-> ends up calling it.
+> Changing the arch/ dir name is easy at this point. My preference is
+> for consistency with the official name (that cannot be changed) and
+> the gcc triplet. I also don't think it annoys thousands of people,
+> most don't really care. The few reactions I've seen is pretty much
+> because people were expecting arm64 and it came as something else.
 > 
-> Perhaps you're worrying about error (or unfound) paths in shmem_unuse()?
-
-Yes that was exactly my concern.
-
-> By the time we make the charge, we know for sure that it's a shmem page,
-> and make the charge appropriately; in racy cases it might get uncharged
-> again in the delete_from_swap_cache().  Can the unfound case occur these
-> days?  
-
-I cannot find a change that would prevent from that.
-
-> I'd have to think more deeply to answer that, but the charge will
-> not go missing.
+> But I'll make a decision on this before the next version of the
+> series.
 > 
-> Hugh
+> > > [...] This also includes the rpm and dpkg architecture names, 
+> > > and the string returned by the uname syscall. If everything 
+> > > else is aarch64, we should use that in the kernel directory 
+> > > too, but if everyone calls it arm64 anyway, we should probably 
+> > > use that name for as many things as possible.
+> > 
+> > Yeah.
+> 
+> What are Red Hat's plans for the AArh64 rpm architecture name?
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+the rpm arch will be the output of uname -m
+
+As i've said previously I personally prefer arm64 I think it will be
+better for users but they will learn if it ends up being aarch64.
+
+
+if uname -m is arm64 we will have foo-1.1-1.arm64.rpm 
+if uname -m ends up as aarch64 we will have foo-1.1-1.aarch64.rpm
+
+Dennis
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iEYEARECAAYFAk/8XewACgkQkSxm47BaWfe/xwCgqq9ctMj9VG6zruJtmLDzrRZM
+Ew8AoJRACBzQCLHLkoSveQ+2XoIrw1rY
+=e8W0
+-----END PGP SIGNATURE-----
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
