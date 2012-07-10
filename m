@@ -1,94 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752161Ab2GJCZq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 22:25:46 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42742 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751669Ab2GJCZp (ORCPT
+	id S1752213Ab2GJC3X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 22:29:23 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46401 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669Ab2GJC3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 22:25:45 -0400
-X-AuditID: 9c930197-b7b49ae0000027b8-03-4ffb92a6a17b
-Message-ID: <4FFB92A9.4090203@kernel.org>
-Date: Tue, 10 Jul 2012 11:25:45 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Mon, 9 Jul 2012 22:29:22 -0400
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] zsmalloc: add single-page object fastpath in unmap
-References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com> <1341263752-10210-3-git-send-email-sjenning@linux.vnet.ibm.com>
-In-Reply-To: <1341263752-10210-3-git-send-email-sjenning@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <alpine.DEB.2.00.1207091834230.20591@chino.kir.corp.google.com>
+References: <20120709215256.9A4F71E0043@wpzn4.hot.corp.google.com>
+ <alpine.DEB.2.00.1207091514310.32082@chino.kir.corp.google.com>
+ <1341873376.6118.56.camel@joe2Laptop> <alpine.DEB.2.00.1207091553120.3552@chino.kir.corp.google.com>
+ <1341876067.6118.67.camel@joe2Laptop> <alpine.DEB.2.00.1207091640170.8185@chino.kir.corp.google.com>
+ <1341881721.6118.92.camel@joe2Laptop> <alpine.DEB.2.00.1207091834230.20591@chino.kir.corp.google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 9 Jul 2012 19:28:57 -0700
+X-Google-Sender-Auth: onT47Gyt_BI9udVH06enfTl-bNY
+Message-ID: <CA+55aFwey-q4716pYYSi=3R_ucw84zFspDXMXmzvzc72XSc9Lg@mail.gmail.com>
+Subject: Re: + checkpatch-add-check-for-use-of-sizeof-without-parenthesis.patch
+ added to -mm tree
+To: David Rientjes <rientjes@google.com>
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+        mm-commits@vger.kernel.org, apw@canonical.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2012 06:15 AM, Seth Jennings wrote:
-> Improve zs_unmap_object() performance by adding a fast path for
-> objects that don't span pages.
-> 
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> ---
->  drivers/staging/zsmalloc/zsmalloc-main.c |   15 ++++++++++-----
->  1 file changed, 10 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-> index a7a6f22..4942d41 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> @@ -774,6 +774,7 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle)
->  	}
->  
->  	zs_copy_map_object(area->vm_buf, page, off, class->size);
-> +	area->vm_addr = NULL;
->  	return area->vm_buf;
->  }
->  EXPORT_SYMBOL_GPL(zs_map_object);
-> @@ -788,6 +789,14 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
->  	struct size_class *class;
->  	struct mapping_area *area;
->  
-> +	area = &__get_cpu_var(zs_map_area);
-> +	if (area->vm_addr) {
-> +		/* single-page object fastpath */
-> +		kunmap_atomic(area->vm_addr);
-> +		put_cpu_var(zs_map_area);
-> +		return;
-> +	}
-> +
+On Mon, Jul 9, 2012 at 6:50 PM, David Rientjes <rientjes@google.com> wrote:
+>
+> This doesn't suggest parenthesis for sizeof at all times
 
-Please locate this after below BUG_ON.
-The BUG check is still effective regardless of your fast path patch.
+sizeof without parenthesis is an abomination, and should never be used.
 
->  	BUG_ON(!handle);
->  
->  	obj_handle_to_location(handle, &page, &obj_idx);
-> @@ -795,11 +804,7 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
->  	class = &pool->size_class[class_idx];
->  	off = obj_idx_to_offset(page, obj_idx, class->size);
->  
-> -	area = &__get_cpu_var(zs_map_area);
-> -	if (off + class->size <= PAGE_SIZE)
-> -		kunmap_atomic(area->vm_addr);
-> -	else
-> -		zs_copy_unmap_object(area->vm_buf, page, off, class->size);
-> +	zs_copy_unmap_object(area->vm_buf, page, off, class->size);
->  	put_cpu_var(zs_map_area);
->  }
->  EXPORT_SYMBOL_GPL(zs_unmap_object);
-> 
+Sure, you don't need to have the parenthesis (except when you do - for
+actual types), but it's a parsing oddity.
 
+The sane solution is: just add the f*cking parenthesis, and don't use
+the parsing oddity.
 
--- 
-Kind regards,
-Minchan Kim
+The parenthesis are *required* when it is a type, and they are a nice
+clarification (and makes the code easier to read) when it's an
+expression. Not having them is insane, because it just makes it clear
+how odd the parsing rules are for the two different cases.
 
+And talking about "prefix operators" is a moronic thing to do. It does
+*not* look like a prefix operator, and it does not even *act* like a
+prefix operator (look at types, where it really does require the
+parenthesis). But most importantly, it's not how sane people think
+about it.
 
+Think of it as a function, and get over your idiotic pissing match
+over how long you've both known C. That's irrelevant. It's a C builtin
+function with (unnecessarily) odd parsing rules that the kernel tries
+to standardize. The fact that it can take a type is the least odd part
+of it (there are other built-in C extensions that look like functions
+and do special things with the arguments they get -
+__builtin_constant_p(), __builtin_choose_expr() etc - they don't
+evaluate the *value* of the argument either).
+
+Btw, the spacing rule is separate, and the "3.1 Spaces" thing was
+added later and is in fact somewhat misleading. The spacing rules have
+nothing to do with "function-vs-keyword", and everything to do with
+"function-vs-control-flow". So "sizeof()" is not actually an exception
+at all, like the docs state: it's perfectly regular. It looks and acts
+as a function, not as a control flow operation.
+
+What makes if/while/else/do/for stand out is that they are the native
+C control flow operators, and they have spaces around them. They fact
+that they are keywords is irrelevant. OF COURSE they are keywords,
+since they are the native control flow ops, but that is not why they
+have special spacing rules. The reason they have special spacing rules
+is that
+
+    for (x; y; z) {
+
+is a control flow construct, while
+
+    function(x, y, z);
+
+is just a normal function expression. And in *no* case do we put
+spaces after the parenthesis, we do it after the comma (or semicolon
+for "for (a; b; c)").
+
+We do have some control flow macros ("list_for_each()" etc), and they
+could logically have the space, but hey, they are also normal macros,
+so whatever. The kernel special-cases the native control-flow stuff,
+not the random control flow macro oddities we've created for special
+occasions.
+
+                Linus
