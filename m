@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab2GJBEz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 21:04:55 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41470 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959Ab2GJBEy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 21:04:54 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Date: Tue, 10 Jul 2012 10:04:27 +0900 (JST)
-Message-Id: <20120710.100427.259038238.d.hatayama@jp.fujitsu.com>
-To: wency@cn.fujitsu.com
-Cc: dzickus@redhat.com, luto@mit.edu, kvm@vger.kernel.org,
-        joerg.roedel@amd.com, mtosatti@redhat.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
-        zhangyanfei@cn.fujitsu.com, avi@redhat.com, gregkh@linuxfoundation.org,
-        ludwig.nussel@suse.de, ebiederm@xmission.com
-Subject: Re: [PATCH v4 2/3] KVM-INTEL: Add new module vmcsinfo-intel to
- fill VMCSINFO
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <4FF6A0F3.2010201@cn.fujitsu.com>
-References: <4FF4155F.6070508@cn.fujitsu.com>
-	<20120706.170410.119097767.d.hatayama@jp.fujitsu.com>
-	<4FF6A0F3.2010201@cn.fujitsu.com>
-X-Mailer: Mew version 6.3 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752836Ab2GJBJU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 21:09:20 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:43890 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751054Ab2GJBJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 21:09:19 -0400
+Date: Tue, 10 Jul 2012 09:09:10 +0800
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        William Irwin <wli@holomorphy.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/hugetlb: fix error code in hugetlbfs_alloc_inode
+Message-ID: <20120710010910.GA7362@shangw>
+Reply-To: Gavin Shan <shangw@linux.vnet.ibm.com>
+References: <1341882184-4549-1-git-send-email-liwp.linux@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341882184-4549-1-git-send-email-liwp.linux@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071001-5930-0000-0000-000009B67887
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wen Congyang <wency@cn.fujitsu.com>
-Subject: Re: [PATCH v4 2/3] KVM-INTEL: Add new module vmcsinfo-intel to fill VMCSINFO
-Date: Fri, 6 Jul 2012 16:25:23 +0800
+On Tue, Jul 10, 2012 at 09:03:04AM +0800, Wanpeng Li wrote:
+>From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>
+>When kmem_cache_alloc fails alloc slab object from
+>hugetlbfs_inode_cachep, return -ENOMEM in usual. But
+>hugetlbfs_alloc_inode implementation has inconsitency
+>with it and returns NULL. Fix it to return -ENOMEM.
+>
+>Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
+>---
+> fs/hugetlbfs/inode.c |    2 +-
+> 1 files changed, 1 insertions(+), 1 deletions(-)
+>
+>diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+>index c4b85d0..79a0f33 100644
+>--- a/fs/hugetlbfs/inode.c
+>+++ b/fs/hugetlbfs/inode.c
+>@@ -696,7 +696,7 @@ static struct inode *hugetlbfs_alloc_inode(struct super_block *sb)
+> 	p = kmem_cache_alloc(hugetlbfs_inode_cachep, GFP_KERNEL);
+> 	if (unlikely(!p)) {
+> 		hugetlbfs_inc_free_inodes(sbinfo);
+>-		return NULL;
+>+		return -ENOMEM;
 
-> At 07/06/2012 04:04 PM, HATAYAMA Daisuke Wrote:
->> From: Yanfei Zhang <zhangyanfei@cn.fujitsu.com>
->> Subject: [PATCH v4 2/3] KVM-INTEL: Add new module vmcsinfo-intel to fill VMCSINFO
->> Date: Wed, 4 Jul 2012 18:05:19 +0800
->> 
->>> Besides, this patch also exports vmcs revision identifier via
->>> /sys/devices/system/cpu/vmcs_id and offsets of fields via
->>> /sys/devices/system/cpu/vmcs/.
->>> Individual offsets are contained in subfiles named by the filed's
->>> encoding, e.g.: /sys/devices/cpu/vmcs/0800
->> 
->> According to the discussion starting from
->> 
->> http://lkml.indiana.edu/hypermail/linux/kernel/1105.3/00749.html
-> 
-> IIRC, kvm can not work in such environment. The vcpu can run on
-> different cpu. If the cpu's vmcs is different, I don't know what
-> will happen. So do we need to support for such environment now?
-> I think that if kvm can not work in such environment, we should
-> not provide vmcs information for each physical cpu.
-> 
+The function is expecting "struct inode *", man.
 
-Ah, I noticed my basic confusion: if it --- vcpu can run on cpus with
-differnet VMCS revision --- were possible, this vmcsinfo would be
-unnecessary because it would mean processer could read VMCS data with
-revision different from its own one or some kind of reverse
-engineering for convertion of differnet VMCS data were done.
+static struct inode *hugetlbfs_alloc_inode(struct super_block *sb)
 
-I think kvm could probably work if only processors that have the same
-VMCS revision are assigned to a single guest. But considering the VMCS
-nature, such processor with differnet revision seems unlikely to be
-used on host machine.
+Thanks,
+Gavin
 
-Thanks.
-HATAYAMA, Daisuke
+> 	}
+> 	return &p->vfs_inode;
+> }
+>-- 
+>1.7.5.4
+>
+>--
+>To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>the body to majordomo@kvack.org.  For more info on Linux MM,
+>see: http://www.linux-mm.org/ .
+>Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+
