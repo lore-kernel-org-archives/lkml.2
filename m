@@ -1,85 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab2GJIyy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 04:54:54 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:8950 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753823Ab2GJIyw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 04:54:52 -0400
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-To: "'Joel Becker'" <jlbec@evilplan.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Felipe Balbi'" <balbi@ti.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        "'Sebastian Andrzej Siewior'" <bigeasy@linutronix.de>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Alan Stern'" <stern@rowland.harvard.edu>
-References: <1340276129-20023-1-git-send-email-andrzej.p@samsung.com>
- <20120702090907.GC13247@dhcp-172-17-9-228.mtv.corp.google.com>
-In-reply-to: <20120702090907.GC13247@dhcp-172-17-9-228.mtv.corp.google.com>
-Subject: RE: [RFC 0/2] USB gadget - configfs
-Date: Tue, 10 Jul 2012 10:54:44 +0200
-Message-id: <000501cd5e79$a770be50$f6523af0$%p@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1YMlysoN6nT8h7S8SdYONJA9extQGP3d+Q
-Content-language: pl
-X-TM-AS-MML: No
+	id S1754613Ab2GJI7k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 04:59:40 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58868 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754516Ab2GJI7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 04:59:37 -0400
+X-IronPort-AV: E=Sophos;i="4.77,559,1336320000"; 
+   d="scan'208";a="5363941"
+Message-ID: <4FFBED84.1030905@cn.fujitsu.com>
+Date: Tue, 10 Jul 2012 16:53:24 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: nhorman@tuxdriver.com, davem@davemloft.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, lizefan@huawei.com, tj@kernel.org,
+        Eric Dumazet <edumazet@google.com>
+Subject: Re: [PATCH] net: cgroup: fix access the unallocated memory in netprio
+ cgroup
+References: <1341837625.3265.2748.camel@edumazet-glaptop>  <1341887508-20302-1-git-send-email-gaofeng@cn.fujitsu.com> <1341893650.3265.3974.camel@edumazet-glaptop>
+In-Reply-To: <1341893650.3265.3974.camel@edumazet-glaptop>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/10 16:52:55,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/10 16:59:18,
+	Serialize complete at 2012/07/10 16:59:18
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Joel,
 
-Thank you for your review.
-
-@Sebastian, Alan, Felipe: Thank you, too.
-
-On Monday, July 02, 2012 11:09 AM Joel Becker wrote:
-
-<snip>
-
+> Hi Gao
 > 
-> > As a prerequisite it adds an operation to configfs. The operation allows
-> > checking if it is ok to remove a pseudo directory corresponding to a
-> > configfs item/group.
-> 
-> 	I NAK'd that patch because you should be using
-> configfs_depend_item().  If you have trouble with that, let's talk.
+> Is it still needed to call update_netdev_tables() from write_priomap() ?
 > 
 
-Now I see the configfs_depend_item() is the way to go. I am in doubt,
-though, so could you please throw some light on it? Here is why:
-As an example I did a quick-and-dirty port of f_mass_storage to the new,
-configfs-based approach. The business logic of this function is that
-once a lun is opened, it must not be changed (deleted, in particular)
-until it is closed. The moment the lun is opened is defined by a write
-to a configfs "file" attribute of a lun config item:
+Yes, I think it's needed,because read_priomap will show all of the net devices,
 
-               +-/lunX
-               |  |
-               |  +-file
-               |  |
-               |  +-nofua
-               |  |
-               |  +-removable
-               |  |
-               |  +-ro
-
-So, the config item corresponding to the lun becomes depended on during
-the write file operation, the same with undepend. Can this be expressed
-with configfs_depend/undepend_item()? Your code in fs/configfs/dir.c
-contains a warning not to call the configfs_depend_item()
-from a configfs callback.
-In this case, is store_attribute a configfs callback?
-
-Thanks,
-
-Andrzej
-
-
+But we may add the netdev after create a netprio cgroup, so the new added netdev's
+priomap will not be allocated. if we don't call update_netdev_tables in write_priomap,
+we may access this unallocated memory.
 
