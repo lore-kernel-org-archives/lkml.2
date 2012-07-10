@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab2GJMsl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 08:48:41 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:44729 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144Ab2GJMsk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 08:48:40 -0400
+	id S1755520Ab2GJMuv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 08:50:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40864 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752022Ab2GJMuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 08:50:50 -0400
+Message-ID: <4FFC251F.4050504@redhat.com>
+Date: Tue, 10 Jul 2012 15:50:39 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <4FFC236E.7090308@antcom.de>
-References: <1341921212-11953-1-git-send-email-aletes.xgr@gmail.com>
-	<4FFC236E.7090308@antcom.de>
-Date: Tue, 10 Jul 2012 09:48:39 -0300
-Message-ID: <CAAAP30Hf5MfSwjn0+1Gz5KZaNehMmnCTDT6zjnEV1+9rddp_LA@mail.gmail.com>
-Subject: Re: [PATCH v2] pwm: add lpc32xx pwm support
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org
+To: Gleb Natapov <gleb@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 1/2] KVM: X86: remove read buffer for mmio read
+References: <4FFA9E16.10001@linux.vnet.ibm.com> <4FFABD59.2070108@redhat.com> <20120709112346.GA23898@redhat.com> <4FFAD341.3080508@redhat.com> <4FFADB37.4090705@linux.vnet.ibm.com> <4FFADDFA.5000603@redhat.com> <20120710103629.GC23898@redhat.com> <4FFC07BB.8080802@redhat.com> <20120710104847.GD23898@redhat.com>
+In-Reply-To: <20120710104847.GD23898@redhat.com>
+X-Enigmail-Version: 1.4.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 9:43 AM, Roland Stigge <stigge@antcom.de> wrote:
-> Hi!
->
-> On 07/10/2012 01:53 PM, Alexandre Pereira da Silva wrote:
->> Add lpc32xx soc pwm driver.
->>
->> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
->> ---
->> +++ b/drivers/pwm/pwm-lpc32xx.c
->> @@ -0,0 +1,150 @@
->> +/*
->> + * Copyright 2012 Alexandre Pereira da Silva <aletes.xgr@gmail.com>
->> + *
->> + * The code contained herein is licensed under the GNU General Public
->> + * License. You may obtain a copy of the GNU General Public License
->> + * Version 2 or later at the following locations:
->> + *
->> + * http://www.opensource.org/licenses/gpl-license.html
->> + * http://www.gnu.org/copyleft/gpl.html
->
-> Some nitpicking about legal wording and contents:
->
-> It doesn't state explicitly that we are licensing via GPLv2.
->
-> Further, maybe we can drop the links (which can become obsolete in the
-> future)? We are shipping the GPL anyway, and other drivers also don't
-> need links.
->
-> E.g.:
->
->  * This program is free software; you can redistribute it and/or modify
->  * it under the terms of the GNU General Public License as published by
->  * the Free Software Foundation; version 2.
+On 07/10/2012 01:48 PM, Gleb Natapov wrote:
+> > > > 
+> > > But the code is already here, why drop it?
+> > 
+> > The read cache is not effective for multiple disjunct reads.
+> What do you mean?
 
-Thanks, Roland. I will apply that.
+If an instruction reads from several sources in mmio, then the first
+read will be flushed from the cache by the second read.  So if we need a
+third read, we'll have to exit for the first again.
+
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
