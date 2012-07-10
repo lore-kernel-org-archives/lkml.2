@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633Ab2GJPY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 11:24:28 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:10757 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753607Ab2GJPY1 (ORCPT
+	id S1755909Ab2GJPYn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 11:24:43 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:33784 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755857Ab2GJPYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 11:24:27 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/lr387qFmLE
-X-RZG-CLASS-ID: mo00
-Date: Tue, 10 Jul 2012 17:24:25 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] xen/pv-on-hvm kexec: shutdown watches from
- old kernel
-Message-ID: <20120710152424.GB31819@aepfle.de>
-References: <1341924603-18978-1-git-send-email-olaf@aepfle.de>
- <20120710141906.GC1791@phenom.dumpdata.com>
+	Tue, 10 Jul 2012 11:24:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120710141906.GC1791@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21.rev5543 (2011-12-20)
+In-Reply-To: <20120710104722.GB14154@suse.de>
+References: <1341588521-17744-1-git-send-email-js1304@gmail.com>
+	<alpine.DEB.2.00.1207070139510.10445@chino.kir.corp.google.com>
+	<CAAmzW4PXdpQ2zSnkx8sSScAt1OY0j4+HXVmf=COvP7eMLqrEvQ@mail.gmail.com>
+	<20120710104722.GB14154@suse.de>
+Date: Wed, 11 Jul 2012 00:24:41 +0900
+Message-ID: <CAAmzW4NhRipDDqyNc3zYTx3fpsOVE6Cc6kc9X-L_p0iKZu7+jA@mail.gmail.com>
+Subject: Re: [PATCH] mm: don't invoke __alloc_pages_direct_compact when order 0
+From: JoonSoo Kim <js1304@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: David Rientjes <rientjes@google.com>, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, Konrad Rzeszutek Wilk wrote:
+2012/7/10 Mel Gorman <mgorman@suse.de>:
+> You say that invoking the function is very costly. I agree that a function
+> call with that many parameters is hefty but it is also in the slow path of
+> the allocator. For order-0 allocations we are about to enter direct reclaim
+> where I would expect the cost far exceeds the cost of a function call.
 
-> On Tue, Jul 10, 2012 at 02:50:03PM +0200, Olaf Hering wrote:
-> > Add xs_reset_watches function to shutdown watches from old kernel after
-> > kexec boot.  The old kernel does not unregister all watches in the
-> > shutdown path.  They are still active, the double registration can not
-> > be detected by the new kernel.  When the watches fire, unexpected events
-> > will arrive and the xenwatch thread will crash (jumps to NULL).  An
-> > orderly reboot of a hvm guest will destroy the entire guest with all its
-> > resources (including the watches) before it is rebuilt from scratch, so
-> > the missing unregister is not an issue in that case.
-> > 
-> > With this change the xenstored is instructed to wipe all active watches
-> > for the guest.  However, a patch for xenstored is required so that it
-> > accepts the XS_RESET_WATCHES request from a client (see changeset
-> > 23839:42a45baf037d in xen-unstable.hg). Without the patch for xenstored
-> > the registration of watches will fail and some features of a PVonHVM
-> > guest are not available. The guest is still able to boot, but repeated
-> > kexec boots will fail.
-> 
-> OK, so this should make the reset of xenstore work with the new hypervisor,
-> but with older ones (like Amazon), it won't and we won't have regressions, right?
+Yes, I agree.
 
-The reset happens only if "platform-feature-xs_reset_watches" exists, so
-old hosts are supposed to be ok.
+> If the cost is indeed high and you have seen this in profiles then I
+> suggest you create a forced inline function alloc_pages_direct_compact
+> that does this;
+>
+> if (order != 0)
+>         __alloc_pages_direct_compact(...)
+>
+> and then call alloc_pages_direct_compact instead of
+> __alloc_pages_direct_compact. After that, recheck the profiles (although I
+> expect the difference to be marginal) and the size of vmlinux (if it gets
+> bigger, it's probably not worth it).
+> That would be functionally similar to your patch but it will preserve git
+> blame, churn less code and be harder to make mistakes with in the unlikely
+> event a third call to alloc_pages_direct_compact is ever added.
 
-Olaf
+Your suggestion looks good.
+But, the size of page_alloc.o is more than before.
+
+I test 3 approaches, vanilla, always_inline and
+wrapping(alloc_page_direct_compact which is your suggestion).
+In my environment (v3.5-rc5, gcc 4.6.3, x86_64), page_alloc.o shows
+below number.
+
+                                         total, .text section, .text.unlikely
+page_alloc_vanilla.o:     93432,   0x510a,        0x243
+page_alloc_inline.o:       93336,   0x52ca,          0xa4
+page_alloc_wrapping.o: 93528,   0x515a,        0x238
+
+Andrew said that inlining add only 26 bytes to .text of page_alloc.o,
+but in my system, need more bytes.
+Currently, I think this patch doesn't have obvious benefit, so I want
+to drop it.
+Any objections?
+
+Thanks for good comments.
