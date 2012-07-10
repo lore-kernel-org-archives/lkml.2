@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab2GJIxC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 04:53:02 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45212 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754393Ab2GJIxA convert rfc822-to-8bit (ORCPT
+	id S1754575Ab2GJIyy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 04:54:54 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:8950 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753823Ab2GJIyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 04:53:00 -0400
-Message-ID: <1341910360.3462.99.camel@twins>
-Subject: Re: [tip:perf/core] perf/x86: Fix USER/KERNEL tagging of samples
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, hpa@zytor.com,
-        eranian@google.com, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        akpm@linux-foundation.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org,
-        Robert Richter <robert.richter@amd.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Date: Tue, 10 Jul 2012 10:52:40 +0200
-In-Reply-To: <20120710082104.GA11187@gmail.com>
-References: <tip-xxrt0a1zronm1sm36obwc2vy@git.kernel.org>
-	 <CA+55aFxY7SqwSQWuRXSg+W=ftp9FtCT1MMEqMiCi1H279Fis-A@mail.gmail.com>
-	 <1341598329.7709.57.camel@twins>
-	 <CA+55aFzqoz7dcUCQfSrXxX2T8=2wgWdb1H2vaBhk7V-r0uaogw@mail.gmail.com>
-	 <CA+55aFw+vE4zMe1bJohLuoMDaFpqGCz6sBNRE8gkV7JOvtro0g@mail.gmail.com>
-	 <1341832997.3462.41.camel@twins> <20120709184145.GA7666@gmail.com>
-	 <1341906848.3462.92.camel@twins> <20120710082104.GA11187@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 10 Jul 2012 04:54:52 -0400
+From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+To: "'Joel Becker'" <jlbec@evilplan.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Felipe Balbi'" <balbi@ti.com>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        "'Sebastian Andrzej Siewior'" <bigeasy@linutronix.de>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        "'Alan Stern'" <stern@rowland.harvard.edu>
+References: <1340276129-20023-1-git-send-email-andrzej.p@samsung.com>
+ <20120702090907.GC13247@dhcp-172-17-9-228.mtv.corp.google.com>
+In-reply-to: <20120702090907.GC13247@dhcp-172-17-9-228.mtv.corp.google.com>
+Subject: RE: [RFC 0/2] USB gadget - configfs
+Date: Tue, 10 Jul 2012 10:54:44 +0200
+Message-id: <000501cd5e79$a770be50$f6523af0$%p@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1YMlysoN6nT8h7S8SdYONJA9extQGP3d+Q
+Content-language: pl
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-10 at 10:21 +0200, Ingo Molnar wrote:
-> Another boundary condition would be when we intentionally 
-> twiddle the GDT: such as during suspend or during BIOS upcalls. 
-> Can we then get a PMU interrupt? If yes then this will probably 
-> result in garbage:
+Dear Joel,
+
+Thank you for your review.
+
+@Sebastian, Alan, Felipe: Thank you, too.
+
+On Monday, July 02, 2012 11:09 AM Joel Becker wrote:
+
+<snip>
+
 > 
-> > > > +             desc = __this_cpu_ptr(&gdt_page.gdt[0]);
+> > As a prerequisite it adds an operation to configfs. The operation allows
+> > checking if it is ok to remove a pseudo directory corresponding to a
+> > configfs item/group.
 > 
-> it won't outright crash, we don't ever deallocate our GDT - but 
-> it will return a garbage RIP.
+> 	I NAK'd that patch because you should be using
+> configfs_depend_item().  If you have trouble with that, let's talk.
+> 
 
-Nothing we can do about that though..
+Now I see the configfs_depend_item() is the way to go. I am in doubt,
+though, so could you please throw some light on it? Here is why:
+As an example I did a quick-and-dirty port of f_mass_storage to the new,
+configfs-based approach. The business logic of this function is that
+once a lun is opened, it must not be changed (deleted, in particular)
+until it is closed. The moment the lun is opened is defined by a write
+to a configfs "file" attribute of a lun config item:
 
-> Then there's also all the Xen craziness with segments ...
+               +-/lunX
+               |  |
+               |  +-file
+               |  |
+               |  +-nofua
+               |  |
+               |  +-removable
+               |  |
+               |  +-ro
 
-I don't think Xen Dom0 has PMU access, that would be their Hyper-visor
-thingy's job, no?
+So, the config item corresponding to the lun becomes depended on during
+the write file operation, the same with undepend. Can this be expressed
+with configfs_depend/undepend_item()? Your code in fs/configfs/dir.c
+contains a warning not to call the configfs_depend_item()
+from a configfs callback.
+In this case, is store_attribute a configfs callback?
 
-Anyway, that seems a problem for Jeremy and Konrad..
+Thanks,
+
+Andrzej
+
+
+
