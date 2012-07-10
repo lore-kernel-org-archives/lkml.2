@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab2GJGNl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 02:13:41 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:41838 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752543Ab2GJGNi (ORCPT
+	id S1753036Ab2GJGSG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 02:18:06 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:65197 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab2GJGSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 02:13:38 -0400
-Message-ID: <4FFBC808.5050602@ti.com>
-Date: Tue, 10 Jul 2012 11:43:28 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
+	Tue, 10 Jul 2012 02:18:03 -0400
+Date: Mon, 9 Jul 2012 23:17:57 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: Re: [PATCH 7/9] Input: ab8500-ponkey: Create AB8500 domain IRQ
+ mapping
+Message-ID: <20120710061757.GB29257@core.coreip.homeip.net>
+References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org>
+ <4FF6994B.9040801@linaro.org>
+ <20120706173957.GA10202@core.coreip.homeip.net>
+ <4FFB288D.4080606@linaro.org>
+ <20120709201422.GA12242@core.coreip.homeip.net>
+ <4FFB40A4.5060505@linaro.org>
+ <20120709204620.GA12692@core.coreip.homeip.net>
+ <4FFB463F.9040201@linaro.org>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, b-cousson@ti.com,
-        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, balbi@ti.com,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org, hvaibhav@ti.com
-Subject: Re: [PATCH v1 08/11] arm/dts: Add twl4030-usb data
-References: <1340884267-28908-1-git-send-email-kishon@ti.com> <1340884267-28908-9-git-send-email-kishon@ti.com>
-In-Reply-To: <1340884267-28908-9-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FFB463F.9040201@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 28 June 2012 05:21 PM, Kishon Vijay Abraham I wrote:
-> Add twl4030-usb data node in twl4030 device tree file.
->
-> Signed-off-by: Kishon Vijay Abraham I<kishon@ti.com>
+On Mon, Jul 09, 2012 at 10:59:43PM +0200, Lee Jones wrote:
+> Sorry for the cock-up(s).
+> 
+> From: Lee Jones <lee.jones@linaro.org>
+> Date: Tue, 26 Jun 2012 10:46:50 +0100
+> Subject: [PATCH 1/1] Input: ab8500-ponkey: Create AB8500 domain IRQ mapping
+> 
+> Before we can use any domain allocated IRQ, we need to first create a
+> map between the Hardware IRQ (hwirq) and the Linux Virtual IRQ (virq).
+> We do this with a helper function provided by the AB8500 IRQ domain
+> controller called ab8500_irq_get_virq(). We need to do this for both
+> IRQs which the Power-On-Key driver uses; one for button press, the other
+> for button depress.
+> 
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+
+Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+
+I think it would be best if this got merged through whatever tree that
+was used to introduce ab8500_irq_get_virq(); otherwise it will have to
+wait till I resync with mainline sometime in the middle of the next
+release cycle.
+
+Thanks.
+
 > ---
->   arch/arm/boot/dts/twl4030.dtsi |   21 +++++++++++++++++++++
->   1 files changed, 21 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/twl4030.dtsi b/arch/arm/boot/dts/twl4030.dtsi
-> index 22f4d13..66534a3 100644
-> --- a/arch/arm/boot/dts/twl4030.dtsi
-> +++ b/arch/arm/boot/dts/twl4030.dtsi
-> @@ -37,6 +37,18 @@
->   		regulator-max-microvolt =<3150000>;
->   	};
->
-> +	vusb1v5: regulator@3 {
-> +		compatible = "ti,twl4030-vusb1v5";
-> +	};
+>  drivers/input/misc/ab8500-ponkey.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/input/misc/ab8500-ponkey.c b/drivers/input/misc/ab8500-ponkey.c
+> index 5ceb23e..f6764af 100644
+> --- a/drivers/input/misc/ab8500-ponkey.c
+> +++ b/drivers/input/misc/ab8500-ponkey.c
+> @@ -74,8 +74,8 @@ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
+>  
+>  	ponkey->idev = input;
+>  	ponkey->ab8500 = ab8500;
+> -	ponkey->irq_dbf = irq_dbf;
+> -	ponkey->irq_dbr = irq_dbr;
+> +	ponkey->irq_dbf = ab8500_irq_get_virq(ab8500, irq_dbf);
+> +	ponkey->irq_dbr = ab8500_irq_get_virq(ab8500, irq_dbr);
+>  
+>  	input->name = "AB8500 POn(PowerOn) Key";
+>  	input->dev.parent = &pdev->dev;
+> -- 
+> 1.7.9.5
+> 
+> 
+> 
 
-These @3, @4 are actually wrong since the node do
-not have a 'reg' property in it. This was commented on
-by David Brown on my original series which added this but
-it somehow slipped through the cracks. I understand that
-you would have looked up what existed in the file and
-extended, but what already exists in the file needs to
-be fixed up too. I'll send in a patch to fix those up.
-
-regards,
-Rajendra
-
-> +
-> +	vusb1v8: regulator@4 {
-> +		compatible = "ti,twl4030-vusb1v8";
-> +	};
-> +
-> +	vusb3v1: regulator@5 {
-> +		compatible = "ti,twl4030-vusb3v1";
-> +	};
-> +
->   	twl_gpio: gpio {
->   		compatible = "ti,twl4030-gpio";
->   		gpio-controller;
-> @@ -44,4 +56,13 @@
->   		interrupt-controller;
->   		#interrupt-cells =<1>;
->   	};
-> +
-> +	twl4030-usb {
-> +		compatible = "ti,twl4030-usb";
-> +		interrupts =<  10 4>;
-> +		usb1v5-supply =<&vusb1v5>;
-> +		usb1v8-supply =<&vusb1v8>;
-> +		usb3v1-supply =<&vusb3v1>;
-> +		usb_mode =<1>;
-> +	};
->   };
-
+-- 
+Dmitry
