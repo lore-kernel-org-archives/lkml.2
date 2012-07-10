@@ -1,146 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab2GJH2e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 03:28:34 -0400
-Received: from smtp-out-150.synserver.de ([212.40.185.150]:1063 "EHLO
-	smtp-out-150.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab2GJH2d (ORCPT
+	id S1754207Ab2GJH2u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 03:28:50 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:42281 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754146Ab2GJH2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 03:28:33 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 28798
-Message-ID: <4FFBDA85.8070708@metafoo.de>
-Date: Tue, 10 Jul 2012 09:32:21 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-MIME-Version: 1.0
+	Tue, 10 Jul 2012 03:28:48 -0400
+Date: Tue, 10 Jul 2012 17:28:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: Kevin Hilman <khilman@ti.com>, Alessandro Zummo <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] drivers/rtc/rtc-twl.c: fix threaded IRQ to use IRQF_ONESHOT
-References: <1341592434-4207-1-git-send-email-khilman@ti.com> <20120709151527.58f44c3a.akpm@linux-foundation.org>
-In-Reply-To: <20120709151527.58f44c3a.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, Kay Sievers <kay@vrfy.org>,
+        Greg KH <greg@kroah.com>
+Subject: linux-next: manual merge of the akpm tree with the
+ driver-core.current tree
+Message-Id: <20120710172838.06f3fff7ab03d91898d18f51@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__10_Jul_2012_17_28_38_+1000_XVWjoOvhq+4SIHHD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2012 12:15 AM, Andrew Morton wrote:
-> On Fri,  6 Jul 2012 09:33:54 -0700
-> Kevin Hilman <khilman@ti.com> wrote:
-> 
->> Requesting a threaded interrupt without a primary handler and without
->> IRQF_ONESHOT is dangerous, and after commit 1c6c6952 (genirq: Reject
->> bogus threaded irq requests), these requests are rejected.  This
->> causes ->probe() to fail, and the RTC driver not to be availble.
->>
->> To fix, add IRQF_ONESHOT to the IRQ flags.
->>
->> Tested on OMAP3730/OveroSTORM and OMAP4430/Panda board using rtcwake
->> to wake from system suspend multiple times.
->>
->> Signed-off-by: Kevin Hilman <khilman@ti.com>
->> ---
->> Resending to broader audience and including Andrew.  Since, I understand
->> that drivers/rtc is somewhat orphaned, Andrew, can you queue this fix for
->> v3.5.  Thanks.
->>
->>  drivers/rtc/rtc-twl.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
->> index 258abea..c5d06fe 100644
->> --- a/drivers/rtc/rtc-twl.c
->> +++ b/drivers/rtc/rtc-twl.c
->> @@ -510,7 +510,7 @@ static int __devinit twl_rtc_probe(struct platform_device *pdev)
->>  	}
->>  
->>  	ret = request_threaded_irq(irq, NULL, twl_rtc_interrupt,
->> -				   IRQF_TRIGGER_RISING,
->> +				   IRQF_TRIGGER_RISING | IRQF_ONESHOT,
->>  				   dev_name(&rtc->dev), rtc);
->>  	if (ret < 0) {
->>  		dev_err(&pdev->dev, "IRQ is not free.\n");
-> 
-> OK, this is the second such patch I've seen and it's time to wonder if
-> we should get grumpy at tglx.  afacit 1c6c6952 broke the following
-> drivers:
+--Signature=_Tue__10_Jul_2012_17_28_38_+1000_XVWjoOvhq+4SIHHD
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If you want to be grumpy, be grumpy at Linus. Thomas actually posted a patch
-which just emits a warning, instead of failing to request the IRQ, but Linus
-didn't want to take it. The whole thread is here
-https://lkml.org/lkml/2012/6/12/151
+Hi Andrew,
 
-> 
-> 
-> sound/soc/codecs/wm8994.c
-> sound/soc/codecs/max98095.c
-> sound/soc/codecs/twl6040.c
-> drivers/usb/otg/ab8500-usb.c
-> drivers/usb/otg/twl4030-usb.c
-> drivers/gpio/gpio-sx150x.c
-> drivers/gpio/gpio-ab8500.c
-> drivers/mfd/ab8500-gpadc.c
-> drivers/mfd/ti-ssp.c
-> drivers/mfd/twl4030-madc.c
-> drivers/mfd/htc-i2cpld.c
-> drivers/mfd/wm831x-auxadc.c
-> drivers/mfd/twl6040-core.c
-> drivers/mfd/wm8350-core.c
-> drivers/extcon/extcon-max8997.c
-> drivers/mmc/host/of_mmc_spi.c
-> drivers/mmc/core/cd-gpio.c
-> drivers/net/can/mcp251x.c
-> drivers/nfc/pn544_hci.c
-> drivers/nfc/pn544.c
-> drivers/power/ab8500_btemp.c
-> drivers/power/twl4030_charger.c
-> drivers/power/lp8727_charger.c
-> drivers/power/smb347-charger.c
-> drivers/power/max17042_battery.c
-> drivers/power/wm831x_power.c
-> drivers/power/ab8500_fg.c
-> drivers/power/max8903_charger.c
-> drivers/power/ab8500_charger.c
-> drivers/regulator/wm831x-isink.c
-> drivers/regulator/wm831x-ldo.c
-> drivers/regulator/wm831x-dcdc.c
-> drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
-> drivers/staging/iio/adc/adt7310.c
-> drivers/staging/iio/adc/adt7410.c
-> drivers/staging/iio/adc/ad7816.c
-> drivers/staging/iio/cdc/ad7150.c
-> drivers/staging/iio/accel/sca3000_core.c
-> drivers/staging/cptm1217/clearpad_tm1217.c
-> drivers/input/keyboard/tc3589x-keypad.c
-> drivers/input/keyboard/twl4030_keypad.c
-> drivers/input/misc/twl4030-pwrbutton.c
-> drivers/input/misc/twl6040-vibra.c
-> drivers/input/misc/wm831x-on.c
-> drivers/media/radio/si470x/radio-si470x-i2c.c
-> drivers/base/regmap/regmap-irq.c
-> drivers/rtc/rtc-wm831x.c
-> drivers/rtc/rtc-twl.c
-> drivers/rtc/rtc-ab8500.c
-> drivers/rtc/rtc-max8998.c
-> drivers/rtc/rtc-isl1208.c
-> drivers/platform/x86/intel_mid_powerbtn.c
-> include/linux/mfd/wm8994/core.h
-> include/linux/mfd/wm8350/core.h
-> 
-> what am I missing here?
-> 
+Today's linux-next merge of the akpm tree got a conflict in
+kernel/printk.c between commit 5becfb1df5ac ("kmsg: merge continuation
+records while printing") from the driver-core.current tree and commit
+"printk: only look for prefix levels in kernel messages" from the akpm
+tree.
 
-Most of these drivers are not broken (anymore), the majority drivers which
-were broken by Thomas's patch have already been fixed. As for your list:
-I've already sent out a fix for all of the staging/iio/ drivers a couple of
-days ago. And drivers which use nested interrupts are not affected by this
-problem. In your list these are basically all drivers with wm*, twl* and
-ab8500 in their names. But still leaves a handful of broken driver which
-should be fixed.
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-- Lars
+diff --cc kernel/printk.c
+index 104a4ee,04983fc..0000000
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@@ -1496,24 -1453,27 +1495,27 @@@ asmlinkage int vprintk_emit(int facilit
+  	/* mark and strip a trailing newline */
+  	if (text_len && text[text_len-1] =3D=3D '\n') {
+  		text_len--;
+ -		newline =3D true;
+ +		lflags |=3D LOG_NEWLINE;
+  	}
+ =20
+- 	/* strip syslog prefix and extract log level or control flags */
+- 	kern_level =3D printk_get_level(text);
+- 	if (kern_level) {
+- 		const char *end_of_header =3D printk_skip_level(text);
+- 		switch (kern_level) {
+- 		case '0' ... '7':
+- 			if (level =3D=3D -1)
+- 				level =3D kern_level - '0';
+- 		case 'd':	/* KERN_DEFAULT */
+- 			lflags |=3D LOG_PREFIX;
+- 		case 'c':	/* KERN_CONT */
+- 			break;
++ 	/* strip kernel syslog prefix and extract log level or control flags */
++ 	if (facility =3D=3D 0) {
++ 		int kern_level =3D printk_get_level(text);
++=20
++ 		if (kern_level) {
++ 			const char *end_of_header =3D printk_skip_level(text);
++ 			switch (kern_level) {
++ 			case '0' ... '7':
++ 				if (level =3D=3D -1)
++ 					level =3D kern_level - '0';
++ 			case 'd':	/* KERN_DEFAULT */
+ -				prefix =3D true;
+++				lflags |=3D LOG_PREFIX;
++ 			case 'c':	/* KERN_CONT */
++ 				break;
++ 			}
++ 			text_len -=3D end_of_header - text;
++ 			text =3D (char *)end_of_header;
+  		}
+- 		text_len -=3D end_of_header - text;
+- 		text =3D (char *)end_of_header;
+  	}
+ =20
+  	if (level =3D=3D -1)
+
+--Signature=_Tue__10_Jul_2012_17_28_38_+1000_XVWjoOvhq+4SIHHD
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJP+9mmAAoJEECxmPOUX5FE0qEP/3In57sbk6UQm4LntPGUvasV
+UfNuxw5z7GkwYGEtKMyhm4z7weHzFx0iBtN2GrF3SNyFObym/AUkDXn487PcyCk8
+YgZ1ys+KjYBZ9ul5Q9yFYwMkWx4wIUrYDWwj1nwlXPc8ThUZHczeVpJivw/YKdC3
+HFI66NSxFD5BdnEkX4gMVZtAcqO8tv8U2O2KYxE38bowmR8CYKjq8WkbnRq7ZvxX
+VglHX5fVTiW1lJ+Uk5BIkUShSWXUwXAuSSKlLjRk0zrkne/xL/l5WuMQESEvyt2A
+MlR749A7o4dyfgEUc4T5q0V7UIMO8hS44wyXfYI0jWWoEGtNVpUbDupjdk1NyG1x
+Eq7uK7B2xVk7LT1xPf7/n7cAGhwnp7fxYt4vCMEi8s6lW/XtDVQbI2Zicx/mFzqZ
+D5vJ125u5I94EICRgA/5Uj3gEDjRukj4tKof80zVhgeFgNlFxpE8Ds2W/ZqSIo6T
+EpQ6uTXlG7AOE3l5zoNzAsyqYWslDZFo7B/6DyAa02BPPRAwsqiEle771buCp/jI
+BK4hCAariVsyY8xWqvIM1PeG1Bp9Mkd8wZIhHeY3WAVZDUBwK4YfbiwrqWeoMMDT
+GI59GmT0B8NzN4AEdSIS8gNCXciLLTbV19zZ3ZkZHbnSf0+FxZKrK0cSxqFmYl8D
+P6ormvlTayu2cLcXkWt2
+=5T0Z
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__10_Jul_2012_17_28_38_+1000_XVWjoOvhq+4SIHHD--
