@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831Ab2GJNbS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 09:31:18 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:45886 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab2GJNbQ (ORCPT
+	id S932069Ab2GJNcO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 09:32:14 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60065 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755788Ab2GJNcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 09:31:16 -0400
-Date: Tue, 10 Jul 2012 16:31:02 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Kevin McKinney <klmckinney1@gmail.com>
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org,
-        Marcos Souza <marcos.souza.org@gmail.com>
-Subject: Re: [PATCH 0/3] staging: bcm: Cleanup bcm driver
-Message-ID: <20120710133102.GB6056@mwanda>
-References: <1341883960-21635-1-git-send-email-marcos.souza.org@gmail.com>
- <20120710024046.GA8894@gmail.com>
- <CAH0vN5Kv6MzVGLxBEAeuUGPRoDC9+8aHkPrZZduFqddEMZrsSg@mail.gmail.com>
- <20120710123840.GA2928@gmail.com>
- <20120710125156.GE6113@mwanda>
- <CAKPrQY8ZMSOMDDANKAfXOe6tp+Tnk8Eba=OVpd_z_AFOtJDbtg@mail.gmail.com>
+	Tue, 10 Jul 2012 09:32:12 -0400
+From: Chandrabhanu Mahapatra <cmahapatra@ti.com>
+To: <rob.herring@calxeda.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <leed.aguilar@ti.com>, Chandrabhanu Mahapatra <cmahapatra@ti.com>
+Subject: [PATCH 0/4] Extend TCA6424 support
+Date: Tue, 10 Jul 2012 19:01:33 +0530
+Message-ID: <cover.1341925681.git.cmahapatra@ti.com>
+X-Mailer: git-send-email 1.7.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKPrQY8ZMSOMDDANKAfXOe6tp+Tnk8Eba=OVpd_z_AFOtJDbtg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 09:24:23AM -0400, Kevin McKinney wrote:
-> On Tue, Jul 10, 2012 at 8:51 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> > On Tue, Jul 10, 2012 at 08:38:41AM -0400, Kevin McKinney wrote:
-> >> On Mon, Jul 09, 2012 at 11:48:09PM -0300, Marcos Souza wrote:
-> >> > 2012/7/9 Kevin McKinney <klmckinney1@gmail.com>:
-> >> > > On Mon, Jul 09, 2012 at 10:32:37PM -0300, Marcos Paulo de Souza wrote:
-> >> > >> Hi Kernel guys!
-> >> > >>
-> >> > >> This new patchset tries to clean a little the bcm driver, removing
-> >> > >> some unused macros and some dead code.
-> >> > >>
-> >> > >> These macros and dead code were reported by the forgotten-macros tool
-> >> > >> (https://github.com/marcosps/forgotten_macros).
-> >> > >>
-> >> > >> The tool is under development, but all the patches looks like OK.
-> >> > >>
-> >> > >> This patchset is based in staging-next.
-> >> > >>
-> >> > >> Thanks guys!
-> >> > >
-> >> > > The patchset looks good!
-> >> >
-> >> > Thanks for the answer Kevin!!
-> >> >
-> >> > So, do I have your ack?
-> >> Yes, I ack.
-> >
-> > The normal format is:
-> >
-> > Acked-by: Your Name <email@address.com>
-> >
-> > Some maintainers have scripts which pick Acked-by tags automatically
-> > or even if they don't they can copy and paste it.
-> 
-> Okay, thanks for this info Dan. I will see if I can write this script.
-> 
+Hi everyone!
+This following patch series extends support capabilities of TCA6424 through
+following patches.
 
-No, what I'm saying is that I know Dave Miller uses a script which
-pulls the Acked-by's out of email threads and adds them
-automatically.  I don't know how Greg does it, but it's better to
-use the normal format.
+The 1st patch adds 24 bit support for polarity inversion registers by providing
+24 bit support for invert variable.
+The 2nd patch adds 24 bit support of the variables such as irq_mask, irq_stat, etc.
+The 3rd patch extends 24 lines irq support for TCA6424.
+The 4th patch corrects the implementation of registration of device irqs using
+appropiate api's.
 
-regards,
-dan carpenter
+These patches were based on mainline kernel v3.5rc6.
+
+All your comments and suggestions are welcome.
+
+Regards,
+Chandrabhanu
+
+Chandrabhanu Mahapatra (1):
+  GPIO: PCA953X: Increase size of invert variable to support 24 bit
+
+Leed Aguilar (3):
+  gpio/pca953x: increase variables size to support 24 bit of data
+  OMAP: Define TCA6424 max number of possible IRQs
+  gpio/pca953x: register the device irq using appropriate api's
+
+ arch/arm/plat-omap/include/plat/irqs.h |   11 +++++++-
+ drivers/gpio/gpio-pca953x.c            |   47 ++++++++++++++++++--------------
+ include/linux/i2c/pca953x.h            |    2 +-
+ 3 files changed, 38 insertions(+), 22 deletions(-)
+
+-- 
+1.7.10
+
