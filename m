@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427Ab2GJEEk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 00:04:40 -0400
-Received: from void.printf.net ([89.145.121.20]:42311 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716Ab2GJEEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 00:04:38 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-sh@vger.kernel.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Boot regression on Mackerel with current mainline
-References: <201207031218.24797.rjw@sisk.pl>
-	<Pine.LNX.4.64.1207031336320.29890@axis700.grange>
-	<201207031910.24864.rjw@sisk.pl>
-	<Pine.LNX.4.64.1207041125330.21042@axis700.grange>
-Date: Tue, 10 Jul 2012 00:04:27 -0400
-In-Reply-To: <Pine.LNX.4.64.1207041125330.21042@axis700.grange> (Guennadi
-	Liakhovetski's message of "Wed, 4 Jul 2012 11:39:07 +0200 (CEST)")
-Message-ID: <87ipdws1mc.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751607Ab2GJEOR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 00:14:17 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:40969 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716Ab2GJEOQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 00:14:16 -0400
+Subject: Re: [PATCH] net: cgroup: fix access the unallocated memory in
+ netprio cgroup
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: nhorman@tuxdriver.com, davem@davemloft.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, lizefan@huawei.com, tj@kernel.org,
+        Eric Dumazet <edumazet@google.com>
+In-Reply-To: <1341887508-20302-1-git-send-email-gaofeng@cn.fujitsu.com>
+References: <1341837625.3265.2748.camel@edumazet-glaptop>
+	 <1341887508-20302-1-git-send-email-gaofeng@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 Jul 2012 06:14:10 +0200
+Message-ID: <1341893650.3265.3974.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guennadi,
+On Tue, 2012-07-10 at 10:31 +0800, Gao feng wrote:
+> there are some out of bound accesses in netprio cgroup.
+> when creating a new netprio cgroup,we only set a prioidx for
+> the new cgroup,without allocate memory for dev->priomap.
+> 
+> because we don't want to see additional bound checkings in
+> fast path, so I think the best way is to allocate memory when we
+> creating a new netprio cgroup.
+> 
+> and because netdev can be created or registered after cgroup being
+> created, so extend_netdev_table is also needed in write_priomap.
+> 
+> this patch add a return value for update_netdev_tables & extend_netdev_table,
+> so when new_priomap is allocated failed,write_priomap will stop to access
+> the priomap,and return -ENOMEM back to the userspace to tell the user
+> what happend.
+> 
+> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+> Cc: Neil Horman <nhorman@tuxdriver.com>
+> Cc: Eric Dumazet <edumazet@google.com>
+> ---
 
-On Wed, Jul 04 2012, Guennadi Liakhovetski wrote:
-> On Tue, 3 Jul 2012, Rafael J. Wysocki wrote:
->
->> On Tuesday, July 03, 2012, Guennadi Liakhovetski wrote:
->> > Hi Rafael
->> > 
->> > On Tue, 3 Jul 2012, Rafael J. Wysocki wrote:
->> > 
->> > > Hi,
->> > > 
->> > > We seem to have a functional regression on Mackerel with 3.5-rc5 which
->> > > seems to be related to SDHI.  Namely, the SDHI driver appears to wait forever
->> > > for the devices to appear and commenting out all of the sdhi devices in the
->> > > board file works around the problem.
->> > > 
->> > > I can investigate some more later today if need be.
->> > 
->> > Have you checked the logs? Are you seeing any of these in the kernel log:
->> > 
->> > genirq: Threaded irq requested with handler=NULL and !ONESHOT for irq 
->> 
->> I see this only once per boot, but then sh_mobile_sdhi is saying "timeout
->> waiting for hardware interrupt" pretty much continuously.
->
-> Yes, that's the one. Ok, let's fix it in the driver. In fact, a fix has 
-> already been submitted, but for 3.6. I hoped, 3.5 would resort to a softer 
-> form of the ONESHOT failing, so, I didn't push it for -rc. I think, the 
-> easiest would be to apply these two patches:
->
-> "mmc: tmio: use MMC opcode defines instead of numbers"
-> http://git.kernel.org/?p=linux/kernel/git/cjb/mmc.git;a=commit;h=598cd9cc217b0aa46089a3838a8b1c37b97aa08b
->
-> and
->
-> "mmc: extend and rename cd-gpio helpers to handle more slot GPIO functions"
-> http://git.kernel.org/?p=linux/kernel/git/cjb/mmc.git;a=commit;h=d8e60fb51effc83e6f53de191a8440f46e5a3f2c
->
-> The latter one looks big because of a rename, but with "-M" it's pretty 
-> trivial. Chris, do you agree?
+>  static void cgrp_destroy(struct cgroup *cgrp)
+> @@ -221,7 +233,10 @@ static int write_priomap(struct cgroup *cgrp, struct cftype *cft,
+>  	if (!dev)
+>  		goto out_free_devname;
+>  
+> -	update_netdev_tables();
+> +	ret = update_netdev_tables();
+> +	if (ret < 0)
+> +		goto out_free_devname;
+> +
+>  	ret = 0;
+>  	rcu_read_lock();
+>  	map = rcu_dereference(dev->priomap);
 
-Is the minimal fix to just add "| IRQF_ONESHOT" to the request_threaded_irq
-argument?  If so, I'd rather push just that for 3.5, and I can take care of
-having that change appear simultaneously in linux-next so that there aren't
-any conflicts.  Is that okay with you?
+Hi Gao
 
-Thanks,
+Is it still needed to call update_netdev_tables() from write_priomap() ?
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+
+
