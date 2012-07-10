@@ -1,208 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab2GJRL5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 13:11:57 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42406
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752232Ab2GJRL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 13:11:56 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Jul 2012 13:11:56 EDT
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [PATCH net,1/1] hyperv: Add support for setting MAC from within guests
-Date: Tue, 10 Jul 2012 10:19:22 -0700
-Message-Id: <1341940762-18307-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756519Ab2GJRMV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 13:12:21 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64670 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756502Ab2GJRMS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 13:12:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120710154410.GA29892@aftab.osrc.amd.com>
+References: <3908561D78D1C84285E8C5FCA982C28F19348DFF@ORSMSX104.amr.corp.intel.com>
+	<f830ac24f491389b0246af0fb31d0546f3583380.1341866155.git.tony.luck@intel.com>
+	<20120710154410.GA29892@aftab.osrc.amd.com>
+Date: Tue, 10 Jul 2012 10:12:17 -0700
+X-Google-Sender-Auth: Lx_3UPWrCdvWPF6UYZA0tl6OHps
+Message-ID: <CA+8MBbKU5AB5zpYQB6pHegA2V1=8q123fxyFERsHjWCLK5iCsw@mail.gmail.com>
+Subject: Re: [PATCH] x86/mce: Need to let kill_proc() send signal to doomed process
+From: Tony Luck <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for setting synthetic NIC MAC address from within Linux
-guests. Before using this feature, the option "spoofing of MAC address"
-should be enabled at the Hyper-V manager / Settings of the synthetic
-NIC.
+On Tue, Jul 10, 2012 at 8:44 AM, Borislav Petkov <bp@amd64.org> wrote:
+> Acked-by: Borislav Petkov <borislav.petkov@amd.com>
 
-Thanks to Kin Cho <kcho@infoblox.com> for the initial implementation and
-tests. And, thanks to Long Li <longli@microsoft.com> for the debugging
-works.
+Thanks for the Ack.
 
-Reported-and-tested-by: Kin Cho <kcho@infoblox.com>
-Reported-by: Long Li <longli@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/net/hyperv/hyperv_net.h   |    1 +
- drivers/net/hyperv/netvsc_drv.c   |   30 +++++++++++++-
- drivers/net/hyperv/rndis_filter.c |   79 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 109 insertions(+), 1 deletions(-)
++       doit = !!PageDirty(ppage) || !!(flags & MF_MUST_KILL);
 
-diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-index 2857ab0..95ceb35 100644
---- a/drivers/net/hyperv/hyperv_net.h
-+++ b/drivers/net/hyperv/hyperv_net.h
-@@ -131,6 +131,7 @@ int rndis_filter_send(struct hv_device *dev,
- 			struct hv_netvsc_packet *pkt);
- 
- int rndis_filter_set_packet_filter(struct rndis_device *dev, u32 new_filter);
-+int rndis_filter_set_device_mac(struct hv_device *hdev, char *mac);
- 
- 
- #define NVSP_INVALID_PROTOCOL_VERSION	((u32)0xFFFFFFFF)
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 8f8ed33..8e23c08 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -341,6 +341,34 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
- 	return 0;
- }
- 
-+
-+static int netvsc_set_mac_addr(struct net_device *ndev, void *p)
-+{
-+	struct net_device_context *ndevctx = netdev_priv(ndev);
-+	struct hv_device *hdev =  ndevctx->device_ctx;
-+	struct sockaddr *addr = p;
-+	char save_adr[14];
-+	unsigned char save_aatype;
-+	int err;
-+
-+	memcpy(save_adr, ndev->dev_addr, ETH_ALEN);
-+	save_aatype = ndev->addr_assign_type;
-+
-+	err = eth_mac_addr(ndev, p);
-+	if (err != 0)
-+		return err;
-+
-+	err = rndis_filter_set_device_mac(hdev, addr->sa_data);
-+	if (err != 0) {
-+		/* roll back to saved MAC */
-+		memcpy(ndev->dev_addr, save_adr, ETH_ALEN);
-+		ndev->addr_assign_type = save_aatype;
-+	}
-+
-+	return err;
-+}
-+
-+
- static const struct ethtool_ops ethtool_ops = {
- 	.get_drvinfo	= netvsc_get_drvinfo,
- 	.get_link	= ethtool_op_get_link,
-@@ -353,7 +381,7 @@ static const struct net_device_ops device_ops = {
- 	.ndo_set_rx_mode =		netvsc_set_multicast_list,
- 	.ndo_change_mtu =		netvsc_change_mtu,
- 	.ndo_validate_addr =		eth_validate_addr,
--	.ndo_set_mac_address =		eth_mac_addr,
-+	.ndo_set_mac_address =		netvsc_set_mac_addr,
- };
- 
- /*
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index 981ebb1..fbf5394 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -27,6 +27,7 @@
- #include <linux/if_ether.h>
- #include <linux/netdevice.h>
- #include <linux/if_vlan.h>
-+#include <linux/nls.h>
- 
- #include "hyperv_net.h"
- 
-@@ -47,6 +48,7 @@ struct rndis_request {
- 	struct hv_page_buffer buf;
- 	/* FIXME: We assumed a fixed size request here. */
- 	struct rndis_message request_msg;
-+	u8 ext[100];
- };
- 
- static void rndis_filter_send_completion(void *ctx);
-@@ -511,6 +513,83 @@ static int rndis_filter_query_device_mac(struct rndis_device *dev)
- 				      dev->hw_mac_adr, &size);
- }
- 
-+#define NWADR_STR "NetworkAddress"
-+#define NWADR_STRLEN 14
-+
-+int rndis_filter_set_device_mac(struct hv_device *hdev, char *mac)
-+{
-+	struct netvsc_device *nvdev = hv_get_drvdata(hdev);
-+	struct rndis_device *rdev = nvdev->extension;
-+	struct net_device *ndev = nvdev->ndev;
-+	struct rndis_request *request;
-+	struct rndis_set_request *set;
-+	struct rndis_config_parameter_info *cpi;
-+	wchar_t *cfg_nwadr, *cfg_mac;
-+	struct rndis_set_complete *set_complete;
-+	char macstr[2*ETH_ALEN+1];
-+	u32 extlen = sizeof(struct rndis_config_parameter_info) +
-+		2*NWADR_STRLEN + 4*ETH_ALEN;
-+	int ret, t;
-+
-+	request = get_rndis_request(rdev, RNDIS_MSG_SET,
-+		RNDIS_MESSAGE_SIZE(struct rndis_set_request) + extlen);
-+	if (!request)
-+		return -ENOMEM;
-+
-+	set = &request->request_msg.msg.set_req;
-+	set->oid = RNDIS_OID_GEN_RNDIS_CONFIG_PARAMETER;
-+	set->info_buflen = extlen;
-+	set->info_buf_offset = sizeof(struct rndis_set_request);
-+	set->dev_vc_handle = 0;
-+
-+	cpi = (struct rndis_config_parameter_info *)((ulong)set +
-+		set->info_buf_offset);
-+	cpi->parameter_name_offset =
-+		sizeof(struct rndis_config_parameter_info);
-+	/* Multiply by 2 because host needs 2 bytes (utf16) for each char */
-+	cpi->parameter_name_length = 2*NWADR_STRLEN;
-+	cpi->parameter_type = RNDIS_CONFIG_PARAM_TYPE_STRING;
-+	cpi->parameter_value_offset =
-+		cpi->parameter_name_offset + cpi->parameter_name_length;
-+	/* Multiply by 4 because each MAC byte displayed as 2 utf16 chars */
-+	cpi->parameter_value_length = 4*ETH_ALEN;
-+
-+	cfg_nwadr = (wchar_t *)((ulong)cpi + cpi->parameter_name_offset);
-+	cfg_mac = (wchar_t *)((ulong)cpi + cpi->parameter_value_offset);
-+	ret = utf8s_to_utf16s(NWADR_STR, NWADR_STRLEN, UTF16_HOST_ENDIAN,
-+			      cfg_nwadr, NWADR_STRLEN);
-+	if (ret < 0)
-+		goto cleanup;
-+	snprintf(macstr, 2*ETH_ALEN+1, "%pm", mac);
-+	ret = utf8s_to_utf16s(macstr, 2*ETH_ALEN, UTF16_HOST_ENDIAN,
-+			      cfg_mac, 2*ETH_ALEN);
-+	if (ret < 0)
-+		goto cleanup;
-+
-+	ret = rndis_filter_send_request(rdev, request);
-+	if (ret != 0)
-+		goto cleanup;
-+
-+	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
-+	if (t == 0) {
-+		netdev_err(ndev, "timeout before we got a set response...\n");
-+		/*
-+		 * can't put_rndis_request, since we may still receive a
-+		 * send-completion.
-+		 */
-+		return -EBUSY;
-+	} else {
-+		set_complete = &request->response_msg.msg.set_complete;
-+		if (set_complete->status != RNDIS_STATUS_SUCCESS)
-+			ret = -EINVAL;
-+	}
-+
-+cleanup:
-+	put_rndis_request(rdev, request);
-+	return ret;
-+}
-+
-+
- static int rndis_filter_query_device_link_status(struct rndis_device *dev)
- {
- 	u32 size = sizeof(u32);
--- 
-1.7.4.1
+Thinking about this some more, the "!!" are redundant
+and are an impediment to readability. We started with
+!!PageDirty(ppage) when we were passing an argument
+directly to kill_procs() and wanted to make sure we had a
+nice boolean value. But the result of the "||" is boolean,
+so we don't need to double negate.
 
+I'm going to change it to:
+       doit = PageDirty(ppage) || (flags & MF_MUST_KILL);
+
+-Tony
