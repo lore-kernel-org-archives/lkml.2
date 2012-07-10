@@ -1,42 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520Ab2GJMuv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 08:50:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40864 "EHLO mx1.redhat.com"
+	id S1755569Ab2GJMwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 08:52:09 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:55022 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752022Ab2GJMuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 08:50:50 -0400
-Message-ID: <4FFC251F.4050504@redhat.com>
-Date: Tue, 10 Jul 2012 15:50:39 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1755379Ab2GJMwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 08:52:07 -0400
+Message-ID: <4FFC2573.8040804@msgid.tls.msk.ru>
+Date: Tue, 10 Jul 2012 16:52:03 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/2] KVM: X86: remove read buffer for mmio read
-References: <4FFA9E16.10001@linux.vnet.ibm.com> <4FFABD59.2070108@redhat.com> <20120709112346.GA23898@redhat.com> <4FFAD341.3080508@redhat.com> <4FFADB37.4090705@linux.vnet.ibm.com> <4FFADDFA.5000603@redhat.com> <20120710103629.GC23898@redhat.com> <4FFC07BB.8080802@redhat.com> <20120710104847.GD23898@redhat.com>
-In-Reply-To: <20120710104847.GD23898@redhat.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.0+ NFS issues
+References: <4FBF2C57.3070203@msgid.tls.msk.ru>   <20120529152416.GC3441@fieldses.org> <4FC5C82E.4020806@msgid.tls.msk.ru>   <20120530132518.GA13794@fieldses.org> <4FC713ED.5040807@msgid.tls.msk.ru>  <1338469169.2420.7.camel@lade.trondhjem.org>  <4FC77128.9090206@msgid.tls.msk.ru> <1338471975.7732.5.camel@lade.trondhjem.org> <4FC77755.5060606@msgid.tls.msk.ru>
+In-Reply-To: <4FC77755.5060606@msgid.tls.msk.ru>
+X-Enigmail-Version: 1.4.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2012 01:48 PM, Gleb Natapov wrote:
-> > > > 
-> > > But the code is already here, why drop it?
-> > 
-> > The read cache is not effective for multiple disjunct reads.
-> What do you mean?
+I tried to debug this again, maybe to reproduce in a virtual machine,
+and found out that it is only 32bit server code shows this issue:
+after updating the kernel on the server to 64bit (the same version)
+I can't reproduce this issue anymore.  Rebooting back to 32bit,
+and voila, it is here again.
 
-If an instruction reads from several sources in mmio, then the first
-read will be flushed from the cache by the second read.  So if we need a
-third read, we'll have to exit for the first again.
+Something apparenlty isn't right on 32bits... ;)
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+(And yes, the prob is still present and is very annoying :)
+
+Thanks,
+
+/mjt
+
+
+On 31.05.2012 17:51, Michael Tokarev wrote:
+> On 31.05.2012 17:46, Myklebust, Trond wrote:
+>> On Thu, 2012-05-31 at 17:24 +0400, Michael Tokarev wrote:
+> []
+>>> I started tcpdump:
+>>>
+>>>  tcpdump -npvi br0 -s 0 host 192.168.88.4 and \( proto ICMP or port 2049 \) -w nfsdump
+>>>
+>>> on the client (192.168.88.2).  Next I mounted a directory on the client,
+>>> and started reading (tar'ing) a directory into /dev/null.  It captured a
+>>> few stalls.  Tcpdump shows number of packets it got, the stalls are at
+>>> packet counts 58090, 97069 and 97071.  I cancelled the capture after that.
+>>>
+>>> The resulting file is available at http://www.corpit.ru/mjt/tmp/nfsdump.xz ,
+>>> it is 220Mb uncompressed and 1.3Mb compressed.  The source files are
+>>> 10 files of 1Gb each, all made by using `truncate' utility, so does not
+>>> take place on disk at all.  This also makes it obvious that the issue
+>>> does not depend on the speed of disk on the server (since in this case,
+>>> the server disk isn't even in use).
+>>
+>> OK. So from the above file it looks as if the traffic is mainly READ
+>> requests.
+> 
+> The issue here happens only with reads.
+> 
+>> In 2 places the server stops responding. In both cases, the client seems
+>> to be sending a single TCP frame containing several COMPOUNDS containing
+>> READ requests (which should be legal) just prior to the hang. When the
+>> server doesn't respond, the client pings it with a RENEW, before it ends
+>> up severing the TCP connection and then retransmitting.
+> 
+> And sometimes -- speaking only from the behavour I've seen, not from the
+> actual frames sent -- server does not respond to the RENEW too, in which
+> case the client reports "nfs server no responding", and on the next
+> renew it may actually respond.  This happens too, but much more rare.
+> 
+> During these stalls, ie, when there's no network activity at all,
+> the server NFSD threads are busy eating all available CPU.
+> 
+> What does it all tell us? :)
+> 
+> Thank you!
+> 
+> /mjt
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
