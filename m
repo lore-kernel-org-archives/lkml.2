@@ -1,76 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab2GJMx0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 08:53:26 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49407 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755407Ab2GJMxZ (ORCPT
+	id S1755627Ab2GJMyg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 08:54:36 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58039 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752291Ab2GJMyd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 08:53:25 -0400
+	Tue, 10 Jul 2012 08:54:33 -0400
+From: Florian Fainelli <florian@openwrt.org>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4 0/4] Add ability to set defaultless network device MAC addresses to deterministic computed locally administered values
+Date: Tue, 10 Jul 2012 14:37:51 +0200
+User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.3; x86_64; ; )
+Cc: Andy Green <andy@warmcat.com>, linux-omap@vger.kernel.org, s-jan@ti.com,
+        arnd@arndb.de, patches@linaro.org, tony@atomide.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org
+References: <20120705024259.26317.16000.stgit@build.warmcat.com>
+In-Reply-To: <20120705024259.26317.16000.stgit@build.warmcat.com>
 MIME-Version: 1.0
-Date: Tue, 10 Jul 2012 20:53:24 +0800
-Message-ID: <CACV3sb+eAdjM4YJ5_jcpSSgtdM2A=BnLROig3xOONQTfbyzfCA@mail.gmail.com>
-Subject: [PATCH] perf: fix perf-report display ip string incorrectly
-From: Jovi Zhang <bookjovi@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201207101437.54877.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From bfc2eb1ac844b6d5f64e36eb01464a1cfba39663 Mon Sep 17 00:00:00 2001
-From: Jovi Zhang <bookjovi@gmail.com>
-Date: Wed, 11 Jul 2012 04:32:15 +0800
-Subject: [PATCH] perf: fix perf-report display ip string incorrectly
+Hi,
 
-This patch fix perf ui browser cannot display ip string correctly
-when using perf-report.
+Le jeudi 05 juillet 2012 04:44:33, Andy Green a écrit :
+> The following series adds some code to generate legal, locally administered
+> MAC addresses from OMAP4 CPU Die ID fuse data, and then adds a helper at
+> net/ethernet taking care of accepting device path / MAC mapping
+> registrations and running a notifier to enforce the requested MAC when the
+> matching network device turns up.
 
-"char ipstr[BITS_PER_LONG / 4 + 1]" cannot reserve enough space
-for ip string, for example string 0x80049ede need 13 bytes,
-so change it to "BITS_PER_LONG / 4 + 3".
+This looks like something you can solve by user-space entirely. Expose the 
+OMAP4 CPU Die ID using a sysfs attribute, and let user-space manage the MAC 
+address pool.
 
-Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
----
- tools/perf/ui/browsers/hists.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+If you tell me you want to use this for nfsroot booting, what prevents you 
+from using an initramfs, assign a valid MAC to your interface and switch over 
+your nfsroot once the interface setup is done?
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 53f6697..a17c9c7 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -386,6 +386,8 @@ static char *callchain_list__sym_name(struct
-callchain_list *cl,
+> 
+> On PandaBoard / ES, two devices have no board-level MAC either assigned by
+> the manufacturer or stored on the board, the last patch in the series adds
+> these device paths and gets them set when the network device is registered.
+> 
+> Lastly for convenient testing, there's a little patch on
+> omap2plus_defconfig that will get Ethernet and WLAN up on Pandaboard.
+> 
+> The patches are against today's linux-omap.
+> 
+> Thanks to Tony Lindgren and Arnd Bergmann for comments leading to the
+> helper in net/ethernet.
+> 
+> ---
+> 
+> Andy Green (4):
+>       OMAP: add cpu id register to MAC address helper
+>       NET ethernet introduce mac_platform helper
+>       OMAP4 PANDA register ethernet and wlan for automatic mac allocation
+>       config test config extending omap2plus with wl12xx etc
+> 
+> 
+>  arch/arm/configs/omap2plus_defconfig   |   35 +++----
+>  arch/arm/mach-omap2/Kconfig            |    1
+>  arch/arm/mach-omap2/board-omap4panda.c |   30 ++++++
+>  arch/arm/mach-omap2/id.c               |   39 ++++++++
+>  arch/arm/mach-omap2/include/mach/id.h  |    1
+>  include/net/mac-platform.h             |   39 ++++++++
+>  net/Kconfig                            |    5 +
+>  net/ethernet/Makefile                  |    3 +
+>  net/ethernet/mac-platform.c            |  151
+> ++++++++++++++++++++++++++++++++ 9 files changed, 282 insertions(+), 22
+> deletions(-)
+>  create mode 100644 include/net/mac-platform.h
+>  create mode 100644 net/ethernet/mac-platform.c
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
- #define LEVEL_OFFSET_STEP 3
-
-+#define IPSTR_LEN (BITS_PER_LONG / 4 + 3)
-+
- static int hist_browser__show_callchain_node_rb_tree(struct
-hist_browser *browser,
- 						     struct callchain_node *chain_node,
- 						     u64 total, int level,
-@@ -416,7 +418,7 @@ static int
-hist_browser__show_callchain_node_rb_tree(struct hist_browser *browse
- 		remaining -= cumul;
-
- 		list_for_each_entry(chain, &child->val, list) {
--			char ipstr[BITS_PER_LONG / 4 + 1], *alloc_str;
-+			char ipstr[IPSTR_LEN], *alloc_str;
- 			const char *str;
- 			int color;
- 			bool was_first = first;
-@@ -492,7 +494,7 @@ static int
-hist_browser__show_callchain_node(struct hist_browser *browser,
- 	char folded_sign = ' ';
-
- 	list_for_each_entry(chain, &node->val, list) {
--		char ipstr[BITS_PER_LONG / 4 + 1], *s;
-+		char ipstr[IPSTR_LEN], *s;
- 		int color;
-
- 		folded_sign = callchain_list__folded(chain);
 -- 
-1.7.9.7
+Florian
