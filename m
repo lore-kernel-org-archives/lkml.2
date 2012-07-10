@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475Ab2GJMQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 08:16:37 -0400
-Received: from mga14.intel.com ([143.182.124.37]:64605 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755405Ab2GJMQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 08:16:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="120713482"
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>
-Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>
-Subject: [PATCHv5 4/4] ext4: weed out ext4_write_super
-Date: Tue, 10 Jul 2012 15:17:53 +0300
-Message-Id: <1341922673-14147-5-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1341922673-14147-1-git-send-email-dedekind1@gmail.com>
-References: <1341922673-14147-1-git-send-email-dedekind1@gmail.com>
+	id S1755503Ab2GJMRU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 08:17:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39945 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755397Ab2GJMRR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 08:17:17 -0400
+Message-ID: <1341922621.3462.130.camel@twins>
+Subject: Re: [PATCH V2 5/5] perf/x86: Add Intel Nehalem-EX uncore support
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: eranian@google.com, mingo@elte.hu, andi@firstfloor.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 10 Jul 2012 14:17:01 +0200
+In-Reply-To: <4FF534F1.3030307@intel.com>
+References: <1341381616-12229-1-git-send-email-zheng.z.yan@intel.com>
+	  <1341381616-12229-6-git-send-email-zheng.z.yan@intel.com>
+	 <1341396293.2507.77.camel@laptop> <4FF534F1.3030307@intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+On Thu, 2012-07-05 at 14:32 +0800, Yan, Zheng wrote:
+> The uncore subsystem in Nehalem-EX consists of 7 components
+> (U-Box, C-Box, B-Box, S-Box, R-Box, M-Box and W-Box). This
+> patch is large because the way to program these boxes is
+> diverse.
+> 
+Thanks, I added the below little delta.
 
-We do not depend on VFS's '->write_super()' anymore and do not need the
-'s_dirt' flag anymore. This patch weeds out 'ext4_write_super()' and the
-'s_dirt' usage in VFS.
+Did you manage to fix that SNB-EP crash already?
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Also, should we be adding 58 (IVB) to the SNB uncore? The SDM states it
+should all be the same programming wise.
+
 ---
- fs/ext4/super.c |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 9b26ba0..546c6ed 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -73,7 +73,6 @@ static const char *ext4_decode_error(struct super_block *sb, int errno,
- static int ext4_remount(struct super_block *sb, int *flags, char *data);
- static int ext4_statfs(struct dentry *dentry, struct kstatfs *buf);
- static int ext4_unfreeze(struct super_block *sb);
--static void ext4_write_super(struct super_block *sb);
- static int ext4_freeze(struct super_block *sb);
- static struct dentry *ext4_mount(struct file_system_type *fs_type, int flags,
- 		       const char *dev_name, void *data);
-@@ -1193,7 +1192,6 @@ static const struct super_operations ext4_nojournal_sops = {
- 	.dirty_inode	= ext4_dirty_inode,
- 	.drop_inode	= ext4_drop_inode,
- 	.evict_inode	= ext4_evict_inode,
--	.write_super	= ext4_write_super,
- 	.put_super	= ext4_put_super,
- 	.statfs		= ext4_statfs,
- 	.remount_fs	= ext4_remount,
-@@ -4202,7 +4200,6 @@ int ext4_commit_super(struct super_block *sb, int sync)
- 	es->s_free_inodes_count =
- 		cpu_to_le32(percpu_counter_sum_positive(
- 				&EXT4_SB(sb)->s_freeinodes_counter));
--	sb->s_dirt = 0;
- 	BUFFER_TRACE(sbh, "marking dirty");
- 	ext4_superblock_csum_set(sb, es);
- 	mark_buffer_dirty(sbh);
-@@ -4309,13 +4306,6 @@ int ext4_force_commit(struct super_block *sb)
- 	return ret;
- }
- 
--static void ext4_write_super(struct super_block *sb)
--{
--	lock_super(sb);
--	ext4_commit_super(sb, 1);
--	unlock_super(sb);
--}
--
- static int ext4_sync_fs(struct super_block *sb, int wait)
- {
- 	int ret = 0;
--- 
-1.7.7.6
+@@ -893,7 +893,7 @@ static struct attribute_group nhmex_unco
+ static struct intel_uncore_type nhmex_uncore_cbox = {
+ 	.name			= "cbox",
+ 	.num_counters		= 6,
+-	.num_boxes		= 8,
++	.num_boxes		= 10,
+ 	.perf_ctr_bits		= 48,
+ 	.event_ctl		= NHMEX_C0_MSR_PMON_EV_SEL0,
+ 	.perf_ctr		= NHMEX_C0_MSR_PMON_CTR0,
+@@ -2806,9 +2806,9 @@ static int __init uncore_cpu_init(void)
+ 	max_cores = boot_cpu_data.x86_max_cores;
+ 	switch (boot_cpu_data.x86_model) {
+ 	case 26: /* Nehalem */
+-	case 30:
++	case 30: /* Nehalem-EP */
+ 	case 37: /* Westmere */
+-	case 44:
++	case 44: /* Westmere-EP */
+ 		msr_uncores = nhm_msr_uncores;
+ 		break;
+ 	case 42: /* Sandy Bridge */
+@@ -2821,7 +2821,10 @@ static int __init uncore_cpu_init(void)
+ 			snbep_uncore_cbox.num_boxes = max_cores;
+ 		msr_uncores = snbep_msr_uncores;
+ 		break;
+-	case 46:
++	case 46: /* Nehalem-EX */
++	case 47: /* Westmere-EX aka. Xeon E7 */
++		if (nhmex_uncore_cbox.num_boxes > max_cores)
++			nhmex_uncore_cbox.num_boxes = max_cores;
+ 		msr_uncores = nhmex_msr_uncores;
+ 		break;
+ 	default:
 
