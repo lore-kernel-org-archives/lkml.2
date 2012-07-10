@@ -1,90 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab2GJGWk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 02:22:40 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62135 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733Ab2GJGWj (ORCPT
+	id S1753937Ab2GJG1R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 02:27:17 -0400
+Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:45985 "EHLO
+	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752543Ab2GJG1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 02:22:39 -0400
-Message-ID: <4FFBCA2A.6080400@linaro.org>
-Date: Tue, 10 Jul 2012 08:22:34 +0200
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Tue, 10 Jul 2012 02:27:15 -0400
+Message-ID: <4FFBCB39.1010809@ti.com>
+Date: Tue, 10 Jul 2012 11:57:05 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
-        arnd@arndb.de
-Subject: Re: [PATCH 7/9] Input: ab8500-ponkey: Create AB8500 domain IRQ mapping
-References: <1341493572-29735-1-git-send-email-lee.jones@linaro.org> <4FF6994B.9040801@linaro.org> <20120706173957.GA10202@core.coreip.homeip.net> <4FFB288D.4080606@linaro.org> <20120709201422.GA12242@core.coreip.homeip.net> <4FFB40A4.5060505@linaro.org> <20120709204620.GA12692@core.coreip.homeip.net> <4FFB463F.9040201@linaro.org> <20120710061757.GB29257@core.coreip.homeip.net>
-In-Reply-To: <20120710061757.GB29257@core.coreip.homeip.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, b-cousson@ti.com,
+        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, balbi@ti.com,
+        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org, hvaibhav@ti.com
+Subject: Re: [PATCH v1 10/11] arm/dts: omap: Add usb_otg and glue data
+References: <1340884267-28908-1-git-send-email-kishon@ti.com> <1340884267-28908-11-git-send-email-kishon@ti.com>
+In-Reply-To: <1340884267-28908-11-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/12 08:17, Dmitry Torokhov wrote:
-> On Mon, Jul 09, 2012 at 10:59:43PM +0200, Lee Jones wrote:
->> Sorry for the cock-up(s).
->>
->> From: Lee Jones <lee.jones@linaro.org>
->> Date: Tue, 26 Jun 2012 10:46:50 +0100
->> Subject: [PATCH 1/1] Input: ab8500-ponkey: Create AB8500 domain IRQ mapping
->>
->> Before we can use any domain allocated IRQ, we need to first create a
->> map between the Hardware IRQ (hwirq) and the Linux Virtual IRQ (virq).
->> We do this with a helper function provided by the AB8500 IRQ domain
->> controller called ab8500_irq_get_virq(). We need to do this for both
->> IRQs which the Power-On-Key driver uses; one for button press, the other
->> for button depress.
->>
->> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+On Thursday 28 June 2012 05:21 PM, Kishon Vijay Abraham I wrote:
+> Add usb otg data node in omap4/omap3 device tree file. Also update
+> the node with board specific setting in omapx-<board>.dts file.
 >
-> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Signed-off-by: Kishon Vijay Abraham I<kishon@ti.com>
+> ---
+>   arch/arm/boot/dts/omap3-beagle.dts |    6 ++++++
+>   arch/arm/boot/dts/omap3-evm.dts    |    6 ++++++
+>   arch/arm/boot/dts/omap3.dtsi       |    8 ++++++++
+>   arch/arm/boot/dts/omap4-panda.dts  |    6 ++++++
+>   arch/arm/boot/dts/omap4-sdp.dts    |    6 ++++++
+>   arch/arm/boot/dts/omap4.dtsi       |    8 ++++++++
+>   6 files changed, 40 insertions(+), 0 deletions(-)
 >
-> I think it would be best if this got merged through whatever tree that
-> was used to introduce ab8500_irq_get_virq(); otherwise it will have to
-> wait till I resync with mainline sometime in the middle of the next
-> release cycle.
->
-> Thanks.
+> diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
+> index 5b4506c..f3d7076 100644
+> --- a/arch/arm/boot/dts/omap3-beagle.dts
+> +++ b/arch/arm/boot/dts/omap3-beagle.dts
+> @@ -67,3 +67,9 @@
+>   &mmc3 {
+>   	status = "disable";
+>   };
+> +
+> +&usb_otg_hs {
+> +	interface_type =<0>;
+> +	mode =<3>;
+> +	power =<50>;
+> +};
+> diff --git a/arch/arm/boot/dts/omap3-evm.dts b/arch/arm/boot/dts/omap3-evm.dts
+> index 2eee16e..8963b3d 100644
+> --- a/arch/arm/boot/dts/omap3-evm.dts
+> +++ b/arch/arm/boot/dts/omap3-evm.dts
+> @@ -18,3 +18,9 @@
+>   		reg =<0x80000000 0x10000000>; /* 256 MB */
+>   	};
+>   };
+> +
+> +&usb_otg_hs {
+> +	interface_type =<0>;
+> +	mode =<3>;
+> +	power =<50>;
+> +};
+> diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+> index 99474fa..2f565d6 100644
+> --- a/arch/arm/boot/dts/omap3.dtsi
+> +++ b/arch/arm/boot/dts/omap3.dtsi
+> @@ -215,5 +215,13 @@
+>   			compatible = "ti,omap3-hsmmc";
+>   			ti,hwmods = "mmc3";
+>   		};
+> +
+> +		usb_otg_hs: usb_otg_hs@4a0ab000 {
+> +			compatible = "ti,musb-omap2430";
 
-No problem. I'll send it though ARM-SoC.
+this compatible doesn't seem right in omap3.dtsi. Same with
+the below entry in omap4.dtsi.
+See other IP blocks which are reused across OMAP2/3/4 on
+how the compatible for those are handled.
 
->> ---
->>   drivers/input/misc/ab8500-ponkey.c |    4 ++--
->>   1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/input/misc/ab8500-ponkey.c b/drivers/input/misc/ab8500-ponkey.c
->> index 5ceb23e..f6764af 100644
->> --- a/drivers/input/misc/ab8500-ponkey.c
->> +++ b/drivers/input/misc/ab8500-ponkey.c
->> @@ -74,8 +74,8 @@ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
->>
->>   	ponkey->idev = input;
->>   	ponkey->ab8500 = ab8500;
->> -	ponkey->irq_dbf = irq_dbf;
->> -	ponkey->irq_dbr = irq_dbr;
->> +	ponkey->irq_dbf = ab8500_irq_get_virq(ab8500, irq_dbf);
->> +	ponkey->irq_dbr = ab8500_irq_get_virq(ab8500, irq_dbr);
->>
->>   	input->name = "AB8500 POn(PowerOn) Key";
->>   	input->dev.parent = &pdev->dev;
->> --
->> 1.7.9.5
->>
->>
->>
->
-
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
-
+> +			ti,hwmods = "usb_otg_hs";
+> +			multipoint =<1>;
+> +			num_eps =<16>;
+> +			ram_bits =<12>;
+> +		};
+>   	};
+>   };
+> diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
+> index 1efe0c5..0825fa7 100644
+> --- a/arch/arm/boot/dts/omap4-panda.dts
+> +++ b/arch/arm/boot/dts/omap4-panda.dts
+> @@ -89,3 +89,9 @@
+>   	ti,non-removable;
+>   	bus-width =<4>;
+>   };
+> +
+> +&usb_otg_hs {
+> +	interface_type =<1>;
+> +	mode =<3>;
+> +	power =<50>;
+> +};
+> diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
+> index d08c4d1..5244d51 100644
+> --- a/arch/arm/boot/dts/omap4-sdp.dts
+> +++ b/arch/arm/boot/dts/omap4-sdp.dts
+> @@ -158,3 +158,9 @@
+>   	bus-width =<4>;
+>   	ti,non-removable;
+>   };
+> +
+> +&usb_otg_hs {
+> +	interface_type =<1>;
+> +	mode =<3>;
+> +	power =<50>;
+> +};
+> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+> index 4d2dcc1..bc7b3c3 100644
+> --- a/arch/arm/boot/dts/omap4.dtsi
+> +++ b/arch/arm/boot/dts/omap4.dtsi
+> @@ -285,5 +285,13 @@
+>   				<0x4a002300 0x1>;
+>   			};
+>   		};
+> +
+> +		usb_otg_hs: usb_otg_hs@4a0ab000 {
+> +			compatible = "ti,musb-omap2430";
+> +			ti,hwmods = "usb_otg_hs";
+> +			multipoint =<1>;
+> +			num_eps =<16>;
+> +			ram_bits =<12>;
+> +		};
+>   	};
+>   };
 
