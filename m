@@ -1,121 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab2GJGJV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 02:09:21 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51984 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472Ab2GJGJS (ORCPT
+	id S1753841Ab2GJGKz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 02:10:55 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:63692 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab2GJGKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 02:09:18 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FFBC703.8010604@jp.fujitsu.com>
-Date: Tue, 10 Jul 2012 15:09:07 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 10 Jul 2012 02:10:53 -0400
+Date: Tue, 10 Jul 2012 14:10:21 +0800
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwp.linux@gmail.com>
+Subject: Re: [patch 08/11] mm: memcg: remove needless !mm fixup to init_mm
+ when charging
+Message-ID: <20120710061021.GA6096@kernel>
+Reply-To: Wanpeng Li <liwp.linux@gmail.com>
+References: <1341449103-1986-1-git-send-email-hannes@cmpxchg.org>
+ <1341449103-1986-9-git-send-email-hannes@cmpxchg.org>
+ <20120709152058.GK4627@tiehlicka.suse.cz>
 MIME-Version: 1.0
-To: <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <lenb@kernel.org>, <srivatsa.bhat@linux.vnet.ibm.com>,
-        <toshi.kani@hp.com>
-Subject: [PATCH v2 2/3] acpi : prevent cpu from becoming online
-References: <4FFBC66B.7030606@jp.fujitsu.com>
-In-Reply-To: <4FFBC66B.7030606@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120709152058.GK4627@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even if acpi_processor_handle_eject() offlines cpu, there is a chance
-to online the cpu after that. So the patch closes the window by using
-get/put_online_cpus().
+On Mon, Jul 09, 2012 at 05:20:58PM +0200, Michal Hocko wrote:
+>On Thu 05-07-12 02:45:00, Johannes Weiner wrote:
+>> It does not matter to __mem_cgroup_try_charge() if the passed mm is
+>> NULL or init_mm, it will charge the root memcg in either case.
 
-Why does the patch change _cpu_up() logic?
+You can also change the comment in __mem_cgroup_try_charge :
 
-The patch cares the race of hot-remove cpu and _cpu_up(). If the patch
-does not change it, there is the following race.
+"if so charge the init_mm" => "if so charge the root memcg"
 
-hot-remove cpu                         |  _cpu_up()
-------------------------------------- ------------------------------------
-call acpi_processor_handle_eject()     |
-     call cpu_down()                   |
-     call get_online_cpus()            |
-                                       | call cpu_hotplug_begin() and stop here
-     call arch_unregister_cpu()        |
-     call acpi_unmap_lsapic()          |
-     call put_online_cpus()            |
-                                       | start and continue _cpu_up()
-     return acpi_processor_remove()    |
-continue hot-remove the cpu            |
-
-So _cpu_up() can continue to itself. And hot-remove cpu can also continue
-itself. If the patch changes _cpu_cp() logic, the race disappears as below:
-
-hot-remove cpu                         | _cpu_up()
------------------------------------------------------------------------
-call acpi_processor_handle_eject()     |
-     call cpu_down()                   |
-     call get_online_cpus()            |
-                                       | call cpu_hotplug_begin() and stop here
-     call arch_unregister_cpu()        |
-     call acpi_unmap_lsapic()          |
-          cpu's cpu_present is set     |
-          to false by set_cpu_present()|
-     call put_online_cpus()            |
-                                       | start _cpu_up()
-                                       | check cpu_present() and return -EINVAL
-     return acpi_processor_remove()    |
-continue hot-remove the cpu            |
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-
----
- drivers/acpi/processor_driver.c |   12 ++++++++++++
- kernel/cpu.c                    |    8 +++++---
- 2 files changed, 17 insertions(+), 3 deletions(-)
-
-Index: linux-3.5-rc6/drivers/acpi/processor_driver.c
-===================================================================
---- linux-3.5-rc6.orig/drivers/acpi/processor_driver.c	2012-07-10 13:58:20.862931557 +0900
-+++ linux-3.5-rc6/drivers/acpi/processor_driver.c	2012-07-10 14:05:46.318365136 +0900
-@@ -850,8 +850,18 @@ static int acpi_processor_handle_eject(s
- 			return ret;
- 	}
-
-+	get_online_cpus();
-+	/*
-+	 * Someone might online the cpu again at this point. So we check that
-+	 * cpu has been onlined or not. If cpu is online, it returns -EBUSY.
-+	 */
-+	if (unlikely(cpu_online(pr->id))) {
-+		put_online_cpus();
-+		return -EBUSY;
-+	}
- 	arch_unregister_cpu(pr->id);
- 	acpi_unmap_lsapic(pr->id);
-+	put_online_cpus();
- 	return ret;
- }
- #else
-Index: linux-3.5-rc6/kernel/cpu.c
-===================================================================
---- linux-3.5-rc6.orig/kernel/cpu.c	2012-07-08 09:23:56.000000000 +0900
-+++ linux-3.5-rc6/kernel/cpu.c	2012-07-10 14:15:26.065113805 +0900
-@@ -343,11 +343,14 @@ static int __cpuinit _cpu_up(unsigned in
- 	unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
- 	struct task_struct *idle;
-
--	if (cpu_online(cpu) || !cpu_present(cpu))
--		return -EINVAL;
--
- 	cpu_hotplug_begin();
-
-+	if (cpu_online(cpu) || !cpu_present(cpu)) {
-+		ret =  -EINVAL;
-+		goto out;
-+	}
-+
-+
- 	idle = idle_thread_get(cpu);
- 	if (IS_ERR(idle)) {
- 		ret = PTR_ERR(idle);
-
+>> 
+>> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+>
+>Acked-by: Michal Hocko <mhocko@suse.cz>
+>
+>> ---
+>>  mm/memcontrol.c |    5 -----
+>>  1 files changed, 0 insertions(+), 5 deletions(-)
+>> 
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 418b47d..6fe4101 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -2766,8 +2766,6 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+>>  		ret = 0;
+>>  	return ret;
+>>  charge_cur_mm:
+>> -	if (unlikely(!mm))
+>> -		mm = &init_mm;
+>>  	ret = __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
+>>  	if (ret == -EINTR)
+>>  		ret = 0;
+>> @@ -2832,9 +2830,6 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+>>  	if (PageCompound(page))
+>>  		return 0;
+>>  
+>> -	if (unlikely(!mm))
+>> -		mm = &init_mm;
+>> -
+>>  	if (!PageSwapCache(page))
+>>  		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
+>>  	else { /* page is swapcache/shmem */
+>> -- 
+>> 1.7.7.6
+>> 
+>
+>-- 
+>Michal Hocko
+>SUSE Labs
+>SUSE LINUX s.r.o.
+>Lihovarska 1060/12
+>190 00 Praha 9    
+>Czech Republic
+>--
+>To unsubscribe from this list: send the line "unsubscribe cgroups" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
