@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab2GJKgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 06:36:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30133 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752678Ab2GJKgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 06:36:32 -0400
-Date: Tue, 10 Jul 2012 13:36:29 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/2] KVM: X86: remove read buffer for mmio read
-Message-ID: <20120710103629.GC23898@redhat.com>
-References: <4FFA9E16.10001@linux.vnet.ibm.com>
- <4FFABD59.2070108@redhat.com>
- <20120709112346.GA23898@redhat.com>
- <4FFAD341.3080508@redhat.com>
- <4FFADB37.4090705@linux.vnet.ibm.com>
- <4FFADDFA.5000603@redhat.com>
+	id S1753482Ab2GJKmp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 06:42:45 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57315 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751534Ab2GJKmn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 06:42:43 -0400
+Date: Tue, 10 Jul 2012 11:42:34 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
+ page to userspace
+Message-ID: <20120710104234.GI9108@mudshark.cambridge.arm.com>
+References: <1341412376-6272-1-git-send-email-will.deacon@arm.com>
+ <20120709122523.GC4627@tiehlicka.suse.cz>
+ <20120709141324.GK7315@mudshark.cambridge.arm.com>
+ <alpine.LSU.2.00.1207091622470.2261@eggly.anvils>
+ <20120710094513.GB9108@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FFADDFA.5000603@redhat.com>
+In-Reply-To: <20120710094513.GB9108@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 04:34:50PM +0300, Avi Kivity wrote:
-> On 07/09/2012 04:23 PM, Xiao Guangrong wrote:
-> > On 07/09/2012 08:49 PM, Avi Kivity wrote:
-> >> On 07/09/2012 02:23 PM, Gleb Natapov wrote:
-> >>>
-> >>>> kvm-unit-tests.git has a test for xchg to mmio.  Does it still work?
-> >>>>
-> >>>> I agree this code has to go, but it needs to be replaced by something.
-> >>>> Maybe a .valid flag in struct operand.
-> >>>>
-> >>> Valid will not enough for that.
-> >> 
-> >> If we make everything go through operands, any reason why not?
-> >> 
-> > 
-> > I noticed some instructions need to read ESP for many times (e.g, iret_real),
-> > maybe .valid flag is not enough for this case if the stack is in MMIO, yes?
+On Tue, Jul 10, 2012 at 10:45:13AM +0100, Will Deacon wrote:
+> On Tue, Jul 10, 2012 at 12:57:14AM +0100, Hugh Dickins wrote:
+> > If I start to grep the architectures for non-empty flush_dcache_page(),
+> > I soon find things in arch/arm such as v4_mc_copy_user_highpage() doing
+> > if (!test_and_set_bit(PG_dcache_clean,)) __flush_dcache_page() - where
+> > the naming suggests that I'm right, it's the architecture's responsibility
+> > to arrange whatever flushing is needed in its copy and clear page functions.
 > 
-> Good catch.  We either have to fix it or to restrict stack operations to
-> regular memory (->read_std).
+> On ARM the flushing is there to deal with dcache aliasing and highmem, so the
+> clear/copy functions won't actually do explicit flushing on modern (ARMv7)
+> cores. Instead we flush the page when writing the pte and noticing that
+> PG_arch_1 (PG_dcache_clean) is clear...
 > 
-> > IIUC, I also noticed ESP is not reset back if it is emulated fail (mmio is needed).
-> > If the stack located in mmio region, this kind of instruct will be broken, i know no
-> > guest will use mmio as stack but SDM does not limit it, is it valid?
-> 
-> Stack in mmio (or task switch in mmio) is architecturally valid.  We
-> don't have to support it if no guests do it.
-> 
-But the code is already here, why drop it?
+> ...so the real question is why this wasn't being triggered for huge pages.
+> I'll go and take another look since I would expect PG_arch_1 to be cleared
+> for pages coming back from alloc_huge_page.
 
---
-			Gleb.
+Ok, so this is exactly the problem. The hugetlb allocator uses its own
+pool of huge pages, so free_huge_page followed by a later alloc_huge_page
+will give you something where the page flags of the compound head do not
+guarantee that PG_arch_1 is clear.
+
+I tried hacking arch_release_hugepage to clear the bit, but that's only
+called when actually releasing the hugepages via __free_pages which is
+precisely the case that works correctly anyway!
+
+Will
