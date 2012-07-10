@@ -1,83 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab2GJGuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 02:50:37 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40969 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753094Ab2GJGuf (ORCPT
+	id S1753800Ab2GJGwd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 02:52:33 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:59418 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753145Ab2GJGwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 02:50:35 -0400
-Date: Tue, 10 Jul 2012 16:50:33 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>, Alessandro Rubini <rubini@gnudd.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the
- i2c-embedded tree
-Message-Id: <20120710165033.ab9ffbee81e2aeb03cad8d00@canb.auug.org.au>
-In-Reply-To: <20120710164130.f38e4d1673f925ddb13914c9@canb.auug.org.au>
-References: <20120710164130.f38e4d1673f925ddb13914c9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__10_Jul_2012_16_50_33_+1000_TQzqAXBCGaEJ7u.I"
+	Tue, 10 Jul 2012 02:52:31 -0400
+Message-ID: <4FFBD0EC.5060300@linux.vnet.ibm.com>
+Date: Tue, 10 Jul 2012 12:21:24 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] acpi : cpu hot-remove returns error number when cpu_down()
+ fails
+References: <4FF65898.3000301@jp.fujitsu.com> <4FF6B537.1030703@linux.vnet.ibm.com> <4FFA4269.5050808@jp.fujitsu.com> <4FFABFAC.3000708@linux.vnet.ibm.com> <4FFB73A8.4030102@jp.fujitsu.com>
+In-Reply-To: <4FFB73A8.4030102@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+x-cbid: 12070920-1396-0000-0000-000001891EC7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__10_Jul_2012_16_50_33_+1000_TQzqAXBCGaEJ7u.I
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/10/2012 05:43 AM, Yasuaki Ishimatsu wrote:
+> Hi Srivatsa,
+> 
+> 2012/07/09 20:25, Srivatsa S. Bhat wrote:
+>> On 07/09/2012 08:01 AM, Yasuaki Ishimatsu wrote:
+>>> Hi Srivatsa,
+>>>
+>>> Thank you for your reviewing.
+>>>
+>>> 2012/07/06 18:51, Srivatsa S. Bhat wrote:
+>>>> On 07/06/2012 08:46 AM, Yasuaki Ishimatsu wrote:
+>>>>> Even if cpu_down() fails, acpi_processor_remove() continues to remove the cpu.
+>>>>
+>>>> Ouch!
+>>>>
+>>>>> But in this case, it should return error number since some process may run on
+>>>>> the cpu. If the cpu has a running process and the cpu is turned the power off,
+>>>>> the system cannot work well.
+>>>>>
+>>>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>>>
+>>>>> ---
+>>>>>    drivers/acpi/processor_driver.c |   18 ++++++++++++------
+>>>>>    1 file changed, 12 insertions(+), 6 deletions(-)
+>>>>>
+>>>>> Index: linux-3.5-rc4/drivers/acpi/processor_driver.c
+>>>>> ===================================================================
+>>>>> --- linux-3.5-rc4.orig/drivers/acpi/processor_driver.c	2012-06-25 04:53:04.000000000 +0900
+>>>>> +++ linux-3.5-rc4/drivers/acpi/processor_driver.c	2012-07-05 21:02:58.711285382 +0900
+>>>>> @@ -610,7 +610,7 @@ err_free_pr:
+>>>>>    static int acpi_processor_remove(struct acpi_device *device, int type)
+>>>>>    {
+>>>>>    	struct acpi_processor *pr = NULL;
+>>>>> -
+>>>>> +	int ret;
+>>>>>
+>>>>>    	if (!device || !acpi_driver_data(device))
+>>>>>    		return -EINVAL;
+>>>>> @@ -621,8 +621,9 @@ static int acpi_processor_remove(struct
+>>>>>    		goto free;
+>>>>>
+>>>>>    	if (type == ACPI_BUS_REMOVAL_EJECT) {
+>>>>> -		if (acpi_processor_handle_eject(pr))
+>>>>> -			return -EINVAL;
+>>>>> +		ret = acpi_processor_handle_eject(pr);
+>>>>> +		if (ret)
+>>>>> +			return ret;
+>>>>>    	}
+>>>>>
+>>>>>    	acpi_processor_power_exit(pr, device);
+>>>>> @@ -841,12 +842,17 @@ static acpi_status acpi_processor_hotadd
+>>>>>
+>>>>>    static int acpi_processor_handle_eject(struct acpi_processor *pr)
+>>>>>    {
+>>>>> -	if (cpu_online(pr->id))
+>>>>> -		cpu_down(pr->id);
+>>>>> +	int ret;
+>>>>> +
+>>>>> +	if (cpu_online(pr->id)) {
+>>>>> +		ret = cpu_down(pr->id);
+>>>>> +		if (ret)
+>>>>> +			return ret;
+>>>>> +	}
+>>>>>
+>>>>
+>>>> Strictly speaking, this is not thorough enough. What prevents someone
+>>>> from onlining that same cpu again, at this point?
+>>>> So, IMHO, you need to wrap the contents of this function inside a
+>>>> get_online_cpus()/put_online_cpus() block, to prevent anyone else
+>>>> from messing with CPU hotplug at the same time.
+>>>
+>>> If I understand your comment by mistake, please let me know.
+>>> If the contents is wrapped a inside get_online_cpus()/put_online_cpus() block
+>>> as below, cpu_down() will stop since cpu_down() calls cpu_hotplug_begin() and
+>>> cpu_hotplug_begin() waits for cpu_hotplug.refcount to become 0.
+>>>
+>>
+>> You are right. Sorry, I overlooked that.
+>>
+>>> +	get_online_cpus()
+>>> +	if (cpu_online(pr->id)) {
+>>> +		ret = cpu_down(pr->id);
+>>> +		if (ret)
+>>> +			return ret;
+>>> +	}
+>>> +	put_online_cpus()
+>>>
+>>> I think following patch can prevent it correctly. How about the patch?
+>>>
+>>> ---
+>>>   drivers/acpi/processor_driver.c |   12 ++++++++++++
+>>>   kernel/cpu.c                    |    8 +++++---
+>>>   2 files changed, 17 insertions(+), 3 deletions(-)
+>>>
+>>> Index: linux-3.5-rc4/drivers/acpi/processor_driver.c
+>>> ===================================================================
+>>> --- linux-3.5-rc4.orig/drivers/acpi/processor_driver.c	2012-07-09 09:59:01.280211202 +0900
+>>> +++ linux-3.5-rc4/drivers/acpi/processor_driver.c	2012-07-09 11:05:34.559859236 +0900
+>>> @@ -844,14 +844,26 @@ static int acpi_processor_handle_eject(s
+>>>   {
+>>>   	int ret;
+>>>
+>>> +retry:
+>>>   	if (cpu_online(pr->id)) {
+>>>   		ret = cpu_down(pr->id);
+>>>   		if (ret)
+>>>   			return ret;
+>>>   	}
+>>>
+>>> +	get_online_cpus();
+>>> +	/*
+>>> +	 * Someone might online the cpu again at this point. So we check that
+>>> +	 * cpu has been onlined or not. If cpu is online, we try to offline
+>>> +	 * the cpu again.
+>>> +	 */
+>>> +	if (cpu_online(pr->id)) {
+>>
+>> How about this:
+>> 	if (unlikely(cpu_online(pr->id)) {
+>> since the probability of this happening is quite small...
+> 
+> Thanks. I'll update it.
+> 
+>>> +		put_online_cpus();
+>>> +		goto retry;
+>>> +	}
+>>>   	arch_unregister_cpu(pr->id);
+>>>   	acpi_unmap_lsapic(pr->id);
+>>> +	put_online_cpus();
+>>>   	return ret;
+>>>   }
+>>
+>> This retry logic doesn't look elegant, but I don't see any better method :-(
+>>
+>>>   #else
+>>> Index: linux-3.5-rc4/kernel/cpu.c
+>>> ===================================================================
+>>> --- linux-3.5-rc4.orig/kernel/cpu.c	2012-07-09 09:59:01.280211202 +0900
+>>> +++ linux-3.5-rc4/kernel/cpu.c	2012-07-09 09:59:02.903190965 +0900
+>>> @@ -343,11 +343,13 @@ static int __cpuinit _cpu_up(unsigned in
+>>>   	unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
+>>>   	struct task_struct *idle;
+>>>
+>>> -	if (cpu_online(cpu) || !cpu_present(cpu))
+>>> -		return -EINVAL;
+>>> -
+>>>   	cpu_hotplug_begin();
+>>>
+>>> +	if (cpu_online(cpu) || !cpu_present(cpu)) {
+>>> +		ret = -EINVAL;
+>>> +		goto out;
+>>> +	}
+>>> +
+>>
+>> Firstly, why is this change needed?
+> 
+> I cared the race of hot-remove cpu and _cpu_up(). If I do not change it,
+> there is the following race.
+> 
+> hot-remove cpu                         |  _cpu_up()
+> ------------------------------------- ------------------------------------
+> call acpi_processor_handle_eject()     |
+>      call cpu_down()                   |
+>      call get_online_cpus()            |
+>                                        | call cpu_hotplug_begin() and stop here
+>      call arch_unregister_cpu()        |
+>      call acpi_unmap_lsapic()          |
+>      call put_online_cpus()            |
+>                                        | start and continue _cpu_up()
+>      return acpi_processor_remove()    |
+> continue hot-remove the cpu            |
+> 
+> So _cpu_up() can continue to itself. And hot-remove cpu can also continue
+> itself. If I change it, I think the race disappears as below:
+> 
+> hot-remove cpu                         | _cpu_up()
+> -----------------------------------------------------------------------
+> call acpi_processor_handle_eject()     |
+>      call cpu_down()                   |
+>      call get_online_cpus()            |
+>                                        | call cpu_hotplug_begin() and stop here
+>      call arch_unregister_cpu()        |
+>      call acpi_unmap_lsapic()          |
+>           cpu's cpu_present is set     |
+> 	  to false by set_cpu_present()|
+>      call put_online_cpus()            |
+>                                        | start _cpu_up()
+> 				       | check cpu_present() and return -EINVAL
+>      return acpi_processor_remove()    |
+> continue hot-remove the cpu            |
+> 
+> Thus I think the change is necessary.
+> 
 
-Hi all,
+Thanks for the detailed explanation. I had missed this race condition.
+Now I see why all the changes in your patch are needed. 
 
-On Tue, 10 Jul 2012 16:41:30 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> Hi all,
->=20
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> drivers/i2c/busses/i2c-nomadik.c between commit af97bace2cca
-> ("i2c-nomadik: move header to <linux/platform_data/i2c-nomadik.h>") from
+Regards,
+Srivatsa S. Bhat
 
-Also commit 235602146ec9 ("i2c-nomadik: turn the platform driver to an
-amba driver")
-
-> the i2c-embedded tree and commits 32e42c687e0a ("ARM: ux500: Remove
-> unused i2c platform_data initialisation code") and 8214fd238a66 ("i2c:
-> Add Device Tree support to the Nomadik I2C driver") from the arm-soc tree.
->=20
-> I fixed it up (I think - see below) and can carry the fix as necessary.
-> Please check this and talk to each other ...
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__10_Jul_2012_16_50_33_+1000_TQzqAXBCGaEJ7u.I
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJP+9C5AAoJEECxmPOUX5FE2UYP/0A9Mh+vwUUR3HpngD15sR1z
-0NDme8UGObFnWMY+0XOFeRs4h+JIDeOfjqG9q5iNchL3RLZIxlSrDEES7dYM62vV
-q6nPkLxGOyYTm1RvbJ7A+9N8ZP9LFf1zWaLbG0RffHp6n7+jBAY6ppOaMSLS7o/G
-0N5btt+rNU+qzNPRgIYuaic8QRXIv7f9s6LJxEenPULO5F2QmVweV0KGQFR5gQ5c
-qXHZN/c89QVbbnowpLkyIJ1e/Z6fQzJEkkYfC4lXIQHvb5jsAfmL5DDCMn5qbhF7
-C6zX7gqglM1lwBi+FoeD++I3ix/V6LlQxkBdCpYSX7u/tO111OBharfhep7ovPbw
-GHM0btkbb0c92NKM9jNw4y1GqyFBysP2e3qbZnCdSnSi/ei3nhz0JhcKA8XJNqM5
-dQTYd+5xop9hoFCYOokH4Ja/t+E11/MnrhhlrAt9aQ1KXEOLI1xPPd5Me2VfwKV5
-ysFFLvdtWXL9uQPHF1fMRLgMhF95UjB3Kl5WSaHmCVpdVWCvxxiURvtUK/heNVH0
-AFL/BztBAsked7sawMZ1WR2/lcS8I4KWn8AOgdy62Y7/debnjTRKC7Ii60JnYrFM
-lxT6ASZGVzTu3YIw2pCH/uMtUAtC0NTu1x/zbfboPc0+Kww+NFhBPc/jjRicjG+1
-UOZmzw/TkiXI8fm3fSjn
-=pZg/
------END PGP SIGNATURE-----
-
---Signature=_Tue__10_Jul_2012_16_50_33_+1000_TQzqAXBCGaEJ7u.I--
