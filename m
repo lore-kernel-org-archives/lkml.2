@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab2GJMQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 08:16:21 -0400
+	id S1755495Ab2GJMSe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 08:18:34 -0400
 Received: from mga14.intel.com ([143.182.124.37]:38748 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754775Ab2GJMQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755330Ab2GJMQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Jul 2012 08:16:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="120713413"
+   d="scan'208";a="120713433"
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>
 Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
         Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
         Ext4 Mailing List <linux-ext4@vger.kernel.org>
-Subject: [PATCHv5 0/4] ext4: stop using write_supers and s_dirt
-Date: Tue, 10 Jul 2012 15:17:49 +0300
-Message-Id: <1341922673-14147-1-git-send-email-dedekind1@gmail.com>
+Subject: [PATCHv5 1/4] ext4: Remove useless marking of superblock dirty
+Date: Tue, 10 Jul 2012 15:17:50 +0300
+Message-Id: <1341922673-14147-2-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1341922673-14147-1-git-send-email-dedekind1@gmail.com>
+References: <1341922673-14147-1-git-send-email-dedekind1@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set makes ext4 file-system stop using the VFS '->write_supers()'
-call-back and the '->s_dirt' superblock field because I plan to remove them
-once all users are gone.
+From: Jan Kara <jack@suse.cz>
 
-Most of the ext4 changes were done or suggested by Jan Kara (thanks!). This
-patch does not do anything complex - we basically notice that ext4 does not
-really needed the 'write_super()' functionality and we can remove it. We
-mark the superblock buffer as dirty directly, rather than postponing this till
-the next 'sync_supers()' kernel thread wake-up.
+Commit a0375156 properly notes that superblock doesn't need to be marked
+as dirty when only number of free inodes / blocks / number of directories
+changes since that is recomputed on each mount anyway. However that comment
+leaves some unnecessary markings as dirty in place. Remove these.
 
-However, this means that we'll end up with calculating the checksum more often,
-see patch 3 for more information.
+Artem: tested using xfstests for both journalled and non-journalled ext4.
 
-I've also dropped the fifth patch which removes the 'now' argument from
-'__ext4_handle_dirty_super()' - simply because I do not understand why we
-should prefer marking the buffer as dirty directly instead of calling
-'ext4_commit_super()': the speed difference must be neglectable and
-'ext4_commit_super()' performs some error checking. I can submit this patch
-later - just need some more explanation from Jan.
+Signed-off-by: Jan Kara <jack@suse.cz>
+Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+---
+ fs/ext4/ialloc.c  |    2 --
+ fs/ext4/mballoc.c |    2 --
+ 2 files changed, 0 insertions(+), 4 deletions(-)
 
-Tested with xfstests (both journalled and non-journalled ext4 modes).
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index d48e8b1..25b918c 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -315,7 +315,6 @@ out:
+ 		err = ext4_handle_dirty_metadata(handle, NULL, bitmap_bh);
+ 		if (!fatal)
+ 			fatal = err;
+-		ext4_mark_super_dirty(sb);
+ 	} else
+ 		ext4_error(sb, "bit already cleared for inode %lu", ino);
+ 
+@@ -830,7 +829,6 @@ got:
+ 	percpu_counter_dec(&sbi->s_freeinodes_counter);
+ 	if (S_ISDIR(mode))
+ 		percpu_counter_inc(&sbi->s_dirs_counter);
+-	ext4_mark_super_dirty(sb);
+ 
+ 	if (sbi->s_log_groups_per_flex) {
+ 		flex_group = ext4_flex_group(sbi, group);
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 1cd6994..eabfb4c 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -2825,7 +2825,6 @@ ext4_mb_mark_diskspace_used(struct ext4_allocation_context *ac,
+ 	err = ext4_handle_dirty_metadata(handle, NULL, gdp_bh);
+ 
+ out_err:
+-	ext4_mark_super_dirty(sb);
+ 	brelse(bitmap_bh);
+ 	return err;
+ }
+@@ -4694,7 +4693,6 @@ do_more:
+ 		put_bh(bitmap_bh);
+ 		goto do_more;
+ 	}
+-	ext4_mark_super_dirty(sb);
+ error_return:
+ 	brelse(bitmap_bh);
+ 	ext4_std_error(sb, err);
+-- 
+1.7.7.6
 
-Reminder:
-
-The goal is to get rid of the 'sync_supers()' kernel thread. This kernel thread
-wakes up every 5 seconds (by default) and calls '->write_super()' for all
-mounted file-systems. And the bad thing is that this is done even if all the
-superblocks are clean. Moreover, many file-systems do not even need this end
-they do not register the '->write_super()' method at all (e.g., btrfs).
-
-So 'sync_supers()' most often just generates useless wake-ups and wastes power.
-I am trying to make all file-systems independent of '->write_super()' and plan
-to remove 'sync_supers()' and '->write_super()' completely once there are no
-more users.
-
-======
-Overall status:
-
-1.  ext4: patches submitted,
-    https://lkml.org/lkml/2012/7/3/210
-2.  exofs: patch submitted,
-    https://lkml.org/lkml/2012/6/4/211
-3.  sysv: patches submitted,
-    http://lkml.org/lkml/2012/7/3/250
-4.  udf: patch submitted, sits in Jan Kara's tree:
-    https://lkml.org/lkml/2012/6/4/233
-    git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs for_testing
-5.  affs: patches submitted, sit in Al Viro's tree:
-    https://lkml.org/lkml/2012/6/6/400
-    git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs for-next
-6.  hfs: patches submitted, sit Andrew Morton's tree
-    http://lkml.org/lkml/2012/6/12/82
-7.  hfsplus: patches submitted, sit in Andrew Morton's tree:
-    https://lkml.org/lkml/2012/6/13/195
-8.  ext2:     done, see commit f72cf5e223a28d3b3ea7dc9e40464fd534e359e8
-9.  vfat:     done, see commit 78491189ddb6d84d4a4abae992ed891a236d0263
-10. jffs2:    done, see commit 208b14e507c00ff7f108e1a388dd3d8cc805a443
-11. reiserfs: done, see commit 033369d1af1264abc23bea2e174aa47cdd212f6f
-
-TODO: ufs
-======
-
- fs/ext4/ext4.h      |   10 +---------
- fs/ext4/ext4_jbd2.c |    2 +-
- fs/ext4/file.c      |   14 +++++++++++++-
- fs/ext4/ialloc.c    |    2 --
- fs/ext4/mballoc.c   |    2 --
- fs/ext4/super.c     |   15 ++-------------
- 6 files changed, 17 insertions(+), 28 deletions(-)
-
-Thanks,
-Artem.
