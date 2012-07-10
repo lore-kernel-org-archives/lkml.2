@@ -1,95 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab2GJJgg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 05:36:36 -0400
-Received: from antcom.de ([188.40.178.216]:45122 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753990Ab2GJJgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 05:36:33 -0400
-Message-ID: <4FFBF799.9080609@antcom.de>
-Date: Tue, 10 Jul 2012 11:36:25 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1754852Ab2GJJhU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 05:37:20 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:61465 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753990Ab2GJJhR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 05:37:17 -0400
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: axel.lin@gmail.com, riyer@nvidia.com, michael.hennerich@analog.com,
-        grant.likely@secretlab.ca, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
-        aletes.xgr@gmail.com
-Subject: Re: [PATCH v8] input: keyboard: Add keys driver for the LPC32xx SoC
-References: <1340834596-15642-1-git-send-email-stigge@antcom.de> <20120710063657.GC29257@core.coreip.homeip.net>
-In-Reply-To: <20120710063657.GC29257@core.coreip.homeip.net>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
+In-Reply-To: <20120704143635.GE28294@somewhere>
+References: <CAJRGBZw_my_=Z+Jyb2UBYwW48BpCGYdcuD5mu7erHsX8NSKbDg@mail.gmail.com>
+	<20120703112828.GA28294@somewhere>
+	<CAJRGBZzn66mpQo+PCQirzqE=Wdm9T7Z01P20FQsHQnTPEd2mqA@mail.gmail.com>
+	<20120704132539.GD28294@somewhere>
+	<CAJRGBZyBGL97MAjBVBa5cKKsePtDFPiWqN4N-Lcw3V8qw35DTQ@mail.gmail.com>
+	<20120704143635.GE28294@somewhere>
+Date: Tue, 10 Jul 2012 05:37:15 -0400
+Message-ID: <CAJRGBZzq8dWeUBTcuNQLa_rUz00e+m4RJ6hjKrM-mcYSmu9qQw@mail.gmail.com>
+Subject: Re: CPU isolation question again
+From: Luming Yu <luming.yu@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, gilad@benyossef.com,
+        Len Brown <lenb@kernel.org>, shli@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry!
+On Wed, Jul 4, 2012 at 10:36 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Wed, Jul 04, 2012 at 10:12:43PM +0800, Luming Yu wrote:
+>> On Wed, Jul 4, 2012 at 9:25 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> > On Wed, Jul 04, 2012 at 08:42:29PM +0800, Luming Yu wrote:
+>> >> On Tue, Jul 3, 2012 at 7:28 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> >> > On Wed, Jun 27, 2012 at 09:22:09PM +0800, Luming Yu wrote:
+>> >> >> Hi there,
+>> >> >>
+>> >> >> I noticed some discussion about CPU isolation which points me to the
+>> >> >> patch set (https://lkml.org/lkml/2011/8/15/245). I'm currently
+>> >> >> preparing a RFC-patch-set to automatically pick up a few suitable CPUs
+>> >> >> to isolate then kick them out of service for a while. We need to
+>> >> >> balance between  thermal & power management And overall system
+>> >> >> performance during this operation as much as possible. So
+>> >> >> software-cpu-online-offline interface could not be a good option to
+>> >> >> me. But to make sure I'm not blindly running on a dead-end path, I'd
+>> >> >> check with experts here to ensure it makes some sense to isolate CPUs
+>> >> >> to this level, and the idea also makes some sense, and the most
+>> >> >> important is it's not implemented yet.
+>> >> >
+>> >> > I don't understand what you are trying to do and how exactly. How do you
+>> >> > plan to do this isolation and how do you want to balance between thermal
+>> >> > and power?
+>> >>
+>> >> My question could be wrong as the question arose several weeks ago
+>> >> when I came across
+>> >>  drivers/acpi/acpi_paid.c which looks like a real user who need to
+>> >> request system automatically
+>> >> pick up a few CPU to get them isolated and deactivated. Later on, I
+>> >> noticed tglx's cpu hot plug re-work.
+>> >> I realized we could reuse the interface to do isolation and deactivation work.
+>> >>
+>> >> Of cause, to pick up which ones to isolate and deactivate is another problem.
+>> >>
+>> >> cc'ed the author and ACPI maintainer of the driver as well as tglx.
+>> >
+>> > May be I'm confused because we both have our own definition of isolation.
+>> > I'm not sure what kind of CPU isolation you're looking for.
+>>
+>> At first, it needs not avaiable to scheduler.  Then, it needs in
+>> deepest power saving mode.
+>> At last, it needs available to scheduler again on demand.
+>> Sounds very like a typical soft offline cpu, but needs to be low light weight.
+>
+> I see. So indeed the latest developments made in CPU hotplug could make it a solution
+> for you.
 
-On 07/10/2012 08:36 AM, Dmitry Torokhov wrote:
->> +static void lpc32xx_mod_states(struct lpc32xx_kscan_drv *kscandat, int col)
->> +{
->> +	u8 key;
->> +	int row;
->> +	unsigned changed, scancode, keycode;
->> +
->> +	key = readl(LPC32XX_KS_DATA(kscandat->kscan_base, col));
->> +	changed = key ^ kscandat->lastkeystates[col];
->> +	if (changed) {
->> +		for (row = 0; row < kscandat->matrix_sz; row++) {
->> +			if (changed & (1 << row)) {
-> 
-> I think it could be optimized a bit of you do not scan entire "changed"
-> but shift it until it reaches 0 instead.
-> 
->> +	of_property_read_u32(np, "nxp,debounce-delay-ms", &kscandat->deb_clks);
->> +	of_property_read_u32(np, "nxp,scan-delay-ms", &kscandat->scan_delay);
->> +	if (!kscandat->deb_clks || !kscandat->scan_delay) {
->> +		dev_err(dev, "debounce or scan delay not specified\n");
->> +		return -ENXIO;
-> 
-> EINVAL suits better.
-> 
->> +
->> +static int __devexit lpc32xx_kscan_remove(struct platform_device *pdev)
->> +{
->> +	struct lpc32xx_kscan_drv *kscandat = platform_get_drvdata(pdev);
->> +
->> +	kfree(kscandat->keymap);
-> 
-> This seems dangerous in case we manage IRQ fire here.
-> 
->> +	free_irq(platform_get_irq(pdev, 0), pdev);
->> +	clk_put(kscandat->clk);
->> +	iounmap(kscandat->kscan_base);
->> +	release_mem_region(kscandat->io_p_start, kscandat->io_p_size);
->> +	input_unregister_device(kscandat->input);
->> +	kfree(kscandat);
->> +
->> +	return 0;
->> +}
->> +
-> 
-> Does the following patch (on top of your) still work with your device?
-
-Thanks for your suggestions and for the incremental patch!
-
-The direct implementation of your above suggestions looks good.
-Unfortunately, you reordered things in probe() which leads to breakage,
-e.g. NULL pointer dereference on lpc32xx_parse_dt() because you decided
-to fill input->dev.parent only _afterwards_.
-
-However, I'm fine with the 2 above suggested changes. I can post an
-updated patch addressing this later today.
-
-Are there any other changes you would require?
-
-Thanks in advance,
-
-Roland
+I hope it works as it can solve half of my question if the interface
+is light enough.  Another half is about a method to tap which set of
+logical processors to isolate. We could leave the question to Admin,
+or we could automatically sort it out from an ordered list. Not sure
+how many type of cpu set we can find from existing APIs..
