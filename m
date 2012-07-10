@@ -1,200 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941Ab2GJGtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 02:49:21 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:43342 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753587Ab2GJGtQ (ORCPT
+	id S1753958Ab2GJGt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 02:49:56 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:52596 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753094Ab2GJGty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 02:49:16 -0400
-Message-ID: <4FFBD060.5010903@ti.com>
-Date: Tue, 10 Jul 2012 12:19:04 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
+	Tue, 10 Jul 2012 02:49:54 -0400
+Date: Tue, 10 Jul 2012 08:49:37 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Chris Ball <cjb@laptop.org>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-sh@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Boot regression on Mackerel with current mainline
+In-Reply-To: <87ipdws1mc.fsf@octavius.laptop.org>
+Message-ID: <Pine.LNX.4.64.1207100845130.29825@axis700.grange>
+References: <201207031218.24797.rjw@sisk.pl> <Pine.LNX.4.64.1207031336320.29890@axis700.grange>
+ <201207031910.24864.rjw@sisk.pl> <Pine.LNX.4.64.1207041125330.21042@axis700.grange>
+ <87ipdws1mc.fsf@octavius.laptop.org>
 MIME-Version: 1.0
-To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-CC: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, b-cousson@ti.com,
-        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, balbi@ti.com,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org, hvaibhav@ti.com
-Subject: Re: [PATCH v1 01/11] drivers: usb: otg: add a new driver for omap
- usb2 phy
-References: <1340884267-28908-1-git-send-email-kishon@ti.com>	<1340884267-28908-2-git-send-email-kishon@ti.com>	<4FFBC1D0.5030506@ti.com> <CAAe_U6L9qiBMXWeS2POeBod8uASCtmqDc4DigwBx1bJ-hhaNRQ@mail.gmail.com>
-In-Reply-To: <CAAe_U6L9qiBMXWeS2POeBod8uASCtmqDc4DigwBx1bJ-hhaNRQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:Awuc0+gE+OIKKpHnHHgQJsb/0+M1IfFuo4cdqjoiVcH
+ PU4WunXa7VXOWFmdyXnsA12Y+vqrRPN1n/5CGr+GX/yGIc9fMU
+ FKYKRHUp9eNMfhA26CuROZfFEVK9x/eiWz3JW4dkjqgw5ElQJD
+ N44HZ9jhBYYnyhNGrxY6vDzaPkKWhxH2DL9IvNLhjsks9zhL8f
+ 2KJIIKCnNJ1yV6nL4rO9EVuoxEKosh2oT5hbI/fx0ljfJRWDK/
+ nm72GqvPLk+Zt58+KVcNUpEh+4nbHQVN3WTHclUCTuNjAOePSA
+ LJnnVKByDsV9MQfavHOa/vtUJMwYQ4Fro7gmPIvYUCZ4KVNb72
+ 0vStha1EzP7MZO0TVCQWekzMAvS/w/zeHWqO9KFoybPYKr4Wst
+ uboUbvLxGNGoA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>
->>> +
->>> +static int __devinit omap_usb2_probe(struct platform_device *pdev)
->>> +{
->>> +       struct omap_usb                 *phy;
->>> +       struct usb_otg                  *otg;
->>> +       struct resource                 *res;
->>> +
->>> +       phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
->>> +       if (!phy) {
->>> +               dev_err(&pdev->dev, "unable to allocate memory for USB2
->>> PHY\n");
->>> +               return -ENOMEM;
->>> +       }
->>> +
->>> +       otg = devm_kzalloc(&pdev->dev, sizeof(*otg), GFP_KERNEL);
->>> +       if (!otg) {
->>> +               dev_err(&pdev->dev, "unable to allocate memory for USB
->>> OTG\n");
->>> +               return -ENOMEM;
->>> +       }
->>> +
->>> +       phy->dev                =&pdev->dev;
->>>
->>> +
->>> +       phy->phy.dev            = phy->dev;
->>> +       phy->phy.label          = "omap-usb2";
->>> +       phy->phy.set_suspend    = omap_usb2_suspend;
->>> +       phy->phy.otg            = otg;
->>> +
->>> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
->>> +
->>> +       phy->control_dev_conf = devm_request_and_ioremap(&pdev->dev, res);
->>> +       if (phy->control_dev_conf == NULL) {
->>> +               dev_err(&pdev->dev, "Failed to obtain io memory\n");
->>> +               return -ENXIO;
->>> +       }
->>> +
->>> +       phy->is_suspended       = 1;
->>> +       omap_usb_phy_power(phy, 0);
->>> +
->>> +       otg->set_host           = omap_usb_set_host;
->>> +       otg->set_peripheral     = omap_usb_set_peripheral;
->>> +       otg->set_vbus           = omap_usb_set_vbus;
->>> +       otg->start_srp          = omap_usb_start_srp;
->>> +       otg->phy                =&phy->phy;
->>>
->>> +
->>> +       phy->wkupclk = devm_clk_get(phy->dev, "usb_phy_cm_clk32k");
->>
->>
->> Why not just use clk_get()? What does devm_clk_get() do?
-> It just associates the clk with the device. So whenever the the driver
-> gets detached, the devres will take care to do a clk_put() of the
-> clock.
+Hi Chris
 
-ok, makes sense.
+On Tue, 10 Jul 2012, Chris Ball wrote:
 
->>
->>
->>> +       if (IS_ERR(phy->wkupclk)) {
->>> +               dev_err(&pdev->dev, "unable to get usb_phy_cm_clk32k\n");
->>> +               return PTR_ERR(phy->wkupclk);
->>> +       }
->>> +       clk_prepare(phy->wkupclk);
->>
->>
->> Ideally clk_prepare() is an extension of clk_enable() and is expected
->> to be used that way. Not to be clubbed with clk_get(). Same with
->> clk_unprepare(). Do you do a clk_enable()/_disable() in interrupt/
->> atomic context?
->
-> Currently it is called from a work queue. But Felipe wanted to remove
-> those work_queue from omap2430 glue. Then this would be called from
-> atomic context.
-> A query for you here. If pm_runtime_get_sync() is called in interrupt
-> context, will runtime resume of that device will also be called in the
-> same context?
+> Hi Guennadi,
+> 
+> On Wed, Jul 04 2012, Guennadi Liakhovetski wrote:
+> > On Tue, 3 Jul 2012, Rafael J. Wysocki wrote:
+> >
+> >> On Tuesday, July 03, 2012, Guennadi Liakhovetski wrote:
+> >> > Hi Rafael
+> >> > 
+> >> > On Tue, 3 Jul 2012, Rafael J. Wysocki wrote:
+> >> > 
+> >> > > Hi,
+> >> > > 
+> >> > > We seem to have a functional regression on Mackerel with 3.5-rc5 which
+> >> > > seems to be related to SDHI.  Namely, the SDHI driver appears to wait forever
+> >> > > for the devices to appear and commenting out all of the sdhi devices in the
+> >> > > board file works around the problem.
+> >> > > 
+> >> > > I can investigate some more later today if need be.
+> >> > 
+> >> > Have you checked the logs? Are you seeing any of these in the kernel log:
+> >> > 
+> >> > genirq: Threaded irq requested with handler=NULL and !ONESHOT for irq 
+> >> 
+> >> I see this only once per boot, but then sh_mobile_sdhi is saying "timeout
+> >> waiting for hardware interrupt" pretty much continuously.
+> >
+> > Yes, that's the one. Ok, let's fix it in the driver. In fact, a fix has 
+> > already been submitted, but for 3.6. I hoped, 3.5 would resort to a softer 
+> > form of the ONESHOT failing, so, I didn't push it for -rc. I think, the 
+> > easiest would be to apply these two patches:
+> >
+> > "mmc: tmio: use MMC opcode defines instead of numbers"
+> > http://git.kernel.org/?p=linux/kernel/git/cjb/mmc.git;a=commit;h=598cd9cc217b0aa46089a3838a8b1c37b97aa08b
+> >
+> > and
+> >
+> > "mmc: extend and rename cd-gpio helpers to handle more slot GPIO functions"
+> > http://git.kernel.org/?p=linux/kernel/git/cjb/mmc.git;a=commit;h=d8e60fb51effc83e6f53de191a8440f46e5a3f2c
+> >
+> > The latter one looks big because of a rename, but with "-M" it's pretty 
+> > trivial. Chris, do you agree?
+> 
+> Is the minimal fix to just add "| IRQF_ONESHOT" to the request_threaded_irq
+> argument?  If so, I'd rather push just that for 3.5, and I can take care of
+> having that change appear simultaneously in linux-next so that there aren't
+> any conflicts.  Is that okay with you?
 
-Yes, it would. You also need to then tell the runtime pm framework about
-it by calling a pm_runtime_irq_safe() api I guess.
+For that you'd have to rebase -next, right? you'd like to do that? Because 
+the patch
 
-regards,
-Rajendra
+"mmc: extend and rename cd-gpio helpers to handle more slot GPIO functions"
+http://git.kernel.org/?p=linux/kernel/git/cjb/mmc.git;a=commit;h=d8e60fb51effc83e6f53de191a8440f46e5a3f2c
 
->
->>
->>
->>> +
->>> +       usb_add_phy(&phy->phy, USB_PHY_TYPE_USB2);
->>> +
->>> +       platform_set_drvdata(pdev, phy);
->>> +
->>> +       pm_runtime_enable(phy->dev);
->>> +
->>> +       return 0;
->>> +}
->>> +
->>> +static int __devexit omap_usb2_remove(struct platform_device *pdev)
->>> +{
->>> +       struct omap_usb *phy = platform_get_drvdata(pdev);
->>> +
->>> +       clk_unprepare(phy->wkupclk);
->>> +       usb_remove_phy(&phy->phy);
->>> +       platform_set_drvdata(pdev, NULL);
->>> +
->>> +       return 0;
->>> +}
->>> +
->>> +#ifdef CONFIG_PM
->>> +
->>> +static int omap_usb2_runtime_suspend(struct device *dev)
->>> +{
->>> +       struct platform_device  *pdev = to_platform_device(dev);
->>> +       struct omap_usb *phy = platform_get_drvdata(pdev);
->>> +
->>> +       clk_disable(phy->wkupclk);
->>> +
->>> +       return 0;
->>> +}
->>> +
->>> +static int omap_usb2_runtime_resume(struct device *dev)
->>> +{
->>> +       struct platform_device  *pdev = to_platform_device(dev);
->>> +       struct omap_usb *phy = platform_get_drvdata(pdev);
->>> +
->>> +       clk_enable(phy->wkupclk);
->>> +
->>> +       return 0;
->>> +}
->>> +
->>> +static const struct dev_pm_ops omap_usb2_pm_ops = {
->>> +       SET_RUNTIME_PM_OPS(omap_usb2_runtime_suspend,
->>> omap_usb2_runtime_resume,
->>> +               NULL)
->>> +};
->>> +
->>> +#define DEV_PM_OPS     (&omap_usb2_pm_ops)
->>> +#else
->>> +#define DEV_PM_OPS     NULL
->>> +#endif
->>> +
->>> +#ifdef CONFIG_OF
->>> +static const struct of_device_id omap_usb2_id_table[] = {
->>> +       { .compatible = "ti,omap-usb2" },
->>> +       {}
->>> +};
->>> +MODULE_DEVICE_TABLE(of, omap_usb2_id_table);
->>> +#else
->>> +#define omap_usb2_id_table NULL;
->>> +#endif
->>> +
->>> +static struct platform_driver omap_usb2_driver = {
->>> +       .probe          = omap_usb2_probe,
->>> +       .remove         = __devexit_p(omap_usb2_remove),
->>> +       .driver         = {
->>> +               .name   = "omap-usb2",
->>> +               .owner  = THIS_MODULE,
->>> +               .pm     = DEV_PM_OPS,
->>> +               .of_match_table = omap_usb2_id_table,
->>
->>
->> Use of_match_ptr() instead.
->
-> Ok. And I'll remove #define omap_usb2_id_table NULL;.
->
-> Thanks
-> Kishon
+obviously would conflict with adding "| IRQF_ONESHOT". Either would work 
+with me, sure. Would you like me to submit this trivial ONESHOT fix and an 
+updated version of the above patch, or would you prefer to do this 
+yourself?
 
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
