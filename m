@@ -1,116 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab2GJH2u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 03:28:50 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42281 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754146Ab2GJH2s (ORCPT
+	id S1754088Ab2GJHkU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 03:40:20 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:24666 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab2GJHkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 03:28:48 -0400
-Date: Tue, 10 Jul 2012 17:28:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Kay Sievers <kay@vrfy.org>,
-        Greg KH <greg@kroah.com>
-Subject: linux-next: manual merge of the akpm tree with the
- driver-core.current tree
-Message-Id: <20120710172838.06f3fff7ab03d91898d18f51@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__10_Jul_2012_17_28_38_+1000_XVWjoOvhq+4SIHHD"
+	Tue, 10 Jul 2012 03:40:18 -0400
+Message-ID: <4FFBDC50.5090800@oracle.com>
+Date: Tue, 10 Jul 2012 15:40:00 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Joe Jin <joe.jin@oracle.com>
+CC: e1000-devel@lists.sf.net,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: 82571EB: Detected Hardware Unit Hang
+References: <4FFA9B96.6040901@oracle.com>
+In-Reply-To: <4FFA9B96.6040901@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__10_Jul_2012_17_28_38_+1000_XVWjoOvhq+4SIHHD
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+When I debug the driver I found before Detected HW hang, driver unable to clean
+and reclaim the resources:
 
-Hi Andrew,
+1457         while ((eop_desc->upper.data & cpu_to_le32(E1000_TXD_STAT_DD)) &&  <== at here upper.data always is 0x300
+1458                (count < tx_ring->count)) {
+     <--- snip --->
+1487         }
 
-Today's linux-next merge of the akpm tree got a conflict in
-kernel/printk.c between commit 5becfb1df5ac ("kmsg: merge continuation
-records while printing") from the driver-core.current tree and commit
-"printk: only look for prefix levels in kernel messages" from the akpm
-tree.
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I checked all driver codes I did not found anywhere will set the upper.data with 
+E1000_TXD_STAT_DD, I guess upper.data be set by hardware?
+If OS is 32bit system, what which happen?
 
-diff --cc kernel/printk.c
-index 104a4ee,04983fc..0000000
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@@ -1496,24 -1453,27 +1495,27 @@@ asmlinkage int vprintk_emit(int facilit
-  	/* mark and strip a trailing newline */
-  	if (text_len && text[text_len-1] =3D=3D '\n') {
-  		text_len--;
- -		newline =3D true;
- +		lflags |=3D LOG_NEWLINE;
-  	}
- =20
-- 	/* strip syslog prefix and extract log level or control flags */
-- 	kern_level =3D printk_get_level(text);
-- 	if (kern_level) {
-- 		const char *end_of_header =3D printk_skip_level(text);
-- 		switch (kern_level) {
-- 		case '0' ... '7':
-- 			if (level =3D=3D -1)
-- 				level =3D kern_level - '0';
-- 		case 'd':	/* KERN_DEFAULT */
-- 			lflags |=3D LOG_PREFIX;
-- 		case 'c':	/* KERN_CONT */
-- 			break;
-+ 	/* strip kernel syslog prefix and extract log level or control flags */
-+ 	if (facility =3D=3D 0) {
-+ 		int kern_level =3D printk_get_level(text);
-+=20
-+ 		if (kern_level) {
-+ 			const char *end_of_header =3D printk_skip_level(text);
-+ 			switch (kern_level) {
-+ 			case '0' ... '7':
-+ 				if (level =3D=3D -1)
-+ 					level =3D kern_level - '0';
-+ 			case 'd':	/* KERN_DEFAULT */
- -				prefix =3D true;
-++				lflags |=3D LOG_PREFIX;
-+ 			case 'c':	/* KERN_CONT */
-+ 				break;
-+ 			}
-+ 			text_len -=3D end_of_header - text;
-+ 			text =3D (char *)end_of_header;
-  		}
-- 		text_len -=3D end_of_header - text;
-- 		text =3D (char *)end_of_header;
-  	}
- =20
-  	if (level =3D=3D -1)
+Thanks in advance,
+Joe 
 
---Signature=_Tue__10_Jul_2012_17_28_38_+1000_XVWjoOvhq+4SIHHD
-Content-Type: application/pgp-signature
+On 07/09/12 16:51, Joe Jin wrote:
+> Hi list,
+> 
+> I'm seeing a Unit Hang even with the latest e1000e driver 2.0.0 when doing
+> scp test. this issue is easy do reproduced on SUN FIRE X2270 M2, just copy
+> a big file (>500M) from another server will hit it at once. 
+> 
+> Would you please help on this?
+> 
+> device info:
+> # lspci -s 05:00.0 
+> 05:00.0 Ethernet controller: Intel Corporation 82571EB Gigabit Ethernet Controller (Copper) (rev 06)
+> 
+> # lspci -s 05:00.0 -n
+> 05:00.0 0200: 8086:10bc (rev 06)
+> 
+> # ethtool -i eth0
+> driver: e1000e
+> version: 2.0.0-NAPI
+> firmware-version: 5.10-2
+> bus-info: 0000:05:00.0
+> 
+> # ethtool -k eth0
+> Offload parameters for eth0:
+> rx-checksumming: on
+> tx-checksumming: on
+> scatter-gather: on
+> tcp segmentation offload: on
+> udp fragmentation offload: off
+> generic segmentation offload: on
+> generic-receive-offload: on
+> 
+> kernel log:
+> -----------
+> e1000e 0000:05:00.0: eth0: Detected Hardware Unit Hang:
+>   TDH                  <6c>
+>   TDT                  <81>
+>   next_to_use          <81>
+>   next_to_clean        <6b>
+> buffer_info[next_to_clean]:
+>   time_stamp           <fffc7a23>
+>   next_to_watch        <71>
+>   jiffies              <fffc8c0c>
+>   next_to_watch.status <0>
+> MAC Status             <80387>
+> PHY Status             <792d>
+> PHY 1000BASE-T Status  <3c00>
+> PHY Extended Status    <3000>
+> PCI Status             <10>
+> e1000e 0000:05:00.0: eth0: Detected Hardware Unit Hang:
+>   TDH                  <6c>
+>   TDT                  <81>
+>   next_to_use          <81>
+>   next_to_clean        <6b>
+> buffer_info[next_to_clean]:
+>   time_stamp           <fffc7a23>
+>   next_to_watch        <71>
+>   jiffies              <fffc9bac>
+>   next_to_watch.status <0>
+> MAC Status             <80387>
+> PHY Status             <792d>
+> PHY 1000BASE-T Status  <3c00>
+> PHY Extended Status    <3000>
+> PCI Status             <10>
+> ------------[ cut here ]------------
+> WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x225/0x230()
+> Hardware name: SUN FIRE X2270 M2
+> NETDEV WATCHDOG: eth0 (e1000e): transmit queue 0 timed out
+> Modules linked in: autofs4 hidp rfcomm bluetooth rfkill lockd sunrpc cpufreq_ondemand acpi_cpufreq mperf be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa ib_mad ib_core ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi cxgb3 mdio libiscsi_tcp libiscsi scsi_transport_iscsi video sbs sbshc acpi_pad acpi_ipmi ipmi_msghandler parport_pc lp parport e1000e(U) snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device igb snd_pcm_oss serio_raw snd_mixer_oss snd_pcm tpm_infineon snd_timer snd soundcore snd_page_alloc i2c_i801 iTCO_wdt i2c_core pcspkr i7core_edac iTCO_vendor_support ioatdma ghes dca edac_core hed dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_mod usb_storage sd_mod crc_t10dif sg ahci libahci ext3 jbd mbcache [last unloaded: microcode]
+> Pid: 0, comm: swapper Not tainted 2.6.39-200.24.1.el5uek #1
+> Call Trace:
+>  [<c07d9ac5>] ? dev_watchdog+0x225/0x230
+>  [<c045ba61>] warn_slowpath_common+0x81/0xa0
+>  [<c07d9ac5>] ? dev_watchdog+0x225/0x230
+>  [<c045bb23>] warn_slowpath_fmt+0x33/0x40
+>  [<c07d9ac5>] dev_watchdog+0x225/0x230
+>  [<c07d98a0>] ? dev_activate+0xb0/0xb0
+>  [<c0468e82>] call_timer_fn+0x32/0xf0
+>  [<c04bceb0>] ? rcu_check_callbacks+0x80/0x80
+>  [<c046a76d>] run_timer_softirq+0xed/0x1b0
+>  [<c07d98a0>] ? dev_activate+0xb0/0xb0
+>  [<c0461a81>] __do_softirq+0x91/0x1a0
+>  [<c04619f0>] ? local_bh_enable+0x80/0x80
+>  <IRQ>  [<c0462295>] ? irq_exit+0x95/0xa0
+>  [<c087f8b8>] ? smp_apic_timer_interrupt+0x38/0x42
+>  [<c08784f5>] ? apic_timer_interrupt+0x31/0x38
+>  [<c046007b>] ? do_exit+0x11b/0x370
+>  [<c065eae4>] ? intel_idle+0xa4/0x100
+>  [<c078d9b9>] ? cpuidle_idle_call+0xb9/0x1e0
+>  [<c0411d77>] ? cpu_idle+0x97/0xd0
+>  [<c085cbbd>] ? rest_init+0x5d/0x70
+>  [<c0b07a7a>] ? start_kernel+0x28a/0x340
+>  [<c0b074b0>] ? obsolete_checksetup+0xb0/0xb0
+>  [<c0b070a4>] ? i386_start_kernel+0x64/0xb0
+> ---[ end trace 5502b55cd4d4e5cb ]---
+> e1000e 0000:05:00.0: eth0: Reset adapter
+> e1000e: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: Rx/Tx
+> 
+> Thanks,
+> Joe
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJP+9mmAAoJEECxmPOUX5FE0qEP/3In57sbk6UQm4LntPGUvasV
-UfNuxw5z7GkwYGEtKMyhm4z7weHzFx0iBtN2GrF3SNyFObym/AUkDXn487PcyCk8
-YgZ1ys+KjYBZ9ul5Q9yFYwMkWx4wIUrYDWwj1nwlXPc8ThUZHczeVpJivw/YKdC3
-HFI66NSxFD5BdnEkX4gMVZtAcqO8tv8U2O2KYxE38bowmR8CYKjq8WkbnRq7ZvxX
-VglHX5fVTiW1lJ+Uk5BIkUShSWXUwXAuSSKlLjRk0zrkne/xL/l5WuMQESEvyt2A
-MlR749A7o4dyfgEUc4T5q0V7UIMO8hS44wyXfYI0jWWoEGtNVpUbDupjdk1NyG1x
-Eq7uK7B2xVk7LT1xPf7/n7cAGhwnp7fxYt4vCMEi8s6lW/XtDVQbI2Zicx/mFzqZ
-D5vJ125u5I94EICRgA/5Uj3gEDjRukj4tKof80zVhgeFgNlFxpE8Ds2W/ZqSIo6T
-EpQ6uTXlG7AOE3l5zoNzAsyqYWslDZFo7B/6DyAa02BPPRAwsqiEle771buCp/jI
-BK4hCAariVsyY8xWqvIM1PeG1Bp9Mkd8wZIhHeY3WAVZDUBwK4YfbiwrqWeoMMDT
-GI59GmT0B8NzN4AEdSIS8gNCXciLLTbV19zZ3ZkZHbnSf0+FxZKrK0cSxqFmYl8D
-P6ormvlTayu2cLcXkWt2
-=5T0Z
------END PGP SIGNATURE-----
+-- 
+Oracle <http://www.oracle.com>
+Joe Jin | Software Development Senior Manager | +8610.6106.5624
+ORACLE | Linux and Virtualization
+No. 24 Zhongguancun Software Park, Haidian District | 100193 Beijing 
 
---Signature=_Tue__10_Jul_2012_17_28_38_+1000_XVWjoOvhq+4SIHHD--
+
