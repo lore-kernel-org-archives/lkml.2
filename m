@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755723Ab2GJNBr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 09:01:47 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:53758 "EHLO zene.cmpxchg.org"
+	id S1755777Ab2GJNB7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 09:01:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37563 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755639Ab2GJNBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 09:01:46 -0400
-Date: Tue, 10 Jul 2012 15:01:33 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] shmem: cleanup shmem_add_to_page_cache
-Message-ID: <20120710130133.GF1779@cmpxchg.org>
-References: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils>
- <alpine.LSU.2.00.1207091544290.2051@eggly.anvils>
+	id S1755744Ab2GJNB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 09:01:56 -0400
+Date: Tue, 10 Jul 2012 16:01:50 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 1/2] KVM: X86: remove read buffer for mmio read
+Message-ID: <20120710130149.GE23898@redhat.com>
+References: <4FFA9E16.10001@linux.vnet.ibm.com>
+ <4FFABD59.2070108@redhat.com>
+ <20120709112346.GA23898@redhat.com>
+ <4FFAD341.3080508@redhat.com>
+ <4FFADB37.4090705@linux.vnet.ibm.com>
+ <4FFADDFA.5000603@redhat.com>
+ <20120710103629.GC23898@redhat.com>
+ <4FFC07BB.8080802@redhat.com>
+ <20120710104847.GD23898@redhat.com>
+ <4FFC251F.4050504@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1207091544290.2051@eggly.anvils>
+In-Reply-To: <4FFC251F.4050504@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 03:46:53PM -0700, Hugh Dickins wrote:
-> shmem_add_to_page_cache() has three callsites, but only one of them
-> wants the radix_tree_preload() (an exceptional entry guarantees that
-> the radix tree node is present in the other cases), and only that site
-> can achieve mem_cgroup_uncharge_cache_page() (PageSwapCache makes it a
-> no-op in the other cases).  We did it this way originally to reflect
-> add_to_page_cache_locked(); but it's confusing now, so move the
-> radix_tree preloading and mem_cgroup uncharging to that one caller.
+On Tue, Jul 10, 2012 at 03:50:39PM +0300, Avi Kivity wrote:
+> On 07/10/2012 01:48 PM, Gleb Natapov wrote:
+> > > > > 
+> > > > But the code is already here, why drop it?
+> > > 
+> > > The read cache is not effective for multiple disjunct reads.
+> > What do you mean?
 > 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
+> If an instruction reads from several sources in mmio, then the first
+> read will be flushed from the cache by the second read.  So if we need a
+> third read, we'll have to exit for the first again.
+> 
+The cache is flashed only before instruction decode, never during
+emulation.
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-
-I'm rebasing my (un)charge series on top of these, thanks.  It only
-annihilates 3/11 and leaves the rest alone--line numbers aside--since
-the rules did not change.
+--
+			Gleb.
