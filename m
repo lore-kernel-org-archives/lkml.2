@@ -1,39 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635Ab2GJBpo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 21:45:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23597 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751054Ab2GJBpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 21:45:42 -0400
-Message-ID: <4FFB892E.5090709@redhat.com>
-Date: Mon, 09 Jul 2012 21:45:18 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755379Ab2GJBs2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 21:48:28 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39675 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009Ab2GJBsY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jul 2012 21:48:24 -0400
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: aarcange@redhat.com, dwmw2@infradead.org, peterz@infradead.org,
-        daniel.santos@pobox.com, axboe@kernel.dk, ebiederm@xmission.com,
-        linux-mm@kvack.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH 01/13] rbtree: reference Documentation/rbtree.txt for
- usage instructions
-References: <1341876923-12469-1-git-send-email-walken@google.com> <1341876923-12469-2-git-send-email-walken@google.com>
-In-Reply-To: <1341876923-12469-2-git-send-email-walken@google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120710112312.099a2f602cd6aea90226732c@canb.auug.org.au>
+References: <20120710112312.099a2f602cd6aea90226732c@canb.auug.org.au>
+From: Aditya Kali <adityakali@google.com>
+Date: Mon, 9 Jul 2012 18:48:02 -0700
+Message-ID: <CAGr1F2EB=BR+GSq34TYB+QE+3FNwzvBwBemYPpPu+=wENQf-ZA@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the ext4 tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>, wfg@linux.intel.com
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Johann Lombardi <johann@whamcloud.com>,
+        ext4 development <linux-ext4@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2012 07:35 PM, Michel Lespinasse wrote:
-> include/linux/rbtree.h included some basic usage instructions, while
-> Documentation/rbtree.txt had some more complete and easier to follow
-> instructions.  Replacing the former with a reference to the latter.
->
-> Signed-off-by: Michel Lespinasse<walken@google.com>
+Sorry for the trouble. The following patch should fix the build.
 
-Acked-by: Rik van Riel <riel@redhat.com>
+
+From: Aditya Kali <adityakali@google.com>
+Date: Mon, 9 Jul 2012 18:42:28 -0700
+Subject: [PATCH] ext4: Fix compilation error for ext4_enable_quotas
+
+ext4_enable_quotas should only be called under CONFIG_QUOTA
+block.
+
+Signed-off-by: Aditya Kali <adityakali@google.com>
+---
+ fs/ext4/super.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index a9b87c3..e4b79fc 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -4734,6 +4734,7 @@ static int ext4_remount(struct super_block *sb,
+int *flags, char *data)
+ 	if (enable_quota) {
+ 		if (sb_any_quota_suspended(sb))
+ 			dquot_resume(sb, -1);
++#ifdef CONFIG_QUOTA
+ 		else if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
+ 					EXT4_FEATURE_RO_COMPAT_QUOTA)) {
+ 			err = ext4_enable_quotas(sb);
+@@ -4742,6 +4743,7 @@ static int ext4_remount(struct super_block *sb,
+int *flags, char *data)
+ 				goto restore_opts;
+ 			}
+ 		}
++#endif
+ 	}
+
+ 	ext4_msg(sb, KERN_INFO, "re-mounted. Opts: %s", orig_data);
+-- 
+1.7.7.3
+
+
+On Mon, Jul 9, 2012 at 6:23 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Ted,
+>
+> After merging the ext4 tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+>
+> fs/ext4/super.c: In function 'ext4_remount':
+> fs/ext4/super.c:4739:4: error: implicit declaration of function 'ext4_enable_quotas' [-Werror=implicit-function-declaration]
+>
+> Caused by commit 182bb8fec8f5 ("ext4: make quota as first class supported
+> feature").  The quota code needs to be protected by CONFIG_QUOTA.
+>
+> I have used the ext4 tree from next-20120709 for today.
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+
+
 
 -- 
-All rights reversed
+
+Aditya
