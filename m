@@ -1,115 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115Ab2GJO1g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 10:27:36 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:42632 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab2GJO1f (ORCPT
+	id S1753563Ab2GJOim (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 10:38:42 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:34245 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab2GJOie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 10:27:35 -0400
-Date: Tue, 10 Jul 2012 10:19:06 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Olaf Hering <olaf@aepfle.de>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] xen/pv-on-hvm kexec: shutdown watches from
- old kernel
-Message-ID: <20120710141906.GC1791@phenom.dumpdata.com>
-References: <1341924603-18978-1-git-send-email-olaf@aepfle.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341924603-18978-1-git-send-email-olaf@aepfle.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Tue, 10 Jul 2012 10:38:34 -0400
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: Roland Stigge <stigge@antcom.de>,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org
+Subject: [PATCH v3] PWM: add lpc32xx PWM support
+Date: Tue, 10 Jul 2012 11:38:10 -0300
+Message-Id: <1341931090-18296-1-git-send-email-aletes.xgr@gmail.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 02:50:03PM +0200, Olaf Hering wrote:
-> Add xs_reset_watches function to shutdown watches from old kernel after
-> kexec boot.  The old kernel does not unregister all watches in the
-> shutdown path.  They are still active, the double registration can not
-> be detected by the new kernel.  When the watches fire, unexpected events
-> will arrive and the xenwatch thread will crash (jumps to NULL).  An
-> orderly reboot of a hvm guest will destroy the entire guest with all its
-> resources (including the watches) before it is rebuilt from scratch, so
-> the missing unregister is not an issue in that case.
-> 
-> With this change the xenstored is instructed to wipe all active watches
-> for the guest.  However, a patch for xenstored is required so that it
-> accepts the XS_RESET_WATCHES request from a client (see changeset
-> 23839:42a45baf037d in xen-unstable.hg). Without the patch for xenstored
-> the registration of watches will fail and some features of a PVonHVM
-> guest are not available. The guest is still able to boot, but repeated
-> kexec boots will fail.
+Add lpc32xx SOC PWM driver.
 
-OK, so this should make the reset of xenstore work with the new hypervisor,
-but with older ones (like Amazon), it won't and we won't have regressions, right?
+Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+---
+Changes since v2:
+* Update commit message
+* Change the driver to handle the two PWM's of the SOC
+* Disable clock on removal
 
-> 
-> Signed-off-by: Olaf Hering <olaf@aepfle.de>
-> ---
->  drivers/xen/xenbus/xenbus_xs.c     |   20 ++++++++++++++++++++
->  include/xen/interface/io/xs_wire.h |    3 ++-
->  2 files changed, 22 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/xen/xenbus/xenbus_xs.c b/drivers/xen/xenbus/xenbus_xs.c
-> index d1c217b..bce15cf 100644
-> --- a/drivers/xen/xenbus/xenbus_xs.c
-> +++ b/drivers/xen/xenbus/xenbus_xs.c
-> @@ -618,6 +618,23 @@ static struct xenbus_watch *find_watch(const char *token)
->  	return NULL;
->  }
->  
-> +static void xs_reset_watches(void)
-> +{
-> +	int err, supported = 0;
-> +
-> +	if (!xen_hvm_domain())
-> +		return;
-> +
-> +	err = xenbus_scanf(XBT_NIL, "control",
-> +			"platform-feature-xs_reset_watches", "%d", &supported);
-> +	if (err != 1 || !supported)
-> +		return;
-> +
-> +	err = xs_error(xs_single(XBT_NIL, XS_RESET_WATCHES, "", NULL));
-> +	if (err && err != -EEXIST)
-> +		printk(KERN_WARNING "xs_reset_watches failed: %d\n", err);
-> +}
-> +
->  /* Register callback to watch this node. */
->  int register_xenbus_watch(struct xenbus_watch *watch)
->  {
-> @@ -900,5 +917,8 @@ int xs_init(void)
->  	if (IS_ERR(task))
->  		return PTR_ERR(task);
->  
-> +	/* shutdown watches for kexec boot */
-> +	xs_reset_watches();
-> +
->  	return 0;
->  }
-> diff --git a/include/xen/interface/io/xs_wire.h b/include/xen/interface/io/xs_wire.h
-> index 7cdfca2..3c1877c 100644
-> --- a/include/xen/interface/io/xs_wire.h
-> +++ b/include/xen/interface/io/xs_wire.h
-> @@ -29,7 +29,8 @@ enum xsd_sockmsg_type
->      XS_IS_DOMAIN_INTRODUCED,
->      XS_RESUME,
->      XS_SET_TARGET,
-> -    XS_RESTRICT
-> +    XS_RESTRICT,
-> +    XS_RESET_WATCHES
->  };
->  
->  #define XS_WRITE_NONE "NONE"
-> -- 
-> 1.7.3.4
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+Changes since v1:
+* Style fixes
+* Better error handling
+* Improved Kconfig and DT descriptions
+
+ .../devicetree/bindings/pwm/lpc32xx-pwm.txt        |   12 ++
+ drivers/pwm/Kconfig                                |   10 ++
+ drivers/pwm/Makefile                               |    1 +
+ drivers/pwm/pwm-lpc32xx.c                          |  148 ++++++++++++++++++++
+ 4 files changed, 171 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pwm/lpc32xx-pwm.txt
+ create mode 100644 drivers/pwm/pwm-lpc32xx.c
+
+diff --git a/Documentation/devicetree/bindings/pwm/lpc32xx-pwm.txt b/Documentation/devicetree/bindings/pwm/lpc32xx-pwm.txt
+new file mode 100644
+index 0000000..cfe1db3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pwm/lpc32xx-pwm.txt
+@@ -0,0 +1,12 @@
++LPC32XX PWM controller
++
++Required properties:
++- compatible: should be "nxp,lpc3220-pwm"
++- reg: physical base address and length of the controller's registers
++
++Examples:
++
++pwm@0x4005C000 {
++	compatible = "nxp,lpc3220-pwm";
++	reg = <0x4005C000 0x8>;
++};
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index 0b2800f..94e176e 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -28,6 +28,16 @@ config PWM_IMX
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called pwm-imx.
+ 
++config PWM_LPC32XX
++	tristate "LPC32XX PWM support"
++	depends on ARCH_LPC32XX
++	help
++	  Generic PWM framework driver for LPC32XX. The LPC32XX SOC has two
++	  PWM controllers.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called pwm-lpc32xx.
++
+ config PWM_MXS
+ 	tristate "Freescale MXS PWM support"
+ 	depends on ARCH_MXS && OF
+diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+index cec2500..5459702 100644
+--- a/drivers/pwm/Makefile
++++ b/drivers/pwm/Makefile
+@@ -1,6 +1,7 @@
+ obj-$(CONFIG_PWM)		+= core.o
+ obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
+ obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
++obj-$(CONFIG_PWM_LPC32XX)	+= pwm-lpc32xx.o
+ obj-$(CONFIG_PWM_MXS)		+= pwm-mxs.o
+ obj-$(CONFIG_PWM_PXA)		+= pwm-pxa.o
+ obj-$(CONFIG_PWM_SAMSUNG)	+= pwm-samsung.o
+diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
+new file mode 100644
+index 0000000..adb87f0
+--- /dev/null
++++ b/drivers/pwm/pwm-lpc32xx.c
+@@ -0,0 +1,148 @@
++/*
++ * Copyright 2012 Alexandre Pereira da Silva <aletes.xgr@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2.
++ *
++ */
++
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/platform_device.h>
++#include <linux/pwm.h>
++#include <linux/slab.h>
++
++struct lpc32xx_pwm_chip {
++	struct pwm_chip chip;
++	struct clk *clk;
++	void __iomem *base;
++};
++
++#define PWM_ENABLE	(1 << 31)
++#define PWM_RELOADV(x)	(((x) & 0xFF) << 8)
++#define PWM_DUTY(x)	((x) & 0xFF)
++
++#define to_lpc32xx_pwm_chip(_chip) \
++	container_of(_chip, struct lpc32xx_pwm_chip, chip)
++
++static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
++			      int duty_ns, int period_ns)
++{
++	struct lpc32xx_pwm_chip *lpc32xx = to_lpc32xx_pwm_chip(chip);
++	unsigned long long c;
++	int period_cycles, duty_cycles;
++
++	c = clk_get_rate(lpc32xx->clk) / 256;
++	c = c * period_ns;
++	do_div(c, NSEC_PER_SEC);
++
++	/* Handle high and low extremes */
++	if (c == 0)
++		c = 1;
++	if (c > 255)
++		c = 0; /* 0 set division by 256 */
++	period_cycles = c;
++
++	c = 256 * duty_ns;
++	do_div(c, period_ns);
++	duty_cycles = c;
++
++	writel(PWM_ENABLE | PWM_RELOADV(period_cycles) | PWM_DUTY(duty_cycles),
++		lpc32xx->base + (pwm->hwpwm << 2));
++
++	return 0;
++}
++
++static int lpc32xx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct lpc32xx_pwm_chip *lpc32xx = to_lpc32xx_pwm_chip(chip);
++
++	return clk_enable(lpc32xx->clk);
++}
++
++static void lpc32xx_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct lpc32xx_pwm_chip *lpc32xx = to_lpc32xx_pwm_chip(chip);
++
++	writel(0, lpc32xx->base + (pwm->hwpwm << 2));
++	clk_disable(lpc32xx->clk);
++}
++
++static const struct pwm_ops lpc32xx_pwm_ops = {
++	.config = lpc32xx_pwm_config,
++	.enable = lpc32xx_pwm_enable,
++	.disable = lpc32xx_pwm_disable,
++	.owner = THIS_MODULE,
++};
++
++static int lpc32xx_pwm_probe(struct platform_device *pdev)
++{
++	struct lpc32xx_pwm_chip *lpc32xx;
++	struct resource *res;
++	int ret;
++
++	lpc32xx = devm_kzalloc(&pdev->dev, sizeof(*lpc32xx), GFP_KERNEL);
++	if (!lpc32xx)
++		return -ENOMEM;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res)
++		return -EINVAL;
++
++	lpc32xx->base = devm_request_and_ioremap(&pdev->dev, res);
++	if (!lpc32xx->base)
++		return -EADDRNOTAVAIL;
++
++	lpc32xx->clk = devm_clk_get(&pdev->dev, NULL);
++	if (IS_ERR(lpc32xx->clk))
++		return PTR_ERR(lpc32xx->clk);
++
++	lpc32xx->chip.dev = &pdev->dev;
++	lpc32xx->chip.ops = &lpc32xx_pwm_ops;
++	lpc32xx->chip.npwm = 2;
++
++	ret = pwmchip_add(&lpc32xx->chip);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "failed to add PWM chip, error %d\n", ret);
++		return ret;
++	}
++
++	platform_set_drvdata(pdev, lpc32xx);
++
++	return 0;
++}
++
++static int __devexit lpc32xx_pwm_remove(struct platform_device *pdev)
++{
++	struct lpc32xx_pwm_chip *lpc32xx = platform_get_drvdata(pdev);
++
++	clk_disable(lpc32xx->clk);
++	return pwmchip_remove(&lpc32xx->chip);
++}
++
++static struct of_device_id lpc32xx_pwm_dt_ids[] = {
++	{ .compatible = "nxp,lpc3220-pwm", },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, lpc32xx_pwm_dt_ids);
++
++static struct platform_driver lpc32xx_pwm_driver = {
++	.driver = {
++		.name = "lpc32xx-pwm",
++		.of_match_table = of_match_ptr(lpc32xx_pwm_dt_ids),
++	},
++	.probe = lpc32xx_pwm_probe,
++	.remove = __devexit_p(lpc32xx_pwm_remove),
++};
++module_platform_driver(lpc32xx_pwm_driver);
++
++MODULE_ALIAS("platform:lpc32xx-pwm");
++MODULE_AUTHOR("Alexandre Pereira da Silva <aletes.xgr@gmail.com>");
++MODULE_DESCRIPTION("LPC32XX PWM Driver");
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.10
+
