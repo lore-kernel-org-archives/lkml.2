@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab2GJMl0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 08:41:26 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:53751 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751883Ab2GJMlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 08:41:25 -0400
-Date: Tue, 10 Jul 2012 14:41:08 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+	id S1755543Ab2GJMmQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 08:42:16 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:38171 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753079Ab2GJMmP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 08:42:15 -0400
+Message-ID: <1341924051.31958.10.camel@aeonflux>
+Subject: Re: [PATCH] Bluetooth: Add MacBookPro10,1 support
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Henrik Rydberg <rydberg@bitmath.se>
+Cc: Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] shmem: fix negative rss in memcg memory.stat
-Message-ID: <20120710124107.GE1779@cmpxchg.org>
-References: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils>
- <alpine.LSU.2.00.1207091541310.2051@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1207091541310.2051@eggly.anvils>
+Date: Tue, 10 Jul 2012 09:40:51 -0300
+In-Reply-To: <20120709202410.GA817@polaris.bitmath.org>
+References: <1341856347-257-1-git-send-email-rydberg@euromail.se>
+	 <20120709184824.GA21411@x220> <20120709192529.GA712@polaris.bitmath.org>
+	 <20120709194947.GA17281@joana> <20120709202410.GA817@polaris.bitmath.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 03:44:24PM -0700, Hugh Dickins wrote:
-> When adding the page_private checks before calling shmem_replace_page(),
-> I did realize that there is a further race, but thought it too unlikely
-> to need a hurried fix.
-> 
-> But independently I've been chasing why a mem cgroup's memory.stat
-> sometimes shows negative rss after all tasks have gone: I expected it
-> to be a stats gathering bug, but actually it's shmem swapping's fault.
-> 
-> It's an old surprise, that when you lock_page(lookup_swap_cache(swap)),
-> the page may have been removed from swapcache before getting the lock; 
-> or it may have been freed and reused and be back in swapcache; and it
-> can even be using the same swap location as before (page_private same).
-> 
-> The swapoff case is already secure against this (swap cannot be reused
-> until the whole area has been swapped off, and a new swapped on); and
-> shmem_getpage_gfp() is protected by shmem_add_to_page_cache()'s check
-> for the expected radix_tree entry - but a little too late.
-> 
-> By that time, we might have already decided to shmem_replace_page():
-> I don't know of a problem from that, but I'd feel more at ease not to
-> do so spuriously.  And we have already done mem_cgroup_cache_charge(),
-> on perhaps the wrong mem cgroup: and this charge is not then undone on
-> the error path, because PageSwapCache ends up preventing that.
+Hi Henrik,
 
-I couldn't see anything wrong with shmem_replace_page(), either, but
-maybe the comment in its error path could be updated as the callsite
-does not rely on page_private alone anymore to confirm correct swap.
+> > > > I believe the requirement is to always include a usb-devices output in
+> > > > the commit message (to let maintainers confirm that no typo has occurred
+> > > > in the patch itself).
+> > 
+> > If you don't have access to the device I can take it without usb-devices,
+> > otherwise just add it to the patch and then resend.
+> 
+> I don't, but I trust that this patch is authentic.
 
-> It's this last case which causes the occasional negative rss in
-> memory.stat: the page is charged here as cache, but (sometimes) found
-> to be anon when eventually it's uncharged - and in between, it's an
-> undeserved charge on the wrong memcg.
-> 
-> Fix this by adding an earlier check on the radix_tree entry: it's
-> inelegant to descend the tree twice, but swapping is not the fast path,
-> and a better solution would need a pair (try+commit) of memcg calls,
-> and a rework of shmem_replace_page() to keep out of the swapcache.
-> 
-> We can use the added shmem_confirm_swap() function to replace the
-> find_get_page+page_cache_release we were already doing on the error
-> path.  And add a comment on that -EEXIST: it seems a peculiar errno
-> to be using, but originates from its use in radix_tree_insert().
-> 
-> [It can be surprising to see positive rss left in a memcg's memory.stat
-> after all tasks have gone, since it is supposed to count anonymous but
-> not shmem.  Aside from sharing anon pages via fork with a task in some
-> other memcg, it often happens after swapping: because a swap page can't
-> be freed while under writeback, nor while locked.  So it's not an error,
-> and these residual pages are easily freed once pressure demands.]
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
+the requirement is to have either /sys/kernel/debug/usb/devices section
+or usb-devices output included in the commit message. No exceptions. I
+want to have this documented in case any questions about it ever arises.
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Regards
+
+Marcel
+
+
