@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab2GJICl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 04:02:41 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:50816 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739Ab2GJICg (ORCPT
+	id S1753319Ab2GJIOC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 04:14:02 -0400
+Received: from na3sys009aog137.obsmtp.com ([74.125.149.18]:37274 "EHLO
+	na3sys009aog137.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753152Ab2GJIN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 04:02:36 -0400
-Date: Tue, 10 Jul 2012 10:02:30 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, hpa@zytor.com,
-        eranian@google.com, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        akpm@linux-foundation.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [tip:perf/core] perf/x86: Fix USER/KERNEL tagging of samples
-Message-ID: <20120710080230.GA10919@gmail.com>
-References: <tip-xxrt0a1zronm1sm36obwc2vy@git.kernel.org>
- <CA+55aFxY7SqwSQWuRXSg+W=ftp9FtCT1MMEqMiCi1H279Fis-A@mail.gmail.com>
- <1341598329.7709.57.camel@twins>
- <CA+55aFzqoz7dcUCQfSrXxX2T8=2wgWdb1H2vaBhk7V-r0uaogw@mail.gmail.com>
- <CA+55aFw+vE4zMe1bJohLuoMDaFpqGCz6sBNRE8gkV7JOvtro0g@mail.gmail.com>
- <1341832997.3462.41.camel@twins>
- <20120709184145.GA7666@gmail.com>
- <1341906848.3462.92.camel@twins>
+	Tue, 10 Jul 2012 04:13:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341906848.3462.92.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FFBCB39.1010809@ti.com>
+References: <1340884267-28908-1-git-send-email-kishon@ti.com>
+	<1340884267-28908-11-git-send-email-kishon@ti.com>
+	<4FFBCB39.1010809@ti.com>
+Date: Tue, 10 Jul 2012 13:43:57 +0530
+Message-ID: <CAAe_U6LqF9aZLZgHQYhX6VXXB41HUNmZgXfOwe9V9VtWVe+46g@mail.gmail.com>
+Subject: Re: [PATCH v1 10/11] arm/dts: omap: Add usb_otg and glue data
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: Rajendra Nayak <rnayak@ti.com>
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, b-cousson@ti.com,
+        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, balbi@ti.com,
+        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org, hvaibhav@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+On Tue, Jul 10, 2012 at 11:57 AM, Rajendra Nayak <rnayak@ti.com> wrote:
+> On Thursday 28 June 2012 05:21 PM, Kishon Vijay Abraham I wrote:
+>>
+>> Add usb otg data node in omap4/omap3 device tree file. Also update
+>> the node with board specific setting in omapx-<board>.dts file.
+>>
+>> Signed-off-by: Kishon Vijay Abraham I<kishon@ti.com>
+>> ---
+>>   arch/arm/boot/dts/omap3-beagle.dts |    6 ++++++
+>>   arch/arm/boot/dts/omap3-evm.dts    |    6 ++++++
+>>   arch/arm/boot/dts/omap3.dtsi       |    8 ++++++++
+>>   arch/arm/boot/dts/omap4-panda.dts  |    6 ++++++
+>>   arch/arm/boot/dts/omap4-sdp.dts    |    6 ++++++
+>>   arch/arm/boot/dts/omap4.dtsi       |    8 ++++++++
+>>   6 files changed, 40 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/boot/dts/omap3-beagle.dts
+>> b/arch/arm/boot/dts/omap3-beagle.dts
+>> index 5b4506c..f3d7076 100644
+>> --- a/arch/arm/boot/dts/omap3-beagle.dts
+>> +++ b/arch/arm/boot/dts/omap3-beagle.dts
+>> @@ -67,3 +67,9 @@
+>>   &mmc3 {
+>>         status = "disable";
+>>   };
+>> +
+>> +&usb_otg_hs {
+>> +       interface_type =<0>;
+>> +       mode =<3>;
+>> +       power =<50>;
+>> +};
+>> diff --git a/arch/arm/boot/dts/omap3-evm.dts
+>> b/arch/arm/boot/dts/omap3-evm.dts
+>> index 2eee16e..8963b3d 100644
+>> --- a/arch/arm/boot/dts/omap3-evm.dts
+>> +++ b/arch/arm/boot/dts/omap3-evm.dts
+>> @@ -18,3 +18,9 @@
+>>                 reg =<0x80000000 0x10000000>; /* 256 MB */
+>>         };
+>>   };
+>> +
+>> +&usb_otg_hs {
+>> +       interface_type =<0>;
+>> +       mode =<3>;
+>> +       power =<50>;
+>> +};
+>> diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+>> index 99474fa..2f565d6 100644
+>> --- a/arch/arm/boot/dts/omap3.dtsi
+>> +++ b/arch/arm/boot/dts/omap3.dtsi
+>> @@ -215,5 +215,13 @@
+>>                         compatible = "ti,omap3-hsmmc";
+>>                         ti,hwmods = "mmc3";
+>>                 };
+>> +
+>> +               usb_otg_hs: usb_otg_hs@4a0ab000 {
+>> +                       compatible = "ti,musb-omap2430";
+>
+>
+> this compatible doesn't seem right in omap3.dtsi. Same with
+> the below entry in omap4.dtsi.
+> See other IP blocks which are reused across OMAP2/3/4 on
+> how the compatible for those are handled.
 
-> > > +static unsigned long code_segment_base(struct pt_regs *regs)
-> > > +{
-> > > +#ifdef CONFIG_32BIT
-> > > +     if (user_mode(regs) && regs->cs != __USER_CS)
-> > > +             return get_segment_base(regs->cs);
-> > > +#else
-> > > +     if (test_thread_flag(TIF_IA32)) {
-> > > +             if (user_mode(regs) && regs->cs != __USER32_CS)
-> > > +                     return get_segment_base(regs->cs);
-> > > +     }
-> > > +#endif
-> > > +     return 0;
-> > > +}
-> > 
-> > Will this do the right thing for x32 mode? 
-> 
-> hpa? It looks like x32 has TIF_X32, but from the kernel's POV 
-> its really just another 64bit process, so as long as we don't 
-> trigger the TIF_IA32 case we'll just return 0.
+Ok. So it should be like *ti,omap4-musb*, *ti,omap3-musb*?
 
-Maybe add that as a comment or so, to stop future wondering. 
-Maybe list all the states an x86 process can be in, and describe 
-what we intend to do for each. That will make it easier to match 
-up intent with actual code and will make it easier to keep it 
-correct in the future as well.
-
-> set_personality_ia32() looks like TIF_IA32 and TIF_X32 are 
-> mutually exclusive, so I think we do the right thing.
-
-Ok.
-
-Thanks,
-
-	Ingo
+Thanks
+Kishon
