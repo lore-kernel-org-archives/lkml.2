@@ -1,162 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab2GJGxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 02:53:00 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:36231 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753558Ab2GJGw6 (ORCPT
+	id S1753984Ab2GJGxu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 02:53:50 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:40129 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751475Ab2GJGxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 02:52:58 -0400
+	Tue, 10 Jul 2012 02:53:49 -0400
+Message-ID: <4FFBD139.9010906@linux.vnet.ibm.com>
+Date: Tue, 10 Jul 2012 12:22:41 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <4FFBC56F.7080007@ti.com>
-References: <1340884267-28908-1-git-send-email-kishon@ti.com>
-	<1340884267-28908-8-git-send-email-kishon@ti.com>
-	<4FFBC56F.7080007@ti.com>
-Date: Tue, 10 Jul 2012 12:22:57 +0530
-Message-ID: <CAAe_U6JhMWzsZ_XZzO0gt=g9fufL-urCLEC0nWfa8vk-9x6F_w@mail.gmail.com>
-Subject: Re: [PATCH v1 07/11] drivers: usb: twl4030: Add device tree support
- for twl4030 usb
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, b-cousson@ti.com,
-        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, balbi@ti.com,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org, hvaibhav@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] acpi : cpu hot-remove returns error number when cpu_down()
+ fails
+References: <4FF65898.3000301@jp.fujitsu.com> <4FF6B537.1030703@linux.vnet.ibm.com> <4FFA4269.5050808@jp.fujitsu.com> <4FFABFAC.3000708@linux.vnet.ibm.com> <4FFB73A8.4030102@jp.fujitsu.com> <4FFBBA40.2010803@jp.fujitsu.com>
+In-Reply-To: <4FFBBA40.2010803@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+x-cbid: 12070921-3568-0000-0000-0000021C6715
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 07/10/2012 10:44 AM, Yasuaki Ishimatsu wrote:
+> Hi Srivatsa,
+> 
+> 2012/07/10 9:13, Yasuaki Ishimatsu wrote:
+>> Hi Srivatsa,
+>>
+>> 2012/07/09 20:25, Srivatsa S. Bhat wrote:
+>>> On 07/09/2012 08:01 AM, Yasuaki Ishimatsu wrote:
+>>>> Hi Srivatsa,
+>>>>
+>>>> Thank you for your reviewing.
+>>>>
+>>>> 2012/07/06 18:51, Srivatsa S. Bhat wrote:
+>>>>> On 07/06/2012 08:46 AM, Yasuaki Ishimatsu wrote:
+>>>>>> Even if cpu_down() fails, acpi_processor_remove() continues to remove the cpu.
+>>>>>
+>>>>> Ouch!
+>>>>>
+>>>>>> But in this case, it should return error number since some process may run on
+>>>>>> the cpu. If the cpu has a running process and the cpu is turned the power off,
+>>>>>> the system cannot work well.
+>>>>>>
+>>>>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>>>>
+>>>>>> ---
+>>>>>>     drivers/acpi/processor_driver.c |   18 ++++++++++++------
+>>>>>>     1 file changed, 12 insertions(+), 6 deletions(-)
+>>>>>>
+>>>>>> Index: linux-3.5-rc4/drivers/acpi/processor_driver.c
+>>>>>> ===================================================================
+>>>>>> --- linux-3.5-rc4.orig/drivers/acpi/processor_driver.c	2012-06-25 04:53:04.000000000 +0900
+>>>>>> +++ linux-3.5-rc4/drivers/acpi/processor_driver.c	2012-07-05 21:02:58.711285382 +0900
+>>>>>> @@ -610,7 +610,7 @@ err_free_pr:
+>>>>>>     static int acpi_processor_remove(struct acpi_device *device, int type)
+>>>>>>     {
+>>>>>>     	struct acpi_processor *pr = NULL;
+>>>>>> -
+>>>>>> +	int ret;
+>>>>>>
+>>>>>>     	if (!device || !acpi_driver_data(device))
+>>>>>>     		return -EINVAL;
+>>>>>> @@ -621,8 +621,9 @@ static int acpi_processor_remove(struct
+>>>>>>     		goto free;
+>>>>>>
+>>>>>>     	if (type == ACPI_BUS_REMOVAL_EJECT) {
+>>>>>> -		if (acpi_processor_handle_eject(pr))
+>>>>>> -			return -EINVAL;
+>>>>>> +		ret = acpi_processor_handle_eject(pr);
+>>>>>> +		if (ret)
+>>>>>> +			return ret;
+>>>>>>     	}
+>>>>>>
+>>>>>>     	acpi_processor_power_exit(pr, device);
+>>>>>> @@ -841,12 +842,17 @@ static acpi_status acpi_processor_hotadd
+>>>>>>
+>>>>>>     static int acpi_processor_handle_eject(struct acpi_processor *pr)
+>>>>>>     {
+>>>>>> -	if (cpu_online(pr->id))
+>>>>>> -		cpu_down(pr->id);
+>>>>>> +	int ret;
+>>>>>> +
+>>>>>> +	if (cpu_online(pr->id)) {
+>>>>>> +		ret = cpu_down(pr->id);
+>>>>>> +		if (ret)
+>>>>>> +			return ret;
+>>>>>> +	}
+>>>>>>
+>>>>>
+>>>>> Strictly speaking, this is not thorough enough. What prevents someone
+>>>>> from onlining that same cpu again, at this point?
+>>>>> So, IMHO, you need to wrap the contents of this function inside a
+>>>>> get_online_cpus()/put_online_cpus() block, to prevent anyone else
+>>>>> from messing with CPU hotplug at the same time.
+>>>>
+>>>> If I understand your comment by mistake, please let me know.
+>>>> If the contents is wrapped a inside get_online_cpus()/put_online_cpus() block
+>>>> as below, cpu_down() will stop since cpu_down() calls cpu_hotplug_begin() and
+>>>> cpu_hotplug_begin() waits for cpu_hotplug.refcount to become 0.
+>>>>
+>>>
+>>> You are right. Sorry, I overlooked that.
+>>>
+>>>> +	get_online_cpus()
+>>>> +	if (cpu_online(pr->id)) {
+>>>> +		ret = cpu_down(pr->id);
+>>>> +		if (ret)
+>>>> +			return ret;
+>>>> +	}
+>>>> +	put_online_cpus()
+>>>>
+>>>> I think following patch can prevent it correctly. How about the patch?
+>>>>
+>>>> ---
+>>>>    drivers/acpi/processor_driver.c |   12 ++++++++++++
+>>>>    kernel/cpu.c                    |    8 +++++---
+>>>>    2 files changed, 17 insertions(+), 3 deletions(-)
+>>>>
+>>>> Index: linux-3.5-rc4/drivers/acpi/processor_driver.c
+>>>> ===================================================================
+>>>> --- linux-3.5-rc4.orig/drivers/acpi/processor_driver.c	2012-07-09 09:59:01.280211202 +0900
+>>>> +++ linux-3.5-rc4/drivers/acpi/processor_driver.c	2012-07-09 11:05:34.559859236 +0900
+>>>> @@ -844,14 +844,26 @@ static int acpi_processor_handle_eject(s
+>>>>    {
+>>>>    	int ret;
+>>>>
+>>>> +retry:
+>>>>    	if (cpu_online(pr->id)) {
+>>>>    		ret = cpu_down(pr->id);
+>>>>    		if (ret)
+>>>>    			return ret;
+>>>>    	}
+>>>>
+>>>> +	get_online_cpus();
+>>>> +	/*
+>>>> +	 * Someone might online the cpu again at this point. So we check that
+>>>> +	 * cpu has been onlined or not. If cpu is online, we try to offline
+>>>> +	 * the cpu again.
+>>>> +	 */
+>>>> +	if (cpu_online(pr->id)) {
+>>>
+>>> How about this:
+>>> 	if (unlikely(cpu_online(pr->id)) {
+>>> since the probability of this happening is quite small...
+>>
+>> Thanks. I'll update it.
+>>
+>>>> +		put_online_cpus();
+>>>> +		goto retry;
+>>>> +	}
+>>>>    	arch_unregister_cpu(pr->id);
+>>>>    	acpi_unmap_lsapic(pr->id);
+>>>> +	put_online_cpus();
+>>>>    	return ret;
+>>>>    }
+>>>
+>>> This retry logic doesn't look elegant, but I don't see any better method :-(
+>>>
+>>>>    #else
+>>>> Index: linux-3.5-rc4/kernel/cpu.c
+>>>> ===================================================================
+>>>> --- linux-3.5-rc4.orig/kernel/cpu.c	2012-07-09 09:59:01.280211202 +0900
+>>>> +++ linux-3.5-rc4/kernel/cpu.c	2012-07-09 09:59:02.903190965 +0900
+>>>> @@ -343,11 +343,13 @@ static int __cpuinit _cpu_up(unsigned in
+>>>>    	unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
+>>>>    	struct task_struct *idle;
+>>>>
+>>>> -	if (cpu_online(cpu) || !cpu_present(cpu))
+>>>> -		return -EINVAL;
+>>>> -
+>>>>    	cpu_hotplug_begin();
+>>>>
+>>>> +	if (cpu_online(cpu) || !cpu_present(cpu)) {
+>>>> +		ret = -EINVAL;
+>>>> +		goto out;
+>>>> +	}
+>>>> +
+>>>
+>>> Firstly, why is this change needed?
+>>
+>> I cared the race of hot-remove cpu and _cpu_up(). If I do not change it,
+>> there is the following race.
+>>
+>> hot-remove cpu                         |  _cpu_up()
+>> ------------------------------------- ------------------------------------
+>> call acpi_processor_handle_eject()     |
+>>       call cpu_down()                   |
+>>       call get_online_cpus()            |
+>>                                         | call cpu_hotplug_begin() and stop here
+>>       call arch_unregister_cpu()        |
+>>       call acpi_unmap_lsapic()          |
+>>       call put_online_cpus()            |
+>>                                         | start and continue _cpu_up()
+>>       return acpi_processor_remove()    |
+>> continue hot-remove the cpu            |
+>>
+>> So _cpu_up() can continue to itself. And hot-remove cpu can also continue
+>> itself. If I change it, I think the race disappears as below:
+>>
+>> hot-remove cpu                         | _cpu_up()
+>> -----------------------------------------------------------------------
+>> call acpi_processor_handle_eject()     |
+>>       call cpu_down()                   |
+>>       call get_online_cpus()            |
+>>                                         | call cpu_hotplug_begin() and stop here
+>>       call arch_unregister_cpu()        |
+>>       call acpi_unmap_lsapic()          |
+>>            cpu's cpu_present is set     |
+>> 	  to false by set_cpu_present()|
+>>       call put_online_cpus()            |
+>>                                         | start _cpu_up()
+>> 				       | check cpu_present() and return -EINVAL
+>>       return acpi_processor_remove()    |
+>> continue hot-remove the cpu            |
+>>
+>> Thus I think the change is necessary.
+>>
+>> Thanks,
+>> Yasuaki Ishimatsu
+>>
+>>> Secondly, if the change is indeed an improvement, then why is it
+>>> in _this_ patch? IMHO, in that case it should be part of a separate patch.
+> 
+> I forget to answer the question.
+> As I answered in the above your first question, the fix is related to
+> acpi_processor_handle_eject(). So the fix should be in the patch.
+>
 
-On Tue, Jul 10, 2012 at 11:32 AM, Rajendra Nayak <rnayak@ti.com> wrote:
-> On Thursday 28 June 2012 05:21 PM, Kishon Vijay Abraham I wrote:
->>
->> Add device tree support for twl6030 usb driver.
->
->
-> twl4030?
-My bad. Will fix it.
->
->
->> Update the Documentation with device tree binding information.
->>
->> Signed-off-by: Kishon Vijay Abraham I<kishon@ti.com>
->> ---
->>   .../devicetree/bindings/usb/twlxxxx-usb.txt        |   19 +++++++++++++
->>   drivers/usb/otg/twl4030-usb.c                      |   28
->> +++++++++++++++----
->>   2 files changed, 41 insertions(+), 6 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
->> b/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
->> index f293271..2d069e4 100644
->> --- a/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
->> +++ b/Documentation/devicetree/bindings/usb/twlxxxx-usb.txt
->> @@ -16,3 +16,22 @@ twl6030-usb {
->>         regulator = "vusb";
->>         vusb-supply =<&vusb>;
->>   };
->> +
->> +TWL4030 USB PHY AND COMPARATOR
->> + - compatible : Should be "ti,twl4030-usb"
->> + - interrupts : The interrupt numbers to the cpu should be specified.
->> First
->> +   interrupt number is the otg interrupt number that raises ID interrupts
->> +   and VBUS interrupts. The second interrupt number is optional.
->> + -<supply-name>-supply : phandle to the regulator device tree node.
->> +<supply-name>  should be vusb1v5, vusb1v8 and vusb3v1
->> + - usb_mode : The mode used by the phy to connect to the controller. "1"
->> +   specifies "ULPI" mode and "2" specifies "CEA2011_3PIN" mode.
->
->
-> Are these standard usb phy modes or something specific to the twl4030
-> usb phy?
+Yep, got it now. Thanks!
 
-These are standard modes used to connect the phy to the controller. I
-think it's used by other chips other than twl4030 (Something in
-am35xx??).
->
->> +
->> +twl4030-usb {
->> +       compatible = "ti,twl4030-usb";
->> +       interrupts =<  10 4>;
->> +       vusb1v5-supply =<&vusb1v5>;
->> +       vusb1v8-supply =<&vusb1v8>;
->> +       vusb3v1-supply =<&vusb3v1>;
->> +       usb_mode =<1>;
->> +};
->> diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
->> index 523cad5..a4e7434 100644
->> --- a/drivers/usb/otg/twl4030-usb.c
->> +++ b/drivers/usb/otg/twl4030-usb.c
->> @@ -585,23 +585,28 @@ static int __devinit twl4030_usb_probe(struct
->> platform_device *pdev)
->>         struct twl4030_usb      *twl;
->>         int                     status, err;
->>         struct usb_otg          *otg;
->> -
->> -       if (!pdata) {
->> -               dev_dbg(&pdev->dev, "platform_data not available\n");
->> -               return -EINVAL;
->> -       }
->> +       struct device_node      *np = pdev->dev.of_node;
->>
->>         twl = devm_kzalloc(&pdev->dev, sizeof *twl, GFP_KERNEL);
->>         if (!twl)
->>                 return -ENOMEM;
->>
->> +       if (np)
->> +               of_property_read_u32(np, "usb_mode",
->> +                               (enum twl4030_usb_mode *)&twl->usb_mode);
->> +       else if (pdata)
->> +               twl->usb_mode = pdata->usb_mode;
->> +       else {
->> +               dev_err(&pdev->dev, "twl4030 initialized without
->> pdata\n");
->> +               return -EINVAL;
->> +       }
->> +
->>         otg = devm_kzalloc(&pdev->dev, sizeof *otg, GFP_KERNEL);
->>         if (!otg)
->>                 return -ENOMEM;
->>
->>         twl->dev                =&pdev->dev;
->>
->>         twl->irq                = platform_get_irq(pdev, 0);
->> -       twl->usb_mode           = pdata->usb_mode;
->>         twl->vbus_supplied      = false;
->>         twl->asleep             = 1;
->>         twl->linkstat           = OMAP_MUSB_UNKNOWN;
->> @@ -690,12 +695,23 @@ static int __exit twl4030_usb_remove(struct
->> platform_device *pdev)
->>         return 0;
->>   }
->>
->> +#ifdef CONFIG_OF
->> +static const struct of_device_id twl4030_usb_id_table[] = {
->> +       { .compatible = "ti,twl4030-usb" },
->> +       {}
->> +};
->> +MODULE_DEVICE_TABLE(of, twl4030_usb_id_table);
->> +#else
->> +#define twl4030_usb_id_table NULL
->> +#endif
->> +
->>   static struct platform_driver twl4030_usb_driver = {
->>         .probe          = twl4030_usb_probe,
->>         .remove         = __exit_p(twl4030_usb_remove),
->>         .driver         = {
->>                 .name   = "twl4030_usb",
->>                 .owner  = THIS_MODULE,
->> +               .of_match_table = twl4030_usb_id_table,
->
->
-> use of_match_ptr().
+Regards,
+Srivatsa S. Bhat
 
-Ok. Will change it that way.
-
-Thanks
-Kishon
