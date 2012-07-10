@@ -1,121 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab2GJKUb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 06:20:31 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38121 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753192Ab2GJKUa convert rfc822-to-8bit (ORCPT
+	id S1752538Ab2GJKZt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 06:25:49 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56553 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752078Ab2GJKZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 06:20:30 -0400
-Message-ID: <1341915609.3462.113.camel@twins>
-Subject: Re: [PATCH] trace: add ability to set a target task for events
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arun Sharma <asharma@fb.com>
-Date: Tue, 10 Jul 2012 12:20:09 +0200
-In-Reply-To: <1341392911-1888300-1-git-send-email-avagin@openvz.org>
-References: <1341392911-1888300-1-git-send-email-avagin@openvz.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 10 Jul 2012 06:25:48 -0400
+Date: Tue, 10 Jul 2012 11:10:18 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Message-ID: <20120710101018.GE15120@arm.com>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+ <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
+ <201207071927.13135.arnd@arndb.de>
+ <20120710071023.GA10456@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120710071023.GA10456@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-04 at 13:08 +0400, Andrew Vagin wrote:
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+On Tue, Jul 10, 2012 at 08:10:23AM +0100, Ingo Molnar wrote:
+> * Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Saturday 07 July 2012, Olof Johansson wrote:
+> > > > ARM introduced AArch64 as part of the ARMv8 architecture
+> > > 
+> > > With the risk of bikeshedding here, but I find the name awkward. How
+> > > about just naming the arch port arm64 instead? It's considerably more
+> > > descriptive in the context of the kernel.  For reference, we didn't
+> > > name ppc64, nor powerpc, after what the IBM/power.org marketing people
+> > > were currently calling the architecture at the time either.
+> > 
+> > I agree the name sucks, [...]
 > 
-> A few events are interesting not only for a current task.
-> For example, sched_stat_* are interesting to a task, which
-> wake up. For this reason, it will be good, if such events will
-> be delivered to a target task too.
+> So why not change it now, when it only bothers a few dozen 
+> people and it is only present in 36 patches? Why go full steam 
+> ahead to annoy thousands of people with it and why spread the 
+> naming madness to thousands of commits?
+
+Changing the arch/ dir name is easy at this point. My preference is for
+consistency with the official name (that cannot be changed) and the gcc
+triplet. I also don't think it annoys thousands of people, most don't
+really care. The few reactions I've seen is pretty much because people
+were expecting arm64 and it came as something else.
+
+But I'll make a decision on this before the next version of the series.
+
+> > [...] This also includes the rpm and dpkg architecture names, 
+> > and the string returned by the uname syscall. If everything 
+> > else is aarch64, we should use that in the kernel directory 
+> > too, but if everyone calls it arm64 anyway, we should probably 
+> > use that name for as many things as possible.
 > 
-> Now a target task can be set by using __perf_task().
+> Yeah.
 
-Right, I suspect you actually tested this and it works?
+What are Red Hat's plans for the AArh64 rpm architecture name?
 
-It would be good it you can expand the Changelog a bit to include your
-entire use-case. IIRC you're wanting to measure task block latency and
-need the time and place where it goes to sleep, provided by
-trace_sched_switch + callchain, and the time when it gets woken up,
-provided by trace_sched_wakeup().
+> > > I guess it's a good chance to clean up some of it and start 
+> > > from a clean slate, if you can avoid the temptation of just 
+> > > moving over code.
+> > 
+> > Agreed. It's clear from the code that it started out as a copy 
+> > of the 32 bit ARM code base, which I think was a mistake, but 
+> > it has also moved on since then and many areas of the 64 bit 
+> > code are now much cleaner because they don't have to worry 
+> > about breaking legacy code. We're also more flexible with 
+> > trying out stuff without having to worry about breaking some 
+> > 10 year old board code.
+> 
+> Just for the record, you guys are repeating all the same 
+> arguments that led to the x86_64 fork a decade ago...
 
-Hmm.. you only add __perf_task() to sched_stat_template, should it also
-be added to sched_wakeup_template?
+As I stated already, comparing AArch64 to x86_64 is not right. So even
+if the arguments may look the same, the context is *different*. AArch64
+is *not* an extension to the AArch32 mode.
 
-ISTR us talking about dis-allowing callgraphs on such cross-task events,
-since that would be nigh impossible to interpret, right?
+In the AArch32 kernel port many implementation decisions newer
+architectures were made in a way that preserves backwards compatibility
+to over 15 years ago (and for *good* reasons, ARMv4 hardware is still in
+use). But keeping the same decisions in AArch64 is wrong.
 
-So do we want something like this on top?
+If you want to put the two architectures under the same directory, you
+pretty much end up with duplicate files or subdirectories. If there is
+little code shared, then I don't see the point. It's just creating more
+work to maintain the build system, the include/asm/ (as AArch64 uses
+lots more generic headers).
 
----
- kernel/events/callchain.c | 12 +++++++++---
- kernel/events/core.c      |  2 +-
- kernel/events/internal.h  |  3 ++-
- 3 files changed, 12 insertions(+), 5 deletions(-)
+AArch64 is also in its early days with a lot of developments to come
+(and still waiting for hardware). Until we really know the final shape,
+the AArch64 code base must allowed to evolve independently from the
+AArch32 one.
 
-diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
-index 6581a04..35de8b1 100644
---- a/kernel/events/callchain.c
-+++ b/kernel/events/callchain.c
-@@ -153,11 +153,11 @@ put_callchain_entry(int rctx)
- 	put_recursion_context(__get_cpu_var(callchain_recursion), rctx);
- }
- 
--struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
-+struct perf_callchain_entry *
-+perf_callchain(struct perf_event *event, struct pt_regs *regs)
- {
--	int rctx;
- 	struct perf_callchain_entry *entry;
--
-+	int rctx;
- 
- 	entry = get_callchain_entry(&rctx);
- 	if (rctx == -1)
-@@ -178,6 +178,12 @@ struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
- 	}
- 
- 	if (regs) {
-+		/*
-+		 * Disallow cross-task user callchains.
-+		 */
-+		if (event->ctx->task && event->ctx->task != current)
-+			goto exit_put;
-+
- 		perf_callchain_store(entry, PERF_CONTEXT_USER);
- 		perf_callchain_user(entry, regs);
- 	}
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index f1cf0ed..74d22c9 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4039,7 +4039,7 @@ void perf_prepare_sample(struct perf_event_header *header,
- 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
- 		int size = 1;
- 
--		data->callchain = perf_callchain(regs);
-+		data->callchain = perf_callchain(event, regs);
- 
- 		if (data->callchain)
- 			size += data->callchain->nr;
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index b0b107f..a096c19 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -101,7 +101,8 @@ __output_copy(struct perf_output_handle *handle,
- }
- 
- /* Callchain handling */
--extern struct perf_callchain_entry *perf_callchain(struct pt_regs *regs);
-+extern struct perf_callchain_entry *
-+perf_callchain(struct perf_event *event, struct pt_regs *regs);
- extern int get_callchain_buffers(void);
- extern void put_callchain_buffers(void);
- 
+> With the difference that the case for unifying platforms seems 
+> even *stronger* in the ARM space than it is in the x86 space: 
+> 32-bit computing will probably stay around with us far longer in 
+> the gadget and appliance space than in the server space. 
+> Thinking that arm64 will only be limited to servers is rather 
+> short-sighted, IMO.
 
+The initial target is servers (see the companies that have announced
+plans around ARMv8) but I agree, we may see it in other devices in the
+future. But as the maintainer I have no plans to support a 32-bit SoC on
+an AArch64/ARMv8 system (which may or may not support AArch32 at kernel
+level). If an AArch64 SoC would share some devices with an AArch32 SoC,
+such code will go to drivers/.
+
+-- 
+Catalin
