@@ -1,137 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014Ab2GJLKI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 07:10:08 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50399 "EHLO arroyo.ext.ti.com"
+	id S1755009Ab2GJLMr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 07:12:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33394 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754720Ab2GJLKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 07:10:06 -0400
-From: AnilKumar Ch <anilkumar@ti.com>
-To: <sameo@linux.intel.com>, <lrg@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <linux-kernel@vger.kernel.org>
-CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <grant.likely@secretlab.ca>, AnilKumar Ch <anilkumar@ti.com>
-Subject: [PATCH v2 3/3] ARM: OMAP2+: AM33XX: Add tps65217 device tree data
-Date: Tue, 10 Jul 2012 16:39:44 +0530
-Message-ID: <1341918584-28004-4-git-send-email-anilkumar@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1341918584-28004-1-git-send-email-anilkumar@ti.com>
-References: <1341918584-28004-1-git-send-email-anilkumar@ti.com>
+	id S1752808Ab2GJLMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 07:12:45 -0400
+Date: Tue, 10 Jul 2012 12:12:42 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Eric B Munson <emunson@mgebm.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH 11/16] netvm: Propagate page->pfmemalloc from
+ skb_alloc_page to skb
+Message-ID: <20120710111242.GD14154@suse.de>
+References: <1340375443-22455-1-git-send-email-mgorman@suse.de>
+ <1340375443-22455-12-git-send-email-mgorman@suse.de>
+ <20120626201328.GI6509@breakpoint.cc>
+ <20120627084348.GG8271@suse.de>
+ <20120709191856.GD3515@breakpoint.cc>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120709191856.GD3515@breakpoint.cc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree data for tps65217 regulator by adding all the consumers
-necessary for AM335X-BeagleBone. The data will be map to a regulator
-constraints which is required for regulator set_voltage and get_voltage
-calls.
+On Mon, Jul 09, 2012 at 09:18:56PM +0200, Sebastian Andrzej Siewior wrote:
+> 
+> > I can update e1000 if you like but it's not critical
+> > to do so and in fact getting a bug reporting saying that network swap
+> > was slow on e1000 would be useful to me in its own way :)
+> No, leave as it, I was just curious.
+> One thing: Do you think it makes sense to you introduce
+> 	#define GFP_NET_RX     (GFP_ATOMIC | __GFP_MEMALLOC)
+> 
+> and use it within the receive path instead of GFP_ATOMIC?
+> 
 
-All tps65217 PMIC regulator constraints are placed in a seperate device
-tree include file (tps65217.dtsi).
+For now, I'd prefer to keep the __GFP_MEMALLOC flag at the different
+callsites because it forces people to think about what it means.  I fear
+that GFP_NET_RX may be too easy to misuse without thinking about what the
+consequences are.
 
-This patch is tested by adding the I2C slave address of TPS65217
-pmic to am335x-bone.dts file (Not included in this, I2C slave
-addition patch will be submitted to linux-omap, where am335x-bone.dts
-binding file is available).
-
-Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
----
- arch/arm/boot/dts/tps65217.dtsi |   84 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 84 insertions(+)
- create mode 100644 arch/arm/boot/dts/tps65217.dtsi
-
-diff --git a/arch/arm/boot/dts/tps65217.dtsi b/arch/arm/boot/dts/tps65217.dtsi
-new file mode 100644
-index 0000000..cbb9e5d
---- /dev/null
-+++ b/arch/arm/boot/dts/tps65217.dtsi
-@@ -0,0 +1,84 @@
-+/*
-+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+/*
-+ * Integrated Power Management Chip
-+ * http://www.ti.com/lit/ds/symlink/tps65217.pdf
-+ */
-+
-+&tps {
-+	compatible = "ti,tps65217";
-+
-+	regulators {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		dcdc1_reg: regulator@0 {
-+			reg = <0>;
-+			regulator-compatible = "dcdc1";
-+			regulator-min-microvolt = <900000>;
-+			regulator-max-microvolt = <1800000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		dcdc2_reg: regulator@1 {
-+			reg = <1>;
-+			regulator-compatible = "dcdc2";
-+			regulator-min-microvolt = <900000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		dcdc3_reg: regulator@2 {
-+			reg = <2>;
-+			regulator-compatible = "dcdc3";
-+			regulator-min-microvolt = <900000>;
-+			regulator-max-microvolt = <1500000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		ldo1_reg: regulator@3 {
-+			reg = <3>;
-+			regulator-compatible = "ldo1";
-+			regulator-min-microvolt = <1000000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		ldo2_reg: regulator@4 {
-+			reg = <4>;
-+			regulator-compatible = "ldo2";
-+			regulator-min-microvolt = <900000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		ldo3_reg: regulator@5 {
-+			reg = <5>;
-+			regulator-compatible = "ldo3";
-+			regulator-min-microvolt = <1800000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		ldo4_reg: regulator@6 {
-+			reg = <6>;
-+			regulator-compatible = "ldo4";
-+			regulator-min-microvolt = <1800000>;
-+			regulator-max-microvolt = <3300000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+	};
-+};
 -- 
-1.7.9.5
-
+Mel Gorman
+SUSE Labs
