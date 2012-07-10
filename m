@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316Ab2GJVse (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 17:48:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49801 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754183Ab2GJVsb (ORCPT
+	id S1754510Ab2GJVtF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 17:49:05 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47254 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754405Ab2GJVtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 17:48:31 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, mingo@kernel.org, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>
-Subject: [PATCH 3/4] perf kvm: limit repetitive guestmount message to once
-Date: Tue, 10 Jul 2012 15:48:13 -0600
-Message-Id: <1341956894-69284-4-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1341956894-69284-1-git-send-email-dsahern@gmail.com>
-References: <1341956894-69284-1-git-send-email-dsahern@gmail.com>
+	Tue, 10 Jul 2012 17:49:01 -0400
+Date: Tue, 10 Jul 2012 22:48:36 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Ingo Molnar <mingo@kernel.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Message-ID: <20120710214836.GB4733@arm.com>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+ <201207101652.18401.arnd@arndb.de>
+ <20120710203527.GA16986@gmail.com>
+ <201207102119.38495.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201207102119.38495.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After 7ed97ad use of the guestmount option without a subdir for each
-VM generates an error message for *each* sample related to that VM. Once
-is enough.
+On Tue, Jul 10, 2012 at 10:19:38PM +0100, Arnd Bergmann wrote:
+> On Tuesday 10 July 2012, Ingo Molnar wrote:
+> > Do you really think that all of the 32-bit ARM code should 
+> > essentially be thrown away when going to 64-bit ARM, that 
+> > patches can only touch arch/arm64/ + drivers/ or the highway?
+> 
+> Yes.
+> 
+> If you're curious, please have a look at arch/arm/mach-spear13xx/.
+> this is the latest platform that we have added. It's fully
+> functional (except PCI, which I hope will be added in
+> drivers/pci/bus, which is another story), A significant portion
+> of that platform deals with SMP support, which is being standardized
+> for AArch64, so there will be only one implementation. Another
+> big portion is DMA-engine support, which is moving out of arch/arm
+> as soon as we have a proper DT binding. Finally there are some
+> boilerplate header files that are going away too.
+> 
+> Once we're done with this, we will basically need zero code
+> in arch/*/ to support a new platform, and that is very easy
+> to share between two distinct arch/* directories ;-)
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/util/map.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+OK, so Arnd's plan for 32-bit ARM SoCs are even better than what I've
+envisaged ;)
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 8668569..641377e 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -8,6 +8,7 @@
- #include <unistd.h>
- #include "map.h"
- #include "thread.h"
-+#include "asm/bug.h"
- 
- const char *map_type__name[MAP__NR_TYPES] = {
- 	[MAP__FUNCTION] = "Functions",
-@@ -695,7 +696,7 @@ struct machine *machines__findnew(struct rb_root *self, pid_t pid)
- 	    (symbol_conf.guestmount)) {
- 		sprintf(path, "%s/%d", symbol_conf.guestmount, pid);
- 		if (access(path, R_OK)) {
--			pr_err("Can't access file %s\n", path);
-+			WARN_ONCE(1, "Can't access file %s\n", path);
- 			machine = NULL;
- 			goto out;
- 		}
 -- 
-1.7.10.1
-
+Catalin
