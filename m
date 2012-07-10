@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab2GJXlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 19:41:49 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:3185 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755182Ab2GJXls (ORCPT
+	id S1755314Ab2GJXmP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 19:42:15 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:9518 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755115Ab2GJXmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 19:41:48 -0400
+	Tue, 10 Jul 2012 19:42:14 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-12.tower-160.messagelabs.com!1341963702!9244599!15
+X-Msg-Ref: server-9.tower-132.messagelabs.com!1341963727!13969175!6
 X-Originating-IP: [216.166.12.180]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 04/83] staging: comedi: rtd520: remove RtdEnableCGT macro
-Date: Tue, 10 Jul 2012 16:41:29 -0700
+Subject: [PATCH 05/83] staging: comedi: rtd520: remove RtdWriteCGTable macro
+Date: Tue, 10 Jul 2012 16:42:08 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -23,7 +23,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201207101641.29746.hartleys@visionengravers.com>
+Message-ID: <201207101642.08783.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -40,36 +40,31 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  1 file changed, 2 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/rtd520.c b/drivers/staging/comedi/drivers/rtd520.c
-index 781f081..550ebbd 100644
+index 550ebbd..0467877 100644
 --- a/drivers/staging/comedi/drivers/rtd520.c
 +++ b/drivers/staging/comedi/drivers/rtd520.c
 @@ -406,10 +406,6 @@ struct rtdPrivate {
  
  /* Macros to access registers */
  
--/* Reset channel gain table read and write pointers */
--#define RtdEnableCGT(dev, v) \
--	writel((v > 0) ? 1 : 0, devpriv->las0+LAS0_CGT_ENABLE)
+-/* Write channel gain table entry */
+-#define RtdWriteCGTable(dev, v) \
+-	writel(v, devpriv->las0+LAS0_CGT_WRITE)
 -
- /* Write channel gain table entry */
- #define RtdWriteCGTable(dev, v) \
- 	writel(v, devpriv->las0+LAS0_CGT_WRITE)
-@@ -795,13 +791,13 @@ static void rtd_load_channelgain_list(struct comedi_device *dev,
- 		int ii;
- 
+ /* Write Channel Gain Latch */
+ #define RtdWriteCGLatch(dev, v) \
+ 	writel(v, devpriv->las0+LAS0_CGL_WRITE)
+@@ -793,8 +789,8 @@ static void rtd_load_channelgain_list(struct comedi_device *dev,
  		writel(0, devpriv->las0 + LAS0_CGT_CLEAR);
--		RtdEnableCGT(dev, 1);	/* enable table */
-+		writel(1, devpriv->las0 + LAS0_CGT_ENABLE);
+ 		writel(1, devpriv->las0 + LAS0_CGT_ENABLE);
  		for (ii = 0; ii < n_chan; ii++) {
- 			RtdWriteCGTable(dev, rtdConvertChanGain(dev, list[ii],
- 								ii));
+-			RtdWriteCGTable(dev, rtdConvertChanGain(dev, list[ii],
+-								ii));
++			writel(rtdConvertChanGain(dev, list[ii], ii),
++				devpriv->las0 + LAS0_CGT_WRITE);
  		}
  	} else {		/* just use the channel gain latch */
--		RtdEnableCGT(dev, 0);	/* disable table, enable latch */
-+		writel(0, devpriv->las0 + LAS0_CGT_ENABLE);
- 		RtdWriteCGLatch(dev, rtdConvertChanGain(dev, list[0], 0));
- 	}
- }
+ 		writel(0, devpriv->las0 + LAS0_CGT_ENABLE);
 -- 
 1.7.11
 
