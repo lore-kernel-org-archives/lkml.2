@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756434Ab2GKAG2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 20:06:28 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:60183 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756386Ab2GKAG0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 20:06:26 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-127.messagelabs.com!1341965185!8243405!1
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 48/83] staging: comedi: rtd520: remove RtdDio1Write macro
-Date: Tue, 10 Jul 2012 17:06:22 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1756416Ab2GKAGx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 20:06:53 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55107 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755454Ab2GKAGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 20:06:52 -0400
+Message-ID: <1341953917.6118.165.camel@joe2Laptop>
+Subject: Re: [PATCH 1/3] panel: Use pr_debug(...) rather than
+ printk(KERN_DEBUG ...)
+From: Joe Perches <joe@perches.com>
+To: Toshiaki Yamane <yamanetoshi@gmail.com>
+Cc: greg@kroah.com, willy@meta-x.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1341919338-8800-1-git-send-email-yamanetoshi@gmail.com>
+References: <1341919338-8800-1-git-send-email-yamanetoshi@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 Jul 2012 13:58:37 -0700
+Mime-Version: 1.0
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201207101706.22278.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This macro uses the 'devpriv' macro which relies on a local variable
-having a specific name. It's also not used. Remove the macro.
+On Tue, 2012-07-10 at 20:22 +0900, Toshiaki Yamane wrote:
+> This change is inspired by checkpatch.
+[]
+> diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+[]
+> @@ -1838,9 +1838,8 @@ static void panel_process_inputs(void)
+>  	struct logical_input *input;
+>  
+>  #if 0
+> -	printk(KERN_DEBUG
+> -	       "entering panel_process_inputs with pp=%016Lx & pc=%016Lx\n",
+> -	       phys_prev, phys_curr);
+> +	pr_debug("entering panel_process_inputs with pp=%016Lx & pc=%016Lx\n",
+> +		 phys_prev, phys_curr);
+>  #endif
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/rtd520.c | 3 ---
- 1 file changed, 3 deletions(-)
+Might as well delete these #if 0 blocks instead
 
-diff --git a/drivers/staging/comedi/drivers/rtd520.c b/drivers/staging/comedi/drivers/rtd520.c
-index 826c01b..452b04b 100644
---- a/drivers/staging/comedi/drivers/rtd520.c
-+++ b/drivers/staging/comedi/drivers/rtd520.c
-@@ -406,9 +406,6 @@ struct rtdPrivate {
- 
- /* Macros to access registers */
- 
--#define RtdDio1Write(dev, v) \
--	writew((v) & 0xff, devpriv->las0+LAS0_DIO1)
--
- #define RtdDioStatusRead(dev) \
- 	(readw(devpriv->las0+LAS0_DIO_STATUS) & 0xff)
- #define RtdDioStatusWrite(dev, v) \
--- 
-1.7.11
+>  
+>  	keypressed = 0;
+> @@ -2003,8 +2002,8 @@ static struct logical_input *panel_bind_key(char *name, char *press,
+>  	key->fall_time = 1;
+>  
+>  #if 0
+> -	printk(KERN_DEBUG "bind: <%s> : m=%016Lx v=%016Lx\n", name, key->mask,
+> -	       key->value);
+> +	pr_debug("bind: <%s> : m=%016Lx v=%016Lx\n", name, key->mask,
+> +		 key->value);
+>  #endif
+>  	strncpy(key->u.kbd.press_str, press, sizeof(key->u.kbd.press_str));
+>  	strncpy(key->u.kbd.repeat_str, repeat, sizeof(key->u.kbd.repeat_str));
+
+
+
 
