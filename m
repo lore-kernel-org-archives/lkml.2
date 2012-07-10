@@ -1,41 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751870Ab2GJTBP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 15:01:15 -0400
-Received: from smtp.wow.synacor.com ([64.8.70.55]:49968 "EHLO
-	smtp.mail.wowway.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab2GJTBO (ORCPT
+	id S1751885Ab2GJTCf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 15:02:35 -0400
+Received: from mga14.intel.com ([143.182.124.37]:35851 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751290Ab2GJTCc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 15:01:14 -0400
-X-Spam-Rating: None
-X_CMAE_Category: 0,0 Undefined,Undefined
-X-CNFS-Analysis: v=1.1 cv=bEiteRS/RCcXbYt3Gx6ZZJNqO/8H8UUuPiN5RYc1C4A= c=1 sm=0 a=W4qIOAyxn3QA:10 a=FKkrIqjQGGEA:10 a=AhRLOILGsKkA:10 a=IkcTkHD0fZMA:10 a=h8dnKJLpj69Tuk1nZEsA:9 a=QEXdDO2ut3YA:10 a=KAAiIXZNPL_Vn01H:21 a=q-ptZn728jFeBGtx:21 a=QLvOlBIuGJjmAZ5IHHaCwQ==:117
-X-CM-Score: 0
-Authentication-Results: smtp02.wow.synacor.com smtp.mail=drdave@wowway.com; spf=neutral
-Date: Tue, 10 Jul 2012 15:01:12 -0400 (EDT)
-From: drdave@wowway.com
-Reply-To: documentdesk01@qatar.io
-Message-ID: <2033058061.259992.1341946872466.JavaMail.root@md02.wow.synacor.com>
-Subject: info
+	Tue, 10 Jul 2012 15:02:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="166410935"
+From: "Dave, Tushar N" <tushar.n.dave@intel.com>
+To: Joe Jin <joe.jin@oracle.com>
+CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Dave, Tushar N" <tushar.n.dave@intel.com>
+Subject: RE: 82571EB: Detected Hardware Unit Hang
+Thread-Topic: 82571EB: Detected Hardware Unit Hang
+Thread-Index: AQHNXbA0O4dj/qIKzEaqpnXp2Y+l0pcimGMAgABDhtA=
+Date: Tue, 10 Jul 2012 19:02:29 +0000
+Message-ID: <061C8A8601E8EE4CA8D8FD6990CEA891274EE41F@ORSMSX102.amr.corp.intel.com>
+References: <4FFA9B96.6040901@oracle.com> <4FFBDC50.5090800@oracle.com>
+In-Reply-To: <4FFBDC50.5090800@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [14.99.127.165]
-X-Mailer: Zimbra 6.0.5_GA_2328.RHEL5_64 (ZimbraWebClient - SAF3 (Win)/6.0.15_GA_2995)
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>-----Original Message-----
+>From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org]
+>On Behalf Of Joe Jin
+>Sent: Tuesday, July 10, 2012 12:40 AM
+>To: Joe Jin
+>Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
+>kernel@vger.kernel.org
+>Subject: Re: 82571EB: Detected Hardware Unit Hang
+>
+>When I debug the driver I found before Detected HW hang, driver unable to
+>clean and reclaim the resources:
+>
+>1457         while ((eop_desc->upper.data &
+>cpu_to_le32(E1000_TXD_STAT_DD)) &&  <== at here upper.data always is 0x300
+>1458                (count < tx_ring->count)) {
+>     <--- snip --->
+>1487         }
+>
+>
+>I checked all driver codes I did not found anywhere will set the
+>upper.data with E1000_TXD_STAT_DD, I guess upper.data be set by hardware?
 
-Congratulations once more from our members and staff of Microsoft and we are glad to pronounce you as the lucky winner of 1million pounds,send to us the following details.
+Yes upper.data (part of it is STATUS byte) is set by HW. Basically driver checks E1000_TXD_STAT_DD (Descriptor Done) bit. If this bit is set that means HW has processed that descriptor and driver can now clean that descriptor.
+With value 0x300 , DD bit is not set. That means HW has not processed that descriptor.
 
-1 Full Name:
-2 Full Address:
-3 Occupation:
-4 Age:
-5 Sex:
-6 Nationality:
-7 Telephone Number:
+How fast does tx hang reproduce? I suggest you to enable debug code in driver so when tx hang occurs it will dump the HW desc ring info into kernel log.
+You can run "ethtool -s ethx msglvl 0x2c00" to enable debug.
+Once tx hang occurs please send me the full dmesg log.
 
-Thank you.
+Does tx hang occur with in-kernel e1000e driver too?
+
+Thanks.
+
+-Tushar
+
+
+>If OS is 32bit system, what which happen?
+
+
+>
+>Thanks in advance,
+>Joe
+>
+>On 07/09/12 16:51, Joe Jin wrote:
+>> Hi list,
+>>
+>> I'm seeing a Unit Hang even with the latest e1000e driver 2.0.0 when
+>> doing scp test. this issue is easy do reproduced on SUN FIRE X2270 M2,
+>> just copy a big file (>500M) from another server will hit it at once.
+>>
+>> Would you please help on this?
+>>
+>> device info:
+>> # lspci -s 05:00.0
+>> 05:00.0 Ethernet controller: Intel Corporation 82571EB Gigabit
+>> Ethernet Controller (Copper) (rev 06)
+>>
+>> # lspci -s 05:00.0 -n
+>> 05:00.0 0200: 8086:10bc (rev 06)
+>>
+>> # ethtool -i eth0
+>> driver: e1000e
+>> version: 2.0.0-NAPI
+>> firmware-version: 5.10-2
+>> bus-info: 0000:05:00.0
+>>
+>> # ethtool -k eth0
+>> Offload parameters for eth0:
+>> rx-checksumming: on
+>> tx-checksumming: on
+>> scatter-gather: on
+>> tcp segmentation offload: on
+>> udp fragmentation offload: off
+>> generic segmentation offload: on
+>> generic-receive-offload: on
+>>
+>> kernel log:
+>> -----------
+>> e1000e 0000:05:00.0: eth0: Detected Hardware Unit Hang:
+>>   TDH                  <6c>
+>>   TDT                  <81>
+>>   next_to_use          <81>
+>>   next_to_clean        <6b>
+>> buffer_info[next_to_clean]:
+>>   time_stamp           <fffc7a23>
+>>   next_to_watch        <71>
+>>   jiffies              <fffc8c0c>
+>>   next_to_watch.status <0>
+>> MAC Status             <80387>
+>> PHY Status             <792d>
+>> PHY 1000BASE-T Status  <3c00>
+>> PHY Extended Status    <3000>
+>> PCI Status             <10>
+>> e1000e 0000:05:00.0: eth0: Detected Hardware Unit Hang:
+>>   TDH                  <6c>
+>>   TDT                  <81>
+>>   next_to_use          <81>
+>>   next_to_clean        <6b>
+>> buffer_info[next_to_clean]:
+>>   time_stamp           <fffc7a23>
+>>   next_to_watch        <71>
+>>   jiffies              <fffc9bac>
+>>   next_to_watch.status <0>
+>> MAC Status             <80387>
+>> PHY Status             <792d>
+>> PHY 1000BASE-T Status  <3c00>
+>> PHY Extended Status    <3000>
+>> PCI Status             <10>
+>> ------------[ cut here ]------------
+>> WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x225/0x230()
+>> Hardware name: SUN FIRE X2270 M2 NETDEV WATCHDOG: eth0 (e1000e):
+>> transmit queue 0 timed out Modules linked in: autofs4 hidp rfcomm
+>> bluetooth rfkill lockd sunrpc cpufreq_ondemand acpi_cpufreq mperf
+>> be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa ib_mad
+>> ib_core ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi cxgb3
+>> mdio libiscsi_tcp libiscsi scsi_transport_iscsi video sbs sbshc
+>> acpi_pad acpi_ipmi ipmi_msghandler parport_pc lp parport e1000e(U)
+>> snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device
+>> igb snd_pcm_oss serio_raw snd_mixer_oss snd_pcm tpm_infineon snd_timer
+>> snd soundcore snd_page_alloc i2c_i801 iTCO_wdt i2c_core pcspkr
+>> i7core_edac iTCO_vendor_support ioatdma ghes dca edac_core hed
+>> dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_mod usb_storage
+>> sd_mod crc_t10dif sg ahci libahci ext3 jbd mbcache [last unloaded:
+>> microcode]
+>> Pid: 0, comm: swapper Not tainted 2.6.39-200.24.1.el5uek #1 Call
+>> Trace:
+>>  [<c07d9ac5>] ? dev_watchdog+0x225/0x230  [<c045ba61>]
+>> warn_slowpath_common+0x81/0xa0  [<c07d9ac5>] ?
+>> dev_watchdog+0x225/0x230  [<c045bb23>] warn_slowpath_fmt+0x33/0x40
+>> [<c07d9ac5>] dev_watchdog+0x225/0x230  [<c07d98a0>] ?
+>> dev_activate+0xb0/0xb0  [<c0468e82>] call_timer_fn+0x32/0xf0
+>> [<c04bceb0>] ? rcu_check_callbacks+0x80/0x80  [<c046a76d>]
+>> run_timer_softirq+0xed/0x1b0  [<c07d98a0>] ? dev_activate+0xb0/0xb0
+>> [<c0461a81>] __do_softirq+0x91/0x1a0  [<c04619f0>] ?
+>> local_bh_enable+0x80/0x80  <IRQ>  [<c0462295>] ? irq_exit+0x95/0xa0
+>> [<c087f8b8>] ? smp_apic_timer_interrupt+0x38/0x42
+>>  [<c08784f5>] ? apic_timer_interrupt+0x31/0x38  [<c046007b>] ?
+>> do_exit+0x11b/0x370  [<c065eae4>] ? intel_idle+0xa4/0x100
+>> [<c078d9b9>] ? cpuidle_idle_call+0xb9/0x1e0  [<c0411d77>] ?
+>> cpu_idle+0x97/0xd0  [<c085cbbd>] ? rest_init+0x5d/0x70  [<c0b07a7a>] ?
+>> start_kernel+0x28a/0x340  [<c0b074b0>] ? obsolete_checksetup+0xb0/0xb0
+>> [<c0b070a4>] ? i386_start_kernel+0x64/0xb0 ---[ end trace
+>> 5502b55cd4d4e5cb ]--- e1000e 0000:05:00.0: eth0: Reset adapter
+>> e1000e: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: Rx/Tx
+>>
+>> Thanks,
+>> Joe
+>>
+>
+>
+>--
+>Oracle <http://www.oracle.com>
+>Joe Jin | Software Development Senior Manager | +8610.6106.5624 ORACLE |
+>Linux and Virtualization No. 24 Zhongguancun Software Park, Haidian
+>District | 100193 Beijing
+>
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe netdev" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
