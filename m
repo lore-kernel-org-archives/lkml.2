@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab2GJLoQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 07:44:16 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:44953 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535Ab2GJLoP (ORCPT
+	id S1755295Ab2GJLrJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 07:47:09 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7653 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535Ab2GJLrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 07:44:15 -0400
+	Tue, 10 Jul 2012 07:47:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 10 Jul 2012 04:46:36 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <w.sang@pengutronix.de>, <khali@linux-fr.org>, <ben-linux@fluff.org>
+CC: <swarren@nvidia.com>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2 1/5] i2c: tegra: remove unused member variable
+Date: Tue, 10 Jul 2012 17:10:21 +0530
+Message-ID: <1341920421-23511-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYPSM_2SjNyeJ5o-PXGkTPcCRAqePRh9bRT54hAjZotCQ@mail.gmail.com>
-References: <CAHdPZaN3HNCJRDGG9kNMfHKOxQr6ULYK36DQyhaQUOM83dtUxQ@mail.gmail.com>
-	<CACRpkdYPSM_2SjNyeJ5o-PXGkTPcCRAqePRh9bRT54hAjZotCQ@mail.gmail.com>
-Date: Tue, 10 Jul 2012 17:14:14 +0530
-Message-ID: <CAHdPZaMrXD==UNMnKv7oaUrjaR1RBP=cJBycYSmsO33fC0VqeQ@mail.gmail.com>
-Subject: Re: config warnings while selecting u300_defconfig
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 9, 2012 at 12:38 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Sat, Jul 7, 2012 at 7:02 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
->
->> While doing compiling for u300, i selected the u300_defconfig,
-> (...)
->> i got the following warnings,
->>
->> root@devendra:/home/devendra/linux# make ARCH=arm
->> CROSS_COMPILE="/home/devendra/gcc-linaro-arm-linux-gnueabihf-2012.05-20120523_linux/bin/arm-linux-gnueabihf-"
->> drivers/pinctrl/
->> scripts/kconfig/conf --silentoldconfig Kconfig
->> include/config/auto.conf:394:warning: symbol value 'm' invalid for
->> STMMAC_PLATFORM
->> include/config/auto.conf:730:warning: symbol value 'elf64-x86-64'
->> invalid for OUTPUT_FORMAT
->> include/config/auto.conf:1050:warning: symbol value
->> 'arch/x86/configs/x86_64_defconfig' invalid for ARCH_DEFCONFIG
->> include/config/auto.conf:1335:warning: symbol value '' invalid for
->> ACPI_CUSTOM_DSDT_FILE
->> include/config/auto.conf:2388:warning: symbol value '-fcall-saved-rdi
->> -fcall-saved-rsi -fcall-saved-rdx -fcall-saved-rcx -fcall-saved-r8
->> -fcall-saved-r9 -fcall-saved-r10 -fcall-saved-r11' invalid for
->> ARCH_HWEIGHT_CFLAGS
->
-> The world is full of warnings, but I cannot see that any of these relate to
-> the pinctrl subsystem ...
->
-> You can surely fix them, but I won't be of any help to do so :-/
->
-Actually its my mistake, those errors are just bogus, i was wrongly
-doing the things , sorry,
+Remove unused member variable "iomem" of the
+i2c device structure.
 
-> Yours,
-> Linus Walleij
+This variable becomes unused when converted all allocation
+to devm_* in following change:
+    i2c: tegra: make all resource allocation through devm_*
 
-Devendra.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+This patch is resend of earlier patch
+ i2c: tegra: remove unused member variable.
+and sending it as part fo series.
+
+Changes from V1:
+Adding more details in description why this variable becomes unused.
+No change in code.
+
+Remaining patches of this series will be still same, version V1.
+If require, I will resend the series with new version.
+
+
+ drivers/i2c/busses/i2c-tegra.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+index f15cd49..00cdc10 100644
+--- a/drivers/i2c/busses/i2c-tegra.c
++++ b/drivers/i2c/busses/i2c-tegra.c
+@@ -119,7 +119,6 @@ enum msg_end_type {
+  * @adapter: core i2c layer adapter information
+  * @clk: clock reference for i2c controller
+  * @i2c_clk: clock reference for i2c bus
+- * @iomem: memory resource for registers
+  * @base: ioremapped registers cookie
+  * @cont_id: i2c controller id, used for for packet header
+  * @irq: irq number of transfer complete interrupt
+@@ -137,7 +136,6 @@ struct tegra_i2c_dev {
+ 	struct i2c_adapter adapter;
+ 	struct clk *clk;
+ 	struct clk *i2c_clk;
+-	struct resource *iomem;
+ 	void __iomem *base;
+ 	int cont_id;
+ 	int irq;
+-- 
+1.7.1.1
+
