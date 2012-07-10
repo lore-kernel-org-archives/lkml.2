@@ -1,255 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563Ab2GJOim (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 10:38:42 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:34245 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718Ab2GJOie (ORCPT
+	id S1753780Ab2GJOkx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 10:40:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38215 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319Ab2GJOku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 10:38:34 -0400
-From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: Roland Stigge <stigge@antcom.de>,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org
-Subject: [PATCH v3] PWM: add lpc32xx PWM support
-Date: Tue, 10 Jul 2012 11:38:10 -0300
-Message-Id: <1341931090-18296-1-git-send-email-aletes.xgr@gmail.com>
-X-Mailer: git-send-email 1.7.10
+	Tue, 10 Jul 2012 10:40:50 -0400
+Date: Tue, 10 Jul 2012 07:40:46 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Gerard Snitselaar <dev@snitselaar.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org, balbi@ti.com,
+        kishon@ti.com
+Subject: Re: [PATCH] usb: twl6030-usb: variable otg not declared in
+ twl6030_usbotg_irq() in linux-next
+Message-ID: <20120710144046.GB15912@kroah.com>
+References: <1341901940-12277-1-git-send-email-dev@snitselaar.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341901940-12277-1-git-send-email-dev@snitselaar.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add lpc32xx SOC PWM driver.
+On Mon, Jul 09, 2012 at 11:32:20PM -0700, Gerard Snitselaar wrote:
+> commit ff9cce82 added back 2 lines that were removed by commit
+> c83a8542 causing build of twl6030-usb to get an error due to otg being
+> referenced, but not declared. This patch removes those 2 lines again
+> to restore intent of commit c83a8542.
+> 
+> Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
+> ---
+>  drivers/usb/otg/twl6030-usb.c | 2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/drivers/usb/otg/twl6030-usb.c b/drivers/usb/otg/twl6030-usb.c
+> index a3d0c04..6907d8d 100644
+> --- a/drivers/usb/otg/twl6030-usb.c
+> +++ b/drivers/usb/otg/twl6030-usb.c
+> @@ -302,8 +302,6 @@ static irqreturn_t twl6030_usbotg_irq(int irq, void *_twl)
+>  		twl6030_writeb(twl, TWL_MODULE_USB, 0x1, USB_ID_INT_EN_HI_CLR);
+>  		twl6030_writeb(twl, TWL_MODULE_USB, 0x10, USB_ID_INT_EN_HI_SET);
+>  		status = OMAP_MUSB_ID_GROUND;
+> -		otg->default_a = true;
+> -		twl->phy.state = OTG_STATE_A_IDLE;
 
-Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
----
-Changes since v2:
-* Update commit message
-* Change the driver to handle the two PWM's of the SOC
-* Disable clock on removal
+Didn't I apply this same patch yesterday?  Can you verify that this is
+still needed in the usb-next branch of my git tree?
 
-Changes since v1:
-* Style fixes
-* Better error handling
-* Improved Kconfig and DT descriptions
+confused,
 
- .../devicetree/bindings/pwm/lpc32xx-pwm.txt        |   12 ++
- drivers/pwm/Kconfig                                |   10 ++
- drivers/pwm/Makefile                               |    1 +
- drivers/pwm/pwm-lpc32xx.c                          |  148 ++++++++++++++++++++
- 4 files changed, 171 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pwm/lpc32xx-pwm.txt
- create mode 100644 drivers/pwm/pwm-lpc32xx.c
-
-diff --git a/Documentation/devicetree/bindings/pwm/lpc32xx-pwm.txt b/Documentation/devicetree/bindings/pwm/lpc32xx-pwm.txt
-new file mode 100644
-index 0000000..cfe1db3
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/lpc32xx-pwm.txt
-@@ -0,0 +1,12 @@
-+LPC32XX PWM controller
-+
-+Required properties:
-+- compatible: should be "nxp,lpc3220-pwm"
-+- reg: physical base address and length of the controller's registers
-+
-+Examples:
-+
-+pwm@0x4005C000 {
-+	compatible = "nxp,lpc3220-pwm";
-+	reg = <0x4005C000 0x8>;
-+};
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 0b2800f..94e176e 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -28,6 +28,16 @@ config PWM_IMX
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-imx.
- 
-+config PWM_LPC32XX
-+	tristate "LPC32XX PWM support"
-+	depends on ARCH_LPC32XX
-+	help
-+	  Generic PWM framework driver for LPC32XX. The LPC32XX SOC has two
-+	  PWM controllers.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-lpc32xx.
-+
- config PWM_MXS
- 	tristate "Freescale MXS PWM support"
- 	depends on ARCH_MXS && OF
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index cec2500..5459702 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -1,6 +1,7 @@
- obj-$(CONFIG_PWM)		+= core.o
- obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
- obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
-+obj-$(CONFIG_PWM_LPC32XX)	+= pwm-lpc32xx.o
- obj-$(CONFIG_PWM_MXS)		+= pwm-mxs.o
- obj-$(CONFIG_PWM_PXA)		+= pwm-pxa.o
- obj-$(CONFIG_PWM_SAMSUNG)	+= pwm-samsung.o
-diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
-new file mode 100644
-index 0000000..adb87f0
---- /dev/null
-+++ b/drivers/pwm/pwm-lpc32xx.c
-@@ -0,0 +1,148 @@
-+/*
-+ * Copyright 2012 Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2.
-+ *
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+#include <linux/slab.h>
-+
-+struct lpc32xx_pwm_chip {
-+	struct pwm_chip chip;
-+	struct clk *clk;
-+	void __iomem *base;
-+};
-+
-+#define PWM_ENABLE	(1 << 31)
-+#define PWM_RELOADV(x)	(((x) & 0xFF) << 8)
-+#define PWM_DUTY(x)	((x) & 0xFF)
-+
-+#define to_lpc32xx_pwm_chip(_chip) \
-+	container_of(_chip, struct lpc32xx_pwm_chip, chip)
-+
-+static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-+			      int duty_ns, int period_ns)
-+{
-+	struct lpc32xx_pwm_chip *lpc32xx = to_lpc32xx_pwm_chip(chip);
-+	unsigned long long c;
-+	int period_cycles, duty_cycles;
-+
-+	c = clk_get_rate(lpc32xx->clk) / 256;
-+	c = c * period_ns;
-+	do_div(c, NSEC_PER_SEC);
-+
-+	/* Handle high and low extremes */
-+	if (c == 0)
-+		c = 1;
-+	if (c > 255)
-+		c = 0; /* 0 set division by 256 */
-+	period_cycles = c;
-+
-+	c = 256 * duty_ns;
-+	do_div(c, period_ns);
-+	duty_cycles = c;
-+
-+	writel(PWM_ENABLE | PWM_RELOADV(period_cycles) | PWM_DUTY(duty_cycles),
-+		lpc32xx->base + (pwm->hwpwm << 2));
-+
-+	return 0;
-+}
-+
-+static int lpc32xx_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct lpc32xx_pwm_chip *lpc32xx = to_lpc32xx_pwm_chip(chip);
-+
-+	return clk_enable(lpc32xx->clk);
-+}
-+
-+static void lpc32xx_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct lpc32xx_pwm_chip *lpc32xx = to_lpc32xx_pwm_chip(chip);
-+
-+	writel(0, lpc32xx->base + (pwm->hwpwm << 2));
-+	clk_disable(lpc32xx->clk);
-+}
-+
-+static const struct pwm_ops lpc32xx_pwm_ops = {
-+	.config = lpc32xx_pwm_config,
-+	.enable = lpc32xx_pwm_enable,
-+	.disable = lpc32xx_pwm_disable,
-+	.owner = THIS_MODULE,
-+};
-+
-+static int lpc32xx_pwm_probe(struct platform_device *pdev)
-+{
-+	struct lpc32xx_pwm_chip *lpc32xx;
-+	struct resource *res;
-+	int ret;
-+
-+	lpc32xx = devm_kzalloc(&pdev->dev, sizeof(*lpc32xx), GFP_KERNEL);
-+	if (!lpc32xx)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -EINVAL;
-+
-+	lpc32xx->base = devm_request_and_ioremap(&pdev->dev, res);
-+	if (!lpc32xx->base)
-+		return -EADDRNOTAVAIL;
-+
-+	lpc32xx->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(lpc32xx->clk))
-+		return PTR_ERR(lpc32xx->clk);
-+
-+	lpc32xx->chip.dev = &pdev->dev;
-+	lpc32xx->chip.ops = &lpc32xx_pwm_ops;
-+	lpc32xx->chip.npwm = 2;
-+
-+	ret = pwmchip_add(&lpc32xx->chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to add PWM chip, error %d\n", ret);
-+		return ret;
-+	}
-+
-+	platform_set_drvdata(pdev, lpc32xx);
-+
-+	return 0;
-+}
-+
-+static int __devexit lpc32xx_pwm_remove(struct platform_device *pdev)
-+{
-+	struct lpc32xx_pwm_chip *lpc32xx = platform_get_drvdata(pdev);
-+
-+	clk_disable(lpc32xx->clk);
-+	return pwmchip_remove(&lpc32xx->chip);
-+}
-+
-+static struct of_device_id lpc32xx_pwm_dt_ids[] = {
-+	{ .compatible = "nxp,lpc3220-pwm", },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, lpc32xx_pwm_dt_ids);
-+
-+static struct platform_driver lpc32xx_pwm_driver = {
-+	.driver = {
-+		.name = "lpc32xx-pwm",
-+		.of_match_table = of_match_ptr(lpc32xx_pwm_dt_ids),
-+	},
-+	.probe = lpc32xx_pwm_probe,
-+	.remove = __devexit_p(lpc32xx_pwm_remove),
-+};
-+module_platform_driver(lpc32xx_pwm_driver);
-+
-+MODULE_ALIAS("platform:lpc32xx-pwm");
-+MODULE_AUTHOR("Alexandre Pereira da Silva <aletes.xgr@gmail.com>");
-+MODULE_DESCRIPTION("LPC32XX PWM Driver");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.10
-
+greg k-h
