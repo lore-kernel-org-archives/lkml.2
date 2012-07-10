@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab2GJJMp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 05:12:45 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:60222 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754555Ab2GJJMn (ORCPT
+	id S1754748Ab2GJJPZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 05:15:25 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:38517 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753274Ab2GJJPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 05:12:43 -0400
-Date: Tue, 10 Jul 2012 11:00:45 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 6/6] r8169: support RTL8168G
-Message-ID: <20120710090045.GA32387@electric-eye.fr.zoreil.com>
-References: <1341898590-1253-1-git-send-email-hayeswang@realtek.com> <1341904369-5277-1-git-send-email-hayeswang@realtek.com>
+	Tue, 10 Jul 2012 05:15:23 -0400
+Subject: Re: [PATCH] net: cgroup: fix access the unallocated memory in
+ netprio cgroup
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: nhorman@tuxdriver.com, davem@davemloft.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, lizefan@huawei.com, tj@kernel.org,
+        Eric Dumazet <edumazet@google.com>
+In-Reply-To: <4FFBED84.1030905@cn.fujitsu.com>
+References: <1341837625.3265.2748.camel@edumazet-glaptop>
+	 <1341887508-20302-1-git-send-email-gaofeng@cn.fujitsu.com>
+	 <1341893650.3265.3974.camel@edumazet-glaptop>
+	 <4FFBED84.1030905@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 Jul 2012 11:15:07 +0200
+Message-ID: <1341911707.3265.4603.camel@edumazet-glaptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341904369-5277-1-git-send-email-hayeswang@realtek.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(you should include a Signed-off-by)
+On Tue, 2012-07-10 at 16:53 +0800, Gao feng wrote:
+> > Hi Gao
+> > 
+> > Is it still needed to call update_netdev_tables() from write_priomap() ?
+> > 
+> 
+> Yes, I think it's needed,because read_priomap will show all of the net devices,
+> 
+> But we may add the netdev after create a netprio cgroup, so the new added netdev's
+> priomap will not be allocated. if we don't call update_netdev_tables in write_priomap,
+> we may access this unallocated memory.
+> 
 
-Hayes Wang <hayeswang@realtek.com> :
-> 1. Remove rtl_ocpdr_cond. No waiting is needed for mac_ocp_{write / read}.
+I realize my question was not clear.
 
-Nit: it would not hurt to do a better job than me and save some commit noise
-getting these things right before they pollute the history. :o)
+If we write in write_priomap() a field of a single netdevice,
+why should we allocate memory for all netdevices on the machine ?
 
-> 2. Set ocp_base to OCP_STD_PHY_BASE after rtl8168g_1_hw_phy_config.
+So the question was : Do we really need to call
+update_netdev_tables(alldevs), instead of extend_netdev_table(dev)
 
-Can't it be stuffed into the firmware ?
 
-The code does not explicitely switch from the PHY access context to
-the extra OCP registers one and anything else in rtl8168g_1_hw_phy_config
-seems to directly use the addresses it needs. So I'd expect the current
-imbalance to come from the firmware, where it would make as much sense to
-fix it
--> no imbalance after the firmware is applied
--> no useless instruction if the firmware is not used
 
--- 
-Ueimor
