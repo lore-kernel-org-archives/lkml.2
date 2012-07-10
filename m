@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123Ab2GJPz4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 11:55:56 -0400
+	id S1756141Ab2GJP4E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 11:56:04 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:43454 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464Ab2GJPzv (ORCPT
+	with ESMTP id S1752464Ab2GJP4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 11:55:51 -0400
+	Tue, 10 Jul 2012 11:56:00 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Don Dutile <ddutile@redhat.com>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
@@ -16,9 +16,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
         Yijing Wang <wangyijing@huawei.com>,
         Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
-Subject: [RFC PATCH 07/14] hotplug/PCI: use PCIe cap access functions to simplify implementation
-Date: Tue, 10 Jul 2012 23:54:08 +0800
-Message-Id: <1341935655-5381-8-git-send-email-jiang.liu@huawei.com>
+Subject: [RFC PATCH 08/14] portdrv/PCI: use PCIe cap access functions to simplify implementation
+Date: Tue, 10 Jul 2012 23:54:09 +0800
+Message-Id: <1341935655-5381-9-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1341935655-5381-1-git-send-email-jiang.liu@huawei.com>
 References: <1341935655-5381-1-git-send-email-jiang.liu@huawei.com>
@@ -30,52 +30,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Use PCIe cap access functions to simplify pcihp_slot.c
+Use PCIe cap access functions to simplify PCIe portdrv implementation
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/pci/hotplug/pcihp_slot.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ drivers/pci/pcie/portdrv_core.c |   20 +++++++-------------
+ drivers/pci/pcie/portdrv_pci.c  |    7 ++-----
+ 2 files changed, 9 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/pci/hotplug/pcihp_slot.c b/drivers/pci/hotplug/pcihp_slot.c
-index 8c05a18..08ca019 100644
---- a/drivers/pci/hotplug/pcihp_slot.c
-+++ b/drivers/pci/hotplug/pcihp_slot.c
-@@ -103,8 +103,7 @@ static void program_hpp_type2(struct pci_dev *dev, struct hpp_type2 *hpp)
- 		return;
+diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
+index bf320a9..a083e81 100644
+--- a/drivers/pci/pcie/portdrv_core.c
++++ b/drivers/pci/pcie/portdrv_core.c
+@@ -76,7 +76,6 @@ static int pcie_port_enable_msix(struct pci_dev *dev, int *vectors, int mask)
+ 	struct msix_entry *msix_entries;
+ 	int idx[PCIE_PORT_DEVICE_MAXSERVICES];
+ 	int nr_entries, status, pos, i, nvec;
+-	u16 reg16;
+ 	u32 reg32;
  
- 	/* Find PCI Express capability */
+ 	nr_entries = pci_msix_table_size(dev);
+@@ -120,9 +119,7 @@ static int pcie_port_enable_msix(struct pci_dev *dev, int *vectors, int mask)
+ 		 * the value in this field indicates which MSI-X Table entry is
+ 		 * used to generate the interrupt message."
+ 		 */
+-		pos = pci_pcie_cap(dev);
+-		pci_read_config_word(dev, pos + PCI_EXP_FLAGS, &reg16);
+-		entry = (reg16 & PCI_EXP_FLAGS_IRQ) >> 9;
++		entry = (dev->pcie_flags & PCI_EXP_FLAGS_IRQ) >> 9;
+ 		if (entry >= nr_entries)
+ 			goto Error;
+ 
+@@ -246,7 +243,7 @@ static void cleanup_service_irqs(struct pci_dev *dev)
+  */
+ static int get_port_device_capability(struct pci_dev *dev)
+ {
+-	int services = 0, pos;
++	int services = 0;
+ 	u16 reg16;
+ 	u32 reg32;
+ 	int cap_mask = 0;
+@@ -265,11 +262,9 @@ static int get_port_device_capability(struct pci_dev *dev)
+ 			return 0;
+ 	}
+ 
 -	pos = pci_pcie_cap(dev);
--	if (!pos)
-+	if (!pci_is_pcie(dev))
- 		return;
+-	pci_read_config_word(dev, pos + PCI_EXP_FLAGS, &reg16);
+ 	/* Hot-Plug Capable */
+-	if ((cap_mask & PCIE_PORT_SERVICE_HP) && (reg16 & PCI_EXP_FLAGS_SLOT)) {
+-		pci_read_config_dword(dev, pos + PCI_EXP_SLTCAP, &reg32);
++	if ((cap_mask & PCIE_PORT_SERVICE_HP) &&
++	    !pci_pcie_cap_read_dword(dev, PCI_EXP_SLTCAP, &reg32))
+ 		if (reg32 & PCI_EXP_SLTCAP_HPC) {
+ 			services |= PCIE_PORT_SERVICE_HP;
+ 			/*
+@@ -277,12 +272,11 @@ static int get_port_device_capability(struct pci_dev *dev)
+ 			 * enabled by the BIOS and the hot-plug service driver
+ 			 * is not loaded.
+ 			 */
+-			pos += PCI_EXP_SLTCTL;
+-			pci_read_config_word(dev, pos, &reg16);
++			pci_pcie_cap_read_word(dev, PCI_EXP_SLTCTL, &reg16);
+ 			reg16 &= ~(PCI_EXP_SLTCTL_CCIE | PCI_EXP_SLTCTL_HPIE);
+-			pci_write_config_word(dev, pos, reg16);
++			pci_pcie_cap_write_word(dev, PCI_EXP_SLTCTL, reg16);
+ 		}
+-	}
++
+ 	/* AER capable */
+ 	if ((cap_mask & PCIE_PORT_SERVICE_AER)
+ 	    && pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR)) {
+diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
+index 24d1463..3b2c92d 100644
+--- a/drivers/pci/pcie/portdrv_pci.c
++++ b/drivers/pci/pcie/portdrv_pci.c
+@@ -64,14 +64,11 @@ __setup("pcie_ports=", pcie_port_setup);
+  */
+ void pcie_clear_root_pme_status(struct pci_dev *dev)
+ {
+-	int rtsta_pos;
+ 	u32 rtsta;
  
- 	if (hpp->revision > 1) {
-@@ -114,16 +113,18 @@ static void program_hpp_type2(struct pci_dev *dev, struct hpp_type2 *hpp)
- 	}
+-	rtsta_pos = pci_pcie_cap(dev) + PCI_EXP_RTSTA;
+-
+-	pci_read_config_dword(dev, rtsta_pos, &rtsta);
++	pci_pcie_cap_read_dword(dev, PCI_EXP_RTSTA, &rtsta);
+ 	rtsta |= PCI_EXP_RTSTA_PME;
+-	pci_write_config_dword(dev, rtsta_pos, rtsta);
++	pci_pcie_cap_write_dword(dev, PCI_EXP_RTSTA, rtsta);
+ }
  
- 	/* Initialize Device Control Register */
--	pci_read_config_word(dev, pos + PCI_EXP_DEVCTL, &reg16);
-+	if (pci_pcie_cap_read_word(dev, PCI_EXP_DEVCTL, &reg16))
-+		return;
- 	reg16 = (reg16 & hpp->pci_exp_devctl_and) | hpp->pci_exp_devctl_or;
--	pci_write_config_word(dev, pos + PCI_EXP_DEVCTL, reg16);
-+	pci_pcie_cap_write_word(dev, PCI_EXP_DEVCTL, reg16);
- 
- 	/* Initialize Link Control Register */
- 	if (dev->subordinate) {
--		pci_read_config_word(dev, pos + PCI_EXP_LNKCTL, &reg16);
--		reg16 = (reg16 & hpp->pci_exp_lnkctl_and)
--			| hpp->pci_exp_lnkctl_or;
--		pci_write_config_word(dev, pos + PCI_EXP_LNKCTL, reg16);
-+		if (pci_pcie_cap_read_word(dev, PCI_EXP_LNKCTL, &reg16)) {
-+			reg16 = (reg16 & hpp->pci_exp_lnkctl_and)
-+				| hpp->pci_exp_lnkctl_or;
-+			pci_pcie_cap_write_word(dev, PCI_EXP_LNKCTL, reg16);
-+		}
- 	}
- 
- 	/* Find Advanced Error Reporting Enhanced Capability */
+ static int pcie_portdrv_restore_config(struct pci_dev *dev)
 -- 
 1.7.9.5
 
