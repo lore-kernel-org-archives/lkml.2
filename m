@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab2GJM7B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 08:59:01 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33714 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620Ab2GJM7A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 08:59:00 -0400
-X-Authority-Analysis: v=2.0 cv=ZuBv2qHG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=j37N9Dys9Y4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=18O0u5j_zHS3M1rr4Y4A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1341925136.14828.11.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 4/8] tracing/function: Introduce persistent trace option
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
-        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Date: Tue, 10 Jul 2012 08:58:56 -0400
-In-Reply-To: <1341879046-5197-4-git-send-email-anton.vorontsov@linaro.org>
-References: <20120710001004.GA22744@lizard>
-	 <1341879046-5197-4-git-send-email-anton.vorontsov@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755708Ab2GJM7M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 08:59:12 -0400
+Received: from warmcat.com ([87.106.134.80]:42366 "EHLO warmcat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755681Ab2GJM7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 08:59:08 -0400
+Message-ID: <4FFC2712.9020208@warmcat.com>
+Date: Tue, 10 Jul 2012 20:58:58 +0800
+From: =?UTF-8?B?IkFuZHkgR3JlZW4gKOael+WuieW7uCki?= <andy@warmcat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Florian Fainelli <florian@openwrt.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        s-jan@ti.com, arnd@arndb.de, patches@linaro.org, tony@atomide.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org
+Subject: Re: [PATCH 4 0/4] Add ability to set defaultless network device MAC
+ addresses to deterministic computed locally administered values
+References: <20120705024259.26317.16000.stgit@build.warmcat.com> <201207101437.54877.florian@openwrt.org>
+In-Reply-To: <201207101437.54877.florian@openwrt.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-09 at 17:10 -0700, Anton Vorontsov wrote:
+On 10/07/12 20:37, the mail apparently from Florian Fainelli included:
 
-> +static struct tracer_flags func_flags;
-> +
->  static void
->  function_trace_call(unsigned long ip, unsigned long parent_ip)
->  {
-> @@ -97,6 +106,12 @@ function_trace_call(unsigned long ip, unsigned long parent_ip)
->  	disabled = atomic_inc_return(&data->disabled);
->  
->  	if (likely(disabled == 1)) {
-> +		/*
-> +		 * So far tracing doesn't support multiple buffers, so
-> +		 * we make an explicit call for now.
+Hi -
 
-I'm working on it ;-)
+> Le jeudi 05 juillet 2012 04:44:33, Andy Green a écrit :
+>> The following series adds some code to generate legal, locally administered
+>> MAC addresses from OMAP4 CPU Die ID fuse data, and then adds a helper at
+>> net/ethernet taking care of accepting device path / MAC mapping
+>> registrations and running a notifier to enforce the requested MAC when the
+>> matching network device turns up.
+>
+> This looks like something you can solve by user-space entirely. Expose the
 
--- Steve
+That might seem so from a openwrt perspective, where you custom cook the 
+whole userland thing per-device, but it ain't so from a generic rootfs 
+perspective.
 
-> +		 */
-> +		if (unlikely(func_flags.val & TRACE_FUNC_OPT_PSTORE))
-> +			pstore_ftrace_call(ip, parent_ip);
->  		pc = preempt_count();
->  		trace_function(tr, ip, parent_ip, flags, pc);
->  	}
+Why should Ubuntu, Fedora etc stink up their OSes with Panda-specific 
+workarounds?  And Panda is not the only device with this issue.
 
-
+-Andy
