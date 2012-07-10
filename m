@@ -1,76 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542Ab2GJCV5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 22:21:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63157 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064Ab2GJCVt (ORCPT
+	id S1752161Ab2GJCZq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 22:25:46 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42742 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669Ab2GJCZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 22:21:49 -0400
-Date: Mon, 9 Jul 2012 19:21:47 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Joe Perches <joe@perches.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, mm-commits@vger.kernel.org,
-        apw@canonical.com
-Subject: Re: + checkpatch-add-check-for-use-of-sizeof-without-parenthesis.patch
- added to -mm tree
-In-Reply-To: <1341885802.6118.101.camel@joe2Laptop>
-Message-ID: <alpine.DEB.2.00.1207091904480.25143@chino.kir.corp.google.com>
-References: <20120709215256.9A4F71E0043@wpzn4.hot.corp.google.com> <alpine.DEB.2.00.1207091514310.32082@chino.kir.corp.google.com> <1341873376.6118.56.camel@joe2Laptop> <alpine.DEB.2.00.1207091553120.3552@chino.kir.corp.google.com> <1341876067.6118.67.camel@joe2Laptop>
- <alpine.DEB.2.00.1207091640170.8185@chino.kir.corp.google.com> <1341881721.6118.92.camel@joe2Laptop> <alpine.DEB.2.00.1207091834230.20591@chino.kir.corp.google.com> <1341885802.6118.101.camel@joe2Laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 9 Jul 2012 22:25:45 -0400
+X-AuditID: 9c930197-b7b49ae0000027b8-03-4ffb92a6a17b
+Message-ID: <4FFB92A9.4090203@kernel.org>
+Date: Tue, 10 Jul 2012 11:25:45 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] zsmalloc: add single-page object fastpath in unmap
+References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com> <1341263752-10210-3-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1341263752-10210-3-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jul 2012, Joe Perches wrote:
+On 07/03/2012 06:15 AM, Seth Jennings wrote:
+> Improve zs_unmap_object() performance by adding a fast path for
+> objects that don't span pages.
+> 
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> ---
+>  drivers/staging/zsmalloc/zsmalloc-main.c |   15 ++++++++++-----
+>  1 file changed, 10 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+> index a7a6f22..4942d41 100644
+> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
+> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+> @@ -774,6 +774,7 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle)
+>  	}
+>  
+>  	zs_copy_map_object(area->vm_buf, page, off, class->size);
+> +	area->vm_addr = NULL;
+>  	return area->vm_buf;
+>  }
+>  EXPORT_SYMBOL_GPL(zs_map_object);
+> @@ -788,6 +789,14 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+>  	struct size_class *class;
+>  	struct mapping_area *area;
+>  
+> +	area = &__get_cpu_var(zs_map_area);
+> +	if (area->vm_addr) {
+> +		/* single-page object fastpath */
+> +		kunmap_atomic(area->vm_addr);
+> +		put_cpu_var(zs_map_area);
+> +		return;
+> +	}
+> +
 
-> I don't really care what style a large block of code
-> uses.  I care that it mostly has the same form.
+Please locate this after below BUG_ON.
+The BUG check is still effective regardless of your fast path patch.
+
+>  	BUG_ON(!handle);
+>  
+>  	obj_handle_to_location(handle, &page, &obj_idx);
+> @@ -795,11 +804,7 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+>  	class = &pool->size_class[class_idx];
+>  	off = obj_idx_to_offset(page, obj_idx, class->size);
+>  
+> -	area = &__get_cpu_var(zs_map_area);
+> -	if (off + class->size <= PAGE_SIZE)
+> -		kunmap_atomic(area->vm_addr);
+> -	else
+> -		zs_copy_unmap_object(area->vm_buf, page, off, class->size);
+> +	zs_copy_unmap_object(area->vm_buf, page, off, class->size);
+>  	put_cpu_var(zs_map_area);
+>  }
+>  EXPORT_SYMBOL_GPL(zs_unmap_object);
 > 
 
-Same form??  The sizeof operator has two forms depending on whether it's a 
-unary expression or a type as specified by the standard.
 
-The issue here is that you're mandating they all use the same form because 
-you're quoting an email from Linus four years ago that you dug up but 
-isn't required in the coding style and is already used in over 1000 places 
-in the kernel.
+-- 
+Kind regards,
+Minchan Kim
 
-If you want the output of checkpatch.pl to be useful, I would think you 
-would want to eliminate this kind of garbage.
 
-> > I guarantee you that those who learned from K&R don't 
-> > think sizeof(unsigned long) "looks like a function".
-> 
-> Tell that to Linus. He wrote the email I referenced
-> which you so apparently blithely elided.
-> 
-> Repeating it:
-> 
-> "Another example of this is "sizeof". The kernel universally (I hope) has 
-> parenthesis around the sizeof argument, even though it's clearly not 
-> required by the C language."
-> 
-
-He's obviously addressing a single form of the sizeof operator, i.e. those 
-on unary expressions; sizeof used on a type CLEARLY DOES require the 
-parenthesis.
-
-Anyway, since this is my last email on the matter since I've already 
-showed how your patch is completely busted, you're talking purely about 
-style preferences here.  Don't convolute that by talking about the C 
-standard or Linus' email where he says "it's a coding standard."  It's 
-not.  I've layed out the two forms of the sizeof operator in every email 
-I've written in this thread.  If you want to enforce a _style_ preference 
-because you saw an email four years ago that Linus wrote, then add it to 
-CodingStyle first and get him to mandate it.  That's how you effect a 
-kernel-wide change; the _only_ person I know that uses checkpatch is 
-Andrew and you'll notice the mm directory is the one where "sizeof ..." 
-isn't used so just changing checkpatch here won't do much good.
-
-Thanks and have a nice day.
