@@ -1,107 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab2GJJdc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 05:33:32 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:39497 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752893Ab2GJJda (ORCPT
+	id S1754840Ab2GJJgb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 05:36:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58455 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753990Ab2GJJga convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 05:33:30 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/lr387qFmLE
-X-RZG-CLASS-ID: mo00
-Date: Tue, 10 Jul 2012 11:33:27 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: Jan Beulich <JBeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: kexec@lists.infradead.org, xen-devel@lists.xensource.com,
-        Daniel Kiper <dkiper@net-space.pl>, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] incorrect layout of globals from head_64.S during
- kexec boot
-Message-ID: <20120710093327.GA13864@aepfle.de>
-References: <20120705210607.GA26908@aepfle.de>
- <20120706084120.GA31219@router-fw-old.local.net-space.pl>
- <20120706120750.GA8970@aepfle.de>
- <4FF6FCA9020000780008E0BB@nat28.tlf.novell.com>
- <20120706133105.GA20600@aepfle.de>
- <20120706141419.GA21951@aepfle.de>
- <4FF7174C020000780008E1FF@nat28.tlf.novell.com>
- <20120706172918.GA15222@aepfle.de>
+	Tue, 10 Jul 2012 05:36:30 -0400
+X-IronPort-AV: E=Sophos;i="4.77,559,1336320000"; 
+   d="scan'208";a="5364631"
+Message-ID: <4FFBF7B2.9070609@cn.fujitsu.com>
+Date: Tue, 10 Jul 2012 17:36:50 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120706172918.GA15222@aepfle.de>
-User-Agent: Mutt/1.5.21.rev5543 (2011-12-20)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: nhorman@tuxdriver.com, davem@davemloft.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, lizefan@huawei.com, tj@kernel.org,
+        Eric Dumazet <edumazet@google.com>
+Subject: Re: [PATCH] net: cgroup: fix access the unallocated memory in netprio
+ cgroup
+References: <1341837625.3265.2748.camel@edumazet-glaptop>  <1341887508-20302-1-git-send-email-gaofeng@cn.fujitsu.com>  <1341893650.3265.3974.camel@edumazet-glaptop>  <4FFBED84.1030905@cn.fujitsu.com> <1341911707.3265.4603.camel@edumazet-glaptop>
+In-Reply-To: <1341911707.3265.4603.camel@edumazet-glaptop>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/10 17:36:20,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/10 17:36:23
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 06, Olaf Hering wrote:
-
-> On Fri, Jul 06, Jan Beulich wrote:
+于 2012年07月10日 17:15, Eric Dumazet 写道:
+> On Tue, 2012-07-10 at 16:53 +0800, Gao feng wrote:
+>>> Hi Gao
+>>>
+>>> Is it still needed to call update_netdev_tables() from write_priomap() ?
+>>>
+>>
+>> Yes, I think it's needed,because read_priomap will show all of the net devices,
+>>
+>> But we may add the netdev after create a netprio cgroup, so the new added netdev's
+>> priomap will not be allocated. if we don't call update_netdev_tables in write_priomap,
+>> we may access this unallocated memory.
+>>
 > 
-> > > Could it be that some code tweaks the stack content used by decompress()
-> > > in some odd way? But that would most likely lead to a crash, not to
-> > > unexpected uncompressing results.
-> > 
-> > Especially if the old and new kernel are using the exact same
-> > image, how about the decompression writing over the shared
-> > info page causing all this? As the decompressor wouldn't
-> > expect Xen to possibly write stuff there itself, it could easily be
-> > that some repeat count gets altered, thus breaking the
-> > decompressed data without the decompression code necessarily
-> > noticing.
+> I realize my question was not clear.
 > 
-> In my case the gfn of the shared info page is 1f54.
-> Is it possible to move the page at runtime? It looks like it can be done
-> because the hvm loader configures fffff initially.
+> If we write in write_priomap() a field of a single netdevice,
+> why should we allocate memory for all netdevices on the machine ?
 > 
-> Perhaps the PVonHVM code has to give up the shared pages or move them to
-> some dedicated unused page during the process of booting into the new
-> kernel.
+> So the question was : Do we really need to call
+> update_netdev_tables(alldevs), instead of extend_netdev_table(dev)
+> 
+> 
 
-The pfn 1f54 of the shared info page is in the middle of the new bzImage:
-pfn    32080 KiB
-_head  29360 KiB
-_text  33826 KiB
-_end   33924 KiB
+I get it.
 
-In other words, the compressed vmlinux.bin gets slightly modified during
-uncompression. For some reason this does not lead to decompression
-errors.
+You are right,Indeed we only need to call extend_netdev_table
+for the netdev witch we want to change.
 
-In the patch below the pfn is moved from the bss to the data section. As
-a result the new location is now at 28680 KiB, which is outside of the
-bzImage.
+and I read the commit f5c38208d32412d72b97a4f0d44af0eb39feb20b,
+found why we need delay allocation.
 
-Maybe there is a way to use another dedicated page as shared info page.
+I will send a v2 patch.
 
-Olaf
-
-
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index ff962d4..258e8f3 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1469,19 +1469,16 @@ void __ref xen_hvm_init_shared_info(void)
- {
- 	int cpu;
- 	struct xen_add_to_physmap xatp;
--	static struct shared_info *shared_info_page = 0;
-+	static struct shared_info shared_info_page __page_aligned_data = {  };
- 
--	if (!shared_info_page)
--		shared_info_page = (struct shared_info *)
--			extend_brk(PAGE_SIZE, PAGE_SIZE);
- 	xatp.domid = DOMID_SELF;
- 	xatp.idx = 0;
- 	xatp.space = XENMAPSPACE_shared_info;
--	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
-+	xatp.gpfn = __pa(&shared_info_page) >> PAGE_SHIFT;
- 	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
- 		BUG();
- 
--	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
-+	HYPERVISOR_shared_info = &shared_info_page;
- 
- 	/* xen_vcpu is a pointer to the vcpu_info struct in the shared_info
- 	 * page, we use it in the event channel upcall and in some pvclock
+Thanks!
