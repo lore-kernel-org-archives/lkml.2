@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379Ab2GJBs2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 21:48:28 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39675 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab2GJBsY (ORCPT
+	id S1755382Ab2GJBue (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 21:50:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37837 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952Ab2GJBud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 21:48:24 -0400
+	Mon, 9 Jul 2012 21:50:33 -0400
+Date: Mon, 9 Jul 2012 18:50:30 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Joe Perches <joe@perches.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, mm-commits@vger.kernel.org,
+        apw@canonical.com
+Subject: Re: + checkpatch-add-check-for-use-of-sizeof-without-parenthesis.patch
+ added to -mm tree
+In-Reply-To: <1341881721.6118.92.camel@joe2Laptop>
+Message-ID: <alpine.DEB.2.00.1207091834230.20591@chino.kir.corp.google.com>
+References: <20120709215256.9A4F71E0043@wpzn4.hot.corp.google.com> <alpine.DEB.2.00.1207091514310.32082@chino.kir.corp.google.com> <1341873376.6118.56.camel@joe2Laptop> <alpine.DEB.2.00.1207091553120.3552@chino.kir.corp.google.com> <1341876067.6118.67.camel@joe2Laptop>
+ <alpine.DEB.2.00.1207091640170.8185@chino.kir.corp.google.com> <1341881721.6118.92.camel@joe2Laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20120710112312.099a2f602cd6aea90226732c@canb.auug.org.au>
-References: <20120710112312.099a2f602cd6aea90226732c@canb.auug.org.au>
-From: Aditya Kali <adityakali@google.com>
-Date: Mon, 9 Jul 2012 18:48:02 -0700
-Message-ID: <CAGr1F2EB=BR+GSq34TYB+QE+3FNwzvBwBemYPpPu+=wENQf-ZA@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the ext4 tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>, wfg@linux.intel.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Johann Lombardi <johann@whamcloud.com>,
-        ext4 development <linux-ext4@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the trouble. The following patch should fix the build.
+On Mon, 9 Jul 2012, Joe Perches wrote:
 
+> CodingStyle already does suggest parenthesis around sizeof
+> 
+> 3.1:  Spaces
+> 
+> Linux kernel style for use of spaces depends (mostly) on
+> function-versus-keyword usage.  Use a space after (most) keywords.  The
+> notable exceptions are sizeof, typeof, alignof, and __attribute__, which look
+> somewhat like functions (and are usually used with parentheses in Linux,
+> although they are not required in the language, as in: "sizeof info" after
+> "struct fileinfo info;" is declared).
+> 
+> So use a space after these keywords:
+> 	if, switch, case, for, do, while
+> but not with sizeof, typeof, alignof, or __attribute__.  E.g.,
+> 	s = sizeof(struct file);
+> 
 
-From: Aditya Kali <adityakali@google.com>
-Date: Mon, 9 Jul 2012 18:42:28 -0700
-Subject: [PATCH] ext4: Fix compilation error for ext4_enable_quotas
+This doesn't suggest parenthesis for sizeof at all times, it's saying that 
+Linux doesn't use the gcc, glibc, C99 way of doing "sizeof (struct file)" 
+for type names as I've already said three times and rather prefers 
+"sizeof(struct file)".  That's fine.
 
-ext4_enable_quotas should only be called under CONFIG_QUOTA
-block.
+I'm talking about the C99 specification that says the sizeof operator act 
+on unary expressions, i.e. not type names that you keep talking about and 
+apparently don't understand the difference between.  Casts are done with 
+type names, you can't do "unsigned long ptr", you do "(unsigned long)ptr".  
+Sizeof operators using type names do the same thing: 
+"sizeof (unsigned long)".  The space is just a stylistic difference.
 
-Signed-off-by: Aditya Kali <adityakali@google.com>
----
- fs/ext4/super.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+You may not understand the difference between a type and a unary 
+expression, but other C programmers do, i.e. those who have implemented 
+the over 1000 places in the kernel that already do this because they 
+learned from K&R.  I guarantee you that those who learned from K&R don't 
+think sizeof(unsigned long) "looks like a function".
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index a9b87c3..e4b79fc 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -4734,6 +4734,7 @@ static int ext4_remount(struct super_block *sb,
-int *flags, char *data)
- 	if (enable_quota) {
- 		if (sb_any_quota_suspended(sb))
- 			dquot_resume(sb, -1);
-+#ifdef CONFIG_QUOTA
- 		else if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
- 					EXT4_FEATURE_RO_COMPAT_QUOTA)) {
- 			err = ext4_enable_quotas(sb);
-@@ -4742,6 +4743,7 @@ static int ext4_remount(struct super_block *sb,
-int *flags, char *data)
- 				goto restore_opts;
- 			}
- 		}
-+#endif
- 	}
+And typeof is a gnu extension, it's not part of the C99 standard.
 
- 	ext4_msg(sb, KERN_INFO, "re-mounted. Opts: %s", orig_data);
--- 
-1.7.7.3
+> and
+> 
+> Chapter 14: Allocating memory
+> []
+> The preferred form for passing a size of a struct is the following:
+> 
+> 	p = kmalloc(sizeof(*p), ...);
+> 
 
-
-On Mon, Jul 9, 2012 at 6:23 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Ted,
->
-> After merging the ext4 tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
->
-> fs/ext4/super.c: In function 'ext4_remount':
-> fs/ext4/super.c:4739:4: error: implicit declaration of function 'ext4_enable_quotas' [-Werror=implicit-function-declaration]
->
-> Caused by commit 182bb8fec8f5 ("ext4: make quota as first class supported
-> feature").  The quota code needs to be protected by CONFIG_QUOTA.
->
-> I have used the ext4 tree from next-20120709 for today.
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-
-
-
--- 
-
-Aditya
+You realize your patch doesn't catch kmalloc(sizeof *p, ...) since it's 
+checking for lval and the unary operator '*' is not considered part of an 
+identifier, right?  Perhaps you should propose a patch that actually works 
+first because yours is busted.
