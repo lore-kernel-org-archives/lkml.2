@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab2GJNrE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 09:47:04 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:58049 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530Ab2GJNrD (ORCPT
+	id S1754109Ab2GJNtH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 09:49:07 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41683 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751414Ab2GJNtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 09:47:03 -0400
+	Tue, 10 Jul 2012 09:49:05 -0400
+Date: Tue, 10 Jul 2012 14:49:03 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>, Liam Girdwood <lrg@ti.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFT] regulator: max8952: Use core GPIO enable support
+Message-ID: <20120710134903.GE9409@opensource.wolfsonmicro.com>
+References: <1341871812.4847.2.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <20120710133102.GB6056@mwanda>
-References: <1341883960-21635-1-git-send-email-marcos.souza.org@gmail.com>
-	<20120710024046.GA8894@gmail.com>
-	<CAH0vN5Kv6MzVGLxBEAeuUGPRoDC9+8aHkPrZZduFqddEMZrsSg@mail.gmail.com>
-	<20120710123840.GA2928@gmail.com>
-	<20120710125156.GE6113@mwanda>
-	<CAKPrQY8ZMSOMDDANKAfXOe6tp+Tnk8Eba=OVpd_z_AFOtJDbtg@mail.gmail.com>
-	<20120710133102.GB6056@mwanda>
-Date: Tue, 10 Jul 2012 09:47:01 -0400
-Message-ID: <CAKPrQY_TuvtXiU+=+UOaRpBbM0JEPCXAsJ-OsCD1ccuyXe7=kw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] staging: bcm: Cleanup bcm driver
-From: Kevin McKinney <klmckinney1@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org,
-        Marcos Souza <marcos.souza.org@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7CZp05NP8/gJM8Cl"
+Content-Disposition: inline
+In-Reply-To: <1341871812.4847.2.camel@phoenix>
+X-Cookie: Your step will soil many countries.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 9:31 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Tue, Jul 10, 2012 at 09:24:23AM -0400, Kevin McKinney wrote:
->> On Tue, Jul 10, 2012 at 8:51 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
->> > On Tue, Jul 10, 2012 at 08:38:41AM -0400, Kevin McKinney wrote:
->> >> On Mon, Jul 09, 2012 at 11:48:09PM -0300, Marcos Souza wrote:
->> >> > 2012/7/9 Kevin McKinney <klmckinney1@gmail.com>:
->> >> > > On Mon, Jul 09, 2012 at 10:32:37PM -0300, Marcos Paulo de Souza wrote:
->> >> > >> Hi Kernel guys!
->> >> > >>
->> >> > >> This new patchset tries to clean a little the bcm driver, removing
->> >> > >> some unused macros and some dead code.
->> >> > >>
->> >> > >> These macros and dead code were reported by the forgotten-macros tool
->> >> > >> (https://github.com/marcosps/forgotten_macros).
->> >> > >>
->> >> > >> The tool is under development, but all the patches looks like OK.
->> >> > >>
->> >> > >> This patchset is based in staging-next.
->> >> > >>
->> >> > >> Thanks guys!
->> >> > >
->> >> > > The patchset looks good!
->> >> >
->> >> > Thanks for the answer Kevin!!
->> >> >
->> >> > So, do I have your ack?
->> >> Yes, I ack.
->> >
->> > The normal format is:
->> >
->> > Acked-by: Your Name <email@address.com>
->> >
->> > Some maintainers have scripts which pick Acked-by tags automatically
->> > or even if they don't they can copy and paste it.
->>
->> Okay, thanks for this info Dan. I will see if I can write this script.
->>
->
-> No, what I'm saying is that I know Dave Miller uses a script which
-> pulls the Acked-by's out of email threads and adds them
-> automatically.  I don't know how Greg does it, but it's better to
-> use the normal format.
-Oh, I see. Okay I will use the normal format.
 
-Thanks,
-Kevin
+--7CZp05NP8/gJM8Cl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Tue, Jul 10, 2012 at 06:10:12AM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+
+Applied, thanks.
+
+--7CZp05NP8/gJM8Cl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJP/DLDAAoJEBus8iNuMP3dd+oP/AuM2/eg2kXyv/RilHbV+N1f
+bq0+jc6QLfrFvAarOKQNCx3CF61muioh4Y2kMxdheSkwvCkiojvCt209EKbT0Osd
+ItghQZnhONBuYjHxaWRv4oqBunyRykqkn0QFT5ijMaWa2WEtvJIB093H2VQN2E3o
+OP0qE0YaH9UO4BzEd7+cvRbwBYDLYFnqbdNJ0EuK4LgF3x+RkVYKMFVzBLmzBQXh
+55E7gT9hXYxH1+Zufqd0BrFuEmptuMf3b38Yvy0Msrla5GdFStTaHQXos4jN9dkC
+dWe5N+xG84Jyu2iD9Fh6y+3EtIiyLYTSEEhEzwEB7VpggugLoeAhWJ42ZgDxf3OE
+zTJOfAzTmAdLRDavPcelRwE27BWO54V/m/EJUI6K+AUJRGMB5cyNhHKMfp4hIBHB
+JDheHQpDQyWfI8piTnTcmJa5SXPwQLrlUAKLJC003GPPmh9FXEAumxNXAPfhs19p
+TlZ8Oe20PilOnaQfJCu2Iu99XZra0uD5pu9e7eAkDfyZ1cQb3NuUPfb2CUdnPBSO
+Vw13IYxYgmNO20AYAYqDvaVePRSCK4zKfQIaTKIt5Uroic5mMpi8dvb5bi51zazl
+Zbp1bi1PwdWEhs/fCi62OIP6CIkK/EIBzQqn4hauyigE92e6DZce9WgynZ3EKPHp
+w6WqPzX+Y/CjsXjItarK
+=vrrV
+-----END PGP SIGNATURE-----
+
+--7CZp05NP8/gJM8Cl--
