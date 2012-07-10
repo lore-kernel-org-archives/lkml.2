@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754978Ab2GJXOD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 19:14:03 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:48582 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881Ab2GJXOA (ORCPT
+	id S1754970Ab2GJXPx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 19:15:53 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:33558 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab2GJXPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 19:14:00 -0400
-Message-ID: <1341962038.2502.54.camel@lorien2>
-Subject: Re: [PATCH RFC] swiotlb: Remove SWIOTLB overflow buffer support
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: fujita.tomonori@lab.ntt.co.jp, LKML <linux-kernel@vger.kernel.org>,
-        akpm@linux-foundation.org, paul.gortmaker@windriver.com,
-        bhelgaas@google.com, amwang@redhat.com, shuahkhan@gmail.com
-Date: Tue, 10 Jul 2012 17:13:58 -0600
-In-Reply-To: <1341961616.2502.52.camel@lorien2>
-References: <1341615972.3101.27.camel@lorien2>
-	 <20120709202505.GA9541@phenom.dumpdata.com>
-	 <1341939307.2502.34.camel@lorien2>
-	 <20120710173211.GB6868@phenom.dumpdata.com>
-	 <1341961616.2502.52.camel@lorien2>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 10 Jul 2012 19:15:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FFC0B0E.8070600@att.net>
+References: <1341876923-12469-1-git-send-email-walken@google.com>
+	<1341876923-12469-3-git-send-email-walken@google.com>
+	<4FFC0B0E.8070600@att.net>
+Date: Tue, 10 Jul 2012 16:10:28 -0700
+Message-ID: <CANN689HVQndmGaNm4n=dDB1YeTvDtQx9Vaq90XcEqM+kSNAN3Q@mail.gmail.com>
+Subject: Re: [PATCH 02/13] rbtree: empty nodes have no color
+From: Michel Lespinasse <walken@google.com>
+To: Daniel Santos <daniel.santos@pobox.com>
+Cc: aarcange@redhat.com, dwmw2@infradead.org, riel@redhat.com,
+        peterz@infradead.org, axboe@kernel.dk, ebiederm@xmission.com,
+        linux-mm@kvack.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-10 at 17:06 -0600, Shuah Khan wrote:
-> On Tue, 2012-07-10 at 13:32 -0400, Konrad Rzeszutek Wilk wrote:
-> > On Tue, Jul 10, 2012 at 10:55:07AM -0600, Shuah Khan wrote:
-> > > On Mon, 2012-07-09 at 16:25 -0400, Konrad Rzeszutek Wilk wrote:
-> > > > On Fri, Jul 06, 2012 at 05:06:12PM -0600, Shuah Khan wrote:
-> > > > > Remove SWIOTLB overflow buffer support and return DMA_ERROR_CODE
-> > > > > (a value of zero) to make it consistent with iommu implementation
-> > > > > on Intel, AMD, and swiotlb-xen.
-> > > > 
-> > > > While this is a good forward step and this needs to be done eventually,
-> > > > you should first send out patches for the drivers that don't check
-> > > > for the DMA_ERROR_CODE when doing mapping. In other words for the
-> > > > drivers that map but don't call dma_mapping_error to check.
-> > > > 
-> > > > When that is fixed and *all the drivers that don't call dma_mapping_error
-> > > > are fixed, then this patch makes sense.
-> > > 
-> > > The challenge will be catching all the drivers and have confidence that
-> > > all of them are covered. I will start looking into this to get a feel
-> > > for how many drivers needs fixing.
-> > 
-> > I don't know if all is needed. Some of them might be dead or not used
-> > at all anymore - who knows? This treasure hunt would give a good idea
-> > of which ones are not using the PCI/DMA API right at least.
-> > 
-> > If it is say, CONFIG_ISA enabled, well, we could #ifdef the overflow
-> > buffer in the swiotlb with that option. And then work through fixing
-> > up those drivers - except that finding folks with that driver to
-> > see if it works .. yuck.. I do have some few ISA cards and some boxes
-> > with ISA slots :-)
-> 
-> Looking at the history CONFIG_ISA was disabled back in 2002 and
-> CONFIG_ISA_DMA_API was disabled in 2004. Sounds like it will be fun
-> finding drivers that could fail.
+On Tue, Jul 10, 2012 at 3:59 AM, Daniel Santos <danielfsantos@att.net> wrote:
+>> One final rb_init_node() caller was recently added in sysctl code
+>> to implement faster sysctl name lookups. This code doesn't make use
+>> of RB_EMPTY_NODE at all, and from what I could see it only called
+>> rb_init_node() under the mistaken assumption that such initialization
+>> was required before node insertion.
+> That was one of the problems with rb_init_node().  Not being documented,
+> one would assume it's needed unless you study the code more closely.
 
-Correction. CONFIG_ISA_DMA_API is made configurable on x86_64 it appears
-back in 2011.
+Agree, the name made it sound like it was required, while it wasn't.
 
--- Shuah
+Looking at the code history, it's pretty clear that the function was
+introduced for the wrong reasons...
 
+> BTW, the current revision of my patches adds some doc comments to struct
+> rb_node since the actual function of rb_parent_color isn't very clear
+> without a lot of study.
+>
+> /**
+>  * struct rb_node
+>  * @rb_parent_color: Contains the color in the lower 2 bits (although
+> only bit
+>  *              zero is currently used) and the address of the parent in
+>  *              the rest (lower 2 bits of address should always be zero on
+>  *              any arch supported).  If the node is initialized and not a
+>  *              member of any tree, the parent point to its self.  If the
+>  *              node belongs to a tree, but is the root element, the
+>  *              parent will be NULL.  Otherwise, parent will always
+>  *              point to the parent node in the tree.
+>  * @rb_right:        Pointer to the right element.
+>  * @rb_left:         Pointer to the left element.
+>  */
+>
+> That said, there's an extra bit in the rb_parent_color that can be used
+> for some future purpose.
 
+My preference would be for such comments to go into lib/rbtree.c, NOT
+include/lib/rbtree.h . The reason being that we really don't want
+rbtree users to start depending on rbtree internals - it's best if
+they just stick to using the documented APIs :)
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
