@@ -1,67 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131Ab2GJXeF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 19:34:05 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:6003 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864Ab2GJXeD (ORCPT
+	id S1755194Ab2GJXge (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 19:36:34 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:49106 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755084Ab2GJXgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 19:34:03 -0400
-Message-ID: <1341963026.16730.828.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] ACPI: Add ACPI CPU hot-remove support
-From: Toshi Kani <toshi.kani@hp.com>
-To: Khalid Aziz <khalid.aziz@hp.com>
-Cc: Jiang Liu <liuj97@gmail.com>, lenb@kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 10 Jul 2012 17:30:26 -0600
-In-Reply-To: <1341960978.1065.12.camel@lyra>
-References: <1340981479-6521-1-git-send-email-toshi.kani@hp.com>
-	 <4FF711DE.1030108@gmail.com> <1341602020.16730.695.camel@misato.fc.hp.com>
-	 <4FF745F1.9030103@hp.com>  <1341608402.16730.730.camel@misato.fc.hp.com>
-	 <1341960978.1065.12.camel@lyra>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+	Tue, 10 Jul 2012 19:36:32 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-16.tower-132.messagelabs.com!1341963390!13978889!3
+X-Originating-IP: [216.166.12.97]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 00/83] staging: comedi: rtd520: initial cleanup
+Date: Tue, 10 Jul 2012 16:36:23 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Content-Disposition: inline
+Message-ID: <201207101636.23561.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-10 at 16:56 -0600, Khalid Aziz wrote:
-> On Fri, 2012-07-06 at 15:00 -0600, Toshi Kani wrote:
-> > Yes, offlining and eject are similar operations to a core as it alone
-> > cannot be removed physically.  Ejecting a core is a logical eject
-> > operation, which updates the status (_STA) of the object in ACPI after
-> > offlining.  The difference from the offlining is that the ejected core
-> > is no longer assigned to the partition.  Here is one example.  Say, a
-> > core is assigned to a guest partition as a dedicated resource (ex. 100%
-> > of its CPU time is bound to the partition).  Offlining this core saves
-> > the power-consumption, but this core is still bound to the partition.
-> > Ejecting the core removes it from the partition (logically), and allows
-> > it to be assigned to other partition as a dedicated resource with
-> > hot-add.
-> > 
-> 
-> Ejecting a core is reasonable when eject happens from a guest. I still
-> wonder what firmware would do if kernel calls eject method on a core
-> when running on the native host platform. If firmware behavior is not
-> well defined in this case, there might be some risk associated with
-> calling eject method on core. 
-> 
-> Makes sense?
+The 'devpriv' macro usage in this driver is holding up other cleanup
+of the comedi drivers.
 
-No, that's not the case.  The firmware only implements _EJ0 when it
-supports the behavior on the environment.  It is true for both native
-and virtual platforms.  Note that the presence of a CPU is abstracted
-with _STA in ACPI, so it does not matter to the kernel if an eject is a
-physical or logical operation.
+This patch series removes all the macros used to read/write the
+hardware registers. All of them are simple wrappers around standard
+{read,write}[rwl] calls with some of them caching the write value
+in a shadow variable in the private data.
 
-For example, HP Superdome 2 implements _EJ0 on the native platform to
-support capacity-on-demand and RAS features (which are supported by
-HP-UX).  _EJ0 is still a logical eject operation in this case.
+Each of the macros is removed in a separate patch to ease reviewing.
+They can all be squashed into one patch if desired.
 
-Thanks,
--Toshi
+After all the macros are gone, the devpriv macro itself can be removed
+along with the boardinfo macro.
 
+The "find pci device" code is also refactored to follow the style of
+the other comedi pci drivers.
 
+The range tables are also cleaned up for aesthetic reasons. The large
+whitespace causes some pretty nasty line breaks in order to keep the
+lines < 80 characters.
+
+H Hartley Sweeten (83):
+  staging: comedi: rtd520: remove RtdResetBoard macro
+  staging: comedi: rtd520: remove RtdResetCGT macro
+  staging: comedi: rtd520: remove RtdClearCGT macro
+  staging: comedi: rtd520: remove RtdEnableCGT macro
+  staging: comedi: rtd520: remove RtdWriteCGTable macro
+  staging: comedi: rtd520: remove RtdWriteCGLatch macro
+  staging: comedi: rtd520: remove RtdAdcClearFifo macro
+  staging: comedi: rtd520: remove RtdAdcConversionSource macro
+  staging: comedi: rtd520: remove RtdBurstStartSource macro
+  staging: comedi: rtd520: remove RtdPacerStartSource macro
+  staging: comedi: rtd520: remove RtdPacerStopSource macro
+  staging: comedi: rtd520: remove RtdPacerClockSource macro
+  staging: comedi: rtd520: remove RtdAdcSampleCounterSource macro
+  staging: comedi: rtd520: remove RtdPacerTriggerMode macro
+  staging: comedi: rtd520: remove RtdAboutStopEnable macro
+  staging: comedi: rtd520: remove RtdTriggerPolarity macro
+  staging: comedi: rtd520: remove RtdAdcStart macro
+  staging: comedi: rtd520: remove RtdAdcFifoGet macro
+  staging: comedi: rtd520: remove RtdAdcFifoGet2 macro
+  staging: comedi: rtd520: remove RtdFifoStatus macro
+  staging: comedi: rtd520: remove RtdPacerStart macro
+  staging: comedi: rtd520: remove RtdPacerStop macro
+  staging: comedi: rtd520: remove RtdInterruptStatus macro
+  staging: comedi: rtd520: remove RtdInterruptMask macro
+  staging: comedi: rtd520: remove RtdInterruptClear macro
+  staging: comedi: rtd520: remove RtdInterruptClearMask macro
+  staging: comedi: rtd520: remove RtdInterruptOverrunStatus macro
+  staging: comedi: rtd520: remove RtdInterruptOverrunClear macro
+  staging: comedi: rtd520: remove RtdPacerCount macro
+  staging: comedi: rtd520: remove RtdPacerCounter macro
+  staging: comedi: rtd520: remove RtdBurstCount macro
+  staging: comedi: rtd520: remove RtdBurstCounter macro
+  staging: comedi: rtd520: remove RtdDelayCount macro
+  staging: comedi: rtd520: remove RtdDelayCounter macro
+  staging: comedi: rtd520: remove RtdAboutCount macro
+  staging: comedi: rtd520: remove RtdAboutCounter macro
+  staging: comedi: rtd520: remove RtdAdcSampleCount macro
+  staging: comedi: rtd520: remove RtdAdcSampleCounter macro
+  staging: comedi: rtd520: remove RtdUtcCounterGet macro
+  staging: comedi: rtd520: remove RtdUtcCounterPut macro
+  staging: comedi: rtd520: remove RtdUtcCtrlPut macro
+  staging: comedi: rtd520: remove RtdUtcClockSource macro
+  staging: comedi: rtd520: remove RtdUtcGateSource macro
+  staging: comedi: rtd520: remove RtdUsrOutSource macro
+  staging: comedi: rtd520: remove RtdDio0Read macro
+  staging: comedi: rtd520: remove RtdDio0Write macro
+  staging: comedi: rtd520: remove RtdDio1Read macro
+  staging: comedi: rtd520: remove RtdDio1Write macro
+  staging: comedi: rtd520: remove RtdDioStatusRead macro
+  staging: comedi: rtd520: remove RtdDioStatusWrite macro
+  staging: comedi: rtd520: remove RtdDio0CtrlRead macro
+  staging: comedi: rtd520: remove RtdDio0CtrlWrite macro
+  staging: comedi: rtd520: remove RtdDacFifoPut macro
+  staging: comedi: rtd520: remove RtdDacUpdate macro
+  staging: comedi: rtd520: remove RtdDacBothUpdate macro
+  staging: comedi: rtd520: remove RtdDacRange macro
+  staging: comedi: rtd520: remove RtdDacClearFifo macro
+  staging: comedi: rtd520: remove RtdDma0Source macro
+  staging: comedi: rtd520: remove RtdDma1Source macro
+  staging: comedi: rtd520: remove RtdDma0Reset macro
+  staging: comedi: rtd520: remove RtdDma1Reset macro
+  staging: comedi: rtd520: remove RtdPlxInterruptRead macro
+  staging: comedi: rtd520: remove RtdPlxInterruptWrite macro
+  staging: comedi: rtd520: remove RtdDma0Mode macro
+  staging: comedi: rtd520: remove RtdDma0PciAddr macro
+  staging: comedi: rtd520: remove RtdDma0LocalAddr macro
+  staging: comedi: rtd520: remove RtdDma0Count macro
+  staging: comedi: rtd520: remove RtdDma0Count macro
+  staging: comedi: rtd520: remove RtdDma1Mode macro
+  staging: comedi: rtd520: remove RtdDma1PciAddr macro
+  staging: comedi: rtd520: remove RtdDma1LocalAddr macro
+  staging: comedi: rtd520: remove RtdDma1Count macro
+  staging: comedi: rtd520: remove RtdDma1Next macro
+  staging: comedi: rtd520: remove RtdDma0Control macro
+  staging: comedi: rtd520: remove RtdDma0Status macro
+  staging: comedi: rtd520: remove RtdDma1Control macro
+  staging: comedi: rtd520: remove RtdDma1Status macro
+  staging: comedi: rtd520: remove devpriv macro
+  staging: comedi: rtd520: remove thisboard macro
+  staging: comedi: rtd520: factor out the "find pci device" code
+  staging: comedi: rtd520: cleanup the "find pci device" code
+  staging: comedi: rtd520: cleanup the range tables
+  staging: comedi: rtd520: cleanup the boardinfo
+
+ drivers/staging/comedi/drivers/rtd520.c | 915 +++++++++++---------------------
+ 1 file changed, 318 insertions(+), 597 deletions(-)
+
+-- 
+1.7.11
 
