@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab2GJQEj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 12:04:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27706 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753213Ab2GJQEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756063Ab2GJQEi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 12:04:38 -0400
+Received: from relay.parallels.com ([195.214.232.42]:47782 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752648Ab2GJQEf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Jul 2012 12:04:35 -0400
-Message-ID: <4FFC528D.8040900@redhat.com>
-Date: Tue, 10 Jul 2012 19:04:29 +0300
-From: Avi Kivity <avi@redhat.com>
+Message-ID: <4FFC5284.4040605@parallels.com>
+Date: Tue, 10 Jul 2012 20:04:20 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/2] KVM: X86: remove read buffer for mmio read
-References: <4FFA9E16.10001@linux.vnet.ibm.com> <4FFABD59.2070108@redhat.com> <20120709112346.GA23898@redhat.com> <4FFAD341.3080508@redhat.com> <4FFADB37.4090705@linux.vnet.ibm.com> <4FFADDFA.5000603@redhat.com> <20120710103629.GC23898@redhat.com> <4FFC07BB.8080802@redhat.com> <20120710104847.GD23898@redhat.com> <4FFC251F.4050504@redhat.com> <20120710130149.GE23898@redhat.com>
-In-Reply-To: <20120710130149.GE23898@redhat.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH] [RFC] nfsd: fix possible dereference of static NULL nfsd_serv
+ pointer
+References: <20120706134548.7307.1133.stgit@localhost.localdomain> <20120706172630.GA11193@fieldses.org> <4FF7C8C2.8070203@parallels.com> <20120710155943.GB1947@fieldses.org>
+In-Reply-To: <20120710155943.GB1947@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2012 04:01 PM, Gleb Natapov wrote:
-> On Tue, Jul 10, 2012 at 03:50:39PM +0300, Avi Kivity wrote:
-> > On 07/10/2012 01:48 PM, Gleb Natapov wrote:
-> > > > > > 
-> > > > > But the code is already here, why drop it?
-> > > > 
-> > > > The read cache is not effective for multiple disjunct reads.
-> > > What do you mean?
-> > 
-> > If an instruction reads from several sources in mmio, then the first
-> > read will be flushed from the cache by the second read.  So if we need a
-> > third read, we'll have to exit for the first again.
-> > 
-> The cache is flashed only before instruction decode, never during
-> emulation.
+10.07.2012 19:59, J. Bruce Fields пишет:
+> On Sat, Jul 07, 2012 at 09:27:30AM +0400, Stanislav Kinsbursky wrote:
+>> 06.07.2012 21:26, J. Bruce Fields пишет:
+>>> On Fri, Jul 06, 2012 at 05:45:56PM +0400, Stanislav Kinsbursky wrote:
+>>>> This is a bug fix for 3.5 kernel.
+>>>> In case on NFSd service start failure svc_shutdown_net() will call svc_destroy
+>>>> callback and zeroize global nfsd_serv pointer, this in turn will lead to Oops
+>>>> in svc_destroy().
+>>>>
+>>>> This patch is marked as RFC, because to many lines were changed. It can be
+>>>> easely simplified if requested.
+>>>> Moreover, NFSd service shutdown is going to be converted into csomething on
+>>>> per-net basis.
+>>> Doesn't this leave error paths in e.g. __write_ports_addfd() and
+>>> __write_ports_addxprt() unfixed?
+>>
+>> Yes, sure it does...
+>>
+>>> I'm inclined to just submit your original fix (split up as in the last
+>>> version I sent) for 3.5 if you don't object.
+>>
+>> Not at all.
+>> Thanks, Bruce.
+>
+> OK.  Actually, Linus is making noise about a release in the next week or
+> two, so given that this is about error paths, I'm going to queue it up
+> for the 3.6 and cc it to stable.  It'll end up in 3.5.x pretty quickly
+> that way anyway.
+>
 
-Oh, I misread the code.
+Ok, Bruce. Sounds good.
 
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+Best regards,
+Stanislav Kinsbursky
+
 
