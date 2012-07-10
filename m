@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab2GJK7e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 06:59:34 -0400
+	id S1754944Ab2GJK7b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 06:59:31 -0400
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:53636 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754487Ab2GJK6q (ORCPT
+	with ESMTP id S1754439Ab2GJK6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 06:58:46 -0400
+	Tue, 10 Jul 2012 06:58:40 -0400
 From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
 To: dri-devel@lists.freedesktop.org
 Cc: linaro-mm-sig@lists.linaro.org, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Subject: [RFC PATCH 8/8] nouveau: Prime execbuffer submission synchronization
-Date: Tue, 10 Jul 2012 12:57:51 +0200
-Message-Id: <1341917871-2512-9-git-send-email-m.b.lankhorst@gmail.com>
+Subject: [RFC PATCH 7/8] nouveau: nvc0 fence prime implementation
+Date: Tue, 10 Jul 2012 12:57:50 +0200
+Message-Id: <1341917871-2512-8-git-send-email-m.b.lankhorst@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1341917871-2512-1-git-send-email-m.b.lankhorst@gmail.com>
 References: <1341917871-2512-1-git-send-email-m.b.lankhorst@gmail.com>
@@ -24,227 +24,183 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 
+Create a read-only mapping for every imported bo, and create a prime
+bo in in system memory.
+
 Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 ---
- drivers/gpu/drm/nouveau/nouveau_gem.c |  121 +++++++++++++++++++++++++++++++--
- 1 file changed, 116 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/nouveau/nvc0_fence.c |  104 +++++++++++++++++++++++++++++-----
+ 1 file changed, 89 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_gem.c b/drivers/gpu/drm/nouveau/nouveau_gem.c
-index 11c9c2a..e5d36bb 100644
---- a/drivers/gpu/drm/nouveau/nouveau_gem.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_gem.c
-@@ -31,6 +31,7 @@
- #include "nouveau_drm.h"
- #include "nouveau_dma.h"
- #include "nouveau_fence.h"
-+#include <linux/dma-buf-mgr.h>
- 
- #define nouveau_gem_pushbuf_sync(chan) 0
- 
-@@ -277,6 +278,7 @@ struct validate_op {
- 	struct list_head vram_list;
- 	struct list_head gart_list;
- 	struct list_head both_list;
-+	struct list_head prime_list;
+diff --git a/drivers/gpu/drm/nouveau/nvc0_fence.c b/drivers/gpu/drm/nouveau/nvc0_fence.c
+index 198e31f..dc6ccab 100644
+--- a/drivers/gpu/drm/nouveau/nvc0_fence.c
++++ b/drivers/gpu/drm/nouveau/nvc0_fence.c
+@@ -37,6 +37,7 @@ struct nvc0_fence_priv {
+ struct nvc0_fence_chan {
+ 	struct nouveau_fence_chan base;
+ 	struct nouveau_vma vma;
++	struct nouveau_vma prime_vma;
  };
  
- static void
-@@ -305,9 +307,36 @@ validate_fini_list(struct list_head *list, struct nouveau_fence *fence)
- static void
- validate_fini(struct validate_op *op, struct nouveau_fence* fence)
- {
-+	struct list_head *entry, *tmp;
-+	struct nouveau_bo *nvbo;
-+	struct dma_buf *sync_buf;
-+	u32 ofs, val;
-+
- 	validate_fini_list(&op->vram_list, fence);
- 	validate_fini_list(&op->gart_list, fence);
- 	validate_fini_list(&op->both_list, fence);
-+
-+	if (list_empty(&op->prime_list))
-+		return;
-+
-+	if (fence &&
-+	    !nouveau_fence_prime_get(fence, &sync_buf, &ofs, &val)) {
-+		dmabufmgr_eu_fence_buffer_objects(sync_buf, ofs, val,
-+						  &op->prime_list);
-+		dma_buf_put(sync_buf);
-+	} else
-+		dmabufmgr_eu_backoff_reservation(&op->prime_list);
-+
-+	list_for_each_safe(entry, tmp, &op->prime_list) {
-+		struct dmabufmgr_validate *val;
-+		val = list_entry(entry, struct dmabufmgr_validate, head);
-+		nvbo = val->priv;
-+
-+		list_del(&val->head);
-+		nvbo->reserved_by = NULL;
-+		drm_gem_object_unreference_unlocked(nvbo->gem);
-+		kfree(val);
-+	}
- }
- 
  static int
-@@ -319,9 +348,9 @@ validate_init(struct nouveau_channel *chan, struct drm_file *file_priv,
- 	struct drm_nouveau_private *dev_priv = dev->dev_private;
- 	uint32_t sequence;
- 	int trycnt = 0;
--	int ret, i;
-+	int i;
+@@ -45,19 +46,23 @@ nvc0_fence_emit(struct nouveau_fence *fence, bool prime)
+ 	struct nouveau_channel *chan = fence->channel;
+ 	struct nvc0_fence_chan *fctx = chan->engctx[NVOBJ_ENGINE_FENCE];
+ 	u64 addr = fctx->vma.offset + chan->id * 16;
+-	int ret;
++	int ret, i;
  
--	sequence = atomic_add_return(1, &dev_priv->ttm.validate_sequence);
-+	sequence = atomic_inc_return(&dev_priv->ttm.validate_sequence);
- retry:
- 	if (++trycnt > 100000) {
- 		NV_ERROR(dev, "%s failed and gave up.\n", __func__);
-@@ -332,6 +361,8 @@ retry:
- 		struct drm_nouveau_gem_pushbuf_bo *b = &pbbo[i];
- 		struct drm_gem_object *gem;
- 		struct nouveau_bo *nvbo;
-+		int ret = 0, is_prime;
-+		struct dmabufmgr_validate *validate = NULL;
- 
- 		gem = drm_gem_object_lookup(dev, file_priv, b->handle);
- 		if (!gem) {
-@@ -340,6 +371,7 @@ retry:
- 			return -ENOENT;
- 		}
- 		nvbo = gem->driver_private;
-+		is_prime = gem->export_dma_buf || gem->import_attach;
- 
- 		if (nvbo->reserved_by && nvbo->reserved_by == file_priv) {
- 			NV_ERROR(dev, "multiple instances of buffer %d on "
-@@ -349,7 +381,21 @@ retry:
- 			return -EINVAL;
- 		}
- 
--		ret = ttm_bo_reserve(&nvbo->bo, true, false, true, sequence);
-+		if (likely(!is_prime))
-+			ret = ttm_bo_reserve(&nvbo->bo, true, false,
-+					     true, sequence);
-+		else {
-+			validate = kzalloc(sizeof(*validate), GFP_KERNEL);
-+			if (validate) {
-+				if (gem->import_attach)
-+					validate->bo =
-+						gem->import_attach->dmabuf;
-+				else
-+					validate->bo = gem->export_dma_buf;
-+				validate->priv = nvbo;
-+			} else
-+				ret = -ENOMEM;
-+		}
- 		if (ret) {
- 			validate_fini(op, NULL);
- 			if (unlikely(ret == -EAGAIN))
-@@ -366,6 +412,9 @@ retry:
- 		b->user_priv = (uint64_t)(unsigned long)nvbo;
- 		nvbo->reserved_by = file_priv;
- 		nvbo->pbbo_index = i;
-+		if (is_prime) {
-+			list_add_tail(&validate->head, &op->prime_list);
-+		} else
- 		if ((b->valid_domains & NOUVEAU_GEM_DOMAIN_VRAM) &&
- 		    (b->valid_domains & NOUVEAU_GEM_DOMAIN_GART))
- 			list_add_tail(&nvbo->entry, &op->both_list);
-@@ -473,6 +522,60 @@ validate_list(struct nouveau_channel *chan, struct list_head *list,
- }
- 
- static int
-+validate_prime(struct nouveau_channel *chan, struct list_head *list,
-+	       struct drm_nouveau_gem_pushbuf_bo *pbbo, uint64_t user_pbbo_ptr)
-+{
-+	struct drm_nouveau_private *dev_priv = chan->dev->dev_private;
-+	struct drm_nouveau_gem_pushbuf_bo __user *upbbo =
-+				(void __force __user *)(uintptr_t)user_pbbo_ptr;
-+	struct drm_device *dev = chan->dev;
-+	struct dmabufmgr_validate *validate;
-+	int ret, relocs = 0;
-+	bool cpu_validate = false;
-+
-+	ret = dmabufmgr_eu_reserve_buffers(list);
-+	if (ret < 0) {
-+		if (ret != -ERESTARTSYS)
-+			NV_ERROR(dev, "failed to reserve prime: %d\n", ret);
+-	ret = RING_SPACE(chan, 5);
+-	if (ret == 0) {
++	ret = RING_SPACE(chan, prime ? 10 : 5);
++	if (ret)
 +		return ret;
-+	}
 +
-+	list_for_each_entry(validate, list, head) {
-+		struct nouveau_bo *nvbo = validate->priv;
-+		struct drm_nouveau_gem_pushbuf_bo *b = &pbbo[nvbo->pbbo_index];
++	for (i = 0; i < (prime ? 2 : 1); ++i) {
++		if (i)
++			addr = fctx->prime_vma.offset + chan->id * 16;
+ 		BEGIN_NVC0(chan, 0, NV84_SUBCHAN_SEMAPHORE_ADDRESS_HIGH, 4);
+ 		OUT_RING  (chan, upper_32_bits(addr));
+ 		OUT_RING  (chan, lower_32_bits(addr));
+ 		OUT_RING  (chan, fence->sequence);
+ 		OUT_RING  (chan, NV84_SUBCHAN_SEMAPHORE_TRIGGER_WRITE_LONG);
+-		FIRE_RING (chan);
+ 	}
+-
+-	return ret;
++	FIRE_RING(chan);
++	return 0;
+ }
+ 
+ static int
+@@ -95,6 +100,8 @@ nvc0_fence_context_del(struct nouveau_channel *chan, int engine)
+ 	struct nvc0_fence_priv *priv = nv_engine(chan->dev, engine);
+ 	struct nvc0_fence_chan *fctx = chan->engctx[engine];
+ 
++	if (priv->base.prime_bo)
++		nouveau_bo_vma_del(priv->base.prime_bo, &fctx->prime_vma);
+ 	nouveau_bo_vma_del(priv->bo, &fctx->vma);
+ 	nouveau_fence_context_del(chan->dev, &fctx->base);
+ 	chan->engctx[engine] = NULL;
+@@ -115,10 +122,16 @@ nvc0_fence_context_new(struct nouveau_channel *chan, int engine)
+ 	nouveau_fence_context_new(&fctx->base);
+ 
+ 	ret = nouveau_bo_vma_add(priv->bo, chan->vm, &fctx->vma);
++	if (!ret && priv->base.prime_bo)
++		ret = nouveau_bo_vma_add(priv->base.prime_bo, chan->vm,
++					 &fctx->prime_vma);
+ 	if (ret)
+ 		nvc0_fence_context_del(chan, engine);
+ 
+-	nouveau_bo_wr32(priv->bo, chan->id * 16/4, 0x00000000);
++	fctx->base.sequence = nouveau_bo_rd32(priv->bo, chan->id * 16/4);
++	if (priv->base.prime_bo)
++		nouveau_bo_wr32(priv->base.prime_bo, chan->id * 16/4,
++				fctx->base.sequence);
+ 	return ret;
+ }
+ 
+@@ -140,12 +153,55 @@ nvc0_fence_destroy(struct drm_device *dev, int engine)
+ 	struct drm_nouveau_private *dev_priv = dev->dev_private;
+ 	struct nvc0_fence_priv *priv = nv_engine(dev, engine);
+ 
++	nouveau_fence_prime_del(&priv->base);
+ 	nouveau_bo_unmap(priv->bo);
++	nouveau_bo_unpin(priv->bo);
+ 	nouveau_bo_ref(NULL, &priv->bo);
+ 	dev_priv->eng[engine] = NULL;
+ 	kfree(priv);
+ }
+ 
++static int
++nvc0_fence_prime_sync(struct nouveau_channel *chan,
++		      struct nouveau_bo *bo,
++		      u32 ofs, u32 val, u64 sema_start)
++{
++	struct nvc0_fence_chan *fctx = chan->engctx[NVOBJ_ENGINE_FENCE];
++	struct nvc0_fence_priv *priv = nv_engine(chan->dev, NVOBJ_ENGINE_FENCE);
++	int ret = RING_SPACE(chan, 5);
++	if (ret)
++		return ret;
 +
-+		if (!cpu_validate)
-+			ret = nouveau_fence_sync_prime(chan, validate);
-+		if (unlikely(ret == -ENODEV)) {
-+			ret = dmabufmgr_eu_wait_completed_cpu(list, 1, 1);
-+			cpu_validate = true;
-+		}
-+		if (unlikely(ret)) {
-+			if (ret != -ERESTARTSYS)
-+				NV_ERROR(dev, "failed prime sync: %d\n", ret);
-+			return ret;
-+		}
++	if (bo == priv->base.prime_bo)
++		sema_start = fctx->prime_vma.offset;
++	else
++		NV_ERROR(chan->dev, "syncing with %08Lx + %08x >= %08x\n",
++			sema_start, ofs, val);
++	sema_start += ofs;
 +
-+		if (dev_priv->card_type < NV_50) {
-+			if (nvbo->bo.offset == b->presumed.offset &&
-+			     b->presumed.domain & NOUVEAU_GEM_DOMAIN_GART)
-+				continue;
++	BEGIN_NVC0(chan, 0, NV84_SUBCHAN_SEMAPHORE_ADDRESS_HIGH, 4);
++	OUT_RING  (chan, upper_32_bits(sema_start));
++	OUT_RING  (chan, lower_32_bits(sema_start));
++	OUT_RING  (chan, val);
++	OUT_RING  (chan, NV84_SUBCHAN_SEMAPHORE_TRIGGER_ACQUIRE_GEQUAL |
++			 NVC0_SUBCHAN_SEMAPHORE_TRIGGER_YIELD);
++	FIRE_RING (chan);
++	return ret;
++}
 +
-+			b->presumed.domain = NOUVEAU_GEM_DOMAIN_GART;
-+			b->presumed.offset = nvbo->bo.offset;
-+			b->presumed.valid = 0;
-+			relocs++;
-+
-+			if (DRM_COPY_TO_USER(&upbbo[nvbo->pbbo_index].presumed,
-+					     &b->presumed, sizeof(b->presumed)))
-+				return -EFAULT;
-+		}
-+	}
-+
-+	return relocs;
++static void
++nvc0_fence_prime_del_import(struct nouveau_fence_prime_bo_entry *entry) {
++	nouveau_bo_vma_del(entry->bo, &entry->vma);
 +}
 +
 +static int
- nouveau_gem_pushbuf_validate(struct nouveau_channel *chan,
- 			     struct drm_file *file_priv,
- 			     struct drm_nouveau_gem_pushbuf_bo *pbbo,
-@@ -485,6 +588,7 @@ nouveau_gem_pushbuf_validate(struct nouveau_channel *chan,
- 	INIT_LIST_HEAD(&op->vram_list);
- 	INIT_LIST_HEAD(&op->gart_list);
- 	INIT_LIST_HEAD(&op->both_list);
-+	INIT_LIST_HEAD(&op->prime_list);
- 
- 	if (nr_buffers == 0)
- 		return 0;
-@@ -523,6 +627,13 @@ nouveau_gem_pushbuf_validate(struct nouveau_channel *chan,
- 	}
- 	relocs += ret;
- 
-+	ret = validate_prime(chan, &op->prime_list, pbbo, user_buffers);
-+	if (unlikely(ret < 0)) {
-+		validate_fini(op, NULL);
-+		return ret;
-+	}
-+	relocs += ret;
++nvc0_fence_prime_add_import(struct nouveau_fence_prime_bo_entry *entry) {
++	int ret = nouveau_bo_vma_add_access(entry->bo, entry->chan->vm,
++					    &entry->vma, NV_MEM_ACCESS_RO);
++	entry->sema_start = entry->vma.offset;
++	return ret;
++}
 +
- 	*apply_relocs = relocs;
- 	return 0;
+ int
+ nvc0_fence_create(struct drm_device *dev)
+ {
+@@ -168,17 +224,35 @@ nvc0_fence_create(struct drm_device *dev)
+ 	priv->base.read = nvc0_fence_read;
+ 	dev_priv->eng[NVOBJ_ENGINE_FENCE] = &priv->base.engine;
+ 
++	priv->base.prime_sync = nvc0_fence_prime_sync;
++	priv->base.prime_add_import = nvc0_fence_prime_add_import;
++	priv->base.prime_del_import = nvc0_fence_prime_del_import;
++
+ 	ret = nouveau_bo_new(dev, 16 * pfifo->channels, 0, TTM_PL_FLAG_VRAM,
+ 			     0, 0, NULL, &priv->bo);
+-	if (ret == 0) {
+-		ret = nouveau_bo_pin(priv->bo, TTM_PL_FLAG_VRAM);
+-		if (ret == 0)
+-			ret = nouveau_bo_map(priv->bo);
+-		if (ret)
+-			nouveau_bo_ref(NULL, &priv->bo);
+-	}
++	if (ret)
++		goto err;
++	ret = nouveau_bo_pin(priv->bo, TTM_PL_FLAG_VRAM);
++	if (ret)
++		goto err_ref;
+ 
++	ret = nouveau_bo_map(priv->bo);
+ 	if (ret)
+-		nvc0_fence_destroy(dev, NVOBJ_ENGINE_FENCE);
++		goto err_unpin;
++
++	ret = nouveau_fence_prime_init(dev, &priv->base, 16);
++	if (ret)
++		goto err_unmap;
++	return 0;
++
++err_unmap:
++	nouveau_bo_unmap(priv->bo);
++err_unpin:
++	nouveau_bo_unpin(priv->bo);
++err_ref:
++	nouveau_bo_ref(NULL, &priv->bo);
++err:
++	dev_priv->eng[NVOBJ_ENGINE_FENCE] = NULL;
++	kfree(priv);
+ 	return ret;
  }
-@@ -782,11 +893,11 @@ nouveau_gem_ioctl_pushbuf(struct drm_device *dev, void *data,
- 		}
- 	}
- 
--	ret = nouveau_fence_new(chan, &fence, false);
-+	ret = nouveau_fence_new(chan, &fence, !list_empty(&op.prime_list));
- 	if (ret) {
- 		NV_ERROR(dev, "error fencing pushbuf: %d\n", ret);
- 		WIND_RING(chan);
--		goto out;
-+		nouveau_fence_unref(&fence);
- 	}
- 
- out:
 -- 
 1.7.9.5
 
