@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514Ab2GJMkx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 08:40:53 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11638 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab2GJMkv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 08:40:51 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 10 Jul 2012 05:37:00 -0700
-Message-ID: <4FFC2157.7090501@nvidia.com>
-Date: Tue, 10 Jul 2012 18:04:31 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1755530Ab2GJMl0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 08:41:26 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:53751 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751883Ab2GJMlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 08:41:25 -0400
+Date: Tue, 10 Jul 2012 14:41:08 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] shmem: fix negative rss in memcg memory.stat
+Message-ID: <20120710124107.GE1779@cmpxchg.org>
+References: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils>
+ <alpine.LSU.2.00.1207091541310.2051@eggly.anvils>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] spi: tegra: use dmaengine based dma driver
-References: <1340969480-7702-1-git-send-email-ldewangan@nvidia.com> <4FEDD97A.7050702@wwwdotorg.org>
-In-Reply-To: <4FEDD97A.7050702@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1207091541310.2051@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 29 June 2012 10:06 PM, Stephen Warren wrote:
-> On 06/29/2012 05:31 AM, Laxman Dewangan wrote:
->> Use the dmaengine based Tegra APB DMA driver for
->> data transfer between SPI FIFO and memory in
->> place of legacy Tegra APB DMA.
->>
->> The new driver is selected if legacy driver is not
->> selected and new DMA driver is enabled through config
->> file.
->>
->> Signed-off-by: Laxman Dewangan<ldewangan@nvidia.com>
-> Acked-by: Stephen Warren<swarren@wwwdotorg.org>
->
+On Mon, Jul 09, 2012 at 03:44:24PM -0700, Hugh Dickins wrote:
+> When adding the page_private checks before calling shmem_replace_page(),
+> I did realize that there is a further race, but thought it too unlikely
+> to need a hurried fix.
+> 
+> But independently I've been chasing why a mem cgroup's memory.stat
+> sometimes shows negative rss after all tasks have gone: I expected it
+> to be a stats gathering bug, but actually it's shmem swapping's fault.
+> 
+> It's an old surprise, that when you lock_page(lookup_swap_cache(swap)),
+> the page may have been removed from swapcache before getting the lock; 
+> or it may have been freed and reused and be back in swapcache; and it
+> can even be using the same swap location as before (page_private same).
+> 
+> The swapoff case is already secure against this (swap cannot be reused
+> until the whole area has been swapped off, and a new swapped on); and
+> shmem_getpage_gfp() is protected by shmem_add_to_page_cache()'s check
+> for the expected radix_tree entry - but a little too late.
+> 
+> By that time, we might have already decided to shmem_replace_page():
+> I don't know of a problem from that, but I'd feel more at ease not to
+> do so spuriously.  And we have already done mem_cgroup_cache_charge(),
+> on perhaps the wrong mem cgroup: and this charge is not then undone on
+> the error path, because PageSwapCache ends up preventing that.
 
-Hi Mark,
-Understand from Grant's mail's discussion that you are picking up the 
-spi change.
-Please let me know if I need to re-send this patch.
+I couldn't see anything wrong with shmem_replace_page(), either, but
+maybe the comment in its error path could be updated as the callsite
+does not rely on page_private alone anymore to confirm correct swap.
 
-Thanks,
-Laxman
+> It's this last case which causes the occasional negative rss in
+> memory.stat: the page is charged here as cache, but (sometimes) found
+> to be anon when eventually it's uncharged - and in between, it's an
+> undeserved charge on the wrong memcg.
+> 
+> Fix this by adding an earlier check on the radix_tree entry: it's
+> inelegant to descend the tree twice, but swapping is not the fast path,
+> and a better solution would need a pair (try+commit) of memcg calls,
+> and a rework of shmem_replace_page() to keep out of the swapcache.
+> 
+> We can use the added shmem_confirm_swap() function to replace the
+> find_get_page+page_cache_release we were already doing on the error
+> path.  And add a comment on that -EEXIST: it seems a peculiar errno
+> to be using, but originates from its use in radix_tree_insert().
+> 
+> [It can be surprising to see positive rss left in a memcg's memory.stat
+> after all tasks have gone, since it is supposed to count anonymous but
+> not shmem.  Aside from sharing anon pages via fork with a task in some
+> other memcg, it often happens after swapping: because a swap page can't
+> be freed while under writeback, nor while locked.  So it's not an error,
+> and these residual pages are easily freed once pressure demands.]
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
 
-
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
