@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974Ab2GJGqi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 02:46:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53142 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab2GJGqh (ORCPT
+	id S1753406Ab2GJGs2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 02:48:28 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:52457 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752242Ab2GJGsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 02:46:37 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Huewe <peterhuewe@gmx.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH 6/6] staging/phison: use module_pci_driver macro
-Date: Tue, 10 Jul 2012 12:16:30 +0530
-Message-Id: <1341902790-22631-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 10 Jul 2012 02:48:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DDAD9FF96@BGMAIL02.nvidia.com>
+References: <1340884267-28908-1-git-send-email-kishon@ti.com>
+	<1340884267-28908-2-git-send-email-kishon@ti.com>
+	<4FFBC1D0.5030506@ti.com>
+	<D958900912E20642BCBC71664EFECE3E6DDAD9FF96@BGMAIL02.nvidia.com>
+Date: Tue, 10 Jul 2012 12:18:24 +0530
+Message-ID: <CAAe_U6Kx8o6sHgpev3UEAou7tuNDt9iL0+hcyOVDb0WsCsSwKg@mail.gmail.com>
+Subject: Re: [PATCH v1 01/11] drivers: usb: otg: add a new driver for omap
+ usb2 phy
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+Cc: Rajendra Nayak <rnayak@ti.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "b-cousson@ti.com" <b-cousson@ti.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "hvaibhav@ti.com" <hvaibhav@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-remove the duplication of module_pci_driver and use this macro instead
+Hi,
 
-module_pci_driver macro does the same things as the code below does
+On Tue, Jul 10, 2012 at 11:33 AM, Venu Byravarasu
+<vbyravarasu@nvidia.com> wrote:
+>> > +
+>> > +#ifdef CONFIG_PM
+>
+> Should it not be CONFIG_PM_SLEEP instead of just CONFIG_PM?
 
-static int __init pci_test_dev_init(void)
-{
-       return pci_register_driver(&pci_test_driver_ops);
-}
+Why? I think we should have CONFIG_PM_SLEEP only when we have
+*suspend*, *resume* hooks. But this driver has only *runtime_suspend*
+and *runtime_resume* hooks.
+>
+>> > +
+>> > +static int omap_usb2_runtime_suspend(struct device *dev)
+>> > +{
+>> > +   struct platform_device  *pdev = to_platform_device(dev);
+>> > +   struct omap_usb *phy = platform_get_drvdata(pdev);
+>> > +
+>
+>
+>> > +static int __init usb2_omap_init(void)
+>> > +{
+>> > +   return platform_driver_register(&omap_usb2_driver);
+>> > +}
+>> > +arch_initcall(usb2_omap_init);
+>> > +
+>> > +static void __exit usb2_omap_exit(void)
+>> > +{
+>> > +   platform_driver_unregister(&omap_usb2_driver);
+>> > +}
+>> > +module_exit(usb2_omap_exit);
+>> > +
+>
+> Do you really need arch_initcall here?
+> If not, then you can replace above two function calls with module_platform_driver().
 
-static void __exit pci_test_dev_exit(void)
-{
-       pci_unregister_driver(&pci_test_driver_ops);
-}
+I indeed want it to be arch_initcall. When the module is built-in, I
+want this module to loaded before twl6030-usb.c
 
-module_init(pci_test_dev_init);
-module_exit(pci_test_dev_exit);
-
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
- drivers/staging/phison/phison.c |   13 +------------
- 1 file changed, 1 insertion(+), 12 deletions(-)
-
-diff --git a/drivers/staging/phison/phison.c b/drivers/staging/phison/phison.c
-index d77b21f..919cb95 100644
---- a/drivers/staging/phison/phison.c
-+++ b/drivers/staging/phison/phison.c
-@@ -87,18 +87,7 @@ static struct pci_driver phison_pci_driver = {
- #endif
- };
- 
--static int __init phison_ide_init(void)
--{
--	return pci_register_driver(&phison_pci_driver);
--}
--
--static void __exit phison_ide_exit(void)
--{
--	pci_unregister_driver(&phison_pci_driver);
--}
--
--module_init(phison_ide_init);
--module_exit(phison_ide_exit);
-+module_pci_driver(phison_pci_driver);
- 
- MODULE_AUTHOR("Evan Ko");
- MODULE_DESCRIPTION("PCIE driver module for PHISON PS5000 E-BOX");
--- 
-1.7.9.5
-
+Thanks
+Kishon
