@@ -1,81 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab2GJBue (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 21:50:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37837 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952Ab2GJBud (ORCPT
+	id S1755397Ab2GJBvr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 21:51:47 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:33084 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952Ab2GJBvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 21:50:33 -0400
-Date: Mon, 9 Jul 2012 18:50:30 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Joe Perches <joe@perches.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, mm-commits@vger.kernel.org,
-        apw@canonical.com
-Subject: Re: + checkpatch-add-check-for-use-of-sizeof-without-parenthesis.patch
- added to -mm tree
-In-Reply-To: <1341881721.6118.92.camel@joe2Laptop>
-Message-ID: <alpine.DEB.2.00.1207091834230.20591@chino.kir.corp.google.com>
-References: <20120709215256.9A4F71E0043@wpzn4.hot.corp.google.com> <alpine.DEB.2.00.1207091514310.32082@chino.kir.corp.google.com> <1341873376.6118.56.camel@joe2Laptop> <alpine.DEB.2.00.1207091553120.3552@chino.kir.corp.google.com> <1341876067.6118.67.camel@joe2Laptop>
- <alpine.DEB.2.00.1207091640170.8185@chino.kir.corp.google.com> <1341881721.6118.92.camel@joe2Laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 9 Jul 2012 21:51:46 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Glauber Costa <glommer@parallels.com>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, Greg Thelen <gthelen@google.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>, Tejun Heo <tj@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+References: <1341565747-15374-1-git-send-email-glommer@parallels.com>
+	<20120709161336.0ec23592.akpm@linux-foundation.org>
+	<87txxgxxs7.fsf@xmission.com>
+	<20120709174705.0e2078c8.akpm@linux-foundation.org>
+Date: Mon, 09 Jul 2012 18:51:37 -0700
+In-Reply-To: <20120709174705.0e2078c8.akpm@linux-foundation.org> (Andrew
+	Morton's message of "Mon, 9 Jul 2012 17:47:05 -0700")
+Message-ID: <87629wxu1i.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18n9y6dqKXa5kEMPKSaW+SIlZz5m2+Ynd8=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
+	*      [URIs: linux-foundation.org]
+	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0359]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *****;Andrew Morton <akpm@linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v2] fail dentry revalidation after namespace change
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jul 2012, Joe Perches wrote:
+Andrew Morton <akpm@linux-foundation.org> writes:
 
-> CodingStyle already does suggest parenthesis around sizeof
-> 
-> 3.1:  Spaces
-> 
-> Linux kernel style for use of spaces depends (mostly) on
-> function-versus-keyword usage.  Use a space after (most) keywords.  The
-> notable exceptions are sizeof, typeof, alignof, and __attribute__, which look
-> somewhat like functions (and are usually used with parentheses in Linux,
-> although they are not required in the language, as in: "sizeof info" after
-> "struct fileinfo info;" is declared).
-> 
-> So use a space after these keywords:
-> 	if, switch, case, for, do, while
-> but not with sizeof, typeof, alignof, or __attribute__.  E.g.,
-> 	s = sizeof(struct file);
-> 
+> On Mon, 09 Jul 2012 17:30:48 -0700 ebiederm@xmission.com (Eric W. Biederman) wrote:
+>
+>> Andrew Morton <akpm@linux-foundation.org> writes:
+>> 
+>> >>  {
+>> >>  	struct sysfs_dirent *sd;
+>> >>  	int is_dir;
+>> >> +	int type;
+>> >>  
+>> >>  	if (nd->flags & LOOKUP_RCU)
+>> >>  		return -ECHILD;
+>> >> @@ -326,6 +327,13 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
+>> >>  	if (strcmp(dentry->d_name.name, sd->s_name) != 0)
+>> >>  		goto out_bad;
+>> >>  
+>> >> +	/* The sysfs dirent has been moved to a different namespace */
+>> >> +	type = KOBJ_NS_TYPE_NONE;
+>> >> +	if (sd->s_parent)
+>> >> +		type = sysfs_ns_type(sd->s_parent);
+>> >> +	if (type && (sysfs_info(dentry->d_sb)->ns[type] != sd->s_ns))
+>> >
+>> > eww, the code is assuming that KOBJ_NS_TYPE_NONE has a value of zero. 
+>> > Don't do that; it smells bad.
+>> 
+>> Gag.  An incomplete change in idiom.
+>> 
+>> KOBJ_NS_TYPE_NONE is explicitly defined as 0 so that it can be used
+>> this way, and every where else in fs/sysfs/dir.c uses this idiom.
+>
+> One man's idiom is another man's idiocy.
 
-This doesn't suggest parenthesis for sizeof at all times, it's saying that 
-Linux doesn't use the gcc, glibc, C99 way of doing "sizeof (struct file)" 
-for type names as I've already said three times and rather prefers 
-"sizeof(struct file)".  That's fine.
+And code that uses inconsistent idioms is even harder to read.
 
-I'm talking about the C99 specification that says the sizeof operator act 
-on unary expressions, i.e. not type names that you keep talking about and 
-apparently don't understand the difference between.  Casts are done with 
-type names, you can't do "unsigned long ptr", you do "(unsigned long)ptr".  
-Sizeof operators using type names do the same thing: 
-"sizeof (unsigned long)".  The space is just a stylistic difference.
+A half assed cleanup is worse than no cleanup.
 
-You may not understand the difference between a type and a unary 
-expression, but other C programmers do, i.e. those who have implemented 
-the over 1000 places in the kernel that already do this because they 
-learned from K&R.  I guarantee you that those who learned from K&R don't 
-think sizeof(unsigned long) "looks like a function".
+> Seriously.  What sort of idea is that?  Create an enumerated type and
+> then just ignore it?
 
-And typeof is a gnu extension, it's not part of the C99 standard.
+It isn't ignored.  It just has a well defined NULL value. That is hardly
+controversial.
 
-> and
-> 
-> Chapter 14: Allocating memory
-> []
-> The preferred form for passing a size of a struct is the following:
-> 
-> 	p = kmalloc(sizeof(*p), ...);
-> 
+>> Pray tell in what parallel universe is that monstrosity above more
+>> readable than the line it replaces?
+>
+> Don't be silly, it is not a "monstrosity".  The code it is modifying
+> contains an unneeded test-and-branch.  It's a test and branch which the
+> compiler might be able to avoid.  If we can demonstrate that the
+> compiler does indeed optimise it, or if we can find a less monstrous
+> way of implementing it then fine.  Otherwise, efficiency wins.
 
-You realize your patch doesn't catch kmalloc(sizeof *p, ...) since it's 
-checking for lval and the unary operator '*' is not considered part of an 
-identifier, right?  Perhaps you should propose a patch that actually works 
-first because yours is busted.
+Efficiency wins?  In a rarely used function?  Which kernel are you
+working on?
+
+Readable maintainable code wins.  Unreadable code causes regressions.
+
+Your addition while it may not be monstrous is most definitely less
+readable.
+
+Eric
