@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab2GJPak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 11:30:40 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56964 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab2GJPai (ORCPT
+	id S1755937Ab2GJPcT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 11:32:19 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:51893 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661Ab2GJPcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 11:30:38 -0400
-Date: Tue, 10 Jul 2012 16:33:58 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-Message-ID: <20120710163358.6ae4a576@pyramind.ukuu.org.uk>
-In-Reply-To: <20120710101018.GE15120@arm.com>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-	<CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
-	<201207071927.13135.arnd@arndb.de>
-	<20120710071023.GA10456@gmail.com>
-	<20120710101018.GE15120@arm.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Jul 2012 11:32:18 -0400
+Date: Tue, 10 Jul 2012 10:14:13 -0500
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: Marcel Selhorst <tpmdd@selhorst.net>
+Cc: Olof Johansson <olof@lixom.net>, Peter Huewe <peter.huewe@infineon.com>,
+        srajiv@linux.vnet.ibm.com, tpmdd-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Luigi Semenzato <semenzato@google.com>,
+        andi.shyti@gmail.com
+Subject: Re: [PATCH 1/2] char/tpm: Add new driver for Infineon I2C TIS TPM
+Message-ID: <20120710151413.GA1304@linux.vnet.ibm.com>
+References: <1339505034-6400-1-git-send-email-peter.huewe@infineon.com>
+ <20120613093744.Horde.0yc-Slm5A05P2ENIeQK2pwA@mail.selhorst.net>
+ <CAOesGMh6wkHk6mwJ29RJ-wnc0uUd5SVMqgboG590CTrYzWfJ_w@mail.gmail.com>
+ <4FD8C802.7070101@selhorst.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FD8C802.7070101@selhorst.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071015-4242-0000-0000-00000245D7A0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In the AArch32 kernel port many implementation decisions newer
-> architectures were made in a way that preserves backwards compatibility
-> to over 15 years ago (and for *good* reasons, ARMv4 hardware is still in
-> use). But keeping the same decisions in AArch64 is wrong.
+On Wed, Jun 13, 2012 at 07:04:02PM +0200, Marcel Selhorst wrote:
+> Hi Olof,
+> 
+> > Signed-off-by usually means "I touched this patch", as in applied it,
+> > or forwarded it (or modified and forwarded it). See
+> > Documentation/SubmittingPatches for full explanation. Do you mean
+> > Acked-by or Reviewed-by here instead?
+> 
+> in that case Acked-by is more suitable, sorry for the confusion.
+> Should I reply to the patches again?
 
-Same argument as x86-32 v x86-64. Same issues about compatibility.
+  Acked-by seems most appropriate to me, please reply and I'll add you
+when I commit.
 
-> AArch64 is also in its early days with a lot of developments to come
-> (and still waiting for hardware). Until we really know the final shape,
-> the AArch64 code base must allowed to evolve independently from the
-> AArch32 one.
+Thanks,
+Kent
 
-That is one area where while the merge was needed and a lot of work the
-original split may well have been sensible for x86-64 as well.
-
-> The initial target is servers (see the companies that have announced
-> plans around ARMv8) but I agree, we may see it in other devices in the
-> future. But as the maintainer I have no plans to support a 32-bit SoC on
-> an AArch64/ARMv8 system (which may or may not support AArch32 at kernel
-> level). If an AArch64 SoC would share some devices with an AArch32 SoC,
-> such code will go to drivers/.
-
-What plans to other maintainers and board vendors have ? Any design choice
-has to cope with these happening if a third party goes and does it.
-
-Alan
-
+> 
+> Thanks!
+> Marcel
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
