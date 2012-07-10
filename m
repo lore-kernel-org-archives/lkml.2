@@ -1,113 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754333Ab2GJIVR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 04:21:17 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:61366 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753299Ab2GJIVK (ORCPT
+	id S1754320Ab2GJIYH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 04:24:07 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52583 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab2GJIYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 04:21:10 -0400
-Date: Tue, 10 Jul 2012 10:21:04 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, hpa@zytor.com,
-        eranian@google.com, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        akpm@linux-foundation.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [tip:perf/core] perf/x86: Fix USER/KERNEL tagging of samples
-Message-ID: <20120710082104.GA11187@gmail.com>
-References: <tip-xxrt0a1zronm1sm36obwc2vy@git.kernel.org>
- <CA+55aFxY7SqwSQWuRXSg+W=ftp9FtCT1MMEqMiCi1H279Fis-A@mail.gmail.com>
- <1341598329.7709.57.camel@twins>
- <CA+55aFzqoz7dcUCQfSrXxX2T8=2wgWdb1H2vaBhk7V-r0uaogw@mail.gmail.com>
- <CA+55aFw+vE4zMe1bJohLuoMDaFpqGCz6sBNRE8gkV7JOvtro0g@mail.gmail.com>
- <1341832997.3462.41.camel@twins>
- <20120709184145.GA7666@gmail.com>
- <1341906848.3462.92.camel@twins>
+	Tue, 10 Jul 2012 04:24:03 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FFBE693.1050209@jp.fujitsu.com>
+Date: Tue, 10 Jul 2012 17:23:47 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341906848.3462.92.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: Toshi Kani <toshi.kani@hp.com>, <linux-acpi@vger.kernel.org>,
+        <lenb@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] acpi : cpu hot-remove returns error number when cpu_down()
+ fails
+References: <4FF65898.3000301@jp.fujitsu.com> <4FF6B537.1030703@linux.vnet.ibm.com> <4FFA4269.5050808@jp.fujitsu.com> <4FFABFAC.3000708@linux.vnet.ibm.com> <1341868544.16730.780.camel@misato.fc.hp.com> <4FFBB62E.9010707@jp.fujitsu.com> <4FFBE06A.4090800@linux.vnet.ibm.com>
+In-Reply-To: <4FFBE06A.4090800@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Srivatsa,
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+2012/07/10 16:57, Srivatsa S. Bhat wrote:
+> On 07/10/2012 10:27 AM, Yasuaki Ishimatsu wrote:
+>> Hi Toshi,
+>>
+>> 2012/07/10 6:15, Toshi Kani wrote:
+>>> On Mon, 2012-07-09 at 16:55 +0530, Srivatsa S. Bhat wrote:
+>>>> On 07/09/2012 08:01 AM, Yasuaki Ishimatsu wrote:
+>>>>> Hi Srivatsa,
+>>>>>
+>>>>> Thank you for your reviewing.
+>>>>>
+>>>>> 2012/07/06 18:51, Srivatsa S. Bhat wrote:
+>>>>>> On 07/06/2012 08:46 AM, Yasuaki Ishimatsu wrote:
+>>>>>>> Even if cpu_down() fails, acpi_processor_remove() continues to
+>>>>>>> remove the cpu.
+>>>>>>
+>>>>>> Ouch!
+>>>>>>
+>>>>>>> But in this case, it should return error number since some process
+>>>>>>> may run on
+>>>>>>> the cpu. If the cpu has a running process and the cpu is turned
+>>>>>>> the power off,
+>>>>>>> the system cannot work well.
+>>>>>>>
+>>>>>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>>>>>
+>>>>>>> ---
+>>>>>>>     drivers/acpi/processor_driver.c |   18 ++++++++++++------
+>>>>>>>     1 file changed, 12 insertions(+), 6 deletions(-)
+>>>>>>>
+>>>>>>> Index: linux-3.5-rc4/drivers/acpi/processor_driver.c
+>>>>>>> ===================================================================
+>>>>>>> --- linux-3.5-rc4.orig/drivers/acpi/processor_driver.c
+>>>>>>> 2012-06-25 04:53:04.000000000 +0900
+>>>>>>> +++ linux-3.5-rc4/drivers/acpi/processor_driver.c    2012-07-05
+>>>>>>> 21:02:58.711285382 +0900
+>>>>>>> @@ -610,7 +610,7 @@ err_free_pr:
+>>>>>>>     static int acpi_processor_remove(struct acpi_device *device,
+>>>>>>> int type)
+>>>>>>>     {
+>>>>>>>         struct acpi_processor *pr = NULL;
+>>>>>>> -
+>>>>>>> +    int ret;
+>>>>>>>
+>>>>>>>         if (!device || !acpi_driver_data(device))
+>>>>>>>             return -EINVAL;
+>>>>>>> @@ -621,8 +621,9 @@ static int acpi_processor_remove(struct
+>>>>>>>             goto free;
+>>>>>>>
+>>>>>>>         if (type == ACPI_BUS_REMOVAL_EJECT) {
+>>>>>>> -        if (acpi_processor_handle_eject(pr))
+>>>>>>> -            return -EINVAL;
+>>>>>>> +        ret = acpi_processor_handle_eject(pr);
+>>>>>>> +        if (ret)
+>>>>>>> +            return ret;
+>>>>>>>         }
+>>>>>>>
+>>>>>>>         acpi_processor_power_exit(pr, device);
+>>>>>>> @@ -841,12 +842,17 @@ static acpi_status acpi_processor_hotadd
+>>>>>>>
+>>>>>>>     static int acpi_processor_handle_eject(struct acpi_processor *pr)
+>>>>>>>     {
+>>>>>>> -    if (cpu_online(pr->id))
+>>>>>>> -        cpu_down(pr->id);
+>>>>>>> +    int ret;
+>>>>>>> +
+>>>>>>> +    if (cpu_online(pr->id)) {
+>>>>>>> +        ret = cpu_down(pr->id);
+>>>>>>> +        if (ret)
+>>>>>>> +            return ret;
+>>>>>>> +    }
+>>>>>>>
+>>>>>>
+>>>>>> Strictly speaking, this is not thorough enough. What prevents someone
+>>>>>> from onlining that same cpu again, at this point?
+>>>>>> So, IMHO, you need to wrap the contents of this function inside a
+>>>>>> get_online_cpus()/put_online_cpus() block, to prevent anyone else
+>>>>>> from messing with CPU hotplug at the same time.
+>>>>>
+>>>>> If I understand your comment by mistake, please let me know.
+>>>>> If the contents is wrapped a inside
+>>>>> get_online_cpus()/put_online_cpus() block
+>>>>> as below, cpu_down() will stop since cpu_down() calls
+>>>>> cpu_hotplug_begin() and
+>>>>> cpu_hotplug_begin() waits for cpu_hotplug.refcount to become 0.
+>>>>>
+>>>>
+>>>> You are right. Sorry, I overlooked that.
+>>>>
+>>>>> +    get_online_cpus()
+>>>>> +    if (cpu_online(pr->id)) {
+>>>>> +        ret = cpu_down(pr->id);
+>>>>> +        if (ret)
+>>>>> +            return ret;
+>>>>> +    }
+>>>>> +    put_online_cpus()
+>>>>>
+>>>>> I think following patch can prevent it correctly. How about the patch?
+>>>>>
+>>>>> ---
+>>>>>    drivers/acpi/processor_driver.c |   12 ++++++++++++
+>>>>>    kernel/cpu.c                    |    8 +++++---
+>>>>>    2 files changed, 17 insertions(+), 3 deletions(-)
+>>>>>
+>>>>> Index: linux-3.5-rc4/drivers/acpi/processor_driver.c
+>>>>> ===================================================================
+>>>>> --- linux-3.5-rc4.orig/drivers/acpi/processor_driver.c    2012-07-09
+>>>>> 09:59:01.280211202 +0900
+>>>>> +++ linux-3.5-rc4/drivers/acpi/processor_driver.c    2012-07-09
+>>>>> 11:05:34.559859236 +0900
+>>>>> @@ -844,14 +844,26 @@ static int acpi_processor_handle_eject(s
+>>>>>    {
+>>>>>        int ret;
+>>>>>
+>>>>> +retry:
+>>>>>        if (cpu_online(pr->id)) {
+>>>>>            ret = cpu_down(pr->id);
+>>>>>            if (ret)
+>>>>>                return ret;
+>>>>>        }
+>>>>>
+>>>>> +    get_online_cpus();
+>>>>> +    /*
+>>>>> +     * Someone might online the cpu again at this point. So we
+>>>>> check that
+>>>>> +     * cpu has been onlined or not. If cpu is online, we try to
+>>>>> offline
+>>>>> +     * the cpu again.
+>>>>> +     */
+>>>>> +    if (cpu_online(pr->id)) {
+>>>>
+>>>> How about this:
+>>>>      if (unlikely(cpu_online(pr->id)) {
+>>>> since the probability of this happening is quite small...
+>>>>
+>>>>> +        put_online_cpus();
+>>>>> +        goto retry;
+>>>>> +    }
+>>>>>        arch_unregister_cpu(pr->id);
+>>>>>        acpi_unmap_lsapic(pr->id);
+>>>>> +    put_online_cpus();
+>>>>>        return ret;
+>>>>>    }
+>>>>
+>>>> This retry logic doesn't look elegant, but I don't see any better
+>>>> method :-(
+>>>
+>>> Another possible option is to fail the request instead of retrying it.
+>>
+>> Good idea!! I'll update it.
+>>
+>>>
+>>> It would be quite challenging to allow on-lining and off-lining
+>>> operations to run concurrently.  In fact, even if we close this window,
+>>> there is yet another window right after the new put_online_cpus() call.
+>>
+>> I think if we close the window, another window does not open.
+>> acpi_unmap_lsapic() sets cpu_present mask to false before new
+>> put_online_cpus()
+>> is called. So even if _cpu_up() is called, the function returns -EINAVL by
+>> following added code.
+>>
+>> @@ -343,11 +343,13 @@ static int __cpuinit _cpu_up(unsigned in
+>>       unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
+>>       struct task_struct *idle;
+>>
+>> -    if (cpu_online(cpu) || !cpu_present(cpu))
+>> -        return -EINVAL;
+>> -
+>>       cpu_hotplug_begin();
+>>
+>> +    if (cpu_online(cpu) || !cpu_present(cpu)) {
+>> +        ret = -EINVAL;
+>> +        goto out;
+>> +    }
+>> +
+>>
+>
+> Right. Yasuaki's patch will ensure that there are no more race conditions
+> because it does the cpu_present() check after taking the cpu_hotplug.lock.
+> So I think it is safe and still doable from the kernel's perspective.
+>
+> But the question is, "should we do it?" I think Toshi's suggestion of failing
+> the hot-remove request (if we find that the cpu has been onlined again by some
+> other task) sounds like a good idea for another reason: cpu hotplug is not
+> initiated by the OS by itself; its requested by the user; so if something is
+> onlining the cpu back again, the user better take a second look and decide
+> what exactly he wants to do with that cpu - whether keep it online or
+> hot-remove it out.
 
-> On Mon, 2012-07-09 at 20:41 +0200, Ingo Molnar wrote:
-> > > +static unsigned long get_segment_base(unsigned int segment)
-> > > +{
-> > > +     struct desc_struct *desc;
-> > > +     int idx = segment >> 3;
-> > > +
-> > > +     if ((segment & SEGMENT_TI_MASK) == SEGMENT_LDT) {
-> > > +             if (idx > LDT_ENTRIES)
-> > > +                     return 0;
-> > > +
-> > > +             desc = current->active_mm->context.ldt;
-> > > +     } else {
-> > > +             if (idx > GDT_ENTRIES)
-> > > +                     return 0;
-> > > +
-> > > +             desc = __this_cpu_ptr(&gdt_page.gdt[0]);
-> > > +     }
-> > > +
-> > > +     return get_desc_base(desc + idx);
-> > 
-> > Shouldn't idx be checked against active_mm->context.ldt.size, 
-> > not LDT_ENTRIES (which is really just an upper limit)?
-> 
-> Ah indeed, fixed that.
+I think so too. Failing the hot-remove request is good idea.
 
-Another boundary condition would be when we intentionally 
-twiddle the GDT: such as during suspend or during BIOS upcalls. 
-Can we then get a PMU interrupt? If yes then this will probably 
-result in garbage:
+>
+> Trying to online as well as hot-remove the same cpu simultaneously sounds like
+> a crazy thing to do, and returning -EBUSY or -EAGAIN in the hot-remove case
+> (ie., failing that request) would give a warning to the user and a chance to
+> reflect upon what exactly he wants to do with the cpu.
+>
+> So, IMHO, we should protect against the race condition (between cpu_up and
+> hot-remove) but choose to fail the hot-remove request, and add a comment saying
+> why we chose to fail the request, even though we could have gone ahead and
+> completed it.
 
-> > > +             desc = __this_cpu_ptr(&gdt_page.gdt[0]);
-
-it won't outright crash, we don't ever deallocate our GDT - but 
-it will return a garbage RIP.
-
-Then there's also all the Xen craziness with segments ...
-
-Both ought to be rare an uninteresting - but then again, 
-segmented execution is already rare and uninteresting to begin 
-with.
-
-So, instead of trying to discover all these weird x86 cases - 
-with little to no testing done after that - I thought that it 
-might be more future proof to just handle the cases we are 
-explicitly interested in: flat code, and pounce in some well 
-defined way in all the other situations by returning the RIP to 
-an empty __X86_LEGACY_SEGMENTED_CODE() symbol.
-
-That way we will at least give *some* useful information to the 
-poor segmented code user, if the profile says:
-
-    21.32%  [kernel]      [k] __X86_LEGACY_SEGMENTED_CODE
-    11.01%  [kernel]      [k] kallsyms_expand_symbol     
-     8.29%  [kernel]      [k] vsnprintf                  
-     7.37%  libc-2.15.so  [.] __strcmp_sse42             
-     6.93%  perf          [.] symbol_filter              
-     4.20%  perf          [.] kallsyms__parse            
-     3.92%  [kernel]      [k] format_decode              
-     3.62%  [kernel]      [k] string.isra.4              
-     3.59%  [kernel]      [k] memcpy                     
-     3.11%  [kernel]      [k] strnlen                    
-
-then the user at least knows that there's 21% of overhead in 
-some sort of segmented x86 code. Or if they *really* want to 
-resolve that, they can take your patch and add symbol decoding 
-to user-space and test it all.
-
-KISS and such.
-
-Linus?
+I have already sent 2nd version of the patch. But the warning message is
+not included in the patch. So I will add the warning message into 3rd
+version.
 
 Thanks,
+Yasuaki Ishimatsu
 
-	Ingo
+> Regards,
+> Srivatsa S. Bhat
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
+
