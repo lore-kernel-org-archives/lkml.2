@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807Ab2GJN1m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 09:27:42 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:42239 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753174Ab2GJN1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 09:27:40 -0400
-Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
-From: Andrew Theurer <habanero@linux.vnet.ibm.com>
-Reply-To: habanero@linux.vnet.ibm.com
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
-        S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-In-Reply-To: <4FFC17D8.5010108@linux.vnet.ibm.com>
-References: <20120709062012.24030.37154.sendpatchset@codeblue>
-	 <1341870457.2909.27.camel@oc2024037011.ibm.com>
-	 <4FFC17D8.5010108@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 Jul 2012 08:27:29 -0500
-Message-ID: <1341926849.2909.28.camel@oc2024037011.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071013-5806-0000-0000-00001723FB60
+	id S1755831Ab2GJNbS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 09:31:18 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:45886 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753279Ab2GJNbQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 09:31:16 -0400
+Date: Tue, 10 Jul 2012 16:31:02 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Kevin McKinney <klmckinney1@gmail.com>
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org,
+        Marcos Souza <marcos.souza.org@gmail.com>
+Subject: Re: [PATCH 0/3] staging: bcm: Cleanup bcm driver
+Message-ID: <20120710133102.GB6056@mwanda>
+References: <1341883960-21635-1-git-send-email-marcos.souza.org@gmail.com>
+ <20120710024046.GA8894@gmail.com>
+ <CAH0vN5Kv6MzVGLxBEAeuUGPRoDC9+8aHkPrZZduFqddEMZrsSg@mail.gmail.com>
+ <20120710123840.GA2928@gmail.com>
+ <20120710125156.GE6113@mwanda>
+ <CAKPrQY8ZMSOMDDANKAfXOe6tp+Tnk8Eba=OVpd_z_AFOtJDbtg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKPrQY8ZMSOMDDANKAfXOe6tp+Tnk8Eba=OVpd_z_AFOtJDbtg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-07-10 at 17:24 +0530, Raghavendra K T wrote:
-> On 07/10/2012 03:17 AM, Andrew Theurer wrote:
-> > On Mon, 2012-07-09 at 11:50 +0530, Raghavendra K T wrote:
-> >> Currently Pause Looop Exit (PLE) handler is doing directed yield to a
-> >> random VCPU on PL exit. Though we already have filtering while choosing
-> >> the candidate to yield_to, we can do better.
+On Tue, Jul 10, 2012 at 09:24:23AM -0400, Kevin McKinney wrote:
+> On Tue, Jul 10, 2012 at 8:51 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> > On Tue, Jul 10, 2012 at 08:38:41AM -0400, Kevin McKinney wrote:
+> >> On Mon, Jul 09, 2012 at 11:48:09PM -0300, Marcos Souza wrote:
+> >> > 2012/7/9 Kevin McKinney <klmckinney1@gmail.com>:
+> >> > > On Mon, Jul 09, 2012 at 10:32:37PM -0300, Marcos Paulo de Souza wrote:
+> >> > >> Hi Kernel guys!
+> >> > >>
+> >> > >> This new patchset tries to clean a little the bcm driver, removing
+> >> > >> some unused macros and some dead code.
+> >> > >>
+> >> > >> These macros and dead code were reported by the forgotten-macros tool
+> >> > >> (https://github.com/marcosps/forgotten_macros).
+> >> > >>
+> >> > >> The tool is under development, but all the patches looks like OK.
+> >> > >>
+> >> > >> This patchset is based in staging-next.
+> >> > >>
+> >> > >> Thanks guys!
+> >> > >
+> >> > > The patchset looks good!
+> >> >
+> >> > Thanks for the answer Kevin!!
+> >> >
+> >> > So, do I have your ack?
+> >> Yes, I ack.
 > >
-> > Hi, Raghu.
+> > The normal format is:
 > >
-> [...]
+> > Acked-by: Your Name <email@address.com>
 > >
-> > Can you briefly explain the 1x and 2x configs?  This of course is highly
-> > dependent whether or not HT is enabled...
-> >
+> > Some maintainers have scripts which pick Acked-by tags automatically
+> > or even if they don't they can copy and paste it.
 > 
-> Sorry if I had not made very clear in earlier threads. Have you applied
-> Rik's following patch for base. without this you could see some 
-> inconsistent results perhaps.
+> Okay, thanks for this info Dan. I will see if I can write this script.
 > 
-> https://lkml.org/lkml/2012/6/19/401
 
-Yes, I do have that applied with your patch and in my baseline.
+No, what I'm saying is that I know Dave Miller uses a script which
+pulls the Acked-by's out of email threads and adds them
+automatically.  I don't know how Greg does it, but it's better to
+use the normal format.
 
--Andrew Theurer
-
-
+regards,
+dan carpenter
