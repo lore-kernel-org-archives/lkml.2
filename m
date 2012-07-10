@@ -1,58 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310Ab2GJHGG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 03:06:06 -0400
-Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:46384 "EHLO
-	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754202Ab2GJHFp (ORCPT
+	id S1754043Ab2GJHKa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 03:10:30 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:47326 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752152Ab2GJHK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 03:05:45 -0400
-Message-ID: <4FFBD43F.4010704@ti.com>
-Date: Tue, 10 Jul 2012 12:35:35 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
+	Tue, 10 Jul 2012 03:10:28 -0400
+Date: Tue, 10 Jul 2012 09:10:23 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Olof Johansson <olof@lixom.net>, Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Message-ID: <20120710071023.GA10456@gmail.com>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+ <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
+ <201207071927.13135.arnd@arndb.de>
 MIME-Version: 1.0
-To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-CC: Venu Byravarasu <vbyravarasu@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "b-cousson@ti.com" <b-cousson@ti.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "hvaibhav@ti.com" <hvaibhav@ti.com>
-Subject: Re: [PATCH v1 01/11] drivers: usb: otg: add a new driver for omap
- usb2 phy
-References: <1340884267-28908-1-git-send-email-kishon@ti.com>	<1340884267-28908-2-git-send-email-kishon@ti.com>	<4FFBC1D0.5030506@ti.com>	<D958900912E20642BCBC71664EFECE3E6DDAD9FF96@BGMAIL02.nvidia.com> <CAAe_U6Kx8o6sHgpev3UEAou7tuNDt9iL0+hcyOVDb0WsCsSwKg@mail.gmail.com>
-In-Reply-To: <CAAe_U6Kx8o6sHgpev3UEAou7tuNDt9iL0+hcyOVDb0WsCsSwKg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201207071927.13135.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 10 July 2012 12:18 PM, ABRAHAM, KISHON VIJAY wrote:
-> Hi,
->
-> On Tue, Jul 10, 2012 at 11:33 AM, Venu Byravarasu
-> <vbyravarasu@nvidia.com>  wrote:
->>>> +
->>>> +#ifdef CONFIG_PM
->>
->> Should it not be CONFIG_PM_SLEEP instead of just CONFIG_PM?
->
-> Why? I think we should have CONFIG_PM_SLEEP only when we have
-> *suspend*, *resume* hooks. But this driver has only *runtime_suspend*
-> and *runtime_resume* hooks.
 
-CONFIG_PM_RUNTIME maybe then?
+* Arnd Bergmann <arnd@arndb.de> wrote:
+
+> On Saturday 07 July 2012, Olof Johansson wrote:
+> 
+> > > ARM introduced AArch64 as part of the ARMv8 architecture
+> > 
+> > With the risk of bikeshedding here, but I find the name awkward. How
+> > about just naming the arch port arm64 instead? It's considerably more
+> > descriptive in the context of the kernel.  For reference, we didn't
+> > name ppc64, nor powerpc, after what the IBM/power.org marketing people
+> > were currently calling the architecture at the time either.
+> 
+> I agree the name sucks, [...]
+
+So why not change it now, when it only bothers a few dozen 
+people and it is only present in 36 patches? Why go full steam 
+ahead to annoy thousands of people with it and why spread the 
+naming madness to thousands of commits?
+
+> [...] and I'd much prefer to just call it arm64 as well.
+
+Then do it! :-)
+
+arch/aarch64/ is a heck of a toungue twister, it's double typing 
+all over the place and if everyone calls it arm64 anyway I'd 
+suggest you change the code, not people!
+
+> [...] The main advantage of the aarch64 name is that it's the 
+> same as the identifier in the elf triplet, and it makes sense 
+> to keep the same name for all places where we need to identify 
+> the architecture. [...]
+
+Doesn't really matter in practice: we have arch/x86/ which isnt 
+the elf triplet either, and besides some minimal kbuild glue 
+it's not an issue, and having a good short name matters quite a 
+bit when trying to write good kernel code.
+
+Wouldn't be the first time the GNU toolchain embarked on silly, 
+user-hostile naming. i386-unknown-Linux, anyone?
+
+So there's no valid technical reason there that I can see.
+
+> [...] This also includes the rpm and dpkg architecture names, 
+> and the string returned by the uname syscall. If everything 
+> else is aarch64, we should use that in the kernel directory 
+> too, but if everyone calls it arm64 anyway, we should probably 
+> use that name for as many things as possible.
+
+Yeah.
+
+> > I guess it's a good chance to clean up some of it and start 
+> > from a clean slate, if you can avoid the temptation of just 
+> > moving over code.
+> 
+> Agreed. It's clear from the code that it started out as a copy 
+> of the 32 bit ARM code base, which I think was a mistake, but 
+> it has also moved on since then and many areas of the 64 bit 
+> code are now much cleaner because they don't have to worry 
+> about breaking legacy code. We're also more flexible with 
+> trying out stuff without having to worry about breaking some 
+> 10 year old board code.
+
+Just for the record, you guys are repeating all the same 
+arguments that led to the x86_64 fork a decade ago...
+
+With the difference that the case for unifying platforms seems 
+even *stronger* in the ARM space than it is in the x86 space: 
+32-bit computing will probably stay around with us far longer in 
+the gadget and appliance space than in the server space. 
+Thinking that arm64 will only be limited to servers is rather 
+short-sighted, IMO.
+
+It all reminds me of what Sir John Templeton said: “The four 
+most dangerous words in investing are, it’s different this 
+time.”
+
+Thanks,
+
+	Ingo
