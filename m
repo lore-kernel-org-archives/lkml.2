@@ -1,92 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653Ab2GJFMe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 01:12:34 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:48410 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751689Ab2GJFMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 01:12:33 -0400
-Message-ID: <1341897152.6118.116.camel@joe2Laptop>
-Subject: Re: +
- checkpatch-add-check-for-use-of-sizeof-without-parenthesis.patch added to
- -mm tree
-From: Joe Perches <joe@perches.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, mm-commits@vger.kernel.org,
-        apw@canonical.com
-Date: Mon, 09 Jul 2012 22:12:32 -0700
-In-Reply-To: <alpine.DEB.2.00.1207091904480.25143@chino.kir.corp.google.com>
-References: <20120709215256.9A4F71E0043@wpzn4.hot.corp.google.com>
-	 <alpine.DEB.2.00.1207091514310.32082@chino.kir.corp.google.com>
-	 <1341873376.6118.56.camel@joe2Laptop>
-	 <alpine.DEB.2.00.1207091553120.3552@chino.kir.corp.google.com>
-	 <1341876067.6118.67.camel@joe2Laptop>
-	 <alpine.DEB.2.00.1207091640170.8185@chino.kir.corp.google.com>
-	 <1341881721.6118.92.camel@joe2Laptop>
-	 <alpine.DEB.2.00.1207091834230.20591@chino.kir.corp.google.com>
-	 <1341885802.6118.101.camel@joe2Laptop>
-	 <alpine.DEB.2.00.1207091904480.25143@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1752990Ab2GJFPI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 01:15:08 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34414 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752425Ab2GJFPF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 01:15:05 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FFBBA40.2010803@jp.fujitsu.com>
+Date: Tue, 10 Jul 2012 14:14:40 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: <linux-acpi@vger.kernel.org>, <lenb@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] acpi : cpu hot-remove returns error number when cpu_down()
+ fails
+References: <4FF65898.3000301@jp.fujitsu.com> <4FF6B537.1030703@linux.vnet.ibm.com> <4FFA4269.5050808@jp.fujitsu.com> <4FFABFAC.3000708@linux.vnet.ibm.com> <4FFB73A8.4030102@jp.fujitsu.com>
+In-Reply-To: <4FFB73A8.4030102@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-07-09 at 19:21 -0700, David Rientjes wrote:
-> On Mon, 9 Jul 2012, Joe Perches wrote:
+Hi Srivatsa,
+
+2012/07/10 9:13, Yasuaki Ishimatsu wrote:
+> Hi Srivatsa,
 > 
-> > I don't really care what style a large block of code
-> > uses.  I care that it mostly has the same form.
-
-> Same form??  The sizeof operator has two forms depending on whether it's a 
-> unary expression or a type as specified by the standard.
-
-> The issue here is that you're mandating they all use the same form because 
-> you're quoting an email from Linus four years ago that you dug up but 
-> isn't required in the coding style and is already used in over 1000 places 
-> in the kernel.
-
-$ git grep -E "\bsizeof\s*\*"|wc -l
-935
-$ git grep -E "\bsizeof\s*\(\s*\*"|wc -l
-12762
-
-> If you want the output of checkpatch.pl to be useful, I would think you 
-> would want to eliminate this kind of garbage.
-
-You are using high emotion words for little purpose.
-
-checkpatch is useful, but it's not all that useful for those
-quite familiar with kernel style.
-
-Except maybe to generate flame emails...
-
-It does have some use for reviewing patches.
-
-> > "Another example of this is "sizeof". The kernel universally (I hope) has 
-> > parenthesis around the sizeof argument, even though it's clearly not 
-> > required by the C language."
+> 2012/07/09 20:25, Srivatsa S. Bhat wrote:
+>> On 07/09/2012 08:01 AM, Yasuaki Ishimatsu wrote:
+>>> Hi Srivatsa,
+>>>
+>>> Thank you for your reviewing.
+>>>
+>>> 2012/07/06 18:51, Srivatsa S. Bhat wrote:
+>>>> On 07/06/2012 08:46 AM, Yasuaki Ishimatsu wrote:
+>>>>> Even if cpu_down() fails, acpi_processor_remove() continues to remove the cpu.
+>>>>
+>>>> Ouch!
+>>>>
+>>>>> But in this case, it should return error number since some process may run on
+>>>>> the cpu. If the cpu has a running process and the cpu is turned the power off,
+>>>>> the system cannot work well.
+>>>>>
+>>>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>>>
+>>>>> ---
+>>>>>     drivers/acpi/processor_driver.c |   18 ++++++++++++------
+>>>>>     1 file changed, 12 insertions(+), 6 deletions(-)
+>>>>>
+>>>>> Index: linux-3.5-rc4/drivers/acpi/processor_driver.c
+>>>>> ===================================================================
+>>>>> --- linux-3.5-rc4.orig/drivers/acpi/processor_driver.c	2012-06-25 04:53:04.000000000 +0900
+>>>>> +++ linux-3.5-rc4/drivers/acpi/processor_driver.c	2012-07-05 21:02:58.711285382 +0900
+>>>>> @@ -610,7 +610,7 @@ err_free_pr:
+>>>>>     static int acpi_processor_remove(struct acpi_device *device, int type)
+>>>>>     {
+>>>>>     	struct acpi_processor *pr = NULL;
+>>>>> -
+>>>>> +	int ret;
+>>>>>
+>>>>>     	if (!device || !acpi_driver_data(device))
+>>>>>     		return -EINVAL;
+>>>>> @@ -621,8 +621,9 @@ static int acpi_processor_remove(struct
+>>>>>     		goto free;
+>>>>>
+>>>>>     	if (type == ACPI_BUS_REMOVAL_EJECT) {
+>>>>> -		if (acpi_processor_handle_eject(pr))
+>>>>> -			return -EINVAL;
+>>>>> +		ret = acpi_processor_handle_eject(pr);
+>>>>> +		if (ret)
+>>>>> +			return ret;
+>>>>>     	}
+>>>>>
+>>>>>     	acpi_processor_power_exit(pr, device);
+>>>>> @@ -841,12 +842,17 @@ static acpi_status acpi_processor_hotadd
+>>>>>
+>>>>>     static int acpi_processor_handle_eject(struct acpi_processor *pr)
+>>>>>     {
+>>>>> -	if (cpu_online(pr->id))
+>>>>> -		cpu_down(pr->id);
+>>>>> +	int ret;
+>>>>> +
+>>>>> +	if (cpu_online(pr->id)) {
+>>>>> +		ret = cpu_down(pr->id);
+>>>>> +		if (ret)
+>>>>> +			return ret;
+>>>>> +	}
+>>>>>
+>>>>
+>>>> Strictly speaking, this is not thorough enough. What prevents someone
+>>>> from onlining that same cpu again, at this point?
+>>>> So, IMHO, you need to wrap the contents of this function inside a
+>>>> get_online_cpus()/put_online_cpus() block, to prevent anyone else
+>>>> from messing with CPU hotplug at the same time.
+>>>
+>>> If I understand your comment by mistake, please let me know.
+>>> If the contents is wrapped a inside get_online_cpus()/put_online_cpus() block
+>>> as below, cpu_down() will stop since cpu_down() calls cpu_hotplug_begin() and
+>>> cpu_hotplug_begin() waits for cpu_hotplug.refcount to become 0.
+>>>
+>>
+>> You are right. Sorry, I overlooked that.
+>>
+>>> +	get_online_cpus()
+>>> +	if (cpu_online(pr->id)) {
+>>> +		ret = cpu_down(pr->id);
+>>> +		if (ret)
+>>> +			return ret;
+>>> +	}
+>>> +	put_online_cpus()
+>>>
+>>> I think following patch can prevent it correctly. How about the patch?
+>>>
+>>> ---
+>>>    drivers/acpi/processor_driver.c |   12 ++++++++++++
+>>>    kernel/cpu.c                    |    8 +++++---
+>>>    2 files changed, 17 insertions(+), 3 deletions(-)
+>>>
+>>> Index: linux-3.5-rc4/drivers/acpi/processor_driver.c
+>>> ===================================================================
+>>> --- linux-3.5-rc4.orig/drivers/acpi/processor_driver.c	2012-07-09 09:59:01.280211202 +0900
+>>> +++ linux-3.5-rc4/drivers/acpi/processor_driver.c	2012-07-09 11:05:34.559859236 +0900
+>>> @@ -844,14 +844,26 @@ static int acpi_processor_handle_eject(s
+>>>    {
+>>>    	int ret;
+>>>
+>>> +retry:
+>>>    	if (cpu_online(pr->id)) {
+>>>    		ret = cpu_down(pr->id);
+>>>    		if (ret)
+>>>    			return ret;
+>>>    	}
+>>>
+>>> +	get_online_cpus();
+>>> +	/*
+>>> +	 * Someone might online the cpu again at this point. So we check that
+>>> +	 * cpu has been onlined or not. If cpu is online, we try to offline
+>>> +	 * the cpu again.
+>>> +	 */
+>>> +	if (cpu_online(pr->id)) {
+>>
+>> How about this:
+>> 	if (unlikely(cpu_online(pr->id)) {
+>> since the probability of this happening is quite small...
 > 
-> He's obviously addressing a single form of the sizeof operator, i.e. those 
-> on unary expressions; sizeof used on a type CLEARLY DOES require the 
-> parenthesis.
+> Thanks. I'll update it.
+> 
+>>> +		put_online_cpus();
+>>> +		goto retry;
+>>> +	}
+>>>    	arch_unregister_cpu(pr->id);
+>>>    	acpi_unmap_lsapic(pr->id);
+>>> +	put_online_cpus();
+>>>    	return ret;
+>>>    }
+>>
+>> This retry logic doesn't look elegant, but I don't see any better method :-(
+>>
+>>>    #else
+>>> Index: linux-3.5-rc4/kernel/cpu.c
+>>> ===================================================================
+>>> --- linux-3.5-rc4.orig/kernel/cpu.c	2012-07-09 09:59:01.280211202 +0900
+>>> +++ linux-3.5-rc4/kernel/cpu.c	2012-07-09 09:59:02.903190965 +0900
+>>> @@ -343,11 +343,13 @@ static int __cpuinit _cpu_up(unsigned in
+>>>    	unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
+>>>    	struct task_struct *idle;
+>>>
+>>> -	if (cpu_online(cpu) || !cpu_present(cpu))
+>>> -		return -EINVAL;
+>>> -
+>>>    	cpu_hotplug_begin();
+>>>
+>>> +	if (cpu_online(cpu) || !cpu_present(cpu)) {
+>>> +		ret = -EINVAL;
+>>> +		goto out;
+>>> +	}
+>>> +
+>>
+>> Firstly, why is this change needed?
+> 
+> I cared the race of hot-remove cpu and _cpu_up(). If I do not change it,
+> there is the following race.
+> 
+> hot-remove cpu                         |  _cpu_up()
+> ------------------------------------- ------------------------------------
+> call acpi_processor_handle_eject()     |
+>       call cpu_down()                   |
+>       call get_online_cpus()            |
+>                                         | call cpu_hotplug_begin() and stop here
+>       call arch_unregister_cpu()        |
+>       call acpi_unmap_lsapic()          |
+>       call put_online_cpus()            |
+>                                         | start and continue _cpu_up()
+>       return acpi_processor_remove()    |
+> continue hot-remove the cpu            |
+> 
+> So _cpu_up() can continue to itself. And hot-remove cpu can also continue
+> itself. If I change it, I think the race disappears as below:
+> 
+> hot-remove cpu                         | _cpu_up()
+> -----------------------------------------------------------------------
+> call acpi_processor_handle_eject()     |
+>       call cpu_down()                   |
+>       call get_online_cpus()            |
+>                                         | call cpu_hotplug_begin() and stop here
+>       call arch_unregister_cpu()        |
+>       call acpi_unmap_lsapic()          |
+>            cpu's cpu_present is set     |
+> 	  to false by set_cpu_present()|
+>       call put_online_cpus()            |
+>                                         | start _cpu_up()
+> 				       | check cpu_present() and return -EINVAL
+>       return acpi_processor_remove()    |
+> continue hot-remove the cpu            |
+> 
+> Thus I think the change is necessary.
+> 
+> Thanks,
+> Yasuaki Ishimatsu
+> 
+>> Secondly, if the change is indeed an improvement, then why is it
+>> in _this_ patch? IMHO, in that case it should be part of a separate patch.
 
-That's one opinion, though I doubt it's his.
-<shrug>  Maybe he'll reply.  (edit: he did)
+I forget to answer the question.
+As I answered in the above your first question, the fix is related to
+acpi_processor_handle_eject(). So the fix should be in the patch.
 
-> you're talking purely about style preferences here.
+Thanks,
+Yasuaki Ishimatsu
 
-_All_ of checkpatch is style preference.
-None if it is a mandate.  Those that care to use it can.
-You can ignore it.  I don't mind.
+>>
+>> Coming back to my first point, I don't see why this hunk is needed. We
+>> already take the cpu_add_remove_lock (cpu_maps_update_begin/end) before
+>> checking the status of the cpu (online or present). And all hotplug
+>> operations (cpu_up/cpu_down/disable|enable_nonboot_cpus) go through that
+>> lock. Isn't that enough? Or am I missing something?
+>>
+>>>    	idle = idle_thread_get(cpu);
+>>>    	if (IS_ERR(idle)) {
+>>>    		ret = PTR_ERR(idle);
+>>>
+>>    
+>> Regards,
+>> Srivatsa S. Bhat
+>>
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Otherwise, just read and write the code and do what you
-think best.  I'm not a particular style zealot.  I'm not
-going to nack a patch just because you or anyone else uses
-a style that isn't the predominate one.
 
-cheers, Joe
 
