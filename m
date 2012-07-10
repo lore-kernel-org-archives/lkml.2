@@ -1,97 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab2GJId0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 04:33:26 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:52011 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753652Ab2GJIdW (ORCPT
+	id S1754483Ab2GJIie (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 04:38:34 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53797 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753363Ab2GJIic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 04:33:22 -0400
-Message-ID: <4FFBE8C8.9090908@ti.com>
-Date: Tue, 10 Jul 2012 14:03:12 +0530
-From: Rajendra Nayak <rnayak@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
+	Tue, 10 Jul 2012 04:38:32 -0400
+Date: Tue, 10 Jul 2012 10:38:19 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Alessandro Rubini <rubini@gnudd.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the
+ i2c-embedded tree
+Message-ID: <20120710083819.GA25197@pengutronix.de>
+References: <20120710164130.f38e4d1673f925ddb13914c9@canb.auug.org.au>
 MIME-Version: 1.0
-To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-CC: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, b-cousson@ti.com,
-        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, balbi@ti.com,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org, hvaibhav@ti.com
-Subject: Re: [PATCH v1 11/11] arm: omap: phy: remove unused functions from
- omap-phy-internal.c
-References: <1340884267-28908-1-git-send-email-kishon@ti.com>	<1340884267-28908-12-git-send-email-kishon@ti.com>	<4FFBCBC0.5020603@ti.com> <CAAe_U6Ly3J90VMz5dP=p4wDauOf1v_K1JRB0Qp8nBYaQhcx==w@mail.gmail.com>
-In-Reply-To: <CAAe_U6Ly3J90VMz5dP=p4wDauOf1v_K1JRB0Qp8nBYaQhcx==w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
+Content-Disposition: inline
+In-Reply-To: <20120710164130.f38e4d1673f925ddb13914c9@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 10 July 2012 01:46 PM, ABRAHAM, KISHON VIJAY wrote:
-> Hi,
->
-> On Tue, Jul 10, 2012 at 11:59 AM, Rajendra Nayak<rnayak@ti.com>  wrote:
->> On Thursday 28 June 2012 05:21 PM, Kishon Vijay Abraham I wrote:
->>>
->>> All the unnessary functions in omap-phy-internal is removed.
->>> These functionality are now handled by omap-usb2 phy driver.
->>>
->>> Cc: Felipe Balbi<balbi@ti.com>
->>> Signed-off-by: Kishon Vijay Abraham I<kishon@ti.com>
->>> Acked-by: Tony Lindgren<tony@atomide.com>
->>> ---
->>>    arch/arm/mach-omap2/omap_phy_internal.c |  138
->>> -------------------------------
->>>    arch/arm/mach-omap2/twl-common.c        |    5 -
->>>    arch/arm/mach-omap2/usb-musb.c          |    3 -
->>>    3 files changed, 0 insertions(+), 146 deletions(-)
->>>
->>> diff --git a/arch/arm/mach-omap2/omap_phy_internal.c
->>> b/arch/arm/mach-omap2/omap_phy_internal.c
->>> index 4c90477..0c610b4 100644
->>> --- a/arch/arm/mach-omap2/omap_phy_internal.c
->>> +++ b/arch/arm/mach-omap2/omap_phy_internal.c
->>> @@ -31,144 +31,6 @@
->>>    #include<plat/usb.h>
->>>    #include "control.h"
->>>
->>> -/* OMAP control module register for UTMI PHY */
->>> -#define CONTROL_DEV_CONF               0x300
->>> -#define PHY_PD                         0x1
->>> -
->>> -#define USBOTGHS_CONTROL               0x33c
->>> -#define        AVALID                          BIT(0)
->>> -#define        BVALID                          BIT(1)
->>> -#define        VBUSVALID                       BIT(2)
->>> -#define        SESSEND                         BIT(3)
->>> -#define        IDDIG                           BIT(4)
->>> -
->>> -static struct clk *phyclk, *clk48m, *clk32k;
->>> -static void __iomem *ctrl_base;
->>> -static int usbotghs_control;
->>> -
->>> -int omap4430_phy_init(struct device *dev)
->>> -{
->>> -       ctrl_base = ioremap(OMAP443X_SCM_BASE, SZ_1K);
->>> -       if (!ctrl_base) {
->>> -               pr_err("control module ioremap failed\n");
->>> -               return -ENOMEM;
->>> -       }
->>> -       /* Power down the phy */
->>> -       __raw_writel(PHY_PD, ctrl_base + CONTROL_DEV_CONF);
->>
->>
->> Just checking, but I hope your new driver handles this too.
->> You might not see any issues with it now, but not doing this could
->> gate OMAP hitting low power in idle.
->
-> I power down the phy during probe in omap-usb2 phy driver.
 
-ok, thanks, good to know.
+--yrj/dFKFPuw6o+aM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->
-> Thanks
-> Kishon
+On Tue, Jul 10, 2012 at 04:41:30PM +1000, Stephen Rothwell wrote:
+> Hi all,
+>=20
+> Today's linux-next merge of the arm-soc tree got a conflict in
+> drivers/i2c/busses/i2c-nomadik.c between commit af97bace2cca
+> ("i2c-nomadik: move header to <linux/platform_data/i2c-nomadik.h>") from
+> the i2c-embedded tree and commits 32e42c687e0a ("ARM: ux500: Remove
+> unused i2c platform_data initialisation code") and 8214fd238a66 ("i2c:
+> Add Device Tree support to the Nomadik I2C driver") from the arm-soc tree.
+>=20
+> I fixed it up (I think - see below) and can carry the fix as necessary.
+> Please check this and talk to each other ...
 
+Hmm, I can't recall any discussion that the DT support patch should go
+in via arm-soc. Did I miss something? Right now, I'd think it should go
+in via i2c. I am fine with the other patch going in via arm-soc, but can
+carry it as well.
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--yrj/dFKFPuw6o+aM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk/76fsACgkQD27XaX1/VRvjmQCgku1NQ2i5RzwCJpUb7OFj0T1Y
+8rEAnA26ufeXf40O2y/Wrt597dFNNVbt
+=Kh7M
+-----END PGP SIGNATURE-----
+
+--yrj/dFKFPuw6o+aM--
