@@ -1,115 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab2GJUQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 16:16:32 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:33096 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752527Ab2GJUQb convert rfc822-to-8bit (ORCPT
+	id S1752968Ab2GJURj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 16:17:39 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:35183 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752724Ab2GJURi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 16:16:31 -0400
+	Tue, 10 Jul 2012 16:17:38 -0400
+Message-ID: <4FFC8DA3.6010100@ahsoftware.de>
+Date: Tue, 10 Jul 2012 22:16:35 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Date: Tue, 10 Jul 2012 22:16:29 +0200
-Message-ID: <CACRpkdYTKu8XVbnLom+VKp=2YGB+EX3Qnc5EX_ciqbaGndbROw@mail.gmail.com>
-Subject: [GIT PULL] gpio fixes for v3.5
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Kevin Hilman <khilman@ti.com>,
-        linux-kernel@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Christian Dietrich 
-	<christian.dietrich@informatik.uni-erlangen.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Roland Stigge <stigge@antcom.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Joe Perches <joe@perches.com>
+CC: Catalin Marinas <catalin.marinas@arm.com>, Ingo Molnar <mingo@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>  <CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>  <201207071927.13135.arnd@arndb.de> <20120710071023.GA10456@gmail.com>  <20120710101018.GE15120@arm.com> <1341940476.6118.150.camel@joe2Laptop>
+In-Reply-To: <1341940476.6118.150.camel@joe2Laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Am 10.07.2012 19:14, schrieb Joe Perches:
+> On Tue, 2012-07-10 at 11:10 +0100, Catalin Marinas wrote:
+>> On Tue, Jul 10, 2012 at 08:10:23AM +0100, Ingo Molnar wrote:
+>>> * Arnd Bergmann <arnd@arndb.de> wrote:
+>>>> On Saturday 07 July 2012, Olof Johansson wrote:
+>>>>>> ARM introduced AArch64 as part of the ARMv8 architecture
+>>>>>
+>>>>> With the risk of bikeshedding here, but I find the name awkward. How
+>>>>> about just naming the arch port arm64 instead? It's considerably more
+>>>>> descriptive in the context of the kernel.  For reference, we didn't
+>>>>> name ppc64, nor powerpc, after what the IBM/power.org marketing people
+>>>>> were currently calling the architecture at the time either.
+>>>>
+>>>> I agree the name sucks, [...]
+>>>
+>>> So why not change it now, when it only bothers a few dozen
+>>> people and it is only present in 36 patches? Why go full steam
+>>> ahead to annoy thousands of people with it and why spread the
+>>> naming madness to thousands of commits?
+>>
+>> Changing the arch/ dir name is easy at this point. My preference is for
+>> consistency with the official name (that cannot be changed) and the gcc
+>> triplet. I also don't think it annoys thousands of people, most don't
+>> really care. The few reactions I've seen is pretty much because people
+>> were expecting arm64 and it came as something else.
+>
+> Count me as one of the 1000s that think it's a poor name choice.
+> I think it's a poor name for marketing purposes too.
 
-yes, this is a *LATE* GPIO pull request with fixes for v3.5.
+Add me to the thousands too.
 
-Grant moved across the planet and accidentally fell off the grid, so he asked
-me to take over the GPIO merges for a while 10 days ago, refer to:
-https://lkml.org/lkml/2012/7/1/220
+Using AArch64 is like calling a fly Brachycera or a dog Canis lupus 
+familiaris. It might be correct, but it is a name I wouldn't want to use 
+when I would need to name the architecture. Try to make a presentation 
+where you have to say AArch64 a dozen times. Those two As are imho just 
+annoying to speak, besides that AArch64 doesn't given a hint by itself 
+that is meant for ARM processors.
 
-Since then I went over the archives and collected this pile of fixes, and pulled
-two of them from the TI maintainer Kevin Hilman. The waited for them to
-atleast hit linux-next once or twice.
+And it isn't so that the name will have to be used that seldom, at least 
+every distribution would need to use it to name the flavour, like e.g. 
+"Fedora AArch64hf" or "Debian AArch64".
 
-This is the info in the usual signed tag, which is more or less the same as
-the commit messages but parsed through my head:
+Regards,
 
-GPIO fixes for v3.5:
-- Invalid context restore on bank 0 for OMAP driver in
-  runtime suspend/resume cycle
-- Check for NULL platform data in sta-2x11 driver
-- Constrain selection of the V1 MSM GPIO driver to applicable
-  platforms (Kconfig issue)
-- Make sure the correct output value is set in the wm8994 driver
-- Export devm_gpio_request_one() so it can be used in modules.
-  Apparently some in-kernel modules can be configured to use this
-  leading to breakage.
-- Check that the GPIO is valid in the lantiq driver
-- Fix the flag bits introduced for v3.5, so they don't overlap
-- Fix a device tree intialization bug for imx21-compatible devices
-- Carry over the OF node to the TPS65910 GPIO chip struct
-
-Please pull it in.
-
-Yours,
-Linus Walleij
-
-The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
-
-  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
-tags/fixes-for-v3.5
-
-Alessandro Rubini (1):
-      gpio-sta2x11: don't use pdata if null
-
-Christian Dietrich (1):
-      gpio/msm_v1: CONFIG_GPIO_MSM_V1 is only available on three SoCs
-
-Grazvydas Ignotas (1):
-      gpio/omap: fix irq loss while in idle with debounce on
-
-Jon Hunter (1):
-      gpio/omap: fix invalid context restore of gpio bank-0
-
-Laxman Dewangan (2):
-      gpio: fix bits conflict for gpio flags
-      gpio: tps65910: initialize of_node of gpio_chip
-
-Linus Walleij (1):
-      Merge branch 'kevin' into fixes
-
-Mark Brown (1):
-      gpiolib: wm8994: Pay attention to the value set when enabling as output
-
-Roland Stigge (1):
-      mips: pci-lantiq: Fix check for valid gpio
-
-Stephen Warren (1):
-      gpio: export devm_gpio_request_one
-
-Uwe Kleine-König (1):
-      gpio/mxc: make irqs work for fsl,imx21-gpio devices
-
- arch/mips/pci/pci-lantiq.c   |    4 ++--
- drivers/gpio/Kconfig         |    2 +-
- drivers/gpio/devres.c        |    1 +
- drivers/gpio/gpio-mxc.c      |   10 ++++++----
- drivers/gpio/gpio-omap.c     |   14 +++++++++++++-
- drivers/gpio/gpio-sta2x11.c  |    5 +++--
- drivers/gpio/gpio-tps65910.c |    1 +
- drivers/gpio/gpio-wm8994.c   |    5 ++++-
- include/linux/gpio.h         |    4 ++--
- 9 files changed, 33 insertions(+), 13 deletions(-)
+Alexander
