@@ -1,109 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab2GJWnc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 18:43:32 -0400
-Received: from mga09.intel.com ([134.134.136.24]:44049 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753857Ab2GJWnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 18:43:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="170117808"
-Message-ID: <1341960208.3336.43.camel@jtkirshe-mobl>
-Subject: Re: [trivial PATCH 2/7] ixgbe: remove unused #define
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: Jon Mason <jdmason@kudzu.us>
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>, netdev <netdev@vger.kernel.org>
-Date: Tue, 10 Jul 2012 15:43:28 -0700
-In-Reply-To: <1341959492-31389-2-git-send-email-jdmason@kudzu.us>
-References: <1341959492-31389-1-git-send-email-jdmason@kudzu.us>
-	 <1341959492-31389-2-git-send-email-jdmason@kudzu.us>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-nh10J2jWcd8YKmbJknqJ"
-X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
-Mime-Version: 1.0
+	id S1754748Ab2GJWnw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 18:43:52 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:55116 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754689Ab2GJWnt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 18:43:49 -0400
+From: John Stultz <johnstul@us.ibm.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>, stable@vger.kernel.org,
+        John Stultz <johnstul@us.ibm.com>
+Subject: [PATCH 3/6] timekeeping: Maintain ktime_t based offsets for hrtimers
+Date: Tue, 10 Jul 2012 18:43:21 -0400
+Message-Id: <1341960205-56738-4-git-send-email-johnstul@us.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
+References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071022-7606-0000-0000-000001E69AC7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Thomas Gleixner <tglx@linutronix.de>
 
---=-nh10J2jWcd8YKmbJknqJ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+We need to update the hrtimer clock offsets from the hrtimer interrupt
+context. To avoid conversions from timespec to ktime_t maintain a
+ktime_t based representation of those offsets in the timekeeper. This
+puts the conversion overhead into the code which updates the
+underlying offsets and provides fast accessible values in the hrtimer
+interrupt.
 
-On Tue, 2012-07-10 at 15:31 -0700, Jon Mason wrote:
-> Remove unused IXGBE_INTEL_VENDOR_ID #define
->=20
-> Signed-off-by: Jon Mason <jdmason@kudzu.us>
-> Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> Cc: Bruce Allan <bruce.w.allan@intel.com>
-> Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
-> Cc: Don Skidmore <donald.c.skidmore@intel.com>
-> Cc: Greg Rose <gregory.v.rose@intel.com>
-> Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-> Cc: Alex Duyck <alexander.h.duyck@intel.com>
-> Cc: John Ronciak <john.ronciak@intel.com>
-> ---
->  drivers/net/ethernet/intel/ixgbe/ixgbe_type.h |    3 ---
->  1 file changed, 3 deletions(-)
+CC: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Prarit Bhargava <prarit@redhat.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: stable@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+---
+ kernel/time/timekeeping.c |   25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
 
-This should also go through David Miller's networking tree's.  Adding
-netdev mailing list.
-
-Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-
->=20
-> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h b/drivers/net/=
-ethernet/intel/ixgbe/ixgbe_type.h
-> index 204848d..c8d8040 100644
-> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
-> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
-> @@ -32,9 +32,6 @@
->  #include <linux/mdio.h>
->  #include <linux/netdevice.h>
-> =20
-> -/* Vendor ID */
-> -#define IXGBE_INTEL_VENDOR_ID   0x8086
-> -
->  /* Device IDs */
->  #define IXGBE_DEV_ID_82598               0x10B6
->  #define IXGBE_DEV_ID_82598_BX            0x1508
-
-
-
---=-nh10J2jWcd8YKmbJknqJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABCgAGBQJP/LAQAAoJEOVv75VaS+3OEG8P/An8AAcBPEMJ6sPzjdrmqn+6
-rLUseT98PXJ/z1t2uO+k1Jjf3hTiXdwVtGtYaogAvtYoEHLJB1Zgef5BmXHg7+om
-fkALZcQSDIVHll5bTwNu1E7lU5O1kzPMlFM6JNp6dKEVj3EoWbitriaf6nFDVlIY
-L6isFnohHmR8tE5HPSrvrN11zqmuxOK5INGQJ27MMPrL2YEuyik7mNPwiw0hnmf7
-MS2jAhk/mncMk/Pi5O+cdW4UJMeu3OV8shDiH3QEzggIMknQCCyZ2xMobIw52vVy
-ky3T102rHLUtI9gOjf2lTJowFQo6BreVKi/4WEwRJYKg9/suvUqBk69G8PfAyOXk
-FlTpY1MmeYjoE0Z4Z35s/ASkrugpGwrMJgavWLn2JaaQ6aEGKLWxM+ppwOdTbIJs
-42+eBbm0Pxkot3MVgNJSgFa6qlVuxw27yrYMGLF1sjPY1NZeXwRJdxbItc5NDJMU
-WJYkNjsoxl93Xv9DY7p3e0yP5u+O7w6GtAHzZo5Ovf7ifFWm80dyMI7jcQlaybAU
-OTHQa3ybEA/ahDiwqxcVj9S3vtPVOYazQ8wE/VmFyRV9WhwHyyo++9sTgFaFtdYw
-Zq5ay0+/GB03iG/Dq411Io9H58KwmWEO6hBkBdgv/9MYtrG0QwIEXF8Ddlcz3qdQ
-IKs5DyBhrno4uK6/cnPA
-=UGm1
------END PGP SIGNATURE-----
-
---=-nh10J2jWcd8YKmbJknqJ--
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index a413e59..1c038da 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -70,6 +70,12 @@ struct timekeeper {
+ 	/* The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock. */
+ 	struct timespec raw_time;
+ 
++	/* Offset clock monotonic -> clock realtime */
++	ktime_t offs_real;
++
++	/* Offset clock monotonic -> clock boottime */
++	ktime_t offs_boot;
++
+ 	/* Seqlock for all timekeeper values */
+ 	seqlock_t lock;
+ };
+@@ -172,6 +178,14 @@ static inline s64 timekeeping_get_ns_raw(void)
+ 	return clocksource_cyc2ns(cycle_delta, clock->mult, clock->shift);
+ }
+ 
++static void update_rt_offset(void)
++{
++	struct timespec tmp, *wtm = &timekeeper.wall_to_monotonic;
++
++	set_normalized_timespec(&tmp, -wtm->tv_sec, -wtm->tv_nsec);
++	timekeeper.offs_real = timespec_to_ktime(tmp);
++}
++
+ /* must hold write on timekeeper.lock */
+ static void timekeeping_update(bool clearntp)
+ {
+@@ -179,6 +193,7 @@ static void timekeeping_update(bool clearntp)
+ 		timekeeper.ntp_error = 0;
+ 		ntp_clear();
+ 	}
++	update_rt_offset();
+ 	update_vsyscall(&timekeeper.xtime, &timekeeper.wall_to_monotonic,
+ 			 timekeeper.clock, timekeeper.mult);
+ }
+@@ -604,6 +619,7 @@ void __init timekeeping_init(void)
+ 	}
+ 	set_normalized_timespec(&timekeeper.wall_to_monotonic,
+ 				-boot.tv_sec, -boot.tv_nsec);
++	update_rt_offset();
+ 	timekeeper.total_sleep_time.tv_sec = 0;
+ 	timekeeper.total_sleep_time.tv_nsec = 0;
+ 	write_sequnlock_irqrestore(&timekeeper.lock, flags);
+@@ -612,6 +628,12 @@ void __init timekeeping_init(void)
+ /* time in seconds when suspend began */
+ static struct timespec timekeeping_suspend_time;
+ 
++static void update_sleep_time(struct timespec t)
++{
++	timekeeper.total_sleep_time = t;
++	timekeeper.offs_boot = timespec_to_ktime(t);
++}
++
+ /**
+  * __timekeeping_inject_sleeptime - Internal function to add sleep interval
+  * @delta: pointer to a timespec delta value
+@@ -630,8 +652,7 @@ static void __timekeeping_inject_sleeptime(struct timespec *delta)
+ 	timekeeper.xtime = timespec_add(timekeeper.xtime, *delta);
+ 	timekeeper.wall_to_monotonic =
+ 			timespec_sub(timekeeper.wall_to_monotonic, *delta);
+-	timekeeper.total_sleep_time = timespec_add(
+-					timekeeper.total_sleep_time, *delta);
++	update_sleep_time(timespec_add(timekeeper.total_sleep_time, *delta));
+ }
+ 
+ 
+-- 
+1.7.9.5
 
