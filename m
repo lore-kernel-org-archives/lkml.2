@@ -1,44 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751010Ab2GJSF3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 14:05:29 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:33938 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab2GJSF2 (ORCPT
+	id S1751253Ab2GJSJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 14:09:57 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:39868 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058Ab2GJSJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 14:05:28 -0400
+	Tue, 10 Jul 2012 14:09:56 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/lr387qFmLE
+X-RZG-CLASS-ID: mo00
+Date: Tue, 10 Jul 2012 20:09:53 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Daniel Kiper <dkiper@net-space.pl>, xen-devel@lists.xensource.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jan Beulich <JBeulich@suse.com>
+Subject: Re: [Xen-devel] incorrect layout of globals from head_64.S during
+ kexec boot
+Message-ID: <20120710180953.GB20075@aepfle.de>
+References: <20120706120750.GA8970@aepfle.de>
+ <4FF6FCA9020000780008E0BB@nat28.tlf.novell.com>
+ <20120706133105.GA20600@aepfle.de>
+ <20120706141419.GA21951@aepfle.de>
+ <4FF7174C020000780008E1FF@nat28.tlf.novell.com>
+ <20120706172918.GA15222@aepfle.de>
+ <20120710093327.GA13864@aepfle.de>
+ <20120710141411.GB1791@phenom.dumpdata.com>
+ <20120710152308.GA31819@aepfle.de>
+ <20120710172626.GA6868@phenom.dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <4FFC6E0E.6050203@computer.org>
-References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
-	<CAOesGMiCexiqA3L5GdNgyHhSD-5Bpqbb02YJrZPr8yMYa0afjA@mail.gmail.com>
-	<201207071927.13135.arnd@arndb.de>
-	<20120710071023.GA10456@gmail.com>
-	<20120710101018.GE15120@arm.com>
-	<1341940476.6118.150.camel@joe2Laptop>
-	<4FFC6E0E.6050203@computer.org>
-Date: Tue, 10 Jul 2012 20:05:27 +0200
-Message-ID: <CAFLxGvx4O7eBxtggcFNJHTuh=72PoGpAU6v1k2XuSO-tGLkbrw@mail.gmail.com>
-Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Jan Ceuleers <jan.ceuleers@computer.org>
-Cc: Joe Perches <joe@perches.com>, Catalin Marinas <catalin.marinas@arm.com>,
-        Ingo Molnar <mingo@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120710172626.GA6868@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21.rev5543 (2011-12-20)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 8:01 PM, Jan Ceuleers <jan.ceuleers@computer.org> wrote:
-> Perhaps it's a typo, and was meant to be AArgh64 :-)
+On Tue, Jul 10, Konrad Rzeszutek Wilk wrote:
 
-Still a much better name than aarch64.
+> On Tue, Jul 10, 2012 at 05:23:08PM +0200, Olaf Hering wrote:
+> > I was not thinking of statically allocated pages but some new concept of
+> > allocating such shared pages. Shouldnt there be some dedicated area in
+> > the E820 table which has to be used during the whole life time of the
+> > guest?
+> 
+> Not that I can see. But I don't see why that could not be added? Perhaps
+> the HVM loader can make it happen? But then how would it tell the kernel
+> that this E820_RESERVED is the shared_info one. Not the other ones..
 
--- 
-Thanks,
-//richard
+Maybe just use a new E820 type for this sort of thing? Its just the
+question wether some other OS can cope with an unknown type. From my
+reading of the e820 related code a region with an unknown type is just
+ignored.
+
+> > Are there more shared areas or is it just the shared info page?
+> > 
+> > > And I am kind of worried that moving it to the .data section won't
+> > > be completly safe - as the decompressor might blow away that part too.
+> > 
+> > The decompressor may just clear the area, but since there is no way to
+> > tell where the shared pages are its always a risk to allocate them at
+> > compile time.
+> 
+> Yeah, and with the hypervisor potentially still updating the "old"
+> MFN before the new kernel has registered the new MFN, we can end up
+> corrupting the new kernel. Ouch.
+> 
+> Would all of these issues disappear if the hypervisor had a hypercall
+> that would stop updating the shared info? or just deregister the MFN?
+> What if you ripped the GMFN out using 'decrease_reservation' hypercall?
+> Would that eliminate the pesky GMFN?
+
+I'm not sure, most likely the gfn will just disappear from the guest,
+like a ballooned page disappears. Accessing it will likely cause a
+crash.
+
+Olaf
