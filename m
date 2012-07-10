@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab2GJTlE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 15:41:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55881 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752028Ab2GJTlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 15:41:01 -0400
-Message-ID: <4FFC853B.30900@redhat.com>
-Date: Tue, 10 Jul 2012 15:40:43 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752504Ab2GJTne (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 15:43:34 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:51326 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398Ab2GJTnd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 15:43:33 -0400
+Date: Tue, 10 Jul 2012 16:43:25 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: manoj.iyer@canonical.com
+Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
+Subject: Re: [PATCH] Bluetooth: btusb: Add vendor specific ID (0a5c:21f4)
+ BCM20702A0
+Message-ID: <20120710194325.GA31426@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	manoj.iyer@canonical.com, linux-kernel@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org
+References: <1341947258-3929-1-git-send-email-manoj.iyer@canonical.com>
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, S390 <linux-s390@vger.kernel.org>,
-        Carsten Otte <cotte@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH RFC V2 2/2] kvm PLE handler: Choose better candidate for
- directed yield
-References: <20120710193056.16440.40112.sendpatchset@codeblue> <20120710193138.16440.31791.sendpatchset@codeblue>
-In-Reply-To: <20120710193138.16440.31791.sendpatchset@codeblue>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341947258-3929-1-git-send-email-manoj.iyer@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2012 03:31 PM, Raghavendra K T wrote:
-> From: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
->
-> Currently PLE handler can repeatedly do a directed yield to same vcpu
-> that has recently done PL exit. This can degrade the performance.
->
-> Try to yield to most eligible guy instead by alternate yielding.
-> Precisely, give chance to a VCPU which has:
->   (a) Not done PLE exit at all (probably he is preempted lock-holder)
->   (b) VCPU skipped in last iteration because it did PL exit, and probably
->   has become eligible now (next eligible lock holder)
->
-> Signed-off-by: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
+Hi Manoj,
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+* manoj.iyer@canonical.com <manoj.iyer@canonical.com> [2012-07-10 14:07:38 -0500]:
 
--- 
-All rights reversed
+> From: Manoj Iyer <manoj.iyer@canonical.com>
+> 
+> Patch adds support for BCM20702A0 device id (0a5c:21f4).
+> 
+> usb-devices after patch was applied:
+> T: Bus=03 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#= 2 Spd=12 MxCh= 0
+> D: Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
+> P: Vendor=0a5c ProdID=21f4 Rev=01.12
+> S: Manufacturer=Broadcom Corp
+> S: Product=BCM20702A0
+> S: SerialNumber=E4D53DF154D6
+> C: #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
+> I: If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+> I: If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+> I: If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> I: If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+> 
+> usb-devices before patch was applied:
+> T: Bus=03 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#= 2 Spd=12 MxCh= 0
+> D: Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
+> P: Vendor=0a5c ProdID=21f4 Rev=01.12
+> S: Manufacturer=Broadcom Corp
+> S: Product=BCM20702A0
+> S: SerialNumber=E4D53DF154D6
+> C: #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
+> I: If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+> I: If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+> I: If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> I: If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+> 
+> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+> Tested-by: Chris Gagnon <chris.gagnon@canonical.com>
+> ---
+>  drivers/bluetooth/btusb.c |    1 +
+>  1 file changed, 1 insertion(+)
+
+Patch has been applied to the bluetooth tree. Thanks.
+
+	Gustavo
