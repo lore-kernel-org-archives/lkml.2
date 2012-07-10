@@ -1,49 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867Ab2GJNfn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 09:35:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:49636 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755821Ab2GJNfl (ORCPT
+	id S1755885Ab2GJNfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 09:35:55 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60247 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755821Ab2GJNfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 09:35:41 -0400
-Date: Tue, 10 Jul 2012 08:35:37 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Arun Raghavan <arun.raghavan@collabora.co.uk>
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] apple-gmux: Restore switch registers on suspend/resume
-Message-ID: <20120710133537.GC10194@thinkpad-t410>
-Mail-Followup-To: Arun Raghavan <arun.raghavan@collabora.co.uk>,
-	Matthew Garrett <mjg@redhat.com>,
-	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1341891593-6485-1-git-send-email-arun.raghavan@collabora.co.uk>
+	Tue, 10 Jul 2012 09:35:53 -0400
+From: Chandrabhanu Mahapatra <cmahapatra@ti.com>
+To: <grant.likely@secretlab.ca>, <linus.walleij@stericsson.com>,
+        <rob.herring@calxeda.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <leed.aguilar@ti.com>, Chandrabhanu Mahapatra <cmahapatra@ti.com>
+Subject: [PATCH 1/4] GPIO: PCA953X: Increase size of invert variable to support 24 bit
+Date: Tue, 10 Jul 2012 19:05:37 +0530
+Message-ID: <505ac716b6c758d36471a90c2a5228cedb7217be.1341925681.git.cmahapatra@ti.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1341925681.git.cmahapatra@ti.com>
+References: <cover.1341925681.git.cmahapatra@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341891593-6485-1-git-send-email-arun.raghavan@collabora.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 09:09:53AM +0530, Arun Raghavan wrote:
-> After suspend and resume, the values of these registers seem to change
-> from what they were at suspend time, potentially preventing the actual
-> output lines from being enabled post-resume. This saves relevant state
-> at suspend and restores it when resumed.
-> 
-> This is at least required on the MacBook Pro 8.2 when the Intel GPU is
-> manually selected in GRUB config before the kernel is loaded.
+TCA6424 is a low voltage 24 bit I2C and SMBus I/O expander of pca953x family
+similar to its 16 bit predecessor TCA6416. It comes with three 8-bit active
+Input, Output, Polarity Inversion and Configuration registers each. The polarity
+of Input ports can be reversed by setting the appropiate bit in Polarity
+Inversion registers.
 
-I've got a couple of problems with this. The first is that the backlight
-update_status callback isn't an appropriate place to do this. Adding
-suspend/resume ops for the pnp_driver would be better.
+The variables corresponding to Input, Output and Configuration registers have
+already been updated to support 24 bit values. This patch thus updates the
+invert variable of PCA953X platform data to support 24 bit.
 
-But the more serious concern is whether or not its safe to simply
-restore the register values. I know that the reverse engineering work
-done on the gmux has revealed a particular sequence for selecting the
-active GPU. A brute force restoration of the registers disregards this
-sequencing, which doesn't seem like a good idea.
+Signed-off-by: Chandrabhanu Mahapatra <cmahapatra@ti.com>
+---
+ drivers/gpio/gpio-pca953x.c |   11 ++++++-----
+ include/linux/i2c/pca953x.h |    2 +-
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
-Seth
+diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+index 1c313c7..af7024f 100644
+--- a/drivers/gpio/gpio-pca953x.c
++++ b/drivers/gpio/gpio-pca953x.c
+@@ -564,7 +564,7 @@ static void pca953x_irq_teardown(struct pca953x_chip *chip)
+  * WARNING: This is DEPRECATED and will be removed eventually!
+  */
+ static void
+-pca953x_get_alt_pdata(struct i2c_client *client, int *gpio_base, int *invert)
++pca953x_get_alt_pdata(struct i2c_client *client, int *gpio_base, u32 *invert)
+ {
+ 	struct device_node *node;
+ 	const __be32 *val;
+@@ -592,13 +592,13 @@ pca953x_get_alt_pdata(struct i2c_client *client, int *gpio_base, int *invert)
+ }
+ #else
+ static void
+-pca953x_get_alt_pdata(struct i2c_client *client, int *gpio_base, int *invert)
++pca953x_get_alt_pdata(struct i2c_client *client, int *gpio_base, u32 *invert)
+ {
+ 	*gpio_base = -1;
+ }
+ #endif
+ 
+-static int __devinit device_pca953x_init(struct pca953x_chip *chip, int invert)
++static int __devinit device_pca953x_init(struct pca953x_chip *chip, u32 invert)
+ {
+ 	int ret;
+ 
+@@ -617,7 +617,7 @@ out:
+ 	return ret;
+ }
+ 
+-static int __devinit device_pca957x_init(struct pca953x_chip *chip, int invert)
++static int __devinit device_pca957x_init(struct pca953x_chip *chip, u32 invert)
+ {
+ 	int ret;
+ 	u32 val = 0;
+@@ -653,8 +653,9 @@ static int __devinit pca953x_probe(struct i2c_client *client,
+ {
+ 	struct pca953x_platform_data *pdata;
+ 	struct pca953x_chip *chip;
+-	int irq_base=0, invert=0;
++	int irq_base = 0;
+ 	int ret;
++	u32 invert = 0;
+ 
+ 	chip = kzalloc(sizeof(struct pca953x_chip), GFP_KERNEL);
+ 	if (chip == NULL)
+diff --git a/include/linux/i2c/pca953x.h b/include/linux/i2c/pca953x.h
+index 139ba52..3c98dd4 100644
+--- a/include/linux/i2c/pca953x.h
++++ b/include/linux/i2c/pca953x.h
+@@ -11,7 +11,7 @@ struct pca953x_platform_data {
+ 	unsigned	gpio_base;
+ 
+ 	/* initial polarity inversion setting */
+-	uint16_t	invert;
++	u32		invert;
+ 
+ 	/* interrupt base */
+ 	int		irq_base;
+-- 
+1.7.10
+
