@@ -1,85 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab2GJAUZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 20:20:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42471 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752743Ab2GJAUX (ORCPT
+	id S1755212Ab2GJAZL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 20:25:11 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:53214 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752742Ab2GJAZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 20:20:23 -0400
-Message-ID: <1341879612.25597.310.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 35/48] dummy: fix rcu_sched self-detected stalls
-From: Ben Hutchings <ben@decadent.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: herton.krzesinski@canonical.com, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        edumazet@google.com
-Date: Tue, 10 Jul 2012 01:20:12 +0100
-In-Reply-To: <20120709.164923.898772652506167140.davem@davemloft.net>
-References: <20120709143121.743971024@decadent.org.uk>
-	 <20120709233901.GB3237@herton-Z68MA-D2H-B3>
-	 <1341877626.25597.300.camel@deadeye.wl.decadent.org.uk>
-	 <20120709.164923.898772652506167140.davem@davemloft.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-R/p1qmh1hIS6LXr5Vsw0"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 9 Jul 2012 20:25:10 -0400
+X-AuditID: 9c93016f-b7c7eae0000025c5-78-4ffb7662adc9
+Date: Tue, 10 Jul 2012 09:25:10 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v2] mm: Warn about costly page allocation
+Message-ID: <20120710002510.GB5935@bbox>
+References: <1341878153-10757-1-git-send-email-minchan@kernel.org>
+ <20120709170856.ca67655a.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120709170856.ca67655a.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Andrew,
 
---=-R/p1qmh1hIS6LXr5Vsw0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jul 09, 2012 at 05:08:56PM -0700, Andrew Morton wrote:
+> On Tue, 10 Jul 2012 08:55:53 +0900
+> Minchan Kim <minchan@kernel.org> wrote:
+> 
+> > ...
+> >
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -2276,6 +2276,29 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+> >  	return alloc_flags;
+> >  }
+> >  
+> > +#if defined(CONFIG_DEBUG_VM) && !defined(CONFIG_COMPACTION)
+> > +static inline void check_page_alloc_costly_order(unsigned int order, gfp_t flags)
+> > +{
+> > +	if (likely(order <= PAGE_ALLOC_COSTLY_ORDER))
+> > +		return;
+> > +
+> > +	if (!printk_ratelimited())
+> > +		return;
+> > +
+> > +	pr_warn("%s: page allocation high-order stupidity: "
+> > +		"order:%d, mode:0x%x\n", current->comm, order, flags);
+> > +	pr_warn("Enable compaction if high-order allocations are "
+> > +		"very few and rare.\n");
+> > +	pr_warn("If you need regular high-order allocation, "
+> > +		"compaction wouldn't help it.\n");
+> > +	dump_stack();
+> > +}
+> > +#else
+> > +static inline void check_page_alloc_costly_order(unsigned int order)
+> > +{
+> > +}
+> > +#endif
+> 
+> Let's remember that plain old "inline" is ignored by the compiler.  If
+> we really really want to inline something then we should use
+> __always_inline.
 
-On Mon, 2012-07-09 at 16:49 -0700, David Miller wrote:
-> From: Ben Hutchings <ben@decadent.org.uk>
-> Date: Tue, 10 Jul 2012 00:47:06 +0100
->=20
-> > I built on x86_64...
->=20
-> As did I :-)
->=20
-> > But it's not an important bug in mainline (yet) so perhaps we can treat
-> > it as only required in stable.
->=20
-> I think this is the best thing to do for now.
+I didn't know about that. Thanks for the pointing out.
 
-OK, done.
+> 
+> And inlining this function would be a bad thing to do - it causes the
+> outer function to have an increased cache footprint.  A good way to
+> optimise this function is probably to move the unlikely stuff
+> out-of-line:
 
-Ben.
+Okay. will do.
 
---=20
-Ben Hutchings
-The generation of random numbers is too important to be left to chance.
-                                                            - Robert Coveyo=
-u
+> 
+> 	if (unlikely(order > PAGE_ALLOC_COSTLY_ORDER))
+> 		check_page_alloc_costly_order(...);
+> 
+> or
+> 
+> static noinline void __check_page_alloc_costly_order(...)
+> {
+> }
+> 
+> static __always_inline void check_page_alloc_costly_order(...)
+> {
+> 	if (unlikely(order > PAGE_ALLOC_COSTLY_ORDER))
+> 		__check_page_alloc_costly_order(...);
+> }
+> 	
+> 
+> Also, the displayed messages don't seem very, umm, professional.  Who
+> was stupid - us or the kernel-configurer?  And "Enable
+> CONFIG_COMPACTION" would be more specific (and hence helpful) than
+> "Enable compaction").
 
---=-R/p1qmh1hIS6LXr5Vsw0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Okay.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> 
+> And how on earth is the user, or the person who is configuring kernels
+> for customers to determine whether the kernel will be frequently
+> performing higher-order allocations?
+> 
+> 
+> So I dunno, this all looks like we have a kernel problem and we're
+> throwing our problem onto hopelessly ill-equipped users of that kernel?
 
-iQIVAwUAT/t1Pee/yOyVhhEJAQobyBAA1ZLPXm1UvwRdqf1fYIFzN3PAlzADO2mn
-GWfy+4IgCc6cTEmV0VSQbz6yoxoocDm50hblOz4nGES2t5EvEBl34Ua+IzQhsLr6
-dDT1Z2wz8a0KWzhVLnKFmAo8H8dudywL9huKb5hUAj8g3WX4S43t9hltDR6YsWHg
-gD/Wmfblce4pAeYyPuFB+r0+ogjPd9F100ot6sc5d8isXGEiCBzo4HCxjc2qeDQk
-rQAEopvNwmS2Mfz6pKmFefiwPZjI6u90uQPKpro+oZv5Uj56c0bf7yrRO3DMBBo8
-5Lbbm+4RKfmE4p+B06DVunU1eGFN6CzLA1w0whv8ZVTQlZfjQGyjj9esMoZW2tcS
-fbTrpV8ncvZZlyrQfL3F6XDZN+Hhoezf+7Vkku5j1rhTkjJiHV1nPOYI1yEE+JU5
-3F4IRVRWEFASrHROFxkiVlNR8fJUG2AiO2ykzRAKsSELkjmagxXnyD8ziG+gXNIx
-eZlzXz1M4oP83nMFF0QxpIPO3N/aSsONuAJGT6LoaYyn/x9DLXVk1gEvinUd1UhA
-2Mw3lmA2dtjrWFB78GLbVh+ULaqrSPs6WNoeNDtIGahq35WI1WggOS4g011gJPwj
-PEyhZgQEaq3EfafN7q/D7ANTpqi/M0q6JL0ApTUfOnVE5r+F99WpZTLDNPnq9V2C
-7Xnd4esQ+wQ=
-=06Jk
------END PGP SIGNATURE-----
+As you know, this patch isn't for solving regular high-order allocations.
+As I wrote down, The problem is that we removed lumpy reclaim without any
+notification for user who might have used it implicitly.
+If such user disable compaction which is a replacement of lumpy reclaim,
+their system might be broken in real practice while test is passing.
+So, the goal is that let them know it in advance so that I expect they can
+test it stronger than old.
 
---=-R/p1qmh1hIS6LXr5Vsw0--
+Although they see the page allocation failure with compaction, it would
+be very helpful reports. It means we need to make compaction more
+aggressive about reclaiming pages.
+
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
