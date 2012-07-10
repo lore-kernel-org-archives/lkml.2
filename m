@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751308Ab2GJS2M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 14:28:12 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:37468 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058Ab2GJS2K (ORCPT
+	id S1751351Ab2GJSam (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 14:30:42 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:32895 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab2GJSak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 14:28:10 -0400
-Date: Tue, 10 Jul 2012 11:28:04 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Devendra Naga <devendra.aaru@gmail.com>, Lior Dotan <liodot@gmail.com>,
-        Christopher Harrer <charrer@alacritech.com>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH 2/3] staging/slicoss: disable pci device at remove
-Message-ID: <20120710182804.GA24666@kroah.com>
-References: <1341855260-9037-1-git-send-email-devendra.aaru@gmail.com>
- <1341855260-9037-2-git-send-email-devendra.aaru@gmail.com>
- <20120709200604.GA2536@kroah.com>
- <877guc4ryk.fsf@xmission.com>
+	Tue, 10 Jul 2012 14:30:40 -0400
+Date: Tue, 10 Jul 2012 15:30:32 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Manoj Iyer <manoj.iyer@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Chris Gagnon <chris.gagnon@canonical.com>
+Subject: Re: [PATCH] Bluetooth: btusb: Add vendor specific ID (0a5c:21f4)
+ BCM20702A0
+Message-ID: <20120710183032.GB13847@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Manoj Iyer <manoj.iyer@canonical.com>, linux-kernel@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org,
+	Johan Hedberg <johan.hedberg@intel.com>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	Chris Gagnon <chris.gagnon@canonical.com>
+References: <1334169563-2948-1-git-send-email-manoj.iyer@canonical.com>
+ <1334169563-2948-2-git-send-email-manoj.iyer@canonical.com>
+ <20120413214817.GB1680@joana>
+ <alpine.DEB.2.02.1207061211420.2959@lazy>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <877guc4ryk.fsf@xmission.com>
+In-Reply-To: <alpine.DEB.2.02.1207061211420.2959@lazy>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 09, 2012 at 01:09:23PM -0700, Eric W. Biederman wrote:
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+Hi Manoj,
+
+* Manoj Iyer <manoj.iyer@canonical.com> [2012-07-06 12:14:22 -0500]:
+
+> On Fri, 13 Apr 2012, Gustavo Padovan wrote:
 > 
-> > On Mon, Jul 09, 2012 at 11:04:19PM +0530, Devendra Naga wrote:
-> >> at probe we enabled the device, and we should disable it at remove.
-> >> 
-> >> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
-> >> ---
-> >>  drivers/staging/slicoss/slicoss.c |    1 +
-> >>  1 file changed, 1 insertion(+)
-> >> 
-> >> diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
-> >> index a511a2b..5bd3825 100644
-> >> --- a/drivers/staging/slicoss/slicoss.c
-> >> +++ b/drivers/staging/slicoss/slicoss.c
-> >> @@ -3234,6 +3234,7 @@ static void __devexit slic_entry_remove(struct pci_dev *pcidev)
-> >>  	}
-> >>  	free_netdev(dev);
-> >>  	pci_release_regions(pcidev);
-> >> +	pci_disable_device(pcidev);
-> >
-> > No, you really shouldn't do this, see the many times this has come up on
-> > the linux-kernel mailing list for why.
+> Gustavo,
 > 
-> I haven't see this?  Why don't you want to disable a device at remove
-> time?  Because we put the disable in the generic pci layer?
+> Sorry it took a long time to locate the hardware to get this info, I
+> got this info from one our QA engg cced here. Do you want me to
+> resubmit the patch ?
 
-For some reason, I thought we didn't do this because of other
-"interfaces" on the same card might then be shut down.  But I must have
-been thinking of something else, as lots of drivers do this, so adding
-it here looks to be correct.
+Yes, please resend the patch with proper git format. Thanks.
 
-So, sorry Devendra, you were right, care to resend this so I can apply
-it?
-
-thanks,
-
-greg k-h
+	Gustavo
