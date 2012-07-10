@@ -1,38 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755862Ab2GJPZM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 11:25:12 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56951 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753630Ab2GJPZL convert rfc822-to-8bit (ORCPT
+	id S1755915Ab2GJP2l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 11:28:41 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38889 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753872Ab2GJP2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 11:25:11 -0400
-Date: Tue, 10 Jul 2012 16:28:46 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Ortwin =?ISO-8859-1?B?R2z8Y2s=?= <odi@odi.ch>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mei: module version
-Message-ID: <20120710162846.3c0f8ed7@pyramind.ukuu.org.uk>
-In-Reply-To: <4FFBFF93.7030201@odi.ch>
-References: <4FFBFF93.7030201@odi.ch>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 10 Jul 2012 11:28:40 -0400
+Message-ID: <4FFC4A23.5000107@linaro.org>
+Date: Tue, 10 Jul 2012 17:28:35 +0200
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, linus.walleij@stericsson.com,
+        arnd@arndb.de
+Subject: Re: [PATCH 1/1] mfd: ab8500: Clean-up the last two ab8500 related
+ DT match tables
+References: <1341578598-9307-1-git-send-email-lee.jones@linaro.org> <20120710091304.GU15345@sortiz-mobl>
+In-Reply-To: <20120710091304.GU15345@sortiz-mobl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jul 2012 12:10:27 +0200
-Ortwin Glück <odi@odi.ch> wrote:
+On 10/07/12 11:13, Samuel Ortiz wrote:
+> Hi Lee,
+>
+> On Fri, Jul 06, 2012 at 01:43:18PM +0100, Lee Jones wrote:
+>> A patch was recently submitted to stop all ab8500 devices from
+>> being registered through Device Tree. Instead, only the db8500
+>> will be DT:ed and the rest will continue to be registered via
+>> the MFD API, as they always were.
+>>
+>> Two patches have recently been applied which enable Device Tree
+>> probing; one for rtc-ab8500 and the other for ponkey-ab8500.
+>> These two need to be removed to prevent double-probing these
+>> devices with Device Tree is enabled.
+>>
+>> Cc: Samuel Ortiz <sameo@linux.intel.com>
+>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>> ---
+>>   drivers/input/misc/ab8500-ponkey.c |    8 --------
+>>   drivers/rtc/rtc-ab8500.c           |    6 ------
+>>   2 files changed, 14 deletions(-)
+> I don't know against which tree you generated those patches, but none of those
+> 2 of_device_id arrays are in my for-next branch. So I can't apply this patch.
 
-> The LMS daemon expects a /sys/modules/mei/version file with, a four 
-> digit version number.
-> 
-> see
-> http://software.intel.com/en-us/articles/download-the-latest-intel-amt-open-source-drivers/
+I can rebase them on anything of your choosing.
 
-Just get them to fix the userspace. I thought the latest one had this
-dealt with ?
+What is your for-next branch based on?
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
+
 
