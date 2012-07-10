@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866Ab2GJKpY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 06:45:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5521 "EHLO mx1.redhat.com"
+	id S1753972Ab2GJKqw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 06:46:52 -0400
+Received: from csmtp3.one.com ([91.198.169.23]:20698 "EHLO csmtp3.one.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753224Ab2GJKpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 06:45:22 -0400
-Message-ID: <4FFC07BB.8080802@redhat.com>
-Date: Tue, 10 Jul 2012 13:45:15 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/2] KVM: X86: remove read buffer for mmio read
-References: <4FFA9E16.10001@linux.vnet.ibm.com> <4FFABD59.2070108@redhat.com> <20120709112346.GA23898@redhat.com> <4FFAD341.3080508@redhat.com> <4FFADB37.4090705@linux.vnet.ibm.com> <4FFADDFA.5000603@redhat.com> <20120710103629.GC23898@redhat.com>
-In-Reply-To: <20120710103629.GC23898@redhat.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752924Ab2GJKqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 06:46:51 -0400
+From: "Henrik Rydberg" <rydberg@bitmath.se>
+To: Gustavo Padovan <gustavo@padovan.org>
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH v2] Bluetooth: Add MacBookPro10,1 support
+Date: Tue, 10 Jul 2012 12:46:41 +0200
+Message-Id: <1341917201-4705-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.11.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2012 01:36 PM, Gleb Natapov wrote:
-> On Mon, Jul 09, 2012 at 04:34:50PM +0300, Avi Kivity wrote:
-> > On 07/09/2012 04:23 PM, Xiao Guangrong wrote:
-> > > On 07/09/2012 08:49 PM, Avi Kivity wrote:
-> > >> On 07/09/2012 02:23 PM, Gleb Natapov wrote:
-> > >>>
-> > >>>> kvm-unit-tests.git has a test for xchg to mmio.  Does it still work?
-> > >>>>
-> > >>>> I agree this code has to go, but it needs to be replaced by something.
-> > >>>> Maybe a .valid flag in struct operand.
-> > >>>>
-> > >>> Valid will not enough for that.
-> > >> 
-> > >> If we make everything go through operands, any reason why not?
-> > >> 
-> > > 
-> > > I noticed some instructions need to read ESP for many times (e.g, iret_real),
-> > > maybe .valid flag is not enough for this case if the stack is in MMIO, yes?
-> > 
-> > Good catch.  We either have to fix it or to restrict stack operations to
-> > regular memory (->read_std).
-> > 
-> > > IIUC, I also noticed ESP is not reset back if it is emulated fail (mmio is needed).
-> > > If the stack located in mmio region, this kind of instruct will be broken, i know no
-> > > guest will use mmio as stack but SDM does not limit it, is it valid?
-> > 
-> > Stack in mmio (or task switch in mmio) is architecturally valid.  We
-> > don't have to support it if no guests do it.
-> > 
-> But the code is already here, why drop it?
+Add support for the 2012 15'' MacBook Pro Retina, also known as
+MacBookPro10,1. The bluetooth device presents itself as
 
-The read cache is not effective for multiple disjunct reads.  The
-splitting into 8-byte groups is unneeded.
+Bus 002 Device 008: ID 05ac:8286 Apple, Inc.
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               2.00
+  bDeviceClass          255 Vendor Specific Class
+  bDeviceSubClass         1
+  bDeviceProtocol         1
+  bMaxPacketSize0        64
+  idVendor           0x05ac Apple, Inc.
+  idProduct          0x8286
+  bcdDevice            0.74
+  iManufacturer           1 Apple Inc.
+  iProduct                2 Bluetooth USB Host Controller
+  iSerial                 0
+  bNumConfigurations      1
 
+Patch originally written and tested by clipcarl (forums.opensuse.org).
+
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+ drivers/bluetooth/btusb.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 83ebb24..6cc54da 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -84,6 +84,9 @@ static struct usb_device_id btusb_table[] = {
+ 	/* Apple MacMini5,1 */
+ 	{ USB_DEVICE(0x05ac, 0x8281) },
+ 
++	/* Apple MacBookPro10,1 */
++	{ USB_DEVICE(0x05ac, 0x8286) },
++
+ 	/* AVM BlueFRITZ! USB v2.0 */
+ 	{ USB_DEVICE(0x057c, 0x3800) },
+ 
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+1.7.11.1
 
