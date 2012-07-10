@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab2GJRkp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 13:40:45 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:36953 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753136Ab2GJRkm (ORCPT
+	id S1753829Ab2GJRl2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 13:41:28 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:43736 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752523Ab2GJRl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 13:40:42 -0400
-Date: Tue, 10 Jul 2012 13:32:11 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Shuah Khan <shuah.khan@hp.com>
-Cc: fujita.tomonori@lab.ntt.co.jp, LKML <linux-kernel@vger.kernel.org>,
-        akpm@linux-foundation.org, paul.gortmaker@windriver.com,
-        bhelgaas@google.com, amwang@redhat.com, shuahkhan@gmail.com
-Subject: Re: [PATCH RFC] swiotlb: Remove SWIOTLB overflow buffer support
-Message-ID: <20120710173211.GB6868@phenom.dumpdata.com>
-References: <1341615972.3101.27.camel@lorien2>
- <20120709202505.GA9541@phenom.dumpdata.com>
- <1341939307.2502.34.camel@lorien2>
+	Tue, 10 Jul 2012 13:41:26 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Wanpeng Li <liwp.linux@gmail.com>, linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Li Zefan <lizefan@huawei.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwp.linux@gmail.com>
+Subject: Re: [PATCH RFC] mm/hugetlb_cgroup: Add huge_page_order check to avoid incorrectly uncharge
+In-Reply-To: <1341914712-4588-1-git-send-email-liwp.linux@gmail.com>
+References: <1341914712-4588-1-git-send-email-liwp.linux@gmail.com>
+User-Agent: Notmuch/0.13.2+63~g548a9bf (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 10 Jul 2012 23:11:07 +0530
+Message-ID: <87394z1pl8.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341939307.2502.34.camel@lorien2>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+x-cbid: 12071017-4790-0000-0000-000003A0618A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 10:55:07AM -0600, Shuah Khan wrote:
-> On Mon, 2012-07-09 at 16:25 -0400, Konrad Rzeszutek Wilk wrote:
-> > On Fri, Jul 06, 2012 at 05:06:12PM -0600, Shuah Khan wrote:
-> > > Remove SWIOTLB overflow buffer support and return DMA_ERROR_CODE
-> > > (a value of zero) to make it consistent with iommu implementation
-> > > on Intel, AMD, and swiotlb-xen.
-> > 
-> > While this is a good forward step and this needs to be done eventually,
-> > you should first send out patches for the drivers that don't check
-> > for the DMA_ERROR_CODE when doing mapping. In other words for the
-> > drivers that map but don't call dma_mapping_error to check.
-> > 
-> > When that is fixed and *all the drivers that don't call dma_mapping_error
-> > are fixed, then this patch makes sense.
-> 
-> The challenge will be catching all the drivers and have confidence that
-> all of them are covered. I will start looking into this to get a feel
-> for how many drivers needs fixing.
+Wanpeng Li <liwp.linux@gmail.com> writes:
 
-I don't know if all is needed. Some of them might be dead or not used
-at all anymore - who knows? This treasure hunt would give a good idea
-of which ones are not using the PCI/DMA API right at least.
+> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+>
+> Against linux-next:
+>
+> Function alloc_huge_page will call hugetlb_cgroup_charge_cgroup
+> to charge pages, the compound page have less than 3 pages will not
+> charge to hugetlb cgroup. When alloc_huge_page fails it will call
+> hugetlb_cgroup_uncharge_cgroup to uncharge pages, however,
+> hugetlb_cgroup_uncharge_cgroup doesn't have huge_page_order check.
+> That means it will uncharge pages even if the compound page have less
+> than 3 pages. Add huge_page_order check to avoid this incorrectly
+> uncharge.
+>
+> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
 
-If it is say, CONFIG_ISA enabled, well, we could #ifdef the overflow
-buffer in the swiotlb with that option. And then work through fixing
-up those drivers - except that finding folks with that driver to
-see if it works .. yuck.. I do have some few ISA cards and some boxes
-with ISA slots :-)
+ Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-> 
-> Also, isn't this problem today with other iommu implementations? All of
-> the other iommu implementation don't have support for overflow buffers?
 
-Right, but you are in high likehood not going to run the drivers that
-don't check this with an IOMMU. Because the drivers are mostly the PCI
-variants .. or PCMCIA. And the hardware that would use this did not have
-IOMMU.
+
+> ---
+>  mm/hugetlb_cgroup.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+>
+> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+> index b834e8d..2b9e214 100644
+> --- a/mm/hugetlb_cgroup.c
+> +++ b/mm/hugetlb_cgroup.c
+> @@ -252,6 +252,9 @@ void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+>
+>  	if (hugetlb_cgroup_disabled() || !h_cg)
+>  		return;
+> +
+> +	if (huge_page_order(&hstates[idx]) < HUGETLB_CGROUP_MIN_ORDER)
+> +		return;
+>
+>  	res_counter_uncharge(&h_cg->hugepage[idx], csize);
+>  	return;
+> -- 
+> 1.7.5.4
+
+-aneesh
+
