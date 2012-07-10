@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab2GJCsa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jul 2012 22:48:30 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:38413 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594Ab2GJCre (ORCPT
+	id S1753604Ab2GJCtZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jul 2012 22:49:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64558 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751608Ab2GJCtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jul 2012 22:47:34 -0400
-From: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: lauri.hintsala@bluegiga.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-Subject: [PATCH 3/5] staging: csr: netdev.c: Remove unused macros
-Date: Mon,  9 Jul 2012 23:43:11 -0300
-Message-Id: <1341888193-12182-4-git-send-email-marcos.souza.org@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1341888193-12182-1-git-send-email-marcos.souza.org@gmail.com>
-References: <1341888193-12182-1-git-send-email-marcos.souza.org@gmail.com>
+	Mon, 9 Jul 2012 22:49:22 -0400
+Date: Mon, 9 Jul 2012 19:49:19 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+        mm-commits@vger.kernel.org, apw@canonical.com
+Subject: Re: + checkpatch-add-check-for-use-of-sizeof-without-parenthesis.patch
+ added to -mm tree
+In-Reply-To: <CA+55aFwey-q4716pYYSi=3R_ucw84zFspDXMXmzvzc72XSc9Lg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1207091933320.25143@chino.kir.corp.google.com>
+References: <20120709215256.9A4F71E0043@wpzn4.hot.corp.google.com> <alpine.DEB.2.00.1207091514310.32082@chino.kir.corp.google.com> <1341873376.6118.56.camel@joe2Laptop> <alpine.DEB.2.00.1207091553120.3552@chino.kir.corp.google.com> <1341876067.6118.67.camel@joe2Laptop>
+ <alpine.DEB.2.00.1207091640170.8185@chino.kir.corp.google.com> <1341881721.6118.92.camel@joe2Laptop> <alpine.DEB.2.00.1207091834230.20591@chino.kir.corp.google.com> <CA+55aFwey-q4716pYYSi=3R_ucw84zFspDXMXmzvzc72XSc9Lg@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These macros are not used, so we can remove it.
+On Mon, 9 Jul 2012, Linus Torvalds wrote:
 
-Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
----
- drivers/staging/csr/netdev.c |    5 -----
- 1 file changed, 5 deletions(-)
+> sizeof without parenthesis is an abomination, and should never be used.
+> 
+> Sure, you don't need to have the parenthesis (except when you do - for
+> actual types), but it's a parsing oddity.
+> 
+> The sane solution is: just add the f*cking parenthesis, and don't use
+> the parsing oddity.
+> 
+> The parenthesis are *required* when it is a type, and they are a nice
+> clarification (and makes the code easier to read) when it's an
+> expression. Not having them is insane, because it just makes it clear
+> how odd the parsing rules are for the two different cases.
+> 
 
-diff --git a/drivers/staging/csr/netdev.c b/drivers/staging/csr/netdev.c
-index cf19f11..55149df 100644
---- a/drivers/staging/csr/netdev.c
-+++ b/drivers/staging/csr/netdev.c
-@@ -70,11 +70,6 @@
-  */
- #define ALLOW_Q_PAUSE
- 
--#define ieee2host16(n)  __le16_to_cpu(n)
--#define ieee2host32(n)  __le32_to_cpu(n)
--#define host2ieee16(n)  __cpu_to_le16(n)
--#define host2ieee32(n)  __cpu_to_le32(n)
--
- #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
- #ifdef UNIFI_NET_NAME
- #define UF_ALLOC_NETDEV(_dev, _size, _name, _setup, _num_of_queues)     \
--- 
-1.7.10.4
+It's only strange looking because Documentation/CodingStyle doesn't use 
+the gcc, glibc, C99, K&R, etc, style of doing "sizeof (struct foo)" and 
+rather requires "sizeof(struct foo)".
 
+> Think of it as a function, and get over your idiotic pissing match
+> over how long you've both known C. That's irrelevant. It's a C builtin
+> function with (unnecessarily) odd parsing rules that the kernel tries
+> to standardize. The fact that it can take a type is the least odd part
+> of it (there are other built-in C extensions that look like functions
+> and do special things with the arguments they get -
+> __builtin_constant_p(), __builtin_choose_expr() etc - they don't
+> evaluate the *value* of the argument either).
+> 
+
+The only thing I've asked for is that something like this be added to 
+Documentation/CodingStyle and not just in checkpatch.pl since hardly 
+anybody uses that perl script.  You've chosen to mandate 
+"sizeof(struct foo)" over "sizeof (struct foo)" in that document, which 
+makes parenthesis for all unary expressions of the sizeof operator 
+stylistically better as well, so it's only reasonable to ask that it 
+mandates them for all unary expressions of sizeof.  It's your kernel.  
+(That will be an exception for sizeof unary expressions, though, since we 
+certainly don't want to mandate (i++).)
+
+So, as I've been saying the whole thread, please either mandate it kernel-
+wide in the CodingStyle or don't do it in checkpatch.  Checkpatch 
+continually acts as a backdoor way of people enforcing their own 
+preferences over others.
