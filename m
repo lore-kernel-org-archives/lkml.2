@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290Ab2GJWbA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 18:31:00 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53222 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242Ab2GJWa7 (ORCPT
+	id S1754521Ab2GJWbH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 18:31:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46536 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753954Ab2GJWbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 18:30:59 -0400
+	Tue, 10 Jul 2012 18:31:04 -0400
 From: Jon Mason <jdmason@kudzu.us>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org, Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
@@ -18,15 +18,17 @@ Cc: linux-kernel@vger.kernel.org, Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
         Alex Duyck <alexander.h.duyck@intel.com>,
         John Ronciak <john.ronciak@intel.com>
-Subject: [trivial PATCH 1/7] ixgb: use PCI_VENDOR_ID_*
-Date: Tue, 10 Jul 2012 15:31:26 -0700
-Message-Id: <1341959492-31389-1-git-send-email-jdmason@kudzu.us>
+Subject: [trivial PATCH 2/7] ixgbe: remove unused #define
+Date: Tue, 10 Jul 2012 15:31:27 -0700
+Message-Id: <1341959492-31389-2-git-send-email-jdmason@kudzu.us>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1341959492-31389-1-git-send-email-jdmason@kudzu.us>
+References: <1341959492-31389-1-git-send-email-jdmason@kudzu.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use PCI_VENDOR_ID_* from pci_ids.h instead of creating #define locally.
+Remove unused IXGBE_INTEL_VENDOR_ID #define
 
 Signed-off-by: Jon Mason <jdmason@kudzu.us>
 Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
@@ -39,88 +41,23 @@ Cc: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
 Cc: Alex Duyck <alexander.h.duyck@intel.com>
 Cc: John Ronciak <john.ronciak@intel.com>
 ---
- drivers/net/ethernet/intel/ixgb/ixgb_hw.c   |    5 +++--
- drivers/net/ethernet/intel/ixgb/ixgb_ids.h  |    5 -----
- drivers/net/ethernet/intel/ixgb/ixgb_main.c |   10 +++++-----
- 3 files changed, 8 insertions(+), 12 deletions(-)
+ drivers/net/ethernet/intel/ixgbe/ixgbe_type.h |    3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/ixgb/ixgb_hw.c b/drivers/net/ethernet/intel/ixgb/ixgb_hw.c
-index 99b69ad..bf9a220 100644
---- a/drivers/net/ethernet/intel/ixgb/ixgb_hw.c
-+++ b/drivers/net/ethernet/intel/ixgb/ixgb_hw.c
-@@ -32,6 +32,7 @@
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+index 204848d..c8d8040 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+@@ -32,9 +32,6 @@
+ #include <linux/mdio.h>
+ #include <linux/netdevice.h>
  
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
-+#include <linux/pci_ids.h>
- #include "ixgb_hw.h"
- #include "ixgb_ids.h"
- 
-@@ -96,7 +97,7 @@ static u32 ixgb_mac_reset(struct ixgb_hw *hw)
- 	ASSERT(!(ctrl_reg & IXGB_CTRL0_RST));
- #endif
- 
--	if (hw->subsystem_vendor_id == SUN_SUBVENDOR_ID) {
-+	if (hw->subsystem_vendor_id == PCI_VENDOR_ID_SUN) {
- 		ctrl_reg =  /* Enable interrupt from XFP and SerDes */
- 			   IXGB_CTRL1_GPI0_EN |
- 			   IXGB_CTRL1_SDP6_DIR |
-@@ -271,7 +272,7 @@ ixgb_identify_phy(struct ixgb_hw *hw)
- 	}
- 
- 	/* update phy type for sun specific board */
--	if (hw->subsystem_vendor_id == SUN_SUBVENDOR_ID)
-+	if (hw->subsystem_vendor_id == PCI_VENDOR_ID_SUN)
- 		phy_type = ixgb_phy_type_bcm;
- 
- 	return phy_type;
-diff --git a/drivers/net/ethernet/intel/ixgb/ixgb_ids.h b/drivers/net/ethernet/intel/ixgb/ixgb_ids.h
-index 2a58847..32c1b30 100644
---- a/drivers/net/ethernet/intel/ixgb/ixgb_ids.h
-+++ b/drivers/net/ethernet/intel/ixgb/ixgb_ids.h
-@@ -33,11 +33,6 @@
- ** The Device and Vendor IDs for 10 Gigabit MACs
- **********************************************************************/
- 
--#define INTEL_VENDOR_ID             0x8086
--#define INTEL_SUBVENDOR_ID          0x8086
--#define SUN_VENDOR_ID               0x108E
--#define SUN_SUBVENDOR_ID            0x108E
+-/* Vendor ID */
+-#define IXGBE_INTEL_VENDOR_ID   0x8086
 -
- #define IXGB_DEVICE_ID_82597EX      0x1048
- #define IXGB_DEVICE_ID_82597EX_SR   0x1A48
- #define IXGB_DEVICE_ID_82597EX_LR   0x1B48
-diff --git a/drivers/net/ethernet/intel/ixgb/ixgb_main.c b/drivers/net/ethernet/intel/ixgb/ixgb_main.c
-index 5fce363..4e5a060 100644
---- a/drivers/net/ethernet/intel/ixgb/ixgb_main.c
-+++ b/drivers/net/ethernet/intel/ixgb/ixgb_main.c
-@@ -54,13 +54,13 @@ MODULE_PARM_DESC(copybreak,
-  *   Class, Class Mask, private data (not used) }
-  */
- static DEFINE_PCI_DEVICE_TABLE(ixgb_pci_tbl) = {
--	{INTEL_VENDOR_ID, IXGB_DEVICE_ID_82597EX,
-+	{PCI_VENDOR_ID_INTEL, IXGB_DEVICE_ID_82597EX,
- 	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
--	{INTEL_VENDOR_ID, IXGB_DEVICE_ID_82597EX_CX4,
-+	{PCI_VENDOR_ID_INTEL, IXGB_DEVICE_ID_82597EX_CX4,
- 	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
--	{INTEL_VENDOR_ID, IXGB_DEVICE_ID_82597EX_SR,
-+	{PCI_VENDOR_ID_INTEL, IXGB_DEVICE_ID_82597EX_SR,
- 	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
--	{INTEL_VENDOR_ID, IXGB_DEVICE_ID_82597EX_LR,
-+	{PCI_VENDOR_ID_INTEL, IXGB_DEVICE_ID_82597EX_LR,
- 	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
- 
- 	/* required last entry */
-@@ -195,7 +195,7 @@ ixgb_irq_enable(struct ixgb_adapter *adapter)
- {
- 	u32 val = IXGB_INT_RXT0 | IXGB_INT_RXDMT0 |
- 		  IXGB_INT_TXDW | IXGB_INT_LSC;
--	if (adapter->hw.subsystem_vendor_id == SUN_SUBVENDOR_ID)
-+	if (adapter->hw.subsystem_vendor_id == PCI_VENDOR_ID_SUN)
- 		val |= IXGB_INT_GPI0;
- 	IXGB_WRITE_REG(&adapter->hw, IMS, val);
- 	IXGB_WRITE_FLUSH(&adapter->hw);
+ /* Device IDs */
+ #define IXGBE_DEV_ID_82598               0x10B6
+ #define IXGBE_DEV_ID_82598_BX            0x1508
 -- 
 1.7.9.5
 
