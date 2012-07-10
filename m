@@ -1,82 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab2GJJhU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 05:37:20 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61465 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753990Ab2GJJhR (ORCPT
+	id S1754804Ab2GJJpq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 05:45:46 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55048 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753613Ab2GJJpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 05:37:17 -0400
+	Tue, 10 Jul 2012 05:45:43 -0400
+Date: Tue, 10 Jul 2012 10:45:13 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: hugetlb: flush dcache before returning zeroed huge
+ page to userspace
+Message-ID: <20120710094513.GB9108@mudshark.cambridge.arm.com>
+References: <1341412376-6272-1-git-send-email-will.deacon@arm.com>
+ <20120709122523.GC4627@tiehlicka.suse.cz>
+ <20120709141324.GK7315@mudshark.cambridge.arm.com>
+ <alpine.LSU.2.00.1207091622470.2261@eggly.anvils>
 MIME-Version: 1.0
-In-Reply-To: <20120704143635.GE28294@somewhere>
-References: <CAJRGBZw_my_=Z+Jyb2UBYwW48BpCGYdcuD5mu7erHsX8NSKbDg@mail.gmail.com>
-	<20120703112828.GA28294@somewhere>
-	<CAJRGBZzn66mpQo+PCQirzqE=Wdm9T7Z01P20FQsHQnTPEd2mqA@mail.gmail.com>
-	<20120704132539.GD28294@somewhere>
-	<CAJRGBZyBGL97MAjBVBa5cKKsePtDFPiWqN4N-Lcw3V8qw35DTQ@mail.gmail.com>
-	<20120704143635.GE28294@somewhere>
-Date: Tue, 10 Jul 2012 05:37:15 -0400
-Message-ID: <CAJRGBZzq8dWeUBTcuNQLa_rUz00e+m4RJ6hjKrM-mcYSmu9qQw@mail.gmail.com>
-Subject: Re: CPU isolation question again
-From: Luming Yu <luming.yu@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, gilad@benyossef.com,
-        Len Brown <lenb@kernel.org>, shli@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1207091622470.2261@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 4, 2012 at 10:36 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Wed, Jul 04, 2012 at 10:12:43PM +0800, Luming Yu wrote:
->> On Wed, Jul 4, 2012 at 9:25 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> > On Wed, Jul 04, 2012 at 08:42:29PM +0800, Luming Yu wrote:
->> >> On Tue, Jul 3, 2012 at 7:28 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> >> > On Wed, Jun 27, 2012 at 09:22:09PM +0800, Luming Yu wrote:
->> >> >> Hi there,
->> >> >>
->> >> >> I noticed some discussion about CPU isolation which points me to the
->> >> >> patch set (https://lkml.org/lkml/2011/8/15/245). I'm currently
->> >> >> preparing a RFC-patch-set to automatically pick up a few suitable CPUs
->> >> >> to isolate then kick them out of service for a while. We need to
->> >> >> balance between  thermal & power management And overall system
->> >> >> performance during this operation as much as possible. So
->> >> >> software-cpu-online-offline interface could not be a good option to
->> >> >> me. But to make sure I'm not blindly running on a dead-end path, I'd
->> >> >> check with experts here to ensure it makes some sense to isolate CPUs
->> >> >> to this level, and the idea also makes some sense, and the most
->> >> >> important is it's not implemented yet.
->> >> >
->> >> > I don't understand what you are trying to do and how exactly. How do you
->> >> > plan to do this isolation and how do you want to balance between thermal
->> >> > and power?
->> >>
->> >> My question could be wrong as the question arose several weeks ago
->> >> when I came across
->> >>  drivers/acpi/acpi_paid.c which looks like a real user who need to
->> >> request system automatically
->> >> pick up a few CPU to get them isolated and deactivated. Later on, I
->> >> noticed tglx's cpu hot plug re-work.
->> >> I realized we could reuse the interface to do isolation and deactivation work.
->> >>
->> >> Of cause, to pick up which ones to isolate and deactivate is another problem.
->> >>
->> >> cc'ed the author and ACPI maintainer of the driver as well as tglx.
->> >
->> > May be I'm confused because we both have our own definition of isolation.
->> > I'm not sure what kind of CPU isolation you're looking for.
->>
->> At first, it needs not avaiable to scheduler.  Then, it needs in
->> deepest power saving mode.
->> At last, it needs available to scheduler again on demand.
->> Sounds very like a typical soft offline cpu, but needs to be low light weight.
->
-> I see. So indeed the latest developments made in CPU hotplug could make it a solution
-> for you.
+Hi Hugh,
 
-I hope it works as it can solve half of my question if the interface
-is light enough.  Another half is about a method to tap which set of
-logical processors to isolate. We could leave the question to Admin,
-or we could automatically sort it out from an ordered list. Not sure
-how many type of cpu set we can find from existing APIs..
+Cheers for looking at this.
+
+On Tue, Jul 10, 2012 at 12:57:14AM +0100, Hugh Dickins wrote:
+> On Mon, 9 Jul 2012, Will Deacon wrote:
+> > On Mon, Jul 09, 2012 at 01:25:23PM +0100, Michal Hocko wrote:
+> > > On Wed 04-07-12 15:32:56, Will Deacon wrote:
+> > > > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > > > index e198831..b83d026 100644
+> > > > --- a/mm/hugetlb.c
+> > > > +++ b/mm/hugetlb.c
+> > > > @@ -2646,6 +2646,7 @@ retry:
+> > > >  			goto out;
+> > > >  		}
+> > > >  		clear_huge_page(page, address, pages_per_huge_page(h));
+> > > > +		flush_dcache_page(page);
+> > > >  		__SetPageUptodate(page);
+> > > 
+> > > Does this have to be explicit in the arch independent code?
+> > > It seems that ia64 uses flush_dcache_page already in the clear_user_page
+> > 
+> > It would match what is done in similar situations by cow_user_page (mm/memory.c)
+> > and shmem_writepage (mm/shmem.c). Other subsystems also have explicit page
+> > flushing (DMA bounce, ksm) so I think this is the right place for it.
+> 
+> I am not at all sure if you are right or not:
+> please let's consult linux-arch about this - now Cc'ed.
+
+I assume that by `linux-arch' you mean BenH :)
+
+> If this hugetlb_no_page() were solely mapping the hugepage into that
+> userspace, I would say you are wrong.  It's the job of clear_huge_page()
+> to take the mapped address into account, and pass it down to the
+> architecture-specific implementation, to do whatever flushing is
+> needed - you should be providing that in your architecture.
+> 
+> In particular, notice how clear_huge_page() goes round a loop of
+> clear_user_highpage()s: in your patch, you're expecting the implementation
+> of flush_dcache_page() to notice whether or not this is a hugepage, and
+> flush the appropriate size.
+> 
+> Perhaps yours is the only architecture to need this on huge, and your
+> flush_dcache_page() implements it correctly; but it does seem surprising.
+
+ARM doesn't yet have hugetlb support in mainline so we can do whatever
+people prefer. I think it makes sense for flush_dcache_page to be hugepage
+aware so that we can sync the caches when installing huge ptes using the
+same code as normal ptes. Of course, that may not be the same across all
+architectures, so you certainly have a valid point.
+
+> If I start to grep the architectures for non-empty flush_dcache_page(),
+> I soon find things in arch/arm such as v4_mc_copy_user_highpage() doing
+> if (!test_and_set_bit(PG_dcache_clean,)) __flush_dcache_page() - where
+> the naming suggests that I'm right, it's the architecture's responsibility
+> to arrange whatever flushing is needed in its copy and clear page functions.
+
+On ARM the flushing is there to deal with dcache aliasing and highmem, so the
+clear/copy functions won't actually do explicit flushing on modern (ARMv7)
+cores. Instead we flush the page when writing the pte and noticing that
+PG_arch_1 (PG_dcache_clean) is clear...
+
+...so the real question is why this wasn't being triggered for huge pages.
+I'll go and take another look since I would expect PG_arch_1 to be cleared
+for pages coming back from alloc_huge_page.
+
+> But... this hugetlb_no_page() has a VM_MAYSHARE case below, which puts
+> the new page into page cache, making it accessible by other processes:
+> that may indeed be reason for flush_dcache_page() there - or a loop of
+> flush_dcache_page()s.  But I worry then that in the !VM_MAYSHARE case
+> you would be duplicating expensive flushes: perhaps they should be
+> restricted to the VM_MAYSHARE block.
+
+If the PG_arch_1 flag does its job, duplicate flushes shouldn't be a
+problem.
+
+Thanks,
+
+Will
