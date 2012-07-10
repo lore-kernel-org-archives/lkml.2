@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab2GJO7v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 10:59:51 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:25225 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065Ab2GJO7s (ORCPT
+	id S1754630Ab2GJPAo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 11:00:44 -0400
+Received: from smtp201.dfw.emailsrvr.com ([67.192.241.201]:45705 "EHLO
+	smtp201.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754166Ab2GJPAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 10:59:48 -0400
-Date: Tue, 10 Jul 2012 10:51:10 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: Olaf Hering <olaf@aepfle.de>, Daniel Kiper <dkiper@net-space.pl>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Beulich <JBeulich@suse.com>
-Subject: Re: [Xen-devel] incorrect layout of globals from head_64.S during
- kexec boot
-Message-ID: <20120710145110.GA15218@phenom.dumpdata.com>
-References: <20120706084120.GA31219@router-fw-old.local.net-space.pl>
- <20120706120750.GA8970@aepfle.de>
- <4FF6FCA9020000780008E0BB@nat28.tlf.novell.com>
- <20120706133105.GA20600@aepfle.de>
- <20120706141419.GA21951@aepfle.de>
- <4FF7174C020000780008E1FF@nat28.tlf.novell.com>
- <20120706172918.GA15222@aepfle.de>
- <20120710093327.GA13864@aepfle.de>
- <20120710141411.GB1791@phenom.dumpdata.com>
- <1341931594.8586.44.camel@hastur.hellion.org.uk>
+	Tue, 10 Jul 2012 11:00:43 -0400
+Message-ID: <4FFC4399.3050407@calxeda.com>
+Date: Tue, 10 Jul 2012 10:00:41 -0500
+From: Rob Herring <rob.herring@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1341931594.8586.44.camel@hastur.hellion.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Meelis Roos <mroos@linux.ee>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>, sparclinux@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: bisected regression since 3.5-rc5 - hang on boot on some sparc64
+ machines
+References: <alpine.SOC.1.00.1207091627480.17307@math.ut.ee>
+In-Reply-To: <alpine.SOC.1.00.1207091627480.17307@math.ut.ee>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 08:46:34AM -0600, Ian Campbell wrote:
-> On Tue, 2012-07-10 at 10:14 -0400, Konrad Rzeszutek Wilk wrote:
-> > Which brings me to another question - say we do use this patch, what
-> > if the decompressor overwrites the old kernels .data section. Won't
-> > we run into this problem again?
+On 07/10/2012 06:09 AM, Meelis Roos wrote:
+> A regression since 3.5-rc5 stops Sun Fire V100 and Sun Netra X1 sparc64 
+> machines from booting, hanging after enabling serial console. Several 
+> different other sparc64 systems work fine with 3.5-rc6. prtconf and full 
+> dmesg below.
 > 
-> I've not really been following this thread that closely but wouldn't the
-> right answer be for the original kernel to unmap the shared info on
-> kexec? Or maybe remap it up to some high/reserved address? Can it read
-
-That would be the right answer I think, but I don't see the a VCPU_deregister
-call (only VCPU_register).
-
-But perhaps the XENMEM_decrease_reservation for the particular MFN is the
-answer to do a VCPU "de-register" ?
-
-> the original address used by hvmloader at start of day and reuse that?
-
-Wait, we can map multiple shared_info? Ooh, somehow I thought the guest
-could only do one registration.
-
+> Bisecting leads to
+> 107a84e61cdd3406c842a0e4be7efffd3a05dba6 is the first bad commit
+> commit 107a84e61cdd3406c842a0e4be7efffd3a05dba6
+> Author: Thierry Reding <thierry.reding@avionic-design.de>
+> Date:   Thu Jun 14 09:12:35 2012 +0200
 > 
-> Ian.
-> 
+>     of: match by compatible property first
+>     
+>     When matching devices against an OF device ID table, the first string of
+>     the compatible property that is listed in the table should match,
+>     regardless of its position in the table.
+>     
+>     Cc: Grant Likely <grant.likely@secretlab.ca>
+>     Cc: Rob Herring <rob.herring@calxeda.com>
+>     Cc: devicetree-discuss@lists.ozlabs.org
+>     Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+>     Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+
+The problem is match combinations of compatible plus name and/or type
+fail to match correctly. I have a fix for this, but given how late it is
+for 3.5 I think it is best to revert this for now. There could be other
+cases that rely on the current although wrong behavior. I will post an
+updated version for 3.6.
+
+Linus, Please revert 107a84e61cdd3406c842a0e4be7efffd3a05dba6.
+
+Rob
