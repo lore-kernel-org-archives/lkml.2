@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab2GJNB7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 09:01:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37563 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755744Ab2GJNB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 09:01:56 -0400
-Date: Tue, 10 Jul 2012 16:01:50 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/2] KVM: X86: remove read buffer for mmio read
-Message-ID: <20120710130149.GE23898@redhat.com>
-References: <4FFA9E16.10001@linux.vnet.ibm.com>
- <4FFABD59.2070108@redhat.com>
- <20120709112346.GA23898@redhat.com>
- <4FFAD341.3080508@redhat.com>
- <4FFADB37.4090705@linux.vnet.ibm.com>
- <4FFADDFA.5000603@redhat.com>
- <20120710103629.GC23898@redhat.com>
- <4FFC07BB.8080802@redhat.com>
- <20120710104847.GD23898@redhat.com>
- <4FFC251F.4050504@redhat.com>
+	id S1755767Ab2GJNHq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 09:07:46 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:34351 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992Ab2GJNHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 09:07:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FFC251F.4050504@redhat.com>
+Date: Tue, 10 Jul 2012 21:07:44 +0800
+Message-ID: <CAJd=RBB-sju_DFR5RjQRD=f7ZmPUG7Dey7zW03oPaNdVohXRMA@mail.gmail.com>
+Subject: [patch] BFS 421-1: delink cpupri
+From: Hillf Danton <dhillf@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 10, 2012 at 03:50:39PM +0300, Avi Kivity wrote:
-> On 07/10/2012 01:48 PM, Gleb Natapov wrote:
-> > > > > 
-> > > > But the code is already here, why drop it?
-> > > 
-> > > The read cache is not effective for multiple disjunct reads.
-> > What do you mean?
-> 
-> If an instruction reads from several sources in mmio, then the first
-> read will be flushed from the cache by the second read.  So if we need a
-> third read, we'll have to exit for the first again.
-> 
-The cache is flashed only before instruction decode, never during
-emulation.
+We compile less with cpupri delinked.
 
+
+--- a/kernel/sched/Makefile	Tue Jul 10 20:51:54 2012
++++ b/kernel/sched/Makefile	Tue Jul 10 20:51:52 2012
+@@ -17,8 +17,8 @@ else
+ obj-y += core.o clock.o idle_task.o fair.o rt.o stop_task.o
+ obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
+ obj-$(CONFIG_SCHED_DEBUG) += debug.o
+-endif
+ obj-$(CONFIG_SMP) += cpupri.o
++endif
+ obj-$(CONFIG_SCHEDSTATS) += stats.o
+
+
+--- a/kernel/sched/bfs.c	Mon Jul  9 20:10:14 2012
++++ b/kernel/sched/bfs.c	Tue Jul 10 20:49:58 2012
+@@ -76,7 +76,6 @@
+ #include <asm/paravirt.h>
+ #endif
+
+-#include "cpupri.h"
+ #include "../workqueue_sched.h"
+
+ #define CREATE_TRACE_POINTS
+@@ -223,7 +222,6 @@ struct root_domain {
+ 	 * one runnable RT task.
+ 	 */
+ 	cpumask_var_t rto_mask;
+-	struct cpupri cpupri;
+ };
+
+ /*
+@@ -5591,7 +5589,6 @@ static void free_rootdomain(struct rcu_h
+ {
+ 	struct root_domain *rd = container_of(rcu, struct root_domain, rcu);
+
+-	cpupri_cleanup(&rd->cpupri);
+ 	free_cpumask_var(rd->rto_mask);
+ 	free_cpumask_var(rd->online);
+ 	free_cpumask_var(rd->span);
+@@ -5646,12 +5643,8 @@ static int init_rootdomain(struct root_d
+ 	if (!alloc_cpumask_var(&rd->rto_mask, GFP_KERNEL))
+ 		goto free_online;
+
+-	if (cpupri_init(&rd->cpupri) != 0)
+-		goto free_rto_mask;
+ 	return 0;
+
+-free_rto_mask:
+-	free_cpumask_var(rd->rto_mask);
+ free_online:
+ 	free_cpumask_var(rd->online);
+ free_span:
 --
-			Gleb.
