@@ -1,50 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512Ab2GJShk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 14:37:40 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:42494 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab2GJShj convert rfc822-to-8bit (ORCPT
+	id S1751552Ab2GJSlL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 14:41:11 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:29149 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282Ab2GJSlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 14:37:39 -0400
-References: <20120710111756.GA11351@localhost>
-In-Reply-To: <20120710111756.GA11351@localhost>
-Mime-Version: 1.0 (1.0)
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <CF1C132D-2873-408A-BCC9-B9F57BE6EDDB@linuxfoundation.org>
-Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-X-Mailer: iPad Mail (9B206)
-From: Christoph Lameter <christoph@linuxfoundation.org>
-Subject: Re: linux-next: Early crashed kernel on CONFIG_SLOB
-Date: Tue, 10 Jul 2012 13:37:35 -0500
-To: "wfg@linux.intel.com" <wfg@linux.intel.com>
+	Tue, 10 Jul 2012 14:41:10 -0400
+Date: Tue, 10 Jul 2012 14:32:13 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Olaf Hering <olaf@aepfle.de>
+Cc: Daniel Kiper <dkiper@net-space.pl>, xen-devel@lists.xensource.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jan Beulich <JBeulich@suse.com>
+Subject: Re: [Xen-devel] incorrect layout of globals from head_64.S during
+ kexec boot
+Message-ID: <20120710183213.GB24536@phenom.dumpdata.com>
+References: <4FF6FCA9020000780008E0BB@nat28.tlf.novell.com>
+ <20120706133105.GA20600@aepfle.de>
+ <20120706141419.GA21951@aepfle.de>
+ <4FF7174C020000780008E1FF@nat28.tlf.novell.com>
+ <20120706172918.GA15222@aepfle.de>
+ <20120710093327.GA13864@aepfle.de>
+ <20120710141411.GB1791@phenom.dumpdata.com>
+ <20120710152308.GA31819@aepfle.de>
+ <20120710172626.GA6868@phenom.dumpdata.com>
+ <20120710180953.GB20075@aepfle.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120710180953.GB20075@aepfle.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I sent a patch yesterday (or was it friday) to fix the issue. Sorry @airport right now. 
-
-
-
-On Jul 10, 2012, at 6:17, wfg@linux.intel.com wrote:
-
-> Hi Christoph,
+On Tue, Jul 10, 2012 at 08:09:53PM +0200, Olaf Hering wrote:
+> On Tue, Jul 10, Konrad Rzeszutek Wilk wrote:
 > 
-> This commit crashes the kernel w/o any dmesg output (the attached one
-> is created by the script as a summary for that run). This is very
-> reproducible in kvm for the attached config.
+> > On Tue, Jul 10, 2012 at 05:23:08PM +0200, Olaf Hering wrote:
+> > > I was not thinking of statically allocated pages but some new concept of
+> > > allocating such shared pages. Shouldnt there be some dedicated area in
+> > > the E820 table which has to be used during the whole life time of the
+> > > guest?
+> > 
+> > Not that I can see. But I don't see why that could not be added? Perhaps
+> > the HVM loader can make it happen? But then how would it tell the kernel
+> > that this E820_RESERVED is the shared_info one. Not the other ones..
 > 
->        commit 3b0efdfa1e719303536c04d9abca43abeb40f80a
->        Author: Christoph Lameter <cl@linux.com>
->        Date:   Wed Jun 13 10:24:57 2012 -0500
+> Maybe just use a new E820 type for this sort of thing? Its just the
+
+Ewww.
+> question wether some other OS can cope with an unknown type. From my
+> reading of the e820 related code a region with an unknown type is just
+> ignored.
+
+Sure. And we could scan it.. but scanning E820_UNKNOWN for some magic
+header seems .. hacky.
+
 > 
->            mm, sl[aou]b: Extract common fields from struct kmem_cache
+> > > Are there more shared areas or is it just the shared info page?
+> > > 
+> > > > And I am kind of worried that moving it to the .data section won't
+> > > > be completly safe - as the decompressor might blow away that part too.
+> > > 
+> > > The decompressor may just clear the area, but since there is no way to
+> > > tell where the shared pages are its always a risk to allocate them at
+> > > compile time.
+> > 
+> > Yeah, and with the hypervisor potentially still updating the "old"
+> > MFN before the new kernel has registered the new MFN, we can end up
+> > corrupting the new kernel. Ouch.
+> > 
+> > Would all of these issues disappear if the hypervisor had a hypercall
+> > that would stop updating the shared info? or just deregister the MFN?
+> > What if you ripped the GMFN out using 'decrease_reservation' hypercall?
+> > Would that eliminate the pesky GMFN?
 > 
-> Thanks,
-> Fengguang
-> <dmesg-kvm-waimea-2191-2012-07-10-17-32-01>
-> <config-3.5.0-rc6+>
+> I'm not sure, most likely the gfn will just disappear from the guest,
+> like a ballooned page disappears. Accessing it will likely cause a
+> crash.
+
+What about an populate_physmap right afterwards to stick a newly
+minted GMFN in its place? I don't really know whether this dance
+of balloon out/balloon in the same GMFN will break the shared_info
+relationship. Perhaps not?
+
+What we are going for is to stop the hypervisor from using the shared_info
+MFN... perhaps there are other ways to do this?
