@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756316Ab2GKAEP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 20:04:15 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:13919 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756279Ab2GKAEN (ORCPT
+	id S1756208Ab2GKAFI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 20:05:08 -0400
+Received: from mail131.messagelabs.com ([216.82.242.99]:52887 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755467Ab2GKAFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 20:04:13 -0400
+	Tue, 10 Jul 2012 20:05:06 -0400
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-160.messagelabs.com!1341965043!9277901!30
+X-Msg-Ref: server-16.tower-131.messagelabs.com!1341965104!24722522!1
 X-Originating-IP: [216.166.12.72]
 X-StarScan-Version: 6.5.10; banners=-,-,-
 X-VirusChecked: Checked
 From: H Hartley Sweeten <hartleys@visionengravers.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 44/83] staging: comedi: rtd520: remove RtdUsrOutSource macro
-Date: Tue, 10 Jul 2012 17:04:05 -0700
+Subject: [PATCH 45/83] staging: comedi: rtd520: remove RtdDio0Read macro
+Date: Tue, 10 Jul 2012 17:04:58 -0700
 User-Agent: KMail/1.9.9
 CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
         <gregkh@linuxfoundation.org>
@@ -23,37 +23,44 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-ID: <201207101704.05603.hartleys@visionengravers.com>
+Message-ID: <201207101704.59220.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This macro uses the 'devpriv' macro which relies on a local variable
-having a specific name. It's also not used. Remove the macro.
+having a specific name. Plus it's just a wrapper around a simple
+'readw'. Remove the macro.
 
 Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 Cc: Ian Abbott <abbotti@mev.co.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/drivers/rtd520.c | 5 -----
- 1 file changed, 5 deletions(-)
+ drivers/staging/comedi/drivers/rtd520.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/rtd520.c b/drivers/staging/comedi/drivers/rtd520.c
-index 5da6930..757cebb 100644
+index 757cebb..e3a6aa2 100644
 --- a/drivers/staging/comedi/drivers/rtd520.c
 +++ b/drivers/staging/comedi/drivers/rtd520.c
-@@ -406,11 +406,6 @@ struct rtdPrivate {
- 
+@@ -407,8 +407,6 @@ struct rtdPrivate {
  /* Macros to access registers */
  
--/* User output N source select (write only) */
--#define RtdUsrOutSource(dev, n, v) \
--	writel(v, devpriv->las0+((n <= 0) ? LAS0_UOUT0_SELECT : \
--				LAS0_UOUT1_SELECT))
--
  /* Digital IO */
- #define RtdDio0Read(dev) \
- 	(readw(devpriv->las0+LAS0_DIO0) & 0xff)
+-#define RtdDio0Read(dev) \
+-	(readw(devpriv->las0+LAS0_DIO0) & 0xff)
+ #define RtdDio0Write(dev, v) \
+ 	writew((v) & 0xff, devpriv->las0+LAS0_DIO0)
+ 
+@@ -1664,7 +1662,7 @@ static int rtd_dio_insn_bits(struct comedi_device *dev,
+ 	}
+ 	/* on return, data[1] contains the value of the digital
+ 	 * input lines. */
+-	data[1] = RtdDio0Read(dev);
++	data[1] = readw(devpriv->las0 + LAS0_DIO0) & 0xff;
+ 
+ 	/*DPRINTK("rtd520:port_0 wrote: 0x%x read: 0x%x\n", s->state, data[1]); */
+ 
 -- 
 1.7.11
 
