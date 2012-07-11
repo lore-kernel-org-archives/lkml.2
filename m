@@ -1,139 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161023Ab2GKWmn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 18:42:43 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:62524 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161010Ab2GKWml (ORCPT
+	id S1030482Ab2GKWnx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 18:43:53 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40576 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754544Ab2GKWnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 18:42:41 -0400
+	Wed, 11 Jul 2012 18:43:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <4FFDE2E2.7050901@linux.vnet.ibm.com>
-References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com>
-	<1341263752-10210-2-git-send-email-sjenning@linux.vnet.ibm.com>
-	<4FFDC54F.5030402@vflare.org>
-	<4FFDE2E2.7050901@linux.vnet.ibm.com>
-Date: Wed, 11 Jul 2012 15:42:40 -0700
-Message-ID: <CAPkvG_fejGCrS9u3Mg-ic1B_ar5qdyCSKSQtweijwaZ5mou=dw@mail.gmail.com>
-Subject: Re: [PATCH 1/4] zsmalloc: remove x86 dependency
-From: Nitin Gupta <ngupta@vflare.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAKYAXd__BLFPOw=+tt=cqZgyM45y5mSOTamVaFTU26BNSNa=2A@mail.gmail.com>
+References: <1341717459-7297-1-git-send-email-linkinjeon@gmail.com>
+	<20120710145937.GA1947@fieldses.org>
+	<CAKYAXd97ir=tvxWTC4eVmrrXBEpK=XCX3-e8XUjCPy16eHoibQ@mail.gmail.com>
+	<20120711140944.GB11432@fieldses.org>
+	<CAKYAXd__BLFPOw=+tt=cqZgyM45y5mSOTamVaFTU26BNSNa=2A@mail.gmail.com>
+Date: Thu, 12 Jul 2012 07:43:49 +0900
+Message-ID: <CAKYAXd9KLxDqXSqgk7Y1rNv9cw-r+PHPSenQCnkRh9_0_6HmAQ@mail.gmail.com>
+Subject: Re: [PATCH] nfs-util: Add cache_flush in mountd UMNT procedure.
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: SteveD@redhat.com, Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vivek Trivedi <vtrivedi018@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 1:32 PM, Seth Jennings
-<sjenning@linux.vnet.ibm.com> wrote:
-> On 07/11/2012 01:26 PM, Nitin Gupta wrote:
->> On 07/02/2012 02:15 PM, Seth Jennings wrote:
->>> This patch replaces the page table assisted object mapping
->>> method, which has x86 dependencies, with a arch-independent
->>> method that does a simple copy into a temporary per-cpu
->>> buffer.
->>>
->>> While a copy seems like it would be worse than mapping the pages,
->>> tests demonstrate the copying is always faster and, in the case of
->>> running inside a KVM guest, roughly 4x faster.
->>>
->>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
->>> ---
->>>  drivers/staging/zsmalloc/Kconfig         |    4 --
->>>  drivers/staging/zsmalloc/zsmalloc-main.c |   99 +++++++++++++++++++++---------
->>>  drivers/staging/zsmalloc/zsmalloc_int.h  |    5 +-
->>>  3 files changed, 72 insertions(+), 36 deletions(-)
->>>
+2012/7/12, Namjae Jeon <linkinjeon@gmail.com>:
+> 2012/7/11, J. Bruce Fields <bfields@fieldses.org>:
+>> On Wed, Jul 11, 2012 at 01:10:53PM +0900, Namjae Jeon wrote:
+>>> 2012/7/10, J. Bruce Fields <bfields@fieldses.org>:
+>>> > On Sat, Jul 07, 2012 at 11:17:39PM -0400, Namjae Jeon wrote:
+>>> >> For removing storage device - user needs to safely un-mount the
+>>> >> device
+>>> >> and then eject. But if 'EBUSY' occurs in umount then it will create
+>>> >> confusion for the user as it will mean some I/O is in progress - and
+>>> >> won't allow user to safely ejecting device.
+>>> >
+>>> Hi James.
+>>> > The one drawback is that recovering from the cache flushes might be a
+>>> > little expensive if you have a lot of exports in use.
+>>> Good point. I will look for more there is the method flush only mount
+>>> entry.
 >>
+>> I don't think there's a good way to flush only one entry.
 >>
->>>  struct mapping_area {
->>> -    struct vm_struct *vm;
->>> -    pte_t *vm_ptes[2];
->>> -    char *vm_addr;
->>> +    char *vm_buf; /* copy buffer for objects that span pages */
->>> +    char *vm_addr; /* address of kmap_atomic()'ed pages */
->>>  };
->>>
+>> Also, this isn't going to help for NFSv4 since a v4 client won't do an
+>> unmount call.
+> Okay.
 >>
->> I think we can reduce the copying overhead by not copying an entire
->> compressed object to another (per-cpu) buffer. The basic idea of the
->> method below is to:
->>  - Copy only the amount of data that spills over into the next page
->>  - No need for a separate buffer to copy into
+>>> > I'm curious, since you said this was for a usb disk: are users
+>>> > expected
+>>> > to just unplug it (in which case--is it read only?) or do they have
+>>> > some
+>>> > way of unmounting before they pull the plug?
+>>> Users expected to unplug it on both read only and read/write.
+>>> And there is no way that system be prepared to know about the
+>>> intelligence when the user is going to unplug.
+>>> if the user really want to detach the device safely. There is an
+>>> option like the desktop PC - where, we can say - umount/eject the
+>>> device. There is a proper user interface for safe removal.
+>>> but they can not unplug safely if usb device is mounted with nfs
+>>> because of this issue.
 >>
->> Currently, we store objects that split across pages as:
->>
->> +-Page1-+
->> |     |
->> |     |
->> |-------| <-- obj-1 off: 0
->> |<ob1'>       |
->> +-------+ <-- obj-1 off: s'
->>
->> +-Page2-+ <-- obj-1 off: s'
->> |<ob1''>|
->> |-------| <-- obj-1 off: obj1_size, obj-2 off: 0
->> |<ob2>        |
->> |-------| <-- obj-2 off: obj2_size
->> +-------+
->>
->> But now we would store it as:
->>
->> +-Page1-+
->> |     |
->> |-------| <-- obj-1 off: s''
->> |     |
->> |<ob1'>       |
->> +-------+ <-- obj-1 off: obj1_size
->>
->> +-Page2-+ <-- obj-1 off: 0
->> |<ob1''>|
->> |-------| <-- obj-1 off: s'', obj-2 off: 0
->> |<ob2>        |
->> |-------| <-- obj-2 off: obj2_size
->> +-------+
->>
->> When object-1 (ob1) is to be mapped, part (size: s'-0) of object-2 will
->> be swapped with ob1'. This swapping can be done in-place using simple
->> xor swap algorithm. So, after swap, page-1 and page-2 will look like:
->>
->> +-Page1-+
->> |     |
->> |-------| <-- obj-2 off: 0
->> |     |
->> |<ob2''>|
->> +-------+ <-- obj-2 off: (obj1_size - s'')
->>
->> +-Page2-+ <-- obj-1 off: 0
->> |     |
->> |<ob1>        |
->> |-------| <-- obj-1 off: obj1_size, obj-2 off: (obj1_size - s'')
->> |<ob2'>       |
->> +-------+ <-- obj-2 off: obj2_size
->>
->> Now obj-1 lies completely within page-2, so can be kmap'ed as usual. On
->> zs_unmap_object() we would just do the reverse and restore objects as in
->> figure-1.
->
-> Hey Nitin, thanks for the feedback.
->
-> Correct me if I'm wrong, but it seems like you wouldn't be able to map
-> ob2 while ob1 was mapped with this design.  You'd need some sort of
-> zspage level protection against concurrent object mappings.  The
-> code for that protection might cancel any benefit you would gain by
-> doing it this way.
->
+>> Ideal might be to get some way to notify nfsd when the device
+>> diseappears or the filesystem wants to unmount.  I don't know how to do
+>> that.
+> Okay. I will look for good solution for this issue.
+> Thanks.
+Hi James.
+I have a question.
+If we found the method to notify nfs when unplugging device, Can nfsd
+flush only entry of usb mount ?
 
-Do you think blocking access of just one particular object (or
-blocking an entire zspage, for simplicity) for a short time would be
-an issue, apart from the complexity of implementing per zspage
-locking?
+Thanks.
 
-Thanks,
-Nitin
+>>
+>> --b.
+>>
+>
