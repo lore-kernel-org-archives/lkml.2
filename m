@@ -1,83 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451Ab2GKIEZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 04:04:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47836 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752840Ab2GKIES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 04:04:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="170334992"
-Message-ID: <1341994106.2963.138.camel@sauron>
-Subject: Re: mmotm 2012-07-10-16-59 uploaded
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
-Date: Wed, 11 Jul 2012 11:08:26 +0300
-In-Reply-To: <20120711005926.25acc6c6.akpm@linux-foundation.org>
-References: <20120711000148.BAD1E5C0050@hpza9.eem.corp.google.com>
-	 <1341988680.2963.128.camel@sauron>
-	 <20120711004430.0d14f0b6.akpm@linux-foundation.org>
-	 <1341993193.2963.132.camel@sauron>
-	 <20120711005926.25acc6c6.akpm@linux-foundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-X0U5uJVxq+VmyXc+Btqt"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1756816Ab2GKIFB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 04:05:01 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:47123 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932078Ab2GKIEx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 04:04:53 -0400
+Date: Wed, 11 Jul 2012 10:04:46 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: [GIT PULL] x86/mce fix (ready for 3.6 merge window)
+Message-ID: <20120711080446.GA17713@gmail.com>
+References: <4ffc6b7b63006ca92@agluck-desktop.sc.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4ffc6b7b63006ca92@agluck-desktop.sc.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-X0U5uJVxq+VmyXc+Btqt
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+* Luck, Tony <tony.luck@intel.com> wrote:
 
-On Wed, 2012-07-11 at 00:59 -0700, Andrew Morton wrote:
-> > > I looked at them, but they're identical to what I now have, so nothin=
-g
-> > > needed doing.
-> >=20
-> > Strange, I thought they had the white-spaces issue solved.=20
->=20
-> They did, but I'd already fixed everything.  That's what those emails
-> in your inbox were about.
+> The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
+> 
+>   Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-mce-ripvfix
+> 
+> for you to fetch changes up to b99c2fc9366d4e32b8d087cd28f6dbf5f7932dae:
+> 
+>   x86/mce: Need to let kill_proc() send signal to doomed process (2012-07-10 10:18:29 -0700)
+> 
+> ----------------------------------------------------------------
+> Fix application level machine check recovery
+> 
+> ----------------------------------------------------------------
+> Tony Luck (1):
+>       x86/mce: Need to let kill_proc() send signal to doomed process
+> 
+>  arch/x86/kernel/cpu/mcheck/mce.c |  6 ++++--
+>  include/linux/mm.h               |  1 +
+>  mm/memory-failure.c              | 10 ++++++----
+>  3 files changed, 11 insertions(+), 6 deletions(-)
 
-Sorry Andrew, you did not squash your changes in, and your fix-up patch
-did not have a nice commit message last time I looked, which made me
-think that it is temporary and you expect an updated version of my
-patches. It is fine with me if to have it separately, I was just
-confused.
+A couple of commit log details:
 
---=20
-Best Regards,
-Artem Bityutskiy
+ - If it's for v3.6 then the Cc: stable backport is not 
+   justified. Either it's for tip:x86/urgent and then we'll 
+   merge it straight away, or for tip:x86/mce for v3.6 and then 
+   there's no Cc: stable tag.
 
---=-X0U5uJVxq+VmyXc+Btqt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+ - This reference to a commit is a bit unusual:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+In commit dad1743e5993f19b3d7e7bd0fb35dc45b5326626
+x86/mce: Only restart instruction after machine check recovery if it is safe
 
-iQIcBAABAgAGBQJP/TR6AAoJECmIfjd9wqK0kV4QAJW6hUvwxaa0RPz/tO7UQBhk
-BMyBe5wkaoJ4nsbRmP8LRfhzHajRnhYhmvPEEagHl3XuBNl/Stij0y+zwBkbY4gt
-Qa89ikgoVlIOxEtE7LH2MaK+IeDP73C/7wNLQqdj8fI8Sm9edJaF+SlDTlHq+ugi
-k6Ji94L1bt2nnoGn702YwnpQJffzoar4pIs5tNPuDqc6hLkZqJoKwuK2eGGTyvG3
-wrVNs+EasBKSMTcyG/2TmokCmmIqcuLCungrSZbN+ucgk9+j3B0UI3UOOwSYxBGs
-0EFSIMElL/B/NMzfU5bjg+uvDbDqxIcbsKHPB0YVZ2CAZ/aghXzvHZgjHc028e8M
-RRu7xEYTvNsrJBri99w+avRY7ltqhEkxqyUMX5dCp/s0Us4XhDbqa7Al/nYAsDD8
-VycxSQWW/pSrsGd09FHBQZIF1swCe2Jv4fS964UcgC2IbjJQW5I/YUisLc+sxCJq
-TuX26UNhz9eozie1rnvUEGtZu/bzUoad2zAfFZX3wfE9CKtx9URmPmKdSyYc5am3
-TP7ea5QS14deC/hs4BD0QSKA+MzUT8eA4qn90IVjubl4cu4/qHbTCKCFhiQwOYGY
-FvPKFRTkZZmdUNvg0DpBLiF06bOEVJyJt2gIuoDKvLVFugihEsbpC4wBkyscpVxf
-FFZaJPa8ZdmLs2w5mbR3
-=wEXM
------END PGP SIGNATURE-----
+   the canonical format is something like:
 
---=-X0U5uJVxq+VmyXc+Btqt--
+  In commit dad1743e5993f1 ("x86/mce: Only restart instruction 
+  after machine check recovery if it is safe") ...
 
+ - We tend to use such an ordering of tags:
+
+  Signed-off-by: Tony Luck <tony.luck@intel.com>
+  Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+  Cc: stable@kernel.org    # 3.4+
+
+  I.e. Tested-by and Reported-by tags first (if any), then 
+  author SOB, then SOB chain (if any), then Reviewed-by
+  and Acked-by, then stable tags, then Cc:s.
+
+  (I fix this up silently for email space patches, for Git pulls
+   I cannot do that.)
+
+ - The title is suboptimal:
+
+  x86/mce: Need to let kill_proc() send signal to doomed process
+
+   In titles we prefer proper sentences, starting with a verb, 
+   so something like this would do:
+
+  x86/mce: Allow kill_proc() to send signals to doomed process
+
+   Or rather, use a good title that talks about what the change 
+   is really about:
+
+  x86/mce: Fix siginfo_t->si_addr value for non-recoverable memory faults
+
+ - (Spelling nitpick: it's not "et. al." but "et al.".)
+
+ - Style nit, this:
+
+       if (mi->restartable == 0)
+
+   is better written as:
+
+       if (!mi->restartable)
+
+   because mi->restartable's role here is not really an integer 
+   value, but a boolean in essence.
+
+ - The 'doit' flag was significantly misnamed when kill_procs() 
+   was written and now it spreads further, it's a totally opaque 
+   name that tells nothing about the role of the flag.
+
+   How about 'force'?
+
+Thanks,
+
+	Ingo
