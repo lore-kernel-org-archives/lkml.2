@@ -1,93 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920Ab2GKJ4o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 05:56:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29919 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756895Ab2GKJ4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 05:56:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="164196330"
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>
-Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>
-Subject: [PATCHv6 2/5] ext4: Convert last user of ext4_mark_super_dirty() to ext4_handle_dirty_super()
-Date: Wed, 11 Jul 2012 12:58:15 +0300
-Message-Id: <1342000698-13556-3-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1342000698-13556-1-git-send-email-dedekind1@gmail.com>
-References: <1342000698-13556-1-git-send-email-dedekind1@gmail.com>
+	id S1756974Ab2GKJ6X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 05:58:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51374 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752323Ab2GKJ6T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 05:58:19 -0400
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: [PATCH] misc/pch_phub: Enable UART clock setting by module parameter
+Date: Wed, 11 Jul 2012 18:57:50 +0900
+Message-Id: <1342000670-1005-1-git-send-email-tomoya.rohm@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+Currently, when a user wants to change UART clock,
+needs to modify this source code by hand.
+This patch enables changing UART clock by specifying UART clock
+as module parameter.
 
-The last user of ext4_mark_super_dirty() in ext4_file_open() is so rare it
-can well be modifying the superblock properly by journalling the change.
-Change it and get rid of ext4_mark_super_dirty() as it's not needed anymore.
-
-Artem: small amendments.
-Artem: tested using xfstests for both journalled and non-journalled ext4.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 ---
- fs/ext4/ext4.h |    9 ---------
- fs/ext4/file.c |   14 +++++++++++++-
- 2 files changed, 13 insertions(+), 10 deletions(-)
+ drivers/misc/pch_phub.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 45 insertions(+), 0 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index cfc4e01..0c4042e 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2321,15 +2321,6 @@ static inline void ext4_unlock_group(struct super_block *sb,
- 	spin_unlock(ext4_group_lock_ptr(sb, group));
- }
+diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
+index 9fbcacd..2e7b0b0 100644
+--- a/drivers/misc/pch_phub.c
++++ b/drivers/misc/pch_phub.c
+@@ -93,6 +93,18 @@
  
--static inline void ext4_mark_super_dirty(struct super_block *sb)
--{
--	struct ext4_super_block *es = EXT4_SB(sb)->s_es;
--
--	ext4_superblock_csum_set(sb, es);
--	if (EXT4_SB(sb)->s_journal == NULL)
--		sb->s_dirt =1;
--}
--
- /*
-  * Block validity checking
-  */
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index 8c7642a..3a77494 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -181,9 +181,21 @@ static int ext4_file_open(struct inode * inode, struct file * filp)
- 		path.dentry = mnt->mnt_root;
- 		cp = d_path(&path, buf, sizeof(buf));
- 		if (!IS_ERR(cp)) {
-+			handle_t *handle;
-+			int err;
+ #define PCH_PHUB_OROM_SIZE 15360
+ 
++#define CLKCFG_BAUDDIV2				(2 << 20)
++#define CLKCFG_BAUDDIV6				(6 << 20)
++#define CLKCFG_PLL2VCO8				(8 << 9)
 +
-+			handle = ext4_journal_start_sb(sb, 1);
-+			if (IS_ERR(handle))
-+				return PTR_ERR(handle);
-+			err = ext4_journal_get_write_access(handle, sbi->s_sbh);
-+			if (err) {
-+				ext4_journal_stop(handle);
-+				return err;
-+			}
- 			strlcpy(sbi->s_es->s_last_mounted, cp,
- 				sizeof(sbi->s_es->s_last_mounted));
--			ext4_mark_super_dirty(sb);
-+			ext4_handle_dirty_super(handle, sb);
-+			ext4_journal_stop(handle);
- 		}
- 	}
- 	/*
++#define PCH_PHUB_REFCLK_48MHZ	CLKCFG_UART_48MHZ
++
++#define PCH_PHUB_REFCLK_64MHZ	(CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV6 |\
++				CLKCFG_PLL2VCO8 | CLKCFG_UARTCLKSEL)
++
++#define PCH_PHUB_REFCLK_192MHZ	(CLKCFG_UART_48MHZ | CLKCFG_BAUDDIV2 |\
++				CLKCFG_PLL2VCO8 | CLKCFG_UARTCLKSEL)
++
+ /**
+  * struct pch_phub_reg - PHUB register structure
+  * @phub_id_reg:			PHUB_ID register val
+@@ -142,6 +154,8 @@ struct pch_phub_reg {
+ /* SROM SPEC for MAC address assignment offset */
+ static const int pch_phub_mac_offset[ETH_ALEN] = {0x3, 0x2, 0x1, 0x0, 0xb, 0xa};
+ 
++static unsigned int select_uart_clk;
++
+ static DEFINE_MUTEX(pch_phub_mutex);
+ 
+ /**
+@@ -710,6 +724,34 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
+ 
+ 	chip->pdev = pdev; /* Save pci device struct */
+ 
++	/* Reference clock setting. ML7223 bus-m doesn't have clock register. */
++	if (select_uart_clk && id->driver_data != 3) {
++		unsigned int clk_val;
++		switch (select_uart_clk) {
++		case 48000000:
++		case 48:
++			clk_val = PCH_PHUB_REFCLK_48MHZ;
++			break;
++		case 64000000:
++		case 64:
++			clk_val = PCH_PHUB_REFCLK_64MHZ;
++			break;
++		case 192000000:
++		case 192:
++			clk_val = PCH_PHUB_REFCLK_192MHZ;
++			break;
++		default:
++			dev_err(&pdev->dev,
++				"%s : Invalid clock(Only 48/64/192MHz).\n",
++				__func__);
++			goto err_sysfs_create;
++		}
++		pch_phub_read_modify_write_reg(chip,
++					      (unsigned int)CLKCFG_REG_OFFSET,
++					       clk_val, CLKCFG_UART_MASK);
++	}
++
++
+ 	if (id->driver_data == 1) { /* EG20T PCH */
+ 		const char *board_name;
+ 
+@@ -908,3 +950,6 @@ module_exit(pch_phub_pci_exit);
+ 
+ MODULE_DESCRIPTION("Intel EG20T PCH/LAPIS Semiconductor IOH(ML7213/ML7223) PHUB");
+ MODULE_LICENSE("GPL");
++module_param(select_uart_clk, uint, S_IRUGO);
++MODULE_PARM_DESC(select_uart_clk,
++		 "Select clock for UART (48/64/192MHz). default is 1.8342MHz");
 -- 
-1.7.7.6
+1.7.4.4
 
