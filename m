@@ -1,101 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932618Ab2GLDWL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 23:22:11 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:44165 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976Ab2GLDWJ (ORCPT
+	id S1758637Ab2GLDfF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 23:35:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63616 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab2GLDfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 23:22:09 -0400
-Message-ID: <4FFE42B6.5080705@oracle.com>
-Date: Thu, 12 Jul 2012 11:21:26 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-Reply-To: jeff.liu@oracle.com
-Organization: Oracle
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Hugh Dickins <hughd@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] tmpfs: revert SEEK_DATA and SEEK_HOLE
-References: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils> <alpine.LSU.2.00.1207091535480.2051@eggly.anvils> <jtj574$tb7$2@dough.gmane.org> <alpine.LSU.2.00.1207111149580.1797@eggly.anvils> <20120711230122.GZ19223@dastard>
-In-Reply-To: <20120711230122.GZ19223@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 11 Jul 2012 23:35:01 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [RFC PATCH 1/2] irq_domain: correct a minor wrong comment for linear revmap
+To: Dong Aisheng <b29396@freescale.com>, linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, tglx@linutronix.de,
+        benh@kernel.crashing.org
+In-Reply-To: <1340182831-10477-1-git-send-email-b29396@freescale.com>
+References: <1340182831-10477-1-git-send-email-b29396@freescale.com>
+Date: Wed, 11 Jul 2012 15:07:38 +0100
+Message-Id: <20120711140738.ABA533E0E16@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2012 07:01 AM, Dave Chinner wrote:
-
-> On Wed, Jul 11, 2012 at 11:55:34AM -0700, Hugh Dickins wrote:
->> On Wed, 11 Jul 2012, Cong Wang wrote:
->>> On Mon, 09 Jul 2012 at 22:41 GMT, Hugh Dickins <hughd@google.com> wrote:
->>>> Revert 4fb5ef089b28 ("tmpfs: support SEEK_DATA and SEEK_HOLE").
->>>> I believe it's correct, and it's been nice to have from rc1 to rc6;
->>>> but as the original commit said:
->>>>
->>>> I don't know who actually uses SEEK_DATA or SEEK_HOLE, and whether it
->>>> would be of any use to them on tmpfs.  This code adds 92 lines and 752
->>>> bytes on x86_64 - is that bloat or worthwhile?
->>>
->>>
->>> I don't think 752 bytes matter much, especially for x86_64.
->>>
->>>>
->>>> Nobody asked for it, so I conclude that it's bloat: let's revert tmpfs
->>>> to the dumb generic support for v3.5.  We can always reinstate it later
->>>> if useful, and anyone needing it in a hurry can just get it out of git.
->>>>
->>>
->>> If you don't have burden to maintain it, I'd prefer to leave as it is,
->>> I don't think 752-bytes is the reason we revert it.
->>
->> Thank you, your vote has been counted ;)
->> and I'll be glad if yours stimulates some agreement or disagreement.
->>
->> But your vote would count for a lot more if you know of some app which
->> would really benefit from this functionality in tmpfs: I've heard of none.
+On Wed, 20 Jun 2012 17:00:30 +0800, Dong Aisheng <b29396@freescale.com> wrote:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
 > 
-> So what? I've heard of no apps that use this functionality on XFS,
-> either, but I have heard of a lot of people asking for it to be
-> implemented over the past couple of years so they can use it.
-> There's been patches written to make coreutils (cp) make use of it
-> instead of parsing FIEMAP output to find holes, though I don't know
-> if that's gone beyond more than "here's some patches"...
-
-Yes, for apps, cp(1) will make use of it to replace the old FIEMAP for efficient sparse file copy.
-I have implemented an extent-scan module to coreutils a few years ago,
-http://fossies.org/dox/coreutils-8.17/extent-scan_8c_source.html
-
-It does extent scan through FIEMAP, however, SEEK_DATA/SEEK_HOLE is more convenient and easy to use
-considering the call interface.  So FIEMAP will be replaced by SEEK_XXX once it got supported by EXT4.
-
-Moreover, I have discussed with Jim who is the coreutils maintainer previously, He would like to post
-extent-scan module to Gnulib so that other GNU utilities which are relied on Gnulib might be a potential
-user of it, at least, GNU tar will definitely need it for sparse file backup.
-
+> The revmap type should be linear for irq_domain_add_linear function.
 > 
-> Besides, given that you can punch holes in tmpfs files, it seems
-> strange to then say "we don't need a method of skipping holes to
-> find data quickly"....
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
 
-So its deserve to keep this feature working on tmpfs considering hole punch. :)
+Applied, thanks.
 
-Thanks,
--Jeff
+g.
 
+> ---
+>  kernel/irq/irqdomain.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> Besides, seek-hole/data is still shiny new and lots of developers
-> aren't even aware of it's presence in recent kernels. Removing new
-> functionality saying "no-one is using it" is like smashing the egg
-> before the chicken hatches (or is it cutting of the chickes's head
-> before it lays the egg?).
+> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> index 3e4ea85..cb83554 100644
+> --- a/kernel/irq/irqdomain.c
+> +++ b/kernel/irq/irqdomain.c
+> @@ -219,7 +219,7 @@ struct irq_domain *irq_domain_add_legacy(struct device_node *of_node,
+>  EXPORT_SYMBOL_GPL(irq_domain_add_legacy);
+>  
+>  /**
+> - * irq_domain_add_linear() - Allocate and register a legacy revmap irq_domain.
+> + * irq_domain_add_linear() - Allocate and register a linear revmap irq_domain.
+>   * @of_node: pointer to interrupt controller's device tree node.
+>   * @size: Number of interrupts in the domain.
+>   * @ops: map/unmap domain callbacks
+> -- 
+> 1.7.0.4
 > 
-> Cheers,
 > 
-> Dave.
 
-
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
