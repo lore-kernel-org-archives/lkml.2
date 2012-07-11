@@ -1,91 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655Ab2GKSnN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 14:43:13 -0400
-Received: from nat.nue.novell.com ([195.135.221.2]:47939 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012Ab2GKSnM (ORCPT
+	id S932262Ab2GKSoS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 14:44:18 -0400
+Received: from mail.digidescorp.com ([50.73.98.161]:25587 "EHLO
+	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692Ab2GKSoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 14:43:12 -0400
-Message-ID: <4FFDC938.4050606@suse.com>
-Date: Wed, 11 Jul 2012 11:43:04 -0700
-From: Lee Duncan <lduncan@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Kai Makisara <Kai.Makisara@kolumbus.fi>
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org, jeffm@suse.com
-Subject: Re: [PATCH v3 3/5] st: get rid of scsi_tapes array
-References: <4FBACC66.80208@suse.com> <alpine.LNX.2.00.1207011147110.3650@kai.makisara.local> <4FF239F8.7030101@suse.com>
-In-Reply-To: <4FF239F8.7030101@suse.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=UTF-8
+	Wed, 11 Jul 2012 14:44:16 -0400
+DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
+	c=simple; q=dns; h=message-id:from;
+	b=e0CZfCv9QFdwOWtjyORvp31Y3VY8xz1F9vm01YTCrUJ2XWzU7qSob0Vtyz3Q
+	ZWpJ0/d6IvCRPs1xU6uq/CZUz+S/7f09cmWSbWDliuX3F2FS16nmq3CyQ
+	8lq5hgLitdKSqG+QBsKcet6unJnqICAfYfHM3Qq5spi7FsrXBW3mCw=;
+X-Spam-Processed: mail.digidescorp.com, Wed, 11 Jul 2012 13:42:25 -0500
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=1539320d59=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+Message-ID: <1342032143.2190.22.camel@iscandar.digidescorp.com>
+Subject: Re: [PATCH v3 00/17] vfs: add the ability to retry on ESTALE to
+ several syscalls
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        michael.brantley@deshaw.com, hch@infradead.org, miklos@szeredi.hu,
+        pstaubach@exagrid.com
+Date: Wed, 11 Jul 2012 13:42:23 -0500
+In-Reply-To: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
+References: <1340996280-27123-1-git-send-email-jlayton@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3 (3.4.3-1.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kai:
+Jeff -
 
-Your added patch looks great, and I see you fixed the documentation as
-well. Thanks for your help.
+On Fri, 2012-06-29 at 14:57 -0400, Jeff Layton wrote: 
+> This patchset is the third version of the patchset to add ESTALE
+> handling to several syscalls. The basic idea is to allow the client to
+> gracefully retry the lookup and call when a NFS server returns ESTALE.
 
+I exercised this using 3.5-rc5 against a memory-starved server that
+exports a FAT-backed filesystem. Where normally I see lots of ESTALE
+errors due to inode eviction, with this patchset I see none. And, the
+performance is much better than the only other way I know to eliminate
+the errors, which is to mount with 'lookupcache=none'.
 
-On 07/02/2012 05:16 PM, Lee Duncan wrote:
-> 
-> On 07/01/2012 01:57 AM, Kai Makisara wrote:
->> On Mon, 21 May 2012, Lee Duncan wrote:
->>
->>> From: Jeff Mahoney <jeffm@suse.com>
->>>
->>> st currently allocates an array to store pointers to all of the
->>> scsi_tape objects. It's used to discover available indexes to use as the
->>> base for the minor number selection and later to look up scsi_tape
->>> devices for character devices.
->>>
->>> We switch to using an IDR for minor selection and a pointer from
->>> st_modedef back to scsi_tape for the lookups.
->>>
->>> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
->>> Signed-off-by: Lee Duncan <lduncan@suse.com>
->>> ---
->>>  drivers/scsi/st.c |  172 ++++++++++++++++++++---------------------------------
->>>  drivers/scsi/st.h |    2 +
->>>  2 files changed, 65 insertions(+), 109 deletions(-)
->>>
->> ... patch removed
->>
->> I have finally had time to review and test this patch set. I am sorry this 
->> has taken so long.
->>
->> I have found one change of behaviour and a theoretical problem:
->> The new code does not re-use the tape numbers when freed and re-scanned. 
->> The current code does re-use the freed numbers. Are there any reasons for 
->> this changed behaviour? (The theoretical problem is that the new code 
->> frees the tape structure but leaves the pointer in the idr tree.)
->>
->> The patch at the end of this message (applies after the whole series) is 
->> an attempt to implement re-use of tape numbers. I am not completely sure 
->> that the change is correctly placed but it seems to work.
-> 
-> 
-> Thanks for the review, and good catch. I'll look over your added patch
-> and give feedback as soon as I can.
-> 
->>
->> Another minor thing is that the documentation should be updated :-)
-> 
-> Of course.
-> 
->>
->> The patch at the end also updates the version code. I am not sure if the 
->> version code is useful, but it should be either updated or removed.
->>
->> Otherwise no problems found. I am ready to ack the patch set after the 
->> re-use thing has been resolved (one way or another).
->>
->> Thanks,
->> Kai
->>
+It's not an exhaustive test by any means, just a data point for you. 
+Thanks!
 
-- Lee
+Lightly-tested-by: Steve Magnani <steve@digidescorp.com>
+------------------------------------------------------------------------
+Steven J. Magnani               "I claim this network for MARS!
+www.digidescorp.com              Earthling, return my space modulator!"
+
+#include <standard.disclaimer>
+
 
