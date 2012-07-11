@@ -1,61 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933108Ab2GKTaU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 15:30:20 -0400
-Received: from nm16-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.166]:26981
-	"HELO nm16-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932307Ab2GKTaS (ORCPT
+	id S933062Ab2GKTes (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 15:34:48 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:58845 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932307Ab2GKTeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 15:30:18 -0400
-X-Yahoo-Newman-Id: 649136.27070.bm@omp1027.access.mail.sp2.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 4HLFztUVM1n80GVQA0kza9bCr21Zq9iGjyPOaREG3T85GCk
- 5v3y0Wpuj9HJ6Z96VMkSos9jlm3QllYcopmrPnCrXrs9692xTLrnKRxEOqTJ
- mblVx5fHGIWx9hnctR9b.5HMJM7LQDwipOPDCJTlUvWufa_9hqSppKOPHa.G
- 2YKLOrCF39BRvSXj55ZQVWXqnJC_riftaV5B71WdEhPIT_XJ8l3B.oYbPkiq
- y9vPnfXS530ilV.J1HXFmeFCDj8HmgTXQtVWQ10OEp0YScbWC5rJFopNQ2Nl
- Rv0gOC1kXx9lGWSU.Omsx248ubKbKX7IkuFxElcjCSMyUaNvXjP3kUFS2E4P
- BMX5L2W5bKEfd3BecRlAxpEEQPrExr0s1JtoVBaAy9yHXQusNFsMhhUOcNcH
- 7kKiK8w--
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-Message-ID: <4FFDD456.7050809@att.net>
-Date: Wed, 11 Jul 2012 14:30:30 -0500
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: Daniel Santos <daniel.santos@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
+	Wed, 11 Jul 2012 15:34:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] arm-soc fixes for 3.5-rc6
+Date: Wed, 11 Jul 2012 19:34:35 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, Tony Lindgren <tony@atomide.com>
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: Michal Nazarewicz <mina86@mina86.com>, aarcange@redhat.com,
-        dwmw2@infradead.org, riel@redhat.com, peterz@infradead.org,
-        daniel.santos@pobox.com, axboe@kernel.dk, ebiederm@xmission.com,
-        linux-mm@kvack.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH 05/13] rbtree: performance and correctness test
-References: <1341876923-12469-1-git-send-email-walken@google.com> <1341876923-12469-6-git-send-email-walken@google.com> <op.wg8cv6x53l0zgt@mpn-glaptop> <CANN689EEHe+_W=pnnvf1u+BxpvY+BK6bLNZ-0Y-eoKNS=9L+rg@mail.gmail.com>
-In-Reply-To: <CANN689EEHe+_W=pnnvf1u+BxpvY+BK6bLNZ-0Y-eoKNS=9L+rg@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201207111934.35953.arnd@arndb.de>
+X-Provags-ID: V02:K0:c5F6MnXn6/mN6bCFrUDBHzgWfXALyKUJuwH6y7bjRBB
+ O4sZpGxRsZPSXvfB1QNJKUyks5uFBAmz7NqeeDISIY5LiYJBHe
+ ZtOVR0kwh7b8x/OHDLqZV0dY01KGkiFSGaGrTiqQ+TR4o9HV13
+ gwNda2Lo8kT/gYl4h5rLf3EDE2Y4GrzhU6xjS36B6ISuTVAcfQ
+ mbyR9u0H/pJ4aw8cKAcMcBi6VZCnyRXaR1H7JLWNfhccPtiWMd
+ oWkVB2cjW8lnZHQ7bx+eckAKXByt5bp7EcdV9q7XhVRuX1ZiCA
+ bZ9JKu+iomTDyRXze0Y5tNdmRiueSxgEhrQyCeI/RYqyvOjpXD
+ qVTIsmtLhBse8fZ23XHM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2012 01:14 AM, Michel Lespinasse wrote:
-> On Tue, Jul 10, 2012 at 5:27 AM, Michal Nazarewicz <mina86@mina86.com> wrote:
->> On Tue, 10 Jul 2012 01:35:15 +0200, Michel Lespinasse <walken@google.com> wrote:
->>> +       u32 prev_key = 0;
->>> +
->>> +       for (rb = rb_first(&root); rb; rb = rb_next(rb)) {
->>> +               struct test_node *node = rb_entry(rb, struct test_node,
->>> rb);
->>> +               WARN_ON_ONCE(node->key < prev_key);
->> What if for some reason we generate node with key equal zero or two keys
->> with the same value?  It may not be the case for current code, but someone
->> might change it in the future.  I think <= is safer here.
-> No, it's not illegal for two nodes to have the same key; the second
-> one to be inserted will just get placed after the first one. The
-> rbtree library doesn't care either way as it's not even aware of the
-> key values :)
-Right.  This is strictly a function of your insert function. In my
-generic rbtree patch set, there is a concept of unique or non-unique
-keys, but this doesn't exist in the rbtree library its self.
+Hi Linus,
+
+Another set of fixes, this time with a proper URL. For some reason the last
+time I sent the pull request it would use the "fixes" branch when I gave
+it the regular git URL and the signed tag when I gave it the ra.kernel.org
+URL, and I forgot that this would not be a world-readable URL. This time
+it worked either way, so here is the normal one.
+The branch is based on top of the previous changeset that you already
+pulled, not based on an -rc this time.
+
+	Arnd
+
+The following changes since commit e15ebe05cce44c5164dbf8489841c18a887bcfc2:
+
+  Merge tag 'omap-fixes-for-v3.5-rc5' of git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap into fixes (2012-07-05 12:16:13 +0200)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
+
+for you to fetch changes up to 9861e9551f443bb2e8dacd4b9572cb8dab0f3ad7:
+
+  Merge tag 'omap-fixes-for-v3.5-rc6' of git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap into fixes (2012-07-10 16:12:39 +0200)
+
+----------------------------------------------------------------
+
+ARM: SoC fixes for 3.5-rc
+
+* multiple omap2+ bug fixes
+* a regression on ux500 dt support
+* a build failure on shmobile
+
+----------------------------------------------------------------
+Arnd Bergmann (2):
+      Merge branch 'ux500/fixes-3.5' into fixes
+      Merge tag 'omap-fixes-for-v3.5-rc6' of git://git.kernel.org/.../tmlind/linux-omap into fixes
+
+Kevin Hilman (1):
+      ARM: OMAP2+: omap2plus_defconfig: EHCI driver is not stable, disable it
+
+Lee Jones (3):
+      of: address: Don't fail a lookup just because a node has no reg property
+      ARM: ux500: Fix build errors/warnings when MACH_UX500_DT is not set
+      ARM: ux500: Over-ride the DT device naming scheme for pinctrl
+
+Magnus Damm (1):
+      ARM: shmobile: fix platsmp.c build when ARCH_SH73A0=n
+
+Paul Walmsley (1):
+      ARM: OMAP2+: hwmod code/clockdomain data: fix 32K sync timer
+
+Tony Lindgren (1):
+      Merge branch 'for_3.5/fixes/pm-3' of git://git.kernel.org/.../khilman/linux-omap-pm into fixes
+
+ arch/arm/configs/omap2plus_defconfig             |    1 -
+ arch/arm/mach-omap2/clockdomain.h                |    4 +++
+ arch/arm/mach-omap2/clockdomains2xxx_3xxx_data.c |    1 +
+ arch/arm/mach-omap2/clockdomains44xx_data.c      |    2 +-
+ arch/arm/mach-omap2/omap_hwmod.c                 |   32 ++++++++++++++++------
+ arch/arm/mach-shmobile/platsmp.c                 |    5 ++++
+ arch/arm/mach-ux500/board-mop500.c               |   12 ++++----
+ arch/arm/mach-ux500/timer.c                      |    2 ++
+ drivers/of/platform.c                            |    7 ++---
+ 9 files changed, 47 insertions(+), 19 deletions(-)
