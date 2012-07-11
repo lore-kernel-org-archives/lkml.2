@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757364Ab2GKL2u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 07:28:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:64439 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765Ab2GKL2t (ORCPT
+	id S1757333Ab2GKLhM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 07:37:12 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52657 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753103Ab2GKLhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 07:28:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: ksummit-2012-discuss@lists.linux-foundation.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Olof Johansson <olof@lixom.net>, Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: ARM mini-summit
-Date: Wed, 11 Jul 2012 11:28:29 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <1341994155.3522.16.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1341994155.3522.16.camel@dabdike.int.hansenpartnership.com>
+	Wed, 11 Jul 2012 07:37:10 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@pengutronix.de,
+        =?UTF-8?q?Philippe=20R=C3=A9tornaz?= <philippe.retornaz@epfl.ch>,
+        Marc Reilly <marc@cpdesign.com.au>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [RFC internal PATCH] mfd/mc13xxx: drop modifying driver's id_table in probe
+Date: Wed, 11 Jul 2012 13:36:48 +0200
+Message-Id: <1342006608-30550-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207111128.29924.arnd@arndb.de>
-X-Provags-ID: V02:K0:4mu1kAZapMpiqwdzPrQFti1CYn/abtNYnFKMyuqWtX8
- j6/RY8zV3EPT/EsYK5HkQBE1ukL+jvqrDXY5odxzXjqK/KD6Ed
- J3A4a0h50y2TstBKC1/ZOFqaSU4aIWAESPwFmUop3OjmhCYvNc
- GlRRF3puuuWEPhmXseSsdxoiNErA7P/nexin8mD0FdbjL4g7vg
- 29X5CIsO7hes7cvVEvqytqQrlZKgr87GZkj+Nb110fOBR4Rd3r
- y7ztg8bdRdxW20aSXmVJRniLKL2S8wYnjn5hVUeGcX7y0f603E
- tO4CTY2IopGJZlM/2GffD3t/VHLzUyWv+NBZIAx7n7wK53R0uM
- Puet1J+kTSPzOojOkGnY=
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 11 July 2012, James Bottomley wrote:
-> Hi All,
-> 
-> We have set aside the second day of the kernel summit (Tuesday 28
-> August) as mini-summit day.  So far we have only the PCI mini summit on
-> this day, so if you can think of other topics, please send them to the
-> kernel summit discuss list:
-> 
-> ksummit-2012-discuss@lists.linux-foundation.org
-> 
-> Looking at the available rooms, we think we can run about four or five
-> mini summits.
-> 
-> As an added incentive, mini summit organisers get to pick who they
-> invite and all the people they pick will get an automatic invitation to
-> the third day of the kernel summit (but not the core first day) and the
-> evening events.
+This was introduced in commit
 
-There is a lot of interest in having another ARM mini-summit, as we had last
-year. Previously, Grant Likely organized this with Olof and me, but right now
-Grant is in an extended offline period and Olof is currently on vacation
-as well. Will Deacon already contacted me and he is interested in helping
-out with organizing the mini-summit, so the two of us could be the primary
-contacts, with Grant and Olof joining in as time permits.
+	876989d (mfd: Add device tree probe support for mc13xxx)
 
-I'm planning to send out an initial email to potential participants today
-or tomorrow to get an idea of who would be joining. Do you have an upper
-limit to the number of people that you expect a mini-summit? I think we
-could easily get 30 or more people that want to come, but we can also
-restrict it to a smaller size.
+for spi and later while introducing support for i2c copied to the i2c
+driver.
 
-	Arnd
+Modifying driver details is very strange, for example probing an
+mc13892 device (instantiated via dt) removes the driver's ability to
+handle (traditionally probed) mc13783 devices in this case.
+I'm not aware of any problems that make this hack necessary and if
+there were some, they'd have to be fixed in the spi/i2c core, not in
+a driver.
+
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+Hello Samuel,
+
+even though this qualifies as fix, I don't think it's necessary to annoy
+Linus with it for 3.5. Usually there is only one pmic on each machine so
+it's not grave when probing one device disables support for another.
+
+Best regards
+Uwe
+
+ drivers/mfd/mc13xxx-i2c.c |    6 ------
+ drivers/mfd/mc13xxx-spi.c |    6 ------
+ 2 files changed, 12 deletions(-)
+
+diff --git a/drivers/mfd/mc13xxx-i2c.c b/drivers/mfd/mc13xxx-i2c.c
+index d22501d..e00e885 100644
+--- a/drivers/mfd/mc13xxx-i2c.c
++++ b/drivers/mfd/mc13xxx-i2c.c
+@@ -53,16 +53,10 @@ static struct regmap_config mc13xxx_regmap_i2c_config = {
+ static int mc13xxx_i2c_probe(struct i2c_client *client,
+ 		const struct i2c_device_id *id)
+ {
+-	const struct of_device_id *of_id;
+-	struct i2c_driver *idrv = to_i2c_driver(client->dev.driver);
+ 	struct mc13xxx *mc13xxx;
+ 	struct mc13xxx_platform_data *pdata = dev_get_platdata(&client->dev);
+ 	int ret;
+ 
+-	of_id = of_match_device(mc13xxx_dt_ids, &client->dev);
+-	if (of_id)
+-		idrv->id_table = (const struct i2c_device_id*) of_id->data;
+-
+ 	mc13xxx = kzalloc(sizeof(*mc13xxx), GFP_KERNEL);
+ 	if (!mc13xxx)
+ 		return -ENOMEM;
+diff --git a/drivers/mfd/mc13xxx-spi.c b/drivers/mfd/mc13xxx-spi.c
+index 03df422..b99e728 100644
+--- a/drivers/mfd/mc13xxx-spi.c
++++ b/drivers/mfd/mc13xxx-spi.c
+@@ -119,16 +119,10 @@ static struct regmap_bus regmap_mc13xxx_bus = {
+ 
+ static int mc13xxx_spi_probe(struct spi_device *spi)
+ {
+-	const struct of_device_id *of_id;
+-	struct spi_driver *sdrv = to_spi_driver(spi->dev.driver);
+ 	struct mc13xxx *mc13xxx;
+ 	struct mc13xxx_platform_data *pdata = dev_get_platdata(&spi->dev);
+ 	int ret;
+ 
+-	of_id = of_match_device(mc13xxx_dt_ids, &spi->dev);
+-	if (of_id)
+-		sdrv->id_table = &mc13xxx_device_id[(enum mc13xxx_id) of_id->data];
+-
+ 	mc13xxx = kzalloc(sizeof(*mc13xxx), GFP_KERNEL);
+ 	if (!mc13xxx)
+ 		return -ENOMEM;
+-- 
+1.7.10.4
+
