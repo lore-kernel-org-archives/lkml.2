@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab2GKMkx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 08:40:53 -0400
-Received: from antcom.de ([188.40.178.216]:40045 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753901Ab2GKMkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 08:40:51 -0400
-Message-ID: <4FFD744F.8060204@antcom.de>
-Date: Wed, 11 Jul 2012 14:40:47 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com, aletes.xgr@gmail.com
-Subject: Re: [PATCH v2 04/23] ARM: LPC32xx: Add DMA configuration to platform
- data
-References: <1339692673-7848-1-git-send-email-stigge@antcom.de> <201207102136.35944.arnd@arndb.de> <4FFD393F.1070104@antcom.de> <201207111233.24780.arnd@arndb.de>
-In-Reply-To: <201207111233.24780.arnd@arndb.de>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
+	id S1757139Ab2GKMmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 08:42:00 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:42447 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752072Ab2GKMl6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 08:41:58 -0400
+Date: Wed, 11 Jul 2012 08:41:39 -0400 (EDT)
+From: Andrew Jones <drjones@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
+        Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH RFC 1/2] kvm vcpu: Note down pause loop exit
+Message-ID: <d0f10496-d51c-4ba6-8f78-8021f3cf5a15@zmail17.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <4FFD69DF.1070107@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.36.7.202]
+X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2012 02:33 PM, Arnd Bergmann wrote:
-> On Wednesday 11 July 2012, Roland Stigge wrote:
->> Thanks for the note! Looks like the interface consolidated to replace
->> ch->cd->min_signal with sth. like cd->min_signal directly.
->>
->> Accessing the signal id/number is/was quite convenient because as you
->> can see in the 3 above cases that now get compile errors with the pl08x
->> changes, the LPC32xx chip hard-wires those numbers, and the respective
->> code is LPC32xx specific anyway.
->>
->> So can we make an exception here to compare static dma channel numbers?
->> Or is there any other interface to access the static dma channel numbers
->> that I'm currently not aware of?
->>
->> Depending on what we agree upon, I can then provide fixes to the
->> lpc32xx-next branch.
+
+
+----- Original Message -----
+> >
+> > Hm, suppose we're the next-in-line for a ticket lock and exit due
+> > to
+> > PLE.  The lock holder completes and unlocks, which really assigns
+> > the
+> > lock to us.  So now we are the lock owner, yet we are marked as
+> > don't
+> > yield-to-us in the PLE code.
 > 
-> I'm not familiar with this code, but I think the solution for now
-> (while we don't have a DT binding) is to do the same thing that
-> spear3xx does: pass a pointer to the global pl08x_filter_id
-> function and an identifier for the channel in the platform data
-> for that device.
+> Yes.. off-topic but that is solved by kicked flag in PV spinlocks.
+> 
 
-OK, thanks!
+Yeah, this is a different, but related, topic. pvticketlocks not
+only help yield spinning vcpus, but also allow the use of ticketlocks
+for the guaranteed fairness. If we want that fairness we'll always
+need some pv-ness, even if it's a mostly PLE solution. I see that as
+a reasonable reason to take the pvticketlock series, assuming it
+performs at least as well as PLE. The following options have all been
+brought up at some point by various people, and all have their own
+pluses and minuses;
 
-Is a patch on top of the already provided lpc32xx-next branches the
-preferred form for a fix? On top of which branch do you need it?
+PLE-only best-effort:
+   + hardware-only, algorithm improvements can be made independent of
+     guest OSes
+   - has limited info about spinning vcpus, making it hard to improve
+     the algorithm (improved with an auto-adjusting ple_window?)
+   - perf enhancement/degradation is workload/ple_window dependant
+   - impossible? to guarantee FIFO order
 
-Thanks in advance,
+pvticketlocks:
+   - have to maintain pv code, both hosts and guests
+   + perf is only workload dependant (should disable ple to avoid
+     interference?)
+   + guarantees FIFO order
+   + can fall-back on PLE-only if the guest doesn't support it
 
-Roland
+hybrid:
+   + takes advantage of the hw support
+   - still requires host and guest pv code
+   - will likely make perf dependant on ple_window again
+   + guarantees FIFO order
+
+???: did I miss any?
+
+I think more benchmarking of PLE vs. pvticketlocks is needed, which
+I'm working on. If we see that it performs just as well or better,
+then IMHO, we should consider committing Raghu's latest version of
+the pvticketlock series, perhaps with and additional patch that
+auto-disables PLE when pvticketlocks are enabled.
+
+Drew
