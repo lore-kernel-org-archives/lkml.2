@@ -1,110 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab2GKHpr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 03:45:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:5680 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752719Ab2GKHpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 03:45:45 -0400
-X-IronPort-AV: E=Sophos;i="4.77,566,1336320000"; 
-   d="scan'208";a="5371838"
-Message-ID: <4FFD3039.1090305@cn.fujitsu.com>
-Date: Wed, 11 Jul 2012 15:50:17 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: lenb@kernel.org, linux-acpi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 6/7 v2] auto bind the memory device which is hotpluged before
- the driver is loaded
-References: <4FFD2F1E.10006@cn.fujitsu.com>
-In-Reply-To: <4FFD2F1E.10006@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/11 15:45:32,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/11 15:45:37,
-	Serialize complete at 2012/07/11 15:45:37
+	id S1756805Ab2GKHpz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 03:45:55 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50123 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752719Ab2GKHpv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 03:45:51 -0400
+Message-ID: <1341992742.3522.5.camel@dabdike.int.hansenpartnership.com>
+Subject: [GIT PULL] SCSI fixes for 3.5-rc6
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 11 Jul 2012 08:45:42 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the memory device is hotpluged before the driver is loaded, the
-user cannot see this device under the directory /sys/bus/acpi/devices/,
-and the user cannot bind it by hand after the driver is loaded.
-This patch introduces a new feature to bind such device when the driver
-is being loaded.
+This is a set of three fixes for data corruption (libsas task file),
+oops causing (NULL in scsi_cmd_to_driver) and driver failure (bnx2i).
+The oops caused by the NULL in scsi_cmd_to_driver() manifests in
+scsi_eh_send_cmd() and has been seen by several people now.
 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+The patch is available here:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
+
+The short changelog is:
+
+Dan Williams (1):
+      libsas: fix taskfile corruption in sas_ata_qc_fill_rtf
+
+Eddie Wai (1):
+      bnx2i: Removed the reference to the netdev->base_addr
+
+Mark Rustad (1):
+      Fix NULL dereferences in scsi_cmd_to_driver
+
+And the diffstat:
+
+ drivers/scsi/aic94xx/aic94xx_task.c |    2 +-
+ drivers/scsi/bnx2i/bnx2i.h          |    1 +
+ drivers/scsi/bnx2i/bnx2i_hwi.c      |    3 +--
+ drivers/scsi/bnx2i/bnx2i_iscsi.c    |   10 +++++-----
+ drivers/scsi/libsas/sas_ata.c       |   12 ++++++------
+ include/scsi/libsas.h               |    6 ++++--
+ include/scsi/scsi_cmnd.h            |    8 +++++++-
+ 7 files changed, 25 insertions(+), 17 deletions(-)
+
+With the full diff below.
+
+James
+
 ---
- drivers/acpi/acpi_memhotplug.c |   37 ++++++++++++++++++++++++++++++++++++-
- 1 files changed, 36 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index 3765375..0010720 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -52,6 +52,9 @@ MODULE_LICENSE("GPL");
- #define MEMORY_POWER_ON_STATE	1
- #define MEMORY_POWER_OFF_STATE	2
+diff --git a/drivers/scsi/aic94xx/aic94xx_task.c b/drivers/scsi/aic94xx/aic94xx_task.c
+index 532d212..393e7ce 100644
+--- a/drivers/scsi/aic94xx/aic94xx_task.c
++++ b/drivers/scsi/aic94xx/aic94xx_task.c
+@@ -201,7 +201,7 @@ static void asd_get_response_tasklet(struct asd_ascb *ascb,
  
-+static bool auto_probe;
-+module_param(auto_probe, bool, S_IRUGO | S_IWUSR);
-+
- static int acpi_memory_device_add(struct acpi_device *device);
- static int acpi_memory_device_remove(struct acpi_device *device, int type);
+ 		if (SAS_STATUS_BUF_SIZE >= sizeof(*resp)) {
+ 			resp->frame_len = le16_to_cpu(*(__le16 *)(r+6));
+-			memcpy(&resp->ending_fis[0], r+16, 24);
++			memcpy(&resp->ending_fis[0], r+16, ATA_RESP_FIS_SIZE);
+ 			ts->buf_valid_size = sizeof(*resp);
+ 		}
+ 	}
+diff --git a/drivers/scsi/bnx2i/bnx2i.h b/drivers/scsi/bnx2i/bnx2i.h
+index 0c53c28..7e77cf6 100644
+--- a/drivers/scsi/bnx2i/bnx2i.h
++++ b/drivers/scsi/bnx2i/bnx2i.h
+@@ -350,6 +350,7 @@ struct bnx2i_hba {
+ 	struct pci_dev *pcidev;
+ 	struct net_device *netdev;
+ 	void __iomem *regview;
++	resource_size_t reg_base;
  
-@@ -522,12 +525,44 @@ acpi_memory_register_notify_handler(acpi_handle handle,
- 				    u32 level, void *ctxt, void **retv)
+ 	u32 age;
+ 	unsigned long cnic_dev_type;
+diff --git a/drivers/scsi/bnx2i/bnx2i_hwi.c b/drivers/scsi/bnx2i/bnx2i_hwi.c
+index ece47e5..86a12b4 100644
+--- a/drivers/scsi/bnx2i/bnx2i_hwi.c
++++ b/drivers/scsi/bnx2i/bnx2i_hwi.c
+@@ -2724,7 +2724,6 @@ int bnx2i_map_ep_dbell_regs(struct bnx2i_endpoint *ep)
+ 		goto arm_cq;
+ 	}
+ 
+-	reg_base = ep->hba->netdev->base_addr;
+ 	if ((test_bit(BNX2I_NX2_DEV_5709, &ep->hba->cnic_dev_type)) &&
+ 	    (ep->hba->mail_queue_access == BNX2I_MQ_BIN_MODE)) {
+ 		config2 = REG_RD(ep->hba, BNX2_MQ_CONFIG2);
+@@ -2740,7 +2739,7 @@ int bnx2i_map_ep_dbell_regs(struct bnx2i_endpoint *ep)
+ 		/* 5709 device in normal node and 5706/5708 devices */
+ 		reg_off = CTX_OFFSET + (MB_KERNEL_CTX_SIZE * cid_num);
+ 
+-	ep->qp.ctx_base = ioremap_nocache(reg_base + reg_off,
++	ep->qp.ctx_base = ioremap_nocache(ep->hba->reg_base + reg_off,
+ 					  MB_KERNEL_CTX_SIZE);
+ 	if (!ep->qp.ctx_base)
+ 		return -ENOMEM;
+diff --git a/drivers/scsi/bnx2i/bnx2i_iscsi.c b/drivers/scsi/bnx2i/bnx2i_iscsi.c
+index f8d516b..621538b 100644
+--- a/drivers/scsi/bnx2i/bnx2i_iscsi.c
++++ b/drivers/scsi/bnx2i/bnx2i_iscsi.c
+@@ -811,13 +811,13 @@ struct bnx2i_hba *bnx2i_alloc_hba(struct cnic_dev *cnic)
+ 	bnx2i_identify_device(hba);
+ 	bnx2i_setup_host_queue_size(hba, shost);
+ 
++	hba->reg_base = pci_resource_start(hba->pcidev, 0);
+ 	if (test_bit(BNX2I_NX2_DEV_5709, &hba->cnic_dev_type)) {
+-		hba->regview = ioremap_nocache(hba->netdev->base_addr,
+-					       BNX2_MQ_CONFIG2);
++		hba->regview = pci_iomap(hba->pcidev, 0, BNX2_MQ_CONFIG2);
+ 		if (!hba->regview)
+ 			goto ioreg_map_err;
+ 	} else if (test_bit(BNX2I_NX2_DEV_57710, &hba->cnic_dev_type)) {
+-		hba->regview = ioremap_nocache(hba->netdev->base_addr, 4096);
++		hba->regview = pci_iomap(hba->pcidev, 0, 4096);
+ 		if (!hba->regview)
+ 			goto ioreg_map_err;
+ 	}
+@@ -884,7 +884,7 @@ cid_que_err:
+ 	bnx2i_free_mp_bdt(hba);
+ mp_bdt_mem_err:
+ 	if (hba->regview) {
+-		iounmap(hba->regview);
++		pci_iounmap(hba->pcidev, hba->regview);
+ 		hba->regview = NULL;
+ 	}
+ ioreg_map_err:
+@@ -910,7 +910,7 @@ void bnx2i_free_hba(struct bnx2i_hba *hba)
+ 	pci_dev_put(hba->pcidev);
+ 
+ 	if (hba->regview) {
+-		iounmap(hba->regview);
++		pci_iounmap(hba->pcidev, hba->regview);
+ 		hba->regview = NULL;
+ 	}
+ 	bnx2i_free_mp_bdt(hba);
+diff --git a/drivers/scsi/libsas/sas_ata.c b/drivers/scsi/libsas/sas_ata.c
+index 441d88a..d109cc3 100644
+--- a/drivers/scsi/libsas/sas_ata.c
++++ b/drivers/scsi/libsas/sas_ata.c
+@@ -139,12 +139,12 @@ static void sas_ata_task_done(struct sas_task *task)
+ 	if (stat->stat == SAS_PROTO_RESPONSE || stat->stat == SAM_STAT_GOOD ||
+ 	    ((stat->stat == SAM_STAT_CHECK_CONDITION &&
+ 	      dev->sata_dev.command_set == ATAPI_COMMAND_SET))) {
+-		ata_tf_from_fis(resp->ending_fis, &dev->sata_dev.tf);
++		memcpy(dev->sata_dev.fis, resp->ending_fis, ATA_RESP_FIS_SIZE);
+ 
+ 		if (!link->sactive) {
+-			qc->err_mask |= ac_err_mask(dev->sata_dev.tf.command);
++			qc->err_mask |= ac_err_mask(dev->sata_dev.fis[2]);
+ 		} else {
+-			link->eh_info.err_mask |= ac_err_mask(dev->sata_dev.tf.command);
++			link->eh_info.err_mask |= ac_err_mask(dev->sata_dev.fis[2]);
+ 			if (unlikely(link->eh_info.err_mask))
+ 				qc->flags |= ATA_QCFLAG_FAILED;
+ 		}
+@@ -161,8 +161,8 @@ static void sas_ata_task_done(struct sas_task *task)
+ 				qc->flags |= ATA_QCFLAG_FAILED;
+ 			}
+ 
+-			dev->sata_dev.tf.feature = 0x04; /* status err */
+-			dev->sata_dev.tf.command = ATA_ERR;
++			dev->sata_dev.fis[3] = 0x04; /* status err */
++			dev->sata_dev.fis[2] = ATA_ERR;
+ 		}
+ 	}
+ 
+@@ -269,7 +269,7 @@ static bool sas_ata_qc_fill_rtf(struct ata_queued_cmd *qc)
  {
- 	acpi_status status;
--
-+	struct acpi_memory_device *mem_device = NULL;
-+	unsigned long long current_status;
+ 	struct domain_device *dev = qc->ap->private_data;
  
- 	status = is_memory_device(handle);
- 	if (ACPI_FAILURE(status))
- 		return AE_OK;	/* continue */
+-	memcpy(&qc->result_tf, &dev->sata_dev.tf, sizeof(qc->result_tf));
++	ata_tf_from_fis(dev->sata_dev.fis, &qc->result_tf);
+ 	return true;
+ }
  
-+	if (auto_probe) {
-+		/* Get device present/absent information from the _STA */
-+		status = acpi_evaluate_integer(handle, "_STA", NULL,
-+					       &current_status);
-+		if (ACPI_FAILURE(status))
-+			goto install;
+diff --git a/include/scsi/libsas.h b/include/scsi/libsas.h
+index f4f1c96..10ce74f 100644
+--- a/include/scsi/libsas.h
++++ b/include/scsi/libsas.h
+@@ -163,6 +163,8 @@ enum ata_command_set {
+         ATAPI_COMMAND_SET = 1,
+ };
+ 
++#define ATA_RESP_FIS_SIZE 24
 +
-+		/*
-+		 * Check for device status. Device should be
-+		 * present/enabled/functioning.
-+		 */
-+		if (!(current_status &
-+		      (ACPI_STA_DEVICE_PRESENT | ACPI_STA_DEVICE_ENABLED |
-+		       ACPI_STA_DEVICE_FUNCTIONING)))
-+			goto install;
+ struct sata_device {
+         enum   ata_command_set command_set;
+         struct smp_resp        rps_resp; /* report_phy_sata_resp */
+@@ -171,7 +173,7 @@ struct sata_device {
+ 
+ 	struct ata_port *ap;
+ 	struct ata_host ata_host;
+-	struct ata_taskfile tf;
++	u8     fis[ATA_RESP_FIS_SIZE];
+ };
+ 
+ enum {
+@@ -537,7 +539,7 @@ enum exec_status {
+  */
+ struct ata_task_resp {
+ 	u16  frame_len;
+-	u8   ending_fis[24];	  /* dev to host or data-in */
++	u8   ending_fis[ATA_RESP_FIS_SIZE];	  /* dev to host or data-in */
+ };
+ 
+ #define SAS_STATUS_BUF_SIZE 96
+diff --git a/include/scsi/scsi_cmnd.h b/include/scsi/scsi_cmnd.h
+index 1e11985..ac06cc5 100644
+--- a/include/scsi/scsi_cmnd.h
++++ b/include/scsi/scsi_cmnd.h
+@@ -134,10 +134,16 @@ struct scsi_cmnd {
+ 
+ static inline struct scsi_driver *scsi_cmd_to_driver(struct scsi_cmnd *cmd)
+ {
++	struct scsi_driver **sdp;
 +
-+		if (acpi_memory_get_device(handle, &mem_device))
-+			goto install;
+ 	if (!cmd->request->rq_disk)
+ 		return NULL;
+ 
+-	return *(struct scsi_driver **)cmd->request->rq_disk->private_data;
++	sdp = (struct scsi_driver **)cmd->request->rq_disk->private_data;
++	if (!sdp)
++		return NULL;
 +
-+		/* We have bound this device while we register the driver */
-+		if (mem_device->state == MEMORY_POWER_ON_STATE)
-+			goto install;
-+
-+		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-+				  "\nauto probe memory device\n"));
-+
-+		if (acpi_memory_enable_device(mem_device))
-+			pr_err(PREFIX "Cannot enable memory device\n");
-+	}
-+
-+install:
- 	status = acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
- 					     acpi_memory_device_notify, NULL);
- 	/* continue */
--- 
-1.7.1
++	return *sdp;
+ }
+ 
+ extern struct scsi_cmnd *scsi_get_command(struct scsi_device *, gfp_t);
+
 
