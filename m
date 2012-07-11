@@ -1,95 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab2GKHSD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 03:18:03 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:38970 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755960Ab2GKHSB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 03:18:01 -0400
-Message-ID: <4FFD2896.3090209@oracle.com>
-Date: Wed, 11 Jul 2012 15:17:42 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S1756706Ab2GKHWj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 03:22:39 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:20070 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756205Ab2GKHWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 03:22:37 -0400
+X-IronPort-AV: E=Sophos;i="4.77,566,1336320000"; 
+   d="scan'208";a="5371410"
+Message-ID: <4FFD2ACA.90204@cn.fujitsu.com>
+Date: Wed, 11 Jul 2012 15:27:06 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: "Dave, Tushar N" <tushar.n.dave@intel.com>
-CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: 82571EB: Detected Hardware Unit Hang
-References: <4FFA9B96.6040901@oracle.com> <4FFBDC50.5090800@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EE41F@ORSMSX102.amr.corp.intel.com> <4FFCCA22.8060006@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EEC8B@ORSMSX102.amr.corp.intel.com> <4FFCDA6C.8020708@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EED74@ORSMSX102.amr.corp.intel.com> <4FFCF314.6020400@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EEDD7@ORSMSX102.amr.corp.intel.com> <4FFD0908.6080506@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EEF38@ORSMSX102.amr.corp.intel.com>
-In-Reply-To: <061C8A8601E8EE4CA8D8FD6990CEA891274EEF38@ORSMSX102.amr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [RFC PATCH v3 11/13] memory-hotplug : free memmap of sparse-vmemmap
+References: <4FFAB0A2.8070304@jp.fujitsu.com> <4FFAB37F.1060105@jp.fujitsu.com> <4FFD09D5.8010605@cn.fujitsu.com> <4FFD14B0.9010606@jp.fujitsu.com> <4FFD1C71.2020404@cn.fujitsu.com> <4FFD21C2.6000201@jp.fujitsu.com>
+In-Reply-To: <4FFD21C2.6000201@jp.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/11 15:22:21,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/07/11 15:22:27,
+	Serialize complete at 2012/07/11 15:22:27
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=ISO-2022-JP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/12 15:11, Dave, Tushar N wrote:
->> -----Original Message-----
->> From: Joe Jin [mailto:joe.jin@oracle.com]
->> Sent: Tuesday, July 10, 2012 10:03 PM
->> To: Dave, Tushar N
->> Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
->> kernel@vger.kernel.org
->> Subject: Re: 82571EB: Detected Hardware Unit Hang
->>
->> On 07/11/12 12:05, Dave, Tushar N wrote:
->>> When you said you had this issue with RHEL5 and RHEL6 drivers, have you
->> install RHEl5/6 kernel and reproduced it? If so I think I should install
->> RHEL6 and try reproduce it locally!
+At 07/11/2012 02:48 PM, Yasuaki Ishimatsu Wrote:
+> Hi Wen,
+> 
+> 2012/07/11 15:25, Wen Congyang wrote:
+>> At 07/11/2012 01:52 PM, Yasuaki Ishimatsu Wrote:
+>>> 2012/07/11 14:06, Wen Congyang wrote:
+>>> Hi Wen,
 >>>
->> Yes I reproduced this on both RHEL5 and RHEL6.
+>>>> At 07/09/2012 06:33 PM, Yasuaki Ishimatsu Wrote:
+>>>>> I don't think that all pages of virtual mapping in removed memory can be
+>>>>> freed, since page which type is MIX_SECTION_INFO is difficult to free.
+>>>>> So, the patch only frees page which type is SECTION_INFO at first.
+>>>>>
+>>>>> CC: David Rientjes <rientjes@google.com>
+>>>>> CC: Jiang Liu <liuj97@gmail.com>
+>>>>> CC: Len Brown <len.brown@intel.com>
+>>>>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>>>>> CC: Paul Mackerras <paulus@samba.org>
+>>>>> CC: Christoph Lameter <cl@linux.com>
+>>>>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>>>>> CC: Andrew Morton <akpm@linux-foundation.org>
+>>>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>>>> CC: Wen Congyang <wency@cn.fujitsu.com>
+>>>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>>>
+>>>>> ---
+>>>>>    arch/x86/mm/init_64.c |   91 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>>>>>    include/linux/mm.h    |    2 +
+>>>>>    mm/memory_hotplug.c   |    5 ++
+>>>>>    mm/sparse.c           |    5 +-
+>>>>>    4 files changed, 101 insertions(+), 2 deletions(-)
+>>>>>
+>>>>> Index: linux-3.5-rc4/include/linux/mm.h
+>>>>> ===================================================================
+>>>>> --- linux-3.5-rc4.orig/include/linux/mm.h	2012-07-03 14:22:18.530011567 +0900
+>>>>> +++ linux-3.5-rc4/include/linux/mm.h	2012-07-03 14:22:20.999983872 +0900
+>>>>> @@ -1588,6 +1588,8 @@ int vmemmap_populate(struct page *start_
+>>>>>    void vmemmap_populate_print_last(void);
+>>>>>    void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
+>>>>>    				  unsigned long size);
+>>>>> +void vmemmap_kfree(struct page *memmpa, unsigned long nr_pages);
+>>>>> +void vmemmap_free_bootmem(struct page *memmpa, unsigned long nr_pages);
+>>>>>
+>>>>>    enum mf_flags {
+>>>>>    	MF_COUNT_INCREASED = 1 << 0,
+>>>>> Index: linux-3.5-rc4/mm/sparse.c
+>>>>> ===================================================================
+>>>>> --- linux-3.5-rc4.orig/mm/sparse.c	2012-07-03 14:21:45.071429805 +0900
+>>>>> +++ linux-3.5-rc4/mm/sparse.c	2012-07-03 14:22:21.000983767 +0900
+>>>>> @@ -614,12 +614,13 @@ static inline struct page *kmalloc_secti
+>>>>>    	/* This will make the necessary allocations eventually. */
+>>>>>    	return sparse_mem_map_populate(pnum, nid);
+>>>>>    }
+>>>>> -static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
+>>>>> +static void __kfree_section_memmap(struct page *page, unsigned long nr_pages)
+>>>>>    {
+>>>>> -	return; /* XXX: Not implemented yet */
+>>>>> +	vmemmap_kfree(page, nr_pages);
+>>>>
+>>>> Hmm, I think you try to free the memory allocated in kmalloc_section_memmap().
+>>>
+>>> Yes.
+>>>
+>>>>
+>>>>>    }
+>>>>>    static void free_map_bootmem(struct page *page, unsigned long nr_pages)
+>>>>>    {
+>>>>> +	vmemmap_free_bootmem(page, nr_pages);
+>>>>>    }
+>>>>
+>>>> Hmm, which function is the memory you try to free allocated in?
+>>>
+>>> The function try to free memory allocated from bootmem. The memory has
+>>> been registered by get_page_bootmem(). So we can free the memory by
+>>> put_page_bootmem().
 >>
->> So far I tried to scp big file (~1GB) will hit it at once.
+>> OK, I will read these codes, and check it.
 >>
->> Thanks,
->> Joe
+>>>
+>>>>
+>>>>>    #else
+>>>>>    static struct page *__kmalloc_section_memmap(unsigned long nr_pages)
+>>>>> Index: linux-3.5-rc4/arch/x86/mm/init_64.c
+>>>>> ===================================================================
+>>>>> --- linux-3.5-rc4.orig/arch/x86/mm/init_64.c	2012-07-03 14:22:18.538011465 +0900
+>>>>> +++ linux-3.5-rc4/arch/x86/mm/init_64.c	2012-07-03 14:22:21.007983103 +0900
+>>>>> @@ -978,6 +978,97 @@ vmemmap_populate(struct page *start_page
+>>>>>    	return 0;
+>>>>>    }
+>>>>>
+>>>>> +unsigned long find_and_clear_pte_page(unsigned long addr, unsigned long end,
+>>>>> +				      struct page **pp)
+>>>>> +{
+>>>>> +	pgd_t *pgd;
+>>>>> +	pud_t *pud;
+>>>>> +	pmd_t *pmd;
+>>>>> +	pte_t *pte;
+>>>>> +	unsigned long next;
+>>>>> +
+>>>>> +	*pp = NULL;
+>>>>> +
+>>>>> +	pgd = pgd_offset_k(addr);
+>>>>> +	if (pgd_none(*pgd))
+>>>>> +		return (addr + PAGE_SIZE) & PAGE_MASK;
+>>>>
+>>>> Hmm, why not goto next pgd?
+>>>
+>>> Does it mean "return (addr + PGDIR_SIZE) & PGDIR_MASK"?
+>>>
+>>>>
+>>>>> +
+>>>>> +	pud = pud_offset(pgd, addr);
+>>>>> +	if (pud_none(*pud))
+>>>>> +		return (addr + PAGE_SIZE) & PAGE_MASK;
+>>>>> +
+>>>>> +	if (!cpu_has_pse) {
+>>>>> +		next = (addr + PAGE_SIZE) & PAGE_MASK;
+>>>>> +		pmd = pmd_offset(pud, addr);
+>>>>> +		if (pmd_none(*pmd))
+>>>>> +			return next;
+>>>>> +
+>>>>> +		pte = pte_offset_kernel(pmd, addr);
+>>>>> +		if (pte_none(*pte))
+>>>>> +			return next;
+>>>>> +
+>>>>> +		*pp = pte_page(*pte);
+>>>>> +		pte_clear(&init_mm, addr, pte);
+>>>>
+>>>> I think you should flush tlb here.
+>>>
+>>> Thanks, I'll update it.
+>>>
+>>>>
+>>>>> +	} else {
+>>>>> +		next = pmd_addr_end(addr, end);
+>>>>> +
+>>>>> +		pmd = pmd_offset(pud, addr);
+>>>>> +		if (pmd_none(*pmd))
+>>>>> +			return next;
+>>>>> +
+>>>>> +		*pp = pmd_page(*pmd);
+>>>>> +		pmd_clear(pmd);
+>>>>> +	}
+>>>>> +
+>>>>> +	return next;
+>>>>> +}
+>>>>> +
+>>>>> +void __meminit
+>>>>> +vmemmap_kfree(struct page *memmap, unsigned long nr_pages)
+>>>>> +{
+>>>>> +	unsigned long addr = (unsigned long)memmap;
+>>>>> +	unsigned long end = (unsigned long)(memmap + nr_pages);
+>>>>> +	unsigned long next;
+>>>>> +	unsigned int order;
+>>>>> +	struct page *page;
+>>>>> +
+>>>>> +	for (; addr < end; addr = next) {
+>>>>> +		page = NULL;
+>>>>> +		next = find_and_clear_pte_page(addr, end, &page);
+>>>>> +		if (!page)
+>>>>> +			continue;
+>>>>> +
+>>>>> +		if (is_vmalloc_addr(page_address(page)))
+>>>>> +			vfree(page_address(page));
+>>>>
+>>>> Hmm, the memory is allocated in vmemmap_alloc_block(), and the address
+>>>> can not be vmalloc address.
+>>>
+>>> Does it mean the if sentence is unnecessary?
+>>>
+>>>>
+>>>>> +		else {
+>>>>> +			order = next - addr;
+>>>>> +			free_pages((unsigned long)page_address(page),
+>>>>> +				   get_order(order));
+>>>>
+>>>> OOPS. I think we cannot free pages here.
+>>>>
+>>>> sizeof(struct page) is less than PAGE_SIZE. We store more than one struct
+>>>> page in the same page. If you free it here while the other struct page
+>>>> is in use, it is very dangerous.
+>>>
+>>> The memory has page structures for hot-removed memory. So nobody is using
+>>> these pages, since the hot-removed memory has been offlined.
+>>
+>> The memory has page structures for hot-removed memory, but it may contain
+>> page structures for the other hot-added memory.
 > 
-> Joe,
-> Can you please send lspci -vvv output for failing port before issue occurs.
-> Thanks.
+> Yes. There may be such corner case. But when does the corner case appear?
+> When removed memory is not aligned to PMD_SIZE/PAGE_SIZE, does the corner
+> case appear? Do you know it?
+
+It does not depend whether the removed memory is aligned to PMD_SIZE/PAGE_SIZE.
+If PAGE_SIZE % sizeof(struct page) != 0, this case will happen.
+
+Thanks
+Wen Congyang
+
 > 
-# lspci -s 05:00.0 -vvv
-05:00.0 Ethernet controller: Intel Corporation 82571EB Gigabit Ethernet Controller (Copper) (rev 06)
-	Subsystem: Oracle Corporation x4 PCI-Express Quad Gigabit Ethernet UTP Low Profile Adapter
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 256 bytes
-	Interrupt: pin B routed to IRQ 80
-	Region 0: Memory at fbde0000 (32-bit, non-prefetchable) [size=128K]
-	Region 1: Memory at fbdc0000 (32-bit, non-prefetchable) [size=128K]
-	Region 2: I/O ports at dc00 [size=32]
-	Expansion ROM at fbda0000 [disabled] [size=128K]
-	Capabilities: [c8] Power Management version 2
-		Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
-	Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
-		Address: 00000000fee21000  Data: 40cb
-	Capabilities: [e0] Express (v1) Endpoint, MSI 00
-		DevCap:	MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
-			ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
-		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-			MaxPayload 128 bytes, MaxReadReq 512 bytes
-		DevSta:	CorrErr- UncorrErr+ FatalErr- UnsuppReq+ AuxPwr+ TransPend-
-		LnkCap:	Port #2, Speed 2.5GT/s, Width x4, ASPM L0s, Latency L0 <4us, L1 <64us
-			ClockPM- Surprise- LLActRep- BwNot-
-		LnkCtl:	ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk-
-			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-		LnkSta:	Speed 2.5GT/s, Width x4, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
-	Capabilities: [100 v1] Advanced Error Reporting
-		UESta:	DLP- SDES- TLP- FCP- CmpltTO+ CmpltAbrt- UnxCmplt- RxOF- MalfTLP+ ECRC- UnsupReq+ ACSViol-
-		UEMsk:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq+ ACSViol-
-		UESvrt:	DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
-		CESta:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
-		CEMsk:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
-		AERCap:	First Error Pointer: 12, GenCap- CGenEn- ChkCap- ChkEn-
-	Capabilities: [140 v1] Device Serial Number 00-15-17-ff-ff-b9-77-9c
-	Kernel driver in use: e1000e
-	Kernel modules: e1000e
+> Thank,
+> Yasuaki Ishimatsu
+> 
+>>
+>> IIUC, If we use sparse-vmemmap, all page structures is stored here.
+>>
+>> Thanks
+>> Wen Congyang
+>>
+>>>
+>>>>> +		}
+>>>>> +	}
+>>>>> +}
+>>>>> +
+>>>>> +void __meminit
+>>>>> +vmemmap_free_bootmem(struct page *memmap, unsigned long nr_pages)
+>>>>> +{
+>>>>> +	unsigned long addr = (unsigned long)memmap;
+>>>>> +	unsigned long end = (unsigned long)(memmap + nr_pages);
+>>>>> +	unsigned long next;
+>>>>> +	struct page *page;
+>>>>> +	unsigned long magic;
+>>>>> +
+>>>>> +	for (; addr < end; addr = next) {
+>>>>> +		page = NULL;
+>>>>> +		next = find_and_clear_pte_page(addr, end, &page);
+>>>>> +		if (!page)
+>>>>> +			continue;
+>>>>> +
+>>>>> +		magic = (unsigned long) page->lru.next;
+>>>>> +		if (magic == SECTION_INFO)
+>>>>> +			put_page_bootmem(page);
+>>>>> +	}
+>>>>> +}
+>>>>> +
+>>>>>    void __meminit
+>>>>>    register_page_bootmem_memmap(unsigned long section_nr, struct page *start_page,
+>>>>>    			     unsigned long size)
+>>>>> Index: linux-3.5-rc4/mm/memory_hotplug.c
+>>>>> ===================================================================
+>>>>> --- linux-3.5-rc4.orig/mm/memory_hotplug.c	2012-07-03 14:22:18.522011667 +0900
+>>>>> +++ linux-3.5-rc4/mm/memory_hotplug.c	2012-07-03 14:22:21.012982694 +0900
+>>>>> @@ -303,6 +303,8 @@ static int __meminit __add_section(int n
+>>>>>    #ifdef CONFIG_SPARSEMEM_VMEMMAP
+>>>>
+>>>> I think this line can be removed now.
+>>>
+>>> I'll update it.
+>>>
+>>> Thanks,
+>>> Yasuaki Ishimatsu
+>>>
+>>>>
+>>>> Thanks
+>>>> Wen Congyang
+>>>>
+>>>>>    static int __remove_section(struct zone *zone, struct mem_section *ms)
+>>>>>    {
+>>>>> +	unsigned long flags;
+>>>>> +	struct pglist_data *pgdat = zone->zone_pgdat;
+>>>>>    	int ret;
+>>>>>
+>>>>>    	if (!valid_section(ms))
+>>>>> @@ -310,6 +312,9 @@ static int __remove_section(struct zone
+>>>>>
+>>>>>    	ret = unregister_memory_section(ms);
+>>>>>
+>>>>> +	pgdat_resize_lock(pgdat, &flags);
+>>>>> +	sparse_remove_one_section(zone, ms);
+>>>>> +	pgdat_resize_unlock(pgdat, &flags);
+>>>>>    	return ret;
+>>>>>    }
+>>>>>    #else
+>>>>>
+>>>>>
+>>>>
+>>>
+>>>
+>>>
+>>>
+>>
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-
-Thanks,
-Joe
