@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757156Ab2GKKUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 06:20:37 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:51528 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757096Ab2GKKUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 06:20:34 -0400
-Message-ID: <4FFD536B.8010603@mev.co.uk>
-Date: Wed, 11 Jul 2012 11:20:27 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0
+	id S1757129Ab2GKKVM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 06:21:12 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:9330 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764Ab2GKKVJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 06:21:09 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 11 Jul 2012 03:20:55 -0700
+Message-ID: <4FFD5202.9080206@nvidia.com>
+Date: Wed, 11 Jul 2012 15:44:26 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 00/83] staging: comedi: rtd520: initial cleanup
-References: <201207101636.23561.hartleys@visionengravers.com>
-In-Reply-To: <201207101636.23561.hartleys@visionengravers.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH RESEND] spi: tegra: use dmaengine based dma driver
+References: <1341927517-4584-1-git-send-email-ldewangan@nvidia.com> <20120711095504.GD3938@opensource.wolfsonmicro.com> <4FFD4ECA.8090304@nvidia.com> <20120711101527.GE3938@opensource.wolfsonmicro.com>
+In-Reply-To: <20120711101527.GE3938@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-07-11 00:36, H Hartley Sweeten wrote:
-> The 'devpriv' macro usage in this driver is holding up other cleanup
-> of the comedi drivers.
+On Wednesday 11 July 2012 03:45 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
 >
-> This patch series removes all the macros used to read/write the
-> hardware registers. All of them are simple wrappers around standard
-> {read,write}[rwl] calls with some of them caching the write value
-> in a shadow variable in the private data.
+> On Wed, Jul 11, 2012 at 03:30:42PM +0530, Laxman Dewangan wrote:
+>> On Wednesday 11 July 2012 03:25 PM, Mark Brown wrote:
 >
-> Each of the macros is removed in a separate patch to ease reviewing.
-> They can all be squashed into one patch if desired.
+>> I believe you have applied for the ASoC one. This is for spi one.
+> No, there's a dmaengine patch in my SPI branch too which I applied
+> yesterday.
 >
-> After all the macros are gone, the devpriv macro itself can be removed
-> along with the boardinfo macro.
+>    git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git spi-next
 >
-> The "find pci device" code is also refactored to follow the style of
-> the other comedi pci drivers.
+
+Looked at your misc/spi-next and you have already applied. This was just 
+resend.
+
+Thanks for taking care.
+
 >
-> The range tables are also cleaned up for aesthetic reasons. The large
-> whitespace causes some pretty nasty line breaks in order to keep the
-> lines < 80 characters.
-
-My main concern with this series of patches is they make it harder to 
-determine what the register accesses actually do, mainly due to the 
-removal of useful comments.  For example:
-
--	RtdPacerStart(dev);	/* Start PACER */
-+	readl(devpriv->las0 + LAS0_PACER);
-
-And:
-
--	RtdPacerStop(dev);	/* Stop PACER */
-+	writel(0, devpriv->las0 + LAS0_PACER);
-
-The comments in the original code were quite superfluous, but they would 
-be useful for the replacement code.  In the above cases you could figure 
-it out after looking at the rtd520.h header file where its reasonably 
-clear that reading the LAS0_PACER register starts the pacer and writing 
-the register (presumably with any value) stops the pacer.  But it's less 
-clear in cases such as:
-
--		RtdAdcConversionSource(dev, 2);	/* BURST triggers ADC */
-+		writel(2, devpriv->las0 + LAS0_ADC_CONVERSION);
-
-Since the values for the LAS0_ADC_CONVERSION register are no longer 
-documented anywhere.
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+> I'm sorry, I can't parse this sentance at all.
+>
+Just wanted to know that spi changes will be in regulator/for-next or 
+some other tree. It is in misc/spi-next.
 
 
