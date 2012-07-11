@@ -1,148 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260Ab2GKRvS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 13:51:18 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:40724 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757095Ab2GKRvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 13:51:15 -0400
-Message-ID: <1342029074.13724.113.camel@joe2Laptop>
-Subject: Re: pr_cat() + CATSTR(name, size)?
-From: Joe Perches <joe@perches.com>
-To: Kay Sievers <kay@vrfy.org>, Vegard Nossum <vegard.nossum@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 11 Jul 2012 10:51:14 -0700
-In-Reply-To: <CAPXgP11pjoKLbj8oXbFBJkzeAFUHwP3CyNkT8DfpO27nBhx2eA@mail.gmail.com>
-References: <1342002808.810.12.camel@mop>
-	 <1342018897.13724.61.camel@joe2Laptop>
-	 <CAPXgP11XnrFayb-g5HFu3wPtw8=xLfSY7HNCCbiSoehj8KsGcw@mail.gmail.com>
-	 <1342020647.13724.71.camel@joe2Laptop>
-	 <CAPXgP13ff+eFH_jJ+0FDX0-GkuZj3RSv7VCp3ftcsGzA412FVQ@mail.gmail.com>
-	 <1342025743.13724.102.camel@joe2Laptop>
-	 <CAPXgP11pjoKLbj8oXbFBJkzeAFUHwP3CyNkT8DfpO27nBhx2eA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757143Ab2GKRwb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 13:52:31 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:50665 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756588Ab2GKRw1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 13:52:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FFD1FE7.6010504@huawei.com>
+References: <CAErSpo70NtEJFaQmDtdTLkSB3fQRNy78juAQO-KbXeceZkunkw@mail.gmail.com>
+ <1341935655-5381-1-git-send-email-jiang.liu@huawei.com> <1341935655-5381-6-git-send-email-jiang.liu@huawei.com>
+ <CAErSpo7k3=nUSTR+n1iX0Rddv2FQm+HzcqnC5VHxh1JKUdoNAw@mail.gmail.com>
+ <4FFCEDDE.2080907@huawei.com> <CAErSpo4JrgU2RHoNDWcm13otgdKVXuGxahE0pbuAD73nZvTZFQ@mail.gmail.com>
+ <4FFD1FE7.6010504@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 11 Jul 2012 11:52:05 -0600
+Message-ID: <CAErSpo7ZtrYtz_8iB8=8nbQBtntPtyi8BLg6K+D7mQjnfj-KCg@mail.gmail.com>
+Subject: Re: [RFC PATCH 05/14] PCI: add access functions for PCIe capabilities
+ to hide PCIe spec differences
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Don Dutile <ddutile@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-11 at 19:25 +0200, Kay Sievers wrote:
-> On Wed, Jul 11, 2012 at 6:55 PM, Joe Perches <joe@perches.com> wrote:
-> > On Wed, 2012-07-11 at 17:48 +0200, Kay Sievers wrote:
-> >> On Wed, Jul 11, 2012 at 5:30 PM, Joe Perches <joe@perches.com> wrote:
-> >> > Well, I think the malloc costs are pretty low
-> >> > and could devolve pretty easily when OOM.
-> >>
-> >> We need to avoid allocating memory in situations where we want to
-> >> printk(), it's just not possible.
-> >
-> > "it's just not possible???"  Kay, them's fightin' words. :)
-> 
-> Nah, I meant it. :) It limits the usefulness of these functions. We
-> can not safely allocate memory, or do not get any memory in some
-> situations where we want to use printk(). Hey, it might be used to say
-> printk("out of memory\n").
+On Wed, Jul 11, 2012 at 12:40 AM, Jiang Liu <jiang.liu@huawei.com> wrote:
+> On 2012-7-11 11:40, Bjorn Helgaas wrote:
+>
+>>> Good point. Return success when reading unimplemented registeres, that
+>>> may simplify code. For we still should return -EINVAL when writing
+>>> unimplemented registers, right?
+>>
+>> Yeah, I guess it's OK to return -EINVAL when *writing* to an
+>> unimplemented register.  Hopefully the caller is structured such that
+>> we don't even try to write in that case.  It'd be interesting to audit
+>> the callers and explore that, but I haven't done that.
+> Hi Bjorn,
+>         Seems it would be better to return error code for unimplemented
+> registers, otherwise following code will becomes more complex. A special
+> error code for unimplemented registers, such as -EIO?
 
-:)
+I think you're asking about returning error for *reads* of
+unimplemented registers?  I guess I still think it's OK to completely
+hide the v1 nastiness inside these accessors, and return success with
+a zero value when reading.  Having several different error returns
+seems like overkill for this case.  Nobody wants to distinguish
+between different reasons for failure.
 
-> >> That's why all the kmsg/printk can
-> >> not really do any plain malloc. All printk memory needs to be static,
-> >> on the stack or somehow pre-allocated.
-> >
-> > Maybe, I was planning to play with it after
-> > refactoring printk in the next couple releases.
-> 
-> Sounds good.
-> 
-> >> > Anyway, interesting idea, keep at it, see what
-> >> > comes out of it.
-> >>
-> >> Just depends on us, I guess. :)
-> 
-> > If your solution is just for the dev_<level> messages
-> > (ie: with vprintk_emit descriptors), then it's not
-> > too ugly.
-> 
-> Yeah, I thought only about these. But there might be more users where
-> it makes sense to do that in a more reliable manner, don't know. It
-> was surely no meant to replace the remaining 99.9% of the other cont
-> users. :)
+I'm actually not sure that it's worth returning an error even when
+*writing* an unimplemented register.  What if we return success and
+just drop the write?
 
-I believe your current reassembly code only works
-on a maximum of 2 interleaved threads.  Did that change?
+Maybe these should even be void functions.  It feels like the only
+real use of the return value is to detect programmer error, and I
+don't think that's very effective.  If we remove the return values,
+people will have to focus on the *data*, which seems more important
+anyway.
 
-> > Did you look at the remaining dev_<level> and printk
-> > continuations grep pattern?  There really aren't too
-> > many to fix up.
-> 
-> Yeah, it looks fine to fix these few.
-> 
-> > Maybe in 3.6.  None of them appear particularly urgent.
-> 
-> Right.
-> 
-> > One trivial style note:
-> >
-> > Maybe CATSTR could use a struct and a DECLARE_ macro?
-> >
-> > struct printk_continuation_buffer {
-> >         size_t length;
-> >         size_t pos;
-> >         char buf[];
-> > }
-> 
-> Yeah, but then we lose the simplicity of passing the normal string
-> around, and we need accessor macros to get to the string when we pass
-> it around later. Maybe it's still OK, but it's surely not so intuitive
-> anymore.
-> 
-> > It's a pity gcc doesn't allow non-static declarations like:
-> >
-> > #define DECLARE_PRINTK_BUF(name, size)          \
-> > struct printk_continuation_buffer name = {      \
-> >         .length = size;                         \
-> >         .pos = 0;                               \
-> >         .buf[size] = {0};                       \
-> > }
-> 
-> Yeah, when the size changes, we have different type of struct. So we
-> can not name them all "printk_continuation_buffer", every different
-> size would conflict with each other.
+> static void rtl_disable_clock_request(struct pci_dev *pdev)
+> {
+>         u16 ctl;
+>
+>         if (!pci_pcie_capability_read_word(pdev, PCI_EXP_LNKCTL, &ctl)) {
+>                 ctl &= ~PCI_EXP_LNKCTL_CLKREQ_EN;
+>                 pci_pcie_capability_write_word(pdev, PCI_EXP_LNKCTL, ctl);
+>         }
+> }
 
-It doesn't work so it doesn't matter no?
+I would write that as:
 
-> > So maybe a DECLARE/DESTROY thing could work
-> > with the appropriate malloc/free.
-> 
-> Hmm, I really don't think we can teach the people, or expect them to
-> know, that these printk() functions are fragile if used in some
-> critical code paths.
+    if (!pci_is_pcie(pdev)
+        return;
 
-Vigilance. (and maybe a checkpatch test :).
-There just aren't many critical code paths.
+    pci_pcie_capability_read_word(pdev, PCI_EXP_LNKCTL, &ctl);
+    if (ctl & PCI_EXP_LNKCTL_CLKREQ_EN)
+        pci_pcie_capability_write_word(pdev, PCI_EXP_LNKCTL, ctl &
+~PCI_EXP_LNKCTL_CLKREQ_EN);
 
-> It would at least need the GFP flags and in many
-> cases GFP_ATOMIC which can easily fail, and we would also need to do
-> error checking then, and printk() should just never fail, because it
-> is used to tell that something went wrong. We have the entire kmsg
-> buffer pre-allocated at bootup for that reason.
+which does the right thing regardless of what we do for return values,
+and saves a config write in the case where LNKCTL is implemented and
+CLKREQ_EN is already cleared.
 
-I still think devolving to direct printks when OOM works
-as a fallback just fine.
-
-> I think the only really sane option here is to use the (usually
-> ~50-100 bytes) stack. Or did you have another idea here which I
-> missed?
-
-Other than malloc, I don't think there's another option.
-Anyone else?
-
-Vegard?  Are you still around?
-
-Do you want to revive something like the blocks in:
-https://lkml.org/lkml/2007/10/4/367
-
-
+Bjorn
