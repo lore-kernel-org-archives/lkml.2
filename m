@@ -1,76 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab2GKLXs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 07:23:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11218 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753804Ab2GKLXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 07:23:46 -0400
-Message-ID: <4FFD621D.5090607@redhat.com>
-Date: Wed, 11 Jul 2012 14:23:09 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
-        Carsten Otte <cotte@de.ibm.com>, KVM <kvm@vger.kernel.org>,
-        chegu vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
-References: <20120709062012.24030.37154.sendpatchset@codeblue> <4FFA8E5E.3070108@de.ibm.com> <4FFD422B.9060008@redhat.com> <4FFD52CD.7040403@de.ibm.com> <4FFD5DA3.3010001@redhat.com> <39DA3B9A-87D6-4EA5-B1FF-B6E30733EF7B@suse.de>
-In-Reply-To: <39DA3B9A-87D6-4EA5-B1FF-B6E30733EF7B@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757311Ab2GKL1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 07:27:32 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58035 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752258Ab2GKL1a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 07:27:30 -0400
+Date: Wed, 11 Jul 2012 12:30:55 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Ingo Molnar <mingo@kernel.org>, Catalin Marinas <catalin.marinas@arm.com>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 00/36] AArch64 Linux kernel port
+Message-ID: <20120711123055.293267de@pyramind.ukuu.org.uk>
+In-Reply-To: <201207102119.38495.arnd@arndb.de>
+References: <1341608777-12982-1-git-send-email-catalin.marinas@arm.com>
+	<201207101652.18401.arnd@arndb.de>
+	<20120710203527.GA16986@gmail.com>
+	<201207102119.38495.arnd@arndb.de>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2012 02:16 PM, Alexander Graf wrote:
->> 
->>> yes the data structure itself seems based on the algorithm
->>> and not on arch specific things. That should work. If we move that to common 
->>> code then s390 will use that scheme automatically for the cases were we call 
->>> kvm_vcpu_on_spin(). All others archs as well.
->> 
->> ARM doesn't have an instruction for cpu_relax(), so it can't intercept
->> it.  Given ppc's dislike of overcommit,
-> 
-> What dislike of overcommit?
+> What if they add 64-bit ARM support to arch/x86? AFAIK some of the
+> machines are going to be basically PCs, including legacy I/O, ACPI
+> and UEFI, so they are much closer to that than they are to anything
+> in arch/arm. The instruction set of course is different, but you
+> already said that this doesn't matter.
 
-I understood ppc virtualization is more of the partitioning sort.
-Perhaps I misunderstood it.  But the reliance on device assignment, the
-restrictions on scheduling, etc. all point to it.
+ACPI5 doesn't require legacy I/O although I guess as before people will
+be reusing x86 components and might do so for hardware reasons.
 
-> 
->> and the way it implements cpu_relax() by adjusting hw thread priority,
-> 
-> Yeah, I don't think we can intercept relaxing.
-
-... and the lack of ability to intercept cpu_relax() ...
-
-> It's basically a nop-like instruction that gives hardware hints on its current priorities.
-
-That's what x88 PAUSE does.  But we can intercept it (and not just any
-execution - we can restrict intercept to tight loops executed more than
-a specific number of times).
-
-> That said, we can always add PV code.
-
-Sure, but that's defeated by advancements like self-tuning PLE exits.
-It's hard to get this right.
-
--- 
-error compiling committee.c: too many arguments to function
-
-
+Alan
