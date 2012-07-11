@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab2GKJCZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 05:02:25 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:34935 "EHLO ogre.sisk.pl"
+	id S1753808Ab2GKJHM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 05:07:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46893 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753844Ab2GKJCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 05:02:21 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
-Date: Wed, 11 Jul 2012 11:07:56 +0200
-User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <201204292244.16467.rjw@sisk.pl> <20120711000850.GD18128@kroah.com>
-In-Reply-To: <20120711000850.GD18128@kroah.com>
+	id S1751717Ab2GKJHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 05:07:10 -0400
+Message-ID: <4FFD422B.9060008@redhat.com>
+Date: Wed, 11 Jul 2012 12:06:51 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
+        Carsten Otte <cotte@de.ibm.com>, KVM <kvm@vger.kernel.org>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
+References: <20120709062012.24030.37154.sendpatchset@codeblue> <4FFA8E5E.3070108@de.ibm.com>
+In-Reply-To: <4FFA8E5E.3070108@de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207111107.56500.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 11, 2012, Greg KH wrote:
-> On Sun, Apr 29, 2012 at 10:44:16PM +0200, Rafael J. Wysocki wrote:
-> > From: Oleksij Rempel <bug-track@fisher-privat.net>
-> > 
-> > This patch makes _SxD/_SxW check follow the ACPI 4.0a specification
-> > more closely and fixes suspend bug found on ASUS Zenbook UX31E.
-> > 
-> > Some OEM use _SxD fileds do blacklist brocken Dx states.
-> > If _SxD/_SxW return values are check before suspend as appropriate,
-> > some nasty suspend/resume issues may be avoided.
-> > 
-> > References: https://bugzilla.kernel.org/show_bug.cgi?id=42728
-> > Signed-off-by: Oleksij Rempel <bug-track@fisher-privat.net>
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > ---
-> > 
-> > Bjorn, Len,
-> > 
-> > This is -stable material and therefore v3.4 as well, IMO.  Please let me
-> > know if one of you can take it or whether you want me to handle it all the
-> > way to Linus.
+On 07/09/2012 10:55 AM, Christian Borntraeger wrote:
+> On 09/07/12 08:20, Raghavendra K T wrote:
+>> Currently Pause Looop Exit (PLE) handler is doing directed yield to a
+>> random VCPU on PL exit. Though we already have filtering while choosing
+>> the candidate to yield_to, we can do better.
+>> 
+>> Problem is, for large vcpu guests, we have more probability of yielding
+>> to a bad vcpu. We are not able to prevent directed yield to same guy who
+>> has done PL exit recently, who perhaps spins again and wastes CPU.
+>> 
+>> Fix that by keeping track of who has done PL exit. So The Algorithm in series
+>> give chance to a VCPU which has:
 > 
-> What ever hapened to this patch?
+> 
+> We could do the same for s390. The appropriate exit would be diag44 (yield to hypervisor).
+> 
+> Almost all s390 kernels use diag9c (directed yield to a given guest cpu) for spinlocks, though.
 
-It was split and partially merged.  As far as the other part is concerned,
-the jury is still out.
+Perhaps x86 should copy this.
 
-Thanks,
-Rafael
+> So there is no win here, but there are other cases were diag44 is used, e.g. cpu_relax.
+> I have to double check with others, if these cases are critical, but for now, it seems 
+> that your dummy implementation  for s390 is just fine. After all it is a no-op until 
+> we implement something.
+
+Does the data structure make sense for you?  If so we can move it to
+common code (and manage it in kvm_vcpu_on_spin()).  We can guard it with
+CONFIG_KVM_HAVE_CPU_RELAX_INTERCEPT or something, so other archs don't
+have to pay anything.
+
+-- 
+error compiling committee.c: too many arguments to function
+
+
