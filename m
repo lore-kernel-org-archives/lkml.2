@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273Ab2GKS4M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 14:56:12 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:46842 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755082Ab2GKS4J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 14:56:09 -0400
-Date: Wed, 11 Jul 2012 11:55:34 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Cong Wang <xiyou.wangcong@gmail.com>
-cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] tmpfs: revert SEEK_DATA and SEEK_HOLE
-In-Reply-To: <jtj574$tb7$2@dough.gmane.org>
-Message-ID: <alpine.LSU.2.00.1207111149580.1797@eggly.anvils>
-References: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils> <alpine.LSU.2.00.1207091535480.2051@eggly.anvils> <jtj574$tb7$2@dough.gmane.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1757577Ab2GKS7S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 14:59:18 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:35883 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755552Ab2GKS7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 14:59:15 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
+Date: Wed, 11 Jul 2012 21:04:48 +0200
+User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+References: <201204292244.16467.rjw@sisk.pl> <201207111107.56500.rjw@sisk.pl> <20120711135333.GA19410@kroah.com>
+In-Reply-To: <20120711135333.GA19410@kroah.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207112104.49173.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jul 2012, Cong Wang wrote:
-> On Mon, 09 Jul 2012 at 22:41 GMT, Hugh Dickins <hughd@google.com> wrote:
-> > Revert 4fb5ef089b28 ("tmpfs: support SEEK_DATA and SEEK_HOLE").
-> > I believe it's correct, and it's been nice to have from rc1 to rc6;
-> > but as the original commit said:
-> >
-> > I don't know who actually uses SEEK_DATA or SEEK_HOLE, and whether it
-> > would be of any use to them on tmpfs.  This code adds 92 lines and 752
-> > bytes on x86_64 - is that bloat or worthwhile?
+On Wednesday, July 11, 2012, Greg KH wrote:
+> On Wed, Jul 11, 2012 at 11:07:56AM +0200, Rafael J. Wysocki wrote:
+> > On Wednesday, July 11, 2012, Greg KH wrote:
+> > > On Sun, Apr 29, 2012 at 10:44:16PM +0200, Rafael J. Wysocki wrote:
+> > > > From: Oleksij Rempel <bug-track@fisher-privat.net>
+> > > > 
+> > > > This patch makes _SxD/_SxW check follow the ACPI 4.0a specification
+> > > > more closely and fixes suspend bug found on ASUS Zenbook UX31E.
+> > > > 
+> > > > Some OEM use _SxD fileds do blacklist brocken Dx states.
+> > > > If _SxD/_SxW return values are check before suspend as appropriate,
+> > > > some nasty suspend/resume issues may be avoided.
+> > > > 
+> > > > References: https://bugzilla.kernel.org/show_bug.cgi?id=42728
+> > > > Signed-off-by: Oleksij Rempel <bug-track@fisher-privat.net>
+> > > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > > > ---
+> > > > 
+> > > > Bjorn, Len,
+> > > > 
+> > > > This is -stable material and therefore v3.4 as well, IMO.  Please let me
+> > > > know if one of you can take it or whether you want me to handle it all the
+> > > > way to Linus.
+> > > 
+> > > What ever hapened to this patch?
+> > 
+> > It was split and partially merged.  As far as the other part is concerned,
+> > the jury is still out.
 > 
-> 
-> I don't think 752 bytes matter much, especially for x86_64.
-> 
-> >
-> > Nobody asked for it, so I conclude that it's bloat: let's revert tmpfs
-> > to the dumb generic support for v3.5.  We can always reinstate it later
-> > if useful, and anyone needing it in a hurry can just get it out of git.
-> >
-> 
-> If you don't have burden to maintain it, I'd prefer to leave as it is,
-> I don't think 752-bytes is the reason we revert it.
+> Ok, I'll wait for someone to ask for it to be added to the stable tree
+> before I do anything.
 
-Thank you, your vote has been counted ;)
-and I'll be glad if yours stimulates some agreement or disagreement.
+In fact, it should have been marked as -stable material, so please add:
 
-But your vote would count for a lot more if you know of some app which
-would really benefit from this functionality in tmpfs: I've heard of none.
+commit dbe9a2edd17d843d80faf2b99f20a691c1853418
+Author: Rafael J. Wysocki <rjw@sisk.pl>
+Date:   Tue May 29 21:21:07 2012 +0200
 
-Hugh
+    ACPI / PM: Make acpi_pm_device_sleep_state() follow the specification
+
+Thanks,
+Rafael
