@@ -1,71 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932956Ab2GKQ2O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 12:28:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25389 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932738Ab2GKQ2M (ORCPT
+	id S1758198Ab2GKQae (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 12:30:34 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:13836 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756398Ab2GKQad convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 12:28:12 -0400
-X-Authority-Analysis: v=2.0 cv=AtpsLZBP c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=t8C3CB5ssRAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=XyIT4aO6M0Qy3YRtcYoA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1342024090.14828.45.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 5/6] ftrace/x86: Add separate function to save regs
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, yrl.pp-manager.tt@hitachi.com
-Date: Wed, 11 Jul 2012 12:28:10 -0400
-In-Reply-To: <1342023754.14828.43.camel@gandalf.stny.rr.com>
-References: <20120702200322.573660631@goodmis.org>
-	 <20120702201821.510485400@goodmis.org> <4FF2AD59.6080006@hitachi.com>
-	 <1342023754.14828.43.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 11 Jul 2012 12:30:33 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-9.tower-209.messagelabs.com!1342024197!8375034!23
+X-Originating-IP: [216.166.12.178]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Wed, 11 Jul 2012 11:30:17 -0500
+Subject: RE: [PATCH] staging: comedi: rtd520: add a few comments
+Thread-Topic: [PATCH] staging: comedi: rtd520: add a few comments
+Thread-Index: Ac1fYLTHSWLpoTJASy+Exc7ZERQ9rAAIYPmg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0020698FEE719@AUSP01VMBX24.collaborationhost.net>
+References: <4FFD5665.7040901@mev.co.uk>
+ <1342009699-7031-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1342009699-7031-1-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-11 at 12:22 -0400, Steven Rostedt wrote:
-> On Tue, 2012-07-03 at 17:29 +0900, Masami Hiramatsu wrote:
-> 
-> 
-> > 
-> > > +	/* Restore flags */
-> > > +	pushq EFLAGS(%rsp)
-> > > +	popfq
-> > > +
-> > > +	MCOUNT_RESTORE_FRAME
-> > 
-> > Here, if MCOUNT_RESTORE_FRAME has skip too, I think you don't
-> > need to restore flags before restoring other registers, like
-> > below;
-> > 
-> > 	MCOUNT_RESTORE_FRAME 8
-> > 	popfq
-> > 
-> > And also, this will prevent to modify flags before return by
-> > addq in MCOUNT_RESTORE_FRAME.
-> 
-> Ah, because the addq will modify flags :-/
-> 
-> Grumble, I guess I should implement this, even though it will make it a
-> little more complex. I thought it was better to restore flags
-> explicitly, but that's not the case.
-> 
+On Wednesday, July 11, 2012 5:28 AM, Ian Abbott wrote:
+> H Hartley Sweeten's recent series of patches to clean up the rtd520
+> driver made some of the register accesses harder to understand.  Add a
+> few comments to provide some clues to the reader.
+>
+> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+> To be applied after Hartley's 83 patches.
+> ---
+>  drivers/staging/comedi/drivers/rtd520.c |   23 ++++++++++++++++++-----
+>  1 files changed, 18 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/rtd520.c b/drivers/staging/comedi/drivers/rtd520.c
+> index 5a2953e..9998d6b 100644
+> --- a/drivers/staging/comedi/drivers/rtd520.c
+> +++ b/drivers/staging/comedi/drivers/rtd520.c
+> @@ -494,6 +494,7 @@ static int rtd520_probe_fifo_depth(struct comedi_device *dev)
+>  
+>  	writel(0, devpriv->las0 + LAS0_ADC_FIFO_CLEAR);
+>  	rtd_load_channelgain_list(dev, 1, &chanspec);
+> +	/* ADC conversion trigger source: SOFTWARE */
+>  	writel(0, devpriv->las0 + LAS0_ADC_CONVERSION);
+>  	/* convert  samples */
+>  	for (i = 0; i < limit; ++i) {
+> @@ -544,7 +545,7 @@ static int rtd_ai_rinsn(struct comedi_device *dev,
+>  	/* write channel to multiplexer and clear channel gain table */
+>  	rtd_load_channelgain_list(dev, 1, &insn->chanspec);
+>  
+> -	/* set conversion source */
+> +	/* ADC conversion trigger source: SOFTWARE */
+>  	writel(0, devpriv->las0 + LAS0_ADC_CONVERSION);
+>  
+>  	/* convert n samples */
+> @@ -908,8 +909,9 @@ abortTransfer:
+>  	/* fall into transferDone */
+>  
+>  transferDone:
+> +	/* pacer stop source: SOFTWARE */
+>  	writel(0, devpriv->las0 + LAS0_PACER_STOP);
+> -	writel(0, devpriv->las0 + LAS0_PACER);
+> +	writel(0, devpriv->las0 + LAS0_PACER);	/* stop pacer */
+>  	writel(0, devpriv->las0 + LAS0_ADC_CONVERSION);
+>  	devpriv->intMask = 0;
+>  	writew(devpriv->intMask, devpriv->las0 + LAS0_IT);
+> @@ -1180,8 +1182,9 @@ static int rtd_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+>  	int timer;
+>  
+>  	/* stop anything currently running */
+> +	/* pacer stop source: SOFTWARE */
+>  	writel(0, devpriv->las0 + LAS0_PACER_STOP);
+> -	writel(0, devpriv->las0 + LAS0_PACER);
+> +	writel(0, devpriv->las0 + LAS0_PACER);	/* stop pacer */
+>  	writel(0, devpriv->las0 + LAS0_ADC_CONVERSION);
+>  	devpriv->intMask = 0;
+>  	writew(devpriv->intMask, devpriv->las0 + LAS0_IT);
+> @@ -1215,12 +1218,17 @@ static int rtd_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+>  	/* setup the common case and override if needed */
+>  	if (cmd->chanlist_len > 1) {
+>  		/*DPRINTK ("rtd520: Multi channel setup\n"); */
+> +		/* pacer start source: SOFTWARE */
+>  		writel(0, devpriv->las0 + LAS0_PACER_START);
+> +		/* burst trigger source: PACER */
+>  		writel(1, devpriv->las0 + LAS0_BURST_START);
+> +		/* ADC conversion trigger source: BURST */
+>  		writel(2, devpriv->las0 + LAS0_ADC_CONVERSION);
+>  	} else {		/* single channel */
+>  		/*DPRINTK ("rtd520: single channel setup\n"); */
+> +		/* pacer start source: SOFTWARE */
+>  		writel(0, devpriv->las0 + LAS0_PACER_START);
+> +		/* ADC conversion trigger source: PACER */
+>  		writel(1, devpriv->las0 + LAS0_ADC_CONVERSION);
+>  	}
+>  	writel((devpriv->fifoLen / 2 - 1) & 0xffff, devpriv->las0 + LAS0_ACNT);
+> @@ -1269,7 +1277,9 @@ static int rtd_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+>  		devpriv->transCount = 0;
+>  		devpriv->flags &= ~SEND_EOS;
+>  	}
+> +	/* pacer clock source: INTERNAL 8MHz */
+>  	writel(1, devpriv->las0 + LAS0_PACER_SELECT);
+> +	/* just interrupt, don't stop */
+>  	writel(1, devpriv->las0 + LAS0_ACNT_STOP_ENABLE);
+>  
+>  	/* BUG??? these look like enumerated values, but they are bit fields */
+> @@ -1305,6 +1315,7 @@ static int rtd_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+>  		break;
+>  
+>  	case TRIG_EXT:
+> +		/* pacer start source: EXTERNAL */
+>  		writel(1, devpriv->las0 + LAS0_PACER_START);
+>  		break;
+>  
+> @@ -1327,6 +1338,7 @@ static int rtd_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+>  		break;
+>  
+>  	case TRIG_EXT:		/* external */
+> +		/* burst trigger source: EXTERNAL */
+>  		writel(2, devpriv->las0 + LAS0_BURST_START);
+>  		break;
+>  
+> @@ -1378,7 +1390,7 @@ static int rtd_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+>  
+>  	/* BUG: start_src is ASSUMED to be TRIG_NOW */
+>  	/* BUG? it seems like things are running before the "start" */
+> -	readl(devpriv->las0 + LAS0_PACER);
+> +	readl(devpriv->las0 + LAS0_PACER);	/* start pacer */
+>  	return 0;
+>  }
+>  
+> @@ -1391,8 +1403,9 @@ static int rtd_ai_cancel(struct comedi_device *dev, struct comedi_subdevice *s)
+>  	u32 overrun;
+>  	u16 status;
+>  
+> +	/* pacer stop source: SOFTWARE */
+>  	writel(0, devpriv->las0 + LAS0_PACER_STOP);
+> -	writel(0, devpriv->las0 + LAS0_PACER);
+> +	writel(0, devpriv->las0 + LAS0_PACER);	/* stop pacer */
+>  	writel(0, devpriv->las0 + LAS0_ADC_CONVERSION);
+>  	devpriv->intMask = 0;
+>  	writew(devpriv->intMask, devpriv->las0 + LAS0_IT);
 
-I know why I did this. Do you want kprobes to be able to modify flags?
-If so, then I need to add, before the restore:
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-	movq EFLAGS(%rsp), %rax
-	movq %rax, SS(%rsp)
-
--- Steve
-
+Thanks!
 
