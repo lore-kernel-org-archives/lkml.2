@@ -1,33 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757658Ab2GKNiw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:38:52 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:54454 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864Ab2GKNiu (ORCPT
+	id S1757685Ab2GKNjA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:39:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56800 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757664Ab2GKNi6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:38:50 -0400
-MIME-Version: 1.0
-Date: Wed, 11 Jul 2012 10:38:49 -0300
-Message-ID: <CAP2AAQMvx5yxVRLN4AT_YdsFJAUDRgSNwzq0A3x8JyZgXKEjmw@mail.gmail.com>
-Subject: Protocol handler using dev_add_pack
-From: Jerry Yu <jerryy@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 11 Jul 2012 09:38:58 -0400
+Message-ID: <1342013914.3462.157.camel@twins>
+Subject: Re: [PATCH 1/6] hrtimer: Provide clock_was_set_delayed()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, stable@vger.kernel.org
+Date: Wed, 11 Jul 2012 15:38:34 +0200
+In-Reply-To: <4FFD7A31.8000909@redhat.com>
+References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
+	 <1341960205-56738-2-git-send-email-johnstul@us.ibm.com>
+	 <4FFD6E5A.9060206@redhat.com> <alpine.LFD.2.02.1207111425260.32033@ionos>
+	 <4FFD7A31.8000909@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am working on a kernel module to monitor all TCP packets. I created a protocol
-handler with protocol code ETH_P_ALL to handle all incoming and outgoing
-TCP packets. The code worked fine on 2.6.14 kernel, but in current 3.2.0-26
-kernel, I am no longer able to get the TCP payload for outgoing packets.
-The data in TCP payload section of skb->data are mainly 0x00. I am still
-able to get incoming TCP packets' payloads though.
+On Wed, 2012-07-11 at 09:05 -0400, Prarit Bhargava wrote:
+> 
+> Both of those options seem like a lot of work for something that happens once
+> every 3-4 years, and may not happen ever again[1].  Based on that statement, if
+> we're going to modify code I would prefer that it be as lightweight as possible.
+>  So, in terms of the kernel, option 2 is likely the best way to go rather than
+> introducing new code that will be used once every 3-4 years. 
 
-Is there any change in 3.2.0 or other early kernel versions that will cause
-this issue?
+Full agreed, however if we implement clock_was_set() like I just
+proposed we'd use that code for every time the clock was modified, which
+is a lot more often.
 
-Thanks,
-
-Jerry
+That said, I'm not a particular fan of it..
