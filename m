@@ -1,124 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932567Ab2GKNoW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:44:22 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:25555
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757734Ab2GKNjX (ORCPT
+	id S932592Ab2GKNox (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:44:53 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59057 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757734Ab2GKNou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:39:23 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M700LF-01-AXI-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 07/27] iommu/amd: Introduce early_amd_iommu_init routine
-Date: Wed, 11 Jul 2012 15:38:52 +0200
-Message-ID: <1342013952-10174-8-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
-References: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Wed, 11 Jul 2012 09:44:50 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH] mfd: add tps65910 32-kHz-crystal-input init
+Date: Wed, 11 Jul 2012 15:44:33 +0200
+Message-Id: <1342014273-31665-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <20120705152334.GH18200@sortiz-mobl>
+References: <20120705152334.GH18200@sortiz-mobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split out the code to parse the ACPI table and setup
-relevant data structures into a new function.
+Replace tps65910_misc_init with a dedicated init function for the
+32-kHz-crystal input.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 ---
- drivers/iommu/amd_iommu.c      |    1 -
- drivers/iommu/amd_iommu_init.c |   38 +++++++++++++++++++++++---------------
- 2 files changed, 23 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index a0ccdcb..45ee0a3 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -382,7 +382,6 @@ DECLARE_STATS_COUNTER(invalidate_iotlb);
- DECLARE_STATS_COUNTER(invalidate_iotlb_all);
- DECLARE_STATS_COUNTER(pri_requests);
+Hi Samuel,
+
+How about something like this? My thought with misc_init was that it could be
+extended should more simple initialisation like for the ck32k_xtal need to be
+done, but perhaps it's cleaner to stick with dedicated init functions
+through-out. At least for now.
+
+Thanks,
+Johan
+
+
+ drivers/mfd/tps65910.c |   19 +++++++++----------
+ 1 files changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+index 3f27ea1..1c56379 100644
+--- a/drivers/mfd/tps65910.c
++++ b/drivers/mfd/tps65910.c
+@@ -68,20 +68,19 @@ static const struct regmap_config tps65910_regmap_config = {
+ 	.cache_type = REGCACHE_RBTREE,
+ };
  
--
- static struct dentry *stats_dir;
- static struct dentry *de_fflush;
- 
-diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index bcdcaac..49e16bb 100644
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -1491,17 +1491,14 @@ static void __init free_on_init_error(void)
-  * After everything is set up the IOMMUs are enabled and the necessary
-  * hotplug and suspend notifiers are registered.
-  */
--int __init amd_iommu_init_hardware(void)
-+static int __init early_amd_iommu_init(void)
+-static int __devinit tps65910_misc_init(struct tps65910 *tps65910,
++static int __devinit tps65910_ck32k_init(struct tps65910 *tps65910,
+ 					struct tps65910_board *pmic_pdata)
  {
- 	struct acpi_table_header *ivrs_base;
- 	acpi_size ivrs_size;
- 	acpi_status status;
- 	int i, ret = 0;
+-	struct device *dev = tps65910->dev;
+ 	int ret;
  
--	if (no_iommu || (iommu_detected && !gart_iommu_aperture))
--		return -ENODEV;
--
--	if (amd_iommu_disabled || !amd_iommu_detected)
-+	if (!amd_iommu_detected)
- 		return -ENODEV;
- 
- 	if (amd_iommu_dev_table != NULL) {
-@@ -1588,16 +1585,6 @@ int __init amd_iommu_init_hardware(void)
- 	if (ret)
- 		goto free;
- 
--	ret = amd_iommu_init_pci();
--	if (ret)
--		goto free;
--
--	enable_iommus();
--
--	amd_iommu_init_notifier();
--
--	register_syscore_ops(&amd_iommu_syscore_ops);
--
- out:
- 	/* Don't leak any ACPI memory */
- 	early_acpi_os_unmap_memory((char __iomem *)ivrs_base, ivrs_size);
-@@ -1611,6 +1598,27 @@ free:
- 	goto out;
- }
- 
-+int __init amd_iommu_init_hardware(void)
-+{
-+	int ret = 0;
+-	if (pmic_pdata->en_ck32k_xtal) {
+-		ret = tps65910_reg_clear_bits(tps65910,
+-						TPS65910_DEVCTRL,
++	if (!pmic_pdata->en_ck32k_xtal)
++		return 0;
 +
-+	ret = early_amd_iommu_init();
-+	if (ret)
++	ret = tps65910_reg_clear_bits(tps65910, TPS65910_DEVCTRL,
+ 						DEVCTRL_CK32K_CTRL_MASK);
+-		if (ret < 0) {
+-			dev_err(dev, "clear ck32k_ctrl failed: %d\n", ret);
+-			return ret;
+-		}
++	if (ret < 0) {
++		dev_err(tps65910->dev, "clear ck32k_ctrl failed: %d\n", ret);
 +		return ret;
-+
-+	ret = amd_iommu_init_pci();
-+	if (ret)
-+		return ret;
-+
-+	enable_iommus();
-+
-+	amd_iommu_init_notifier();
-+
-+	register_syscore_ops(&amd_iommu_syscore_ops);
-+
-+	return ret;
-+}
-+
- static int amd_iommu_enable_interrupts(void)
- {
- 	struct amd_iommu *iommu;
+ 	}
+ 
+ 	return 0;
+@@ -265,7 +264,7 @@ static __devinit int tps65910_i2c_probe(struct i2c_client *i2c,
+ 	init_data->irq_base = pmic_plat_data->irq_base;
+ 
+ 	tps65910_irq_init(tps65910, init_data->irq, init_data);
+-	tps65910_misc_init(tps65910, pmic_plat_data);
++	tps65910_ck32k_init(tps65910, pmic_plat_data);
+ 	tps65910_sleepinit(tps65910, pmic_plat_data);
+ 
+ 	return ret;
 -- 
-1.7.9.5
-
+1.7.8.6
 
