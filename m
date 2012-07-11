@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932952Ab2GKTWY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 15:22:24 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:35961 "EHLO ogre.sisk.pl"
+	id S933050Ab2GKTWe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 15:22:34 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:36005 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932351Ab2GKTWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 15:22:20 -0400
+	id S932191Ab2GKTWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 15:22:23 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/7] i2c-at91: Use struct dev_pm_ops for power management
-Date: Wed, 11 Jul 2012 21:22:47 +0200
+Subject: [PATCH 3/7] i2c-ocores: Use struct dev_pm_ops for power management
+Date: Wed, 11 Jul 2012 21:24:15 +0200
 User-Agent: KMail/1.13.6 (Linux/3.5.0-rc5+; KDE/4.6.0; x86_64; ; )
 Cc: Linux PM list <linux-pm@vger.kernel.org>,
         Linus Walleij <linus.walleij@stericsson.com>,
@@ -25,61 +25,73 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201207112122.47495.rjw@sisk.pl>
+Message-Id: <201207112124.15712.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Make the AT91 Two-Wire Interface driver define its PM callbacks
+Make the OpenCores I2C controller driver define its PM callbacks
 through a struct dev_pm_ops object rather than by using legacy PM
 hooks in struct platform_driver.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/i2c/busses/i2c-at91.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ drivers/i2c/busses/i2c-ocores.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-Index: linux/drivers/i2c/busses/i2c-at91.c
+Index: linux/drivers/i2c/busses/i2c-ocores.c
 ===================================================================
---- linux.orig/drivers/i2c/busses/i2c-at91.c
-+++ linux/drivers/i2c/busses/i2c-at91.c
-@@ -279,30 +279,31 @@ static int __devexit at91_i2c_remove(str
+--- linux.orig/drivers/i2c/busses/i2c-ocores.c
++++ linux/drivers/i2c/busses/i2c-ocores.c
+@@ -367,9 +367,9 @@ static int __devexit ocores_i2c_remove(s
+ }
  
- /* NOTE: could save a few mA by keeping clock off outside of at91_xfer... */
- 
--static int at91_i2c_suspend(struct platform_device *pdev, pm_message_t mesg)
-+static int at91_i2c_suspend(struct device *dev)
+ #ifdef CONFIG_PM
+-static int ocores_i2c_suspend(struct platform_device *pdev, pm_message_t state)
++static int ocores_i2c_suspend(struct device *dev)
  {
- 	clk_disable(twi_clk);
+-	struct ocores_i2c *i2c = platform_get_drvdata(pdev);
++	struct ocores_i2c *i2c = dev_get_drvdata(dev);
+ 	u8 ctrl = oc_getreg(i2c, OCI2C_CONTROL);
+ 
+ 	/* make sure the device is disabled */
+@@ -378,17 +378,19 @@ static int ocores_i2c_suspend(struct pla
  	return 0;
  }
  
--static int at91_i2c_resume(struct platform_device *pdev)
-+static int at91_i2c_resume(struct device *dev)
+-static int ocores_i2c_resume(struct platform_device *pdev)
++static int ocores_i2c_resume(struct device *dev)
  {
- 	return clk_enable(twi_clk);
- }
+-	struct ocores_i2c *i2c = platform_get_drvdata(pdev);
++	struct ocores_i2c *i2c = dev_get_drvdata(dev);
  
-+static SIMPLE_DEV_PM_OPS(at91_i2c_pm, at91_i2c_suspend, at91_i2c_resume);
-+#define AT91_I2C_PM	(&at91_i2c_pm)
+ 	ocores_init(i2c);
+ 
+ 	return 0;
+ }
 +
++static SIMPLE_DEV_PM_OPS(ocores_i2c_pm, ocores_i2c_suspend, ocores_i2c_resume);
++#define OCORES_I2C_PM	(&ocores_i2c_pm)
  #else
--#define at91_i2c_suspend	NULL
--#define at91_i2c_resume		NULL
-+#define AT91_I2C_PM	NULL
+-#define ocores_i2c_suspend	NULL
+-#define ocores_i2c_resume	NULL
++#define OCORES_I2C_PM	NULL
  #endif
  
- static struct platform_driver at91_i2c_driver = {
- 	.probe		= at91_i2c_probe,
- 	.remove		= __devexit_p(at91_i2c_remove),
--	.suspend	= at91_i2c_suspend,
--	.resume		= at91_i2c_resume,
- 	.driver		= {
- 		.name	= "at91_i2c",
- 		.owner	= THIS_MODULE,
-+		.pm	= AT91_I2C_PM,
+ static struct of_device_id ocores_i2c_match[] = {
+@@ -400,12 +402,11 @@ MODULE_DEVICE_TABLE(of, ocores_i2c_match
+ static struct platform_driver ocores_i2c_driver = {
+ 	.probe   = ocores_i2c_probe,
+ 	.remove  = __devexit_p(ocores_i2c_remove),
+-	.suspend = ocores_i2c_suspend,
+-	.resume  = ocores_i2c_resume,
+ 	.driver  = {
+ 		.owner = THIS_MODULE,
+ 		.name = "ocores-i2c",
+ 		.of_match_table = ocores_i2c_match,
++		.pm = OCORES_I2C_PM,
  	},
  };
  
