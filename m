@@ -1,106 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757333Ab2GKLhM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 07:37:12 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52657 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103Ab2GKLhK (ORCPT
+	id S1757350Ab2GKLiY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 07:38:24 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:44034 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753103Ab2GKLiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 07:37:10 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@pengutronix.de,
-        =?UTF-8?q?Philippe=20R=C3=A9tornaz?= <philippe.retornaz@epfl.ch>,
-        Marc Reilly <marc@cpdesign.com.au>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [RFC internal PATCH] mfd/mc13xxx: drop modifying driver's id_table in probe
-Date: Wed, 11 Jul 2012 13:36:48 +0200
-Message-Id: <1342006608-30550-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 11 Jul 2012 07:38:22 -0400
+Message-ID: <1342006696.810.19.camel@mop>
+Subject: Re: pr_cat() + CATSTR(name, size)?
+From: Kay Sievers <kay@vrfy.org>
+To: Joe Perches <joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 11 Jul 2012 13:38:16 +0200
+In-Reply-To: <1342002808.810.12.camel@mop>
+References: <1342002808.810.12.camel@mop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.5.3.1 (3.5.3.1-4.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was introduced in commit
+On Wed, 2012-07-11 at 12:33 +0200, Kay Sievers wrote:
+> Hey Joe,
+> 
+> what do you think of this?
+> 
+> It would make composing continuation lines at the caller side entirely
+> race-free, and it might fit into the usual pattern.
+> 
+> The more interesting thing, this would allow us to completely race-free
+> use the dev_printk() calls with continuation content, which we should
+> avoid otherwise for integrity reasons.
 
-	876989d (mfd: Add device tree probe support for mc13xxx)
+Better version with better range checking and _INIT() to reset the
+string for re-use. It prints:
+  [    0.000000] Kernel command line: root=/dev/sda2 ...
+  [    0.000000] 1:-12 -34 -56 -78 -90
+  [    0.000000] 2:-12 -34 -56 --90
+  [    0.000000] 3:-12 -34 --90
+  [    0.000000] 4:+12 +34 +-90
+  [    0.000000] 5:~12 ~34 ~-90
+  [    0.000000] PID hash table entries: 2048 (order: 2, 16384 bytes)
 
-for spi and later while introducing support for i2c copied to the i2c
-driver.
+Thanks,
+Kay
 
-Modifying driver details is very strange, for example probing an
-mc13892 device (instantiated via dt) removes the driver's ability to
-handle (traditionally probed) mc13783 devices in this case.
-I'm not aware of any problems that make this hack necessary and if
-there were some, they'd have to be fixed in the spi/i2c core, not in
-a driver.
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
-Hello Samuel,
-
-even though this qualifies as fix, I don't think it's necessary to annoy
-Linus with it for 3.5. Usually there is only one pmic on each machine so
-it's not grave when probing one device disables support for another.
-
-Best regards
-Uwe
-
- drivers/mfd/mc13xxx-i2c.c |    6 ------
- drivers/mfd/mc13xxx-spi.c |    6 ------
- 2 files changed, 12 deletions(-)
-
-diff --git a/drivers/mfd/mc13xxx-i2c.c b/drivers/mfd/mc13xxx-i2c.c
-index d22501d..e00e885 100644
---- a/drivers/mfd/mc13xxx-i2c.c
-+++ b/drivers/mfd/mc13xxx-i2c.c
-@@ -53,16 +53,10 @@ static struct regmap_config mc13xxx_regmap_i2c_config = {
- static int mc13xxx_i2c_probe(struct i2c_client *client,
- 		const struct i2c_device_id *id)
- {
--	const struct of_device_id *of_id;
--	struct i2c_driver *idrv = to_i2c_driver(client->dev.driver);
- 	struct mc13xxx *mc13xxx;
- 	struct mc13xxx_platform_data *pdata = dev_get_platdata(&client->dev);
- 	int ret;
+diff --git a/kernel/printk.c b/kernel/printk.c
+index dba1821..1490153 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -48,6 +48,39 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/printk.h>
  
--	of_id = of_match_device(mc13xxx_dt_ids, &client->dev);
--	if (of_id)
--		idrv->id_table = (const struct i2c_device_id*) of_id->data;
--
- 	mc13xxx = kzalloc(sizeof(*mc13xxx), GFP_KERNEL);
- 	if (!mc13xxx)
- 		return -ENOMEM;
-diff --git a/drivers/mfd/mc13xxx-spi.c b/drivers/mfd/mc13xxx-spi.c
-index 03df422..b99e728 100644
---- a/drivers/mfd/mc13xxx-spi.c
-+++ b/drivers/mfd/mc13xxx-spi.c
-@@ -119,16 +119,10 @@ static struct regmap_bus regmap_mc13xxx_bus = {
++#define CATSTR_INIT(name)		\
++	name##_len = 0;
++
++#define CATSTR_DEFINE(name, max)	\
++	char name[max];			\
++	size_t name##_len = 0;		\
++	size_t name##_max = max;
++
++#define pr_cat(name, fmt, ...)		\
++	_catstr(name, &name##_len, name##_max, fmt, ##__VA_ARGS__)
++
++ssize_t _catstr(char *s, size_t *len, size_t size, const char *fmt, ...)
++{
++	va_list args;
++	size_t r;
++
++	if (*len == size)
++		return -EINVAL;
++
++	va_start(args, fmt);
++	r = vsnprintf(s + *len, size - *len, fmt, args);
++	va_end(args);
++
++	if (r >= size - *len) {
++		*len = size;
++		return -EINVAL;
++	}
++
++	*len += r;
++	s[*len] = '\0';
++	return r;
++}
++
+ /*
+  * Architectures can override it:
+  */
+@@ -668,6 +701,47 @@ void __init setup_log_buf(int early)
+ 	char *new_log_buf;
+ 	int free;
  
- static int mc13xxx_spi_probe(struct spi_device *spi)
- {
--	const struct of_device_id *of_id;
--	struct spi_driver *sdrv = to_spi_driver(spi->dev.driver);
- 	struct mc13xxx *mc13xxx;
- 	struct mc13xxx_platform_data *pdata = dev_get_platdata(&spi->dev);
- 	int ret;
++	CATSTR_DEFINE(line, 24)
++	CATSTR_DEFINE(line2, 16)
++	CATSTR_DEFINE(line3, 12)
++
++	pr_cat(line, "1:");
++	pr_cat(line, "-%i ", 12);
++	pr_cat(line, "-%i ", 34);
++	pr_cat(line, "-%i ", 56);
++	pr_cat(line, "-%i ", 78);
++	pr_warn("%s-%i\n", line, 90);
++
++	pr_cat(line2, "2:");
++	pr_cat(line2, "-%i ", 12);
++	pr_cat(line2, "-%i ", 34);
++	pr_cat(line2, "-%i ", 56);
++	pr_cat(line2, "-%i ", 78);
++	pr_warn("%s-%i\n", line2, 90);
++
++	pr_cat(line3, "3:");
++	pr_cat(line3, "-%i ", 12);
++	pr_cat(line3, "-%i ", 34);
++	pr_cat(line3, "-%i ", 56);
++	pr_cat(line3, "-%i ", 78);
++	pr_warn("%s-%i\n", line3, 90);
++
++	CATSTR_INIT(line3)
++	pr_cat(line3, "4:");
++	pr_cat(line3, "+%i ", 12);
++	pr_cat(line3, "+%i ", 34);
++	pr_cat(line3, "+%i ", 56);
++	pr_cat(line3, "+%i ", 78);
++	pr_warn("%s-%i\n", line3, 90);
++
++	CATSTR_INIT(line3)
++	pr_cat(line3, "5:");
++	pr_cat(line3, "~%i ", 12);
++	pr_cat(line3, "~%i ", 34);
++	pr_cat(line3, "~%i ", 56);
++	pr_cat(line3, "~%i ", 78);
++	pr_warn("%s-%i\n", line3, 90);
++
+ 	if (!new_log_buf_len)
+ 		return;
  
--	of_id = of_match_device(mc13xxx_dt_ids, &spi->dev);
--	if (of_id)
--		sdrv->id_table = &mc13xxx_device_id[(enum mc13xxx_id) of_id->data];
--
- 	mc13xxx = kzalloc(sizeof(*mc13xxx), GFP_KERNEL);
- 	if (!mc13xxx)
- 		return -ENOMEM;
--- 
-1.7.10.4
 
