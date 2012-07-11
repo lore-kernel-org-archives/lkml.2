@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757685Ab2GKNjA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:39:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56800 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757664Ab2GKNi6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:38:58 -0400
-Message-ID: <1342013914.3462.157.camel@twins>
-Subject: Re: [PATCH 1/6] hrtimer: Provide clock_was_set_delayed()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, stable@vger.kernel.org
-Date: Wed, 11 Jul 2012 15:38:34 +0200
-In-Reply-To: <4FFD7A31.8000909@redhat.com>
-References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
-	 <1341960205-56738-2-git-send-email-johnstul@us.ibm.com>
-	 <4FFD6E5A.9060206@redhat.com> <alpine.LFD.2.02.1207111425260.32033@ionos>
-	 <4FFD7A31.8000909@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1757712Ab2GKNjO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:39:14 -0400
+Received: from antcom.de ([188.40.178.216]:41554 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757694Ab2GKNjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 09:39:11 -0400
+Message-ID: <4FFD81FD.4080103@antcom.de>
+Date: Wed, 11 Jul 2012 15:39:09 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com, aletes.xgr@gmail.com
+Subject: Re: [PATCH v2 04/23] ARM: LPC32xx: Add DMA configuration to platform
+ data
+References: <1339692673-7848-1-git-send-email-stigge@antcom.de> <201207111233.24780.arnd@arndb.de> <4FFD744F.8060204@antcom.de> <201207111325.03195.arnd@arndb.de>
+In-Reply-To: <201207111325.03195.arnd@arndb.de>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-11 at 09:05 -0400, Prarit Bhargava wrote:
+On 07/11/2012 03:25 PM, Arnd Bergmann wrote:
+> On Wednesday 11 July 2012, Roland Stigge wrote:
+>> OK, thanks!
+>>
+>> Is a patch on top of the already provided lpc32xx-next branches the
+>> preferred form for a fix? On top of which branch do you need it?
+>>
 > 
-> Both of those options seem like a lot of work for something that happens once
-> every 3-4 years, and may not happen ever again[1].  Based on that statement, if
-> we're going to modify code I would prefer that it be as lightweight as possible.
->  So, in terms of the kernel, option 2 is likely the best way to go rather than
-> introducing new code that will be used once every 3-4 years. 
+> Yes, I think in this case, changing it on top of that branch is best.
 
-Full agreed, however if we implement clock_was_set() like I just
-proposed we'd use that code for every time the clock was modified, which
-is a lot more often.
+Good, thanks!
 
-That said, I'm not a particular fan of it..
+> I'm not sure how that works for the nand drivers though, since they
+> are in another tree.
+
+Will address this separately with the mtd/nand tree.
+
+Roland
