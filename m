@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687Ab2GKNwl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:52:41 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:40949 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752628Ab2GKNuR (ORCPT
+	id S932715Ab2GKNxm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:53:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54882 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932471Ab2GKNxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:50:17 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAG6E/U9bdWOb/2dsb2JhbABFt16BB4IgAQEFeRAgMTwbBxKIEb1XkS4DlTqJJoZggmE
-X-IronPort-AV: E=Sophos;i="4.77,568,1336341600"; 
-   d="scan'208";a="541808127"
-From: "Javier M. Mellid" <jmunhoz@igalia.com>
-To: gregkh@linuxfoundation.org, gewang@siliconmotion.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        "Javier M. Mellid" <jmunhoz@igalia.com>
-Subject: [PATCH 2/9] staging: sm7xxfb: rename index var on sm712vga_setup
-Date: Wed, 11 Jul 2012 15:49:34 +0200
-Message-Id: <1342014581-2979-3-git-send-email-jmunhoz@igalia.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1342014581-2979-1-git-send-email-jmunhoz@igalia.com>
-References: <1342014581-2979-1-git-send-email-jmunhoz@igalia.com>
+	Wed, 11 Jul 2012 09:53:39 -0400
+Date: Wed, 11 Jul 2012 06:53:33 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ACPI / PCI: Make _SxD/_SxW check follow ACPI 4.0a spec
+Message-ID: <20120711135333.GA19410@kroah.com>
+References: <201204292244.16467.rjw@sisk.pl>
+ <20120711000850.GD18128@kroah.com>
+ <201207111107.56500.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201207111107.56500.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Javier M. Mellid" <jmunhoz@igalia.com>
+On Wed, Jul 11, 2012 at 11:07:56AM +0200, Rafael J. Wysocki wrote:
+> On Wednesday, July 11, 2012, Greg KH wrote:
+> > On Sun, Apr 29, 2012 at 10:44:16PM +0200, Rafael J. Wysocki wrote:
+> > > From: Oleksij Rempel <bug-track@fisher-privat.net>
+> > > 
+> > > This patch makes _SxD/_SxW check follow the ACPI 4.0a specification
+> > > more closely and fixes suspend bug found on ASUS Zenbook UX31E.
+> > > 
+> > > Some OEM use _SxD fileds do blacklist brocken Dx states.
+> > > If _SxD/_SxW return values are check before suspend as appropriate,
+> > > some nasty suspend/resume issues may be avoided.
+> > > 
+> > > References: https://bugzilla.kernel.org/show_bug.cgi?id=42728
+> > > Signed-off-by: Oleksij Rempel <bug-track@fisher-privat.net>
+> > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > > ---
+> > > 
+> > > Bjorn, Len,
+> > > 
+> > > This is -stable material and therefore v3.4 as well, IMO.  Please let me
+> > > know if one of you can take it or whether you want me to handle it all the
+> > > way to Linus.
+> > 
+> > What ever hapened to this patch?
+> 
+> It was split and partially merged.  As far as the other part is concerned,
+> the jury is still out.
 
-This patchs renames index var on sm712vga_setup.
+Ok, I'll wait for someone to ask for it to be added to the stable tree
+before I do anything.
 
-Tested with SM712.
+thanks,
 
-Signed-off-by: Javier M. Mellid <jmunhoz@igalia.com>
----
- drivers/staging/sm7xxfb/sm7xxfb.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/staging/sm7xxfb/sm7xxfb.c b/drivers/staging/sm7xxfb/sm7xxfb.c
-index 28aa903..88d4b79 100644
---- a/drivers/staging/sm7xxfb/sm7xxfb.c
-+++ b/drivers/staging/sm7xxfb/sm7xxfb.c
-@@ -764,7 +764,7 @@ static inline void sm7xx_init_hw(void)
-  */
- static int __init sm712vga_setup(char *options)
- {
--	int index;
-+	int i;
- 
- 	if (!options || !*options)
- 		return -EINVAL;
-@@ -775,16 +775,14 @@ static int __init sm712vga_setup(char *options)
- 
- 	pr_debug("sm712vga_setup = %s\n", options);
- 
--	for (index = 0;
--	     index < ARRAY_SIZE(vesa_mode_table);
--	     index++) {
--		if (strstr(options, vesa_mode_table[index].index)) {
-+	for (i = 0; i < ARRAY_SIZE(vesa_mode_table); i++) {
-+		if (strstr(options, vesa_mode_table[i].index)) {
- 			smtc_screen_info.lfb_width =
--				vesa_mode_table[index].lfb_width;
-+				vesa_mode_table[i].lfb_width;
- 			smtc_screen_info.lfb_height =
--				vesa_mode_table[index].lfb_height;
-+				vesa_mode_table[i].lfb_height;
- 			smtc_screen_info.lfb_depth =
--				vesa_mode_table[index].lfb_depth;
-+				vesa_mode_table[i].lfb_depth;
- 			return 0;
- 		}
- 	}
--- 
-1.7.10
-
+greg k-h
