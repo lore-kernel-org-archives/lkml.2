@@ -1,87 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106Ab2GKKUG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 06:20:06 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14140 "EHLO mga02.intel.com"
+	id S1757156Ab2GKKUh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 06:20:37 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:51528 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752603Ab2GKKUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 06:20:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="asc'?scan'208";a="164202929"
-Message-ID: <1342002259.18274.8.camel@sauron.fi.intel.com>
-Subject: Re: [PATCHv6 3/5] ext4: remove unnecessary superblock dirtying
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Jan Kara <jack@suse.cz>
-Cc: Theodore Tso <tytso@mit.edu>,
-        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>
-Date: Wed, 11 Jul 2012 13:24:19 +0300
-In-Reply-To: <20120711101150.GH1316@quack.suse.cz>
-References: <1342000698-13556-1-git-send-email-dedekind1@gmail.com>
-	 <1342000698-13556-4-git-send-email-dedekind1@gmail.com>
-	 <20120711100726.GE1316@quack.suse.cz> <20120711101150.GH1316@quack.suse.cz>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-xi7At3cGn/3OTrdzKzol"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1757096Ab2GKKUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 06:20:34 -0400
+Message-ID: <4FFD536B.8010603@mev.co.uk>
+Date: Wed, 11 Jul 2012 11:20:27 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0
+MIME-Version: 1.0
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 00/83] staging: comedi: rtd520: initial cleanup
+References: <201207101636.23561.hartleys@visionengravers.com>
+In-Reply-To: <201207101636.23561.hartleys@visionengravers.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2012-07-11 00:36, H Hartley Sweeten wrote:
+> The 'devpriv' macro usage in this driver is holding up other cleanup
+> of the comedi drivers.
+>
+> This patch series removes all the macros used to read/write the
+> hardware registers. All of them are simple wrappers around standard
+> {read,write}[rwl] calls with some of them caching the write value
+> in a shadow variable in the private data.
+>
+> Each of the macros is removed in a separate patch to ease reviewing.
+> They can all be squashed into one patch if desired.
+>
+> After all the macros are gone, the devpriv macro itself can be removed
+> along with the boardinfo macro.
+>
+> The "find pci device" code is also refactored to follow the style of
+> the other comedi pci drivers.
+>
+> The range tables are also cleaned up for aesthetic reasons. The large
+> whitespace causes some pretty nasty line breaks in order to keep the
+> lines < 80 characters.
 
---=-xi7At3cGn/3OTrdzKzol
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+My main concern with this series of patches is they make it harder to 
+determine what the register accesses actually do, mainly due to the 
+removal of useful comments.  For example:
 
-On Wed, 2012-07-11 at 12:11 +0200, Jan Kara wrote:
-> > > So case 2.b is a bit controversial, but I think it is acceptable. Aft=
-er all, by
-> > > enabling checksumming we already sign up for paying the price of calc=
-ulating
-> > > it. The way to improve checksumming performance globally would be to =
-calculate
-> > > it just before sending buffers to the I/O queue. We'd need some kind =
-of
-> > > call-back which could be registered by file-systems.
->   Actually, the most common case of adding orphan inode used
-> ext4_handle_dirty_super_now() so for that case there is no difference. An=
-d
-> other cases are so rare it really does not matter... So there shouldn't b=
-e
-> any measurable difference.
+-	RtdPacerStart(dev);	/* Start PACER */
++	readl(devpriv->las0 + LAS0_PACER);
 
-Thank you, I'll take a closer look and possibly change the commit
-message.
+And:
 
---=20
-Best Regards,
-Artem Bityutskiy
+-	RtdPacerStop(dev);	/* Stop PACER */
++	writel(0, devpriv->las0 + LAS0_PACER);
 
---=-xi7At3cGn/3OTrdzKzol
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+The comments in the original code were quite superfluous, but they would 
+be useful for the replacement code.  In the above cases you could figure 
+it out after looking at the rtd520.h header file where its reasonably 
+clear that reading the LAS0_PACER register starts the pacer and writing 
+the register (presumably with any value) stops the pacer.  But it's less 
+clear in cases such as:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+-		RtdAdcConversionSource(dev, 2);	/* BURST triggers ADC */
++		writel(2, devpriv->las0 + LAS0_ADC_CONVERSION);
 
-iQIcBAABAgAGBQJP/VRTAAoJECmIfjd9wqK05qAP/1NDgfwLYkmPLr+YxzDrreef
-/4Om+BNCMv7rM7WedN9Lr718P2C0nf4BwcWy06jOFkK6htLwKrsiGvPO892BYLG0
-22Gq/YRjuRPSJJt6z9yo92AuAia8aGc0mo6yeYR+/zlYGCNWiwZJ0g2IHNAhmHSn
-MoJSpMilDp1hg4mgxCOgXqZM9cHPVMDrb0qErb3m4AONo2E0xTR621/M2yVTGKoW
-bwLZG1xUymeSpK4KXWgMKvmYmM3q77pOqWDe5aqYn40H/1c00ME2/w3h1fbsK3ku
-EfyBgxQDsyl8xzbvs5Rv+/921iME136bpUdJB3F8vRWZVDyb27rLdXMPCnrHCXRw
-3s3qycVM4ZkRXygkfh5kc04cIkMFEULMuFS0+bqlgq6fKNxzMK4dkbkbhYDnKWEJ
-wv8DLjy4UepZGknb//PdOQXw094ApA++Ai5w350EVkU7KgCcqI2VNpxCUpRpsABP
-Ji3D0EdASDH6lJcQxmHPQN8ArXm6Q9UXT0w9Q5caB6hGTxEYPqaEWtFjIrSJdcuw
-trwcn/RM4Vkm+hHMjqyysEXXwMliUu1PPlBxiLmdCiX6Py5973AN5k2Lgt7CcsBG
-0ehmiwFXQyXniU4dsAXXH0nmxlz0fnrRg5Mx/58H/RMNe+6WCZjFFIEGnfJCP8nS
-DhxkOWXAxt4qeABf/C7a
-=xvRN
------END PGP SIGNATURE-----
+Since the values for the LAS0_ADC_CONVERSION register are no longer 
+documented anywhere.
 
---=-xi7At3cGn/3OTrdzKzol--
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+
 
