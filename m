@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050Ab2GKPIk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 11:08:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48011 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755629Ab2GKPIj (ORCPT
+	id S1758056Ab2GKPJy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 11:09:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33329 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755629Ab2GKPJx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 11:08:39 -0400
-Date: Wed, 11 Jul 2012 08:08:35 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ben Minerds <puzzleduck@gmail.com>
-Cc: alan@lxorguk.ukuu.org.uk, richard.weinberger@gmail.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] USB: serial: Changes to conform with checkpatch.
-Message-ID: <20120711150835.GA25117@kroah.com>
-References: <1342015820-10229-1-git-send-email-puzzleduck@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342015820-10229-1-git-send-email-puzzleduck@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 11 Jul 2012 11:09:53 -0400
+Message-ID: <1342019376.3462.166.camel@twins>
+Subject: Re: [PATCH] trace: add ability to set a target task for events (v2)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arun Sharma <asharma@fb.com>
+Date: Wed, 11 Jul 2012 17:09:36 +0200
+In-Reply-To: <1342016098-213063-1-git-send-email-avagin@openvz.org>
+References: <1342016098-213063-1-git-send-email-avagin@openvz.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 12, 2012 at 12:10:14AM +1000, Ben Minerds wrote:
-> Removed various checkpatch.sh warnings and errors. 
-> Split patch by warning/error type.
-> Corrected line wraps in emails.
-> 
-> Signed-off-by: Ben Minerds <puzzleduck@gmail.com>
-> ---
->  drivers/usb/serial/keyspan.c |  106 +++++++++++++++++++++---------------------
->  1 files changed, 53 insertions(+), 53 deletions(-)
+On Wed, 2012-07-11 at 18:14 +0400, Andrew Vagin wrote:
+> @@ -5226,6 +5227,29 @@ void perf_tp_event(u64 addr, u64 count, void *record, int entry_size,
+>                         perf_swevent_event(event, count, &data, regs);
+>         }
+>  
+> +       /*
+> +        * If we got specified a target task, also iterate its context and
+> +        * deliver this event there too.
+> +        */
+> +       if (task && task != current) {
+> +               struct perf_event_context *ctx;
+> +               struct trace_entry *entry = record;
+> +
+> +               rcu_read_lock();
+> +               ctx = rcu_dereference(task->perf_event_ctxp[perf_sw_context]);
+> +               if (!ctx)
+> +                       goto unlock;
+> +
+> +               list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
 
-I don't understand, is this 0/6 patch a "real" patch that should be
-applied, or is it just a summary of the 1-6 patches all together?
+I added:
+			if (event->attr.type != PERF_TYPE_TRACEPOINT)
+				continue;
 
-Normally the 0/6 email is a text summary, and maybe the diffstat of the
-whole patchset.  But not a patch itself with a signed-off-by line.
+> +                       if (entry->type != event->attr.config)
+> +                               continue;
+> +                       if (perf_tp_event_match(event, &data, regs))
+> +                               perf_swevent_event(event, count, &data, regs);
+> +               }
+> +unlock:
+> +               rcu_read_unlock();
+> +       }
+> +
+>         perf_swevent_put_recursion_context(rctx);
+>  } 
 
-confused,
-
-greg k-h
+Otherwise I've applied the patch.. Thanks!
