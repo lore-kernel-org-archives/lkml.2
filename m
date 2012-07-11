@@ -1,43 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758322Ab2GKVvb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 17:51:31 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:54927 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab2GKVv3 (ORCPT
+	id S933318Ab2GKVwN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 17:52:13 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:7752 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933242Ab2GKVwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 17:51:29 -0400
+	Wed, 11 Jul 2012 17:52:12 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-3.tower-160.messagelabs.com!1342043531!9393499!1
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Version: 6.5.10; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 03/30] staging: comedi: adl_pci7230: use comedi_device pci_dev pointer
+Date: Wed, 11 Jul 2012 14:52:02 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
+        <gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1341997995-14020-2-git-send-email-tarun.kanti@ti.com>
-References: <1341997995-14020-1-git-send-email-tarun.kanti@ti.com>
-	<1341997995-14020-2-git-send-email-tarun.kanti@ti.com>
-Date: Wed, 11 Jul 2012 23:51:28 +0200
-Message-ID: <CACRpkdYdtrAu-GX4F6iv_3VM4DrTAU48ch63SotLybfi8oLffQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio/omap: move bank->dbck initialization to omap_gpio_mod_init()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tarun Kanti DebBarma <tarun.kanti@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>, Paul Walmsley <paul@pwsan.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201207111452.02587.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 11:13 AM, Tarun Kanti DebBarma
-<tarun.kanti@ti.com> wrote:
+Use the pci_dev pointer in the comedi_device struct instead of
+carrying it in the private data.
 
-> Since the bank->dbck initialization in a one time operation there
-> is no need to keep this within gpio_debounce(). Therefore, moving
-> clk_get(bank->dbck) to omap_gpio_mod_init(). Since the value of
-> bank->dbck would be NULL at the beginning, this check has been
-> removed.
->
-> Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/comedi/drivers/adl_pci7230.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-Applied with Pauld reviewed-by.
+diff --git a/drivers/staging/comedi/drivers/adl_pci7230.c b/drivers/staging/comedi/drivers/adl_pci7230.c
+index cfb8bb0..b61dafe 100644
+--- a/drivers/staging/comedi/drivers/adl_pci7230.c
++++ b/drivers/staging/comedi/drivers/adl_pci7230.c
+@@ -44,7 +44,6 @@ Configuration Options:
+ 
+ struct adl_pci7230_private {
+ 	int data;
+-	struct pci_dev *pci_dev;
+ };
+ 
+ #define devpriv ((struct adl_pci7230_private *)dev->private)
+@@ -115,16 +114,16 @@ static int adl_pci7230_attach(struct comedi_device *dev,
+ 	if (ret)
+ 		return ret;
+ 
+-	devpriv->pci_dev = adl_pci7230_find_pci(dev, it);
+-	if (!devpriv->pci_dev)
++	dev->pcidev = adl_pci7230_find_pci(dev, it);
++	if (!dev->pcidev)
+ 		return -EIO;
+ 
+-	if (comedi_pci_enable(devpriv->pci_dev, "adl_pci7230") < 0) {
++	if (comedi_pci_enable(dev->pcidev, "adl_pci7230") < 0) {
+ 		printk(KERN_ERR "comedi%d: Failed to enable PCI device and request regions\n",
+ 			dev->minor);
+ 		return -EIO;
+ 	}
+-	dev->iobase = pci_resource_start(devpriv->pci_dev, 2);
++	dev->iobase = pci_resource_start(dev->pcidev, 2);
+ 	printk(KERN_DEBUG "comedi: base addr %4lx\n", dev->iobase);
+ 
+ 	s = dev->subdevices + 0;
+@@ -152,10 +151,10 @@ static int adl_pci7230_attach(struct comedi_device *dev,
+ 
+ static void adl_pci7230_detach(struct comedi_device *dev)
+ {
+-	if (devpriv && devpriv->pci_dev) {
++	if (dev->pcidev) {
+ 		if (dev->iobase)
+-			comedi_pci_disable(devpriv->pci_dev);
+-		pci_dev_put(devpriv->pci_dev);
++			comedi_pci_disable(dev->pcidev);
++		pci_dev_put(dev->pcidev);
+ 	}
+ }
+ 
+-- 
+1.7.11
 
-Thanks,
-Linus Walleij
