@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756391Ab2GKRnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 13:43:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59594 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754032Ab2GKRm7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 13:42:59 -0400
-Date: Wed, 11 Jul 2012 18:42:57 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: Fix bug in regulator_mode_to_status() core
- function.
-Message-ID: <20120711174257.GN3938@opensource.wolfsonmicro.com>
-References: <20120711142606.GK3938@opensource.wolfsonmicro.com>
- <201207111221.q6BCLW8L014872@sw-eng-lt-dc-vm2>
- <20120711132655.GG3938@opensource.wolfsonmicro.com>
- <201207111421.q6BELFoF006060@sw-eng-lt-dc-vm2>
- <201207111513.q6BFDR1x016181@sw-eng-lt-dc-vm2>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yLaBmHMi4cq+C/u4"
-Content-Disposition: inline
-In-Reply-To: <201207111513.q6BFDR1x016181@sw-eng-lt-dc-vm2>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756610Ab2GKRpb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 13:45:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61378 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755289Ab2GKRp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 13:45:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="164391977"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+In-Reply-To: <CA+8MBbJjhVgEM7bJzZOSFvT6+RBLUQV6KtdzShuBxBH_nDxo4w@mail.gmail.com>
+Subject: [GIT PULL v2] x86/mce fix (ready for 3.6 merge window)
+Date: Wed, 11 Jul 2012 10:45:29 -0700
+Message-Id: <4ffdbbb9135702cfae@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
 
---yLaBmHMi4cq+C/u4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
 
-On Wed, Jul 11, 2012 at 04:13:00PM +0100, Krystian Garbaciak wrote:
+are available in the git repository at:
 
-> Would it make more sense to have some special enum value for that case, let say
-> there would be REGULATOR_STATUS_UNDEFINED?
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git mce-ripvfix
 
-> Returning 0 is interpreted as REGULATOR_STATUS_OFF outside the function.
-> But it may change, if ever the enumeration changes.
+for you to fetch changes up to 6751ed65dc6642af64f7b8a440a75563c8aab7ae:
 
-That'd be fine.
+  x86/mce: Fix siginfo_t->si_addr value for non-recoverable memory faults (2012-07-11 10:20:47 -0700)
 
-Also, please do submit separate changes separately.
+----------------------------------------------------------------
+Fix application level machine check recovery
 
---yLaBmHMi4cq+C/u4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+----------------------------------------------------------------
+Tony Luck (1):
+      x86/mce: Fix siginfo_t->si_addr value for non-recoverable memory faults
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJP/brsAAoJEBus8iNuMP3dr68P/R2uh2v0pKkm5OoijVYBHqur
-QssNCEbOhYhD3jCO6JSTceAoDpxKXSL31rvEnWF9rXMpeHtaXjS317rDghcOKZLm
-9v4owFc1gdyCdwnjr6WMkuonazgfK/jFK6JRVCYF3gRzvcCKmZ1P8Fh9yaE4hFCT
-4jDBXdmOX39paEdI12Vm4LI3iNV7YsiAc1N0VeWmuh5XnF3ln0WZQmIJ+f0bzywf
-LAKzDS8In04U3CnPm6BBC7kAoeWbBoiLmaZCxgJ+FiqiXxY0u2oBWbMhwUi/7mwk
-T9UUc6iqpBQzMa1nfF6ENBdqXlDs66IS410b//S9TQ9S0btq0pMFNiQy6hZa7hK8
-74N+ZmFx/eVpKBPgtmMNGVGXuUcedgaEFNNoIaL9MD5UPFdilSSsPPTHmF6EwAaK
-JRfVvQwTXjCo6HJ298fO/1HMoGXMwQeWYAZnlCXWzEgbPz9g4HNlUec7rHaWzx4V
-5DkA9wjuPah1CJrbtvY7g6R6dzU+S+KgTzKmAAq6YMtxy18YaBBQiGhin6EH5rqN
-YcCZn6+PygVgJbaeFvRINsCaiAS7gwF8UkSWTbnKOVCvB3HJ5cdqEAOilR5JlUOH
-NjQI935FLmy41tPBA9TDzr0QSrSzRiQvEhSAXSO+h6zCLDoYK8O3Iq98CSdqzXf7
-V92nwaQ8vJ4OaMjXv5kq
-=wZ8u
------END PGP SIGNATURE-----
-
---yLaBmHMi4cq+C/u4--
+ arch/x86/kernel/cpu/mcheck/mce.c |  6 ++++--
+ include/linux/mm.h               |  1 +
+ mm/memory-failure.c              | 14 ++++++++------
+ 3 files changed, 13 insertions(+), 8 deletions(-)
