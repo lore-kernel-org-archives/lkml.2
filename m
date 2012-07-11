@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933514Ab2GKXiT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 19:38:19 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:39597 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351Ab2GKXiR (ORCPT
+	id S1758458Ab2GKXmg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 19:42:36 -0400
+Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:56124 "EHLO
+	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754650Ab2GKXmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 19:38:17 -0400
-Subject: Re: mmotm 2012-07-10-16-59 uploaded (staging/ccg)
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-next@vger.kernel.org, Mike Lockwood <lockwood@android.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-In-Reply-To: <20120711151644.23016bd8.akpm@linux-foundation.org>
-References: <20120711000148.BAD1E5C0050@hpza9.eem.corp.google.com>
-	 <4FFDF7BC.6050602@xenotime.net>
-	 <20120711151644.23016bd8.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 Jul 2012 16:38:14 -0700
-Message-ID: <1342049894.18004.98.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Jul 2012 19:42:35 -0400
+Date: Wed, 11 Jul 2012 16:42:29 -0700
+From: Mike Turquette <mturquette@ti.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org, Ulf Hansson <ulf.hansson@stericsson.com>
+Subject: Re: [PATCH] clk: allow clocks without parents to change rate
+Message-ID: <20120711234229.GF2772@gmail.com>
+References: <1341439772-649-1-git-send-email-linus.walleij@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1341439772-649-1-git-send-email-linus.walleij@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On 20120705-00:09, Linus Walleij wrote:
+> The clk_change_rate() code would dereference clk->parent
+> to get clk->parent->rate without first checking that clk->parent
+> was valid. This doesn't work if the clock is (A) a root clock
+> and (B) can change rate. Such is the case with a VCO clock
+> like the ICST which consequently crash like this without
+> this patch:
+> 
+> Unable to handle kernel NULL pointer dereference at virtual address 0000001c
+> pgd = c0004000
+> [0000001c] *pgd=00000000
+> Internal error: Oops: 5 [#1] PREEMPT ARM
+> Modules linked in:
+> CPU: 0    Not tainted  (3.5.0-rc3-00003-g8156866-dirty #193)
+> PC is at clk_change_rate+0x34/0xd8
+> LR is at clk_change_rate+0x18/0xd8
+> 
+> Cc: stable@kernel.org
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Cc: Ulf Hansson <ulf.hansson@stericsson.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-On Wed, 2012-07-11 at 15:16 -0700, Andrew Morton wrote:
-> On Wed, 11 Jul 2012 15:01:32 -0700
-> Randy Dunlap <rdunlap@xenotime.net> wrote:
-> 
-> > In file included from drivers/staging/ccg/ccg.c:59:0:
-> > drivers/staging/ccg/../../usb/gadget/f_fs.c:41:0: warning: "pr_vdebug" redefined
-> > drivers/staging/ccg/../../usb/gadget/u_serial.c:138:0: note: this is the location of the previous definition
-> 
-> <looks at drivers/staging/ccg/ccg.c>
-> 
-> : /*
-> :  * Kbuild is not very cooperative with respect to linking separately
-> :  * compiled library objects into one module.  So for now we won't use
-> :  * separate compilation ... ensuring init/exit sections work to shrink
-> :  * the runtime footprint, and giving us at least some parts of what
-> :  * a "gcc --combine ... part1.c part2.c part3.c ... " build would.
-> :  */
-> : #include "../../usb/gadget/usbstring.c"
-> : #include "../../usb/gadget/config.c"
-> : #include "../../usb/gadget/epautoconf.c"
-> : #include "../../usb/gadget/composite.c"
-> : 
-> : #include "../../usb/gadget/f_mass_storage.c"
-> : #include "../../usb/gadget/u_serial.c"
-> : #include "../../usb/gadget/f_acm.c"
-> : #define USB_ETH_RNDIS y
-> : #include "../../usb/gadget/f_rndis.c"
-> : #include "../../usb/gadget/rndis.c"
-> : #include "../../usb/gadget/u_ether.c"
-> : #include "../../usb/gadget/f_fs.c"
-> 
-> What nonsense is this?
-> 
-> Who wrote that rotten comment?  What does "not very cooperative" mean? 
-> This alleged lack of cooperation is the central issue, but you couldn't
-> be bothered actually describing it?  How the heck is anyone else to
-> understand the problem and suggest fixes?  argh.
-> 
-> It talks about library objects.  Really?  Is there a .a file
-> involved here, or is that just a thinko?  If there is indeed a .a file
-> then I'm not surprised there are problems: don't do that.  If instead
-> we're just talking about a bunch of .o files then I'm rather curious to
-> know what "not very cooperative" means.
-> 
+Hi Linus,
 
-I certainly won't attempt to defend this particular piece of code, but
-FYI the original design limitation(s) for usb-gadget that requires this
-type of strangeness was elaborated by Sebastian a few months back here:
+This has been fixed in Pawell's patch, "clk: Check parent for NULL in
+clk_change_rate".
 
-http://www.spinics.net/lists/target-devel/msg02374.html
+Thanks,
+Mike
 
---nab
-
+> ---
+>  drivers/clk/clk.c |   22 +++++++++++++++-------
+>  1 file changed, 15 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 687b00d..032d79c 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -854,14 +854,22 @@ static void clk_change_rate(struct clk *clk)
+>  
+>  	old_rate = clk->rate;
+>  
+> -	if (clk->ops->set_rate)
+> -		clk->ops->set_rate(clk->hw, clk->new_rate, clk->parent->rate);
+> +	if (clk->ops->set_rate) {
+> +		if (clk->parent)
+> +			clk->ops->set_rate(clk->hw, clk->new_rate,
+> +					clk->parent->rate);
+> +		else
+> +			clk->ops->set_rate(clk->hw, clk->new_rate, 0);
+> +	}
+>  
+> -	if (clk->ops->recalc_rate)
+> -		clk->rate = clk->ops->recalc_rate(clk->hw,
+> -				clk->parent->rate);
+> -	else
+> -		clk->rate = clk->parent->rate;
+> +	if (clk->ops->recalc_rate) {
+> +		if (clk->parent)
+> +			clk->rate = clk->ops->recalc_rate(clk->hw,
+> +							clk->parent->rate);
+> +		else
+> +			clk->rate = clk->ops->recalc_rate(clk->hw, 0);
+> +	} else
+> +		clk->rate = clk->parent ? clk->parent->rate : 0;
+>  
+>  	if (clk->notifier_count && old_rate != clk->rate)
+>  		__clk_notify(clk, POST_RATE_CHANGE, old_rate, clk->rate);
+> -- 
+> 1.7.10.4
+> 
