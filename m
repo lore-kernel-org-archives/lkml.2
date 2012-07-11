@@ -1,117 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933442Ab2GKWZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 18:25:56 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:54034 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933388Ab2GKWZy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 18:25:54 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-7.tower-131.messagelabs.com!1342045553!24834268!1
-X-Originating-IP: [216.166.12.97]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 13/30] staging: comedi: cb_pcidas: use comedi_device pci_dev pointer
-Date: Wed, 11 Jul 2012 15:25:45 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S933460Ab2GKW0E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 18:26:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53849 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933388Ab2GKWZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 18:25:58 -0400
+Message-ID: <1342045559.19666.28.camel@tucsk.pomaz.szeredi.hu>
+Subject: Re: [PATCH 3/3] audit: clean up refcounting in audit-tree
+From: Miklos Szeredi <mszeredi@suse.cz>
+To: Eric Paris <eparis@redhat.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, viro@ZenIV.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Date: Thu, 12 Jul 2012 00:25:59 +0200
+In-Reply-To: <1341597064.5347.3.camel@localhost>
+References: <1340646378-5169-1-git-send-email-miklos@szeredi.hu>
+	 <1340646378-5169-4-git-send-email-miklos@szeredi.hu>
+	 <1341597064.5347.3.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201207111525.46227.hartleys@visionengravers.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the pci_dev pointer in the comedi_device struct instead of
-carrying it in the private data.
+On Fri, 2012-07-06 at 13:51 -0400, Eric Paris wrote:
+> On Mon, 2012-06-25 at 19:46 +0200, Miklos Szeredi wrote:
+> > From: Miklos Szeredi <mszeredi@suse.cz>
+> > 
+> > Drop the initial reference by fsnotify_init_mark early instead of
+> > audit_tree_freeing_mark() at destroy time.
+> > 
+> > In the cases we destroy the mark before we drop the initial reference we need to
+> > get rid of the get_mark that balances the put_mark in audit_tree_freeing_mark().
+> > 
+> > Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> 
+> I don't love this.  The reference from fsnotify_init_mark() should live
+> until fsnotify_mark_destroy().  If we need to drop a reference in
+> audit_tree_freeing_mark() we should be taking that elsewhere....
+> 
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/comedi/drivers/cb_pcidas.c | 31 +++++++++++++++---------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
+There's no point in dropping a ref in ->freeing_mark, as the caller
+needs to hold a ref anyways.
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
-index 301444e..39b02e8 100644
---- a/drivers/staging/comedi/drivers/cb_pcidas.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidas.c
-@@ -343,7 +343,6 @@ static const struct cb_pcidas_board cb_pcidas_boards[] = {
- };
- 
- struct cb_pcidas_private {
--	struct pci_dev *pci_dev;
- 	/* base addresses */
- 	unsigned long s5933_config;
- 	unsigned long control_status;
-@@ -1553,35 +1552,35 @@ static int cb_pcidas_attach(struct comedi_device *dev,
- 		return -ENOMEM;
- 	devpriv = dev->private;
- 
--	devpriv->pci_dev = cb_pcidas_find_pci_device(dev, it);
--	if (!devpriv->pci_dev)
-+	dev->pcidev = cb_pcidas_find_pci_device(dev, it);
-+	if (!dev->pcidev)
- 		return -EIO;
- 	thisboard = comedi_board(dev);
- 
--	if (comedi_pci_enable(devpriv->pci_dev, dev->driver->driver_name)) {
-+	if (comedi_pci_enable(dev->pcidev, dev->driver->driver_name)) {
- 		dev_err(dev->class_dev,
- 			"Failed to enable PCI device and request regions\n");
- 		return -EIO;
- 	}
- 
--	devpriv->s5933_config = pci_resource_start(devpriv->pci_dev, 0);
--	devpriv->control_status = pci_resource_start(devpriv->pci_dev, 1);
--	devpriv->adc_fifo = pci_resource_start(devpriv->pci_dev, 2);
--	devpriv->pacer_counter_dio = pci_resource_start(devpriv->pci_dev, 3);
-+	devpriv->s5933_config = pci_resource_start(dev->pcidev, 0);
-+	devpriv->control_status = pci_resource_start(dev->pcidev, 1);
-+	devpriv->adc_fifo = pci_resource_start(dev->pcidev, 2);
-+	devpriv->pacer_counter_dio = pci_resource_start(dev->pcidev, 3);
- 	if (thisboard->ao_nchan)
--		devpriv->ao_registers = pci_resource_start(devpriv->pci_dev, 4);
-+		devpriv->ao_registers = pci_resource_start(dev->pcidev, 4);
- 
- 	/*  disable and clear interrupts on amcc s5933 */
- 	outl(INTCSR_INBOX_INTR_STATUS,
- 	     devpriv->s5933_config + AMCC_OP_REG_INTCSR);
- 
--	if (request_irq(devpriv->pci_dev->irq, cb_pcidas_interrupt,
-+	if (request_irq(dev->pcidev->irq, cb_pcidas_interrupt,
- 			IRQF_SHARED, dev->driver->driver_name, dev)) {
- 		dev_dbg(dev->class_dev, "unable to allocate irq %d\n",
--			devpriv->pci_dev->irq);
-+			dev->pcidev->irq);
- 		return -EINVAL;
- 	}
--	dev->irq = devpriv->pci_dev->irq;
-+	dev->irq = dev->pcidev->irq;
- 
- 	dev->board_name = thisboard->name;
- 
-@@ -1714,10 +1713,10 @@ static void cb_pcidas_detach(struct comedi_device *dev)
- 		free_irq(dev->irq, dev);
- 	if (dev->subdevices)
- 		subdev_8255_cleanup(dev, dev->subdevices + 2);
--	if (devpriv && devpriv->pci_dev) {
--		if (devpriv->s5933_config)
--			comedi_pci_disable(devpriv->pci_dev);
--		pci_dev_put(devpriv->pci_dev);
-+	if (dev->pcidev) {
-+		if (devpriv && devpriv->s5933_config)
-+			comedi_pci_disable(dev->pcidev);
-+		pci_dev_put(dev->pcidev);
- 	}
- }
- 
--- 
-1.7.11
+
+Thanks,
+Miklos
+
+> > ---
+> >  kernel/audit_tree.c |   12 +++++++++---
+> >  1 files changed, 9 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
+> > index 31fdc48..7b95706 100644
+> > --- a/kernel/audit_tree.c
+> > +++ b/kernel/audit_tree.c
+> > @@ -292,6 +292,7 @@ static void untag_chunk(struct node *p)
+> >  	spin_unlock(&hash_lock);
+> >  	spin_unlock(&entry->lock);
+> >  	fsnotify_destroy_mark(entry);
+> > +	fsnotify_put_mark(&new->mark);	/* drop initial reference */
+> >  	goto out;
+> >  
+> >  Fallback:
+> > @@ -330,7 +331,6 @@ static int create_chunk(struct inode *inode, struct audit_tree *tree)
+> >  		spin_unlock(&hash_lock);
+> >  		chunk->dead = 1;
+> >  		spin_unlock(&entry->lock);
+> > -		fsnotify_get_mark(entry);
+> >  		fsnotify_destroy_mark(entry);
+> >  		fsnotify_put_mark(entry);
+> >  		return 0;
+> > @@ -346,6 +346,7 @@ static int create_chunk(struct inode *inode, struct audit_tree *tree)
+> >  	insert_hash(chunk);
+> >  	spin_unlock(&hash_lock);
+> >  	spin_unlock(&entry->lock);
+> > +	fsnotify_put_mark(entry);	/* drop initial reference */
+> >  	return 0;
+> >  }
+> >  
+> > @@ -411,7 +412,6 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
+> >  		spin_unlock(&chunk_entry->lock);
+> >  		spin_unlock(&old_entry->lock);
+> >  
+> > -		fsnotify_get_mark(chunk_entry);
+> >  		fsnotify_destroy_mark(chunk_entry);
+> >  
+> >  		fsnotify_put_mark(chunk_entry);
+> > @@ -444,6 +444,7 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
+> >  	spin_unlock(&chunk_entry->lock);
+> >  	spin_unlock(&old_entry->lock);
+> >  	fsnotify_destroy_mark(old_entry);
+> > +	fsnotify_put_mark(chunk_entry);	/* drop initial reference */
+> >  	fsnotify_put_mark(old_entry); /* pair to fsnotify_find mark_entry */
+> >  	return 0;
+> >  }
+> > @@ -915,7 +916,12 @@ static void audit_tree_freeing_mark(struct fsnotify_mark *entry, struct fsnotify
+> >  	struct audit_chunk *chunk = container_of(entry, struct audit_chunk, mark);
+> >  
+> >  	evict_chunk(chunk);
+> > -	fsnotify_put_mark(entry);
+> > +
+> > +	/*
+> > +	 * We are guaranteed to have at least one reference to the mark from
+> > +	 * either the inode or the caller of fsnotify_destroy_mark().
+> > +	 */
+> > +	BUG_ON(atomic_read(&entry->refcnt) < 1);
+> >  }
+> >  
+> >  static bool audit_tree_send_event(struct fsnotify_group *group, struct inode *inode,
+> 
+> 
+
 
