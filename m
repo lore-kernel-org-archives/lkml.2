@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab2GKFEA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 01:04:00 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:38996 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753639Ab2GKFD6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 01:03:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120710182804.GA24666@kroah.com>
-References: <1341855260-9037-1-git-send-email-devendra.aaru@gmail.com>
-	<1341855260-9037-2-git-send-email-devendra.aaru@gmail.com>
-	<20120709200604.GA2536@kroah.com>
-	<877guc4ryk.fsf@xmission.com>
-	<20120710182804.GA24666@kroah.com>
-Date: Wed, 11 Jul 2012 10:48:57 +0545
-Message-ID: <CAHdPZaNvm8ag1=dCcwsdPJHTA9YxOV0vBZfOLSXy_vRfmXnQUA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] staging/slicoss: disable pci device at remove
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Lior Dotan <liodot@gmail.com>,
-        Christopher Harrer <charrer@alacritech.com>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755904Ab2GKFEI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 01:04:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38596 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755775Ab2GKFEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 01:04:05 -0400
+Date: Wed, 11 Jul 2012 14:04:01 +0900 (JST)
+Message-Id: <20120711.140401.1493578767541672738.yamato@redhat.com>
+To: andrei.emeltchenko.news@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
+Subject: [PATCH v3 7/8] bluetooth: Added /proc/net/rfcomm via
+ bt_procfs_init()
+From: Masatake YAMATO <yamato@redhat.com>
+In-Reply-To: <20120711.135831.1712662939552441872.yamato@redhat.com>
+References: <20120629.020253.963694178693689545.yamato@redhat.com>
+	<20120710140400.GA15795@aemeltch-MOBL1>
+	<20120711.135831.1712662939552441872.yamato@redhat.com>
+Organization: Red Hat Japan, Inc.
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 12:13 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
->> I haven't see this?  Why don't you want to disable a device at remove
->> time?  Because we put the disable in the generic pci layer?
->
-> For some reason, I thought we didn't do this because of other
-> "interfaces" on the same card might then be shut down.  But I must have
-> been thinking of something else, as lots of drivers do this, so adding
-> it here looks to be correct.
->
-> So, sorry Devendra, you were right, care to resend this so I can apply
-> it?
->
+Signed-off-by: Masatake YAMATO <yamato@redhat.com>
+---
+ net/bluetooth/rfcomm/sock.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-Hi Greg,
+diff --git a/net/bluetooth/rfcomm/sock.c b/net/bluetooth/rfcomm/sock.c
+index 7e1e596..260821a 100644
+--- a/net/bluetooth/rfcomm/sock.c
++++ b/net/bluetooth/rfcomm/sock.c
+@@ -1033,8 +1033,17 @@ int __init rfcomm_init_sockets(void)
+ 		return err;
+ 
+ 	err = bt_sock_register(BTPROTO_RFCOMM, &rfcomm_sock_family_ops);
+-	if (err < 0)
++	if (err < 0) {
++		BT_ERR("RFCOMM socket layer registration failed");
++		goto error;
++	}
++
++	err = bt_procfs_init(THIS_MODULE, &init_net, "rfcomm", &rfcomm_sk_list, NULL);
++	if (err < 0) {
++		BT_ERR("Failed to create RFCOMM proc file");
++		bt_sock_unregister(BTPROTO_RFCOMM);
+ 		goto error;
++	}
+ 
+ 	if (bt_debugfs) {
+ 		rfcomm_sock_debugfs = debugfs_create_file("rfcomm", 0444,
+@@ -1048,13 +1057,14 @@ int __init rfcomm_init_sockets(void)
+ 	return 0;
+ 
+ error:
+-	BT_ERR("RFCOMM socket layer registration failed");
+ 	proto_unregister(&rfcomm_proto);
+ 	return err;
+ }
+ 
+ void __exit rfcomm_cleanup_sockets(void)
+ {
++	bt_procfs_cleanup(&init_net, "rfcomm");
++
+ 	debugfs_remove(rfcomm_sock_debugfs);
+ 
+ 	if (bt_sock_unregister(BTPROTO_RFCOMM) < 0)
+-- 
+1.7.10.4
 
-I will send the patch out in few hrs, with V2 name.
-
-Actually i was referring to the discussion here in this link,
-
-https://lkml.org/lkml/2005/2/13/82
-
-it says about if the request regions fails we do not disable the
-device, as the other driver may be using the device.
-since the remove function of the driver is calling, which means that
-probe succeeded, so i think its fine to call
-pci_disable_device at driver_remove.
-
-
-> thanks,
->
-> greg k-h
-
-Thanks,
-devendra.
