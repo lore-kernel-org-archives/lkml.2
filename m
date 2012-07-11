@@ -1,86 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757024Ab2GKJ6o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 05:58:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29919 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753029Ab2GKJ4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 05:56:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="164196323"
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>
-Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Ext4 Mailing List <linux-ext4@vger.kernel.org>
-Subject: [PATCHv6 1/5] ext4: Remove useless marking of superblock dirty
-Date: Wed, 11 Jul 2012 12:58:14 +0300
-Message-Id: <1342000698-13556-2-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1342000698-13556-1-git-send-email-dedekind1@gmail.com>
-References: <1342000698-13556-1-git-send-email-dedekind1@gmail.com>
+	id S1756947Ab2GKKHV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 06:07:21 -0400
+Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:46246 "EHLO
+	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752593Ab2GKKHT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 06:07:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGF5oy_QVyYKFcS_62dffkRRZhBZrG4RTpYG9HKT8zMoLue1Xw@mail.gmail.com>
+References: <1341647872-15267-1-git-send-email-eduardo.valentin@ti.com>
+	<1341647872-15267-2-git-send-email-eduardo.valentin@ti.com>
+	<20120709193130.GA12982@kroah.com>
+	<CAGF5oy_QVyYKFcS_62dffkRRZhBZrG4RTpYG9HKT8zMoLue1Xw@mail.gmail.com>
+Date: Wed, 11 Jul 2012 13:07:17 +0300
+Message-ID: <CAGF5oy-Ey7mB+_gjDWxm7H5muvpGrksTmjBsrn-Pva6N=JHNoQ@mail.gmail.com>
+Subject: Re: [PATCHv2 1/4] staging: OMAP4+: thermal: introduce bandgap
+ temperature sensor
+From: "Valentin, Eduardo" <eduardo.valentin@ti.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, b-cousson@ti.com, j-keerthy@ti.com,
+        linux-kernel@vger.kernel.org, kbaidarov@dev.rtsoft.ru,
+        grant.likely@secretlab.ca
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+Hello Greg,
 
-Commit a0375156 properly notes that superblock doesn't need to be marked
-as dirty when only number of free inodes / blocks / number of directories
-changes since that is recomputed on each mount anyway. However that comment
-leaves some unnecessary markings as dirty in place. Remove these.
+On Mon, Jul 9, 2012 at 11:33 PM, Valentin, Eduardo
+<eduardo.valentin@ti.com> wrote:
+> Hello Greg,
+>
+> On Mon, Jul 9, 2012 at 10:31 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+>> On Sat, Jul 07, 2012 at 10:57:49AM +0300, Eduardo Valentin wrote:
+>>> In the System Control Module, OMAP supplies a voltage reference
+>>> and a temperature sensor feature that are gathered in the band
+>>> gap voltage and temperature sensor (VBGAPTS) module. The band
+>>> gap provides current and voltage reference for its internal
+>>> circuits and other analog IP blocks. The analog-to-digital
+>>> converter (ADC) produces an output value that is proportional
+>>> to the silicon temperature.
+>>>
+>>> This patch provides a platform driver which expose this feature.
+>>> It is moduled as a MFD child of the System Control Module core
+>>> MFD driver.
+>>>
+>>> This driver provides only APIs to access the device properties,
+>>> like temperature, thresholds and update rate.
+>>>
+>>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+>>> Signed-off-by: Keerthy <j-keerthy@ti.com>
+>>
+>> As much as I enjoy interesting names, odds are, "Keerthy" is not the
+>> real name of this person, right?  In fact, based on the copyright
+>> comments in the code, I can almost guarantee it...
+>>
+>> I need a full-name please, no aliases or fake names allowed in kernel
+>> signed-off-by lines.
+>>
+>> Please resend these with that fixed up.
+>
+> Actually, his name is in fact Keerthy J.  I can resend with the
+> additional "J" the way it is in the copyrights.
 
-Artem: tested using xfstests for both journalled and non-journalled ext4.
+While looking into his commits, I believe the SOB in this patch is one
+of the ways he uses to sign:
+commit f99c1d4f94f91fd3a20bd2eaa3be9c5e7d2668eb
+Author: Keerthy <j-keerthy@ti.com>
+Date:   Tue Mar 1 19:12:26 2011 +0530
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
- fs/ext4/ialloc.c  |    2 --
- fs/ext4/mballoc.c |    2 --
- 2 files changed, 0 insertions(+), 4 deletions(-)
+    mfd: Add twl4030 madc driver
 
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index d48e8b1..25b918c 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -315,7 +315,6 @@ out:
- 		err = ext4_handle_dirty_metadata(handle, NULL, bitmap_bh);
- 		if (!fatal)
- 			fatal = err;
--		ext4_mark_super_dirty(sb);
- 	} else
- 		ext4_error(sb, "bit already cleared for inode %lu", ino);
- 
-@@ -830,7 +829,6 @@ got:
- 	percpu_counter_dec(&sbi->s_freeinodes_counter);
- 	if (S_ISDIR(mode))
- 		percpu_counter_inc(&sbi->s_dirs_counter);
--	ext4_mark_super_dirty(sb);
- 
- 	if (sbi->s_log_groups_per_flex) {
- 		flex_group = ext4_flex_group(sbi, group);
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 1cd6994..eabfb4c 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -2825,7 +2825,6 @@ ext4_mb_mark_diskspace_used(struct ext4_allocation_context *ac,
- 	err = ext4_handle_dirty_metadata(handle, NULL, gdp_bh);
- 
- out_err:
--	ext4_mark_super_dirty(sb);
- 	brelse(bitmap_bh);
- 	return err;
- }
-@@ -4694,7 +4693,6 @@ do_more:
- 		put_bh(bitmap_bh);
- 		goto do_more;
- 	}
--	ext4_mark_super_dirty(sb);
- error_return:
- 	brelse(bitmap_bh);
- 	ext4_std_error(sb, err);
+    Introducing a driver for MADC on TWL4030 powerIC. MADC stands for monitoring
+    ADC. This driver monitors the real time conversion of analog signals like
+    battery temperature, battery cuurent etc.
+
+    Signed-off-by: Keerthy <j-keerthy@ti.com>
+    Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+
+So, I'd prefer to keep the way it is.
+
+>
+>>
+>> greg k-h
+>
+>
+>
+> --
+>
+> Eduardo Valentin
+
+
+
 -- 
-1.7.7.6
 
+Eduardo Valentin
