@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933346Ab2GKV4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 17:56:14 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:63521 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758253Ab2GKV4K (ORCPT
+	id S1030291Ab2GKV6s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 17:58:48 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52190 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030192Ab2GKV6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 17:56:10 -0400
+	Wed, 11 Jul 2012 17:58:47 -0400
+Message-ID: <4FFDF713.80109@gmail.com>
+Date: Wed, 11 Jul 2012 16:58:43 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <201207112126.36412.rjw@sisk.pl>
-References: <201207112121.11046.rjw@sisk.pl>
-	<201207112126.36412.rjw@sisk.pl>
-Date: Wed, 11 Jul 2012 23:56:09 +0200
-Message-ID: <CACRpkdbLWTOAvqT==XoFuU2++Y_OvNBrGwWmATcPyK6EP90miw@mail.gmail.com>
-Subject: Re: [PATCH 6/7] i2c-stu300: Use struct dev_pm_ops for power management
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-i2c@vger.kernel.org, Sonic Zhang <sonic.zhang@analog.com>,
-        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Peter Korsgaard <jacmet@sunsite.dk>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Vitaly Wool <vitalywool@gmail.com>, Colin Cross <ccross@android.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
+To: Marc Zyngier <marc.zyngier@arm.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ksummit-2012-discuss@lists.linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Ksummit-2012-discuss] ARM mini-summit
+References: <1341994155.3522.16.camel@dabdike.int.hansenpartnership.com> <20120711140536.GC16523@phenom.dumpdata.com> <CAPbh3rsnNNFNWEf651M-mO2UFOK8pFYTMV2x7RPhjHOAyf9OJw@mail.gmail.com> <201207112006.28632.arnd@arndb.de> <061ef00be9b475973e5df22fcd096308@localhost>
+In-Reply-To: <061ef00be9b475973e5df22fcd096308@localhost>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 9:26 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+On 07/11/2012 04:16 PM, Marc Zyngier wrote:
+> On Wed, 11 Jul 2012 20:06:28 +0000, Arnd Bergmann <arnd@arndb.de> wrote:
+>> On Wednesday 11 July 2012, Konrad Rzeszutek Wilk wrote:
+>>>>>> contacts, with Grant and Olof joining in as time permits.
+>>>>>
+>>>>> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+>>>>
+>>>> I would be interested in attending it as well. I believe Stefano has
+> a
+>>>> strong
+>>>> interest as well (since he and Ian Campbell are leading the Xen ARM
+>>>> work).
+>>>
+>>> And Stefano is out on vacation right now so I will serve as his phantom
+>>> voice
+>>> and say: "Yes, I am interested as well."
+>>
+>> Ok. So are you mostly interested in discussion ARM virtualization or
+> other
+>> topics
+>> as well? Last time we had organized this explicitly as the "ARM subarch
+>> maintainer
+>> summit" and we might again limit the participants to the subarch
+>> maintainers and
+>> a few more people if we're running out of space, but then again if a lot
+>> of them
+>> are interested in discussion virtualization, we should probably have you
+>> both and 
+>> the ARM KVM people included as well.
+>>
+>> We haven't even started discussing an agenda, but I'll note down your
+>> names as
+>> candidates and Xen and/or KVM as proposed topics. I'll follow up with a
+>> more
+>> formal call for topics once I have a positive confirmation from James
+> and
+>> the
+>> linux-foundation that we can go ahead with the ARM mini-summit.
+> 
+> Putting on my KVM/ARM hacker hat this time: I'd be very glad to contribute
+> to the discussion. There is a number of ARM-specific topics that would be
+> interesting to discuss regarding KVM/ARM (mainlining the damn thing, common
+> hypercalls?, HYP mode booting), and probably a couple of other things.
+> 
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->
-> Make the ST-Ericsson U300 I2C controller driver define its PM
-> callbacks through a struct dev_pm_ops object rather than by using
-> legacy PM hooks in struct platform_driver.
->
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Perhaps a mini-summit on ARM virtualization, too? Xen Summit is also
+co-located.
 
-Great, thanks!
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-
-Yours,
-Linus Walleij
+Rob
