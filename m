@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059Ab2GKKQc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 06:16:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49237 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826Ab2GKKQa (ORCPT
+	id S1757084Ab2GKKSB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 06:18:01 -0400
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:54019 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752960Ab2GKKR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 06:16:30 -0400
-Date: Wed, 11 Jul 2012 18:16:18 +0800
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Li Zefan <lizefan@huawei.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwp.linux@gmail.com>
-Subject: Re: [PATCH] mm/hugetlb_cgroup: Add list_del to remove unused page
- from hugepage_activelist when hugepage migration
-Message-ID: <20120711101618.GA12033@kernel>
-Reply-To: Wanpeng Li <liwp.linux@gmail.com>
-References: <1341978718-6423-1-git-send-email-liwp.linux@gmail.com>
- <87wr2aitpk.fsf@skywalker.in.ibm.com>
- <20120711091648.GA10841@kernel>
- <87txxeiqc0.fsf@skywalker.in.ibm.com>
+	Wed, 11 Jul 2012 06:17:59 -0400
+Message-ID: <4FFD52CD.7040403@de.ibm.com>
+Date: Wed, 11 Jul 2012 12:17:49 +0200
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87txxeiqc0.fsf@skywalker.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
+        Carsten Otte <cotte@de.ibm.com>, KVM <kvm@vger.kernel.org>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
+References: <20120709062012.24030.37154.sendpatchset@codeblue> <4FFA8E5E.3070108@de.ibm.com> <4FFD422B.9060008@redhat.com>
+In-Reply-To: <4FFD422B.9060008@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12071110-6892-0000-0000-0000026574C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 03:15:19PM +0530, Aneesh Kumar K.V wrote:
->Wanpeng Li <liwp.linux@gmail.com> writes:
->
->> On Wed, Jul 11, 2012 at 02:02:23PM +0530, Aneesh Kumar K.V wrote:
->>>Wanpeng Li <liwp.linux@gmail.com> writes:
->>>
->>>> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
->>>>
->>>> hugepage_activelist is used to track currently used HugeTLB pages.
->>>> We can find the in-use HugeTLB pages to support HugeTLB cgroup
->>>> removal. Don't keep unused page in hugetlb_activelist too long.
->>>> Otherwise, on cgroup removal we should update the unused page's 
->>>> charge to parent count. To reduce this overhead, remove unused page 
->>>> from hugepage_activelist immediately.
->>>>
->>>> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
->>>> ---
->>>>  mm/hugetlb_cgroup.c |    1 +
->>>>  1 files changed, 1 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
->>>> index b834e8d..d819d66 100644
->>>> --- a/mm/hugetlb_cgroup.c
->>>> +++ b/mm/hugetlb_cgroup.c
->>>> @@ -398,6 +398,7 @@ void hugetlb_cgroup_migrate(struct page *oldhpage, struct page *newhpage)
->>>>  	spin_lock(&hugetlb_lock);
->>>>  	h_cg = hugetlb_cgroup_from_page(oldhpage);
->>>>  	set_hugetlb_cgroup(oldhpage, NULL);
->>>> +	list_del(&oldhpage->lru);
->>>>
->>>>  	/* move the h_cg details to new cgroup */
->>>>  	set_hugetlb_cgroup(newhpage, h_cg);
->>>
->>>put_page on the oldhpage will do that. If we do list_del here
->>>free_huge_page() will have error list_move().
->>
->> I don't know if move the page to other lists when migration in order 
->> to reduce overhead I mentioned make sense. :-)
->>
->
->Even if we are in the active_list, we don't get anything wrong because
->hugetlb cgroup is set to NULL for the old hugetlb page. The above patch is
->wrong and will result in crash when we try to put_page the oldhpage.
+On 11/07/12 11:06, Avi Kivity wrote:
+[...]
+>> Almost all s390 kernels use diag9c (directed yield to a given guest cpu) for spinlocks, though.
+> 
+> Perhaps x86 should copy this.
 
-Hi aneesh, I am happy we are in the same company. I am a guy in LTC
-China. I want to know if there any features or works about hugetlb
-cgroup I can do with you!
+See arch/s390/lib/spinlock.c
+The basic idea is using several heuristics:
+- loop for a given amount of loops
+- check if the lock holder is currently scheduled by the hypervisor
+  (smp_vcpu_scheduled, which uses the sigp sense running instruction)
+  Dont know if such thing is available for x86. It must be a lot cheaper
+  than a guest exit to be useful
+- if lock holder is not running and we looped for a while do a directed
+  yield to that cpu.
 
-Regards,
-Wanpeng Li
+> 
+>> So there is no win here, but there are other cases were diag44 is used, e.g. cpu_relax.
+>> I have to double check with others, if these cases are critical, but for now, it seems 
+>> that your dummy implementation  for s390 is just fine. After all it is a no-op until 
+>> we implement something.
+> 
+> Does the data structure make sense for you?  If so we can move it to
+> common code (and manage it in kvm_vcpu_on_spin()).  We can guard it with
+> CONFIG_KVM_HAVE_CPU_RELAX_INTERCEPT or something, so other archs don't
+> have to pay anything.
 
->
->-aneesh
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
+Ignoring the name, yes the data structure itself seems based on the algorithm
+and not on arch specific things. That should work. If we move that to common 
+code then s390 will use that scheme automatically for the cases were we call 
+kvm_vcpu_on_spin(). All others archs as well.
+
+So this would probably improve guests that uses cpu_relax, for example
+stop_machine_run. I have no measurements, though.
+
+Christian
+
