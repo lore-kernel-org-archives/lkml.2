@@ -1,1222 +1,1654 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756475Ab2GKRiZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 13:38:25 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:56690 "EHLO
+	id S1756571Ab2GKRik (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 13:38:40 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:61474 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323Ab2GKRiU (ORCPT
+	with ESMTP id S1755354Ab2GKRif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 13:38:20 -0400
-Date: Wed, 11 Jul 2012 19:38:12 +0200
+	Wed, 11 Jul 2012 13:38:35 -0400
+Date: Wed, 11 Jul 2012 19:38:29 +0200
 From: Johannes Goetzfried 
 	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
 To: Herbert Xu <herbert@gondor.hengli.com.au>
 Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
         Tilo Mueller <tilo.mueller@informatik.uni-erlangen.de>
-Subject: [PATCH 4/6] crypto: cast6 - prepare generic module for optimized
- implementations
-Message-ID: <bafb01e31d427c6eae0eb8c46f66d09b6c34c35c.1342027375.git.johannes@goetzfried-amberg.de>
+Subject: [PATCH 5/6] crypto: testmgr - add larger cast6 testvectors
+Message-ID: <36641a446d14fba89e5ee49b7f972785bd42b4de.1342027375.git.johannes@goetzfried-amberg.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <cover.1342027375.git.johannes@goetzfried-amberg.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Provags-ID: V02:K0:7bqKGN6fvT6L36JwI7vipT1HFmmWPGvrz6G01k3ZlAV
- ql1qYD9BjNjZQQDLtAAp0cc6U41ocVg5VgbbMyvXonCubH1pYW
- SucMwHvwikPgsJ3sUvLL7wB4TXRW2u7TJsVt3riloePyxtDG2O
- RHQjgnfhfSdZqsR2H6ZfUebg10xJC13xo975SS+e5oIJ6pj4+W
- kYqSnYqDcCWpKumMTR00rmowlQZT4PDvFhJ7/gBEJkcSLkELMs
- OZB6pJvKu5h01aGn2QTuw3MRZF9n+uH+3aQTRBNc+nuUy+sRdO
- iOX9s9rO5spZaTzscEIZXQ2cL++Tx2fv4FqhTNPzSH4LGNHiRH
- XlCuP1VdGOl8Or06gxnGj+fQH+x078isrbiN4pJhCfWKQGkYDP
- jTAnXl1iHmAZOiVEZgffoTkZLfMUyZ18biWtpWcJapv5Wd1Kxg
- uLElC
+X-Provags-ID: V02:K0:tTb9Zh/NLURK9r6iQrbhX8EoTUYapMZ8ETThSDcmuX4
+ 88J7u3Oaatm3kyXK6fJZrrycD6+5xFAkxuZJfFqGhYQfPHFPAp
+ CQUiUJTH6yEXokBZhz94pw4bjak9LtxpN8SKAPgDeb+zxAJn/f
+ GajuUGgznhtW4IVi0WJegqlsRCoFRQuId19Jf2VJQVZ32qrfVe
+ +S0HLq/qG7qI66qr/hiCYQ7Kylb4kQb06pUtLB7igjeb9Mhmjz
+ VOmDVED8+kcrWR8fn9aXg9/THGXYxcGYo/EkJsLiY74zJIAhMC
+ dCQQfUeUIA2kyqcJzk147A7wJGZKdHiYdCY5lMQ8pswb6FHHp4
+ 67pNL8ziUFGgMzXxUDdwF8t8ZFCmnqKPwaYvWVPa3bvhdZgBed
+ oQKVbXmGg12T8jUQRzFbMqjqvnyi6X3cwQPls0aCqFoi027UNn
+ L/Elv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename cast6 module to cast6_generic to allow autoloading of optimized
-implementations. Generic functions and s-boxes are exported to be able to use
-them within optimized implementations.
+New ECB, CBC, CTR, LRW and XTS testvectors for cast6. We need larger
+testvectors to check parallel code paths in the optimized implementation. Tests
+have also been added to the tcrypt module.
 
 Signed-off-by: Johannes Goetzfried <Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
 ---
- crypto/Makefile        |    2 +-
- crypto/cast6.c         |  547 ----------------------------------------------
- crypto/cast6_generic.c |  566 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/crypto/cast6.h |   23 ++
- 4 files changed, 590 insertions(+), 548 deletions(-)
- delete mode 100644 crypto/cast6.c
- create mode 100644 crypto/cast6_generic.c
- create mode 100644 include/crypto/cast6.h
+ crypto/tcrypt.c  |   50 ++
+ crypto/testmgr.c |   60 +++
+ crypto/testmgr.h | 1412 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 1520 insertions(+), 2 deletions(-)
 
-diff --git a/crypto/Makefile b/crypto/Makefile
-index a56821e..396966d 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -69,7 +69,7 @@ obj-$(CONFIG_CRYPTO_SERPENT) += serpent_generic.o
- obj-$(CONFIG_CRYPTO_AES) += aes_generic.o
- obj-$(CONFIG_CRYPTO_CAMELLIA) += camellia_generic.o
- obj-$(CONFIG_CRYPTO_CAST5) += cast5_generic.o
--obj-$(CONFIG_CRYPTO_CAST6) += cast6.o
-+obj-$(CONFIG_CRYPTO_CAST6) += cast6_generic.o
- obj-$(CONFIG_CRYPTO_ARC4) += arc4.o
- obj-$(CONFIG_CRYPTO_TEA) += tea.o
- obj-$(CONFIG_CRYPTO_KHAZAD) += khazad.o
-diff --git a/crypto/cast6.c b/crypto/cast6.c
-deleted file mode 100644
-index e0c15a6..0000000
---- a/crypto/cast6.c
-+++ /dev/null
-@@ -1,547 +0,0 @@
--/* Kernel cryptographic api.
-- * cast6.c - Cast6 cipher algorithm [rfc2612].
-- *
-- * CAST-256 (*cast6*) is a DES like Substitution-Permutation Network (SPN)
-- * cryptosystem built upon the CAST-128 (*cast5*) [rfc2144] encryption
-- * algorithm.
-- *
-- * Copyright (C) 2003 Kartikey Mahendra Bhatt <kartik_me@hotmail.com>.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms of GNU General Public License as published by the Free
-- * Software Foundation; either version 2 of the License, or (at your option)
-- * any later version.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-- */
--
--
--#include <asm/byteorder.h>
--#include <linux/init.h>
--#include <linux/crypto.h>
--#include <linux/module.h>
--#include <linux/errno.h>
--#include <linux/string.h>
--#include <linux/types.h>
--
--#define CAST6_BLOCK_SIZE 16
--#define CAST6_MIN_KEY_SIZE 16
--#define CAST6_MAX_KEY_SIZE 32
--
--struct cast6_ctx {
--	u32 Km[12][4];
--	u8 Kr[12][4];
--};
--
--#define F1(D, r, m)  ((I = ((m) + (D))), (I = rol32(I, (r))),   \
--    (((s1[I >> 24] ^ s2[(I>>16)&0xff]) - s3[(I>>8)&0xff]) + s4[I&0xff]))
--#define F2(D, r, m)  ((I = ((m) ^ (D))), (I = rol32(I, (r))),   \
--    (((s1[I >> 24] - s2[(I>>16)&0xff]) + s3[(I>>8)&0xff]) ^ s4[I&0xff]))
--#define F3(D, r, m)  ((I = ((m) - (D))), (I = rol32(I, (r))),   \
--    (((s1[I >> 24] + s2[(I>>16)&0xff]) ^ s3[(I>>8)&0xff]) - s4[I&0xff]))
--
--static const u32 s1[256] = {
--	0x30fb40d4, 0x9fa0ff0b, 0x6beccd2f, 0x3f258c7a, 0x1e213f2f,
--	0x9c004dd3, 0x6003e540, 0xcf9fc949,
--	0xbfd4af27, 0x88bbbdb5, 0xe2034090, 0x98d09675, 0x6e63a0e0,
--	0x15c361d2, 0xc2e7661d, 0x22d4ff8e,
--	0x28683b6f, 0xc07fd059, 0xff2379c8, 0x775f50e2, 0x43c340d3,
--	0xdf2f8656, 0x887ca41a, 0xa2d2bd2d,
--	0xa1c9e0d6, 0x346c4819, 0x61b76d87, 0x22540f2f, 0x2abe32e1,
--	0xaa54166b, 0x22568e3a, 0xa2d341d0,
--	0x66db40c8, 0xa784392f, 0x004dff2f, 0x2db9d2de, 0x97943fac,
--	0x4a97c1d8, 0x527644b7, 0xb5f437a7,
--	0xb82cbaef, 0xd751d159, 0x6ff7f0ed, 0x5a097a1f, 0x827b68d0,
--	0x90ecf52e, 0x22b0c054, 0xbc8e5935,
--	0x4b6d2f7f, 0x50bb64a2, 0xd2664910, 0xbee5812d, 0xb7332290,
--	0xe93b159f, 0xb48ee411, 0x4bff345d,
--	0xfd45c240, 0xad31973f, 0xc4f6d02e, 0x55fc8165, 0xd5b1caad,
--	0xa1ac2dae, 0xa2d4b76d, 0xc19b0c50,
--	0x882240f2, 0x0c6e4f38, 0xa4e4bfd7, 0x4f5ba272, 0x564c1d2f,
--	0xc59c5319, 0xb949e354, 0xb04669fe,
--	0xb1b6ab8a, 0xc71358dd, 0x6385c545, 0x110f935d, 0x57538ad5,
--	0x6a390493, 0xe63d37e0, 0x2a54f6b3,
--	0x3a787d5f, 0x6276a0b5, 0x19a6fcdf, 0x7a42206a, 0x29f9d4d5,
--	0xf61b1891, 0xbb72275e, 0xaa508167,
--	0x38901091, 0xc6b505eb, 0x84c7cb8c, 0x2ad75a0f, 0x874a1427,
--	0xa2d1936b, 0x2ad286af, 0xaa56d291,
--	0xd7894360, 0x425c750d, 0x93b39e26, 0x187184c9, 0x6c00b32d,
--	0x73e2bb14, 0xa0bebc3c, 0x54623779,
--	0x64459eab, 0x3f328b82, 0x7718cf82, 0x59a2cea6, 0x04ee002e,
--	0x89fe78e6, 0x3fab0950, 0x325ff6c2,
--	0x81383f05, 0x6963c5c8, 0x76cb5ad6, 0xd49974c9, 0xca180dcf,
--	0x380782d5, 0xc7fa5cf6, 0x8ac31511,
--	0x35e79e13, 0x47da91d0, 0xf40f9086, 0xa7e2419e, 0x31366241,
--	0x051ef495, 0xaa573b04, 0x4a805d8d,
--	0x548300d0, 0x00322a3c, 0xbf64cddf, 0xba57a68e, 0x75c6372b,
--	0x50afd341, 0xa7c13275, 0x915a0bf5,
--	0x6b54bfab, 0x2b0b1426, 0xab4cc9d7, 0x449ccd82, 0xf7fbf265,
--	0xab85c5f3, 0x1b55db94, 0xaad4e324,
--	0xcfa4bd3f, 0x2deaa3e2, 0x9e204d02, 0xc8bd25ac, 0xeadf55b3,
--	0xd5bd9e98, 0xe31231b2, 0x2ad5ad6c,
--	0x954329de, 0xadbe4528, 0xd8710f69, 0xaa51c90f, 0xaa786bf6,
--	0x22513f1e, 0xaa51a79b, 0x2ad344cc,
--	0x7b5a41f0, 0xd37cfbad, 0x1b069505, 0x41ece491, 0xb4c332e6,
--	0x032268d4, 0xc9600acc, 0xce387e6d,
--	0xbf6bb16c, 0x6a70fb78, 0x0d03d9c9, 0xd4df39de, 0xe01063da,
--	0x4736f464, 0x5ad328d8, 0xb347cc96,
--	0x75bb0fc3, 0x98511bfb, 0x4ffbcc35, 0xb58bcf6a, 0xe11f0abc,
--	0xbfc5fe4a, 0xa70aec10, 0xac39570a,
--	0x3f04442f, 0x6188b153, 0xe0397a2e, 0x5727cb79, 0x9ceb418f,
--	0x1cacd68d, 0x2ad37c96, 0x0175cb9d,
--	0xc69dff09, 0xc75b65f0, 0xd9db40d8, 0xec0e7779, 0x4744ead4,
--	0xb11c3274, 0xdd24cb9e, 0x7e1c54bd,
--	0xf01144f9, 0xd2240eb1, 0x9675b3fd, 0xa3ac3755, 0xd47c27af,
--	0x51c85f4d, 0x56907596, 0xa5bb15e6,
--	0x580304f0, 0xca042cf1, 0x011a37ea, 0x8dbfaadb, 0x35ba3e4a,
--	0x3526ffa0, 0xc37b4d09, 0xbc306ed9,
--	0x98a52666, 0x5648f725, 0xff5e569d, 0x0ced63d0, 0x7c63b2cf,
--	0x700b45e1, 0xd5ea50f1, 0x85a92872,
--	0xaf1fbda7, 0xd4234870, 0xa7870bf3, 0x2d3b4d79, 0x42e04198,
--	0x0cd0ede7, 0x26470db8, 0xf881814c,
--	0x474d6ad7, 0x7c0c5e5c, 0xd1231959, 0x381b7298, 0xf5d2f4db,
--	0xab838653, 0x6e2f1e23, 0x83719c9e,
--	0xbd91e046, 0x9a56456e, 0xdc39200c, 0x20c8c571, 0x962bda1c,
--	0xe1e696ff, 0xb141ab08, 0x7cca89b9,
--	0x1a69e783, 0x02cc4843, 0xa2f7c579, 0x429ef47d, 0x427b169c,
--	0x5ac9f049, 0xdd8f0f00, 0x5c8165bf
--};
--
--static const u32 s2[256] = {
--	0x1f201094, 0xef0ba75b, 0x69e3cf7e, 0x393f4380, 0xfe61cf7a,
--	0xeec5207a, 0x55889c94, 0x72fc0651,
--	0xada7ef79, 0x4e1d7235, 0xd55a63ce, 0xde0436ba, 0x99c430ef,
--	0x5f0c0794, 0x18dcdb7d, 0xa1d6eff3,
--	0xa0b52f7b, 0x59e83605, 0xee15b094, 0xe9ffd909, 0xdc440086,
--	0xef944459, 0xba83ccb3, 0xe0c3cdfb,
--	0xd1da4181, 0x3b092ab1, 0xf997f1c1, 0xa5e6cf7b, 0x01420ddb,
--	0xe4e7ef5b, 0x25a1ff41, 0xe180f806,
--	0x1fc41080, 0x179bee7a, 0xd37ac6a9, 0xfe5830a4, 0x98de8b7f,
--	0x77e83f4e, 0x79929269, 0x24fa9f7b,
--	0xe113c85b, 0xacc40083, 0xd7503525, 0xf7ea615f, 0x62143154,
--	0x0d554b63, 0x5d681121, 0xc866c359,
--	0x3d63cf73, 0xcee234c0, 0xd4d87e87, 0x5c672b21, 0x071f6181,
--	0x39f7627f, 0x361e3084, 0xe4eb573b,
--	0x602f64a4, 0xd63acd9c, 0x1bbc4635, 0x9e81032d, 0x2701f50c,
--	0x99847ab4, 0xa0e3df79, 0xba6cf38c,
--	0x10843094, 0x2537a95e, 0xf46f6ffe, 0xa1ff3b1f, 0x208cfb6a,
--	0x8f458c74, 0xd9e0a227, 0x4ec73a34,
--	0xfc884f69, 0x3e4de8df, 0xef0e0088, 0x3559648d, 0x8a45388c,
--	0x1d804366, 0x721d9bfd, 0xa58684bb,
--	0xe8256333, 0x844e8212, 0x128d8098, 0xfed33fb4, 0xce280ae1,
--	0x27e19ba5, 0xd5a6c252, 0xe49754bd,
--	0xc5d655dd, 0xeb667064, 0x77840b4d, 0xa1b6a801, 0x84db26a9,
--	0xe0b56714, 0x21f043b7, 0xe5d05860,
--	0x54f03084, 0x066ff472, 0xa31aa153, 0xdadc4755, 0xb5625dbf,
--	0x68561be6, 0x83ca6b94, 0x2d6ed23b,
--	0xeccf01db, 0xa6d3d0ba, 0xb6803d5c, 0xaf77a709, 0x33b4a34c,
--	0x397bc8d6, 0x5ee22b95, 0x5f0e5304,
--	0x81ed6f61, 0x20e74364, 0xb45e1378, 0xde18639b, 0x881ca122,
--	0xb96726d1, 0x8049a7e8, 0x22b7da7b,
--	0x5e552d25, 0x5272d237, 0x79d2951c, 0xc60d894c, 0x488cb402,
--	0x1ba4fe5b, 0xa4b09f6b, 0x1ca815cf,
--	0xa20c3005, 0x8871df63, 0xb9de2fcb, 0x0cc6c9e9, 0x0beeff53,
--	0xe3214517, 0xb4542835, 0x9f63293c,
--	0xee41e729, 0x6e1d2d7c, 0x50045286, 0x1e6685f3, 0xf33401c6,
--	0x30a22c95, 0x31a70850, 0x60930f13,
--	0x73f98417, 0xa1269859, 0xec645c44, 0x52c877a9, 0xcdff33a6,
--	0xa02b1741, 0x7cbad9a2, 0x2180036f,
--	0x50d99c08, 0xcb3f4861, 0xc26bd765, 0x64a3f6ab, 0x80342676,
--	0x25a75e7b, 0xe4e6d1fc, 0x20c710e6,
--	0xcdf0b680, 0x17844d3b, 0x31eef84d, 0x7e0824e4, 0x2ccb49eb,
--	0x846a3bae, 0x8ff77888, 0xee5d60f6,
--	0x7af75673, 0x2fdd5cdb, 0xa11631c1, 0x30f66f43, 0xb3faec54,
--	0x157fd7fa, 0xef8579cc, 0xd152de58,
--	0xdb2ffd5e, 0x8f32ce19, 0x306af97a, 0x02f03ef8, 0x99319ad5,
--	0xc242fa0f, 0xa7e3ebb0, 0xc68e4906,
--	0xb8da230c, 0x80823028, 0xdcdef3c8, 0xd35fb171, 0x088a1bc8,
--	0xbec0c560, 0x61a3c9e8, 0xbca8f54d,
--	0xc72feffa, 0x22822e99, 0x82c570b4, 0xd8d94e89, 0x8b1c34bc,
--	0x301e16e6, 0x273be979, 0xb0ffeaa6,
--	0x61d9b8c6, 0x00b24869, 0xb7ffce3f, 0x08dc283b, 0x43daf65a,
--	0xf7e19798, 0x7619b72f, 0x8f1c9ba4,
--	0xdc8637a0, 0x16a7d3b1, 0x9fc393b7, 0xa7136eeb, 0xc6bcc63e,
--	0x1a513742, 0xef6828bc, 0x520365d6,
--	0x2d6a77ab, 0x3527ed4b, 0x821fd216, 0x095c6e2e, 0xdb92f2fb,
--	0x5eea29cb, 0x145892f5, 0x91584f7f,
--	0x5483697b, 0x2667a8cc, 0x85196048, 0x8c4bacea, 0x833860d4,
--	0x0d23e0f9, 0x6c387e8a, 0x0ae6d249,
--	0xb284600c, 0xd835731d, 0xdcb1c647, 0xac4c56ea, 0x3ebd81b3,
--	0x230eabb0, 0x6438bc87, 0xf0b5b1fa,
--	0x8f5ea2b3, 0xfc184642, 0x0a036b7a, 0x4fb089bd, 0x649da589,
--	0xa345415e, 0x5c038323, 0x3e5d3bb9,
--	0x43d79572, 0x7e6dd07c, 0x06dfdf1e, 0x6c6cc4ef, 0x7160a539,
--	0x73bfbe70, 0x83877605, 0x4523ecf1
--};
--
--static const u32 s3[256] = {
--	0x8defc240, 0x25fa5d9f, 0xeb903dbf, 0xe810c907, 0x47607fff,
--	0x369fe44b, 0x8c1fc644, 0xaececa90,
--	0xbeb1f9bf, 0xeefbcaea, 0xe8cf1950, 0x51df07ae, 0x920e8806,
--	0xf0ad0548, 0xe13c8d83, 0x927010d5,
--	0x11107d9f, 0x07647db9, 0xb2e3e4d4, 0x3d4f285e, 0xb9afa820,
--	0xfade82e0, 0xa067268b, 0x8272792e,
--	0x553fb2c0, 0x489ae22b, 0xd4ef9794, 0x125e3fbc, 0x21fffcee,
--	0x825b1bfd, 0x9255c5ed, 0x1257a240,
--	0x4e1a8302, 0xbae07fff, 0x528246e7, 0x8e57140e, 0x3373f7bf,
--	0x8c9f8188, 0xa6fc4ee8, 0xc982b5a5,
--	0xa8c01db7, 0x579fc264, 0x67094f31, 0xf2bd3f5f, 0x40fff7c1,
--	0x1fb78dfc, 0x8e6bd2c1, 0x437be59b,
--	0x99b03dbf, 0xb5dbc64b, 0x638dc0e6, 0x55819d99, 0xa197c81c,
--	0x4a012d6e, 0xc5884a28, 0xccc36f71,
--	0xb843c213, 0x6c0743f1, 0x8309893c, 0x0feddd5f, 0x2f7fe850,
--	0xd7c07f7e, 0x02507fbf, 0x5afb9a04,
--	0xa747d2d0, 0x1651192e, 0xaf70bf3e, 0x58c31380, 0x5f98302e,
--	0x727cc3c4, 0x0a0fb402, 0x0f7fef82,
--	0x8c96fdad, 0x5d2c2aae, 0x8ee99a49, 0x50da88b8, 0x8427f4a0,
--	0x1eac5790, 0x796fb449, 0x8252dc15,
--	0xefbd7d9b, 0xa672597d, 0xada840d8, 0x45f54504, 0xfa5d7403,
--	0xe83ec305, 0x4f91751a, 0x925669c2,
--	0x23efe941, 0xa903f12e, 0x60270df2, 0x0276e4b6, 0x94fd6574,
--	0x927985b2, 0x8276dbcb, 0x02778176,
--	0xf8af918d, 0x4e48f79e, 0x8f616ddf, 0xe29d840e, 0x842f7d83,
--	0x340ce5c8, 0x96bbb682, 0x93b4b148,
--	0xef303cab, 0x984faf28, 0x779faf9b, 0x92dc560d, 0x224d1e20,
--	0x8437aa88, 0x7d29dc96, 0x2756d3dc,
--	0x8b907cee, 0xb51fd240, 0xe7c07ce3, 0xe566b4a1, 0xc3e9615e,
--	0x3cf8209d, 0x6094d1e3, 0xcd9ca341,
--	0x5c76460e, 0x00ea983b, 0xd4d67881, 0xfd47572c, 0xf76cedd9,
--	0xbda8229c, 0x127dadaa, 0x438a074e,
--	0x1f97c090, 0x081bdb8a, 0x93a07ebe, 0xb938ca15, 0x97b03cff,
--	0x3dc2c0f8, 0x8d1ab2ec, 0x64380e51,
--	0x68cc7bfb, 0xd90f2788, 0x12490181, 0x5de5ffd4, 0xdd7ef86a,
--	0x76a2e214, 0xb9a40368, 0x925d958f,
--	0x4b39fffa, 0xba39aee9, 0xa4ffd30b, 0xfaf7933b, 0x6d498623,
--	0x193cbcfa, 0x27627545, 0x825cf47a,
--	0x61bd8ba0, 0xd11e42d1, 0xcead04f4, 0x127ea392, 0x10428db7,
--	0x8272a972, 0x9270c4a8, 0x127de50b,
--	0x285ba1c8, 0x3c62f44f, 0x35c0eaa5, 0xe805d231, 0x428929fb,
--	0xb4fcdf82, 0x4fb66a53, 0x0e7dc15b,
--	0x1f081fab, 0x108618ae, 0xfcfd086d, 0xf9ff2889, 0x694bcc11,
--	0x236a5cae, 0x12deca4d, 0x2c3f8cc5,
--	0xd2d02dfe, 0xf8ef5896, 0xe4cf52da, 0x95155b67, 0x494a488c,
--	0xb9b6a80c, 0x5c8f82bc, 0x89d36b45,
--	0x3a609437, 0xec00c9a9, 0x44715253, 0x0a874b49, 0xd773bc40,
--	0x7c34671c, 0x02717ef6, 0x4feb5536,
--	0xa2d02fff, 0xd2bf60c4, 0xd43f03c0, 0x50b4ef6d, 0x07478cd1,
--	0x006e1888, 0xa2e53f55, 0xb9e6d4bc,
--	0xa2048016, 0x97573833, 0xd7207d67, 0xde0f8f3d, 0x72f87b33,
--	0xabcc4f33, 0x7688c55d, 0x7b00a6b0,
--	0x947b0001, 0x570075d2, 0xf9bb88f8, 0x8942019e, 0x4264a5ff,
--	0x856302e0, 0x72dbd92b, 0xee971b69,
--	0x6ea22fde, 0x5f08ae2b, 0xaf7a616d, 0xe5c98767, 0xcf1febd2,
--	0x61efc8c2, 0xf1ac2571, 0xcc8239c2,
--	0x67214cb8, 0xb1e583d1, 0xb7dc3e62, 0x7f10bdce, 0xf90a5c38,
--	0x0ff0443d, 0x606e6dc6, 0x60543a49,
--	0x5727c148, 0x2be98a1d, 0x8ab41738, 0x20e1be24, 0xaf96da0f,
--	0x68458425, 0x99833be5, 0x600d457d,
--	0x282f9350, 0x8334b362, 0xd91d1120, 0x2b6d8da0, 0x642b1e31,
--	0x9c305a00, 0x52bce688, 0x1b03588a,
--	0xf7baefd5, 0x4142ed9c, 0xa4315c11, 0x83323ec5, 0xdfef4636,
--	0xa133c501, 0xe9d3531c, 0xee353783
--};
--
--static const u32 s4[256] = {
--	0x9db30420, 0x1fb6e9de, 0xa7be7bef, 0xd273a298, 0x4a4f7bdb,
--	0x64ad8c57, 0x85510443, 0xfa020ed1,
--	0x7e287aff, 0xe60fb663, 0x095f35a1, 0x79ebf120, 0xfd059d43,
--	0x6497b7b1, 0xf3641f63, 0x241e4adf,
--	0x28147f5f, 0x4fa2b8cd, 0xc9430040, 0x0cc32220, 0xfdd30b30,
--	0xc0a5374f, 0x1d2d00d9, 0x24147b15,
--	0xee4d111a, 0x0fca5167, 0x71ff904c, 0x2d195ffe, 0x1a05645f,
--	0x0c13fefe, 0x081b08ca, 0x05170121,
--	0x80530100, 0xe83e5efe, 0xac9af4f8, 0x7fe72701, 0xd2b8ee5f,
--	0x06df4261, 0xbb9e9b8a, 0x7293ea25,
--	0xce84ffdf, 0xf5718801, 0x3dd64b04, 0xa26f263b, 0x7ed48400,
--	0x547eebe6, 0x446d4ca0, 0x6cf3d6f5,
--	0x2649abdf, 0xaea0c7f5, 0x36338cc1, 0x503f7e93, 0xd3772061,
--	0x11b638e1, 0x72500e03, 0xf80eb2bb,
--	0xabe0502e, 0xec8d77de, 0x57971e81, 0xe14f6746, 0xc9335400,
--	0x6920318f, 0x081dbb99, 0xffc304a5,
--	0x4d351805, 0x7f3d5ce3, 0xa6c866c6, 0x5d5bcca9, 0xdaec6fea,
--	0x9f926f91, 0x9f46222f, 0x3991467d,
--	0xa5bf6d8e, 0x1143c44f, 0x43958302, 0xd0214eeb, 0x022083b8,
--	0x3fb6180c, 0x18f8931e, 0x281658e6,
--	0x26486e3e, 0x8bd78a70, 0x7477e4c1, 0xb506e07c, 0xf32d0a25,
--	0x79098b02, 0xe4eabb81, 0x28123b23,
--	0x69dead38, 0x1574ca16, 0xdf871b62, 0x211c40b7, 0xa51a9ef9,
--	0x0014377b, 0x041e8ac8, 0x09114003,
--	0xbd59e4d2, 0xe3d156d5, 0x4fe876d5, 0x2f91a340, 0x557be8de,
--	0x00eae4a7, 0x0ce5c2ec, 0x4db4bba6,
--	0xe756bdff, 0xdd3369ac, 0xec17b035, 0x06572327, 0x99afc8b0,
--	0x56c8c391, 0x6b65811c, 0x5e146119,
--	0x6e85cb75, 0xbe07c002, 0xc2325577, 0x893ff4ec, 0x5bbfc92d,
--	0xd0ec3b25, 0xb7801ab7, 0x8d6d3b24,
--	0x20c763ef, 0xc366a5fc, 0x9c382880, 0x0ace3205, 0xaac9548a,
--	0xeca1d7c7, 0x041afa32, 0x1d16625a,
--	0x6701902c, 0x9b757a54, 0x31d477f7, 0x9126b031, 0x36cc6fdb,
--	0xc70b8b46, 0xd9e66a48, 0x56e55a79,
--	0x026a4ceb, 0x52437eff, 0x2f8f76b4, 0x0df980a5, 0x8674cde3,
--	0xedda04eb, 0x17a9be04, 0x2c18f4df,
--	0xb7747f9d, 0xab2af7b4, 0xefc34d20, 0x2e096b7c, 0x1741a254,
--	0xe5b6a035, 0x213d42f6, 0x2c1c7c26,
--	0x61c2f50f, 0x6552daf9, 0xd2c231f8, 0x25130f69, 0xd8167fa2,
--	0x0418f2c8, 0x001a96a6, 0x0d1526ab,
--	0x63315c21, 0x5e0a72ec, 0x49bafefd, 0x187908d9, 0x8d0dbd86,
--	0x311170a7, 0x3e9b640c, 0xcc3e10d7,
--	0xd5cad3b6, 0x0caec388, 0xf73001e1, 0x6c728aff, 0x71eae2a1,
--	0x1f9af36e, 0xcfcbd12f, 0xc1de8417,
--	0xac07be6b, 0xcb44a1d8, 0x8b9b0f56, 0x013988c3, 0xb1c52fca,
--	0xb4be31cd, 0xd8782806, 0x12a3a4e2,
--	0x6f7de532, 0x58fd7eb6, 0xd01ee900, 0x24adffc2, 0xf4990fc5,
--	0x9711aac5, 0x001d7b95, 0x82e5e7d2,
--	0x109873f6, 0x00613096, 0xc32d9521, 0xada121ff, 0x29908415,
--	0x7fbb977f, 0xaf9eb3db, 0x29c9ed2a,
--	0x5ce2a465, 0xa730f32c, 0xd0aa3fe8, 0x8a5cc091, 0xd49e2ce7,
--	0x0ce454a9, 0xd60acd86, 0x015f1919,
--	0x77079103, 0xdea03af6, 0x78a8565e, 0xdee356df, 0x21f05cbe,
--	0x8b75e387, 0xb3c50651, 0xb8a5c3ef,
--	0xd8eeb6d2, 0xe523be77, 0xc2154529, 0x2f69efdf, 0xafe67afb,
--	0xf470c4b2, 0xf3e0eb5b, 0xd6cc9876,
--	0x39e4460c, 0x1fda8538, 0x1987832f, 0xca007367, 0xa99144f8,
--	0x296b299e, 0x492fc295, 0x9266beab,
--	0xb5676e69, 0x9bd3ddda, 0xdf7e052f, 0xdb25701c, 0x1b5e51ee,
--	0xf65324e6, 0x6afce36c, 0x0316cc04,
--	0x8644213e, 0xb7dc59d0, 0x7965291f, 0xccd6fd43, 0x41823979,
--	0x932bcdf6, 0xb657c34d, 0x4edfd282,
--	0x7ae5290c, 0x3cb9536b, 0x851e20fe, 0x9833557e, 0x13ecf0b0,
--	0xd3ffb372, 0x3f85c5c1, 0x0aef7ed2
--};
--
--static const u32 Tm[24][8] = {
--	{ 0x5a827999, 0xc95c653a, 0x383650db, 0xa7103c7c, 0x15ea281d,
--		0x84c413be, 0xf39dff5f, 0x6277eb00 } ,
--	{ 0xd151d6a1, 0x402bc242, 0xaf05ade3, 0x1ddf9984, 0x8cb98525,
--		0xfb9370c6, 0x6a6d5c67, 0xd9474808 } ,
--	{ 0x482133a9, 0xb6fb1f4a, 0x25d50aeb, 0x94aef68c, 0x0388e22d,
--		0x7262cdce, 0xe13cb96f, 0x5016a510 } ,
--	{ 0xbef090b1, 0x2dca7c52, 0x9ca467f3, 0x0b7e5394, 0x7a583f35,
--		0xe9322ad6, 0x580c1677, 0xc6e60218 } ,
--	{ 0x35bfedb9, 0xa499d95a, 0x1373c4fb, 0x824db09c, 0xf1279c3d,
--		0x600187de, 0xcedb737f, 0x3db55f20 } ,
--	{ 0xac8f4ac1, 0x1b693662, 0x8a432203, 0xf91d0da4, 0x67f6f945,
--		0xd6d0e4e6, 0x45aad087, 0xb484bc28 } ,
--	{ 0x235ea7c9, 0x9238936a, 0x01127f0b, 0x6fec6aac, 0xdec6564d,
--		0x4da041ee, 0xbc7a2d8f, 0x2b541930 } ,
--	{ 0x9a2e04d1, 0x0907f072, 0x77e1dc13, 0xe6bbc7b4, 0x5595b355,
--		0xc46f9ef6, 0x33498a97, 0xa2237638 } ,
--	{ 0x10fd61d9, 0x7fd74d7a, 0xeeb1391b, 0x5d8b24bc, 0xcc65105d,
--		0x3b3efbfe, 0xaa18e79f, 0x18f2d340 } ,
--	{ 0x87ccbee1, 0xf6a6aa82, 0x65809623, 0xd45a81c4, 0x43346d65,
--		0xb20e5906, 0x20e844a7, 0x8fc23048 } ,
--	{ 0xfe9c1be9, 0x6d76078a, 0xdc4ff32b, 0x4b29decc, 0xba03ca6d,
--		0x28ddb60e, 0x97b7a1af, 0x06918d50 } ,
--	{ 0x756b78f1, 0xe4456492, 0x531f5033, 0xc1f93bd4, 0x30d32775,
--		0x9fad1316, 0x0e86feb7, 0x7d60ea58 } ,
--	{ 0xec3ad5f9, 0x5b14c19a, 0xc9eead3b, 0x38c898dc, 0xa7a2847d,
--		0x167c701e, 0x85565bbf, 0xf4304760 } ,
--	{ 0x630a3301, 0xd1e41ea2, 0x40be0a43, 0xaf97f5e4, 0x1e71e185,
--		0x8d4bcd26, 0xfc25b8c7, 0x6affa468 } ,
--	{ 0xd9d99009, 0x48b37baa, 0xb78d674b, 0x266752ec, 0x95413e8d,
--		0x041b2a2e, 0x72f515cf, 0xe1cf0170 } ,
--	{ 0x50a8ed11, 0xbf82d8b2, 0x2e5cc453, 0x9d36aff4, 0x0c109b95,
--		0x7aea8736, 0xe9c472d7, 0x589e5e78 } ,
--	{ 0xc7784a19, 0x365235ba, 0xa52c215b, 0x14060cfc, 0x82dff89d,
--		0xf1b9e43e, 0x6093cfdf, 0xcf6dbb80 } ,
--	{ 0x3e47a721, 0xad2192c2, 0x1bfb7e63, 0x8ad56a04, 0xf9af55a5,
--		0x68894146, 0xd7632ce7, 0x463d1888 } ,
--	{ 0xb5170429, 0x23f0efca, 0x92cadb6b, 0x01a4c70c, 0x707eb2ad,
--		0xdf589e4e, 0x4e3289ef, 0xbd0c7590 } ,
--	{ 0x2be66131, 0x9ac04cd2, 0x099a3873, 0x78742414, 0xe74e0fb5,
--		0x5627fb56, 0xc501e6f7, 0x33dbd298 } ,
--	{ 0xa2b5be39, 0x118fa9da, 0x8069957b, 0xef43811c, 0x5e1d6cbd,
--		0xccf7585e, 0x3bd143ff, 0xaaab2fa0 } ,
--	{ 0x19851b41, 0x885f06e2, 0xf738f283, 0x6612de24, 0xd4ecc9c5,
--		0x43c6b566, 0xb2a0a107, 0x217a8ca8 } ,
--	{ 0x90547849, 0xff2e63ea, 0x6e084f8b, 0xdce23b2c, 0x4bbc26cd,
--		0xba96126e, 0x296ffe0f, 0x9849e9b0 } ,
--	{ 0x0723d551, 0x75fdc0f2, 0xe4d7ac93, 0x53b19834, 0xc28b83d5,
--		0x31656f76, 0xa03f5b17, 0x0f1946b8 }
--};
--
--static const u8 Tr[4][8] = {
--	{ 0x13, 0x04, 0x15, 0x06, 0x17, 0x08, 0x19, 0x0a } ,
--	{ 0x1b, 0x0c, 0x1d, 0x0e, 0x1f, 0x10, 0x01, 0x12 } ,
--	{ 0x03, 0x14, 0x05, 0x16, 0x07, 0x18, 0x09, 0x1a } ,
--	{ 0x0b, 0x1c, 0x0d, 0x1e, 0x0f, 0x00, 0x11, 0x02 }
--};
--
--/* forward octave */
--static void W(u32 *key, unsigned int i)
--{
--	u32 I;
--	key[6] ^= F1(key[7], Tr[i % 4][0], Tm[i][0]);
--	key[5] ^= F2(key[6], Tr[i % 4][1], Tm[i][1]);
--	key[4] ^= F3(key[5], Tr[i % 4][2], Tm[i][2]);
--	key[3] ^= F1(key[4], Tr[i % 4][3], Tm[i][3]);
--	key[2] ^= F2(key[3], Tr[i % 4][4], Tm[i][4]);
--	key[1] ^= F3(key[2], Tr[i % 4][5], Tm[i][5]);
--	key[0] ^= F1(key[1], Tr[i % 4][6], Tm[i][6]);
--	key[7] ^= F2(key[0], Tr[i % 4][7], Tm[i][7]);
--}
--
--static int cast6_setkey(struct crypto_tfm *tfm, const u8 *in_key,
--			unsigned key_len)
--{
--	int i;
--	u32 key[8];
--	__be32 p_key[8]; /* padded key */
--	struct cast6_ctx *c = crypto_tfm_ctx(tfm);
--	u32 *flags = &tfm->crt_flags;
--
--	if (key_len % 4 != 0) {
--		*flags |= CRYPTO_TFM_RES_BAD_KEY_LEN;
--		return -EINVAL;
--	}
--
--	memset(p_key, 0, 32);
--	memcpy(p_key, in_key, key_len);
--
--	key[0] = be32_to_cpu(p_key[0]);		/* A */
--	key[1] = be32_to_cpu(p_key[1]);		/* B */
--	key[2] = be32_to_cpu(p_key[2]);		/* C */
--	key[3] = be32_to_cpu(p_key[3]);		/* D */
--	key[4] = be32_to_cpu(p_key[4]);		/* E */
--	key[5] = be32_to_cpu(p_key[5]);		/* F */
--	key[6] = be32_to_cpu(p_key[6]);		/* G */
--	key[7] = be32_to_cpu(p_key[7]);		/* H */
--
--	for (i = 0; i < 12; i++) {
--		W(key, 2 * i);
--		W(key, 2 * i + 1);
--
--		c->Kr[i][0] = key[0] & 0x1f;
--		c->Kr[i][1] = key[2] & 0x1f;
--		c->Kr[i][2] = key[4] & 0x1f;
--		c->Kr[i][3] = key[6] & 0x1f;
--
--		c->Km[i][0] = key[7];
--		c->Km[i][1] = key[5];
--		c->Km[i][2] = key[3];
--		c->Km[i][3] = key[1];
--	}
--
--	return 0;
--}
--
--/*forward quad round*/
--static void Q(u32 *block, u8 *Kr, u32 *Km)
--{
--	u32 I;
--	block[2] ^= F1(block[3], Kr[0], Km[0]);
--	block[1] ^= F2(block[2], Kr[1], Km[1]);
--	block[0] ^= F3(block[1], Kr[2], Km[2]);
--	block[3] ^= F1(block[0], Kr[3], Km[3]);
--}
--
--/*reverse quad round*/
--static void QBAR(u32 *block, u8 *Kr, u32 *Km)
--{
--	u32 I;
--	block[3] ^= F1(block[0], Kr[3], Km[3]);
--	block[0] ^= F3(block[1], Kr[2], Km[2]);
--	block[1] ^= F2(block[2], Kr[1], Km[1]);
--	block[2] ^= F1(block[3], Kr[0], Km[0]);
--}
--
--static void cast6_encrypt(struct crypto_tfm *tfm, u8 *outbuf, const u8 *inbuf)
--{
--	struct cast6_ctx *c = crypto_tfm_ctx(tfm);
--	const __be32 *src = (const __be32 *)inbuf;
--	__be32 *dst = (__be32 *)outbuf;
--	u32 block[4];
--	u32 *Km;
--	u8 *Kr;
--
--	block[0] = be32_to_cpu(src[0]);
--	block[1] = be32_to_cpu(src[1]);
--	block[2] = be32_to_cpu(src[2]);
--	block[3] = be32_to_cpu(src[3]);
--
--	Km = c->Km[0]; Kr = c->Kr[0]; Q(block, Kr, Km);
--	Km = c->Km[1]; Kr = c->Kr[1]; Q(block, Kr, Km);
--	Km = c->Km[2]; Kr = c->Kr[2]; Q(block, Kr, Km);
--	Km = c->Km[3]; Kr = c->Kr[3]; Q(block, Kr, Km);
--	Km = c->Km[4]; Kr = c->Kr[4]; Q(block, Kr, Km);
--	Km = c->Km[5]; Kr = c->Kr[5]; Q(block, Kr, Km);
--	Km = c->Km[6]; Kr = c->Kr[6]; QBAR(block, Kr, Km);
--	Km = c->Km[7]; Kr = c->Kr[7]; QBAR(block, Kr, Km);
--	Km = c->Km[8]; Kr = c->Kr[8]; QBAR(block, Kr, Km);
--	Km = c->Km[9]; Kr = c->Kr[9]; QBAR(block, Kr, Km);
--	Km = c->Km[10]; Kr = c->Kr[10]; QBAR(block, Kr, Km);
--	Km = c->Km[11]; Kr = c->Kr[11]; QBAR(block, Kr, Km);
--
--	dst[0] = cpu_to_be32(block[0]);
--	dst[1] = cpu_to_be32(block[1]);
--	dst[2] = cpu_to_be32(block[2]);
--	dst[3] = cpu_to_be32(block[3]);
--}
--
--static void cast6_decrypt(struct crypto_tfm *tfm, u8 *outbuf, const u8 *inbuf)
--{
--	struct cast6_ctx *c = crypto_tfm_ctx(tfm);
--	const __be32 *src = (const __be32 *)inbuf;
--	__be32 *dst = (__be32 *)outbuf;
--	u32 block[4];
--	u32 *Km;
--	u8 *Kr;
--
--	block[0] = be32_to_cpu(src[0]);
--	block[1] = be32_to_cpu(src[1]);
--	block[2] = be32_to_cpu(src[2]);
--	block[3] = be32_to_cpu(src[3]);
--
--	Km = c->Km[11]; Kr = c->Kr[11]; Q(block, Kr, Km);
--	Km = c->Km[10]; Kr = c->Kr[10]; Q(block, Kr, Km);
--	Km = c->Km[9]; Kr = c->Kr[9]; Q(block, Kr, Km);
--	Km = c->Km[8]; Kr = c->Kr[8]; Q(block, Kr, Km);
--	Km = c->Km[7]; Kr = c->Kr[7]; Q(block, Kr, Km);
--	Km = c->Km[6]; Kr = c->Kr[6]; Q(block, Kr, Km);
--	Km = c->Km[5]; Kr = c->Kr[5]; QBAR(block, Kr, Km);
--	Km = c->Km[4]; Kr = c->Kr[4]; QBAR(block, Kr, Km);
--	Km = c->Km[3]; Kr = c->Kr[3]; QBAR(block, Kr, Km);
--	Km = c->Km[2]; Kr = c->Kr[2]; QBAR(block, Kr, Km);
--	Km = c->Km[1]; Kr = c->Kr[1]; QBAR(block, Kr, Km);
--	Km = c->Km[0]; Kr = c->Kr[0]; QBAR(block, Kr, Km);
--
--	dst[0] = cpu_to_be32(block[0]);
--	dst[1] = cpu_to_be32(block[1]);
--	dst[2] = cpu_to_be32(block[2]);
--	dst[3] = cpu_to_be32(block[3]);
--}
--
--static struct crypto_alg alg = {
--	.cra_name = "cast6",
--	.cra_flags = CRYPTO_ALG_TYPE_CIPHER,
--	.cra_blocksize = CAST6_BLOCK_SIZE,
--	.cra_ctxsize = sizeof(struct cast6_ctx),
--	.cra_alignmask = 3,
--	.cra_module = THIS_MODULE,
--	.cra_list = LIST_HEAD_INIT(alg.cra_list),
--	.cra_u = {
--		  .cipher = {
--			     .cia_min_keysize = CAST6_MIN_KEY_SIZE,
--			     .cia_max_keysize = CAST6_MAX_KEY_SIZE,
--			     .cia_setkey = cast6_setkey,
--			     .cia_encrypt = cast6_encrypt,
--			     .cia_decrypt = cast6_decrypt}
--		  }
--};
--
--static int __init cast6_mod_init(void)
--{
--	return crypto_register_alg(&alg);
--}
--
--static void __exit cast6_mod_fini(void)
--{
--	crypto_unregister_alg(&alg);
--}
--
--module_init(cast6_mod_init);
--module_exit(cast6_mod_fini);
--
--MODULE_LICENSE("GPL");
--MODULE_DESCRIPTION("Cast6 Cipher Algorithm");
-diff --git a/crypto/cast6_generic.c b/crypto/cast6_generic.c
-new file mode 100644
-index 0000000..dc9309d
---- /dev/null
-+++ b/crypto/cast6_generic.c
-@@ -0,0 +1,566 @@
-+/* Kernel cryptographic api.
-+ * cast6.c - Cast6 cipher algorithm [rfc2612].
-+ *
-+ * CAST-256 (*cast6*) is a DES like Substitution-Permutation Network (SPN)
-+ * cryptosystem built upon the CAST-128 (*cast5*) [rfc2144] encryption
-+ * algorithm.
-+ *
-+ * Copyright (C) 2003 Kartikey Mahendra Bhatt <kartik_me@hotmail.com>.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
-+ */
+diff --git a/crypto/tcrypt.c b/crypto/tcrypt.c
+index a94bbd7..871076b 100644
+--- a/crypto/tcrypt.c
++++ b/crypto/tcrypt.c
+@@ -1043,6 +1043,10 @@ static int do_test(int m)
+ 
+ 	case 15:
+ 		ret += tcrypt_test("ecb(cast6)");
++		ret += tcrypt_test("cbc(cast6)");
++		ret += tcrypt_test("ctr(cast6)");
++		ret += tcrypt_test("lrw(cast6)");
++		ret += tcrypt_test("xts(cast6)");
+ 		break;
+ 
+ 	case 16:
+@@ -1376,6 +1380,29 @@ static int do_test(int m)
+ 				  speed_template_8_16);
+ 		break;
+ 
++	case 210:
++		test_cipher_speed("ecb(cast6)", ENCRYPT, sec, NULL, 0,
++				  speed_template_16_32);
++		test_cipher_speed("ecb(cast6)", DECRYPT, sec, NULL, 0,
++				  speed_template_16_32);
++		test_cipher_speed("cbc(cast6)", ENCRYPT, sec, NULL, 0,
++				  speed_template_16_32);
++		test_cipher_speed("cbc(cast6)", DECRYPT, sec, NULL, 0,
++				  speed_template_16_32);
++		test_cipher_speed("ctr(cast6)", ENCRYPT, sec, NULL, 0,
++				  speed_template_16_32);
++		test_cipher_speed("ctr(cast6)", DECRYPT, sec, NULL, 0,
++				  speed_template_16_32);
++		test_cipher_speed("lrw(cast6)", ENCRYPT, sec, NULL, 0,
++				  speed_template_32_48);
++		test_cipher_speed("lrw(cast6)", DECRYPT, sec, NULL, 0,
++				  speed_template_32_48);
++		test_cipher_speed("xts(cast6)", ENCRYPT, sec, NULL, 0,
++				  speed_template_32_64);
++		test_cipher_speed("xts(cast6)", DECRYPT, sec, NULL, 0,
++				  speed_template_32_64);
++		break;
 +
+ 	case 300:
+ 		/* fall through */
+ 
+@@ -1671,6 +1698,29 @@ static int do_test(int m)
+ 				   speed_template_8_16);
+ 		break;
+ 
++	case 507:
++		test_acipher_speed("ecb(cast6)", ENCRYPT, sec, NULL, 0,
++				   speed_template_16_32);
++		test_acipher_speed("ecb(cast6)", DECRYPT, sec, NULL, 0,
++				   speed_template_16_32);
++		test_acipher_speed("cbc(cast6)", ENCRYPT, sec, NULL, 0,
++				   speed_template_16_32);
++		test_acipher_speed("cbc(cast6)", DECRYPT, sec, NULL, 0,
++				   speed_template_16_32);
++		test_acipher_speed("ctr(cast6)", ENCRYPT, sec, NULL, 0,
++				   speed_template_16_32);
++		test_acipher_speed("ctr(cast6)", DECRYPT, sec, NULL, 0,
++				   speed_template_16_32);
++		test_acipher_speed("lrw(cast6)", ENCRYPT, sec, NULL, 0,
++				   speed_template_32_48);
++		test_acipher_speed("lrw(cast6)", DECRYPT, sec, NULL, 0,
++				   speed_template_32_48);
++		test_acipher_speed("xts(cast6)", ENCRYPT, sec, NULL, 0,
++				   speed_template_32_64);
++		test_acipher_speed("xts(cast6)", DECRYPT, sec, NULL, 0,
++				   speed_template_32_64);
++		break;
 +
-+#include <asm/byteorder.h>
-+#include <linux/init.h>
-+#include <linux/crypto.h>
-+#include <linux/module.h>
-+#include <linux/errno.h>
-+#include <linux/string.h>
-+#include <linux/types.h>
-+#include <crypto/cast6.h>
-+
-+#define s1 cast6_s1
-+#define s2 cast6_s2
-+#define s3 cast6_s3
-+#define s4 cast6_s4
-+
-+#define F1(D, r, m)  ((I = ((m) + (D))), (I = rol32(I, (r))),   \
-+	(((s1[I >> 24] ^ s2[(I>>16)&0xff]) - s3[(I>>8)&0xff]) + s4[I&0xff]))
-+#define F2(D, r, m)  ((I = ((m) ^ (D))), (I = rol32(I, (r))),   \
-+	(((s1[I >> 24] - s2[(I>>16)&0xff]) + s3[(I>>8)&0xff]) ^ s4[I&0xff]))
-+#define F3(D, r, m)  ((I = ((m) - (D))), (I = rol32(I, (r))),   \
-+	(((s1[I >> 24] + s2[(I>>16)&0xff]) ^ s3[(I>>8)&0xff]) - s4[I&0xff]))
-+
-+const u32 cast6_s1[256] = {
-+	0x30fb40d4, 0x9fa0ff0b, 0x6beccd2f, 0x3f258c7a, 0x1e213f2f,
-+	0x9c004dd3, 0x6003e540, 0xcf9fc949,
-+	0xbfd4af27, 0x88bbbdb5, 0xe2034090, 0x98d09675, 0x6e63a0e0,
-+	0x15c361d2, 0xc2e7661d, 0x22d4ff8e,
-+	0x28683b6f, 0xc07fd059, 0xff2379c8, 0x775f50e2, 0x43c340d3,
-+	0xdf2f8656, 0x887ca41a, 0xa2d2bd2d,
-+	0xa1c9e0d6, 0x346c4819, 0x61b76d87, 0x22540f2f, 0x2abe32e1,
-+	0xaa54166b, 0x22568e3a, 0xa2d341d0,
-+	0x66db40c8, 0xa784392f, 0x004dff2f, 0x2db9d2de, 0x97943fac,
-+	0x4a97c1d8, 0x527644b7, 0xb5f437a7,
-+	0xb82cbaef, 0xd751d159, 0x6ff7f0ed, 0x5a097a1f, 0x827b68d0,
-+	0x90ecf52e, 0x22b0c054, 0xbc8e5935,
-+	0x4b6d2f7f, 0x50bb64a2, 0xd2664910, 0xbee5812d, 0xb7332290,
-+	0xe93b159f, 0xb48ee411, 0x4bff345d,
-+	0xfd45c240, 0xad31973f, 0xc4f6d02e, 0x55fc8165, 0xd5b1caad,
-+	0xa1ac2dae, 0xa2d4b76d, 0xc19b0c50,
-+	0x882240f2, 0x0c6e4f38, 0xa4e4bfd7, 0x4f5ba272, 0x564c1d2f,
-+	0xc59c5319, 0xb949e354, 0xb04669fe,
-+	0xb1b6ab8a, 0xc71358dd, 0x6385c545, 0x110f935d, 0x57538ad5,
-+	0x6a390493, 0xe63d37e0, 0x2a54f6b3,
-+	0x3a787d5f, 0x6276a0b5, 0x19a6fcdf, 0x7a42206a, 0x29f9d4d5,
-+	0xf61b1891, 0xbb72275e, 0xaa508167,
-+	0x38901091, 0xc6b505eb, 0x84c7cb8c, 0x2ad75a0f, 0x874a1427,
-+	0xa2d1936b, 0x2ad286af, 0xaa56d291,
-+	0xd7894360, 0x425c750d, 0x93b39e26, 0x187184c9, 0x6c00b32d,
-+	0x73e2bb14, 0xa0bebc3c, 0x54623779,
-+	0x64459eab, 0x3f328b82, 0x7718cf82, 0x59a2cea6, 0x04ee002e,
-+	0x89fe78e6, 0x3fab0950, 0x325ff6c2,
-+	0x81383f05, 0x6963c5c8, 0x76cb5ad6, 0xd49974c9, 0xca180dcf,
-+	0x380782d5, 0xc7fa5cf6, 0x8ac31511,
-+	0x35e79e13, 0x47da91d0, 0xf40f9086, 0xa7e2419e, 0x31366241,
-+	0x051ef495, 0xaa573b04, 0x4a805d8d,
-+	0x548300d0, 0x00322a3c, 0xbf64cddf, 0xba57a68e, 0x75c6372b,
-+	0x50afd341, 0xa7c13275, 0x915a0bf5,
-+	0x6b54bfab, 0x2b0b1426, 0xab4cc9d7, 0x449ccd82, 0xf7fbf265,
-+	0xab85c5f3, 0x1b55db94, 0xaad4e324,
-+	0xcfa4bd3f, 0x2deaa3e2, 0x9e204d02, 0xc8bd25ac, 0xeadf55b3,
-+	0xd5bd9e98, 0xe31231b2, 0x2ad5ad6c,
-+	0x954329de, 0xadbe4528, 0xd8710f69, 0xaa51c90f, 0xaa786bf6,
-+	0x22513f1e, 0xaa51a79b, 0x2ad344cc,
-+	0x7b5a41f0, 0xd37cfbad, 0x1b069505, 0x41ece491, 0xb4c332e6,
-+	0x032268d4, 0xc9600acc, 0xce387e6d,
-+	0xbf6bb16c, 0x6a70fb78, 0x0d03d9c9, 0xd4df39de, 0xe01063da,
-+	0x4736f464, 0x5ad328d8, 0xb347cc96,
-+	0x75bb0fc3, 0x98511bfb, 0x4ffbcc35, 0xb58bcf6a, 0xe11f0abc,
-+	0xbfc5fe4a, 0xa70aec10, 0xac39570a,
-+	0x3f04442f, 0x6188b153, 0xe0397a2e, 0x5727cb79, 0x9ceb418f,
-+	0x1cacd68d, 0x2ad37c96, 0x0175cb9d,
-+	0xc69dff09, 0xc75b65f0, 0xd9db40d8, 0xec0e7779, 0x4744ead4,
-+	0xb11c3274, 0xdd24cb9e, 0x7e1c54bd,
-+	0xf01144f9, 0xd2240eb1, 0x9675b3fd, 0xa3ac3755, 0xd47c27af,
-+	0x51c85f4d, 0x56907596, 0xa5bb15e6,
-+	0x580304f0, 0xca042cf1, 0x011a37ea, 0x8dbfaadb, 0x35ba3e4a,
-+	0x3526ffa0, 0xc37b4d09, 0xbc306ed9,
-+	0x98a52666, 0x5648f725, 0xff5e569d, 0x0ced63d0, 0x7c63b2cf,
-+	0x700b45e1, 0xd5ea50f1, 0x85a92872,
-+	0xaf1fbda7, 0xd4234870, 0xa7870bf3, 0x2d3b4d79, 0x42e04198,
-+	0x0cd0ede7, 0x26470db8, 0xf881814c,
-+	0x474d6ad7, 0x7c0c5e5c, 0xd1231959, 0x381b7298, 0xf5d2f4db,
-+	0xab838653, 0x6e2f1e23, 0x83719c9e,
-+	0xbd91e046, 0x9a56456e, 0xdc39200c, 0x20c8c571, 0x962bda1c,
-+	0xe1e696ff, 0xb141ab08, 0x7cca89b9,
-+	0x1a69e783, 0x02cc4843, 0xa2f7c579, 0x429ef47d, 0x427b169c,
-+	0x5ac9f049, 0xdd8f0f00, 0x5c8165bf
-+};
-+EXPORT_SYMBOL_GPL(cast6_s1);
-+
-+const u32 cast6_s2[256] = {
-+	0x1f201094, 0xef0ba75b, 0x69e3cf7e, 0x393f4380, 0xfe61cf7a,
-+	0xeec5207a, 0x55889c94, 0x72fc0651,
-+	0xada7ef79, 0x4e1d7235, 0xd55a63ce, 0xde0436ba, 0x99c430ef,
-+	0x5f0c0794, 0x18dcdb7d, 0xa1d6eff3,
-+	0xa0b52f7b, 0x59e83605, 0xee15b094, 0xe9ffd909, 0xdc440086,
-+	0xef944459, 0xba83ccb3, 0xe0c3cdfb,
-+	0xd1da4181, 0x3b092ab1, 0xf997f1c1, 0xa5e6cf7b, 0x01420ddb,
-+	0xe4e7ef5b, 0x25a1ff41, 0xe180f806,
-+	0x1fc41080, 0x179bee7a, 0xd37ac6a9, 0xfe5830a4, 0x98de8b7f,
-+	0x77e83f4e, 0x79929269, 0x24fa9f7b,
-+	0xe113c85b, 0xacc40083, 0xd7503525, 0xf7ea615f, 0x62143154,
-+	0x0d554b63, 0x5d681121, 0xc866c359,
-+	0x3d63cf73, 0xcee234c0, 0xd4d87e87, 0x5c672b21, 0x071f6181,
-+	0x39f7627f, 0x361e3084, 0xe4eb573b,
-+	0x602f64a4, 0xd63acd9c, 0x1bbc4635, 0x9e81032d, 0x2701f50c,
-+	0x99847ab4, 0xa0e3df79, 0xba6cf38c,
-+	0x10843094, 0x2537a95e, 0xf46f6ffe, 0xa1ff3b1f, 0x208cfb6a,
-+	0x8f458c74, 0xd9e0a227, 0x4ec73a34,
-+	0xfc884f69, 0x3e4de8df, 0xef0e0088, 0x3559648d, 0x8a45388c,
-+	0x1d804366, 0x721d9bfd, 0xa58684bb,
-+	0xe8256333, 0x844e8212, 0x128d8098, 0xfed33fb4, 0xce280ae1,
-+	0x27e19ba5, 0xd5a6c252, 0xe49754bd,
-+	0xc5d655dd, 0xeb667064, 0x77840b4d, 0xa1b6a801, 0x84db26a9,
-+	0xe0b56714, 0x21f043b7, 0xe5d05860,
-+	0x54f03084, 0x066ff472, 0xa31aa153, 0xdadc4755, 0xb5625dbf,
-+	0x68561be6, 0x83ca6b94, 0x2d6ed23b,
-+	0xeccf01db, 0xa6d3d0ba, 0xb6803d5c, 0xaf77a709, 0x33b4a34c,
-+	0x397bc8d6, 0x5ee22b95, 0x5f0e5304,
-+	0x81ed6f61, 0x20e74364, 0xb45e1378, 0xde18639b, 0x881ca122,
-+	0xb96726d1, 0x8049a7e8, 0x22b7da7b,
-+	0x5e552d25, 0x5272d237, 0x79d2951c, 0xc60d894c, 0x488cb402,
-+	0x1ba4fe5b, 0xa4b09f6b, 0x1ca815cf,
-+	0xa20c3005, 0x8871df63, 0xb9de2fcb, 0x0cc6c9e9, 0x0beeff53,
-+	0xe3214517, 0xb4542835, 0x9f63293c,
-+	0xee41e729, 0x6e1d2d7c, 0x50045286, 0x1e6685f3, 0xf33401c6,
-+	0x30a22c95, 0x31a70850, 0x60930f13,
-+	0x73f98417, 0xa1269859, 0xec645c44, 0x52c877a9, 0xcdff33a6,
-+	0xa02b1741, 0x7cbad9a2, 0x2180036f,
-+	0x50d99c08, 0xcb3f4861, 0xc26bd765, 0x64a3f6ab, 0x80342676,
-+	0x25a75e7b, 0xe4e6d1fc, 0x20c710e6,
-+	0xcdf0b680, 0x17844d3b, 0x31eef84d, 0x7e0824e4, 0x2ccb49eb,
-+	0x846a3bae, 0x8ff77888, 0xee5d60f6,
-+	0x7af75673, 0x2fdd5cdb, 0xa11631c1, 0x30f66f43, 0xb3faec54,
-+	0x157fd7fa, 0xef8579cc, 0xd152de58,
-+	0xdb2ffd5e, 0x8f32ce19, 0x306af97a, 0x02f03ef8, 0x99319ad5,
-+	0xc242fa0f, 0xa7e3ebb0, 0xc68e4906,
-+	0xb8da230c, 0x80823028, 0xdcdef3c8, 0xd35fb171, 0x088a1bc8,
-+	0xbec0c560, 0x61a3c9e8, 0xbca8f54d,
-+	0xc72feffa, 0x22822e99, 0x82c570b4, 0xd8d94e89, 0x8b1c34bc,
-+	0x301e16e6, 0x273be979, 0xb0ffeaa6,
-+	0x61d9b8c6, 0x00b24869, 0xb7ffce3f, 0x08dc283b, 0x43daf65a,
-+	0xf7e19798, 0x7619b72f, 0x8f1c9ba4,
-+	0xdc8637a0, 0x16a7d3b1, 0x9fc393b7, 0xa7136eeb, 0xc6bcc63e,
-+	0x1a513742, 0xef6828bc, 0x520365d6,
-+	0x2d6a77ab, 0x3527ed4b, 0x821fd216, 0x095c6e2e, 0xdb92f2fb,
-+	0x5eea29cb, 0x145892f5, 0x91584f7f,
-+	0x5483697b, 0x2667a8cc, 0x85196048, 0x8c4bacea, 0x833860d4,
-+	0x0d23e0f9, 0x6c387e8a, 0x0ae6d249,
-+	0xb284600c, 0xd835731d, 0xdcb1c647, 0xac4c56ea, 0x3ebd81b3,
-+	0x230eabb0, 0x6438bc87, 0xf0b5b1fa,
-+	0x8f5ea2b3, 0xfc184642, 0x0a036b7a, 0x4fb089bd, 0x649da589,
-+	0xa345415e, 0x5c038323, 0x3e5d3bb9,
-+	0x43d79572, 0x7e6dd07c, 0x06dfdf1e, 0x6c6cc4ef, 0x7160a539,
-+	0x73bfbe70, 0x83877605, 0x4523ecf1
-+};
-+EXPORT_SYMBOL_GPL(cast6_s2);
-+
-+const u32 cast6_s3[256] = {
-+	0x8defc240, 0x25fa5d9f, 0xeb903dbf, 0xe810c907, 0x47607fff,
-+	0x369fe44b, 0x8c1fc644, 0xaececa90,
-+	0xbeb1f9bf, 0xeefbcaea, 0xe8cf1950, 0x51df07ae, 0x920e8806,
-+	0xf0ad0548, 0xe13c8d83, 0x927010d5,
-+	0x11107d9f, 0x07647db9, 0xb2e3e4d4, 0x3d4f285e, 0xb9afa820,
-+	0xfade82e0, 0xa067268b, 0x8272792e,
-+	0x553fb2c0, 0x489ae22b, 0xd4ef9794, 0x125e3fbc, 0x21fffcee,
-+	0x825b1bfd, 0x9255c5ed, 0x1257a240,
-+	0x4e1a8302, 0xbae07fff, 0x528246e7, 0x8e57140e, 0x3373f7bf,
-+	0x8c9f8188, 0xa6fc4ee8, 0xc982b5a5,
-+	0xa8c01db7, 0x579fc264, 0x67094f31, 0xf2bd3f5f, 0x40fff7c1,
-+	0x1fb78dfc, 0x8e6bd2c1, 0x437be59b,
-+	0x99b03dbf, 0xb5dbc64b, 0x638dc0e6, 0x55819d99, 0xa197c81c,
-+	0x4a012d6e, 0xc5884a28, 0xccc36f71,
-+	0xb843c213, 0x6c0743f1, 0x8309893c, 0x0feddd5f, 0x2f7fe850,
-+	0xd7c07f7e, 0x02507fbf, 0x5afb9a04,
-+	0xa747d2d0, 0x1651192e, 0xaf70bf3e, 0x58c31380, 0x5f98302e,
-+	0x727cc3c4, 0x0a0fb402, 0x0f7fef82,
-+	0x8c96fdad, 0x5d2c2aae, 0x8ee99a49, 0x50da88b8, 0x8427f4a0,
-+	0x1eac5790, 0x796fb449, 0x8252dc15,
-+	0xefbd7d9b, 0xa672597d, 0xada840d8, 0x45f54504, 0xfa5d7403,
-+	0xe83ec305, 0x4f91751a, 0x925669c2,
-+	0x23efe941, 0xa903f12e, 0x60270df2, 0x0276e4b6, 0x94fd6574,
-+	0x927985b2, 0x8276dbcb, 0x02778176,
-+	0xf8af918d, 0x4e48f79e, 0x8f616ddf, 0xe29d840e, 0x842f7d83,
-+	0x340ce5c8, 0x96bbb682, 0x93b4b148,
-+	0xef303cab, 0x984faf28, 0x779faf9b, 0x92dc560d, 0x224d1e20,
-+	0x8437aa88, 0x7d29dc96, 0x2756d3dc,
-+	0x8b907cee, 0xb51fd240, 0xe7c07ce3, 0xe566b4a1, 0xc3e9615e,
-+	0x3cf8209d, 0x6094d1e3, 0xcd9ca341,
-+	0x5c76460e, 0x00ea983b, 0xd4d67881, 0xfd47572c, 0xf76cedd9,
-+	0xbda8229c, 0x127dadaa, 0x438a074e,
-+	0x1f97c090, 0x081bdb8a, 0x93a07ebe, 0xb938ca15, 0x97b03cff,
-+	0x3dc2c0f8, 0x8d1ab2ec, 0x64380e51,
-+	0x68cc7bfb, 0xd90f2788, 0x12490181, 0x5de5ffd4, 0xdd7ef86a,
-+	0x76a2e214, 0xb9a40368, 0x925d958f,
-+	0x4b39fffa, 0xba39aee9, 0xa4ffd30b, 0xfaf7933b, 0x6d498623,
-+	0x193cbcfa, 0x27627545, 0x825cf47a,
-+	0x61bd8ba0, 0xd11e42d1, 0xcead04f4, 0x127ea392, 0x10428db7,
-+	0x8272a972, 0x9270c4a8, 0x127de50b,
-+	0x285ba1c8, 0x3c62f44f, 0x35c0eaa5, 0xe805d231, 0x428929fb,
-+	0xb4fcdf82, 0x4fb66a53, 0x0e7dc15b,
-+	0x1f081fab, 0x108618ae, 0xfcfd086d, 0xf9ff2889, 0x694bcc11,
-+	0x236a5cae, 0x12deca4d, 0x2c3f8cc5,
-+	0xd2d02dfe, 0xf8ef5896, 0xe4cf52da, 0x95155b67, 0x494a488c,
-+	0xb9b6a80c, 0x5c8f82bc, 0x89d36b45,
-+	0x3a609437, 0xec00c9a9, 0x44715253, 0x0a874b49, 0xd773bc40,
-+	0x7c34671c, 0x02717ef6, 0x4feb5536,
-+	0xa2d02fff, 0xd2bf60c4, 0xd43f03c0, 0x50b4ef6d, 0x07478cd1,
-+	0x006e1888, 0xa2e53f55, 0xb9e6d4bc,
-+	0xa2048016, 0x97573833, 0xd7207d67, 0xde0f8f3d, 0x72f87b33,
-+	0xabcc4f33, 0x7688c55d, 0x7b00a6b0,
-+	0x947b0001, 0x570075d2, 0xf9bb88f8, 0x8942019e, 0x4264a5ff,
-+	0x856302e0, 0x72dbd92b, 0xee971b69,
-+	0x6ea22fde, 0x5f08ae2b, 0xaf7a616d, 0xe5c98767, 0xcf1febd2,
-+	0x61efc8c2, 0xf1ac2571, 0xcc8239c2,
-+	0x67214cb8, 0xb1e583d1, 0xb7dc3e62, 0x7f10bdce, 0xf90a5c38,
-+	0x0ff0443d, 0x606e6dc6, 0x60543a49,
-+	0x5727c148, 0x2be98a1d, 0x8ab41738, 0x20e1be24, 0xaf96da0f,
-+	0x68458425, 0x99833be5, 0x600d457d,
-+	0x282f9350, 0x8334b362, 0xd91d1120, 0x2b6d8da0, 0x642b1e31,
-+	0x9c305a00, 0x52bce688, 0x1b03588a,
-+	0xf7baefd5, 0x4142ed9c, 0xa4315c11, 0x83323ec5, 0xdfef4636,
-+	0xa133c501, 0xe9d3531c, 0xee353783
-+};
-+EXPORT_SYMBOL_GPL(cast6_s3);
-+
-+const u32 cast6_s4[256] = {
-+	0x9db30420, 0x1fb6e9de, 0xa7be7bef, 0xd273a298, 0x4a4f7bdb,
-+	0x64ad8c57, 0x85510443, 0xfa020ed1,
-+	0x7e287aff, 0xe60fb663, 0x095f35a1, 0x79ebf120, 0xfd059d43,
-+	0x6497b7b1, 0xf3641f63, 0x241e4adf,
-+	0x28147f5f, 0x4fa2b8cd, 0xc9430040, 0x0cc32220, 0xfdd30b30,
-+	0xc0a5374f, 0x1d2d00d9, 0x24147b15,
-+	0xee4d111a, 0x0fca5167, 0x71ff904c, 0x2d195ffe, 0x1a05645f,
-+	0x0c13fefe, 0x081b08ca, 0x05170121,
-+	0x80530100, 0xe83e5efe, 0xac9af4f8, 0x7fe72701, 0xd2b8ee5f,
-+	0x06df4261, 0xbb9e9b8a, 0x7293ea25,
-+	0xce84ffdf, 0xf5718801, 0x3dd64b04, 0xa26f263b, 0x7ed48400,
-+	0x547eebe6, 0x446d4ca0, 0x6cf3d6f5,
-+	0x2649abdf, 0xaea0c7f5, 0x36338cc1, 0x503f7e93, 0xd3772061,
-+	0x11b638e1, 0x72500e03, 0xf80eb2bb,
-+	0xabe0502e, 0xec8d77de, 0x57971e81, 0xe14f6746, 0xc9335400,
-+	0x6920318f, 0x081dbb99, 0xffc304a5,
-+	0x4d351805, 0x7f3d5ce3, 0xa6c866c6, 0x5d5bcca9, 0xdaec6fea,
-+	0x9f926f91, 0x9f46222f, 0x3991467d,
-+	0xa5bf6d8e, 0x1143c44f, 0x43958302, 0xd0214eeb, 0x022083b8,
-+	0x3fb6180c, 0x18f8931e, 0x281658e6,
-+	0x26486e3e, 0x8bd78a70, 0x7477e4c1, 0xb506e07c, 0xf32d0a25,
-+	0x79098b02, 0xe4eabb81, 0x28123b23,
-+	0x69dead38, 0x1574ca16, 0xdf871b62, 0x211c40b7, 0xa51a9ef9,
-+	0x0014377b, 0x041e8ac8, 0x09114003,
-+	0xbd59e4d2, 0xe3d156d5, 0x4fe876d5, 0x2f91a340, 0x557be8de,
-+	0x00eae4a7, 0x0ce5c2ec, 0x4db4bba6,
-+	0xe756bdff, 0xdd3369ac, 0xec17b035, 0x06572327, 0x99afc8b0,
-+	0x56c8c391, 0x6b65811c, 0x5e146119,
-+	0x6e85cb75, 0xbe07c002, 0xc2325577, 0x893ff4ec, 0x5bbfc92d,
-+	0xd0ec3b25, 0xb7801ab7, 0x8d6d3b24,
-+	0x20c763ef, 0xc366a5fc, 0x9c382880, 0x0ace3205, 0xaac9548a,
-+	0xeca1d7c7, 0x041afa32, 0x1d16625a,
-+	0x6701902c, 0x9b757a54, 0x31d477f7, 0x9126b031, 0x36cc6fdb,
-+	0xc70b8b46, 0xd9e66a48, 0x56e55a79,
-+	0x026a4ceb, 0x52437eff, 0x2f8f76b4, 0x0df980a5, 0x8674cde3,
-+	0xedda04eb, 0x17a9be04, 0x2c18f4df,
-+	0xb7747f9d, 0xab2af7b4, 0xefc34d20, 0x2e096b7c, 0x1741a254,
-+	0xe5b6a035, 0x213d42f6, 0x2c1c7c26,
-+	0x61c2f50f, 0x6552daf9, 0xd2c231f8, 0x25130f69, 0xd8167fa2,
-+	0x0418f2c8, 0x001a96a6, 0x0d1526ab,
-+	0x63315c21, 0x5e0a72ec, 0x49bafefd, 0x187908d9, 0x8d0dbd86,
-+	0x311170a7, 0x3e9b640c, 0xcc3e10d7,
-+	0xd5cad3b6, 0x0caec388, 0xf73001e1, 0x6c728aff, 0x71eae2a1,
-+	0x1f9af36e, 0xcfcbd12f, 0xc1de8417,
-+	0xac07be6b, 0xcb44a1d8, 0x8b9b0f56, 0x013988c3, 0xb1c52fca,
-+	0xb4be31cd, 0xd8782806, 0x12a3a4e2,
-+	0x6f7de532, 0x58fd7eb6, 0xd01ee900, 0x24adffc2, 0xf4990fc5,
-+	0x9711aac5, 0x001d7b95, 0x82e5e7d2,
-+	0x109873f6, 0x00613096, 0xc32d9521, 0xada121ff, 0x29908415,
-+	0x7fbb977f, 0xaf9eb3db, 0x29c9ed2a,
-+	0x5ce2a465, 0xa730f32c, 0xd0aa3fe8, 0x8a5cc091, 0xd49e2ce7,
-+	0x0ce454a9, 0xd60acd86, 0x015f1919,
-+	0x77079103, 0xdea03af6, 0x78a8565e, 0xdee356df, 0x21f05cbe,
-+	0x8b75e387, 0xb3c50651, 0xb8a5c3ef,
-+	0xd8eeb6d2, 0xe523be77, 0xc2154529, 0x2f69efdf, 0xafe67afb,
-+	0xf470c4b2, 0xf3e0eb5b, 0xd6cc9876,
-+	0x39e4460c, 0x1fda8538, 0x1987832f, 0xca007367, 0xa99144f8,
-+	0x296b299e, 0x492fc295, 0x9266beab,
-+	0xb5676e69, 0x9bd3ddda, 0xdf7e052f, 0xdb25701c, 0x1b5e51ee,
-+	0xf65324e6, 0x6afce36c, 0x0316cc04,
-+	0x8644213e, 0xb7dc59d0, 0x7965291f, 0xccd6fd43, 0x41823979,
-+	0x932bcdf6, 0xb657c34d, 0x4edfd282,
-+	0x7ae5290c, 0x3cb9536b, 0x851e20fe, 0x9833557e, 0x13ecf0b0,
-+	0xd3ffb372, 0x3f85c5c1, 0x0aef7ed2
-+};
-+EXPORT_SYMBOL_GPL(cast6_s4);
-+
-+static const u32 Tm[24][8] = {
-+	{ 0x5a827999, 0xc95c653a, 0x383650db, 0xa7103c7c, 0x15ea281d,
-+		0x84c413be, 0xf39dff5f, 0x6277eb00 } ,
-+	{ 0xd151d6a1, 0x402bc242, 0xaf05ade3, 0x1ddf9984, 0x8cb98525,
-+		0xfb9370c6, 0x6a6d5c67, 0xd9474808 } ,
-+	{ 0x482133a9, 0xb6fb1f4a, 0x25d50aeb, 0x94aef68c, 0x0388e22d,
-+		0x7262cdce, 0xe13cb96f, 0x5016a510 } ,
-+	{ 0xbef090b1, 0x2dca7c52, 0x9ca467f3, 0x0b7e5394, 0x7a583f35,
-+		0xe9322ad6, 0x580c1677, 0xc6e60218 } ,
-+	{ 0x35bfedb9, 0xa499d95a, 0x1373c4fb, 0x824db09c, 0xf1279c3d,
-+		0x600187de, 0xcedb737f, 0x3db55f20 } ,
-+	{ 0xac8f4ac1, 0x1b693662, 0x8a432203, 0xf91d0da4, 0x67f6f945,
-+		0xd6d0e4e6, 0x45aad087, 0xb484bc28 } ,
-+	{ 0x235ea7c9, 0x9238936a, 0x01127f0b, 0x6fec6aac, 0xdec6564d,
-+		0x4da041ee, 0xbc7a2d8f, 0x2b541930 } ,
-+	{ 0x9a2e04d1, 0x0907f072, 0x77e1dc13, 0xe6bbc7b4, 0x5595b355,
-+		0xc46f9ef6, 0x33498a97, 0xa2237638 } ,
-+	{ 0x10fd61d9, 0x7fd74d7a, 0xeeb1391b, 0x5d8b24bc, 0xcc65105d,
-+		0x3b3efbfe, 0xaa18e79f, 0x18f2d340 } ,
-+	{ 0x87ccbee1, 0xf6a6aa82, 0x65809623, 0xd45a81c4, 0x43346d65,
-+		0xb20e5906, 0x20e844a7, 0x8fc23048 } ,
-+	{ 0xfe9c1be9, 0x6d76078a, 0xdc4ff32b, 0x4b29decc, 0xba03ca6d,
-+		0x28ddb60e, 0x97b7a1af, 0x06918d50 } ,
-+	{ 0x756b78f1, 0xe4456492, 0x531f5033, 0xc1f93bd4, 0x30d32775,
-+		0x9fad1316, 0x0e86feb7, 0x7d60ea58 } ,
-+	{ 0xec3ad5f9, 0x5b14c19a, 0xc9eead3b, 0x38c898dc, 0xa7a2847d,
-+		0x167c701e, 0x85565bbf, 0xf4304760 } ,
-+	{ 0x630a3301, 0xd1e41ea2, 0x40be0a43, 0xaf97f5e4, 0x1e71e185,
-+		0x8d4bcd26, 0xfc25b8c7, 0x6affa468 } ,
-+	{ 0xd9d99009, 0x48b37baa, 0xb78d674b, 0x266752ec, 0x95413e8d,
-+		0x041b2a2e, 0x72f515cf, 0xe1cf0170 } ,
-+	{ 0x50a8ed11, 0xbf82d8b2, 0x2e5cc453, 0x9d36aff4, 0x0c109b95,
-+		0x7aea8736, 0xe9c472d7, 0x589e5e78 } ,
-+	{ 0xc7784a19, 0x365235ba, 0xa52c215b, 0x14060cfc, 0x82dff89d,
-+		0xf1b9e43e, 0x6093cfdf, 0xcf6dbb80 } ,
-+	{ 0x3e47a721, 0xad2192c2, 0x1bfb7e63, 0x8ad56a04, 0xf9af55a5,
-+		0x68894146, 0xd7632ce7, 0x463d1888 } ,
-+	{ 0xb5170429, 0x23f0efca, 0x92cadb6b, 0x01a4c70c, 0x707eb2ad,
-+		0xdf589e4e, 0x4e3289ef, 0xbd0c7590 } ,
-+	{ 0x2be66131, 0x9ac04cd2, 0x099a3873, 0x78742414, 0xe74e0fb5,
-+		0x5627fb56, 0xc501e6f7, 0x33dbd298 } ,
-+	{ 0xa2b5be39, 0x118fa9da, 0x8069957b, 0xef43811c, 0x5e1d6cbd,
-+		0xccf7585e, 0x3bd143ff, 0xaaab2fa0 } ,
-+	{ 0x19851b41, 0x885f06e2, 0xf738f283, 0x6612de24, 0xd4ecc9c5,
-+		0x43c6b566, 0xb2a0a107, 0x217a8ca8 } ,
-+	{ 0x90547849, 0xff2e63ea, 0x6e084f8b, 0xdce23b2c, 0x4bbc26cd,
-+		0xba96126e, 0x296ffe0f, 0x9849e9b0 } ,
-+	{ 0x0723d551, 0x75fdc0f2, 0xe4d7ac93, 0x53b19834, 0xc28b83d5,
-+		0x31656f76, 0xa03f5b17, 0x0f1946b8 }
+ 	case 1000:
+ 		test_available();
+ 		break;
+diff --git a/crypto/testmgr.c b/crypto/testmgr.c
+index def0f43..cff3c1c 100644
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -1878,6 +1878,21 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 			}
+ 		}
+ 	}, {
++		.alg = "cbc(cast6)",
++		.test = alg_test_skcipher,
++		.suite = {
++			.cipher = {
++				.enc = {
++					.vecs = cast6_cbc_enc_tv_template,
++					.count = CAST6_CBC_ENC_TEST_VECTORS
++				},
++				.dec = {
++					.vecs = cast6_cbc_dec_tv_template,
++					.count = CAST6_CBC_DEC_TEST_VECTORS
++				}
++			}
++		}
++	}, {
+ 		.alg = "cbc(des)",
+ 		.test = alg_test_skcipher,
+ 		.suite = {
+@@ -2144,6 +2159,21 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 			}
+ 		}
+ 	}, {
++		.alg = "ctr(cast6)",
++		.test = alg_test_skcipher,
++		.suite = {
++			.cipher = {
++				.enc = {
++					.vecs = cast6_ctr_enc_tv_template,
++					.count = CAST6_CTR_ENC_TEST_VECTORS
++				},
++				.dec = {
++					.vecs = cast6_ctr_dec_tv_template,
++					.count = CAST6_CTR_DEC_TEST_VECTORS
++				}
++			}
++		}
++	}, {
+ 		.alg = "ctr(serpent)",
+ 		.test = alg_test_skcipher,
+ 		.suite = {
+@@ -2620,6 +2650,21 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 			}
+ 		}
+ 	}, {
++		.alg = "lrw(cast6)",
++		.test = alg_test_skcipher,
++		.suite = {
++			.cipher = {
++				.enc = {
++					.vecs = cast6_lrw_enc_tv_template,
++					.count = CAST6_LRW_ENC_TEST_VECTORS
++				},
++				.dec = {
++					.vecs = cast6_lrw_dec_tv_template,
++					.count = CAST6_LRW_DEC_TEST_VECTORS
++				}
++			}
++		}
++	}, {
+ 		.alg = "lrw(serpent)",
+ 		.test = alg_test_skcipher,
+ 		.suite = {
+@@ -2972,6 +3017,21 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 			}
+ 		}
+ 	}, {
++		.alg = "xts(cast6)",
++		.test = alg_test_skcipher,
++		.suite = {
++			.cipher = {
++				.enc = {
++					.vecs = cast6_xts_enc_tv_template,
++					.count = CAST6_XTS_ENC_TEST_VECTORS
++				},
++				.dec = {
++					.vecs = cast6_xts_dec_tv_template,
++					.count = CAST6_XTS_DEC_TEST_VECTORS
++				}
++			}
++		}
++	}, {
+ 		.alg = "xts(serpent)",
+ 		.test = alg_test_skcipher,
+ 		.suite = {
+diff --git a/crypto/testmgr.h b/crypto/testmgr.h
+index 9309948..6eb3ef5 100644
+--- a/crypto/testmgr.h
++++ b/crypto/testmgr.h
+@@ -6896,8 +6896,16 @@ static struct cipher_testvec serpent_xts_dec_tv_template[] = {
+ };
+ 
+ /* Cast6 test vectors from RFC 2612 */
+-#define CAST6_ENC_TEST_VECTORS	3
+-#define CAST6_DEC_TEST_VECTORS  3
++#define CAST6_ENC_TEST_VECTORS		4
++#define CAST6_DEC_TEST_VECTORS		4
++#define CAST6_CBC_ENC_TEST_VECTORS	1
++#define CAST6_CBC_DEC_TEST_VECTORS	1
++#define CAST6_CTR_ENC_TEST_VECTORS	1
++#define CAST6_CTR_DEC_TEST_VECTORS	1
++#define CAST6_LRW_ENC_TEST_VECTORS	1
++#define CAST6_LRW_DEC_TEST_VECTORS	1
++#define CAST6_XTS_ENC_TEST_VECTORS	1
++#define CAST6_XTS_DEC_TEST_VECTORS	1
+ 
+ static struct cipher_testvec cast6_enc_tv_template[] = {
+ 	{
+@@ -6930,6 +6938,140 @@ static struct cipher_testvec cast6_enc_tv_template[] = {
+ 		.result	= "\x4f\x6a\x20\x38\x28\x68\x97\xb9"
+ 			  "\xc9\x87\x01\x36\x55\x33\x17\xfa",
+ 		.rlen	= 16,
++	}, { /* Generated from TF test vectors */
++		.key	= "\x85\x62\x3F\x1C\xF9\xD6\x1C\xF9"
++			  "\xD6\xB3\x90\x6D\x4A\x90\x6D\x4A"
++			  "\x27\x04\xE1\x27\x04\xE1\xBE\x9B"
++			  "\x78\xBE\x9B\x78\x55\x32\x0F\x55",
++		.klen	= 32,
++		.iv	= "\xE2\x24\x89\xEE\x53\xB8\x1D\x5F"
++			  "\xC4\x29\x8E\xF3\x35\x9A\xFF\x64",
++		.input	= "\x56\xED\x84\x1B\x8F\x26\xBD\x31"
++			  "\xC8\x5F\xF6\x6A\x01\x98\x0C\xA3"
++			  "\x3A\xD1\x45\xDC\x73\x0A\x7E\x15"
++			  "\xAC\x20\xB7\x4E\xE5\x59\xF0\x87"
++			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
++			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
++			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
++			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
++			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
++			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
++			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
++			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
++			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
++			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
++			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
++			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
++			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
++			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
++			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
++			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
++			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
++			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
++			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
++			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
++			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
++			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
++			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
++			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
++			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
++			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
++			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
++			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
++			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
++			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
++			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
++			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
++			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
++			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
++			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
++			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
++			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
++			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
++			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
++			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
++			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
++			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
++			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
++			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
++			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
++			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
++			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
++			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
++			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
++			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
++			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
++			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
++			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
++			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
++			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
++			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
++			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
++			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
++		.ilen	= 496,
++		.result	= "\xC3\x70\x22\x32\xF5\x80\xCB\x54"
++			  "\xFC\x30\xE0\xF6\xEB\x39\x57\xA6"
++			  "\xB6\xB9\xC5\xA4\x91\x55\x14\x97"
++			  "\xC1\x20\xFF\x6C\x5C\xF0\x67\xEA"
++			  "\x2F\xED\xD8\xC9\xFB\x38\x3F\xFE"
++			  "\x93\xBE\xDC\x00\xD3\x7F\xAD\x4C"
++			  "\x5A\x08\x92\xD1\x47\x0C\xFA\x6C"
++			  "\xD0\x6A\x99\x10\x72\xF8\x47\x62"
++			  "\x81\x42\xF8\xD8\xF5\xBB\x94\x08"
++			  "\xAA\x97\xA2\x8B\x69\xB3\xD2\x7E"
++			  "\xBC\xB5\x00\x0C\xE5\x44\x4B\x58"
++			  "\xE8\x63\xDC\xB3\xC4\xE5\x23\x12"
++			  "\x5A\x72\x85\x47\x8B\xEC\x9F\x26"
++			  "\x84\xB6\xED\x10\x33\x63\x9B\x5F"
++			  "\x4D\x53\xEE\x94\x45\x8B\x60\x58"
++			  "\x86\x20\xF9\x1E\x82\x08\x3E\x58"
++			  "\x60\x1B\x34\x19\x02\xBE\x4E\x09"
++			  "\xBB\x7C\x15\xCC\x60\x27\x55\x7A"
++			  "\x12\xB8\xD8\x08\x89\x3C\xA6\xF3"
++			  "\xF1\xDD\xA7\x07\xA3\x12\x85\x28"
++			  "\xE9\x57\xAC\x80\x0C\x5C\x0F\x3A"
++			  "\x5D\xC2\x91\xC7\x90\xE4\x8C\x43"
++			  "\x92\xE4\x7C\x26\x69\x4D\x83\x68"
++			  "\x14\x96\x42\x47\xBD\xA9\xE4\x8A"
++			  "\x33\x19\xEB\x54\x8E\x0D\x4B\x6E"
++			  "\x91\x51\xB5\x36\x08\xDE\x1C\x06"
++			  "\x03\xBD\xDE\x81\x26\xF7\x99\xC2"
++			  "\xBA\xF7\x6D\x87\x0D\xE4\xA6\xCF"
++			  "\xC1\xF5\x27\x05\xB8\x02\x57\x72"
++			  "\xE6\x42\x13\x0B\xC6\x47\x05\x74"
++			  "\x24\x15\xF7\x0D\xC2\x23\x9D\xB9"
++			  "\x3C\x77\x18\x93\xBA\xB4\xFC\x8C"
++			  "\x98\x82\x67\x67\xB4\xD7\xD3\x43"
++			  "\x23\x08\x02\xB7\x9B\x99\x05\xFB"
++			  "\xD3\xB5\x00\x0A\xA9\x9D\x66\xD6"
++			  "\x2E\x49\x58\xD0\xA8\x57\x29\x7F"
++			  "\x0A\x0E\x7D\xFC\x92\x83\xCC\x67"
++			  "\xA2\xB1\x70\x3A\x8F\x87\x4A\x8D"
++			  "\x17\xE2\x58\x2B\x88\x0D\x68\x62"
++			  "\xBF\x35\xD1\x6F\xC0\xF0\x18\x62"
++			  "\xB2\xC7\x2D\x58\xC7\x16\xDE\x08"
++			  "\xEB\x84\x1D\x25\xA7\x38\x94\x06"
++			  "\x93\x9D\xF8\xFE\x88\x71\xE7\x84"
++			  "\x2C\xA0\x38\xA3\x1D\x48\xCF\x29"
++			  "\x0B\xBC\xD8\x50\x99\x1A\x26\xFB"
++			  "\x8E\x75\x3D\x73\xEB\x6A\xED\x29"
++			  "\xE0\x8E\xED\xFC\xFE\x6F\xF6\xBA"
++			  "\x41\xE2\x10\x4C\x01\x8B\x69\x2B"
++			  "\x25\x3F\x4D\x70\x7B\x92\xD6\x3B"
++			  "\xAC\xF9\x77\x18\xD9\x6A\x30\xA6"
++			  "\x2E\xFA\x30\xFF\xC8\xD5\x1D\x06"
++			  "\x59\x28\x1D\x86\x43\x04\x5D\x3B"
++			  "\x99\x4C\x04\x5A\x21\x17\x8B\x76"
++			  "\x8F\x72\xCB\xA1\x9C\x29\x4C\xC3"
++			  "\x65\xA2\x58\x2A\xC5\x66\x24\xBF"
++			  "\xBA\xE6\x0C\xDD\x34\x24\x74\xC8"
++			  "\x84\x0A\x66\x2C\xBE\x8F\x32\xA9"
++			  "\xE7\xE4\xA1\xD7\xDA\xAB\x23\x1E"
++			  "\xEB\xEE\x6C\x94\x6F\x9C\x2E\xD1"
++			  "\x49\x2C\xF3\xD4\x90\xCC\x93\x4C"
++			  "\x84\x52\x6D\x68\xDE\xC6\x64\xB2"
++			  "\x11\x74\x93\x57\xB4\x7E\xC6\x00",
++		.rlen	= 496,
+ 	},
+ };
+ 
+@@ -6964,6 +7106,1272 @@ static struct cipher_testvec cast6_dec_tv_template[] = {
+ 		.ilen	= 16,
+ 		.result	= zeroed_string,
+ 		.rlen	= 16,
++	}, { /* Generated from TF test vectors */
++		.key	= "\x85\x62\x3F\x1C\xF9\xD6\x1C\xF9"
++			  "\xD6\xB3\x90\x6D\x4A\x90\x6D\x4A"
++			  "\x27\x04\xE1\x27\x04\xE1\xBE\x9B"
++			  "\x78\xBE\x9B\x78\x55\x32\x0F\x55",
++		.klen	= 32,
++		.iv	= "\xE2\x24\x89\xEE\x53\xB8\x1D\x5F"
++			  "\xC4\x29\x8E\xF3\x35\x9A\xFF\x64",
++		.input	= "\xC3\x70\x22\x32\xF5\x80\xCB\x54"
++			  "\xFC\x30\xE0\xF6\xEB\x39\x57\xA6"
++			  "\xB6\xB9\xC5\xA4\x91\x55\x14\x97"
++			  "\xC1\x20\xFF\x6C\x5C\xF0\x67\xEA"
++			  "\x2F\xED\xD8\xC9\xFB\x38\x3F\xFE"
++			  "\x93\xBE\xDC\x00\xD3\x7F\xAD\x4C"
++			  "\x5A\x08\x92\xD1\x47\x0C\xFA\x6C"
++			  "\xD0\x6A\x99\x10\x72\xF8\x47\x62"
++			  "\x81\x42\xF8\xD8\xF5\xBB\x94\x08"
++			  "\xAA\x97\xA2\x8B\x69\xB3\xD2\x7E"
++			  "\xBC\xB5\x00\x0C\xE5\x44\x4B\x58"
++			  "\xE8\x63\xDC\xB3\xC4\xE5\x23\x12"
++			  "\x5A\x72\x85\x47\x8B\xEC\x9F\x26"
++			  "\x84\xB6\xED\x10\x33\x63\x9B\x5F"
++			  "\x4D\x53\xEE\x94\x45\x8B\x60\x58"
++			  "\x86\x20\xF9\x1E\x82\x08\x3E\x58"
++			  "\x60\x1B\x34\x19\x02\xBE\x4E\x09"
++			  "\xBB\x7C\x15\xCC\x60\x27\x55\x7A"
++			  "\x12\xB8\xD8\x08\x89\x3C\xA6\xF3"
++			  "\xF1\xDD\xA7\x07\xA3\x12\x85\x28"
++			  "\xE9\x57\xAC\x80\x0C\x5C\x0F\x3A"
++			  "\x5D\xC2\x91\xC7\x90\xE4\x8C\x43"
++			  "\x92\xE4\x7C\x26\x69\x4D\x83\x68"
++			  "\x14\x96\x42\x47\xBD\xA9\xE4\x8A"
++			  "\x33\x19\xEB\x54\x8E\x0D\x4B\x6E"
++			  "\x91\x51\xB5\x36\x08\xDE\x1C\x06"
++			  "\x03\xBD\xDE\x81\x26\xF7\x99\xC2"
++			  "\xBA\xF7\x6D\x87\x0D\xE4\xA6\xCF"
++			  "\xC1\xF5\x27\x05\xB8\x02\x57\x72"
++			  "\xE6\x42\x13\x0B\xC6\x47\x05\x74"
++			  "\x24\x15\xF7\x0D\xC2\x23\x9D\xB9"
++			  "\x3C\x77\x18\x93\xBA\xB4\xFC\x8C"
++			  "\x98\x82\x67\x67\xB4\xD7\xD3\x43"
++			  "\x23\x08\x02\xB7\x9B\x99\x05\xFB"
++			  "\xD3\xB5\x00\x0A\xA9\x9D\x66\xD6"
++			  "\x2E\x49\x58\xD0\xA8\x57\x29\x7F"
++			  "\x0A\x0E\x7D\xFC\x92\x83\xCC\x67"
++			  "\xA2\xB1\x70\x3A\x8F\x87\x4A\x8D"
++			  "\x17\xE2\x58\x2B\x88\x0D\x68\x62"
++			  "\xBF\x35\xD1\x6F\xC0\xF0\x18\x62"
++			  "\xB2\xC7\x2D\x58\xC7\x16\xDE\x08"
++			  "\xEB\x84\x1D\x25\xA7\x38\x94\x06"
++			  "\x93\x9D\xF8\xFE\x88\x71\xE7\x84"
++			  "\x2C\xA0\x38\xA3\x1D\x48\xCF\x29"
++			  "\x0B\xBC\xD8\x50\x99\x1A\x26\xFB"
++			  "\x8E\x75\x3D\x73\xEB\x6A\xED\x29"
++			  "\xE0\x8E\xED\xFC\xFE\x6F\xF6\xBA"
++			  "\x41\xE2\x10\x4C\x01\x8B\x69\x2B"
++			  "\x25\x3F\x4D\x70\x7B\x92\xD6\x3B"
++			  "\xAC\xF9\x77\x18\xD9\x6A\x30\xA6"
++			  "\x2E\xFA\x30\xFF\xC8\xD5\x1D\x06"
++			  "\x59\x28\x1D\x86\x43\x04\x5D\x3B"
++			  "\x99\x4C\x04\x5A\x21\x17\x8B\x76"
++			  "\x8F\x72\xCB\xA1\x9C\x29\x4C\xC3"
++			  "\x65\xA2\x58\x2A\xC5\x66\x24\xBF"
++			  "\xBA\xE6\x0C\xDD\x34\x24\x74\xC8"
++			  "\x84\x0A\x66\x2C\xBE\x8F\x32\xA9"
++			  "\xE7\xE4\xA1\xD7\xDA\xAB\x23\x1E"
++			  "\xEB\xEE\x6C\x94\x6F\x9C\x2E\xD1"
++			  "\x49\x2C\xF3\xD4\x90\xCC\x93\x4C"
++			  "\x84\x52\x6D\x68\xDE\xC6\x64\xB2"
++			  "\x11\x74\x93\x57\xB4\x7E\xC6\x00",
++		.ilen	= 496,
++		.result	= "\x56\xED\x84\x1B\x8F\x26\xBD\x31"
++			  "\xC8\x5F\xF6\x6A\x01\x98\x0C\xA3"
++			  "\x3A\xD1\x45\xDC\x73\x0A\x7E\x15"
++			  "\xAC\x20\xB7\x4E\xE5\x59\xF0\x87"
++			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
++			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
++			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
++			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
++			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
++			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
++			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
++			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
++			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
++			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
++			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
++			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
++			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
++			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
++			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
++			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
++			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
++			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
++			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
++			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
++			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
++			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
++			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
++			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
++			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
++			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
++			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
++			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
++			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
++			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
++			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
++			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
++			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
++			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
++			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
++			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
++			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
++			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
++			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
++			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
++			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
++			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
++			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
++			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
++			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
++			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
++			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
++			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
++			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
++			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
++			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
++			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
++			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
++			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
++			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
++			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
++			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
++			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
++		.rlen	= 496,
++	},
 +};
 +
-+static const u8 Tr[4][8] = {
-+	{ 0x13, 0x04, 0x15, 0x06, 0x17, 0x08, 0x19, 0x0a } ,
-+	{ 0x1b, 0x0c, 0x1d, 0x0e, 0x1f, 0x10, 0x01, 0x12 } ,
-+	{ 0x03, 0x14, 0x05, 0x16, 0x07, 0x18, 0x09, 0x1a } ,
-+	{ 0x0b, 0x1c, 0x0d, 0x1e, 0x0f, 0x00, 0x11, 0x02 }
++static struct cipher_testvec cast6_cbc_enc_tv_template[] = {
++	{ /* Generated from TF test vectors */
++		.key	= "\x85\x62\x3F\x1C\xF9\xD6\x1C\xF9"
++			  "\xD6\xB3\x90\x6D\x4A\x90\x6D\x4A"
++			  "\x27\x04\xE1\x27\x04\xE1\xBE\x9B"
++			  "\x78\xBE\x9B\x78\x55\x32\x0F\x55",
++		.klen	= 32,
++		.iv	= "\xE2\x24\x89\xEE\x53\xB8\x1D\x5F"
++			  "\xC4\x29\x8E\xF3\x35\x9A\xFF\x64",
++		.input	= "\x56\xED\x84\x1B\x8F\x26\xBD\x31"
++			  "\xC8\x5F\xF6\x6A\x01\x98\x0C\xA3"
++			  "\x3A\xD1\x45\xDC\x73\x0A\x7E\x15"
++			  "\xAC\x20\xB7\x4E\xE5\x59\xF0\x87"
++			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
++			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
++			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
++			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
++			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
++			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
++			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
++			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
++			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
++			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
++			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
++			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
++			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
++			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
++			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
++			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
++			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
++			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
++			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
++			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
++			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
++			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
++			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
++			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
++			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
++			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
++			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
++			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
++			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
++			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
++			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
++			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
++			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
++			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
++			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
++			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
++			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
++			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
++			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
++			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
++			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
++			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
++			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
++			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
++			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
++			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
++			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
++			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
++			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
++			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
++			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
++			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
++			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
++			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
++			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
++			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
++			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
++			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
++		.ilen	= 496,
++		.result	= "\xDF\x77\x68\x96\xC7\xBA\xF8\xE2"
++			  "\x0E\x24\x99\x1A\xAA\xF3\xC6\x9F"
++			  "\xA0\x73\xB3\x70\xC3\x68\x64\x70"
++			  "\xAD\x33\x02\xFB\x88\x74\xAA\x78"
++			  "\xC7\x47\x1A\x18\x61\x2D\xAC\x9F"
++			  "\x7E\x6F\xDF\x05\x13\x76\xA6\x72"
++			  "\xB7\x13\x09\x0F\x7D\x38\xDF\x25"
++			  "\x4E\xFD\x50\x45\xFA\x35\x6A\xC0"
++			  "\x57\x95\xE1\x21\x26\x10\x9A\x21"
++			  "\xA1\x8A\x51\x05\xD1\xB1\x78\x35"
++			  "\x98\xF5\xAE\xC0\xC1\x8B\x94\xFF"
++			  "\xD0\x69\x3F\x42\xC2\x01\xA7\x9B"
++			  "\x23\x16\x47\x72\x81\x13\x3A\x72"
++			  "\xEC\xD9\x40\x88\x00\x9C\xB0\xA8"
++			  "\x9C\xAC\xCE\x11\x73\x7B\x63\x3E"
++			  "\xA3\x63\x98\x7D\x35\xE4\xD9\x83"
++			  "\xE2\xD0\x52\x87\x0C\x1F\xB0\xB3"
++			  "\x41\x1A\x93\x8D\x76\x31\x9F\xF2"
++			  "\xFE\x09\xA3\x8F\x22\x6A\x3B\xB9"
++			  "\x6C\x9E\xE4\xA1\xA0\xC4\xE7\xA1"
++			  "\x21\x9C\x1A\xCA\x65\xDE\x44\x03"
++			  "\x99\xF2\xD2\x39\xE3\x3F\x0F\x37"
++			  "\x53\x50\x23\xA4\x81\x6E\xDA\xFB"
++			  "\xF8\x7B\x01\xD7\xB2\x32\x9C\xB8"
++			  "\xB1\x0E\x99\x17\xB5\x38\xF9\xD7"
++			  "\x86\x2D\x6E\x94\x5C\x99\x9D\xB3"
++			  "\xD3\x63\x4B\x2A\x7D\x44\x6A\xB2"
++			  "\xC1\x03\xE6\x5A\x37\xD8\x64\x18"
++			  "\xAA\x32\xCE\x29\xED\xC0\xA2\xCB"
++			  "\x8D\xAF\xCD\xBE\x8F\xB6\xEC\xB4"
++			  "\x89\x05\x81\x6E\x71\x4F\xC3\x28"
++			  "\x10\xC1\x62\xC4\x41\xE9\xD2\x39"
++			  "\xF3\x22\x39\x12\x2C\xC2\x95\x2D"
++			  "\xBF\x93\x58\x4B\x04\xD1\x8D\x57"
++			  "\xAE\xEB\x60\x03\x56\x35\xAD\x5A"
++			  "\xE9\xC3\xFF\x4E\x31\xE1\x37\xF8"
++			  "\x7D\xEE\x65\x8A\xB6\x88\x1A\x3E"
++			  "\x07\x09\x82\xBA\xF0\x80\x8A\xD0"
++			  "\xA0\x3F\x6A\xE9\x24\x87\x19\x65"
++			  "\x73\x3F\x12\x91\x47\x54\xBA\x39"
++			  "\x30\x5B\x1E\xE5\xC2\xF9\x3F\xEF"
++			  "\xD6\x75\xF9\xB8\x7C\x8B\x05\x76"
++			  "\xEE\xB7\x08\x25\x4B\xB6\x7B\x47"
++			  "\x72\xC0\x4C\xD4\xDA\xE0\x75\xF1"
++			  "\x7C\xE8\x94\x9E\x16\x6E\xB8\x12"
++			  "\xA1\xC1\x6E\x3B\x1C\x59\x41\x2D"
++			  "\x23\xFA\x7D\x77\xB8\x46\x75\xFE"
++			  "\x4F\x10\xD3\x09\x60\xA1\x36\x96"
++			  "\x5B\xC2\xDC\x6E\x84\x7D\x9B\x14"
++			  "\x80\x21\x83\x58\x3C\x76\xFD\x28"
++			  "\x1D\xF9\x93\x13\xD7\x0E\x62\x14"
++			  "\x5A\xC5\x4E\x08\xA5\x56\xA4\x3C"
++			  "\x68\x93\x44\x70\xDF\xCF\x4A\x51"
++			  "\x0B\x81\x29\x41\xE5\x62\x4D\x36"
++			  "\xB3\xEA\x94\xA6\xB9\xDD\x3F\x09"
++			  "\x62\x34\xA0\x6A\x7E\x7D\xF5\xF6"
++			  "\x01\x91\xB4\x27\xDA\x59\xD6\x17"
++			  "\x56\x4D\x82\x62\x37\xA3\x48\x01"
++			  "\x99\x91\x77\xB2\x08\x6B\x2C\x37"
++			  "\xC5\x5C\xAD\xB6\x07\xB6\x84\xF3"
++			  "\x4D\x59\x7D\xC5\x28\x69\xFA\x92"
++			  "\x22\x46\x89\x2D\x0F\x2B\x08\x24",
++		.rlen	= 496,
++	},
 +};
 +
-+/* forward octave */
-+static void W(u32 *key, unsigned int i)
-+{
-+	u32 I;
-+	key[6] ^= F1(key[7], Tr[i % 4][0], Tm[i][0]);
-+	key[5] ^= F2(key[6], Tr[i % 4][1], Tm[i][1]);
-+	key[4] ^= F3(key[5], Tr[i % 4][2], Tm[i][2]);
-+	key[3] ^= F1(key[4], Tr[i % 4][3], Tm[i][3]);
-+	key[2] ^= F2(key[3], Tr[i % 4][4], Tm[i][4]);
-+	key[1] ^= F3(key[2], Tr[i % 4][5], Tm[i][5]);
-+	key[0] ^= F1(key[1], Tr[i % 4][6], Tm[i][6]);
-+	key[7] ^= F2(key[0], Tr[i % 4][7], Tm[i][7]);
-+}
-+
-+int __cast6_setkey(struct cast6_ctx *c, const u8 *in_key,
-+		   unsigned key_len, u32 *flags)
-+{
-+	int i;
-+	u32 key[8];
-+	__be32 p_key[8]; /* padded key */
-+
-+	if (key_len % 4 != 0) {
-+		*flags |= CRYPTO_TFM_RES_BAD_KEY_LEN;
-+		return -EINVAL;
-+	}
-+
-+	memset(p_key, 0, 32);
-+	memcpy(p_key, in_key, key_len);
-+
-+	key[0] = be32_to_cpu(p_key[0]);		/* A */
-+	key[1] = be32_to_cpu(p_key[1]);		/* B */
-+	key[2] = be32_to_cpu(p_key[2]);		/* C */
-+	key[3] = be32_to_cpu(p_key[3]);		/* D */
-+	key[4] = be32_to_cpu(p_key[4]);		/* E */
-+	key[5] = be32_to_cpu(p_key[5]);		/* F */
-+	key[6] = be32_to_cpu(p_key[6]);		/* G */
-+	key[7] = be32_to_cpu(p_key[7]);		/* H */
-+
-+	for (i = 0; i < 12; i++) {
-+		W(key, 2 * i);
-+		W(key, 2 * i + 1);
-+
-+		c->Kr[i][0] = key[0] & 0x1f;
-+		c->Kr[i][1] = key[2] & 0x1f;
-+		c->Kr[i][2] = key[4] & 0x1f;
-+		c->Kr[i][3] = key[6] & 0x1f;
-+
-+		c->Km[i][0] = key[7];
-+		c->Km[i][1] = key[5];
-+		c->Km[i][2] = key[3];
-+		c->Km[i][3] = key[1];
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(__cast6_setkey);
-+
-+int cast6_setkey(struct crypto_tfm *tfm, const u8 *key, unsigned int keylen)
-+{
-+	return __cast6_setkey(crypto_tfm_ctx(tfm), key, keylen,
-+			      &tfm->crt_flags);
-+}
-+EXPORT_SYMBOL_GPL(cast6_setkey);
-+
-+/*forward quad round*/
-+static void Q(u32 *block, u8 *Kr, u32 *Km)
-+{
-+	u32 I;
-+	block[2] ^= F1(block[3], Kr[0], Km[0]);
-+	block[1] ^= F2(block[2], Kr[1], Km[1]);
-+	block[0] ^= F3(block[1], Kr[2], Km[2]);
-+	block[3] ^= F1(block[0], Kr[3], Km[3]);
-+}
-+
-+/*reverse quad round*/
-+static void QBAR(u32 *block, u8 *Kr, u32 *Km)
-+{
-+	u32 I;
-+	block[3] ^= F1(block[0], Kr[3], Km[3]);
-+	block[0] ^= F3(block[1], Kr[2], Km[2]);
-+	block[1] ^= F2(block[2], Kr[1], Km[1]);
-+	block[2] ^= F1(block[3], Kr[0], Km[0]);
-+}
-+
-+void __cast6_encrypt(struct cast6_ctx *c, u8 *outbuf, const u8 *inbuf)
-+{
-+	const __be32 *src = (const __be32 *)inbuf;
-+	__be32 *dst = (__be32 *)outbuf;
-+	u32 block[4];
-+	u32 *Km;
-+	u8 *Kr;
-+
-+	block[0] = be32_to_cpu(src[0]);
-+	block[1] = be32_to_cpu(src[1]);
-+	block[2] = be32_to_cpu(src[2]);
-+	block[3] = be32_to_cpu(src[3]);
-+
-+	Km = c->Km[0]; Kr = c->Kr[0]; Q(block, Kr, Km);
-+	Km = c->Km[1]; Kr = c->Kr[1]; Q(block, Kr, Km);
-+	Km = c->Km[2]; Kr = c->Kr[2]; Q(block, Kr, Km);
-+	Km = c->Km[3]; Kr = c->Kr[3]; Q(block, Kr, Km);
-+	Km = c->Km[4]; Kr = c->Kr[4]; Q(block, Kr, Km);
-+	Km = c->Km[5]; Kr = c->Kr[5]; Q(block, Kr, Km);
-+	Km = c->Km[6]; Kr = c->Kr[6]; QBAR(block, Kr, Km);
-+	Km = c->Km[7]; Kr = c->Kr[7]; QBAR(block, Kr, Km);
-+	Km = c->Km[8]; Kr = c->Kr[8]; QBAR(block, Kr, Km);
-+	Km = c->Km[9]; Kr = c->Kr[9]; QBAR(block, Kr, Km);
-+	Km = c->Km[10]; Kr = c->Kr[10]; QBAR(block, Kr, Km);
-+	Km = c->Km[11]; Kr = c->Kr[11]; QBAR(block, Kr, Km);
-+
-+	dst[0] = cpu_to_be32(block[0]);
-+	dst[1] = cpu_to_be32(block[1]);
-+	dst[2] = cpu_to_be32(block[2]);
-+	dst[3] = cpu_to_be32(block[3]);
-+}
-+EXPORT_SYMBOL_GPL(__cast6_encrypt);
-+
-+static void cast6_encrypt(struct crypto_tfm *tfm, u8 *outbuf, const u8 *inbuf)
-+{
-+	__cast6_encrypt(crypto_tfm_ctx(tfm), outbuf, inbuf);
-+}
-+
-+void __cast6_decrypt(struct cast6_ctx *c, u8 *outbuf, const u8 *inbuf)
-+{
-+	const __be32 *src = (const __be32 *)inbuf;
-+	__be32 *dst = (__be32 *)outbuf;
-+	u32 block[4];
-+	u32 *Km;
-+	u8 *Kr;
-+
-+	block[0] = be32_to_cpu(src[0]);
-+	block[1] = be32_to_cpu(src[1]);
-+	block[2] = be32_to_cpu(src[2]);
-+	block[3] = be32_to_cpu(src[3]);
-+
-+	Km = c->Km[11]; Kr = c->Kr[11]; Q(block, Kr, Km);
-+	Km = c->Km[10]; Kr = c->Kr[10]; Q(block, Kr, Km);
-+	Km = c->Km[9]; Kr = c->Kr[9]; Q(block, Kr, Km);
-+	Km = c->Km[8]; Kr = c->Kr[8]; Q(block, Kr, Km);
-+	Km = c->Km[7]; Kr = c->Kr[7]; Q(block, Kr, Km);
-+	Km = c->Km[6]; Kr = c->Kr[6]; Q(block, Kr, Km);
-+	Km = c->Km[5]; Kr = c->Kr[5]; QBAR(block, Kr, Km);
-+	Km = c->Km[4]; Kr = c->Kr[4]; QBAR(block, Kr, Km);
-+	Km = c->Km[3]; Kr = c->Kr[3]; QBAR(block, Kr, Km);
-+	Km = c->Km[2]; Kr = c->Kr[2]; QBAR(block, Kr, Km);
-+	Km = c->Km[1]; Kr = c->Kr[1]; QBAR(block, Kr, Km);
-+	Km = c->Km[0]; Kr = c->Kr[0]; QBAR(block, Kr, Km);
-+
-+	dst[0] = cpu_to_be32(block[0]);
-+	dst[1] = cpu_to_be32(block[1]);
-+	dst[2] = cpu_to_be32(block[2]);
-+	dst[3] = cpu_to_be32(block[3]);
-+}
-+EXPORT_SYMBOL_GPL(__cast6_decrypt);
-+
-+static void cast6_decrypt(struct crypto_tfm *tfm, u8 *outbuf, const u8 *inbuf)
-+{
-+	__cast6_decrypt(crypto_tfm_ctx(tfm), outbuf, inbuf);
-+}
-+
-+static struct crypto_alg alg = {
-+	.cra_name = "cast6",
-+	.cra_driver_name = "cast6-generic",
-+	.cra_priority = 100,
-+	.cra_flags = CRYPTO_ALG_TYPE_CIPHER,
-+	.cra_blocksize = CAST6_BLOCK_SIZE,
-+	.cra_ctxsize = sizeof(struct cast6_ctx),
-+	.cra_alignmask = 3,
-+	.cra_module = THIS_MODULE,
-+	.cra_u = {
-+		  .cipher = {
-+			     .cia_min_keysize = CAST6_MIN_KEY_SIZE,
-+			     .cia_max_keysize = CAST6_MAX_KEY_SIZE,
-+			     .cia_setkey = cast6_setkey,
-+			     .cia_encrypt = cast6_encrypt,
-+			     .cia_decrypt = cast6_decrypt}
-+		  }
++static struct cipher_testvec cast6_cbc_dec_tv_template[] = {
++	{ /* Generated from TF test vectors */
++		.key	= "\x85\x62\x3F\x1C\xF9\xD6\x1C\xF9"
++			  "\xD6\xB3\x90\x6D\x4A\x90\x6D\x4A"
++			  "\x27\x04\xE1\x27\x04\xE1\xBE\x9B"
++			  "\x78\xBE\x9B\x78\x55\x32\x0F\x55",
++		.klen	= 32,
++		.iv	= "\xE2\x24\x89\xEE\x53\xB8\x1D\x5F"
++			  "\xC4\x29\x8E\xF3\x35\x9A\xFF\x64",
++		.input	= "\xDF\x77\x68\x96\xC7\xBA\xF8\xE2"
++			  "\x0E\x24\x99\x1A\xAA\xF3\xC6\x9F"
++			  "\xA0\x73\xB3\x70\xC3\x68\x64\x70"
++			  "\xAD\x33\x02\xFB\x88\x74\xAA\x78"
++			  "\xC7\x47\x1A\x18\x61\x2D\xAC\x9F"
++			  "\x7E\x6F\xDF\x05\x13\x76\xA6\x72"
++			  "\xB7\x13\x09\x0F\x7D\x38\xDF\x25"
++			  "\x4E\xFD\x50\x45\xFA\x35\x6A\xC0"
++			  "\x57\x95\xE1\x21\x26\x10\x9A\x21"
++			  "\xA1\x8A\x51\x05\xD1\xB1\x78\x35"
++			  "\x98\xF5\xAE\xC0\xC1\x8B\x94\xFF"
++			  "\xD0\x69\x3F\x42\xC2\x01\xA7\x9B"
++			  "\x23\x16\x47\x72\x81\x13\x3A\x72"
++			  "\xEC\xD9\x40\x88\x00\x9C\xB0\xA8"
++			  "\x9C\xAC\xCE\x11\x73\x7B\x63\x3E"
++			  "\xA3\x63\x98\x7D\x35\xE4\xD9\x83"
++			  "\xE2\xD0\x52\x87\x0C\x1F\xB0\xB3"
++			  "\x41\x1A\x93\x8D\x76\x31\x9F\xF2"
++			  "\xFE\x09\xA3\x8F\x22\x6A\x3B\xB9"
++			  "\x6C\x9E\xE4\xA1\xA0\xC4\xE7\xA1"
++			  "\x21\x9C\x1A\xCA\x65\xDE\x44\x03"
++			  "\x99\xF2\xD2\x39\xE3\x3F\x0F\x37"
++			  "\x53\x50\x23\xA4\x81\x6E\xDA\xFB"
++			  "\xF8\x7B\x01\xD7\xB2\x32\x9C\xB8"
++			  "\xB1\x0E\x99\x17\xB5\x38\xF9\xD7"
++			  "\x86\x2D\x6E\x94\x5C\x99\x9D\xB3"
++			  "\xD3\x63\x4B\x2A\x7D\x44\x6A\xB2"
++			  "\xC1\x03\xE6\x5A\x37\xD8\x64\x18"
++			  "\xAA\x32\xCE\x29\xED\xC0\xA2\xCB"
++			  "\x8D\xAF\xCD\xBE\x8F\xB6\xEC\xB4"
++			  "\x89\x05\x81\x6E\x71\x4F\xC3\x28"
++			  "\x10\xC1\x62\xC4\x41\xE9\xD2\x39"
++			  "\xF3\x22\x39\x12\x2C\xC2\x95\x2D"
++			  "\xBF\x93\x58\x4B\x04\xD1\x8D\x57"
++			  "\xAE\xEB\x60\x03\x56\x35\xAD\x5A"
++			  "\xE9\xC3\xFF\x4E\x31\xE1\x37\xF8"
++			  "\x7D\xEE\x65\x8A\xB6\x88\x1A\x3E"
++			  "\x07\x09\x82\xBA\xF0\x80\x8A\xD0"
++			  "\xA0\x3F\x6A\xE9\x24\x87\x19\x65"
++			  "\x73\x3F\x12\x91\x47\x54\xBA\x39"
++			  "\x30\x5B\x1E\xE5\xC2\xF9\x3F\xEF"
++			  "\xD6\x75\xF9\xB8\x7C\x8B\x05\x76"
++			  "\xEE\xB7\x08\x25\x4B\xB6\x7B\x47"
++			  "\x72\xC0\x4C\xD4\xDA\xE0\x75\xF1"
++			  "\x7C\xE8\x94\x9E\x16\x6E\xB8\x12"
++			  "\xA1\xC1\x6E\x3B\x1C\x59\x41\x2D"
++			  "\x23\xFA\x7D\x77\xB8\x46\x75\xFE"
++			  "\x4F\x10\xD3\x09\x60\xA1\x36\x96"
++			  "\x5B\xC2\xDC\x6E\x84\x7D\x9B\x14"
++			  "\x80\x21\x83\x58\x3C\x76\xFD\x28"
++			  "\x1D\xF9\x93\x13\xD7\x0E\x62\x14"
++			  "\x5A\xC5\x4E\x08\xA5\x56\xA4\x3C"
++			  "\x68\x93\x44\x70\xDF\xCF\x4A\x51"
++			  "\x0B\x81\x29\x41\xE5\x62\x4D\x36"
++			  "\xB3\xEA\x94\xA6\xB9\xDD\x3F\x09"
++			  "\x62\x34\xA0\x6A\x7E\x7D\xF5\xF6"
++			  "\x01\x91\xB4\x27\xDA\x59\xD6\x17"
++			  "\x56\x4D\x82\x62\x37\xA3\x48\x01"
++			  "\x99\x91\x77\xB2\x08\x6B\x2C\x37"
++			  "\xC5\x5C\xAD\xB6\x07\xB6\x84\xF3"
++			  "\x4D\x59\x7D\xC5\x28\x69\xFA\x92"
++			  "\x22\x46\x89\x2D\x0F\x2B\x08\x24",
++		.ilen	= 496,
++		.result	= "\x56\xED\x84\x1B\x8F\x26\xBD\x31"
++			  "\xC8\x5F\xF6\x6A\x01\x98\x0C\xA3"
++			  "\x3A\xD1\x45\xDC\x73\x0A\x7E\x15"
++			  "\xAC\x20\xB7\x4E\xE5\x59\xF0\x87"
++			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
++			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
++			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
++			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
++			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
++			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
++			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
++			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
++			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
++			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
++			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
++			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
++			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
++			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
++			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
++			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
++			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
++			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
++			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
++			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
++			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
++			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
++			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
++			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
++			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
++			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
++			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
++			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
++			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
++			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
++			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
++			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
++			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
++			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
++			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
++			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
++			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
++			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
++			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
++			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
++			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
++			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
++			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
++			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
++			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
++			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
++			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
++			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
++			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
++			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
++			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
++			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
++			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
++			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
++			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
++			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
++			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
++			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
++		.rlen	= 496,
++	},
 +};
 +
-+static int __init cast6_mod_init(void)
-+{
-+	return crypto_register_alg(&alg);
-+}
-+
-+static void __exit cast6_mod_fini(void)
-+{
-+	crypto_unregister_alg(&alg);
-+}
-+
-+module_init(cast6_mod_init);
-+module_exit(cast6_mod_fini);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Cast6 Cipher Algorithm");
-+MODULE_ALIAS("cast6");
-diff --git a/include/crypto/cast6.h b/include/crypto/cast6.h
-new file mode 100644
-index 0000000..02dde6b
---- /dev/null
-+++ b/include/crypto/cast6.h
-@@ -0,0 +1,23 @@
-+#ifndef _CRYPTO_CAST6_H
-+#define _CRYPTO_CAST6_H
-+
-+#include <linux/types.h>
-+#include <linux/crypto.h>
-+
-+#define CAST6_BLOCK_SIZE 16
-+#define CAST6_MIN_KEY_SIZE 16
-+#define CAST6_MAX_KEY_SIZE 32
-+
-+struct cast6_ctx {
-+	u32 Km[12][4];
-+	u8 Kr[12][4];
++static struct cipher_testvec cast6_ctr_enc_tv_template[] = {
++	{ /* Generated from TF test vectors */
++		.key	= "\x85\x62\x3F\x1C\xF9\xD6\x1C\xF9"
++			  "\xD6\xB3\x90\x6D\x4A\x90\x6D\x4A"
++			  "\x27\x04\xE1\x27\x04\xE1\xBE\x9B"
++			  "\x78\xBE\x9B\x78\x55\x32\x0F\x55",
++		.klen	= 32,
++		.iv	= "\xE2\x24\x89\xEE\x53\xB8\x1D\x5F"
++			  "\xC4\x29\x8E\xF3\x35\x9A\xFF\x64",
++		.input	= "\x56\xED\x84\x1B\x8F\x26\xBD\x31"
++			  "\xC8\x5F\xF6\x6A\x01\x98\x0C\xA3"
++			  "\x3A\xD1\x45\xDC\x73\x0A\x7E\x15"
++			  "\xAC\x20\xB7\x4E\xE5\x59\xF0\x87"
++			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
++			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
++			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
++			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
++			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
++			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
++			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
++			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
++			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
++			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
++			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
++			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
++			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
++			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
++			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
++			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
++			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
++			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
++			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
++			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
++			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
++			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
++			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
++			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
++			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
++			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
++			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
++			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
++			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
++			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
++			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
++			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
++			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
++			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
++			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
++			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
++			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
++			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
++			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
++			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
++			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
++			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
++			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
++			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
++			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
++			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
++			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
++			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
++			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
++			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
++			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
++			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
++			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
++			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
++			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
++			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
++			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
++			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
++		.ilen	= 496,
++		.result	= "\x26\x0A\xF1\xE2\x3F\x8A\xEF\xA3"
++			  "\x53\x9A\x5E\x1B\x2A\x1A\xC6\x0A"
++			  "\x57\xA3\xEF\x47\x2A\xE8\x88\xA7"
++			  "\x3C\xD0\xEC\xB9\x94\x50\x7D\x56"
++			  "\xBC\xE1\xC1\xF5\xE1\xEE\x12\xF8"
++			  "\x4F\x03\x82\x3A\x93\x6B\x4C\xD3"
++			  "\xE3\xF3\xFA\xC2\x23\x55\x98\x20"
++			  "\x49\x76\x9B\x6B\xC1\x23\xBF\xE5"
++			  "\xD4\xC4\x2F\x61\xE1\x67\x2A\x30"
++			  "\x6F\x29\xCA\x54\xF8\x1B\xA6\x7D"
++			  "\x66\x45\xEE\xC8\x19\xBE\x50\xF0"
++			  "\x5F\x65\xF8\x1E\x4D\x07\x87\xD9"
++			  "\xD3\xD9\x1B\x09\x89\xFD\x42\xC5"
++			  "\xDB\xEB\x86\xF1\x67\x04\x0F\x5C"
++			  "\x81\xDF\x82\x12\xC7\x4C\x1B\x07"
++			  "\xDE\xE6\xFA\x29\x86\xD1\xB0\xBA"
++			  "\x3D\x6A\x69\x76\xEC\x0F\xB4\xE6"
++			  "\xCD\xA7\xF8\xA8\xB8\xE0\x33\xF5"
++			  "\x49\x61\x22\x52\x64\x8C\x46\x41"
++			  "\x1F\x48\x5F\x4F\xA2\x89\x36\x17"
++			  "\x20\xF8\x2F\x8F\x4B\xFA\xF2\xC0"
++			  "\x1E\x18\xA2\xF8\xB7\x6D\x98\xE3"
++			  "\x00\x14\x15\x59\xC1\x30\x64\xAF"
++			  "\xA8\x01\x38\xAB\xD4\x8B\xEC\x7C"
++			  "\x44\x9A\xC6\x2C\x2E\x2B\x2B\xF4"
++			  "\x02\x37\xC4\x69\xEF\x36\xC1\xF3"
++			  "\xA0\xFB\xFE\x29\xAD\x39\xCF\xD0"
++			  "\x51\x73\xA3\x22\x42\x41\xAB\xD2"
++			  "\x0F\x50\x14\xB9\x54\xD3\xD4\xFA"
++			  "\xBF\xC9\xBB\xCE\xC4\x1D\x2D\xAF"
++			  "\xC9\x3F\x07\x87\x42\x4B\x3A\x54"
++			  "\x34\x8E\x37\xA3\x03\x6F\x65\x66"
++			  "\xDB\x44\xC3\xE8\xD7\xDD\x7D\xDD"
++			  "\x61\xB4\x2B\x80\xA3\x98\x13\xF5"
++			  "\x5A\xD3\x34\x58\xC3\x6E\xF6\xB8"
++			  "\x0A\xC6\x50\x01\x8E\xD5\x6C\x7D"
++			  "\xFE\x16\xB6\xCF\xFC\x51\x40\xAE"
++			  "\xB3\x15\xAC\x90\x6F\x0B\x28\x3A"
++			  "\x60\x40\x38\x90\x20\x46\xC7\xB3"
++			  "\x0B\x12\x6D\x3B\x15\x14\xF9\xF4"
++			  "\x11\x41\x76\x6B\xB3\x60\x82\x3C"
++			  "\x84\xFB\x08\x2E\x92\x25\xCB\x79"
++			  "\x6F\x58\xC5\x94\x00\x00\x47\xB6"
++			  "\x9E\xDC\x0F\x29\x70\x46\x20\x76"
++			  "\x65\x75\x66\x5C\x00\x96\xB3\xE1"
++			  "\x0B\xA7\x11\x8B\x2E\x61\x4E\x45"
++			  "\x73\xFC\x91\xAB\x79\x41\x23\x14"
++			  "\x13\xB6\x72\x6C\x46\xB3\x03\x11"
++			  "\xE4\xF1\xEE\xC9\x7A\xCF\x96\x32"
++			  "\xB6\xF0\x8B\x97\xB4\xCF\x82\xB7"
++			  "\x15\x48\x44\x99\x09\xF6\xE0\xD7"
++			  "\xBC\xF1\x5B\x91\x4F\x30\x22\xA2"
++			  "\x45\xC4\x68\x55\xC2\xBE\xA7\xD2"
++			  "\x12\x53\x35\x9C\xF9\xE7\x35\x5D"
++			  "\x81\xE4\x86\x42\xC3\x58\xFB\xF0"
++			  "\x38\x9B\x8E\x5A\xEF\x83\x33\x0F"
++			  "\x00\x4E\x3F\x9F\xF5\x84\x62\xC4"
++			  "\x19\x35\x88\x22\x45\x59\x0E\x8F"
++			  "\xEC\x27\xDD\x4A\xA4\x1F\xBC\x41"
++			  "\x9B\x66\x8D\x32\xBA\x81\x34\x87"
++			  "\x0E\x74\x33\x30\x62\xB9\x89\xDF"
++			  "\xF9\xC5\xDD\x27\xB3\x39\xCB\xCB",
++		.rlen	= 496,
++	},
 +};
 +
-+int __cast6_setkey(struct cast6_ctx *ctx, const u8 *key,
-+		   unsigned int keylen, u32 *flags);
-+int cast6_setkey(struct crypto_tfm *tfm, const u8 *key, unsigned int keylen);
++static struct cipher_testvec cast6_ctr_dec_tv_template[] = {
++	{ /* Generated from TF test vectors */
++		.key	= "\x85\x62\x3F\x1C\xF9\xD6\x1C\xF9"
++			  "\xD6\xB3\x90\x6D\x4A\x90\x6D\x4A"
++			  "\x27\x04\xE1\x27\x04\xE1\xBE\x9B"
++			  "\x78\xBE\x9B\x78\x55\x32\x0F\x55",
++		.klen	= 32,
++		.iv	= "\xE2\x24\x89\xEE\x53\xB8\x1D\x5F"
++			  "\xC4\x29\x8E\xF3\x35\x9A\xFF\x64",
++		.input	= "\x26\x0A\xF1\xE2\x3F\x8A\xEF\xA3"
++			  "\x53\x9A\x5E\x1B\x2A\x1A\xC6\x0A"
++			  "\x57\xA3\xEF\x47\x2A\xE8\x88\xA7"
++			  "\x3C\xD0\xEC\xB9\x94\x50\x7D\x56"
++			  "\xBC\xE1\xC1\xF5\xE1\xEE\x12\xF8"
++			  "\x4F\x03\x82\x3A\x93\x6B\x4C\xD3"
++			  "\xE3\xF3\xFA\xC2\x23\x55\x98\x20"
++			  "\x49\x76\x9B\x6B\xC1\x23\xBF\xE5"
++			  "\xD4\xC4\x2F\x61\xE1\x67\x2A\x30"
++			  "\x6F\x29\xCA\x54\xF8\x1B\xA6\x7D"
++			  "\x66\x45\xEE\xC8\x19\xBE\x50\xF0"
++			  "\x5F\x65\xF8\x1E\x4D\x07\x87\xD9"
++			  "\xD3\xD9\x1B\x09\x89\xFD\x42\xC5"
++			  "\xDB\xEB\x86\xF1\x67\x04\x0F\x5C"
++			  "\x81\xDF\x82\x12\xC7\x4C\x1B\x07"
++			  "\xDE\xE6\xFA\x29\x86\xD1\xB0\xBA"
++			  "\x3D\x6A\x69\x76\xEC\x0F\xB4\xE6"
++			  "\xCD\xA7\xF8\xA8\xB8\xE0\x33\xF5"
++			  "\x49\x61\x22\x52\x64\x8C\x46\x41"
++			  "\x1F\x48\x5F\x4F\xA2\x89\x36\x17"
++			  "\x20\xF8\x2F\x8F\x4B\xFA\xF2\xC0"
++			  "\x1E\x18\xA2\xF8\xB7\x6D\x98\xE3"
++			  "\x00\x14\x15\x59\xC1\x30\x64\xAF"
++			  "\xA8\x01\x38\xAB\xD4\x8B\xEC\x7C"
++			  "\x44\x9A\xC6\x2C\x2E\x2B\x2B\xF4"
++			  "\x02\x37\xC4\x69\xEF\x36\xC1\xF3"
++			  "\xA0\xFB\xFE\x29\xAD\x39\xCF\xD0"
++			  "\x51\x73\xA3\x22\x42\x41\xAB\xD2"
++			  "\x0F\x50\x14\xB9\x54\xD3\xD4\xFA"
++			  "\xBF\xC9\xBB\xCE\xC4\x1D\x2D\xAF"
++			  "\xC9\x3F\x07\x87\x42\x4B\x3A\x54"
++			  "\x34\x8E\x37\xA3\x03\x6F\x65\x66"
++			  "\xDB\x44\xC3\xE8\xD7\xDD\x7D\xDD"
++			  "\x61\xB4\x2B\x80\xA3\x98\x13\xF5"
++			  "\x5A\xD3\x34\x58\xC3\x6E\xF6\xB8"
++			  "\x0A\xC6\x50\x01\x8E\xD5\x6C\x7D"
++			  "\xFE\x16\xB6\xCF\xFC\x51\x40\xAE"
++			  "\xB3\x15\xAC\x90\x6F\x0B\x28\x3A"
++			  "\x60\x40\x38\x90\x20\x46\xC7\xB3"
++			  "\x0B\x12\x6D\x3B\x15\x14\xF9\xF4"
++			  "\x11\x41\x76\x6B\xB3\x60\x82\x3C"
++			  "\x84\xFB\x08\x2E\x92\x25\xCB\x79"
++			  "\x6F\x58\xC5\x94\x00\x00\x47\xB6"
++			  "\x9E\xDC\x0F\x29\x70\x46\x20\x76"
++			  "\x65\x75\x66\x5C\x00\x96\xB3\xE1"
++			  "\x0B\xA7\x11\x8B\x2E\x61\x4E\x45"
++			  "\x73\xFC\x91\xAB\x79\x41\x23\x14"
++			  "\x13\xB6\x72\x6C\x46\xB3\x03\x11"
++			  "\xE4\xF1\xEE\xC9\x7A\xCF\x96\x32"
++			  "\xB6\xF0\x8B\x97\xB4\xCF\x82\xB7"
++			  "\x15\x48\x44\x99\x09\xF6\xE0\xD7"
++			  "\xBC\xF1\x5B\x91\x4F\x30\x22\xA2"
++			  "\x45\xC4\x68\x55\xC2\xBE\xA7\xD2"
++			  "\x12\x53\x35\x9C\xF9\xE7\x35\x5D"
++			  "\x81\xE4\x86\x42\xC3\x58\xFB\xF0"
++			  "\x38\x9B\x8E\x5A\xEF\x83\x33\x0F"
++			  "\x00\x4E\x3F\x9F\xF5\x84\x62\xC4"
++			  "\x19\x35\x88\x22\x45\x59\x0E\x8F"
++			  "\xEC\x27\xDD\x4A\xA4\x1F\xBC\x41"
++			  "\x9B\x66\x8D\x32\xBA\x81\x34\x87"
++			  "\x0E\x74\x33\x30\x62\xB9\x89\xDF"
++			  "\xF9\xC5\xDD\x27\xB3\x39\xCB\xCB",
++		.ilen	= 496,
++		.result	= "\x56\xED\x84\x1B\x8F\x26\xBD\x31"
++			  "\xC8\x5F\xF6\x6A\x01\x98\x0C\xA3"
++			  "\x3A\xD1\x45\xDC\x73\x0A\x7E\x15"
++			  "\xAC\x20\xB7\x4E\xE5\x59\xF0\x87"
++			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
++			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
++			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
++			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
++			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
++			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
++			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
++			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
++			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
++			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
++			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
++			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
++			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
++			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
++			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
++			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
++			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
++			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
++			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
++			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
++			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
++			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
++			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
++			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
++			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
++			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
++			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
++			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
++			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
++			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
++			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
++			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
++			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
++			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
++			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
++			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
++			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
++			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
++			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
++			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
++			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
++			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
++			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
++			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
++			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
++			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
++			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
++			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
++			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
++			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
++			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
++			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
++			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
++			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
++			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
++			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
++			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
++			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
++		.rlen	= 496,
++	},
++};
 +
-+void __cast6_encrypt(struct cast6_ctx *ctx, u8 *dst, const u8 *src);
-+void __cast6_decrypt(struct cast6_ctx *ctx, u8 *dst, const u8 *src);
++static struct cipher_testvec cast6_lrw_enc_tv_template[] = {
++	{ /* Generated from TF test vectors */
++		.key	= "\xf8\xd4\x76\xff\xd6\x46\xee\x6c"
++			  "\x23\x84\xcb\x1c\x77\xd6\x19\x5d"
++			  "\xfe\xf1\xa9\xf3\x7b\xbc\x8d\x21"
++			  "\xa7\x9c\x21\xf8\xcb\x90\x02\x89"
++			  "\xa8\x45\x34\x8e\xc8\xc5\xb5\xf1"
++			  "\x26\xf5\x0e\x76\xfe\xfd\x1b\x1e",
++		.klen	= 48,
++		.iv	= "\x00\x00\x00\x00\x00\x00\x00\x00"
++			  "\x00\x00\x00\x00\x00\x00\x00\x01",
++		.input	= "\x05\x11\xb7\x18\xab\xc6\x2d\xac"
++			  "\x70\x5d\xf6\x22\x94\xcd\xe5\x6c"
++			  "\x17\x6b\xf6\x1c\xf0\xf3\x6e\xf8"
++			  "\x50\x38\x1f\x71\x49\xb6\x57\xd6"
++			  "\x8f\xcb\x8d\x6b\xe3\xa6\x29\x90"
++			  "\xfe\x2a\x62\x82\xae\x6d\x8b\xf6"
++			  "\xad\x1e\x9e\x20\x5f\x38\xbe\x04"
++			  "\xda\x10\x8e\xed\xa2\xa4\x87\xab"
++			  "\xda\x6b\xb4\x0c\x75\xba\xd3\x7c"
++			  "\xc9\xac\x42\x31\x95\x7c\xc9\x04"
++			  "\xeb\xd5\x6e\x32\x69\x8a\xdb\xa6"
++			  "\x15\xd7\x3f\x4f\x2f\x66\x69\x03"
++			  "\x9c\x1f\x54\x0f\xde\x1f\xf3\x65"
++			  "\x4c\x96\x12\xed\x7c\x92\x03\x01"
++			  "\x6f\xbc\x35\x93\xac\xf1\x27\xf1"
++			  "\xb4\x96\x82\x5a\x5f\xb0\xa0\x50"
++			  "\x89\xa4\x8e\x66\x44\x85\xcc\xfd"
++			  "\x33\x14\x70\xe3\x96\xb2\xc3\xd3"
++			  "\xbb\x54\x5a\x1a\xf9\x74\xa2\xc5"
++			  "\x2d\x64\x75\xdd\xb4\x54\xe6\x74"
++			  "\x8c\xd3\x9d\x9e\x86\xab\x51\x53"
++			  "\xb7\x93\x3e\x6f\xd0\x4e\x2c\x40"
++			  "\xf6\xa8\x2e\x3e\x9d\xf4\x66\xa5"
++			  "\x76\x12\x73\x44\x1a\x56\xd7\x72"
++			  "\x88\xcd\x21\x8c\x4c\x0f\xfe\xda"
++			  "\x95\xe0\x3a\xa6\xa5\x84\x46\xcd"
++			  "\xd5\x3e\x9d\x3a\xe2\x67\xe6\x60"
++			  "\x1a\xe2\x70\x85\x58\xc2\x1b\x09"
++			  "\xe1\xd7\x2c\xca\xad\xa8\x8f\xf9"
++			  "\xac\xb3\x0e\xdb\xca\x2e\xe2\xb8"
++			  "\x51\x71\xd9\x3c\x6c\xf1\x56\xf8"
++			  "\xea\x9c\xf1\xfb\x0c\xe6\xb7\x10"
++			  "\x1c\xf8\xa9\x7c\xe8\x53\x35\xc1"
++			  "\x90\x3e\x76\x4a\x74\xa4\x21\x2c"
++			  "\xf6\x2c\x4e\x0f\x94\x3a\x88\x2e"
++			  "\x41\x09\x6a\x33\x7d\xf6\xdd\x3f"
++			  "\x8d\x23\x31\x74\x84\xeb\x88\x6e"
++			  "\xcc\xb9\xbc\x22\x83\x19\x07\x22"
++			  "\xa5\x2d\xdf\xa5\xf3\x80\x85\x78"
++			  "\x84\x39\x6a\x6d\x6a\x99\x4f\xa5"
++			  "\x15\xfe\x46\xb0\xe4\x6c\xa5\x41"
++			  "\x3c\xce\x8f\x42\x60\x71\xa7\x75"
++			  "\x08\x40\x65\x8a\x82\xbf\xf5\x43"
++			  "\x71\x96\xa9\x4d\x44\x8a\x20\xbe"
++			  "\xfa\x4d\xbb\xc0\x7d\x31\x96\x65"
++			  "\xe7\x75\xe5\x3e\xfd\x92\x3b\xc9"
++			  "\x55\xbb\x16\x7e\xf7\xc2\x8c\xa4"
++			  "\x40\x1d\xe5\xef\x0e\xdf\xe4\x9a"
++			  "\x62\x73\x65\xfd\x46\x63\x25\x3d"
++			  "\x2b\xaf\xe5\x64\xfe\xa5\x5c\xcf"
++			  "\x24\xf3\xb4\xac\x64\xba\xdf\x4b"
++			  "\xc6\x96\x7d\x81\x2d\x8d\x97\xf7"
++			  "\xc5\x68\x77\x84\x32\x2b\xcc\x85"
++			  "\x74\x96\xf0\x12\x77\x61\xb9\xeb"
++			  "\x71\xaa\x82\xcb\x1c\xdb\x89\xc8"
++			  "\xc6\xb5\xe3\x5c\x7d\x39\x07\x24"
++			  "\xda\x39\x87\x45\xc0\x2b\xbb\x01"
++			  "\xac\xbc\x2a\x5c\x7f\xfc\xe8\xce"
++			  "\x6d\x9c\x6f\xed\xd3\xc1\xa1\xd6"
++			  "\xc5\x55\xa9\x66\x2f\xe1\xc8\x32"
++			  "\xa6\x5d\xa4\x3a\x98\x73\xe8\x45"
++			  "\xa4\xc7\xa8\xb4\xf6\x13\x03\xf6"
++			  "\xe9\x2e\xc4\x29\x0f\x84\xdb\xc4"
++			  "\x21\xc4\xc2\x75\x67\x89\x37\x0a",
++		.ilen	= 512,
++		.result	= "\x55\x25\x09\x8B\xB5\xD5\xF8\xBF"
++			  "\x37\x4A\xFE\x3C\x47\xD8\xE6\xEB"
++			  "\xCA\xA4\x9B\xB0\xAB\x6D\x64\xCA"
++			  "\x58\xB6\x73\xF0\xD7\x52\x34\xEF"
++			  "\xFB\x3E\x96\x81\xB7\x71\x34\xA4"
++			  "\x55\x20\xBE\x39\x5A\x2B\xF9\xD1"
++			  "\x65\x0B\xDA\xD3\x7E\xB3\xA6\xF7"
++			  "\x2E\x0B\x5A\x52\xDB\x39\x8C\x9B"
++			  "\x61\x17\x5F\xAF\xB6\x5A\xC8\x08"
++			  "\xA7\xB7\x2A\x11\x7C\x97\x38\x9D"
++			  "\x59\x0E\x66\x59\x5E\xD8\x8B\xCE"
++			  "\x70\xE0\xC3\x42\xB0\x8C\x0F\xBA"
++			  "\xB2\x0D\x81\xB6\xBE\x61\x1C\x2D"
++			  "\x7E\xEA\x91\x25\xAC\xEC\xF8\x28"
++			  "\x80\x1D\xF0\x30\xBA\x62\x77\x7D"
++			  "\xDB\x15\x69\xDF\xFA\x2A\x81\x64"
++			  "\x95\x5B\xA4\x7F\x3E\x4F\xE3\x30"
++			  "\xB0\x5C\xC2\x05\xF8\xF0\x29\xE7"
++			  "\x0A\xA0\x66\xB2\x5D\x0F\x39\x2B"
++			  "\xB4\xB3\x00\xA9\xD0\xAB\x63\x61"
++			  "\x5E\xDB\xFC\x11\x74\x25\x96\x65"
++			  "\xE8\xE2\x34\x57\x77\x15\x5E\x70"
++			  "\xFF\x10\x90\xC3\x64\xF0\x11\x0A"
++			  "\x63\x3A\xD3\x55\x92\x15\x4B\x0C"
++			  "\xC7\x08\x89\x17\x3B\x99\xAD\x63"
++			  "\xE7\x06\xDF\x52\xBC\x15\x64\x45"
++			  "\x9D\x7A\xFB\x69\xBC\x2D\x6E\xA9"
++			  "\x35\xD9\xD8\xF5\x0C\xC4\xA2\x23"
++			  "\x9C\x18\x8B\xA8\x8C\xFE\xF8\x0E"
++			  "\xBD\xAB\x60\x1A\x51\x17\x54\x27"
++			  "\xB6\xE8\xBE\x0F\xA9\xA5\x82\x19"
++			  "\x2F\x6F\x20\xA7\x47\xED\x74\x6C"
++			  "\x4E\xC1\xF8\x8C\x14\xF3\xBB\x1F"
++			  "\xED\x4D\x8F\x7C\x37\xEF\x19\xA1"
++			  "\x07\x16\xDE\x76\xCC\x5E\x94\x02"
++			  "\xFB\xBF\xE4\x81\x50\xCE\xFC\x0F"
++			  "\x9E\xCF\x3D\xF6\x67\x00\xBF\xA7"
++			  "\x6E\x21\x58\x36\x06\xDE\xB3\xD4"
++			  "\xA2\xFA\xD8\x4E\xE0\xB9\x7F\x23"
++			  "\x51\x21\x2B\x32\x68\xAA\xF8\xA8"
++			  "\x93\x08\xB5\x6D\xE6\x43\x2C\xB7"
++			  "\x31\xB2\x0F\xD0\xA2\x51\xC0\x25"
++			  "\x30\xC7\x10\x3F\x97\x27\x01\x8E"
++			  "\xFA\xD8\x4F\x78\xD8\x2E\x1D\xEB"
++			  "\xA1\x37\x52\x0F\x7B\x5E\x87\xA8"
++			  "\x22\xE2\xE6\x92\xA7\x5F\x11\x32"
++			  "\xCC\x93\x34\xFC\xD1\x7E\xAE\x54"
++			  "\xBC\x6A\x1B\x91\xD1\x2E\x21\xEC"
++			  "\x5D\xF1\xC4\xF1\x55\x20\xBF\xE5"
++			  "\x96\x3D\x69\x91\x20\x4E\xF2\x61"
++			  "\xDA\x77\xFE\xEE\xC3\x74\x57\x2A"
++			  "\x78\x39\xB0\xE0\xCF\x12\x56\xD6"
++			  "\x05\xDC\xF9\x19\x66\x44\x1D\xF9"
++			  "\x82\x37\xD4\xC2\x60\xB6\x31\xDF"
++			  "\x0C\xAF\xBC\x8B\x55\x9A\xC8\x2D"
++			  "\xAB\xA7\x88\x7B\x41\xE8\x29\xC9"
++			  "\x9B\x8D\xA7\x00\x86\x25\xB6\x14"
++			  "\xF5\x13\x73\xD7\x4B\x6B\x83\xF3"
++			  "\xAF\x96\x00\xE4\xB7\x3C\x65\xA6"
++			  "\x15\xB7\x94\x7D\x4E\x70\x4C\x75"
++			  "\xF3\xB4\x02\xA9\x17\x1C\x7A\x0A"
++			  "\xC0\xD5\x33\x11\x56\xDE\xDC\xF5"
++			  "\x8D\xD9\xCD\x3B\x22\x67\x18\xC7"
++			  "\xC4\xF5\x99\x61\xBC\xBB\x5B\x46",
++		.rlen	= 512,
++	},
++};
 +
-+#endif
++static struct cipher_testvec cast6_lrw_dec_tv_template[] = {
++	{ /* Generated from TF test vectors */
++		.key	= "\xf8\xd4\x76\xff\xd6\x46\xee\x6c"
++			  "\x23\x84\xcb\x1c\x77\xd6\x19\x5d"
++			  "\xfe\xf1\xa9\xf3\x7b\xbc\x8d\x21"
++			  "\xa7\x9c\x21\xf8\xcb\x90\x02\x89"
++			  "\xa8\x45\x34\x8e\xc8\xc5\xb5\xf1"
++			  "\x26\xf5\x0e\x76\xfe\xfd\x1b\x1e",
++		.klen	= 48,
++		.iv	= "\x00\x00\x00\x00\x00\x00\x00\x00"
++			  "\x00\x00\x00\x00\x00\x00\x00\x01",
++		.input	= "\x55\x25\x09\x8B\xB5\xD5\xF8\xBF"
++			  "\x37\x4A\xFE\x3C\x47\xD8\xE6\xEB"
++			  "\xCA\xA4\x9B\xB0\xAB\x6D\x64\xCA"
++			  "\x58\xB6\x73\xF0\xD7\x52\x34\xEF"
++			  "\xFB\x3E\x96\x81\xB7\x71\x34\xA4"
++			  "\x55\x20\xBE\x39\x5A\x2B\xF9\xD1"
++			  "\x65\x0B\xDA\xD3\x7E\xB3\xA6\xF7"
++			  "\x2E\x0B\x5A\x52\xDB\x39\x8C\x9B"
++			  "\x61\x17\x5F\xAF\xB6\x5A\xC8\x08"
++			  "\xA7\xB7\x2A\x11\x7C\x97\x38\x9D"
++			  "\x59\x0E\x66\x59\x5E\xD8\x8B\xCE"
++			  "\x70\xE0\xC3\x42\xB0\x8C\x0F\xBA"
++			  "\xB2\x0D\x81\xB6\xBE\x61\x1C\x2D"
++			  "\x7E\xEA\x91\x25\xAC\xEC\xF8\x28"
++			  "\x80\x1D\xF0\x30\xBA\x62\x77\x7D"
++			  "\xDB\x15\x69\xDF\xFA\x2A\x81\x64"
++			  "\x95\x5B\xA4\x7F\x3E\x4F\xE3\x30"
++			  "\xB0\x5C\xC2\x05\xF8\xF0\x29\xE7"
++			  "\x0A\xA0\x66\xB2\x5D\x0F\x39\x2B"
++			  "\xB4\xB3\x00\xA9\xD0\xAB\x63\x61"
++			  "\x5E\xDB\xFC\x11\x74\x25\x96\x65"
++			  "\xE8\xE2\x34\x57\x77\x15\x5E\x70"
++			  "\xFF\x10\x90\xC3\x64\xF0\x11\x0A"
++			  "\x63\x3A\xD3\x55\x92\x15\x4B\x0C"
++			  "\xC7\x08\x89\x17\x3B\x99\xAD\x63"
++			  "\xE7\x06\xDF\x52\xBC\x15\x64\x45"
++			  "\x9D\x7A\xFB\x69\xBC\x2D\x6E\xA9"
++			  "\x35\xD9\xD8\xF5\x0C\xC4\xA2\x23"
++			  "\x9C\x18\x8B\xA8\x8C\xFE\xF8\x0E"
++			  "\xBD\xAB\x60\x1A\x51\x17\x54\x27"
++			  "\xB6\xE8\xBE\x0F\xA9\xA5\x82\x19"
++			  "\x2F\x6F\x20\xA7\x47\xED\x74\x6C"
++			  "\x4E\xC1\xF8\x8C\x14\xF3\xBB\x1F"
++			  "\xED\x4D\x8F\x7C\x37\xEF\x19\xA1"
++			  "\x07\x16\xDE\x76\xCC\x5E\x94\x02"
++			  "\xFB\xBF\xE4\x81\x50\xCE\xFC\x0F"
++			  "\x9E\xCF\x3D\xF6\x67\x00\xBF\xA7"
++			  "\x6E\x21\x58\x36\x06\xDE\xB3\xD4"
++			  "\xA2\xFA\xD8\x4E\xE0\xB9\x7F\x23"
++			  "\x51\x21\x2B\x32\x68\xAA\xF8\xA8"
++			  "\x93\x08\xB5\x6D\xE6\x43\x2C\xB7"
++			  "\x31\xB2\x0F\xD0\xA2\x51\xC0\x25"
++			  "\x30\xC7\x10\x3F\x97\x27\x01\x8E"
++			  "\xFA\xD8\x4F\x78\xD8\x2E\x1D\xEB"
++			  "\xA1\x37\x52\x0F\x7B\x5E\x87\xA8"
++			  "\x22\xE2\xE6\x92\xA7\x5F\x11\x32"
++			  "\xCC\x93\x34\xFC\xD1\x7E\xAE\x54"
++			  "\xBC\x6A\x1B\x91\xD1\x2E\x21\xEC"
++			  "\x5D\xF1\xC4\xF1\x55\x20\xBF\xE5"
++			  "\x96\x3D\x69\x91\x20\x4E\xF2\x61"
++			  "\xDA\x77\xFE\xEE\xC3\x74\x57\x2A"
++			  "\x78\x39\xB0\xE0\xCF\x12\x56\xD6"
++			  "\x05\xDC\xF9\x19\x66\x44\x1D\xF9"
++			  "\x82\x37\xD4\xC2\x60\xB6\x31\xDF"
++			  "\x0C\xAF\xBC\x8B\x55\x9A\xC8\x2D"
++			  "\xAB\xA7\x88\x7B\x41\xE8\x29\xC9"
++			  "\x9B\x8D\xA7\x00\x86\x25\xB6\x14"
++			  "\xF5\x13\x73\xD7\x4B\x6B\x83\xF3"
++			  "\xAF\x96\x00\xE4\xB7\x3C\x65\xA6"
++			  "\x15\xB7\x94\x7D\x4E\x70\x4C\x75"
++			  "\xF3\xB4\x02\xA9\x17\x1C\x7A\x0A"
++			  "\xC0\xD5\x33\x11\x56\xDE\xDC\xF5"
++			  "\x8D\xD9\xCD\x3B\x22\x67\x18\xC7"
++			  "\xC4\xF5\x99\x61\xBC\xBB\x5B\x46",
++		.ilen	= 512,
++		.result	= "\x05\x11\xb7\x18\xab\xc6\x2d\xac"
++			  "\x70\x5d\xf6\x22\x94\xcd\xe5\x6c"
++			  "\x17\x6b\xf6\x1c\xf0\xf3\x6e\xf8"
++			  "\x50\x38\x1f\x71\x49\xb6\x57\xd6"
++			  "\x8f\xcb\x8d\x6b\xe3\xa6\x29\x90"
++			  "\xfe\x2a\x62\x82\xae\x6d\x8b\xf6"
++			  "\xad\x1e\x9e\x20\x5f\x38\xbe\x04"
++			  "\xda\x10\x8e\xed\xa2\xa4\x87\xab"
++			  "\xda\x6b\xb4\x0c\x75\xba\xd3\x7c"
++			  "\xc9\xac\x42\x31\x95\x7c\xc9\x04"
++			  "\xeb\xd5\x6e\x32\x69\x8a\xdb\xa6"
++			  "\x15\xd7\x3f\x4f\x2f\x66\x69\x03"
++			  "\x9c\x1f\x54\x0f\xde\x1f\xf3\x65"
++			  "\x4c\x96\x12\xed\x7c\x92\x03\x01"
++			  "\x6f\xbc\x35\x93\xac\xf1\x27\xf1"
++			  "\xb4\x96\x82\x5a\x5f\xb0\xa0\x50"
++			  "\x89\xa4\x8e\x66\x44\x85\xcc\xfd"
++			  "\x33\x14\x70\xe3\x96\xb2\xc3\xd3"
++			  "\xbb\x54\x5a\x1a\xf9\x74\xa2\xc5"
++			  "\x2d\x64\x75\xdd\xb4\x54\xe6\x74"
++			  "\x8c\xd3\x9d\x9e\x86\xab\x51\x53"
++			  "\xb7\x93\x3e\x6f\xd0\x4e\x2c\x40"
++			  "\xf6\xa8\x2e\x3e\x9d\xf4\x66\xa5"
++			  "\x76\x12\x73\x44\x1a\x56\xd7\x72"
++			  "\x88\xcd\x21\x8c\x4c\x0f\xfe\xda"
++			  "\x95\xe0\x3a\xa6\xa5\x84\x46\xcd"
++			  "\xd5\x3e\x9d\x3a\xe2\x67\xe6\x60"
++			  "\x1a\xe2\x70\x85\x58\xc2\x1b\x09"
++			  "\xe1\xd7\x2c\xca\xad\xa8\x8f\xf9"
++			  "\xac\xb3\x0e\xdb\xca\x2e\xe2\xb8"
++			  "\x51\x71\xd9\x3c\x6c\xf1\x56\xf8"
++			  "\xea\x9c\xf1\xfb\x0c\xe6\xb7\x10"
++			  "\x1c\xf8\xa9\x7c\xe8\x53\x35\xc1"
++			  "\x90\x3e\x76\x4a\x74\xa4\x21\x2c"
++			  "\xf6\x2c\x4e\x0f\x94\x3a\x88\x2e"
++			  "\x41\x09\x6a\x33\x7d\xf6\xdd\x3f"
++			  "\x8d\x23\x31\x74\x84\xeb\x88\x6e"
++			  "\xcc\xb9\xbc\x22\x83\x19\x07\x22"
++			  "\xa5\x2d\xdf\xa5\xf3\x80\x85\x78"
++			  "\x84\x39\x6a\x6d\x6a\x99\x4f\xa5"
++			  "\x15\xfe\x46\xb0\xe4\x6c\xa5\x41"
++			  "\x3c\xce\x8f\x42\x60\x71\xa7\x75"
++			  "\x08\x40\x65\x8a\x82\xbf\xf5\x43"
++			  "\x71\x96\xa9\x4d\x44\x8a\x20\xbe"
++			  "\xfa\x4d\xbb\xc0\x7d\x31\x96\x65"
++			  "\xe7\x75\xe5\x3e\xfd\x92\x3b\xc9"
++			  "\x55\xbb\x16\x7e\xf7\xc2\x8c\xa4"
++			  "\x40\x1d\xe5\xef\x0e\xdf\xe4\x9a"
++			  "\x62\x73\x65\xfd\x46\x63\x25\x3d"
++			  "\x2b\xaf\xe5\x64\xfe\xa5\x5c\xcf"
++			  "\x24\xf3\xb4\xac\x64\xba\xdf\x4b"
++			  "\xc6\x96\x7d\x81\x2d\x8d\x97\xf7"
++			  "\xc5\x68\x77\x84\x32\x2b\xcc\x85"
++			  "\x74\x96\xf0\x12\x77\x61\xb9\xeb"
++			  "\x71\xaa\x82\xcb\x1c\xdb\x89\xc8"
++			  "\xc6\xb5\xe3\x5c\x7d\x39\x07\x24"
++			  "\xda\x39\x87\x45\xc0\x2b\xbb\x01"
++			  "\xac\xbc\x2a\x5c\x7f\xfc\xe8\xce"
++			  "\x6d\x9c\x6f\xed\xd3\xc1\xa1\xd6"
++			  "\xc5\x55\xa9\x66\x2f\xe1\xc8\x32"
++			  "\xa6\x5d\xa4\x3a\x98\x73\xe8\x45"
++			  "\xa4\xc7\xa8\xb4\xf6\x13\x03\xf6"
++			  "\xe9\x2e\xc4\x29\x0f\x84\xdb\xc4"
++			  "\x21\xc4\xc2\x75\x67\x89\x37\x0a",
++		.rlen	= 512,
++	},
++};
++
++static struct cipher_testvec cast6_xts_enc_tv_template[] = {
++	{ /* Generated from TF test vectors */
++		.key	= "\x27\x18\x28\x18\x28\x45\x90\x45"
++			  "\x23\x53\x60\x28\x74\x71\x35\x26"
++			  "\x62\x49\x77\x57\x24\x70\x93\x69"
++			  "\x99\x59\x57\x49\x66\x96\x76\x27"
++			  "\x31\x41\x59\x26\x53\x58\x97\x93"
++			  "\x23\x84\x62\x64\x33\x83\x27\x95"
++			  "\x02\x88\x41\x97\x16\x93\x99\x37"
++			  "\x51\x05\x82\x09\x74\x94\x45\x92",
++		.klen	= 64,
++		.iv	= "\xff\x00\x00\x00\x00\x00\x00\x00"
++			  "\x00\x00\x00\x00\x00\x00\x00\x00",
++		.input	= "\x00\x01\x02\x03\x04\x05\x06\x07"
++			  "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
++			  "\x10\x11\x12\x13\x14\x15\x16\x17"
++			  "\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
++			  "\x20\x21\x22\x23\x24\x25\x26\x27"
++			  "\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f"
++			  "\x30\x31\x32\x33\x34\x35\x36\x37"
++			  "\x38\x39\x3a\x3b\x3c\x3d\x3e\x3f"
++			  "\x40\x41\x42\x43\x44\x45\x46\x47"
++			  "\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f"
++			  "\x50\x51\x52\x53\x54\x55\x56\x57"
++			  "\x58\x59\x5a\x5b\x5c\x5d\x5e\x5f"
++			  "\x60\x61\x62\x63\x64\x65\x66\x67"
++			  "\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f"
++			  "\x70\x71\x72\x73\x74\x75\x76\x77"
++			  "\x78\x79\x7a\x7b\x7c\x7d\x7e\x7f"
++			  "\x80\x81\x82\x83\x84\x85\x86\x87"
++			  "\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f"
++			  "\x90\x91\x92\x93\x94\x95\x96\x97"
++			  "\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f"
++			  "\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7"
++			  "\xa8\xa9\xaa\xab\xac\xad\xae\xaf"
++			  "\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7"
++			  "\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf"
++			  "\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7"
++			  "\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf"
++			  "\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7"
++			  "\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf"
++			  "\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7"
++			  "\xe8\xe9\xea\xeb\xec\xed\xee\xef"
++			  "\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7"
++			  "\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff"
++			  "\x00\x01\x02\x03\x04\x05\x06\x07"
++			  "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
++			  "\x10\x11\x12\x13\x14\x15\x16\x17"
++			  "\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
++			  "\x20\x21\x22\x23\x24\x25\x26\x27"
++			  "\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f"
++			  "\x30\x31\x32\x33\x34\x35\x36\x37"
++			  "\x38\x39\x3a\x3b\x3c\x3d\x3e\x3f"
++			  "\x40\x41\x42\x43\x44\x45\x46\x47"
++			  "\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f"
++			  "\x50\x51\x52\x53\x54\x55\x56\x57"
++			  "\x58\x59\x5a\x5b\x5c\x5d\x5e\x5f"
++			  "\x60\x61\x62\x63\x64\x65\x66\x67"
++			  "\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f"
++			  "\x70\x71\x72\x73\x74\x75\x76\x77"
++			  "\x78\x79\x7a\x7b\x7c\x7d\x7e\x7f"
++			  "\x80\x81\x82\x83\x84\x85\x86\x87"
++			  "\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f"
++			  "\x90\x91\x92\x93\x94\x95\x96\x97"
++			  "\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f"
++			  "\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7"
++			  "\xa8\xa9\xaa\xab\xac\xad\xae\xaf"
++			  "\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7"
++			  "\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf"
++			  "\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7"
++			  "\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf"
++			  "\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7"
++			  "\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf"
++			  "\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7"
++			  "\xe8\xe9\xea\xeb\xec\xed\xee\xef"
++			  "\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7"
++			  "\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff",
++		.ilen	= 512,
++		.result	= "\xDE\x6F\x22\xA5\xE8\x39\xE8\x78"
++			  "\x88\x5A\x4F\x8D\x82\x76\x52\x6D"
++			  "\xB2\x41\x16\xF4\x2B\xA6\xEB\xF6"
++			  "\xE2\xC5\x62\x8D\x61\xA1\x01\xED"
++			  "\xD9\x38\x01\xC1\x43\x63\x4E\x88"
++			  "\xC9\x4B\x5A\x88\x80\xB7\x5C\x71"
++			  "\x47\xEE\x11\xD8\xB7\x2D\x5D\x13"
++			  "\x1A\xB1\x68\x5B\x61\xA7\xA9\x81"
++			  "\x8B\x83\xA1\x6A\xAA\x36\xD6\xB6"
++			  "\x60\x54\x09\x32\xFE\x6A\x76\x2E"
++			  "\x28\xFF\xD5\xD6\xDD\x1D\x45\x7D"
++			  "\xF0\x8B\xF3\x32\x4E\x6C\x12\xCB"
++			  "\xB8\x25\x70\xF8\x40\xBC\x90\x1B"
++			  "\x11\xC3\x59\xAF\xF0\x2F\x92\xDD"
++			  "\xD3\x3B\xCF\x60\xA1\x78\x94\x57"
++			  "\xAF\x76\xC1\x67\xA6\x3C\xCD\x98"
++			  "\xB1\xF7\x27\xB9\xA3\xBD\x10\xEA"
++			  "\xCD\x8B\xC2\xF2\x14\xF2\xB2\x67"
++			  "\x05\xDD\x1D\x58\x6E\x2F\x95\x08"
++			  "\x3A\xF8\x78\x76\x82\x56\xA7\xEC"
++			  "\x51\x4B\x85\x77\xC2\x4C\x4A\x34"
++			  "\x71\x38\x17\x91\x44\xE8\xFC\x65"
++			  "\x99\x0D\x52\x91\xEE\xF8\xEF\x27"
++			  "\x2A\x9E\x6E\x78\xC4\x26\x87\xF4"
++			  "\x8A\xF0\x2D\x04\xE8\x14\x92\x5D"
++			  "\x59\x22\x9B\x29\x5C\x18\xF0\xC3"
++			  "\x47\xF3\x76\xD8\xE4\xF3\x1B\xD1"
++			  "\x70\xA3\x0D\xB5\x70\x02\x1D\xA3"
++			  "\x91\x3B\x49\x73\x18\xAB\xD4\xC9"
++			  "\xC3\x1E\xEF\x1F\xFE\xD5\x59\x8A"
++			  "\xD7\xF6\xC9\x71\x67\x79\xD7\x0E"
++			  "\xBE\x1F\x8E\xEC\x55\x7E\x4F\x24"
++			  "\xE6\x87\xEA\xFE\x96\x25\x67\x8E"
++			  "\x93\x03\xFA\xFF\xCE\xAF\xB2\x3C"
++			  "\x6F\xEB\x57\xFB\xD3\x28\x87\xA9"
++			  "\xCE\xC2\xF5\x9C\xC6\x67\xB5\x97"
++			  "\x49\xF7\x04\xCB\xEF\x84\x98\x33"
++			  "\xAF\x38\xD3\x04\x1C\x24\x71\x38"
++			  "\xC7\x71\xDD\x43\x0D\x12\x4A\x18"
++			  "\xBA\xC4\xAF\xBA\xB2\x5B\xEB\x95"
++			  "\x02\x43\x5D\xCE\x19\xCC\xCD\x66"
++			  "\x91\x0B\x8C\x7F\x51\xC4\xBF\x3C"
++			  "\x8B\xF1\xCC\xAA\x29\xD7\x87\xCB"
++			  "\x3E\xC5\xF3\xC9\x75\xE8\xA3\x5B"
++			  "\x30\x45\xA9\xB7\xAF\x80\x64\x6F"
++			  "\x75\x4A\xA7\xC0\x6D\x19\x6B\xDE"
++			  "\x17\xDE\x6D\xEA\x87\x9F\x95\xAE"
++			  "\xF5\x3C\xEE\x54\xB8\x27\x84\xF8"
++			  "\x97\xA3\xE1\x6F\x38\x24\x34\x88"
++			  "\xCE\xBD\x32\x52\xE0\x00\x6C\x94"
++			  "\xC9\xD7\x5D\x37\x81\x33\x2E\x7F"
++			  "\x4F\x7E\x2E\x0D\x94\xBD\xEA\x59"
++			  "\x34\x39\xA8\x35\x12\xB7\xBC\xAC"
++			  "\xEA\x52\x9C\x78\x02\x6D\x92\x36"
++			  "\xFB\x59\x2B\xA4\xEA\x7B\x1B\x83"
++			  "\xE1\x4D\x5E\x2A\x7E\x92\xB1\x64"
++			  "\xDE\xE0\x27\x4B\x0A\x6F\x4C\xE3"
++			  "\xB0\xEB\x31\xE4\x69\x95\xAB\x35"
++			  "\x8B\x2C\xF5\x6B\x7F\xF1\xA2\x82"
++			  "\xF8\xD9\x47\x82\xA9\x82\x03\x91"
++			  "\x69\x1F\xBE\x4C\xE7\xC7\x34\x2F"
++			  "\x45\x72\x80\x17\x81\xBD\x9D\x62"
++			  "\xA1\xAC\xE8\xCF\xC6\x74\xCF\xDC"
++			  "\x22\x60\x4E\xE8\xA4\x5D\x85\xB9",
++		.rlen	= 512,
++	},
++};
++
++static struct cipher_testvec cast6_xts_dec_tv_template[] = {
++	{ /* Generated from TF test vectors */
++		.key	= "\x27\x18\x28\x18\x28\x45\x90\x45"
++			  "\x23\x53\x60\x28\x74\x71\x35\x26"
++			  "\x62\x49\x77\x57\x24\x70\x93\x69"
++			  "\x99\x59\x57\x49\x66\x96\x76\x27"
++			  "\x31\x41\x59\x26\x53\x58\x97\x93"
++			  "\x23\x84\x62\x64\x33\x83\x27\x95"
++			  "\x02\x88\x41\x97\x16\x93\x99\x37"
++			  "\x51\x05\x82\x09\x74\x94\x45\x92",
++		.klen	= 64,
++		.iv	= "\xff\x00\x00\x00\x00\x00\x00\x00"
++			  "\x00\x00\x00\x00\x00\x00\x00\x00",
++		.input	= "\xDE\x6F\x22\xA5\xE8\x39\xE8\x78"
++			  "\x88\x5A\x4F\x8D\x82\x76\x52\x6D"
++			  "\xB2\x41\x16\xF4\x2B\xA6\xEB\xF6"
++			  "\xE2\xC5\x62\x8D\x61\xA1\x01\xED"
++			  "\xD9\x38\x01\xC1\x43\x63\x4E\x88"
++			  "\xC9\x4B\x5A\x88\x80\xB7\x5C\x71"
++			  "\x47\xEE\x11\xD8\xB7\x2D\x5D\x13"
++			  "\x1A\xB1\x68\x5B\x61\xA7\xA9\x81"
++			  "\x8B\x83\xA1\x6A\xAA\x36\xD6\xB6"
++			  "\x60\x54\x09\x32\xFE\x6A\x76\x2E"
++			  "\x28\xFF\xD5\xD6\xDD\x1D\x45\x7D"
++			  "\xF0\x8B\xF3\x32\x4E\x6C\x12\xCB"
++			  "\xB8\x25\x70\xF8\x40\xBC\x90\x1B"
++			  "\x11\xC3\x59\xAF\xF0\x2F\x92\xDD"
++			  "\xD3\x3B\xCF\x60\xA1\x78\x94\x57"
++			  "\xAF\x76\xC1\x67\xA6\x3C\xCD\x98"
++			  "\xB1\xF7\x27\xB9\xA3\xBD\x10\xEA"
++			  "\xCD\x8B\xC2\xF2\x14\xF2\xB2\x67"
++			  "\x05\xDD\x1D\x58\x6E\x2F\x95\x08"
++			  "\x3A\xF8\x78\x76\x82\x56\xA7\xEC"
++			  "\x51\x4B\x85\x77\xC2\x4C\x4A\x34"
++			  "\x71\x38\x17\x91\x44\xE8\xFC\x65"
++			  "\x99\x0D\x52\x91\xEE\xF8\xEF\x27"
++			  "\x2A\x9E\x6E\x78\xC4\x26\x87\xF4"
++			  "\x8A\xF0\x2D\x04\xE8\x14\x92\x5D"
++			  "\x59\x22\x9B\x29\x5C\x18\xF0\xC3"
++			  "\x47\xF3\x76\xD8\xE4\xF3\x1B\xD1"
++			  "\x70\xA3\x0D\xB5\x70\x02\x1D\xA3"
++			  "\x91\x3B\x49\x73\x18\xAB\xD4\xC9"
++			  "\xC3\x1E\xEF\x1F\xFE\xD5\x59\x8A"
++			  "\xD7\xF6\xC9\x71\x67\x79\xD7\x0E"
++			  "\xBE\x1F\x8E\xEC\x55\x7E\x4F\x24"
++			  "\xE6\x87\xEA\xFE\x96\x25\x67\x8E"
++			  "\x93\x03\xFA\xFF\xCE\xAF\xB2\x3C"
++			  "\x6F\xEB\x57\xFB\xD3\x28\x87\xA9"
++			  "\xCE\xC2\xF5\x9C\xC6\x67\xB5\x97"
++			  "\x49\xF7\x04\xCB\xEF\x84\x98\x33"
++			  "\xAF\x38\xD3\x04\x1C\x24\x71\x38"
++			  "\xC7\x71\xDD\x43\x0D\x12\x4A\x18"
++			  "\xBA\xC4\xAF\xBA\xB2\x5B\xEB\x95"
++			  "\x02\x43\x5D\xCE\x19\xCC\xCD\x66"
++			  "\x91\x0B\x8C\x7F\x51\xC4\xBF\x3C"
++			  "\x8B\xF1\xCC\xAA\x29\xD7\x87\xCB"
++			  "\x3E\xC5\xF3\xC9\x75\xE8\xA3\x5B"
++			  "\x30\x45\xA9\xB7\xAF\x80\x64\x6F"
++			  "\x75\x4A\xA7\xC0\x6D\x19\x6B\xDE"
++			  "\x17\xDE\x6D\xEA\x87\x9F\x95\xAE"
++			  "\xF5\x3C\xEE\x54\xB8\x27\x84\xF8"
++			  "\x97\xA3\xE1\x6F\x38\x24\x34\x88"
++			  "\xCE\xBD\x32\x52\xE0\x00\x6C\x94"
++			  "\xC9\xD7\x5D\x37\x81\x33\x2E\x7F"
++			  "\x4F\x7E\x2E\x0D\x94\xBD\xEA\x59"
++			  "\x34\x39\xA8\x35\x12\xB7\xBC\xAC"
++			  "\xEA\x52\x9C\x78\x02\x6D\x92\x36"
++			  "\xFB\x59\x2B\xA4\xEA\x7B\x1B\x83"
++			  "\xE1\x4D\x5E\x2A\x7E\x92\xB1\x64"
++			  "\xDE\xE0\x27\x4B\x0A\x6F\x4C\xE3"
++			  "\xB0\xEB\x31\xE4\x69\x95\xAB\x35"
++			  "\x8B\x2C\xF5\x6B\x7F\xF1\xA2\x82"
++			  "\xF8\xD9\x47\x82\xA9\x82\x03\x91"
++			  "\x69\x1F\xBE\x4C\xE7\xC7\x34\x2F"
++			  "\x45\x72\x80\x17\x81\xBD\x9D\x62"
++			  "\xA1\xAC\xE8\xCF\xC6\x74\xCF\xDC"
++			  "\x22\x60\x4E\xE8\xA4\x5D\x85\xB9",
++		.ilen	= 512,
++		.result	= "\x00\x01\x02\x03\x04\x05\x06\x07"
++			  "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
++			  "\x10\x11\x12\x13\x14\x15\x16\x17"
++			  "\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
++			  "\x20\x21\x22\x23\x24\x25\x26\x27"
++			  "\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f"
++			  "\x30\x31\x32\x33\x34\x35\x36\x37"
++			  "\x38\x39\x3a\x3b\x3c\x3d\x3e\x3f"
++			  "\x40\x41\x42\x43\x44\x45\x46\x47"
++			  "\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f"
++			  "\x50\x51\x52\x53\x54\x55\x56\x57"
++			  "\x58\x59\x5a\x5b\x5c\x5d\x5e\x5f"
++			  "\x60\x61\x62\x63\x64\x65\x66\x67"
++			  "\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f"
++			  "\x70\x71\x72\x73\x74\x75\x76\x77"
++			  "\x78\x79\x7a\x7b\x7c\x7d\x7e\x7f"
++			  "\x80\x81\x82\x83\x84\x85\x86\x87"
++			  "\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f"
++			  "\x90\x91\x92\x93\x94\x95\x96\x97"
++			  "\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f"
++			  "\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7"
++			  "\xa8\xa9\xaa\xab\xac\xad\xae\xaf"
++			  "\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7"
++			  "\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf"
++			  "\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7"
++			  "\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf"
++			  "\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7"
++			  "\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf"
++			  "\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7"
++			  "\xe8\xe9\xea\xeb\xec\xed\xee\xef"
++			  "\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7"
++			  "\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff"
++			  "\x00\x01\x02\x03\x04\x05\x06\x07"
++			  "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
++			  "\x10\x11\x12\x13\x14\x15\x16\x17"
++			  "\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
++			  "\x20\x21\x22\x23\x24\x25\x26\x27"
++			  "\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f"
++			  "\x30\x31\x32\x33\x34\x35\x36\x37"
++			  "\x38\x39\x3a\x3b\x3c\x3d\x3e\x3f"
++			  "\x40\x41\x42\x43\x44\x45\x46\x47"
++			  "\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f"
++			  "\x50\x51\x52\x53\x54\x55\x56\x57"
++			  "\x58\x59\x5a\x5b\x5c\x5d\x5e\x5f"
++			  "\x60\x61\x62\x63\x64\x65\x66\x67"
++			  "\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f"
++			  "\x70\x71\x72\x73\x74\x75\x76\x77"
++			  "\x78\x79\x7a\x7b\x7c\x7d\x7e\x7f"
++			  "\x80\x81\x82\x83\x84\x85\x86\x87"
++			  "\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f"
++			  "\x90\x91\x92\x93\x94\x95\x96\x97"
++			  "\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f"
++			  "\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7"
++			  "\xa8\xa9\xaa\xab\xac\xad\xae\xaf"
++			  "\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7"
++			  "\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf"
++			  "\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7"
++			  "\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf"
++			  "\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7"
++			  "\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf"
++			  "\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7"
++			  "\xe8\xe9\xea\xeb\xec\xed\xee\xef"
++			  "\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7"
++			  "\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff",
++		.rlen	= 512,
+ 	},
+ };
+ 
 -- 
 1.7.2.5
 
