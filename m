@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab2GKVCL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 17:02:11 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:41968 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755146Ab2GKVCJ (ORCPT
+	id S1758214Ab2GKVQV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 17:16:21 -0400
+Received: from inca-roads.misterjones.org ([213.251.177.50]:52187 "EHLO
+	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753482Ab2GKVQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 17:02:09 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6769"; a="207273211"
-Date: Wed, 11 Jul 2012 14:02:05 -0700
-From: David Brown <davidb@codeaurora.org>
+	Wed, 11 Jul 2012 17:16:20 -0400
 To: Arnd Bergmann <arnd@arndb.de>
-Cc: ksummit-2012-discuss@lists.linux-foundation.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Olof Johansson <olof@lixom.net>, Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
 Subject: Re: [Ksummit-2012-discuss] ARM mini-summit
-Message-ID: <20120711210204.GA15810@codeaurora.org>
-References: <1341994155.3522.16.camel@dabdike.int.hansenpartnership.com>
- <201207111128.29924.arnd@arndb.de>
+X-PHP-Originating-Script: 0:func.inc
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201207111128.29924.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Date: Wed, 11 Jul 2012 23:16:09 +0200
+From: Marc Zyngier <marc.zyngier@arm.com>
+Cc: <ksummit-2012-discuss@lists.linux-foundation.org>, <konrad@darnok.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Organization: ARM Ltd
+In-Reply-To: <201207112006.28632.arnd@arndb.de>
+References: <1341994155.3522.16.camel@dabdike.int.hansenpartnership.com> <20120711140536.GC16523@phenom.dumpdata.com> <CAPbh3rsnNNFNWEf651M-mO2UFOK8pFYTMV2x7RPhjHOAyf9OJw@mail.gmail.com> <201207112006.28632.arnd@arndb.de>
+Message-ID: <061ef00be9b475973e5df22fcd096308@localhost>
+User-Agent: RoundCube Webmail/0.3.1
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Rcpt-To: arnd@arndb.de, ksummit-2012-discuss@lists.linux-foundation.org, konrad@darnok.org, James.Bottomley@hansenpartnership.com, linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org, konrad.wilk@oracle.com
+X-SA-Exim-Mail-From: marc.zyngier@arm.com
+X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 11:28:29AM +0000, Arnd Bergmann wrote:
-> On Wednesday 11 July 2012, James Bottomley wrote:
-> > Hi All,
-> > 
-> > We have set aside the second day of the kernel summit (Tuesday 28
-> > August) as mini-summit day.  So far we have only the PCI mini summit on
-> > this day, so if you can think of other topics, please send them to the
-> > kernel summit discuss list:
-> > 
-> > ksummit-2012-discuss@lists.linux-foundation.org
-> > 
-> > Looking at the available rooms, we think we can run about four or five
-> > mini summits.
-> > 
-> > As an added incentive, mini summit organisers get to pick who they
-> > invite and all the people they pick will get an automatic invitation to
-> > the third day of the kernel summit (but not the core first day) and the
-> > evening events.
+On Wed, 11 Jul 2012 20:06:28 +0000, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 11 July 2012, Konrad Rzeszutek Wilk wrote:
+>> >> > contacts, with Grant and Olof joining in as time permits.
+>> >>
+>> >> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+>> >
+>> > I would be interested in attending it as well. I believe Stefano has
+a
+>> > strong
+>> > interest as well (since he and Ian Campbell are leading the Xen ARM
+>> > work).
+>> 
+>> And Stefano is out on vacation right now so I will serve as his phantom
+>> voice
+>> and say: "Yes, I am interested as well."
 > 
-> There is a lot of interest in having another ARM mini-summit, as we had last
-> year. Previously, Grant Likely organized this with Olof and me, but right now
-> Grant is in an extended offline period and Olof is currently on vacation
-> as well. Will Deacon already contacted me and he is interested in helping
-> out with organizing the mini-summit, so the two of us could be the primary
-> contacts, with Grant and Olof joining in as time permits.
+> Ok. So are you mostly interested in discussion ARM virtualization or
+other
+> topics
+> as well? Last time we had organized this explicitly as the "ARM subarch
+> maintainer
+> summit" and we might again limit the participants to the subarch
+> maintainers and
+> a few more people if we're running out of space, but then again if a lot
+> of them
+> are interested in discussion virtualization, we should probably have you
+> both and 
+> the ARM KVM people included as well.
 > 
-> I'm planning to send out an initial email to potential participants today
-> or tomorrow to get an idea of who would be joining. Do you have an upper
-> limit to the number of people that you expect a mini-summit? I think we
-> could easily get 30 or more people that want to come, but we can also
-> restrict it to a smaller size.
+> We haven't even started discussing an agenda, but I'll note down your
+> names as
+> candidates and Xen and/or KVM as proposed topics. I'll follow up with a
+> more
+> formal call for topics once I have a positive confirmation from James
+and
+> the
+> linux-foundation that we can go ahead with the ARM mini-summit.
 
-I found the ARM mini-summit last year to be valuable.  I'm definitely
-interested.
+Putting on my KVM/ARM hacker hat this time: I'd be very glad to contribute
+to the discussion. There is a number of ARM-specific topics that would be
+interesting to discuss regarding KVM/ARM (mainlining the damn thing, common
+hypercalls?, HYP mode booting), and probably a couple of other things.
 
-Because of the location, I think there should be a good turnout of
-Qualcomm kernel devs at plumbers, if anyone wants to meet anyone,
-that'd be a good time.
+Cheers,
 
-David
-
+        M.
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Fast, cheap, reliable. Pick two.
