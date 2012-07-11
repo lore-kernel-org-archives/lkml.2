@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757869Ab2GKOBp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 10:01:45 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:48983 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757702Ab2GKOBn (ORCPT
+	id S932689Ab2GKOBw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 10:01:52 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:59156 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757879Ab2GKOBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 10:01:43 -0400
-Message-ID: <4FFD86FE.1090307@linux.vnet.ibm.com>
-Date: Wed, 11 Jul 2012 09:00:30 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Wed, 11 Jul 2012 10:01:48 -0400
+Message-ID: <4FFD86CE.9040501@linux.vnet.ibm.com>
+Date: Wed, 11 Jul 2012 19:29:42 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] zsmalloc improvements
-References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com> <4FFD2524.2050300@kernel.org>
-In-Reply-To: <4FFD2524.2050300@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Avi Kivity <avi@redhat.com>
+CC: habanero@linux.vnet.ibm.com, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
+        Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
+References: <20120709062012.24030.37154.sendpatchset@codeblue> <1341870457.2909.27.camel@oc2024037011.ibm.com> <4FFD4091.8040804@redhat.com>
+In-Reply-To: <4FFD4091.8040804@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071114-7408-0000-0000-000006AB546D
+x-cbid: 12071103-5490-0000-0000-000001C34D8F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2012 02:03 AM, Minchan Kim wrote:
-> On 07/03/2012 06:15 AM, Seth Jennings wrote:
->> zsmapbench measures the copy-based mapping at ~560 cycles for a
->> map/unmap operation on spanned object for both KVM guest and bare-metal,
->> while the page table mapping was ~1500 cycles on a VM and ~760 cycles
->> bare-metal.  The cycles for the copy method will vary with
->> allocation size, however, it is still faster even for the largest
->> allocation that zsmalloc supports.
+On 07/11/2012 02:30 PM, Avi Kivity wrote:
+> On 07/10/2012 12:47 AM, Andrew Theurer wrote:
 >>
->> The result is convenient though, as mempcy is very portable :)
-> 
-> Today, I tested zsmapbench in my embedded board(ARM).
-> tlb-flush is 30% faster than copy-based so it's always not win.
-> I think it depends on CPU speed/cache size.
-> 
-> zram is already very popular on embedded systems so I want to use
-> it continuously without 30% big demage so I want to keep our old approach
-> which supporting local tlb flush. 
-> 
-> Of course, in case of KVM guest, copy-based would be always bin win.
-> So shouldn't we support both approach? It could make code very ugly
-> but I think it has enough value.
-> 
-> Any thought?
+>> For the cpu threads in the host that are actually active (in this case
+>> 1/2 of them), ~50% of their time is in kernel and ~43% in guest.  This
+>> is for a no-IO workload, so that's just incredible to see so much cpu
+>> wasted.  I feel that 2 important areas to tackle are a more scalable
+>> yield_to() and reducing the number of pause exits itself (hopefully by
+>> just tuning ple_window for the latter).
+>
+> One thing we can do is autotune ple_window.  If a ple exit fails to wake
+> anybody (because all vcpus are either running, sleeping, or in ple
+> exits) then we deduce we are not overcommitted and we can increase the
+> ple window.  There's the question of how to decrease it again though.
+>
 
-Thanks for testing on ARM.
+I see some problem here, If I interpret situation correctly. What
+happens if we have two guests with one VM having no over-commit and 
+other with high over-commit. (except when we have gang scheduling).
 
-I can add the pgtable assisted method back in, no problem.
-The question is by which criteria are we going to choose
-which method to use? By arch (i.e. ARM -> pgtable assist,
-x86 -> copy, other archs -> ?)?
-
-Also, what changes did you make to zsmapbench to measure
-elapsed time/cycles on ARM?  Afaik, rdtscll() is not
-supported on ARM.
-
-Thanks,
-Seth
+Rather we should have something tied to VM rather than rigid PLE
+window.
 
