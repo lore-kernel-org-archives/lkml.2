@@ -1,93 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306Ab2GKHwm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 03:52:42 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41143 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754258Ab2GKHwk (ORCPT
+	id S1756820Ab2GKHxa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 03:53:30 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:28278 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754258Ab2GKHx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 03:52:40 -0400
-Date: Wed, 11 Jul 2012 00:52:35 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Roland Stigge <stigge@antcom.de>
-Cc: axel.lin@gmail.com, riyer@nvidia.com, michael.hennerich@analog.com,
-        grant.likely@secretlab.ca, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
-        aletes.xgr@gmail.com
-Subject: Re: [PATCH v9] input: keyboard: Add keys driver for the LPC32xx SoC
-Message-ID: <20120711075235.GA27353@core.coreip.homeip.net>
-References: <1341948910-6530-1-git-send-email-stigge@antcom.de>
- <20120710205507.GA377@core.coreip.homeip.net>
- <4FFD2FF0.8030000@antcom.de>
+	Wed, 11 Jul 2012 03:53:29 -0400
+Message-ID: <4FFD30E7.3070404@oracle.com>
+Date: Wed, 11 Jul 2012 15:53:11 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FFD2FF0.8030000@antcom.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Dave, Tushar N" <tushar.n.dave@intel.com>
+CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: 82571EB: Detected Hardware Unit Hang
+References: <4FFA9B96.6040901@oracle.com> <4FFBDC50.5090800@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EE41F@ORSMSX102.amr.corp.intel.com> <4FFCCA22.8060006@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EEC8B@ORSMSX102.amr.corp.intel.com> <4FFCDA6C.8020708@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EED74@ORSMSX102.amr.corp.intel.com> <4FFCF314.6020400@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EEDD7@ORSMSX102.amr.corp.intel.com> <4FFD0908.6080506@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EEF38@ORSMSX102.amr.corp.intel.com> <4FFD2896.3090209@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EEFD7@ORSMSX102.amr.corp.intel.com> <4FFD2D7E.60801@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EF055@ORSMSX102.amr.corp.intel.com>
+In-Reply-To: <061C8A8601E8EE4CA8D8FD6990CEA891274EF055@ORSMSX102.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 11, 2012 at 09:49:04AM +0200, Roland Stigge wrote:
-> On 07/10/2012 10:55 PM, Dmitry Torokhov wrote:
-> > Hi Roland,
-> > 
-> > On Tue, Jul 10, 2012 at 09:35:10PM +0200, Roland Stigge wrote:
-> >> This patch adds a driver for the key scan interface of the LPC32xx SoC
-> >>
-> > 
-> > Could of more things that I had in my patch but forgot to specifically
-> > call out:
-> > 
-> >> +
-> >> +	/* Configure the key scanner */
-> >> +	clk_prepare_enable(kscandat->clk);
-> > 
-> > This may fail so we should handle errors.
-> > 
-> >> +	writel(kscandat->deb_clks, LPC32XX_KS_DEB(kscandat->kscan_base));
-> >> +	writel(kscandat->scan_delay, LPC32XX_KS_SCAN_CTL(kscandat->kscan_base));
-> >> +	writel(LPC32XX_KSCAN_FTST_USE32K_CLK,
-> >> +	       LPC32XX_KS_FAST_TST(kscandat->kscan_base));
-> >> +	writel(kscandat->matrix_sz,
-> >> +	       LPC32XX_KS_MATRIX_DIM(kscandat->kscan_base));
-> >> +	writel(1, LPC32XX_KS_IRQ(kscandat->kscan_base));
-> >> +	clk_disable_unprepare(kscandat->clk);
-> >> +
-> >> +	error = request_irq(irq, lpc32xx_kscan_irq, 0, pdev->name, kscandat);
-> > 
-> > ...
-> > 
-> >> +
-> >> +	free_irq(platform_get_irq(pdev, 0), pdev);
-> > 
-> > You are requesting IRQ with kscandat as an argument but freeing it with
-> > 'pdev' which will fail.
-> > 
-> >> +
-> >> +	if (kscandat->input->users) {
-> >> +		/* Enable clock and clear IRQ */
-> >> +		clk_prepare_enable(kscandat->clk);
-> > 
-> > Need to handle errors here as well.
-> > 
-> > Since I am partial to my rearrangement (basically I started preferring
-> > err_<action> style of error labels as they more explanatory than out2 or
-> > fail3 style of labels), could you try this version of my patch (on top
-> > of your v9 one). Third time is a charm maybe? :)
+On 07/11/12 15:50, Dave, Tushar N wrote:
+> Device status and AER sections show some errors that looks little suspicious to me but I'm not too sure. I will get back tomorrow.
 > 
-> Yes, works fine!
-> 
-> Thanks!
-> 
-> Acked-by: Roland Stigge <stigge@antcom.de>
 
-Excellent, I'll fold it up into your original v9 patch and queue for
-3.6.
+Thanks a lot, Tushar!
 
-Thank you for your patience.
+Joe
+
 
 -- 
-Dmitry
+Oracle <http://www.oracle.com>
+Joe Jin | Software Development Senior Manager | +8610.6106.5624
+ORACLE | Linux and Virtualization
+No. 24 Zhongguancun Software Park, Haidian District | 100193 Beijing 
+
+
