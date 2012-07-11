@@ -1,99 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758185Ab2GKP4W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 11:56:22 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55860 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755494Ab2GKP4U (ORCPT
+	id S1758196Ab2GKP4v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 11:56:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37553 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755494Ab2GKP4u convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 11:56:20 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial] mach-omap2: Fix typo in debug message and comment
-Date: Thu, 12 Jul 2012 00:56:57 +0900
-Message-Id: <1342022217-28522-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.7.11.1.104.ge7b44f1
+	Wed, 11 Jul 2012 11:56:50 -0400
+Message-ID: <1342022185.3462.176.camel@twins>
+Subject: Re: [PATCH 1/6] hrtimer: Provide clock_was_set_delayed()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prarit Bhargava <prarit@redhat.com>, John Stultz <johnstul@us.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, stable@vger.kernel.org
+Date: Wed, 11 Jul 2012 17:56:25 +0200
+In-Reply-To: <alpine.LFD.2.02.1207111539060.32033@ionos>
+References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>
+	  <1341960205-56738-2-git-send-email-johnstul@us.ibm.com>
+	  <4FFD6E5A.9060206@redhat.com> <alpine.LFD.2.02.1207111425260.32033@ionos>
+	 <1342011904.3462.152.camel@twins>
+	 <alpine.LFD.2.02.1207111539060.32033@ionos>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correcting spelling typo in mach-omap2
+On Wed, 2012-07-11 at 17:18 +0200, Thomas Gleixner wrote:
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- arch/arm/mach-omap2/board-apollon.c       | 2 +-
- arch/arm/mach-omap2/board-omap4panda.c    | 2 +-
- arch/arm/mach-omap2/omap-mpuss-lowpower.c | 2 +-
- arch/arm/mach-omap2/sr_device.c           | 2 +-
- arch/arm/mach-omap2/twl-common.c          | 2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+> Right. I think with the atomic update of the offset in the timer
+> interrupt we are on the safe side. The main problem of timers expiring
+> early forever is covered by this.
+> 
+> Thinking more about it.
+> 
+> If time goes backwards, then the IPI is pointless. The already armed
+> clockevent device will fire too early, hrtimer_interrupt will update
+> and just rearm it. That's one "spurious" event.
+> 
+> So we only need it in the case of time going forward. 
+> 
+> Though with the leap second the maximum observable delay is 1 second
+> on a completely idle core. Surely nothing to worry about for an event
+> which happens rarely. So we could safely avoid the whole delayed
+> business and just do the timerfd notification, though I wonder if even
+> that is necessary in the leap second case.
+> 
+> On NOHZ=n systems the IPI is pointless as well. The maximum lateness
+> will be 10ms for HZ=100. Nothing we should worry about.
+> 
+> That leaves NOHZ enabled systems and there we might be clever and
+> avoid the IPIs to those cores which are not idle and let the tick
+> interrupt deal with it. And we can make the calls async and just let
+> them raise the hrtimer softirq on those cores, which will run the
+> hrtimer interrupt code and take care of everything.
+> 
+> Thoughts?
 
-diff --git a/arch/arm/mach-omap2/board-apollon.c b/arch/arm/mach-omap2/board-apollon.c
-index 502c31e..3a8b665 100644
---- a/arch/arm/mach-omap2/board-apollon.c
-+++ b/arch/arm/mach-omap2/board-apollon.c
-@@ -329,7 +329,7 @@ static void __init omap_apollon_init(void)
- 	/* LCD PWR_EN */
- 	omap_mux_init_signal("mcbsp2_dr.gpio_11", OMAP_PULL_ENA | OMAP_PULL_UP);
- 
--	/* Use Interal loop-back in MMC/SDIO Module Input Clock selection */
-+	/* Use Internal loop-back in MMC/SDIO Module Input Clock selection */
- 	v = omap_ctrl_readl(OMAP2_CONTROL_DEVCONF0);
- 	v |= (1 << 24);
- 	omap_ctrl_writel(v, OMAP2_CONTROL_DEVCONF0);
-diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
-index 982fb26..4d2fac5 100644
---- a/arch/arm/mach-omap2/board-omap4panda.c
-+++ b/arch/arm/mach-omap2/board-omap4panda.c
-@@ -106,7 +106,7 @@ static struct platform_device leds_gpio = {
- static struct omap_abe_twl6040_data panda_abe_audio_data = {
- 	/* Audio out */
- 	.has_hs		= ABE_TWL6040_LEFT | ABE_TWL6040_RIGHT,
--	/* HandsFree through expasion connector */
-+	/* HandsFree through expansion connector */
- 	.has_hf		= ABE_TWL6040_LEFT | ABE_TWL6040_RIGHT,
- 	/* PandaBoard: FM TX, PandaBoardES: can be connected to audio out */
- 	.has_aux	= ABE_TWL6040_LEFT | ABE_TWL6040_RIGHT,
-diff --git a/arch/arm/mach-omap2/omap-mpuss-lowpower.c b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
-index 13670aa..7787eb8 100644
---- a/arch/arm/mach-omap2/omap-mpuss-lowpower.c
-+++ b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
-@@ -313,7 +313,7 @@ int __cpuinit omap4_hotplug_cpu(unsigned int cpu, unsigned int power_state)
- 	scu_pwrst_prepare(cpu, power_state);
- 
- 	/*
--	 * CPU never retuns back if targetted power state is OFF mode.
-+	 * CPU never retuns back if targeted power state is OFF mode.
- 	 * CPU ONLINE follows normal CPU ONLINE ptah via
- 	 * omap_secondary_startup().
- 	 */
-diff --git a/arch/arm/mach-omap2/sr_device.c b/arch/arm/mach-omap2/sr_device.c
-index a503e1e..62af20f 100644
---- a/arch/arm/mach-omap2/sr_device.c
-+++ b/arch/arm/mach-omap2/sr_device.c
-@@ -106,7 +106,7 @@ static int __init sr_dev_init(struct omap_hwmod *oh, void *user)
- 
- 	omap_voltage_get_volttable(sr_data->voltdm, &volt_data);
- 	if (!volt_data) {
--		pr_warning("%s: No Voltage table registerd fo VDD%d."
-+		pr_warning("%s: No Voltage table registered fo VDD%d."
- 			"Something really wrong\n\n", __func__, i + 1);
- 		goto exit;
- 	}
-diff --git a/arch/arm/mach-omap2/twl-common.c b/arch/arm/mach-omap2/twl-common.c
-index 119d5a9..40d8abb 100644
---- a/arch/arm/mach-omap2/twl-common.c
-+++ b/arch/arm/mach-omap2/twl-common.c
-@@ -92,7 +92,7 @@ void __init omap4_pmic_init(const char *pmic_type,
- 
- void __init omap_pmic_late_init(void)
- {
--	/* Init the OMAP TWL parameters (if PMIC has been registerd) */
-+	/* Init the OMAP TWL parameters (if PMIC has been registered) */
- 	if (pmic_i2c_board_info.irq)
- 		omap3_twl_init();
- 	if (omap4_i2c1_board_info[0].irq)
--- 
-1.7.11.1.104.ge7b44f1
+
+static void nohz_hrtimer_softirq(void *unused)
+{
+	raise_softirq(HRTIMER_SOFTIRQ);
+}
+
+static void kick_nohz_cpus(void)
+{
+	smp_call_function_many(nohz.idle_cpus_mask, nohz_hrtimer_softirq, NULL, 0);
+}
+
+Same problem as before though, can't be sending IPIs while in hardirq
+context.. 
+
+And you cannot do the same trick with a CFD as with the CSD, some CPUs
+might need it again while others are still pending.
 
