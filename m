@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab2GKNGb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:06:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25433 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754662Ab2GKNG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:06:29 -0400
-Message-ID: <4FFD7A31.8000909@redhat.com>
-Date: Wed, 11 Jul 2012 09:05:53 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1757592Ab2GKNGl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:06:41 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:44073 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757578Ab2GKNGi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 09:06:38 -0400
+Message-ID: <4FFD79E2.3080307@linux.vnet.ibm.com>
+Date: Wed, 11 Jul 2012 18:34:34 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: John Stultz <johnstul@us.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, stable@vger.kernel.org
-Subject: Re: [PATCH 1/6] hrtimer: Provide clock_was_set_delayed()
-References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com> <1341960205-56738-2-git-send-email-johnstul@us.ibm.com> <4FFD6E5A.9060206@redhat.com> <alpine.LFD.2.02.1207111425260.32033@ionos>
-In-Reply-To: <alpine.LFD.2.02.1207111425260.32033@ionos>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
+        Carsten Otte <cotte@de.ibm.com>, KVM <kvm@vger.kernel.org>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
+References: <20120709062012.24030.37154.sendpatchset@codeblue> <4FFA8E5E.3070108@de.ibm.com> <4FFD422B.9060008@redhat.com> <4FFD52CD.7040403@de.ibm.com> <4FFD68AA.1000607@linux.vnet.ibm.com>
+In-Reply-To: <4FFD68AA.1000607@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+x-cbid: 12071102-9264-0000-0000-000001E4824B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/11/2012 05:21 PM, Raghavendra K T wrote:
+> On 07/11/2012 03:47 PM, Christian Borntraeger wrote:
+>> On 11/07/12 11:06, Avi Kivity wrote:
+[...]
+>>>> So there is no win here, but there are other cases were diag44 is
+>>>> used, e.g. cpu_relax.
+>>>> I have to double check with others, if these cases are critical, but
+>>>> for now, it seems
+>>>> that your dummy implementation for s390 is just fine. After all it
+>>>> is a no-op until
+>>>> we implement something.
+>>>
+>>> Does the data structure make sense for you? If so we can move it to
+>>> common code (and manage it in kvm_vcpu_on_spin()). We can guard it with
+>>> CONFIG_KVM_HAVE_CPU_RELAX_INTERCEPT or something, so other archs don't
+>>> have to pay anything.
+>>
+>> Ignoring the name, yes the data structure itself seems based on the
+>> algorithm
+>> and not on arch specific things. That should work.
+>
+> Ok. can you please elaborate, on the flow.
+>
 
->> I wish there was a nicer way to do this ... but looking at the code I can't
->> figure out a better way.  (no offense John, it's just the way the code is ;) )
-> 
-> Yeah, I had the same discussion with Peter earlier today. There is
-> only a rather limited set of options.
-> 
-> 1) Retrigger the timer interrupt vectors on all CPUs - except the one
->    we are running on, but we have no interface for that at the moment
-> 
-> 2) Do the nasty __smp_call_function_single() hack
-> 
->    Preallocate call_single_data for all cpus and do a
->    __smp_call_function_single() on all online cpus.
-> 
->    This can be called from hard interrupt context or irq disabled
->    regions.
-> 
->    That would allow to get rid of the whole delay magic all
->    together.
-> 
-> Thoughts?
-> 
+Ok got it..  Will check how the code can be common to both x86 and s390.
 
-Both of those options seem like a lot of work for something that happens once
-every 3-4 years, and may not happen ever again[1].  Based on that statement, if
-we're going to modify code I would prefer that it be as lightweight as possible.
- So, in terms of the kernel, option 2 is likely the best way to go rather than
-introducing new code that will be used once every 3-4 years.
-
-I keep asking the question of why the mechanism of inserting a leap second isn't
-moved into userspace ntpd (or some other appropriate daemon).  I suppose there
-is a risk of ntpd being starved out on heavily loaded systems...
-
-P.
-
-[1] http://en.wikipedia.org/wiki/Leap_second#Proposal_to_abolish_leap_seconds
