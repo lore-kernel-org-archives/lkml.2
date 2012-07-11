@@ -1,104 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923Ab2GKF5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 01:57:13 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64247 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755467Ab2GKF5M (ORCPT
+	id S1755940Ab2GKGJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 02:09:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48904 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755467Ab2GKGJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 01:57:12 -0400
-X-AuditID: 9c930197-b7b98ae000000e33-8f-4ffd15b23f49
-Message-ID: <4FFD15B2.6020001@kernel.org>
-Date: Wed, 11 Jul 2012 14:57:06 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v2] mm: Warn about costly page allocation
-References: <1341878153-10757-1-git-send-email-minchan@kernel.org> <20120709170856.ca67655a.akpm@linux-foundation.org> <20120710002510.GB5935@bbox> <alpine.DEB.2.00.1207101756070.684@chino.kir.corp.google.com> <20120711022304.GA17425@bbox> <alpine.DEB.2.00.1207102223000.26591@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1207102223000.26591@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 11 Jul 2012 02:09:27 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Devendra Naga <devendra.aaru@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Lior Dotan <liodot@gmail.com>,
+        Christopher Harrer <charrer@alacritech.com>
+Subject: [PATCH V2] staging/slicoss: disable pci device at remove
+Date: Wed, 11 Jul 2012 11:54:15 +0545
+Message-Id: <1341986955-20020-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2012 02:33 PM, David Rientjes wrote:
-> On Wed, 11 Jul 2012, Minchan Kim wrote:
-> 
->>> Should we consider enabling CONFIG_COMPACTION in defconfig?  If not, would 
->>
->> I hope so but Mel didn't like it because some users want to have a smallest
->> kernel if they don't care of high-order allocation.
->>
-> 
-> CONFIG_COMPACTION adds 0.1% to my kernel image using x86_64 defconfig, 
+at probe we enabled the device, and we should disable it at remove.
 
-barrios@bbox:~/linux-next$ size mm/compaction.o mm/migrate.o
-   text	   data	    bss	    dec	    hex	filename
-   8550	   1114	      4	   9668	   25c4	mm/compaction.o
-  10891	    520	      0	  11411	   2c93	mm/migrate.o
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
 
-It couldn't be a trivial on small system.
+changes v2:
+	nothing, just a resend, incremented patch version count for maintainer to have notified the latest change easily.
 
-> that's the only reason we don't enable it by default?
+ drivers/staging/slicoss/slicoss.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-AFAIK, that's all. Mel. Do you think others?
-
-> 
->>> it be possible with a different extfrag_threshold (and more aggressive 
->>> when things like THP are enabled)?
->>
->> Anyway, we should enable compaction for it although the system doesn't 
->> care about high-order allocation and it ends up make bloting kernel unnecessary.
->>
-> 
-> The problem with this approach (and the appended patch) is that we can't 
-> define a system that "doesn't care about high-order allocations."  Even if 
-> you discount thp, an admin has no way of knowing how many high-order 
-> allocations his or her kernel will be doing and it will change between 
-
-Of course.
-
-> kernel versions.  Almost 50% of slab caches on my desktop machine running 
-> with slub have a default order greater than 0.
-> 
-> So I don't believe that adding this warning will be helpful and will 
-> simply lead to confusion.
-> 
->> I tend to agree Andrew and your concern but I don't have a good idea but
->> alert vague warning message. Anyway, we need *alert* this fact which removed
->> lumpy reclaim for being able to disabling CONFIG_COMPACTION.
-> 
-> Can we ignore the fact that lumpy reclaim was removed and look at 
-> individual issues as they arise and address them by fixing the VM or by 
-> making a case for enabling CONFIG_COMPACTION by default?
-
-I agree it's an ideal but the problem is that it's too late.
-Once product is released, we have to recall all products in the worst case.
-The fact is that lumpy have helped high order allocation implicitly but we removed it
-without any notification or information. It's a sort of regression and we can't say
-them "Please report us if it happens". It's irresponsible, too.
-IMHO, at least, what we can do is to warn about it before it's too late.
-
-
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
-
+diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
+index 785e4c5..56829fc 100644
+--- a/drivers/staging/slicoss/slicoss.c
++++ b/drivers/staging/slicoss/slicoss.c
+@@ -3234,6 +3234,7 @@ static void __devexit slic_entry_remove(struct pci_dev *pcidev)
+ 	}
+ 	free_netdev(dev);
+ 	pci_release_regions(pcidev);
++	pci_disable_device(pcidev);
+ }
+ 
+ static int slic_entry_halt(struct net_device *dev)
 -- 
-Kind regards,
-Minchan Kim
-
+1.7.9.5
 
