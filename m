@@ -1,161 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab2GKC4X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 22:56:23 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:25396 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752084Ab2GKC4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 22:56:21 -0400
-X-IronPort-AV: E=Sophos;i="4.77,564,1336320000"; 
-   d="scan'208";a="5368311"
-Message-ID: <4FFCE3E6.709@cn.fujitsu.com>
-Date: Wed, 11 Jul 2012 10:24:38 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1755320Ab2GKDD0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 23:03:26 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:46318 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377Ab2GKDDY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 23:03:24 -0400
+Message-ID: <4FFCEC62.5090200@linux.vnet.ibm.com>
+Date: Wed, 11 Jul 2012 08:30:50 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [RFC PATCH v3 0/13] memory-hotplug : hot-remove physical memory
-References: <4FFAB0A2.8070304@jp.fujitsu.com> <4FFCDC6A.9070704@cn.fujitsu.com>
-In-Reply-To: <4FFCDC6A.9070704@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/11 10:19:54,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/11 10:20:32,
-	Serialize complete at 2012/07/11 10:20:32
+To: Ingo Molnar <mingo@kernel.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        S390 <linux-s390@vger.kernel.org>, Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        KVM <kvm@vger.kernel.org>, chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH RFC V2 2/2] kvm PLE handler: Choose better candidate for
+ directed yield
+References: <20120710193056.16440.40112.sendpatchset@codeblue> <20120710193138.16440.31791.sendpatchset@codeblue> <20120710205018.GB16986@gmail.com>
+In-Reply-To: <20120710205018.GB16986@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
+x-cbid: 12071016-7014-0000-0000-00000189FA43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 07/11/2012 09:52 AM, Wen Congyang Wrote:
-> At 07/09/2012 06:21 PM, Yasuaki Ishimatsu Wrote:
->> This patch series aims to support physical memory hot-remove.
->>
->>   [RFC PATCH v3 1/13] memory-hotplug : rename remove_memory to offline_memory
->>   [RFC PATCH v3 2/13] memory-hotplug : add physical memory hotplug code to acpi_memory_device_remove
->>   [RFC PATCH v3 3/13] memory-hotplug : unify argument of firmware_map_add_early/hotplug
->>   [RFC PATCH v3 4/13] memory-hotplug : remove /sys/firmware/memmap/X sysfs
->>   [RFC PATCH v3 5/13] memory-hotplug : does not release memory region in PAGES_PER_SECTION chunks
->>   [RFC PATCH v3 6/13] memory-hotplug : add memory_block_release
->>   [RFC PATCH v3 7/13] memory-hotplug : remove_memory calls __remove_pages
->>   [RFC PATCH v3 8/13] memory-hotplug : check page type in get_page_bootmem
->>   [RFC PATCH v3 9/13] memory-hotplug : move register_page_bootmem_info_node and put_page_bootmem for
->> sparse-vmemmap
->>   [RFC PATCH v3 10/13] memory-hotplug : implement register_page_bootmem_info_section of sparse-vmemmap
->>   [RFC PATCH v3 11/13] memory-hotplug : free memmap of sparse-vmemmap
->>   [RFC PATCH v3 12/13] memory-hotplug : add node_device_release
->>   [RFC PATCH v3 13/13] memory-hotplug : remove sysfs file of node
->>
->> Even if you apply these patches, you cannot remove the physical memory
->> completely since these patches are still under development. I want you to
->> cooperate to improve the physical memory hot-remove. So please review these
->> patches and give your comment/idea.
->>
->> The patches can free/remove following things:
->>
->>   - acpi_memory_info                          : [RFC PATCH 2/13]
->>   - /sys/firmware/memmap/X/{end, start, type} : [RFC PATCH 4/13]
->>   - iomem_resource                            : [RFC PATCH 5/13]
->>   - mem_section and related sysfs files       : [RFC PATCH 6-11/13]
->>   - node and related sysfs files              : [RFC PATCH 12-13/13]
->>
->> The patches cannot do following things yet:
->>
->>   - page table of removed memory
->>
->> If you find lack of function for physical memory hot-remove, please let me
->> know.
->>
->> change log of v3:
->>  * rebase to 3.5.0-rc6
->>
->>  [RFC PATCH v2 2/13]
->>    * remove extra kobject_put()
->>
->>    * The patch was commented by Wen. Wen's comment is
->>      "acpi_memory_device_remove() should ignore a return value of
->>      remove_memory() since caller does not care the return value".
->>      But I did not change it since I think caller should care the
->>      return value. And I am trying to fix it as follow:
->>
->>      https://lkml.org/lkml/2012/7/5/624
-> 
-> acpi_memory_device_remove() will be called not only when we write
-> 1 to /sys/bus/acpi/devices/PNP0C80:XX/eject. When we unbind it
-> from the driver or remove the module acpi_memhotplug, this function
-> will be called too.
-> 
-> I will check whether your patch can work for these two cases.
+On 07/11/2012 02:20 AM, Ingo Molnar wrote:
+>
+> * Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>  wrote:
+>
+>> --- a/virt/kvm/kvm_main.c
+>> +++ b/virt/kvm/kvm_main.c
+>> @@ -1595,6 +1595,9 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>>   				continue;
+>>   			if (waitqueue_active(&vcpu->wq))
+>>   				continue;
+>> +			if (!kvm_arch_vcpu_check_and_update_eligible(vcpu)) {
+>> +				continue;
+>> +			}
+>
+> Saw this fly by for a second time and now it annoyed me enough
+> to mention it: those curly braces are superfluous and should be
+> dropped.
+>
 
-I have checked it, and I think your patch can not work for these 2 cases.
-
-When we unbind the device from the driver(write device name to
-/sys/bus/acpi/drivers/acpi_memhotplug/unbind), driver_unbind()
-will be called. This function does not care the return value.
-
-When we remove the module acpi_memhotplug, acpi_memory_device_exit()
-will be called. This function does not care the return value too.
-
-I don't know whether there are some other cases that acpi_memory_device_remove()
-will be called.
-
-Thanks
-Wen Congyang
-
-
-> 
-> Thanks
-> Wen Congyang
-> 
->>
->>  [RFC PATCH v2 4/13]
->>    * remove a firmware_memmap_entry allocated by kzmalloc()
->>
->> change log of v2:
->>  [RFC PATCH v2 2/13]
->>    * check whether memory block is offline or not before calling offline_memory()
->>    * check whether section is valid or not in is_memblk_offline()
->>    * call kobject_put() for each memory_block in is_memblk_offline()
->>
->>  [RFC PATCH v2 3/13]
->>    * unify the end argument of firmware_map_add_early/hotplug
->>
->>  [RFC PATCH v2 4/13]
->>    * add release_firmware_map_entry() for freeing firmware_map_entry
->>
->>  [RFC PATCH v2 6/13]
->>   * add release_memory_block() for freeing memory_block
->>
->>  [RFC PATCH v2 11/13]
->>   * fix wrong arguments of free_pages()
->>
->> ---
->>  arch/powerpc/platforms/pseries/hotplug-memory.c |   16 +-
->>  arch/x86/mm/init_64.c                           |  144 ++++++++++++++++++++++++
->>  drivers/acpi/acpi_memhotplug.c                  |   28 ++++
->>  drivers/base/memory.c                           |   54 ++++++++-
->>  drivers/base/node.c                             |    7 +
->>  drivers/firmware/memmap.c                       |   78 ++++++++++++-
->>  include/linux/firmware-map.h                    |    6 +
->>  include/linux/memory.h                          |    5
->>  include/linux/memory_hotplug.h                  |   17 --
->>  include/linux/mm.h                              |    5
->>  mm/memory_hotplug.c                             |   98 ++++++++++++----
->>  mm/sparse.c                                     |    5
->>  12 files changed, 414 insertions(+), 49 deletions(-)
->>
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Oops! Sorry.will remove {} and resend with Rik's reviewed-by. TBH,
+block got simplified after iterations (local), this one leftout. my
+mistake.
 
