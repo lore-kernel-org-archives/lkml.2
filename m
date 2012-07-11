@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab2GKJt4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 05:49:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56273 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752790Ab2GKJty convert rfc822-to-8bit (ORCPT
+	id S1753940Ab2GKJup (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 05:50:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61529 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148Ab2GKJuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 05:49:54 -0400
-Message-ID: <1342000187.3462.134.camel@twins>
-Subject: Re: perf with precise attribute kills all KVM based VMs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>, Avi Kivity <avi@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 11 Jul 2012 11:49:47 +0200
-In-Reply-To: <20120711071006.GF23898@redhat.com>
-References: <4FFAE6D8.5050609@gmail.com> <20120709141904.GC7298@redhat.com>
-	 <1341843844.3462.75.camel@twins> <4FFAED16.7050204@redhat.com>
-	 <4FFAEF13.7010108@gmail.com> <1341845396.3462.81.camel@twins>
-	 <4FFAEFF1.9000706@redhat.com> <1341845999.3462.86.camel@twins>
-	 <4FFCBD00.1030109@gmail.com> <20120711071006.GF23898@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 11 Jul 2012 05:50:44 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
+        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH] leds/leds-s3c24xx: use devm_gpio_request
+Date: Wed, 11 Jul 2012 15:35:32 +0545
+Message-Id: <1342000232-10105-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-07-11 at 10:10 +0300, Gleb Natapov wrote:
+why?
+because if the led_classdev_register fails we wont do gpio free
+because using devm_ functions, there is no need for error paths
 
-> Looks like Avi is right about the overshoot. Can you test something like this?
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index 166546e..5fb371a 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -1374,8 +1374,11 @@ static struct perf_guest_switch_msr *intel_guest_get_msrs(int *nr)
->  	arr[0].msr = MSR_CORE_PERF_GLOBAL_CTRL;
->  	arr[0].host = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_guest_mask;
->  	arr[0].guest = x86_pmu.intel_ctrl & ~cpuc->intel_ctrl_host_mask;
-> +	arr[1].msr = MSR_IA32_PEBS_ENABLE;
-> +	arr[1].host = cpuc->pebs_enabled;
-> +	arr[1].guest = 0;
-> +	*nr = 2;
->  
-> -	*nr = 1;
->  	return arr;
->  }
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
+Bryan,
 
+	This patch is not even compile tested, since my machine crashed, and
+didn't have the ARM toolchain, sorry ..
 
-You also need to clear TR, BTS, BTINT from MSR_IA32_DEBUGCTLMSR and
-ideally you'd also clear MSR_IA32_DS_AREA so that any write will be a
-proper NULL deref or such.
+	And i think this patch is legit not as that pci_set_drvdata one :(
+ drivers/leds/leds-s3c24xx.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
+index e120640..942f0ea 100644
+--- a/drivers/leds/leds-s3c24xx.c
++++ b/drivers/leds/leds-s3c24xx.c
+@@ -65,7 +65,6 @@ static int s3c24xx_led_remove(struct platform_device *dev)
+ 	struct s3c24xx_gpio_led *led = pdev_to_gpio(dev);
+ 
+ 	led_classdev_unregister(&led->cdev);
+-	gpio_free(led->pdata->gpio);
+ 
+ 	return 0;
+ }
+@@ -92,7 +91,7 @@ static int s3c24xx_led_probe(struct platform_device *dev)
+ 
+ 	led->pdata = pdata;
+ 
+-	ret = gpio_request(pdata->gpio, "S3C24XX_LED");
++	ret = devm_gpio_request(&dev->dev, pdata->gpio, "S3C24XX_LED");
+ 	if (ret < 0)
+ 		return ret;
+ 
+-- 
+1.7.9.5
+
