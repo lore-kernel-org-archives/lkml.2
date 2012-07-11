@@ -1,100 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933184Ab2GKUQH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 16:16:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48722 "EHLO mx2.suse.de"
+	id S933211Ab2GKUTt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 16:19:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64617 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932456Ab2GKUQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 16:16:05 -0400
-Date: Wed, 11 Jul 2012 22:16:01 +0200
-From: Jan Kara <jack@suse.cz>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>, mgalbraith@suse.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Deadlocks due to per-process plugging
-Message-ID: <20120711201601.GB9779@quack.suse.cz>
-References: <20120711133735.GA8122@quack.suse.cz>
- <x49ehoii8ps.fsf@segfault.boston.devel.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49ehoii8ps.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933157Ab2GKUTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 16:19:47 -0400
+Date: Wed, 11 Jul 2012 16:18:00 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Sasha Levin <levinsasha928@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, jaschut@sandia.gov,
+        kamezawa.hiroyu@jp.fujitsu.com, Dave Jones <davej@redhat.com>
+Subject: [PATCH -mm v3] mm: have order > 0 compaction start off where it
+ left
+Message-ID: <20120711161800.763dbef0@cuia.bos.redhat.com>
+In-Reply-To: <4FF3F864.3000204@kernel.org>
+References: <20120628135520.0c48b066@annuminas.surriel.com>
+	<20120628135940.2c26ada9.akpm@linux-foundation.org>
+	<4FECCB89.2050400@redhat.com>
+	<20120628143546.d02d13f9.akpm@linux-foundation.org>
+	<1341250950.16969.6.camel@lappy>
+	<4FF2435F.2070302@redhat.com>
+	<20120703101024.GG13141@csn.ul.ie>
+	<20120703144808.4daa4244.akpm@linux-foundation.org>
+	<4FF3ABA1.3070808@kernel.org>
+	<20120704004219.47d0508d.akpm@linux-foundation.org>
+	<4FF3F864.3000204@kernel.org>
+Organization: Red Hat, Inc
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-07-12 12:05:51, Jeff Moyer wrote:
-> Jan Kara <jack@suse.cz> writes:
-> 
-> >   Hello,
-> >
-> >   we've recently hit a deadlock in our QA runs which is caused by the
-> > per-process plugging code. The problem is as follows:
-> >   process A					process B (kjournald)
-> >   generic_file_aio_write()
-> >     blk_start_plug(&plug);
-> >     ...
-> >     somewhere in here we allocate memory and
-> >     direct reclaim submits buffer X for IO
-> >     ...
-> >     ext3_write_begin()
-> >       ext3_journal_start()
-> >         we need more space in a journal
-> >         so we want to checkpoint old transactions,
-> >         we block waiting for kjournald to commit
-> >         a currently running transaction.
-> > 						journal_commit_transaction()
-> > 						  wait for IO on buffer X
-> > 						  to complete as it is part
-> > 						  of the current transaction
-> >
-> >   => deadlock since A waits for B and B waits for A to do unplug.
-> > BTW: I don't think this is really ext3/ext4 specific. I think other
-> > filesystems can get into problems as well when direct reclaim submits some
-> > IO and the process subsequently blocks without submitting the IO.
-> 
-> So, I thought schedule would do the flush.  Checking the code:
-> 
-> asmlinkage void __sched schedule(void)
-> {
->         struct task_struct *tsk = current;
-> 
->         sched_submit_work(tsk);
->         __schedule();
-> }
-> 
-> And sched_submit_work looks like this:
-> 
-> static inline void sched_submit_work(struct task_struct *tsk)
-> {
->         if (!tsk->state || tsk_is_pi_blocked(tsk))
->                 return;
->         /*
->          * If we are going to sleep and we have plugged IO queued,
->          * make sure to submit it to avoid deadlocks.
->          */
->         if (blk_needs_flush_plug(tsk))
->                 blk_schedule_flush_plug(tsk);
-> }
-> 
-> This eventually ends in a call to blk_run_queue_async(q) after
-> submitting the I/O from the plug list.  Right?  So is the question
-> really why doesn't the kblockd workqueue get scheduled?
-  Ah, I didn't know this. Thanks for the hint. So in the kdump I have I can
-see requests queued in tsk->plug despite the process is sleeping in
-TASK_UNINTERRUPTIBLE state.  So the only way how unplug could have been
-omitted is if tsk_is_pi_blocked() was true. Rummaging through the dump...
-indeed task has pi_blocked_on = 0xffff8802717d79c8. The dump is from an -rt
-kernel (I just didn't originally thought that makes any difference) so
-actually any mutex is rtmutex and thus tsk_is_pi_blocked() is true whenever
-we are sleeping on a mutex. So this seems like a bug in rtmutex code.
-Thomas, you seemed to have added that condition... Any idea how to avoid
-the deadlock?
+This patch makes the comment for cc->wrapped longer, explaining
+what is really going on. It also incorporates the comment fix
+pointed out by Minchan.
 
-									Honza 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Additionally, Minchan found that, when no pages get isolated,
+high_pte could be a value that is much lower than desired,
+which might potentially cause compaction to skip a range of
+pages.
+
+Only assign zone->compact_cache_free_pfn if we actually
+isolated free pages for compaction.
+
+Split out the calculation to get the start of the last page
+block in a zone into its own, commented function.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ include/linux/mmzone.h |    2 +-
+ mm/compaction.c        |   30 ++++++++++++++++++++++--------
+ mm/internal.h          |    6 +++++-
+ 3 files changed, 28 insertions(+), 10 deletions(-)
+
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index e629594..e957fa1 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -370,7 +370,7 @@ struct zone {
+ 	spinlock_t		lock;
+ 	int                     all_unreclaimable; /* All pages pinned */
+ #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+-	/* pfn where the last order > 0 compaction isolated free pages */
++	/* pfn where the last incremental compaction isolated free pages */
+ 	unsigned long		compact_cached_free_pfn;
+ #endif
+ #ifdef CONFIG_MEMORY_HOTPLUG
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 2668b77..3812c3e 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -472,10 +472,11 @@ static void isolate_freepages(struct zone *zone,
+ 		 * looking for free pages, the search will restart here as
+ 		 * page migration may have returned some pages to the allocator
+ 		 */
+-		if (isolated)
++		if (isolated) {
+ 			high_pfn = max(high_pfn, pfn);
+-		if (cc->order > 0)
+-			zone->compact_cached_free_pfn = high_pfn;
++			if (cc->order > 0)
++				zone->compact_cached_free_pfn = high_pfn;
++		}
+ 	}
+ 
+ 	/* split_free_page does not map the pages */
+@@ -569,6 +570,21 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 	return ISOLATE_SUCCESS;
+ }
+ 
++/*
++ * Returns the start pfn of the laste page block in a zone.
++ * This is the starting point for full compaction of a zone.
++ * Compaction searches for free pages from the end of each zone,
++ * while isolate_freepages_block scans forward inside each page
++ * block.
++ */
++static unsigned long start_free_pfn(struct zone *zone)
++{
++	unsigned long free_pfn;
++	free_pfn = zone->zone_start_pfn + zone->spanned_pages;
++	free_pfn &= ~(pageblock_nr_pages-1);
++	return free_pfn;
++}
++
+ static int compact_finished(struct zone *zone,
+ 			    struct compact_control *cc)
+ {
+@@ -587,10 +603,9 @@ static int compact_finished(struct zone *zone,
+ 	if (cc->free_pfn <= cc->migrate_pfn) {
+ 		if (cc->order > 0 && !cc->wrapped) {
+ 			/* We started partway through; restart at the end. */
+-			unsigned long free_pfn;
+-			free_pfn = zone->zone_start_pfn + zone->spanned_pages;
+-			free_pfn &= ~(pageblock_nr_pages-1);
++			unsigned long free_pfn = start_free_pfn(zone);
+ 			zone->compact_cached_free_pfn = free_pfn;
++			cc->free_pfn = free_pfn;
+ 			cc->wrapped = 1;
+ 			return COMPACT_CONTINUE;
+ 		}
+@@ -703,8 +718,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 		cc->start_free_pfn = cc->free_pfn;
+ 	} else {
+ 		/* Order == -1 starts at the end of the zone. */
+-		cc->free_pfn = cc->migrate_pfn + zone->spanned_pages;
+-		cc->free_pfn &= ~(pageblock_nr_pages-1);
++		cc->free_pfn = start_free_pfn(zone);
+ 	}
+ 
+ 	migrate_prep_local();
+diff --git a/mm/internal.h b/mm/internal.h
+index 0b72461..da6b9b2 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -121,7 +121,11 @@ struct compact_control {
+ 	unsigned long start_free_pfn;	/* where we started the search */
+ 	unsigned long migrate_pfn;	/* isolate_migratepages search base */
+ 	bool sync;			/* Synchronous migration */
+-	bool wrapped;			/* Last round for order>0 compaction */
++	bool wrapped;			/* Order > 0 compactions are
++					   incremental, once free_pfn
++					   and migrate_pfn meet, we restart
++					   from the top of the zone;
++					   remember we wrapped around. */
+ 
+ 	int order;			/* order a direct compactor needs */
+ 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
