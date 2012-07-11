@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758118Ab2GKPbN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 11:31:13 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:38392 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758107Ab2GKPbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 11:31:09 -0400
-Message-ID: <4FFD9C08.2070502@linux.vnet.ibm.com>
-Date: Wed, 11 Jul 2012 08:30:16 -0700
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, wency@cn.fujitsu.com
-Subject: Re: [RFC PATCH v3 3/13] memory-hotplug : unify argument of firmware_map_add_early/hotplug
-References: <4FFAB0A2.8070304@jp.fujitsu.com> <4FFAB17F.2090209@jp.fujitsu.com>
-In-Reply-To: <4FFAB17F.2090209@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12071115-7182-0000-0000-000001F56B70
+	id S932892Ab2GKPco (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 11:32:44 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51560 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755722Ab2GKPcj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 11:32:39 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Cc: davem@davemloft.net, chris@zankel.net, catalin.marinas@arm.com,
+        arnd@arndb.de, cmetcalf@tilera.com, akpm@linux-foundation.org,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 3/3] ipc: compat: use signed size_t types for msgsnd and msgrcv
+Date: Wed, 11 Jul 2012 16:32:21 +0100
+Message-Id: <1342020741-12758-4-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1342020741-12758-1-git-send-email-will.deacon@arm.com>
+References: <1342020741-12758-1-git-send-email-will.deacon@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2012 03:25 AM, Yasuaki Ishimatsu wrote:
-> @@ -642,7 +642,7 @@ int __ref add_memory(int nid, u64 start,
->  	}
-> 
->  	/* create new memmap entry */
-> -	firmware_map_add_hotplug(start, start + size, "System RAM");
-> +	firmware_map_add_hotplug(start, start + size - 1, "System RAM");
+The msgsnd and msgrcv system calls use size_t to represent the size of
+the message being transferred. POSIX states that values of msgsz greater
+than SSIZE_MAX cause the result to be implementation-defined. On Linux,
+this equates to returning -EINVAL if (long) msgsz < 0.
 
-I know the firmware_map_*() calls use inclusive end addresses
-internally, but do we really need to expose them?  Both of the callers
-you mentioned do:
+For compat tasks where !CONFIG_ARCH_WANT_OLD_COMPAT_IPC and
+compat_size_t is smaller than size_t, negative size values passed from
+userspace will be interpreted as positive values by do_msg{rcv,snd} and
+will fail to exit early with -EINVAL.
 
-	firmware_map_add_hotplug(start, start + size - 1, "System RAM");
+This patch changes the compat prototypes for msg{rcv,snd} so that the
+message size is represented as a compat_ssize_t, which we cast to the
+native ssize_t type for the core IPC code.
 
-or
+Cc: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ include/linux/compat.h |    4 ++--
+ ipc/compat.c           |    8 ++++----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-                firmware_map_add_early(entry->addr,
-                        entry->addr + entry->size - 1,
-                        e820_type_to_string(entry->type));
-
-So it seems a _bit_ silly to keep all of the callers doing this size-1
-thing.  I also noted that the new caller that you added does the same
-thing.  Could we just change the external calling convention to be
-exclusive?
-
-BTW, this patch should probably be first in your series.  It's a real
-bugfix.
+diff --git a/include/linux/compat.h b/include/linux/compat.h
+index 9f68e90..f2b8fe2 100644
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -266,9 +266,9 @@ long compat_sys_shmat(int first, int second, compat_uptr_t third, int version,
+ #else
+ long compat_sys_semctl(int semid, int semnum, int cmd, int arg);
+ long compat_sys_msgsnd(int msqid, struct compat_msgbuf __user *msgp,
+-		size_t msgsz, int msgflg);
++		compat_ssize_t msgsz, int msgflg);
+ long compat_sys_msgrcv(int msqid, struct compat_msgbuf __user *msgp,
+-		size_t msgsz, long msgtyp, int msgflg);
++		compat_ssize_t msgsz, long msgtyp, int msgflg);
+ long compat_sys_shmat(int shmid, compat_uptr_t shmaddr, int shmflg);
+ #endif
+ long compat_sys_msgctl(int first, int second, void __user *uptr);
+diff --git a/ipc/compat.c b/ipc/compat.c
+index a41600f..20f92b2 100644
+--- a/ipc/compat.c
++++ b/ipc/compat.c
+@@ -373,21 +373,21 @@ long compat_sys_semctl(int semid, int semnum, int cmd, int arg)
+ }
+ 
+ long compat_sys_msgsnd(int msqid, struct compat_msgbuf __user *msgp,
+-		       size_t msgsz, int msgflg)
++		       compat_ssize_t msgsz, int msgflg)
+ {
+ 	compat_long_t mtype;
+ 
+ 	if (get_user(mtype, &msgp->mtype))
+ 		return -EFAULT;
+-	return do_msgsnd(msqid, mtype, msgp->mtext, msgsz, msgflg);
++	return do_msgsnd(msqid, mtype, msgp->mtext, (ssize_t)msgsz, msgflg);
+ }
+ 
+ long compat_sys_msgrcv(int msqid, struct compat_msgbuf __user *msgp,
+-		       size_t msgsz, long msgtyp, int msgflg)
++		       compat_ssize_t msgsz, long msgtyp, int msgflg)
+ {
+ 	long err, mtype;
+ 
+-	err =  do_msgrcv(msqid, &mtype, msgp->mtext, msgsz, msgtyp, msgflg);
++	err =  do_msgrcv(msqid, &mtype, msgp->mtext, (ssize_t)msgsz, msgtyp, msgflg);
+ 	if (err < 0)
+ 		goto out;
+ 
+-- 
+1.7.4.1
 
