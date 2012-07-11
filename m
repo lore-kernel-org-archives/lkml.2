@@ -1,49 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757232Ab2GKKdT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 06:33:19 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:51585 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757215Ab2GKKdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 06:33:14 -0400
-Message-ID: <4FFD5665.7040901@mev.co.uk>
-Date: Wed, 11 Jul 2012 11:33:09 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120616 Thunderbird/13.0
-MIME-Version: 1.0
-To: Ian Abbott <ian.abbott@mev.co.uk>
-CC: H Hartley Sweeten <hartleys@visionengravers.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 00/83] staging: comedi: rtd520: initial cleanup
-References: <201207101636.23561.hartleys@visionengravers.com> <4FFD536B.8010603@mev.co.uk>
-In-Reply-To: <4FFD536B.8010603@mev.co.uk>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	id S1757249Ab2GKKdh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 06:33:37 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:37191 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757234Ab2GKKde (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 06:33:34 -0400
+Message-ID: <1342002808.810.12.camel@mop>
+Subject: pr_cat() + CATSTR(name, size)?
+From: Kay Sievers <kay@vrfy.org>
+To: Joe Perches <joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 11 Jul 2012 12:33:28 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.5.3.1 (3.5.3.1-4.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-07-11 11:20, Ian Abbott wrote:
-> On 2012-07-11 00:36, H Hartley Sweeten wrote:
-> My main concern with this series of patches is they make it harder to
-> determine what the register accesses actually do, mainly due to the
-> removal of useful comments.  For example:
->
-> -	RtdPacerStart(dev);	/* Start PACER */
-> +	readl(devpriv->las0 + LAS0_PACER);
->
-> And:
->
-> -	RtdPacerStop(dev);	/* Stop PACER */
-> +	writel(0, devpriv->las0 + LAS0_PACER);
+Hey Joe,
 
-It would be too much work to redo all those patches though.  I'll just 
-make a patch to add back in the useful-looking comments.
+what do you think this?
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+It would make composing continuation lines at the caller side entirely
+race-free, and it might fit into the usual pattern.
 
+The more interesting thing, this would allow us to completely race-free
+use the dev_printk() calls with continuation content, which we should
+avoid otherwise for integrity reasons.
+
+The patch below is just hacked it into the printk.c file to illustrate
+the idea. It prints:
+  [    0.000000] Kernel command line: root=/dev/sda2 ...
+  [    0.000000] 12 34 56 78
+  [    0.000000] PID hash table entries: 2048 (order: 2, 16384 bytes)
+
+  5,96,0;Kernel command line: root=/dev/sda2 ...
+  4,97,0;12 34 56 78
+  6,98,0;PID hash table entries: 2048 (order: 2, 16384 bytes)
+
+Thanks,
+Kay
+
+
+diff --git a/kernel/printk.c b/kernel/printk.c
+index dba1821..1fd00b0 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -48,6 +48,32 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/printk.h>
+ 
++#define CATSTR(name, max)		\
++	char name[max];			\
++	size_t _##name_len = 0;		\
++	size_t _##name_max = max;
++
++#define pr_cat(name, fmt, ...)		\
++	_catstr(name, &_##name_len, _##name_max, fmt, ##__VA_ARGS__)
++
++ssize_t _catstr(char *s, size_t *len, size_t size, const char *fmt, ...)
++{
++	va_list args;
++	size_t l = *len;
++	size_t r;
++
++	va_start(args, fmt);
++	r = vsnprintf(s + l, size - l, fmt, args);
++	va_end(args);
++
++	if (r >= size - l)
++		return -EINVAL;
++
++	*len += r;
++	s[*len] = '\0';
++	return r;
++}
++
+ /*
+  * Architectures can override it:
+  */
+@@ -668,6 +694,12 @@ void __init setup_log_buf(int early)
+ 	char *new_log_buf;
+ 	int free;
+ 
++	CATSTR(line, 80);
++	pr_cat(line, "%i ", 12);
++	pr_cat(line, "%i ", 34);
++	pr_cat(line, "%i ", 56);
++	pr_warn("%s%i\n", line, 78);
++
+ 	if (!new_log_buf_len)
+ 		return;
+ 
 
