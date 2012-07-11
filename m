@@ -1,90 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932592Ab2GKNox (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:44:53 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59057 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757734Ab2GKNou (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:44:50 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH] mfd: add tps65910 32-kHz-crystal-input init
-Date: Wed, 11 Jul 2012 15:44:33 +0200
-Message-Id: <1342014273-31665-1-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <20120705152334.GH18200@sortiz-mobl>
-References: <20120705152334.GH18200@sortiz-mobl>
+	id S932630Ab2GKNpQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:45:16 -0400
+Received: from mga14.intel.com ([143.182.124.37]:3915 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932503Ab2GKNpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 09:45:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="121164760"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Theodore Tso <tytso@mit.edu>, Jan Kara <jack@suse.cz>
+Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>
+Subject: [PATCHv7 0/5] ext4: stop using write_supers and s_dirt
+Date: Wed, 11 Jul 2012 16:46:39 +0300
+Message-Id: <1342014404-14834-1-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace tps65910_misc_init with a dedicated init function for the
-32-kHz-crystal input.
+This patch-set makes ext4 file-system stop using the VFS '->write_supers()'
+call-back and the '->s_dirt' superblock field because I plan to remove them
+once all users are gone.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
+What we do in this patch-set is we notice that ext4 does not really needed the
+'write_super()' functionality and we can remove it. Instead, we simply mark the
+superblock buffer as dirty directly, rather than postponing this till the next
+'sync_supers()' kernel thread wake-up. Most of the ext4 changes were done or
+suggested by Jan Kara - thanks Jan!
 
-Hi Samuel,
+V7 is identical to v6, but I've added Jan's "Reviewed-by" and removed my
+worries about slowing down the deletion path - they were false, apologies. So
+only the commit messages changed.
 
-How about something like this? My thought with misc_init was that it could be
-extended should more simple initialisation like for the ck32k_xtal need to be
-done, but perhaps it's cleaner to stick with dedicated init functions
-through-out. At least for now.
+Tested with xfstests (both journalled and non-journalled ext4 modes).
+
+fs/ext4/ext4.h      |    9 ---------
+fs/ext4/ext4_jbd2.c |    8 +++-----
+fs/ext4/ext4_jbd2.h |    7 ++-----
+fs/ext4/file.c      |   14 +++++++++++++-
+fs/ext4/ialloc.c    |    2 --
+fs/ext4/inode.c     |    2 +-
+fs/ext4/mballoc.c   |    2 --
+fs/ext4/namei.c     |    4 ++--
+fs/ext4/resize.c    |    2 +-
+fs/ext4/super.c     |   12 +-----------
+10 files changed, 23 insertions(+), 39 deletions(-)
+
+Reminder
+========
+
+The goal is to get rid of the 'sync_supers()' kernel thread. This kernel thread
+wakes up every 5 seconds (by default) and calls '->write_super()' for all
+mounted file-systems. And the bad thing is that this is done even if all the
+superblocks are clean. Moreover, many file-systems do not even need this and
+they do not even register the '->write_super()' method at all (e.g., btrfs).
+
+So 'sync_supers()' mostly just generates useless wake-ups and wastes power.
+I am trying to make all file-systems independent of '->write_super()' and plan
+to remove 'sync_supers()' and '->write_super()' completely once there are no
+more users.
+
+Overall status
+==============
+
+1.  ext4: patches submitted,
+    https://lkml.org/lkml/2012/7/10/195
+2.  exofs: patch submitted,
+    https://lkml.org/lkml/2012/6/4/211
+3.  sysv: patches submitted,
+    http://lkml.org/lkml/2012/7/3/250
+4.  udf: patch submitted, sits in Jan Kara's tree:
+    https://lkml.org/lkml/2012/6/4/233
+    git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs for_testing
+5.  affs: patches submitted, sit in Al Viro's tree:
+    https://lkml.org/lkml/2012/6/6/400
+    git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs for-next
+6.  hfs: patches submitted, sit Andrew Morton's tree
+    http://lkml.org/lkml/2012/6/12/82
+7.  hfsplus: patches submitted, sit in Andrew Morton's tree:
+    https://lkml.org/lkml/2012/6/13/195
+8.  ext2:     done, see commit f72cf5e223a28d3b3ea7dc9e40464fd534e359e8
+9.  vfat:     done, see commit 78491189ddb6d84d4a4abae992ed891a236d0263
+10. jffs2:    done, see commit 208b14e507c00ff7f108e1a388dd3d8cc805a443
+11. reiserfs: done, see commit 033369d1af1264abc23bea2e174aa47cdd212f6f
+
+TODO: ufs
 
 Thanks,
-Johan
-
-
- drivers/mfd/tps65910.c |   19 +++++++++----------
- 1 files changed, 9 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index 3f27ea1..1c56379 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -68,20 +68,19 @@ static const struct regmap_config tps65910_regmap_config = {
- 	.cache_type = REGCACHE_RBTREE,
- };
- 
--static int __devinit tps65910_misc_init(struct tps65910 *tps65910,
-+static int __devinit tps65910_ck32k_init(struct tps65910 *tps65910,
- 					struct tps65910_board *pmic_pdata)
- {
--	struct device *dev = tps65910->dev;
- 	int ret;
- 
--	if (pmic_pdata->en_ck32k_xtal) {
--		ret = tps65910_reg_clear_bits(tps65910,
--						TPS65910_DEVCTRL,
-+	if (!pmic_pdata->en_ck32k_xtal)
-+		return 0;
-+
-+	ret = tps65910_reg_clear_bits(tps65910, TPS65910_DEVCTRL,
- 						DEVCTRL_CK32K_CTRL_MASK);
--		if (ret < 0) {
--			dev_err(dev, "clear ck32k_ctrl failed: %d\n", ret);
--			return ret;
--		}
-+	if (ret < 0) {
-+		dev_err(tps65910->dev, "clear ck32k_ctrl failed: %d\n", ret);
-+		return ret;
- 	}
- 
- 	return 0;
-@@ -265,7 +264,7 @@ static __devinit int tps65910_i2c_probe(struct i2c_client *i2c,
- 	init_data->irq_base = pmic_plat_data->irq_base;
- 
- 	tps65910_irq_init(tps65910, init_data->irq, init_data);
--	tps65910_misc_init(tps65910, pmic_plat_data);
-+	tps65910_ck32k_init(tps65910, pmic_plat_data);
- 	tps65910_sleepinit(tps65910, pmic_plat_data);
- 
- 	return ret;
--- 
-1.7.8.6
-
+Artem.
