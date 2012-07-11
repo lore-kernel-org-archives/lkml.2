@@ -1,98 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757764Ab2GKOAZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 10:00:25 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:39709 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755307Ab2GKOAW (ORCPT
+	id S1757869Ab2GKOBp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 10:01:45 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:48983 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757702Ab2GKOBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 10:00:22 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Colin Cross <ccross@android.com>, Rob Lee <rob.lee@linaro.org>,
-        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>, linux-acpi@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [linux-pm] cpuidle future and improvements
-Organization: Texas Instruments, Inc.
-References: <4FDEE98D.7010802@linaro.org>
-	<CAMbhsRQRFXcayyWjM1RirgFppVAK23z2+3EbYOCw-qmzuY9_2g@mail.gmail.com>
-	<4FE85F6A.80307@linaro.org>
-Date: Wed, 11 Jul 2012 07:00:19 -0700
-In-Reply-To: <4FE85F6A.80307@linaro.org> (Daniel Lezcano's message of "Mon, 25
-	Jun 2012 14:54:02 +0200")
-Message-ID: <87a9z6pfd8.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Wed, 11 Jul 2012 10:01:43 -0400
+Message-ID: <4FFD86FE.1090307@linux.vnet.ibm.com>
+Date: Wed, 11 Jul 2012 09:00:30 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] zsmalloc improvements
+References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com> <4FFD2524.2050300@kernel.org>
+In-Reply-To: <4FFD2524.2050300@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071114-7408-0000-0000-000006AB546D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Lezcano <daniel.lezcano@linaro.org> writes:
+On 07/11/2012 02:03 AM, Minchan Kim wrote:
+> On 07/03/2012 06:15 AM, Seth Jennings wrote:
+>> zsmapbench measures the copy-based mapping at ~560 cycles for a
+>> map/unmap operation on spanned object for both KVM guest and bare-metal,
+>> while the page table mapping was ~1500 cycles on a VM and ~760 cycles
+>> bare-metal.  The cycles for the copy method will vary with
+>> allocation size, however, it is still faster even for the largest
+>> allocation that zsmalloc supports.
+>>
+>> The result is convenient though, as mempcy is very portable :)
+> 
+> Today, I tested zsmapbench in my embedded board(ARM).
+> tlb-flush is 30% faster than copy-based so it's always not win.
+> I think it depends on CPU speed/cache size.
+> 
+> zram is already very popular on embedded systems so I want to use
+> it continuously without 30% big demage so I want to keep our old approach
+> which supporting local tlb flush. 
+> 
+> Of course, in case of KVM guest, copy-based would be always bin win.
+> So shouldn't we support both approach? It could make code very ugly
+> but I think it has enough value.
+> 
+> Any thought?
 
-> On 06/18/2012 08:15 PM, Colin Cross wrote:
->> On Mon, Jun 18, 2012 at 1:40 AM, Daniel Lezcano
->> <daniel.lezcano@linaro.org> wrote:
->>> I propose to host a cpuidle-next tree where all these modifications will
->>> be and where people can send patches against, preventing last minutes
->>> conflicts and perhaps Lenb will agree to pull from this tree. In the
->>> meantime, the tree will be part of the linux-next, the patches will be
->>> more widely tested and could be fixed earlier.
->> 
->> My coupled cpuidle patches were acked and temporarily in Len's
->> next/Linus pull branch, but were later dropped when the first pull
->> request to Linus was rejected.  I asked Len to either put the coupled
->> cpuidle patches into his next branch, or let me host them so people
->> could base SoC branches off of them and let Len pull them later, but
->> got no response.  If you do start a cpuidle for-next branch, can you
->> pull my coupled-cpuidle branch:
->> 
->> The following changes since commit 76e10d158efb6d4516018846f60c2ab5501900bc:
->> 
->>   Linux 3.4 (2012-05-20 15:29:13 -0700)
->> 
->> are available in the git repository at:
->>   https://android.googlesource.com/kernel/common.git coupled-cpuidle
->> 
->> Colin Cross (4):
->>       cpuidle: refactor out cpuidle_enter_state
->>       cpuidle: fix error handling in __cpuidle_register_device
->>       cpuidle: add support for states that affect multiple cpus
->>       cpuidle: coupled: add parallel barrier function
->> 
->>  drivers/cpuidle/Kconfig   |    3 +
->>  drivers/cpuidle/Makefile  |    1 +
->>  drivers/cpuidle/coupled.c |  715 +++++++++++++++++++++++++++++++++++++++++++++
->>  drivers/cpuidle/cpuidle.c |   68 ++++-
->>  drivers/cpuidle/cpuidle.h |   32 ++
->>  include/linux/cpuidle.h   |   11 +
->>  6 files changed, 813 insertions(+), 17 deletions(-)
->>  create mode 100644 drivers/cpuidle/coupled.c
->
->
-> Done.
->
-> http://git.linaro.org/gitweb?p=people/dlezcano/cpuidle-next.git;a=shortlog;h=refs/heads/cpuidle-next
+Thanks for testing on ARM.
 
-Great!
+I can add the pgtable assisted method back in, no problem.
+The question is by which criteria are we going to choose
+which method to use? By arch (i.e. ARM -> pgtable assist,
+x86 -> copy, other archs -> ?)?
 
-Daniel, thanks for tracking this.  Are you planning to submit a pull
-request to Rafael so we finally can get this into linux-next and merged
-for v3.6?
+Also, what changes did you make to zsmapbench to measure
+elapsed time/cycles on ARM?  Afaik, rdtscll() is not
+supported on ARM.
 
-Looks like there will be a slight problem to sort out though.  Len's
-'next' branch[1] is already included in linux-next and as some version
-of the coupled CPUidle already merged.
+Thanks,
+Seth
 
-I hope we can sort this out in time for v3.6 because this series has
-been well reviewed, well tested and ready for merge since before the
-v3.5 merge window.
-
-Kevin
-
-[1] git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux next
