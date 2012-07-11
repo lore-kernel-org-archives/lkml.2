@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757379Ab2GKLvl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 07:51:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35787 "EHLO mx1.redhat.com"
+	id S1757397Ab2GKLwk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 07:52:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43520 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753554Ab2GKLvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 07:51:39 -0400
-Message-ID: <4FFD68C3.7000504@redhat.com>
-Date: Wed, 11 Jul 2012 14:51:31 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        "mst@redhat.com" <mst@redhat.com>, "gleb@redhat.com" <gleb@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 0/2] kvm: level irqfd and new eoifd
-References: <20120703191106.6735.78272.stgit@bling.home> <4FFD4D0A.2000202@redhat.com> <4FFD52E7.3030806@siemens.com> <4FFD5A2B.2040605@redhat.com> <4FFD6221.1060304@siemens.com>
-In-Reply-To: <4FFD6221.1060304@siemens.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753958Ab2GKLwi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 07:52:38 -0400
+Subject: Re: [PATCH RFC 0/2] kvm: Improving directed yield in PLE handler
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=US-ASCII
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <4FFD621D.5090607@redhat.com>
+Date: Wed, 11 Jul 2012 13:52:26 +0200
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, S390 <linux-s390@vger.kernel.org>,
+        Carsten Otte <cotte@de.ibm.com>, KVM <kvm@vger.kernel.org>,
+        chegu vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, X86 <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, linux390@de.ibm.com,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <794FFD35-579D-48CE-890F-8FCC785032F3@suse.de>
+References: <20120709062012.24030.37154.sendpatchset@codeblue> <4FFA8E5E.3070108@de.ibm.com> <4FFD422B.9060008@redhat.com> <4FFD52CD.7040403@de.ibm.com> <4FFD5DA3.3010001@redhat.com> <39DA3B9A-87D6-4EA5-B1FF-B6E30733EF7B@suse.de> <4FFD621D.5090607@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2012 02:23 PM, Jan Kiszka wrote:
+
+On 11.07.2012, at 13:23, Avi Kivity wrote:
+
+> On 07/11/2012 02:16 PM, Alexander Graf wrote:
+>>> 
+>>>> yes the data structure itself seems based on the algorithm
+>>>> and not on arch specific things. That should work. If we move that to common 
+>>>> code then s390 will use that scheme automatically for the cases were we call 
+>>>> kvm_vcpu_on_spin(). All others archs as well.
+>>> 
+>>> ARM doesn't have an instruction for cpu_relax(), so it can't intercept
+>>> it.  Given ppc's dislike of overcommit,
 >> 
->> I'd appreciate a couple of examples for formality's sake.
+>> What dislike of overcommit?
 > 
-> From the top of my head: NVIDIA FX3700 (granted, legacy by now), Atheros
-> AR9287. For others, I need to check.
+> I understood ppc virtualization is more of the partitioning sort.
+> Perhaps I misunderstood it.  But the reliance on device assignment, the
+> restrictions on scheduling, etc. all point to it.
 
-Thanks.
+Well, you need to distinguish the different PPC targets here. In the embedded world, partitioning is obviously the biggest use case, though overcommit is possible. For big servers however, we usually do want overcommit and we do support it within the constraints hardware gives us.
 
->> 
->>> And then there is not easily replaceable legacy hardware like old
->>> telephony adapters or industrial I/O cards etc. that want this.
->> 
->> I imagine legacy hardware will live with the speed of routing through
->> qemu, when running on modern platforms.
+It's really no different from x86 when it comes to the use case wideness :).
+
 > 
-> Just because it's "legacy" doesn't mean it's "low performance" and "low
-> interrupt rate".
+>> 
+>>> and the way it implements cpu_relax() by adjusting hw thread priority,
+>> 
+>> Yeah, I don't think we can intercept relaxing.
+> 
+> ... and the lack of ability to intercept cpu_relax() ...
+> 
+>> It's basically a nop-like instruction that gives hardware hints on its current priorities.
+> 
+> That's what x88 PAUSE does.  But we can intercept it (and not just any
+> execution - we can restrict intercept to tight loops executed more than
+> a specific number of times).
 
-I meant that it was used with lower throughput hardware, so the overhead
-of routing through qemu will be masked by the improved host hardware.
-But most of the improvement in hardware in recent years is the increase
-in core/thread count.
+Yeah, it's pretty hard to fetch that information from PPC, since unlike x86 we split the hint from the loop. But I'll let Ben speak to that, he certainly knows way better how the hardware works.
 
-> We still have classic KVM device assignment to provide fast-path INTx.
-> But if we want to replace it midterm, I think it's necessary for VFIO to
-> be able to provide such a path as well.
+> 
+>> That said, we can always add PV code.
+> 
+> Sure, but that's defeated by advancements like self-tuning PLE exits.
+> It's hard to get this right.
 
-I would like VFIO to have no regressions vs. kvm device assignment,
-except perhaps in uncommon corner cases.  So I agree.
+Well, eventually everything we do in PV is going to be moot as soon as hardware catches up. In most cases from what I've seen it's only useful as an interim solution. But for that time it's good to have :).
 
--- 
-error compiling committee.c: too many arguments to function
 
+Alex
 
