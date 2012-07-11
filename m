@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab2GKJup (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 05:50:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61529 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148Ab2GKJuo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 05:50:44 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
-        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH] leds/leds-s3c24xx: use devm_gpio_request
-Date: Wed, 11 Jul 2012 15:35:32 +0545
-Message-Id: <1342000232-10105-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755112Ab2GKJxV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 05:53:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30377 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752014Ab2GKJxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 05:53:19 -0400
+Message-ID: <4FFD4D0A.2000202@redhat.com>
+Date: Wed, 11 Jul 2012 12:53:14 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: mst@redhat.com, gleb@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jan.kiszka@siemens.com
+Subject: Re: [PATCH v3 0/2] kvm: level irqfd and new eoifd
+References: <20120703191106.6735.78272.stgit@bling.home>
+In-Reply-To: <20120703191106.6735.78272.stgit@bling.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-why?
-because if the led_classdev_register fails we wont do gpio free
-because using devm_ functions, there is no need for error paths
+On 07/03/2012 10:21 PM, Alex Williamson wrote:
+> Here's the latest iteration of adding an interface to assert and
+> de-assert level interrupts from external drivers like vfio.  These
+> apply on top of the previous argument cleanup, documentation, and
+> sanitization patches for irqfd.  It would be great to get this queued
+> in next for linux 3.6.
+> 
+> I believe I've addressed all the previous comments, including fixing
+> the locking problems in eoifd.  I've run this with lockdep adding
+> and removing level irqfd/eoifd pairs without any problems.  Please
+> let me know if there are any further comments.  Thanks,
 
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
-Bryan,
+Is there any performance justification for level irqfd?  Don't all
+new/high bandwidth devices support msi, and this is just a legacy path?
 
-	This patch is not even compile tested, since my machine crashed, and
-didn't have the ARM toolchain, sorry ..
+eoifd does add new functionality (which parallels the existing ack
+notifier usage in kvm device assignment); it's not just an optimization.
 
-	And i think this patch is legit not as that pci_set_drvdata one :(
- drivers/leds/leds-s3c24xx.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
-index e120640..942f0ea 100644
---- a/drivers/leds/leds-s3c24xx.c
-+++ b/drivers/leds/leds-s3c24xx.c
-@@ -65,7 +65,6 @@ static int s3c24xx_led_remove(struct platform_device *dev)
- 	struct s3c24xx_gpio_led *led = pdev_to_gpio(dev);
- 
- 	led_classdev_unregister(&led->cdev);
--	gpio_free(led->pdata->gpio);
- 
- 	return 0;
- }
-@@ -92,7 +91,7 @@ static int s3c24xx_led_probe(struct platform_device *dev)
- 
- 	led->pdata = pdata;
- 
--	ret = gpio_request(pdata->gpio, "S3C24XX_LED");
-+	ret = devm_gpio_request(&dev->dev, pdata->gpio, "S3C24XX_LED");
- 	if (ret < 0)
- 		return ret;
- 
 -- 
-1.7.9.5
+error compiling committee.c: too many arguments to function
+
 
