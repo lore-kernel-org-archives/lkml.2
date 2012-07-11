@@ -1,409 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867Ab2GKP0g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 11:26:36 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51365 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932847Ab2GKP0a (ORCPT
+	id S932873Ab2GKP04 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 11:26:56 -0400
+Received: from mga12.intel.com ([143.182.124.36]:46701 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932835Ab2GKP0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 11:26:30 -0400
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hans Verkuil <hverkuil@xs4all.nl>,
-        Federico Vaga <federico.vaga@gmail.com>
-Subject: [PATCH] [media] adv7180.c: convert to v4l2 control framework
-Date: Wed, 11 Jul 2012 17:29:33 +0200
-Message-Id: <1342020573-22536-1-git-send-email-federico.vaga@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 11 Jul 2012 11:26:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120711145412.GA2430@ram-ThinkPad-T61>
+References: <1341057657-7823-1-git-send-email-octavian.purdila@intel.com>
+	<20120710143348.d977da44.akpm@linux-foundation.org>
+	<20120711020902.GC13885@ram-ThinkPad-T61>
+	<CAE1zotK=2nK_pRsg8C6MuGqOKZut96MgWy-ru2dkPOQQF--U3Q@mail.gmail.com>
+	<20120711145412.GA2430@ram-ThinkPad-T61>
+Date: Wed, 11 Jul 2012 18:26:49 +0300
+Message-ID: <CAE1zotJuDn+oLcUVZ0HWeAck+UD0DiveOrOO=iYz6btdOQyD6Q@mail.gmail.com>
+Subject: Re: [PATCH] resource: make sure requested range intersects root range
+From: "Purdila, Octavian" <octavian.purdila@intel.com>
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
----
- drivers/media/video/adv7180.c |  235 +++++++++++++++--------------------------
- 1 file changed, 84 insertions(+), 151 deletions(-)
+On Wed, Jul 11, 2012 at 5:54 PM, Ram Pai <linuxram@us.ibm.com> wrote:
+> On Wed, Jul 11, 2012 at 02:06:10PM +0300, Purdila, Octavian wrote:
+>> On Wed, Jul 11, 2012 at 5:09 AM, Ram Pai <linuxram@us.ibm.com> wrote:
+>>
+>> >
+>> > Wait.. I am not sure this will fix the problem entirely. The above check
+>> > will handle the case where the range requested is entirey out of the
+>> > root's range.  But if the requested range overlapps that of the root
+>> > range, we will still call __reserve_region_with_split() and end up with
+>> > a recursion if there is a overflow. Wont we?
+>> >
+>>
+>> Good catch. I will fix this as well as address Andrew's and Joe's
+>> comments in a new patch. The only question is how to handle the
+>> overlap case:
+>>
+>> (a) abort the whole request or
+>>
+>> (b) try to reserve the part that overlaps (and adjust the request to
+>> avoid the overflow)
+>>
+>> I think (b) is more in line with the current implementation for reservations.
+>
+>
+> I prefer (b).  following patch should handle that.
+>
+> diff --git a/kernel/resource.c b/kernel/resource.c
+> index e1d2b8e..dd87fde 100644
+> --- a/kernel/resource.c
+> +++ b/kernel/resource.c
+> @@ -780,6 +780,10 @@ static void __init __reserve_region_with_split(struct resource *root,
+>
+>         if (conflict->start > start)
+>                 __reserve_region_with_split(root, start, conflict->start-1, name);
+> +
+> +       if (conflict->end == parent->end )
+> +               return;
+> +
+>         if (conflict->end < end)
+>                 __reserve_region_with_split(root, conflict->end+1, end, name);
+>  }
+>
 
-diff --git a/drivers/media/video/adv7180.c b/drivers/media/video/adv7180.c
-index 174bffa..07bb550 100644
---- a/drivers/media/video/adv7180.c
-+++ b/drivers/media/video/adv7180.c
-@@ -26,11 +26,10 @@
- #include <media/v4l2-ioctl.h>
- #include <linux/videodev2.h>
- #include <media/v4l2-device.h>
-+#include <media/v4l2-ctrls.h>
- #include <media/v4l2-chip-ident.h>
- #include <linux/mutex.h>
- 
--#define DRIVER_NAME "adv7180"
--
- #define ADV7180_INPUT_CONTROL_REG			0x00
- #define ADV7180_INPUT_CONTROL_AD_PAL_BG_NTSC_J_SECAM	0x00
- #define ADV7180_INPUT_CONTROL_AD_PAL_BG_NTSC_J_SECAM_PED 0x10
-@@ -55,21 +54,21 @@
- 
- #define ADV7180_AUTODETECT_ENABLE_REG			0x07
- #define ADV7180_AUTODETECT_DEFAULT			0x7f
--
-+/* Contrast */
- #define ADV7180_CON_REG		0x08	/*Unsigned */
--#define CON_REG_MIN		0
--#define CON_REG_DEF		128
--#define CON_REG_MAX		255
--
-+#define ADV7180_CON_MIN		0
-+#define ADV7180_CON_DEF		128
-+#define ADV7180_CON_MAX		255
-+/* Brightness*/
- #define ADV7180_BRI_REG		0x0a	/*Signed */
--#define BRI_REG_MIN		-128
--#define BRI_REG_DEF		0
--#define BRI_REG_MAX		127
--
-+#define ADV7180_BRI_MIN		-128
-+#define ADV7180_BRI_DEF		0
-+#define ADV7180_BRI_MAX		127
-+/* Hue */
- #define ADV7180_HUE_REG		0x0b	/*Signed, inverted */
--#define HUE_REG_MIN		-127
--#define HUE_REG_DEF		0
--#define HUE_REG_MAX		128
-+#define ADV7180_HUE_MIN		-127
-+#define ADV7180_HUE_DEF		0
-+#define ADV7180_HUE_MAX		128
- 
- #define ADV7180_ADI_CTRL_REG				0x0e
- #define ADV7180_ADI_CTRL_IRQ_SPACE			0x20
-@@ -98,12 +97,12 @@
- #define ADV7180_ICONF1_ACTIVE_LOW	0x01
- #define ADV7180_ICONF1_PSYNC_ONLY	0x10
- #define ADV7180_ICONF1_ACTIVE_TO_CLR	0xC0
--
-+/* Saturation */
- #define ADV7180_SD_SAT_CB_REG	0xe3	/*Unsigned */
- #define ADV7180_SD_SAT_CR_REG	0xe4	/*Unsigned */
--#define SAT_REG_MIN		0
--#define SAT_REG_DEF		128
--#define SAT_REG_MAX		255
-+#define ADV7180_SAT_MIN		0
-+#define ADV7180_SAT_DEF		128
-+#define ADV7180_SAT_MAX		255
- 
- #define ADV7180_IRQ1_LOCK	0x01
- #define ADV7180_IRQ1_UNLOCK	0x02
-@@ -121,18 +120,18 @@
- #define ADV7180_NTSC_V_BIT_END_MANUAL_NVEND	0x4F
- 
- struct adv7180_state {
-+	struct v4l2_ctrl_handler ctrl_hdl;
- 	struct v4l2_subdev	sd;
- 	struct work_struct	work;
- 	struct mutex		mutex; /* mutual excl. when accessing chip */
- 	int			irq;
- 	v4l2_std_id		curr_norm;
- 	bool			autodetect;
--	s8			brightness;
--	s16			hue;
--	u8			contrast;
--	u8			saturation;
- 	u8			input;
- };
-+#define to_adv7180_sd(_ctrl) &container_of(_ctrl->handler,		\
-+					   struct adv7180_state,	\
-+					   ctrl_hdl)->sd
- 
- static v4l2_std_id adv7180_std_to_v4l2(u8 status1)
+I don't think this covers all cases, e.g. if root range starts
+somewhere above 0 and the request is below the root start point.
+
+What about something like below? It is maybe too verbose, but it
+should make it easier to find the offender.
+
+diff --git a/kernel/resource.c b/kernel/resource.c
+index e1d2b8e..0d71983 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -788,8 +788,29 @@ void __init reserve_region_with_split(struct
+resource *root,
+ 		resource_size_t start, resource_size_t end,
+ 		const char *name)
  {
-@@ -237,7 +236,7 @@ static int adv7180_s_routing(struct v4l2_subdev *sd, u32 input,
- 	if (ret)
- 		return ret;
- 
--	/*We cannot discriminate between LQFP and 40-pin LFCSP, so accept
-+	/* We cannot discriminate between LQFP and 40-pin LFCSP, so accept
- 	 * all inputs and let the card driver take care of validation
- 	 */
- 	if ((input & ADV7180_INPUT_CONTROL_INSEL_MASK) != input)
-@@ -316,117 +315,39 @@ out:
- 	return ret;
- }
- 
--static int adv7180_queryctrl(struct v4l2_subdev *sd, struct v4l2_queryctrl *qc)
--{
--	switch (qc->id) {
--	case V4L2_CID_BRIGHTNESS:
--		return v4l2_ctrl_query_fill(qc, BRI_REG_MIN, BRI_REG_MAX,
--					    1, BRI_REG_DEF);
--	case V4L2_CID_HUE:
--		return v4l2_ctrl_query_fill(qc, HUE_REG_MIN, HUE_REG_MAX,
--					    1, HUE_REG_DEF);
--	case V4L2_CID_CONTRAST:
--		return v4l2_ctrl_query_fill(qc, CON_REG_MIN, CON_REG_MAX,
--					    1, CON_REG_DEF);
--	case V4L2_CID_SATURATION:
--		return v4l2_ctrl_query_fill(qc, SAT_REG_MIN, SAT_REG_MAX,
--					    1, SAT_REG_DEF);
--	default:
--		break;
--	}
--
--	return -EINVAL;
--}
--
--static int adv7180_g_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
--{
--	struct adv7180_state *state = to_state(sd);
--	int ret = mutex_lock_interruptible(&state->mutex);
--	if (ret)
--		return ret;
--
--	switch (ctrl->id) {
--	case V4L2_CID_BRIGHTNESS:
--		ctrl->value = state->brightness;
--		break;
--	case V4L2_CID_HUE:
--		ctrl->value = state->hue;
--		break;
--	case V4L2_CID_CONTRAST:
--		ctrl->value = state->contrast;
--		break;
--	case V4L2_CID_SATURATION:
--		ctrl->value = state->saturation;
--		break;
--	default:
--		ret = -EINVAL;
--	}
--
--	mutex_unlock(&state->mutex);
--	return ret;
--}
--
--static int adv7180_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
-+static int adv7180_s_ctrl(struct v4l2_ctrl *ctrl)
- {
-+	struct v4l2_subdev *sd = to_adv7180_sd(ctrl);
- 	struct adv7180_state *state = to_state(sd);
- 	struct i2c_client *client = v4l2_get_subdevdata(sd);
- 	int ret = mutex_lock_interruptible(&state->mutex);
-+	int val;
++	int abort = 0;
 +
- 	if (ret)
- 		return ret;
--
-+	val = ctrl->val;
- 	switch (ctrl->id) {
- 	case V4L2_CID_BRIGHTNESS:
--		if ((ctrl->value > BRI_REG_MAX)
--		    || (ctrl->value < BRI_REG_MIN)) {
--			ret = -ERANGE;
--			break;
--		}
--		state->brightness = ctrl->value;
--		ret = i2c_smbus_write_byte_data(client,
--						ADV7180_BRI_REG,
--						state->brightness);
-+		ret = i2c_smbus_write_byte_data(client, ADV7180_BRI_REG, val);
- 		break;
- 	case V4L2_CID_HUE:
--		if ((ctrl->value > HUE_REG_MAX)
--		    || (ctrl->value < HUE_REG_MIN)) {
--			ret = -ERANGE;
--			break;
--		}
--		state->hue = ctrl->value;
- 		/*Hue is inverted according to HSL chart */
--		ret = i2c_smbus_write_byte_data(client,
--						ADV7180_HUE_REG, -state->hue);
-+		ret = i2c_smbus_write_byte_data(client, ADV7180_HUE_REG, -val);
- 		break;
- 	case V4L2_CID_CONTRAST:
--		if ((ctrl->value > CON_REG_MAX)
--		    || (ctrl->value < CON_REG_MIN)) {
--			ret = -ERANGE;
--			break;
--		}
--		state->contrast = ctrl->value;
--		ret = i2c_smbus_write_byte_data(client,
--						ADV7180_CON_REG,
--						state->contrast);
-+		ret = i2c_smbus_write_byte_data(client, ADV7180_CON_REG, val);
- 		break;
- 	case V4L2_CID_SATURATION:
--		if ((ctrl->value > SAT_REG_MAX)
--		    || (ctrl->value < SAT_REG_MIN)) {
--			ret = -ERANGE;
--			break;
--		}
- 		/*
- 		 *This could be V4L2_CID_BLUE_BALANCE/V4L2_CID_RED_BALANCE
- 		 *Let's not confuse the user, everybody understands saturation
- 		 */
--		state->saturation = ctrl->value;
--		ret = i2c_smbus_write_byte_data(client,
--						ADV7180_SD_SAT_CB_REG,
--						state->saturation);
-+		ret = i2c_smbus_write_byte_data(client, ADV7180_SD_SAT_CB_REG,
-+						val);
- 		if (ret < 0)
- 			break;
--		ret = i2c_smbus_write_byte_data(client,
--						ADV7180_SD_SAT_CR_REG,
--						state->saturation);
-+		ret = i2c_smbus_write_byte_data(client, ADV7180_SD_SAT_CR_REG,
-+						val);
- 		break;
- 	default:
- 		ret = -EINVAL;
-@@ -436,6 +357,42 @@ static int adv7180_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
- 	return ret;
- }
- 
-+static const struct v4l2_ctrl_ops adv7180_ctrl_ops = {
-+	.s_ctrl = adv7180_s_ctrl,
-+};
-+
-+static int adv7180_init_controls(struct adv7180_state *state)
-+{
-+	v4l2_ctrl_handler_init(&state->ctrl_hdl, 4);
-+
-+	v4l2_ctrl_new_std(&state->ctrl_hdl, &adv7180_ctrl_ops,
-+			  V4L2_CID_BRIGHTNESS, ADV7180_BRI_MIN,
-+			  ADV7180_BRI_MAX, 1, ADV7180_BRI_DEF);
-+	v4l2_ctrl_new_std(&state->ctrl_hdl, &adv7180_ctrl_ops,
-+			  V4L2_CID_CONTRAST, ADV7180_CON_MIN,
-+			  ADV7180_CON_MAX, 1, ADV7180_CON_DEF);
-+	v4l2_ctrl_new_std(&state->ctrl_hdl, &adv7180_ctrl_ops,
-+			  V4L2_CID_SATURATION, ADV7180_SAT_MIN,
-+			  ADV7180_SAT_MAX, 1, ADV7180_SAT_DEF);
-+	v4l2_ctrl_new_std(&state->ctrl_hdl, &adv7180_ctrl_ops,
-+			  V4L2_CID_HUE, ADV7180_HUE_MIN,
-+			  ADV7180_HUE_MAX, 1, ADV7180_HUE_DEF);
-+	state->sd.ctrl_handler = &state->ctrl_hdl;
-+	if (state->ctrl_hdl.error) {
-+		int err = state->ctrl_hdl.error;
-+
-+		v4l2_ctrl_handler_free(&state->ctrl_hdl);
-+		return err;
+ 	write_lock(&resource_lock);
+-	__reserve_region_with_split(root, start, end, name);
++	if (!(root->start >= start && root->end >= end)) {
++		pr_err("Requested range (0x%llx-0x%llx) not in root %pr\n",
++		       (unsigned long long)start, (unsigned long long)end,
++		       root);
++		if (start > root->end || end < root->start) {
++			abort = 1;
++			pr_err("Unable to fix request, aborting\n");
++		} else {
++			if (end > root->end)
++				end = root->end;
++			else if (start < root->start)
++				start = root->start;
++			pr_err("Request trimmed to (0x%llx-0x%llx)\n",
++			       (unsigned long long)start,
++			       (unsigned long long)end);
++		}
++		dump_stack();
 +	}
-+	v4l2_ctrl_handler_setup(&state->ctrl_hdl);
-+
-+	return 0;
-+}
-+static void adv7180_exit_controls(struct adv7180_state *state)
-+{
-+	v4l2_ctrl_handler_free(&state->ctrl_hdl);
-+}
-+
- static const struct v4l2_subdev_video_ops adv7180_video_ops = {
- 	.querystd = adv7180_querystd,
- 	.g_input_status = adv7180_g_input_status,
-@@ -445,9 +402,9 @@ static const struct v4l2_subdev_video_ops adv7180_video_ops = {
- static const struct v4l2_subdev_core_ops adv7180_core_ops = {
- 	.g_chip_ident = adv7180_g_chip_ident,
- 	.s_std = adv7180_s_std,
--	.queryctrl = adv7180_queryctrl,
--	.g_ctrl = adv7180_g_ctrl,
--	.s_ctrl = adv7180_s_ctrl,
-+	.queryctrl = v4l2_subdev_queryctrl,
-+	.g_ctrl = v4l2_subdev_g_ctrl,
-+	.s_ctrl = v4l2_subdev_s_ctrl,
- };
- 
- static const struct v4l2_subdev_ops adv7180_ops = {
-@@ -539,7 +496,7 @@ static int init_device(struct i2c_client *client, struct adv7180_state *state)
- 
- 	/* register for interrupts */
- 	if (state->irq > 0) {
--		ret = request_irq(state->irq, adv7180_irq, 0, DRIVER_NAME,
-+		ret = request_irq(state->irq, adv7180_irq, 0, KBUILD_MODNAME,
- 				  state);
- 		if (ret)
- 			return ret;
-@@ -580,31 +537,6 @@ static int init_device(struct i2c_client *client, struct adv7180_state *state)
- 			return ret;
- 	}
- 
--	/*Set default value for controls */
--	ret = i2c_smbus_write_byte_data(client, ADV7180_BRI_REG,
--					state->brightness);
--	if (ret < 0)
--		return ret;
--
--	ret = i2c_smbus_write_byte_data(client, ADV7180_HUE_REG, state->hue);
--	if (ret < 0)
--		return ret;
--
--	ret = i2c_smbus_write_byte_data(client, ADV7180_CON_REG,
--					state->contrast);
--	if (ret < 0)
--		return ret;
--
--	ret = i2c_smbus_write_byte_data(client, ADV7180_SD_SAT_CB_REG,
--					state->saturation);
--	if (ret < 0)
--		return ret;
--
--	ret = i2c_smbus_write_byte_data(client, ADV7180_SD_SAT_CR_REG,
--					state->saturation);
--	if (ret < 0)
--		return ret;
--
- 	return 0;
++	if (!abort)
++		__reserve_region_with_split(root, start, end, name);
+ 	write_unlock(&resource_lock);
  }
- 
-@@ -632,25 +564,26 @@ static __devinit int adv7180_probe(struct i2c_client *client,
- 	INIT_WORK(&state->work, adv7180_work);
- 	mutex_init(&state->mutex);
- 	state->autodetect = true;
--	state->brightness = BRI_REG_DEF;
--	state->hue = HUE_REG_DEF;
--	state->contrast = CON_REG_DEF;
--	state->saturation = SAT_REG_DEF;
- 	state->input = 0;
- 	sd = &state->sd;
- 	v4l2_i2c_subdev_init(sd, client, &adv7180_ops);
- 
--	ret = init_device(client, state);
--	if (0 != ret)
-+	ret = adv7180_init_controls(state);
-+	if (ret)
- 		goto err_unreg_subdev;
-+	ret = init_device(client, state);
-+	if (ret)
-+		goto err_free_ctrl;
- 	return 0;
- 
-+err_free_ctrl:
-+	adv7180_exit_controls(state);
- err_unreg_subdev:
- 	mutex_destroy(&state->mutex);
- 	v4l2_device_unregister_subdev(sd);
- 	kfree(state);
- err:
--	printk(KERN_ERR DRIVER_NAME ": Failed to probe: %d\n", ret);
-+	printk(KERN_ERR KBUILD_MODNAME ": Failed to probe: %d\n", ret);
- 	return ret;
- }
- 
-@@ -678,7 +611,7 @@ static __devexit int adv7180_remove(struct i2c_client *client)
- }
- 
- static const struct i2c_device_id adv7180_id[] = {
--	{DRIVER_NAME, 0},
-+	{KBUILD_MODNAME, 0},
- 	{},
- };
- 
-@@ -716,7 +649,7 @@ MODULE_DEVICE_TABLE(i2c, adv7180_id);
- static struct i2c_driver adv7180_driver = {
- 	.driver = {
- 		   .owner = THIS_MODULE,
--		   .name = DRIVER_NAME,
-+		   .name = KBUILD_MODNAME,
- 		   },
- 	.probe = adv7180_probe,
- 	.remove = __devexit_p(adv7180_remove),
--- 
-1.7.10.4
-
