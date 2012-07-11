@@ -1,76 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757609Ab2GKN2s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:28:48 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:9538
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754965Ab2GKN2p convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:28:45 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -7
-X-BigFish: VS-7(zz98dI9371I542M1432Izz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ahbe9i)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/7] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
-Thread-Topic: [PATCH 2/7] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY attribute
-Thread-Index: AQHNX1Lf1mZ3xwjNGEGZYEQuF0W4P5cj6ygQgABoMgD//73XsA==
-Date: Wed, 11 Jul 2012 13:28:40 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D13ABC3@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1342003763-8139-1-git-send-email-joerg.roedel@amd.com>
- <1342003763-8139-3-git-send-email-joerg.roedel@amd.com>
- <C5ECD7A89D1DC44195F34B25E172658D13AA64@039-SN2MPN1-013.039d.mgd.msft.net>
- <20120711121708.GF25282@amd.com>
-In-Reply-To: <20120711121708.GF25282@amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [122.176.146.105]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1757614Ab2GKNcC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:32:02 -0400
+Received: from mga01.intel.com ([192.55.52.88]:62981 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754932Ab2GKNcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 09:32:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="176007785"
+Message-ID: <1342013776.18274.52.camel@sauron.fi.intel.com>
+Subject: Re: [PATCHv6 3/5] ext4: remove unnecessary superblock dirtying
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Jan Kara <jack@suse.cz>
+Cc: Theodore Tso <tytso@mit.edu>,
+        Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Ext4 Mailing List <linux-ext4@vger.kernel.org>
+Date: Wed, 11 Jul 2012 16:36:16 +0300
+In-Reply-To: <20120711101150.GH1316@quack.suse.cz>
+References: <1342000698-13556-1-git-send-email-dedekind1@gmail.com>
+	 <1342000698-13556-4-git-send-email-dedekind1@gmail.com>
+	 <20120711100726.GE1316@quack.suse.cz> <20120711101150.GH1316@quack.suse.cz>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-M09F2wkXjz6TraIu71G9"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--=-M09F2wkXjz6TraIu71G9
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: Joerg Roedel [mailto:joerg.roedel@amd.com]
-> Sent: Wednesday, July 11, 2012 5:47 PM
-> To: Sethi Varun-B16395
-> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 2/7] iommu/amd: Implement DOMAIN_ATTR_GEOMETRY
-> attribute
-> 
-> Hi Sethi,
-> 
-> On Wed, Jul 11, 2012 at 11:47:39AM +0000, Sethi Varun-B16395 wrote:
-> > I am currently working on upstreaming the Freescale IOMMU driver. As
-> > discussed (with Scott Wood) a while back, this representation of the
-> > GEOMETRY attribute doesn't go well with our IOMMU implementation. Our
-> > representation of the geometry would be more complex and is certainly
-> > modifiable.  Our IOMMU allows for creating custom DMA mappings by
-> > defining a set of DMA sub windows within a given window. We need a
-> > mechanism for specifying the number of DMA subwindows as a part of the
-> > domain geometry. My suggestion would be to make the GEOMETRY attribute
-> > implementation dependent
-> 
-> Yeah, we had some discussions in the past and I came to the conclusion
-> that its best to wait for your code and decide then if and how to change
-> the interface to better suit your needs. The interface is not exposed to
-> userspace so we can easily change it.
-> 
-> People are waiting for this feature and I don't want to delay it further
-> unless it is absolutly necessary.
-The API call for setting domain attributes is an essential part of our implementation and
-GEOMETRY is a critical attribute for us. I am currently working on our driver and hopefully 
-should be able to submit it in the next two weeks. In my case I was planning on letting the
-geometry attribute be implementation dependent.
+On Wed, 2012-07-11 at 12:11 +0200, Jan Kara wrote:
+> > > So case 2.b is a bit controversial, but I think it is acceptable. Aft=
+er all, by
+> > > enabling checksumming we already sign up for paying the price of calc=
+ulating
+> > > it. The way to improve checksumming performance globally would be to =
+calculate
+> > > it just before sending buffers to the I/O queue. We'd need some kind =
+of
+> > > call-back which could be registered by file-systems.
+>   Actually, the most common case of adding orphan inode used
+> ext4_handle_dirty_super_now() so for that case there is no difference. An=
+d
+> other cases are so rare it really does not matter... So there shouldn't b=
+e
+> any measurable difference.
 
--Varun
+Actually, the entire "orphan" case uses 'ext4_handle_dirty_super_now()',
+so this code-path is actually unaffected by my patch-set, so I do not
+have to even worry about it. My changes affect only the
+'ext4_handle_dirty_super()' users, and there are only 3 of them, and
+they are extremely rare one-time events.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-M09F2wkXjz6TraIu71G9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJP/YFQAAoJECmIfjd9wqK0ux4QAL3OCUVT3fbTMwzacISAGrMW
+c0Ak/XyQy8ecXA6nAsiZPvTpuUg8LuVkvsq5v1YcOooL4TVJHxTvxHwo72sPSNEo
+RdVf5XxnEUJasKecAz7aBB7U5DIrVQPi3UrWW3aEWwARiXzE7X3Wix68cq5hykm5
+XCVgGBcREqj3P57hInyMWQF9ev/aR/OtOehNNA086XOd75RXfd8T6HgbGJ7G83nM
+ItZcRHxDWjwtZ5/+5olh7ayouxA3tPfg45hudY9i9dUeEwqH4XYsxEHGfDCL6qT3
+8PXmF5dnWnz/13EXQajs27sUpdFqMtQqeqFjpcWQc2/qwwPAjF+7OxsHoxICZZZA
+T8pUez+ER/WKzgKdMCKN5aequM0VeSciXdum9ylBPK7+kozrd2TONBxyk53/dOBJ
+RLC7vTFIfYIWQ7KbqR4OTVhYACJos/Rl5/IscsABRYFoIDhfXfxXly1oW0RSGhD4
+z6MDKRWvH6i+UCKlM4+cZSUSfUR7xanU/DETp2AQYoyZoPQ3apuBvlyIbE1+D9Rq
+hBMESsIJ2N6cZrBJjyKxO9njglU4z1JN4QPf7hWwc3PYrIHx2NaU9bMohvR9vQc+
+fFgphFnyw/KbveF1Ahku3lfryZbsgvzTZoBUPxPqEpR0Yz1/oxFUyWKJuy64vgOD
+75zgfpqE7EQTpJ1Oup2L
+=vHqr
+-----END PGP SIGNATURE-----
+
+--=-M09F2wkXjz6TraIu71G9--
 
