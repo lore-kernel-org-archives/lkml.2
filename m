@@ -1,122 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758001Ab2GKOYh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 10:24:37 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40035 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757456Ab2GKOYd (ORCPT
+	id S1757982Ab2GKOYg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 10:24:36 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:52154 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755233Ab2GKOYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 10:24:33 -0400
-Message-ID: <4FFD8C95.4060300@gmail.com>
-Date: Wed, 11 Jul 2012 22:24:21 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	Wed, 11 Jul 2012 10:24:34 -0400
+Date: Wed, 11 Jul 2012 10:24:32 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb/host/ehci-hub: Fix the issue EG20T USB host controller
+ has long resuming time, when pen drive is attached.
+In-Reply-To: <1341966511-4373-1-git-send-email-tomoya.rohm@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1207111021020.1559-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, rientjes@google.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        wency@cn.fujitsu.com
-Subject: Re: [RFC PATCH v3 0/13] memory-hotplug : hot-remove physical memory
-References: <4FFAB0A2.8070304@jp.fujitsu.com> <alpine.DEB.2.00.1207091015570.30060@router.home> <4FFBFCAC.4010007@jp.fujitsu.com> <4FFC5D43.7040206@gmail.com> <4FFCC438.4080004@jp.fujitsu.com> <4FFCC6F1.5060908@gmail.com> <4FFCCEC3.4050800@jp.fujitsu.com>
-In-Reply-To: <4FFCCEC3.4050800@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2012 08:54 AM, Yasuaki Ishimatsu wrote:
-> Hi Jiang,
-> 
-> 2012/07/11 9:21, Jiang Liu wrote:
->> On 07/11/2012 08:09 AM, Yasuaki Ishimatsu wrote:
->>> Hi Jiang,
->>>
->>> 2012/07/11 1:50, Jiang Liu wrote:
->>>> On 07/10/2012 05:58 PM, Yasuaki Ishimatsu wrote:
->>>>> Hi Christoph,
->>>>>
->>>>> 2012/07/10 0:18, Christoph Lameter wrote:
->>>>>>
->>>>>> On Mon, 9 Jul 2012, Yasuaki Ishimatsu wrote:
->>>>>>
->>>>>>> Even if you apply these patches, you cannot remove the physical memory
->>>>>>> completely since these patches are still under development. I want you to
->>>>>>> cooperate to improve the physical memory hot-remove. So please review these
->>>>>>> patches and give your comment/idea.
->>>>>>
->>>>>> Could you at least give a method on how you want to do physical memory
->>>>>> removal?
->>>>>
->>>>> We plan to release a dynamic hardware partitionable system. It will be
->>>>> able to hot remove/add a system board which included memory and cpu.
->>>>> But as you know, Linux does not support memory hot-remove on x86 box.
->>>>> So I try to develop it.
->>>>>
->>>>> Current plan to hot remove system board is to use container driver.
->>>>> Thus I define the system board in ACPI DSDT table as a container device.
->>>>> It have supported hot-add a container device. And if container device
->>>>> has _EJ0 ACPI method, "eject" file to remove the container device is
->>>>> prepared as follow:
->>>>>
->>>>> # ls -l /sys/bus/acpi/devices/ACPI0004\:01/eject
->>>>> --w-------. 1 root root 4096 Jul 10 18:19 /sys/bus/acpi/devices/ACPI0004:01/eject
->>>>>
->>>>> When I hot-remove the container device, I echo 1 to the file as follow:
->>>>>
->>>>> #echo 1 > /sys/bus/acpi/devices/ACPI0004\:02/eject
->>>>>
->>>>> Then acpi_bus_trim() is called. And it calls acpi_memory_device_remove()
->>>>> for removing memory device. But the code does not do nothing.
->>>>> So I developed the continuation of the function.
->>>>>
->>>>>> You would have to remove all objects from the range you want to
->>>>>> physically remove. That is only possible under special circumstances and
->>>>>> with a limited set of objects. Even if you exclusively use ZONE_MOVEABLE
->>>>>> you still may get cases where pages are pinned for a long time.
->>>>>
->>>>> I know it. So my memory hot-remove plan is as follows:
->>>>>
->>>>> 1. hot-added a system board
->>>>>      All memory which included the system board is offline.
->>>>>
->>>>> 2. online the memory as removable page
->>>>>      The function has not supported yet. It is being developed by Lai as follow:
->>>>>      http://lkml.indiana.edu/hypermail/linux/kernel/1207.0/01478.html
->>>>>      If it is supported, I will be able to create movable memory.
->>>>>
->>>>> 3. hot-remove the memory by container device's eject file
->>>> We have implemented a prototype to do physical node (mem + CPU + IOH) hotplug
->>>> for Itanium and is now porting it to x86. But with currently solution, memory
->>>> hotplug functionality may cause 10-20% performance decrease because we concentrate
->>>> all DMA/Normal memory to the first NUMA node, and all other NUMA nodes only
->>>> hosts ZONE_MOVABLE. We are working on solution to minimize the performance
->>>> drop now.
->>>
->>> Thank you for your interesting response.
->>>
->>> I have a question. How do you move all other NUMA nodes to ZONE_MOVABLE?
->>> To use ZONE_MOVABLE, we need to use boot options like kernelcore or movablecore.
->>> But it is not enough, since the requested amount is spread evenly throughout
->>> all nodes in the system. So I think we do not have way to move all other NUMA
->>> node to ZONE_MOVABLE.
->> We have modified the ZONE_MOVABLE spreading and bootmem allocation. If the kernelcore
->> or movablecore kernel parameters are present, we follow current behavior. If those
->> parameter are absent and the platform supports physical hotplug, we will concentrate
->> DMA/NORMAL memory to specific nodes.
-> 
-> That's interesting. I want to know more details, if you do not mind.
-> Current kernel doesn't do the behavior, does it? So I think you have some
-> patches for changing the behavior. Will you merge these patches into
-> community kernel?
-Yeah, we do have patches for that. But it's still prototype, still much work
-needed before sending them to the community. 
-Currently I'm trying to send out patches for an ACPI based system device
-hotplug framework, which will support processor, memory, IOH and node hotplug
-in a unified way. After that, I will prepare the memory hotplug code.
+On Wed, 11 Jul 2012, Tomoya MORINAGA wrote:
 
-Thanks!
-Gerry
+> 
+> Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+
+There's no patch description.  What is the cause of the problem and how
+does the patch fix it?
+
+> ---
+>  drivers/usb/host/ehci-hub.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
+> index fc9e7cc..d596d0f 100644
+> --- a/drivers/usb/host/ehci-hub.c
+> +++ b/drivers/usb/host/ehci-hub.c
+> @@ -207,6 +207,7 @@ static int ehci_bus_suspend (struct usb_hcd *hcd)
+>  	int			port;
+>  	int			mask;
+>  	int			changed;
+> +	int			temp;
+>  
+>  	ehci_dbg(ehci, "suspend root hub\n");
+>  
+> @@ -324,6 +325,9 @@ static int ehci_bus_suspend (struct usb_hcd *hcd)
+>  	 * want, and so we must delete any pending watchdog timer events.
+>  	 */
+>  	del_timer_sync(&ehci->watchdog);
+> +	temp = ehci_readl(ehci, &ehci->regs->status);
+> +	if (temp & STS_FLR)
+> +		ehci_writel(ehci, STS_FLR, &ehci->regs->status);
+>  	return 0;
+
+Operations like this should be done while holding the spinlock.
+
+Also, why do you need the ehci_readl and the test?  You could always 
+clear the STS_FLR flag.
+
+Alan Stern
+
