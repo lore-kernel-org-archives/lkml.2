@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757518Ab2GKMa1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 08:30:27 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19728 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754174Ab2GKMa0 convert rfc822-to-8bit (ORCPT
+	id S1757532Ab2GKMbK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 08:31:10 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:52190 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753486Ab2GKMbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 08:30:26 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 11 Jul 2012 05:26:37 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Sangbeom Kim <sbkim73@samsung.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-CC: "'Liam Girdwood'" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "sbkim01@gmail.com" <sbkim01@gmail.com>
-Date: Wed, 11 Jul 2012 18:00:20 +0530
-Subject: RE: [PATCH V3 3/7] mfd: samsung: Modify samsung mfd header
-Thread-Topic: [PATCH V3 3/7] mfd: samsung: Modify samsung mfd header
-Thread-Index: Ac1fXbbieHH+gCiiTPG5j4NYs10mVAAAYpkg
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDB1D61AC@BGMAIL02.nvidia.com>
-References: <012b01cd5f5d$b6ff8a10$24fe9e30$@com>
-In-Reply-To: <012b01cd5f5d$b6ff8a10$24fe9e30$@com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Wed, 11 Jul 2012 08:31:08 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q6BCV1MG009858, This message is released by code: ctlocs8528
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next] r8169: Remove rtl_ocpdr_cond
+Date: Wed, 11 Jul 2012 20:31:56 +0800
+Message-ID: <1342009916-1519-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> --- /dev/null
-> +++ b/include/linux/mfd/samsung/core.h
-> @@ -0,0 +1,147 @@
-> +/*
-> + * core.h
-> + *
-> + * copyright (c) 2011 Samsung Electronics Co., Ltd
-> + *              http://www.samsung.com
+No waiting is needed for mac_ocp_{write / read}. And the bit 31 of
+OCPDR would not change, so rtl_udelay_loop_wait_high always return
+false. That is, the r8168_mac_ocp_read always retuen ~0.
 
-In most of the files you mentioned 2011.
-Should they not be changed to 2012?
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/ethernet/realtek/r8169.c |   12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
 
-> + *
-> + *  This program is free software; you can redistribute  it and/or modify it
-> + *  under  the terms of  the GNU General  Public License as published by the
-> + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> + *  option) any later version.
-
-
-
-
-> -
-> -#ifndef __LINUX_MFD_S5M_CORE_H
-> -#define __LINUX_MFD_S5M_CORE_H
-> -
-> -
-> -	int				buck_set1;
-> -	int				buck_set2;
-> -	int				buck_set3;
-
-As you have buck4_enable etc below, by any chance do you need buck_set4 as well here?
-Similarly should you declare buck1_enable here?
-
-> -	int				buck2_enable;
-> -	int				buck3_enable;
-> -	int				buck4_enable;
-> -	int				buck_default_idx;
-> -	int				buck2_default_idx;
-
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index c29c5fb..1f27318 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -1043,13 +1043,6 @@ static void rtl_w1w0_phy_ocp(struct rtl8169_private *tp, int reg, int p, int m)
+ 	r8168_phy_ocp_write(tp, reg, (val | p) & ~m);
+ }
+ 
+-DECLARE_RTL_COND(rtl_ocpdr_cond)
+-{
+-	void __iomem *ioaddr = tp->mmio_addr;
+-
+-	return RTL_R32(OCPDR) & OCPAR_FLAG;
+-}
+-
+ static void r8168_mac_ocp_write(struct rtl8169_private *tp, u32 reg, u32 data)
+ {
+ 	void __iomem *ioaddr = tp->mmio_addr;
+@@ -1058,8 +1051,6 @@ static void r8168_mac_ocp_write(struct rtl8169_private *tp, u32 reg, u32 data)
+ 		return;
+ 
+ 	RTL_W32(OCPDR, OCPAR_FLAG | (reg << 15) | data);
+-
+-	rtl_udelay_loop_wait_low(tp, &rtl_ocpdr_cond, 25, 10);
+ }
+ 
+ static u16 r8168_mac_ocp_read(struct rtl8169_private *tp, u32 reg)
+@@ -1071,8 +1062,7 @@ static u16 r8168_mac_ocp_read(struct rtl8169_private *tp, u32 reg)
+ 
+ 	RTL_W32(OCPDR, reg << 15);
+ 
+-	return rtl_udelay_loop_wait_high(tp, &rtl_ocpdr_cond, 25, 10) ?
+-		RTL_R32(OCPDR) : ~0;
++	return RTL_R32(OCPDR);
+ }
+ 
+ #define OCP_STD_PHY_BASE	0xa400
+-- 
+1.7.10.4
 
