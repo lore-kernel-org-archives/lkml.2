@@ -1,87 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933265Ab2GKVkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 17:40:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57988 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757940Ab2GKVkF (ORCPT
+	id S1756674Ab2GKVl2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 17:41:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50114 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754177Ab2GKVlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 17:40:05 -0400
-Date: Wed, 11 Jul 2012 14:40:01 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        davem@davemloft.net, chris@zankel.net, catalin.marinas@arm.com,
-        arnd@arndb.de, cmetcalf@tilera.com
-Subject: Re: [PATCH 2/3] ipc: allow compat IPC version field parsing if
- !ARCH_WANT_OLD_COMPAT_IPC
-Message-Id: <20120711144001.b1f7c21d.akpm@linux-foundation.org>
-In-Reply-To: <1342020741-12758-3-git-send-email-will.deacon@arm.com>
-References: <1342020741-12758-1-git-send-email-will.deacon@arm.com>
-	<1342020741-12758-3-git-send-email-will.deacon@arm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Jul 2012 17:41:25 -0400
+Date: Wed, 11 Jul 2012 14:40:41 -0700
+From: tip-bot for John Stultz <johnstul@us.ibm.com>
+Message-ID: <tip-f55a6faa384304c89cfef162768e88374d3312cb@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, johnstul@us.ibm.com, jengelh@inai.de,
+        tglx@linutronix.de, prarit@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        johnstul@us.ibm.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        jengelh@inai.de, prarit@redhat.com
+In-Reply-To: <1341960205-56738-2-git-send-email-johnstul@us.ibm.com>
+References: <1341960205-56738-2-git-send-email-johnstul@us.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] hrtimer: Provide clock_was_set_delayed()
+Git-Commit-ID: f55a6faa384304c89cfef162768e88374d3312cb
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 11 Jul 2012 14:40:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jul 2012 16:32:20 +0100
-Will Deacon <will.deacon@arm.com> wrote:
+Commit-ID:  f55a6faa384304c89cfef162768e88374d3312cb
+Gitweb:     http://git.kernel.org/tip/f55a6faa384304c89cfef162768e88374d3312cb
+Author:     John Stultz <johnstul@us.ibm.com>
+AuthorDate: Tue, 10 Jul 2012 18:43:19 -0400
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 11 Jul 2012 23:34:37 +0200
 
-> Commit 48b25c43 ("[PATCH v3] ipc: provide generic compat versions of IPC
-> syscalls") added a new ARCH_WANT_OLD_COMPAT_IPC config option for
-> architectures to select if their compat target requires the old IPC
-> syscall interface.
-> 
-> For architectures (such as AArch64) that do not require the internal
-> calling conventions provided by this option, but have a compat target
-> where the C library passes the IPC_64 flag explicitly,
-> compat_ipc_parse_version no longer strips out the flag before calling
-> the native system call implementation, resulting in unknown SHM/IPC
-> commands and -EINVAL being returned to userspace.
-> 
-> This patch separates the selection of the internal calling conventions
-> for the IPC syscalls from the version parsing, allowing architectures to
-> select __ARCH_WANT_COMPAT_IPC_PARSE_VERSION if they want to use version
-> parsing whilst retaining the newer syscall calling conventions.
-> 
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> ---
->  include/linux/compat.h |    1 +
->  ipc/compat.c           |    2 +-
->  2 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/compat.h b/include/linux/compat.h
-> index 4e89039..9f68e90 100644
-> --- a/include/linux/compat.h
-> +++ b/include/linux/compat.h
-> @@ -256,6 +256,7 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
->  			   compat_size_t __user *len_ptr);
->  
->  #ifdef CONFIG_ARCH_WANT_OLD_COMPAT_IPC
-> +#define __ARCH_WANT_COMPAT_IPC_PARSE_VERSION
->  long compat_sys_semctl(int first, int second, int third, void __user *uptr);
->  long compat_sys_msgsnd(int first, int second, int third, void __user *uptr);
->  long compat_sys_msgrcv(int first, int second, int msgtyp, int third,
-> diff --git a/ipc/compat.c b/ipc/compat.c
-> index 53cebdf..a41600f 100644
-> --- a/ipc/compat.c
-> +++ b/ipc/compat.c
-> @@ -118,7 +118,7 @@ extern int sem_ctls[];
->  
->  static inline int compat_ipc_parse_version(int *cmd)
->  {
-> -#ifdef CONFIG_ARCH_WANT_OLD_COMPAT_IPC
-> +#ifdef	__ARCH_WANT_COMPAT_IPC_PARSE_VERSION
->  	int version = *cmd & IPC_64;
->  
->  	/* this is tricky: architectures that have support for the old
+hrtimer: Provide clock_was_set_delayed()
 
-Could we do this purely in Kconfig?  Add a new
-CONFIG_ARCH_WANT_COMPAT_IPC_PARSE_VERSION and always set it true if
-CONFIG_ARCH_WANT_OLD_COMPAT_IPC?
+clock_was_set() cannot be called from hard interrupt context because
+it calls on_each_cpu().
+
+For fixing the widely reported leap seconds issue it is necessary to
+call it from hard interrupt context, i.e. the timer tick code, which
+does the timekeeping updates.
+
+Provide a new function which denotes it in the hrtimer cpu base
+structure of the cpu on which it is called and raise the hrtimer
+softirq. We then execute the clock_was_set() notificiation from
+softirq context in run_hrtimer_softirq(). The hrtimer softirq is
+rarely used, so polling the flag there is not a performance issue.
+
+[ tglx: Made it depend on CONFIG_HIGH_RES_TIMERS. We really should get
+  rid of all this ifdeffery ASAP ]
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+Reported-by: Jan Engelhardt <jengelh@inai.de>
+Reviewed-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Prarit Bhargava <prarit@redhat.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1341960205-56738-2-git-send-email-johnstul@us.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/hrtimer.h |    9 ++++++++-
+ kernel/hrtimer.c        |   20 ++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index fd0dc30..c9ec940 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -165,6 +165,7 @@ enum  hrtimer_base_type {
+  * @lock:		lock protecting the base and associated clock bases
+  *			and timers
+  * @active_bases:	Bitfield to mark bases with active timers
++ * @clock_was_set:	Indicates that clock was set from irq context.
+  * @expires_next:	absolute time of the next event which was scheduled
+  *			via clock_set_next_event()
+  * @hres_active:	State of high resolution mode
+@@ -177,7 +178,8 @@ enum  hrtimer_base_type {
+  */
+ struct hrtimer_cpu_base {
+ 	raw_spinlock_t			lock;
+-	unsigned long			active_bases;
++	unsigned int			active_bases;
++	unsigned int			clock_was_set;
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 	ktime_t				expires_next;
+ 	int				hres_active;
+@@ -286,6 +288,8 @@ extern void hrtimer_peek_ahead_timers(void);
+ # define MONOTONIC_RES_NSEC	HIGH_RES_NSEC
+ # define KTIME_MONOTONIC_RES	KTIME_HIGH_RES
+ 
++extern void clock_was_set_delayed(void);
++
+ #else
+ 
+ # define MONOTONIC_RES_NSEC	LOW_RES_NSEC
+@@ -306,6 +310,9 @@ static inline int hrtimer_is_hres_active(struct hrtimer *timer)
+ {
+ 	return 0;
+ }
++
++static inline void clock_was_set_delayed(void) { }
++
+ #endif
+ 
+ extern void clock_was_set(void);
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index ae34bf5..3c24fb2 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -717,6 +717,19 @@ static int hrtimer_switch_to_hres(void)
+ 	return 1;
+ }
+ 
++/*
++ * Called from timekeeping code to reprogramm the hrtimer interrupt
++ * device. If called from the timer interrupt context we defer it to
++ * softirq context.
++ */
++void clock_was_set_delayed(void)
++{
++	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++
++	cpu_base->clock_was_set = 1;
++	__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
++}
++
+ #else
+ 
+ static inline int hrtimer_hres_active(void) { return 0; }
+@@ -1395,6 +1408,13 @@ void hrtimer_peek_ahead_timers(void)
+ 
+ static void run_hrtimer_softirq(struct softirq_action *h)
+ {
++	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++
++	if (cpu_base->clock_was_set) {
++		cpu_base->clock_was_set = 0;
++		clock_was_set();
++	}
++
+ 	hrtimer_peek_ahead_timers();
+ }
+ 
