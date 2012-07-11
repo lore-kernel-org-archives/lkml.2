@@ -1,528 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756617Ab2GKAcg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 20:32:36 -0400
-Received: from ks35366.kimsufi.com ([213.251.186.122]:39101 "EHLO meetr.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752844Ab2GKAce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 20:32:34 -0400
-X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Jul 2012 20:32:34 EDT
-Message-ID: <4FFCC7FB.1090609@meetr.de>
-Date: Wed, 11 Jul 2012 02:25:31 +0200
-From: Andreas Heider <andreas@meetr.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1756639Ab2GKAe6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 20:34:58 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32710 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028Ab2GKAe4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 20:34:56 -0400
+Message-ID: <4FFCCA22.8060006@oracle.com>
+Date: Wed, 11 Jul 2012 08:34:42 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Arun Raghavan <arun.raghavan@collabora.co.uk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] apple-gmux: Restore switch registers on suspend/resume
-References: <1341891593-6485-1-git-send-email-arun.raghavan@collabora.co.uk> <20120710160555.GA31562@srcf.ucam.org> <20120710163516.GE10194@thinkpad-t410>
-In-Reply-To: <20120710163516.GE10194@thinkpad-t410>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Dave, Tushar N" <tushar.n.dave@intel.com>
+CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: 82571EB: Detected Hardware Unit Hang
+References: <4FFA9B96.6040901@oracle.com> <4FFBDC50.5090800@oracle.com> <061C8A8601E8EE4CA8D8FD6990CEA891274EE41F@ORSMSX102.amr.corp.intel.com>
+In-Reply-To: <061C8A8601E8EE4CA8D8FD6990CEA891274EE41F@ORSMSX102.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for adding me, seeing the gmux driver progress is always great.
+On 07/11/12 03:02, Dave, Tushar N wrote:
+>> -----Original Message-----
+>> From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org]
+>> On Behalf Of Joe Jin
+>> Sent: Tuesday, July 10, 2012 12:40 AM
+>> To: Joe Jin
+>> Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
+>> kernel@vger.kernel.org
+>> Subject: Re: 82571EB: Detected Hardware Unit Hang
+>>
+>> When I debug the driver I found before Detected HW hang, driver unable to
+>> clean and reclaim the resources:
+>>
+>> 1457         while ((eop_desc->upper.data &
+>> cpu_to_le32(E1000_TXD_STAT_DD)) &&  <== at here upper.data always is 0x300
+>> 1458                (count < tx_ring->count)) {
+>>     <--- snip --->
+>> 1487         }
+>>
+>>
+>> I checked all driver codes I did not found anywhere will set the
+>> upper.data with E1000_TXD_STAT_DD, I guess upper.data be set by hardware?
+> 
+> Yes upper.data (part of it is STATUS byte) is set by HW. Basically driver checks E1000_TXD_STAT_DD (Descriptor Done) bit. If this bit is set that means HW has processed that descriptor and driver can now clean that descriptor.
+> With value 0x300 , DD bit is not set. That means HW has not processed that descriptor.
 
-Regarding the original patch: This is probably only useful when the gmux 
-was switched in GRUB  and there's already a solution for the resume 
-problem in userspace 
-(http://ubuntuforums.org/showpost.php?p=10695119&postcount=261). Maybe 
-the same could be achieved a bit cleaner by simply using a few parts of 
-the switching patch?
+Thanks for the clarify, might be firmware issue?
+> 
+> How fast does tx hang reproduce? I suggest you to enable debug code in driver so when tx hang occurs it will dump the HW desc ring info into kernel log.
 
-Regarding the gmux switching patch: The patch itself should work and 
-hopefully doesn't break stuff that wasn't broken before. But without 
-additional fixes to i915/nouveau/etc. It won't be too useful either, 
-although it should fix the resume issue.
+Once I copy a file from other server, issue to be reproduced at once.
+I'll enable the debug to get more debug info.
 
-I'll look into how well it works with the current kernel on the weekend, 
-but I don't want to promise too much since time is still a bit of an 
-issue for me.
+> You can run "ethtool -s ethx msglvl 0x2c00" to enable debug.
+> Once tx hang occurs please send me the full dmesg log.
+> 
+> Does tx hang occur with in-kernel e1000e driver too?
 
-Andreas
+I tried several drivers included rhel5 the latest, Intel the latest,
+rhel6 the latest, issue see on all those drivers.
 
-Am 10.07.12 18:35, schrieb Seth Forshee:
-> [Adding Anreas on the Cc, looks like he was forgotten]
->
-> On Tue, Jul 10, 2012 at 05:05:55PM +0100, Matthew Garrett wrote:
->> On Tue, Jul 10, 2012 at 09:09:53AM +0530, Arun Raghavan wrote:
->>> After suspend and resume, the values of these registers seem to change
->>> from what they were at suspend time, potentially preventing the actual
->>> output lines from being enabled post-resume. This saves relevant state
->>> at suspend and restores it when resumed.
+Thanks,
+Joe 
+> 
+> Thanks.
+> 
+> -Tushar
+> 
+> 
+>> If OS is 32bit system, what which happen?
+> 
+> 
+>>
+>> Thanks in advance,
+>> Joe
+>>
+>> On 07/09/12 16:51, Joe Jin wrote:
+>>> Hi list,
 >>>
->>> This is at least required on the MacBook Pro 8.2 when the Intel GPU is
->>> manually selected in GRUB config before the kernel is loaded.
->> I'd really rather add proper switcheroo support. Andreas, I have a patch
->> with your name on it that appears to work (attached) - any objections to
->> getting this merged?
-> I agree completely. I've really been wanting to get the switcheroo
-> support added, but I don't have hardware with working discrete graphics
-> under EFI boot to work with.
->
-> The patch seems to have some rough edges to work out, but once that's
-> done I'd be in favor of merging it as long as it's working well.
->
-> Seth
->
->> commit 225a5a4ba90e9cf3de836c936cd01e9828cd0765
->> Author: Matthew Garrett <mjg@redhat.com>
->> Date:   Thu Mar 22 09:28:27 2012 -0400
+>>> I'm seeing a Unit Hang even with the latest e1000e driver 2.0.0 when
+>>> doing scp test. this issue is easy do reproduced on SUN FIRE X2270 M2,
+>>> just copy a big file (>500M) from another server will hit it at once.
+>>>
+>>> Would you please help on this?
+>>>
+>>> device info:
+>>> # lspci -s 05:00.0
+>>> 05:00.0 Ethernet controller: Intel Corporation 82571EB Gigabit
+>>> Ethernet Controller (Copper) (rev 06)
+>>>
+>>> # lspci -s 05:00.0 -n
+>>> 05:00.0 0200: 8086:10bc (rev 06)
+>>>
+>>> # ethtool -i eth0
+>>> driver: e1000e
+>>> version: 2.0.0-NAPI
+>>> firmware-version: 5.10-2
+>>> bus-info: 0000:05:00.0
+>>>
+>>> # ethtool -k eth0
+>>> Offload parameters for eth0:
+>>> rx-checksumming: on
+>>> tx-checksumming: on
+>>> scatter-gather: on
+>>> tcp segmentation offload: on
+>>> udp fragmentation offload: off
+>>> generic segmentation offload: on
+>>> generic-receive-offload: on
+>>>
+>>> kernel log:
+>>> -----------
+>>> e1000e 0000:05:00.0: eth0: Detected Hardware Unit Hang:
+>>>   TDH                  <6c>
+>>>   TDT                  <81>
+>>>   next_to_use          <81>
+>>>   next_to_clean        <6b>
+>>> buffer_info[next_to_clean]:
+>>>   time_stamp           <fffc7a23>
+>>>   next_to_watch        <71>
+>>>   jiffies              <fffc8c0c>
+>>>   next_to_watch.status <0>
+>>> MAC Status             <80387>
+>>> PHY Status             <792d>
+>>> PHY 1000BASE-T Status  <3c00>
+>>> PHY Extended Status    <3000>
+>>> PCI Status             <10>
+>>> e1000e 0000:05:00.0: eth0: Detected Hardware Unit Hang:
+>>>   TDH                  <6c>
+>>>   TDT                  <81>
+>>>   next_to_use          <81>
+>>>   next_to_clean        <6b>
+>>> buffer_info[next_to_clean]:
+>>>   time_stamp           <fffc7a23>
+>>>   next_to_watch        <71>
+>>>   jiffies              <fffc9bac>
+>>>   next_to_watch.status <0>
+>>> MAC Status             <80387>
+>>> PHY Status             <792d>
+>>> PHY 1000BASE-T Status  <3c00>
+>>> PHY Extended Status    <3000>
+>>> PCI Status             <10>
+>>> ------------[ cut here ]------------
+>>> WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x225/0x230()
+>>> Hardware name: SUN FIRE X2270 M2 NETDEV WATCHDOG: eth0 (e1000e):
+>>> transmit queue 0 timed out Modules linked in: autofs4 hidp rfcomm
+>>> bluetooth rfkill lockd sunrpc cpufreq_ondemand acpi_cpufreq mperf
+>>> be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa ib_mad
+>>> ib_core ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi cxgb3
+>>> mdio libiscsi_tcp libiscsi scsi_transport_iscsi video sbs sbshc
+>>> acpi_pad acpi_ipmi ipmi_msghandler parport_pc lp parport e1000e(U)
+>>> snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device
+>>> igb snd_pcm_oss serio_raw snd_mixer_oss snd_pcm tpm_infineon snd_timer
+>>> snd soundcore snd_page_alloc i2c_i801 iTCO_wdt i2c_core pcspkr
+>>> i7core_edac iTCO_vendor_support ioatdma ghes dca edac_core hed
+>>> dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_mod usb_storage
+>>> sd_mod crc_t10dif sg ahci libahci ext3 jbd mbcache [last unloaded:
+>>> microcode]
+>>> Pid: 0, comm: swapper Not tainted 2.6.39-200.24.1.el5uek #1 Call
+>>> Trace:
+>>>  [<c07d9ac5>] ? dev_watchdog+0x225/0x230  [<c045ba61>]
+>>> warn_slowpath_common+0x81/0xa0  [<c07d9ac5>] ?
+>>> dev_watchdog+0x225/0x230  [<c045bb23>] warn_slowpath_fmt+0x33/0x40
+>>> [<c07d9ac5>] dev_watchdog+0x225/0x230  [<c07d98a0>] ?
+>>> dev_activate+0xb0/0xb0  [<c0468e82>] call_timer_fn+0x32/0xf0
+>>> [<c04bceb0>] ? rcu_check_callbacks+0x80/0x80  [<c046a76d>]
+>>> run_timer_softirq+0xed/0x1b0  [<c07d98a0>] ? dev_activate+0xb0/0xb0
+>>> [<c0461a81>] __do_softirq+0x91/0x1a0  [<c04619f0>] ?
+>>> local_bh_enable+0x80/0x80  <IRQ>  [<c0462295>] ? irq_exit+0x95/0xa0
+>>> [<c087f8b8>] ? smp_apic_timer_interrupt+0x38/0x42
+>>>  [<c08784f5>] ? apic_timer_interrupt+0x31/0x38  [<c046007b>] ?
+>>> do_exit+0x11b/0x370  [<c065eae4>] ? intel_idle+0xa4/0x100
+>>> [<c078d9b9>] ? cpuidle_idle_call+0xb9/0x1e0  [<c0411d77>] ?
+>>> cpu_idle+0x97/0xd0  [<c085cbbd>] ? rest_init+0x5d/0x70  [<c0b07a7a>] ?
+>>> start_kernel+0x28a/0x340  [<c0b074b0>] ? obsolete_checksetup+0xb0/0xb0
+>>> [<c0b070a4>] ? i386_start_kernel+0x64/0xb0 ---[ end trace
+>>> 5502b55cd4d4e5cb ]--- e1000e 0000:05:00.0: eth0: Reset adapter
+>>> e1000e: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: Rx/Tx
+>>>
+>>> Thanks,
+>>> Joe
+>>>
 >>
->>      gmux switcheroo
 >>
->> diff --git a/drivers/platform/x86/apple-gmux.c b/drivers/platform/x86/apple-gmux.c
->> index 694a15a..ef2c9ac 100644
->> --- a/drivers/platform/x86/apple-gmux.c
->> +++ b/drivers/platform/x86/apple-gmux.c
->> @@ -2,6 +2,7 @@
->>    *  Gmux driver for Apple laptops
->>    *
->>    *  Copyright (C) Canonical Ltd. <seth.forshee@canonical.com>
->> + *  Copyright (C) 2010-2012 Andreas Heider <andreas@meetr.de>
->>    *
->>    *  This program is free software; you can redistribute it and/or modify
->>    *  it under the terms of the GNU General Public License version 2 as
->> @@ -20,13 +21,22 @@
->>   #include <linux/slab.h>
->>   #include <acpi/video.h>
->>   #include <asm/io.h>
->> +#include <linux/pci.h>
->> +#include <linux/vga_switcheroo.h>
->> +#include <linux/delay.h>
->>   
->> -struct apple_gmux_data {
->> +static struct apple_gmux_data {
->>   	unsigned long iostart;
->>   	unsigned long iolen;
->> +	acpi_handle dhandle;
->> +	enum vga_switcheroo_client_id resume_client_id;
->>   
->>   	struct backlight_device *bdev;
->> -};
->> +} gmux_data;
->> +
->> +static struct pci_dev *discrete;
->> +
->> +DECLARE_COMPLETION(powerchange_done);
->>   
->>   /*
->>    * gmux port offsets. Many of these are not yet used, but may be in the
->> @@ -59,32 +69,29 @@ struct apple_gmux_data {
->>   #define GMUX_BRIGHTNESS_MASK		0x00ffffff
->>   #define GMUX_MAX_BRIGHTNESS		GMUX_BRIGHTNESS_MASK
->>   
->> -static inline u8 gmux_read8(struct apple_gmux_data *gmux_data, int port)
->> +static inline u8 gmux_read8(int port)
->>   {
->> -	return inb(gmux_data->iostart + port);
->> +	return inb(gmux_data.iostart + port);
->>   }
->>   
->> -static inline void gmux_write8(struct apple_gmux_data *gmux_data, int port,
->> -			       u8 val)
->> +static inline void gmux_write8(int port, u8 val)
->>   {
->> -	outb(val, gmux_data->iostart + port);
->> +	outb(val, gmux_data.iostart + port);
->>   }
->>   
->> -static inline u32 gmux_read32(struct apple_gmux_data *gmux_data, int port)
->> +static inline u32 gmux_read32(int port)
->>   {
->> -	return inl(gmux_data->iostart + port);
->> +	return inl(gmux_data.iostart + port);
->>   }
->>   
->>   static int gmux_get_brightness(struct backlight_device *bd)
->>   {
->> -	struct apple_gmux_data *gmux_data = bl_get_data(bd);
->> -	return gmux_read32(gmux_data, GMUX_PORT_BRIGHTNESS) &
->> +	return gmux_read32(GMUX_PORT_BRIGHTNESS) &
->>   	       GMUX_BRIGHTNESS_MASK;
->>   }
->>   
->>   static int gmux_update_status(struct backlight_device *bd)
->>   {
->> -	struct apple_gmux_data *gmux_data = bl_get_data(bd);
->>   	u32 brightness = bd->props.brightness;
->>   
->>   	if (bd->props.state & BL_CORE_SUSPENDED)
->> @@ -96,54 +103,225 @@ static int gmux_update_status(struct backlight_device *bd)
->>   	 * accept a single u32 write, but the old method also works, so we
->>   	 * just use the old method for all gmux versions.
->>   	 */
->> -	gmux_write8(gmux_data, GMUX_PORT_BRIGHTNESS, brightness);
->> -	gmux_write8(gmux_data, GMUX_PORT_BRIGHTNESS + 1, brightness >> 8);
->> -	gmux_write8(gmux_data, GMUX_PORT_BRIGHTNESS + 2, brightness >> 16);
->> -	gmux_write8(gmux_data, GMUX_PORT_BRIGHTNESS + 3, 0);
->> +	gmux_write8(GMUX_PORT_BRIGHTNESS, brightness);
->> +	gmux_write8(GMUX_PORT_BRIGHTNESS + 1, brightness >> 8);
->> +	gmux_write8(GMUX_PORT_BRIGHTNESS + 2, brightness >> 16);
->> +	gmux_write8(GMUX_PORT_BRIGHTNESS + 3, 0);
->> +
->> +	return 0;
->> +}
->> +
->> +static int gmux_switchto(enum vga_switcheroo_client_id id)
->> +{
->> +	if (id == VGA_SWITCHEROO_IGD) {
->> +		gmux_write8(GMUX_PORT_SWITCH_DDC, 1);
->> +		gmux_write8(GMUX_PORT_SWITCH_DISPLAY, 2);
->> +		gmux_write8(GMUX_PORT_SWITCH_EXTERNAL, 2);
->> +	} else {
->> +		gmux_write8(GMUX_PORT_SWITCH_DDC, 2);
->> +		gmux_write8(GMUX_PORT_SWITCH_DISPLAY, 3);
->> +		gmux_write8(GMUX_PORT_SWITCH_EXTERNAL, 3);
->> +	}
->> +
->> +	return 0;
->> +}
->> +
->> +static int gmux_call_acpi_pwrd(int arg)
->> +{
->> +	acpi_handle gfx_handle = DEVICE_ACPI_HANDLE(&discrete->dev);
->> +	acpi_handle pwrd_handle = NULL;
->> +	acpi_status status = AE_OK;
->> +	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
->> +	union acpi_object arg0 = { ACPI_TYPE_INTEGER };
->> +	struct acpi_object_list arg_list = { 1, &arg0 };
->> +
->> +	if (!gfx_handle) {
->> +		pr_err("Cannot find device ACPI handle\n");
->> +		return -ENODEV;
->> +	}
->> +
->> +	status = acpi_get_handle(gfx_handle, "PWRD", &pwrd_handle);
->> +	if (ACPI_FAILURE(status)) {
->> +		pr_err("Cannot get PWRD handle: %s\n",
->> +		       acpi_format_exception(status));
->> +		return -ENODEV;
->> +	}
->>   
->> +	arg0.integer.value = arg;
->> +
->> +	status = acpi_evaluate_object(pwrd_handle, NULL, &arg_list, &buffer);
->> +	if (ACPI_FAILURE(status)) {
->> +		pr_err("PWRD call failed: %s\n",
->> +		       acpi_format_exception(status));
->> +		return -ENODEV;
->> +	}
->> +
->> +	kfree(buffer.pointer);
->>   	return 0;
->>   }
->>   
->> +static int gmux_set_discrete_state(enum vga_switcheroo_state state)
->> +{
->> +	/* TODO: locking for completions needed? */
->> +	init_completion(&powerchange_done);
->> +
->> +	if (state == VGA_SWITCHEROO_ON) {
->> +		gmux_call_acpi_pwrd(0);
->> +		gmux_write8(GMUX_PORT_DISCRETE_POWER, 1);
->> +		gmux_write8(GMUX_PORT_DISCRETE_POWER, 3);
->> +	} else {
->> +		gmux_write8(GMUX_PORT_DISCRETE_POWER, 1);
->> +		gmux_write8(GMUX_PORT_DISCRETE_POWER, 0);
->> +		gmux_call_acpi_pwrd(1);
->> +	}
->> +
->> +	if (wait_for_completion_interruptible_timeout(&powerchange_done,
->> +						      msecs_to_jiffies(200)))
->> +		pr_info("completion timeout\n");
->> +
->> +	return 0;
->> +}
->> +
->> +static int gmux_set_power_state(enum vga_switcheroo_client_id id,
->> +				enum vga_switcheroo_state state)
->> +{
->> +	if (id == VGA_SWITCHEROO_IGD)
->> +		return 0;
->> +
->> +	return gmux_set_discrete_state(state);
->> +}
->> +
->> +static int gmux_init(void)
->> +{
->> +	return 0;
->> +}
->> +
->> +static int gmux_get_client_id(struct pci_dev *pdev)
->> +{
->> +	/* early mbps with switchable graphics use nvidia integrated graphics,
->> +	 * hardcode that the 9400M is integrated */
->> +	if (pdev->vendor == PCI_VENDOR_ID_INTEL) {
->> +		return VGA_SWITCHEROO_IGD;
->> +	} else if (pdev->vendor == PCI_VENDOR_ID_NVIDIA &&
->> +		   pdev->device == 0x0863) {
->> +		return VGA_SWITCHEROO_IGD;
->> +	} else {
->> +		discrete = pdev;
->> +		return VGA_SWITCHEROO_DIS;
->> +	}
->> +}
->> +
->> +static bool gmux_client_active(enum vga_switcheroo_client_id id)
->> +{
->> +	u8 state = gmux_read8(GMUX_PORT_SWITCH_DISPLAY);
->> +
->> +	if ((id == VGA_SWITCHEROO_IGD && state == 2) ||
->> +	    (id == VGA_SWITCHEROO_DIS && state == 3))
->> +		return true;
->> +
->> +	return false;
->> +}
->> +
->> +static struct vga_switcheroo_handler gmux_handler = {
->> +	.switchto = gmux_switchto,
->> +	.power_state = gmux_set_power_state,
->> +	.init = gmux_init,
->> +	.get_client_id = gmux_get_client_id,
->> +	.client_active = gmux_client_active,
->> +};
->> +
->> +static void gmux_disable_interrupts(void)
->> +{
->> +	gmux_write8(GMUX_PORT_INTERRUPT_ENABLE, GMUX_INTERRUPT_DISABLE);
->> +}
->> +
->> +static void gmux_enable_interrupts(void)
->> +{
->> +	gmux_write8(GMUX_PORT_INTERRUPT_ENABLE, GMUX_INTERRUPT_ENABLE);
->> +}
->> +
->> +static int gmux_interrupt_get_status(void)
->> +{
->> +	return gmux_read8(GMUX_PORT_INTERRUPT_STATUS);
->> +}
->> +
->> +static void gmux_interrupt_activate_status(void)
->> +{
->> +	int old_status;
->> +	int new_status;
->> +
->> +	/* to reactivate interrupts write back current status */
->> +	old_status = gmux_read8(GMUX_PORT_INTERRUPT_STATUS);
->> +	gmux_write8(GMUX_PORT_INTERRUPT_STATUS, old_status);
->> +	new_status = gmux_read8(GMUX_PORT_INTERRUPT_STATUS);
->> +
->> +	/* status = 0 indicates active interrupts */
->> +	if (new_status)
->> +		pr_info("gmux: error: activate_status, old_status %d new_status %d\n", old_status, new_status);
->> +}
->> +
->> +static void gmux_notify_handler(acpi_handle device, u32 value, void *context)
->> +{
->> +	int status;
->> +
->> +	status = gmux_interrupt_get_status();
->> +	gmux_disable_interrupts();
->> +
->> +	gmux_interrupt_activate_status();
->> +	gmux_enable_interrupts();
->> +
->> +	if (status & GMUX_INTERRUPT_STATUS_POWER)
->> +		complete(&powerchange_done);
->> +}
->> +
->>   static const struct backlight_ops gmux_bl_ops = {
->>   	.options = BL_CORE_SUSPENDRESUME,
->>   	.get_brightness = gmux_get_brightness,
->>   	.update_status = gmux_update_status,
->>   };
->>   
->> +static int gmux_suspend(struct pnp_dev *dev, pm_message_t state)
->> +{
->> +	gmux_data.resume_client_id = gmux_read8(GMUX_PORT_SWITCH_DISPLAY) == 2 ?
->> +		VGA_SWITCHEROO_IGD : VGA_SWITCHEROO_DIS;
->> +	return 0;
->> +}
->> +
->> +static int gmux_resume(struct pnp_dev *dev)
->> +{
->> +	gmux_switchto(gmux_data.resume_client_id);
->> +	return 0;
->> +}
->> +
->>   static int __devinit gmux_probe(struct pnp_dev *pnp,
->>   				const struct pnp_device_id *id)
->>   {
->> -	struct apple_gmux_data *gmux_data;
->>   	struct resource *res;
->>   	struct backlight_properties props;
->>   	struct backlight_device *bdev;
->>   	u8 ver_major, ver_minor, ver_release;
->> +	acpi_status status;
->>   	int ret = -ENXIO;
->>   
->> -	gmux_data = kzalloc(sizeof(*gmux_data), GFP_KERNEL);
->> -	if (!gmux_data)
->> -		return -ENOMEM;
->> -	pnp_set_drvdata(pnp, gmux_data);
->> -
->>   	res = pnp_get_resource(pnp, IORESOURCE_IO, 0);
->>   	if (!res) {
->>   		pr_err("Failed to find gmux I/O resource\n");
->> -		goto err_free;
->> +		goto err_begin;
->>   	}
->>   
->> -	gmux_data->iostart = res->start;
->> -	gmux_data->iolen = res->end - res->start;
->> +	gmux_data.iostart = res->start;
->> +	gmux_data.iolen = res->end - res->start;
->>   
->> -	if (gmux_data->iolen < GMUX_MIN_IO_LEN) {
->> +	if (gmux_data.iolen < GMUX_MIN_IO_LEN) {
->>   		pr_err("gmux I/O region too small (%lu < %u)\n",
->> -		       gmux_data->iolen, GMUX_MIN_IO_LEN);
->> -		goto err_free;
->> +		       gmux_data.iolen, GMUX_MIN_IO_LEN);
->> +		goto err_begin;
->>   	}
->>   
->> -	if (!request_region(gmux_data->iostart, gmux_data->iolen,
->> +	if (!request_region(gmux_data.iostart, gmux_data.iolen,
->>   			    "Apple gmux")) {
->>   		pr_err("gmux I/O already in use\n");
->> -		goto err_free;
->> +		goto err_begin;
->>   	}
->>   
->>   	/*
->> @@ -151,9 +329,9 @@ static int __devinit gmux_probe(struct pnp_dev *pnp,
->>   	 * doesn't really have a gmux. Check for invalid version information
->>   	 * to detect this.
->>   	 */
->> -	ver_major = gmux_read8(gmux_data, GMUX_PORT_VERSION_MAJOR);
->> -	ver_minor = gmux_read8(gmux_data, GMUX_PORT_VERSION_MINOR);
->> -	ver_release = gmux_read8(gmux_data, GMUX_PORT_VERSION_RELEASE);
->> +	ver_major = gmux_read8(GMUX_PORT_VERSION_MAJOR);
->> +	ver_minor = gmux_read8(GMUX_PORT_VERSION_MINOR);
->> +	ver_release = gmux_read8(GMUX_PORT_VERSION_RELEASE);
->>   	if (ver_major == 0xff && ver_minor == 0xff && ver_release == 0xff) {
->>   		pr_info("gmux device not present\n");
->>   		ret = -ENODEV;
->> @@ -165,7 +343,7 @@ static int __devinit gmux_probe(struct pnp_dev *pnp,
->>   
->>   	memset(&props, 0, sizeof(props));
->>   	props.type = BACKLIGHT_PLATFORM;
->> -	props.max_brightness = gmux_read32(gmux_data, GMUX_PORT_MAX_BRIGHTNESS);
->> +	props.max_brightness = gmux_read32(GMUX_PORT_MAX_BRIGHTNESS);
->>   
->>   	/*
->>   	 * Currently it's assumed that the maximum brightness is less than
->> @@ -177,44 +355,73 @@ static int __devinit gmux_probe(struct pnp_dev *pnp,
->>   		props.max_brightness = GMUX_MAX_BRIGHTNESS;
->>   
->>   	bdev = backlight_device_register("gmux_backlight", &pnp->dev,
->> -					 gmux_data, &gmux_bl_ops, &props);
->> +					 NULL, &gmux_bl_ops, &props);
->>   	if (IS_ERR(bdev)) {
->>   		ret = PTR_ERR(bdev);
->>   		goto err_release;
->>   	}
->>   
->> -	gmux_data->bdev = bdev;
->> +	gmux_data.bdev = bdev;
->>   	bdev->props.brightness = gmux_get_brightness(bdev);
->>   	backlight_update_status(bdev);
->>   
->> -	/*
->> -	 * The backlight situation on Macs is complicated. If the gmux is
->> -	 * present it's the best choice, because it always works for
->> -	 * backlight control and supports more levels than other options.
->> -	 * Disable the other backlight choices.
->> -	 */
->> -	acpi_video_unregister();
->> -	apple_bl_unregister();
->> +	gmux_data.dhandle = DEVICE_ACPI_HANDLE(&pnp->dev);
->> +	if (!gmux_data.dhandle) {
->> +		pr_err("Cannot find acpi device for pnp device %s\n",
->> +		       dev_name(&pnp->dev));
->> +		goto err_release;
->> +	} else {
->> +		struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER, NULL };
->> +		acpi_get_name(gmux_data.dhandle, ACPI_SINGLE_NAME, &buf);
->> +		pr_info("Found acpi handle for pnp device %s: %s\n",
->> +			dev_name(&pnp->dev), (char *)buf.pointer);
->> +		kfree(buf.pointer);
->> +	}
->> +
->> +	status = acpi_install_notify_handler(gmux_data.dhandle,
->> +				ACPI_DEVICE_NOTIFY, &gmux_notify_handler, pnp);
->> +	if (ACPI_FAILURE(status)) {
->> +		pr_err("Install notify handler failed: %s\n",
->> +		       acpi_format_exception(status));
->> +		goto err_notify;
->> +	}
->> +
->> +	if (vga_switcheroo_register_handler(&gmux_handler))
->> +		goto err_register;
->> +
->> +	init_completion(&powerchange_done);
->> +	gmux_enable_interrupts();
->>   
->>   	return 0;
->>   
->> +err_register:
->> +	status = acpi_remove_notify_handler(gmux_data.dhandle,
->> +				     ACPI_DEVICE_NOTIFY, &gmux_notify_handler);
->> +	if (ACPI_FAILURE(status))
->> +		pr_err("Remove notify handler failed: %s\n",
->> +		       acpi_format_exception(status));
->> +err_notify:
->> +	backlight_device_unregister(bdev);
->>   err_release:
->> -	release_region(gmux_data->iostart, gmux_data->iolen);
->> -err_free:
->> -	kfree(gmux_data);
->> +	release_region(gmux_data.iostart, gmux_data.iolen);
->> +err_begin:
->>   	return ret;
->>   }
->>   
->>   static void __devexit gmux_remove(struct pnp_dev *pnp)
->>   {
->> -	struct apple_gmux_data *gmux_data = pnp_get_drvdata(pnp);
->> -
->> -	backlight_device_unregister(gmux_data->bdev);
->> -	release_region(gmux_data->iostart, gmux_data->iolen);
->> -	kfree(gmux_data);
->> -
->> -	acpi_video_register();
->> -	apple_bl_register();
->> +	acpi_status status;
->> +
->> +	vga_switcheroo_unregister_handler();
->> +	backlight_device_unregister(gmux_data.bdev);
->> +	gmux_disable_interrupts();
->> +	status = acpi_remove_notify_handler(gmux_data.dhandle,
->> +				     ACPI_DEVICE_NOTIFY, &gmux_notify_handler);
->> +	if (ACPI_FAILURE(status))
->> +		pr_err("Remove notify handler failed: %s\n",
->> +		       acpi_format_exception(status));
->> +
->> +	release_region(gmux_data.iostart, gmux_data.iolen);
->>   }
->>   
->>   static const struct pnp_device_id gmux_device_ids[] = {
->> @@ -227,6 +434,8 @@ static struct pnp_driver gmux_pnp_driver = {
->>   	.probe		= gmux_probe,
->>   	.remove		= __devexit_p(gmux_remove),
->>   	.id_table	= gmux_device_ids,
->> +	.suspend	= gmux_suspend,
->> +	.resume		= gmux_resume
->>   };
->>   
->>   static int __init apple_gmux_init(void)
 >>
->> -- 
->> Matthew Garrett | mjg59@srcf.ucam.org
-
-
