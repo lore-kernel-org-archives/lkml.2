@@ -1,95 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932669Ab2GKNsG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:48:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53851 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932521Ab2GKNsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:48:01 -0400
-Date: Wed, 11 Jul 2012 15:47:57 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Wanpeng Li <liwp.linux@gmail.com>
-Cc: linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] mm/memcg: calculate max hierarchy limit number
- instead of min
-Message-ID: <20120711134757.GC4820@tiehlicka.suse.cz>
-References: <a>
- <1342013081-4096-1-git-send-email-liwp.linux@gmail.com>
+	id S1757781Ab2GKNrr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:47:47 -0400
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:12848
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757717Ab2GKNjU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 09:39:20 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dh668h839hd24he5bhf0ah)
+X-WSS-ID: 0M700L8-01-AX4-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <iommu@lists.linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>,
+        <x86@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: [PATCH 02/27] x86/irq: Introduce irq_cfg->remapped
+Date: Wed, 11 Jul 2012 15:38:47 +0200
+Message-ID: <1342013952-10174-3-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
+References: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1342013081-4096-1-git-send-email-liwp.linux@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-07-12 21:24:41, Wanpeng Li wrote:
-> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
-> 
-> Since hierachical_memory_limit shows "of bytes of memory limit with
-> regard to hierarchy under which the memory cgroup is", the count should
-> calculate max hierarchy limit when use_hierarchy in order to show hierarchy
-> subtree limit. hierachical_memsw_limit is the same case.
+This flag will show whether the interrupt is remapped in a
+way that works for VT-d and AMD-Vi.
 
-No the patch is wrong. The hierarchical limit says when we start
-reclaiming in the hierarchy and that one is triggered on smallest limit
-up the way to the hierarchy root.
+Cc: x86@kernel.org
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/x86/include/asm/hw_irq.h       |    1 +
+ arch/x86/kernel/apic/io_apic.c      |    2 +-
+ drivers/iommu/intel_irq_remapping.c |    4 ++++
+ 3 files changed, 6 insertions(+), 1 deletion(-)
 
-What are you trying to accomplish here?
-
-> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
-> ---
->  mm/memcontrol.c |   14 +++++++-------
->  1 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 69a7d45..6392c0a 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3929,10 +3929,10 @@ static void memcg_get_hierarchical_limit(struct mem_cgroup *memcg,
->  		unsigned long long *mem_limit, unsigned long long *memsw_limit)
->  {
->  	struct cgroup *cgroup;
-> -	unsigned long long min_limit, min_memsw_limit, tmp;
-> +	unsigned long long max_limit, max_memsw_limit, tmp;
->  
-> -	min_limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
-> -	min_memsw_limit = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
-> +	max_limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
-> +	max_memsw_limit = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
->  	cgroup = memcg->css.cgroup;
->  	if (!memcg->use_hierarchy)
->  		goto out;
-> @@ -3943,13 +3943,13 @@ static void memcg_get_hierarchical_limit(struct mem_cgroup *memcg,
->  		if (!memcg->use_hierarchy)
->  			break;
->  		tmp = res_counter_read_u64(&memcg->res, RES_LIMIT);
-> -		min_limit = min(min_limit, tmp);
-> +		max_limit = max(max_limit, tmp);
->  		tmp = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
-> -		min_memsw_limit = min(min_memsw_limit, tmp);
-> +		max_memsw_limit = max(max_memsw_limit, tmp);
->  	}
->  out:
-> -	*mem_limit = min_limit;
-> -	*memsw_limit = min_memsw_limit;
-> +	*mem_limit = max_limit;
-> +	*memsw_limit = max_memsw_limit;
->  }
->  
->  static int mem_cgroup_reset(struct cgroup *cont, unsigned int event)
-> -- 
-> 1.7.5.4
-> 
-
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index b6171e6..71bb327 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -132,6 +132,7 @@ struct irq_cfg {
+ 	u8			vector;
+ 	u8			move_in_progress : 1;
+ #ifdef CONFIG_IRQ_REMAP
++	bool			remapped;
+ 	union irq_remap_info    irq_remap_info;
+ #endif
+ };
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 08f666c..d5bccc0 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -72,7 +72,7 @@
+ static void irq_remap_modify_chip_defaults(struct irq_chip *chip);
+ static inline bool irq_remapped(struct irq_cfg *cfg)
+ {
+-	return cfg->irq_remap_info.irq_2_iommu.iommu != NULL;
++	return cfg->remapped;
+ }
+ #else
+ static inline bool irq_remapped(struct irq_cfg *cfg)
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index e4e4334..29411ed 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -68,6 +68,7 @@ static int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
+ {
+ 	struct ir_table *table = iommu->ir_table;
+ 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
++	struct irq_cfg *cfg = irq_get_chip_data(irq);
+ 	u16 index, start_index;
+ 	unsigned int mask = 0;
+ 	unsigned long flags;
+@@ -115,6 +116,7 @@ static int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
+ 	for (i = index; i < index + count; i++)
+ 		table->base[i].present = 1;
+ 
++	cfg->remapped = true;
+ 	irq_iommu->iommu = iommu;
+ 	irq_iommu->irte_index =  index;
+ 	irq_iommu->sub_handle = 0;
+@@ -155,6 +157,7 @@ static int map_irq_to_irte_handle(int irq, u16 *sub_handle)
+ static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subhandle)
+ {
+ 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
++	struct irq_cfg *cfg = irq_get_chip_data(irq);
+ 	unsigned long flags;
+ 
+ 	if (!irq_iommu)
+@@ -162,6 +165,7 @@ static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subha
+ 
+ 	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
+ 
++	cfg->remapped = true;
+ 	irq_iommu->iommu = iommu;
+ 	irq_iommu->irte_index = index;
+ 	irq_iommu->sub_handle = subhandle;
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+1.7.9.5
+
+
