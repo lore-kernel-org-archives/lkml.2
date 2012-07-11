@@ -1,61 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672Ab2GKUGz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 16:06:55 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:62947 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753468Ab2GKUGx (ORCPT
+	id S1756757Ab2GKUHu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 16:07:50 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:39691 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753318Ab2GKUHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 16:06:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: ksummit-2012-discuss@lists.linux-foundation.org, konrad@darnok.org
-Subject: Re: [Ksummit-2012-discuss] ARM mini-summit
-Date: Wed, 11 Jul 2012 20:06:28 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-References: <1341994155.3522.16.camel@dabdike.int.hansenpartnership.com> <20120711140536.GC16523@phenom.dumpdata.com> <CAPbh3rsnNNFNWEf651M-mO2UFOK8pFYTMV2x7RPhjHOAyf9OJw@mail.gmail.com>
-In-Reply-To: <CAPbh3rsnNNFNWEf651M-mO2UFOK8pFYTMV2x7RPhjHOAyf9OJw@mail.gmail.com>
+	Wed, 11 Jul 2012 16:07:49 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207112006.28632.arnd@arndb.de>
-X-Provags-ID: V02:K0:/nyPkySdygcxzMyYuYRwcWKgo1Zh5Ukz08RHZTYWemd
- b+4h4A6p3m3W8xLZnbXAuRDwDCNrAjRWZ7QoYrixUTnyT9Mvg+
- IGHd9ora46m2ocpFrt9Oie3Idau2QNERHzhrQQINz51mwlgX2p
- Cv8SWW/AVnW5QCM/VDrpBuXddpL+ANkXaI7GorqXVbuLTGgF4E
- 1dMC6By18ePkK6xuTrMUSy1UBT9oOS1zb1JoxtC/wGImRwtI0c
- M6BuFXLtjuLXmUSR3NWSrGXrIb22cpZpjt3cIM2DHVUZGkFKk7
- 2WiDPzRHDafeicznQY7RPS4wUmm6SyvvfdfzVrKHhv71zbYGGd
- k8qL7KT0vDhIV/iFErjo=
+In-Reply-To: <20120711125206.GB6615@kroah.com>
+References: <1341647872-15267-1-git-send-email-eduardo.valentin@ti.com>
+	<1341647872-15267-2-git-send-email-eduardo.valentin@ti.com>
+	<20120709193130.GA12982@kroah.com>
+	<CAGF5oy_QVyYKFcS_62dffkRRZhBZrG4RTpYG9HKT8zMoLue1Xw@mail.gmail.com>
+	<CAGF5oy-Ey7mB+_gjDWxm7H5muvpGrksTmjBsrn-Pva6N=JHNoQ@mail.gmail.com>
+	<20120711125206.GB6615@kroah.com>
+Date: Wed, 11 Jul 2012 23:07:47 +0300
+Message-ID: <CAGF5oy_T3=9CV-dtFaGabKKPkZmRsf82y5A=bT7begU3Rtavzg@mail.gmail.com>
+Subject: Re: [PATCHv2 1/4] staging: OMAP4+: thermal: introduce bandgap
+ temperature sensor
+From: "Valentin, Eduardo" <eduardo.valentin@ti.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, b-cousson@ti.com, j-keerthy@ti.com,
+        linux-kernel@vger.kernel.org, kbaidarov@dev.rtsoft.ru,
+        grant.likely@secretlab.ca
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 11 July 2012, Konrad Rzeszutek Wilk wrote:
-> >> > contacts, with Grant and Olof joining in as time permits.
-> >>
-> >> Acked-by: Grant Likely <grant.likely@secretlab.ca>
-> >
-> > I would be interested in attending it as well. I believe Stefano has a strong
-> > interest as well (since he and Ian Campbell are leading the Xen ARM work).
-> 
-> And Stefano is out on vacation right now so I will serve as his phantom voice
-> and say: "Yes, I am interested as well."
+Greg,
 
-Ok. So are you mostly interested in discussion ARM virtualization or other topics
-as well? Last time we had organized this explicitly as the "ARM subarch maintainer
-summit" and we might again limit the participants to the subarch maintainers and
-a few more people if we're running out of space, but then again if a lot of them
-are interested in discussion virtualization, we should probably have you both and 
-the ARM KVM people included as well.
+On Wed, Jul 11, 2012 at 3:52 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Wed, Jul 11, 2012 at 01:07:17PM +0300, Valentin, Eduardo wrote:
+>> Hello Greg,
+>>
+>> On Mon, Jul 9, 2012 at 11:33 PM, Valentin, Eduardo
+>> <eduardo.valentin@ti.com> wrote:
+>> > Hello Greg,
+>> >
+>> > On Mon, Jul 9, 2012 at 10:31 PM, Greg Kroah-Hartman
+>> > g<gregkh@linuxfoundation.org> wrote:
+>> >> On Sat, Jul 07, 2012 at 10:57:49AM +0300, Eduardo Valentin wrote:
+>> >>> In the System Control Module, OMAP supplies a voltage reference
+>> >>> and a temperature sensor feature that are gathered in the band
+>> >>> gap voltage and temperature sensor (VBGAPTS) module. The band
+>> >>> gap provides current and voltage reference for its internal
+>> >>> circuits and other analog IP blocks. The analog-to-digital
+>> >>> converter (ADC) produces an output value that is proportional
+>> >>> to the silicon temperature.
+>> >>>
+>> >>> This patch provides a platform driver which expose this feature.
+>> >>> It is moduled as a MFD child of the System Control Module core
+>> >>> MFD driver.
+>> >>>
+>> >>> This driver provides only APIs to access the device properties,
+>> >>> like temperature, thresholds and update rate.
+>> >>>
+>> >>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+>> >>> Signed-off-by: Keerthy <j-keerthy@ti.com>
+>> >>
+>> >> As much as I enjoy interesting names, odds are, "Keerthy" is not the
+>> >> real name of this person, right?  In fact, based on the copyright
+>> >> comments in the code, I can almost guarantee it...
+>> >>
+>> >> I need a full-name please, no aliases or fake names allowed in kernel
+>> >> signed-off-by lines.
+>> >>
+>> >> Please resend these with that fixed up.
+>> >
+>> > Actually, his name is in fact Keerthy J.  I can resend with the
+>> > additional "J" the way it is in the copyrights.
+>>
+>> While looking into his commits, I believe the SOB in this patch is one
+>> of the ways he uses to sign:
+>> commit f99c1d4f94f91fd3a20bd2eaa3be9c5e7d2668eb
+>> Author: Keerthy <j-keerthy@ti.com>
+>> Date:   Tue Mar 1 19:12:26 2011 +0530
+>>
+>>     mfd: Add twl4030 madc driver
+>>
+>>     Introducing a driver for MADC on TWL4030 powerIC. MADC stands for monitoring
+>>     ADC. This driver monitors the real time conversion of analog signals like
+>>     battery temperature, battery cuurent etc.
+>>
+>>     Signed-off-by: Keerthy <j-keerthy@ti.com>
+>>     Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+>>
+>> So, I'd prefer to keep the way it is.
+>
+> But it doesn't match the copyright notice, which I am guessing TI got
+> "right" from a legal perspective, and as such, we need to also.
+>
 
-We haven't even started discussing an agenda, but I'll note down your names as
-candidates and Xen and/or KVM as proposed topics. I'll follow up with a more
-formal call for topics once I have a positive confirmation from James and the
-linux-foundation that we can go ahead with the ARM mini-summit.
+Now I see your point, it makes sense. Resending V3 of this patch in
+reply on this thread. It will contain his SOB the way it is in the
+copyright notice.
 
-	Arnd
+> thanks,
+>
+> greg k-h
+
+
+
+-- 
+
+Eduardo Valentin
