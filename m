@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756887Ab2GKIha (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 04:37:30 -0400
-Received: from canardo.mork.no ([148.122.252.1]:56294 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756860Ab2GKIh1 convert rfc822-to-8bit (ORCPT
+	id S1756863Ab2GKIoj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 04:44:39 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:52139 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271Ab2GKIog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 04:37:27 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
-        "open list\:USB SUBSYSTEM" <linux-usb@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] USB: add USB_VENDOR_AND_INTERFACE_INFO() macro
-Organization: m
-References: <1341957063-11989-1-git-send-email-gustavo@padovan.org>
-	<20120710220108.GA28387@kroah.com>
-Date: Wed, 11 Jul 2012 10:36:46 +0200
-In-Reply-To: <20120710220108.GA28387@kroah.com> (Greg Kroah-Hartman's message
-	of "Tue, 10 Jul 2012 15:01:08 -0700")
-Message-ID: <877guahext.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	Wed, 11 Jul 2012 04:44:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4FFD12C5.9090204@xenotime.net>
+References: <20120710174320.3b7dd806e20ee74ca1b1685f@canb.auug.org.au>
+	<4FFD12C5.9090204@xenotime.net>
+Date: Wed, 11 Jul 2012 10:44:35 +0200
+Message-ID: <CACRpkdY2CdHr+oMyckR_ozJ69vpzpyuC75qDwDLPi4Og2UD-7g@mail.gmail.com>
+Subject: Re: linux-next: Tree for July 10 (gpio/gpio-tps65910.c)
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
-> On Tue, Jul 10, 2012 at 06:51:03PM -0300, Gustavo Padovan wrote:
+On Wed, Jul 11, 2012 at 7:44 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On 07/10/2012 12:43 AM, Stephen Rothwell wrote:
+>>
+>> Changes since 20120709:
 >
->> { USB_VENDOR_AND_INTERFACE_INFO(0x0a5c, 0xff, 0x01, 0x01) }
+> when CONFIG_OF_GPIO is not enabled:
 >
-> Two entries in the cdc_wdm driver can also be converted to use this
-> interface.  Do you want to send a patch doing that, or do you want me to
-> do it?
+> drivers/gpio/gpio-tps65910.c: In function 'tps65910_gpio_probe':
+> drivers/gpio/gpio-tps65910.c:152:26: error: 'struct gpio_chip' has no member named 'of_node'
 
-Only if you decide to take this change in 3.4 and 3.5.  Those entries
-are gone in 3.6.
+I have a patche queued for this and even attempted to send it to Torvalds.
+It will be in tomorrows -next anyway.
 
-
-
-Bjørn
+Yours,
+Linus Walleij
