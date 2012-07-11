@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757521Ab2GKM3N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 08:29:13 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:35556 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754094Ab2GKM3M (ORCPT
+	id S1757518Ab2GKMa1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 08:30:27 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19728 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754174Ab2GKMa0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 08:29:12 -0400
+	Wed, 11 Jul 2012 08:30:26 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 11 Jul 2012 05:26:37 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Sangbeom Kim <sbkim73@samsung.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+CC: "'Liam Girdwood'" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sbkim01@gmail.com" <sbkim01@gmail.com>
+Date: Wed, 11 Jul 2012 18:00:20 +0530
+Subject: RE: [PATCH V3 3/7] mfd: samsung: Modify samsung mfd header
+Thread-Topic: [PATCH V3 3/7] mfd: samsung: Modify samsung mfd header
+Thread-Index: Ac1fXbbieHH+gCiiTPG5j4NYs10mVAAAYpkg
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DDB1D61AC@BGMAIL02.nvidia.com>
+References: <012b01cd5f5d$b6ff8a10$24fe9e30$@com>
+In-Reply-To: <012b01cd5f5d$b6ff8a10$24fe9e30$@com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Wed, 11 Jul 2012 14:29:10 +0200
-Message-ID: <CA+icZUX565WsuJNHKsohXi=vp34Acn+2D-nj8mQQtCfi=Pw_Nw@mail.gmail.com>
-Subject: Re: linux-next: Tree for July 10 (gpio/gpio-tps65910.c)
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> --- /dev/null
+> +++ b/include/linux/mfd/samsung/core.h
+> @@ -0,0 +1,147 @@
+> +/*
+> + * core.h
+> + *
+> + * copyright (c) 2011 Samsung Electronics Co., Ltd
+> + *              http://www.samsung.com
 
-I see the same build-error as Randy in latest linux.git
-(055c9fa8874fa7261eec7a268366565db84af474).
+In most of the files you mentioned 2011.
+Should they not be changed to 2012?
 
-Where is this patch queued up (see original posting)?
-I do not see any patch in [2].
-And please please please rename your repo... "linux-2.6" died many
-months ago :-).
+> + *
+> + *  This program is free software; you can redistribute  it and/or modify it
+> + *  under  the terms of  the GNU General  Public License as published by the
+> + *  Free Software Foundation;  either version 2 of the  License, or (at your
+> + *  option) any later version.
 
-I also do not see any patch sent to LKML.
 
-Should that all disabled?
 
-CONFIG_GPIO_TPS65910=y
-CONFIG_MFD_TPS65910=y
-CONFIG_REGULATOR_TPS65910=m
 
-...or is CONFIG_GPIO_TPS65910=n enough to workaround it?
+> -
+> -#ifndef __LINUX_MFD_S5M_CORE_H
+> -#define __LINUX_MFD_S5M_CORE_H
+> -
+> -
+> -	int				buck_set1;
+> -	int				buck_set2;
+> -	int				buck_set3;
 
-- Sedat -
+As you have buck4_enable etc below, by any chance do you need buck_set4 as well here?
+Similarly should you declare buck1_enable here?
 
-[1] http://marc.info/?l=linux-kernel&m=134199653428188&w=2
-[2] http://git.secretlab.ca/?p=linux-2.6.git;a=summary
-[3] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=Next/Trees;#l31
+> -	int				buck2_enable;
+> -	int				buck3_enable;
+> -	int				buck4_enable;
+> -	int				buck_default_idx;
+> -	int				buck2_default_idx;
+
+
