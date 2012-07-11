@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab2GKGj5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 02:39:57 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:53878 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab2GKGj4 (ORCPT
+	id S1756162Ab2GKGkw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 02:40:52 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:19783 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752517Ab2GKGkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 02:39:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] mm/slob: avoid type warning about alignment value
-Date: Wed, 11 Jul 2012 06:39:43 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org
-References: <201207102055.35278.arnd@arndb.de> <alpine.DEB.2.00.1207101815580.684@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1207101815580.684@chino.kir.corp.google.com>
+	Wed, 11 Jul 2012 02:40:51 -0400
+Date: Wed, 11 Jul 2012 09:40:40 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] tty: double unlock on error in ptmx_open()
+Message-ID: <20120711064040.GH11812@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201207110639.43587.arnd@arndb.de>
-X-Provags-ID: V02:K0:XQMm7PHE8XyfhIe+NZNWoie6qE6EpkLbWr6D0bATiS5
- dkxu1kb3nGTQ+/O43aO8pKdP+d/552W0aKSgB1xIqZ2RaWRbLl
- zmvtL4niZs4dnNM3D4yysmGqV283It+esLLmLpeBYY/k5Skexs
- 7+LmzWrc6z4UwqZJ7tZ37I/kFm8I9yQ9X6Cg4SnkwdOlZ47+Oi
- 18N6wXzN1NMRe6Sh6dskp5d7054U3vGlbWYCeK+G2FIBXKGWzg
- NrRrhsA/qMK5mbT/Ea9qjy7TTah72fj8TbkJgJ1qr/CL9AC73o
- Jm9KrKyPELlbFQ6bY90iZyHfbS7CfM6TNbcDS9UwUIuUxbkMsV
- 3BzNOD2hKvWoIHxyg2iI=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 11 July 2012, David Rientjes wrote:
-> Wouldn't it be better to avoid this problem more generally by casting the 
-> __alignof__ for ARCH_{KMALLOC,SLAB}_MINALIGN to int in slab.h?  All 
-> architectures that define these themselves will be using plain integers, 
-> the problem is __alignof__ returning size_t when undefined.
+The problem here is that we called mutex_unlock(&devpts_mutex) on the
+error path when we weren't holding the lock.
 
-I thought about it but I wasn't sure if that would cover all possible
-cases. My version at least is known not to introduce a different type
-mismatch on another architecture.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-Also, size_t seems to be the correct type here, while the untyped
-definition is just an int.
-
-	Arnd
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index d855883..a0ca083 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -618,13 +618,12 @@ static int ptmx_open(struct inode *inode, struct file *filp)
+ 	/* find a device that is not in use. */
+ 	mutex_lock(&devpts_mutex);
+ 	index = devpts_new_index(inode);
++	mutex_unlock(&devpts_mutex);
+ 	if (index < 0) {
+ 		retval = index;
+ 		goto err_file;
+ 	}
+ 
+-	mutex_unlock(&devpts_mutex);
+-
+ 	mutex_lock(&tty_mutex);
+ 	tty = tty_init_dev(ptm_driver, index);
+ 
+@@ -659,7 +658,6 @@ out:
+ 	mutex_unlock(&tty_mutex);
+ 	devpts_kill_index(inode, index);
+ err_file:
+-        mutex_unlock(&devpts_mutex);
+ 	tty_free_file(filp);
+ 	return retval;
+ }
