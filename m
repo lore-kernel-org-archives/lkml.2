@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758403Ab2GKWla (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 18:41:30 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:37878 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751166Ab2GKWl3 (ORCPT
+	id S1161008Ab2GKWmf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 18:42:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58551 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186Ab2GKWme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 18:41:29 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+iAlkkItGixmDGQ3nJJ/MbJkVGfm6zrTR40PrCFl
-	YCmWbunGiKJFFm
-Message-ID: <4FFE011C.7020902@gmx.de>
-Date: Wed, 11 Jul 2012 22:41:32 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120613 Icedove/3.0.11
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Subject: [GIT PULL] fbdev fixes for 3.5#2
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 11 Jul 2012 18:42:34 -0400
+Date: Wed, 11 Jul 2012 15:42:32 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, arjan@linux.intel.com,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Christian Kujau <lists@nerdbynature.de>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH RESEND] Fix a dead loop in async_synchronize_full()
+Message-Id: <20120711154232.165cbca9.akpm@linux-foundation.org>
+In-Reply-To: <1341817465.4579.5.camel@ThinkPad-T420>
+References: <1341817465.4579.5.camel@ThinkPad-T420>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 09 Jul 2012 15:04:25 +0800
+Li Zhong <zhong@linux.vnet.ibm.com> wrote:
 
-please pull the fixes below.
+> This patch tries to fix a dead loop in  async_synchronize_full(), which
+> could be seen when preemption is disabled on a single cpu machine. 
+> 
+> void async_synchronize_full(void)
+> {
+>         do {
+>                 async_synchronize_cookie(next_cookie);
+>         } while (!list_empty(&async_running) || !
+> list_empty(&async_pending));
+> }
+> 
+> async_synchronize_cookie() calls async_synchronize_cookie_domain() with
+> &async_running as the default domain to synchronize. 
+> 
+> However, there might be some works in the async_pending list from other
+> domains. On a single cpu system, without preemption, there is no chance
+> for the other works to finish, so async_synchronize_full() enters a dead
+> loop. 
+> 
+> It seems async_synchronize_full() wants to synchronize all entries in
+> all running lists(domains), so maybe we could just check the entry_count
+> to know whether all works are finished. 
+> 
+> Currently, async_synchronize_cookie_domain() expects a non-NULL running
+> list ( if NULL, there would be NULL pointer dereference ), so maybe a
+> NULL pointer could be used as an indication for the functions to
+> synchronize all works in all domains. 
 
+The patch is fairly wordwrapped - please fix up your email client.
 
-Thanks,
+More seriously, it does not apply to linux-next due to some fairly
+significant changes which have been sitting in Dan's tree since May. 
+What's going on?
 
-Florian Tobias Schandinat
-
-
-The following changes since commit b67989515defba7412acff01162e5bb1f0f5923a:
-
-  video: s3c-fb: fix possible division by zero in s3c_fb_calc_pixclk (2012-06-13 17:34:16 +0000)
-
-are available in the git repository at:
-
-  git://github.com/schandinat/linux-2.6.git fbdev-fixes-for-3.5-2
-
-for you to fetch changes up to 373b43652150c9342168c846a1efbd81438ea241:
-
-  OMAPDSS: fix warnings if CONFIG_PM_RUNTIME=n (2012-07-08 14:00:27 +0000)
-
-----------------------------------------------------------------
-fbdev fixes for 3.5
-
-- two fixes for OMAPDSS by Tomi Valkeinen
-  one to avoid warnings when runtime PM is not enabled
-  one workaround to dependancy issues during suspend/resume
-
-----------------------------------------------------------------
-Tomi Valkeinen (2):
-      OMAPDSS: Use PM notifiers for system suspend
-      OMAPDSS: fix warnings if CONFIG_PM_RUNTIME=n
-
- drivers/video/omap2/dss/core.c  |   43 ++++++++++++++++++++++++--------------
- drivers/video/omap2/dss/dispc.c |    2 +-
- drivers/video/omap2/dss/dsi.c   |    2 +-
- drivers/video/omap2/dss/dss.c   |    2 +-
- drivers/video/omap2/dss/hdmi.c  |    2 +-
- drivers/video/omap2/dss/rfbi.c  |    2 +-
- drivers/video/omap2/dss/venc.c  |    2 +-
- 7 files changed, 33 insertions(+), 22 deletions(-)
