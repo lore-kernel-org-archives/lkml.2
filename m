@@ -1,95 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab2GKGfG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 02:35:06 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:56953 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab2GKGfF (ORCPT
+	id S1756107Ab2GKGf1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 02:35:27 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:18851 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab2GKGfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 02:35:05 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Chan <benchan@chromium.org>, Sage Ahn <syahn@gctsemi.com>,
-        Paul Stewart <pstew@chromium.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH] staging/gdm72xx: use kthread APIs
-Date: Wed, 11 Jul 2012 12:19:44 +0545
-Message-Id: <1341988484-23369-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 11 Jul 2012 02:35:24 -0400
+Date: Wed, 11 Jul 2012 09:35:08 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] tracing: check for allocation failure
+Message-ID: <20120711063507.GF11812@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies the kthread usage in the gdm_usb code, and tries to
-use the kthread APIs better.
+Clean up and return -ENOMEM on if the kzalloc() fails.
 
-Actually the task_struct is taken as global as the limitation of priv.
-we run the kthread before we allocate the priv.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-did only compilation test, but not the insmod, check ps ax for kthread and
-rmmod and see the thread is killed kind of tests.
-
-There were no checks while kthread_run may fail, returing some error which can be seen by using PTR_ERR.
-
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
- drivers/staging/gdm72xx/gdm_usb.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/staging/gdm72xx/gdm_usb.c b/drivers/staging/gdm72xx/gdm_usb.c
-index 89268c7..126150d 100644
---- a/drivers/staging/gdm72xx/gdm_usb.c
-+++ b/drivers/staging/gdm72xx/gdm_usb.c
-@@ -46,7 +46,6 @@ MODULE_DEVICE_TABLE(usb, id_table);
- static DECLARE_WAIT_QUEUE_HEAD(k_wait);
- static LIST_HEAD(k_list);
- static DEFINE_SPINLOCK(k_lock);
--static int k_mode_stop;
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 814ff30..a120f98 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2390,6 +2390,9 @@ __tracing_open(struct inode *inode, struct file *file)
  
- #define K_WAIT_TIME	(2 * HZ / 100)
- 
-@@ -55,6 +54,7 @@ static int k_mode_stop;
- static int init_usb(struct usbwm_dev *udev);
- static void release_usb(struct usbwm_dev *udev);
- 
-+static struct task_struct *kthread; 
- /*#define DEBUG */
- #ifdef DEBUG
- static void hexdump(char *title, u8 *data, int len)
-@@ -720,7 +720,7 @@ static int k_mode_thread(void *arg)
- 
- 	daemonize("k_mode_wimax");
- 
--	while (!k_mode_stop) {
-+	while (!kthread_should_stop()) {
- 
- 		spin_lock_irqsave(&k_lock, flags2);
- 		while (!list_empty(&k_list)) {
-@@ -781,7 +781,11 @@ static struct usb_driver gdm_usb_driver = {
- static int __init usb_gdm_wimax_init(void)
- {
- #ifdef CONFIG_WIMAX_GDM72XX_K_MODE
--	kthread_run(k_mode_thread, NULL, "WiMax_thread");
-+	kthread = kthread_run(k_mode_thread, NULL, "WiMax_thread");
-+	if (IS_ERR(kthread)) {
-+		printk(KERN_ERR "%s: can't create kernel thread\n", __func__);
-+		return PTR_ERR(kthread);
-+	}
- #endif /* CONFIG_WIMAX_GDM72XX_K_MODE */
- 	return usb_register(&gdm_usb_driver);
+ 	iter->buffer_iter = kzalloc(sizeof(*iter->buffer_iter) * num_possible_cpus(),
+ 				    GFP_KERNEL);
++	if (!iter->buffer_iter)
++		goto release;
++
+ 	/*
+ 	 * We make a copy of the current tracer to avoid concurrent
+ 	 * changes on it while we are reading.
+@@ -2451,6 +2454,7 @@ __tracing_open(struct inode *inode, struct file *file)
+ 	mutex_unlock(&trace_types_lock);
+ 	kfree(iter->trace);
+ 	kfree(iter->buffer_iter);
++release:
+ 	seq_release_private(inode, file);
+ 	return ERR_PTR(-ENOMEM);
  }
-@@ -789,7 +793,8 @@ static int __init usb_gdm_wimax_init(void)
- static void __exit usb_gdm_wimax_exit(void)
- {
- #ifdef CONFIG_WIMAX_GDM72XX_K_MODE
--	k_mode_stop = 1;
-+	if (kthread)
-+		kthread_stop(kthread);
- 	wake_up(&k_wait);
- #endif
- 	usb_deregister(&gdm_usb_driver);
--- 
-1.7.9.5
-
