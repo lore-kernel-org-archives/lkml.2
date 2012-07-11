@@ -1,72 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab2GKCGL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jul 2012 22:06:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:5927 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753687Ab2GKCGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jul 2012 22:06:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="170206383"
-Message-ID: <4FFCDF8C.9060204@intel.com>
-Date: Wed, 11 Jul 2012 10:06:04 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: eranian@google.com, mingo@elte.hu, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 5/5] perf/x86: Add Intel Nehalem-EX uncore support
-References: <1341381616-12229-1-git-send-email-zheng.z.yan@intel.com>   <1341381616-12229-6-git-send-email-zheng.z.yan@intel.com>  <1341396293.2507.77.camel@laptop> <4FF534F1.3030307@intel.com> <1341922621.3462.130.camel@twins>
-In-Reply-To: <1341922621.3462.130.camel@twins>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754848Ab2GKCGm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jul 2012 22:06:42 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:46385 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754606Ab2GKCGl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jul 2012 22:06:41 -0400
+Message-ID: <1341972394.25495.3.camel@phoenix>
+Subject: [PATCH] mfd: Remove unneeded io_mutex from struct twl6040
+From: Axel Lin <axel.lin@gmail.com>
+To: SamuelOrtiz <sameo@linux.intel.com>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Misael Lopez Cruz <misael.lopez@ti.com>, linux-kernel@vger.kernel.org
+Date: Wed, 11 Jul 2012 10:06:34 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2012 08:17 PM, Peter Zijlstra wrote:
-> On Thu, 2012-07-05 at 14:32 +0800, Yan, Zheng wrote:
->> The uncore subsystem in Nehalem-EX consists of 7 components
->> (U-Box, C-Box, B-Box, S-Box, R-Box, M-Box and W-Box). This
->> patch is large because the way to program these boxes is
->> diverse.
->>
-> Thanks, I added the below little delta.
-> 
-> Did you manage to fix that SNB-EP crash already?
+Current code has been converted to use regmap APIs, the io_mutex is not needed.
+Thus remove the io_mutex.
 
-Yes, commit 42089697 (perf/x86: Detect number of instances of uncore CBox)
-should fix that.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/twl6040-core.c  |   23 +++--------------------
+ include/linux/mfd/twl6040.h |    1 -
+ 2 files changed, 3 insertions(+), 21 deletions(-)
 
-> 
-> Also, should we be adding 58 (IVB) to the SNB uncore? The SDM states it
-> should all be the same programming wise.
-> 
+diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
+index 4ded9e7..5f620ae 100644
+--- a/drivers/mfd/twl6040-core.c
++++ b/drivers/mfd/twl6040-core.c
+@@ -64,19 +64,15 @@ int twl6040_reg_read(struct twl6040 *twl6040, unsigned int reg)
+ 	int ret;
+ 	unsigned int val;
+ 
+-	mutex_lock(&twl6040->io_mutex);
+ 	/* Vibra control registers from cache */
+ 	if (unlikely(reg == TWL6040_REG_VIBCTLL ||
+ 		     reg == TWL6040_REG_VIBCTLR)) {
+ 		val = twl6040->vibra_ctrl_cache[VIBRACTRL_MEMBER(reg)];
+ 	} else {
+ 		ret = regmap_read(twl6040->regmap, reg, &val);
+-		if (ret < 0) {
+-			mutex_unlock(&twl6040->io_mutex);
++		if (ret < 0)
+ 			return ret;
+-		}
+ 	}
+-	mutex_unlock(&twl6040->io_mutex);
+ 
+ 	return val;
+ }
+@@ -86,12 +82,10 @@ int twl6040_reg_write(struct twl6040 *twl6040, unsigned int reg, u8 val)
+ {
+ 	int ret;
+ 
+-	mutex_lock(&twl6040->io_mutex);
+ 	ret = regmap_write(twl6040->regmap, reg, val);
+ 	/* Cache the vibra control registers */
+ 	if (reg == TWL6040_REG_VIBCTLL || reg == TWL6040_REG_VIBCTLR)
+ 		twl6040->vibra_ctrl_cache[VIBRACTRL_MEMBER(reg)] = val;
+-	mutex_unlock(&twl6040->io_mutex);
+ 
+ 	return ret;
+ }
+@@ -99,23 +93,13 @@ EXPORT_SYMBOL(twl6040_reg_write);
+ 
+ int twl6040_set_bits(struct twl6040 *twl6040, unsigned int reg, u8 mask)
+ {
+-	int ret;
+-
+-	mutex_lock(&twl6040->io_mutex);
+-	ret = regmap_update_bits(twl6040->regmap, reg, mask, mask);
+-	mutex_unlock(&twl6040->io_mutex);
+-	return ret;
++	return regmap_update_bits(twl6040->regmap, reg, mask, mask);
+ }
+ EXPORT_SYMBOL(twl6040_set_bits);
+ 
+ int twl6040_clear_bits(struct twl6040 *twl6040, unsigned int reg, u8 mask)
+ {
+-	int ret;
+-
+-	mutex_lock(&twl6040->io_mutex);
+-	ret = regmap_update_bits(twl6040->regmap, reg, mask, 0);
+-	mutex_unlock(&twl6040->io_mutex);
+-	return ret;
++	return regmap_update_bits(twl6040->regmap, reg, mask, 0);
+ }
+ EXPORT_SYMBOL(twl6040_clear_bits);
+ 
+@@ -573,7 +557,6 @@ static int __devinit twl6040_probe(struct i2c_client *client,
+ 	twl6040->irq = client->irq;
+ 
+ 	mutex_init(&twl6040->mutex);
+-	mutex_init(&twl6040->io_mutex);
+ 	init_completion(&twl6040->ready);
+ 
+ 	twl6040->rev = twl6040_reg_read(twl6040, TWL6040_REG_ASICREV);
+diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
+index 6659487..dcc0e12 100644
+--- a/include/linux/mfd/twl6040.h
++++ b/include/linux/mfd/twl6040.h
+@@ -206,7 +206,6 @@ struct twl6040 {
+ 	struct regmap *regmap;
+ 	struct regulator_bulk_data supplies[2]; /* supplies for vio, v2v1 */
+ 	struct mutex mutex;
+-	struct mutex io_mutex;
+ 	struct mutex irq_mutex;
+ 	struct mfd_cell cells[TWL6040_CELLS];
+ 	struct completion ready;
+-- 
+1.7.9.5
 
-It's completely untested, I think it's better not to do that now.
 
-> ---
-> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> 
-> @@ -893,7 +893,7 @@ static struct attribute_group nhmex_unco
->  static struct intel_uncore_type nhmex_uncore_cbox = {
->  	.name			= "cbox",
->  	.num_counters		= 6,
-> -	.num_boxes		= 8,
-> +	.num_boxes		= 10,
->  	.perf_ctr_bits		= 48,
->  	.event_ctl		= NHMEX_C0_MSR_PMON_EV_SEL0,
->  	.perf_ctr		= NHMEX_C0_MSR_PMON_CTR0,
 
-This doesn't work. The MSRs for Cbox 8/9 in WSM-EX aren't contiguous with
-Cbox 0~7. Furthermore the encoding for the FVC register in the Mbox are
-different between NHM-EX and WSM-EX.
-
-Please don't merge this patch, I will send a new one with WSM-EX support
-and some fixes soon.
-
-Regards
-Yan, Zheng
