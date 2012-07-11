@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758285Ab2GKS1W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 14:27:22 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:65226 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758273Ab2GKS1P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758275Ab2GKS1P (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 11 Jul 2012 14:27:15 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:47918 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758259Ab2GKS1K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 14:27:10 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -24,9 +24,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 05/11] x86: Syscall hooks for userspace RCU extended QS
-Date: Wed, 11 Jul 2012 20:26:34 +0200
-Message-Id: <1342031200-22731-6-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 04/11] rcu: Switch task's syscall hooks on context switch
+Date: Wed, 11 Jul 2012 20:26:33 +0200
+Message-Id: <1342031200-22731-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1342031200-22731-1-git-send-email-fweisbec@gmail.com>
 References: <1342031200-22731-1-git-send-email-fweisbec@gmail.com>
@@ -34,9 +34,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add syscall slow path hooks to notify syscall entry
-and exit on CPUs that want to support userspace RCU
-extended quiescent state.
+Clear the syscalls hook of a task when it's scheduled out so that if
+the task migrates, it doesn't run the syscall slow path on a CPU
+that might not need it.
+
+Also set the syscalls hook on the next task if needed.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -58,84 +60,117 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/include/asm/thread_info.h |   10 +++++++---
- arch/x86/kernel/ptrace.c           |    5 +++++
- 2 files changed, 12 insertions(+), 3 deletions(-)
+ arch/um/drivers/mconsole_kern.c |    2 +-
+ include/linux/rcupdate.h        |    2 ++
+ include/linux/sched.h           |   20 +++++++++++---------
+ kernel/rcutree.c                |   15 +++++++++++++++
+ kernel/sched/core.c             |    2 +-
+ 5 files changed, 30 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index 89f794f..c535d84 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -89,6 +89,7 @@ struct thread_info {
- #define TIF_NOTSC		16	/* TSC is not accessible in userland */
- #define TIF_IA32		17	/* IA32 compatibility process */
- #define TIF_FORK		18	/* ret_from_fork */
-+#define TIF_NOHZ		19	/* in adaptive nohz mode */
- #define TIF_MEMDIE		20	/* is terminating due to OOM killer */
- #define TIF_DEBUG		21	/* uses debug registers */
- #define TIF_IO_BITMAP		22	/* uses I/O bitmap */
-@@ -114,6 +115,7 @@ struct thread_info {
- #define _TIF_NOTSC		(1 << TIF_NOTSC)
- #define _TIF_IA32		(1 << TIF_IA32)
- #define _TIF_FORK		(1 << TIF_FORK)
-+#define _TIF_NOHZ		(1 << TIF_NOHZ)
- #define _TIF_DEBUG		(1 << TIF_DEBUG)
- #define _TIF_IO_BITMAP		(1 << TIF_IO_BITMAP)
- #define _TIF_FORCED_TF		(1 << TIF_FORCED_TF)
-@@ -126,12 +128,13 @@ struct thread_info {
- /* work to do in syscall_trace_enter() */
- #define _TIF_WORK_SYSCALL_ENTRY	\
- 	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_EMU | _TIF_SYSCALL_AUDIT |	\
--	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT)
-+	 _TIF_SECCOMP | _TIF_SINGLESTEP | _TIF_SYSCALL_TRACEPOINT |	\
-+	 _TIF_NOHZ)
+diff --git a/arch/um/drivers/mconsole_kern.c b/arch/um/drivers/mconsole_kern.c
+index 88e466b..e61922d 100644
+--- a/arch/um/drivers/mconsole_kern.c
++++ b/arch/um/drivers/mconsole_kern.c
+@@ -705,7 +705,7 @@ static void stack_proc(void *arg)
+ 	struct task_struct *from = current, *to = arg;
  
- /* work to do in syscall_trace_leave() */
- #define _TIF_WORK_SYSCALL_EXIT	\
- 	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | _TIF_SINGLESTEP |	\
--	 _TIF_SYSCALL_TRACEPOINT)
-+	 _TIF_SYSCALL_TRACEPOINT | _TIF_NOHZ)
- 
- /* work to do on interrupt/exception return */
- #define _TIF_WORK_MASK							\
-@@ -141,7 +144,8 @@ struct thread_info {
- 
- /* work to do on any return to user space */
- #define _TIF_ALLWORK_MASK						\
--	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT)
-+	((0x0000FFFF & ~_TIF_SECCOMP) | _TIF_SYSCALL_TRACEPOINT |	\
-+	_TIF_NOHZ)
- 
- /* Only used for 64 bit */
- #define _TIF_DO_NOTIFY_MASK						\
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index c4c6a5c..9f94f8e 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -21,6 +21,7 @@
- #include <linux/signal.h>
- #include <linux/perf_event.h>
- #include <linux/hw_breakpoint.h>
-+#include <linux/rcupdate.h>
- 
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
-@@ -1463,6 +1464,8 @@ long syscall_trace_enter(struct pt_regs *regs)
- {
- 	long ret = 0;
- 
-+	rcu_user_exit();
-+
- 	/*
- 	 * If we stepped into a sysenter/syscall insn, it trapped in
- 	 * kernel mode; do_debug() cleared TF and set TIF_SINGLESTEP.
-@@ -1526,4 +1529,6 @@ void syscall_trace_leave(struct pt_regs *regs)
- 			!test_thread_flag(TIF_SYSCALL_EMU);
- 	if (step || test_thread_flag(TIF_SYSCALL_TRACE))
- 		tracehook_report_syscall_exit(regs, step);
-+
-+	rcu_user_enter();
+ 	to->thread.saved_task = from;
+-	rcu_switch_from(from);
++	rcu_switch(from, to);
+ 	switch_to(from, to, from);
  }
+ 
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index a72f25e..1e57888 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -198,6 +198,8 @@ extern void rcu_user_enter(void);
+ extern void rcu_user_exit(void);
+ extern void rcu_user_enter_irq(void);
+ extern void rcu_user_exit_irq(void);
++extern void rcu_user_hooks_switch(struct task_struct *prev,
++				  struct task_struct *next);
+ #else
+ static inline void rcu_user_enter(void) { }
+ static inline void rcu_user_exit(void) { }
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 4059c0f..e17fcd0 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1871,23 +1871,25 @@ static inline void rcu_copy_process(struct task_struct *p)
+ 	INIT_LIST_HEAD(&p->rcu_node_entry);
+ }
+ 
+-static inline void rcu_switch_from(struct task_struct *prev)
+-{
+-	if (prev->rcu_read_lock_nesting != 0)
+-		rcu_preempt_note_context_switch();
+-}
+-
+ #else
+ 
+ static inline void rcu_copy_process(struct task_struct *p)
+ {
+ }
+ 
+-static inline void rcu_switch_from(struct task_struct *prev)
+-{
+-}
++#endif
+ 
++static inline void rcu_switch(struct task_struct *prev,
++			      struct task_struct *next)
++{
++#ifdef CONFIG_PREEMPT_RCU
++	if (prev->rcu_read_lock_nesting != 0)
++		rcu_preempt_note_context_switch();
++#endif
++#ifdef CONFIG_RCU_USER_QS
++	rcu_user_hooks_switch(prev, next);
+ #endif
++}
+ 
+ #ifdef CONFIG_SMP
+ extern void do_set_cpus_allowed(struct task_struct *p,
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 78b0c30..2d79308 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -720,6 +720,21 @@ int rcu_is_cpu_idle(void)
+ }
+ EXPORT_SYMBOL(rcu_is_cpu_idle);
+ 
++#ifdef CONFIG_RCU_USER_QS
++void rcu_user_hooks_switch(struct task_struct *prev,
++			   struct task_struct *next)
++{
++	struct rcu_dynticks *rdtp;
++
++	/* Interrupts are disabled in context switch */
++	rdtp = &__get_cpu_var(rcu_dynticks);
++	if (!rdtp->ignore_user_qs) {
++		clear_tsk_thread_flag(prev, TIF_NOHZ);
++		set_tsk_thread_flag(next, TIF_NOHZ);
++	}
++}
++#endif
++
+ #if defined(CONFIG_PROVE_RCU) && defined(CONFIG_HOTPLUG_CPU)
+ 
+ /*
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index d5594a4..fa61d8a 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2081,7 +2081,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
+ #endif
+ 
+ 	/* Here we just switch the register state and the stack. */
+-	rcu_switch_from(prev);
++	rcu_switch(prev, next);
+ 	switch_to(prev, next, prev);
+ 
+ 	barrier();
 -- 
 1.7.5.4
 
