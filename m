@@ -1,61 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757715Ab2GKN6a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:58:30 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:37424 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755208Ab2GKN62 (ORCPT
+	id S1757764Ab2GKOAZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 10:00:25 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:39709 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755307Ab2GKOAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:58:28 -0400
-Date: Wed, 11 Jul 2012 06:58:24 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	Wed, 11 Jul 2012 10:00:22 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Colin Cross <ccross@android.com>, Rob Lee <rob.lee@linaro.org>,
+        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>, linux-acpi@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>
-Subject: [GIT PATCH] driver core (printk really) fixes for 3.5-rc6
-Message-ID: <20120711135824.GA19620@kroah.com>
+Subject: Re: [linux-pm] cpuidle future and improvements
+Organization: Texas Instruments, Inc.
+References: <4FDEE98D.7010802@linaro.org>
+	<CAMbhsRQRFXcayyWjM1RirgFppVAK23z2+3EbYOCw-qmzuY9_2g@mail.gmail.com>
+	<4FE85F6A.80307@linaro.org>
+Date: Wed, 11 Jul 2012 07:00:19 -0700
+In-Reply-To: <4FE85F6A.80307@linaro.org> (Daniel Lezcano's message of "Mon, 25
+	Jun 2012 14:54:02 +0200")
+Message-ID: <87a9z6pfd8.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
+Daniel Lezcano <daniel.lezcano@linaro.org> writes:
 
-  Linux 3.5-rc5 (2012-06-30 16:08:57 -0700)
+> On 06/18/2012 08:15 PM, Colin Cross wrote:
+>> On Mon, Jun 18, 2012 at 1:40 AM, Daniel Lezcano
+>> <daniel.lezcano@linaro.org> wrote:
+>>> I propose to host a cpuidle-next tree where all these modifications will
+>>> be and where people can send patches against, preventing last minutes
+>>> conflicts and perhaps Lenb will agree to pull from this tree. In the
+>>> meantime, the tree will be part of the linux-next, the patches will be
+>>> more widely tested and could be fixed earlier.
+>> 
+>> My coupled cpuidle patches were acked and temporarily in Len's
+>> next/Linus pull branch, but were later dropped when the first pull
+>> request to Linus was rejected.  I asked Len to either put the coupled
+>> cpuidle patches into his next branch, or let me host them so people
+>> could base SoC branches off of them and let Len pull them later, but
+>> got no response.  If you do start a cpuidle for-next branch, can you
+>> pull my coupled-cpuidle branch:
+>> 
+>> The following changes since commit 76e10d158efb6d4516018846f60c2ab5501900bc:
+>> 
+>>   Linux 3.4 (2012-05-20 15:29:13 -0700)
+>> 
+>> are available in the git repository at:
+>>   https://android.googlesource.com/kernel/common.git coupled-cpuidle
+>> 
+>> Colin Cross (4):
+>>       cpuidle: refactor out cpuidle_enter_state
+>>       cpuidle: fix error handling in __cpuidle_register_device
+>>       cpuidle: add support for states that affect multiple cpus
+>>       cpuidle: coupled: add parallel barrier function
+>> 
+>>  drivers/cpuidle/Kconfig   |    3 +
+>>  drivers/cpuidle/Makefile  |    1 +
+>>  drivers/cpuidle/coupled.c |  715 +++++++++++++++++++++++++++++++++++++++++++++
+>>  drivers/cpuidle/cpuidle.c |   68 ++++-
+>>  drivers/cpuidle/cpuidle.h |   32 ++
+>>  include/linux/cpuidle.h   |   11 +
+>>  6 files changed, 813 insertions(+), 17 deletions(-)
+>>  create mode 100644 drivers/cpuidle/coupled.c
+>
+>
+> Done.
+>
+> http://git.linaro.org/gitweb?p=people/dlezcano/cpuidle-next.git;a=shortlog;h=refs/heads/cpuidle-next
 
-are available in the git repository at:
+Great!
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.5-rc6
+Daniel, thanks for tracking this.  Are you planning to submit a pull
+request to Rafael so we finally can get this into linux-next and merged
+for v3.6?
 
-for you to fetch changes up to 5becfb1df5ac8e491338e64b1029685ccad4b39c:
+Looks like there will be a slight problem to sort out though.  Len's
+'next' branch[1] is already included in linux-next and as some version
+of the coupled CPUidle already merged.
 
-  kmsg: merge continuation records while printing (2012-07-09 12:15:42 -0700)
+I hope we can sort this out in time for v3.6 because this series has
+been well reviewed, well tested and ready for merge since before the
+v3.5 merge window.
 
-----------------------------------------------------------------
-printk fixes for 3.5-rc6
+Kevin
 
-Here are some more printk fixes for 3.5-rc6.  They resolve all known
-outstanding issues with the printk changes that have been happening.  They have
-been tested by the people reporting the problems.
-
-This hopefully should be it for the printk stuff for 3.5-final.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Kay Sievers (6):
-      kmsg: escape the backslash character while exporting data
-      kmsg: add the facility number to the syslog prefix
-      kmsg: properly handle concurrent non-blocking read() from /proc/kmsg
-      kmsg: make sure all messages reach a newly registered boot console
-      kmsg: /proc/kmsg - support reading of partial log records
-      kmsg: merge continuation records while printing
-
-liu chuansheng (1):
-      printk: replacing the raw_spin_lock/unlock with raw_spin_lock/unlock_irq
-
- kernel/printk.c | 202 +++++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 126 insertions(+), 76 deletions(-)
+[1] git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux next
