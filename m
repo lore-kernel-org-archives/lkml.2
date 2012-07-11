@@ -1,127 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933249Ab2GKUpv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 16:45:51 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:60575 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933218Ab2GKUpt (ORCPT
+	id S1030224Ab2GKUuM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 16:50:12 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:44908 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932387Ab2GKUuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 16:45:49 -0400
+	Wed, 11 Jul 2012 16:50:10 -0400
+Message-ID: <4FFDE69C.8080205@linux.vnet.ibm.com>
+Date: Wed, 11 Jul 2012 15:48:28 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAGF5oy_T3=9CV-dtFaGabKKPkZmRsf82y5A=bT7begU3Rtavzg@mail.gmail.com>
-References: <1341647872-15267-1-git-send-email-eduardo.valentin@ti.com>
-	<1341647872-15267-2-git-send-email-eduardo.valentin@ti.com>
-	<20120709193130.GA12982@kroah.com>
-	<CAGF5oy_QVyYKFcS_62dffkRRZhBZrG4RTpYG9HKT8zMoLue1Xw@mail.gmail.com>
-	<CAGF5oy-Ey7mB+_gjDWxm7H5muvpGrksTmjBsrn-Pva6N=JHNoQ@mail.gmail.com>
-	<20120711125206.GB6615@kroah.com>
-	<CAGF5oy_T3=9CV-dtFaGabKKPkZmRsf82y5A=bT7begU3Rtavzg@mail.gmail.com>
-Date: Wed, 11 Jul 2012 23:45:47 +0300
-Message-ID: <CAGF5oy_sd8MHJdj+vHhGnqJDz1W9AAzvuuzQLmsLS8TjKJUunA@mail.gmail.com>
-Subject: Re: [PATCHv2 1/4] staging: OMAP4+: thermal: introduce bandgap
- temperature sensor
-From: "Valentin, Eduardo" <eduardo.valentin@ti.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, b-cousson@ti.com, j-keerthy@ti.com,
-        linux-kernel@vger.kernel.org, kbaidarov@dev.rtsoft.ru,
-        grant.likely@secretlab.ca
+To: konrad@darnok.org
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] zsmalloc improvements
+References: <1341263752-10210-1-git-send-email-sjenning@linux.vnet.ibm.com> <20120704204325.GB2924@localhost.localdomain> <4FF6FF1F.5090701@linux.vnet.ibm.com>	<4FFAE37F.70403@linux.vnet.ibm.com> <CAPbh3rtXVf_GPKZ2dA2nWaj=h6aYztntQ-oFD5Pg0j65BbOvmA@mail.gmail.com>
+In-Reply-To: <CAPbh3rtXVf_GPKZ2dA2nWaj=h6aYztntQ-oFD5Pg0j65BbOvmA@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071120-7408-0000-0000-000006AF07BF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
-
-On Wed, Jul 11, 2012 at 11:07 PM, Valentin, Eduardo
-<eduardo.valentin@ti.com> wrote:
-> Greg,
->
-> On Wed, Jul 11, 2012 at 3:52 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
->> On Wed, Jul 11, 2012 at 01:07:17PM +0300, Valentin, Eduardo wrote:
->>> Hello Greg,
+On 07/11/2012 02:42 PM, Konrad Rzeszutek Wilk wrote:
+>>>> Which architecture was this under? It sounds x86-ish? Is this on
+>>>> Westmere and more modern machines? What about Core2 architecture?
+>>>>
+>>>> Oh how did it work on AMD Phenom boxes?
 >>>
->>> On Mon, Jul 9, 2012 at 11:33 PM, Valentin, Eduardo
->>> <eduardo.valentin@ti.com> wrote:
->>> > Hello Greg,
->>> >
->>> > On Mon, Jul 9, 2012 at 10:31 PM, Greg Kroah-Hartman
->>> > g<gregkh@linuxfoundation.org> wrote:
->>> >> On Sat, Jul 07, 2012 at 10:57:49AM +0300, Eduardo Valentin wrote:
->>> >>> In the System Control Module, OMAP supplies a voltage reference
->>> >>> and a temperature sensor feature that are gathered in the band
->>> >>> gap voltage and temperature sensor (VBGAPTS) module. The band
->>> >>> gap provides current and voltage reference for its internal
->>> >>> circuits and other analog IP blocks. The analog-to-digital
->>> >>> converter (ADC) produces an output value that is proportional
->>> >>> to the silicon temperature.
->>> >>>
->>> >>> This patch provides a platform driver which expose this feature.
->>> >>> It is moduled as a MFD child of the System Control Module core
->>> >>> MFD driver.
->>> >>>
->>> >>> This driver provides only APIs to access the device properties,
->>> >>> like temperature, thresholds and update rate.
->>> >>>
->>> >>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
->>> >>> Signed-off-by: Keerthy <j-keerthy@ti.com>
->>> >>
->>> >> As much as I enjoy interesting names, odds are, "Keerthy" is not the
->>> >> real name of this person, right?  In fact, based on the copyright
->>> >> comments in the code, I can almost guarantee it...
->>> >>
->>> >> I need a full-name please, no aliases or fake names allowed in kernel
->>> >> signed-off-by lines.
->>> >>
->>> >> Please resend these with that fixed up.
->>> >
->>> > Actually, his name is in fact Keerthy J.  I can resend with the
->>> > additional "J" the way it is in the copyrights.
->>>
->>> While looking into his commits, I believe the SOB in this patch is one
->>> of the ways he uses to sign:
->>> commit f99c1d4f94f91fd3a20bd2eaa3be9c5e7d2668eb
->>> Author: Keerthy <j-keerthy@ti.com>
->>> Date:   Tue Mar 1 19:12:26 2011 +0530
->>>
->>>     mfd: Add twl4030 madc driver
->>>
->>>     Introducing a driver for MADC on TWL4030 powerIC. MADC stands for monitoring
->>>     ADC. This driver monitors the real time conversion of analog signals like
->>>     battery temperature, battery cuurent etc.
->>>
->>>     Signed-off-by: Keerthy <j-keerthy@ti.com>
->>>     Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
->>>
->>> So, I'd prefer to keep the way it is.
+>>> I don't have a Phenom box but I have an Athlon X2 I can try out.
+>>> I'll get this information next Monday.
 >>
->> But it doesn't match the copyright notice, which I am guessing TI got
->> "right" from a legal perspective, and as such, we need to also.
->>
->
-> Now I see your point, it makes sense. Resending V3 of this patch in
-> reply on this thread. It will contain his SOB the way it is in the
-> copyright notice.
+>> Actually, I'm running some production stuff on that box, so
+>> I rather not put testing stuff on it.  Is there any
+>> particular reason that you wanted this information? Do you
+>> have a reason to believe that mapping will be faster than
+>> copy for AMD procs?
+> 
+> Sorry for the late response. Working on some ugly bug that is taking
+> more time than anticipated.
+> My thoughts were that these findings are based on the hardware memory
+> prefetcher. The Intel
+> machines - especially starting with Nehelem have some pretty
+> impressive prefetcher where
+> even doing in a linked list 'prefetch' on the next node is not beneficial.
+> 
+> Perhaps the way to leverage this is to use different modes depending
+> on the bulk of data?
+> When there is a huge amount use the old method, but for small use copy
+> (as it would
+> in theory stay in the cache longer).
 
-FYI, I've just resent the 4 patches in this series with v3 mark,
-because I removed one ending empty line added in patch 01 as git was
-complaining while applying and had to adapt following patch 02. Now
-patch 01 has his SOB just like in the copyright notice in the files.
+Not sure what you mean by "bulk" or "huge amount" but the
+maximum size of mapped object is PAGE_SIZE and the typical
+size more around PAGE_SIZE/2. So that is what I'm
+considering.  Do you think it makes a difference with copies
+that small?
 
+Thanks,
+Seth
 
->
->> thanks,
->>
->> greg k-h
->
->
->
-> --
->
-> Eduardo Valentin
-
-
-
--- 
-
-Eduardo Valentin
