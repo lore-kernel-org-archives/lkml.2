@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab2GKKn7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 06:43:59 -0400
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:58000 "EHLO smtp1.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751965Ab2GKKn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 06:43:58 -0400
-Date: Wed, 11 Jul 2012 13:43:55 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: valdis.kletnieks@vt.edu
-cc: Dave Airlie <airlied@gmail.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: 3.5-rc5: radeon acceleration regression on Transmeta system
-In-Reply-To: <60495.1341959530@turing-police.cc.vt.edu>
-Message-ID: <alpine.SOC.1.00.1207111340360.12880@math.ut.ee>
-References: <alpine.SOC.1.00.1207050956300.515@math.ut.ee> <CAPM=9tyo69+8QTCKMDCOTzWT2gR+uXkynOny85PaQ_nCYNMGAg@mail.gmail.com> <alpine.SOC.1.00.1207052224340.19147@math.ut.ee>            <alpine.SOC.1.00.1207090051120.3699@math.ut.ee>
- <60495.1341959530@turing-police.cc.vt.edu>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1757177Ab2GKKpM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 06:45:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:54923 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752793Ab2GKKpJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 06:45:09 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: Re: [PATCH] misc/pch_phub: Enable UART clock setting by module parameter
+Date: Wed, 11 Jul 2012 10:45:02 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+References: <1342000670-1005-1-git-send-email-tomoya.rohm@gmail.com>
+In-Reply-To: <1342000670-1005-1-git-send-email-tomoya.rohm@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201207111045.03275.arnd@arndb.de>
+X-Provags-ID: V02:K0:PuyBiWd1s/VhqTjjwct2elE9ochYTj60Io6JIb4YBf1
+ 0BjRbfG8MhmcxmfRtsLSqyUSUgteoRcPakz8bXJdaSx1OPso7t
+ tLKZpfEo+3FCmKtYDEa5Uuq1AfuiwfnriqIyZNZmNjvdf3SXZ7
+ YvU1iF8deBUPqaNjc3ogyXSEg2KvoG++TZjAB0gUoE8tgpNU3G
+ +vaITNbiqUPjH0XVd9fun3/8bcJfk3tpao7UnKkoquOHSriRAG
+ 4gQXdx5UJJfjxPH4a892PO2bFVwnY0PjTHrTrJwaxglNLFojHO
+ aiWoJZoRezFkhaIC8bQ4kiCdj1qKSbvsdJbBvcplq9ScY2HOh2
+ TkTMi+X7HhoH5nYq8Cd0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > It's actually more complicated than that. Old kernel images started
-> > misbehaving from around 2.6.35-rc5 and any kernel older than that was
-> > OK. When I recompiled the older kernels with squeeze gcc (migh have been
-> > lenny gcc before, or different answers to make oldconfig), anything from
-> > current git down to 2.6.33 is broken with radeon.modeset=1 and works (I
+On Wednesday 11 July 2012, Tomoya MORINAGA wrote:
+> Currently, when a user wants to change UART clock,
+> needs to modify this source code by hand.
+> This patch enables changing UART clock by specifying UART clock
+> as module parameter.
 > 
-> What releases of GCC were those?  I'm chasing an issue where compiling
-> with 4.7.[01] breaks but 4.6.2 is OK, wondering if we're chasing the same thing.
+> Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-I do not remember when I upgraded from lenny to squeeze. It the previous 
-gcc was lenny's, it was gcc version 4.3.2 (Debian 4.3.2-1.1). The gcc in 
-current stable (squeeze) is gcc version 4.4.5 (Debian 4.4.5-8). Since 
-the old laptop is somewhat slow for following unstable, I have not tried 
-any newer gcc version on that machine, and it has been compiling its own 
-kernels for stress-testing purposes.
+This looks like a rather nonscalable solution if you get to systems
+with lots of clocks.
 
-So it's probably not related to gcc 4.6->4.7 changes.
+Given that you are doing it for the uart clock, shouldn't that be
+set from the uart driver using an ioctl like other serial ports do?
 
--- 
-Meelis Roos (mroos@linux.ee)
+What would be the use case for an end user to override the module
+parameter? Is it about platform specific settings or policy?
+
+	Arnd
