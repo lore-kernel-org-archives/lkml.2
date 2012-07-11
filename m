@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab2GKSv2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 14:51:28 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26939 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755329Ab2GKSv0 convert rfc822-to-8bit (ORCPT
+	id S1757273Ab2GKS4M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 14:56:12 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:46842 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755082Ab2GKS4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 14:51:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="191387445"
-From: "Dave, Tushar N" <tushar.n.dave@intel.com>
-To: Joe Jin <joe.jin@oracle.com>
-CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Dave, Tushar N" <tushar.n.dave@intel.com>
-Subject: RE: 82571EB: Detected Hardware Unit Hang
-Thread-Topic: 82571EB: Detected Hardware Unit Hang
-Thread-Index: AQHNXbA0O4dj/qIKzEaqpnXp2Y+l0pcimGMAgABDhtCAANf7AP//lehggAB9gwD//6IHIIAAe14A//+RAgAAESU+AAANp23A
-Date: Wed, 11 Jul 2012 18:51:21 +0000
-Message-ID: <061C8A8601E8EE4CA8D8FD6990CEA891274EF8AD@ORSMSX102.amr.corp.intel.com>
-References: <4FFA9B96.6040901@oracle.com> <4FFBDC50.5090800@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EE41F@ORSMSX102.amr.corp.intel.com>
- <4FFCCA22.8060006@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EEC8B@ORSMSX102.amr.corp.intel.com>
- <4FFCDA6C.8020708@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EED74@ORSMSX102.amr.corp.intel.com>
- <4FFCF314.6020400@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EEDD7@ORSMSX102.amr.corp.intel.com>
- <4FFD0908.6080506@oracle.com>
-In-Reply-To: <4FFD0908.6080506@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 Jul 2012 14:56:09 -0400
+Date: Wed, 11 Jul 2012 11:55:34 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Cong Wang <xiyou.wangcong@gmail.com>
+cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] tmpfs: revert SEEK_DATA and SEEK_HOLE
+In-Reply-To: <jtj574$tb7$2@dough.gmane.org>
+Message-ID: <alpine.LSU.2.00.1207111149580.1797@eggly.anvils>
+References: <alpine.LSU.2.00.1207091533001.2051@eggly.anvils> <alpine.LSU.2.00.1207091535480.2051@eggly.anvils> <jtj574$tb7$2@dough.gmane.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Joe Jin [mailto:joe.jin@oracle.com]
->Sent: Tuesday, July 10, 2012 10:03 PM
->To: Dave, Tushar N
->Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
->kernel@vger.kernel.org
->Subject: Re: 82571EB: Detected Hardware Unit Hang
->
->On 07/11/12 12:05, Dave, Tushar N wrote:
->> When you said you had this issue with RHEL5 and RHEL6 drivers, have you
->install RHEl5/6 kernel and reproduced it? If so I think I should install
->RHEL6 and try reproduce it locally!
->>
->Yes I reproduced this on both RHEL5 and RHEL6.
->
->So far I tried to scp big file (~1GB) will hit it at once.
->
->Thanks,
->Joe
+On Wed, 11 Jul 2012, Cong Wang wrote:
+> On Mon, 09 Jul 2012 at 22:41 GMT, Hugh Dickins <hughd@google.com> wrote:
+> > Revert 4fb5ef089b28 ("tmpfs: support SEEK_DATA and SEEK_HOLE").
+> > I believe it's correct, and it's been nice to have from rc1 to rc6;
+> > but as the original commit said:
+> >
+> > I don't know who actually uses SEEK_DATA or SEEK_HOLE, and whether it
+> > would be of any use to them on tmpfs.  This code adds 92 lines and 752
+> > bytes on x86_64 - is that bloat or worthwhile?
+> 
+> 
+> I don't think 752 bytes matter much, especially for x86_64.
+> 
+> >
+> > Nobody asked for it, so I conclude that it's bloat: let's revert tmpfs
+> > to the dumb generic support for v3.5.  We can always reinstate it later
+> > if useful, and anyone needing it in a hurry can just get it out of git.
+> >
+> 
+> If you don't have burden to maintain it, I'd prefer to leave as it is,
+> I don't think 752-bytes is the reason we revert it.
 
-Joe,
+Thank you, your vote has been counted ;)
+and I'll be glad if yours stimulates some agreement or disagreement.
 
-I see couple of errors in lspci output.
-Device capability status register shows UnCorrectable PCIe error. This means there is certainly something went wrong. The only way to recover from Uncorrectable errors is reset.
-   
-	DevSta:	CorrErr- *UncorrErr+ FatalErr+ UnsuppReq+ AuxPwr+ TransPend-
+But your vote would count for a lot more if you know of some app which
+would really benefit from this functionality in tmpfs: I've heard of none.
 
-Also AER sections in lspci output shows PCIe completion timeout.
-	
-	Capabilities: [100 v1] Advanced Error Reporting
-		UESta:	DLP- SDES- TLP- FCP- *CmpltTO+ CmpltAbrt- UnxCmplt- RxOF- MalfTLP+ ECRC- UnsupReq+ ACSViol-
-
-I suggest you should load AER driver and check for any error messages in log. Also please check any error message reported by system in BIOS log. Are there any machine check errors? 
-
-When did you notice this issue? have 82571 ever been working before on this server?
-
-One more thing, Cache line size 256 is little unusual( I never seen this value before, mostly it's 64). Does BIOS settings have been changed? Are you using default BIOS setting?
-
-Thanks.
-
--Tushar
-
-  
-		
-
-
+Hugh
