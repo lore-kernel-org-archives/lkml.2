@@ -1,164 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756796Ab2GKHuV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 03:50:21 -0400
-Received: from mga14.intel.com ([143.182.124.37]:47098 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752840Ab2GKHuT convert rfc822-to-8bit (ORCPT
+	id S1756808Ab2GKHvT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 03:51:19 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:49880 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754258Ab2GKHvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 03:50:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="121075497"
-From: "Dave, Tushar N" <tushar.n.dave@intel.com>
-To: Joe Jin <joe.jin@oracle.com>
-CC: "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Dave, Tushar N" <tushar.n.dave@intel.com>
-Subject: RE: 82571EB: Detected Hardware Unit Hang
-Thread-Topic: 82571EB: Detected Hardware Unit Hang
-Thread-Index: AQHNXbA0O4dj/qIKzEaqpnXp2Y+l0pcimGMAgABDhtCAANf7AP//lehggAB9gwD//6IHIIAAe14A//+RAgAAESU+AAAKOidg///TzACAAHLpQP//kvAAgAB0asA=
-Date: Wed, 11 Jul 2012 07:50:16 +0000
-Message-ID: <061C8A8601E8EE4CA8D8FD6990CEA891274EF055@ORSMSX102.amr.corp.intel.com>
-References: <4FFA9B96.6040901@oracle.com> <4FFBDC50.5090800@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EE41F@ORSMSX102.amr.corp.intel.com>
- <4FFCCA22.8060006@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EEC8B@ORSMSX102.amr.corp.intel.com>
- <4FFCDA6C.8020708@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EED74@ORSMSX102.amr.corp.intel.com>
- <4FFCF314.6020400@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EEDD7@ORSMSX102.amr.corp.intel.com>
- <4FFD0908.6080506@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EEF38@ORSMSX102.amr.corp.intel.com>
- <4FFD2896.3090209@oracle.com>
- <061C8A8601E8EE4CA8D8FD6990CEA891274EEFD7@ORSMSX102.amr.corp.intel.com>
- <4FFD2D7E.60801@oracle.com>
-In-Reply-To: <4FFD2D7E.60801@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 Jul 2012 03:51:17 -0400
+Date: Wed, 11 Jul 2012 00:49:24 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Fengguang Wu <wfg@linux.intel.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: rcu_dyntick and suspicious RCU usage
+Message-ID: <20120711074924.GD3819@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120709135637.GA26040@localhost>
+ <20120709145724.GA27095@localhost>
+ <20120710044700.GA9462@localhost>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120710044700.GA9462@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12071107-7606-0000-0000-000001E84731
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Joe Jin [mailto:joe.jin@oracle.com]
->Sent: Wednesday, July 11, 2012 12:39 AM
->To: Dave, Tushar N
->Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
->kernel@vger.kernel.org
->Subject: Re: 82571EB: Detected Hardware Unit Hang
->
->On 07/11/12 15:37, Dave, Tushar N wrote:
->>> -----Original Message-----
->>> From: Joe Jin [mailto:joe.jin@oracle.com]
->>> Sent: Wednesday, July 11, 2012 12:18 AM
->>> To: Dave, Tushar N
->>> Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
->>> kernel@vger.kernel.org
->>> Subject: Re: 82571EB: Detected Hardware Unit Hang
->>>
->>> On 07/11/12 15:11, Dave, Tushar N wrote:
->>>>> -----Original Message-----
->>>>> From: Joe Jin [mailto:joe.jin@oracle.com]
->>>>> Sent: Tuesday, July 10, 2012 10:03 PM
->>>>> To: Dave, Tushar N
->>>>> Cc: e1000-devel@lists.sf.net; netdev@vger.kernel.org; linux-
->>>>> kernel@vger.kernel.org
->>>>> Subject: Re: 82571EB: Detected Hardware Unit Hang
->>>>>
->>>>> On 07/11/12 12:05, Dave, Tushar N wrote:
->>>>>> When you said you had this issue with RHEL5 and RHEL6 drivers,
->>>>>> have you
->>>>> install RHEl5/6 kernel and reproduced it? If so I think I should
->>>>> install
->>>>> RHEL6 and try reproduce it locally!
->>>>>>
->>>>> Yes I reproduced this on both RHEL5 and RHEL6.
->>>>>
->>>>> So far I tried to scp big file (~1GB) will hit it at once.
->>>>>
->>>>> Thanks,
->>>>> Joe
->>>>
->>>> Joe,
->>>> Can you please send lspci -vvv output for failing port before issue
->>> occurs.
->>>> Thanks.
->>>>
->>> # lspci -s 05:00.0 -vvv
->>> 05:00.0 Ethernet controller: Intel Corporation 82571EB Gigabit
->>> Ethernet Controller (Copper) (rev 06)
->>> 	Subsystem: Oracle Corporation x4 PCI-Express Quad Gigabit Ethernet
->>> UTP Low Profile Adapter
->>> 	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
->>> Stepping- SERR- FastB2B- DisINTx+
->>> 	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
->>> <TAbort- <MAbort- >SERR- <PERR- INTx-
->>> 	Latency: 0, Cache Line Size: 256 bytes
->>> 	Interrupt: pin B routed to IRQ 80
->>> 	Region 0: Memory at fbde0000 (32-bit, non-prefetchable) [size=128K]
->>> 	Region 1: Memory at fbdc0000 (32-bit, non-prefetchable) [size=128K]
->>> 	Region 2: I/O ports at dc00 [size=32]
->>> 	Expansion ROM at fbda0000 [disabled] [size=128K]
->>> 	Capabilities: [c8] Power Management version 2
->>> 		Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-
->>> ,D3hot+,D3cold+)
->>> 		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
->>> 	Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
->>> 		Address: 00000000fee21000  Data: 40cb
->>> 	Capabilities: [e0] Express (v1) Endpoint, MSI 00
->>> 		DevCap:	MaxPayload 256 bytes, PhantFunc 0, Latency L0s
->>> <512ns, L1 <64us
->>> 			ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
->>> 		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal-
->>> Unsupported-
->>> 			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
->>> 			MaxPayload 128 bytes, MaxReadReq 512 bytes
->>> 		DevSta:	CorrErr- UncorrErr+ FatalErr- UnsuppReq+ AuxPwr+
->>> TransPend-
->>> 		LnkCap:	Port #2, Speed 2.5GT/s, Width x4, ASPM L0s,
->>> Latency L0 <4us, L1 <64us
->>> 			ClockPM- Surprise- LLActRep- BwNot-
->>> 		LnkCtl:	ASPM Disabled; RCB 64 bytes Disabled- Retrain-
->>> CommClk-
->>> 			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
->>> 		LnkSta:	Speed 2.5GT/s, Width x4, TrErr- Train- SlotClk+
->>> DLActive- BWMgmt- ABWMgmt-
->>> 	Capabilities: [100 v1] Advanced Error Reporting
->>> 		UESta:	DLP- SDES- TLP- FCP- CmpltTO+ CmpltAbrt- UnxCmplt-
->>> RxOF- MalfTLP+ ECRC- UnsupReq+ ACSViol-
->>> 		UEMsk:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt-
->>> RxOF- MalfTLP- ECRC- UnsupReq+ ACSViol-
->>> 		UESvrt:	DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt-
->>> UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
->>> 		CESta:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
->>> 		CEMsk:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
->>> 		AERCap:	First Error Pointer: 12, GenCap- CGenEn- ChkCap-
->>> ChkEn-
->>> 	Capabilities: [140 v1] Device Serial Number 00-15-17-ff-ff-b9-77-9c
->>> 	Kernel driver in use: e1000e
->>> 	Kernel modules: e1000e
->>>
->>>
->>> Thanks,
->>> Joe
->>
->> was this lspci output taken on freshly booted system?
->>
->
->Yes, any issue do you find?
->
->Thanks,
->Joe
->
+On Tue, Jul 10, 2012 at 12:47:00PM +0800, Fengguang Wu wrote:
+> Hi Paul,
+> 
+> Fortunately this bug is bisectable and the first bad commit is:
+> 
+>         commit 9b2e4f1880b789be1f24f9684f7a54b90310b5c0
+>         Author: Paul E. McKenney <paul.mckenney@linaro.org>
+>         Date:   Fri Sep 30 12:10:22 2011 -0700
+> 
+>             rcu: Track idleness independent of idle tasks
 
-Device status and AER sections show some errors that looks little suspicious to me but I'm not too sure. I will get back tomorrow.
+OK, there is a problem in TINY_RCU's handling of dyntick-idle: it
+traces while in idle.  The confusion on my part was that in TREE_RCU,
+the nesting and dyntick-idle indication are different, while in
+TINY_RCU they are one and the same.
 
--Tushar
+Does the following patch help?
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+rcu: Pull TINY_RCU dyntick-idle tracing into non-idle region
+
+Because TINY_RCU's idle detection keys directly off of the nesting
+level, rather than from a separate variable as in TREE_RCU, the
+TINY_RCU dyntick-idle tracing on transition to idle must happen
+before the change to the nesting level.  This commit therefore makes
+this change by passing the desired new value (rather than the old value)
+of the nesting level in to rcu_idle_enter_common().
+
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index 547b1fe..ca3741d 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -56,24 +56,26 @@ static void __call_rcu(struct rcu_head *head,
+ static long long rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
+ 
+ /* Common code for rcu_idle_enter() and rcu_irq_exit(), see kernel/rcutree.c. */
+-static void rcu_idle_enter_common(long long oldval)
++static void rcu_idle_enter_common(long long newval)
+ {
+ 	if (rcu_dynticks_nesting) {
+ 		RCU_TRACE(trace_rcu_dyntick("--=",
+-					    oldval, rcu_dynticks_nesting));
++					    rcu_dynticks_nesting, newval));
+ 		return;
+ 	}
+-	RCU_TRACE(trace_rcu_dyntick("Start", oldval, rcu_dynticks_nesting));
++	RCU_TRACE(trace_rcu_dyntick("Start", rcu_dynticks_nesting, newval));
+ 	if (!is_idle_task(current)) {
+ 		struct task_struct *idle = idle_task(smp_processor_id());
+ 
+ 		RCU_TRACE(trace_rcu_dyntick("Error on entry: not idle task",
+-					    oldval, rcu_dynticks_nesting));
++					    rcu_dynticks_nesting, newval));
+ 		ftrace_dump(DUMP_ALL);
+ 		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
+ 			  current->pid, current->comm,
+ 			  idle->pid, idle->comm); /* must be idle task! */
+ 	}
++	barrier();
++	rcu_dynticks_nesting = newval;
+ 	rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
+ }
+ 
+@@ -84,17 +86,16 @@ static void rcu_idle_enter_common(long long oldval)
+ void rcu_idle_enter(void)
+ {
+ 	unsigned long flags;
+-	long long oldval;
++	long long newval;
+ 
+ 	local_irq_save(flags);
+-	oldval = rcu_dynticks_nesting;
+ 	WARN_ON_ONCE((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) == 0);
+ 	if ((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) ==
+ 	    DYNTICK_TASK_NEST_VALUE)
+-		rcu_dynticks_nesting = 0;
++		newval = 0;
+ 	else
+-		rcu_dynticks_nesting  -= DYNTICK_TASK_NEST_VALUE;
+-	rcu_idle_enter_common(oldval);
++		newval = rcu_dynticks_nesting - DYNTICK_TASK_NEST_VALUE;
++	rcu_idle_enter_common(newval);
+ 	local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL_GPL(rcu_idle_enter);
+@@ -105,13 +106,12 @@ EXPORT_SYMBOL_GPL(rcu_idle_enter);
+ void rcu_irq_exit(void)
+ {
+ 	unsigned long flags;
+-	long long oldval;
++	long long newval;
+ 
+ 	local_irq_save(flags);
+-	oldval = rcu_dynticks_nesting;
+-	rcu_dynticks_nesting--;
+-	WARN_ON_ONCE(rcu_dynticks_nesting < 0);
+-	rcu_idle_enter_common(oldval);
++	newval = rcu_dynticks_nesting - 1;
++	WARN_ON_ONCE(newval < 0);
++	rcu_idle_enter_common(newval);
+ 	local_irq_restore(flags);
+ }
+ 
+
