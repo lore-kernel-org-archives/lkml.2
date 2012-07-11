@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757755Ab2GKNjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:39:25 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:49660
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757603Ab2GKNjR (ORCPT
+	id S932516Ab2GKNmu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:42:50 -0400
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:12963
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757745Ab2GKNjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:39:17 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+	Wed, 11 Jul 2012 09:39:25 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M700L7-02-1P5-02
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24he5bhf0ah)
+X-WSS-ID: 0M700LE-01-AXF-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        <x86@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [PATCH 01/27] x86/irq: Add data structure to keep AMD specific irq remapping information
-Date: Wed, 11 Jul 2012 15:38:46 +0200
-Message-ID: <1342013952-10174-2-git-send-email-joerg.roedel@amd.com>
+CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 05/27] iommu/amd: Split out PCI related parts of IOMMU initialization
+Date: Wed, 11 Jul 2012 15:38:50 +0200
+Message-ID: <1342013952-10174-6-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
 References: <1342013952-10174-1-git-send-email-joerg.roedel@amd.com>
@@ -30,85 +28,314 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a data structure to store information the IOMMU driver
-can use to get from a 'struct irq_cfg' to the remapping
-entry.
+For interrupt remapping the relevant IOMMU initialization
+needs to run earlier at boot when the PCI subsystem is not
+yet initialized. To support that this patch splits the parts
+of IOMMU initialization which need PCI accesses out of the
+initial setup path so that this can be done later.
 
-Cc: x86@kernel.org
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/hw_irq.h       |   14 +++++++++++++-
- arch/x86/kernel/apic/io_apic.c      |    2 +-
- drivers/iommu/intel_irq_remapping.c |    2 +-
- 3 files changed, 15 insertions(+), 3 deletions(-)
+ drivers/iommu/amd_iommu_init.c  |  224 +++++++++++++++++++++------------------
+ drivers/iommu/amd_iommu_types.h |    5 +-
+ 2 files changed, 121 insertions(+), 108 deletions(-)
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index eb92a6e..b6171e6 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -101,6 +101,7 @@ static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
- 	irq_attr->polarity	= polarity;
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index de11b98..fa6ca8b 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -715,90 +715,6 @@ static void __init set_device_exclusion_range(u16 devid, struct ivmd_header *m)
  }
  
-+/* Intel specific interrupt remapping information */
- struct irq_2_iommu {
- 	struct intel_iommu *iommu;
- 	u16 irte_index;
-@@ -108,6 +109,17 @@ struct irq_2_iommu {
- 	u8  irte_mask;
- };
- 
-+/* AMD specific interrupt remapping information */
-+struct irq_2_irte {
-+	u16 devid; /* Device ID for IRTE table */
-+	u16 index; /* Index into IRTE table*/
-+};
-+
-+union irq_remap_info {
-+	struct irq_2_iommu irq_2_iommu;
-+	struct irq_2_irte  irq_2_irte;
-+};
-+
  /*
-  * This is performance-critical, we want to do it O(1)
+- * This function reads some important data from the IOMMU PCI space and
+- * initializes the driver data structure with it. It reads the hardware
+- * capabilities and the first/last device entries
+- */
+-static void __init init_iommu_from_pci(struct amd_iommu *iommu)
+-{
+-	int cap_ptr = iommu->cap_ptr;
+-	u32 range, misc, low, high;
+-	int i, j;
+-
+-	pci_read_config_dword(iommu->dev, cap_ptr + MMIO_CAP_HDR_OFFSET,
+-			      &iommu->cap);
+-	pci_read_config_dword(iommu->dev, cap_ptr + MMIO_RANGE_OFFSET,
+-			      &range);
+-	pci_read_config_dword(iommu->dev, cap_ptr + MMIO_MISC_OFFSET,
+-			      &misc);
+-
+-	iommu->first_device = calc_devid(MMIO_GET_BUS(range),
+-					 MMIO_GET_FD(range));
+-	iommu->last_device = calc_devid(MMIO_GET_BUS(range),
+-					MMIO_GET_LD(range));
+-	iommu->evt_msi_num = MMIO_MSI_NUM(misc);
+-
+-	if (!(iommu->cap & (1 << IOMMU_CAP_IOTLB)))
+-		amd_iommu_iotlb_sup = false;
+-
+-	/* read extended feature bits */
+-	low  = readl(iommu->mmio_base + MMIO_EXT_FEATURES);
+-	high = readl(iommu->mmio_base + MMIO_EXT_FEATURES + 4);
+-
+-	iommu->features = ((u64)high << 32) | low;
+-
+-	if (iommu_feature(iommu, FEATURE_GT)) {
+-		int glxval;
+-		u32 pasids;
+-		u64 shift;
+-
+-		shift   = iommu->features & FEATURE_PASID_MASK;
+-		shift >>= FEATURE_PASID_SHIFT;
+-		pasids  = (1 << shift);
+-
+-		amd_iommu_max_pasids = min(amd_iommu_max_pasids, pasids);
+-
+-		glxval   = iommu->features & FEATURE_GLXVAL_MASK;
+-		glxval >>= FEATURE_GLXVAL_SHIFT;
+-
+-		if (amd_iommu_max_glx_val == -1)
+-			amd_iommu_max_glx_val = glxval;
+-		else
+-			amd_iommu_max_glx_val = min(amd_iommu_max_glx_val, glxval);
+-	}
+-
+-	if (iommu_feature(iommu, FEATURE_GT) &&
+-	    iommu_feature(iommu, FEATURE_PPR)) {
+-		iommu->is_iommu_v2   = true;
+-		amd_iommu_v2_present = true;
+-	}
+-
+-	if (!is_rd890_iommu(iommu->dev))
+-		return;
+-
+-	/*
+-	 * Some rd890 systems may not be fully reconfigured by the BIOS, so
+-	 * it's necessary for us to store this information so it can be
+-	 * reprogrammed on resume
+-	 */
+-
+-	pci_read_config_dword(iommu->dev, iommu->cap_ptr + 4,
+-			      &iommu->stored_addr_lo);
+-	pci_read_config_dword(iommu->dev, iommu->cap_ptr + 8,
+-			      &iommu->stored_addr_hi);
+-
+-	/* Low bit locks writes to configuration space */
+-	iommu->stored_addr_lo &= ~1;
+-
+-	for (i = 0; i < 6; i++)
+-		for (j = 0; j < 0x12; j++)
+-			iommu->stored_l1[i][j] = iommu_read_l1(iommu, i, j);
+-
+-	for (i = 0; i < 0x83; i++)
+-		iommu->stored_l2[i] = iommu_read_l2(iommu, i);
+-}
+-
+-/*
+  * Takes a pointer to an AMD IOMMU entry in the ACPI table and
+  * initializes the hardware and our data structures with it.
+  */
+@@ -1014,13 +930,7 @@ static int __init init_iommu_one(struct amd_iommu *iommu, struct ivhd_header *h)
+ 	/*
+ 	 * Copy data from ACPI table entry to the iommu struct
+ 	 */
+-	iommu->dev = pci_get_bus_and_slot(PCI_BUS(h->devid), h->devid & 0xff);
+-	if (!iommu->dev)
+-		return 1;
+-
+-	iommu->root_pdev = pci_get_bus_and_slot(iommu->dev->bus->number,
+-						PCI_DEVFN(0, 0));
+-
++	iommu->devid   = h->devid;
+ 	iommu->cap_ptr = h->cap_ptr;
+ 	iommu->pci_seg = h->pci_seg;
+ 	iommu->mmio_phys = h->mmio_phys;
+@@ -1038,20 +948,10 @@ static int __init init_iommu_one(struct amd_iommu *iommu, struct ivhd_header *h)
+ 
+ 	iommu->int_enabled = false;
+ 
+-	init_iommu_from_pci(iommu);
+ 	init_iommu_from_acpi(iommu, h);
+ 	init_iommu_devices(iommu);
+ 
+-	if (iommu_feature(iommu, FEATURE_PPR)) {
+-		iommu->ppr_log = alloc_ppr_log(iommu);
+-		if (!iommu->ppr_log)
+-			return -ENOMEM;
+-	}
+-
+-	if (iommu->cap & (1UL << IOMMU_CAP_NPCACHE))
+-		amd_iommu_np_cache = true;
+-
+-	return pci_enable_device(iommu->dev);
++	return 0;
+ }
+ 
+ /*
+@@ -1100,6 +1000,121 @@ static int __init init_iommu_all(struct acpi_table_header *table)
+ 	return 0;
+ }
+ 
++static int iommu_init_pci(struct amd_iommu *iommu)
++{
++	int cap_ptr = iommu->cap_ptr;
++	u32 range, misc, low, high;
++
++	iommu->dev = pci_get_bus_and_slot(PCI_BUS(iommu->devid),
++					  iommu->devid & 0xff);
++	if (!iommu->dev)
++		return -ENODEV;
++
++	pci_read_config_dword(iommu->dev, cap_ptr + MMIO_CAP_HDR_OFFSET,
++			      &iommu->cap);
++	pci_read_config_dword(iommu->dev, cap_ptr + MMIO_RANGE_OFFSET,
++			      &range);
++	pci_read_config_dword(iommu->dev, cap_ptr + MMIO_MISC_OFFSET,
++			      &misc);
++
++	iommu->first_device = calc_devid(MMIO_GET_BUS(range),
++					 MMIO_GET_FD(range));
++	iommu->last_device = calc_devid(MMIO_GET_BUS(range),
++					MMIO_GET_LD(range));
++
++	if (!(iommu->cap & (1 << IOMMU_CAP_IOTLB)))
++		amd_iommu_iotlb_sup = false;
++
++	/* read extended feature bits */
++	low  = readl(iommu->mmio_base + MMIO_EXT_FEATURES);
++	high = readl(iommu->mmio_base + MMIO_EXT_FEATURES + 4);
++
++	iommu->features = ((u64)high << 32) | low;
++
++	if (iommu_feature(iommu, FEATURE_GT)) {
++		int glxval;
++		u32 pasids;
++		u64 shift;
++
++		shift   = iommu->features & FEATURE_PASID_MASK;
++		shift >>= FEATURE_PASID_SHIFT;
++		pasids  = (1 << shift);
++
++		amd_iommu_max_pasids = min(amd_iommu_max_pasids, pasids);
++
++		glxval   = iommu->features & FEATURE_GLXVAL_MASK;
++		glxval >>= FEATURE_GLXVAL_SHIFT;
++
++		if (amd_iommu_max_glx_val == -1)
++			amd_iommu_max_glx_val = glxval;
++		else
++			amd_iommu_max_glx_val = min(amd_iommu_max_glx_val, glxval);
++	}
++
++	if (iommu_feature(iommu, FEATURE_GT) &&
++	    iommu_feature(iommu, FEATURE_PPR)) {
++		iommu->is_iommu_v2   = true;
++		amd_iommu_v2_present = true;
++	}
++
++	if (iommu_feature(iommu, FEATURE_PPR)) {
++		iommu->ppr_log = alloc_ppr_log(iommu);
++		if (!iommu->ppr_log)
++			return -ENOMEM;
++	}
++
++	if (iommu->cap & (1UL << IOMMU_CAP_NPCACHE))
++		amd_iommu_np_cache = true;
++
++	if (is_rd890_iommu(iommu->dev)) {
++		int i, j;
++
++		iommu->root_pdev = pci_get_bus_and_slot(iommu->dev->bus->number,
++				PCI_DEVFN(0, 0));
++
++		/*
++		 * Some rd890 systems may not be fully reconfigured by the
++		 * BIOS, so it's necessary for us to store this information so
++		 * it can be reprogrammed on resume
++		 */
++		pci_read_config_dword(iommu->dev, iommu->cap_ptr + 4,
++				&iommu->stored_addr_lo);
++		pci_read_config_dword(iommu->dev, iommu->cap_ptr + 8,
++				&iommu->stored_addr_hi);
++
++		/* Low bit locks writes to configuration space */
++		iommu->stored_addr_lo &= ~1;
++
++		for (i = 0; i < 6; i++)
++			for (j = 0; j < 0x12; j++)
++				iommu->stored_l1[i][j] = iommu_read_l1(iommu, i, j);
++
++		for (i = 0; i < 0x83; i++)
++			iommu->stored_l2[i] = iommu_read_l2(iommu, i);
++	}
++
++	return pci_enable_device(iommu->dev);
++}
++
++static int amd_iommu_init_pci(void)
++{
++	struct amd_iommu *iommu;
++	int ret = 0;
++
++	for_each_iommu(iommu) {
++		ret = iommu_init_pci(iommu);
++		if (ret)
++			break;
++	}
++
++	/* Make sure ACS will be enabled */
++	pci_request_acs();
++
++	ret = amd_iommu_init_devices();
++
++	return ret;
++}
++
+ /****************************************************************************
   *
-@@ -120,7 +132,7 @@ struct irq_cfg {
- 	u8			vector;
- 	u8			move_in_progress : 1;
- #ifdef CONFIG_IRQ_REMAP
--	struct irq_2_iommu	irq_2_iommu;
-+	union irq_remap_info    irq_remap_info;
- #endif
- };
+  * The following functions initialize the MSI interrupts for all IOMMUs
+@@ -1563,7 +1578,7 @@ int __init amd_iommu_init_hardware(void)
+ 	if (ret)
+ 		goto free;
  
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 5f0ff59..08f666c 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -72,7 +72,7 @@
- static void irq_remap_modify_chip_defaults(struct irq_chip *chip);
- static inline bool irq_remapped(struct irq_cfg *cfg)
- {
--	return cfg->irq_2_iommu.iommu != NULL;
-+	return cfg->irq_remap_info.irq_2_iommu.iommu != NULL;
- }
- #else
- static inline bool irq_remapped(struct irq_cfg *cfg)
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index 6d34706..e4e4334 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -43,7 +43,7 @@ static DEFINE_RAW_SPINLOCK(irq_2_ir_lock);
- static struct irq_2_iommu *irq_2_iommu(unsigned int irq)
- {
- 	struct irq_cfg *cfg = irq_get_chip_data(irq);
--	return cfg ? &cfg->irq_2_iommu : NULL;
-+	return cfg ? &cfg->irq_remap_info.irq_2_iommu : NULL;
+-	ret = amd_iommu_init_devices();
++	ret = amd_iommu_init_pci();
+ 	if (ret)
+ 		goto free;
+ 
+@@ -1696,9 +1711,6 @@ int __init amd_iommu_detect(void)
+ 	iommu_detected = 1;
+ 	x86_init.iommu.iommu_init = amd_iommu_init;
+ 
+-	/* Make sure ACS will be enabled */
+-	pci_request_acs();
+-
+ 	return 0;
  }
  
- int get_irte(int irq, struct irte *entry)
+diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
+index 594faaf..6ad8b99 100644
+--- a/drivers/iommu/amd_iommu_types.h
++++ b/drivers/iommu/amd_iommu_types.h
+@@ -501,6 +501,9 @@ struct amd_iommu {
+ 	/* IOMMUv2 */
+ 	bool is_iommu_v2;
+ 
++	/* PCI device id of the IOMMU device */
++	u16 devid;
++
+ 	/*
+ 	 * Capability pointer. There could be more than one IOMMU per PCI
+ 	 * device function if there are more than one AMD IOMMU capability
+@@ -530,8 +533,6 @@ struct amd_iommu {
+ 	u32 evt_buf_size;
+ 	/* event buffer virtual address */
+ 	u8 *evt_buf;
+-	/* MSI number for event interrupt */
+-	u16 evt_msi_num;
+ 
+ 	/* Base of the PPR log, if present */
+ 	u8 *ppr_log;
 -- 
 1.7.9.5
 
