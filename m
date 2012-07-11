@@ -1,72 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440Ab2GKJph (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 05:45:37 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:49159 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab2GKJpZ (ORCPT
+	id S1755838Ab2GKJpz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 05:45:55 -0400
+Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:56280 "EHLO
+	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752677Ab2GKJpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 05:45:25 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Wanpeng Li <liwp.linux@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Li Zefan <lizefan@huawei.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwp.linux@gmail.com>
-Subject: Re: [PATCH] mm/hugetlb_cgroup: Add list_del to remove unused page from hugepage_activelist when hugepage migration
-In-Reply-To: <20120711091648.GA10841@kernel>
-References: <1341978718-6423-1-git-send-email-liwp.linux@gmail.com> <87wr2aitpk.fsf@skywalker.in.ibm.com> <20120711091648.GA10841@kernel>
-User-Agent: Notmuch/0.13.2+63~g548a9bf (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 11 Jul 2012 15:15:19 +0530
-Message-ID: <87txxeiqc0.fsf@skywalker.in.ibm.com>
+	Wed, 11 Jul 2012 05:45:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12071109-2000-0000-0000-0000083A6D51
+In-Reply-To: <20120710061326.GA29257@core.coreip.homeip.net>
+References: <1339152780-25301-1-git-send-email-sourav.poddar@ti.com>
+	<20120710061326.GA29257@core.coreip.homeip.net>
+Date: Wed, 11 Jul 2012 15:15:47 +0530
+Message-ID: <CAKdam54gZoMEaH93FDL9D--GB=TqcSTEGz69TcZ99NdnvnQzsg@mail.gmail.com>
+Subject: Re: [RESEND/PATCHv5 1/2] drivers: input: keypad: Add device tree support
+From: "Poddar, Sourav" <sourav.poddar@ti.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Felipe Balbi <balbi@ti.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wanpeng Li <liwp.linux@gmail.com> writes:
+Hi Dmitry,
 
-> On Wed, Jul 11, 2012 at 02:02:23PM +0530, Aneesh Kumar K.V wrote:
->>Wanpeng Li <liwp.linux@gmail.com> writes:
->>
->>> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
->>>
->>> hugepage_activelist is used to track currently used HugeTLB pages.
->>> We can find the in-use HugeTLB pages to support HugeTLB cgroup
->>> removal. Don't keep unused page in hugetlb_activelist too long.
->>> Otherwise, on cgroup removal we should update the unused page's 
->>> charge to parent count. To reduce this overhead, remove unused page 
->>> from hugepage_activelist immediately.
->>>
->>> Signed-off-by: Wanpeng Li <liwp.linux@gmail.com>
->>> ---
->>>  mm/hugetlb_cgroup.c |    1 +
->>>  1 files changed, 1 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
->>> index b834e8d..d819d66 100644
->>> --- a/mm/hugetlb_cgroup.c
->>> +++ b/mm/hugetlb_cgroup.c
->>> @@ -398,6 +398,7 @@ void hugetlb_cgroup_migrate(struct page *oldhpage, struct page *newhpage)
->>>  	spin_lock(&hugetlb_lock);
->>>  	h_cg = hugetlb_cgroup_from_page(oldhpage);
->>>  	set_hugetlb_cgroup(oldhpage, NULL);
->>> +	list_del(&oldhpage->lru);
->>>
->>>  	/* move the h_cg details to new cgroup */
->>>  	set_hugetlb_cgroup(newhpage, h_cg);
->>
->>put_page on the oldhpage will do that. If we do list_del here
->>free_huge_page() will have error list_move().
+On Tue, Jul 10, 2012 at 11:43 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> Hi Sourav,
 >
-> I don't know if move the page to other lists when migration in order 
-> to reduce overhead I mentioned make sense. :-)
+> On Fri, Jun 08, 2012 at 04:22:59PM +0530, Sourav Poddar wrote:
+>> Update the Documentation with omap4 keypad device tree
+>> binding information.
+>> Add device tree support for omap4 keypad driver.
+>>
+>> Tested on omap4430 sdp.
+>>
 >
+> Sorry for the delay, I have a few comments:
+>
+>>
+>>       /* platform data */
+>>       pdata = pdev->dev.platform_data;
+>> -     if (!pdata) {
+>> +     if (np) {
+>> +             of_property_read_u32(np, "keypad,num-rows", &num_rows);
+>> +             of_property_read_u32(np, "keypad,num-columns", &num_cols);
+>> +             if (!num_rows || !num_cols) {
+>> +                     dev_err(&pdev->dev, "number of keypad rows/columns not specified\n");
+>> +                     return -EINVAL;
+>> +             }
+>> +     } else if (pdata) {
+>> +             num_rows = pdata->rows;
+>> +             num_cols = pdata->cols;
+>> +     } else {
+>>               dev_err(&pdev->dev, "no platform data defined\n");
+>>               return -EINVAL;
+>>       }
+>>
+>
+> I believe drivers should use platform data if it is supplied and use DT
+> data if platform data is omitted. This way one can override firmware
+> data if needed.
+>
+> Does the patch below (if applied on top of your) work for you?
+>
+Yes, the above patch works fine for me.
+Acked-by: Sourav Poddar <sourav.poddar@ti.com>
 
-Even if we are in the active_list, we don't get anything wrong because
-hugetlb cgroup is set to NULL for the old hugetlb page. The above patch is
-wrong and will result in crash when we try to put_page the oldhpage.
+Note, I did some mux setting changes in the bootloader for DT case.
 
--aneesh
-
+Thanks,
+Sourav
+> Thanks.
+>
+> --
+> Dmitry
+>
+> Input: omap4-keypad - misc fixes
+>
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> ---
+>
+>  drivers/input/keyboard/omap4-keypad.c |  152 ++++++++++++++++-----------------
+>  1 file changed, 74 insertions(+), 78 deletions(-)
+>
+>
+> diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
+> index d5a2d1a..033168e 100644
+> --- a/drivers/input/keyboard/omap4-keypad.c
+> +++ b/drivers/input/keyboard/omap4-keypad.c
+> @@ -76,7 +76,6 @@ enum {
+>
+>  struct omap4_keypad {
+>         struct input_dev *input;
+> -       struct matrix_keymap_data *keymap_data;
+>
+>         void __iomem *base;
+>         unsigned int irq;
+> @@ -88,7 +87,7 @@ struct omap4_keypad {
+>         unsigned int row_shift;
+>         bool no_autorepeat;
+>         unsigned char key_state[8];
+> -       unsigned short keymap[];
+> +       unsigned short *keymap;
+>  };
+>
+>  static int kbd_readl(struct omap4_keypad *keypad_data, u32 offset)
+> @@ -211,74 +210,52 @@ static void omap4_keypad_close(struct input_dev *input)
+>         pm_runtime_put_sync(input->dev.parent);
+>  }
+>
+> -static struct omap4_keypad *omap_keypad_parse_dt(struct device *dev,
+> -                               uint32_t rows, uint32_t cols,
+> -                               struct input_dev *input_dev)
+> +#ifdef CONFIG_OF
+> +static int __devinit omap4_keypad_parse_dt(struct device *dev,
+> +                                          struct omap4_keypad *keypad_data)
+>  {
+>         struct device_node *np = dev->of_node;
+> -       struct platform_device *pdev = to_platform_device(dev);
+> -       struct omap4_keypad *keypad_data = platform_get_drvdata(pdev);
+>         int error;
+>
+> -       error = matrix_keypad_build_keymap(NULL, "linux,keymap",
+> -                               rows, cols, keypad_data->keymap, input_dev);
+> -       if (error) {
+> -               dev_err(&pdev->dev, "failed to build keymap\n");
+> -               input_free_device(input_dev);
+> +       if (!np) {
+> +               dev_err(dev, "missing DT data");
+> +               return -EINVAL;
+> +       }
+> +
+> +       of_property_read_u32(np, "keypad,num-rows", &keypad_data->rows);
+> +       of_property_read_u32(np, "keypad,num-columns", &keypad_data->cols);
+> +       if (!keypad_data->rows || !keypad_data->cols) {
+> +               dev_err(dev, "number of keypad rows/columns not specified\n");
+> +               return -EINVAL;
+>         }
+>
+>         if (of_get_property(np, "linux,input-no-autorepeat", NULL))
+>                 keypad_data->no_autorepeat = true;
+>
+> -       return keypad_data;
+> +       return 0;
+> +}
+> +#else
+> +static inline int omap4_keypad_parse_dt(struct device *dev,
+> +                                       struct omap4_keypad *keypad_data)
+> +{
+> +       return -ENOSYS;
+>  }
+> +#endif
+>
+>  static int __devinit omap4_keypad_probe(struct platform_device *pdev)
+>  {
+> -       struct device *dev = &pdev->dev;
+> -       struct device_node *np = dev->of_node;
+> -       const struct omap4_keypad_platform_data *pdata;
+> +       const struct omap4_keypad_platform_data *pdata =
+> +                               dev_get_platdata(&pdev->dev);
+> +       const struct matrix_keymap_data *keymap_data =
+> +                               pdata ? pdata->keymap_data : NULL;
+>         struct omap4_keypad *keypad_data;
+>         struct input_dev *input_dev;
+>         struct resource *res;
+> -       resource_size_t size;
+> -       unsigned int row_shift = 0, max_keys = 0;
+> -       uint32_t num_rows = 0, num_cols = 0;
+> +       unsigned int max_keys;
+>         int rev;
+>         int irq;
+>         int error;
+>
+> -       /* platform data */
+> -       pdata = pdev->dev.platform_data;
+> -       if (np) {
+> -               of_property_read_u32(np, "keypad,num-rows", &num_rows);
+> -               of_property_read_u32(np, "keypad,num-columns", &num_cols);
+> -               if (!num_rows || !num_cols) {
+> -                       dev_err(&pdev->dev, "number of keypad rows/columns not specified\n");
+> -                       return -EINVAL;
+> -               }
+> -       } else if (pdata) {
+> -               num_rows = pdata->rows;
+> -               num_cols = pdata->cols;
+> -       } else {
+> -               dev_err(&pdev->dev, "no platform data defined\n");
+> -               return -EINVAL;
+> -       }
+> -
+> -       row_shift = get_count_order(num_cols);
+> -       max_keys = num_rows << row_shift;
+> -
+> -       keypad_data = devm_kzalloc(dev, sizeof(struct omap4_keypad) +
+> -                       max_keys * sizeof(keypad_data->keymap[0]),
+> -                               GFP_KERNEL);
+> -
+> -       if (!keypad_data) {
+> -               dev_err(&pdev->dev, "keypad_data memory allocation failed\n");
+> -               return -ENOMEM;
+> -       }
+> -
+> -       platform_set_drvdata(pdev, keypad_data);
+> -
+>         res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>         if (!res) {
+>                 dev_err(&pdev->dev, "no base address specified\n");
+> @@ -291,9 +268,24 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
+>                 return -EINVAL;
+>         }
+>
+> -       size = resource_size(res);
+> +       keypad_data = kzalloc(sizeof(struct omap4_keypad), GFP_KERNEL);
+> +       if (!keypad_data) {
+> +               dev_err(&pdev->dev, "keypad_data memory allocation failed\n");
+> +               return -ENOMEM;
+> +       }
+> +
+> +       keypad_data->irq = irq;
+> +
+> +       if (pdata) {
+> +               keypad_data->rows = pdata->rows;
+> +               keypad_data->cols = pdata->cols;
+> +       } else {
+> +               error = omap4_keypad_parse_dt(&pdev->dev, keypad_data);
+> +               if (error)
+> +                       return error;
+> +       }
+>
+> -       res = request_mem_region(res->start, size, pdev->name);
+> +       res = request_mem_region(res->start, resource_size(res), pdev->name);
+>         if (!res) {
+>                 dev_err(&pdev->dev, "can't request mem region\n");
+>                 error = -EBUSY;
+> @@ -307,15 +299,11 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
+>                 goto err_release_mem;
+>         }
+>
+> -       keypad_data->rows = num_rows;
+> -       keypad_data->cols = num_cols;
+> -       keypad_data->irq = irq;
+> -       keypad_data->row_shift = row_shift;
+>
+>         /*
+> -       * Enable clocks for the keypad module so that we can read
+> -       * revision register.
+> -       */
+> +        * Enable clocks for the keypad module so that we can read
+> +        * revision register.
+> +        */
+>         pm_runtime_enable(&pdev->dev);
+>         error = pm_runtime_get_sync(&pdev->dev);
+>         if (error) {
+> @@ -358,29 +346,30 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
+>         input_dev->open = omap4_keypad_open;
+>         input_dev->close = omap4_keypad_close;
+>
+> -       if (np) {
+> -               keypad_data = omap_keypad_parse_dt(&pdev->dev,
+> -                               keypad_data->rows, keypad_data->cols,
+> -                               input_dev);
+> -       } else {
+> -               keypad_data->keymap_data =
+> -                       (struct matrix_keymap_data *)pdata->keymap_data;
+> -               error = matrix_keypad_build_keymap(keypad_data->keymap_data,
+> -                               NULL, keypad_data->rows, keypad_data->cols,
+> -                               keypad_data->keymap, input_dev);
+> -               if (error) {
+> -                       dev_err(&pdev->dev, "failed to build keymap\n");
+> -                       goto err_free_input;
+> -               }
+> -       }
+> -
+> +       input_set_capability(input_dev, EV_MSC, MSC_SCAN);
+>         if (!keypad_data->no_autorepeat)
+>                 __set_bit(EV_REP, input_dev->evbit);
+>
+> -       input_set_capability(input_dev, EV_MSC, MSC_SCAN);
+> -
+>         input_set_drvdata(input_dev, keypad_data);
+>
+> +       keypad_data->row_shift = get_count_order(keypad_data->cols);
+> +       max_keys = keypad_data->rows << keypad_data->row_shift;
+> +       keypad_data->keymap = kzalloc(max_keys * sizeof(keypad_data->keymap[0]),
+> +                                     GFP_KERNEL);
+> +       if (!keypad_data->keymap) {
+> +               dev_err(&pdev->dev, "Not enough memory for keymap\n");
+> +               error = -ENOMEM;
+> +               goto err_free_input;
+> +       }
+> +
+> +       error = matrix_keypad_build_keymap(keymap_data, NULL,
+> +                                          keypad_data->rows, keypad_data->cols,
+> +                                          keypad_data->keymap, input_dev);
+> +       if (error) {
+> +               dev_err(&pdev->dev, "failed to build keymap\n");
+> +               goto err_free_keymap;
+> +       }
+> +
+>         error = request_irq(keypad_data->irq, omap4_keypad_interrupt,
+>                              IRQF_TRIGGER_RISING,
+>                              "omap4-keypad", keypad_data);
+> @@ -397,11 +386,14 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
+>                 goto err_pm_disable;
+>         }
+>
+> +       platform_set_drvdata(pdev, keypad_data);
+>         return 0;
+>
+>  err_pm_disable:
+>         pm_runtime_disable(&pdev->dev);
+>         free_irq(keypad_data->irq, keypad_data);
+> +err_free_keymap:
+> +       kfree(keypad_data->keymap);
+>  err_free_input:
+>         input_free_device(input_dev);
+>  err_pm_put_sync:
+> @@ -409,7 +401,7 @@ err_pm_put_sync:
+>  err_unmap:
+>         iounmap(keypad_data->base);
+>  err_release_mem:
+> -       release_mem_region(res->start, size);
+> +       release_mem_region(res->start, resource_size(res));
+>  err_free_keypad:
+>         kfree(keypad_data);
+>         return error;
+> @@ -431,17 +423,21 @@ static int __devexit omap4_keypad_remove(struct platform_device *pdev)
+>         res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>         release_mem_region(res->start, resource_size(res));
+>
+> +       kfree(keypad_data->keymap);
+>         kfree(keypad_data);
+> +
+>         platform_set_drvdata(pdev, NULL);
+>
+>         return 0;
+>  }
+>
+> +#ifdef CONFIG_OF
+>  static const struct of_device_id omap_keypad_dt_match[] = {
+>         { .compatible = "ti,omap4-keypad" },
+>         {},
+>  };
+>  MODULE_DEVICE_TABLE(of, omap_keypad_dt_match);
+> +#endif
+>
+>  static struct platform_driver omap4_keypad_driver = {
+>         .probe          = omap4_keypad_probe,
