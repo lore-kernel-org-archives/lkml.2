@@ -1,109 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758076Ab2GKPSG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 11:18:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46980 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755635Ab2GKPSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 11:18:03 -0400
-Date: Wed, 11 Jul 2012 17:15:13 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@gmail.com>
-Cc: linux-kernel@vger.kernel.org, "Jonathan M. Foote" <jmfoote@cert.org>,
-        "H. J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@suse.de>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>
-Subject: Re: [PATCH] Extend core dump note section to contain file names of
-	mapped files
-Message-ID: <20120711151513.GA9314@redhat.com>
-References: <CAK1hOcNWo2mV2nKmVEuzKzEs7pCveFCBFWrYSrMbj4Y7M8zQ6Q@mail.gmail.com>
+	id S1758082Ab2GKPS0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 11:18:26 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33653 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755751Ab2GKPSY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 11:18:24 -0400
+Date: Wed, 11 Jul 2012 17:18:15 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: Prarit Bhargava <prarit@redhat.com>, John Stultz <johnstul@us.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, stable@vger.kernel.org
+Subject: Re: [PATCH 1/6] hrtimer: Provide clock_was_set_delayed()
+In-Reply-To: <1342011904.3462.152.camel@twins>
+Message-ID: <alpine.LFD.2.02.1207111539060.32033@ionos>
+References: <1341960205-56738-1-git-send-email-johnstul@us.ibm.com>  <1341960205-56738-2-git-send-email-johnstul@us.ibm.com>  <4FFD6E5A.9060206@redhat.com> <alpine.LFD.2.02.1207111425260.32033@ionos> <1342011904.3462.152.camel@twins>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK1hOcNWo2mV2nKmVEuzKzEs7pCveFCBFWrYSrMbj4Y7M8zQ6Q@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11, Denys Vlasenko wrote:
->
-> I propose to save this information in core dump, as a new note
-> in note segment.
+On Wed, 11 Jul 2012, Peter Zijlstra wrote:
+> On Wed, 2012-07-11 at 14:45 +0200, Thomas Gleixner wrote:
+> > On Wed, 11 Jul 2012, Prarit Bhargava wrote:
+> > > On 07/10/2012 06:43 PM, John Stultz wrote:
+> > > > clock_was_set() cannot be called from hard interrupt context because
+> > > > it calls on_each_cpu(). For fixing the widely reported leap seconds
+> > > > issue it's necessary to call it from the timer interrupt context.
+> > > > 
+> > > > Provide a new function which denotes it in the hrtimer cpu base
+> > > > structure of the cpu on which it is called and raising the timer
+> > > > softirq.
+> > > > 
+> > > > We then execute the clock_was_set() notificiation in the timer softirq
+> > > > context in hrtimer_run_pending().
+> > > 
+> > > I wish there was a nicer way to do this ... but looking at the code I can't
+> > > figure out a better way.  (no offense John, it's just the way the code is ;) )
+> > 
+> > Yeah, I had the same discussion with Peter earlier today. There is
+> > only a rather limited set of options.
+> > 
+> > 1) Retrigger the timer interrupt vectors on all CPUs - except the one
+> >    we are running on, but we have no interface for that at the moment
+> > 
+> > 2) Do the nasty __smp_call_function_single() hack
+> > 
+> >    Preallocate call_single_data for all cpus and do a
+> >    __smp_call_function_single() on all online cpus.
+> > 
+> >    This can be called from hard interrupt context or irq disabled
+> >    regions.
+> > 
+> >    That would allow to get rid of the whole delay magic all
+> >    together.
+> > 
+> > Thoughts?
+> 
+> The __smp_call_function_single() thing isn't particularly pretty either
+> and a lot more code to boot.. 
+> 
+> static DEFINE_PER_CPU(struct call_single_data, cws_csd);
+> 
+> void clock_was_set(void)
+> {
+> 	int cpu;
+> 
+> 	for_each_online_cpu(cpu) {
+> 		struct call_single_data *csd = &per_cpu(cws_csd, cpu);
+> 
+> 		if (csd->flags & CSD_FLAG_LOCK)
+> 			continue; /* a pending request is good enough */
+> 
+> 		csd->func = retrigger_next_event;
+> 
+> 		__smp_call_function_single(cpu, csd, 0);
+> 	}
+> 
+> 	timerfd_clock_was_set();
+> }
+> 
+> It also is a for_each_cpu loop with preemption disabled, not pretty :/
 
-Denys, I am in no position to discuss whether we need this change or not,
-format, etc. I'll only try to comment the code.
+Right. I think with the atomic update of the offset in the timer
+interrupt we are on the safe side. The main problem of timers expiring
+early forever is covered by this.
 
-And please do not use the attachments ;)
+Thinking more about it.
 
-> +static void fill_files_note(struct memelfnote *note)
-> +{
-> +	struct vm_area_struct *vma;
-> +	struct file *file;
-> +	unsigned count, word_count, size, remaining;
-> +	long *data;
-> +	long *start_end_ofs;
-> +	char *name;
-> +
-> +	count = 0;
-> +	for (vma = current->mm->mmap; vma != NULL; vma = vma->vm_next) {
-> +		file = vma->vm_file;
-> +		if (!file)
-> +			continue;
-> +		count++;
-> +		if (count >= MAX_FILE_NOTE_SIZE / 64) /* paranoia check */
-> +			goto err;
+If time goes backwards, then the IPI is pointless. The already armed
+clockevent device will fire too early, hrtimer_interrupt will update
+and just rearm it. That's one "spurious" event.
 
-Why this check? If count is huge, then...
+So we only need it in the case of time going forward. 
 
-> +	size = count * 64;
-> +	word_count = 2 + 3 * count;
-> + alloc:
-> +	if (size >= MAX_FILE_NOTE_SIZE) /* paranoia check */
-> +		goto err;
+Though with the leap second the maximum observable delay is 1 second
+on a completely idle core. Surely nothing to worry about for an event
+which happens rarely. So we could safely avoid the whole delayed
+business and just do the timerfd notification, though I wonder if even
+that is necessary in the leap second case.
 
-we should detect this case before the first alloc?
+On NOHZ=n systems the IPI is pointless as well. The maximum lateness
+will be 10ms for HZ=100. Nothing we should worry about.
 
-> +	size = (size + PAGE_SIZE - 1) & (-PAGE_SIZE);
+That leaves NOHZ enabled systems and there we might be clever and
+avoid the IPIs to those cores which are not idle and let the tick
+interrupt deal with it. And we can make the calls async and just let
+them raise the hrtimer softirq on those cores, which will run the
+hrtimer interrupt code and take care of everything.
 
-Well, I'd suggest PAGE_MASK instead of -PAGE_SIZE. Better yet,
+Thoughts?
 
-	size = round_up(size, PAGE_SIZE);
+	tglx
 
-> +		if (remaining == 0) {
-> + try_new_size:
-> +			vfree(data);
-> +			size = size * 5 / 4;
-> +			goto alloc;
-> +		}
-> +		filename = d_path(&file->f_path, name, remaining);
-> +		if (IS_ERR(filename)) {
-> +			if (PTR_ERR(filename) == -ENAMETOOLONG)
-> +				goto try_new_size;
 
-This looks like unnecessary complication to me, or I missed something.
-d_path(..., buflen) should handle the "buflen == 0" case correctly, so
-afacics you can remove the "if (remaining == 0)" block and move this
-free-and-goto-alloc code under the -ENAMETOOLONG check.
 
-> +		while ((remaining--, *name++ = *filename++) != '\0')
-> +			continue;
-
-Well, perhaps this is just me... but this looks a bit too complex
-to me ;) I won't insist, but
-
-		do
-			remaining--;
-		while ((*name++ = *filename++));
-
-looks more understandable, imho.
-
-Or even
-
-		/* d_path() fills the end of the buffer */
-		remaining = name - filename;
-		strcpy(name, filename);
-
-Oleg.
 
