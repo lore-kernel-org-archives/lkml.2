@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757723Ab2GKN5B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:57:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47651 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932529Ab2GKN47 (ORCPT
+	id S1757715Ab2GKN6a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:58:30 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:37424 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755208Ab2GKN62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:56:59 -0400
-Date: Wed, 11 Jul 2012 06:56:55 -0700
+	Wed, 11 Jul 2012 09:58:28 -0400
+Date: Wed, 11 Jul 2012 06:58:24 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] USB bug fixes for 3.5-rc6
-Message-ID: <20120711135655.GA19587@kroah.com>
+Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>
+Subject: [GIT PATCH] driver core (printk really) fixes for 3.5-rc6
+Message-ID: <20120711135824.GA19620@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,57 +28,34 @@ The following changes since commit 6887a4131da3adaab011613776d865f4bcfb5678:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.5-rc6
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.5-rc6
 
-for you to fetch changes up to dbf0e4c7257f8d684ec1a3c919853464293de66e:
+for you to fetch changes up to 5becfb1df5ac8e491338e64b1029685ccad4b39c:
 
-  PCI: EHCI: fix crash during suspend on ASUS computers (2012-07-10 09:52:05 -0700)
+  kmsg: merge continuation records while printing (2012-07-09 12:15:42 -0700)
 
 ----------------------------------------------------------------
-USB fixes for 3.5-rc6
+printk fixes for 3.5-rc6
 
-Here are a few fixes and new device ids for the 3.5-rc6 tree.
+Here are some more printk fixes for 3.5-rc6.  They resolve all known
+outstanding issues with the printk changes that have been happening.  They have
+been tested by the people reporting the problems.
 
-The PCI changes resolve a long-standing issue with resuming some EHCI
-controllers.  It has been acked by the PCI maintainer, and he asked for it to
-go through my USB tree instead of his.
-
-The xhci patches also resolve a number of reported issues.
+This hopefully should be it for the printk stuff for 3.5-final.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Alan Stern (1):
-      PCI: EHCI: fix crash during suspend on ASUS computers
+Kay Sievers (6):
+      kmsg: escape the backslash character while exporting data
+      kmsg: add the facility number to the syslog prefix
+      kmsg: properly handle concurrent non-blocking read() from /proc/kmsg
+      kmsg: make sure all messages reach a newly registered boot console
+      kmsg: /proc/kmsg - support reading of partial log records
+      kmsg: merge continuation records while printing
 
-Bjørn Mork (2):
-      USB: option: add ZTE MF60
-      USB: cdc-wdm: fix lockup on error in wdm_read
+liu chuansheng (1):
+      printk: replacing the raw_spin_lock/unlock with raw_spin_lock/unlock_irq
 
-Gaosen Zhang (1):
-      USB: option: Add MEDIATEK product ids
-
-Greg Kroah-Hartman (1):
-      Merge tag 'for-usb-linus-2012-07-02' of git://git.kernel.org/.../sarah/xhci into usb-linus
-
-Johan Hovold (1):
-      USB: metro-usb: fix tty_flip_buffer_push use
-
-Sarah Sharp (1):
-      xhci: Fix hang on back-to-back Set TR Deq Ptr commands.
-
-Stanislaw Ledwon (1):
-      usb: Add support for root hub port status CAS
-
- drivers/pci/pci-driver.c       | 12 ++++++++++++
- drivers/pci/pci.c              |  5 -----
- drivers/pci/quirks.c           | 26 -------------------------
- drivers/usb/class/cdc-wdm.c    |  2 ++
- drivers/usb/core/hub.c         | 18 +++++++++--------
- drivers/usb/host/xhci-hub.c    | 44 ++++++++++++++++++++++++++++++++++++------
- drivers/usb/host/xhci-ring.c   | 11 +++++++++++
- drivers/usb/host/xhci.h        |  6 +++++-
- drivers/usb/serial/metro-usb.c |  8 --------
- drivers/usb/serial/option.c    | 26 +++++++++++++++++++++++++
- include/linux/pci.h            |  2 --
- 11 files changed, 104 insertions(+), 56 deletions(-)
+ kernel/printk.c | 202 +++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 126 insertions(+), 76 deletions(-)
