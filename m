@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab2GKHqR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 03:46:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:5397 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752719Ab2GKHqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 03:46:14 -0400
-X-IronPort-AV: E=Sophos;i="4.77,566,1336320000"; 
-   d="scan'208";a="5371845"
-Message-ID: <4FFD3057.2050308@cn.fujitsu.com>
-Date: Wed, 11 Jul 2012 15:50:47 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: lenb@kernel.org, linux-acpi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 7/7 v2] release memory resources if hotadd_new_pgdat() failed
-References: <4FFD2F1E.10006@cn.fujitsu.com>
-In-Reply-To: <4FFD2F1E.10006@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/11 15:46:02,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/07/11 15:46:04,
-	Serialize complete at 2012/07/11 15:46:04
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756786Ab2GKHtB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 03:49:01 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60044 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754253Ab2GKHs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 03:48:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="175899654"
+Message-ID: <1341993193.2963.132.camel@sauron>
+Subject: Re: mmotm 2012-07-10-16-59 uploaded
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
+Date: Wed, 11 Jul 2012 10:53:13 +0300
+In-Reply-To: <20120711004430.0d14f0b6.akpm@linux-foundation.org>
+References: <20120711000148.BAD1E5C0050@hpza9.eem.corp.google.com>
+	 <1341988680.2963.128.camel@sauron>
+	 <20120711004430.0d14f0b6.akpm@linux-foundation.org>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-TKtQ4fCInahKiz/mbV1T"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should goto error to release memory resource if hotadd_new_pgdat() failed.
 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- mm/memory_hotplug.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+--=-TKtQ4fCInahKiz/mbV1T
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 0d7e3ec..427bb29 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -618,7 +618,7 @@ int __ref add_memory(int nid, u64 start, u64 size)
- 		pgdat = hotadd_new_pgdat(nid, start);
- 		ret = -ENOMEM;
- 		if (!pgdat)
--			goto out;
-+			goto error;
- 		new_pgdat = 1;
- 	}
- 
--- 
-1.7.1
+On Wed, 2012-07-11 at 00:44 -0700, Andrew Morton wrote:
+> On Wed, 11 Jul 2012 09:38:00 +0300 Artem Bityutskiy <dedekind1@gmail.com>=
+ wrote:
+>=20
+> > Andrew, thanks for picking my changes!
+> >=20
+> > On Tue, 2012-07-10 at 17:01 -0700, akpm@linux-foundation.org wrote:
+> > > * hfs-get-rid-of-hfs_sync_super-checkpatch-fixes.patch
+> >=20
+> > > * hfsplus-get-rid-of-write_super-checkpatch-fixes.patch
+> >=20
+> > I sent updated versions which would fix checkpatch.pl complaints. I
+> > guess you did not notice them or was unable to pick because I think I
+> > PGP-signed them?
+>=20
+> I looked at them, but they're identical to what I now have, so nothing
+> needed doing.
+
+Strange, I thought they had the white-spaces issue solved. I'll resend
+the entire series. Thanks!
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-TKtQ4fCInahKiz/mbV1T
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJP/TDpAAoJECmIfjd9wqK0Op8P/14ZezDA/Ag/M2iBmGNIU08J
+2rwtfpPR3QGtB1VPTmvBnfvGKYMcUgQWWyodwoujQmTA0VH/eWFcsh9P4R4KGxAq
+OXhFYW+Jllc5YOZKDwvGHlXp2h1yEpIonQDkGXTPuqR9Lnkgtu+GnBMIeMPC8KCr
+izLtyTiSDz4pzB7FRsMavxyWRgjMmTN0wZkNZBw0kn1BdqBVsORKi9KSitLpJu+7
+VtnjVJzGf0lD5oDjs4csZmMhTi0fSPAcwaAsQj0SnpRqj84S6ixgXnwm8rdcwhl5
+4/DBB2K8W+IlvRMLIJOCLXuSA+51CLELzsnGkj/Jpv6T63m4FYvf/gWzXNxxTisH
+4UE5gzVRI5J5IuhclMsE0ZJlKhVYw//EF3+chVsB7eVvoYMBB7VpiXTTQ09Yvzu3
+28ZarIOzU5qVAN6IXiRGDG3E6+YkgOS4/G+Ypus4lT4aCUxX35s4+VEBypyrNPlw
+paHRQ2/Bx0DUty12qnqnNRQMzlwVVbMsUg6JxuTK9nlIwZt1jrsuCCfDPs+ltZfx
+RM2hmwi3p+3KkRLStxnhScFTx3COpmmYODtXquCTwEnBSZrA0qswn7hqxvwRvPEW
+Wtnbe2GCAf6JG+nO52F73euL2CE6zeWNXMqMne5THV47G7fNtQ7FRsqIxarXkf7K
+lDt23SR4cTmPVLUYNAvn
+=fSvh
+-----END PGP SIGNATURE-----
+
+--=-TKtQ4fCInahKiz/mbV1T--
 
