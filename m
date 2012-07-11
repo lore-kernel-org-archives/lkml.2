@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932731Ab2GKNwF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 09:52:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27797 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932560Ab2GKNwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 09:52:00 -0400
-Message-ID: <4FFD84FB.80600@redhat.com>
-Date: Wed, 11 Jul 2012 16:51:55 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v7 00/10] KVM: MMU: fast page fault
-References: <4FE1822D.8010002@linux.vnet.ibm.com>
-In-Reply-To: <4FE1822D.8010002@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932701Ab2GKNwD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 09:52:03 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:40949 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757478Ab2GKNuW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 09:50:22 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAG6E/U9bdWOb/2dsb2JhbABFt16BB4IgAQEFeRAgMTwbBxKIEb1XkS4DlTqJJoZggmE
+X-IronPort-AV: E=Sophos;i="4.77,568,1336341600"; 
+   d="scan'208";a="541808132"
+From: "Javier M. Mellid" <jmunhoz@igalia.com>
+To: gregkh@linuxfoundation.org, gewang@siliconmotion.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        "Javier M. Mellid" <jmunhoz@igalia.com>
+Subject: [PATCH 4/9] staging: sm7xxfb: rename sm712vga_setup to sm7xx_vga_setup
+Date: Wed, 11 Jul 2012 15:49:36 +0200
+Message-Id: <1342014581-2979-5-git-send-email-jmunhoz@igalia.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1342014581-2979-1-git-send-email-jmunhoz@igalia.com>
+References: <1342014581-2979-1-git-send-email-jmunhoz@igalia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2012 10:56 AM, Xiao Guangrong wrote:
-> Changlog:
-> - always atomicly update the spte if it can be updated out of mmu-lock
-> - rename spte_can_be_writable() to spte_is_locklessly_modifiable()
-> - cleanup and comment spte_write_protect()
-> 
-> Performance result:
-> (The benchmark can be found at: http://www.spinics.net/lists/kvm/msg73011.html)
-> 
->                                before            after
-> Run 10 times, Avg time:      538233957 ns.      249809853 ns. +53.6%
-> 
+From: "Javier M. Mellid" <jmunhoz@igalia.com>
 
-Thanks, all applied.  Thanks for your patience while we reviewed all the
-iterations of this patchset.
+This patch renames sm712vga_setup to sm7xx_vga_setup. sm7xx_vga_setup
+process command line options in order to get the vga parameter. This
+parameter will be the lookup index to match the right vesa mode. It is
+chip independent.
 
+Signed-off-by: Javier M. Mellid <jmunhoz@igalia.com>
+---
+ drivers/staging/sm7xxfb/sm7xxfb.c |   13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/staging/sm7xxfb/sm7xxfb.c b/drivers/staging/sm7xxfb/sm7xxfb.c
+index d7d37bd..7a597fd 100644
+--- a/drivers/staging/sm7xxfb/sm7xxfb.c
++++ b/drivers/staging/sm7xxfb/sm7xxfb.c
+@@ -756,13 +756,8 @@ static inline void sm7xx_init_hw(void)
+ 	outb_p(0x11, 0x3c5);
+ }
+ 
+-/*
+- *	sm712vga_setup - process command line options, get vga parameter
+- *	@options: string of options
+- *	Returns zero.
+- *
+- */
+-static int __init sm712vga_setup(char *options)
++/* process command line options, get vga parameter */
++static int __init sm7xx_vga_setup(char *options)
+ {
+ 	int i;
+ 
+@@ -773,7 +768,7 @@ static int __init sm712vga_setup(char *options)
+ 	smtc_scr_info.lfb_height = 0;
+ 	smtc_scr_info.lfb_depth = 0;
+ 
+-	pr_debug("sm712vga_setup = %s\n", options);
++	pr_debug("sm7xx_vga_setup = %s\n", options);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(vesa_mode_table); i++) {
+ 		if (strstr(options, vesa_mode_table[i].index)) {
+@@ -786,7 +781,7 @@ static int __init sm712vga_setup(char *options)
+ 
+ 	return -1;
+ }
+-__setup("vga=", sm712vga_setup);
++__setup("vga=", sm7xx_vga_setup);
+ 
+ static int __devinit smtcfb_pci_probe(struct pci_dev *pdev,
+ 				   const struct pci_device_id *ent)
 -- 
-error compiling committee.c: too many arguments to function
-
+1.7.10
 
