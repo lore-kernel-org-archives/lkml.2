@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758237Ab2GKSgz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 14:36:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64196 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756596Ab2GKSgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 14:36:53 -0400
-Message-ID: <4FFDAB10.8020404@redhat.com>
-Date: Wed, 11 Jul 2012 19:34:24 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1755655Ab2GKSnN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 14:43:13 -0400
+Received: from nat.nue.novell.com ([195.135.221.2]:47939 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012Ab2GKSnM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 14:43:12 -0400
+Message-ID: <4FFDC938.4050606@suse.com>
+Date: Wed, 11 Jul 2012 11:43:04 -0700
+From: Lee Duncan <lduncan@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, kvm@vger.kernel.org
-Subject: Re: [PATCH 1/2] kvm, Add x86_hyper_kvm to complete detect_hypervisor_platform
- check [v2]
-References: <1341493877-16622-1-git-send-email-prarit@redhat.com> <1341493877-16622-2-git-send-email-prarit@redhat.com> <4FF59606.4060504@redhat.com> <4FF5987C.6080905@redhat.com> <20120706112719.GA18059@amt.cnet> <4FF724BB.5040008@redhat.com>
-In-Reply-To: <4FF724BB.5040008@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kai Makisara <Kai.Makisara@kolumbus.fi>
+CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org, jeffm@suse.com
+Subject: Re: [PATCH v3 3/5] st: get rid of scsi_tapes array
+References: <4FBACC66.80208@suse.com> <alpine.LNX.2.00.1207011147110.3650@kai.makisara.local> <4FF239F8.7030101@suse.com>
+In-Reply-To: <4FF239F8.7030101@suse.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/2012 08:47 PM, Prarit Bhargava wrote:
-> [PATCH 1/2] kvm, Add x86_hyper_kvm to complete detect_hypervisor_platform check [v3]
+Kai:
+
+Your added patch looks great, and I see you fixed the documentation as
+well. Thanks for your help.
+
+
+On 07/02/2012 05:16 PM, Lee Duncan wrote:
 > 
-> While debugging I noticed that unlike all the other hypervisor code in the
-> kernel, kvm does not have an entry for x86_hyper which is used in
-> detect_hypervisor_platform() which results in a nice printk in the
-> syslog.  This is only really a stub function but it
-> does make kvm more consistent with the other hypervisors.
-
-Thanks, applied.
-
+> On 07/01/2012 01:57 AM, Kai Makisara wrote:
+>> On Mon, 21 May 2012, Lee Duncan wrote:
+>>
+>>> From: Jeff Mahoney <jeffm@suse.com>
+>>>
+>>> st currently allocates an array to store pointers to all of the
+>>> scsi_tape objects. It's used to discover available indexes to use as the
+>>> base for the minor number selection and later to look up scsi_tape
+>>> devices for character devices.
+>>>
+>>> We switch to using an IDR for minor selection and a pointer from
+>>> st_modedef back to scsi_tape for the lookups.
+>>>
+>>> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+>>> Signed-off-by: Lee Duncan <lduncan@suse.com>
+>>> ---
+>>>  drivers/scsi/st.c |  172 ++++++++++++++++++++---------------------------------
+>>>  drivers/scsi/st.h |    2 +
+>>>  2 files changed, 65 insertions(+), 109 deletions(-)
+>>>
+>> ... patch removed
+>>
+>> I have finally had time to review and test this patch set. I am sorry this 
+>> has taken so long.
+>>
+>> I have found one change of behaviour and a theoretical problem:
+>> The new code does not re-use the tape numbers when freed and re-scanned. 
+>> The current code does re-use the freed numbers. Are there any reasons for 
+>> this changed behaviour? (The theoretical problem is that the new code 
+>> frees the tape structure but leaves the pointer in the idr tree.)
+>>
+>> The patch at the end of this message (applies after the whole series) is 
+>> an attempt to implement re-use of tape numbers. I am not completely sure 
+>> that the change is correctly placed but it seems to work.
 > 
-> --- a/arch/x86/kernel/cpu/hypervisor.c
-> +++ b/arch/x86/kernel/cpu/hypervisor.c
-> @@ -37,6 +37,7 @@ static const __initconst struct hypervisor_x86 * const
-> hypervisors[] =
+> 
+> Thanks for the review, and good catch. I'll look over your added patch
+> and give feedback as soon as I can.
+> 
+>>
+>> Another minor thing is that the documentation should be updated :-)
+> 
+> Of course.
+> 
+>>
+>> The patch at the end also updates the version code. I am not sure if the 
+>> version code is useful, but it should be either updated or removed.
+>>
+>> Otherwise no problems found. I am ready to ack the patch set after the 
+>> re-use thing has been resolved (one way or another).
+>>
+>> Thanks,
+>> Kai
+>>
 
-Corrupted patch, fixed by hand.
-
->  #endif
-
--- 
-error compiling committee.c: too many arguments to function
-
+- Lee
 
