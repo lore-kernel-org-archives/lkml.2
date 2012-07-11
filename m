@@ -1,49 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab2GKJOA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 05:14:00 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47842 "EHLO bear.ext.ti.com"
+	id S1756854Ab2GKJOM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 05:14:12 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45440 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751423Ab2GKJN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 05:13:59 -0400
+	id S1754391Ab2GKJOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jul 2012 05:14:08 -0400
 From: Tarun Kanti DebBarma <tarun.kanti@ti.com>
 To: <linux-omap@vger.kernel.org>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Tarun Kanti DebBarma <tarun.kanti@ti.com>
-Subject: [PATCH 0/2] gpio/omap: few code realignment and update of missing code
-Date: Wed, 11 Jul 2012 14:43:13 +0530
-Message-ID: <1341997995-14020-1-git-send-email-tarun.kanti@ti.com>
+        Tarun Kanti DebBarma <tarun.kanti@ti.com>,
+        Kevin Hilman <khilman@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Paul Walmsley <paul@pwsan.com>
+Subject: [PATCH 2/2] gpio/omap: add *remove* callback in platform_driver
+Date: Wed, 11 Jul 2012 14:43:15 +0530
+Message-ID: <1341997995-14020-3-git-send-email-tarun.kanti@ti.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1341997995-14020-1-git-send-email-tarun.kanti@ti.com>
+References: <1341997995-14020-1-git-send-email-tarun.kanti@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is in reponse to comments provided to [gpio/omap: add clk_prepare
-and clk_unprepare] and is available here for reference:
-http://lists.infradead.org/pipermail/linux-arm-kernel/2012-June/105762.html
+Add *remove* callback so that necessary cleanup operations are
+performed when device is unregistered. The device is deleted
+from the list and associated clock handle is released by
+calling clk_put() and irq descriptor is released using the
+irq_free_desc() api.
 
-Patch-1 moves the debounce clock handle initialization from gpio_debounce()
-to omap_gpio_mod_init(). Since this is a one time initialization it makes
-sense to keep it here. Though proposal was to keep in omap_gpio_chip_init()
-I found more appropriate to keep in omap_gpio_mod_init() because it is more
-related to bank specific initialization.
+Signed-off-by: Tarun Kanti DebBarma <tarun.kanti@ti.com>
+Reported-by: Paul Walmsley <paul@pwsan.com>
+Reviewed-by: Jon Hunter <jon-hunter@ti.com>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: Rajendra Nayak <rnayak@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Cousson, Benoit <b-cousson@ti.com>
+Cc: Paul Walmsley <paul@pwsan.com>
+---
+ drivers/gpio/gpio-omap.c |   30 ++++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
 
-Patch-2 adds *.remove* callback which is missing in current implementation.
-Along with other cleanup operations this function is used for releasing the
-clock handle and of course calling clk_unprepare().
-
-Reference:
-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-Commit: bd0a521e88aa7a06ae7aabaed7ae196ed4ad867a (Linux 3.5-rc6)
-
-Tested on: OMAP3630/ZOOM3, BLAZE
-
-Tarun Kanti DebBarma (2):
-  gpio/omap: move bank->dbck initialization to omap_gpio_mod_init()
-  gpio/omap: add *remove* callback in platform_driver
-
- drivers/gpio/gpio-omap.c |   40 ++++++++++++++++++++++++++++++++++------
- 1 files changed, 34 insertions(+), 6 deletions(-)
+diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+index afecdcc..08929d5 100644
+--- a/drivers/gpio/gpio-omap.c
++++ b/drivers/gpio/gpio-omap.c
+@@ -1140,6 +1140,35 @@ static int __devinit omap_gpio_probe(struct platform_device *pdev)
+ 	return ret;
+ }
+ 
++/**
++ * omap_gpio_remove - cleanup a registered gpio device
++ * @pdev:       pointer to current gpio platform device
++ *
++ * Called by driver framework whenever a gpio device is unregistered.
++ * GPIO is deleted from the list and associated clock handle freed.
++ */
++static int __devexit omap_gpio_remove(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct gpio_bank *bank;
++	unsigned long flags;
++	int ret = -EINVAL;
++
++	list_for_each_entry(bank, &omap_gpio_list, node) {
++		spin_lock_irqsave(&bank->lock, flags);
++		if (bank->dev == dev) {
++			list_del(&bank->node);
++			clk_put(bank->dbck);
++			irq_free_desc(bank->irq_base);
++			ret = 0;
++			spin_unlock_irqrestore(&bank->lock, flags);
++			break;
++		}
++		spin_unlock_irqrestore(&bank->lock, flags);
++	}
++	return ret;
++}
++
+ #ifdef CONFIG_ARCH_OMAP2PLUS
+ 
+ #if defined(CONFIG_PM_RUNTIME)
+@@ -1466,6 +1495,7 @@ MODULE_DEVICE_TABLE(of, omap_gpio_match);
+ 
+ static struct platform_driver omap_gpio_driver = {
+ 	.probe		= omap_gpio_probe,
++	.remove = __devexit_p(omap_gpio_remove),
+ 	.driver		= {
+ 		.name	= "omap_gpio",
+ 		.pm	= &gpio_pm_ops,
+-- 
+1.7.0.4
 
