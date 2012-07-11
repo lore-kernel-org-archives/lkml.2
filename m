@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757760Ab2GKOPc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jul 2012 10:15:32 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50847 "EHLO
+	id S1757821Ab2GKOR0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jul 2012 10:17:26 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61356 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757829Ab2GKOPa (ORCPT
+	with ESMTP id S1755355Ab2GKORZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jul 2012 10:15:30 -0400
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] [media] adv7180.c: convert to v4l2 control framework
-Date: Wed, 11 Jul 2012 16:19:02 +0200
-Message-ID: <1764384.YhnDdKNyk4@harkonnen>
-User-Agent: KMail/4.8.4 (Linux/3.4.4-5.fc17.x86_64; KDE/4.8.4; x86_64; ; )
-In-Reply-To: <201207111605.49470.hverkuil@xs4all.nl>
-References: <1341974086-27887-1-git-send-email-federico.vaga@gmail.com> <1460334.RCi3doz24X@harkonnen> <201207111605.49470.hverkuil@xs4all.nl>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 11 Jul 2012 10:17:25 -0400
+Subject: Re: Protocol handler using dev_add_pack
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jerry Yu <jerryy@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <CAP2AAQMvx5yxVRLN4AT_YdsFJAUDRgSNwzq0A3x8JyZgXKEjmw@mail.gmail.com>
+References: <CAP2AAQMvx5yxVRLN4AT_YdsFJAUDRgSNwzq0A3x8JyZgXKEjmw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 Jul 2012 16:17:19 +0200
+Message-ID: <1342016239.3265.8007.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > @@ -445,9 +402,9 @@ static const struct v4l2_subdev_video_ops
-> > > adv7180_video_ops = {> 
-> > >  static const struct v4l2_subdev_core_ops adv7180_core_ops = {
-> > >  
-> > >   .g_chip_ident = adv7180_g_chip_ident,
-> > >   .s_std = adv7180_s_std,
-> > > 
-> > > - .queryctrl = adv7180_queryctrl,
-> > > - .g_ctrl = adv7180_g_ctrl,
-> > > - .s_ctrl = adv7180_s_ctrl,
-> > > + .queryctrl = v4l2_subdev_queryctrl,
-> > > + .g_ctrl = v4l2_subdev_g_ctrl,
-> > > + .s_ctrl = v4l2_subdev_s_ctrl,
-> > 
-> > I'm not sure to undestand this point. I "grepped" for the adv7180
-> > and it seem that I'm the only user of the adv7180 (sta2x11 VIP
-> > driver). In the VIP driver I don't use the control framework (there
-> > aren't controls), so I think these lines must be there. Am I wrong?
+On Wed, 2012-07-11 at 10:38 -0300, Jerry Yu wrote:
+> I am working on a kernel module to monitor all TCP packets. I created a protocol
+> handler with protocol code ETH_P_ALL to handle all incoming and outgoing
+> TCP packets. The code worked fine on 2.6.14 kernel, but in current 3.2.0-26
+> kernel, I am no longer able to get the TCP payload for outgoing packets.
+> The data in TCP payload section of skb->data are mainly 0x00. I am still
+> able to get incoming TCP packets' payloads though.
 > 
-> Correct. But once sta2x11 is converted to using the control framework,
-> then these lines can be dropped since no one else is using this
-> subdevice driver.
+> Is there any change in 3.2.0 or other early kernel versions that will cause
+> this issue?
 
-What do you suggest? I re-submit this patch and when sta2x11 is fixed a 
-I submit a new patch to remove these lines; or wait the full conversion 
-of the sta2x11 driver and submit both patch?
+Maybe you make wrong assumptions in your code.
 
--- 
-Federico Vaga
+skb->data doesnt exactly contains tcp payload of locally generated TCP
+packets, unless you disabled scatter-gather on the NIC
+
+ehtool -K eth0 sg off
+
+
+
